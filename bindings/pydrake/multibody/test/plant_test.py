@@ -3388,7 +3388,7 @@ class TestPlant(unittest.TestCase):
         geometry2 = GeometryInstance(X_PG=RigidTransform(),
                                      shape=Sphere(2.0), name="sphere2")
         geometry2.set_proximity_properties(props)
-        dut.RegisterDeformableBody(
+        body_id2 = dut.RegisterDeformableBody(
             geometry_instance=geometry2,
             config=deformable_body_config,
             model_instance=model_instance,
@@ -3397,6 +3397,9 @@ class TestPlant(unittest.TestCase):
 
         geometry_id = dut.GetGeometryId(body_id)
         self.assertEqual(dut.GetBodyId(geometry_id), body_id)
+        deformable_body_ids = dut.GetBodyIds(model_instance=model_instance)
+        self.assertEqual(len(deformable_body_ids), 1)
+        self.assertEqual(deformable_body_ids[0], body_id2)
         dut.SetWallBoundaryCondition(body_id, [1, 1, -1], [0, 0, 1])
 
         spatial_inertia = SpatialInertia_[float].SolidCubeWithDensity(1, 1)
