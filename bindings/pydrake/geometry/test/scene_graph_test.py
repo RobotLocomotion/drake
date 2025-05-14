@@ -1,5 +1,6 @@
 import pydrake.geometry as mut
 
+import numpy as np
 import unittest
 from math import pi
 
@@ -16,6 +17,7 @@ from pydrake.systems.sensors import (
     ImageDepth32F,
     ImageLabel16I,
 )
+import pydrake.symbolic as sym
 
 
 class TestGeometrySceneGraph(unittest.TestCase):
@@ -615,6 +617,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
         QueryObject = mut.QueryObject_[T]
         SceneGraphInspector = mut.SceneGraphInspector_[T]
         FramePoseVector = mut.FramePoseVector_[T]
+        GeometryConfigurationVector = mut.GeometryConfigurationVector_[T]
 
         # First, ensure we can default-construct it.
         model = QueryObject()
@@ -628,6 +631,11 @@ class TestGeometrySceneGraph(unittest.TestCase):
             source_id=source_id, frame_id=frame_id,
             geometry=mut.GeometryInstance(X_PG=RigidTransform(),
                                           shape=mut.Sphere(1.), name="sphere"))
+        deformable_geometry_id = scene_graph.RegisterDeformableGeometry(
+            source_id=source_id, frame_id=scene_graph.world_frame_id(),
+            geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
+                                          shape=mut.Sphere(0.1),
+                                          name="sphere4"), resolution_hint=1)
         render_params = mut.RenderEngineVtkParams()
         renderer_name = "test_renderer"
         scene_graph.AddRenderer(renderer_name,
@@ -638,11 +646,32 @@ class TestGeometrySceneGraph(unittest.TestCase):
         pose_vector.set_value(frame_id, RigidTransform_[T]())
         scene_graph.get_source_pose_port(source_id).FixValue(
             context, pose_vector)
+        geometry_configuration_vector = GeometryConfigurationVector()
+        # The deformable sphere uses an octahedron mesh for approximation,
+        # which has 7 vertices, hence its configuration has 7 * 3 = 21 element.
+        octahedron_configuration_flat = np.array([T(i) for i in range(21)])
+        geometry_configuration_vector.set_value(
+            deformable_geometry_id, octahedron_configuration_flat)
+        scene_graph.get_source_configuration_port(source_id).FixValue(
+            context, geometry_configuration_vector)
         query_object = scene_graph.get_query_output_port().Eval(context)
 
         self.assertIsInstance(query_object.inspector(), SceneGraphInspector)
         self.assertIsInstance(
             query_object.GetPoseInWorld(frame_id=frame_id), RigidTransform_[T])
+        configuration_val = query_object.GetConfigurationsInWorld(
+                deformable_geometry_id=deformable_geometry_id)
+        self.assertIsInstance(configuration_val, np.ndarray)
+        self.assertEqual(
+            configuration_val.size, octahedron_configuration_flat.size)
+        for i in range(configuration_val.size):
+            if T == sym.Expression:
+                self.assertTrue(
+                    configuration_val[i].EqualTo(
+                        octahedron_configuration_flat[i]))
+            else:
+                self.assertEqual(
+                    configuration_val[i], octahedron_configuration_flat[i])
         self.assertIsInstance(
             query_object.GetPoseInParent(frame_id=frame_id),
             RigidTransform_[T])

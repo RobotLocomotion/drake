@@ -566,6 +566,9 @@ void DefineQueryObject(py::module m, T) {
                 &Class::GetPoseInWorld),
             py::arg("frame_id"), py_rvp::reference_internal,
             cls_doc.GetPoseInWorld.doc_1args_frame_id)
+        .def("GetConfigurationsInWorld", &Class::GetConfigurationsInWorld,
+            py::arg("deformable_geometry_id"), py_rvp::copy,
+            cls_doc.GetConfigurationsInWorld.doc)
         .def("GetPoseInParent", &Class::GetPoseInParent, py::arg("frame_id"),
             py_rvp::reference_internal, cls_doc.GetPoseInParent.doc)
         .def("GetPoseInWorld",
