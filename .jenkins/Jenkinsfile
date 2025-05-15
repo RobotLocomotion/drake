@@ -22,7 +22,15 @@ node(getNodeLabel()) {
   skipDefaultCheckout()
 
   // Import utilities.
-  library('utils')
+  library identifier: 'utils@master', retriever: modernSCM(
+    scm: [
+      $class: 'GitSCMSource',
+      remote: 'https://github.com/RobotLocomotion/drake',
+      credentialsId: '5b9a4e7f-b57a-4692-95b1-6cc704c106fd',
+      traits: [gitBranchDiscovery()]
+    ],
+    libraryPath: '.jenkins/utils/'
+  )
 
   // Categorize this build.
   def isProd = utils.isProduction()
