@@ -39,12 +39,13 @@ drake_pybind_library(
         "planning_py_collision_checker.cc",
         "planning_py_collision_checker_interface_types.cc",
         "planning_py_graph_algorithms.cc",
+        "planning_py_iris_common.cc",
+        "planning_py_iris_from_clique_cover.cc",
+        "planning_py_iris_zo.cc",
+        "planning_py_joint_limits.cc",
         "planning_py_robot_diagram.cc",
         "planning_py_trajectory_optimization.cc",
         "planning_py_visibility_graph.cc",
-        "planning_py_iris_from_clique_cover.cc",
-        "planning_py_iris_common.cc",
-        "planning_py_iris_zo.cc",
         "planning_py_zmp_planner.cc",
     ],
     package_info = PACKAGE_INFO,
@@ -146,6 +147,13 @@ drake_py_unittest(
     deps = [
         ":planning",
         "//bindings/pydrake/multibody:inverse_kinematics_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "joint_limits_test",
+    deps = [
+        ":planning",
     ],
 )
 
