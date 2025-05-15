@@ -158,6 +158,17 @@ class Cassie : public benchmark::Fixture {
     }
   }
 
+  // Runs the MassMatrixViaID benchmark.
+  // NOLINTNEXTLINE(runtime/references)
+  void DoMassMatrixViaID(benchmark::State& state) {
+    DRAKE_DEMAND(want_grad_vdot(state) == false);
+    DRAKE_DEMAND(want_grad_u(state) == false);
+    for (auto _ : state) {
+      InvalidateState();
+      plant_->CalcMassMatrixViaInverseDynamics(*context_, &mass_matrix_out_);
+    }
+  }
+
   // Runs the MassMatrix benchmark.
   // NOLINTNEXTLINE(runtime/references)
   void DoMassMatrix(benchmark::State& state) {
@@ -166,6 +177,17 @@ class Cassie : public benchmark::Fixture {
     for (auto _ : state) {
       InvalidateState();
       plant_->CalcMassMatrix(*context_, &mass_matrix_out_);
+    }
+  }
+
+  // Runs the MassMatrixInM benchmark.
+  // NOLINTNEXTLINE(runtime/references)
+  void DoMassMatrixInM(benchmark::State& state) {
+    DRAKE_DEMAND(want_grad_vdot(state) == false);
+    DRAKE_DEMAND(want_grad_u(state) == false);
+    for (auto _ : state) {
+      InvalidateState();
+      plant_->CalcMassMatrixInM(*context_, &mass_matrix_out_);
     }
   }
 
@@ -392,10 +414,26 @@ BENCHMARK_REGISTER_F(CassieDouble, PosAndVelKinematicsInM)
     ->Arg(kWantNoGrad);
 
 // NOLINTNEXTLINE(runtime/references)
+BENCHMARK_DEFINE_F(CassieDouble, MassMatrixViaID)(benchmark::State& state) {
+  DoMassMatrixViaID(state);
+}
+BENCHMARK_REGISTER_F(CassieDouble, MassMatrixViaID)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
+
+// NOLINTNEXTLINE(runtime/references)
 BENCHMARK_DEFINE_F(CassieDouble, MassMatrix)(benchmark::State& state) {
   DoMassMatrix(state);
 }
 BENCHMARK_REGISTER_F(CassieDouble, MassMatrix)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
+
+// NOLINTNEXTLINE(runtime/references)
+BENCHMARK_DEFINE_F(CassieDouble, MassMatrixInM)(benchmark::State& state) {
+  DoMassMatrixInM(state);
+}
+BENCHMARK_REGISTER_F(CassieDouble, MassMatrixInM)
     ->Unit(benchmark::kMicrosecond)
     ->Arg(kWantNoGrad);
 
