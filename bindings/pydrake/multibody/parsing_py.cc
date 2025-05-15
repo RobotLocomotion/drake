@@ -291,7 +291,7 @@ PYBIND11_MODULE(parsing, m) {
       [&m]<typename T>(T) {
         m.def("GetScopedFrameByName",
             overload_cast_explicit<const Frame<T>&, const MultibodyPlant<T>&,
-                const std::string&>(&parsing::GetScopedFrameByName),
+                std::string_view>(&parsing::GetScopedFrameByName),
             py::arg("plant"), py::arg("full_name"),
             py::return_value_policy::reference,
             py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
@@ -303,7 +303,7 @@ PYBIND11_MODULE(parsing, m) {
       [&m]<typename T>(T) {
         m.def("GetScopedFrameByNameMaybe",
             overload_cast_explicit<const Frame<T>*, const MultibodyPlant<T>&,
-                const std::string&>(&parsing::GetScopedFrameByNameMaybe),
+                std::string_view>(&parsing::GetScopedFrameByNameMaybe),
             py::arg("plant"), py::arg("full_name"),
             py::return_value_policy::reference,
             py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
