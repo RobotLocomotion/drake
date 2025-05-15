@@ -305,10 +305,16 @@ class BodyNode : public MultibodyElement<T> {
   // sweep down to World filling in its diagonal contributions as in the
   // inner loop of algorithm 9.3, using the appropriate
   // CalcMassMatrixOffDiagonalHelper().
-  virtual void CalcMassMatrixContribution_TipToBase(
+  virtual void CalcMassMatrixContributionInWorld_TipToBase(
       const PositionKinematicsCache<T>& pc,
-      const std::vector<SpatialInertia<T>>& Mc_B_W_cache,
+      const std::vector<SpatialInertia<T>>& I_BBo_W_cache,
       const std::vector<Vector6<T>>& H_PB_W_cache,
+      EigenPtr<MatrixX<T>> M) const = 0;
+
+  // Same, but calculated in body M frames rather than World.
+  virtual void CalcMassMatrixContributionInM_TipToBase(
+      const PositionKinematicsCacheInM<T>& pcm,
+      const std::vector<SpatialInertia<T>>& I_BMo_M_cache,
       EigenPtr<MatrixX<T>> M) const = 0;
 
   // There are six functions for calculating the off-diagonal blocks, one for
@@ -724,20 +730,20 @@ class BodyNode : public MultibodyElement<T> {
 };
 
 // During mass matrix computation, this dispatcher is invoked by the
-// composite body R(k) on each of the bodies on the path to World.
-template <typename T, int Rnv>
+// composite body B on each of the bodies on its inboard path to World.
+template <typename T, int Bnv>
 class CalcMassMatrixOffDiagonalDispatcher;
 
-#define SPECIALIZE_MASS_MATRIX_DISPATCHER(Rnv)                           \
+#define SPECIALIZE_MASS_MATRIX_DISPATCHER(Bnv)                           \
   template <typename T>                                                  \
-  class CalcMassMatrixOffDiagonalDispatcher<T, Rnv> {                    \
+  class CalcMassMatrixOffDiagonalDispatcher<T, Bnv> {                    \
    public:                                                               \
-    static void Dispatch(const BodyNode<T>& body_node, int R_start_in_v, \
+    static void Dispatch(const BodyNode<T>& body_node, int B_start_in_v, \
                          const std::vector<Vector6<T>>& H_PB_W_cache,    \
-                         const Eigen::Matrix<T, 6, Rnv>& Fm_CBo_W,       \
+                         const Eigen::Matrix<T, 6, Bnv>& Fm_CPo_W,       \
                          EigenPtr<MatrixX<T>> M) {                       \
-      body_node.CalcMassMatrixOffDiagonalBlock##Rnv(                     \
-          R_start_in_v, H_PB_W_cache, Fm_CBo_W, M);                      \
+      body_node.CalcMassMatrixOffDiagonalBlock##Bnv(                     \
+          B_start_in_v, H_PB_W_cache, Fm_CPo_W, M);                      \
     }                                                                    \
   }
 

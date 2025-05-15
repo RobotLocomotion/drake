@@ -85,10 +85,10 @@ void BodyNode<T>::CalcCompositeBodyInertiaInM_TipToBase(
     const math::RigidTransform<T>& X_MbMc = pcm.get_X_MpM(child_node_index);
     // Shift the child's composite body inertia to B's Mb frame origin Mbo, but
     // still expressed in Mc (so Mx==Mc here).
-    const Vector3<T> p_McMb_Mb = -X_MbMc.translation();  // 3 flops
+    const Vector3<T> p_McMb_Mb = -X_MbMc.translation();      // 3 flops
     SpatialInertia<T> I_CMb_Mx = I_CMc_Mc.Shift(p_McMb_Mb);  // 37 flops
     I_CMb_Mx.ReExpressInPlace(X_MbMc.rotation());  // Now Mx==Mb, 72 flops
-    I_BMb_Mb += I_CMb_Mx;  // 36 flops
+    I_BMb_Mb += I_CMb_Mx;                          // 36 flops
   }
 }
 

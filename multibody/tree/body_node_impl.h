@@ -92,10 +92,15 @@ class BodyNodeImpl final : public BodyNode<T> {
       const T* positions, const PositionKinematicsCacheInM<T>& pcm,
       const T* velocities, VelocityKinematicsCacheInM<T>* vcm) const final;
 
-  void CalcMassMatrixContribution_TipToBase(
+  void CalcMassMatrixContributionInWorld_TipToBase(
       const PositionKinematicsCache<T>& pc,
-      const std::vector<SpatialInertia<T>>& Mc_B_W_cache,
+      const std::vector<SpatialInertia<T>>& I_BBo_W_cache,
       const std::vector<Vector6<T>>& H_PB_W_cache,
+      EigenPtr<MatrixX<T>> M) const final;
+
+  void CalcMassMatrixContributionInM_TipToBase(
+      const PositionKinematicsCacheInM<T>& pcm,
+      const std::vector<SpatialInertia<T>>& I_BMo_M_cache,
       EigenPtr<MatrixX<T>> M) const final;
 
   // Declare functions for the six sizes of mass matrix off-diagonal

@@ -2146,8 +2146,6 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
 
   // The algorithm below does not recurse zero entries and therefore these must
   // be set a priori.
-  // In addition, we initialize diagonal entries to include the effect of rotor
-  // reflected inertia. See JointActuator::reflected_inertia().
   M->setZero();
 
   // Perform tip-to-base recursion for each composite body, skipping the world.
@@ -2156,11 +2154,43 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
       // Node corresponding to the composite body C.
       const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
 
-      composite_node.CalcMassMatrixContribution_TipToBase(pc, Mc_B_W_cache,
-                                                          H_PB_W_cache, M);
+      composite_node.CalcMassMatrixContributionInWorld_TipToBase(
+          pc, Mc_B_W_cache, H_PB_W_cache, M);
     }
   }
 
+  // Account for reflected inertia.
+  M->diagonal() += reflected_inertia;
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcMassMatrixInM(const systems::Context<T>& context,
+                                         EigenPtr<MatrixX<T>> M) const {
+  DRAKE_DEMAND(M != nullptr);
+  DRAKE_DEMAND(M->rows() == num_velocities());
+  DRAKE_DEMAND(M->cols() == num_velocities());
+
+  const PositionKinematicsCacheInM<T>& pcm = EvalPositionKinematicsInM(context);
+  const std::vector<SpatialInertia<T>>& I_BM_M_cache =
+      EvalCompositeBodyInertiaInMCache(context);
+  const VectorX<T>& reflected_inertia = EvalReflectedInertiaCache(context);
+
+  // The algorithm below does not recurse zero entries and therefore these must
+  // be set a priori.
+  M->setZero();
+
+  // Perform tip-to-base recursion for each composite body, skipping the world.
+  for (int level = forest_height() - 1; level > 0; --level) {
+    for (MobodIndex mobod_index : body_node_levels_[level]) {
+      // Node corresponding to the composite body C.
+      const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
+
+      composite_node.CalcMassMatrixContributionInM_TipToBase(pcm, I_BM_M_cache,
+                                                             M);
+    }
+  }
+
+  // Account for reflected inertia.
   M->diagonal() += reflected_inertia;
 }
 

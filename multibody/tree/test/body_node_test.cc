@@ -98,9 +98,15 @@ class DummyBodyNode : public BodyNode<double> {
     DRAKE_UNREACHABLE();
   }
 
-  void CalcMassMatrixContribution_TipToBase(
+  void CalcMassMatrixContributionInWorld_TipToBase(
       const PositionKinematicsCache<T>&, const std::vector<SpatialInertia<T>>&,
       const std::vector<Vector6<T>>&, EigenPtr<MatrixX<T>>) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcMassMatrixContributionInM_TipToBase(
+      const PositionKinematicsCacheInM<T>&,
+      const std::vector<SpatialInertia<T>>&, EigenPtr<MatrixX<T>>) const final {
     DRAKE_UNREACHABLE();
   }
 
