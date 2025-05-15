@@ -2,7 +2,7 @@ properties([
     parameters([
         string(name: 'ciSha', defaultValue: 'main',
           description: 'Commit SHA or branch name. ' +
-            'Enter branch name <code>pr/1234/head</code> ' +
+            'For pull requests, enter branch name <code>pr/1234/head</code> ' +
             'or <code>pr/1234/merge</code> for pull request #1234. ' +
             'Defaults to <code>main</code>.'),
     ]),
@@ -14,13 +14,11 @@ properties([
     )
 ])
 
-// Define the main pipeline.
 node(getNodeLabel()) {
   // Use a custom checkout step below, since there are
   // multiple repositories with a particular directory layout.
   skipDefaultCheckout()
 
-  // Import utilities.
   library identifier: 'utils@master', retriever: modernSCM(
     scm: [
       $class: 'GitSCMSource',
@@ -37,19 +35,11 @@ node(getNodeLabel()) {
         timestamps {
           try {
             // Use the CI branch parameter for checkout (defaults to main).
-            utils.checkout(params.ciSha)
-            echo "Checking linux cache server:"
-            try {
-              sh "\"${{env.WORKSPACE}}/ci/cache_server/health_check.bash\" \"linux\""
-            } catch(Exception e) {
-              currentBuild.result = 'FAILURE'
-            }
+            def scmVars = utils.checkout(params.ciSha)
+            utils.doMainBuild(scmVars)
           } finally {
             try {
-              // Only send failure emails for production builds.
-              if (!"${env.JOB_NAME}".contains("experimental")) {
-                utils.emailFailureResults()
-              }
+              utils.addCDashBadge()
             } finally {
               utils.cleanWorkspace()
             }

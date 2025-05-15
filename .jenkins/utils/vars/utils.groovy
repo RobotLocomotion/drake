@@ -1,9 +1,3 @@
-// Returns true if this job is continuous or nightly.
-def isProduction() {
-  return ("${env.JOB_NAME}".contains("continuous") ||
-    "${env.JOB_NAME}".contains("nightly"))
-}
-
 // Performs the checkout step for drake and drake-ci.
 // * drake: Clones into WORKSPACE/'src' and checks out the branch
 //   specified from the build.
@@ -30,6 +24,27 @@ def checkout(String ciSha = 'main') {
         url: 'git@github.com:RobotLocomotion/drake-ci.git']]])
   }
   return scmVars
+}
+
+// Performs the main build step by calling into the drake-ci driver script
+// with the necessary credentials and environment variables.
+def doMainBuild(Map scmVars, String stagingReleaseVersion = null) {
+  withCredentials([
+    sshUserPrivateKey(credentialsId: 'ad794d10-9bc8-4a7a-a2f3-998af802cab0',
+      keyFileVariable: 'SSH_PRIVATE_KEY_FILE'),
+    string(credentialsId: 'e21b9517-8aa7-419e-8f25-19cd42e10f68',
+      variable: 'DOCKER_USERNAME'),
+    file(credentialsId: '912dd413-d419-4760-b7ab-c132ab9e7c5e',
+      variable: 'DOCKER_PASSWORD_FILE')
+  ]) {
+    def environment = ["GIT_COMMIT=${scmVars.GIT_COMMIT}"]
+    if (stagingReleaseVersion) {
+      environment += "DRAKE_VERSION=${stagingReleaseVersion}"
+    }
+    withEnv(environment) {
+      sh "${env.WORKSPACE}/ci/ctest_driver_script_wrapper.bash"
+    }
+  }
 }
 
 // Sends an email to Drake developers when a build fails or is unstable.
