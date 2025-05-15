@@ -102,7 +102,7 @@ careful when interpreting them as Eigen vectors for computation purposes.
 
   // Returns tau = H_FM_Mᵀ(q)⋅F_BMo_M
   void calc_tau_from_M(const RigidTransform<T>& X_FM, const T* q,
-                       const SpatialForce<T>& F_BMo_M, T* tau) const;
+                       const Vector6<T>& F_BMo_M, T* tau) const;
 
 MobilizerImpl also provides a number of size specific methods to retrieve
 multibody quantities of interest from caching structures. These are common

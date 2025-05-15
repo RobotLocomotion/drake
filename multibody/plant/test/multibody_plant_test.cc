@@ -2991,12 +2991,16 @@ TEST_F(SplitPendulum, MassMatrix) {
   // state.
   const double theta = M_PI / 3;
 
-  MatrixX<double> M(1, 1);
+  MatrixX<double> M_id(1, 1), M_in_world(1, 1), M_in_m(1, 1);
   pin_->set_angle(context_.get(), theta);
-  plant_.CalcMassMatrixViaInverseDynamics(*context_, &M);
+  plant_.CalcMassMatrixViaInverseDynamics(*context_, &M_id);
+  plant_.CalcMassMatrix(*context_, &M_in_world);
+  plant_.CalcMassMatrixInM(*context_, &M_in_m);
 
   // We can only expect values within the precision specified in the sdf file.
-  EXPECT_NEAR(M(0, 0), Io, 1.0e-6);
+  EXPECT_NEAR(M_id(0, 0), Io, 1.0e-6);
+  EXPECT_NEAR(M_in_world(0, 0), Io, 1.0e-6);
+  EXPECT_NEAR(M_in_m(0, 0), Io, 1.0e-6);
 }
 
 // This test ensures that we can create a symbolic mass matrix successfully.
@@ -3035,14 +3039,17 @@ TEST_F(SplitPendulum, SymbolicMassMatrix) {
 
   // Calculate the mass matrix two different ways and verify that evaluating
   // the resulting expressions yields the same result numerically.
-  Eigen::MatrixX<symbolic::Expression> M(1, 1), M_id(1, 1);
-  sym_plant->CalcMassMatrix(*sym_context, &M);
+  Eigen::MatrixX<symbolic::Expression> M_id(1, 1), M_in_world(1, 1),
+      M_in_m(1, 1);
   sym_plant->CalcMassMatrixViaInverseDynamics(*sym_context, &M_id);
+  sym_plant->CalcMassMatrix(*sym_context, &M_in_world);
+  sym_plant->CalcMassMatrixInM(*sym_context, &M_in_m);
 
   const symbolic::Environment env{{q_var(0), 2.0}, {v_var(0), 10.},
                                   {m_var(0), 3.0}, {m_var(1), 4.0},
                                   {l_var(0), 5.0}, {l_var(1), 6.0}};
-  EXPECT_NEAR(M(0, 0).Evaluate(env), M_id(0, 0).Evaluate(env), 1e-14);
+  EXPECT_NEAR(M_in_world(0, 0).Evaluate(env), M_id(0, 0).Evaluate(env), 1e-14);
+  EXPECT_NEAR(M_in_m(0, 0).Evaluate(env), M_id(0, 0).Evaluate(env), 1e-14);
 
   // Generate symbolic expressions for a few more quantities here just as a
   // sanity check that we can do so. We won't look at the results.

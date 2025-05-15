@@ -1545,16 +1545,20 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
         body.CalcSpatialInertiaInBodyFrame(context);
     frame_body_poses->SetM_BBo_B(mobod.index(), M_BBo_B);
 
-    if (!M_BBo_B.IsNaN()) {
-      // Shift and re-express.
-      const SpatialInertia<T> M_BMo_B = M_BBo_B.Shift(p_BoMo_B);
-      const SpatialInertia<T> M_BMo_M = M_BMo_B.ReExpress(R_MB);
-      frame_body_poses->SetM_BMo_M(mobod.index(), M_BMo_M);
-    } else {
-      // Hopefully no one is planning to use this. If they do it will blow
-      // up later.
-      frame_body_poses->SetM_BMo_M(mobod.index(), M_BBo_B);
+    // Can't shift if there are NaNs. (Skip if T is symbolic.)
+    if constexpr (scalar_predicate<T>::is_bool) {
+      if (M_BBo_B.IsNaN()) {
+        // Hopefully no one is planning to use this. If they do it will blow
+        // up later.
+        frame_body_poses->SetM_BMo_M(mobod.index(), M_BBo_B);
+        continue;
+      }
     }
+
+    // Shift and re-express.
+    const SpatialInertia<T> M_BMo_B = M_BBo_B.Shift(p_BoMo_B);
+    const SpatialInertia<T> M_BMo_M = M_BMo_B.ReExpress(R_MB);
+    frame_body_poses->SetM_BMo_M(mobod.index(), M_BMo_M);
   }
 }
 
@@ -2146,21 +2150,50 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
 
   // The algorithm below does not recurse zero entries and therefore these must
   // be set a priori.
-  // In addition, we initialize diagonal entries to include the effect of rotor
-  // reflected inertia. See JointActuator::reflected_inertia().
   M->setZero();
 
   // Perform tip-to-base recursion for each composite body, skipping the world.
-  for (int level = forest_height() - 1; level > 0; --level) {
-    for (MobodIndex mobod_index : body_node_levels_[level]) {
-      // Node corresponding to the composite body C.
-      const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
+  for (MobodIndex mobod_index(num_mobods() - 1); mobod_index > 0;
+       --mobod_index) {
+    // Node corresponding to the composite body C.
+    const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
 
-      composite_node.CalcMassMatrixContribution_TipToBase(pc, Mc_B_W_cache,
-                                                          H_PB_W_cache, M);
-    }
+    composite_node.CalcMassMatrixContributionInWorld_TipToBase(pc, Mc_B_W_cache,
+                                                               H_PB_W_cache, M);
   }
 
+  // Account for reflected inertia.
+  M->diagonal() += reflected_inertia;
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcMassMatrixInM(const systems::Context<T>& context,
+                                         EigenPtr<MatrixX<T>> M) const {
+  DRAKE_DEMAND(M != nullptr);
+  DRAKE_DEMAND(M->rows() == num_velocities());
+  DRAKE_DEMAND(M->cols() == num_velocities());
+
+  const T* const positions = get_positions(context).data();
+  const PositionKinematicsCacheInM<T>& pcm = EvalPositionKinematicsInM(context);
+  const std::vector<SpatialInertia<T>>& I_BM_M_cache =
+      EvalCompositeBodyInertiaInMCache(context);
+  const VectorX<T>& reflected_inertia = EvalReflectedInertiaCache(context);
+
+  // The algorithm below does not recurse zero entries and therefore these must
+  // be set a priori.
+  M->setZero();
+
+  // Perform tip-to-base recursion for each composite body, skipping the world.
+  for (MobodIndex mobod_index(num_mobods() - 1); mobod_index > 0;
+       --mobod_index) {
+    // Node corresponding to the composite body C.
+    const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
+
+    composite_node.CalcMassMatrixContributionInM_TipToBase(positions, pcm,
+                                                           I_BM_M_cache, M);
+  }
+
+  // Account for reflected inertia.
   M->diagonal() += reflected_inertia;
 }
 

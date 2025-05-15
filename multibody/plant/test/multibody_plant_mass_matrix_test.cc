@@ -21,11 +21,12 @@ using test::LimitMalloc;
 namespace multibody {
 namespace {
 
-// We verify the computation of the mass matrix by comparing two significantly
+// We verify the computation of the mass matrix by comparing three significantly
 // different implementations:
-//   - CalcMassMatrix(): uses the Composite Body Algorithm.
+//   - CalcMassMatrix(): Composite Body Algorithm, in the World frame.
+//   - CalcMassMatrixInM(): Composite Body Algorithm, in mobilizer M frames.
 //   - CalcMassMatrixViaInverseDynamics(): uses inverse dynamics to compute each
-//     column of the mass matrix at a time.
+//     column of the mass matrix one at a time.
 class MultibodyPlantMassMatrixTests : public ::testing::Test {
  public:
   void LoadUrl(const std::string& url) {
@@ -60,15 +61,26 @@ class MultibodyPlantMassMatrixTests : public ::testing::Test {
   // mass matrix by comparing the results from CalcMassMatrix() and
   // CalcMassMatrixViaInverseDynamics().
   void VerifyMassMatrixComputation(const Context<double>& context) {
-    // Compute mass matrix via the Composite Body Algorithm.
-    MatrixX<double> Mcba(plant_.num_velocities(), plant_.num_velocities());
-    plant_.CalcMassMatrix(context, &Mcba);
+    // Compute mass matrix via the Composite Body Algorithm in World.
+    MatrixX<double> Mcba_in_W(plant_.num_velocities(), plant_.num_velocities());
+    plant_.CalcMassMatrix(context, &Mcba_in_W);
 
     // After a first warm-up call, subsequent calls to CalcMassMatrix<double>()
     // should never allocate.
     {
       LimitMalloc guard;
-      plant_.CalcMassMatrix(context, &Mcba);
+      plant_.CalcMassMatrix(context, &Mcba_in_W);
+    }
+
+    // Compute mass matrix via the Composite Body Algorithm in M frames.
+    MatrixX<double> Mcba_in_M(plant_.num_velocities(), plant_.num_velocities());
+    plant_.CalcMassMatrixInM(context, &Mcba_in_M);
+
+    // After a first warm-up call, subsequent calls to
+    // CalcMassMatrixInM<double>() should never allocate.
+    {
+      LimitMalloc guard;
+      plant_.CalcMassMatrixInM(context, &Mcba_in_M);
     }
 
     // Compute mass matrix using inverse dynamics for each column.
@@ -80,10 +92,12 @@ class MultibodyPlantMassMatrixTests : public ::testing::Test {
     // squared root of the number of elements in the matrix, this tolerance is
     // effectively being scaled by the RMS value of the elements in the mass
     // matrix.
-    const double kTolerance = 10.0 * std::numeric_limits<double>::epsilon() *
-                              Mcba.norm() / plant_.num_velocities();
-    EXPECT_TRUE(
-        CompareMatrices(Mcba, Mid, kTolerance, MatrixCompareType::relative));
+    const double tolerance = 10.0 * std::numeric_limits<double>::epsilon() *
+                             Mcba_in_W.norm() / plant_.num_velocities();
+    EXPECT_TRUE(CompareMatrices(Mcba_in_W, Mid, tolerance,
+                                MatrixCompareType::relative));
+    EXPECT_TRUE(CompareMatrices(Mcba_in_M, Mid, tolerance,
+                                MatrixCompareType::relative));
   }
 
  protected:

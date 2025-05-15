@@ -204,10 +204,12 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   // Returns tau = H_FM_Mᵀ⋅F_M.
   // TODO(sherm1) Just re-expressing here; could likely do better.
   void calc_tau_from_M(const math::RigidTransform<T>& X_FM, const T* q,
-                       const SpatialForce<T>& F_BMo_M, T* tau) const {
+                       const Vector6<T>& F_BMo_M, T* tau) const {
     DRAKE_ASSERT(q != nullptr && tau != nullptr);
     const math::RotationMatrix<T>& R_FM = X_FM.rotation();
-    const SpatialForce<T> F_BMo_F = R_FM * F_BMo_M;
+    const auto t_B_M = F_BMo_M.template head<3>();    // rotational (torque)
+    const auto f_BMo_M = F_BMo_M.template tail<3>();  // translational (force)
+    const SpatialForce<T> F_BMo_F(R_FM * t_B_M, R_FM * f_BMo_M);  // 30 flops
     return calc_tau(q, F_BMo_F, &*tau);
   }
 

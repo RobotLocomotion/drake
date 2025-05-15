@@ -307,9 +307,9 @@ class PrismaticMobilizerAxial final : public PrismaticMobilizer<T> {
   // Returns tau = H_FM_Mᵀ⋅F_M, where H_FM_Mᵀ = [0₃ᵀ axis_Mᵀ], and
   // axis_M == axis_F (see class comments).
   void calc_tau_from_M(const math::RigidTransform<T>&, const T*,
-                       const SpatialForce<T>& F_BMo_M, T* tau) const {
+                       const Vector6<T>& F_BMo_M, T* tau) const {
     DRAKE_ASSERT(tau != nullptr);
-    const Vector3<T>& f_BMo_F = F_BMo_M.translational();
+    const auto f_BMo_F = F_BMo_M.template tail<3>();  // translational
     tau[0] = f_BMo_F[axis];
   }
 

@@ -798,7 +798,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamicsInM_TipToBase(
   VVector<T> tau_projection;  // = Hᵀ_FM_M ⋅ F_BMo_M
   const math::RigidTransform<T>& X_FM = pcm.get_X_FM(index);
   // Next line is 0 flops for revolute/prismatic, 30 flops for floating
-  mobilizer_->calc_tau_from_M(X_FM, get_q(positions), F_BMo_M,
+  mobilizer_->calc_tau_from_M(X_FM, get_q(positions), F_BMo_M.get_coeffs(),
                               tau_projection.data());
   tau = tau_projection - tau_app;  // 1-6 flops
 }

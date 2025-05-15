@@ -312,10 +312,10 @@ class RevoluteMobilizerAxial final : public RevoluteMobilizer<T> {
   // Returns tau = H_FM_Mᵀ⋅F_M, where H_FM_Mᵀ = [axis_Mᵀ 0₃ᵀ] and
   // axis_M == 100, 010, or 001.
   void calc_tau_from_M(const math::RigidTransform<T>&, const T*,
-                       const SpatialForce<T>& F_BMo_M, T* tau) const {
+                       const Vector6<T>& F_BMo_M, T* tau) const {
     DRAKE_ASSERT(tau != nullptr);
-    const Vector3<T>& t_BMo_M = F_BMo_M.rotational();
-    tau[0] = t_BMo_M[axis];
+    const auto t_B_M = F_BMo_M.template head<3>();  // rotational (torque)
+    tau[0] = t_B_M[axis];
   }
 
  private:

@@ -391,14 +391,17 @@ SpatialInertia<T>& SpatialInertia<T>::operator+=(
   T other_mass = M_BP_E.get_mass();
   T total_mass = this_mass + other_mass;  // 1 flop
   mass_ = total_mass;
+
   // For two massless bodies we just want the arithmetic mean of the COMs
-  // and unit inertias. (Don't do this test for symbolics.)
+  // and unit inertias. Lie about the mass properties to make this happen below.
+  // (Skip for symbolic T.)
   if constexpr (scalar_predicate<T>::is_bool) {
     if (total_mass == 0) {
       this_mass = other_mass = 1;
       total_mass = 2;
     }
   }
+
   const T oo_total_mass = 1 / total_mass;             // ~6 flops
   const T this_factor = this_mass * oo_total_mass;    // 1 flop
   const T other_factor = other_mass * oo_total_mass;  // 1 flop

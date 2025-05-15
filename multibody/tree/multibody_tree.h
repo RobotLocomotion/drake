@@ -1661,6 +1661,10 @@ class MultibodyTree {
                       EigenPtr<MatrixX<T>> M) const;
 
   // See MultibodyPlant method.
+  void CalcMassMatrixInM(const systems::Context<T>& context,
+                         EigenPtr<MatrixX<T>> M) const;
+
+  // See MultibodyPlant method.
   void CalcBiasTerm(const systems::Context<T>& context,
                     EigenPtr<VectorX<T>> Cv) const;
 
@@ -2765,6 +2769,12 @@ class MultibodyTree {
       const systems::Context<T>& context) const {
     DRAKE_ASSERT(tree_system_ != nullptr);
     return tree_system_->EvalCompositeBodyInertiaInWorldCache(context);
+  }
+
+  const std::vector<SpatialInertia<T>>& EvalCompositeBodyInertiaInMCache(
+      const systems::Context<T>& context) const {
+    DRAKE_ASSERT(tree_system_ != nullptr);
+    return tree_system_->EvalCompositeBodyInertiaInMCache(context);
   }
 
   // Evaluates the cache entry stored in context with the bias term

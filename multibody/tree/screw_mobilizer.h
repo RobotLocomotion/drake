@@ -257,12 +257,12 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
   /* Returns tau = H_FM_Mᵀ⋅F_M, where H_FM_Mᵀ = [axis_Mᵀ f⋅axis_Mᵀ] and
   axis_M == axis_F (see class comments).  12 flops */
   void calc_tau_from_M(const math::RigidTransform<T>&, const T*,
-                       const SpatialForce<T>& F_BMo_M, T* tau) const {
+                       const Vector6<T>& F_BMo_M, T* tau) const {
     DRAKE_ASSERT(tau != nullptr);
     const T f = screw_pitch_ / (2 * M_PI);
-    const Vector3<T>& t_B_M = F_BMo_M.rotational();       // torque
-    const Vector3<T>& f_BMo_M = F_BMo_M.translational();  // force
-    tau[0] = axis_.dot(t_B_M) + f * axis_.dot(f_BMo_M);   // This is axis_M.
+    const auto t_B_M = F_BMo_M.template head<3>();    // rotational (torque)
+    const auto f_BMo_M = F_BMo_M.template tail<3>();  // translational (force)
+    tau[0] = axis_.dot(t_B_M) + f * axis_.dot(f_BMo_M);  // This is axis_M.
   }
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(

@@ -4337,6 +4337,15 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     internal_tree().CalcMassMatrix(context, M);
   }
 
+  // Same mass matrix, calculated by working in each body's inboard mobilizer
+  // frame M, rather than in World. Should be faster.
+  void CalcMassMatrixInM(const systems::Context<T>& context,
+                         EigenPtr<MatrixX<T>> M) const {
+    this->ValidateContext(context);
+    DRAKE_DEMAND(M != nullptr);
+    internal_tree().CalcMassMatrixInM(context, M);
+  }
+
   /// This method allows users to map the state of `this` model, x, into a
   /// vector of selected state xₛ with a given preferred ordering.
   /// The mapping, or selection, is returned in the form of a selector matrix

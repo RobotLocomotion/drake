@@ -241,12 +241,12 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   // Returns tau = H_FM_Mᵀ⋅F_M. See class comments.
   void calc_tau_from_M(const math::RigidTransform<T>& X_FM, const T* q,
-                       const SpatialForce<T>& F_BMo_M, T* tau) const {
+                       const Vector6<T>& F_BMo_M, T* tau) const {
     DRAKE_ASSERT(q != nullptr && tau != nullptr);
     const math::RotationMatrix<T>& R_FM = X_FM.rotation();
-    const Vector3<T>& t_BMo_M = F_BMo_M.rotational();
+    const auto t_B_M = F_BMo_M.template head<3>();  // rotational (torque)
     Eigen::Map<VVector<T>> tau_as_vector(tau);
-    tau_as_vector = R_FM * t_BMo_M;  // 15 flops
+    tau_as_vector = R_FM * t_B_M;  // 15 flops
   }
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(

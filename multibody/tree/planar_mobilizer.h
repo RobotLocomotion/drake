@@ -215,16 +215,16 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   /* Returns tau = H_FM_Mᵀ⋅F_M. See class comments. */
   void calc_tau_from_M(const math::RigidTransform<T>&, const T* q,
-                       const SpatialForce<T>& F_BMo_M, T* tau) const {
+                       const Vector6<T>& F_BMo_M, T* tau) const {
     // TODO(sherm1) These are already available in the passed-in X_FM.
     using std::sin, std::cos;
     DRAKE_ASSERT(tau != nullptr);
     const T s = sin(q[2]), c = cos(q[2]);
-    const Vector3<T>& t_B_M = F_BMo_M.rotational();       // torque
-    const Vector3<T>& f_BMo_M = F_BMo_M.translational();  // force
-    tau[0] = c * f_BMo_M[0] - s * f_BMo_M[1];             // force along x
-    tau[1] = s * f_BMo_M[0] + c * f_BMo_M[1];             // force along y
-    tau[2] = t_B_M[2];                                    // torque about z
+    const auto t_B_M = F_BMo_M.template head<3>();    // rotational (torque)
+    const auto f_BMo_M = F_BMo_M.template tail<3>();  // translational (force)
+    tau[0] = c * f_BMo_M[0] - s * f_BMo_M[1];         // force along x
+    tau[1] = s * f_BMo_M[0] + c * f_BMo_M[1];         // force along y
+    tau[2] = t_B_M[2];                                // torque about z
   }
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(

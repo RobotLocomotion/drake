@@ -112,7 +112,7 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
   // Does nothing since there are no taus.
   void calc_tau(const T*, const SpatialForce<T>&, T*) const {}
   void calc_tau_from_M(const math::RigidTransform<T>&, const T*,
-                       const SpatialForce<T>&, T*) const {}
+                       const Vector6<T>&, T*) const {}
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>&) const final;
