@@ -1390,6 +1390,19 @@ class TestMathematicalProgram(unittest.TestCase):
                 for key, value in expected_common.items()
             )
         })
+        with catch_drake_warnings(expected_count=1):
+            self.assertDictEqual(dut.GetOptions(solver_id), expected_dummy)
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(dut.common_solver_options(), expected_common)
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(dut.get_print_to_console(), True)
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(dut.get_print_file_name(), "print.log")
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(dut.get_standalone_reproduction_file_name(),
+                             "repro.txt")
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(dut.get_max_threads(), 4)
         self.assertTrue(dut == dut)
         self.assertFalse(dut != dut)
         copy.deepcopy(dut)
