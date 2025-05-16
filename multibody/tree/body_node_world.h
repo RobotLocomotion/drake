@@ -31,6 +31,12 @@ class BodyNodeWorld final : public BodyNode<T> {
     DRAKE_UNREACHABLE();
   }
 
+  void CalcPositionKinematicsCacheInM_BaseToTip(
+      const FrameBodyPoseCache<T>&, const T*,
+      PositionKinematicsCacheInM<T>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
   void CalcAcrossNodeJacobianWrtVExpressedInWorld(
       const FrameBodyPoseCache<T>&, const T*, const PositionKinematicsCache<T>&,
       std::vector<Vector6<T>>*) const final {
@@ -44,9 +50,21 @@ class BodyNodeWorld final : public BodyNode<T> {
     DRAKE_UNREACHABLE();
   }
 
-  void CalcMassMatrixContribution_TipToBase(
+  void CalcVelocityKinematicsCacheInM_BaseToTip(
+      const T*, const PositionKinematicsCacheInM<T>&, const T*,
+      VelocityKinematicsCacheInM<T>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcMassMatrixContributionInWorld_TipToBase(
       const PositionKinematicsCache<T>&, const std::vector<SpatialInertia<T>>&,
       const std::vector<Vector6<T>>&, EigenPtr<MatrixX<T>>) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcMassMatrixContributionInM_TipToBase(
+      const PositionKinematicsCacheInM<T>&,
+      const std::vector<SpatialInertia<T>>&, EigenPtr<MatrixX<T>>) const final {
     DRAKE_UNREACHABLE();
   }
 
@@ -73,6 +91,13 @@ class BodyNodeWorld final : public BodyNode<T> {
     DRAKE_UNREACHABLE();
   }
 
+  void CalcSpatialAccelerationInM_BaseToTip(
+      const T*, const PositionKinematicsCacheInM<T>&, const T*,
+      const VelocityKinematicsCacheInM<T>&, const T*,
+      std::vector<SpatialAcceleration<T>>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
   void CalcInverseDynamics_TipToBase(const FrameBodyPoseCache<T>&, const T*,
                                      const PositionKinematicsCache<T>&,
                                      const std::vector<SpatialInertia<T>>&,
@@ -82,6 +107,16 @@ class BodyNodeWorld final : public BodyNode<T> {
                                      const Eigen::Ref<const VectorX<T>>&,
                                      std::vector<SpatialForce<T>>*,
                                      EigenPtr<VectorX<T>>) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcInverseDynamicsInM_TipToBase(
+      const FrameBodyPoseCache<T>&, const T*,
+      const PositionKinematicsCacheInM<T>&,
+      const VelocityKinematicsCacheInM<T>&,
+      const std::vector<SpatialAcceleration<T>>&,
+      const std::vector<SpatialForce<T>>&, const Eigen::Ref<const VectorX<T>>&,
+      std::vector<SpatialForce<T>>*, EigenPtr<VectorX<T>>) const final {
     DRAKE_UNREACHABLE();
   }
 
@@ -111,8 +146,14 @@ class BodyNodeWorld final : public BodyNode<T> {
     DRAKE_UNREACHABLE();
   }
 
-  void CalcCompositeBodyInertia_TipToBase(
+  void CalcCompositeBodyInertiaInWorld_TipToBase(
       const PositionKinematicsCache<T>&, const std::vector<SpatialInertia<T>>&,
+      std::vector<SpatialInertia<T>>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcCompositeBodyInertiaInM_TipToBase(
+      const FrameBodyPoseCache<T>&, const PositionKinematicsCacheInM<T>&,
       std::vector<SpatialInertia<T>>*) const final {
     DRAKE_UNREACHABLE();
   }
