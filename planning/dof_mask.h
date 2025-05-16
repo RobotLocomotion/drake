@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/reset_after_move.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
@@ -51,6 +52,8 @@ class DofMask {
 
   This allows for construction of a mask with the given `size` where all
   dofs are either selected (`value = true`) or unselected.
+
+  @pre size >= 0
   @pydrake_mkdoc_identifier{by_size} */
   DofMask(int size, bool value);
 
@@ -65,7 +68,7 @@ class DofMask {
   /** Constructs a %DofMask from a vector of bool.
   @pydrake_mkdoc_identifier{vector_bool} */
   // NOLINTNEXTLINE(runtime/explicit)
-  DofMask(std::vector<bool> values) : data_(std::move(values)) {}
+  DofMask(std::vector<bool> values);
 
   //@}
 
@@ -100,7 +103,7 @@ class DofMask {
   int size() const { return ssize(data_); }
 
   /** Reports this %DofMask instance's number of _selected_ dofs. */
-  int count() const;
+  int count() const { return count_; }
 
   /** Creates a collection of all of the joints implied by the selected dofs in
   `this`. The returned joint indices are reported in increasing order.
@@ -111,7 +114,7 @@ class DofMask {
 
   /** Note: `o.size()` may be different from `this->size()`. They will, by
   definition report as not equal. */
-  bool operator==(const DofMask& o) const { return data_ == o.data_; }
+  bool operator==(const DofMask& o) const;
 
   /** @pre `index` is in the range [0, size()). */
   bool operator[](int index) const { return data_.at(index); }
@@ -240,7 +243,10 @@ class DofMask {
   static void ThrowIfNotCompatible(
       const multibody::MultibodyPlant<double>& plant);
 
+  // These member fields are almost "const" -- we have no member functions that
+  // mutate them, other than the two default assignment operators.
   std::vector<bool> data_;
+  reset_after_move<int> count_{0};
 };
 
 }  // namespace planning

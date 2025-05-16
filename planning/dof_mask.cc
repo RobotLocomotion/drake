@@ -13,10 +13,21 @@ using multibody::MultibodyPlant;
 
 DofMask::DofMask() = default;
 
-DofMask::DofMask(int size, bool value) : data_(size, value) {}
+DofMask::DofMask(int size, bool value)
+    : data_(size >= 0 ? size : 0, value), count_(value ? size : 0) {
+  DRAKE_THROW_UNLESS(size >= 0);
+}
 
 DofMask::DofMask(std::initializer_list<bool> values)
-    : data_(std::move(values)) {}
+    : DofMask(std::vector(std::move(values))) {}
+
+DofMask::DofMask(std::vector<bool> values) : data_(std::move(values)) {
+  for (int i = 0; i < ssize(data_); ++i) {
+    if (data_[i]) {
+      ++count_;
+    }
+  }
+}
 
 DofMask DofMask::MakeFromModel(const MultibodyPlant<double>& plant,
                                ModelInstanceIndex model_index) {
@@ -41,16 +52,6 @@ DofMask DofMask::MakeFromModel(const MultibodyPlant<double>& plant,
   return DofMask::MakeFromModel(plant, model_index);
 }
 
-int DofMask::count() const {
-  // TODO(SeanCurtis-TRI): Speed this up so that the lower-case name is actually
-  // deserved.
-  int result = 0;
-  for (size_t i = 0; i < data_.size(); ++i) {
-    if (data_[i]) ++result;
-  }
-  return result;
-}
-
 void DofMask::ThrowIfNotCompatible(const MultibodyPlant<double>& plant) {
   if (!plant.IsVelocityEqualToQDot()) {
     throw std::runtime_error(fmt::format(
@@ -70,39 +71,52 @@ std::string DofMask::to_string() const {
 }
 
 DofMask DofMask::Complement() const {
-  std::vector<bool> bits(data_);
-  bits.flip();
-  return DofMask(std::move(bits));
+  DofMask result(*this);
+  result.data_.flip();
+  result.count_ = this->size() - this->count();
+  return result;
 }
 
 DofMask DofMask::Union(const DofMask& other) const {
-  int mask_size = size();
+  const int mask_size = size();
   DRAKE_THROW_UNLESS(other.size() == mask_size);
-  std::vector<bool> bits(mask_size, false);
+  DofMask result(mask_size, false);
   for (int i = 0; i < mask_size; ++i) {
-    bits[i] = data_[i] || other[i];
+    const bool bit = data_[i] || other[i];
+    result.data_[i] = bit;
+    if (bit) {
+      ++result.count_;
+    }
   }
-  return DofMask(std::move(bits));
+  return result;
 }
 
 DofMask DofMask::Intersect(const DofMask& other) const {
-  int mask_size = size();
+  const int mask_size = size();
   DRAKE_THROW_UNLESS(other.size() == mask_size);
-  std::vector<bool> bits(mask_size, false);
+  DofMask result(mask_size, false);
   for (int i = 0; i < mask_size; ++i) {
-    bits[i] = data_[i] && other[i];
+    const bool bit = data_[i] && other[i];
+    result.data_[i] = bit;
+    if (bit) {
+      ++result.count_;
+    }
   }
-  return DofMask(std::move(bits));
+  return result;
 }
 
 DofMask DofMask::Subtract(const DofMask& other) const {
-  int mask_size = size();
+  const int mask_size = size();
   DRAKE_THROW_UNLESS(other.size() == mask_size);
-  std::vector<bool> bits(mask_size, false);
+  DofMask result(mask_size, false);
   for (int i = 0; i < mask_size; ++i) {
-    bits[i] = data_[i] && !other[i];
+    const bool bit = data_[i] && !other[i];
+    result.data_[i] = bit;
+    if (bit) {
+      ++result.count_;
+    }
   }
-  return DofMask(std::move(bits));
+  return result;
 }
 
 void DofMask::GetFromArray(const Eigen::Ref<const Eigen::VectorXd>& full_vec,
@@ -134,7 +148,6 @@ void DofMask::GetColumnsFromMatrix(
   DRAKE_THROW_UNLESS(output->cols() == count());
   DRAKE_THROW_UNLESS(full_mat.rows() == output->rows());
   DRAKE_THROW_UNLESS(full_mat.cols() == size());
-
   int out_index = -1;
   for (int i = 0; i < size(); ++i) {
     if (data_[i]) {
@@ -142,7 +155,7 @@ void DofMask::GetColumnsFromMatrix(
       if (out_index >= output->cols()) break;
     }
   }
-  DRAKE_THROW_UNLESS(out_index + 1 == output->cols());
+  DRAKE_DEMAND(out_index + 1 == output->cols());
 }
 
 Eigen::MatrixXd DofMask::GetColumnsFromMatrix(
@@ -154,8 +167,7 @@ Eigen::MatrixXd DofMask::GetColumnsFromMatrix(
 
 void DofMask::SetInArray(const Eigen::Ref<const Eigen::VectorXd>& vec,
                          drake::EigenPtr<Eigen::VectorXd> output) const {
-  // TODO(SeanCurtis-TRI): When count() is O(1), test vec.size() == count() at
-  // the top instead of at the end of the scan.
+  DRAKE_THROW_UNLESS(vec.size() == count());
   DRAKE_THROW_UNLESS(output != nullptr);
   DRAKE_THROW_UNLESS(output->size() == size());
   int input_index = -1;
@@ -164,7 +176,7 @@ void DofMask::SetInArray(const Eigen::Ref<const Eigen::VectorXd>& vec,
       (*output)[i] = vec[++input_index];
     }
   }
-  DRAKE_THROW_UNLESS(input_index + 1 == vec.size());
+  DRAKE_DEMAND(input_index + 1 == vec.size());
 }
 
 std::vector<JointIndex> DofMask::GetJoints(
@@ -172,7 +184,7 @@ std::vector<JointIndex> DofMask::GetJoints(
   DofMask::ThrowIfNotCompatible(plant);
   DRAKE_THROW_UNLESS(size() == plant.num_positions());
   std::vector<JointIndex> result;
-  for (JointIndex j{0}; j < plant.num_joints(); ++j) {
+  for (const JointIndex& j : plant.GetJointIndices()) {
     const Joint<double>& joint = plant.get_joint(j);
     for (int i = joint.position_start();
          i < joint.position_start() + joint.num_positions(); ++i) {
@@ -182,6 +194,12 @@ std::vector<JointIndex> DofMask::GetJoints(
       }
     }
   }
+  return result;
+}
+
+bool DofMask::operator==(const DofMask& o) const {
+  const bool result = data_ == o.data_;
+  DRAKE_ASSERT((result == false) || (this->count() == o.count()));
   return result;
 }
 
