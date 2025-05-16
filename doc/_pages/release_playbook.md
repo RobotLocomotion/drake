@@ -23,10 +23,10 @@ push_release, etc.) are supported only on Ubuntu (not macOS).
 2. Create a local Drake branch named ``release_notes-v1.N.0`` (so that others
    can easily find and push to it after the PR is opened).
 3. As the first commit on the branch, mimic the commit
-   [`drake@65adb4dd`](https://github.com/RobotLocomotion/drake/commit/65adb4dd1f89835ad482d6a9a437cb899c05b779)
+   [`drake@cb6f616ced`](https://github.com/RobotLocomotion/drake/commit/cb6f616ced5496ea7863db46d86551930c9d61f7)
    in order to disable CI.  A quick way to do this might be:
    ```
-   git fetch upstream 65adb4dd1f89835ad482d6a9a437cb899c05b779
+   git fetch upstream cb6f616ced5496ea7863db46d86551930c9d61f7
    git cherry-pick FETCH_HEAD
    ```
 4. Push that branch and then open a new pull request titled:
@@ -259,19 +259,28 @@ the email address associated with your github account.
    # We need to repeat drake's wheel dependencies here so that they end up in
    # Deepnote's venv. Deepnote no longer sees the Ubuntu packages in /usr/lib.
    matplotlib==3.5.1
-   numpy==1.21.5
+   numpy==1.23
    pydot==1.4.2
    PyYAML==5.3.1
    ```
-4. For reference (no action required), the initialization notebook at
-   [init.ipynb](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/Init%20notebook-5fcfe3fc0bd0403899baab3b6cf37a18)
-   has this cell added the bottom, as a Drake-specific customization:
-   ```
-   %%bash
-   /opt/drake/share/drake/setup/deepnote/install_nginx
-   ```
-   For Jammy we also needed to add ``cd /work`` atop the stanza that checks for
-   ``requirements.txt`` to get it working again.
+4. Check the initialization notebook at
+   [init.ipynb](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/Init%20notebook-5fcfe3fc0bd0403899baab3b6cf37a18).
+   1. It has these cells added at the bottom, as a Drake-specific customization:
+      ```
+      import subprocess
+      import sys
+      subprocess.check_call([sys.executable, "-m", "pip", "check"], cwd="/work")
+      ```
+   
+      ```
+      %%bash
+      /opt/drake/share/drake/setup/deepnote/install_nginx
+      ```
+      For Jammy we also needed to add ``cd /work`` atop the stanza that checks
+      for ``requirements.txt`` to get it working again.
+   2. Confirm that all cells executed successfully. If the "pip check" cell
+      reports dependency errors, then ask for help on slack in the
+      ``#releases`` channel.
 5. Copy the updated tutorials from the pinned Dockerfile release
    (in ``/opt/drake/share/drake/tutorials/...``) into the Deepnote project
    storage (``~/work/...``):
