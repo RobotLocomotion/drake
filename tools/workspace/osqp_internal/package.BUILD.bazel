@@ -17,10 +17,10 @@ package(
 cmake_configure_file(
     name = "configure_file",
     src = "configure/osqp_configure.h.in",
-    out = "include/osqp_configure.h",
+    out = "include/public/osqp_configure.h",
     defines = [
-        "PRINTING",
-        "PROFILING",
+        "OSQP_ENABLE_PRINTING",
+        "OSQP_ENABLE_PROFILING",
         # Keep the default primitive size of `double` and `int`.  Don't define
         # 'DFLOAT' nor 'DLONG' unless @qdldl_internal and @scs_internal are
         # also changed to use those primitive sizes.
@@ -40,57 +40,87 @@ cmake_configure_file(
     visibility = ["//visibility:private"],
 )
 
+# This list matches osqp_headers_private in CMakeLists.txt.
+OSQP_HEADERS_PRIVATE = [
+    "include/private/version.h",
+    "include/private/algebra_vector.h",
+    "include/private/algebra_matrix.h",
+    "include/private/auxil.h",
+    "include/private/error.h",
+    "include/private/glob_opts.h",
+    "include/private/lin_alg.h",
+    "include/private/printing.h",
+    "include/private/profilers.h",
+    "include/private/scaling.h",
+    "include/private/timing.h",
+    "include/private/types.h",
+    "include/private/util.h",
+]
+
+# This list matches osqp_headers_public in CMakeLists.txt.
+OSQP_HEADERS_PUBLIC = [
+    "include/public/osqp.h",
+    "include/public/osqp_api_constants.h",
+    "include/public/osqp_api_functions.h",
+    "include/public/osqp_api_types.h",
+    "include/public/osqp_export_define.h",
+] + [
+    # This header is part of osqp_headers_public but is added in CMakeLists.txt
+    # in a separate stanza, so we do the same here.
+    "include/public/osqp_configure.h",
+] + [
+    # This header is enabled in CMakeLists only when building in non-embedded
+    # mode.
+    "include/private/polish.h",
+]
+
+OSQPLIB_SOURCES = [
+    # From ./src/CMakeLists.txt.
+    # These sources are always enabled in CMakeLists.
+    "src/auxil.c",
+    "src/error.c",
+    "src/scaling.c",
+    "src/util.c",
+    # These sources are enabled in CMakeLists only when building in
+    # non-embedded mode.
+    "src/polish.c",
+    # This seesm to be missing from CMakeLists.txt; oh well.
+    "src/osqp_api.c",
+    # From algebra/builtin/CMakeLists.txt:
+    "algebra/_common/csc_math.h",
+    "algebra/_common/csc_math.c",
+    "algebra/_common/csc_utils.h",
+    "algebra/_common/csc_utils.c",
+    "algebra/builtin/algebra_impl.h",
+    "algebra/builtin/algebra_libs.c",
+    "algebra/builtin/vector.c",
+    "algebra/builtin/matrix.c",
+    # From algebra/_common/lin_sys/qdldl/qdldl.cmake:
+    "algebra/_common/kkt.h",
+    "algebra/_common/kkt.c",
+    "algebra/_common/lin_sys/qdldl/qdldl_interface.h",
+    "algebra/_common/lin_sys/qdldl/qdldl_interface.c",
+] + select({
+    # These sources are enabled in CMakeLists only when building with
+    # OSQP_ENABLE_PROFILING enabled.
+    "@drake//tools/cc_toolchain:apple": [
+        "src/timing_macos.c",
+    ],
+    "//conditions:default": [
+        "src/timing_linux.c",
+    ],
+})
+
 cc_library(
     name = "osqp",
-    # Our hdrs match OSQP's ./include/CMakeLists.txt variable `osqp_headers`.
-    hdrs = [
-        # These headers are always enabled in CMakeLists.
-        "include/auxil.h",
-        "include/constants.h",
-        "include/error.h",
-        "include/glob_opts.h",
-        "include/lin_alg.h",
-        "include/osqp.h",
-        "include/osqp_configure.h",
-        "include/proj.h",
-        "include/scaling.h",
-        "include/types.h",
-        "include/util.h",
-        "include/version.h",
-        # These headers are enabled in CMakeLists only when building in normal
-        # mode.
-        "include/kkt.h",
-        # These headers are enabled in CMakeLists only when building in
-        # non-embedded mode.
-        "include/cs.h",
-        "include/polish.h",
-        "include/lin_sys.h",
-    ],
-    srcs = [
-        # From ./lin_sys/direct/qdldl/CMakeLists.txt at `qdldl_interface_src`.
-        "lin_sys/direct/qdldl/qdldl_interface.h",
-        "lin_sys/direct/qdldl/qdldl_interface.c",
-        # From ./src/CMakeLists.txt at `osqp_src`.
-        # These sources are always enabled in CMakeLists.
-        "src/auxil.c",
-        "src/error.c",
-        "src/lin_alg.c",
-        "src/osqp.c",
-        "src/proj.c",
-        "src/scaling.c",
-        "src/util.c",
-        # These sources are enabled in CMakeLists only when building in normal
-        # mode.
-        "src/kkt.c",
-        # These sources are enabled in CMakeLists only when building in
-        # non-embedded mode.
-        "src/cs.c",
-        "src/polish.c",
-        "src/lin_sys.c",
-    ],
+    hdrs = OSQP_HEADERS_PUBLIC,
+    srcs = OSQP_HEADERS_PRIVATE + OSQPLIB_SOURCES,
     includes = [
-        "include",
-        "lin_sys/direct/qdldl",
+        "include/private",
+        "include/public",
+        "algebra/builtin",
+        "algebra/_common",
+        "algebra/_common/lin_sys/qdldl",
     ],
     copts = [
         "-fvisibility=hidden",
