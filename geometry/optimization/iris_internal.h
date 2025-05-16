@@ -7,8 +7,13 @@
 #include <memory>
 #include <optional>
 
+#include "drake/geometry/optimization/affine_ball.h"
+#include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/geometry/optimization/iris_internal.h"
+#include "drake/geometry/optimization/minkowski_sum.h"
+#include "drake/geometry/optimization/vpolytope.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solver_interface.h"
@@ -91,6 +96,60 @@ class ClosestCollisionProgram {
   solvers::VectorXDecisionVariable q_;
   std::optional<solvers::Binding<solvers::LinearConstraint>> P_constraint_{};
 };
+
+// Constructs a ConvexSet for each supported Shape and adds it to the set.
+class IrisConvexSetMaker final : public ShapeReifier {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IrisConvexSetMaker);
+
+  IrisConvexSetMaker(const QueryObject<double>& query,
+                     std::optional<FrameId> reference_frame)
+      : query_{query}, reference_frame_{reference_frame} {};
+
+  void set_reference_frame(const FrameId& reference_frame) {
+    DRAKE_DEMAND(reference_frame.is_valid());
+    *reference_frame_ = reference_frame;
+  }
+
+  void set_geometry_id(const GeometryId& geom_id) { geom_id_ = geom_id; }
+
+  using ShapeReifier::ImplementGeometry;
+
+  void ImplementGeometry(const Box&, void* data);
+
+  void ImplementGeometry(const Capsule&, void* data);
+
+  void ImplementGeometry(const Cylinder&, void* data);
+
+  void ImplementGeometry(const Ellipsoid&, void* data);
+
+  void ImplementGeometry(const HalfSpace&, void* data);
+
+  void ImplementGeometry(const Sphere&, void* data);
+
+  void ImplementGeometry(const Convex&, void* data);
+
+  void ImplementGeometry(const Mesh&, void* data);
+
+ private:
+  const QueryObject<double>& query_{};
+  std::optional<FrameId> reference_frame_{};
+  GeometryId geom_id_{};
+};
+
+struct GeometryPairWithDistance {
+  GeometryId geomA;
+  GeometryId geomB;
+  double distance;
+
+  GeometryPairWithDistance(GeometryId gA, GeometryId gB, double dist)
+      : geomA(gA), geomB(gB), distance(dist) {}
+
+  bool operator<(const GeometryPairWithDistance& other) const {
+    return distance < other.distance;
+  }
+};
+
 }  // namespace internal
 }  // namespace optimization
 }  // namespace geometry
