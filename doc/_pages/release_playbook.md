@@ -103,10 +103,10 @@ the main body of the document:
 ## Cutting the release
 
 1. Find a plausible nightly build to use:
-   1. Make sure <https://drake-jenkins.csail.mit.edu/view/Production/> is clean
+   1. Make sure <https://drake-jenkins.csail.mit.edu/view/Production/> is clean.
    2. Make sure <https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/>
       has nothing still running (modulo the ``*-coverage`` builds, which we can
-      ignore)
+      ignore).
    3. Open the latest builds from the following builds:
       1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-jammy-unprovisioned-gcc-cmake-nightly-packaging/>
       2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-noble-unprovisioned-gcc-cmake-nightly-packaging/>
@@ -119,7 +119,7 @@ the main body of the document:
    5. Use the
       ``tools/release_engineering/download_release_candidate`` tool with the
       ``--find-git-sha`` option to download and verify that all the nightlies
-      are built from the same commit.  (It's usage instructions are atop its
+      are built from the same commit.  (Its usage instructions are atop its
       source code:
       [download_release_candidate.py](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/download_release_candidate.py).)
 2. Launch the staging builds for that git commit sha:
@@ -149,10 +149,10 @@ the main body of the document:
 5. Wait for the wheel builds to complete, and then download release artifacts:
    1. Use the
       ``tools/release_engineering/download_release_candidate`` tool with the
-      ``--version`` option to download and verify all binaries.  (It's usage
+      ``--version`` option to download and verify all binaries.  (Its usage
       instructions are atop its source code:
       [download_release_candidate.py](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/download_release_candidate.py).)
-6. Merge the release notes PR
+6. Merge the release notes PR.
    1. Take care when squashing not to accept github's auto-generated commit message if it is not appropriate.
    2. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-jammy-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
       * If you don't have "Build now" click "Log in" first in upper right.
@@ -183,7 +183,7 @@ the main body of the document:
 8. Once the documentation build finishes, release!
    1. Check that the link to drake.mit.edu docs from the GitHub release draft
       page actually works.
-   2. Click "Publish release"
+   2. Click "Publish release".
    3. Create a new GitHub issue on the [drake](https://github.com/RobotLocomotion/drake/issues/new/choose)
       repository and select the "Post-Release Actions" template.
    4. Create a GitHub issue on the [drake-ros](https://github.com/RobotLocomotion/drake-ros/issues)
