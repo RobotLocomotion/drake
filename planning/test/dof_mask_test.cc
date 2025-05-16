@@ -60,11 +60,13 @@ GTEST_TEST(DofMaskTest, CopyMoveSemantics) {
   DofMask moved(std::move(copied));
   EXPECT_EQ(moved, dofs);
   EXPECT_NE(copied, dofs);
+  EXPECT_EQ(copied.count(), 0);
 
   // Move assignment.
   copied = std::move(moved);
   EXPECT_EQ(copied, dofs);
   EXPECT_NE(moved, dofs);
+  EXPECT_EQ(moved.count(), 0);
 
   // Copy assignment.
   moved = copied;
