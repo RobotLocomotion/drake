@@ -23,10 +23,10 @@ push_release, etc.) are supported only on Ubuntu (not macOS).
 2. Create a local Drake branch named ``release_notes-v1.N.0`` (so that others
    can easily find and push to it after the PR is opened).
 3. As the first commit on the branch, mimic the commit
-   [`drake@65adb4dd`](https://github.com/RobotLocomotion/drake/commit/65adb4dd1f89835ad482d6a9a437cb899c05b779)
+   [`drake@cb6f616ced`](https://github.com/RobotLocomotion/drake/commit/cb6f616ced5496ea7863db46d86551930c9d61f7)
    in order to disable CI.  A quick way to do this might be:
    ```
-   git fetch upstream 65adb4dd1f89835ad482d6a9a437cb899c05b779
+   git fetch upstream cb6f616ced5496ea7863db46d86551930c9d61f7
    git cherry-pick FETCH_HEAD
    ```
 4. Push that branch and then open a new pull request titled:
