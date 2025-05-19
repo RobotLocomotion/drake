@@ -8,8 +8,8 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/solvers/cost.h"
-#include "drake/solvers/osqp_solver.h"
 #include "drake/solvers/snopt_solver.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace solvers {
@@ -223,19 +223,15 @@ GTEST_TEST(TestMathematicalProgramResult, InfeasibleProblem) {
   prog.AddLinearConstraint(x(1) >= 1);
   prog.AddQuadraticCost(x.dot(x.cast<symbolic::Expression>()));
 
-  MathematicalProgramResult result;
-  OsqpSolver osqp_solver;
-  if (osqp_solver.available()) {
-    const Eigen::VectorXd x_guess = Eigen::Vector2d::Zero();
-    osqp_solver.Solve(prog, x_guess, {}, &result);
-    EXPECT_TRUE(CompareMatrices(
-        result.GetSolution(x),
-        Eigen::Vector2d::Constant(std::numeric_limits<double>::quiet_NaN())));
-    EXPECT_TRUE(std::isnan(result.GetSolution(x(0))));
-    EXPECT_TRUE(std::isnan(result.GetSolution(x(1))));
-    EXPECT_EQ(result.get_optimal_cost(),
-              MathematicalProgram::kGlobalInfeasibleCost);
-  }
+  const Eigen::VectorXd x_guess = Eigen::Vector2d::Zero();
+  const MathematicalProgramResult result = Solve(prog, x_guess, {});
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+  const auto x_sol = result.GetSolution(x);
+  EXPECT_EQ(x_sol.size(), 2);
+
+  EXPECT_EQ(result.get_optimal_cost(),
+            MathematicalProgram::kGlobalInfeasibleCost);
 }
 
 GTEST_TEST(TestMathematicalProgramResult, GetInfeasibleConstraintNames) {
