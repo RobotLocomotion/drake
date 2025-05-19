@@ -24,11 +24,13 @@ namespace pooled_sap {
 const double kEps = std::numeric_limits<double>::epsilon();
 
 template <typename T>
-void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
+void MakeModel(PooledSapModel<T>* model, bool single_clique = false,
+               bool use_sparse_hessian = true) {
   const double time_step = 0.01;
   const int nv = 18;
 
   std::unique_ptr<PooledSapParameters<T>> params = model->ReleaseParameters();
+  params->use_sparse_hessian = use_sparse_hessian;
   params->time_step = time_step;
   params->A.Clear();
   params->J_WB.Clear();
@@ -162,7 +164,9 @@ GTEST_TEST(PooledSapModel, CalcData) {
   const VectorXd gradient_value = math::ExtractValue(data.cache().gradient);
   const MatrixXd gradient_derivatives =
       math::ExtractGradient(data.cache().gradient);
-  const MatrixXd hessian_value = math::ExtractValue(data.cache().hessian);
+
+  const MatrixXd hessian_value =
+      math::ExtractValue(data.cache().hessian.MakeDenseMatrix());
 
   fmt::print("Cost: {}\n", cost_value);
   fmt::print("Gradient: {}\n", fmt_eigen(gradient_value.transpose()));
@@ -170,6 +174,7 @@ GTEST_TEST(PooledSapModel, CalcData) {
       "|grad-grad_ref|/|grad| = {}\n",
       (gradient_value - cost_derivatives).norm() / gradient_value.norm());
   fmt::print("Hessian:\n{}\n", fmt_eigen(hessian_value));
+  fmt::print("Grad. Derivs:\n{}\n", fmt_eigen(gradient_derivatives));
   fmt::print("|H-Href| = {}\n", (hessian_value - gradient_derivatives).norm());
 
   EXPECT_TRUE(CompareMatrices(gradient_value, cost_derivatives, 8 * kEps,
@@ -210,14 +215,17 @@ GTEST_TEST(PooledSapModel, SingleVsMultipleCliques) {
   EXPECT_TRUE(CompareMatrices(data_single.cache().gradient,
                               data_multiple.cache().gradient, kEps,
                               MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(data_single.cache().hessian,
-                              data_multiple.cache().hessian, kEps,
-                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(data_single.cache().hessian.MakeDenseMatrix(),
+                              data_multiple.cache().hessian.MakeDenseMatrix(),
+                              kEps, MatrixCompareType::relative));
 }
 
 GTEST_TEST(PooledSapModel, LimitMallocOnCalcData) {
   PooledSapModel<double> model;
-  MakeModel(&model);
+  bool use_sparse_hessian =
+      false;  // Right now this leads to memory allocations.
+  MakeModel(&model, false /* each body in its own clique */,
+            use_sparse_hessian);
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
   EXPECT_EQ(model.num_constraints(), 3);

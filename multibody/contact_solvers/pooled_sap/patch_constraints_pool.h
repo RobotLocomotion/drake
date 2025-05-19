@@ -228,6 +228,10 @@ class PooledSapModel<T>::PatchConstraintsPool {
     return num_pairs_[patch_index];
   }
 
+  /* Computes sparsity pattern for the pool. That is, cliques i is connected to
+  clique j > i iff sparsity[i] contains j. */
+  void CalcSparsityPattern(std::vector<std::vector<int>>* sparsity) const;
+
   void CalcData(const SapData<T>& data,
                 PatchConstraintsDataPool<T>* patch_data) const;
 
@@ -236,7 +240,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
   // pools.
   void AccumulateGradientAndHessian(const SapData<T>& data,
                                     VectorX<T>* gradient,
-                                    MatrixX<T>* hessian) const;
+                                    Hessian<T>* hessian) const;
 
  private:
   using ConstJacobianView =
