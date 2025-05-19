@@ -15,6 +15,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -40,6 +41,8 @@ using drake::geometry::internal::kRezHint;
 using drake::math::RigidTransformd;
 using drake::math::RollPitchYawd;
 using drake::multibody::ConnectContactResultsToDrakeVisualizer;
+using drake::multibody::DeformableBodyId;
+using drake::multibody::Parser;
 using drake::multibody::RevoluteJoint;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
 using drake::multibody::internal::CompliantContactManager;
@@ -1030,18 +1033,21 @@ class DeformableReactionForcesTest : public ::testing::Test {
     std::tie(plant_, scene_graph_) =
         AddMultibodyPlantSceneGraph(&builder, kTimeStep);
 
-    // Add a deformable model to the plant
-    DeformableModel<double>& deformable_model =
-        plant_->mutable_deformable_model();
-    deformable_body_id_ =
-        RegisterDeformableBox(&deformable_model, "deformable_box");
-    deformable_model_ptr_ = &deformable_model;
-
-    plant_->set_discrete_contact_approximation(
-        DiscreteContactApproximation::kSap);
-
     // Add a rigid floor welded to the world
     AddFloor();
+
+    // Add a deformable model to the plant
+    Parser parser(&builder);
+    const std::string absolute_path =
+        FindResourceOrThrow("drake/multibody/plant/test/deformable_box.sdf");
+    const auto model_instances =
+        parser.AddModelsFromUrl("file://" + absolute_path);
+    DeformableModel<double>& deformable_model =
+        plant_->mutable_deformable_model();
+    deformable_model_ptr_ = &deformable_model;
+    const std::vector<DeformableBodyId> deformable_body_ids =
+        deformable_model.GetBodyIds(model_instances[0]);
+    deformable_body_id_ = deformable_body_ids[0];
 
     // Set gravity
     plant_->mutable_gravity_field().set_gravity_vector(
@@ -1064,8 +1070,10 @@ class DeformableReactionForcesTest : public ::testing::Test {
                                                  kFloorWidth, kFloorHeight);
     floor_ = &plant_->AddRigidBody("floor", M_FloorCm);
 
-    // Position the floor below the origin
-    const RigidTransformd X_WF(Vector3d(0.0, 0.0, -kFloorHeight / 2.0));
+    // Position the floor such that the top of the floor makes contact with
+    // the bottom of the deformable box when the sim starts
+    const auto floor_z_pos = -kFloorHeight / 2.0 - kBoxSize / 2.0;
+    const RigidTransformd X_WF(Vector3d(0.0, 0.0, floor_z_pos));
 
     // Weld the floor to the world
     weld_ = &plant_->WeldFrames(plant_->world_body().body_frame(),
@@ -1083,36 +1091,6 @@ class DeformableReactionForcesTest : public ::testing::Test {
     const Vector4<double> floor_color(0.5, 0.5, 0.5, 1.0);  // Gray
     plant_->RegisterVisualGeometry(*floor_, RigidTransformd::Identity(),
                                    floor_shape, "floor_visual", floor_color);
-  }
-
-  // Registers a deformable box with 8 vertices
-  DeformableBodyId RegisterDeformableBox(DeformableModel<double>* model,
-                                         std::string name) {
-    const std::string box =
-        FindResourceOrThrow("drake/multibody/plant/test/box.vtk");
-    auto geometry = std::make_unique<GeometryInstance>(
-        RigidTransformd(Vector3d(0.0, 0.0, kInitialHeight)),
-        std::make_unique<drake::geometry::Mesh>(box, kBoxSize),
-        std::move(name));
-
-    // Add contact properties
-    geometry::ProximityProperties props;
-    geometry::AddContactMaterial({}, {}, kFriction, &props);
-    geometry->set_proximity_properties(std::move(props));
-
-    // Configure deformable body properties
-    fem::DeformableBodyConfig<double> body_config;
-    body_config.set_youngs_modulus(kYoungsModulus);
-    body_config.set_poissons_ratio(kPoissonsRatio);
-    body_config.set_mass_density(kMassDensity);
-    body_config.set_stiffness_damping_coefficient(kStiffnessDamping);
-
-    // Register the deformable body
-    constexpr double unused_resolution_hint = 1.0;
-    DeformableBodyId id = model->RegisterDeformableBody(
-        std::move(geometry), body_config, unused_resolution_hint);
-
-    return id;
   }
 
   // Computes the reference volume of the registered deformable body
@@ -1176,28 +1154,23 @@ class DeformableReactionForcesTest : public ::testing::Test {
     EXPECT_TRUE(CompareMatrices(F_Weld.rotational(), expected_torque,
                                 kTolerance, MatrixCompareType::relative));
   }
-  // Deformable body parameters
-  const double kYoungsModulus{1e5};      // Young's modulus in Pa
-  const double kPoissonsRatio{0.4};      // Poisson's ratio (unitless)
-  const double kMassDensity{1e3};        // Mass density in kg/m³
-  const double kStiffnessDamping{0.01};  // Stiffness damping in s
+
+  // Deformable object parameters
+  const double kMassDensity{1.0};  // Mass density in kg/m³
+  const double kBoxSize{1.0};      // Size of the box edge in m
 
   // Floor parameters
-  const double kFloorWidth{1.0};   // Width of the floor in m
-  const double kFloorHeight{0.1};  // Height of the floor in m
+  const double kFloorWidth{10.0};  // Width of the floor in m
+  const double kFloorHeight{1.0};  // Height of the floor in m
   const double kFloorMass{10.0};   // Mass of the floor in kg
-
-  // Deformable box parameters
-  const double kBoxSize{0.1};         // Size of the box edge in m
-  const double kInitialHeight{0.06};  // Initial height of the box in m
 
   // Simulation parameters
   const double kTimeStep{0.001};        // Time step in s
-  const double kSimulationTime{5.0};    // Maximum simulation time in s
+  const double kSimulationTime{2.0};    // Maximum simulation time in s
   const double kTargetRealtimeRate{0};  // Target realtime rate
   const double kGravity{9.81};          // Gravity in m/s²
   const CoulombFriction<double> kFriction{0.4, 0.4};  // Friction
-  const double kTolerance{1e-4};  // Tolerance for comparisons
+  const double kTolerance{1e-6};  // Tolerance for comparisons
 
   // System components
   MultibodyPlant<double>* plant_{nullptr};
