@@ -139,7 +139,7 @@ class _State:
         Report the completion of an action.
         """
 
-    def _push_asset_s3(self, asset: Asset, bucket: str, path: str):
+    def _push_asset(self, asset: Asset, bucket: str, path: str):
         """
         Pushes the specified asset to S3.
 
@@ -158,11 +158,26 @@ class _State:
             self._s3.upload_file(local_path, bucket, path)
             self._done()
 
-    def _push_file_github(self, name: str, local_path: str):
+    def _upload_file_s3(self, name: str, bucket: str, path: str,
+                      local_path: str):
+        """
+        Pushes the specified file to S3.
+
+        If --dry-run was given, rather than actually pushing files to S3,
+        prints what would be done.
+        """
+        if self.options.dry_run:
+            print(f'push {name!r} to s3://{bucket}/{path}/{name}')
+        else:
+            self._begin('pushing', name, f's3://{bucket}/{path}/{name}')
+            self._s3.upload_file(local_path, bucket, f'{path}/{name}')
+            self._done()
+
+    def _upload_file_github(self, name: str, local_path: str):
         """
         Pushes the specified file to GitHub.
 
-        If --dry-run was given, rather than actually pushing files to S3,
+        If --dry-run was given, rather than actually pushing files to GitHub,
         prints what would be done.
         """
         if self.options.dry_run:
@@ -220,8 +235,8 @@ class _State:
         self._done()
         return local_path
 
-    def push_artifact_s3(self, artifact: _Artifact, bucket: str,
-                        path: str, include_hashes: bool = True):
+    def push_artifact(self, artifact: _Artifact, bucket: str,
+                      path: str, include_hashes: bool = True):
         """
         Pushes the specified artifact to S3, optionally including any
         associated hashes.
@@ -229,65 +244,38 @@ class _State:
         If --dry-run was given, rather than actually pushing files to S3,
         prints what would be done.
         """
-        self._push_asset_s3(artifact.asset, bucket, path)
+        self._push_asset(artifact.asset, bucket, path)
         if include_hashes:
             for h, a in artifact.hashes.items():
-                self._push_asset_s3(a, bucket, f'{path}.sha{h}')
+                self._push_asset(a, bucket, f'{path}.sha{h}')
 
-    def push_archive_s3(self, bucket: str, path: str, name: str,
-                        archive_format: str = 'tarball'):
+    def push_archive(self, name: str, bucket: str, path: str,
+                     archive_format: str = 'tarball'):
         """
-        Pushes the release source archive to S3, along with computed hashes.
+        Pushes the release source archive to S3 and GitHub, along with computed
+        hashes.
 
-        If --dry-run was given, rather than actually pushing files to S3,
-        prints what would be done.
+        If --dry-run was given, rather than actually pushing files, prints what
+        would be done.
         """
         local_path = self._download_file(name, archive_format)
-
-        if self.options.dry_run:
-            print(f'push {name!r} to s3://{bucket}/{path}/{name}')
-        else:
-            self._begin('pushing', name, f's3://{bucket}/{path}/{name}')
-            self._s3.upload_file(local_path, bucket, f'{path}/{name}')
-            self._done()
+        self._upload_file_s3(name, bucket, path, local_path)
+        self._upload_file_github(name, local_path)
 
         # Calculate hashes and write hash files
         for algorithm in _ARCHIVE_HASHES:
             hashfile_name = f'{name}.{algorithm}'
             hashfile_path = os.path.join(self._scratch.name, hashfile_name)
-            remote_path = f'{path}/{hashfile_name}'
+            s3_hashfile_path = f'{path}/{hashfile_name}'
 
             digest = self._write_hashfile(name, algorithm,
                                           local_path, hashfile_path)
-
-            if self.options.dry_run:
-                print(f'{name!r} {algorithm}: {digest.hexdigest()}')
-                print(f'push {hashfile_name!r} to s3://{bucket}/{remote_path}')
-            else:
-                self._begin('pushing', hashfile_name,
-                            f's3://{bucket}/{remote_path}')
-                self._s3.upload_file(hashfile_path, bucket, remote_path)
-                self._done()
-
-    def push_archive_github(self, name: str, archive_format: str = 'tarball'):
-        """
-        Pushes the release source archive to GitHub, along with computed
-        hashes.
-
-        If --dry-run was given, rather than actually pushing files to GitHub,
-        prints what would be done.
-        """
-        local_path = self._download_file(name, archive_format)
-        self._push_file_github(name, local_path)
-
-        # Calculate hashes and write hash files
-        for algorithm in _ARCHIVE_HASHES:
-            hashfile_name = f'{name}.{algorithm}'
-            hashfile_path = os.path.join(self._scratch.name, hashfile_name)
+            print(f'{name!r} {algorithm}: {digest.hexdigest()}')
 
             self._write_hashfile(name, algorithm,
                                  local_path, hashfile_path)
-            self._push_file_github(hashfile_name, hashfile_path)
+            self._upload_file_s3(hashfile_name, bucket, s3_hashfile_path, hashfile_path)
+            self._upload_file_github(hashfile_name, hashfile_path)
 
     def push_docker_tag(self, old_tag_name: str, new_tag_name: str,
                         repository: str = _DOCKER_REPOSITORY_NAME):
@@ -394,11 +382,10 @@ def _push_tar(state: _State):
     version = state.options.source_version
 
     for tar in state.find_artifacts(_Manifest.RE_TAR):
-        state.push_artifact_s3(tar, _AWS_BUCKET, f'drake/release/{tar.name}')
+        state.push_artifact(tar, _AWS_BUCKET, f'drake/release/{tar.name}')
 
     dest_name = f'drake-{version}-src.tar.gz'
-    state.push_archive_s3(_AWS_BUCKET, 'drake/release', dest_name)
-    state.push_archive_github(dest_name)
+    state.push_archive(dest_name, _AWS_BUCKET, 'drake/release')
 
 
 def _push_deb(state: _State):
@@ -408,7 +395,7 @@ def _push_deb(state: _State):
     for deb in state.find_artifacts(_Manifest.RE_DEB):
         dest_path_suffix = f'{deb.version}_{deb.arch}-{deb.platform}.{deb.ext}'
         dest_path = f'drake/release/drake-dev_{dest_path_suffix}'
-        state.push_artifact_s3(deb, _AWS_BUCKET, dest_path)
+        state.push_artifact(deb, _AWS_BUCKET, dest_path)
 
 
 def _push_docker(state: _State):
@@ -436,7 +423,8 @@ def main(args: List[str]):
     parser.add_argument(
         '--tar', dest='push_tar', default=True,
         action=argparse.BooleanOptionalAction,
-        help='Mirror binary and source .tar archives to S3.')
+        help='Mirror binary and source .tar archives to S3 '
+             'and source .tar archive to GitHub.')
     parser.add_argument(
         '-n', '--dry-run', default=False,
         action=argparse.BooleanOptionalAction,
