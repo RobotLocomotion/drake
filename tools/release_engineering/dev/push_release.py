@@ -121,7 +121,8 @@ class _State:
         self.manifest = _Manifest(release)
         self._scratch = tempfile.TemporaryDirectory()
         self._s3 = boto3.client('s3')
-        self._docker = docker.APIClient()
+        if options.push_docker:
+            self._docker = docker.APIClient()
 
         self.find_artifacts = self.manifest.find_artifacts
 
@@ -138,6 +139,7 @@ class _State:
         """
         Report the completion of an action.
         """
+        print(' done')
 
     def _push_asset(self, asset: Asset, bucket: str, path: str):
         """
@@ -159,11 +161,11 @@ class _State:
             self._done()
 
     def _upload_file_s3(self, name: str, bucket: str, path: str,
-                      local_path: str):
+                        local_path: str):
         """
-        Pushes the specified file to S3.
+        Uploads the specified file to S3.
 
-        If --dry-run was given, rather than actually pushing files to S3,
+        If --dry-run was given, rather than actually uploading files to S3,
         prints what would be done.
         """
         if self.options.dry_run:
@@ -175,9 +177,9 @@ class _State:
 
     def _upload_file_github(self, name: str, local_path: str):
         """
-        Pushes the specified file to GitHub.
+        Uploads the specified file to GitHub.
 
-        If --dry-run was given, rather than actually pushing files to GitHub,
+        If --dry-run was given, rather than actually uploading files to GitHub,
         prints what would be done.
         """
         if self.options.dry_run:
@@ -229,9 +231,11 @@ class _State:
         """
         Downloads the specified file from the GitHub release.
         """
-        local_path = os.path.join(self._scratch.name, name)
         self._begin('downloading', name)
+
+        local_path = os.path.join(self._scratch.name, name)
         assert self.release.archive(archive_format, local_path)
+
         self._done()
         return local_path
 
@@ -271,10 +275,8 @@ class _State:
             digest = self._write_hashfile(name, algorithm,
                                           local_path, hashfile_path)
             print(f'{name!r} {algorithm}: {digest.hexdigest()}')
-
-            self._write_hashfile(name, algorithm,
-                                 local_path, hashfile_path)
-            self._upload_file_s3(hashfile_name, bucket, s3_hashfile_path, hashfile_path)
+            self._upload_file_s3(hashfile_name, bucket,
+                                 s3_hashfile_path, hashfile_path)
             self._upload_file_github(hashfile_name, hashfile_path)
 
     def push_docker_tag(self, old_tag_name: str, new_tag_name: str,
@@ -423,8 +425,8 @@ def main(args: List[str]):
     parser.add_argument(
         '--tar', dest='push_tar', default=True,
         action=argparse.BooleanOptionalAction,
-        help='Mirror binary and source .tar archives to S3 '
-             'and source .tar archive to GitHub.')
+        help='Mirror binary and source .tar archives to S3'
+             ' and source .tar archive to GitHub.')
     parser.add_argument(
         '-n', '--dry-run', default=False,
         action=argparse.BooleanOptionalAction,
