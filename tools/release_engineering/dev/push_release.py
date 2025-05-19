@@ -121,7 +121,8 @@ class _State:
         self.manifest = _Manifest(release)
         self._scratch = tempfile.TemporaryDirectory()
         self._s3 = boto3.client('s3')
-        self._docker = docker.APIClient()
+        if options.push_docker:
+            self._docker = docker.APIClient()
 
         self.find_artifacts = self.manifest.find_artifacts
 
@@ -138,6 +139,7 @@ class _State:
         """
         Report the completion of an action.
         """
+        print(' done')
 
     def _push_asset(self, asset: Asset, bucket: str, path: str):
         """
@@ -159,7 +161,7 @@ class _State:
             self._done()
 
     def _upload_file_s3(self, name: str, bucket: str, path: str,
-                      local_path: str):
+                        local_path: str):
         """
         Pushes the specified file to S3.
 
@@ -271,10 +273,8 @@ class _State:
             digest = self._write_hashfile(name, algorithm,
                                           local_path, hashfile_path)
             print(f'{name!r} {algorithm}: {digest.hexdigest()}')
-
-            self._write_hashfile(name, algorithm,
-                                 local_path, hashfile_path)
-            self._upload_file_s3(hashfile_name, bucket, s3_hashfile_path, hashfile_path)
+            self._upload_file_s3(hashfile_name, bucket,
+                                 s3_hashfile_path, hashfile_path)
             self._upload_file_github(hashfile_name, hashfile_path)
 
     def push_docker_tag(self, old_tag_name: str, new_tag_name: str,
