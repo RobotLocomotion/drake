@@ -42,6 +42,7 @@ types like FixedOffsetFrame *are* directly owned by this collection.
   - JointActuator
   - ModelInstance
   - RigidBody
+  - DeformableBody
 @tparam Index The corresponding index type for the given Element type. */
 template <typename T, template <typename> class Element, typename Index>
 class ElementCollection final {
