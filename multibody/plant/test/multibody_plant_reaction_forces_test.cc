@@ -1015,10 +1015,14 @@ INSTANTIATE_TEST_SUITE_P(ReactionForcesTests, WeldedAndFloatingTest,
                          testing::ValuesIn({false, true}));
 
 // This test verifies the computation of joint reaction forces in a model with a
-// deformable object sitting on a rigid floor. The floor is welded to the world
-// frame. The deformable is a floating body. The reaction force for the weld
-// joint connecting the floor to the world should equal the weight of the
-// deformable object.
+// deformable object sitting on a rigid floor. The deformable is a floating
+// body. The floor is welded to the world frame. The position of the weld joint
+// is such that its aligned with the center of mass of the rigid floor and the
+// deformable box that sits atop it. The reaction force for the weld joint
+// connecting the floor to the world should equal the combined weight of the
+// deformable object and the floor. Since the weld joint is aligned with the
+// center of mass of the rigid floor and deformable box, there should be zero
+// reaction torque.
 class DeformableReactionForcesTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -1033,9 +1037,6 @@ class DeformableReactionForcesTest : public ::testing::Test {
         RegisterDeformableBox(&deformable_model, "deformable_box");
     deformable_model_ptr_ = &deformable_model;
 
-    // N.B. Deformables are only supported with the SAP solver.
-    // Thus for testing we choose one arbitrary contact approximation that uses
-    // the SAP solver.
     plant_->set_discrete_contact_approximation(
         DiscreteContactApproximation::kSap);
 
@@ -1073,11 +1074,6 @@ class DeformableReactionForcesTest : public ::testing::Test {
     // Add collision geometry for the floor
     geometry::ProximityProperties proximity_props;
     geometry::AddContactMaterial({}, {}, kFriction, &proximity_props);
-    // TODO(xuchenhan-tri): Modify this when resolution hint is no longer used
-    //  as the trigger for contact with deformable bodies.
-    proximity_props.AddProperty(geometry::internal::kHydroGroup,
-                                geometry::internal::kRezHint, 1.0);
-
     const Box floor_shape(kFloorWidth, kFloorWidth, kFloorHeight);
     plant_->RegisterCollisionGeometry(*floor_, RigidTransformd::Identity(),
                                       floor_shape, "floor_collision",
@@ -1089,7 +1085,7 @@ class DeformableReactionForcesTest : public ::testing::Test {
                                    floor_shape, "floor_visual", floor_color);
   }
 
-  /// Registers a deformable box with 8 vertices
+  // Registers a deformable box with 8 vertices
   DeformableBodyId RegisterDeformableBox(DeformableModel<double>* model,
                                          std::string name) {
     const std::string box =
@@ -1119,7 +1115,7 @@ class DeformableReactionForcesTest : public ::testing::Test {
     return id;
   }
 
-  /* Computes the reference volume of the registered deformable body. */
+  // Computes the reference volume of the registered deformable body
   double CalcDeformableReferenceVolume() const {
     const SceneGraphInspector<double>& inspector =
         scene_graph_->model_inspector();
@@ -1173,7 +1169,9 @@ class DeformableReactionForcesTest : public ::testing::Test {
     EXPECT_TRUE(CompareMatrices(F_Weld.translational(), expected_force,
                                 kTolerance, MatrixCompareType::relative));
 
-    // There should be no reaction torque
+    // There should be no reaction torque since the weld joint is aligned
+    // (in world frame x and y) with the center of mass of both the
+    // rigid floor and deformable object.
     const Vector3d expected_torque = Vector3d::Zero();
     EXPECT_TRUE(CompareMatrices(F_Weld.rotational(), expected_torque,
                                 kTolerance, MatrixCompareType::relative));
