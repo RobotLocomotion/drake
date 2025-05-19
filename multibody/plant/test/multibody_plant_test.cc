@@ -2999,6 +2999,65 @@ TEST_F(SplitPendulum, MassMatrix) {
   EXPECT_NEAR(M(0, 0), Io, 1.0e-6);
 }
 
+// This test ensures that we can create a symbolic mass matrix successfully.
+TEST_F(SplitPendulum, SymbolicMassMatrix) {
+  auto sym_plant = systems::System<double>::ToSymbolic(plant_);
+  auto sym_context = sym_plant->CreateDefaultContext();
+
+  // State variables
+  const Eigen::VectorX<symbolic::Variable> q_var =
+      symbolic::MakeVectorVariable(1, "q");
+  const Eigen::VectorX<symbolic::Variable> v_var =
+      symbolic::MakeVectorVariable(1, "v");
+
+  // Parameters
+  const Eigen::VectorX<symbolic::Variable> m_var =
+      symbolic::MakeVectorVariable(2, "m");
+  const Eigen::VectorX<symbolic::Variable> l_var =
+      symbolic::MakeVectorVariable(2, "l");
+
+  const Eigen::VectorX<symbolic::Expression> q = q_var, v = v_var, m = m_var,
+                                             l = l_var;
+
+  const auto& upper_arm = sym_plant->GetBodyByName("upper_section");
+  const SpatialInertia<symbolic::Expression> inertia0(
+      m[0], Vector3<symbolic::Expression>(0, 0, -l[0]),
+      UnitInertia<symbolic::Expression>(l[0] * l[0], l[0] * l[0], 0));
+  upper_arm.SetSpatialInertiaInBodyFrame(sym_context.get(), inertia0);
+  const auto& lower_arm = sym_plant->GetBodyByName("lower_section");
+  const SpatialInertia<symbolic::Expression> inertia1(
+      m[1], Vector3<symbolic::Expression>(0, 0, -l[1]),
+      UnitInertia<symbolic::Expression>(l[1] * l[1], l[1] * l[1], 0));
+  lower_arm.SetSpatialInertiaInBodyFrame(sym_context.get(), inertia1);
+
+  sym_plant->SetPositions(sym_context.get(), q);
+  sym_plant->SetVelocities(sym_context.get(), v);
+
+  // Calculate the mass matrix two different ways and verify that evaluating
+  // the resulting expressions yields the same result numerically.
+  Eigen::MatrixX<symbolic::Expression> M(1, 1), M_id(1, 1);
+  sym_plant->CalcMassMatrix(*sym_context, &M);
+  sym_plant->CalcMassMatrixViaInverseDynamics(*sym_context, &M_id);
+
+  const symbolic::Environment env{{q_var(0), 2.0}, {v_var(0), 10.},
+                                  {m_var(0), 3.0}, {m_var(1), 4.0},
+                                  {l_var(0), 5.0}, {l_var(1), 6.0}};
+  EXPECT_NEAR(M(0, 0).Evaluate(env), M_id(0, 0).Evaluate(env), 1e-14);
+
+  // Generate symbolic expressions for a few more quantities here just as a
+  // sanity check that we can do so. We won't look at the results.
+  Eigen::VectorX<symbolic::Expression> Cv(1), tauExt(1);
+  sym_plant->CalcBiasTerm(*sym_context, &Cv);
+  EXPECT_NO_THROW(sym_plant->CalcGravityGeneralizedForces(*sym_context));
+  const Eigen::MatrixX<symbolic::Expression> B =
+      sym_plant->MakeActuationMatrix();
+  EXPECT_EQ(B.rows(), 1);
+  EXPECT_EQ(B.cols(), 1);
+  MultibodyForces<symbolic::Expression> forces(*sym_plant);
+  sym_plant->CalcForceElementsContribution(*sym_context, &forces);
+  sym_plant->CalcGeneralizedForces(*sym_context, forces, &tauExt);
+}
+
 // Verify that we can obtain the owning MultibodyPlant from one of its
 // MultibodyElements, and that we get a proper error message if we try
 // this for an element that isn't owned by a MultibodyPlant.

@@ -73,8 +73,10 @@ SpatialInertia<T> ToSpatialInertia(
   const auto& spatial_inertia_vector = spatial_inertia_basic_vector.get_value();
   // Kinematics-only code sometimes specifies inertia as NaN since it isn't
   // needed. Convert back to NaN here rather than risk blowing up below.
-  if (spatial_inertia_vector.array().isNaN().any()) {
-    return SpatialInertia<T>::NaN();
+  if constexpr (scalar_predicate<T>::is_bool) {
+    if (spatial_inertia_vector.array().isNaN().any()) {
+      return SpatialInertia<T>::NaN();
+    }
   }
   return SpatialInertia<T>(
       spatial_inertia_vector[SpatialInertiaIndex::k_mass],

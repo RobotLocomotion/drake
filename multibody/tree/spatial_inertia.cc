@@ -387,18 +387,23 @@ template <typename T>
 SpatialInertia<T>& SpatialInertia<T>::operator+=(
     const SpatialInertia<T>& M_BP_E) {
   const T total_mass = get_mass() + M_BP_E.get_mass();
-  if (total_mass != 0) {
-    p_PScm_E_ = (CalcComMoment() + M_BP_E.CalcComMoment()) / total_mass;
-    G_SP_E_.SetFromRotationalInertia(
-        CalcRotationalInertia() + M_BP_E.CalcRotationalInertia(), total_mass);
-  } else {
-    // Compose the spatial inertias of two massless bodies in the limit when
-    // the two bodies have the same mass. In this limit, p_PScm_E_ and G_SP_E_
-    // are the arithmetic mean of the constituent COMs and unit inertias.
-    p_PScm_E_ = 0.5 * (get_com() + M_BP_E.get_com());
-    G_SP_E_.SetFromRotationalInertia(
-        get_unit_inertia() + M_BP_E.get_unit_inertia(), 2.0);
+  if constexpr (scalar_predicate<T>::is_bool) {
+    if (total_mass == 0) {
+      // Compose the spatial inertias of two massless bodies in the limit when
+      // the two bodies have the same mass. In this limit, p_PScm_E_ and G_SP_E_
+      // are the arithmetic mean of the constituent COMs and unit inertias.
+      p_PScm_E_ = 0.5 * (get_com() + M_BP_E.get_com());
+      G_SP_E_.SetFromRotationalInertia(
+          get_unit_inertia() + M_BP_E.get_unit_inertia(), 2.0);
+      mass_ = total_mass;
+      return *this;
+    }
   }
+
+  // This is the normal case.
+  p_PScm_E_ = (CalcComMoment() + M_BP_E.CalcComMoment()) / total_mass;
+  G_SP_E_.SetFromRotationalInertia(
+      CalcRotationalInertia() + M_BP_E.CalcRotationalInertia(), total_mass);
   mass_ = total_mass;
   return *this;
 }
