@@ -291,15 +291,17 @@ TEST_F(DeformableModelTest, AddFixedConstraint) {
   geometry::Box box(1.0, 1.0, 1.0);
   const RigidTransformd X_BA(Vector3d(-2, 0, 0));
   const RigidTransformd X_BG(Vector3d(-1, 0, 0));
-  const MultibodyConstraintId constraint_id =
-      deformable_model_ptr_->AddFixedConstraint(deformable_id, rigid_body, X_BA,
-                                                box, X_BG);
-
+  deformable_model_ptr_->AddFixedConstraint(deformable_id, rigid_body, X_BA,
+                                            box, X_BG);
+  const DeformableBody<double>& body =
+      deformable_model_ptr_->GetBody(deformable_id);
+  ASSERT_EQ(body.body_id(), deformable_id);
   EXPECT_TRUE(deformable_model_ptr_->HasConstraint(deformable_id));
-  EXPECT_EQ(deformable_model_ptr_->fixed_constraint_ids(deformable_id).size(),
-            1);
+  EXPECT_TRUE(body.has_fixed_constraint());
+  ASSERT_EQ(body.fixed_constraint_specs().size(), 1);
   const DeformableRigidFixedConstraintSpec& spec =
-      deformable_model_ptr_->fixed_constraint_spec(constraint_id);
+      body.fixed_constraint_specs()[0];
+
   EXPECT_EQ(spec.body_A, deformable_id);
   EXPECT_EQ(spec.body_B, rigid_body.index());
   /* Only the right-most deformable body vertex (with world position (1, 0, 0))
@@ -487,9 +489,8 @@ TEST_F(DeformableModelTest, NonEmptyClone) {
   geometry::Box box(1.0, 1.0, 1.0);
   const RigidTransformd X_BA(Vector3d(-2, 0, 0));
   const RigidTransformd X_BG(Vector3d(-1, 0, 0));
-  const MultibodyConstraintId constraint_id =
-      deformable_model_ptr_->AddFixedConstraint(body_id, rigid_body, X_BA, box,
-                                                X_BG);
+  deformable_model_ptr_->AddFixedConstraint(body_id, rigid_body, X_BA, box,
+                                            X_BG);
 
   EXPECT_FALSE(deformable_model_ptr_->is_empty());
   /* Plant owning the cloned from models need to be finalized. */
@@ -526,10 +527,6 @@ TEST_F(DeformableModelTest, NonEmptyClone) {
             deformable_model_ptr_->GetBodyId(geometry_id));
   EXPECT_EQ(double_clone_ptr->HasConstraint(body_id),
             deformable_model_ptr_->HasConstraint(body_id));
-  EXPECT_EQ(double_clone_ptr->fixed_constraint_spec(constraint_id),
-            deformable_model_ptr_->fixed_constraint_spec(constraint_id));
-  EXPECT_EQ(double_clone_ptr->fixed_constraint_ids(body_id),
-            deformable_model_ptr_->fixed_constraint_ids(body_id));
 }
 
 /* An empty DeformableModel doesn't get in the way of a TAMSI plant. */
