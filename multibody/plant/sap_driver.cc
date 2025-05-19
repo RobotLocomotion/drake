@@ -1194,24 +1194,22 @@ void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
   const VectorX<T> diagonal_inertia = manager().CalcEffectiveDamping(context);
   generalized_forces -= diagonal_inertia.asDiagonal() * a;
 
-  // Include the contribution from constraints.
-  // TODO(amcastro-tri): Consider deformables.
-  if (manager().deformable_driver() != nullptr) {
-    throw std::logic_error(
-        "The computation of MultibodyForces must be updated to include "
-        "deformable objects.");
-  }
+  const ContactProblemCache<T>& contact_problem_cache =
+      EvalContactProblemCache(context);
 
-  VectorX<T> constraints_generalized_forces(plant().num_velocities());
-  std::vector<SpatialForce<T>> constraint_spatial_forces(plant().num_bodies());
+  // constraints_generalized_forces is the size of the full problem.
+  // The rigid dofs come before the deformable dofs.
+  const int num_dofs = contact_problem_cache.sap_problem->num_velocities();
+  // num_objects includes both rigid and deformable bodies
+  const int num_objects = contact_problem_cache.sap_problem->num_objects();
+  VectorX<T> constraints_generalized_forces(num_dofs);
+  std::vector<SpatialForce<T>> constraint_spatial_forces(num_objects);
   const VectorX<T>& gamma = sap_results.gamma;
 
   // N.B. When CompliantContactManager builds the problem, the "about point" for
   // the reporting of multibody forces is defined to be at body origins and
   // expressed in the world frame.
   // Therefore aggregation of forces per-body makes sense in this call.
-  const ContactProblemCache<T>& contact_problem_cache =
-      EvalContactProblemCache(context);
   contact_problem_cache.sap_problem->CalcConstraintMultibodyForces(
       gamma, &constraints_generalized_forces, &constraint_spatial_forces);
   generalized_forces += constraints_generalized_forces;
