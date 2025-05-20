@@ -215,7 +215,6 @@ GTEST_TEST(PooledSapModel, SingleVsMultipleCliques) {
                               MatrixCompareType::relative));
 }
 
-#if 0
 GTEST_TEST(PooledSapModel, LimitMallocOnCalcData) {
   PooledSapModel<double> model;
   MakeModel(&model);
@@ -236,7 +235,6 @@ GTEST_TEST(PooledSapModel, LimitMallocOnCalcData) {
     model.CalcData(v, &data);
   }
 }
-#endif
 
 }  // namespace pooled_sap
 }  // namespace contact_solvers

@@ -375,9 +375,18 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradientAndHessian(
   const PatchConstraintsDataPool<T>& patch_data =
       data.cache().patch_constraints_data;
 
-  // Previously allocated scratch.
+  // Make sure the scratch has enough storage before requesting more elements.
+  // N.B. ElementView's can be invalidating if adding new elements results in
+  // memory allocation.
   data.scratch().Clear();
   auto& MatrixX_pool = data.scratch().MatrixX_pool;
+  // Conservatively, request memory for all clique sizes, noting that cliques
+  // might be repeated.
+  for (int c = 0; c < model().num_cliques(); ++c) {
+    const int nv = model().clique_size(c);
+    MatrixX_pool.Add(6, nv);
+    MatrixX_pool.Add(6, nv);
+  }
 
   // EigenPool and AutoDiffXd do not play well together.
   // When T = AutoDiffXd this function simply allocates new memory, not from the
@@ -397,6 +406,9 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradientAndHessian(
   const EigenPool<Matrix6<T>>& G_Bp_pool = patch_data.G_Bp_pool();
 
   for (int p = 0; p < num_patches(); ++p) {
+    // We'll work at most with two entries in the pool at a time.
+    MatrixX_pool.Clear();
+
     // First clique, body B.
     const int body_b = bodies_[p].first;
     DRAKE_ASSERT(body_b != 0);  // Body B is never anchored.
