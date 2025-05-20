@@ -1,7 +1,13 @@
 #include "drake/systems/analysis/convex_integrator.h"
 
+#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
+#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap_builder.h"
+
 namespace drake {
 namespace systems {
+
+using multibody::contact_solvers::pooled_sap::PooledSapBuilder;
+using multibody::contact_solvers::pooled_sap::PooledSapModel;
 
 template <typename T>
 ConvexIntegrator<T>::ConvexIntegrator(const System<T>& system,
@@ -33,6 +39,14 @@ void ConvexIntegrator<T>::DoInitialize() {
 template <typename T>
 bool ConvexIntegrator<T>::DoStep(const T& h) {
   Context<T>& context = *this->get_mutable_context();
+
+  // Set up the pooled sap model (eventually allocation of builder and model
+  // will move to DoInitialize).
+  const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
+  PooledSapBuilder<T> builder(plant());
+  PooledSapModel<T> model;
+  builder.UpdateModel(plant_context, h, &model);
+
   context.SetTime(context.get_time() + h);
   return true;
 }

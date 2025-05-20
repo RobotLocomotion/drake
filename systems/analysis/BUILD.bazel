@@ -119,6 +119,8 @@ drake_cc_library(
     deps = [
         ":integrator_base",
         "//multibody/plant",
+        "//multibody/contact_solvers/pooled_sap:pooled_sap_builder",
+        "//multibody/contact_solvers/pooled_sap:pooled_sap_core",
     ],
 )
 
