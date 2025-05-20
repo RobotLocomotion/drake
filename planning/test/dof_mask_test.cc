@@ -61,10 +61,20 @@ GTEST_TEST(DofMaskTest, CopyMoveSemantics) {
   EXPECT_EQ(moved, dofs);
   EXPECT_NE(copied, dofs);
 
+  // A moved-from object must be zero-sized (it's the only reasonable way for
+  // it to maintain its invariants after donating is storage to the new object.)
+  EXPECT_EQ(copied.size(), 0);
+  EXPECT_EQ(copied.count(), 0);
+
   // Move assignment.
   copied = std::move(moved);
   EXPECT_EQ(copied, dofs);
   EXPECT_NE(moved, dofs);
+
+  // A moved-from object must be zero-sized (it's the only reasonable way for
+  // it to maintain its invariants after donating is storage to the new object.)
+  EXPECT_EQ(moved.size(), 0);
+  EXPECT_EQ(moved.count(), 0);
 
   // Copy assignment.
   moved = copied;
