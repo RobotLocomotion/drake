@@ -1,11 +1,12 @@
 #pragma once
 
 #ifndef DRAKE_POOLED_SAP_INCLUDED
-#error Do not include this file. Use "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
+#error Do not include this file. Use "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"  // NOLINT
 #endif
 
 #include <memory>
 #include <set>
+#include <utility>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -93,7 +94,7 @@ class PooledSapModel {
       : params_(std::make_unique<PooledSapParameters<T>>()),
         patch_constraints_pool_(this) {}
 
-  /* Resets problem parameters. 
+  /* Resets problem parameters.
    @pre params->VerifyInvariants() is true. */
   void ResetParameters(std::unique_ptr<PooledSapParameters<T>> params) {
     DRAKE_DEMAND(params != nullptr);
@@ -117,8 +118,8 @@ class PooledSapModel {
       clique_sizes_.push_back(clique_nv);
       // Here we are pushing the start for the next clique, c+1.
       clique_start_.push_back(clique_start_.back() + clique_nv);
-      Aldlt_.push_back(math::LinearSolver<Eigen::LDLT, MatrixX<T>>(
-        MatrixX<T>(A[c])));
+      Aldlt_.push_back(
+          math::LinearSolver<Eigen::LDLT, MatrixX<T>>(MatrixX<T>(A[c])));
     }
     DRAKE_DEMAND(params_->r.size() == num_velocities_);
     patch_constraints_pool_.Clear();
@@ -253,9 +254,6 @@ class PooledSapModel {
   void ResizeData(SapData<T>* data) const {
     data->Resize(num_bodies_, num_velocities_, clique_sizes_,
                  patch_constraints_pool_.patch_sizes());
-    // TODO: Consider.
-    // data->cache().patch_constraints_data.Resize(
-    //    num_velocities_, patch_constraints_pool_.patch_size());
   }
 
   // Updates `data` as a function of v.
@@ -277,7 +275,7 @@ class PooledSapModel {
   std::vector<int> clique_start_;  // Clique first velocity.
   std::vector<int> clique_sizes_;  // Number of velocities per clique.
   std::vector<math::LinearSolver<Eigen::LDLT, MatrixX<T>>> Aldlt_;
-  EigenPool<Vector6<T>> V_WB0_;    // Initial spatial velocities.
+  EigenPool<Vector6<T>> V_WB0_;  // Initial spatial velocities.
 
   PatchConstraintsPool patch_constraints_pool_;
 };

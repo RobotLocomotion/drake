@@ -11,7 +11,6 @@ reasonable. */
 // clang-format off
 #include "drake/multibody/contact_solvers/pooled_sap/pooled_sap_model.h"
 #include "drake/multibody/contact_solvers/pooled_sap/patch_constraints_pool.h"
-//#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap_model_inlines.h"
 // clang-format on
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(

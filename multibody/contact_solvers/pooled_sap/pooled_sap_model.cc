@@ -109,8 +109,8 @@ void PooledSapModel<T>::CalcData(const VectorX<T>& v, SapData<T>* data) const {
   patch_constraints_pool_.CalcData(*data, &cache.patch_constraints_data);
 
   // Include patch constraints contributions.
-  // TODO: factor out this function into a ConstraintPool class, along with
-  // clique data size and other common per-pool functionality.
+  // TODO(amcastro-tri): factor out this function into a ConstraintPool class,
+  // along with clique data size and other common per-pool functionality.
   patch_constraints_pool_.AccumulateGradientAndHessian(*data, &cache.gradient,
                                                        &cache.hessian);
 

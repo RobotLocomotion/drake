@@ -125,7 +125,7 @@ class TwoSpheres : public testing::Test {
 
     // plant_->SetUseSampledOutputPorts(false);
 
-    // TODO: parameterize test.
+    // TODO(amcastro-tri): parameterize test.
     plant_->set_contact_model(ContactModel::kHydroelastic);
     discrete_.plant->set_contact_model(ContactModel::kHydroelastic);
 
@@ -312,7 +312,6 @@ TEST_F(TwoSpheres, MakeData) {
   EXPECT_EQ(data.num_patches(), 1);
 }
 
-
 // Fix bug in this test, related to evaling SapProblem with a discrete plant.
 #if 0
 
@@ -345,7 +344,7 @@ TEST_F(TwoSpheres, CalcData) {
   model.CalcData(v, &data);
 
   // Compute a reference solution.
-  const SapContactProblem<double>& problem = EvalSapProblem();      
+  const SapContactProblem<double>& problem = EvalSapProblem();
   SapModel<double> sap_model(&problem);
   auto context = sap_model.MakeContext();
   sap_model.GetMutableVelocities(context.get()) = v;

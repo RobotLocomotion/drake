@@ -15,16 +15,10 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":eigen_pool",
+        ":patch_constraints_data_pool",
+        ":pooled_sap_builder",
         ":pooled_sap_core",
-    ],
-)
-
-drake_cc_library(
-    name = "constraint_data",
-    hdrs = ["constraint_data.h"],
-    deps = [
-        "//common:essential",
-        ":eigen_pool",
+        ":sap_data",
     ],
 )
 
@@ -38,12 +32,12 @@ drake_cc_library(
 
 drake_cc_library(
     name = "patch_constraints_data_pool",
-    hdrs = ["patch_constraints_data_pool.h"],
     srcs = ["patch_constraints_data_pool.cc"],
+    hdrs = ["patch_constraints_data_pool.h"],
     deps = [
-        "//common:essential",
-        "//common:default_scalars",
         ":eigen_pool",
+        "//common:default_scalars",
+        "//common:essential",
     ],
 )
 
@@ -51,39 +45,41 @@ drake_cc_library(
     name = "sap_data",
     hdrs = ["sap_data.h"],
     deps = [
-        "//common:essential",
         ":eigen_pool",
         ":patch_constraints_data_pool",
+        "//common:essential",
     ],
 )
 
 drake_cc_library(
     name = "pooled_sap_builder",
-    hdrs = ["pooled_sap_builder.h"],
     srcs = ["pooled_sap_builder.cc"],
+    hdrs = ["pooled_sap_builder.h"],
     deps = [
+        ":pooled_sap_core",
         "//common:essential",
         "//multibody/plant",
-        ":pooled_sap_core",
     ],
 )
 
 drake_cc_library(
     name = "pooled_sap_core",
     srcs = [
+        "patch_constraints_pool.cc",
         "pooled_sap.cc",
-        "pooled_sap_model.cc", 
-        "patch_constraints_pool.cc"],
+        "pooled_sap_model.cc",
+    ],
     hdrs = [
+        "patch_constraints_pool.h",
         "pooled_sap.h",
         "pooled_sap_model.h",
-        "patch_constraints_pool.h"],
+    ],
     deps = [
-        "//common:essential",
-        "//common:default_scalars",
-        "//math:linear_solve",
-        "//math:gradient",
         ":sap_data",
+        "//common:default_scalars",
+        "//common:essential",
+        "//math:gradient",
+        "//math:linear_solve",
     ],
 )
 
@@ -97,28 +93,12 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "constraint_data_test",
-    deps = [
-        ":constraint_data",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "patch_constraint_data_test",
-    deps = [
-        ":patch_constraint_data",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
     name = "pooled_model_test",
     deps = [
         ":eigen_pool",
         ":pooled_sap_core",
-        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:limit_malloc",
         "//math:geometric_transform",
     ],
@@ -127,14 +107,13 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "two_spheres_test",
     deps = [
-        "//common/test_utilities:limit_malloc",
+        ":pooled_sap_builder",
+        ":pooled_sap_core",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
         "//multibody/parsing:parser",
         "//systems/framework:diagram_builder",
-        ":pooled_sap_core",
-        ":pooled_sap_builder",
     ],
 )
-
 
 add_lint_tests()

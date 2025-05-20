@@ -87,7 +87,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   typename EigenPool<MatrixX<T>>::ElementView M = params->A.Add(nv, nv);
   plant().CalcMassMatrix(context, &M);
 
-  // TODO: Add effective damping terms.
+  // TODO(amcastro-tri): Add effective damping terms.
   // const VectorX<T> diagonal_inertia = plant().CalcEffectiveDamping(context);
 
   // Update rigid body cliques and body Jacobians.

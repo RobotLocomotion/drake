@@ -1,10 +1,12 @@
 #pragma once
 
 #ifndef DRAKE_POOLED_SAP_INCLUDED
-#error Do not include this file. Use "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
+#error Do not include this file. Use "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h" // NOLINT
 #endif
 
+#include <algorithm>
 #include <numeric>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -58,6 +60,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
    @param max_clique_size Used to estimate storage for spatial velocity
      Jacobians.  */
   void Resize(int num_patches, int num_pairs_capacity, int max_clique_size) {
+    unused(max_clique_size);
     // per-patch data.
     num_pairs_.resize(num_patches);
     num_cliques_.resize(num_patches);
@@ -82,6 +85,8 @@ class PooledSapModel<T>::PatchConstraintsPool {
    @param max_clique_size Used to estimate storage for spatial velocity
      Jacobians.  */
   void Reserve(int num_patches, int num_pairs_capacity, int max_clique_size) {
+    unused(max_clique_size);
+
     // Data per patch.
     num_pairs_.reserve(num_patches);
     num_cliques_.reserve(num_patches);
@@ -100,7 +105,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
   }
 
   /* Adds a contact patch between bodies A and B.
-   @pre B is always dynamic (not anchored). 
+   @pre B is always dynamic (not anchored).
    @returns the index into the new patch. */
   int AddPatch(int bodyA, int bodyB, const T& dissipation, const T& friction,
                const Vector3<T>& p_AB_W) {
@@ -223,8 +228,9 @@ class PooledSapModel<T>::PatchConstraintsPool {
   void CalcData(const SapData<T>& data,
                 PatchConstraintsDataPool<T>* patch_data) const;
 
-  // TODO: factor out this method into a BodyConstraintsPool parent class, along
-  // with other common functionality to all body-constraint pools.
+  // TODO(amcastro-tri): factor out this method into a BodyConstraintsPool
+  // parent class, along with other common functionality to all body-constraint
+  // pools.
   void AccumulateGradientAndHessian(const SapData<T>& data,
                                     VectorX<T>* gradient,
                                     MatrixX<T>* hessian) const;
@@ -296,7 +302,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
   std::vector<T> n0_;               // Previous time step impulse.
   std::vector<T> epsilon_soft_;     // Regularized stiction tolerance.
 
-   // Scratch used during construction to compute Delassus approximation.
+  // Scratch used during construction to compute Delassus approximation.
   mutable EigenPool<MatrixX<T>> MatrixX_pool_;
 };
 

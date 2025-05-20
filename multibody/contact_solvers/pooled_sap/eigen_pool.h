@@ -27,7 +27,7 @@ constexpr bool is_fixed_size_vector_v =
 
 template <typename T>
 constexpr bool is_dynamic_size_vector_v =
-    is_eigen_vector<T>::value && !is_fixed_size_v<T>;    
+    is_eigen_vector<T>::value && !is_fixed_size_v<T>;
 
 template <typename EigenType>
 struct DynamicSizeStorage {
@@ -152,9 +152,7 @@ struct FixedSizeStorage {
 
   FixedSizeStorage() = default;
 
-  void Clear() {
-    data_.clear();
-  }
+  void Clear() { data_.clear(); }
 
   /* Resizes storage to store `num_elements`. */
   void Resize(int num_elements) { data_.resize(num_elements); }
@@ -204,7 +202,6 @@ struct StorageSelector {
   using Storage = FixedSizeStorage<EigenType>;
 };
 
-
 // Choose dynamic-size storage.
 template <typename EigenType>
 struct StorageSelector<EigenType, Eigen::Dynamic> {
@@ -244,7 +241,7 @@ class EigenPool {
    Only available for fixed size Eigen tpes. */
   void Resize(int num_elements)
     requires is_fixed_size_v<EigenType>
-  { // NOLINT(whitespace/braces)
+  {  // NOLINT(whitespace/braces)
     storage_.Resize(num_elements);
   }
 
@@ -259,7 +256,7 @@ class EigenPool {
    rows (cols) are ignored if the rows (cols) of EigenType are fixed at compile
    time. */
   void Resize(const std::vector<int>& rows, const std::vector<int>& cols)
-    requires (!is_fixed_size_v<EigenType>)
+    requires(!is_fixed_size_v<EigenType>)
   {  // NOLINT(whitespace/braces)
     storage_.Resize(rows, cols);
   }
@@ -290,12 +287,10 @@ class EigenPool {
     for (const auto& d : data) {
       AddAndCopy(d);
     }
-  }  
+  }
 
   /* Zeroes out all elements in the pool. */
-  void SetZero() {
-    storage_.SetZero();
-  }
+  void SetZero() { storage_.SetZero(); }
 
   /* Returns the number of elements in the pool. */
   int size() const { return storage_.size(); }

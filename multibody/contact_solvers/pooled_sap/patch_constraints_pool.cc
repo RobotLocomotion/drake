@@ -158,7 +158,7 @@ T PooledSapModel<T>::PatchConstraintsPool::CalcRegularizationOfFriction(
   MatrixX_pool_.Clear();
 
   // Diagonal entry of the Delassus operator for this k-th pair.
-  Matrix3<T> Wkk = Matrix3<T>::Zero();  
+  Matrix3<T> Wkk = Matrix3<T>::Zero();
 
   const int body_b = bodies_[p].first;
   const int c_b = model().body_clique(body_b);
@@ -173,23 +173,23 @@ T PooledSapModel<T>::PatchConstraintsPool::CalcRegularizationOfFriction(
     J_Bk.col(i) = J_WBv.col(i) + J_WBw.col(i).cross(p_BoC_W);
   }
 
-  // TODO: Factorization has garbage. Fix.
+  // TODO(amcastro-tri): Factorization has garbage. Fix.
   const auto Ab = model().get_dynamics_matrix(c_b);
   const math::LinearSolver<Eigen::LDLT, MatrixX<T>>& Ab_ldlt =
       model().get_dynamics_factoriazation(c_b);
-  (void) Ab_ldlt;
+  (void)Ab_ldlt;
   auto Ab_inv_JT = MatrixX_pool_.Add(nv_b, 3);
-  //Ab_inv_JT = Ab_ldlt.Solve(J_Bk.transpose());
+  // Ab_inv_JT = Ab_ldlt.Solve(J_Bk.transpose());
   Ab_inv_JT = Ab.ldlt().solve(J_Bk.transpose());
   Wkk = J_Bk * Ab_inv_JT;
-  
+
   fmt::print("Ab:\n{}\n", fmt_eigen(Ab));
   fmt::print("J_Bk:\n{}\n", fmt_eigen(J_Bk));
   fmt::print("JT:\n{}\n", fmt_eigen(J_Bk.transpose()));
   fmt::print("AinvJT:\n{}\n", fmt_eigen(Ab_inv_JT));
   fmt::print("Wkk(1):\n{}\n", fmt_eigen(Wkk));
 
-      const int num_cliques = num_cliques_[p];
+  const int num_cliques = num_cliques_[p];
   if (num_cliques == 2) {
     const int body_a = bodies_[p].second;
     const int c_a = model().body_clique(body_a);
@@ -209,18 +209,18 @@ T PooledSapModel<T>::PatchConstraintsPool::CalcRegularizationOfFriction(
         model().get_dynamics_factoriazation(c_a);
     (void)Aa_ldlt;
     auto Aa_inv_JT = MatrixX_pool_.Add(nv_a, 3);
-    //Aa_inv_JT = Aa_ldlt.Solve(J_Ak.transpose());
+    // Aa_inv_JT = Aa_ldlt.Solve(J_Ak.transpose());
     Aa_inv_JT = Aa.ldlt().solve(J_Ak.transpose());
     Wkk += J_Ak * Aa_inv_JT;
 
     fmt::print("Wkk(2):\n{}\n", fmt_eigen(Wkk));
-  }  
+  }
 
   const Vector3<T> Wdiag = Wkk.diagonal();
 
   // TODO(amcastro-tri): Consider splitting into normal and tangential
   // components as done in SapHuntCrossleyConstraint.
-  const T w_rms = Wdiag.norm() / sqrt(3.0);  
+  const T w_rms = Wdiag.norm() / sqrt(3.0);
   const T Rt = sigma_ * w_rms;  // SAP's regularization.
 
   return Rt;
