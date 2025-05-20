@@ -17,6 +17,7 @@ drake_cc_package_library(
         ":calc_distance_and_time_derivative",
         ":constraint_specs",
         ":contact_jacobians",
+        ":contact_properties",
         ":contact_results",
         ":coulomb_friction",
         ":deformable_ids",

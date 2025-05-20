@@ -1,0 +1,119 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_package_library(
+    name = "pooled_sap",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":eigen_pool",
+        ":patch_constraints_data_pool",
+        ":pooled_sap_builder",
+        ":pooled_sap_core",
+        ":sap_data",
+    ],
+)
+
+drake_cc_library(
+    name = "eigen_pool",
+    hdrs = ["eigen_pool.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "patch_constraints_data_pool",
+    srcs = ["patch_constraints_data_pool.cc"],
+    hdrs = ["patch_constraints_data_pool.h"],
+    deps = [
+        ":eigen_pool",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "sap_data",
+    hdrs = ["sap_data.h"],
+    deps = [
+        ":eigen_pool",
+        ":patch_constraints_data_pool",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "pooled_sap_builder",
+    srcs = ["pooled_sap_builder.cc"],
+    hdrs = ["pooled_sap_builder.h"],
+    deps = [
+        ":pooled_sap_core",
+        "//common:essential",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "pooled_sap_core",
+    srcs = [
+        "patch_constraints_pool.cc",
+        "pooled_sap.cc",
+        "pooled_sap_model.cc",
+    ],
+    hdrs = [
+        "patch_constraints_pool.h",
+        "pooled_sap.h",
+        "pooled_sap_model.h",
+    ],
+    deps = [
+        ":sap_data",
+        "//common:default_scalars",
+        "//common:essential",
+        "//math:gradient",
+        "//math:linear_solve",
+    ],
+)
+
+drake_cc_googletest(
+    name = "eigen_pool_test",
+    deps = [
+        ":eigen_pool",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest(
+    name = "pooled_model_test",
+    deps = [
+        ":eigen_pool",
+        ":pooled_sap_core",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:limit_malloc",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "two_spheres_test",
+    deps = [
+        ":pooled_sap_builder",
+        ":pooled_sap_core",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
+        "//multibody/parsing:parser",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+add_lint_tests()
