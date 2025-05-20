@@ -173,21 +173,11 @@ T PooledSapModel<T>::PatchConstraintsPool::CalcRegularizationOfFriction(
     J_Bk.col(i) = J_WBv.col(i) + J_WBw.col(i).cross(p_BoC_W);
   }
 
-  // TODO(amcastro-tri): Factorization has garbage. Fix.
-  const auto Ab = model().get_dynamics_matrix(c_b);
   const math::LinearSolver<Eigen::LDLT, MatrixX<T>>& Ab_ldlt =
       model().get_dynamics_factoriazation(c_b);
-  (void)Ab_ldlt;
   auto Ab_inv_JT = MatrixX_pool_.Add(nv_b, 3);
-  // Ab_inv_JT = Ab_ldlt.Solve(J_Bk.transpose());
-  Ab_inv_JT = Ab.ldlt().solve(J_Bk.transpose());
+  Ab_inv_JT = Ab_ldlt.Solve(J_Bk.transpose());
   Wkk = J_Bk * Ab_inv_JT;
-
-  fmt::print("Ab:\n{}\n", fmt_eigen(Ab));
-  fmt::print("J_Bk:\n{}\n", fmt_eigen(J_Bk));
-  fmt::print("JT:\n{}\n", fmt_eigen(J_Bk.transpose()));
-  fmt::print("AinvJT:\n{}\n", fmt_eigen(Ab_inv_JT));
-  fmt::print("Wkk(1):\n{}\n", fmt_eigen(Wkk));
 
   const int num_cliques = num_cliques_[p];
   if (num_cliques == 2) {
@@ -204,16 +194,11 @@ T PooledSapModel<T>::PatchConstraintsPool::CalcRegularizationOfFriction(
       J_Ak.col(i) = J_WAv.col(i) + J_WAw.col(i).cross(p_AoC_W);
     }
 
-    const auto Aa = model().get_dynamics_matrix(c_a);
     const math::LinearSolver<Eigen::LDLT, MatrixX<T>>& Aa_ldlt =
         model().get_dynamics_factoriazation(c_a);
-    (void)Aa_ldlt;
     auto Aa_inv_JT = MatrixX_pool_.Add(nv_a, 3);
-    // Aa_inv_JT = Aa_ldlt.Solve(J_Ak.transpose());
-    Aa_inv_JT = Aa.ldlt().solve(J_Ak.transpose());
+    Aa_inv_JT = Aa_ldlt.Solve(J_Ak.transpose());
     Wkk += J_Ak * Aa_inv_JT;
-
-    fmt::print("Wkk(2):\n{}\n", fmt_eigen(Wkk));
   }
 
   const Vector3<T> Wdiag = Wkk.diagonal();
