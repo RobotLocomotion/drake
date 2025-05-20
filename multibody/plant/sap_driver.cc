@@ -1170,16 +1170,17 @@ void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
   auto& generalized_forces = forces->mutable_generalized_forces();
   auto& spatial_forces = forces->mutable_body_forces();
 
-  // Current state (previous time step).
-  const VectorX<T>& x0 =
+  // Current rigid body state (previous time step).
+  const int num_rigid_dofs = plant().num_velocities();
+  const VectorX<T>& rigid_x0 =
       context.get_discrete_state(manager().multibody_state_index()).value();
-  const auto v0 = x0.bottomRows(plant().num_velocities());
+  const auto rigid_v0 = rigid_x0.bottomRows(num_rigid_dofs);
 
   // Next time step state.
   const SapSolverResults<T>& sap_results = EvalSapSolverResults(context);
-  // Generalized velocities and accelerations.
-  const VectorX<T>& v = sap_results.v;
-  const VectorX<T> a = (v - v0) / plant().time_step();
+  // Generalized velocities and accelerations for rigid dofs.
+  const auto rigid_v = sap_results.v.head(num_rigid_dofs);
+  const VectorX<T> rigid_a = (rigid_v - rigid_v0) / plant().time_step();
 
   // Include all state dependent forces (not constraints) evaluated at t₀
   // (previous time step as stored in the context).
@@ -1188,11 +1189,11 @@ void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
                                  /* include_pd_controlled_input */ false,
                                  forces);
 
-  // SAP evaluates damping terms (joint damping and reflected inertia)
-  // implicitly. Therefore we must subtract the explicit term evaluated above
-  // and include the implicit term instead.
+  // SAP evaluates damping terms for rigid dofs (joint damping and reflected
+  // inertia) implicitly. Therefore we must subtract the explicit term evaluated
+  // above and include the implicit term instead.
   const VectorX<T> diagonal_inertia = manager().CalcEffectiveDamping(context);
-  generalized_forces -= diagonal_inertia.asDiagonal() * a;
+  generalized_forces -= diagonal_inertia.asDiagonal() * rigid_a;
 
   const ContactProblemCache<T>& contact_problem_cache =
       EvalContactProblemCache(context);
@@ -1212,7 +1213,9 @@ void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
   // Therefore aggregation of forces per-body makes sense in this call.
   contact_problem_cache.sap_problem->CalcConstraintMultibodyForces(
       gamma, &constraints_generalized_forces, &constraint_spatial_forces);
-  generalized_forces += constraints_generalized_forces;
+  // Extract the generalized forces on the rigid dofs from the full
+  // generalized forces vector.
+  generalized_forces += constraints_generalized_forces.head(num_rigid_dofs);
 
   // N.B. The CompliantContactManager indexes constraints objects with body
   // indexes. Therefore using body indices on constraint_spatial_forces is

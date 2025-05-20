@@ -6,6 +6,7 @@
         <geometry>
           <mesh>
             <uri>box.vtk</uri>
+            <scale>0.1 0.1 0.1</scale>
           </mesh>
         </geometry>
         <drake:proximity_properties>
@@ -21,10 +22,10 @@
         </material>
       </visual>
       <drake:deformable_properties>
-        <drake:youngs_modulus>1e5</drake:youngs_modulus>
+        <drake:youngs_modulus>1e7</drake:youngs_modulus>
         <drake:poissons_ratio>0.4</drake:poissons_ratio>
         <drake:stiffness_damping>0.01</drake:stiffness_damping>
-        <drake:mass_density>1.0</drake:mass_density>
+        <drake:mass_density>1e3</drake:mass_density>
       </drake:deformable_properties>
     </link>
   </model>

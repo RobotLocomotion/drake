@@ -1155,9 +1155,9 @@ class DeformableReactionForcesTest : public ::testing::Test {
                                 kTolerance, MatrixCompareType::relative));
   }
 
-  // Deformable object parameters
-  const double kMassDensity{1.0};  // Mass density in kg/m³
-  const double kBoxSize{1.0};      // Size of the box edge in m
+  // Deformable object parameters (from the SDFormat file).
+  const double kMassDensity{1000.0};  // Mass density in kg/m³
+  const double kBoxSize{0.1};         // Size of the box edge in m
 
   // Floor parameters
   const double kFloorWidth{10.0};  // Width of the floor in m
@@ -1165,12 +1165,12 @@ class DeformableReactionForcesTest : public ::testing::Test {
   const double kFloorMass{10.0};   // Mass of the floor in kg
 
   // Simulation parameters
-  const double kTimeStep{0.001};        // Time step in s
-  const double kSimulationTime{2.0};    // Maximum simulation time in s
+  const double kTimeStep{0.01};         // Time step in s
+  const double kSimulationTime{1.0};    // Maximum simulation time in s
   const double kTargetRealtimeRate{0};  // Target realtime rate
   const double kGravity{9.81};          // Gravity in m/s²
   const CoulombFriction<double> kFriction{0.4, 0.4};  // Friction
-  const double kTolerance{1e-6};  // Tolerance for comparisons
+  const double kTolerance{1e-8};  // Tolerance for comparisons
 
   // System components
   MultibodyPlant<double>* plant_{nullptr};
