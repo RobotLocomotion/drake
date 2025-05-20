@@ -616,6 +616,17 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "convex_integrator_test",
+    deps = [
+        ":convex_integrator",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis/test_utilities",
+        "//systems/framework:diagram",
+    ],
+)
+
+drake_cc_googletest(
     name = "discrete_time_approximation_test",
     data = [
         "//examples/multibody/cart_pole:models",

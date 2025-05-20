@@ -53,7 +53,6 @@ class ConvexIntegrator final : public IntegratorBase<T> {
    * Specifies the MultibodyPlant used to set up the optimization problem.
    */
   void set_plant(MultibodyPlant<T>* plant) {
-    // TODO(vincekurtz): add check that the plant is part of this->system().
     DRAKE_DEMAND(plant != nullptr);
     plant_ = plant;
   }
@@ -69,6 +68,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
 
   // TODO(vincekurtz): add support for error estimation.
   bool supports_error_estimation() const final { return false; }
+  int get_error_estimate_order() const final { return 0; }
 
  private:
   // Perform final checks and allocations before beginning integration.

@@ -18,18 +18,27 @@ ConvexIntegrator<T>::ConvexIntegrator(const System<T>& system,
 
 template <typename T>
 void ConvexIntegrator<T>::DoInitialize() {
-  DRAKE_DEMAND(plant_ != nullptr);
+  DRAKE_THROW_UNLESS(plant_ != nullptr);
+
+  // TODO(vincekurtz): check that the plant is part of this->get_system().
 
   // For now, the convex integrator only supports systems where the only
   // second-order state (q, v) is from the MultibodyPlant.
   const int nq = this->get_context().get_continuous_state().num_q();
   const int nv = this->get_context().get_continuous_state().num_v();
-  DRAKE_DEMAND(nq == plant_->num_positions());
-  DRAKE_DEMAND(nv == plant_->num_velocities());
+  DRAKE_THROW_UNLESS(nq == plant_->num_positions());
+  DRAKE_THROW_UNLESS(nv == plant_->num_velocities());
+}
+
+template <typename T>
+bool ConvexIntegrator<T>::DoStep(const T& h) {
+  Context<T>& context = *this->get_mutable_context();
+  context.SetTime(context.get_time() + h);
+  return true;
 }
 
 }  // namespace systems
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class drake::systems::ConvexIntegrator);
