@@ -67,7 +67,7 @@ PooledSapBuilder<T>::PooledSapBuilder(const MultibodyPlant<T>& plant)
 
 template <typename T>
 void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
-                                      double time_step,
+                                      const T& time_step,
                                       PooledSapModel<T>* model) const {
   // N.B. we can retrieve spanning forest (tree) like so:
   // const SpanningForest& tree = internal::GetInternalTree(plant).forest();
