@@ -51,6 +51,16 @@ class PooledSapModel<T>::PatchConstraintsPool {
     clique_start_ = clique_start;
     clique_size_ = clique_size;
     Clear();
+
+    // We use this pool in CalcRegularizationOfFriction(), where we need space
+    // for two Jacobian matrices of size 6 x nv, with nv the number of
+    // velocities of a clique. Conservatively, request memory for all clique
+    // sizes, noting that cliques might be repeated.
+    for (int c = 0; c < model().num_cliques(); ++c) {
+      const int nv = model().clique_size(c);
+      MatrixX_pool_.Add(6, nv);
+      MatrixX_pool_.Add(6, nv);
+    }
   }
 
   /* Resizes to store patch constraint data. No memory allocation performed if
@@ -177,18 +187,11 @@ class PooledSapModel<T>::PatchConstraintsPool {
     const T n0 = max(0.0, time_step_ * fn0) * damping;
     n0_.push_back(n0);
 
-#if 0
     const T& mu = friction_[p];
     const T Rt = CalcRegularizationOfFriction(p, p_BoC_W);
     const T sap_stiction_tolerance = mu * Rt * n0;
     const T eps = max(stiction_tolerance_, sap_stiction_tolerance);
-
-    fmt::print("vs: {}. vs_sap: {}. eps: {}\n", stiction_tolerance_,
-               sap_stiction_tolerance, eps);
-
     epsilon_soft_.push_back(eps);
-#endif
-    epsilon_soft_.push_back(stiction_tolerance_);
   }
 
   /* Clears memory, no memory is freed, and the capacity remains the same.
