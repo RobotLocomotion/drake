@@ -1,5 +1,10 @@
 properties([
     parameters([
+        string(name: 'drakeSha', defaultValue: 'master',
+          description: 'Commit SHA or branch name. ' +
+            'For pull requests, enter branch name <code>pr/1234/head</code> ' +
+            'or <code>pr/1234/merge</code> for pull request #1234. ' +
+            'Defaults to <code>master</code>.')
         string(name: 'ciSha', defaultValue: 'main',
           description: 'Commit SHA or branch name. ' +
             'For pull requests, enter branch name <code>pr/1234/head</code> ' +
@@ -47,8 +52,9 @@ node(getNodeLabel()) {
       ansiColor('xterm') {
         timestamps {
           try {
-            // Use the ci branch parameter for checkout (defaults to main).
-            def scmVars = utils.checkout("${params.ciSha}")
+            // Use the drake and ci branch parameters for checkout (defaults
+            // to master & main).
+            def scmVars = utils.checkout(params.ciSha, params.drakeSha)
             utils.doMainBuild(scmVars, params.release_version)
           } finally {
             try {

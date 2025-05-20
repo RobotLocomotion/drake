@@ -3,12 +3,27 @@
 //   specified from the build.
 // * drake-ci: Clones into WORKSPACE/'ci' and performs a custom
 //   checkout of either 'main' or the given parameter.
-def checkout(String ciSha = 'main') {
+def checkout(String ciSha = 'main', String drakeSha = null) {
   def scmVars = null
   retry(4) {
+    if (drakeSha) {
+      scmVars = checkout([$class: 'GitSCM',
+        branches: [[name: "${drakeSha}"]],
+        extensions: [[$class: 'AuthorInChangelog'],
+          [$class: 'CloneOption', honorRefspec: true, noTags: true],
+          [$class: 'RelativeTargetDirectory', relativeTargetDir: 'src'],
+          [$class: 'LocalBranch', localBranch: 'master']],
+        userRemoteConfigs: [[
+          credentialsId: 'ad794d10-9bc8-4a7a-a2f3-998af802cab0',
+          name: 'origin',
+          refspec: '+refs/heads/master:refs/remotes/origin/master',
+          url: 'git@github.com:RobotLocomotion/drake.git']]])
+    }
+    else {
       dir("${env.WORKSPACE}/src") {
         scmVars = checkout scm
       }
+    }
   }
   retry(4) {
     checkout([$class: 'GitSCM',
