@@ -37,7 +37,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
    *
    * @note This constructor matches the signature used by other integrators, but
    *       does not specify the MultibodyPlant used to set up the optimization
-   *       problem. SetPlant() must be called before using the integrator.
+   *       problem. set_plant() must be called before using the integrator.
    */
   explicit ConvexIntegrator(const System<T>& system,
                             Context<T>* context = nullptr);
@@ -46,35 +46,39 @@ class ConvexIntegrator final : public IntegratorBase<T> {
    * Constructs the convex integrator, specifying the MultibodyPlant used to
    * formulate the convex optimization problem.
    */
-  ConvexIntegrator(const System<T>& system,
-                   std::shared_ptr<MultibodyPlant<T>> plant,
+  ConvexIntegrator(const System<T>& system, MultibodyPlant<T>* plant,
                    Context<T>* context = nullptr);
 
   /**
    * Specifies the MultibodyPlant used to set up the optimization problem.
    */
-  void SetPlant(std::shared_ptr<MultibodyPlant<T>> plant) {
-    plant_ = std::move(plant);
+  void set_plant(MultibodyPlant<T>* plant) {
+    // TODO(vincekurtz): add check that the plant is part of this->system().
+    DRAKE_DEMAND(plant != nullptr);
+    plant_ = plant;
   }
-
-  // TODO(vincekurtz): add support for error estimation.
-  bool supports_error_estimation() const final { return false; }
 
   /**
    * Get a reference to the MultibodyPlant used to formulate the convex
    * optimization problem.
    */
-  const MultibodyPlant<T>& plant() const { return *plant_; }
+  const MultibodyPlant<T>& plant() const {
+    DRAKE_ASSERT(plant_ != nullptr);
+    return *plant_;
+  }
+
+  // TODO(vincekurtz): add support for error estimation.
+  bool supports_error_estimation() const final { return false; }
 
  private:
-  // The multibody plant used as the basis of the convex optimization problem.
-  std::shared_ptr<MultibodyPlant<T>> plant_{nullptr};
-
   // Perform final checks and allocations before beginning integration.
   void DoInitialize() final;
 
   // Perform the main integration step, setting x_{t+h} and the error estimate.
   bool DoStep(const T& h) override;
+
+  // The multibody plant used as the basis of the convex optimization problem.
+  MultibodyPlant<T>* plant_{nullptr};
 };
 
 }  // namespace systems
