@@ -114,7 +114,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
     }
   }
 
-  // r = u₀ + M⋅v₀ - C(q₀,v₀)
+  // r = u₀ + M⋅v₀ - C(q₀,v₀) + τᵉˣᵗ
   auto& r = params->r;
   r.resize(nv);
   CalcActuationInput(context, &u_w_pd, &u_no_pd);
@@ -122,7 +122,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   r = -r;                                     // r = -C(q₀, v₀)
   r += M * v0;                                // r += M⋅v₀
   r += u_no_pd;                               // r += u.
-  AccumulateForceElementForces(context, &r);  // r+= τᵉˣᵗ
+  AccumulateForceElementForces(context, &r);  // r += τᵉˣᵗ
 
   model->ResetParameters(std::move(params));
   CalcGeometryContactData(context);

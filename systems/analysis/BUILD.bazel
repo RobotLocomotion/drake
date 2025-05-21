@@ -118,9 +118,9 @@ drake_cc_library(
     hdrs = ["convex_integrator.h"],
     deps = [
         ":integrator_base",
-        "//multibody/plant",
         "//multibody/contact_solvers/pooled_sap:pooled_sap_builder",
         "//multibody/contact_solvers/pooled_sap:pooled_sap_core",
+        "//multibody/plant",
     ],
 )
 

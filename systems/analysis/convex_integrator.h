@@ -4,6 +4,8 @@
 #include <utility>
 
 #include "drake/common/default_scalars.h"
+#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
+#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap_builder.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/integrator_base.h"
 
@@ -11,6 +13,9 @@ namespace drake {
 namespace systems {
 
 using multibody::MultibodyPlant;
+using multibody::contact_solvers::pooled_sap::PooledSapBuilder;
+using multibody::contact_solvers::pooled_sap::PooledSapModel;
+using multibody::contact_solvers::pooled_sap::SapData;
 
 /**
  * An experimental implicit integrator that solves a convex SAP problem to
@@ -66,6 +71,26 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     return *plant_;
   }
 
+  /**
+   * Get a reference to SAP problem builder, used to set up the convex problem.
+   */
+  const PooledSapBuilder<T>& builder() const {
+    DRAKE_ASSERT(builder_ != nullptr);
+    return *builder_;
+  }
+
+  /**
+   * Get a reference to the SAP problem model, used to compute the cost,
+   * gradient, Hessian, etc.
+   */
+  PooledSapModel<T>& get_model() { return model_; }
+
+  /**
+   * Get a reference to the SAP problem data, used to store the cost, gradient,
+   * Hessian, etc.
+   */
+  SapData<T>& get_data() { return data_; }
+
   // TODO(vincekurtz): add support for error estimation.
   bool supports_error_estimation() const final { return false; }
   int get_error_estimate_order() const final { return 0; }
@@ -77,8 +102,18 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Perform the main integration step, setting x_{t+h} and the error estimate.
   bool DoStep(const T& h) override;
 
+  // Solve the convex SAP problem for next-step velocities v = min ℓ(v).
+  // The solution is written back into the initial guess v. Returns true if and
+  // only if the optimization converged.
+  bool SolveWithGuess(const PooledSapModel<T>& model, VectorX<T>* v_guess);
+
   // The multibody plant used as the basis of the convex optimization problem.
   MultibodyPlant<T>* plant_{nullptr};
+
+  // Objects used to formulate and solve the convex optimization problem.
+  std::unique_ptr<PooledSapBuilder<T>> builder_;
+  PooledSapModel<T> model_;
+  SapData<T> data_;
 };
 
 }  // namespace systems
