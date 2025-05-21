@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <utility>
 
@@ -36,6 +37,47 @@ struct ConvexIntegratorSolverParameters {
   // Scaling factor for the relaxed convergence check (θ method of Hairer 1996)
   // used to exit early under loose accuracies.
   double kappa{0.05};
+};
+
+/**
+ * Statistics to track during the optimization process.
+ */
+struct ConvexIntegratorSolverStats {
+  // The iteration number that we're on
+  int k;
+
+  // The cost ℓ(v)
+  double cost;
+
+  // The gradient norm ||∇ℓ(v)||
+  double gradient_norm;
+
+  // Number of line search iterations taken in this solver iteration
+  int num_ls_iterations;
+
+  // The linesearch parameter α
+  double alpha;
+
+  // The step size at this iteration, ||Δvₖ||
+  double step_size;
+
+  // The step size at the previous iteration, ||Δvₖ₋₁||
+  double last_step_size;
+
+  // The ratio of current and previous step sizes, θ = ||Δvₖ|| / ||Δvₖ₋₁||
+  double theta;
+
+  // Reset the stats to start a new iteration.
+  void Reset() {
+    k = 0;
+    cost = std::numeric_limits<double>::quiet_NaN();
+    gradient_norm = std::numeric_limits<double>::quiet_NaN();
+    num_ls_iterations = 0;
+    alpha = 1.0;
+    step_size = std::numeric_limits<double>::quiet_NaN();
+    last_step_size = std::numeric_limits<double>::quiet_NaN();
+    theta = std::numeric_limits<double>::quiet_NaN();
+  }
 };
 
 /**
@@ -127,6 +169,11 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     solver_parameters_ = parameters;
   }
 
+  /**
+   * Get the current convex solver statistics.
+   */
+  const ConvexIntegratorSolverStats& get_solver_stats() const { return stats_; }
+
   // TODO(vincekurtz): add support for error estimation.
   bool supports_error_estimation() const final { return false; }
   int get_error_estimate_order() const final { return 0; }
@@ -154,6 +201,9 @@ class ConvexIntegrator final : public IntegratorBase<T> {
 
   // Solver tolerances and other parameters
   ConvexIntegratorSolverParameters solver_parameters_;
+
+  // Solver statistics
+  ConvexIntegratorSolverStats stats_;
 };
 
 // Forward-declare specializations to double, prior to DRAKE_DECLARE... below.
