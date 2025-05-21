@@ -48,6 +48,7 @@ drake_cc_library(
         ":eigen_pool",
         ":patch_constraints_data_pool",
         "//common:essential",
+        "//multibody/contact_solvers:block_sparse_cholesky_solver",
     ],
 )
 

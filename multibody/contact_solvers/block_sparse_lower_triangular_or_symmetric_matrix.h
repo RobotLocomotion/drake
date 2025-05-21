@@ -111,6 +111,8 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
 
   static_assert(MatrixType::RowsAtCompileTime == MatrixType::ColsAtCompileTime);
 
+  using Scalar = typename MatrixType::Scalar;
+
   /* Constructs a BlockSparseLowerTriangularOrSymmetricMatrix with the given
    block sparsity pattern.
    @param sparsity_pattern  The block sparsity pattern of lower triangular part
@@ -180,12 +182,12 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
 
   /* Makes a dense representation of the matrix. Useful for debugging purposes.
    */
-  MatrixX<double> MakeDenseMatrix() const;
+  MatrixX<Scalar> MakeDenseMatrix() const;
 
   /* Makes a dense representation of the bottom right `num_blocks` blocks of the
    matrix.
    @pre 0 <= num_blocks <= block_cols(). */
-  MatrixX<double> MakeDenseBottomRightCorner(int num_blocks) const;
+  MatrixX<Scalar> MakeDenseBottomRightCorner(int num_blocks) const;
 
   /* Returns true if the ij-th block in this block sparse matrix is non-zero. In
    particular, this returns false if the indices provided are out of range. */
@@ -299,6 +301,10 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
   // std::vector<unordered_map<int, int>> to accomodate large matrices.
   std::vector<std::vector<int>> block_row_to_flat_;
 };
+
+template <typename T>
+using BlockSparseSymmetricMatrixT =
+    BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<T>, true>;
 
 using BlockSparseLowerTriangularMatrix =
     BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<double>, false>;

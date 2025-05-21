@@ -238,9 +238,11 @@ class PooledSapModel<T>::PatchConstraintsPool {
   // TODO(amcastro-tri): factor out this method into a BodyConstraintsPool
   // parent class, along with other common functionality to all body-constraint
   // pools.
-  void AccumulateGradientAndHessian(const SapData<T>& data,
-                                    VectorX<T>* gradient,
-                                    Hessian<T>* hessian) const;
+  void AccumulateGradient(const SapData<T>& data, VectorX<T>* gradient) const;
+
+  void AccumulateHessian(
+      const SapData<T>& data,
+      internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
  private:
   using ConstJacobianView =

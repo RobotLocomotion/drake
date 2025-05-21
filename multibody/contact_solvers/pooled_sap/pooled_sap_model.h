@@ -51,8 +51,6 @@ struct PooledSapParameters {
     }
   }
 
-  bool use_sparse_hessian{true};
-
   // Discrete time step.
   T time_step{0.0};
   // Linear dynamics matrix. Of size num_cliques.
@@ -258,6 +256,48 @@ class PooledSapModel {
 
   // Updates `data` as a function of v.
   void CalcData(const VectorX<T>& v, SapData<T>* data) const;
+
+  /* Makes a new Hessian matrix. If only `data` changes for the same SAP model,
+   calling UpdateHessian() to reuse the sparsity pattern of the Hessian is
+   cheaper, and incurs in no memory allocations.
+
+   The workflow to use the Hessian should be:
+
+   // The integrator will own the factorization.
+   internal::BlockSparseCholeskySolver<Eigen::MatrixXd> factorization;
+
+   // Make an entirely new Hessian when Newton's convergence is slow and the
+   // sparsity changed (i.e. across time steps).
+   auto hessian = model.MakeHessian(data);
+
+   // This performs sparsity analysis, so only call when Hessian's sparsity
+   changed (i.e. MakeHessian() was called)
+   factorization.SetMatrix(*hessian);
+   factorization.Factor(); // Actual numerical factorization.
+
+   // Start Newton iteration.
+   VectorXd search_direction = factorization.Solve(-residual);
+
+   if (slow convergence within Newton) {
+      // The model did not change, we can reuse the sparsity within the Newton
+      // iterations.
+      factorization.UpdateMatrix(*hessian);  // Update values, not the sparsity.
+      factorization.Factor();  // Perform actual factorization.
+   }
+
+   Note: For "dense" hessians, we can get one with
+   BlockSparseSymmetricMatrix::MakeDenseMatrix(). The additional bookkeeping in
+   this class is indeed necessary to build the matrix even if dense.
+
+  See documentation in  internal::BlockSparseCholeskySolver for further details.
+  */
+  std::unique_ptr<internal::BlockSparseSymmetricMatrixT<T>> MakeHessian(
+      const SapData<T>& data) const;
+
+  /* Updates the values of the Hessian for the input `data`.
+   @pre The sparsity of the `hessian` matches the structure of `this` model. */
+  void UpdateHessian(const SapData<T>& data,
+                     internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
   const VectorX<T>& r() const { return params_->r; }
 

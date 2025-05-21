@@ -355,8 +355,43 @@ void PooledSapModel<T>::PatchConstraintsPool::CalcData(
 }
 
 template <typename T>
-void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradientAndHessian(
-    const SapData<T>& data, VectorX<T>* gradient, Hessian<T>* hessian) const {
+void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradient(
+    const SapData<T>& data, VectorX<T>* gradient) const {
+  const PatchConstraintsDataPool<T>& patch_data =
+      data.cache().patch_constraints_data;
+  const EigenPool<Vector6<T>>& Gamma_Bo_W_pool = patch_data.Gamma_Bo_W_pool();
+
+  for (int p = 0; p < num_patches(); ++p) {
+    const int body_a = bodies_[p].second;
+    const int body_b = bodies_[p].first;
+    const int c_b = model().body_clique(body_b);
+    const int c_a = model().body_clique(body_a);  // negative if anchored.
+
+    // First clique, body B.
+    DRAKE_ASSERT(!model().is_anchored(body_b));  // Body B is never anchored.
+
+    const ConstJacobianView J_WB = model().get_jacobian(body_b);
+    const Vector6<T>& Gamma_Bo_W = Gamma_Bo_W_pool[p];
+
+    VectorXView gradient_b = model().clique_segment(c_b, gradient);
+    gradient_b.noalias() -= J_WB.transpose() * Gamma_Bo_W;
+
+    // Second clique, for body A, only contributes if not anchored.
+    if (!model().is_anchored(body_a)) {
+      const Vector3<T>& p_AB_W = p_AB_W_[p];
+      const ConstJacobianView J_WA = model().get_jacobian(body_a);
+
+      const Vector6<T> minus_Gamma_Ao_W = ShiftSpatialForce(Gamma_Bo_W, p_AB_W);
+      VectorXView gradient_a = model().clique_segment(c_a, gradient);
+      gradient_a.noalias() += J_WA.transpose() * minus_Gamma_Ao_W;
+    }
+  }
+}
+
+template <typename T>
+void PooledSapModel<T>::PatchConstraintsPool::AccumulateHessian(
+    const SapData<T>& data,
+    internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
   const PatchConstraintsDataPool<T>& patch_data =
       data.cache().patch_constraints_data;
 
@@ -389,7 +424,6 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradientAndHessian(
     }
   };
 
-  const EigenPool<Vector6<T>>& Gamma_Bo_W_pool = patch_data.Gamma_Bo_W_pool();
   const EigenPool<Matrix6<T>>& G_Bp_pool = patch_data.G_Bp_pool();
 
   for (int p = 0; p < num_patches(); ++p) {
@@ -420,10 +454,6 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradientAndHessian(
     DRAKE_ASSERT(!model().is_anchored(body_b));  // Body B is never anchored.
 
     const ConstJacobianView J_WB = model().get_jacobian(body_b);
-    const Vector6<T>& Gamma_Bo_W = Gamma_Bo_W_pool[p];
-
-    VectorXView gradient_b = model().clique_segment(c_b, gradient);
-    gradient_b.noalias() -= J_WB.transpose() * Gamma_Bo_W;
 
     // Accumulate Hessian.
     auto GJb = GetMatrixXScratch(6, nv_b);
@@ -440,10 +470,6 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradientAndHessian(
 
       const Vector3<T>& p_AB_W = p_AB_W_[p];
       const ConstJacobianView J_WA = model().get_jacobian(body_a);
-
-      const Vector6<T> minus_Gamma_Ao_W = ShiftSpatialForce(Gamma_Bo_W, p_AB_W);
-      VectorXView gradient_a = model().clique_segment(c_a, gradient);
-      gradient_a.noalias() += J_WA.transpose() * minus_Gamma_Ao_W;
 
       // Accumulate (upper triangular) Hessian.
       auto H_AA = GetMatrixXScratch(nv_a, nv_a);
