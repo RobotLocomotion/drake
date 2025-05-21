@@ -24,7 +24,10 @@ using multibody::contact_solvers::pooled_sap::SapData;
 struct ConvexIntegratorSolverParameters {
   // Maximum outer iterations and linesearch iterations
   int max_iterations{100};
-  int max_ls_iterations{10};
+  int max_ls_iterations{100};
+
+  // Maximum line search step size
+  double alpha_max{1.0};
 
   // Absolute tolerance for the stricter gradient-based convergence check.
   double tolerance{1e-6};
