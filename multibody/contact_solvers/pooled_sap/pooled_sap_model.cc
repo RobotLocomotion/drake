@@ -60,8 +60,8 @@ void PooledSapModel<T>::CalcMomentumTerms(
   data.scratch().Clear();
   auto tmp = data.scratch().VectorX_pool.Add(num_velocities(), 1);
 
-  MatrixX<T>& H = cache->hessian;
-  H.setZero();
+  Hessian<T>& H = cache->hessian;
+  H.SetZero();
 
   Av.setZero();
   for (int c = 0; c < A.size(); ++c) {
@@ -73,7 +73,7 @@ void PooledSapModel<T>::CalcMomentumTerms(
     auto Av_clique = Av.segment(start, nv);
     Av_clique.noalias() = A_clique * v_clique;  // Required to avoid allocation!
     // Initialize H = diag(A).
-    H.block(start, start, nv, nv) = A_clique;
+    H.AddToBlock(c, c, A_clique);
   }
 
   // Cost.
@@ -115,10 +115,39 @@ void PooledSapModel<T>::CalcData(const VectorX<T>& v, SapData<T>* data) const {
                                                        &cache.hessian);
 
   // Complete lower triangle.
-  cache.hessian.template triangularView<Eigen::StrictlyLower>() =
-      cache.hessian.template triangularView<Eigen::StrictlyUpper>().transpose();
+  // cache.hessian.template triangularView<Eigen::StrictlyLower>() =
+  //  cache.hessian.template triangularView<Eigen::StrictlyUpper>().transpose();
 
   cache.cost = cache.momentum_cost + cache.patch_constraints_data.cost();
+}
+
+template <typename T>
+internal::BlockSparsityPattern PooledSapModel<T>::CalcSparsityPattern() const {
+  const auto& A = params().A;
+  const int num_nodes = A.size();
+  std::vector<int> block_sizes = clique_sizes_;
+
+  /* Build diagonal entry in sparsity pattern. */
+  std::vector<std::vector<int>> sparsity(num_nodes);
+  for (int i = 0; i < num_nodes; ++i) {
+    sparsity[i].emplace_back(i);
+  }
+
+  /* Build off-diagonal entry in sparsity pattern. */
+  // TODO(amcastro-tri): Make parent ConstraintsPool for all constraints pool
+  // types.
+  patch_constraints_pool_.CalcSparsityPattern(&sparsity);
+
+  return internal::BlockSparsityPattern(std::move(block_sizes),
+                                        std::move(sparsity));
+}
+
+template <typename T>
+void PooledSapModel<T>::ResizeData(SapData<T>* data) const {
+  data->Resize(num_bodies_, num_velocities_, clique_sizes_,
+               patch_constraints_pool_.patch_sizes());
+  data->cache().hessian.set_sparse(params().use_sparse_hessian);
+  data->cache().hessian.Resize(CalcSparsityPattern());
 }
 
 }  // namespace pooled_sap

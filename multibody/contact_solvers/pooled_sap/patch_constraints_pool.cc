@@ -356,7 +356,7 @@ void PooledSapModel<T>::PatchConstraintsPool::CalcData(
 
 template <typename T>
 void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradientAndHessian(
-    const SapData<T>& data, VectorX<T>* gradient, MatrixX<T>* hessian) const {
+    const SapData<T>& data, VectorX<T>* gradient, Hessian<T>* hessian) const {
   const PatchConstraintsDataPool<T>& patch_data =
       data.cache().patch_constraints_data;
 
@@ -371,6 +371,8 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradientAndHessian(
     const int nv = model().clique_size(c);
     MatrixX_pool.Add(6, nv);
     MatrixX_pool.Add(6, nv);
+    MatrixX_pool.Add(nv, nv);  // For H_BB
+    MatrixX_pool.Add(nv, nv);  // For H_AA
   }
 
   // EigenPool and AutoDiffXd do not play well together.
@@ -394,12 +396,28 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradientAndHessian(
     // We'll work at most with two entries in the pool at a time.
     MatrixX_pool.Clear();
 
-    // First clique, body B.
+    const int body_a = bodies_[p].second;
     const int body_b = bodies_[p].first;
-    DRAKE_ASSERT(body_b != 0);  // Body B is never anchored.
     const int c_b = model().body_clique(body_b);
-    const int start_b = model().clique_start(c_b);
+    const int c_a = model().body_clique(body_a);  // negative if anchored.
     const int nv_b = model().clique_size(c_b);
+    const int nv_a = model().clique_size(c_a);  // zero if anchored.
+
+    // Ensure MatrixX_pool has enough capacity so that there are no re-allocs
+    // that could invalidate the returned vector views.
+    if constexpr (!std::is_same_v<T, AutoDiffXd>) {
+      MatrixX_pool.Add(nv_b, nv_b);
+      MatrixX_pool.Add(6, nv_b);
+      if (nv_a > 0) {
+        MatrixX_pool.Add(nv_a, nv_a);
+        MatrixX_pool.Add(nv_a, nv_b);
+        MatrixX_pool.Add(nv_b, nv_a);
+        MatrixX_pool.Add(6, nv_a);
+      }
+    }
+
+    // First clique, body B.
+    DRAKE_ASSERT(!model().is_anchored(body_b));  // Body B is never anchored.
 
     const ConstJacobianView J_WB = model().get_jacobian(body_b);
     const Vector6<T>& Gamma_Bo_W = Gamma_Bo_W_pool[p];
@@ -409,17 +427,15 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradientAndHessian(
 
     // Accumulate Hessian.
     auto GJb = GetMatrixXScratch(6, nv_b);
+    auto H_BB = GetMatrixXScratch(nv_b, nv_b);
     const Matrix6<T>& G_Bp = G_Bp_pool[p];
-    auto H_BB = hessian->block(start_b, start_b, nv_b, nv_b);
+    // auto H_BB = hessian->block(start_b, start_b, nv_b, nv_b);
     GJb.noalias() = G_Bp * J_WB;
-    H_BB.noalias() += J_WB.transpose() * GJb;
+    H_BB.noalias() = J_WB.transpose() * GJb;
+    hessian->AddToBlock(c_b, c_b, H_BB);
 
     // Second clique, for body A, only contributes if not anchored.
-    const int body_a = bodies_[p].second;
     if (!model().is_anchored(body_a)) {
-      const int c_a = model().body_clique(body_a);
-      const int start_a = model().clique_start(c_a);
-      const int nv_a = model().clique_size(c_a);
       auto GJa = GetMatrixXScratch(6, nv_a);
 
       const Vector3<T>& p_AB_W = p_AB_W_[p];
@@ -430,27 +446,58 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradientAndHessian(
       gradient_a.noalias() += J_WA.transpose() * minus_Gamma_Ao_W;
 
       // Accumulate (upper triangular) Hessian.
-      auto H_AA = hessian->block(start_a, start_a, nv_a, nv_a);
+      auto H_AA = GetMatrixXScratch(nv_a, nv_a);
+      // auto H_AA = hessian->block(start_a, start_a, nv_a, nv_a);
       const Matrix6<T> G_Phi = ShiftFromTheRight(G_Bp, p_AB_W);  // = Gₚ⋅Φ
       const Matrix6<T> G_Ap = ShiftFromTheLeft(G_Phi, p_AB_W);   // = Φᵀ⋅Gₚ⋅Φ
 
       // TODO(amcastro-tri): Consider using variants for the trivial case when a
       // Jacobian is the identity (free body).
 
-      // When c_a != c_b, we only write the upper triangular portion.
+      // When c_a != c_b, we only write the lower triangular portion.
       // If c_a == c_b, we must compute both terms.
-      if (c_b <= c_a) {
-        GJa.noalias() = G_Phi * J_WA;
-        auto H_BA = hessian->block(start_b, start_a, nv_b, nv_a);
-        H_BA.noalias() -= J_WB.transpose() * GJa;
+      GJa.noalias() = G_Phi * J_WA;
+      auto H_BA = GetMatrixXScratch(nv_b, nv_a);
+      H_BA.noalias() = -J_WB.transpose() * GJa;
+      if (c_b > c_a) {
+        hessian->AddToBlock(c_b, c_a, H_BA);
       }
-      if (c_a <= c_b) {
-        GJb.noalias() = G_Phi.transpose() * J_WB;
-        auto H_AB = hessian->block(start_a, start_b, nv_a, nv_b);
-        H_AB.noalias() -= J_WA.transpose() * GJb;
+      if (c_a > c_b) {
+        // N.B. Doing:
+        // AddToBlock(c_a, c_b, H_BA.transpose()) allocates temp memory!!!.
+        auto H_AB = GetMatrixXScratch(nv_a, nv_b);
+        H_AB = H_BA.transpose();
+        hessian->AddToBlock(c_a, c_b, H_AB);
       }
+      if (c_b == c_a) {
+        // We must add both. Additionally, AddToBlock assumes symmetric blocks
+        // for diagonal blocks.
+        H_BB.noalias() = H_BA + H_BA.transpose();  // Re-use H_BB.
+        hessian->AddToBlock(c_a, c_b, H_BB);
+      }
+
       GJa.noalias() = G_Ap * J_WA;
-      H_AA.noalias() += J_WA.transpose() * GJa;
+      H_AA.noalias() = J_WA.transpose() * GJa;
+      hessian->AddToBlock(c_a, c_a, H_AA);
+    }
+  }
+}
+
+template <typename T>
+void PooledSapModel<T>::PatchConstraintsPool::CalcSparsityPattern(
+    std::vector<std::vector<int>>* sparsity) const {
+  for (int p = 0; p < num_patches(); ++p) {
+    // We only need to add to the sparsity if body_a is not anchored.
+    const int body_a = bodies_[p].second;
+    if (!model().is_anchored(body_a)) {
+      const int body_b = bodies_[p].first;
+      DRAKE_ASSERT(!model().is_anchored(body_b));  // Body B is never anchored.
+      const int c_a = model().body_clique(body_a);
+      const int c_b = model().body_clique(body_b);
+      if (c_a == c_b) continue;  // we do not add diagonal blocks here.
+      const int c_min = std::min(c_a, c_b);
+      const int c_max = std::max(c_a, c_b);
+      sparsity->at(c_min).push_back(c_max);  // j > i blocks.
     }
   }
 }

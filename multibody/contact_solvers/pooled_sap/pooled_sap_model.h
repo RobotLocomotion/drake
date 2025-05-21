@@ -14,6 +14,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/linear_solve.h"
+#include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/pooled_sap/eigen_pool.h"
 #include "drake/multibody/contact_solvers/pooled_sap/sap_data.h"
 
@@ -49,6 +50,8 @@ struct PooledSapParameters {
       }
     }
   }
+
+  bool use_sparse_hessian{true};
 
   // Discrete time step.
   T time_step{0.0};
@@ -251,10 +254,7 @@ class PooledSapModel {
 
   /* Resizes data accordingly to store data for this model.
    No allocations are required if data's capacity is already enough. */
-  void ResizeData(SapData<T>* data) const {
-    data->Resize(num_bodies_, num_velocities_, clique_sizes_,
-                 patch_constraints_pool_.patch_sizes());
-  }
+  void ResizeData(SapData<T>* data) const;
 
   // Updates `data` as a function of v.
   void CalcData(const VectorX<T>& v, SapData<T>* data) const;
@@ -266,6 +266,7 @@ class PooledSapModel {
                          typename SapData<T>::Cache* cache) const;
   void CalcBodySpatialVelocities(const VectorX<T>& v,
                                  EigenPool<Vector6<T>>* V_pool) const;
+  internal::BlockSparsityPattern CalcSparsityPattern() const;
 
   std::unique_ptr<PooledSapParameters<T>> params_;
 
