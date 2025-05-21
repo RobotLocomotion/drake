@@ -31,9 +31,11 @@ class PooledSapBuilder {
   const MultibodyPlant<T>& plant() const { return *plant_; }
 
  private:
-  void AccumulateActuationInput(const systems::Context<T>& context,
-                                VectorX<T>* actuation_w_pd,
-                                VectorX<T>* actuation_wo_pd) const;
+  void AccumulateForceElementForces(const systems::Context<T>& context,
+                                    VectorX<T>* r) const;
+  void CalcActuationInput(const systems::Context<T>& context,
+                          VectorX<T>* actuation_w_pd,
+                          VectorX<T>* actuation_wo_pd) const;
   void CalcGeometryContactData(const systems::Context<T>& context) const;
   void AddPatchConstraintsForPointContact(const systems::Context<T>& context,
                                           PooledSapModel<T>* model) const;
@@ -46,6 +48,8 @@ class PooledSapBuilder {
   struct Scratch {
     VectorX<T> u_no_pd;
     VectorX<T> u_w_pd;
+    VectorX<T> tmp_v1;  // Scratch of size num_velocities.
+    std::unique_ptr<MultibodyForces<T>> forces;
     std::vector<geometry::PenetrationAsPointPair<T>> point_pairs;
     std::vector<geometry::ContactSurface<T>> surfaces;
   };
