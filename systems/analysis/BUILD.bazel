@@ -621,8 +621,10 @@ drake_cc_googletest(
     name = "convex_integrator_test",
     deps = [
         ":convex_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//multibody/plant",
+        "//systems/analysis:simulator",
         "//systems/analysis/test_utilities",
         "//systems/framework:diagram",
     ],

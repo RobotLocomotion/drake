@@ -2,8 +2,10 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -19,10 +21,10 @@ const char double_pendulum_xml[] = R"""(
 <mujoco model="double_pendulum">
 <worldbody>
   <body>
-  <joint type="hinge" axis="0 1 0" pos="0 0 0.1" damping="1e-3"/>
+  <joint type="hinge" axis="0 1 0" pos="0 0 0.1" damping="0.0"/>
   <geom type="capsule" size="0.01 0.1"/>
   <body>
-    <joint type="hinge" axis="0 1 0" pos="0 0 -0.1" damping="1e-3"/>
+    <joint type="hinge" axis="0 1 0" pos="0 0 -0.1" damping="0.0"/>
     <geom type="capsule" size="0.01 0.1" pos="0 0 -0.2"/>
   </body>
   </body>
@@ -55,6 +57,7 @@ GTEST_TEST(ConvexIntegratorTest, TestConstruction) {
 }
 
 GTEST_TEST(ConvexIntegratorTest, TestStep) {
+  // TODO(vincekurtz): update this test to include joint damping
   // Create a simple system
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
@@ -80,8 +83,24 @@ GTEST_TEST(ConvexIntegratorTest, TestStep) {
   EXPECT_NEAR(plant_context.get_time(), dt,
               std::numeric_limits<double>::epsilon());
 
-  const auto& q = plant.GetPositions(plant_context);
-  fmt::print("q after step: {}\n", fmt_eigen(q.transpose()));
+  // Discrete-time reference
+  MultibodyPlant<double> reference_plant(dt);
+  Parser(&reference_plant).AddModelsFromString(double_pendulum_xml, "xml");
+  reference_plant.Finalize();
+  auto reference_context = reference_plant.CreateDefaultContext();
+  reference_plant.SetPositions(reference_context.get(), q0);
+
+  Simulator<double> simulator(reference_plant, std::move(reference_context));
+  simulator.Initialize();
+  simulator.AdvanceTo(dt);
+  EXPECT_NEAR(simulator.get_context().get_time(), dt,
+              std::numeric_limits<double>::epsilon());
+
+  const VectorXd& q_ref = reference_plant.GetPositions(simulator.get_context());
+  const VectorXd& q = plant.GetPositions(plant_context);
+  const double kTol = std::sqrt(std::numeric_limits<double>::epsilon());
+
+  EXPECT_TRUE(CompareMatrices(q, q_ref, kTol, MatrixCompareType::relative));
 }
 
 }  // namespace systems
