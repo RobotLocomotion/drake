@@ -80,7 +80,7 @@ drake_cc_library(
         "//common:essential",
         "//math:gradient",
         "//math:linear_solve",
-        "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",
+        "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa
     ],
 )
 

@@ -401,7 +401,7 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradientAndHessian(
     const int c_b = model().body_clique(body_b);
     const int c_a = model().body_clique(body_a);  // negative if anchored.
     const int nv_b = model().clique_size(c_b);
-    const int nv_a = model().clique_size(c_a);    // zero if anchored.
+    const int nv_a = model().clique_size(c_a);  // zero if anchored.
 
     // Ensure MatrixX_pool has enough capacity so that there are no re-allocs
     // that could invalidate the returned vector views.
@@ -429,7 +429,7 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradientAndHessian(
     auto GJb = GetMatrixXScratch(6, nv_b);
     auto H_BB = GetMatrixXScratch(nv_b, nv_b);
     const Matrix6<T>& G_Bp = G_Bp_pool[p];
-    //auto H_BB = hessian->block(start_b, start_b, nv_b, nv_b);
+    // auto H_BB = hessian->block(start_b, start_b, nv_b, nv_b);
     GJb.noalias() = G_Bp * J_WB;
     H_BB.noalias() = J_WB.transpose() * GJb;
     hessian->AddToBlock(c_b, c_b, H_BB);
@@ -447,7 +447,7 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradientAndHessian(
 
       // Accumulate (upper triangular) Hessian.
       auto H_AA = GetMatrixXScratch(nv_a, nv_a);
-      //auto H_AA = hessian->block(start_a, start_a, nv_a, nv_a);
+      // auto H_AA = hessian->block(start_a, start_a, nv_a, nv_a);
       const Matrix6<T> G_Phi = ShiftFromTheRight(G_Bp, p_AB_W);  // = Gₚ⋅Φ
       const Matrix6<T> G_Ap = ShiftFromTheLeft(G_Phi, p_AB_W);   // = Φᵀ⋅Gₚ⋅Φ
 
