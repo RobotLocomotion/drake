@@ -3,6 +3,9 @@
 namespace drake {
 namespace systems {
 
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
+
 template <typename T>
 ConvexIntegrator<T>::ConvexIntegrator(const System<T>& system,
                                       Context<T>* context)
@@ -80,22 +83,77 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
 }
 
 template <typename T>
-bool ConvexIntegrator<T>::SolveWithGuess(const PooledSapModel<T>& model,
-                                         VectorX<T>* v_guess) {
-  SapData<T>& data = get_data();
-  VectorX<T>& v = *v_guess;
+bool ConvexIntegrator<T>::SolveWithGuess(const PooledSapModel<T>&,
+                                         VectorX<T>*) {
+  // Eventually we could propagate gradients with the implicit function theorem
+  // to support AutoDiffXd. For now we'll throw if anything other than double is
+  // used.
+  throw std::logic_error("ConvexIntegrator only supports T = double.");
+}
+
+template <>
+bool ConvexIntegrator<double>::SolveWithGuess(
+    const PooledSapModel<double>& model, VectorXd* v_guess) {
+  SapData<double>& data = get_data();
+  VectorXd& v = *v_guess;
   model.ResizeData(&data);
   DRAKE_DEMAND(data.num_velocities() == v.size());
 
-  // Compute the cost, gradient, and Hessian.
-  model.CalcData(v, &data);
+  // TODO(vincekurtz): expose these parameters
+  const int max_iterations = 100;
+  const double kappa = 0.05;
+  const double early_exit_tolerance = 1e-6;
+  const double tolerance = kappa * this->get_accuracy_in_use();
 
-  // For now, just take a single Newton step.
-  const VectorX<T>& g = data.cache().gradient;
-  const MatrixX<T>& H = data.cache().hessian;
-  v += H.ldlt().solve(-g);
+  // TODO(vincekurtz): pre-allocate dv
+  VectorXd dv = v;              // Search direction
+  double alpha = 1.0;           // Step size (linesearch parameter)
+  double step_norm = 0.0;       // Size of the current step
+  double last_step_norm = 0.0;  // Size of the previous step
+  double theta;                 // ratio of current and previous step sizes
 
-  return true;
+  for (int k = 0; k < max_iterations; ++k) {
+    // Compute the cost, gradient, and Hessian.
+    // TODO(vincekurtz): re-use the old Hessian
+    model.CalcData(v, &data);
+
+    // Early convergence check. Allows for early exit if v_guess is already
+    // optimal, or a single Newton step for simple unconstrained problems. This
+    // is necessary because our main convergence criterion requires comparing dv
+    // over several iterations.
+    const VectorXd& g = data.cache().gradient;
+    if (g.norm() < early_exit_tolerance) {
+      // TODO(vincekurtz): consider using the SAP momentum residual rather than
+      // the gradient norm.
+      return true;  // Converged!
+    }
+
+    // Compute the search direction via Newton step dv = -H⁻¹ g
+    const MatrixXd& H = data.cache().hessian;
+    dv = H.ldlt().solve(-g);
+
+    // Compute the step size with linesearch
+    dv *= alpha;
+
+    // Update the decision variables (velocities)
+    v += dv;
+
+    // Convergence check from on [Hairer, 1996], Eq. IV.8.10.
+    last_step_norm = step_norm;
+    step_norm = dv.norm();
+    if (k > 0) {
+      // N.B. this only comes into effect in the second iteration, since we need
+      // both step_norm and last_step_norm to be set.
+      theta = step_norm / last_step_norm;
+      if ((theta < 1.0) && ((theta / (1.0 - theta)) < tolerance)) {
+        return true;  // Converged!
+      }
+
+      // TODO(vincekurtz): use theta to trigger hessian re-computation.
+    }
+  }
+
+  return false;  // Failed to converge.
 }
 
 }  // namespace systems

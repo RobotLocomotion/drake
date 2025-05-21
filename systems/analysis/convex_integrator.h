@@ -116,6 +116,11 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   SapData<T> data_;
 };
 
+// Forward-declare specializations to double, prior to DRAKE_DECLARE... below.
+template <>
+bool ConvexIntegrator<double>::SolveWithGuess(const PooledSapModel<double>&,
+                                              VectorX<double>*);
+
 }  // namespace systems
 }  // namespace drake
 
