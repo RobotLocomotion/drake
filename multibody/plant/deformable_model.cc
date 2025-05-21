@@ -1,6 +1,7 @@
 #include "drake/multibody/plant/deformable_model.h"
 
 #include <algorithm>
+#include <iostream>
 #include <utility>
 
 #include "drake/geometry/proximity/volume_mesh.h"
@@ -91,8 +92,8 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
     const DeformableBodyIndex body_index = deformable_bodies_.next_index();
     DeformableBody<T>& body = deformable_bodies_.Add(
         std::unique_ptr<DeformableBody<T>>(new DeformableBody<T>(
-            body_index, body_id, geometry_id, model_instance, *mesh_G, X_WG, config,
-            &this->plant())));
+            body_index, body_id, name, geometry_id, model_instance, *mesh_G,
+            X_WG, config, &this->plant())));
     body.set_parallelism(parallelism_);
     geometry_id_to_body_id_.emplace(geometry_id, body_id);
     body_id_to_index_.emplace(body_id, body.index());
@@ -164,6 +165,7 @@ void DeformableModel<T>::AddExternalForce(
 template <typename T>
 const std::vector<const ForceDensityField<T>*>&
 DeformableModel<T>::GetExternalForces(DeformableBodyId id) const {
+  this->ThrowIfSystemResourcesNotDeclared(__func__);
   ThrowUnlessRegistered(__func__, id);
   return GetBody(id).external_forces();
 }
@@ -190,7 +192,7 @@ const fem::FemModel<T>& DeformableModel<T>::GetFemModel(
 }
 
 template <typename T>
-const VectorX<T>& DeformableModel<T>::GetReferencePositions(
+const VectorX<double>& DeformableModel<T>::GetReferencePositions(
     DeformableBodyId id) const {
   ThrowUnlessRegistered(__func__, id);
   return GetBody(id).reference_positions();
@@ -205,14 +207,17 @@ DeformableBodyId DeformableModel<T>::GetBodyId(
 template <typename T>
 bool DeformableModel<T>::HasBodyNamed(const std::string& name) const {
   const auto [lower, upper] = deformable_bodies_.names_map().equal_range(name);
+  std::cout << "testing" << std::endl;
+  /* No match. */
   if (lower == upper) {
     return false;
   }
-  if (lower->second != upper->second) {
+  std::cout << "testing2" << std::endl;
+  /* With no model instance requested, ensure the name is globally unique. */
+  if (std::next(lower) != upper) {
     throw std::logic_error(
         fmt::format("HasBodyNamed(): The name {} is not unique. The name must "
-                    "be unique within a model "
-                    "instance.",
+                    "be unique within a model instance.",
                     name));
   }
   return true;
@@ -241,12 +246,10 @@ const DeformableBody<T>& DeformableModel<T>::GetBodyByName(
         "No deformable body with the given name {} has been registered.",
         name));
   }
-  // TODO(xuchenhan-tri): Implement this function.
-  if constexpr (std::is_same_v<T, double>) {
-    return deformable_bodies_.get_element(DeformableBodyIndex(0));
-  } else {
-    DRAKE_UNREACHABLE();
-  }
+  const auto [lower, upper] = deformable_bodies_.names_map().equal_range(name);
+  /* This must be true otherwise HasBodyNamed will return false. */
+  DRAKE_DEMAND(lower != upper && std::next(lower) == upper);
+  return deformable_bodies_.get_element(lower->second);
 }
 
 template <typename T>
@@ -259,7 +262,7 @@ template <typename T>
 std::vector<DeformableBodyId> DeformableModel<T>::GetBodyIds(
     ModelInstanceIndex model_instance) const {
   std::vector<DeformableBodyId> result;
-  for (const DeformableBody<double>* body : deformable_bodies_.elements()) {
+  for (const DeformableBody<T>* body : deformable_bodies_.elements()) {
     if (body->model_instance() == model_instance) {
       result.push_back(body->body_id());
     }
@@ -270,7 +273,6 @@ std::vector<DeformableBodyId> DeformableModel<T>::GetBodyIds(
 template <typename T>
 DeformableBodyIndex DeformableModel<T>::GetBodyIndex(
     DeformableBodyId id) const {
-  this->ThrowIfSystemResourcesNotDeclared(__func__);
   ThrowUnlessRegistered(__func__, id);
   return body_id_to_index_.at(id);
 }
@@ -320,9 +322,15 @@ std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
      1. Copy the field directly.
      2. Place a disclaimer comment why that field does not need to be copied. */
 
-    // TODO(xuchenhan-tri): Copy over deformable_bodies_.
+    /* Copy over deformable_bodies_. */
+    result->deformable_bodies_.ResizeToMatch(deformable_bodies_);
+    for (const DeformableBodyIndex& index : deformable_bodies_.indices()) {
+      const DeformableBody<T>& body = deformable_bodies_.get_element(index);
+      result->deformable_bodies_.Add(body.CloneToDouble(&result->plant()));
+    }
     result->geometry_id_to_body_id_ = geometry_id_to_body_id_;
     result->body_id_to_index_ = body_id_to_index_;
+    /* Copy over force_densities_. */
     for (const auto& force_density : force_densities_) {
       result->force_densities_.emplace_back(force_density->Clone());
     }
@@ -351,55 +359,63 @@ DeformableModel<T>::CloneToSymbolic(
 
 template <typename T>
 void DeformableModel<T>::DoDeclareSystemResources() {
-  if (!is_empty()) {
-    if (this->plant().get_discrete_contact_solver() !=
-        DiscreteContactSolver::kSap) {
-      throw std::runtime_error(
-          "DeformableModel is only supported by the SAP contact solver. "
-          "Please use `kSap`, `kLagged`, or `kSimilar` as the discrete contact "
-          "approximation for the MultibodyPlant containing deformable bodies.");
-    }
-    if (!this->plant().is_discrete()) {
-      throw std::runtime_error(
-          "Deformable body simulation is only supported "
-          "with discrete time MultibodyPlant.");
-    }
-  }
-
-  /* Declare discrete states and parameters. */
-  const std::vector<DeformableBodyIndex>& body_indices =
-      deformable_bodies_.indices();
-  if constexpr (std::is_same_v<T, double>) {
-    for (const DeformableBodyIndex& index : body_indices) {
-      DeformableBody<T>& body = deformable_bodies_.get_mutable_element(index);
-      const fem::FemModel<T>& fem_model = body.fem_model();
-      std::unique_ptr<fem::FemState<T>> default_fem_state =
-          fem_model.MakeFemState();
-      const int num_dofs = default_fem_state->num_dofs();
-      VectorX<T> model_state(num_dofs * 3 /* q, v, and a */);
-      model_state.head(num_dofs) = default_fem_state->GetPositions();
-      model_state.segment(num_dofs, num_dofs) =
-          default_fem_state->GetVelocities();
-      model_state.tail(num_dofs) = default_fem_state->GetAccelerations();
-      body.set_discrete_state_index(this->DeclareDiscreteState(model_state));
-      body.set_is_enabled_parameter_index(
-          this->DeclareAbstractParameter(Value<bool>(true)));
-      const Vector3<T>& gravity =
-          this->plant().gravity_field().gravity_vector();
-      body.SetExternalForces(force_densities_, gravity);
-    }
-  } else {
+  if constexpr (!std::is_same_v<T, double>) {
     /* A none double DeformableModel is always empty. */
-    DRAKE_DEMAND(body_indices.empty());
-  }
-  /* Declare cache entries and input ports for force density fields that need
-   them. */
-  for (std::unique_ptr<ForceDensityField<T>>& force_density :
-       force_densities_) {
+    DRAKE_DEMAND(is_empty());
+    return;
+  } else {
+    if (!is_empty()) {
+      if (this->plant().get_discrete_contact_solver() !=
+          DiscreteContactSolver::kSap) {
+        throw std::runtime_error(
+            "DeformableModel is only supported by the SAP contact solver. "
+            "Please use `kSap`, `kLagged`, or `kSimilar` as the discrete "
+            "contact "
+            "approximation for the MultibodyPlant containing deformable "
+            "bodies.");
+      }
+      if (!this->plant().is_discrete()) {
+        throw std::runtime_error(
+            "Deformable body simulation is only supported "
+            "with discrete time MultibodyPlant.");
+      }
+    }
+
+    /* Declare discrete states and parameters. */
+    const std::vector<DeformableBodyIndex>& body_indices =
+        deformable_bodies_.indices();
+    if constexpr (std::is_same_v<T, double>) {
+      for (const DeformableBodyIndex& index : body_indices) {
+        DeformableBody<T>& body = deformable_bodies_.get_mutable_element(index);
+        const fem::FemModel<T>& fem_model = body.fem_model();
+        std::unique_ptr<fem::FemState<T>> default_fem_state =
+            fem_model.MakeFemState();
+        const int num_dofs = default_fem_state->num_dofs();
+        VectorX<T> model_state(num_dofs * 3 /* q, v, and a */);
+        model_state.head(num_dofs) = default_fem_state->GetPositions();
+        model_state.segment(num_dofs, num_dofs) =
+            default_fem_state->GetVelocities();
+        model_state.tail(num_dofs) = default_fem_state->GetAccelerations();
+        body.set_discrete_state_index(this->DeclareDiscreteState(model_state));
+        body.set_is_enabled_parameter_index(
+            this->DeclareAbstractParameter(Value<bool>(true)));
+        const Vector3<T>& gravity =
+            this->plant().gravity_field().gravity_vector();
+        body.SetExternalForces(force_densities_, gravity);
+      }
+    } else {
+      /* A none double DeformableModel is always empty. */
+      DRAKE_DEMAND(body_indices.empty());
+    }
+    /* Declare cache entries and input ports for force density fields that need
+     them. */
+    for (std::unique_ptr<ForceDensityField<T>>& force_density :
+         force_densities_) {
     /* We know that the static cast is safe because all concrete force density
      field is derived from ForceDensityFieldImpl. */
     static_cast<ForceDensityFieldImpl<T>*>(force_density.get())
         ->DeclareSystemResources(this->mutable_plant());
+    }
   }
 }
 
@@ -431,29 +447,21 @@ void DeformableModel<T>::CopyVertexPositions(const systems::Context<T>& context,
   output_value.clear();
   const std::vector<DeformableBodyIndex>& body_indices =
       deformable_bodies_.indices();
-  if constexpr (std::is_same_v<T, double>) {
-    for (const DeformableBodyIndex& index : body_indices) {
-      const DeformableBody<T>& body = deformable_bodies_.get_element(index);
-      const DeformableBodyId body_id = body.body_id();
-      const GeometryId geometry_id = body.geometry_id();
-      const int num_dofs = body.fem_model().num_dofs();
-      const auto& discrete_state_index = body.discrete_state_index();
-      VectorX<T> vertex_positions =
-          context.get_discrete_state(discrete_state_index)
-              .value()
-              .head(num_dofs);
-      output_value.set_value(geometry_id, std::move(vertex_positions));
-    }
-  } else {
-    /* A none double DeformableModel is always empty. */
-    DRAKE_DEMAND(body_indices.empty());
+  for (const DeformableBodyIndex& index : body_indices) {
+    const DeformableBody<T>& body = deformable_bodies_.get_element(index);
+    const GeometryId geometry_id = body.geometry_id();
+    const int num_dofs = body.fem_model().num_dofs();
+    const auto& discrete_state_index = body.discrete_state_index();
+    VectorX<T> vertex_positions =
+        context.get_discrete_state(discrete_state_index).value().head(num_dofs);
+    output_value.set_value(geometry_id, std::move(vertex_positions));
   }
 }
 
 template <typename T>
 void DeformableModel<T>::ThrowUnlessRegistered(const char* function_name,
                                                DeformableBodyId id) const {
-  if (body_id_to_index_.contains(id)) {
+  if (!body_id_to_index_.contains(id)) {
     throw std::logic_error(
         fmt::format("{}(): No deformable body with id {} has been registered.",
                     function_name, id));

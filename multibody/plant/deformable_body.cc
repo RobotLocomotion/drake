@@ -77,7 +77,7 @@ MultibodyConstraintId DeformableBody<T>::AddFixedConstraint(
   auto query =
       scene_graph.get_query_output_port().Eval<geometry::QueryObject<double>>(
           *context);
-  const VectorX<T>& p_WPi = reference_positions_;
+  const VectorX<double>& p_WPi = reference_positions_;
   for (int vertex_index = 0; vertex_index < fem_model_->num_nodes();
        ++vertex_index) {
     /* The vertex position in the deformable body's geometry frame. */
@@ -169,28 +169,33 @@ void DeformableBody<T>::Enable(systems::Context<T>* context) const {
 }
 
 template <typename T>
-DeformableBody<T>::DeformableBody(DeformableBodyIndex index,
-                                  DeformableBodyId id, GeometryId geometry_id,
-                                  ModelInstanceIndex model_instance,
-                                  const VolumeMesh<double>& mesh_G,
-                                  const math::RigidTransform<double>& X_WG,
-                                  const fem::DeformableBodyConfig<T>& config,
-                                  const MultibodyPlant<T>* plant)
+DeformableBody<T>::DeformableBody(
+    DeformableBodyIndex index, DeformableBodyId id, std::string name,
+    GeometryId geometry_id, ModelInstanceIndex model_instance,
+    const VolumeMesh<double>& mesh_G, const math::RigidTransform<double>& X_WG,
+    const fem::DeformableBodyConfig<T>& config, const MultibodyPlant<T>* plant)
     : index_(index),
       id_(id),
+      name_(std::move(name)),
       geometry_id_(geometry_id),
       model_instance_(model_instance),
+      mesh_G_(mesh_G),
       X_WG_(X_WG),
       config_(config),
       plant_(plant) {
-  DRAKE_DEMAND(plant_ != nullptr);
-  DRAKE_DEMAND(!plant->is_finalized());
-  geometry::VolumeMesh<double> mesh_W = mesh_G;
-  mesh_W.TransformVertices(X_WG);
-  BuildLinearVolumetricModel(mesh_W, config);
-  reference_positions_.resize(3 * mesh_W.num_vertices());
-  for (int v = 0; v < mesh_W.num_vertices(); ++v) {
-    reference_positions_.template segment<3>(3 * v) = mesh_W.vertex(v);
+  if constexpr (std::is_same_v<T, double>) {
+    DRAKE_DEMAND(plant_ != nullptr);
+    DRAKE_DEMAND(!plant->is_finalized());
+    geometry::VolumeMesh<double> mesh_W = mesh_G;
+    mesh_W.TransformVertices(X_WG);
+    BuildLinearVolumetricModel(mesh_W, config);
+    reference_positions_.resize(3 * mesh_W.num_vertices());
+    for (int v = 0; v < mesh_W.num_vertices(); ++v) {
+      reference_positions_.template segment<3>(3 * v) = mesh_W.vertex(v);
+    }
+  } else {
+    throw std::runtime_error(
+        "DeformableBody<T>::DeformableBody(): T must be double.");
   }
 }
 
@@ -208,7 +213,9 @@ void DeformableBody<T>::SetExternalForces(
 }
 
 template <typename T>
-void DeformableBody<T>::BuildLinearVolumetricModel(
+template <typename T1>
+typename std::enable_if_t<std::is_same_v<T1, double>, void>
+DeformableBody<T>::BuildLinearVolumetricModel(
     const VolumeMesh<double>& mesh,
     const fem::DeformableBodyConfig<T>& config) {
   switch (config.material_model()) {
@@ -232,8 +239,9 @@ void DeformableBody<T>::BuildLinearVolumetricModel(
 }
 
 template <typename T>
-template <template <class> class Model>
-void DeformableBody<T>::BuildLinearVolumetricModelHelper(
+template <template <typename> class Model, typename T1>
+typename std::enable_if_t<std::is_same_v<T1, double>, void>
+DeformableBody<T>::BuildLinearVolumetricModelHelper(
     const VolumeMesh<double>& mesh,
     const fem::DeformableBodyConfig<T>& config) {
   constexpr int kNaturalDimension = 3;
@@ -275,7 +283,8 @@ void DeformableBody<T>::BuildLinearVolumetricModelHelper(
   fem_model_ = std::move(concrete_fem_model);
 }
 
-template class DeformableBody<double>;
-
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::DeformableBody);

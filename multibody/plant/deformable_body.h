@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
@@ -19,22 +20,18 @@
 namespace drake {
 namespace multibody {
 
+// TODO(xuchenhan-tri): Derive from MultibodyElement.
 template <typename T>
 class DeformableBody {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeformableBody);
-
   /** Returns this element's unique index. */
   DeformableBodyIndex index() const { return index_; }
 
   /** Returns the unique body id. */
   DeformableBodyId body_id() const { return id_; }
 
-  /** Returns physical parameters of this deformable body. */
-  const fem::DeformableBodyConfig<T>& config() const { return config_; }
-
-  /** Returns the number of degrees of freedom (DoFs) of this body. */
-  int num_dofs() const { return fem_model_->num_dofs(); }
+  /** Returns the name of the body. */
+  const std::string& name() const { return name_; }
 
   /** Returns the geometry id of the deformable geometry used to simulate this
    deformable body. */
@@ -43,13 +40,21 @@ class DeformableBody {
   /** Returns the model instance index of this deformable body. */
   ModelInstanceIndex model_instance() const { return model_instance_; }
 
+  /** Returns physical parameters of this deformable body. */
+  const fem::DeformableBodyConfig<T>& config() const { return config_; }
+
+  /** Returns the number of degrees of freedom (DoFs) of this body. */
+  int num_dofs() const { return fem_model_->num_dofs(); }
+
   /** Returns the reference positions of the vertices of the deformable body
    identified by the given `id`.
    The reference positions are represented as a VectorX with 3N values where N
    is the number of vertices. The x-, y-, and z-positions (measured and
    expressed in the world frame) of the j-th vertex are 3j, 3j + 1, and 3j + 2
    in the VectorX. */
-  const VectorX<T>& reference_positions() const { return reference_positions_; }
+  const VectorX<double>& reference_positions() const {
+    return reference_positions_;
+  }
 
   /** Returns the FemModel for this deformable body. */
   const fem::FemModel<T>& fem_model() const { return *fem_model_; }
@@ -195,12 +200,17 @@ class DeformableBody {
   void Enable(systems::Context<T>* context) const;
 
  private:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformableBody)
+
   template <typename U>
   friend class DeformableModel;
+  template <typename U>
+  friend class DeformableBody;
 
   /* Private constructor exposed only to DeformableModel.
    @param index           Unique DeformableBodyIndex
    @param id              Unique DeformableBodyId
+   @param name            Name of the body
    @param geometry_id     GeometryId of the simulated geometry.
    @param model_instance  ModelInstanceIndex for this body.
    @param mesh_G          The simulated volume mesh in the geometry's frame.
@@ -211,12 +221,25 @@ class DeformableBody {
    @pre `plant` is not nullptr.
    @pre `plant` is not finalized. */
   DeformableBody(DeformableBodyIndex index, DeformableBodyId id,
-                 geometry::GeometryId geometry_id,
+                 std::string name, geometry::GeometryId geometry_id,
                  ModelInstanceIndex model_instance,
                  const geometry::VolumeMesh<double>& mesh_G,
                  const math::RigidTransform<double>& X_WG,
                  const fem::DeformableBodyConfig<T>& config,
                  const MultibodyPlant<T>* plant);
+
+  std::unique_ptr<DeformableBody<double>> CloneToDouble(
+      const MultibodyPlant<double>* plant) const {
+    if constexpr (!std::is_same_v<T, double>) {
+      /* A none double body shouldn't exist in the first place. */
+      DRAKE_UNREACHABLE();
+    } else {
+      auto clone = std::unique_ptr<DeformableBody<double>>(
+          new DeformableBody<double>(*this));
+      clone->plant_ = plant;
+      return clone;
+    }
+  }
 
   /* Private setter accessible to DeformableModel. */
   void set_discrete_state_index(systems::DiscreteStateIndex index) {
@@ -240,33 +263,39 @@ class DeformableBody {
    single quadrature point. The reference positions as well as the connectivity
    of the elements are given by `mesh`, and physical properties of the body are
    given by `config`. */
-  void BuildLinearVolumetricModel(const geometry::VolumeMesh<double>& mesh,
-                                  const fem::DeformableBodyConfig<T>& config);
+  template <typename T1 = T>
+  typename std::enable_if_t<std::is_same_v<T1, double>, void>
+  BuildLinearVolumetricModel(const geometry::VolumeMesh<double>& mesh,
+                             const fem::DeformableBodyConfig<T>& config);
 
   /* Helper for BuildLinearVolumetricModel templated on constitutive model. */
-  template <template <class> class Model>
-  void BuildLinearVolumetricModelHelper(
-      const geometry::VolumeMesh<double>& mesh,
-      const fem::DeformableBodyConfig<T>& config);
+  template <template <class> class Model, typename T1 = T>
+  typename std::enable_if_t<std::is_same_v<T1, double>, void>
+  BuildLinearVolumetricModelHelper(const geometry::VolumeMesh<double>& mesh,
+                                   const fem::DeformableBodyConfig<T>& config);
 
   DeformableBodyIndex index_{};
   DeformableBodyId id_{};
+  std::string name_;
   geometry::GeometryId geometry_id_{};
   ModelInstanceIndex model_instance_{};
+  /* The mesh of the deformable geometry (in its reference configuration) in its
+   geometry frame. */
+  geometry::VolumeMesh<double> mesh_G_;
   /* The pose of the deformable geometry (in its reference configuration) in the
    world frame. */
   math::RigidTransform<double> X_WG_;
   fem::DeformableBodyConfig<T> config_;
   const MultibodyPlant<T>* plant_{};
-  VectorX<T> reference_positions_;
-  std::unique_ptr<fem::FemModel<T>> fem_model_;
+  VectorX<double> reference_positions_;
+  copyable_unique_ptr<fem::FemModel<T>> fem_model_;
   systems::DiscreteStateIndex discrete_state_index_{};
   systems::AbstractParameterIndex is_enabled_parameter_index_{};
   std::vector<internal::DeformableRigidFixedConstraintSpec>
       fixed_constraint_specs_;
   /* External forces and constraints. */
   /* Owned gravity force. */
-  std::unique_ptr<ForceDensityField<T>> gravity_force_;
+  copyable_unique_ptr<ForceDensityField<T>> gravity_force_;
   /* All external forces affecting this body (including the owned gravity). */
   std::vector<const ForceDensityField<T>*> external_forces_;
 };

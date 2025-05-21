@@ -277,9 +277,6 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    %DeformableModel. */
   const fem::FemModel<T>& GetFemModel(DeformableBodyId id) const;
 
-  // TODO(xuchenhan-tri): The use of T over double is not well-reasoned.
-  //  Consider whether T is really necessary when we support autodiff in
-  //  deformable simulations.
   /** Returns the reference positions of the vertices of the deformable body
    identified by the given `id`.
    The reference positions are represented as a VectorX with 3N values where N
@@ -288,7 +285,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    in the VectorX.
    @throws std::exception if no deformable body with the given `id` has been
    registered in this model. */
-  const VectorX<T>& GetReferencePositions(DeformableBodyId id) const;
+  const VectorX<double>& GetReferencePositions(DeformableBodyId id) const;
 
   /** Returns the DeformableBodyId of the body with the given body index.
    @throws std::exception if no deformable body with the given index has been
@@ -470,7 +467,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
 
   /* Data members. WARNING: if you add a field here be sure to update
    CloneToDouble() to make sure all fields are copied. */
-  internal::ElementCollection<double, DeformableBody, DeformableBodyIndex>
+  internal::ElementCollection<T, DeformableBody, DeformableBodyIndex>
       deformable_bodies_;
   std::unordered_map<geometry::GeometryId, DeformableBodyId>
       geometry_id_to_body_id_;

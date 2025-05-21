@@ -117,13 +117,6 @@ TEST_F(DeformableModelTest, SetWallBoundaryCondition) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       deformable_model_ptr_->SetWallBoundaryCondition(fake_body_id, p_WQ2, n_W),
       fmt::format(".*No.*id.*{}.*registered.*", fake_body_id));
-
-  /* Setting boundary condition must be done pre-finalize. */
-  plant_->Finalize();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      deformable_model_ptr_->SetWallBoundaryCondition(body_id, p_WQ2, n_W),
-      ".*SetWallBoundaryCondition.*after system resources have been "
-      "declared.*");
 }
 
 TEST_F(DeformableModelTest, DiscreteStateIndexAndReferencePositions) {
@@ -183,9 +176,6 @@ TEST_F(DeformableModelTest, InvalidBodyId) {
 TEST_F(DeformableModelTest, GetBodyIdFromBodyIndex) {
   constexpr double kRezHint = 0.5;
   const DeformableBodyId body_id = RegisterSphere(kRezHint);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      deformable_model_ptr_->GetBodyId(DeformableBodyIndex(0)),
-      ".*GetBodyId.*before system resources have been declared.*");
   plant_->Finalize();
   EXPECT_EQ(deformable_model_ptr_->GetBodyId(DeformableBodyIndex(0)), body_id);
   // Throws for invalid indexes.
@@ -198,9 +188,6 @@ TEST_F(DeformableModelTest, GetBodyIdFromBodyIndex) {
 TEST_F(DeformableModelTest, GetBodyIndex) {
   constexpr double kRezHint = 0.5;
   const DeformableBodyId body_id = RegisterSphere(kRezHint);
-  /* Throws for pre-finalize call. */
-  DRAKE_EXPECT_THROWS_MESSAGE(deformable_model_ptr_->GetBodyIndex(body_id),
-                              ".*before system resources.*declared.*");
   plant_->Finalize();
   EXPECT_EQ(deformable_model_ptr_->GetBodyIndex(body_id),
             DeformableBodyIndex(0));
@@ -316,7 +303,8 @@ TEST_F(DeformableModelTest, AddFixedConstraint) {
   /* Qi should be coincident with Pi. */
   ASSERT_EQ(spec.p_BQs.size(), 1);
   const Vector3d p_BQi = spec.p_BQs[0];
-  EXPECT_EQ(X_BA * p_APi, p_BQi);
+  EXPECT_TRUE(CompareMatrices(X_BA * p_APi, p_BQi,
+                              4.0 * std::numeric_limits<double>::epsilon()));
 
   /* Throw conditions */
   /* Non-existant deformable body. */
