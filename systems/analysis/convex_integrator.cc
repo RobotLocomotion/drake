@@ -104,11 +104,9 @@ bool ConvexIntegrator<double>::SolveWithGuess(
   model.ResizeData(&data);
   DRAKE_DEMAND(data.num_velocities() == v.size());
 
-  // TODO(vincekurtz): expose these parameters
-  const int max_iterations = 100;
-  const double kappa = 0.05;
-  const double early_exit_tolerance = 1e-6;
-  const double tolerance = kappa * this->get_accuracy_in_use();
+  // Tolerance for a more relaxed convergence check under looser accuracies.
+  const double k_dot_tol =
+      solver_parameters_.kappa * this->get_accuracy_in_use();
 
   // TODO(vincekurtz): pre-allocate dv
   VectorXd dv = v;              // Search direction
@@ -117,7 +115,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(
   double last_step_norm = 0.0;  // Size of the previous step
   double theta;                 // ratio of current and previous step sizes
 
-  for (int k = 0; k < max_iterations; ++k) {
+  for (int k = 0; k < solver_parameters_.max_iterations; ++k) {
     // Compute the cost, gradient, and Hessian.
     // TODO(vincekurtz): re-use the old Hessian
     model.CalcData(v, &data);
@@ -127,7 +125,8 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     // is necessary because our main convergence criterion requires comparing dv
     // over several iterations.
     const VectorXd& g = data.cache().gradient;
-    if (g.norm() < early_exit_tolerance) {
+    if (g.norm() < solver_parameters_.abs_tolerance +
+                       solver_parameters_.rel_tolerance * g.norm()) {
       // TODO(vincekurtz): consider using the SAP momentum residual rather than
       // the gradient norm.
       return true;  // Converged!
@@ -150,7 +149,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(
       // N.B. this only comes into effect in the second iteration, since we need
       // both step_norm and last_step_norm to be set.
       theta = step_norm / last_step_norm;
-      if ((theta < 1.0) && ((theta / (1.0 - theta)) < tolerance)) {
+      if ((theta < 1.0) && ((theta / (1.0 - theta)) < k_dot_tol)) {
         return true;  // Converged!
       }
 
