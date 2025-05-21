@@ -555,9 +555,14 @@ int do_main() {
       MakeSimulatorFromGflags(*diagram, std::move(diagram_context));
 
   // Use the convex integrator
-  ConvexIntegrator<double>& ci =
-      simulator->reset_integrator<ConvexIntegrator<double>>();
-  ci.set_plant(&plant);
+  // TODO(vincekurtz): set things up so the convex integrator can be selected
+  // via gflags like the others.
+  if (FLAGS_mbp_time_step == 0.0) {
+    ConvexIntegrator<double>& ci =
+        simulator->reset_integrator<ConvexIntegrator<double>>();
+    ci.set_plant(&plant);
+    ci.set_maximum_step_size(0.01);
+  }
 
   drake::systems::IntegratorBase<double>& integrator =
       simulator->get_mutable_integrator();
