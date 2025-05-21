@@ -26,10 +26,8 @@ struct ConvexIntegratorSolverParameters {
   int max_iterations{100};
   int max_ls_iterations{10};
 
-  // Absolute and relative tolerances for the gradient-based convergence check
-  // (similar to discrete SAP).
-  double abs_tolerance{1e-14};
-  double rel_tolerance{1e-6};
+  // Absolute tolerance for the stricter gradient-based convergence check.
+  double tolerance{1e-6};
 
   // Tolerance for exact line search.
   double ls_tolerance{1e-6};

@@ -67,6 +67,13 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     throw std::runtime_error("ConvexIntegrator: optimization failed.");
   }
 
+  // print iters, cost, gradient norm, step size, and alpha
+  fmt::print(
+      "ConvexIntegrator: iters = {}, cost = {}, gradient norm = {}, "
+      "step size = {}, alpha = {}\n",
+      stats_.k, stats_.cost, stats_.gradient_norm, stats_.step_size,
+      stats_.alpha);
+
   // Advance configurations q = q₀ + h N(q₀) v
   // TODO(vincekurtz): pre-allocate q
   VectorX<T> q(plant().num_positions());
@@ -125,9 +132,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     // optimal, or a single Newton step for simple unconstrained problems. This
     // is necessary because our main convergence criterion requires comparing dv
     // over several iterations.
-    if (stats_.gradient_norm <
-        solver_parameters_.abs_tolerance +
-            solver_parameters_.rel_tolerance * stats_.gradient_norm) {
+    if (stats_.gradient_norm < solver_parameters_.tolerance) {
       // TODO(vincekurtz): consider using the SAP momentum residual rather than
       // the gradient norm.
       return true;
