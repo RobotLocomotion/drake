@@ -126,7 +126,7 @@ class PooledSapModel {
     patch_constraints_pool_.Reset(params_->time_step, clique_start_,
                                   clique_sizes_);
 
-    V_WB0_.Resize(num_velocities_);
+    V_WB0_.Resize(num_bodies_);
     CalcBodySpatialVelocities(params_->v0, &V_WB0_);
   }
 

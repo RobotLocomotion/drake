@@ -63,6 +63,8 @@ PooledSapBuilder<T>::PooledSapBuilder(const MultibodyPlant<T>& plant)
   const int nv = plant.num_velocities();
   scratch_.u_no_pd.resize(nv);
   scratch_.u_w_pd.resize(nv);
+  scratch_.tmp_v1.resize(nv);
+  scratch_.forces = std::make_unique<MultibodyForces<T>>(plant);
 }
 
 template <typename T>
@@ -115,11 +117,12 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   // r = u₀ + M⋅v₀ - C(q₀,v₀)
   auto& r = params->r;
   r.resize(nv);
-  AccumulateActuationInput(context, &u_w_pd, &u_no_pd);
+  CalcActuationInput(context, &u_w_pd, &u_no_pd);
   plant().CalcBiasTerm(context, &r);
-  r = -r;        // r = -C(q₀, v₀)
-  r += M * v0;   // r += M⋅v₀
-  r += u_no_pd;  // r += u.
+  r = -r;                                     // r = -C(q₀, v₀)
+  r += M * v0;                                // r += M⋅v₀
+  r += u_no_pd;                               // r += u.
+  AccumulateForceElementForces(context, &r);  // r+= τᵉˣᵗ
 
   model->ResetParameters(std::move(params));
   CalcGeometryContactData(context);
@@ -128,15 +131,25 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
 }
 
 template <typename T>
-void PooledSapBuilder<T>::AccumulateActuationInput(
+void PooledSapBuilder<T>::AccumulateForceElementForces(
+    const systems::Context<T>& context, VectorX<T>* r) const {
+  MultibodyForces<T>& forces = *scratch_.forces;
+  VectorX<T>& tau_g = scratch_.tmp_v1;
+  plant().CalcForceElementsContribution(context, &forces);
+  plant().CalcGeneralizedForces(context, forces, &tau_g);
+  *r += tau_g;
+}
+
+template <typename T>
+void PooledSapBuilder<T>::CalcActuationInput(
     const systems::Context<T>& context, VectorX<T>* actuation_w_pd,
     VectorX<T>* actuation_wo_pd) const {
   DRAKE_DEMAND(actuation_w_pd != nullptr);
   DRAKE_DEMAND(actuation_w_pd->size() == plant().num_velocities());
   DRAKE_DEMAND(actuation_wo_pd != nullptr);
   DRAKE_DEMAND(actuation_wo_pd->size() == plant().num_velocities());
-  // actuation_w_pd->setZero();
-  // actuation_wo_pd->setZero();
+  actuation_w_pd->setZero();
+  actuation_wo_pd->setZero();
   if (plant().num_actuators() > 0) {
     const VectorX<T> u =
         MultibodyPlantTester::AssembleActuationInput(plant(), context);
