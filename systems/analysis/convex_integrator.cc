@@ -22,7 +22,12 @@ ConvexIntegrator<T>::ConvexIntegrator(const System<T>& system,
 template <typename T>
 void ConvexIntegrator<T>::DoInitialize() {
   using std::isnan;
-  DRAKE_THROW_UNLESS(plant_ != nullptr);
+  if (plant_ == nullptr) {
+    throw std::runtime_error(
+        "ConvexIntegrator: MultibodyPlant not set. You must either use the "
+        "constructor that specifies a plant, or call ConvexIntegrator::"
+        "set_plant() before initialization.");
+  }
 
   // Get the plant context from the overall context. This will throw if plant()
   // is not part of the system diagram.

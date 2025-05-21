@@ -28,6 +28,7 @@
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
+#include "drake/systems/analysis/convex_integrator.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/implicit_integrator.h"
 #include "drake/systems/analysis/simulator.h"
@@ -46,7 +47,7 @@ constexpr double kHuge = 1.0e40;
 // Simulation parameters.
 DEFINE_double(simulation_time, 10.0, "Simulation duration in seconds");
 DEFINE_double(
-    mbp_time_step, 0.01,
+    mbp_time_step, 0.0,
     "If mbp_time_step > 0, the fixed-time step period (in seconds) of discrete "
     "updates for the plant (modeled as a discrete system). "
     "If mbp_time_step = 0, the plant is modeled as a continuous system "
@@ -124,6 +125,7 @@ using clock = std::chrono::steady_clock;
 using drake::multibody::contact_solvers::internal::SapHessianFactorizationType;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
 using drake::multibody::internal::CompliantContactManager;
+using drake::systems::ConvexIntegrator;
 using drake::visualization::ApplyVisualizationConfig;
 using drake::visualization::VisualizationConfig;
 
@@ -551,6 +553,11 @@ int do_main() {
 
   auto simulator =
       MakeSimulatorFromGflags(*diagram, std::move(diagram_context));
+
+  // Use the convex integrator
+  ConvexIntegrator<double>& ci =
+      simulator->reset_integrator<ConvexIntegrator<double>>();
+  ci.set_plant(&plant);
 
   drake::systems::IntegratorBase<double>& integrator =
       simulator->get_mutable_integrator();
