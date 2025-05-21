@@ -148,10 +148,6 @@ void PooledSapModel<T>::ResizeData(SapData<T>* data) const {
                patch_constraints_pool_.patch_sizes());
   data->cache().hessian.set_sparse(params().use_sparse_hessian);
   data->cache().hessian.Resize(CalcSparsityPattern());
-
-  // TODO: Consider.
-  // data->cache().patch_constraints_data.Resize(
-  //    num_velocities_, patch_constraints_pool_.patch_size());
 }
 
 }  // namespace pooled_sap

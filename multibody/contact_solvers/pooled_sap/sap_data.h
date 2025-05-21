@@ -1,6 +1,8 @@
 #pragma once
 
+#include <memory>
 #include <numeric>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -26,15 +28,22 @@ class Hessian {
     if constexpr (!std::is_same_v<T, double>) is_sparse_ = false;
   }
 
-  void set_sparse(bool is_sparse = true) { is_sparse_ = is_sparse; }
+  /* Sets whether to use sparsity. Ignored for AutoDiffXd, which only supports
+  dense. */
+  void set_sparse(bool is_sparse = true) {
+    unused(is_sparse);
+    if constexpr (std::is_same_v<T, double>) {
+      is_sparse_ = is_sparse;
+    }
+  }
 
   /* Resizes from the provided sparsity. Sparsity pattern ignored if is_sparse()
    * is false. */
   void Resize(internal::BlockSparsityPattern sparsity) {
     if (is_sparse_) {
       // TODO(amcastro-tri): consider how to re-use memory for the Hessian.
-      sparse_ =
-          std::make_unique<internal::BlockSparseSymmetricMatrix>(std::move(sparsity));
+      sparse_ = std::make_unique<internal::BlockSparseSymmetricMatrix>(
+          std::move(sparsity));
     } else {
       const std::vector<int>& clique_sizes = sparsity.block_sizes();
       const int nv =
@@ -53,7 +62,7 @@ class Hessian {
     }
   }
 
-  /* Resize for a dense Hessian of size nv. 
+  /* Resize for a dense Hessian of size nv.
    @pre is_sparse() is true. */
   void Resize(int nv) {
     DRAKE_DEMAND(!is_sparse_);
