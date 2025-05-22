@@ -9,6 +9,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/fem/force_density_field_base.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 
 namespace drake {
@@ -17,38 +18,15 @@ namespace multibody {
 template <typename T>
 class MultibodyPlant;
 
-/** (Advanced) Enum for the type of force density in ForceDensityField. */
-enum class ForceDensityType {
-  /** ForceDensityField::EvaluateAt() returns the force per unit of _current_
-   (deformed) configuration volume. */
-  kPerCurrentVolume,
-  /** ForceDensityField::EvaluateAt() returns the force per unit of _reference_
-   configuration volume where the reference undeformed configuration is defined
-   by the input mesh provided by the user. */
-  kPerReferenceVolume,
-};
-
-/** The %ForceDensityField class is an abstract base class that represents a
- force density field affecting deformable bodies in a MultibodyPlant. The
- force field is described by the member function EvaluateAt() which takes as
- input a position in the world frame and returns the force density from the
- force density field at the given location, with unit [N/m³]. The force density
- function can depend on other Context-dependent parameters.
+/** Implementations of the ForceDensityFieldBase class should inherit from this
+ class. This class provides the functionality for a force density field to
+ depend on context-dependent quantities. It also provides the functionality to
+ declare system resources in a MultibodyPlant.
  @tparam_default_scalar */
 template <typename T>
-class ForceDensityField {
+class ForceDensityField : public ForceDensityFieldBase<T> {
  public:
   virtual ~ForceDensityField();
-
-  /** Evaluates the force density [N/m³] with the given `context` of the
-   owning MultibodyPlant and a position in world, `p_WQ`. */
-  Vector3<T> EvaluateAt(const systems::Context<T>& context,
-                        const Vector3<T>& p_WQ) const {
-    return DoEvaluateAt(context, p_WQ);
-  }
-
-  /** Returns an identical copy of `this` ForceDensityField. */
-  std::unique_ptr<ForceDensityField<T>> Clone() const { return DoClone(); }
 
   /** Returns true iff `this` external force is owned by a MultibodyPlant. */
   bool has_parent_system() const { return tree_system_ != nullptr; }
@@ -60,9 +38,6 @@ class ForceDensityField {
     DRAKE_THROW_UNLESS(tree_system_ != nullptr);
     return *tree_system_;
   }
-
-  /* (Advanced) Returns the force density type of `this` %ForceDensityField. */
-  ForceDensityType density_type() const { return density_type_; }
 
 #ifndef DRAKE_DOXYGEN_CXX
   /* (Internal use only) Declares internal::MultibodyTreeSystem cache
@@ -77,7 +52,7 @@ class ForceDensityField {
                           MultibodyPlant.
    @note You can only invoke this function if you have a definition of
          MultibodyPlant available. That is, you must include
-        `drake/multibody/plant/multibody_plant.h` in the translation unit that
+         `drake/multibody/plant/multibody_plant.h` in the translation unit that
          invokes this function; force_density_field.h cannot do that for you.
    @pre tree_system != nullptr. */
   template <typename = void>
@@ -92,16 +67,7 @@ class ForceDensityField {
 
   explicit ForceDensityField(
       ForceDensityType density_type = ForceDensityType::kPerCurrentVolume)
-      : density_type_(density_type) {}
-
-  /** Derived classes must override this function to provide a threadsafe
-   implemention to the NVI EvaluateAt(). */
-  virtual Vector3<T> DoEvaluateAt(const systems::Context<T>& context,
-                                  const Vector3<T>& p_WQ) const = 0;
-
-  /** Derived classes must override this function to implement the NVI
-   Clone(). */
-  virtual std::unique_ptr<ForceDensityField<T>> DoClone() const = 0;
+      : ForceDensityFieldBase<T>(density_type) {}
 
   /** NVI implementations for declaring system resources. Defaults to no-op.
    Derived classes should override the default implementation if the external
@@ -143,7 +109,6 @@ class ForceDensityField {
   }
 
   const internal::MultibodyTreeSystem<T>* tree_system_{nullptr};
-  ForceDensityType density_type_{ForceDensityType::kPerCurrentVolume};
 };
 
 /** A uniform gravitational force density field for a uniform density object.
@@ -172,7 +137,7 @@ class GravityForceField : public ForceDensityField<T> {
     return force_density_;
   };
 
-  std::unique_ptr<ForceDensityField<T>> DoClone() const final {
+  std::unique_ptr<ForceDensityFieldBase<T>> DoClone() const final {
     return std::make_unique<GravityForceField<T>>(*this);
   }
 

@@ -11,6 +11,7 @@
 #include "drake/multibody/fem/volumetric_element.h"
 #include "drake/multibody/fem/volumetric_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/force_density_field.h"
 
 namespace drake {
 namespace multibody {
@@ -134,7 +135,7 @@ GTEST_TEST(FemModelTest, CalcResidualWithContextDependentExternalForce) {
       return context.get_time() * unit_vector_;
     };
 
-    std::unique_ptr<ForceDensityField<double>> DoClone() const final {
+    std::unique_ptr<ForceDensityFieldBase<double>> DoClone() const final {
       return std::make_unique<TimeScaledForceDensityField>(*this);
     }
 
