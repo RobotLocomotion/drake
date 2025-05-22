@@ -265,10 +265,6 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
                                     alpha_tolerance,
                                     solver_parameters_.ls_tolerance,
                                     solver_parameters_.max_iterations);
-
-  fmt::print("alpha: {}, num_iterations: {}\n", alpha, num_iterations);
-  fmt::print("ℓ: {}, ∂ℓ/∂α: {}, ∂²ℓ/∂α²: {}\n", ell, dell_dalpha,
-             d2ell_dalpha2);
 }
 
 template <typename T>
