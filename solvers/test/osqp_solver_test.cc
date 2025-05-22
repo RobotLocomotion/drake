@@ -83,6 +83,8 @@ GTEST_TEST(QPtest, TestUnbounded) {
   if (solver.available()) {
     auto result = solver.Solve(prog, {}, {});
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
+    EXPECT_TRUE(result.GetSolution(x).array().isFinite().all());
+    EXPECT_EQ(result.get_solver_details<OsqpSolver>().y.size(), 0);
   }
 
   // Add a constraint
@@ -99,9 +101,9 @@ GTEST_TEST(QPtest, TestInfeasible) {
   auto x = prog.NewContinuousVariables<2>();
 
   prog.AddQuadraticCost(x(0) * x(0) + 2 * x(1) * x(1));
-  prog.AddLinearConstraint(x(0) + 2 * x(1) == 2);
-  prog.AddLinearConstraint(x(0) >= 1);
-  prog.AddLinearConstraint(x(1) >= 2);
+  auto constraint0 = prog.AddLinearConstraint(x(0) + 2 * x(1) == 2);
+  auto constraint1 = prog.AddLinearConstraint(x(0) >= 1);
+  auto constraint2 = prog.AddLinearConstraint(x(1) >= 2);
 
   OsqpSolver solver;
   // The program is infeasible.
@@ -111,7 +113,16 @@ GTEST_TEST(QPtest, TestInfeasible) {
               SolutionResult::kInfeasibleConstraints);
     EXPECT_EQ(result.get_optimal_cost(),
               MathematicalProgram::kGlobalInfeasibleCost);
-    EXPECT_EQ(result.get_solver_details<OsqpSolver>().y.rows(), 0);
+
+    EXPECT_EQ(result.get_solver_details<OsqpSolver>().y.rows(), 3);
+    // Primal solution is not NAN or inf.
+    EXPECT_TRUE(result.GetSolution(x).array().isFinite().all());
+    // Dual solution is not NAN or inf.
+    EXPECT_TRUE(
+        result.get_solver_details<OsqpSolver>().y.array().isFinite().all());
+    EXPECT_TRUE(result.GetDualSolution(constraint0).array().isFinite().all());
+    EXPECT_TRUE(result.GetDualSolution(constraint1).array().isFinite().all());
+    EXPECT_TRUE(result.GetDualSolution(constraint2).array().isFinite().all());
     // In OSQP's default upstream settings, time-based adaptive rho is enabled
     // by default (i.e., adaptive_rho_interval=0). However, in our OsqpSolver
     // wrapper, we've changed the default to be non-zero so that solver results
