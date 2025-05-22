@@ -167,21 +167,32 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
     // Fmᵀ = Hᵀ * I. We'll do 6 applications of Hᵀ to columns of I to give
     // columns of Fmᵀ which are rows of Fm. Then to compute M = Hᵀ⋅Fm we'll
     // do m more applications of Hᵀ to columns of Fm to yield columns of M.
+
+    // This ugly code is just calculating Fm_BMo_M = H_FM_Mᵀ * I_BMo_M, with
+    // the inertia considered as a 6x6 matrix. But that's not how we represent
+    // spatial inertia! We have cheap (1 flop) inline methods for constructing
+    // columns of a _unit_ spatial inertia suitable for our specialized inline
+    // methods for multiplying by H_FM_Mᵀ. For a revolute mobilizer that is
+    // just a 0-flop extraction of one of the elements of the I_BMo_M column.
+    // And since everything is inline, it is possible for the compiler to
+    // turn all of this into 6 loads and 6 scalar multiplies.
     Eigen::Matrix<T, 6, kNv> Fm_BMo_M;
-    Eigen::Matrix<T, 1, kNv> Fm_row_i;  // Contiguous storage needed.
-    const T& mass = I_BMo_M.get_mass();
-    mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col0(), Fm_row_i.data());
-    Fm_BMo_M.row(0) = mass * Fm_row_i;
-    mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col1(), Fm_row_i.data());
-    Fm_BMo_M.row(1) = mass * Fm_row_i;
-    mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col2(), Fm_row_i.data());
-    Fm_BMo_M.row(2) = mass * Fm_row_i;
-    mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col3(), Fm_row_i.data());
-    Fm_BMo_M.row(3) = mass * Fm_row_i;
-    mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col4(), Fm_row_i.data());
-    Fm_BMo_M.row(4) = mass * Fm_row_i;
-    mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col5(), Fm_row_i.data());
-    Fm_BMo_M.row(5) = mass * Fm_row_i;
+    {
+      Eigen::Matrix<T, 1, kNv> Fm_i;  // Contiguous storage needed.
+      const T& mass = I_BMo_M.get_mass();
+      mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col0(), Fm_i.data());
+      Fm_BMo_M.row(0) = mass * Fm_i;
+      mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col1(), Fm_i.data());
+      Fm_BMo_M.row(1) = mass * Fm_i;
+      mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col2(), Fm_i.data());
+      Fm_BMo_M.row(2) = mass * Fm_i;
+      mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col3(), Fm_i.data());
+      Fm_BMo_M.row(3) = mass * Fm_i;
+      mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col4(), Fm_i.data());
+      Fm_BMo_M.row(4) = mass * Fm_i;
+      mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col5(), Fm_i.data());
+      Fm_BMo_M.row(5) = mass * Fm_i;
+    }
 
     const int B_start_in_v = mobilizer().velocity_start_in_v();
 
