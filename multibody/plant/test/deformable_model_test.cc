@@ -6,6 +6,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
+#include "drake/multibody/tree/force_density_field_impl.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -348,7 +349,7 @@ TEST_F(DeformableModelTest, AddFixedConstraint) {
 
 TEST_F(DeformableModelTest, ExternalForces) {
   /* A user defined force density field. */
-  class ConstantForceDensityField final : public ForceDensityField<double> {
+  class ConstantForceDensityField final : public ForceDensityFieldImpl<double> {
    public:
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConstantForceDensityField);
 

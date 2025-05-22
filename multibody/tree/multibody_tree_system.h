@@ -588,7 +588,7 @@ namespace multibody {
 template <typename T>
 class MultibodyElement;
 template <typename T>
-class ForceDensityField;
+class ForceDensityFieldImpl;
 
 namespace internal {
 
@@ -605,7 +605,7 @@ class MultibodyTreeSystemElementAttorney {
   template <typename U>
   friend class drake::multibody::MultibodyElement;
 
-  friend class drake::multibody::ForceDensityField<T>;
+  friend class drake::multibody::ForceDensityFieldImpl<T>;
 
   static systems::NumericParameterIndex DeclareNumericParameter(
       MultibodyTreeSystem<T>* tree_system,

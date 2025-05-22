@@ -14,6 +14,7 @@
 #include "drake/multibody/fem/velocity_newmark_scheme.h"
 #include "drake/multibody/fem/volumetric_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/force_density_field_impl.h"
 
 namespace drake {
 namespace multibody {
@@ -583,7 +584,10 @@ void DeformableModel<T>::DoDeclareSystemResources() {
    them. */
   for (std::unique_ptr<ForceDensityField<T>>& force_density :
        force_densities_) {
-    force_density->DeclareSystemResources(this->mutable_plant());
+    /* We know that the static cast is safe because all concrete force density
+     field is derived from ForceDensityFieldImpl. */
+    static_cast<ForceDensityFieldImpl<T>*>(force_density.get())
+        ->DeclareSystemResources(this->mutable_plant());
   }
 }
 

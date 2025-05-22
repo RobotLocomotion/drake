@@ -13,9 +13,9 @@
 #include "drake/multibody/fem/deformable_body_config.h"
 #include "drake/multibody/fem/discrete_time_integrator.h"
 #include "drake/multibody/fem/fem_model.h"
+#include "drake/multibody/fem/force_density_field.h"
 #include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/plant/deformable_ids.h"
-#include "drake/multibody/plant/force_density_field.h"
 #include "drake/multibody/plant/physical_model.h"
 #include "drake/multibody/tree/rigid_body.h"
 

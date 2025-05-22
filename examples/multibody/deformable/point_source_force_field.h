@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/multibody/plant/force_density_field.h"
+#include "drake/multibody/tree/force_density_field_impl.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
@@ -16,7 +16,7 @@ namespace deformable {
  a double-valued input port (see maximum_force_density_input_port()). If the
  port is unconnected, it reads as zero. */
 class PointSourceForceField final
-    : public multibody::ForceDensityField<double> {
+    : public multibody::ForceDensityFieldImpl<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointSourceForceField);
 
