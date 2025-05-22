@@ -736,6 +736,32 @@ TEST_F(DiagramBuilderSolePortsTest, ConnectionMap) {
     const InputPortLocator in1_input{in1_, InputPortIndex{0}};
     EXPECT_EQ(builder_.connection_map().at(in1_input), in1out1_output);
   }
+
+  // Disconnecting works correctly.
+  builder_.Disconnect(in1out1_->get_output_port(), in1_->get_input_port());
+  ASSERT_EQ(builder_.connection_map().size(), 1);
+  {
+    const OutputPortLocator out1_output{out1_, OutputPortIndex{0}};
+    const InputPortLocator in1out1_input{in1out1_, InputPortIndex{0}};
+    EXPECT_EQ(builder_.connection_map().at(in1out1_input), out1_output);
+  }
+}
+
+// Disconnecting a non-existent connection will throw.
+TEST_F(DiagramBuilderSolePortsTest, DisconnectError) {
+  const OutputPort<double>& src = out1_->get_output_port();
+  const InputPort<double>& dest = in1_->get_input_port();
+  builder_.Connect(src, dest);
+
+  // Wrong `src`.
+  const OutputPort<double>& src_wrong = in1out1_->get_output_port();
+  DRAKE_EXPECT_THROWS_MESSAGE(builder_.Disconnect(src_wrong, dest),
+                              ".*src=y0, dest=in.*not.*connected.*");
+
+  // Wrong `dest`.
+  const InputPort<double>& dest_wrong = in1out1_->get_input_port();
+  DRAKE_EXPECT_THROWS_MESSAGE(builder_.Disconnect(src, dest_wrong),
+                              ".*src=y0, dest=u0.*not.*connected.*");
 }
 
 // The cascade synonym also works.

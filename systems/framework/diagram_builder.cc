@@ -403,6 +403,24 @@ OutputPortIndex DiagramBuilder<T>::ExportOutput(
 }
 
 template <typename T>
+void DiagramBuilder<T>::Disconnect(const OutputPort<T>& src,
+                                   const InputPort<T>& dest) {
+  OutputPortLocator src_id{&src.get_system(), src.get_index()};
+  InputPortLocator dest_id{&dest.get_system(), dest.get_index()};
+  const auto iter = connection_map_.find(dest_id);
+  if (iter != connection_map_.end()) {
+    if (iter->second == src_id) {
+      connection_map_.erase(iter);
+      return;
+    }
+  }
+  throw std::logic_error(fmt::format(
+      "DiagramBuilder::Disconnect(src={}, dest={}) error: the ports were not "
+      "already connected, so cannot be disconnected.",
+      src.get_name(), dest.get_name()));
+}
+
+template <typename T>
 std::unique_ptr<Diagram<T>> DiagramBuilder<T>::Build() {
   ThrowIfAlreadyBuilt();
   return std::unique_ptr<Diagram<T>>(new Diagram<T>(Compile()));
