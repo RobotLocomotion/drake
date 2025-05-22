@@ -13,7 +13,11 @@ drake::Matrix3<typename Derived::Scalar> VectorToSkewSymmetric(
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
 
   drake::Matrix3<typename Derived::Scalar> ret;
-  ret << 0.0, -p(2), p(1), p(2), 0.0, -p(0), -p(1), p(0), 0.0;
+  // clang-format off
+  ret <<  0.0, -p(2), p(1),
+          p(2), 0.0, -p(0),
+         -p(1), p(0), 0.0;
+  // clang-format on
   return ret;
 }
 
