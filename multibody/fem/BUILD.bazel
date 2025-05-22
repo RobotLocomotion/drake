@@ -732,6 +732,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "force_density_field_test",
+    deps = [
+        ":force_density_field",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_googletest(
     name = "isoparametric_element_test",
     deps = [
         ":isoparametric_element",

@@ -109,7 +109,6 @@ class ForceDensityFieldImpl : public ForceDensityField<T> {
   }
 
   const internal::MultibodyTreeSystem<T>* tree_system_{nullptr};
-  ForceDensityType density_type_{ForceDensityType::kPerCurrentVolume};
 };
 
 /** A uniform gravitational force density field for a uniform density object.

@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "drake/multibody/tree/force_density_field_impl.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/force_density_field_impl.h"
 
 namespace drake {
 namespace examples {
