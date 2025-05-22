@@ -192,6 +192,17 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // and only if the optimization converged.
   bool SolveWithGuess(const PooledSapModel<T>& model, VectorX<T>* v_guess);
 
+  // Solve min_α ℓ(v + α Δ v) using a 1D Newton method with bisection fallback.
+  void PerformExactLineSearch(const PooledSapModel<T>& model,
+                              const VectorX<T>& v, const VectorX<T>& dv,
+                              T* alpha, int* num_iterations);
+
+  // Compute the cost along the linesearch direction, ℓ(α) = ℓ(v + α Δ v), along
+  // with first and second derivatives ∂ℓ/∂α and ∂²ℓ/∂α² for exact line search.
+  void CalcCostAlongLine(const PooledSapModel<T>& model, const VectorX<T>& v,
+                         const VectorX<T>& dv, const T& alpha, T* ell,
+                         T* dell_dalpha, T* d2ell_dalpha2);
+
   // The multibody plant used as the basis of the convex optimization problem.
   MultibodyPlant<T>* plant_{nullptr};
 

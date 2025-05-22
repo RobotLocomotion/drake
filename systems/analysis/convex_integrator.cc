@@ -144,8 +144,8 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     dv = H.ldlt().solve(-g);
 
     // Compute the step size with linesearch
-    stats_.num_ls_iterations = 0;
-    stats_.alpha = 1.0;
+    PerformExactLineSearch(model, v, dv, &stats_.alpha,
+                          &stats_.num_ls_iterations);
     dv *= stats_.alpha;
 
     // Update the decision variables (velocities)
@@ -168,6 +168,52 @@ bool ConvexIntegrator<double>::SolveWithGuess(
   }
 
   return false;  // Failed to converge.
+}
+
+template <typename T>
+void ConvexIntegrator<T>::PerformExactLineSearch(const PooledSapModel<T>& model,
+                                                 const VectorX<T>& v,
+                                                 const VectorX<T>& dv, T* alpha_ptr,
+                                                 int* num_iterations_ptr) {
+  // Initialize the step size and number of iterations.
+  T& alpha = *alpha_ptr;
+  int& num_iterations = *num_iterations_ptr;
+  alpha = solver_parameters_.alpha_max;
+  num_iterations = 0;
+
+  // TODO(vincekurtz): pre-allocate ell, dell_dalpha, d2ell_dalpha2
+  T ell = 0.0;
+  T dell_dalpha = 0.0;
+  T d2ell_dalpha2 = 0.0;
+
+  CalcCostAlongLine(model, v, dv, alpha, &ell, &dell_dalpha, &d2ell_dalpha2);
+
+  fmt::print("ℓ: {}, ∂ℓ/∂α: {}, ∂²ℓ/∂α²: {}\n", ell, dell_dalpha,
+             d2ell_dalpha2);
+}
+
+template <typename T>
+void ConvexIntegrator<T>::CalcCostAlongLine(
+    const PooledSapModel<T>& model, const VectorX<T>& v,
+    const VectorX<T>& dv, const T& alpha, T* ell, T* dell_dalpha,
+    T* d2ell_dalpha2) {
+  // TODO(vincekurtz): pre-allocate these, and think through whether we can just
+  // use this->data() instead of scratch_data.
+  SapData<T> scratch_data;
+  VectorX<T> v_alpha(v.size());
+
+  // Compute full cost, gradient, and Hessian.
+  model.ResizeData(&scratch_data);
+  v_alpha = v + alpha * dv;
+  model.CalcData(v_alpha, &scratch_data);
+
+  // Compute ℓ, ∂ℓ/∂α, and ∂²ℓ/∂α².
+  // TODO(vincekurtz): use the more efficient O(n) methods from the SAP paper.
+  *ell = scratch_data.cache().cost;
+  *dell_dalpha = scratch_data.cache().gradient.dot(dv);
+  MatrixX<T> H = scratch_data.cache().hessian.MakeDenseMatrix();
+  *d2ell_dalpha2 = dv.dot(H * dv);
+
 }
 
 }  // namespace systems
