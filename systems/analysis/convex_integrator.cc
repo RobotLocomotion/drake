@@ -1,10 +1,14 @@
 #include "drake/systems/analysis/convex_integrator.h"
 
+#include "drake/multibody/contact_solvers/newton_with_bisection.h"
+
 namespace drake {
 namespace systems {
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+using multibody::contact_solvers::internal::Bracket;
+using multibody::contact_solvers::internal::DoNewtonWithBisectionFallback;
 
 template <typename T>
 ConvexIntegrator<T>::ConvexIntegrator(const System<T>& system,
@@ -171,23 +175,98 @@ bool ConvexIntegrator<double>::SolveWithGuess(
 }
 
 template <typename T>
-void ConvexIntegrator<T>::PerformExactLineSearch(const PooledSapModel<T>& model,
-                                                 const VectorX<T>& v,
-                                                 const VectorX<T>& dv, T* alpha_ptr,
-                                                 int* num_iterations_ptr) {
+void ConvexIntegrator<T>::PerformExactLineSearch(const PooledSapModel<T>&,
+                                                 const VectorX<T>&,
+                                                 const VectorX<T>&, T*, int*) {
+  throw std::logic_error(
+      "ConvexIntegrator: PerformExactLineSearch only supports T = double.");
+}
+
+template <>
+void ConvexIntegrator<double>::PerformExactLineSearch(
+    const PooledSapModel<double>& model, const VectorXd& v, const VectorXd& dv,
+    double* alpha_ptr, int* num_iterations_ptr) {
   // Initialize the step size and number of iterations.
-  T& alpha = *alpha_ptr;
+  double& alpha = *alpha_ptr;
   int& num_iterations = *num_iterations_ptr;
   alpha = solver_parameters_.alpha_max;
   num_iterations = 0;
 
-  // TODO(vincekurtz): pre-allocate ell, dell_dalpha, d2ell_dalpha2
-  T ell = 0.0;
-  T dell_dalpha = 0.0;
-  T d2ell_dalpha2 = 0.0;
+  // TODO(vincekurtz): pre-allocate these
+  double ell = 0.0;
+  double dell_dalpha = 0.0;
+  double d2ell_dalpha2 = 0.0;
 
+  // First we'll evaluate ℓ, ∂ℓ/∂α, and ∂²ℓ/∂α² at α = 0. In this case ∂ℓ/∂α
+  // should be strictly negative, since the Hessian is positive definite.
+  // TODO(vincekurtz): consider reusing the old SapData here
+  CalcCostAlongLine(model, v, dv, 0.0, &ell, &dell_dalpha, &d2ell_dalpha2);
+  if (dell_dalpha >= 0) {
+    throw std::logic_error(
+        "ConvexIntegrator: the cost does not decrease along the search "
+        "direction. This is usually caused by an excessive accumulation of "
+        "round-off errors for ill-conditioned systems. Consider revisiting "
+        "your model.");
+  }
+
+  // N.B. we'll use this for normalization later.
+  const double dell_scale = -dell_dalpha;
+
+  // Next we'll evaluate ℓ, ∂ℓ/∂α, and ∂²ℓ/∂α² at α = α_max. If the cost is
+  // still decreasing here, we just accept α_max.
   CalcCostAlongLine(model, v, dv, alpha, &ell, &dell_dalpha, &d2ell_dalpha2);
+  if (dell_dalpha <= 0) {
+    return;  // α = α_max and num_iterations = 0 are set above.
+  }
 
+  // TODO(vincekurtz): add a check to enable full Newton steps very close to
+  // machine epsilon, as in SapSolver. We'll need to be mindful of the fact that
+  // the cost can be negative in the pooled SAP formulation.
+
+  // We've exhausted all of the early exit conditions, so now we move on to the
+  // Newton method with bisection fallback. To do so, we define an anonymous
+  // function that computes the cost and gradient of f(α) = −ℓ'(α)/ℓ'₀.
+  // Normalizing in this way reduces round-off errors, ensuring f(0) = -1.
+
+  // N.B. This struct collects everything the lambda function needs access to.
+  struct EvalData {
+    const ConvexIntegrator<double>& integrator;
+    const PooledSapModel<double>& model;
+    const VectorX<double>& v;
+    const VectorX<double>& dv;
+    const double& dell_scale;
+  };
+  EvalData eval_data{*this, model, v, dv, dell_scale};
+
+  // Compute the cost and gradient of f(α) = −ℓ'(α)/ℓ'₀.
+  auto cost_and_gradient = [&eval_data](double x) {
+    double l;  // unused
+    double dell;
+    double d2ell;
+    // TODO(vincekurtz): defining CalcCostAlongLine in PooledSapModel might make
+    // this cleaner.
+    eval_data.integrator.CalcCostAlongLine(eval_data.model, eval_data.v,
+                                       eval_data.dv, x, &l, &dell, &d2ell);
+    return std::make_pair(dell / eval_data.dell_scale,
+                          d2ell / eval_data.dell_scale);
+  };
+
+  // TODO(vincekurtz): use a more informative initial guess
+  const double alpha_guess = 0.8;
+
+  // The initial bracket is [0, alpha_max], since we already know that ℓ'(0) < 0
+  // and ℓ'(α_max) > 0
+  const Bracket bracket(0.0, -1.0, alpha, dell_dalpha / dell_scale);
+
+  // TODO(vincekurtz): scale linesearch tolerance based on accuracy.
+  const double alpha_tolerance = solver_parameters_.ls_tolerance * alpha_guess;
+  std::tie(alpha, num_iterations) =
+      DoNewtonWithBisectionFallback(cost_and_gradient, bracket, alpha_guess,
+                                    alpha_tolerance,
+                                    solver_parameters_.ls_tolerance,
+                                    solver_parameters_.max_iterations);
+
+  fmt::print("alpha: {}, num_iterations: {}\n", alpha, num_iterations);
   fmt::print("ℓ: {}, ∂ℓ/∂α: {}, ∂²ℓ/∂α²: {}\n", ell, dell_dalpha,
              d2ell_dalpha2);
 }
@@ -196,7 +275,7 @@ template <typename T>
 void ConvexIntegrator<T>::CalcCostAlongLine(
     const PooledSapModel<T>& model, const VectorX<T>& v,
     const VectorX<T>& dv, const T& alpha, T* ell, T* dell_dalpha,
-    T* d2ell_dalpha2) {
+    T* d2ell_dalpha2) const {
   // TODO(vincekurtz): pre-allocate these, and think through whether we can just
   // use this->data() instead of scratch_data.
   SapData<T> scratch_data;
