@@ -103,8 +103,8 @@ TEST_F(RpyBallMobilizerTest, ZeroState) {
 }
 
 // For an arbitrary state, verify that calculating the Nplus matrix N⁺(q) is the
-// inverse of N(q).  Similarly, verify that the NplusDot matrix Ṅ⁺(q,q̇) is the
-// inverse of the NDot matrix Ṅ(q,q̇).
+// inverse of N(q), e.g., verify N⁺(q) * N(q) = [I] (the identity matrix). Also
+// verify the time derivatives of N⁺(q) * N(q) and N(q) * N⁺(q) are both zero.
 TEST_F(RpyBallMobilizerTest, KinematicMapping) {
   const Vector3d rpy(M_PI / 3, -M_PI / 3, M_PI / 5);
   mobilizer_->SetAngles(context_.get(), rpy);
