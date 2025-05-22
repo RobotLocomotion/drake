@@ -122,6 +122,29 @@ void PooledSapModel<T>::CalcData(const VectorX<T>& v, SapData<T>* data) const {
 }
 
 template <typename T>
+T PooledSapModel<T>::CalcCostAlongLine(const VectorX<T>& v,
+                                       const VectorX<T>& dv, const T& alpha,
+                                       SapData<T>* data, T* dell_dalpha,
+                                       T* d2ell_dalpha2) const {
+  // TODO(vincekurtz): use the more efficient O(n) method from the SAP paper.
+  ResizeData(data);
+  auto v_alpha = data->scratch().VectorX_pool.Add(num_velocities(), 1);
+
+  // Compute cost, gradient, and (dense) Hessian for the original problem at
+  // v + α dv.
+  v_alpha = v + alpha * dv;
+  CalcData(v_alpha, data);
+  const T& ell = data->cache().cost;
+  const VectorX<T>& g = data->cache().gradient;
+  const MatrixX<T> H = data->cache().hessian.MakeDenseMatrix();
+
+  // Compute ∂ℓ/∂α, and ∂²ℓ/∂α².
+  *dell_dalpha = g.dot(dv);
+  *d2ell_dalpha2 = dv.dot(H * dv);
+  return ell;
+}
+
+template <typename T>
 internal::BlockSparsityPattern PooledSapModel<T>::CalcSparsityPattern() const {
   const auto& A = params().A;
   const int num_nodes = A.size();

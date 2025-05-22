@@ -149,7 +149,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(
 
     // Compute the step size with linesearch
     PerformExactLineSearch(model, v, dv, &stats_.alpha,
-                          &stats_.num_ls_iterations);
+                           &stats_.num_ls_iterations);
     dv *= stats_.alpha;
 
     // Update the decision variables (velocities)
@@ -186,6 +186,8 @@ template <>
 void ConvexIntegrator<double>::PerformExactLineSearch(
     const PooledSapModel<double>& model, const VectorXd& v, const VectorXd& dv,
     double* alpha_ptr, int* num_iterations_ptr) {
+  SapData<double>& data = get_data();
+
   // Initialize the step size and number of iterations.
   double& alpha = *alpha_ptr;
   int& num_iterations = *num_iterations_ptr;
@@ -193,14 +195,13 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
   num_iterations = 0;
 
   // TODO(vincekurtz): pre-allocate these
-  double ell = 0.0;
   double dell_dalpha = 0.0;
   double d2ell_dalpha2 = 0.0;
 
   // First we'll evaluate ℓ, ∂ℓ/∂α, and ∂²ℓ/∂α² at α = 0. In this case ∂ℓ/∂α
   // should be strictly negative, since the Hessian is positive definite.
-  // TODO(vincekurtz): consider reusing the old SapData here
-  CalcCostAlongLine(model, v, dv, 0.0, &ell, &dell_dalpha, &d2ell_dalpha2);
+  // TODO(vincekurtz): don't need to recompute anything here
+  model.CalcCostAlongLine(v, dv, 0.0, &data, &dell_dalpha, &d2ell_dalpha2);
   if (dell_dalpha >= 0) {
     throw std::logic_error(
         "ConvexIntegrator: the cost does not decrease along the search "
@@ -214,7 +215,7 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
 
   // Next we'll evaluate ℓ, ∂ℓ/∂α, and ∂²ℓ/∂α² at α = α_max. If the cost is
   // still decreasing here, we just accept α_max.
-  CalcCostAlongLine(model, v, dv, alpha, &ell, &dell_dalpha, &d2ell_dalpha2);
+  model.CalcCostAlongLine(v, dv, alpha, &data, &dell_dalpha, &d2ell_dalpha2);
   if (dell_dalpha <= 0) {
     return;  // α = α_max and num_iterations = 0 are set above.
   }
@@ -230,23 +231,20 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
 
   // N.B. This struct collects everything the lambda function needs access to.
   struct EvalData {
-    const ConvexIntegrator<double>& integrator;
     const PooledSapModel<double>& model;
+    SapData<double>& data;
     const VectorX<double>& v;
     const VectorX<double>& dv;
     const double& dell_scale;
   };
-  EvalData eval_data{*this, model, v, dv, dell_scale};
+  EvalData eval_data{model, data, v, dv, dell_scale};
 
   // Compute the cost and gradient of f(α) = −ℓ'(α)/ℓ'₀.
   auto cost_and_gradient = [&eval_data](double x) {
-    double l;  // unused
     double dell;
     double d2ell;
-    // TODO(vincekurtz): defining CalcCostAlongLine in PooledSapModel might make
-    // this cleaner.
-    eval_data.integrator.CalcCostAlongLine(eval_data.model, eval_data.v,
-                                       eval_data.dv, x, &l, &dell, &d2ell);
+    eval_data.model.CalcCostAlongLine(eval_data.v, eval_data.dv, x,
+                                      &eval_data.data, &dell, &d2ell);
     return std::make_pair(dell / eval_data.dell_scale,
                           d2ell / eval_data.dell_scale);
   };
@@ -260,35 +258,9 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
 
   // TODO(vincekurtz): scale linesearch tolerance based on accuracy.
   const double alpha_tolerance = solver_parameters_.ls_tolerance * alpha_guess;
-  std::tie(alpha, num_iterations) =
-      DoNewtonWithBisectionFallback(cost_and_gradient, bracket, alpha_guess,
-                                    alpha_tolerance,
-                                    solver_parameters_.ls_tolerance,
-                                    solver_parameters_.max_iterations);
-}
-
-template <typename T>
-void ConvexIntegrator<T>::CalcCostAlongLine(
-    const PooledSapModel<T>& model, const VectorX<T>& v,
-    const VectorX<T>& dv, const T& alpha, T* ell, T* dell_dalpha,
-    T* d2ell_dalpha2) const {
-  // TODO(vincekurtz): pre-allocate these, and think through whether we can just
-  // use this->data() instead of scratch_data.
-  SapData<T> scratch_data;
-  VectorX<T> v_alpha(v.size());
-
-  // Compute full cost, gradient, and Hessian.
-  model.ResizeData(&scratch_data);
-  v_alpha = v + alpha * dv;
-  model.CalcData(v_alpha, &scratch_data);
-
-  // Compute ℓ, ∂ℓ/∂α, and ∂²ℓ/∂α².
-  // TODO(vincekurtz): use the more efficient O(n) methods from the SAP paper.
-  *ell = scratch_data.cache().cost;
-  *dell_dalpha = scratch_data.cache().gradient.dot(dv);
-  MatrixX<T> H = scratch_data.cache().hessian.MakeDenseMatrix();
-  *d2ell_dalpha2 = dv.dot(H * dv);
-
+  std::tie(alpha, num_iterations) = DoNewtonWithBisectionFallback(
+      cost_and_gradient, bracket, alpha_guess, alpha_tolerance,
+      solver_parameters_.ls_tolerance, solver_parameters_.max_iterations);
 }
 
 }  // namespace systems

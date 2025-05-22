@@ -197,12 +197,6 @@ class ConvexIntegrator final : public IntegratorBase<T> {
                               const VectorX<T>& v, const VectorX<T>& dv,
                               T* alpha, int* num_iterations);
 
-  // Compute the cost along the linesearch direction, ℓ(α) = ℓ(v + α Δ v), along
-  // with first and second derivatives ∂ℓ/∂α and ∂²ℓ/∂α² for exact line search.
-  void CalcCostAlongLine(const PooledSapModel<T>& model, const VectorX<T>& v,
-                         const VectorX<T>& dv, const T& alpha, T* ell,
-                         T* dell_dalpha, T* d2ell_dalpha2) const;
-
   // The multibody plant used as the basis of the convex optimization problem.
   MultibodyPlant<T>* plant_{nullptr};
 
@@ -224,8 +218,8 @@ bool ConvexIntegrator<double>::SolveWithGuess(const PooledSapModel<double>&,
                                               VectorX<double>*);
 template <>
 void ConvexIntegrator<double>::PerformExactLineSearch(
-    const PooledSapModel<double>&, const VectorX<double>&, const VectorX<double>&,
-    double*, int*);
+    const PooledSapModel<double>&, const VectorX<double>&,
+    const VectorX<double>&, double*, int*);
 
 }  // namespace systems
 }  // namespace drake

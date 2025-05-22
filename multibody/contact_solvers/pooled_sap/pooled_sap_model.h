@@ -259,6 +259,11 @@ class PooledSapModel {
   // Updates `data` as a function of v.
   void CalcData(const VectorX<T>& v, SapData<T>* data) const;
 
+  // Compute the cost along the linesearch direction, ℓ(α) = ℓ(v + α Δ v), along
+  // with the first and second derivatives ∂ℓ/∂α, ∂²ℓ/∂α².
+  T CalcCostAlongLine(const VectorX<T>& v, const VectorX<T>& dv, const T& alpha,
+                      SapData<T>* data, T* dell_dalpha, T* d2ell_dalpha2) const;
+
   const VectorX<T>& r() const { return params_->r; }
 
  private:
