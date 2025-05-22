@@ -102,8 +102,9 @@ TEST_F(RpyBallMobilizerTest, ZeroState) {
   EXPECT_TRUE(X_WB.IsExactlyIdentity());
 }
 
-// For an arbitrary state verify that the computed Nplus(q) matrix is the
-// inverse of N(q).
+// For an arbitrary state, verify that calculating the Nplus matrix N⁺(q) is the
+// inverse of N(q), e.g., verify N⁺(q) * N(q) = [I] (the identity matrix). Also
+// verify the time derivatives of N⁺(q) * N(q) and N(q) * N⁺(q) are both zero.
 TEST_F(RpyBallMobilizerTest, KinematicMapping) {
   const Vector3d rpy(M_PI / 3, -M_PI / 3, M_PI / 5);
   mobilizer_->SetAngles(context_.get(), rpy);
@@ -111,21 +112,40 @@ TEST_F(RpyBallMobilizerTest, KinematicMapping) {
   ASSERT_EQ(mobilizer_->num_positions(), 3);
   ASSERT_EQ(mobilizer_->num_velocities(), 3);
 
-  // Compute N.
-  MatrixX<double> N(3, 3);
+  // Compute the N(q) and Nplus(q) matrices.
+  MatrixX<double> N(3, 3), Nplus(3, 3);
   mobilizer_->CalcNMatrix(*context_, &N);
-
-  // Compute Nplus.
-  MatrixX<double> Nplus(3, 3);
   mobilizer_->CalcNplusMatrix(*context_, &Nplus);
 
-  // Verify that Nplus is the inverse of N.
-  MatrixX<double> N_x_Nplus = N * Nplus;
-  MatrixX<double> Nplus_x_N = Nplus * N;
-
+  // Verify that Nplus (N⁺) is the inverse of N and vice-versa.
+  const MatrixX<double> N_x_Nplus = N * Nplus;
+  const MatrixX<double> Nplus_x_N = Nplus * N;
   EXPECT_TRUE(CompareMatrices(N_x_Nplus, Matrix3d::Identity(), kTolerance,
                               MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(Nplus_x_N, Matrix3d::Identity(), kTolerance,
+                              MatrixCompareType::relative));
+
+  // Set a generic angular velocity.
+  const Vector3<double> v(0.5, -0.7, 2.3);
+  mobilizer_->SetAngularVelocity(context_.get(), v);
+
+  // Compute the NDot(q,q̇) and NplusDot(q,q̇) matrices.
+  MatrixX<double> NDot(3, 3), NplusDot(3, 3);
+  mobilizer_->CalcNDotMatrix(*context_, &NDot);
+  mobilizer_->CalcNplusDotMatrix(*context_, &NplusDot);
+
+  // The Nplus(q) matrix N⁺ multiplied by N(q) is the identity matrix [I].
+  // Hence the time-derivative of (N⁺ * N = [I]) is Ṅ⁺ * N + N⁺ * Ṅ = [0],
+  // where [0] is the zero matrix. Therefore Ṅ⁺ * N = -N⁺ * Ṅ.
+  // Similarly, the time derivative of (N * N⁺ = [I]) is Ṅ * N⁺ + N * Ṅ⁺ = [0],
+  // so Ṅ * N⁺ = -N * Ṅ⁺.  Verify these relationships.
+  const MatrixX<double> NplusDot_N = NplusDot * N;
+  const MatrixX<double> Nplus_NDot = Nplus * NDot;
+  const MatrixX<double> NDot_Nplus = NDot * Nplus;
+  const MatrixX<double> N_NplusDot = N * NplusDot;
+  EXPECT_TRUE(CompareMatrices(NplusDot_N, -Nplus_NDot, kTolerance,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(NDot_Nplus, -N_NplusDot, kTolerance,
                               MatrixCompareType::relative));
 }
 
