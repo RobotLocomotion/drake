@@ -194,14 +194,14 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
   alpha = solver_parameters_.alpha_max;
   num_iterations = 0;
 
-  // TODO(vincekurtz): pre-allocate these
-  double dell_dalpha = 0.0;
-  double d2ell_dalpha2 = 0.0;
+  double dell_dalpha{NAN};
+  double d2ell_dalpha2{NAN};
 
-  // First we'll evaluate ℓ, ∂ℓ/∂α, and ∂²ℓ/∂α² at α = 0. In this case ∂ℓ/∂α
-  // should be strictly negative, since the Hessian is positive definite.
-  // TODO(vincekurtz): don't need to recompute anything here
-  model.CalcCostAlongLine(v, dv, 0.0, &data, &dell_dalpha, &d2ell_dalpha2);
+  // First we'll evaluate ∂ℓ/∂α at α = 0. This should be strictly negative,
+  // since the Hessian is positive definite.
+  // N.B. we already have the gradient at α = 0 cached from solving for the
+  // search direction earlier.
+  dell_dalpha = data.cache().gradient.dot(dv);
   if (dell_dalpha >= 0) {
     throw std::logic_error(
         "ConvexIntegrator: the cost does not decrease along the search "
