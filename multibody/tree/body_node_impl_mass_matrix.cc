@@ -147,8 +147,8 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
         EigenPtr<MatrixX<T>> M) const {
   if constexpr (kNv != 0) {
     const MobodIndex B_index = mobod_index();
-    // This node's 6x6 composite body inertia, about Mo and expressed in M.
-    const Matrix6<T> I_BMo_M = I_BMo_M_cache[B_index].CopyToFullMatrix6();
+    // This node's 6x6 composite body inertia.
+    const SpatialInertia<T>& I_BMo_M = I_BMo_M_cache[B_index];
 
     // For now, calc_tau_from_M() needs these.
     const math::RigidTransform<T>& X_FM = pcm.get_X_FM(B_index);
@@ -168,13 +168,20 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
     // columns of Fmᵀ which are rows of Fm. Then to compute M = Hᵀ⋅Fm we'll
     // do m more applications of Hᵀ to columns of Fm to yield columns of M.
     Eigen::Matrix<T, 6, kNv> Fm_BMo_M;
-    for (int i = 0; i < 6; ++i) {
-      const SpatialForce<T>& I =
-          *reinterpret_cast<const SpatialForce<T>*>(I_BMo_M.col(i).data());
-      Eigen::Matrix<T, 1, kNv> Fm_row_i;  // Contiguous storage needed.
-      mobilizer_->calc_tau_from_M(X_FM, q, I, Fm_row_i.data());
-      Fm_BMo_M.row(i) = Fm_row_i;
-    }
+    Eigen::Matrix<T, 1, kNv> Fm_row_i;  // Contiguous storage needed.
+    const T& mass = I_BMo_M.get_mass();
+    mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col0(), Fm_row_i.data());
+    Fm_BMo_M.row(0) = mass * Fm_row_i;
+    mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col1(), Fm_row_i.data());
+    Fm_BMo_M.row(1) = mass * Fm_row_i;
+    mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col2(), Fm_row_i.data());
+    Fm_BMo_M.row(2) = mass * Fm_row_i;
+    mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col3(), Fm_row_i.data());
+    Fm_BMo_M.row(3) = mass * Fm_row_i;
+    mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col4(), Fm_row_i.data());
+    Fm_BMo_M.row(4) = mass * Fm_row_i;
+    mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col5(), Fm_row_i.data());
+    Fm_BMo_M.row(5) = mass * Fm_row_i;
 
     const int B_start_in_v = mobilizer().velocity_start_in_v();
 
@@ -204,8 +211,9 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
       // We've got Fm_CMc_Mc but we need to shift and re-express to the parent's
       // M frame Mp to yield Fm_PMp_Mp.
       Eigen::Matrix<T, 6, kNv> Fm_PMp_Mp;
-      // This is SpatialForce<T>::ShiftInPlace(&Fm_CMc_Mp, -p_MpMc_Mp) but
-      // done with fixed sizes (no loop if kNv==1). 42 * kNv flops
+      // This is
+      //   Fm_PMp_Mp = SpatialForce<T>::Shift(R_MpMc * Fm_CMc_Mc, -p_MpMc_Mp)
+      // but done with fixed sizes (no loop if kNv==1). 42 * kNv flops
       for (int col = 0; col < kNv; ++col) {
         // Ugly Eigen intermediate types; don't look!
         const auto torque_C = Fm_CMc_Mc.template block<3, 1>(0, col);
