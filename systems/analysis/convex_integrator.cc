@@ -226,34 +226,22 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
 
   // We've exhausted all of the early exit conditions, so now we move on to the
   // Newton method with bisection fallback. To do so, we define an anonymous
-  // function that computes the cost and gradient of f(α) = −ℓ'(α)/ℓ'₀.
+  // function that computes the value and gradient of f(α) = −ℓ'(α)/ℓ'₀.
   // Normalizing in this way reduces round-off errors, ensuring f(0) = -1.
-
-  // N.B. This struct collects everything the lambda function needs access to.
-  struct EvalData {
-    const PooledSapModel<double>& model;
-    SapData<double>& data;
-    const VectorX<double>& v;
-    const VectorX<double>& dv;
-    const double& dell_scale;
-  };
-  EvalData eval_data{model, data, v, dv, dell_scale};
-
-  // Compute the cost and gradient of f(α) = −ℓ'(α)/ℓ'₀.
-  auto cost_and_gradient = [&eval_data](double x) {
+  auto cost_and_gradient = [&model, &data, &v, &dv, &dell_scale](double x) {
     double dell;
     double d2ell;
-    eval_data.model.CalcCostAlongLine(eval_data.v, eval_data.dv, x,
-                                      &eval_data.data, &dell, &d2ell);
-    return std::make_pair(dell / eval_data.dell_scale,
-                          d2ell / eval_data.dell_scale);
+    model.CalcCostAlongLine(v, dv, x, &data, &dell, &d2ell);
+    return std::make_pair(dell / dell_scale, d2ell / dell_scale);
   };
 
   // TODO(vincekurtz): use a more informative initial guess
   const double alpha_guess = 0.8;
 
-  // The initial bracket is [0, alpha_max], since we already know that ℓ'(0) < 0
-  // and ℓ'(α_max) > 0
+  // The initial bracket is [0, α_max], since we already know that ℓ'(0) < 0 and
+  // ℓ'(α_max) > 0. Values at the endpoints of the bracket are f(0) = -1 (by
+  // definition) and f(α_max) = dell_dalpha / dell_scale, because we just
+  // computed dell_dalpha = ℓ'(α_max) above.
   const Bracket bracket(0.0, -1.0, alpha, dell_dalpha / dell_scale);
 
   // TODO(vincekurtz): scale linesearch tolerance based on accuracy.
