@@ -355,10 +355,18 @@ void MosekSolver::DoSolve2(const MathematicalProgram& prog,
       result->set_x_val(sol_vector);
     }
     MSKrealt optimal_cost;
-    rescode = MSK_getprimalobj(impl.task(), solution_type, &optimal_cost);
-    DRAKE_ASSERT(rescode == MSK_RES_OK);
-    if (rescode == MSK_RES_OK) {
-      result->set_optimal_cost(optimal_cost);
+    switch (solution_status) {
+      case MSK_SOL_STA_PRIM_INFEAS_CER: {
+        result->set_optimal_cost(MathematicalProgram::kGlobalInfeasibleCost);
+        break;
+      }
+      default: {
+        rescode = MSK_getprimalobj(impl.task(), solution_type, &optimal_cost);
+        DRAKE_ASSERT(rescode == MSK_RES_OK);
+        if (rescode == MSK_RES_OK) {
+          result->set_optimal_cost(optimal_cost);
+        }
+      }
     }
     rescode = impl.SetDualSolution(
         solution_type, prog, bb_con_dual_indices, linear_con_dual_indices,

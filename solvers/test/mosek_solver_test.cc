@@ -721,6 +721,8 @@ GTEST_TEST(MosekTest, InfeasibleLinearProgramTest) {
   if (solver.available()) {
     const auto result = solver.Solve(prog);
     ASSERT_FALSE(result.is_success());
+    EXPECT_EQ(result.get_optimal_cost(),
+              MathematicalProgram::kGlobalInfeasibleCost);
     // Check that the primal solutions are not NAN.
     for (int i = 0; i < x.rows(); ++i) {
       EXPECT_FALSE(std::isnan(result.GetSolution(x(i))));
@@ -745,6 +747,8 @@ GTEST_TEST(MosekTest, InfeasibleSemidefiniteProgramTest) {
   if (solver.available()) {
     const auto result = solver.Solve(prog);
     ASSERT_FALSE(result.is_success());
+    EXPECT_EQ(result.get_optimal_cost(),
+              MathematicalProgram::kGlobalInfeasibleCost);
     // Check that the primal solutions are not NAN.
     const auto X_sol = result.GetSolution(X);
     for (int i = 0; i < X.rows(); ++i) {
