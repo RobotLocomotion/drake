@@ -940,7 +940,7 @@ void GurobiSolver::DoSolve2(const MathematicalProgram& prog,
 
   // A couple options don't use the standard GRBset{...}param API.
   const bool compute_iis = [&options]() {
-    const int value = options->template Pop<int>("GRBcomputeIIS").value_or(0);
+    const int value = options->Pop<int>("GRBcomputeIIS").value_or(0);
     if (!(value == 0 || value == 1)) {
       throw std::runtime_error(fmt::format(
           "GurobiSolver(): option GRBcomputeIIS should be either 0 or 1, but "
