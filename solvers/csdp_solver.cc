@@ -421,7 +421,7 @@ std::string MaybeWriteCsdpParams(internal::SpecificOptions* options,
     constexpr int kLorentzConeSlack =
         static_cast<int>(RemoveFreeVariableMethod::kLorentzConeSlack);
     const int method =
-        options->template Pop<int>("drake::RemoveFreeVariableMethod")
+        options->Pop<int>("drake::RemoveFreeVariableMethod")
             .value_or(kNullspace);
     if (!(method >= kTwoSlackVariables && method <= kLorentzConeSlack)) {
       throw std::logic_error(fmt::format(
