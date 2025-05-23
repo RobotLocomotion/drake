@@ -592,7 +592,7 @@ class ForceDensityField;
 
 namespace internal {
 
-// Attorney to give access to MultibodyElement and ForceDensityField to a
+// Attorney to give access to MultibodyElement and ForceDensityFieldBase to a
 // selection of protected methods for declaring/accessing/mutating
 // MultibodyTreeSystem parameters, cache entries, and input ports.
 template <typename T>

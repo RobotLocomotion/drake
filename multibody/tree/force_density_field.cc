@@ -1,4 +1,4 @@
-#include "drake/multibody/plant/force_density_field.h"
+#include "drake/multibody/tree/force_density_field.h"
 
 namespace drake {
 namespace multibody {

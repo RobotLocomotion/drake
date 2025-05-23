@@ -3,7 +3,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/plant/force_density_field.h"
+#include "drake/multibody/fem/force_density_field_base.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -19,14 +19,14 @@ template <typename T>
 struct FemPlantData {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FemPlantData);
-  FemPlantData(
-      const systems::Context<T>& plant_context_in,
-      const std::vector<const ForceDensityField<T>*>& force_density_fields_in)
+  FemPlantData(const systems::Context<T>& plant_context_in,
+               const std::vector<const ForceDensityFieldBase<T>*>&
+                   force_density_fields_in)
       : plant_context(plant_context_in),
         force_density_fields(force_density_fields_in) {}
 
   const systems::Context<T>& plant_context;
-  std::vector<const ForceDensityField<T>*> force_density_fields;
+  std::vector<const ForceDensityFieldBase<T>*> force_density_fields;
 };
 
 }  // namespace fem

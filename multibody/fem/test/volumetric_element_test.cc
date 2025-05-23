@@ -11,6 +11,7 @@
 #include "drake/multibody/fem/linear_simplex_element.h"
 #include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/force_density_field.h"
 
 namespace drake {
 namespace multibody {
@@ -429,7 +430,7 @@ TEST_F(VolumetricElementTest, PerCurrentVolumeExternalForce) {
       return f_;
     };
 
-    std::unique_ptr<ForceDensityField<AD>> DoClone() const final {
+    std::unique_ptr<ForceDensityFieldBase<AD>> DoClone() const final {
       return std::make_unique<ConstantForceDensityField>(*this);
     }
 

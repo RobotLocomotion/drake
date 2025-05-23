@@ -441,7 +441,7 @@ class VolumetricElement
       const Matrix3<T>& deformation_gradient =
           data.deformation_gradient_data[q].deformation_gradient();
       Vector3<T> scaled_force = Vector3<T>::Zero();
-      for (const multibody::ForceDensityField<T>* force_density :
+      for (const multibody::ForceDensityFieldBase<T>* force_density :
            plant_data.force_density_fields) {
         DRAKE_ASSERT(force_density != nullptr);
         const T change_of_volume =

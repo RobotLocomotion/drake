@@ -151,7 +151,7 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
                                  EigenPtr<Vector<T, kNumDofs>> result) const {
     for (int i = 0; i < this->num_nodes; ++i) {
       const auto node_q = data.element_q.template segment<3>(3 * i);
-      for (const multibody::ForceDensityField<T>* force_density :
+      for (const multibody::ForceDensityFieldBase<T>* force_density :
            plant_data.force_density_fields) {
         result->template segment<3>(3 * i) +=
             scale * force_density->EvaluateAt(plant_data.plant_context, node_q);

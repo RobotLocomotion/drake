@@ -6,6 +6,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
+#include "drake/multibody/tree/force_density_field.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -370,7 +371,7 @@ TEST_F(DeformableModelTest, ExternalForces) {
       return get_input_port().Eval(context)(0) * field_(p_WQ);
     };
 
-    std::unique_ptr<ForceDensityField<double>> DoClone() const final {
+    std::unique_ptr<ForceDensityFieldBase<double>> DoClone() const final {
       return std::make_unique<ConstantForceDensityField>(*this);
     }
 
@@ -415,7 +416,7 @@ TEST_F(DeformableModelTest, ExternalForces) {
       deformable_model_ptr_->GetExternalForces(fake_id),
       fmt::format(".*No.*id.*{}.*registered.*", fake_id));
 
-  const std::vector<const ForceDensityField<double>*>& external_forces =
+  const std::vector<const ForceDensityFieldBase<double>*>& external_forces =
       deformable_model_ptr_->GetExternalForces(body_id);
   for (const auto* force : external_forces) {
     const auto* g = dynamic_cast<const GravityForceField<double>*>(force);
