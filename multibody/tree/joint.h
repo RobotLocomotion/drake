@@ -976,11 +976,6 @@ class Joint : public MultibodyElement<T> {
   /// Mobilizer.
   bool has_mobilizer() const { return mobilizer_ != nullptr; }
 
-  DRAKE_DEPRECATED(
-      "2025-06-01",
-      "Use has_mobilizer() instead (JointImplementation class is gone).")
-  bool has_implementation() const { return has_mobilizer(); }
-
  private:
   // Make all other Joint<U> objects a friend of Joint<T> so they can clone
   // successfully.
