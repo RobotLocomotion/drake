@@ -3205,12 +3205,12 @@ template <typename T>
 void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
     const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
     const Frame<T>& frame_A, const Frame<T>& frame_E,
-    EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
+    EigenPtr<Matrix3X<T>> Js_v_AScm_E) const {
   const int num_columns = (with_respect_to == JacobianWrtVariable::kQDot)
                               ? num_positions()
                               : num_velocities();
-  DRAKE_THROW_UNLESS(Js_v_ACcm_E != nullptr);
-  DRAKE_THROW_UNLESS(Js_v_ACcm_E->cols() == num_columns);
+  DRAKE_THROW_UNLESS(Js_v_AScm_E != nullptr);
+  DRAKE_THROW_UNLESS(Js_v_AScm_E->cols() == num_columns);
 
   // Reminder: MultibodyTree always declares a world body (0ᵗʰ body).
   if (num_bodies() <= 1) {
@@ -3221,7 +3221,7 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
     throw std::logic_error(message);
   }
 
-  Js_v_ACcm_E->setZero();
+  Js_v_AScm_E->setZero();
   T composite_mass = 0;
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
@@ -3231,7 +3231,7 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
         context, with_respect_to, body.body_frame(), body.body_frame(),
         pi_BoBcm, frame_A, frame_E, &Jsi_v_ABcm_E);
     const T& body_mass = body.get_mass(context);
-    *Js_v_ACcm_E += body_mass * Jsi_v_ABcm_E;
+    *Js_v_AScm_E += body_mass * Jsi_v_ABcm_E;
     composite_mass += body_mass;
   }
 
@@ -3241,7 +3241,7 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
     throw std::logic_error(message);
   }
 
-  *Js_v_ACcm_E /= composite_mass;
+  *Js_v_AScm_E /= composite_mass;
 }
 
 template <typename T>
@@ -3249,12 +3249,12 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
     const systems::Context<T>& context,
     const std::vector<ModelInstanceIndex>& model_instances,
     JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
-    const Frame<T>& frame_E, EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
+    const Frame<T>& frame_E, EigenPtr<Matrix3X<T>> Js_v_AScm_E) const {
   const int num_columns = (with_respect_to == JacobianWrtVariable::kQDot)
                               ? num_positions()
                               : num_velocities();
-  DRAKE_THROW_UNLESS(Js_v_ACcm_E != nullptr);
-  DRAKE_THROW_UNLESS(Js_v_ACcm_E->cols() == num_columns);
+  DRAKE_THROW_UNLESS(Js_v_AScm_E != nullptr);
+  DRAKE_THROW_UNLESS(Js_v_AScm_E->cols() == num_columns);
 
   // Reminder: MultibodyTree always declares a world body.
   if (num_bodies() <= 1) {
@@ -3266,7 +3266,7 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
   }
 
   T total_mass = 0;
-  Js_v_ACcm_E->setZero();
+  Js_v_AScm_E->setZero();
 
   // Sum over all bodies contained in model_instances except for the 0th body
   // (which is the world body), and count each body's contribution only once.
@@ -3293,7 +3293,7 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
       CalcJacobianTranslationalVelocity(
           context, with_respect_to, body.body_frame(), body.body_frame(),
           pi_BoBcm, frame_A, frame_E, &Jsi_v_ABcm_E);
-      *Js_v_ACcm_E += body_mass * Jsi_v_ABcm_E;
+      *Js_v_AScm_E += body_mass * Jsi_v_ABcm_E;
     }
   }
 
@@ -3312,8 +3312,8 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
     throw std::logic_error(message);
   }
 
-  /// J𝑠_v_ACcm_ = ∑ (mᵢ Jᵢ) / mₛ, where mₛ = ∑ mᵢ.
-  *Js_v_ACcm_E /= total_mass;
+  /// J𝑠_v_AScm_ = ∑ (mᵢ Jᵢ) / mₛ, where mₛ = ∑ mᵢ.
+  *Js_v_AScm_E /= total_mass;
 }
 
 template <typename T>
@@ -3330,15 +3330,15 @@ Vector3<T> MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
   }
 
   T composite_mass = 0;
-  Vector3<T> asBias_ACcm_E = Vector3<T>::Zero();
+  Vector3<T> asBias_AScm_E = Vector3<T>::Zero();
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
     const Vector3<T> pi_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
     const Frame<T>& frame_B = body.body_frame();
-    const SpatialAcceleration<T> AsBiasi_ACcm_E = CalcBiasSpatialAcceleration(
+    const SpatialAcceleration<T> AsBiasi_AScm_E = CalcBiasSpatialAcceleration(
         context, with_respect_to, frame_B, pi_BoBcm_B, frame_A, frame_E);
     const T& body_mass = body.get_mass(context);
-    asBias_ACcm_E += body_mass * AsBiasi_ACcm_E.translational();
+    asBias_AScm_E += body_mass * AsBiasi_AScm_E.translational();
     composite_mass += body_mass;
   }
 
@@ -3347,8 +3347,8 @@ Vector3<T> MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
         "{}(): The system's total mass must be greater than zero.", __func__);
     throw std::logic_error(message);
   }
-  asBias_ACcm_E /= composite_mass;
-  return asBias_ACcm_E;
+  asBias_AScm_E /= composite_mass;
+  return asBias_AScm_E;
 }
 
 template <typename T>
