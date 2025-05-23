@@ -32,7 +32,7 @@ drake_cc_package_library(
         ":fem_solver",
         ":fem_state",
         ":fem_state_system",
-        ":force_density_field",
+        ":force_density_field_base",
         ":isoparametric_element",
         ":linear_constitutive_model",
         ":linear_constitutive_model_data",
@@ -252,7 +252,7 @@ drake_cc_library(
         "fem_plant_data.h",
     ],
     deps = [
-        ":force_density_field",
+        ":force_density_field_base",
         "//common:default_scalars",
         "//common:essential",
         "//systems/framework:context",
@@ -310,12 +310,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "force_density_field",
+    name = "force_density_field_base",
     srcs = [
-        "force_density_field.cc",
+        "force_density_field_base.cc",
     ],
     hdrs = [
-        "force_density_field.h",
+        "force_density_field_base.h",
     ],
     deps = [
         "//common:default_scalars",
@@ -732,9 +732,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "force_density_field_test",
+    name = "force_density_field_base_test",
     deps = [
-        ":force_density_field",
+        ":force_density_field_base",
         "//multibody/plant",
     ],
 )

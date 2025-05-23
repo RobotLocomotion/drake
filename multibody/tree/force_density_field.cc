@@ -1,13 +1,13 @@
-#include "drake/multibody/tree/force_density_field_impl.h"
+#include "drake/multibody/tree/force_density_field.h"
 
 namespace drake {
 namespace multibody {
 
 template <typename T>
-ForceDensityFieldImpl<T>::~ForceDensityFieldImpl() = default;
+ForceDensityField<T>::~ForceDensityField() = default;
 
 template <typename T>
-systems::CacheEntry& ForceDensityFieldImpl<T>::DeclareCacheEntry(
+systems::CacheEntry& ForceDensityField<T>::DeclareCacheEntry(
     internal::MultibodyTreeSystem<T>* plant, std::string description,
     systems::ValueProducer value_producer,
     std::set<systems::DependencyTicket> prerequisites_of_calc) {
@@ -17,7 +17,7 @@ systems::CacheEntry& ForceDensityFieldImpl<T>::DeclareCacheEntry(
 }
 
 template <typename T>
-systems::InputPort<T>& ForceDensityFieldImpl<T>::DeclareAbstractInputPort(
+systems::InputPort<T>& ForceDensityField<T>::DeclareAbstractInputPort(
     internal::MultibodyTreeSystem<T>* plant, std::string name,
     const AbstractValue& model_value) {
   return internal::MultibodyTreeSystemElementAttorney<
@@ -25,7 +25,7 @@ systems::InputPort<T>& ForceDensityFieldImpl<T>::DeclareAbstractInputPort(
 }
 
 template <typename T>
-systems::InputPort<T>& ForceDensityFieldImpl<T>::DeclareVectorInputPort(
+systems::InputPort<T>& ForceDensityField<T>::DeclareVectorInputPort(
     internal::MultibodyTreeSystem<T>* plant, std::string name,
     const systems::BasicVector<T>& model_vector) {
   return internal::MultibodyTreeSystemElementAttorney<
@@ -39,7 +39,7 @@ GravityForceField<T>::~GravityForceField() = default;
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::ForceDensityFieldImpl);
+    class ::drake::multibody::ForceDensityField);
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::GravityForceField);

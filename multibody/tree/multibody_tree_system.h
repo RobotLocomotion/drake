@@ -588,11 +588,11 @@ namespace multibody {
 template <typename T>
 class MultibodyElement;
 template <typename T>
-class ForceDensityFieldImpl;
+class ForceDensityField;
 
 namespace internal {
 
-// Attorney to give access to MultibodyElement and ForceDensityField to a
+// Attorney to give access to MultibodyElement and ForceDensityFieldBase to a
 // selection of protected methods for declaring/accessing/mutating
 // MultibodyTreeSystem parameters, cache entries, and input ports.
 template <typename T>
@@ -605,7 +605,7 @@ class MultibodyTreeSystemElementAttorney {
   template <typename U>
   friend class drake::multibody::MultibodyElement;
 
-  friend class drake::multibody::ForceDensityFieldImpl<T>;
+  friend class drake::multibody::ForceDensityField<T>;
 
   static systems::NumericParameterIndex DeclareNumericParameter(
       MultibodyTreeSystem<T>* tree_system,

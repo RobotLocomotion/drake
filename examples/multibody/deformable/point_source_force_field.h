@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/tree/force_density_field_impl.h"
+#include "drake/multibody/tree/force_density_field.h"
 
 namespace drake {
 namespace examples {
@@ -16,7 +16,7 @@ namespace deformable {
  a double-valued input port (see maximum_force_density_input_port()). If the
  port is unconnected, it reads as zero. */
 class PointSourceForceField final
-    : public multibody::ForceDensityFieldImpl<double> {
+    : public multibody::ForceDensityField<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointSourceForceField);
 
@@ -61,7 +61,7 @@ class PointSourceForceField final
   Vector3<double> DoEvaluateAt(const systems::Context<double>& context,
                                const Vector3<double>& p_WQ) const final;
 
-  std::unique_ptr<ForceDensityField<double>> DoClone() const final;
+  std::unique_ptr<ForceDensityFieldBase<double>> DoClone() const final;
 
   void DoDeclareCacheEntries(multibody::MultibodyPlant<double>* plant) final;
 

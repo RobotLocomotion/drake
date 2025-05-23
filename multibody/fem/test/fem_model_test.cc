@@ -11,7 +11,7 @@
 #include "drake/multibody/fem/volumetric_element.h"
 #include "drake/multibody/fem/volumetric_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/tree/force_density_field_impl.h"
+#include "drake/multibody/tree/force_density_field.h"
 
 namespace drake {
 namespace multibody {
@@ -119,8 +119,7 @@ GTEST_TEST(FemModelTest, CalcResidualWithContextDependentExternalForce) {
   unique_ptr<FemState<double>> fem_state = model.MakeFemState();
 
   /* A force field where the magnitude of the force density depends on time. */
-  class TimeScaledForceDensityField final
-      : public ForceDensityFieldImpl<double> {
+  class TimeScaledForceDensityField final : public ForceDensityField<double> {
    public:
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TimeScaledForceDensityField);
 
@@ -136,7 +135,7 @@ GTEST_TEST(FemModelTest, CalcResidualWithContextDependentExternalForce) {
       return context.get_time() * unit_vector_;
     };
 
-    std::unique_ptr<ForceDensityField<double>> DoClone() const final {
+    std::unique_ptr<ForceDensityFieldBase<double>> DoClone() const final {
       return std::make_unique<TimeScaledForceDensityField>(*this);
     }
 

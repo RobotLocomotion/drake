@@ -1,6 +1,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/tree/force_density_field_impl.h"
+#include "drake/multibody/tree/force_density_field.h"
 
 namespace drake {
 namespace multibody {
@@ -10,7 +10,7 @@ namespace multibody {
 // isn't a no-op.
 template <typename T>
 template <typename>
-void ForceDensityFieldImpl<T>::DeclareSystemResources(
+void ForceDensityField<T>::DeclareSystemResources(
     internal::MultibodyTreeSystem<T>* tree_system) {
   DRAKE_DEMAND(tree_system != nullptr);
   tree_system_ = tree_system;
@@ -27,7 +27,7 @@ void ForceDensityFieldImpl<T>::DeclareSystemResources(
 
 // clang-format off
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
-    &ForceDensityFieldImpl<T>::template DeclareSystemResources<void>
+    &ForceDensityField<T>::template DeclareSystemResources<void>
 ));
 // clang-format on
 

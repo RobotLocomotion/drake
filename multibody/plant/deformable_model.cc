@@ -14,7 +14,7 @@
 #include "drake/multibody/fem/velocity_newmark_scheme.h"
 #include "drake/multibody/fem/volumetric_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/tree/force_density_field_impl.h"
+#include "drake/multibody/tree/force_density_field.h"
 
 namespace drake {
 namespace multibody {
@@ -264,14 +264,14 @@ Matrix3X<T> DeformableModel<T>::GetPositions(const systems::Context<T>& context,
 
 template <typename T>
 void DeformableModel<T>::AddExternalForce(
-    std::unique_ptr<ForceDensityField<T>> force_density) {
+    std::unique_ptr<ForceDensityFieldBase<T>> force_density) {
   this->ThrowIfSystemResourcesDeclared(__func__);
   ThrowIfNotDouble(__func__);
   force_densities_.push_back(std::move(force_density));
 }
 
 template <typename T>
-const std::vector<const ForceDensityField<T>*>&
+const std::vector<const ForceDensityFieldBase<T>*>&
 DeformableModel<T>::GetExternalForces(DeformableBodyId id) const {
   this->ThrowIfSystemResourcesNotDeclared(__func__);
   ThrowUnlessRegistered(__func__, id);
@@ -582,11 +582,11 @@ void DeformableModel<T>::DoDeclareSystemResources() {
 
   /* Declare cache entries and input ports for force density fields that need
    them. */
-  for (std::unique_ptr<ForceDensityField<T>>& force_density :
+  for (std::unique_ptr<ForceDensityFieldBase<T>>& force_density :
        force_densities_) {
     /* We know that the static cast is safe because all concrete force density
-     field is derived from ForceDensityFieldImpl. */
-    static_cast<ForceDensityFieldImpl<T>*>(force_density.get())
+     field is derived from ForceDensityField. */
+    static_cast<ForceDensityField<T>*>(force_density.get())
         ->DeclareSystemResources(this->mutable_plant());
   }
 }

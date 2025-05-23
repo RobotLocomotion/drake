@@ -1,9 +1,9 @@
-#include "drake/multibody/fem/force_density_field.h"
+#include "drake/multibody/fem/force_density_field_base.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/tree/force_density_field_impl.h"
+#include "drake/multibody/tree/force_density_field.h"
 
 namespace drake {
 namespace multibody {
@@ -14,7 +14,7 @@ using drake::systems::BasicVector;
 using Eigen::Vector3d;
 
 /* A concrete force density field for testing. */
-class ConstantForceDensityField final : public ForceDensityFieldImpl<double> {
+class ConstantForceDensityField final : public ForceDensityField<double> {
  public:
   /* Constructs an force density field that has the functional form given by
    input `field` which is then scaled by a scalar value via input port. */
@@ -36,7 +36,7 @@ class ConstantForceDensityField final : public ForceDensityFieldImpl<double> {
     return get_input_port().Eval(context)(0) * field_(p_WQ);
   };
 
-  std::unique_ptr<ForceDensityField<double>> DoClone() const final {
+  std::unique_ptr<ForceDensityFieldBase<double>> DoClone() const final {
     return std::unique_ptr<ConstantForceDensityField>(
         new ConstantForceDensityField(*this));
   }

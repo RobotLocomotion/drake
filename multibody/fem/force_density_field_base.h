@@ -11,31 +11,31 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-class ForceDensityFieldImpl;
+class ForceDensityField;
 
-/** (Advanced) Enum for the type of force density in ForceDensityField. */
+/** (Advanced) Enum for the type of force density in ForceDensityFieldBase. */
 enum class ForceDensityType {
-  /** ForceDensityField::EvaluateAt() returns the force per unit of _current_
-   (deformed) configuration volume. */
+  /** ForceDensityFieldBase::EvaluateAt() returns the force per unit of
+   _current_ (deformed) configuration volume. */
   kPerCurrentVolume,
-  /** ForceDensityField::EvaluateAt() returns the force per unit of _reference_
-   configuration volume where the reference undeformed configuration is defined
-   by the input mesh provided by the user. */
+  /** ForceDensityFieldBase::EvaluateAt() returns the force per unit of
+   _reference_ configuration volume where the reference undeformed configuration
+   is defined by the input mesh provided by the user. */
   kPerReferenceVolume,
 };
 
-/** The %ForceDensityField class is an abstract base class that represents a
+/** The %ForceDensityFieldBase class is an abstract base class that represents a
  force density field affecting deformable bodies in a MultibodyPlant. The
  force field is described by the member function EvaluateAt() which takes as
  input a position in the world frame and returns the force density from the
  force density field at the given location, with unit [N/m³]. To create a
- concrete %ForceDensityField class, inherit from ForceDensityFieldImpl instead
- of directly inheriting from %ForceDensityField.
+ concrete %ForceDensityFieldBase class, inherit from ForceDensityField instead
+ of directly inheriting from %ForceDensityFieldBase.
  @tparam_default_scalar */
 template <typename T>
-class ForceDensityField {
+class ForceDensityFieldBase {
  public:
-  virtual ~ForceDensityField() = 0;
+  virtual ~ForceDensityFieldBase() = 0;
 
   /** Evaluates the force density [N/m³] with the given `context` of the
    owning MultibodyPlant and a position in world, `p_WQ`. */
@@ -44,15 +44,15 @@ class ForceDensityField {
     return DoEvaluateAt(context, p_WQ);
   }
 
-  /** Returns an identical copy of `this` ForceDensityField. */
-  std::unique_ptr<ForceDensityField<T>> Clone() const { return DoClone(); }
+  /** Returns an identical copy of `this` ForceDensityFieldBase. */
+  std::unique_ptr<ForceDensityFieldBase<T>> Clone() const { return DoClone(); }
 
-  /* (Advanced) Returns the force density type of `this` %ForceDensityFieldImpl.
+  /* (Advanced) Returns the force density type of `this` %ForceDensityField.
    */
   ForceDensityType density_type() const { return density_type_; }
 
  protected:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ForceDensityField);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ForceDensityFieldBase);
 
   /** Derived classes must override this function to provide a threadsafe
    implemention to the NVI EvaluateAt(). */
@@ -61,15 +61,15 @@ class ForceDensityField {
 
   /** Derived classes must override this function to implement the NVI
    Clone(). */
-  virtual std::unique_ptr<ForceDensityField<T>> DoClone() const = 0;
+  virtual std::unique_ptr<ForceDensityFieldBase<T>> DoClone() const = 0;
 
  private:
-  friend class ForceDensityFieldImpl<T>;
+  friend class ForceDensityField<T>;
 
-  /* Private constructor exposed only to ForceDensityFieldImpl. This prevents
+  /* Private constructor exposed only to ForceDensityField. This prevents
    users from creating concrete force densities that directly inherit from
-   ForceDensityField. */
-  explicit ForceDensityField(ForceDensityType density_type)
+   ForceDensityFieldBase. */
+  explicit ForceDensityFieldBase(ForceDensityType density_type)
       : density_type_(density_type) {}
 
   ForceDensityType density_type_;
@@ -79,4 +79,4 @@ class ForceDensityField {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::ForceDensityField);
+    class ::drake::multibody::ForceDensityFieldBase);

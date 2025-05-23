@@ -9,7 +9,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/fem/force_density_field.h"
+#include "drake/multibody/fem/force_density_field_base.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 
 namespace drake {
@@ -18,15 +18,15 @@ namespace multibody {
 template <typename T>
 class MultibodyPlant;
 
-/** Implementations of the ForceDensityField class should inherit from this
+/** Implementations of the ForceDensityFieldBase class should inherit from this
  class. This class provides the functionality for a force density field to
  depend on context-dependent quantities. It also provides the functionality to
  declare system resources in a MultibodyPlant.
  @tparam_default_scalar */
 template <typename T>
-class ForceDensityFieldImpl : public ForceDensityField<T> {
+class ForceDensityField : public ForceDensityFieldBase<T> {
  public:
-  virtual ~ForceDensityFieldImpl();
+  virtual ~ForceDensityField();
 
   /** Returns true iff `this` external force is owned by a MultibodyPlant. */
   bool has_parent_system() const { return tree_system_ != nullptr; }
@@ -52,7 +52,7 @@ class ForceDensityFieldImpl : public ForceDensityField<T> {
                           MultibodyPlant.
    @note You can only invoke this function if you have a definition of
          MultibodyPlant available. That is, you must include
-        `drake/multibody/plant/multibody_plant.h` in the translation unit that
+         `drake/multibody/plant/multibody_plant.h` in the translation unit that
          invokes this function; force_density_field.h cannot do that for you.
    @pre tree_system != nullptr. */
   template <typename = void>
@@ -63,11 +63,11 @@ class ForceDensityFieldImpl : public ForceDensityField<T> {
 #endif
 
  protected:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ForceDensityFieldImpl);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ForceDensityField);
 
-  explicit ForceDensityFieldImpl(
+  explicit ForceDensityField(
       ForceDensityType density_type = ForceDensityType::kPerCurrentVolume)
-      : ForceDensityField<T>(density_type) {}
+      : ForceDensityFieldBase<T>(density_type) {}
 
   /** NVI implementations for declaring system resources. Defaults to no-op.
    Derived classes should override the default implementation if the external
@@ -116,7 +116,7 @@ class ForceDensityFieldImpl : public ForceDensityField<T> {
  ρ [kg/m³] and gravity vector g [m/s²].
  @tparam_default_scalar */
 template <typename T>
-class GravityForceField : public ForceDensityFieldImpl<T> {
+class GravityForceField : public ForceDensityField<T> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GravityForceField);
 
@@ -126,7 +126,7 @@ class GravityForceField : public ForceDensityFieldImpl<T> {
   (undeformed) configuration is defined by the input mesh provided by the user.
   */
   GravityForceField(const Vector3<T>& gravity_vector, const T& mass_density)
-      : ForceDensityFieldImpl<T>(ForceDensityType::kPerReferenceVolume),
+      : ForceDensityField<T>(ForceDensityType::kPerReferenceVolume),
         force_density_(mass_density * gravity_vector) {}
 
   ~GravityForceField() override;
@@ -137,7 +137,7 @@ class GravityForceField : public ForceDensityFieldImpl<T> {
     return force_density_;
   };
 
-  std::unique_ptr<ForceDensityField<T>> DoClone() const final {
+  std::unique_ptr<ForceDensityFieldBase<T>> DoClone() const final {
     return std::make_unique<GravityForceField<T>>(*this);
   }
 
@@ -149,7 +149,7 @@ class GravityForceField : public ForceDensityFieldImpl<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::ForceDensityFieldImpl);
+    class ::drake::multibody::ForceDensityField);
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::GravityForceField);
