@@ -17,7 +17,6 @@
 #include "drake/multibody/fem/fem_model.h"
 #include "drake/multibody/plant/contact_properties.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
-#include "drake/multibody/plant/force_density_field.h"
 #include "drake/multibody/plant/hydroelastic_quadrature_point_data.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
@@ -632,18 +631,17 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
           .template Eval<geometry::GeometryConfigurationVector<T>>(context);
   for (DeformableBodyIndex index(0); index < deformable_model_->num_bodies();
        ++index) {
-    DeformableBodyId body_id = deformable_model_->GetBodyId(index);
-    if (!deformable_model_->is_enabled(body_id, context) ||
-        !deformable_model_->HasConstraint(body_id)) {
+    const DeformableBody<T>& body = deformable_model_->GetBody(index);
+    if (!body.is_enabled(context) || !body.has_fixed_constraint()) {
       continue;
     }
 
-    const FemModel<T>& fem_model = deformable_model_->GetFemModel(body_id);
+    const FemModel<T>& fem_model = body.fem_model();
     const DirichletBoundaryCondition<T>& bc =
         fem_model.dirichlet_boundary_condition();
 
-    /* Returns true iff for the deformable body with `body_id`, the given vertex
-     index is under boundary condition. */
+    /* Returns true iff for the deformable body, the given vertex index is under
+     boundary condition. */
     auto is_under_bc = [&](int vertex_index) {
       return bc.index_to_boundary_state().count(
                  multibody::fem::FemNodeIndex(vertex_index)) > 0;
@@ -654,15 +652,13 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
     // Each deformable body forms its own clique and are indexed in inceasing
     // DeformableBodyIndex order and placed after all rigid cliques.
     const TreeIndex clique_index_A(tree_topology.num_trees() + index);
-    GeometryId geometry_id = deformable_model_->GetGeometryId(body_id);
+    const GeometryId geometry_id = body.geometry_id();
     const PartialPermutation& vertex_permutation =
         EvalVertexPermutation(context, geometry_id);
     const VectorX<T>& p_WVs = configurations.value(geometry_id);
 
-    for (const MultibodyConstraintId& constraint_id :
-         deformable_model_->fixed_constraint_ids(body_id)) {
-      const DeformableRigidFixedConstraintSpec& spec =
-          deformable_model_->fixed_constraint_spec(constraint_id);
+    for (const DeformableRigidFixedConstraintSpec& spec :
+         body.fixed_constraint_specs()) {
       const int num_vertices_in_constraint = ssize(spec.vertices);
       /* The Jacobian block for the deformable body A. */
       Block3x3SparseMatrix<T> negative_Jv_v_WAp(
@@ -1057,23 +1053,21 @@ void DeformableDriver<T>::CalcDeformableContact(
   /* Complete the result with information on constraints other than contact. */
   for (DeformableBodyIndex body_index(0);
        body_index < deformable_model_->num_bodies(); ++body_index) {
-    DeformableBodyId body_id = deformable_model_->GetBodyId(body_index);
+    const DeformableBody<T>& body = deformable_model_->GetBody(body_index);
     /* Add in constraints. */
-    if (deformable_model_->HasConstraint(body_id)) {
+    if (body.has_fixed_constraint()) {
       std::unordered_set<int> fixed_vertices;
-      for (const MultibodyConstraintId& constraint_id :
-           deformable_model_->fixed_constraint_ids(body_id)) {
-        const DeformableRigidFixedConstraintSpec& spec =
-            deformable_model_->fixed_constraint_spec(constraint_id);
+      for (const DeformableRigidFixedConstraintSpec& spec :
+           body.fixed_constraint_specs()) {
         fixed_vertices.insert(spec.vertices.begin(), spec.vertices.end());
       }
       /* Register the geometry in case it hasn't been registered because it's
        not participating in contact but is participating in other types of
        constraints. */
-      GeometryId geometry_id = deformable_model_->GetGeometryId(body_id);
+      GeometryId geometry_id = body.geometry_id();
       if (!result->IsRegistered(geometry_id)) {
-        result->RegisterDeformableGeometry(
-            geometry_id, deformable_model_->GetFemModel(body_id).num_nodes());
+        result->RegisterDeformableGeometry(geometry_id,
+                                           body.fem_model().num_nodes());
       }
       result->Participate(geometry_id, fixed_vertices);
     }

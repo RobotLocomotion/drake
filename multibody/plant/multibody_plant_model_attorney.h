@@ -38,6 +38,11 @@ class MultibodyPlantModelAttorney {
     return *scene_graph;
   }
 
+  static const internal::MultibodyTree<T>& internal_tree(
+      const MultibodyPlant<T>& plant) {
+    return plant.internal_tree();
+  }
+
   static systems::DiscreteStateIndex DeclareDiscreteState(
       MultibodyPlant<T>* plant, const VectorX<T>& model_value) {
     DRAKE_DEMAND(plant != nullptr);

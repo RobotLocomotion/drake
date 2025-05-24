@@ -11,6 +11,7 @@
 #include "drake/multibody/fem/volumetric_element.h"
 #include "drake/multibody/fem/volumetric_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/force_density_field_impl.h"
 
 namespace drake {
 namespace multibody {
@@ -118,7 +119,8 @@ GTEST_TEST(FemModelTest, CalcResidualWithContextDependentExternalForce) {
   unique_ptr<FemState<double>> fem_state = model.MakeFemState();
 
   /* A force field where the magnitude of the force density depends on time. */
-  class TimeScaledForceDensityField final : public ForceDensityField<double> {
+  class TimeScaledForceDensityField final
+      : public ForceDensityFieldImpl<double> {
    public:
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TimeScaledForceDensityField);
 

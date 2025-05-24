@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/plant/deformable_ids.h"
+#include "drake/multibody/tree/deformable_ids.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {

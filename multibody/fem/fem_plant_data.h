@@ -3,7 +3,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/plant/force_density_field.h"
+#include "drake/multibody/fem/force_density_field.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {

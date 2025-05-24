@@ -588,7 +588,7 @@ namespace multibody {
 template <typename T>
 class MultibodyElement;
 template <typename T>
-class ForceDensityField;
+class ForceDensityFieldImpl;
 
 namespace internal {
 
@@ -605,7 +605,7 @@ class MultibodyTreeSystemElementAttorney {
   template <typename U>
   friend class drake::multibody::MultibodyElement;
 
-  friend class drake::multibody::ForceDensityField<T>;
+  friend class drake::multibody::ForceDensityFieldImpl<T>;
 
   static systems::NumericParameterIndex DeclareNumericParameter(
       MultibodyTreeSystem<T>* tree_system,
@@ -642,6 +642,12 @@ class MultibodyTreeSystemElementAttorney {
       const systems::BasicVector<T>& model_value) {
     DRAKE_DEMAND(tree_system != nullptr);
     return tree_system->DeclareVectorInputPort(std::move(name), model_value);
+  }
+
+  static systems::DiscreteStateIndex DeclareDiscreteState(
+      MultibodyTreeSystem<T>* tree_system, const VectorX<T>& model_value) {
+    DRAKE_DEMAND(tree_system != nullptr);
+    return tree_system->DeclareDiscreteState(model_value);
   }
 };
 }  // namespace internal
