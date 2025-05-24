@@ -14,9 +14,9 @@
 #include "drake/multibody/fem/fem_model.h"
 #include "drake/multibody/fem/force_density_field.h"
 #include "drake/multibody/plant/constraint_specs.h"
-#include "drake/multibody/plant/deformable_body.h"
-#include "drake/multibody/plant/deformable_ids.h"
 #include "drake/multibody/plant/physical_model.h"
+#include "drake/multibody/tree/deformable_body.h"
+#include "drake/multibody/tree/deformable_ids.h"
 #include "drake/multibody/tree/element_collection.h"
 #include "drake/multibody/tree/rigid_body.h"
 

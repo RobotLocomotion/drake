@@ -12,20 +12,23 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/fem/deformable_body_config.h"
 #include "drake/multibody/fem/fem_model.h"
+#include "drake/multibody/fem/force_density_field.h"
 #include "drake/multibody/plant/constraint_specs.h"
-#include "drake/multibody/plant/deformable_ids.h"
-#include "drake/multibody/plant/force_density_field.h"
+#include "drake/multibody/tree/deformable_ids.h"
 #include "drake/multibody/tree/rigid_body.h"
 
 namespace drake {
 namespace multibody {
 
-// TODO(xuchenhan-tri): Derive from MultibodyElement.
 template <typename T>
-class DeformableBody {
+class DeformableBody final : public MultibodyElement<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeformableBody);
+
   /** Returns this element's unique index. */
-  DeformableBodyIndex index() const { return index_; }
+  DeformableBodyIndex index() const {
+    return this->template index_impl<DeformableBodyIndex>();
+  }
 
   /** Returns the unique body id. */
   DeformableBodyId body_id() const { return id_; }
@@ -36,9 +39,6 @@ class DeformableBody {
   /** Returns the geometry id of the deformable geometry used to simulate this
    deformable body. */
   geometry::GeometryId geometry_id() const { return geometry_id_; }
-
-  /** Returns the model instance index of this deformable body. */
-  ModelInstanceIndex model_instance() const { return model_instance_; }
 
   /** Returns physical parameters of this deformable body. */
   const fem::DeformableBodyConfig<T>& config() const { return config_; }
@@ -119,9 +119,7 @@ class DeformableBody {
                            `shape` in body B's frame.
    @returns the unique id of the newly added constraint.
    @throws std::exception unless `body_B` is registered with the same multibody
-           plant owning this deformable model.
-   @throws std::exception if Finalize() has been called on the multibody plant
-           owning this deformable body.
+           tree owning this deformable body.
    @throws std::exception if no constraint is added (i.e. no vertex of the
            deformable body is inside the given `shape` with the given poses). */
   MultibodyConstraintId AddFixedConstraint(
@@ -150,9 +148,7 @@ class DeformableBody {
      2. `context` does not belong to the MultibodyPlant that owns this body.
      3. The number of columns of `q` does not match the number of vertices of
         this body.
-     4. `q` contains non-finite values.
-     5. `Finalize()` has not been called on the MultibodyPlant that owns this
-        body. */
+     4. `q` contains non-finite values. */
   void SetPositions(systems::Context<T>* context,
                     const Eigen::Ref<const Matrix3X<T>>& q) const;
 
@@ -163,10 +159,8 @@ class DeformableBody {
                       this body.
    @retval q          A 3×N matrix containing the positions of all vertices of
                       the body.
-   @throws std::exception if any of the following conditions are met:
-     1. `context` does not belong to the MultibodyPlant that owns this body.
-     2. `Finalize()` has not been called on the MultibodyPlant that owns this
-        body. */
+   @throws std::exception if `context` does not belong to the MultibodyPlant
+   that owns this body. */
   Matrix3X<T> GetPositions(const systems::Context<T>& context) const;
 
   /** @return true if and only if this deformable body is enabled.
@@ -200,8 +194,6 @@ class DeformableBody {
   void Enable(systems::Context<T>* context) const;
 
  private:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformableBody)
-
   template <typename U>
   friend class DeformableModel;
   template <typename U>
@@ -216,27 +208,45 @@ class DeformableBody {
    @param mesh_G          The simulated volume mesh in the geometry's frame.
    @param X_WG            The pose of the mesh in the world frame.
    @param config          Physical parameters of this body.
-   @param plant           Pointer to the MultibodyPlant that owns this
-                          DeformableBody.
-   @pre `plant` is not nullptr.
-   @pre `plant` is not finalized. */
+   @param weights         The integrator weights for the deformable body used to
+                          combine the stiffness, damping, and mass matrices to
+                          form the tangent matrix. */
   DeformableBody(DeformableBodyIndex index, DeformableBodyId id,
                  std::string name, geometry::GeometryId geometry_id,
                  ModelInstanceIndex model_instance,
                  const geometry::VolumeMesh<double>& mesh_G,
                  const math::RigidTransform<double>& X_WG,
                  const fem::DeformableBodyConfig<T>& config,
-                 const MultibodyPlant<T>* plant);
+                 const Vector3<T>& weights);
 
-  std::unique_ptr<DeformableBody<double>> CloneToDouble(
-      const MultibodyPlant<double>* plant) const {
+  std::unique_ptr<DeformableBody<double>> CloneToDouble() const {
     if constexpr (!std::is_same_v<T, double>) {
       /* A none double body shouldn't exist in the first place. */
       DRAKE_UNREACHABLE();
     } else {
-      auto clone = std::unique_ptr<DeformableBody<double>>(
-          new DeformableBody<double>(*this));
-      clone->plant_ = plant;
+      auto clone =
+          std::unique_ptr<DeformableBody<double>>(new DeformableBody<double>(
+              this->index(), id_, name_, geometry_id_, this->model_instance(),
+              mesh_G_, X_WG_, config_, fem_model_->tangent_matrix_weights()));
+      /* We go through all data member one by one in order, and either copy them
+       over or explain why they don't need to be copied. */
+      /* id_ is copied in the constructor above. */
+      /* name_ is copied in the constructor above. */
+      /* geometry_id_ is copied in the constructor above. */
+      /* mesh_G_ is copied in the constructor aobve. */
+      /* X_WG_ is copied in the constructor above. */
+      /* config_ is copied in the constructor above. */
+      /* Copy over reference_positions_. */
+      clone->reference_positions_ = reference_positions_;
+      /* fem_model_ is constructed in the constructor above. */
+      /* discrete_state_index_ is set in DoDeclareDiscreteState() when the
+       owning DeformableModel declares system resources. */
+      /* is_enabled_parameter_index_ is set in DoDeclareParameters() when the
+       owning DeformableModel declares system resources. */
+      /* Copy over fixed_constraint_specs_. */
+      clone->fixed_constraint_specs_ = fixed_constraint_specs_;
+      /* gravity_forces_ and external_forces_ are set when the owning
+       DeformableModel declares system resources. */
       return clone;
     }
   }
@@ -266,19 +276,46 @@ class DeformableBody {
   template <typename T1 = T>
   typename std::enable_if_t<std::is_same_v<T1, double>, void>
   BuildLinearVolumetricModel(const geometry::VolumeMesh<double>& mesh,
-                             const fem::DeformableBodyConfig<T>& config);
+                             const fem::DeformableBodyConfig<T>& config,
+                             const Vector3<T>& weights);
 
   /* Helper for BuildLinearVolumetricModel templated on constitutive model. */
   template <template <class> class Model, typename T1 = T>
   typename std::enable_if_t<std::is_same_v<T1, double>, void>
   BuildLinearVolumetricModelHelper(const geometry::VolumeMesh<double>& mesh,
-                                   const fem::DeformableBodyConfig<T>& config);
+                                   const fem::DeformableBodyConfig<T>& config,
+                                   const Vector3<T>& weights);
 
-  DeformableBodyIndex index_{};
+  void DoSetTopology(const internal::MultibodyTreeTopology&) final {
+    /* No-op because deformable bodies are not part of the MultibodyTree
+     topology. */
+  }
+
+  void DoDeclareDiscreteState(
+      internal::MultibodyTreeSystem<T>* tree_system) final {
+    std::unique_ptr<fem::FemState<T>> default_fem_state =
+        fem_model_->MakeFemState();
+    const int num_dofs = default_fem_state->num_dofs();
+    VectorX<T> model_state(num_dofs * 3 /* q, v, and a */);
+    model_state.head(num_dofs) = default_fem_state->GetPositions();
+    model_state.segment(num_dofs, num_dofs) =
+        default_fem_state->GetVelocities();
+    model_state.tail(num_dofs) = default_fem_state->GetAccelerations();
+    discrete_state_index_ =
+        this->DeclareDiscreteState(tree_system, model_state);
+  }
+
+  void DoDeclareParameters(
+      internal::MultibodyTreeSystem<T>* tree_system) final {
+    is_enabled_parameter_index_ =
+        this->DeclareAbstractParameter(tree_system, Value<bool>(true));
+  }
+
+  /* NOTE: If a new data member is added to this list, it would need to be
+   cloned accordingly in CloneToDouble(). */
   DeformableBodyId id_{};
   std::string name_;
   geometry::GeometryId geometry_id_{};
-  ModelInstanceIndex model_instance_{};
   /* The mesh of the deformable geometry (in its reference configuration) in its
    geometry frame. */
   geometry::VolumeMesh<double> mesh_G_;
@@ -286,7 +323,8 @@ class DeformableBody {
    world frame. */
   math::RigidTransform<double> X_WG_;
   fem::DeformableBodyConfig<T> config_;
-  const MultibodyPlant<T>* plant_{};
+  /* The vertex positions of the deformable body in its reference configuration
+   measured and expressed in the world frame. */
   VectorX<double> reference_positions_;
   copyable_unique_ptr<fem::FemModel<T>> fem_model_;
   systems::DiscreteStateIndex discrete_state_index_{};

@@ -1,7 +1,6 @@
 #include "drake/multibody/plant/deformable_model.h"
 
 #include <algorithm>
-#include <iostream>
 #include <utility>
 
 #include "drake/geometry/proximity/volume_mesh.h"
@@ -93,7 +92,8 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
     DeformableBody<T>& body = deformable_bodies_.Add(
         std::unique_ptr<DeformableBody<T>>(new DeformableBody<T>(
             body_index, body_id, name, geometry_id, model_instance, *mesh_G,
-            X_WG, config, &this->plant())));
+            X_WG, config, integrator_->GetWeights())));
+    body.set_parent_tree(&this->internal_tree(), body.index());
     body.set_parallelism(parallelism_);
     geometry_id_to_body_id_.emplace(geometry_id, body_id);
     body_id_to_index_.emplace(body_id, body.index());
@@ -207,12 +207,10 @@ DeformableBodyId DeformableModel<T>::GetBodyId(
 template <typename T>
 bool DeformableModel<T>::HasBodyNamed(const std::string& name) const {
   const auto [lower, upper] = deformable_bodies_.names_map().equal_range(name);
-  std::cout << "testing" << std::endl;
   /* No match. */
   if (lower == upper) {
     return false;
   }
-  std::cout << "testing2" << std::endl;
   /* With no model instance requested, ensure the name is globally unique. */
   if (std::next(lower) != upper) {
     throw std::logic_error(
@@ -326,7 +324,7 @@ std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
     result->deformable_bodies_.ResizeToMatch(deformable_bodies_);
     for (const DeformableBodyIndex& index : deformable_bodies_.indices()) {
       const DeformableBody<T>& body = deformable_bodies_.get_element(index);
-      result->deformable_bodies_.Add(body.CloneToDouble(&result->plant()));
+      result->deformable_bodies_.Add(body.CloneToDouble());
     }
     result->geometry_id_to_body_id_ = geometry_id_to_body_id_;
     result->body_id_to_index_ = body_id_to_index_;
@@ -387,18 +385,11 @@ void DeformableModel<T>::DoDeclareSystemResources() {
     if constexpr (std::is_same_v<T, double>) {
       for (const DeformableBodyIndex& index : body_indices) {
         DeformableBody<T>& body = deformable_bodies_.get_mutable_element(index);
-        const fem::FemModel<T>& fem_model = body.fem_model();
-        std::unique_ptr<fem::FemState<T>> default_fem_state =
-            fem_model.MakeFemState();
-        const int num_dofs = default_fem_state->num_dofs();
-        VectorX<T> model_state(num_dofs * 3 /* q, v, and a */);
-        model_state.head(num_dofs) = default_fem_state->GetPositions();
-        model_state.segment(num_dofs, num_dofs) =
-            default_fem_state->GetVelocities();
-        model_state.tail(num_dofs) = default_fem_state->GetAccelerations();
-        body.set_discrete_state_index(this->DeclareDiscreteState(model_state));
-        body.set_is_enabled_parameter_index(
-            this->DeclareAbstractParameter(Value<bool>(true)));
+        body.DeclareDiscreteState(
+            static_cast<internal::MultibodyTreeSystem<T>*>(
+                this->mutable_plant()));
+        body.DeclareParameters(static_cast<internal::MultibodyTreeSystem<T>*>(
+            this->mutable_plant()));
         const Vector3<T>& gravity =
             this->plant().gravity_field().gravity_vector();
         body.SetExternalForces(force_densities_, gravity);
@@ -411,10 +402,10 @@ void DeformableModel<T>::DoDeclareSystemResources() {
      them. */
     for (std::unique_ptr<ForceDensityField<T>>& force_density :
          force_densities_) {
-    /* We know that the static cast is safe because all concrete force density
-     field is derived from ForceDensityFieldImpl. */
-    static_cast<ForceDensityFieldImpl<T>*>(force_density.get())
-        ->DeclareSystemResources(this->mutable_plant());
+      /* We know that the static cast is safe because all concrete force density
+       field is derived from ForceDensityFieldImpl. */
+      static_cast<ForceDensityFieldImpl<T>*>(force_density.get())
+          ->DeclareSystemResources(this->mutable_plant());
     }
   }
 }

@@ -643,6 +643,12 @@ class MultibodyTreeSystemElementAttorney {
     DRAKE_DEMAND(tree_system != nullptr);
     return tree_system->DeclareVectorInputPort(std::move(name), model_value);
   }
+
+  static systems::DiscreteStateIndex DeclareDiscreteState(
+      MultibodyTreeSystem<T>* tree_system, const VectorX<T>& model_value) {
+    DRAKE_DEMAND(tree_system != nullptr);
+    return tree_system->DeclareDiscreteState(model_value);
+  }
 };
 }  // namespace internal
 }  // namespace multibody

@@ -19,7 +19,6 @@ drake_cc_package_library(
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
-        ":deformable_ids",
         ":desired_state_input",
         ":discrete_contact_data",
         ":discrete_contact_pair",
@@ -43,7 +42,7 @@ drake_cc_library(
         "constraint_specs.h",
     ],
     deps = [
-        ":deformable_ids",
+        "//multibody/tree:deformable_ids",
         "//multibody/tree:multibody_tree_indexes",
     ],
 )
@@ -86,7 +85,6 @@ drake_cc_library(
     name = "multibody_plant_core",
     srcs = [
         "compliant_contact_manager.cc",
-        "deformable_body.cc",
         "deformable_driver.cc",
         "deformable_model.cc",
         "discrete_step_memory.cc",
@@ -105,9 +103,7 @@ drake_cc_library(
     ],
     hdrs = [
         "compliant_contact_manager.h",
-        "deformable_body.h",
         "deformable_driver.h",
-        "deformable_ids.h",
         "deformable_model.h",
         "discrete_step_memory.h",
         "discrete_update_manager.h",
@@ -130,7 +126,6 @@ drake_cc_library(
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
-        ":deformable_ids",
         ":desired_state_input",
         ":discrete_contact_data",
         ":discrete_contact_pair",
@@ -261,16 +256,6 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:drake_bool",
-    ],
-)
-
-drake_cc_library(
-    name = "deformable_ids",
-    hdrs = [
-        "deformable_ids.h",
-    ],
-    deps = [
-        "//common:identifier",
     ],
 )
 

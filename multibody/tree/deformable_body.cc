@@ -1,4 +1,4 @@
-#include "drake/multibody/plant/deformable_body.h"
+#include "drake/multibody/tree/deformable_body.h"
 
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/fem/corotated_model.h"
@@ -10,8 +10,9 @@
 #include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fem/velocity_newmark_scheme.h"
 #include "drake/multibody/fem/volumetric_model.h"
-#include "drake/multibody/plant/deformable_ids.h"
-#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/deformable_ids.h"
+#include "drake/multibody/tree/force_density_field_impl.h"
+#include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
 namespace multibody {
@@ -51,8 +52,7 @@ template <typename T>
 MultibodyConstraintId DeformableBody<T>::AddFixedConstraint(
     const RigidBody<T>& body_B, const math::RigidTransform<double>& X_BA,
     const geometry::Shape& shape, const math::RigidTransform<double>& X_BG) {
-  DRAKE_THROW_UNLESS(!plant_->is_finalized());
-  if (&plant_->get_body(body_B.index()) != &body_B) {
+  if (&this->get_parent_tree().get_body(body_B.index()) != &body_B) {
     throw std::logic_error(
         fmt::format("The rigid body with name {} is not registered with the "
                     "MultibodyPlant owning the deformable model.",
@@ -112,8 +112,7 @@ void DeformableBody<T>::SetPositions(
     systems::Context<T>* context,
     const Eigen::Ref<const Matrix3X<T>>& q) const {
   DRAKE_THROW_UNLESS(context != nullptr);
-  plant_->ValidateContext(*context);
-  DRAKE_THROW_UNLESS(plant_->is_finalized());
+  this->GetParentTreeSystem().ValidateContext(*context);
   const int num_nodes = fem_model_->num_nodes();
   DRAKE_THROW_UNLESS(q.cols() == num_nodes);
   auto all_finite = [](const Matrix3X<T>& positions) {
@@ -129,8 +128,7 @@ void DeformableBody<T>::SetPositions(
 template <typename T>
 Matrix3X<T> DeformableBody<T>::GetPositions(
     const systems::Context<T>& context) const {
-  plant_->ValidateContext(context);
-  DRAKE_THROW_UNLESS(plant_->is_finalized());
+  this->GetParentTreeSystem().ValidateContext(context);
 
   const int num_nodes = fem_model_->num_nodes();
   const VectorX<T>& q = context.get_discrete_state(discrete_state_index_)
@@ -141,7 +139,7 @@ Matrix3X<T> DeformableBody<T>::GetPositions(
 
 template <typename T>
 bool DeformableBody<T>::is_enabled(const systems::Context<T>& context) const {
-  plant_->ValidateContext(context);
+  this->GetParentTreeSystem().ValidateContext(context);
   return context.get_parameters().template get_abstract_parameter<bool>(
       is_enabled_parameter_index_);
 }
@@ -149,7 +147,7 @@ bool DeformableBody<T>::is_enabled(const systems::Context<T>& context) const {
 template <typename T>
 void DeformableBody<T>::Disable(systems::Context<T>* context) const {
   DRAKE_THROW_UNLESS(context != nullptr);
-  plant_->ValidateContext(*context);
+  this->GetParentTreeSystem().ValidateContext(*context);
   context->get_mutable_abstract_parameter(is_enabled_parameter_index_)
       .set_value(false);
   /* Set both the accelerations and the velocities to zero, noting that the
@@ -163,7 +161,7 @@ void DeformableBody<T>::Disable(systems::Context<T>* context) const {
 template <typename T>
 void DeformableBody<T>::Enable(systems::Context<T>* context) const {
   DRAKE_THROW_UNLESS(context != nullptr);
-  plant_->ValidateContext(*context);
+  this->GetParentTreeSystem().ValidateContext(*context);
   context->get_mutable_abstract_parameter(is_enabled_parameter_index_)
       .set_value(true);
 }
@@ -173,22 +171,18 @@ DeformableBody<T>::DeformableBody(
     DeformableBodyIndex index, DeformableBodyId id, std::string name,
     GeometryId geometry_id, ModelInstanceIndex model_instance,
     const VolumeMesh<double>& mesh_G, const math::RigidTransform<double>& X_WG,
-    const fem::DeformableBodyConfig<T>& config, const MultibodyPlant<T>* plant)
-    : index_(index),
+    const fem::DeformableBodyConfig<T>& config, const Vector3<T>& weights)
+    : MultibodyElement<T>(model_instance, index),
       id_(id),
       name_(std::move(name)),
       geometry_id_(geometry_id),
-      model_instance_(model_instance),
       mesh_G_(mesh_G),
       X_WG_(X_WG),
-      config_(config),
-      plant_(plant) {
+      config_(config) {
   if constexpr (std::is_same_v<T, double>) {
-    DRAKE_DEMAND(plant_ != nullptr);
-    DRAKE_DEMAND(!plant->is_finalized());
     geometry::VolumeMesh<double> mesh_W = mesh_G;
     mesh_W.TransformVertices(X_WG);
-    BuildLinearVolumetricModel(mesh_W, config);
+    BuildLinearVolumetricModel(mesh_W, config, weights);
     reference_positions_.resize(3 * mesh_W.num_vertices());
     for (int v = 0; v < mesh_W.num_vertices(); ++v) {
       reference_positions_.template segment<3>(3 * v) = mesh_W.vertex(v);
@@ -216,24 +210,24 @@ template <typename T>
 template <typename T1>
 typename std::enable_if_t<std::is_same_v<T1, double>, void>
 DeformableBody<T>::BuildLinearVolumetricModel(
-    const VolumeMesh<double>& mesh,
-    const fem::DeformableBodyConfig<T>& config) {
+    const VolumeMesh<double>& mesh, const fem::DeformableBodyConfig<T>& config,
+    const Vector3<T>& weights) {
   switch (config.material_model()) {
     case MaterialModel::kLinear:
       BuildLinearVolumetricModelHelper<fem::internal::LinearConstitutiveModel>(
-          mesh, config);
+          mesh, config, weights);
       break;
     case MaterialModel::kCorotated:
-      BuildLinearVolumetricModelHelper<fem::internal::CorotatedModel>(mesh,
-                                                                      config);
+      BuildLinearVolumetricModelHelper<fem::internal::CorotatedModel>(
+          mesh, config, weights);
       break;
     case MaterialModel::kNeoHookean:
-      BuildLinearVolumetricModelHelper<fem::internal::NeoHookeanModel>(mesh,
-                                                                       config);
+      BuildLinearVolumetricModelHelper<fem::internal::NeoHookeanModel>(
+          mesh, config, weights);
       break;
     case MaterialModel::kLinearCorotated:
       BuildLinearVolumetricModelHelper<fem::internal::LinearCorotatedModel>(
-          mesh, config);
+          mesh, config, weights);
       break;
   }
 }
@@ -242,8 +236,8 @@ template <typename T>
 template <template <typename> class Model, typename T1>
 typename std::enable_if_t<std::is_same_v<T1, double>, void>
 DeformableBody<T>::BuildLinearVolumetricModelHelper(
-    const VolumeMesh<double>& mesh,
-    const fem::DeformableBodyConfig<T>& config) {
+    const VolumeMesh<double>& mesh, const fem::DeformableBodyConfig<T>& config,
+    const Vector3<T>& weights) {
   constexpr int kNaturalDimension = 3;
   constexpr int kSpatialDimension = 3;
   constexpr int kQuadratureOrder = 1;
@@ -271,9 +265,7 @@ DeformableBody<T>::BuildLinearVolumetricModelHelper(
       config.mass_damping_coefficient(),
       config.stiffness_damping_coefficient());
 
-  const Vector3<T> integrator_weights =
-      plant_->deformable_model().integrator().GetWeights();
-  auto concrete_fem_model = std::make_unique<FemModelType>(integrator_weights);
+  auto concrete_fem_model = std::make_unique<FemModelType>(weights);
   ConstitutiveModelType constitutive_model(config.youngs_modulus(),
                                            config.poissons_ratio());
   typename FemModelType::VolumetricBuilder builder(concrete_fem_model.get());

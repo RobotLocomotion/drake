@@ -15,6 +15,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":articulated_body_inertia",
+        ":deformable_ids",
         ":geometry_spatial_inertia",
         ":multibody_tree_caches",
         ":multibody_tree_core",
@@ -24,6 +25,16 @@ drake_cc_package_library(
         ":scoped_name",
         ":spatial_inertia",
         ":unit_inertia",
+    ],
+)
+
+drake_cc_library(
+    name = "deformable_ids",
+    hdrs = [
+        "deformable_ids.h",
+    ],
+    deps = [
+        "//common:identifier",
     ],
 )
 
@@ -89,6 +100,7 @@ drake_cc_library(
         "body_node_impl_mass_matrix.cc",
         "curvilinear_joint.cc",
         "curvilinear_mobilizer.cc",
+        "deformable_body.cc",
         "door_hinge.cc",
         "element_collection.cc",
         "fixed_offset_frame.cc",
@@ -135,9 +147,9 @@ drake_cc_library(
         "body_node_world.h",
         "curvilinear_joint.h",
         "curvilinear_mobilizer.h",
+        "deformable_body.h",
         "door_hinge.h",
         "element_collection.h",
-        "element_collection-inl.h",
         "fixed_offset_frame.h",
         "force_density_field_impl.h",
         "force_element.h",
@@ -181,6 +193,7 @@ drake_cc_library(
     # "//multibody/tree" broadly, not just ":multibody_tree_core".
     visibility = ["//visibility:private"],
     deps = [
+        ":deformable_ids",
         ":multibody_tree_caches",
         ":multibody_tree_indexes",
         ":scoped_name",
@@ -191,8 +204,10 @@ drake_cc_library(
         "//common:string_container",
         "//common:unused",
         "//common/trajectories:piecewise_constant_curvature_trajectory",
+        "//geometry",
         "//math:geometric_transform",
-        "//multibody/fem:force_density_field",
+        "//multibody/fem",
+        "//multibody/plant:constraint_specs",
         "//multibody/topology",
         "//systems/framework:leaf_system",
     ],
