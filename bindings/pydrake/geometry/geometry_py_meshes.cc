@@ -92,7 +92,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "CalcCartesianFromBarycentric",
             [](const Class* self, int element_index, const Vector3<T>& b_Q) {
-              return self->template CalcCartesianFromBarycentric(
+              return self->template CalcCartesianFromBarycentric<T>(
                   element_index, b_Q);
             },
             py::arg("element_index"), py::arg("b_Q"),
@@ -100,7 +100,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "CalcBarycentric",
             [](const Class* self, const Vector3<T>& p_MQ, int t) {
-              return self->template CalcBarycentric(p_MQ, t);
+              return self->template CalcBarycentric<T>(p_MQ, t);
             },
             py::arg("p_MQ"), py::arg("t"), cls_doc.CalcBarycentric.doc);
   }
@@ -132,7 +132,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "CalcBarycentric",
             [](const Class* self, const Vector3<T>& p_MQ, int e) {
-              return self->template CalcBarycentric(p_MQ, e);
+              return self->template CalcBarycentric<T>(p_MQ, e);
             },
             py::arg("p_MQ"), py::arg("e"), cls_doc.CalcBarycentric.doc)
         .def("Equal", &Class::Equal, py::arg("mesh"),
