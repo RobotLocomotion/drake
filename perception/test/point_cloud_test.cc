@@ -1,5 +1,6 @@
 #include "drake/perception/point_cloud.h"
 
+#include <numbers>
 #include <stdexcept>
 
 #include <common_robotics_utilities/openmp_helpers.hpp>
@@ -688,9 +689,10 @@ GTEST_TEST(PointCloudTest, EstimateNormalsPlane) {
 
   cloud.mutable_xyzs().transpose() << 0, 0, 0, 1, 0, 0, 0, 1, 1;
   cloud.EstimateNormals(10, 3, ENABLE_PARALLEL_OPS);
+  const float one_over_sqrt2 = 0.5f * std::numbers::sqrt2_v<float>;
   for (int i = 0; i < 3; ++i) {
-    CheckNormal(cloud.normal(i),
-                Vector3f{0, 1.0 / std::sqrt(2.0), -1.0 / std::sqrt(2.0)}, kTol);
+    CheckNormal(cloud.normal(i), Vector3f{0, one_over_sqrt2, -one_over_sqrt2},
+                kTol);
   }
 }
 

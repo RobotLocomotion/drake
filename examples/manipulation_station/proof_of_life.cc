@@ -84,10 +84,11 @@ int do_main(int argc, char* argv[]) {
     builder.Connect(station->GetOutputPort("camera_" + name + "_rgb_image"),
                     cam_port);
   }
-  auto image_array_lcm_publisher = builder.template AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<lcmt_image_array>(
-          "DRAKE_RGBD_CAMERA_IMAGES", nullptr,
-          1.0 / 10 /* 10 fps publish period */));
+  auto image_array_lcm_publisher =
+      builder.template AddSystem<systems::lcm::LcmPublisherSystem>(
+          systems::lcm::LcmPublisherSystem::Make<lcmt_image_array>(
+              "DRAKE_RGBD_CAMERA_IMAGES", nullptr,
+              1.0 / 10 /* 10 fps publish period */));
   image_array_lcm_publisher->set_name("rgbd_publisher");
   builder.Connect(image_to_lcm_image_array->image_array_t_msg_output_port(),
                   image_array_lcm_publisher->get_input_port());

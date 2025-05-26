@@ -225,9 +225,9 @@ int DoMain() {
   image_to_lcm_image_array->set_name("converter");
 
   LcmPublisherSystem* image_array_lcm_publisher{nullptr};
-  image_array_lcm_publisher =
-      builder.template AddSystem(LcmPublisherSystem::Make<lcmt_image_array>(
-          "DRAKE_RGBD_CAMERA_IMAGES", &lcm, image_publish_period));
+  image_array_lcm_publisher = builder.template AddSystem<LcmPublisherSystem>(
+      LcmPublisherSystem::Make<lcmt_image_array>("DRAKE_RGBD_CAMERA_IMAGES",
+                                                 &lcm, image_publish_period));
   image_array_lcm_publisher->set_name("publisher");
 
   builder.Connect(image_to_lcm_image_array->image_array_t_msg_output_port(),
