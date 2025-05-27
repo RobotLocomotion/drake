@@ -371,6 +371,7 @@ class TestAnalysis(unittest.TestCase):
         SimulatorConfig()
         config = SimulatorConfig(target_realtime_rate=2.0)
         self.assertEqual(config.target_realtime_rate, 2.0)
+        self.assertIn("start_time", repr(config))
         self.assertIn("target_realtime_rate", repr(config))
         copy.copy(config)
 
