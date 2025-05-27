@@ -245,13 +245,13 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
   // the cost can be negative in the pooled SAP formulation.
 
   // Set the initial guess for linesearch based on a cubic hermite spline
-  // between α = 0 and α = α_max. This spline takes the form 
+  // between α = 0 and α = α_max. This spline takes the form
   // p(t) = a t³ + b t² + c t + d, where p(0) = ℓ(0), p(1) = ℓ(α_max).
   // TODO(vincekurtz): deal with the case of α_max != 1 properly
   const double a = 2 * ell0 - 2 * ell + dell_dalpha0 + dell_dalpha;
   const double b = -3 * ell0 + 3 * ell - 2 * dell_dalpha0 - dell_dalpha;
   const double c = dell_dalpha0;
-  double alpha_guess = (- 2*b + std::sqrt(4*b*b - 12*a*c)) / (6 * a);
+  double alpha_guess = (-2 * b + std::sqrt(4 * b * b - 12 * a * c)) / (6 * a);
   DRAKE_DEMAND(alpha_guess >= 0);
   alpha_guess = std::min(alpha_guess, solver_parameters_.alpha_max);
 
@@ -276,7 +276,7 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
   const double alpha_tolerance = solver_parameters_.ls_tolerance * alpha_guess;
   std::tie(alpha, num_iterations) = DoNewtonWithBisectionFallback(
       cost_and_gradient, bracket, alpha_guess, alpha_tolerance,
-      solver_parameters_.ls_tolerance, solver_parameters_.max_iterations);
+      solver_parameters_.ls_tolerance, solver_parameters_.max_ls_iterations);
 }
 
 template <typename T>
