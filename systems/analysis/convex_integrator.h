@@ -3,6 +3,7 @@
 #include <limits>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
@@ -44,40 +45,41 @@ struct ConvexIntegratorSolverParameters {
  * Statistics to track during the optimization process.
  */
 struct ConvexIntegratorSolverStats {
-  // The iteration number that we're on
-  int k;
+  // The number of solver iterations
+  int iterations;
 
-  // The cost ℓ(v)
-  double cost;
+  // The cost ℓ(v) at each iteration.
+  std::vector<double> cost;
 
-  // The gradient norm ||∇ℓ(v)||
-  double gradient_norm;
+  // The gradient norm ||∇ℓ(v)|| at each iteration.
+  std::vector<double> gradient_norm;
 
-  // Number of line search iterations taken in this solver iteration
-  int num_ls_iterations;
+  // The number of linesearch iterations at each solver iteration.
+  std::vector<int> ls_iterations;
 
-  // The linesearch parameter α
-  double alpha;
+  // The linesearch parameter α at each iteration.
+  std::vector<double> alpha;
 
   // The step size at this iteration, ||Δvₖ||
-  double step_size;
-
-  // The step size at the previous iteration, ||Δvₖ₋₁||
-  double last_step_size;
-
-  // The ratio of current and previous step sizes, θ = ||Δvₖ|| / ||Δvₖ₋₁||
-  double theta;
+  std::vector<double> step_size;
 
   // Reset the stats to start a new iteration.
   void Reset() {
-    k = 0;
-    cost = std::numeric_limits<double>::quiet_NaN();
-    gradient_norm = std::numeric_limits<double>::quiet_NaN();
-    num_ls_iterations = 0;
-    alpha = 1.0;
-    step_size = std::numeric_limits<double>::quiet_NaN();
-    last_step_size = std::numeric_limits<double>::quiet_NaN();
-    theta = std::numeric_limits<double>::quiet_NaN();
+    iterations = 0;
+    cost.resize(0);
+    gradient_norm.resize(0);
+    ls_iterations.resize(0);
+    alpha.resize(0);
+    step_size.resize(0);
+  }
+
+  // Reserve space for the vectors to avoid reallocations.
+  void Reserve(int size) {
+    cost.reserve(size);
+    gradient_norm.reserve(size);
+    ls_iterations.reserve(size);
+    alpha.reserve(size);
+    step_size.reserve(size);
   }
 };
 

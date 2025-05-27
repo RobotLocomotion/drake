@@ -50,6 +50,9 @@ void ConvexIntegrator<T>::DoInitialize() {
   builder_ = std::make_unique<PooledSapBuilder<T>>(plant());
   builder_->UpdateModel(plant_context, 0.01, &model_);
   model_.ResizeData(&data_);
+
+  // Allocate memory for the solver statistics.
+  stats_.Reserve(solver_parameters_.max_iterations);
 }
 
 template <typename T>
@@ -75,8 +78,8 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   fmt::print(
       "ConvexIntegrator: iters = {}, cost = {}, gradient norm = {}, "
       "step size = {}, alpha = {}\n",
-      stats_.k, stats_.cost, stats_.gradient_norm, stats_.step_size,
-      stats_.alpha);
+      stats_.iterations, stats_.cost.back(), stats_.gradient_norm.back(),
+      stats_.step_size.back(), stats_.alpha.back());
 
   // Advance configurations q = q₀ + h N(q₀) v
   // TODO(vincekurtz): pre-allocate q
@@ -119,24 +122,27 @@ bool ConvexIntegrator<double>::SolveWithGuess(
   const double k_dot_tol =
       solver_parameters_.kappa * this->get_accuracy_in_use();
 
-  // TODO(vincekurtz): pre-allocate the search direction dv
+  // TODO(vincekurtz): pre-allocate the search direction data
   VectorXd dv(v.size());
+  double alpha{NAN};
+  int ls_iterations{0};
 
   stats_.Reset();
-  for (stats_.k = 0; stats_.k < solver_parameters_.max_iterations; ++stats_.k) {
+  for (int k = 0; k < solver_parameters_.max_iterations; ++k) {
     // Compute the cost, gradient, and Hessian.
     // TODO(vincekurtz): re-use the old Hessian
     model.CalcData(v, &data);
 
     // Update the statistics we have available so far
-    stats_.cost = data.cache().cost;
-    stats_.gradient_norm = data.cache().gradient.norm();
+    stats_.iterations = k;
+    stats_.cost.push_back(data.cache().cost);
+    stats_.gradient_norm.push_back(data.cache().gradient.norm());
 
     // Early convergence check. Allows for early exit if v_guess is already
     // optimal, or a single Newton step for simple unconstrained problems. This
     // is necessary because our main convergence criterion requires comparing dv
     // over several iterations.
-    if (stats_.gradient_norm < solver_parameters_.tolerance) {
+    if (stats_.gradient_norm.back() < solver_parameters_.tolerance) {
       // TODO(vincekurtz): consider using the SAP momentum residual rather than
       // the gradient norm.
       return true;
@@ -148,22 +154,24 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     dv = H.ldlt().solve(-g);
 
     // Compute the step size with linesearch
-    PerformExactLineSearch(model, v, dv, &stats_.alpha,
-                           &stats_.num_ls_iterations);
-    dv *= stats_.alpha;
+    PerformExactLineSearch(model, v, dv, &alpha, &ls_iterations);
 
     // Update the decision variables (velocities)
+    dv *= alpha;
     v += dv;
 
+    // Log the remaining solver statistics.
+    stats_.ls_iterations.push_back(ls_iterations);
+    stats_.alpha.push_back(alpha);
+    stats_.step_size.push_back(dv.norm());
+
     // Convergence check from on [Hairer, 1996], Eq. IV.8.10.
-    stats_.last_step_size = stats_.step_size;
-    stats_.step_size = dv.norm();
-    if (stats_.k > 0) {
+    if (k > 0) {
       // N.B. this only comes into effect in the second iteration, since we need
-      // both step_norm and last_step_norm to be set.
-      stats_.theta = stats_.step_size / stats_.last_step_size;
-      if ((stats_.theta < 1.0) &&
-          ((stats_.theta / (1.0 - stats_.theta)) < k_dot_tol)) {
+      // both ||Δvₖ|| and ||Δvₖ₋₁|| to compute θ = ||Δvₖ|| / ||Δvₖ₋₁||.
+      const double theta = stats_.step_size[k] / stats_.step_size[k - 1];
+      const double eta = theta / (1.0 - theta);
+      if ((theta < 1.0) && (eta < k_dot_tol)) {
         return true;
       }
 
