@@ -453,6 +453,11 @@ class DiagramBuilder {
       const OutputPort<T>& output,
       std::variant<std::string, UseDefaultName> name = kUseDefaultName);
 
+  /// Undoes a Connect() by disconnecting the given subsystem ports.
+  /// @see connection_map()
+  /// @throws std::exception if the ports were not already connected.
+  void Disconnect(const OutputPort<T>& source, const InputPort<T>& dest);
+
   /// Builds the Diagram that has been described by the calls to Connect,
   /// ExportInput, and ExportOutput.
   /// @throws std::exception if the graph is not buildable.
