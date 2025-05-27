@@ -199,6 +199,9 @@ class ConvexIntegrator final : public IntegratorBase<T> {
                               const VectorX<T>& v, const VectorX<T>& dv,
                               T* alpha, int* num_iterations);
 
+  // Log solver statistics to the console for debugging.
+  void PrintSolverStats() const;
+
   // The multibody plant used as the basis of the convex optimization problem.
   MultibodyPlant<T>* plant_{nullptr};
 

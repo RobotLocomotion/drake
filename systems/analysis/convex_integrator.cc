@@ -74,12 +74,9 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     throw std::runtime_error("ConvexIntegrator: optimization failed.");
   }
 
-  // print iters, cost, gradient norm, step size, and alpha
-  fmt::print(
-      "ConvexIntegrator: iters = {}, cost = {}, gradient norm = {}, "
-      "step size = {}, alpha = {}\n",
-      stats_.iterations, stats_.cost.back(), stats_.gradient_norm.back(),
-      stats_.step_size.back(), stats_.alpha.back());
+  // print stats for debugging
+  // TODO(vincekurtz): add a verbose/debug flag to control this.
+  PrintSolverStats();
 
   // Advance configurations q = q₀ + h N(q₀) v
   // TODO(vincekurtz): pre-allocate q
@@ -145,6 +142,9 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     if (stats_.gradient_norm.back() < solver_parameters_.tolerance) {
       // TODO(vincekurtz): consider using the SAP momentum residual rather than
       // the gradient norm.
+      stats_.ls_iterations.push_back(0);
+      stats_.alpha.push_back(NAN);
+      stats_.step_size.push_back(NAN);
       return true;
     }
 
@@ -257,6 +257,18 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
   std::tie(alpha, num_iterations) = DoNewtonWithBisectionFallback(
       cost_and_gradient, bracket, alpha_guess, alpha_tolerance,
       solver_parameters_.ls_tolerance, solver_parameters_.max_iterations);
+}
+
+template <typename T>
+void ConvexIntegrator<T>::PrintSolverStats() const {
+  fmt::print("ConvexIntegrator: {} iters\n", stats_.iterations + 1);
+  for (int k = 0; k <= stats_.iterations; ++k) {
+    fmt::print(
+        "  Iteration {}: cost = {}, gradient norm = {}, ls_iterations = {}, "
+        "alpha = {}, step size = {}\n",
+        k, stats_.cost[k], stats_.gradient_norm[k], stats_.ls_iterations[k],
+        stats_.alpha[k], stats_.step_size[k]);
+  }
 }
 
 }  // namespace systems
