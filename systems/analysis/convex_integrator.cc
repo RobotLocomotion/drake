@@ -53,6 +53,13 @@ void ConvexIntegrator<T>::DoInitialize() {
 
   // Allocate memory for the solver statistics.
   stats_.Reserve(solver_parameters_.max_iterations);
+
+  // Set up the CSV file and write a header, if logging is enabled.
+  if (log_solver_stats_) {
+    log_file_.open("convex_integrator_stats.csv");
+    log_file_
+        << "time,iteration,cost,gradient_norm,ls_iterations,alpha,step_size\n";
+  }
 }
 
 template <typename T>
@@ -74,9 +81,9 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     throw std::runtime_error("ConvexIntegrator: optimization failed.");
   }
 
-  // print stats for debugging
-  // TODO(vincekurtz): add a verbose/debug flag to control this.
-  PrintSolverStats();
+  // Log and print solver statistics, as requested.
+  if (print_solver_stats_) PrintSolverStats();
+  if (log_solver_stats_) LogSolverStats();
 
   // Advance configurations q = q₀ + h N(q₀) v
   // TODO(vincekurtz): pre-allocate q
@@ -268,6 +275,17 @@ void ConvexIntegrator<T>::PrintSolverStats() const {
         "alpha = {}, step size = {}\n",
         k, stats_.cost[k], stats_.gradient_norm[k], stats_.ls_iterations[k],
         stats_.alpha[k], stats_.step_size[k]);
+  }
+}
+
+template <typename T>
+void ConvexIntegrator<T>::LogSolverStats() {
+  DRAKE_THROW_UNLESS(log_file_.is_open());
+  const T time = this->get_context().get_time();
+  for (int k = 0; k <= stats_.iterations; ++k) {
+    log_file_ << time << "," << k << "," << stats_.cost[k] << ","
+              << stats_.gradient_norm[k] << "," << stats_.ls_iterations[k]
+              << "," << stats_.alpha[k] << "," << stats_.step_size[k] << "\n";
   }
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fstream>
 #include <limits>
 #include <memory>
 #include <utility>
@@ -199,8 +200,11 @@ class ConvexIntegrator final : public IntegratorBase<T> {
                               const VectorX<T>& v, const VectorX<T>& dv,
                               T* alpha, int* num_iterations);
 
-  // Log solver statistics to the console for debugging.
+  // Print solver statistics to the console for debugging.
   void PrintSolverStats() const;
+
+  // Log solver statistics to a CSV file for later analysis.
+  void LogSolverStats();
 
   // The multibody plant used as the basis of the convex optimization problem.
   MultibodyPlant<T>* plant_{nullptr};
@@ -213,7 +217,10 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Solver tolerances and other parameters
   ConvexIntegratorSolverParameters solver_parameters_;
 
-  // Solver statistics
+  // Logging/performance tracking utilities
+  bool print_solver_stats_{true};  // Whether to print stats to console.
+  bool log_solver_stats_{true};    // Whether to log stats to a file.
+  std::ofstream log_file_;         // CSV file for logging stats.
   ConvexIntegratorSolverStats stats_;
 };
 
