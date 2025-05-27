@@ -178,6 +178,18 @@ class ConvexIntegrator final : public IntegratorBase<T> {
    */
   const ConvexIntegratorSolverStats& get_solver_stats() const { return stats_; }
 
+  /**
+   * Set whether to record solver statistics to a CSV file.
+   */
+  void set_log_solver_stats(bool log_stats) { log_solver_stats_ = log_stats; }
+
+  /**
+   * Set whether to print solver statistics to the console.
+   */
+  void set_print_solver_stats(bool print_stats) {
+    print_solver_stats_ = print_stats;
+  }
+
   // TODO(vincekurtz): add support for error estimation.
   bool supports_error_estimation() const final { return false; }
   int get_error_estimate_order() const final { return 0; }

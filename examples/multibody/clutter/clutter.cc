@@ -96,6 +96,12 @@ DEFINE_bool(visualize_forces, false,
 DEFINE_double(viz_period, std::numeric_limits<double>::infinity(),
               "Viz period.");
 
+// Logging and verbosity for the convex integrator.
+DEFINE_bool(log_solver_stats, false,
+            "Whether to log convex integrator statistics to a CSV file.");
+DEFINE_bool(print_solver_stats, false,
+            "Whether to print convex integrator statistics to the console.");
+
 // Discrete contact solver.
 DEFINE_string(discrete_contact_approximation, "lagged",
               "Discrete contact solver. Options are: 'tamsi', 'sap', 'lagged', "
@@ -562,6 +568,8 @@ int do_main() {
         simulator->reset_integrator<ConvexIntegrator<double>>();
     ci.set_plant(&plant);
     ci.set_maximum_step_size(0.01);
+    ci.set_log_solver_stats(FLAGS_log_solver_stats);
+    ci.set_print_solver_stats(FLAGS_print_solver_stats);
   }
 
   drake::systems::IntegratorBase<double>& integrator =
