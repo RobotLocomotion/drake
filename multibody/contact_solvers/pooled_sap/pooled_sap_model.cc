@@ -91,11 +91,13 @@ void PooledSapModel<T>::CalcBodySpatialVelocities(
   spatial_velocities[0].setZero();  // World's spatial velocity.
   for (int b = 1; b < num_bodies_; ++b) {
     const int c = params().body_cliques[b];
+    Vector6<T>& V_WB = spatial_velocities[b];
     if (c >= 0) {
       auto v_clique = clique_segment(c, v);
       auto J_WB = params().J_WB[b];
-      Vector6<T>& V_WB = spatial_velocities[b];
       V_WB = J_WB * v_clique;
+    } else {
+      V_WB.setZero();  // Anchored body.
     }
   }
 }
