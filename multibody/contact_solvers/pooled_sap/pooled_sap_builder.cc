@@ -242,8 +242,8 @@ void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
     const Vector3<T> p_BoC_W = p_WC - p_WBo;
 
     // Normal must always point from A to B, by convention.
-    const Vector3<T>& nhat_MN_W = pp.nhat_BA_W;  // Points from M into N.
-    const Vector3<T> nhat_AB_W = bodyB == bodyN ? nhat_MN_W : -nhat_MN_W;
+    const Vector3<T>& nhat_NM_W = pp.nhat_BA_W;  // Points from N into M.
+    const Vector3<T> nhat_AB_W = bodyB == bodyN ? -nhat_NM_W : nhat_NM_W;
     const T fn0 = k * pp.depth;
 
     // For point contact we add single-pair patches.
