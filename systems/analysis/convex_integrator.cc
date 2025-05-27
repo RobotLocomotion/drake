@@ -84,6 +84,9 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   // Log and print solver statistics, as requested.
   if (print_solver_stats_) PrintSolverStats();
   if (log_solver_stats_) LogSolverStats();
+  total_solver_iterations_ += stats_.iterations + 1;  // zero-indexed
+  total_ls_iterations_ += std::accumulate(stats_.ls_iterations.begin(),
+                                          stats_.ls_iterations.end(), 0);
 
   // Advance configurations q = q₀ + h N(q₀) v
   // TODO(vincekurtz): pre-allocate q

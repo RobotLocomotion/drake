@@ -7,6 +7,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/systems/analysis/convex_integrator.h"
 #include "drake/systems/analysis/implicit_integrator.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/simulator.h"
@@ -158,6 +159,21 @@ void PrintSimulatorStatistics(const Simulator<T>& simulator) {
       fmt::print("Number of Newton-Raphson Iterations = {:d}\n",
                  implicit_integrator->get_num_newton_raphson_iterations());
     }
+  }
+
+  // If the integrator is a ConvexIntegrator, we can similarly print some more
+  // specific statistics.
+  const systems::ConvexIntegrator<T>* convex_integrator =
+      dynamic_cast<const systems::ConvexIntegrator<T>*>(
+          &(simulator.get_integrator()));
+  const bool integrator_is_convex = (convex_integrator != nullptr);
+  if (integrator_is_convex) {
+    const systems::ConvexIntegrator<T>& ci = *convex_integrator;
+    fmt::print("Convex Integrator Statistics:\n");
+    fmt::print("Number of solver iterations = {:d}\n",
+               ci.get_total_solver_iterations());
+    fmt::print("Number of linesearch iterations = {:d}\n",
+               ci.get_total_ls_iterations());
   }
 }
 

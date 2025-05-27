@@ -190,6 +190,17 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     print_solver_stats_ = print_stats;
   }
 
+  /**
+   * Get the current total number of solver iterations across all time steps.
+   */
+  int get_total_solver_iterations() const { return total_solver_iterations_; }
+
+  /**
+   * Get the current total number of linesearch iterations, across all time
+   * steps and solver iterations.
+   */
+  int get_total_ls_iterations() const { return total_ls_iterations_; }
+
   // TODO(vincekurtz): add support for error estimation.
   bool supports_error_estimation() const final { return false; }
   int get_error_estimate_order() const final { return 0; }
@@ -234,6 +245,8 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   bool log_solver_stats_{true};    // Whether to log stats to a file.
   std::ofstream log_file_;         // CSV file for logging stats.
   ConvexIntegratorSolverStats stats_;
+  int total_solver_iterations_{0};
+  int total_ls_iterations_{0};
 };
 
 // Forward-declare specializations to double, prior to DRAKE_DECLARE... below.
