@@ -228,6 +228,12 @@ class PooledSapModel<T>::PatchConstraintsPool {
     return num_pairs_[patch_index];
   }
 
+  void set_stiction_tolerance(double stiction_tolerance) {
+    DRAKE_DEMAND(stiction_tolerance > 0.0);
+    stiction_tolerance_ = stiction_tolerance;
+    vs2_ = stiction_tolerance_ * stiction_tolerance_;
+  }
+
   /* Computes sparsity pattern for the pool. That is, cliques i is connected to
   clique j > i iff sparsity[i] contains j. */
   void CalcSparsityPattern(std::vector<std::vector<int>>* sparsity) const;

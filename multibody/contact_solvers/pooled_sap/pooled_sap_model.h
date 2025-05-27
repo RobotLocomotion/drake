@@ -226,6 +226,10 @@ class PooledSapModel {
     return patch_constraints_pool_.num_constraint_equations();
   }
 
+  void set_stiction_tolerance(double stiction_tolerance) {
+    patch_constraints_pool_.set_stiction_tolerance(stiction_tolerance);
+  }
+
   PatchConstraintsPool& patch_constraints_pool() {
     return patch_constraints_pool_;
   }
