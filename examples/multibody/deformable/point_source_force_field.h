@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "drake/multibody/plant/force_density_field.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/force_density_field.h"
 
 namespace drake {
 namespace examples {
@@ -61,7 +61,7 @@ class PointSourceForceField final
   Vector3<double> DoEvaluateAt(const systems::Context<double>& context,
                                const Vector3<double>& p_WQ) const final;
 
-  std::unique_ptr<ForceDensityField<double>> DoClone() const final;
+  std::unique_ptr<ForceDensityFieldBase<double>> DoClone() const final;
 
   void DoDeclareCacheEntries(multibody::MultibodyPlant<double>* plant) final;
 

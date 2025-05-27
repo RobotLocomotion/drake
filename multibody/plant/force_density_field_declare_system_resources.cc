@@ -1,6 +1,6 @@
 #include "drake/common/default_scalars.h"
-#include "drake/multibody/plant/force_density_field.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/force_density_field.h"
 
 namespace drake {
 namespace multibody {
@@ -13,8 +13,6 @@ template <typename>
 void ForceDensityField<T>::DeclareSystemResources(
     internal::MultibodyTreeSystem<T>* tree_system) {
   DRAKE_DEMAND(tree_system != nullptr);
-  /* `this` force field isn't already associated with a system. */
-  DRAKE_DEMAND(tree_system_ == nullptr);
   tree_system_ = tree_system;
   auto plant = dynamic_cast<MultibodyPlant<T>*>(tree_system);
   if (plant == nullptr) {

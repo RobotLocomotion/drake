@@ -4,6 +4,7 @@
 
 #include "drake/multibody/fem/test/dummy_element.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/force_density_field.h"
 
 namespace drake {
 namespace multibody {

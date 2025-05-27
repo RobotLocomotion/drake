@@ -13,9 +13,9 @@
 #include "drake/multibody/fem/deformable_body_config.h"
 #include "drake/multibody/fem/discrete_time_integrator.h"
 #include "drake/multibody/fem/fem_model.h"
+#include "drake/multibody/fem/force_density_field_base.h"
 #include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/plant/deformable_ids.h"
-#include "drake/multibody/plant/force_density_field.h"
 #include "drake/multibody/plant/physical_model.h"
 #include "drake/multibody/tree/rigid_body.h"
 
@@ -211,7 +211,8 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
            double.
    @throws std::exception if Finalize() has been called on the multibody plant
            owning this deformable model. */
-  void AddExternalForce(std::unique_ptr<ForceDensityField<T>> external_force);
+  void AddExternalForce(
+      std::unique_ptr<ForceDensityFieldBase<T>> external_force);
 
   // TODO(xuchenhan-tri): We should allow instrospecting external forces
   // pre-finalize. Currently we add gravity forces at finalize time (instead of
@@ -223,7 +224,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    @throws std::exception if MultibodyPlant::Finalize() has not been called yet.
    or if no deformable body with the given `id` has been registered in this
    model. */
-  const std::vector<const ForceDensityField<T>*>& GetExternalForces(
+  const std::vector<const ForceDensityFieldBase<T>*>& GetExternalForces(
       DeformableBodyId id) const;
 
   // TODO(xuchenhan-tri): filter collisions for the disabled deformable body's
@@ -474,10 +475,10 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   std::unordered_map<ModelInstanceIndex, std::vector<DeformableBodyId>>
       model_instance_to_body_ids_;
   /* The collection all external forces. */
-  std::vector<std::unique_ptr<ForceDensityField<T>>> force_densities_;
+  std::vector<std::unique_ptr<ForceDensityFieldBase<T>>> force_densities_;
   /* body_index_to_force_densities_[i] is the collection of pointers to external
    forces applied to body i. */
-  std::vector<std::vector<const ForceDensityField<T>*>>
+  std::vector<std::vector<const ForceDensityFieldBase<T>*>>
       body_index_to_force_densities_;
   std::unordered_map<DeformableBodyId, std::vector<MultibodyConstraintId>>
       body_id_to_constraint_ids_;

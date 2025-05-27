@@ -339,8 +339,9 @@ void MultibodyTreeSystem<T>::Finalize() {
 
   // Forces, and thus accelerations, are functions not only of state but also
   // inputs. In addition, the forces and accelerations can have extra
-  // user-injected dependencies through MultibodyElement and ForceDensityField,
-  // so we must include tickets that users might depend on.
+  // user-injected dependencies through MultibodyElement and
+  // ForceDensityFieldBase, so we must include tickets that users might depend
+  // on.
   const std::set<DependencyTicket> force_and_acceleration_prereqs = {
       position_ticket,
       velocity_ticket,
