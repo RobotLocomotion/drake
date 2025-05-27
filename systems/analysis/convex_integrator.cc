@@ -219,7 +219,8 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
   // since the Hessian is positive definite.
   // N.B. we already have the gradient at α = 0 cached from solving for the
   // search direction earlier.
-  dell_dalpha = data.cache().gradient.dot(dv);
+  const double ell0 = data.cache().cost;
+  const double dell_dalpha0 = data.cache().gradient.dot(dv);
   if (dell_dalpha >= 0) {
     throw std::logic_error(
         "ConvexIntegrator: the cost does not decrease along the search "
@@ -229,11 +230,12 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
   }
 
   // N.B. we'll use this for normalization later.
-  const double dell_scale = -dell_dalpha;
+  const double dell_scale = -dell_dalpha0;
 
   // Next we'll evaluate ℓ, ∂ℓ/∂α, and ∂²ℓ/∂α² at α = α_max. If the cost is
   // still decreasing here, we just accept α_max.
-  model.CalcCostAlongLine(v, dv, alpha, &data, &dell_dalpha, &d2ell_dalpha2);
+  const double ell = model.CalcCostAlongLine(v, dv, alpha, &data, &dell_dalpha,
+                                             &d2ell_dalpha2);
   if (dell_dalpha <= 0) {
     return;  // α = α_max and num_iterations = 0 are set above.
   }
@@ -241,6 +243,17 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
   // TODO(vincekurtz): add a check to enable full Newton steps very close to
   // machine epsilon, as in SapSolver. We'll need to be mindful of the fact that
   // the cost can be negative in the pooled SAP formulation.
+
+  // Set the initial guess for linesearch based on a cubic hermite spline
+  // between α = 0 and α = α_max. This spline takes the form 
+  // p(t) = a t³ + b t² + c t + d, where p(0) = ℓ(0), p(1) = ℓ(α_max).
+  // TODO(vincekurtz): deal with the case of α_max != 1 properly
+  const double a = 2 * ell0 - 2 * ell + dell_dalpha0 + dell_dalpha;
+  const double b = -3 * ell0 + 3 * ell - 2 * dell_dalpha0 - dell_dalpha;
+  const double c = dell_dalpha0;
+  double alpha_guess = (- 2*b + std::sqrt(4*b*b - 12*a*c)) / (6 * a);
+  DRAKE_DEMAND(alpha_guess >= 0);
+  alpha_guess = std::min(alpha_guess, solver_parameters_.alpha_max);
 
   // We've exhausted all of the early exit conditions, so now we move on to the
   // Newton method with bisection fallback. To do so, we define an anonymous
@@ -252,9 +265,6 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
     model.CalcCostAlongLine(v, dv, x, &data, &dell, &d2ell);
     return std::make_pair(dell / dell_scale, d2ell / dell_scale);
   };
-
-  // TODO(vincekurtz): use a more informative initial guess
-  const double alpha_guess = 0.8;
 
   // The initial bracket is [0, α_max], since we already know that ℓ'(0) < 0 and
   // ℓ'(α_max) > 0. Values at the endpoints of the bracket are f(0) = -1 (by
