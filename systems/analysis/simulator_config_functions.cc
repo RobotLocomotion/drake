@@ -222,6 +222,7 @@ void ApplySimulatorConfig(const SimulatorConfig& config,
   if (!integrator.get_fixed_step_mode()) {
     integrator.set_target_accuracy(config.accuracy);
   }
+  simulator->get_mutable_context().SetTime(config.start_time);
   simulator->set_target_realtime_rate(config.target_realtime_rate);
   // It is almost always the case we want these two next flags to be either both
   // true or both false. Otherwise we could miss the first publish at t = 0.
@@ -246,6 +247,7 @@ SimulatorConfig ExtractSimulatorConfig(const Simulator<T>& simulator) {
     result.use_error_control = false;
     result.accuracy = 0.0;
   }
+  result.start_time = ExtractDoubleOrThrow(simulator.get_context().get_time());
   result.target_realtime_rate =
       ExtractDoubleOrThrow(simulator.get_target_realtime_rate());
   result.publish_every_time_step = simulator.get_publish_every_time_step();

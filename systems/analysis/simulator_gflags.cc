@@ -24,6 +24,10 @@ DEFINE_bool(simulator_publish_every_time_step,
             "Simulator::set_publish_at_initialization())."
             "See Simulator::set_publish_every_time_step() for details.");
 
+DEFINE_double(simulator_start_time,
+              drake::systems::SimulatorConfig{}.start_time,
+              "[Simulator flag] Sets the simulation start time.");
+
 // === Integrator's parameters ===
 
 // N.B. The list here must be kept in sync with
@@ -96,6 +100,7 @@ std::unique_ptr<Simulator<T>> MakeSimulatorFromGflags(
                                FLAGS_simulator_max_time_step,
                                FLAGS_simulator_accuracy,
                                FLAGS_simulator_use_error_control,
+                               FLAGS_simulator_start_time,
                                FLAGS_simulator_target_realtime_rate,
                                FLAGS_simulator_publish_every_time_step};
   ApplySimulatorConfig(config, simulator.get());
