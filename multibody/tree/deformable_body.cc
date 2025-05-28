@@ -197,7 +197,7 @@ template <typename T>
 std::unique_ptr<DeformableBody<double>> DeformableBody<T>::CloneToDouble()
     const {
   if constexpr (!std::is_same_v<T, double>) {
-    /* A none double body shouldn't exist in the first place. */
+    /* A non-double body shouldn't exist in the first place. */
     DRAKE_UNREACHABLE();
   } else {
     auto clone =
