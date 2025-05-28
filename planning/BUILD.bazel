@@ -121,6 +121,7 @@ drake_cc_library(
     srcs = ["joint_limits.cc"],
     hdrs = ["joint_limits.h"],
     deps = [
+        ":dof_mask",
         "//common:essential",
         "//multibody/plant",
     ],
