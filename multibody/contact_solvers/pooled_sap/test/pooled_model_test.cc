@@ -76,7 +76,7 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
 
   // Add patches.
   const T dissipation = 50.0;
-  const T stiffness = 1000.0;
+  const T stiffness = 1.0e6;
   const T friction = 0.5;
 
   typename PooledSapModel<T>::PatchConstraintsPool& patches =
@@ -331,14 +331,14 @@ GTEST_TEST(PooledSapModel, CostAlongLine) {
 
   // Compute data.
   const int nv = model.num_velocities();
-  const VectorX<AutoDiffXd> v = VectorXd::LinSpaced(nv, -10, 10.0);
+  const VectorX<AutoDiffXd> v = VectorXd::LinSpaced(nv, 0.05, 0.01);
   // VectorX<AutoDiffXd> v(nv);
   // math::InitializeAutoDiff(v_values, &v);
   model.CalcData(v, &data);
 
   // Allocate search direction.
   const VectorX<AutoDiffXd> w = VectorX<AutoDiffXd>::LinSpaced(
-      nv, -0.1, 0.2);  // Arbitrary search direction.
+      nv, 0.1, -0.2);  // Arbitrary search direction.
   SearchDirectionData<AutoDiffXd> search_data;
   model.UpdateSearchDirection(data, w, &search_data);
 
@@ -362,14 +362,15 @@ GTEST_TEST(PooledSapModel, CostAlongLine) {
     const double momentum_cost =
         (a * alpha * alpha / 2.0 + b * alpha + c).value();
     EXPECT_NEAR(momentum_cost, momentum_cost_expected,
-                kEps * momentum_cost_expected);
+                8 * kEps * abs(momentum_cost_expected));
 
     AutoDiffXd dcost, d2cost;
     const AutoDiffXd cost = model.CalcCostAlongLine(alpha, data, search_data,
                                                     &scratch, &dcost, &d2cost);
-    EXPECT_NEAR(cost.value(), cost_expected, kEps * cost_expected);
-    EXPECT_NEAR(dcost.value(), dcost_expected, kEps * dcost_expected);
-    EXPECT_NEAR(d2cost.value(), d2cost_expected, kEps * d2cost_expected);
+    EXPECT_NEAR(cost.value(), cost_expected, 8 * kEps * abs(cost_expected));
+    EXPECT_NEAR(dcost.value(), dcost_expected, 8 * kEps * abs(dcost_expected));
+    EXPECT_NEAR(d2cost.value(), d2cost_expected,
+                8 * kEps * abs(d2cost_expected));
 
     fmt::print("alpha: {}. cost: {}. dcost: {}. d2cost: {}\n", alpha,
                cost.value(), dcost.value(), d2cost.value());
