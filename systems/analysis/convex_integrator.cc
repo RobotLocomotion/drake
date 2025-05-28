@@ -251,7 +251,7 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
   const double a = 2 * ell0 - 2 * ell + dell_dalpha0 + dell_dalpha;
   const double b = -3 * ell0 + 3 * ell - 2 * dell_dalpha0 - dell_dalpha;
   const double c = dell_dalpha0;
-  double alpha_guess = (-2 * b + std::sqrt(4 * b * b - 12 * a * c)) / (6 * a);
+  double alpha_guess = SolveQuadraticForLargestRoot(3 * a, 2 * b, c);
   DRAKE_DEMAND(alpha_guess >= 0);
   alpha_guess = std::min(alpha_guess, solver_parameters_.alpha_max);
 
@@ -277,6 +277,26 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
   std::tie(alpha, num_iterations) = DoNewtonWithBisectionFallback(
       cost_and_gradient, bracket, alpha_guess, alpha_tolerance,
       solver_parameters_.ls_tolerance, solver_parameters_.max_ls_iterations);
+}
+
+template <typename T>
+T ConvexIntegrator<T>::SolveQuadraticForLargestRoot(const T& a, const T& b,
+                                                    const T& c) const {
+  using std::sqrt;
+
+  if (a < std::numeric_limits<T>::epsilon()) {
+    // If a ≈ 0, just solve b x + c = 0.
+    return -c / b;
+  } else {
+    // Normalize everything by a
+    const T b_tilde = b / a;
+    const T c_tilde = c / a;
+
+    const T discriminant = b_tilde * b_tilde - 4 * c_tilde;
+    DRAKE_DEMAND(discriminant >= 0);  // must have a real root
+
+    return (-b_tilde + sqrt(discriminant)) / 2.0;
+  }
 }
 
 template <typename T>

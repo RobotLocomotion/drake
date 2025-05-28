@@ -223,6 +223,9 @@ class ConvexIntegrator final : public IntegratorBase<T> {
                               const VectorX<T>& v, const VectorX<T>& dv,
                               T* alpha, int* num_iterations);
 
+  // Returns the largest root of the quadratic equation ax² + bx + c = 0.
+  T SolveQuadraticForLargestRoot(const T& a, const T& b, const T& c) const;
+
   // Print solver statistics to the console for debugging.
   void PrintSolverStats() const;
 
