@@ -324,11 +324,15 @@ class WorkspaceStorage {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WorkspaceStorage);
 
+  // The snopt manual states that trying to use a workspace smaller than this
+  // will always yield an error.
+  static constexpr int kMinimumSize = 500;
+
   explicit WorkspaceStorage(const SnoptUserFunInfo* user_info)
       : user_info_(user_info) {
     DRAKE_DEMAND(user_info_ != nullptr);
-    iw_.resize(500);
-    rw_.resize(500);
+    iw_.resize(kMinimumSize);
+    rw_.resize(kMinimumSize);
   }
 
   int* iw() { return iw_.data(); }
@@ -1302,6 +1306,34 @@ void SolveWithGivenOptions(const MathematicalProgram& prog,
   const int lenG = iGfun.size();
   user_info.set_lenG(lenG);
 
+  // If the user sets the "Total ... workspace" option(s) to be larger than the
+  // storage we've allocated, then we must allocate more storage to accomodate.
+  // Here, we'll `Pop` the options (removing them from CopyToCallbacks), and
+  // then after `snmema` has a chance to request even more storage, we'll do the
+  // final calls to `snseti` for these options by hand.
+  if (auto total_iw = options->Pop<int>("Total integer workspace")) {
+    if (!(*total_iw >= WorkspaceStorage::kMinimumSize)) {
+      throw std::logic_error(fmt::format(
+          "Snopt parameter 'Total integer workspace'={} is smaller than the "
+          "minimum allowed value of {}",
+          *total_iw, WorkspaceStorage::kMinimumSize));
+    }
+    if (*total_iw > storage.leniw()) {
+      storage.resize_iw(*total_iw);
+    }
+  }
+  if (auto total_rw = options->Pop<int>("Total real workspace")) {
+    if (!(*total_rw >= WorkspaceStorage::kMinimumSize)) {
+      throw std::logic_error(fmt::format(
+          "Snopt parameter 'Total real workspace'={} is smaller than the "
+          "minimum allowed value of {}",
+          *total_rw, WorkspaceStorage::kMinimumSize));
+    }
+    if (*total_rw > storage.lenrw()) {
+      storage.resize_rw(*total_rw);
+    }
+  }
+
   // Copy `options` into the snopt program storage.
   options->CopyToCallbacks(
       [&storage](const std::string& key, double value) {
@@ -1334,16 +1366,9 @@ void SolveWithGivenOptions(const MathematicalProgram& prog,
         }
       });
 
-  int Cold = 0;
-  double objective_constant = linear_cost_constant_term;
-  // The index of the objective row among all function evaluation F (notice that
-  // due to SNOPT using Fortran, this is 1-indexed).
-  int ObjRow = 1;
-  int nS = 0;
-  int nInf{0};
-  double sInf{0.0};
-
-  // Reallocate int and real workspace.
+  // Ask `snmema` whether the integer and/or real workspace needs to be larger,
+  // and increase the size if so. Once we know the final size, tell snopt that
+  // it can use all of it.
   int miniw, minrw;
   int snopt_status{0};
   Snopt::snmema(&snopt_status, nF, nx, lenA, lenG, &miniw, &minrw, storage.iw(),
@@ -1351,22 +1376,34 @@ void SolveWithGivenOptions(const MathematicalProgram& prog,
   // TODO(jwnimmer-tri) Check snopt_status for errors.
   if (miniw > storage.leniw()) {
     storage.resize_iw(miniw);
-    const std::string option = "Total int workspace";
-    int errors;
-    Snopt::snseti(option.c_str(), option.length(), storage.leniw(), &errors,
-                  storage.iw(), storage.leniw(), storage.rw(), storage.lenrw());
-    // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
   if (minrw > storage.lenrw()) {
     storage.resize_rw(minrw);
-    const std::string option = "Total real workspace";
+  }
+  {
+    const std::string option_iw = "Total integer workspace";
     int errors;
-    Snopt::snseti(option.c_str(), option.length(), storage.lenrw(), &errors,
-                  storage.iw(), storage.leniw(), storage.rw(), storage.lenrw());
+    Snopt::snseti(option_iw.c_str(), option_iw.length(), storage.leniw(),
+                  &errors, storage.iw(), storage.leniw(), storage.rw(),
+                  storage.lenrw());
+    // TODO(hongkai.dai): report the error in SnoptSolverDetails.
+    const std::string option_rw = "Total real workspace";
+    Snopt::snseti(option_rw.c_str(), option_rw.length(), storage.lenrw(),
+                  &errors, storage.iw(), storage.leniw(), storage.rw(),
+                  storage.lenrw());
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
+
   // Actual solve.
+  int Cold = 0;
   const char problem_name[] = "drake_problem";
+  double objective_constant = linear_cost_constant_term;
+  // The index of the objective row among all function evaluation F (notice that
+  // due to SNOPT using Fortran, this is 1-indexed).
+  int ObjRow = 1;
+  int nS = 0;
+  int nInf{0};
+  double sInf{0.0};
   auto snopt_start = std::chrono::high_resolution_clock::now();
   // clang-format off
   Snopt::snkera(Cold, problem_name, nF, nx, objective_constant, ObjRow,
