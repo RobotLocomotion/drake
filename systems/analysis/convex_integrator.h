@@ -22,6 +22,7 @@ using multibody::contact_solvers::internal::BlockSparseSymmetricMatrixT;
 using multibody::contact_solvers::pooled_sap::PooledSapBuilder;
 using multibody::contact_solvers::pooled_sap::PooledSapModel;
 using multibody::contact_solvers::pooled_sap::SapData;
+using multibody::contact_solvers::pooled_sap::SearchDirectionData;
 
 /**
  * Tolerances and other parameters for the convex integrator's solver.
@@ -243,9 +244,11 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   std::unique_ptr<PooledSapBuilder<T>> builder_;
   PooledSapModel<T> model_;
   SapData<T> data_;
+  SapData<T> scratch_data_;
   std::unique_ptr<BlockSparseSymmetricMatrixT<T>> hessian_;
   BlockSparseCholeskySolver<Eigen::MatrixXd> hessian_factorization_;
   VectorX<T> search_direction_;
+  SearchDirectionData<T> search_direction_data_;
 
   // Solver tolerances and other parameters
   ConvexIntegratorSolverParameters solver_parameters_;

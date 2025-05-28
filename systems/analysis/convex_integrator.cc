@@ -272,7 +272,7 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
 
   // Next we'll evaluate ℓ, ∂ℓ/∂α, and ∂²ℓ/∂α² at α = α_max. If the cost is
   // still decreasing here, we just accept α_max.
-  const double ell =
+  double ell =
       model.CalcCostAlongLine(v, dv, alpha_max, &data, &dell, &d2ell);
   if (dell <= std::numeric_limits<double>::epsilon()) {
     return std::make_pair(alpha_max, 0);
@@ -307,15 +307,30 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
     alpha_guess *= alpha_max;
   }
 
+  // Set up prerequisites for an efficient CalcCostAlongLine
+  SapData<double>& scratch = scratch_data_;
+  model.ResizeData(&scratch);
+  SearchDirectionData<double>& search_data = search_direction_data_;
+  model.UpdateSearchDirection(data, dv, &search_data);
+   
+  // DEBUG: check against old version
+  model.CalcData(v, &data);
+  model.CalcData(v, &scratch);
+  ell = model.CalcCostAlongLine(alpha_guess, data, search_data, &scratch, &dell, &d2ell);
+  fmt::print("ell: {}, dell: {}, d2ell: {}\n", ell, dell, d2ell);
+  ell = model.CalcCostAlongLine(v, dv, alpha_guess, &data, &dell, &d2ell);
+  fmt::print("ell: {}, dell: {}, d2ell: {}\n", ell, dell, d2ell);
+  fmt::print("\n\n");
+
   // We've exhausted all of the early exit conditions, so now we move on to the
   // Newton method with bisection fallback. To do so, we define an anonymous
   // function that computes the value and gradient of f(α) = −ℓ'(α)/ℓ'₀.
   // Normalizing in this way reduces round-off errors, ensuring f(0) = -1.
   const double dell_scale = -dell0;
-  auto cost_and_gradient = [&model, &data, &v, &dv, &dell_scale](double x) {
+  auto cost_and_gradient = [&model, &data, &search_data, &scratch, &dell_scale](double x) {
     double dell_dalpha;
     double d2ell_dalpha2;
-    model.CalcCostAlongLine(v, dv, x, &data, &dell_dalpha, &d2ell_dalpha2);
+    model.CalcCostAlongLine(x, data, search_data, &scratch, &dell_dalpha, &d2ell_dalpha2);
     return std::make_pair(dell_dalpha / dell_scale, d2ell_dalpha2 / dell_scale);
   };
 
