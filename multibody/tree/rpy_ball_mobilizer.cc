@@ -132,15 +132,17 @@ void RpyBallMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
-void RpyBallMobilizer<T>::ThrowSinceCosPitchIsNearZero(const T& pitch) const {
+void RpyBallMobilizer<T>::ThrowSinceCosPitchIsNearZero(
+    const T& pitch, const char* function_name) const {
   throw std::runtime_error(fmt::format(
-      "The RpyBallMobilizer (implementing a BallRpyJoint) between "
+      "{}(): The RpyBallMobilizer (implementing a BallRpyJoint) between "
       "body {} and body {} has reached a singularity. This occurs when the "
       "pitch angle takes values near π/2 + kπ, ∀ k ∈ ℤ. At the current "
       "configuration, we have pitch = {}. Drake does not yet support a "
       "comparable joint using quaternions, but the feature request is "
       "tracked in https://github.com/RobotLocomotion/drake/issues/12404.",
-      this->inboard_body().name(), this->outboard_body().name(), pitch));
+      function_name, this->inboard_body().name(), this->outboard_body().name(),
+      pitch));
 }
 
 template <typename T>
@@ -162,7 +164,10 @@ void RpyBallMobilizer<T>::DoCalcNMatrix(const systems::Context<T>& context,
   using std::sin;
   const Vector3<T> angles = get_angles(context);
   const T cp = cos(angles[1]);
-  if (abs(cp) < 1.0e-3) ThrowSinceCosPitchIsNearZero(angles[1]);
+  if (abs(cp) < 1.0e-3) {
+    const char* function_name_less_Do = __func__ + 2;
+    ThrowSinceCosPitchIsNearZero(angles[1], function_name_less_Do);
+  }
   const T sp = sin(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
@@ -229,7 +234,10 @@ void RpyBallMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>& context,
   const T sp = sin(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
-  if (abs(cp) < 1.0e-3) ThrowSinceCosPitchIsNearZero(angles[1]);
+  if (abs(cp) < 1.0e-3) {
+    const char* function_name_less_Do = __func__ + 2;
+    ThrowSinceCosPitchIsNearZero(angles[1], function_name_less_Do);
+  }
   const T cpi = 1.0 / cp;
   const T cpiSqr = cpi * cpi;
 
@@ -343,7 +351,10 @@ void RpyBallMobilizer<T>::DoMapVelocityToQDot(
   const T cp = cos(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
-  if (abs(cp) < 1.0e-3) ThrowSinceCosPitchIsNearZero(angles[1]);
+  if (abs(cp) < 1.0e-3) {
+    const char* function_name_less_Do = __func__ + 2;
+    ThrowSinceCosPitchIsNearZero(angles[1], function_name_less_Do);
+  }
   const T cpi = 1.0 / cp;
 
   // Although we can calculate q̇ = N(q) * v, it is more efficient to implicitly
