@@ -85,6 +85,15 @@ TEST_F(DeformableModelTest, RegisterDeformableBody) {
                                         make_unique<Sphere>(1), "sphere"),
           default_body_config_, kRezHint),
       ".*RegisterDeformableBody.*after system resources have been declared.*");
+
+  /* Registering a deformable body within a continous plant throws. */
+  MultibodyPlant<double> continuous_plant(0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      continuous_plant.mutable_deformable_model().RegisterDeformableBody(
+          make_unique<GeometryInstance>(RigidTransformd(),
+                                        make_unique<Sphere>(1), "sphere"),
+          default_body_config_, kRezHint),
+      ".*RegisterDeformableBody.*continuous MultibodyPlant.*not allowed.*");
 }
 
 /* Coarsely tests that SetWallBoundaryCondition adds some sort of boundary
@@ -428,6 +437,13 @@ TEST_F(DeformableModelTest, ExternalForces) {
       EXPECT_EQ(force->EvaluateAt(*plant_context, p_WQ), scale * 3.14 * p_WQ);
     }
   }
+
+  /* Registering an external force within a continous plant throws. */
+  MultibodyPlant<double> continuous_plant(0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      continuous_plant.mutable_deformable_model().AddExternalForce(
+          std::make_unique<ConstantForceDensityField>(force_field)),
+      ".*AddExternalForce.*continuous MultibodyPlant.*not allowed.*");
 }
 
 TEST_F(DeformableModelTest, CloneBeforeFinalizeThrows) {

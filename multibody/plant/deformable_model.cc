@@ -44,11 +44,13 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
     ModelInstanceIndex model_instance,
     const fem::DeformableBodyConfig<T>& config, double resolution_hint) {
   this->ThrowIfSystemResourcesDeclared(__func__);
+  ThrowIfNotDiscrete(__func__);
   ThrowIfNotDouble(__func__);
   if (!(model_instance < this->plant().num_model_instances())) {
     throw std::logic_error(
-        "Invalid model instance specified. A valid model instance can be "
-        "obtained by calling MultibodyPlant::AddModelInstance().");
+        "RegisterDeformableBody(): Invalid model instance specified. A valid "
+        "model instance can be obtained by calling "
+        "MultibodyPlant::AddModelInstance().");
   }
   if constexpr (std::is_same_v<T, double>) {
     const std::string name = geometry_instance->name();
@@ -56,8 +58,9 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
       const std::string& model_instance_name =
           this->plant().GetModelInstanceName(model_instance);
       throw std::logic_error(fmt::format(
-          "Model instance '{}' already contains a deformable body "
-          "named '{}'. Body names must be unique within a given model.",
+          "RegisterDeformableBody(): Model instance '{}' already contains a "
+          "deformable body named '{}'. Body names must be unique within a "
+          "given model.",
           model_instance_name, name));
     }
     /* Register the geometry with SceneGraph. */
@@ -162,6 +165,7 @@ void DeformableModel<T>::AddExternalForce(
     std::unique_ptr<ForceDensityFieldBase<T>> force_density) {
   this->ThrowIfSystemResourcesDeclared(__func__);
   ThrowIfNotDouble(__func__);
+  ThrowIfNotDiscrete(__func__);
   force_densities_.push_back(std::move(force_density));
 }
 
@@ -221,7 +225,7 @@ bool DeformableModel<T>::HasBodyNamed(const std::string& name) const {
 template <typename T>
 bool DeformableModel<T>::HasBodyNamed(const std::string& name,
                                       ModelInstanceIndex model_instance) const {
-  return !GetBodyIndicesByName(name, model_instance).empty();
+  return GetBodyIndexByName(name, model_instance).has_value();
 }
 
 template <typename T>
@@ -229,9 +233,10 @@ const DeformableBody<T>& DeformableModel<T>::GetBodyByName(
     const std::string& name) const {
   const std::vector<DeformableBodyIndex> indices = GetBodyIndicesByName(name);
   if (indices.empty()) {
-    throw std::runtime_error(fmt::format(
-        "No deformable body with the given name {} has been registered.",
-        name));
+    throw std::runtime_error(
+        fmt::format("GetBodyByName(): No deformable body with the given name "
+                    "{} has been registered.",
+                    name));
   }
   if (indices.size() > 1) {
     throw std::runtime_error(
@@ -245,15 +250,15 @@ const DeformableBody<T>& DeformableModel<T>::GetBodyByName(
 template <typename T>
 const DeformableBody<T>& DeformableModel<T>::GetBodyByName(
     const std::string& name, ModelInstanceIndex model_instance) const {
-  const std::vector<DeformableBodyIndex> indices =
-      GetBodyIndicesByName(name, model_instance);
-  if (indices.empty()) {
+  const std::optional<DeformableBodyIndex> index =
+      GetBodyIndexByName(name, model_instance);
+  if (!index.has_value()) {
     throw std::runtime_error(
-        fmt::format("No deformable body with the given name {} in instance {}.",
+        fmt::format("GetBodyByName(): No deformable body with the given name "
+                    "{} in instance {}.",
                     name, model_instance));
   }
-  DRAKE_DEMAND(ssize(indices) == 1);
-  return deformable_bodies_.get_element(indices[0]);
+  return deformable_bodies_.get_element(index.value());
 }
 
 template <typename T>
@@ -364,7 +369,7 @@ DeformableModel<T>::CloneToSymbolic(
 template <typename T>
 void DeformableModel<T>::DoDeclareSystemResources() {
   if constexpr (!std::is_same_v<T, double>) {
-    /* A none double DeformableModel is always empty. */
+    /* A non-double DeformableModel is always empty. */
     DRAKE_DEMAND(is_empty());
     return;
   } else {
@@ -467,6 +472,15 @@ void DeformableModel<T>::ThrowIfNotDouble(const char* function_name) const {
                     function_name));
   }
 }
+template <typename T>
+void DeformableModel<T>::ThrowIfNotDiscrete(const char* function_name) const {
+  if (!this->plant().is_discrete()) {
+    throw std::logic_error(
+        fmt::format("Calls to {}() with a DeformableModel belonging to a "
+                    "continuous MultibodyPlant are not allowed.",
+                    function_name));
+  }
+}
 
 template <typename T>
 std::vector<DeformableBodyIndex> DeformableModel<T>::GetBodyIndicesByName(
@@ -481,18 +495,17 @@ std::vector<DeformableBodyIndex> DeformableModel<T>::GetBodyIndicesByName(
 }
 
 template <typename T>
-std::vector<DeformableBodyIndex> DeformableModel<T>::GetBodyIndicesByName(
+std::optional<DeformableBodyIndex> DeformableModel<T>::GetBodyIndexByName(
     const std::string& name, ModelInstanceIndex model_instance) const {
   /* Use the name lookup for its side-effect of throwing on an invalid index. */
   unused(this->plant().GetModelInstanceName(model_instance));
   auto [lower, upper] = deformable_bodies_.names_map().equal_range(name);
-  std::vector<DeformableBodyIndex> indices;
   for (auto it = lower; it != upper; ++it) {
     if (GetBody(it->second).model_instance() == model_instance) {
-      indices.push_back(it->second);
+      return it->second;
     }
   }
-  return indices;
+  return std::nullopt;
 }
 
 }  // namespace multibody

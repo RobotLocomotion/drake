@@ -151,7 +151,7 @@ class MultibodyElement {
   virtual void DoSetDefaultParameters(systems::Parameters<T>*) const;
 
   /// Implementation of the NVI DeclareDiscreteState(). MultibodyElement-derived
-  /// objects may override to declare their specific parameters.
+  /// objects may override to declare their specific state variables.
   virtual void DoDeclareDiscreteState(internal::MultibodyTreeSystem<T>*);
 
   /// To be used by MultibodyElement-derived objects when declaring parameters

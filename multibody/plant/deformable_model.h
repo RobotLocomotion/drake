@@ -2,6 +2,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -82,6 +83,8 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    @pre resolution_hint > 0.
    @throws std::exception if `this` %DeformableModel is not of scalar type
    double.
+   @throws std::exception if `this` %DeformableModel belongs to a continuous
+   MultibodyPlant.
    @throws std::exception if the model instance does not exist.
    @throws std::exception if a deformable body with the same name has already
    been registered to the model instance.
@@ -211,6 +214,8 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    all deformable bodies.
    @throws std::exception if `this` %DeformableModel is not of scalar type
            double.
+   @throws std::exception if `this` %DeformableModel belongs to a continuous
+           MultibodyPlant.
    @throws std::exception if Finalize() has been called on the multibody plant
            owning this deformable model. */
   void AddExternalForce(
@@ -302,7 +307,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
       DeformableBodyIndex index = GetBodyIndex(id);
       return deformable_bodies_.get_element(index);
     } else {
-      /* A none double DeformableModel is always empty. */
+      /* A non-double DeformableModel is always empty. */
       DRAKE_UNREACHABLE();
     }
   }
@@ -314,12 +319,12 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
     if constexpr (std::is_same_v<T, double>) {
       return deformable_bodies_.get_element(index);
     } else {
-      /* A none double DeformableModel is always empty. */
+      /* A non-double DeformableModel is always empty. */
       DRAKE_UNREACHABLE();
     }
   }
 
-  /** Returns the deformable body with the given `id`.
+  /** Returns a mutable reference to the deformable body with the given `id`.
    @throws std::exception if no deformable body with the given `id` has been
    registered in this model. */
   DeformableBody<T>& GetMutableBody(DeformableBodyId id) {
@@ -328,7 +333,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
       DeformableBodyIndex index = GetBodyIndex(id);
       return deformable_bodies_.get_mutable_element(index);
     } else {
-      /* A none double DeformableModel is always empty. */
+      /* A non-double DeformableModel is always empty. */
       DRAKE_UNREACHABLE();
     }
   }
@@ -344,12 +349,13 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
 
   /** Returns the DeformableBody with the given name.
    @throws std::exception if there's no body with the given name or if more than
-   one model instance contains deformable body with the given name. */
+   one model instance contains a deformable body with the given name. */
   const DeformableBody<T>& GetBodyByName(const std::string& name) const;
 
-  /** Returns the DeformableBody with the given name.
-   @throws std::exception if there's no body with the given name or if more than
-   one model instance contains deformable body with the given name. */
+  /** Returns the DeformableBody with the given name from the given model
+   instance.
+   @throws std::exception if there's no body with the given name that is
+   registered with the given model instance. */
   const DeformableBody<T>& GetBodyByName(
       const std::string& name, ModelInstanceIndex model_instance) const;
 
@@ -472,14 +478,18 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    a DeformableModel that doesn't have scalar type double. */
   void ThrowIfNotDouble(const char* function_name) const;
 
+  /* Helper to throw a useful message if the given `function_name` is called on
+   a DeformableModel that belongs to a continuous plant. */
+  void ThrowIfNotDiscrete(const char* function_name) const;
+
   /* Returns all body indices with exactly this name (no model instance check).
    */
   std::vector<DeformableBodyIndex> GetBodyIndicesByName(
       const std::string& name) const;
 
-  /* Returns all body indices with this name *and* in the given model instance.
-   */
-  std::vector<DeformableBodyIndex> GetBodyIndicesByName(
+  /* Returns the index of the deformable body with this name *and* in the given
+   model instance if any; otherwise, returns std::nullopt. */
+  std::optional<DeformableBodyIndex> GetBodyIndexByName(
       const std::string& name, ModelInstanceIndex model_instance) const;
 
   /* Data members. WARNING: if you add a field here be sure to update
