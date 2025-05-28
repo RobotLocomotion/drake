@@ -2,6 +2,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/planning/dof_mask.h"
 
 namespace drake {
 namespace planning {
@@ -24,6 +25,22 @@ class JointLimits final {
   @throws std::exception if any limits contain NaN values. */
   JointLimits(const multibody::MultibodyPlant<double>& plant,
               bool require_finite_positions = false,
+              bool require_finite_velocities = false,
+              bool require_finite_accelerations = false);
+
+  /** Constructs a JointLimits using the position, velocity, and acceleration
+  limits in the provided `plant`, selecting only the coefficients indicated by
+  `active_dof.`
+  @throws std::exception if plant is not finalized.
+  @throws if active_dof.size() != num_positions().
+  @throws if active_dof.size() != num_velocities().
+  @throws if active_dof.size() != num_accelerations().
+  @throws std::exception if the position, velocity, or acceleration limits
+  contain non-finite values, and the corresponding constructor argument is
+  true.
+  @throws std::exception if any limits contain NaN values. */
+  JointLimits(const multibody::MultibodyPlant<double>& plant,
+              const DofMask& active_dof, bool require_finite_positions = false,
               bool require_finite_velocities = false,
               bool require_finite_accelerations = false);
 

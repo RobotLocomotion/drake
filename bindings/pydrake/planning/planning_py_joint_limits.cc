@@ -22,6 +22,13 @@ void DefinePlanningJointLimits(py::module m) {
           py::arg("require_finite_velocities") = false,
           py::arg("require_finite_accelerations") = false,
           cls_doc.ctor.doc_4args)
+      .def(py::init<const multibody::MultibodyPlant<double>&, const DofMask&,
+               bool, bool, bool>(),
+          py::arg("plant"), py::arg("active_dof"),
+          py::arg("require_finite_positions") = false,
+          py::arg("require_finite_velocities") = false,
+          py::arg("require_finite_accelerations") = false,
+          cls_doc.ctor.doc_4args)
       .def(py::init<const Eigen::VectorXd&, const Eigen::VectorXd&,
                const Eigen::VectorXd&, const Eigen::VectorXd&,
                const Eigen::VectorXd&, const Eigen::VectorXd&, bool, bool,
