@@ -269,6 +269,40 @@ T PooledSapModel<T>::PatchConstraintsPool::CalcLaggedHuntCrossleyModel(
 }
 
 template <typename T>
+void PooledSapModel<T>::PatchConstraintsPool::CalcConstraintVelocities(
+    const EigenPool<Vector6<T>>& V_WB_pool,
+    EigenPool<Vector6<T>>* V_AbB_W_pool) const {
+  DRAKE_ASSERT(V_WB_pool.size() == model().num_bodies());
+  DRAKE_ASSERT(V_AbB_W_pool->size() == num_patches());
+
+  for (int p = 0; p < num_patches(); ++p) {
+    const int num_cliques = num_cliques_[p];
+
+    const int bodyB = bodies_[p].first;
+    // If A is anchored, bodyA, will reference a zero velocity that won't
+    // get used.
+    const int bodyA = bodies_[p].second;
+    const Vector6<T>& V_WB = V_WB_pool[bodyB];
+    const Vector6<T>& V_WA = V_WB_pool[bodyA];
+
+    Vector6<T>& V_AbB_W = (*V_AbB_W_pool)[p];
+    V_AbB_W = V_WB;
+
+    if (num_cliques == 2) {
+      const Vector3<T>& p_AB_W = p_AB_W_[p];
+
+      const auto w_WA = V_WA.template head<3>();
+      const auto v_WA = V_WA.template tail<3>();
+      auto w_AbB_W = V_AbB_W.template head<3>();
+      auto v_AbB_W = V_AbB_W.template tail<3>();
+
+      w_AbB_W -= w_WA;
+      v_AbB_W -= (v_WA + w_WA.cross(p_AB_W));
+    }
+  }
+}
+
+template <typename T>
 void PooledSapModel<T>::PatchConstraintsPool::CalcContactVelocities(
     const EigenPool<Vector6<T>>& V_WB_pool,
     EigenPool<Vector3<T>>* v_AcBc_W_pool) const {
@@ -345,13 +379,40 @@ void PooledSapModel<T>::PatchConstraintsPool::CalcPatchQuantities(
 
 template <typename T>
 void PooledSapModel<T>::PatchConstraintsPool::CalcData(
-    const SapData<T>& data, PatchConstraintsDataPool<T>* patch_data) const {
-  const auto& spatial_velocities = data.cache().spatial_velocities;
-  CalcContactVelocities(spatial_velocities, &patch_data->v_AcBc_W_pool());
+    const EigenPool<Vector6<T>>& V_WB,
+    PatchConstraintsDataPool<T>* patch_data) const {
+  CalcContactVelocities(V_WB, &patch_data->v_AcBc_W_pool());
   CalcPatchQuantities(patch_data->v_AcBc_W_pool(), &patch_data->cost_pool(),
                       &patch_data->Gamma_Bo_W_pool(), &patch_data->G_Bp_pool());
   patch_data->cost() = std::accumulate(patch_data->cost_pool().begin(),
                                        patch_data->cost_pool().end(), T(0.0));
+}
+
+template <typename T>
+void PooledSapModel<T>::PatchConstraintsPool::ProjectAlongLine(
+    const PatchConstraintsDataPool<T>& patch_data,
+    const EigenPool<Vector6<T>>& U_WB_pool,
+    typename SapData<T>::Scratch* scratch, T* dcost, T* d2cost) const {
+  auto& U_AbB_W_pool = scratch->Vector6_pool;
+  U_AbB_W_pool.Clear();
+  U_AbB_W_pool.Resize(num_patches());
+  CalcConstraintVelocities(U_WB_pool, &U_AbB_W_pool);
+
+  const auto& Gamma_pool = patch_data.Gamma_Bo_W_pool();
+  const EigenPool<Matrix6<T>>& G_Bp_pool = patch_data.G_Bp_pool();
+  *dcost = 0;
+  *d2cost = 0;
+  Vector6<T> dGamma;
+  for (int p = 0; p < num_patches(); ++p) {
+    // N.B. All this is contiguous, so we could use a single dot product.
+    const Vector6<T>& U = U_AbB_W_pool[p];
+    const Vector6<T>& Gamma = Gamma_pool[p];
+    const Matrix6<T>& G = G_Bp_pool[p];
+    *dcost -= U.dot(Gamma);  // -= Uᵀ⋅Γ
+
+    dGamma = G * U;
+    *d2cost += U.dot(dGamma);  // += Uᵀ⋅Gₚ⋅U
+  }
 }
 
 template <typename T>
@@ -413,7 +474,7 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateHessian(
   // EigenPool and AutoDiffXd do not play well together.
   // When T = AutoDiffXd this function simply allocates new memory, not from the
   // pool. Otherwise it returns a new element into MatrixX_pool.
-  // TODO(amcastro-tir): Consider resolving EigenPool to a simple std::vector
+  // TODO(amcastro-tri): Consider resolving EigenPool to a simple std::vector
   // when the scalar type is AutoDiffXd.
   auto GetMatrixXScratch = [&MatrixX_pool](int rows, int cols) {
     if constexpr (std::is_same_v<T, AutoDiffXd>) {

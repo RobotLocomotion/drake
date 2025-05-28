@@ -317,6 +317,65 @@ GTEST_TEST(PooledSapModel, LimitMallocOnCalcData) {
   }
 }
 
+GTEST_TEST(PooledSapModel, CostAlongLine) {
+  PooledSapModel<AutoDiffXd> model;
+  MakeModel(&model, false /* Multiple cliques */);
+  EXPECT_EQ(model.num_cliques(), 3);
+  EXPECT_EQ(model.num_velocities(), 18);
+  EXPECT_EQ(model.num_constraints(), 3);
+
+  // Allocate data, and additional scratch.
+  SapData<AutoDiffXd> data, scratch;
+  model.ResizeData(&data);
+  model.ResizeData(&scratch);
+
+  // Compute data.
+  const int nv = model.num_velocities();
+  const VectorX<AutoDiffXd> v = VectorXd::LinSpaced(nv, -10, 10.0);
+  // VectorX<AutoDiffXd> v(nv);
+  // math::InitializeAutoDiff(v_values, &v);
+  model.CalcData(v, &data);
+
+  // Allocate search direction.
+  const VectorX<AutoDiffXd> w = VectorX<AutoDiffXd>::LinSpaced(
+      nv, -0.1, 0.2);  // Arbitrary search direction.
+  SearchDirectionData<AutoDiffXd> search_data;
+  model.UpdateSearchDirection(data, w, &search_data);
+
+  // Try-out a set of arbitrary values.
+  for (double alpha_value : {-0.45, 0., 0.15, 0.34, 0.93, 1.32}) {
+    const AutoDiffXd alpha = {
+        alpha_value, VectorXd::Ones(1) /* This is the independent variable */};
+
+    const VectorX<AutoDiffXd> v_alpha = v + alpha * w;
+    model.CalcData(v_alpha, &scratch);
+    const double cost_expected = scratch.cache().cost.value();
+    const double momentum_cost_expected = scratch.cache().momentum_cost.value();
+    const double dcost_expected = scratch.cache().cost.derivatives()[0];
+    const VectorXd w_times_H = math::ExtractGradient(scratch.cache().gradient);
+    const double d2cost_expected = w_times_H.dot(math::ExtractValue(w));
+
+    // Verify pre-computed terms are correct.
+    const AutoDiffXd a = search_data.a;
+    const AutoDiffXd b = search_data.b;
+    const AutoDiffXd c = search_data.c;
+    const double momentum_cost =
+        (a * alpha * alpha / 2.0 + b * alpha + c).value();
+    EXPECT_NEAR(momentum_cost, momentum_cost_expected,
+                kEps * momentum_cost_expected);
+
+    AutoDiffXd dcost, d2cost;
+    const AutoDiffXd cost = model.CalcCostAlongLine(alpha, data, search_data,
+                                                    &scratch, &dcost, &d2cost);
+    EXPECT_NEAR(cost.value(), cost_expected, kEps * cost_expected);
+    EXPECT_NEAR(dcost.value(), dcost_expected, kEps * dcost_expected);
+    EXPECT_NEAR(d2cost.value(), d2cost_expected, kEps * d2cost_expected);
+
+    fmt::print("alpha: {}. cost: {}. dcost: {}. d2cost: {}\n", alpha,
+               cost.value(), dcost.value(), d2cost.value());
+  }
+}
+
 }  // namespace pooled_sap
 }  // namespace contact_solvers
 }  // namespace multibody

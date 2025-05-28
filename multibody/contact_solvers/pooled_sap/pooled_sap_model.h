@@ -194,6 +194,8 @@ class PooledSapModel {
     return params().A[clique];
   }
 
+  const VectorX<T>& r() const { return params_->r; }
+
   int num_bodies() const {
     DRAKE_ASSERT(params_ != nullptr);
     return num_bodies_;
@@ -299,9 +301,26 @@ class PooledSapModel {
   void UpdateHessian(const SapData<T>& data,
                      internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
-  const VectorX<T>& r() const { return params_->r; }
+  void UpdateSearchDirection(const SapData<T>& data, const VectorX<T>& w,
+                             SearchDirectionData<T>* search_data) const;
+
+  /* Computes ℓ(α) = ℓ(v + α⋅w) along w at α and its first dℓ/dα(α) and second
+   derivatives d²ℓ/dα²(α).
+   @param alpha The value of α.
+   @param data Stores velocity v along with cached quantities. See CalcData().
+   @param search_direction Stores w along with cached quantities. See
+   UpdateSearchDirection().
+   @param scratch Scratch space properly resized with ResizeData().
+   @param dcost_dalpha dℓ/dα on output.
+   @param dcost_dalpha d²ℓ/dα² on output.
+   @returns The cost ℓ(α). */
+  T CalcCostAlongLine(const T& alpha, const SapData<T>& data,
+                      const SearchDirectionData<T>& search_direction,
+                      SapData<T>* scratch, T* dcost_dalpha,
+                      T* d2cost_dalpha2) const;
 
  private:
+  void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* result) const;
   void CalcMomentumTerms(const SapData<T>& data,
                          typename SapData<T>::Cache* cache) const;
   void CalcBodySpatialVelocities(const VectorX<T>& v,
