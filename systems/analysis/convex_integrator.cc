@@ -2,6 +2,8 @@
 
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
 
+#include <chrono>
+
 namespace drake {
 namespace systems {
 
@@ -50,6 +52,7 @@ void ConvexIntegrator<T>::DoInitialize() {
   builder_ = std::make_unique<PooledSapBuilder<T>>(plant());
   builder_->UpdateModel(plant_context, 0.01, &model_);
   model_.ResizeData(&data_);
+  search_direction_.resize(model_.num_velocities());
 
   // Allocate memory for the solver statistics.
   stats_.Reserve(solver_parameters_.max_iterations);
@@ -122,15 +125,15 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     const PooledSapModel<double>& model, VectorXd* v_guess) {
   SapData<double>& data = get_data();
   VectorXd& v = *v_guess;
+  VectorXd& dv = search_direction_;
   model.ResizeData(&data);
+  dv.resize(data.num_velocities());
   DRAKE_DEMAND(data.num_velocities() == v.size());
 
   // Tolerance for a more relaxed convergence check under looser accuracies.
   const double k_dot_tol =
       solver_parameters_.kappa * this->get_accuracy_in_use();
 
-  // TODO(vincekurtz): pre-allocate the search direction data
-  VectorXd dv(v.size());
   double alpha{NAN};
   int ls_iterations{0};
 
@@ -160,17 +163,39 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     // Compute the search direction via Newton step dv = -H⁻¹ g
     // TODO(vincekurtz): re-use the old Hessian
     const VectorXd& g = data.cache().gradient;
+
+    auto start = std::chrono::high_resolution_clock::now();
     if (k == 0) {
-      hessian_factorization_.SetMatrix(*model.MakeHessian(data));
+      hessian_ = model.MakeHessian(data);
     } else {
-      hessian_factorization_.UpdateMatrix(*model.MakeHessian(data));
+      model.UpdateHessian(data, hessian_.get());
     }
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    const double make_hessian_time = elapsed.count();
+
+    start = std::chrono::high_resolution_clock::now();
+    hessian_factorization_.SetMatrix(*hessian_);
+    end = std::chrono::high_resolution_clock::now();
+    elapsed = end - start;
+    const double set_matrix_time = elapsed.count();
+
+    start = std::chrono::high_resolution_clock::now();
     if (!hessian_factorization_.Factor()) {
       throw std::runtime_error("Hessian factorization failed!");
     }
+    end = std::chrono::high_resolution_clock::now();
+    elapsed = end - start;
+    const double factor_time = elapsed.count();
+
+    start = std::chrono::high_resolution_clock::now();
     dv = hessian_factorization_.Solve(-g);
-    //const MatrixXd H = model.MakeHessian(data)->MakeDenseMatrix();
-    //dv = H.ldlt().solve(-g);
+    end = std::chrono::high_resolution_clock::now();
+    elapsed = end - start;
+    const double solve_time = elapsed.count();
+
+    fmt::print("k: {}, MakeHessian: {}, SetMatrix: {}, Factor: {}, Solve: {}\n",
+               k, make_hessian_time, set_matrix_time, factor_time, solve_time);
 
     // Compute the step size with linesearch
     PerformExactLineSearch(model, v, dv, &alpha, &ls_iterations);
