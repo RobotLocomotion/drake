@@ -136,8 +136,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(
 
   stats_.Reset();
   for (int k = 0; k < solver_parameters_.max_iterations; ++k) {
-    // Compute the cost, gradient, and Hessian.
-    // TODO(vincekurtz): re-use the old Hessian
+    // Compute the cost and gradient
     model.CalcData(v, &data);
 
     // Update the statistics we have available so far
@@ -159,9 +158,19 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     }
 
     // Compute the search direction via Newton step dv = -H⁻¹ g
+    // TODO(vincekurtz): re-use the old Hessian
     const VectorXd& g = data.cache().gradient;
-    const MatrixXd H = model.MakeHessian(data)->MakeDenseMatrix();
-    dv = H.ldlt().solve(-g);
+    if (k == 0) {
+      hessian_factorization_.SetMatrix(*model.MakeHessian(data));
+    } else {
+      hessian_factorization_.UpdateMatrix(*model.MakeHessian(data));
+    }
+    if (!hessian_factorization_.Factor()) {
+      throw std::runtime_error("Hessian factorization failed!");
+    }
+    dv = hessian_factorization_.Solve(-g);
+    //const MatrixXd H = model.MakeHessian(data)->MakeDenseMatrix();
+    //dv = H.ldlt().solve(-g);
 
     // Compute the step size with linesearch
     PerformExactLineSearch(model, v, dv, &alpha, &ls_iterations);

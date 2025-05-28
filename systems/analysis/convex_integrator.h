@@ -11,6 +11,7 @@
 #include "drake/multibody/contact_solvers/pooled_sap/pooled_sap_builder.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/integrator_base.h"
+#include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 
 namespace drake {
 namespace systems {
@@ -19,6 +20,8 @@ using multibody::MultibodyPlant;
 using multibody::contact_solvers::pooled_sap::PooledSapBuilder;
 using multibody::contact_solvers::pooled_sap::PooledSapModel;
 using multibody::contact_solvers::pooled_sap::SapData;
+using multibody::contact_solvers::internal::BlockSparseCholeskySolver;
+using multibody::contact_solvers::internal::BlockSparseSymmetricMatrix;
 
 /**
  * Tolerances and other parameters for the convex integrator's solver.
@@ -239,6 +242,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   std::unique_ptr<PooledSapBuilder<T>> builder_;
   PooledSapModel<T> model_;
   SapData<T> data_;
+  BlockSparseCholeskySolver<Eigen::MatrixXd> hessian_factorization_;
 
   // Solver tolerances and other parameters
   ConvexIntegratorSolverParameters solver_parameters_;
