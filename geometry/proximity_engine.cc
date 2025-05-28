@@ -658,6 +658,25 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return witness_pairs;
   }
 
+  /* Searches for an fcl::CollisionObject associated with the given `id`.
+   Note: this strips the const away from the collision object because fcl's
+   API requires non-const inputs.
+   @throws if the proximity engine has no geometry for the id. */
+  CollisionObjectd* FindCollisionObject(GeometryId id,
+                                        std::string_view query_type) const {
+    auto iter = dynamic_objects_.find(id);
+    if (iter == dynamic_objects_.end()) {
+      iter = anchored_objects_.find(id);
+      if (iter == anchored_objects_.end()) {
+        throw std::runtime_error(
+            fmt::format("The geometry given by id {} does not reference a "
+                        "geometry that can be used in a {} query",
+                        id, query_type));
+      }
+    }
+    return const_cast<CollisionObjectd*>(iter->second.get());
+  }
+
   SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
       GeometryId id_A, GeometryId id_B,
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
@@ -671,22 +690,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
     data.request.distance_tolerance = distance_tolerance_;
 
-    auto find_geometry = [this](GeometryId id) -> CollisionObjectd* {
-      auto iter = dynamic_objects_.find(id);
-      if (iter == dynamic_objects_.end()) {
-        iter = anchored_objects_.find(id);
-        if (iter == anchored_objects_.end()) {
-          throw std::runtime_error(fmt::format(
-              "The geometry given by id {} does not reference a "
-              "geometry that can be used in a signed distance query",
-              id));
-        }
-      }
-      return const_cast<CollisionObjectd*>(iter->second.get());
-    };
-
-    CollisionObjectd* object_A = find_geometry(id_A);
-    CollisionObjectd* object_B = find_geometry(id_B);
+    CollisionObjectd* object_A = FindCollisionObject(id_A, "signed distance");
+    CollisionObjectd* object_B = FindCollisionObject(id_B, "signed distance");
     shape_distance::Callback<T>(object_A, object_B, &data, max_distance);
 
     // If the callback didn't throw, it returned an actual value.
@@ -722,6 +727,33 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     std::sort(distances.begin(), distances.end(),
               OrderSignedDistanceToPoint<T>);
     return distances;
+  }
+
+  SignedDistanceToPoint<T> ComputeSignedDistanceGeometryToPoint(
+      const Vector3<T>& p_WQ,
+      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
+      GeometryId geometry_id) const {
+    // We create a sphere of zero radius centered at the query point and put
+    // it into a CollisionObject.
+    auto fcl_sphere = make_shared<fcl::Sphered>(0.0);  // sphere of zero radius
+    CollisionObjectd query_point(fcl_sphere);
+    // The FCL broadphase requires double-valued poses; so we use ADL to
+    // efficiently get double-valued poses out of arbitrary T-valued poses.
+    query_point.setTranslation(convert_to_double(p_WQ));
+    query_point.computeAABB();
+
+    CollisionObjectd* geometry =
+        FindCollisionObject(geometry_id, "signed distance");
+    DRAKE_DEMAND(geometry != nullptr);
+    double kInf = std::numeric_limits<double>::infinity();
+
+    std::vector<SignedDistanceToPoint<T>> distances;
+    point_distance::CallbackData<T> data{
+        &query_point, kInf, p_WQ, &X_WGs, &mesh_sdf_data_, &distances};
+
+    point_distance::Callback<T>(&query_point, geometry, &data, kInf);
+    DRAKE_DEMAND(distances.size() == 1);
+    return distances[0];
   }
 
   std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration(
@@ -1413,6 +1445,15 @@ ProximityEngine<T>::ComputeSignedDistanceToPoint(
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
     const double threshold) const {
   return impl_->ComputeSignedDistanceToPoint(query, X_WGs, threshold);
+}
+
+template <typename T>
+SignedDistanceToPoint<T>
+ProximityEngine<T>::ComputeSignedDistanceGeometryToPoint(
+    const Vector3<T>& query,
+    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
+    GeometryId geometry_id) const {
+  return impl_->ComputeSignedDistanceGeometryToPoint(query, X_WGs, geometry_id);
 }
 
 template <typename T>

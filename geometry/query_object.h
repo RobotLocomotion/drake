@@ -838,6 +838,20 @@ class QueryObject {
       const double threshold = std::numeric_limits<double>::infinity()) const;
   //@}
 
+  /** A variant of ComputeSignedDistanceToPoint(). Instead of finding distances
+   to all geometries, provides the distance to only the geometry indicated by
+   id.
+
+   @param p_WQ          Position of a query point Q in world frame W.
+   @param geometry_id   The id of the geometry. The distance between the surface
+                        of the geometry and the point Q will be returned.
+   @throws std::exception if `geometry_id` is invalid.
+   @throws std::exception if the combination of the indicated geometry's Shape
+   type and the given scalar Type T are unsupported in
+   ComputeSignedDistanceToPoint()'s support table. */
+  SignedDistanceToPoint<T> ComputeSignedDistanceGeometryToPoint(
+      const Vector3<T>& p_WQ, GeometryId geometry_id) const;
+
   //---------------------------------------------------------------------------
   /**
    @anchor render_queries

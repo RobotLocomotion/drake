@@ -1244,6 +1244,47 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceToPointNonPositiveThreshold) {
   }
 }
 
+// ProximityEngine::ComputeSignedDistanceGeometryToPoint() does no math. It is
+// simply responsible for acquiring the indicated geometry (if possible,
+// throwing if not), bundling it up with the query point, forwarding it to the
+// callback, and returning the measured result. We'll be testing that
+// functionality.
+GTEST_TEST(ProximityEngineTests, SignedDistanceGeometryToPoint) {
+  const double kRadius = 0.5;
+
+  const GeometryId dynamic_id = GeometryId::get_new_id();
+  const GeometryId anchored_id = GeometryId::get_new_id();
+  const GeometryId bad_id = GeometryId::get_new_id();
+  // Position the sphere arbitrarily far from the origin.
+  const RigidTransformd X_WS(Vector3d(-10, -11, -12));
+  const unordered_map<GeometryId, RigidTransformd> X_WGs{{dynamic_id, X_WS},
+                                                         {anchored_id, X_WS}};
+
+  Sphere sphere{kRadius};
+
+  ProximityEngine<double> engine;
+  // We'll put the anchored sphere and dynamic sphere at the same place. Ten
+  // units in the -Wx direction from the origin.
+  engine.AddAnchoredGeometry(sphere, X_WS, anchored_id);
+  engine.AddDynamicGeometry(sphere, {}, dynamic_id);
+  engine.UpdateWorldPoses(X_WGs);
+
+  // Point in arbitrary point away from the origin.
+  const Vector3d p_WQ{1, 2, 3};
+  const double expected_dist = (X_WS.translation() - p_WQ).norm() - kRadius;
+
+  const SignedDistanceToPoint<double> anchored_result =
+      engine.ComputeSignedDistanceGeometryToPoint(p_WQ, X_WGs, anchored_id);
+  const SignedDistanceToPoint<double> dynamic_result =
+      engine.ComputeSignedDistanceGeometryToPoint(p_WQ, X_WGs, dynamic_id);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.ComputeSignedDistanceGeometryToPoint(p_WQ, X_WGs, bad_id),
+      ".*does not reference a geometry.*signed distance query");
+
+  EXPECT_DOUBLE_EQ(anchored_result.distance, expected_dist);
+  EXPECT_DOUBLE_EQ(dynamic_result.distance, expected_dist);
+}
+
 // We put two small spheres with radius 0.1 centered at (1,1,1) and
 // (-1,-1,-1). The query point Q will be at (3,3,3), so we can test that our
 // code does call computeAABB() of the query point (by default, its AABB is
