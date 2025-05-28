@@ -60,9 +60,6 @@ void PooledSapModel<T>::CalcMomentumTerms(
   data.scratch().Clear();
   auto tmp = data.scratch().VectorX_pool.Add(num_velocities(), 1);
 
-  Hessian<T>& H = cache->hessian;
-  H.SetZero();
-
   Av.setZero();
   for (int c = 0; c < A.size(); ++c) {
     // Compute A*v
@@ -72,8 +69,6 @@ void PooledSapModel<T>::CalcMomentumTerms(
     const auto v_clique = v.segment(start, nv);
     auto Av_clique = Av.segment(start, nv);
     Av_clique.noalias() = A_clique * v_clique;  // Required to avoid allocation!
-    // Initialize H = diag(A).
-    H.AddToBlock(c, c, A_clique);
   }
 
   // Cost.
@@ -113,12 +108,7 @@ void PooledSapModel<T>::CalcData(const VectorX<T>& v, SapData<T>* data) const {
   // Include patch constraints contributions.
   // TODO(amcastro-tri): factor out this function into a ConstraintPool class,
   // along with clique data size and other common per-pool functionality.
-  patch_constraints_pool_.AccumulateGradientAndHessian(*data, &cache.gradient,
-                                                       &cache.hessian);
-
-  // Complete lower triangle.
-  // cache.hessian.template triangularView<Eigen::StrictlyLower>() =
-  //  cache.hessian.template triangularView<Eigen::StrictlyUpper>().transpose();
+  patch_constraints_pool_.AccumulateGradient(*data, &cache.gradient);
 
   cache.cost = cache.momentum_cost + cache.patch_constraints_data.cost();
 }
@@ -138,7 +128,9 @@ T PooledSapModel<T>::CalcCostAlongLine(const VectorX<T>& v,
   CalcData(v_alpha, data);
   const T& ell = data->cache().cost;
   const VectorX<T>& g = data->cache().gradient;
-  const MatrixX<T> H = data->cache().hessian.MakeDenseMatrix();
+
+  // TODO(vincekurtz): avoid constructing the dense Hessian
+  const MatrixX<T> H = MakeHessian(*data)->MakeDenseMatrix();
 
   // Compute ∂ℓ/∂α, and ∂²ℓ/∂α².
   *dell_dalpha = g.dot(dv);
@@ -147,10 +139,35 @@ T PooledSapModel<T>::CalcCostAlongLine(const VectorX<T>& v,
 }
 
 template <typename T>
-internal::BlockSparsityPattern PooledSapModel<T>::CalcSparsityPattern() const {
+std::unique_ptr<internal::BlockSparseSymmetricMatrixT<T>>
+PooledSapModel<T>::MakeHessian(const SapData<T>& data) const {
+  auto hessian = std::make_unique<internal::BlockSparseSymmetricMatrixT<T>>(
+      CalcSparsityPattern());
+  UpdateHessian(data, hessian.get());
+  return hessian;
+}
+
+template <typename T>
+void PooledSapModel<T>::UpdateHessian(
+    const SapData<T>& data,
+    internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
+  hessian->SetZero();
+
+  // Initialize hessian = diag(A).
   const auto& A = params().A;
-  const int num_nodes = A.size();
+  for (int c = 0; c < A.size(); ++c) {
+    ConstMatrixXView<T> A_clique = A[c];
+    hessian->AddToBlock(c, c, A_clique);
+  }
+
+  // Add constraints' contributions.
+  patch_constraints_pool_.AccumulateHessian(data, hessian);
+}
+
+template <typename T>
+internal::BlockSparsityPattern PooledSapModel<T>::CalcSparsityPattern() const {
   std::vector<int> block_sizes = clique_sizes_;
+  const int num_nodes = block_sizes.size();
 
   /* Build diagonal entry in sparsity pattern. */
   std::vector<std::vector<int>> sparsity(num_nodes);
@@ -171,8 +188,6 @@ template <typename T>
 void PooledSapModel<T>::ResizeData(SapData<T>* data) const {
   data->Resize(num_bodies_, num_velocities_, clique_sizes_,
                patch_constraints_pool_.patch_sizes());
-  data->cache().hessian.set_sparse(params().use_sparse_hessian);
-  data->cache().hessian.Resize(CalcSparsityPattern());
 }
 
 }  // namespace pooled_sap

@@ -11,6 +11,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/linear_solve.h"
+#include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/pooled_sap/patch_constraints_data_pool.h"
 
@@ -159,7 +161,6 @@ class SapData {
     T cost;
     VectorX<T> Av;        // = A * v.
     VectorX<T> gradient;  // Of size num_velocities().
-    Hessian<T> hessian;
 
     // Rigid body spatial velocities, V_WB.
     EigenPool<Vector6<T>> spatial_velocities;

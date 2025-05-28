@@ -160,7 +160,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(
 
     // Compute the search direction via Newton step dv = -H⁻¹ g
     const VectorXd& g = data.cache().gradient;
-    const MatrixXd H = data.cache().hessian.MakeDenseMatrix();
+    const MatrixXd H = model.MakeHessian(data)->MakeDenseMatrix();
     dv = H.ldlt().solve(-g);
 
     // Compute the step size with linesearch
