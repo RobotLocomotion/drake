@@ -73,6 +73,33 @@ JointLimits::JointLimits(const MultibodyPlant<double>& plant,
           plant.GetAccelerationUpperLimits(), require_finite_positions,
           require_finite_velocities, require_finite_accelerations) {}
 
+JointLimits::JointLimits(const MultibodyPlant<double>& plant,
+                         const DofMask& active_dof,
+                         const bool require_finite_positions,
+                         const bool require_finite_velocities,
+                         const bool require_finite_accelerations)
+    : JointLimits(active_dof.GetFromArray(plant.GetPositionLowerLimits()),
+                  active_dof.GetFromArray(plant.GetPositionUpperLimits()),
+                  active_dof.GetFromArray(plant.GetVelocityLowerLimits()),
+                  active_dof.GetFromArray(plant.GetVelocityUpperLimits()),
+                  active_dof.GetFromArray(plant.GetAccelerationLowerLimits()),
+                  active_dof.GetFromArray(plant.GetAccelerationUpperLimits()),
+                  require_finite_positions, require_finite_velocities,
+                  require_finite_accelerations) {}
+
+JointLimits::JointLimits(const JointLimits& other, const DofMask& active_dof,
+                         const bool require_finite_positions,
+                         const bool require_finite_velocities,
+                         const bool require_finite_accelerations)
+    : JointLimits(active_dof.GetFromArray(other.position_lower()),
+                  active_dof.GetFromArray(other.position_upper()),
+                  active_dof.GetFromArray(other.velocity_lower()),
+                  active_dof.GetFromArray(other.velocity_upper()),
+                  active_dof.GetFromArray(other.acceleration_lower()),
+                  active_dof.GetFromArray(other.acceleration_upper()),
+                  require_finite_positions, require_finite_velocities,
+                  require_finite_accelerations) {}
+
 JointLimits::JointLimits(
     const VectorXd& position_lower, const VectorXd& position_upper,
     const VectorXd& velocity_lower, const VectorXd& velocity_upper,
