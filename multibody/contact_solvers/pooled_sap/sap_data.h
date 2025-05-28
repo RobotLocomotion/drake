@@ -175,9 +175,14 @@ class SapData {
   struct Scratch {
     /* Clears all data without changing capacity. */
     void Clear() {
+      Vector6_pool.Clear();
       VectorX_pool.Clear();
       MatrixX_pool.Clear();
     }
+    // Meant for velocity sized vectors that do not change size. Update to
+    // EigenPool when AutoDiffXd is better supported.
+    VectorX<T> v_pool;
+    EigenPool<Vector6<T>> Vector6_pool;
     EigenPool<VectorX<T>> VectorX_pool;
     EigenPool<MatrixX<T>> MatrixX_pool;
   };
@@ -216,6 +221,21 @@ class SapData {
   Cache cache_;   // All other quantities function of v.
   // We allow PooledSapModel methods to write on the scratch as needed.
   mutable Scratch scratch_;
+};
+
+template <typename T>
+struct SearchDirectionData {
+  // DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SearchDirectionData);
+
+  VectorX<T> w;  // Search direction.
+
+  // Precomputed terms:
+  //   ℓ(α) = ℓ(v+α⋅w) = aα²/2 + bα + c + ℓᶜ(v+α⋅w),
+  // where ℓᶜ(v+α⋅w) is the constraints cost.
+  T a;                      // = ‖w‖²/2 (A norm)
+  T b;                      // = w⋅(v+r)
+  T c;                      // = ‖v‖²/2 + r⋅v  (momentum cost at v)
+  EigenPool<Vector6<T>> U;  // U = J⋅w.
 };
 
 }  // namespace pooled_sap

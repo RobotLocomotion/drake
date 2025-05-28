@@ -238,7 +238,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
   clique j > i iff sparsity[i] contains j. */
   void CalcSparsityPattern(std::vector<std::vector<int>>* sparsity) const;
 
-  void CalcData(const SapData<T>& data,
+  void CalcData(const EigenPool<Vector6<T>>& V_WB,
                 PatchConstraintsDataPool<T>* patch_data) const;
 
   // TODO(amcastro-tri): factor out this method into a BodyConstraintsPool
@@ -249,6 +249,11 @@ class PooledSapModel<T>::PatchConstraintsPool {
   void AccumulateHessian(
       const SapData<T>& data,
       internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
+
+  void ProjectAlongLine(const PatchConstraintsDataPool<T>& patch_data,
+                        const EigenPool<Vector6<T>>& U_WB_pool,
+                        typename SapData<T>::Scratch* scratch, T* dcost,
+                        T* d2cost) const;
 
  private:
   using ConstJacobianView =
@@ -274,6 +279,12 @@ class PooledSapModel<T>::PatchConstraintsPool {
 
   T CalcLaggedHuntCrossleyModel(int p, int k, const Vector3<T>& v_AcBc_W,
                                 Vector3<T>* gamma_Bc_W, Matrix3<T>* G) const;
+
+  /* Given the body spatial velocities V_WB, this function computes the relative
+   spatial velocity V_AbB_W for each patch. When A is anchored, V_WA = 0 and
+   V_AbB_W = V_WB. */
+  void CalcConstraintVelocities(const EigenPool<Vector6<T>>& V_WB_pool,
+                                EigenPool<Vector6<T>>* V_AbB_W_pool) const;
   void CalcContactVelocities(const EigenPool<Vector6<T>>& V_WB_pool,
                              EigenPool<Vector3<T>>* v_AcBc_W_pool) const;
   void CalcPatchQuantities(const EigenPool<Vector3<T>>& v_AcBc_W_pool,

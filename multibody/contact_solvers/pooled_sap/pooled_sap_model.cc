@@ -42,6 +42,26 @@ Eigen::VectorBlock<VectorX<T>> PooledSapModel<T>::clique_segment(
     ℓ(v) = 1/2‖v‖²−r⋅v + ℓ(vc).
 */
 
+template <typename T>
+void PooledSapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
+                                                 VectorX<T>* result) const {
+  DRAKE_ASSERT(v.size() == num_velocities());
+  DRAKE_ASSERT(result != nullptr);
+  DRAKE_ASSERT(result->size() == num_velocities());
+
+  const auto& A = params().A;
+  result->setZero();
+  for (int c = 0; c < A.size(); ++c) {
+    // Compute A*v
+    ConstMatrixXView<T> A_clique = A[c];
+    const int start = clique_start_[c];
+    const int nv = clique_sizes_[c];
+    const auto v_clique = v.segment(start, nv);
+    auto Av_clique = result->segment(start, nv);
+    Av_clique.noalias() = A_clique * v_clique;  // Required to avoid allocation!
+  }
+}
+
 /* Computes:
   - Av
   - momentum_cost */
@@ -49,7 +69,6 @@ template <typename T>
 void PooledSapModel<T>::CalcMomentumTerms(
     const SapData<T>& data, typename SapData<T>::Cache* cache) const {
   // Parameters.
-  const auto& A = params().A;
   const auto& r = params().r;
 
   // Data.
@@ -60,16 +79,7 @@ void PooledSapModel<T>::CalcMomentumTerms(
   data.scratch().Clear();
   auto tmp = data.scratch().VectorX_pool.Add(num_velocities(), 1);
 
-  Av.setZero();
-  for (int c = 0; c < A.size(); ++c) {
-    // Compute A*v
-    ConstMatrixXView<T> A_clique = A[c];
-    const int start = clique_start_[c];
-    const int nv = clique_sizes_[c];
-    const auto v_clique = v.segment(start, nv);
-    auto Av_clique = Av.segment(start, nv);
-    Av_clique.noalias() = A_clique * v_clique;  // Required to avoid allocation!
-  }
+  MultiplyByDynamicsMatrix(v, &Av);
 
   // Cost.
   tmp = 0.5 * Av - r;
@@ -103,7 +113,8 @@ void PooledSapModel<T>::CalcData(const VectorX<T>& v, SapData<T>* data) const {
   typename SapData<T>::Cache& cache = data->cache();
   CalcMomentumTerms(*data, &cache);
   CalcBodySpatialVelocities(v, &cache.spatial_velocities);
-  patch_constraints_pool_.CalcData(*data, &cache.patch_constraints_data);
+  patch_constraints_pool_.CalcData(cache.spatial_velocities,
+                                   &cache.patch_constraints_data);
 
   // Include patch constraints contributions.
   // TODO(amcastro-tri): factor out this function into a ConstraintPool class,
@@ -188,6 +199,70 @@ template <typename T>
 void PooledSapModel<T>::ResizeData(SapData<T>* data) const {
   data->Resize(num_bodies_, num_velocities_, clique_sizes_,
                patch_constraints_pool_.patch_sizes());
+}
+
+template <typename T>
+void PooledSapModel<T>::UpdateSearchDirection(
+    const SapData<T>& data, const VectorX<T>& w,
+    SearchDirectionData<T>* search_data) const {
+  search_data->w.resize(num_velocities());
+  search_data->U.Resize(num_bodies());
+
+  // We'll use search_data->w as scratch, to avoid memory allocation.
+  auto& tmp = search_data->w;
+  MultiplyByDynamicsMatrix(w, &tmp);  // tmp = A⋅w
+
+  search_data->a = tmp.dot(w);  // a = ‖w‖²
+  tmp = data.v() - r();         // tmp = v - r
+  search_data->b = w.dot(tmp);  // b = w⋅(v - r)
+  search_data->c = data.cache().momentum_cost;
+
+  search_data->w = w;  // it is now safe to overwrite with the desired value.
+
+  // U = J⋅w.
+  CalcBodySpatialVelocities(w, &search_data->U);
+}
+
+template <typename T>
+T PooledSapModel<T>::CalcCostAlongLine(
+    const T& alpha, const SapData<T>& data,
+    const SearchDirectionData<T>& search_direction, SapData<T>* scratch,
+    T* dcost_dalpha, T* d2cost_dalpha2) const {
+  typename SapData<T>::Cache& cache_alpha = scratch->cache();
+
+  const T& a = search_direction.a;
+  const T& b = search_direction.b;
+  const T& c = search_direction.c;
+
+  // N.B. We'll use data.scratch() for these, while we'll use
+  // scratch->scratch() below for constraints to avoid overwriting these locals
+  // by mistake.
+  auto& V_WB_alpha = data.scratch().Vector6_pool;
+  V_WB_alpha.Clear();
+  V_WB_alpha.Resize(num_bodies());
+  auto& v_alpha = data.scratch().v_pool;
+  v_alpha.resize(num_velocities());
+
+  v_alpha.noalias() = data.v() + alpha * search_direction.w;
+
+  // Compute momentum contributions:
+  T cost = (0.5 * a * alpha + b) * alpha + c;  // = aα²/2 + bα + c
+  *dcost_dalpha = a * alpha + b;
+  *d2cost_dalpha2 = a;
+
+  // Add constraints contributions:
+  T constraint_dcost, constraint_d2cost;
+  CalcBodySpatialVelocities(v_alpha, &V_WB_alpha);
+  patch_constraints_pool_.CalcData(V_WB_alpha,
+                                   &cache_alpha.patch_constraints_data);
+  patch_constraints_pool_.ProjectAlongLine(
+      cache_alpha.patch_constraints_data, search_direction.U,
+      &scratch->scratch(), &constraint_dcost, &constraint_d2cost);
+  cost += cache_alpha.patch_constraints_data.cost();
+  *dcost_dalpha += constraint_dcost;
+  *d2cost_dalpha2 += constraint_d2cost;
+
+  return cost;
 }
 
 }  // namespace pooled_sap
