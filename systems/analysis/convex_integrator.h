@@ -7,21 +7,21 @@
 #include <vector>
 
 #include "drake/common/default_scalars.h"
+#include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
 #include "drake/multibody/contact_solvers/pooled_sap/pooled_sap_builder.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/integrator_base.h"
-#include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 
 namespace drake {
 namespace systems {
 
 using multibody::MultibodyPlant;
+using multibody::contact_solvers::internal::BlockSparseCholeskySolver;
+using multibody::contact_solvers::internal::BlockSparseSymmetricMatrixT;
 using multibody::contact_solvers::pooled_sap::PooledSapBuilder;
 using multibody::contact_solvers::pooled_sap::PooledSapModel;
 using multibody::contact_solvers::pooled_sap::SapData;
-using multibody::contact_solvers::internal::BlockSparseCholeskySolver;
-using multibody::contact_solvers::internal::BlockSparseSymmetricMatrixT;
 
 /**
  * Tolerances and other parameters for the convex integrator's solver.
@@ -226,8 +226,8 @@ class ConvexIntegrator final : public IntegratorBase<T> {
                               const VectorX<T>& v, const VectorX<T>& dv,
                               T* alpha, int* num_iterations);
 
-  // Returns the largest root of the quadratic equation ax² + bx + c = 0.
-  T SolveQuadraticForLargestRoot(const T& a, const T& b, const T& c) const;
+  // Returns the root of the quadratic equation ax² + bx + c = 0, x ∈ [0, 1].
+  T SolveQuadraticInUnitInterval(const T& a, const T& b, const T& c) const;
 
   // Print solver statistics to the console for debugging.
   void PrintSolverStats() const;

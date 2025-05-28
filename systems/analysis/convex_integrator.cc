@@ -1,8 +1,8 @@
 #include "drake/systems/analysis/convex_integrator.h"
 
-#include "drake/multibody/contact_solvers/newton_with_bisection.h"
-
 #include <chrono>
+
+#include "drake/multibody/contact_solvers/newton_with_bisection.h"
 
 namespace drake {
 namespace systems {
@@ -175,7 +175,11 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     const double make_hessian_time = elapsed.count();
 
     start = std::chrono::high_resolution_clock::now();
-    hessian_factorization_.SetMatrix(*hessian_);
+    if (k == 0) {
+      hessian_factorization_.SetMatrix(*hessian_);
+    } else {
+      hessian_factorization_.UpdateMatrix(*hessian_);
+    }
     end = std::chrono::high_resolution_clock::now();
     elapsed = end - start;
     const double set_matrix_time = elapsed.count();
@@ -189,13 +193,20 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     const double factor_time = elapsed.count();
 
     start = std::chrono::high_resolution_clock::now();
-    dv = hessian_factorization_.Solve(-g);
+    dv = -g;
+    hessian_factorization_.SolveInPlace(&dv);
     end = std::chrono::high_resolution_clock::now();
     elapsed = end - start;
     const double solve_time = elapsed.count();
 
-    fmt::print("k: {}, MakeHessian: {}, SetMatrix: {}, Factor: {}, Solve: {}\n",
-               k, make_hessian_time, set_matrix_time, factor_time, solve_time);
+    // fmt::print("k: {}, MakeHessian: {}, SetMatrix: {}, Factor: {}, Solve:
+    // {}\n",
+    //            k, make_hessian_time, set_matrix_time, factor_time,
+    //            solve_time);
+    (void)make_hessian_time;
+    (void)set_matrix_time;
+    (void)factor_time;
+    (void)solve_time;
 
     // Compute the step size with linesearch
     PerformExactLineSearch(model, v, dv, &alpha, &ls_iterations);
@@ -270,7 +281,7 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
   // still decreasing here, we just accept α_max.
   const double ell = model.CalcCostAlongLine(v, dv, alpha, &data, &dell_dalpha,
                                              &d2ell_dalpha2);
-  if (dell_dalpha <= 0) {
+  if (dell_dalpha <= std::numeric_limits<double>::epsilon()) {
     return;  // α = α_max and num_iterations = 0 are set above.
   }
 
@@ -285,9 +296,7 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
   const double a = 2 * ell0 - 2 * ell + dell_dalpha0 + dell_dalpha;
   const double b = -3 * ell0 + 3 * ell - 2 * dell_dalpha0 - dell_dalpha;
   const double c = dell_dalpha0;
-  double alpha_guess = SolveQuadraticForLargestRoot(3 * a, 2 * b, c);
-  DRAKE_DEMAND(alpha_guess >= 0);
-  alpha_guess = std::min(alpha_guess, solver_parameters_.alpha_max);
+  double alpha_guess = SolveQuadraticInUnitInterval(3 * a, 2 * b, c);
 
   // We've exhausted all of the early exit conditions, so now we move on to the
   // Newton method with bisection fallback. To do so, we define an anonymous
@@ -314,13 +323,14 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
 }
 
 template <typename T>
-T ConvexIntegrator<T>::SolveQuadraticForLargestRoot(const T& a, const T& b,
+T ConvexIntegrator<T>::SolveQuadraticInUnitInterval(const T& a, const T& b,
                                                     const T& c) const {
   using std::sqrt;
 
+  T s;
   if (a < std::numeric_limits<T>::epsilon()) {
     // If a ≈ 0, just solve b x + c = 0.
-    return -c / b;
+    s = -c / b;
   } else {
     // Normalize everything by a
     const T b_tilde = b / a;
@@ -329,8 +339,20 @@ T ConvexIntegrator<T>::SolveQuadraticForLargestRoot(const T& a, const T& b,
     const T discriminant = b_tilde * b_tilde - 4 * c_tilde;
     DRAKE_DEMAND(discriminant >= 0);  // must have a real root
 
-    return (-b_tilde + sqrt(discriminant)) / 2.0;
+    // Try the larger root first.
+    s = (-b_tilde + sqrt(discriminant)) / 2.0;
+    if (s > 1.0) {
+      s = (-b_tilde - sqrt(discriminant)) / 2.0;
+    }
   }
+
+  // The solution must be in [0, 1]
+  if (s < 0.0 || s > 1.0) {
+    throw std::runtime_error(
+        "ConvexIntegrator: quadratic root falls outside [0, 1].");
+  }
+
+  return s;
 }
 
 template <typename T>
