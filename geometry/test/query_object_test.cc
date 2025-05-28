@@ -189,6 +189,8 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
       GeometryId::get_new_id(), GeometryId::get_new_id()));
   EXPECT_DEFAULT_ERROR(
       default_object.ComputeSignedDistanceToPoint(Vector3<double>::Zero()));
+  EXPECT_DEFAULT_ERROR(default_object.ComputeSignedDistanceGeometryToPoint(
+      Vector3<double>::Zero(), GeometrySet(GeometryId::get_new_id())));
 
   EXPECT_DEFAULT_ERROR(default_object.FindCollisionCandidates());
   EXPECT_DEFAULT_ERROR(default_object.HasCollisions());
