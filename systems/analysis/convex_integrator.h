@@ -222,9 +222,10 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   bool SolveWithGuess(const PooledSapModel<T>& model, VectorX<T>* v_guess);
 
   // Solve min_α ℓ(v + α Δ v) using a 1D Newton method with bisection fallback.
-  void PerformExactLineSearch(const PooledSapModel<T>& model,
-                              const VectorX<T>& v, const VectorX<T>& dv,
-                              T* alpha, int* num_iterations);
+  // Returns the linesearch parameter α and the number of iterations taken.
+  std::pair<T, int> PerformExactLineSearch(const PooledSapModel<T>& model,
+                                           const VectorX<T>& v,
+                                           const VectorX<T>& dv);
 
   // Returns the root of the quadratic equation ax² + bx + c = 0, x ∈ [0, 1].
   T SolveQuadraticInUnitInterval(const T& a, const T& b, const T& c) const;
@@ -263,9 +264,9 @@ template <>
 bool ConvexIntegrator<double>::SolveWithGuess(const PooledSapModel<double>&,
                                               VectorX<double>*);
 template <>
-void ConvexIntegrator<double>::PerformExactLineSearch(
+std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
     const PooledSapModel<double>&, const VectorX<double>&,
-    const VectorX<double>&, double*, int*);
+    const VectorX<double>&);
 
 }  // namespace systems
 }  // namespace drake

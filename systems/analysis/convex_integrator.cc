@@ -209,7 +209,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     (void)solve_time;
 
     // Compute the step size with linesearch
-    PerformExactLineSearch(model, v, dv, &alpha, &ls_iterations);
+    std::tie(alpha, ls_iterations) = PerformExactLineSearch(model, v, dv);
 
     // Update the decision variables (velocities)
     dv *= alpha;
@@ -238,35 +238,31 @@ bool ConvexIntegrator<double>::SolveWithGuess(
 }
 
 template <typename T>
-void ConvexIntegrator<T>::PerformExactLineSearch(const PooledSapModel<T>&,
-                                                 const VectorX<T>&,
-                                                 const VectorX<T>&, T*, int*) {
+std::pair<T, int> ConvexIntegrator<T>::PerformExactLineSearch(
+    const PooledSapModel<T>&, const VectorX<T>&, const VectorX<T>&) {
   throw std::logic_error(
       "ConvexIntegrator: PerformExactLineSearch only supports T = double.");
 }
 
 template <>
-void ConvexIntegrator<double>::PerformExactLineSearch(
-    const PooledSapModel<double>& model, const VectorXd& v, const VectorXd& dv,
-    double* alpha_ptr, int* num_iterations_ptr) {
+std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
+    const PooledSapModel<double>& model, const VectorXd& v,
+    const VectorXd& dv) {
   SapData<double>& data = get_data();
+  const double alpha_max = solver_parameters_.alpha_max;
 
-  // Initialize the step size and number of iterations.
-  double& alpha = *alpha_ptr;
-  int& num_iterations = *num_iterations_ptr;
-  alpha = solver_parameters_.alpha_max;
-  num_iterations = 0;
-
-  double dell_dalpha{NAN};
-  double d2ell_dalpha2{NAN};
+  // Allocate first and second derivatives of ℓ(α)
+  double dell{NAN};
+  double d2ell{NAN};
 
   // First we'll evaluate ∂ℓ/∂α at α = 0. This should be strictly negative,
-  // since the Hessian is positive definite.
-  // N.B. we already have the gradient at α = 0 cached from solving for the
-  // search direction earlier.
+  // since the Hessian is positive definite. This is cheap since we already have
+  // the gradient at α = 0 cached from solving for the search direction earlier.
+  // N.B. We use a new dell0 rather than dell declared above, b/c both dell and
+  // dell0 will be used to generate an initial guess.
   const double ell0 = data.cache().cost;
-  const double dell_dalpha0 = data.cache().gradient.dot(dv);
-  if (dell_dalpha >= 0) {
+  const double dell0 = data.cache().gradient.dot(dv);
+  if (dell0 >= 0) {
     throw std::logic_error(
         "ConvexIntegrator: the cost does not decrease along the search "
         "direction. This is usually caused by an excessive accumulation of "
@@ -274,15 +270,12 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
         "your model.");
   }
 
-  // N.B. we'll use this for normalization later.
-  const double dell_scale = -dell_dalpha0;
-
   // Next we'll evaluate ℓ, ∂ℓ/∂α, and ∂²ℓ/∂α² at α = α_max. If the cost is
   // still decreasing here, we just accept α_max.
-  const double ell = model.CalcCostAlongLine(v, dv, alpha, &data, &dell_dalpha,
-                                             &d2ell_dalpha2);
-  if (dell_dalpha <= std::numeric_limits<double>::epsilon()) {
-    return;  // α = α_max and num_iterations = 0 are set above.
+  const double ell =
+      model.CalcCostAlongLine(v, dv, alpha_max, &data, &dell, &d2ell);
+  if (dell <= std::numeric_limits<double>::epsilon()) {
+    return std::make_pair(alpha_max, 0);
   }
 
   // TODO(vincekurtz): add a check to enable full Newton steps very close to
@@ -291,33 +284,42 @@ void ConvexIntegrator<double>::PerformExactLineSearch(
 
   // Set the initial guess for linesearch based on a cubic hermite spline
   // between α = 0 and α = α_max. This spline takes the form
-  // p(t) = a t³ + b t² + c t + d, where p(0) = ℓ(0), p(1) = ℓ(α_max).
-  // TODO(vincekurtz): deal with the case of α_max != 1 properly
-  const double a = 2 * ell0 - 2 * ell + dell_dalpha0 + dell_dalpha;
-  const double b = -3 * ell0 + 3 * ell - 2 * dell_dalpha0 - dell_dalpha;
-  const double c = dell_dalpha0;
+  // p(t) = a t³ + b t² + c t + d, where
+  //   p(0) = ℓ(0),
+  //   p(1) = ℓ(α_max),
+  //   p'(0) = α_max⋅ℓ'(0),
+  //   p'(1) = α_max⋅ℓ'(α_max).
+  // We can then find the analytical minimum in [0, α_max], and use that to
+  // establish an initial guess for linesearch.
+  const double a = 2 * ell0 - 2 * ell + dell0 * alpha_max + dell * alpha_max;
+  const double b =
+      -3 * ell0 + 3 * ell - 2 * dell0 * alpha_max - dell * alpha_max;
+  const double c = dell0 * alpha_max;
+  // N.B. throws if a solution cannot be found in [0, 1]
   double alpha_guess = SolveQuadraticInUnitInterval(3 * a, 2 * b, c);
+  alpha_guess *= alpha_max;
 
   // We've exhausted all of the early exit conditions, so now we move on to the
   // Newton method with bisection fallback. To do so, we define an anonymous
   // function that computes the value and gradient of f(α) = −ℓ'(α)/ℓ'₀.
   // Normalizing in this way reduces round-off errors, ensuring f(0) = -1.
+  const double dell_scale = -dell0;
   auto cost_and_gradient = [&model, &data, &v, &dv, &dell_scale](double x) {
-    double dell;
-    double d2ell;
-    model.CalcCostAlongLine(v, dv, x, &data, &dell, &d2ell);
-    return std::make_pair(dell / dell_scale, d2ell / dell_scale);
+    double dell_dalpha;
+    double d2ell_dalpha2;
+    model.CalcCostAlongLine(v, dv, x, &data, &dell_dalpha, &d2ell_dalpha2);
+    return std::make_pair(dell_dalpha / dell_scale, d2ell_dalpha2 / dell_scale);
   };
 
   // The initial bracket is [0, α_max], since we already know that ℓ'(0) < 0 and
   // ℓ'(α_max) > 0. Values at the endpoints of the bracket are f(0) = -1 (by
-  // definition) and f(α_max) = dell_dalpha / dell_scale, because we just
-  // computed dell_dalpha = ℓ'(α_max) above.
-  const Bracket bracket(0.0, -1.0, alpha, dell_dalpha / dell_scale);
+  // definition) and f(α_max) = dell / dell_scale, because we just set dell =
+  // ℓ'(α_max) above.
+  const Bracket bracket(0.0, -1.0, alpha_max, dell / dell_scale);
 
   // TODO(vincekurtz): scale linesearch tolerance based on accuracy.
   const double alpha_tolerance = solver_parameters_.ls_tolerance * alpha_guess;
-  std::tie(alpha, num_iterations) = DoNewtonWithBisectionFallback(
+  return DoNewtonWithBisectionFallback(
       cost_and_gradient, bracket, alpha_guess, alpha_tolerance,
       solver_parameters_.ls_tolerance, solver_parameters_.max_ls_iterations);
 }
