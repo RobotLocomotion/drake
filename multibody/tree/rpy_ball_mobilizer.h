@@ -306,7 +306,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
       const MultibodyTree<symbolic::Expression>& tree_clone) const override;
 
   // Certain roll pitch yaw calculations (e.g., calculating the N(q) matrix)
-  // have  a singularity (divide-by-zero error) when cos(pitch) ≈ 0.
+  // have a singularity (divide-by-zero error) when cos(pitch) ≈ 0.
   void ThrowSinceCosPitchIsNearZero(const T& pitch) const;
 
  private:

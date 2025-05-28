@@ -215,6 +215,13 @@ void RpyBallMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>& context,
   // N(q) = [                  -sin(y),                    cos(y),  0]
   //        [ sin(p) * cos(y) / cos(p),  sin(p) * sin(y) / cos(p),  1]
   //
+  //          ⌈ -sy/cp ẏ + cy sp/cp² ṗ    cy/cp ẏ + sy sp/cp² ṗ,   0 ⌉
+  // Ṅ(q,q̇) = |                  -cy ẏ,                   -sy ẏ,   0 |
+  //          ⌊  cy/cp² ṗ̇ - sp sy/cp ẏ,   sy/cp² ṗ + sp cy/cp ẏ,   0 ⌋
+  //
+  // where cp = cos(p), sp = sin(p), cy = cos(y), sy = sin(y).
+  // Note: Ṅ[2, 0] simplifies using: cp cy/cp ṗ + sp² cy/cp² ṗ = cy/cp² ṗ.
+  // Note: Ṅ[2, 1] simplifies using: cp sy/cp ṗ̇ + sp² sy/cp² ṗ = sy/cp² ṗ.
   using std::cos;
   using std::sin;
   const Vector3<T> angles = get_angles(context);
@@ -237,14 +244,15 @@ void RpyBallMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>& context,
   const T cpiSqr_pdot = cpiSqr * pdot;
   const T sp_cpi_ydot = sp * cpi * ydot;
 
+  // The elements below are in column order (like Eigen).
   Ndot->coeffRef(0, 0) = (cy * sp_pdot - sy * cp_ydot) * cpiSqr;
-  Ndot->coeffRef(0, 1) = (sy * sp_pdot + cy * cp_ydot) * cpiSqr;
-  Ndot->coeffRef(0, 2) = 0;
   Ndot->coeffRef(1, 0) = -cy * ydot;
-  Ndot->coeffRef(1, 1) = -sy * ydot;
-  Ndot->coeffRef(1, 2) = 0;
   Ndot->coeffRef(2, 0) = cy * cpiSqr_pdot - sy * sp_cpi_ydot;
+  Ndot->coeffRef(0, 1) = (sy * sp_pdot + cy * cp_ydot) * cpiSqr;
+  Ndot->coeffRef(1, 1) = -sy * ydot;
   Ndot->coeffRef(2, 1) = sy * cpiSqr_pdot + cy * sp_cpi_ydot;
+  Ndot->coeffRef(0, 2) = 0;
+  Ndot->coeffRef(1, 2) = 0;
   Ndot->coeffRef(2, 2) = 0;
 }
 
@@ -262,6 +270,13 @@ void RpyBallMobilizer<T>::DoCalcNplusDotMatrix(
   // N⁺(q) = [ sin(y) * cos(p),   cos(y),  0]
   //         [         -sin(p),        0,  1]
   //
+  //           ⌈ -sy cp ẏ - cy sp ṗ,   -cy ẏ,   0 ⌉
+  // Ṅ⁺(q,q̇) = |  cy cp ẏ - sy sp ṗ    -sy ẏ,   0 |
+  //           ⌊              -cp ṗ,       0,   0 ⌋
+  //
+  // where cp = cos(p), sp = sin(p), cy = cos(y), sy = sin(y).
+  // Note: Ṅ[2, 0] simplifies using: cp cy/cp ṗ + sp² cy/cp² ṗ = cy/cp² ṗ.
+  // Note: Ṅ[2, 1] simplifies using: cp sy/cp ṗ̇ + sp² sy/cp² ṗ = sy/cp² ṗ.
   using std::cos;
   using std::sin;
   const Vector3<T> angles = get_angles(context);
@@ -280,14 +295,15 @@ void RpyBallMobilizer<T>::DoCalcNplusDotMatrix(
   const T cy_ydot = cy * ydot;
   const T sy_ydot = sy * ydot;
 
+  // The elements below are in column order (like Eigen).
   NplusDot->coeffRef(0, 0) = -sy_ydot * cp - cy * sp_pdot;
-  NplusDot->coeffRef(0, 1) = -cy_ydot;
-  NplusDot->coeffRef(0, 2) = 0;
   NplusDot->coeffRef(1, 0) = cy_ydot * cp - sy * sp_pdot;
-  NplusDot->coeffRef(1, 1) = -sy * ydot;
-  NplusDot->coeffRef(1, 2) = 0;
   NplusDot->coeffRef(2, 0) = -cp * pdot;
+  NplusDot->coeffRef(0, 1) = -cy_ydot;
+  NplusDot->coeffRef(1, 1) = -sy_ydot;
   NplusDot->coeffRef(2, 1) = 0;
+  NplusDot->coeffRef(0, 2) = 0;
+  NplusDot->coeffRef(1, 2) = 0;
   NplusDot->coeffRef(2, 2) = 0;
 }
 
