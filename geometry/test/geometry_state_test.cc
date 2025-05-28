@@ -4534,6 +4534,39 @@ TEST_F(GeometryStateTest, ComputeSignedDistancePairClosestPointsError) {
       ".*has the perception role.");
 }
 
+// GeometryState must convert GeometrySet to a set of GeometryIds for proximity
+// engine. This will confirm that the transformation takes place.
+TEST_F(GeometryStateTest, ComputeSignedDistanceGeometryToPoint) {
+  SetUpWithRigidAndDeformableGeometries(Assign::kProximity);
+
+  // This set includes rigid geometries 0, 1, 2, and anchored. Rigid 0 is
+  // specified redundantly (explicitly and as part of frame 0). Rigid geometry 1
+  // also comes from frame 0.
+  const GeometrySet ids({geometries_[0], geometries_[2], anchored_geometry_},
+                        {frames_[0]});
+  // Confirm expected ordering.
+  DRAKE_DEMAND(geometries_.back() < anchored_geometry_);
+  DRAKE_DEMAND(anchored_geometry_ < deformable_geometries_[0]);
+
+  const std::vector<SignedDistanceToPoint<double>> result =
+      geometry_state_.ComputeSignedDistanceGeometryToPoint(Vector3d::Zero(),
+                                                           ids);
+  ASSERT_EQ(result.size(), 4);
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_EQ(result[i].id_G, geometries_[i]);
+  }
+  EXPECT_EQ(result[3].id_G, anchored_geometry_);
+
+  // Deformable geometries throw. Note: we're testing this explicitly because
+  // a small change to GeometryState could cause the deformable geometry to
+  // simply be ignored; we want to make sure that doesn't happen.
+  const GeometrySet bad_id(deformable_geometries_[0]);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.ComputeSignedDistanceGeometryToPoint(Vector3d::Zero(),
+                                                           bad_id),
+      ".*does not reference a geometry.*signed distance query");
+}
+
 // This is the base for testing the ApplyProximityDefaults() overloaded
 // methods. Note that only the resulting proximity properties contents are
 // tested.  Since we know (glass-box knowledge) that ApplyProximityDefaults

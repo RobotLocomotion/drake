@@ -1472,6 +1472,20 @@ SignedDistancePair<T> GeometryState<T>::ComputeSignedDistancePairClosestPoints(
 }
 
 template <typename T>
+std::vector<SignedDistanceToPoint<T>>
+GeometryState<T>::ComputeSignedDistanceGeometryToPoint(
+    const Vector3<T>& p_WQ, const GeometrySet& geometries) const {
+  // We're supposed to throw for bad geometry ids and deformable geometry ids.
+  // CollectIds will throw for bad geometry ids, but not deformable ids; it will
+  // only ignore them. So, we include them in the `ids` (kAll) and rely on
+  // ProximityEngine to throw if `ids` includes deformable ids.
+  std::unordered_set<GeometryId> ids =
+      CollectIds(geometries, std::nullopt, CollisionFilterScope::kAll);
+  return geometry_engine_->ComputeSignedDistanceGeometryToPoint(
+      p_WQ, kinematics_data_.X_WGs, ids);
+}
+
+template <typename T>
 void GeometryState<T>::AddRenderer(
     std::string name, std::shared_ptr<render::RenderEngine> renderer) {
   if (render_engines_.contains(name)) {
