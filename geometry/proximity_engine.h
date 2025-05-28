@@ -256,10 +256,10 @@ class ProximityEngine {
   /* Implementation of GeometryState::ComputeSignedDistanceGeometryToPoint().
    This includes `X_WGs`, the current poses of all geometries in World in the
    current scalar type, keyed on each geometry's GeometryId.  */
-  SignedDistanceToPoint<T> ComputeSignedDistanceGeometryToPoint(
+  std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceGeometryToPoint(
       const Vector3<T>& p_WQ,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
-      GeometryId geometry_id) const;
+      const std::unordered_set<GeometryId>& geometries) const;
   //@}
 
   //----------------------------------------------------------------------------

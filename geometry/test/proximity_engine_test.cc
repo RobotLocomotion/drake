@@ -1254,6 +1254,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceGeometryToPoint) {
 
   const GeometryId dynamic_id = GeometryId::get_new_id();
   const GeometryId anchored_id = GeometryId::get_new_id();
+  DRAKE_DEMAND(dynamic_id < anchored_id);
   const GeometryId bad_id = GeometryId::get_new_id();
   // Position the sphere arbitrarily far from the origin.
   const RigidTransformd X_WS(Vector3d(-10, -11, -12));
@@ -1262,7 +1263,10 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceGeometryToPoint) {
 
   Sphere sphere{kRadius};
 
+  std::unordered_set<GeometryId> ids{anchored_id, dynamic_id};
+
   ProximityEngine<double> engine;
+
   // We'll put the anchored sphere and dynamic sphere at the same place. Ten
   // units in the -Wx direction from the origin.
   engine.AddAnchoredGeometry(sphere, X_WS, anchored_id);
@@ -1273,16 +1277,20 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceGeometryToPoint) {
   const Vector3d p_WQ{1, 2, 3};
   const double expected_dist = (X_WS.translation() - p_WQ).norm() - kRadius;
 
-  const SignedDistanceToPoint<double> anchored_result =
-      engine.ComputeSignedDistanceGeometryToPoint(p_WQ, X_WGs, anchored_id);
-  const SignedDistanceToPoint<double> dynamic_result =
-      engine.ComputeSignedDistanceGeometryToPoint(p_WQ, X_WGs, dynamic_id);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.ComputeSignedDistanceGeometryToPoint(p_WQ, X_WGs, bad_id),
-      ".*does not reference a geometry.*signed distance query");
+  const std::vector<SignedDistanceToPoint<double>> result =
+      engine.ComputeSignedDistanceGeometryToPoint(p_WQ, X_WGs, ids);
 
-  EXPECT_DOUBLE_EQ(anchored_result.distance, expected_dist);
-  EXPECT_DOUBLE_EQ(dynamic_result.distance, expected_dist);
+  // Confirm ordering.
+  EXPECT_EQ(result.size(), 2);
+  EXPECT_EQ(result[0].id_G, dynamic_id);
+  EXPECT_EQ(result[1].id_G, anchored_id);
+  // Confirm distance.
+  EXPECT_DOUBLE_EQ(result[0].distance, expected_dist);
+  EXPECT_DOUBLE_EQ(result[1].distance, expected_dist);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.ComputeSignedDistanceGeometryToPoint(p_WQ, X_WGs, {bad_id}),
+      ".*does not reference a geometry.*signed distance query");
 }
 
 // We put two small spheres with radius 0.1 centered at (1,1,1) and

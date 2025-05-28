@@ -649,11 +649,8 @@ class GeometryState {
   }
 
   /** Implementation of QueryObject::ComputeSignedDistanceGeometryToPoint().  */
-  SignedDistanceToPoint<T> ComputeSignedDistanceGeometryToPoint(
-      const Vector3<T>& p_WQ, GeometryId geometry_id) const {
-    return geometry_engine_->ComputeSignedDistanceGeometryToPoint(
-        p_WQ, kinematics_data_.X_WGs, geometry_id);
-  }
+  std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceGeometryToPoint(
+      const Vector3<T>& p_WQ, const GeometrySet& geometries) const;
 
   //@}
 

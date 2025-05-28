@@ -1472,6 +1472,17 @@ SignedDistancePair<T> GeometryState<T>::ComputeSignedDistancePairClosestPoints(
 }
 
 template <typename T>
+std::vector<SignedDistanceToPoint<T>>
+GeometryState<T>::ComputeSignedDistanceGeometryToPoint(
+    const Vector3<T>& p_WQ, const GeometrySet& geometries) const {
+  // If the ids include a deformable geometry, ProximityEngine will throw.
+  std::unordered_set<GeometryId> ids =
+      CollectIds(geometries, std::nullopt, CollisionFilterScope::kAll);
+  return geometry_engine_->ComputeSignedDistanceGeometryToPoint(
+      p_WQ, kinematics_data_.X_WGs, ids);
+}
+
+template <typename T>
 void GeometryState<T>::AddRenderer(
     std::string name, std::shared_ptr<render::RenderEngine> renderer) {
   if (render_engines_.contains(name)) {

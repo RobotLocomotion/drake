@@ -211,13 +211,14 @@ QueryObject<T>::ComputeSignedDistanceToPoint(const Vector3<T>& p_WQ,
 }
 
 template <typename T>
-SignedDistanceToPoint<T> QueryObject<T>::ComputeSignedDistanceGeometryToPoint(
-    const Vector3<T>& p_WQ, GeometryId geometry_id) const {
+std::vector<SignedDistanceToPoint<T>>
+QueryObject<T>::ComputeSignedDistanceGeometryToPoint(
+    const Vector3<T>& p_WQ, const GeometrySet& geometries) const {
   ThrowIfNotCallable();
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
-  return state.ComputeSignedDistanceGeometryToPoint(p_WQ, geometry_id);
+  return state.ComputeSignedDistanceGeometryToPoint(p_WQ, geometries);
 }
 
 template <typename T>
