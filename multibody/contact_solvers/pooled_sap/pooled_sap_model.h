@@ -51,8 +51,6 @@ struct PooledSapParameters {
     }
   }
 
-  bool use_sparse_hessian{true};
-
   // Discrete time step.
   T time_step{0.0};
   // Linear dynamics matrix. Of size num_cliques.
@@ -264,11 +262,6 @@ class PooledSapModel {
 
   // Updates `data` as a function of v.
   void CalcData(const VectorX<T>& v, SapData<T>* data) const;
-
-  // Compute the cost along the linesearch direction, ℓ(α) = ℓ(v + α Δ v), along
-  // with the first and second derivatives ∂ℓ/∂α, ∂²ℓ/∂α².
-  T CalcCostAlongLine(const VectorX<T>& v, const VectorX<T>& dv, const T& alpha,
-                      SapData<T>* data, T* dell_dalpha, T* d2ell_dalpha2) const;
 
   /* Makes a new Hessian matrix. If only `data` changes for the same SAP model,
    calling UpdateHessian() to reuse the sparsity pattern of the Hessian is

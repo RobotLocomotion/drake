@@ -125,31 +125,6 @@ void PooledSapModel<T>::CalcData(const VectorX<T>& v, SapData<T>* data) const {
 }
 
 template <typename T>
-T PooledSapModel<T>::CalcCostAlongLine(const VectorX<T>& v,
-                                       const VectorX<T>& dv, const T& alpha,
-                                       SapData<T>* data, T* dell_dalpha,
-                                       T* d2ell_dalpha2) const {
-  // TODO(vincekurtz): use the more efficient O(n) method from the SAP paper.
-  ResizeData(data);
-  auto v_alpha = data->scratch().VectorX_pool.Add(num_velocities(), 1);
-
-  // Compute cost, gradient, and (dense) Hessian for the original problem at
-  // v + α dv.
-  v_alpha = v + alpha * dv;
-  CalcData(v_alpha, data);
-  const T& ell = data->cache().cost;
-  const VectorX<T>& g = data->cache().gradient;
-
-  // TODO(vincekurtz): avoid constructing the dense Hessian
-  const MatrixX<T> H = MakeHessian(*data)->MakeDenseMatrix();
-
-  // Compute ∂ℓ/∂α, and ∂²ℓ/∂α².
-  *dell_dalpha = g.dot(dv);
-  *d2ell_dalpha2 = dv.dot(H * dv);
-  return ell;
-}
-
-template <typename T>
 std::unique_ptr<internal::BlockSparseSymmetricMatrixT<T>>
 PooledSapModel<T>::MakeHessian(const SapData<T>& data) const {
   auto hessian = std::make_unique<internal::BlockSparseSymmetricMatrixT<T>>(

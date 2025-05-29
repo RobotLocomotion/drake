@@ -289,18 +289,12 @@ TEST_F(TwoSpheres, MakeData) {
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
   EXPECT_EQ(data.num_patches(), 1);
 
-  // Clear patch constraints and verify resizing data does not allocate (only
-  // true for dense Hessian right now)
-  auto params = model.ReleaseParameters();
-  params->use_sparse_hessian = false;
-  model.ResetParameters(std::move(params));
+  // Clear patch constraints and verify resizing data does not allocate.
   patch_constraints.Clear();
   EXPECT_EQ(model.num_velocities(), nv);
   EXPECT_EQ(model.num_patch_constraints(), 0);
   {
-    // We still compute the sparsity pattern, and that right now leads to
-    // allocations.
-    // drake::test::LimitMalloc guard;
+    drake::test::LimitMalloc guard;
     model.ResizeData(&data);
   }
   EXPECT_EQ(model.num_velocities(), nv);
