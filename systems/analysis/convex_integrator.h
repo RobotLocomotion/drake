@@ -225,7 +225,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Solve min_α ℓ(v + α Δ v) using a 1D Newton method with bisection fallback.
   // Returns the linesearch parameter α and the number of iterations taken.
   std::pair<T, int> PerformExactLineSearch(const PooledSapModel<T>& model,
-                                           const VectorX<T>& v,
+                                           const SapData<T>& data,
                                            const VectorX<T>& dv);
 
   // Returns the root of the quadratic equation ax² + bx + c = 0, x ∈ [0, 1].
@@ -268,7 +268,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(const PooledSapModel<double>&,
                                               VectorX<double>*);
 template <>
 std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
-    const PooledSapModel<double>&, const VectorX<double>&,
+    const PooledSapModel<double>&, const SapData<double>&,
     const VectorX<double>&);
 
 }  // namespace systems
