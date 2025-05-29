@@ -99,8 +99,12 @@ void PooledSapModel<T>::CalcBodySpatialVelocities(
     Vector6<T>& V_WB = spatial_velocities[b];
     if (c >= 0) {
       auto v_clique = clique_segment(c, v);
-      auto J_WB = params().J_WB[b];
-      V_WB = J_WB * v_clique;
+      if (is_floating(b)) {
+        V_WB = v_clique;
+      } else {
+        auto J_WB = params().J_WB[b];
+        V_WB = J_WB * v_clique;
+      }
     } else {
       V_WB.setZero();  // Anchored body.
     }

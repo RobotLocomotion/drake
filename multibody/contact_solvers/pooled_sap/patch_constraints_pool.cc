@@ -431,20 +431,28 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradient(
     // First clique, body B.
     DRAKE_ASSERT(!model().is_anchored(body_b));  // Body B is never anchored.
 
-    const ConstJacobianView J_WB = model().get_jacobian(body_b);
     const Vector6<T>& Gamma_Bo_W = Gamma_Bo_W_pool[p];
 
     VectorXView gradient_b = model().clique_segment(c_b, gradient);
-    gradient_b.noalias() -= J_WB.transpose() * Gamma_Bo_W;
+    if (model().is_floating(body_b)) {
+      gradient_b.noalias() -= Gamma_Bo_W;
+    } else {
+      const ConstJacobianView J_WB = model().get_jacobian(body_b);
+      gradient_b.noalias() -= J_WB.transpose() * Gamma_Bo_W;
+    }
 
     // Second clique, for body A, only contributes if not anchored.
     if (!model().is_anchored(body_a)) {
       const Vector3<T>& p_AB_W = p_AB_W_[p];
-      const ConstJacobianView J_WA = model().get_jacobian(body_a);
-
       const Vector6<T> minus_Gamma_Ao_W = ShiftSpatialForce(Gamma_Bo_W, p_AB_W);
       VectorXView gradient_a = model().clique_segment(c_a, gradient);
-      gradient_a.noalias() += J_WA.transpose() * minus_Gamma_Ao_W;
+
+      if (model().is_floating(body_a)) {
+        gradient_a.noalias() += minus_Gamma_Ao_W;
+      } else {
+        const ConstJacobianView J_WA = model().get_jacobian(body_a);
+        gradient_a.noalias() += J_WA.transpose() * minus_Gamma_Ao_W;
+      }
     }
   }
 }
@@ -514,15 +522,17 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateHessian(
     // First clique, body B.
     DRAKE_ASSERT(!model().is_anchored(body_b));  // Body B is never anchored.
 
-    const ConstJacobianView J_WB = model().get_jacobian(body_b);
-
     // Accumulate Hessian.
-    auto GJb = GetMatrixXScratch(6, nv_b);
     auto H_BB = GetMatrixXScratch(nv_b, nv_b);
     const Matrix6<T>& G_Bp = G_Bp_pool[p];
-    // auto H_BB = hessian->block(start_b, start_b, nv_b, nv_b);
-    GJb.noalias() = G_Bp * J_WB;
-    H_BB.noalias() = J_WB.transpose() * GJb;
+    const ConstJacobianView J_WB = model().get_jacobian(body_b);
+    if (model().is_floating(body_b)) {
+      H_BB.noalias() = G_Bp;
+    } else {
+      auto GJb = GetMatrixXScratch(6, nv_b);
+      GJb.noalias() = G_Bp * J_WB;
+      H_BB.noalias() = J_WB.transpose() * GJb;
+    }
     hessian->AddToBlock(c_b, c_b, H_BB);
 
     // Second clique, for body A, only contributes if not anchored.
@@ -545,7 +555,11 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateHessian(
       // If c_a == c_b, we must compute both terms.
       GJa.noalias() = G_Phi * J_WA;
       auto H_BA = GetMatrixXScratch(nv_b, nv_a);
-      H_BA.noalias() = -J_WB.transpose() * GJa;
+      if (model().is_floating(body_b)) {
+        H_BA.noalias() = -GJa;
+      } else {
+        H_BA.noalias() = -J_WB.transpose() * GJa;
+      }
       if (c_b > c_a) {
         hessian->AddToBlock(c_b, c_a, H_BA);
       }
@@ -563,8 +577,12 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateHessian(
         hessian->AddToBlock(c_a, c_b, H_BB);
       }
 
-      GJa.noalias() = G_Ap * J_WA;
-      H_AA.noalias() = J_WA.transpose() * GJa;
+      if (model().is_floating(body_a)) {
+        H_AA.noalias() = G_Ap;
+      } else {
+        GJa.noalias() = G_Ap * J_WA;
+        H_AA.noalias() = J_WA.transpose() * GJa;
+      }
       hessian->AddToBlock(c_a, c_a, H_AA);
     }
   }
