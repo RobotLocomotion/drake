@@ -256,7 +256,7 @@ TEST_F(TwoSpheres, GetContact) {
   PooledSapBuilder<double> builder(*plant_);
   PooledSapModel<double> model;
   builder.UpdateModel(*plant_context_, time_step, &model);
-  EXPECT_EQ(model.num_cliques(), 1);
+  EXPECT_EQ(model.num_cliques(), 2);
   EXPECT_EQ(model.num_velocities(), plant_->num_velocities());
   EXPECT_EQ(model.num_patch_constraints(), 1);
 }
@@ -273,10 +273,10 @@ TEST_F(TwoSpheres, MakeData) {
   PooledSapBuilder<double> builder(*plant_);
   PooledSapModel<double> model;
   builder.UpdateModel(*plant_context_, time_step, &model);
-  EXPECT_EQ(model.num_cliques(), 1);
+  EXPECT_EQ(model.num_cliques(), 2);
   EXPECT_EQ(model.num_velocities(), nv);
   EXPECT_EQ(model.num_patch_constraints(), 1);
-  EXPECT_EQ(model.clique_sizes(), std::vector<int>({nv}));
+  EXPECT_EQ(model.clique_sizes(), std::vector<int>({6, 6}));
 
   PooledSapModel<double>::PatchConstraintsPool& patch_constraints =
       model.patch_constraints_pool();
@@ -311,9 +311,7 @@ TEST_F(TwoSpheres, MakeData) {
   // pre-allocated workspace for this function.
   builder.UpdateModel(*plant_context_, time_step, &model);
   {
-    // We still compute the sparsity pattern, and that right now leads to
-    // allocations.
-    // drake::test::LimitMalloc guard;
+    drake::test::LimitMalloc guard;
     model.ResizeData(&data);
   }
   EXPECT_EQ(model.num_velocities(), nv);

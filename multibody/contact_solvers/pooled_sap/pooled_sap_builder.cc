@@ -6,7 +6,10 @@
 using drake::multibody::internal::GetCombinedDynamicCoulombFriction;
 using drake::multibody::internal::GetCombinedHuntCrossleyDissipation;
 using drake::multibody::internal::GetCombinedPointContactStiffness;
+using drake::multibody::internal::GetInternalTree;
 using drake::multibody::internal::GetPointContactStiffness;
+using drake::multibody::internal::MultibodyTreeTopology;
+using drake::multibody::internal::TreeIndex;
 
 namespace drake {
 namespace multibody {
@@ -61,6 +64,8 @@ template <typename T>
 PooledSapBuilder<T>::PooledSapBuilder(const MultibodyPlant<T>& plant)
     : plant_(&plant) {
   const int nv = plant.num_velocities();
+  scratch_.M.resize(nv, nv);
+  scratch_.J_V_WB.resize(6, nv);
   scratch_.u_no_pd.resize(nv);
   scratch_.u_w_pd.resize(nv);
   scratch_.tmp_v1.resize(nv);
@@ -71,10 +76,12 @@ template <typename T>
 void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
                                       const T& time_step,
                                       PooledSapModel<T>* model) const {
-  // N.B. we can retrieve spanning forest (tree) like so:
-  // const SpanningForest& tree = internal::GetInternalTree(plant).forest();
+  const MultibodyTreeTopology& topology =
+      GetInternalTree(plant()).get_topology();
 
   const int nv = plant().num_velocities();
+  MatrixX<T>& M = scratch_.M;
+  Matrix6X<T>& J_V_WB = scratch_.J_V_WB;
   VectorX<T>& u_no_pd = scratch_.u_no_pd;
   VectorX<T>& u_w_pd = scratch_.u_w_pd;
 
@@ -85,12 +92,20 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   params->A.Clear();
   params->J_WB.Clear();
 
-  // Linearized dynamics matrix for a single clique.
-  typename EigenPool<MatrixX<T>>::ElementView M = params->A.Add(nv, nv);
+  // Dense linearized dynamics from MbP.
   plant().CalcMassMatrix(context, &M);
 
-  // TODO(amcastro-tri): Add effective damping terms.
-  // const VectorX<T> diagonal_inertia = plant().CalcEffectiveDamping(context);
+  // Implicit damping.
+  // N.B. The mass matrix already include reflected inertia terms.
+  M.diagonal() += plant().EvalJointDampingCache(context) * plant().time_step();
+
+  for (TreeIndex t(0); t < topology.num_trees(); ++t) {
+    const int tree_start_in_v = topology.tree_velocities_start_in_v(t);
+    const int tree_nv = topology.num_tree_velocities(t);
+    typename EigenPool<MatrixX<T>>::ElementView At =
+        params->A.Add(tree_nv, tree_nv);
+    At = M.block(tree_start_in_v, tree_start_in_v, tree_nv, tree_nv);
+  }
 
   // Update rigid body cliques and body Jacobians.
   const auto& world_frame = plant().world_frame();
@@ -105,12 +120,20 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
       // one-column Jacobian.
       params->J_WB.Add(6, 1);
     } else {
-      params->body_cliques.push_back(0);  // Single clique (dense) setup.
+      const TreeIndex t = topology.body_to_tree_index(BodyIndex(b));
+      const bool tree_has_dofs = topology.tree_has_dofs(t);
+      DRAKE_ASSERT(tree_has_dofs);
+
+      const int vt_start = topology.tree_velocities_start_in_v(t);
+      const int nt = topology.num_tree_velocities(t);
+
+      params->body_cliques.push_back(t);  // Single clique (dense) setup.
       typename EigenPool<Matrix6X<T>>::ElementView Jv_WBc_W =
-          params->J_WB.Add(6, nv);
+          params->J_WB.Add(6, nt);
       plant().CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kV,
                                           body.body_frame(), Vector3<T>::Zero(),
-                                          world_frame, world_frame, &Jv_WBc_W);
+                                          world_frame, world_frame, &J_V_WB);
+      Jv_WBc_W = J_V_WB.middleCols(vt_start, nt);
     }
   }
 
