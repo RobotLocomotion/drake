@@ -4,10 +4,6 @@
 common --@drake//tools/flags:public_repo_default=pkgconfig
 common --@drake//tools/flags:private_runtime_repo_default=external
 
-# XXX Clang 20 testing can't use Ubuntu shared libraries
-common --@drake//tools/flags:public_repo_default=module
-common --@drake//tools/flags:private_runtime_repo_default=internal
-
 # Tell spdlog to build a library, not header-only. This *substantially* reduces
 # build size and improves build speed.
 build --@@spdlog+//:header_only=False
