@@ -107,7 +107,7 @@ DEFINE_string(discrete_contact_approximation, "lagged",
               "Discrete contact solver. Options are: 'tamsi', 'sap', 'lagged', "
               "'similar'.");
 DEFINE_double(near_rigid_threshold, 1.0, "SAP near rigid threshold.");
-DEFINE_bool(dense_algebra, true, "Whether to use dense algebra in SAP.");
+DEFINE_bool(dense_algebra, false, "Whether to use dense algebra in SAP.");
 
 // Continuous integration parameters
 DEFINE_string(
