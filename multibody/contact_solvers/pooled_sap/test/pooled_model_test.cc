@@ -24,13 +24,11 @@ namespace pooled_sap {
 const double kEps = std::numeric_limits<double>::epsilon();
 
 template <typename T>
-void MakeModel(PooledSapModel<T>* model, bool single_clique = false,
-               bool use_sparse_hessian = true) {
+void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
   const double time_step = 0.01;
   const int nv = 18;
 
   std::unique_ptr<PooledSapParameters<T>> params = model->ReleaseParameters();
-  params->use_sparse_hessian = use_sparse_hessian;
   params->time_step = time_step;
   params->A.Clear();
   params->J_WB.Clear();
@@ -345,43 +343,37 @@ GTEST_TEST(PooledSapModel, CostAlongLine) {
   model.UpdateSearchDirection(data, w, &search_data);
 
   // Try-out a set of arbitrary values.
-  for (double alpha_value : {0.0, -0.45, 0., 0.15, 0.34, 0.93, 1.32}) {
+  for (double alpha_value : {-0.45, 0., 0.15, 0.34, 0.93, 1.32}) {
     const AutoDiffXd alpha = {
         alpha_value, VectorXd::Ones(1) /* This is the independent variable */};
 
-    // const VectorX<AutoDiffXd> v_alpha = v + alpha * w;
-    // model.CalcData(v_alpha, &scratch);
-    // const double cost_expected = scratch.cache().cost.value();
-    // const double momentum_cost_expected = scratch.cache().momentum_cost.value();
-    // const double dcost_expected = scratch.cache().cost.derivatives()[0];
-    // const VectorXd w_times_H = math::ExtractGradient(scratch.cache().gradient);
-    // const double d2cost_expected = w_times_H.dot(math::ExtractValue(w));
+    const VectorX<AutoDiffXd> v_alpha = v + alpha * w;
+    model.CalcData(v_alpha, &scratch);
+    const double cost_expected = scratch.cache().cost.value();
+    const double momentum_cost_expected = scratch.cache().momentum_cost.value();
+    const double dcost_expected = scratch.cache().cost.derivatives()[0];
+    const VectorXd w_times_H = math::ExtractGradient(scratch.cache().gradient);
+    const double d2cost_expected = w_times_H.dot(math::ExtractValue(w));
 
-    // // Verify pre-computed terms are correct.
-    // const AutoDiffXd a = search_data.a;
-    // const AutoDiffXd b = search_data.b;
-    // const AutoDiffXd c = search_data.c;
-    // const double momentum_cost =
-    //     (a * alpha * alpha / 2.0 + b * alpha + c).value();
-    // EXPECT_NEAR(momentum_cost, momentum_cost_expected,
-    //             8 * kEps * abs(momentum_cost_expected));
+    // Verify pre-computed terms are correct.
+    const AutoDiffXd a = search_data.a;
+    const AutoDiffXd b = search_data.b;
+    const AutoDiffXd c = search_data.c;
+    const double momentum_cost =
+        (a * alpha * alpha / 2.0 + b * alpha + c).value();
+    EXPECT_NEAR(momentum_cost, momentum_cost_expected,
+                8 * kEps * abs(momentum_cost_expected));
 
     AutoDiffXd dcost, d2cost;
     const AutoDiffXd cost = model.CalcCostAlongLine(alpha, data, search_data,
                                                     &scratch, &dcost, &d2cost);
-    // EXPECT_NEAR(cost.value(), cost_expected, 8 * kEps * abs(cost_expected));
-    // EXPECT_NEAR(dcost.value(), dcost_expected, 8 * kEps * abs(dcost_expected));
-    // EXPECT_NEAR(d2cost.value(), d2cost_expected,
-    //             8 * kEps * abs(d2cost_expected));
-    
-    fmt::print("New: alpha: {}. cost: {}. dcost: {}. d2cost: {}\n", alpha,
+    EXPECT_NEAR(cost.value(), cost_expected, 8 * kEps * abs(cost_expected));
+    EXPECT_NEAR(dcost.value(), dcost_expected, 8 * kEps * abs(dcost_expected));
+    EXPECT_NEAR(d2cost.value(), d2cost_expected,
+                8 * kEps * abs(d2cost_expected));
+
+    fmt::print("alpha: {}. cost: {}. dcost: {}. d2cost: {}\n", alpha,
                cost.value(), dcost.value(), d2cost.value());
-
-    // Reference via alternative method
-    const AutoDiffXd cost_ref = model.CalcCostAlongLine(v, w, alpha, &scratch, &dcost, &d2cost);
-    fmt::print("Ref: alpha: {}. cost: {}. dcost: {}. d2cost: {}\n\n", alpha,
-               cost_ref.value(), dcost.value(), d2cost.value());
-
   }
 }
 
