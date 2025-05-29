@@ -690,7 +690,8 @@ GTEST_TEST(PointCloudTest, EstimateNormalsPlane) {
   cloud.EstimateNormals(10, 3, ENABLE_PARALLEL_OPS);
   for (int i = 0; i < 3; ++i) {
     CheckNormal(cloud.normal(i),
-                Vector3f{0, 1.0 / std::sqrt(2.0), -1.0 / std::sqrt(2.0)}, kTol);
+                Vector3f{0, 1.0f / std::sqrt(2.0f), -1.0f / std::sqrt(2.0f)},
+                kTol);
   }
 }
 
