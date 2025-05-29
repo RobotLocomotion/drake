@@ -35,12 +35,19 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
   params->v0 = VectorX<T>::Zero(nv);
 
   // Push back mass matrices for three cliques.
+  const Matrix6<T> A1 = 0.3 * Matrix6<T>::Identity();
+  const Matrix6<T> A2 = 2.3 * Matrix6<T>::Identity();
+  const Matrix6<T> A3 = 1.5 * Matrix6<T>::Identity();
   if (single_clique) {
-    params->A.PushBack(MatrixX<T>::Identity(nv, nv));
+    MatrixX<T> A = MatrixX<T>::Identity(nv, nv);
+    A.template block<6, 6>(0, 0) = A1;
+    A.template block<6, 6>(6, 6) = A2;
+    A.template block<6, 6>(12, 12) = A3;
+    params->A.PushBack(A);
   } else {
-    params->A.Add(6, 6) = Matrix6<T>::Identity();
-    params->A.Add(6, 6) = Matrix6<T>::Identity();
-    params->A.Add(6, 6) = Matrix6<T>::Identity();
+    params->A.Add(6, 6) = A1;
+    params->A.Add(6, 6) = A2;
+    params->A.Add(6, 6) = A3;
   }
   params->r = VectorX<T>::LinSpaced(nv, -0.5, 0.5);
 
