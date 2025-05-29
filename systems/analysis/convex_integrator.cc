@@ -151,9 +151,11 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     // optimal, or a single Newton step for simple unconstrained problems. This
     // is necessary because our main convergence criterion requires comparing dv
     // over several iterations.
-    if (stats_.gradient_norm.back() < solver_parameters_.tolerance) {
-      // TODO(vincekurtz): consider using the SAP momentum residual rather than
-      // the gradient norm.
+    const double scale =
+        std::max(data.cache().Av.norm(), model.params().r.norm());
+    if (stats_.gradient_norm.back() <
+        solver_parameters_.abs_tolerance +
+            solver_parameters_.rel_tolerance * scale) {
       stats_.ls_iterations.push_back(0);
       stats_.alpha.push_back(NAN);
       stats_.step_size.push_back(NAN);
