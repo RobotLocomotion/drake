@@ -111,6 +111,7 @@ drake_pybind_library(
         ":math_py",
         ":module_py",
         "//bindings/pydrake/systems:framework_py",
+        "//bindings/pydrake/geometry",
     ],
     py_srcs = [
         "_tree_extra.py",

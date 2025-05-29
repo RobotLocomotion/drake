@@ -726,12 +726,8 @@ TEST_F(DeformableModelTest, Parallelism) {
 TEST_F(DeformableModelTest, BodyName) {
   const DeformableBodyId body_id = RegisterSphere(0.5);
   EXPECT_TRUE(deformable_model_ptr_->HasBodyNamed("sphere"));
-  EXPECT_EQ(deformable_model_ptr_->GetBodyIdByName("sphere"), body_id);
   EXPECT_EQ(deformable_model_ptr_->GetBodyByName("sphere").body_id(), body_id);
   EXPECT_FALSE(deformable_model_ptr_->HasBodyNamed("nonexistent_body_name"));
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      deformable_model_ptr_->GetBodyIdByName("nonexistent_body_name"),
-      ".*No deformable body.*nonexistent_body_name.*registered.*");
 }
 
 /* Tests registering deformable bodies into a prescribed model instance as well

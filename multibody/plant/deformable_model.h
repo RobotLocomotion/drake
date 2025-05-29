@@ -298,6 +298,11 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    registered in this model. */
   DeformableBodyId GetBodyId(DeformableBodyIndex index) const;
 
+  /** Returns the DeformableBodyId associated with the given `geometry_id`.
+   @throws std::exception if the given `geometry_id` does not correspond to a
+   deformable body registered with this model. */
+  DeformableBodyId GetBodyId(geometry::GeometryId geometry_id) const;
+
   /** Returns the deformable body with the given `id`.
    @throws std::exception if no deformable body with the given `id` has been
    registered in this model. */
@@ -359,21 +364,13 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   const DeformableBody<T>& GetBodyByName(
       const std::string& name, ModelInstanceIndex model_instance) const;
 
-  // TODO(xuchenhan-tri): This function can be removed.
-  /** Returns the DeformableBodyId of the body with the given name.
-   @throws std::exception if there's no body with the given name or if more than
-   one model instance contains deformable body with the given name. */
-  DeformableBodyId GetBodyIdByName(const std::string& name) const;
-
   /** Returns the DeformableIds of the bodies that belong to the given model
    instance. Returns the empty vector if no deformable bodies are registered
    with the given model instance. */
   std::vector<DeformableBodyId> GetBodyIds(
       ModelInstanceIndex model_instance) const;
 
-  /** (Internal) Returns the DeformableBodyIndex of the body with the given id.
-   This function is for internal bookkeeping use only. Most users should use
-   DeformableBodyId instead.
+  /** Returns the DeformableBodyIndex of the body with the given id.
    @throws std::exception if no body with the given `id` has been registered. */
   DeformableBodyIndex GetBodyIndex(DeformableBodyId id) const;
 
@@ -382,13 +379,8 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    @throws std::exception if no body with the given `id` has been registered. */
   geometry::GeometryId GetGeometryId(DeformableBodyId id) const;
 
-  /** Returns the DeformableBodyId associated with the given `geometry_id`.
-   @throws std::exception if the given `geometry_id` does not correspond to a
-   deformable body registered with this model. */
-  DeformableBodyId GetBodyId(geometry::GeometryId geometry_id) const;
-
-  /** (Internal use only) Returns the true iff the deformable body with the
-   given `id` has constraints associated with it. */
+  /** Returns the true if the deformable body with the given `id` has
+   constraints associated with it. */
   bool HasConstraint(DeformableBodyId id) const {
     return GetBody(id).has_fixed_constraint();
   }
@@ -402,8 +394,8 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
     return *integrator_;
   }
 
-  /** Returns the output port index of the vertex positions port for all
-   registered deformable bodies.
+  /** (Internal use only) Returns the output port index of the vertex positions
+   port for all registered deformable bodies.
    @throws std::exception if called before `DeclareSceneGraphPorts()` is called.
   */
   systems::OutputPortIndex configuration_output_port_index() const {
