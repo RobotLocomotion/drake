@@ -262,12 +262,6 @@ const DeformableBody<T>& DeformableModel<T>::GetBodyByName(
 }
 
 template <typename T>
-DeformableBodyId DeformableModel<T>::GetBodyIdByName(
-    const std::string& name) const {
-  return GetBodyByName(name).body_id();
-}
-
-template <typename T>
 std::vector<DeformableBodyId> DeformableModel<T>::GetBodyIds(
     ModelInstanceIndex model_instance) const {
   std::vector<DeformableBodyId> result;
