@@ -252,6 +252,7 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
 
   // Set up prerequisites for an efficient CalcCostAlongLine
   const SapData<double>& data = data_;  // already up-to-date
+
   SapData<double> scratch = scratch_data_;
   model.ResizeData(&scratch);
   SearchDirectionData<double>& search_data = search_direction_data_;
@@ -274,6 +275,10 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
 
   getchar();
 
+  (void)alpha_max;
+  return std::make_pair(0.5, 0);
+
+#if 0
   // First we'll evaluate ∂ℓ/∂α at α = 0. This should be strictly negative,
   // since the Hessian is positive definite. This is cheap since we already have
   // the gradient at α = 0 cached from solving for the search direction earlier.
@@ -359,6 +364,7 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
   return DoNewtonWithBisectionFallback(
       cost_and_gradient, bracket, alpha_guess, alpha_tolerance,
       solver_parameters_.ls_tolerance, solver_parameters_.max_ls_iterations);
+#endif
 }
 
 template <typename T>
