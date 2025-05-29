@@ -62,6 +62,8 @@ void ApplySimulatorConfig(const SimulatorConfig& config,
 
 /** Reports the simulator's current configuration, including the configuration
 of the integrator.
+The start_time of the extracted config is set to the current time of the
+simulator context.
 
 @param[in] simulator The Simulator to extract the configuration from.
 @tparam_nonsymbolic_scalar
