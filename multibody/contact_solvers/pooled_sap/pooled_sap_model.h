@@ -60,8 +60,9 @@ struct PooledSapParameters {
   // Clique for the b-th rigid body. Negative if anchored.
   // body_cliques[0]  < 0 must correspond to the world.
   std::vector<int> body_cliques;
-  EigenPool<Matrix6X<T>> J_WB;  // Rigid body spatial velocity Jacobians.
-  VectorX<T> v0;                // The current generalized velocities.
+  std::vector<int> body_is_floating;  // 1 if floating.
+  EigenPool<Matrix6X<T>> J_WB;        // Rigid body spatial velocity Jacobians.
+  VectorX<T> v0;                      // The current generalized velocities.
 };
 
 /* A model of the SAP problem.
@@ -153,6 +154,13 @@ class PooledSapModel {
   bool is_anchored(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return body_clique(body) < 0;
+  }
+
+  /* Returns `true` for a free floating body. This can be used to optimize out
+   Jacobian multiplications when these are the identity matrix. */
+  bool is_floating(int body) const {
+    DRAKE_ASSERT(0 <= body && body < num_bodies());
+    return params().body_is_floating[body] == 1;
   }
 
   /* Returns the number of velocities for `clique` or zero if clique < 0

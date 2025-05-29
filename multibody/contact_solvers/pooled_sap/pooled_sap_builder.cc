@@ -118,8 +118,13 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   const auto& world_frame = plant().world_frame();
   params->body_cliques.clear();
   params->body_cliques.reserve(plant().num_bodies());
+  params->body_is_floating.clear();
+  params->body_is_floating.reserve(plant().num_bodies());
   for (int b = 0; b < plant().num_bodies(); ++b) {
     const auto& body = plant().get_body(BodyIndex(b));
+
+    params->body_is_floating.push_back(body.is_floating() ? 1 : 0);
+
     if (plant().IsAnchored(body)) {
       params->body_cliques.push_back(-1);  // mark as anchored.
       // Empty Jacobian.
@@ -139,10 +144,18 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
       params->body_cliques.push_back(clique);
       typename EigenPool<Matrix6X<T>>::ElementView Jv_WBc_W =
           params->J_WB.Add(6, nt);
-      plant().CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kV,
-                                          body.body_frame(), Vector3<T>::Zero(),
-                                          world_frame, world_frame, &J_V_WB);
-      Jv_WBc_W = J_V_WB.middleCols(vt_start, nt);
+      if (body.is_floating()) {
+        Jv_WBc_W.setIdentity();
+      } else {
+        plant().CalcJacobianSpatialVelocity(
+            context, JacobianWrtVariable::kV, body.body_frame(),
+            Vector3<T>::Zero(), world_frame, world_frame, &J_V_WB);
+        Jv_WBc_W = J_V_WB.middleCols(vt_start, nt);
+      }
+      // if (body.is_floating()) {
+      //   fmt::print("b: {}. name: {}. J:\n{}\n", b, body.name(),
+      //              fmt_eigen(Jv_WBc_W));
+      // }
     }
   }
 
