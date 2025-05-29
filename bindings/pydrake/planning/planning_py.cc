@@ -22,11 +22,11 @@ and/or trajectories of dynamical systems.
   py::module::import("pydrake.trajectories");
 
   // The order of these calls matters. Some modules rely on prior definitions.
-  internal::DefinePlanningJointLimits(m);
   internal::DefinePlanningRobotDiagram(m);
   internal::DefinePlanningCollisionCheckerInterfaceTypes(m);
   internal::DefinePlanningCollisionChecker(m);
   internal::DefinePlanningDofMask(m);
+  internal::DefinePlanningJointLimits(m);
   internal::DefinePlanningGraphAlgorithms(m);
   internal::DefinePlanningTrajectoryOptimization(m);
   internal::DefinePlanningVisibilityGraph(m);

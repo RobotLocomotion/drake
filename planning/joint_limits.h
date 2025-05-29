@@ -2,6 +2,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/planning/dof_mask.h"
 
 namespace drake {
 namespace planning {
@@ -10,24 +11,58 @@ namespace planning {
 Note that enforcement of finite limits by this class is optional; see the
 `require_finite_*` constructor arguments.
 
-NaN values are rejected for all limits and tolerances. */
+NaNs are rejected for all limits and tolerances. */
 class JointLimits final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(JointLimits);
 
-  /** Constructs a JointLimits using the position, velocity, and acceleration
+  /** Constructs a %JointLimits using the position, velocity, and acceleration
   limits in the provided `plant`.
   @throws std::exception if plant is not finalized.
   @throws std::exception if the position, velocity, or acceleration limits
   contain non-finite values, and the corresponding constructor argument is
   true.
-  @throws std::exception if any limits contain NaN values. */
+  @throws std::exception if any limit value is NaN.
+  @pydrake_mkdoc_identifier{plant} */
   JointLimits(const multibody::MultibodyPlant<double>& plant,
               bool require_finite_positions = false,
               bool require_finite_velocities = false,
               bool require_finite_accelerations = false);
 
-  /** Constructs a JointLimits using the provided arguments.
+  /** Constructs a %JointLimits using the position, velocity, and acceleration
+  limits in the provided `plant`, selecting only the dofs indicated by
+  `active_dof.`
+  @throws std::exception if plant is not finalized.
+  @throws std::exception if active_dof.size() != num_positions().
+  @throws std::exception if active_dof.size() != num_velocities().
+  @throws std::exception if active_dof.size() != num_accelerations().
+  @throws std::exception if the position, velocity, or acceleration limits
+  contain non-finite values, and the corresponding constructor argument is
+  true.
+  @throws std::exception if any limit value is NaN.
+  @pydrake_mkdoc_identifier{plant_select} */
+  JointLimits(const multibody::MultibodyPlant<double>& plant,
+              const DofMask& active_dof, bool require_finite_positions = false,
+              bool require_finite_velocities = false,
+              bool require_finite_accelerations = false);
+
+  /** Constructs a %JointLimits using the position, velocity, and acceleration
+  limits in the provided `other`, selecting only the coefficients indicated by
+  `active_dof.`
+  @throws std::exception if active_dof.size() != other.num_positions().
+  @throws std::exception if active_dof.size() != other.num_velocities().
+  @throws std::exception if active_dof.size() != other.num_accelerations().
+  @throws std::exception if the position, velocity, or acceleration limits
+  contain non-finite values, and the corresponding constructor argument is
+  true.
+  @throws std::exception if any limit value is NaN.
+  @pydrake_mkdoc_identifier{copy_select} */
+  JointLimits(const JointLimits& other, const DofMask& active_dof,
+              bool require_finite_positions = false,
+              bool require_finite_velocities = false,
+              bool require_finite_accelerations = false);
+
+  /** Constructs a %JointLimits using the provided arguments.
   @throws std::exception if the position, velocity, or acceleration limits
   contain non-finite values, and the corresponding constructor argument is
   true.
@@ -35,7 +70,8 @@ class JointLimits final {
   @throws std::exception if any upper limit coefficients are less than the
   corresponding lower limit coefficient.
   @throws std::exception if velocity and acceleration limits differ in size.
-  @throws std::exception if any limits contain NaN values. */
+  @throws std::exception if any limit value is NaN.
+  @pydrake_mkdoc_identifier{vectors} */
   JointLimits(const Eigen::VectorXd& position_lower,
               const Eigen::VectorXd& position_upper,
               const Eigen::VectorXd& velocity_lower,
@@ -46,7 +82,7 @@ class JointLimits final {
               bool require_finite_velocities = false,
               bool require_finite_accelerations = false);
 
-  /** Constructs a JointLimits with 0-length vectors for all limits. */
+  /** Constructs a %JointLimits with 0-length vectors for all limits. */
   JointLimits() = default;
 
   ~JointLimits();
