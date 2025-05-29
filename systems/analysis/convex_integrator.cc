@@ -262,9 +262,11 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
   double dell{NAN};
   double d2ell{NAN};
 
-  // DEBUG: evaluate linesearch data at alpha = 0.5
+  // DEBUG: evaluate linesearch data at alpha = 0.5 using two methods. Both
+  // should give the same result, but right now they don't...
   const double alpha = 0.5;
-  double ell = model.CalcCostAlongLine(alpha, data, search_data, &scratch, &dell, &d2ell);
+  double ell = model.CalcCostAlongLine(alpha, data, search_data, &scratch,
+                                       &dell, &d2ell);
   fmt::print("New: ell: {}, dell: {}, d2ell: {}\n", ell, dell, d2ell);
 
   SapData<double> scratch2;
@@ -273,8 +275,10 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
   ell = model.CalcCostAlongLine(v, dv, alpha, &scratch2, &dell, &d2ell);
   fmt::print("Ref: ell: {}, dell: {}, d2ell: {}\n", ell, dell, d2ell);
 
+  fmt::print("Press [ENTER] to continue...");
   getchar();
 
+  // Just return early for debugging
   (void)alpha_max;
   return std::make_pair(0.5, 0);
 
