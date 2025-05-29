@@ -162,53 +162,10 @@ bool ConvexIntegrator<double>::SolveWithGuess(
       return true;
     }
 
-    // Compute the search direction via Newton step dv = -H⁻¹ g
-    // TODO(vincekurtz): re-use the old Hessian
-    const VectorXd& g = data.cache().gradient;
-
-    auto start = std::chrono::high_resolution_clock::now();
-    if (k == 0) {
-      hessian_ = model.MakeHessian(data);
-    } else {
-      model.UpdateHessian(data, hessian_.get());
-    }
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = end - start;
-    const double make_hessian_time = elapsed.count();
-
-    start = std::chrono::high_resolution_clock::now();
-    if (k == 0) {
-      hessian_factorization_.SetMatrix(*hessian_);
-    } else {
-      hessian_factorization_.UpdateMatrix(*hessian_);
-    }
-    end = std::chrono::high_resolution_clock::now();
-    elapsed = end - start;
-    const double set_matrix_time = elapsed.count();
-
-    start = std::chrono::high_resolution_clock::now();
-    if (!hessian_factorization_.Factor()) {
-      throw std::runtime_error("Hessian factorization failed!");
-    }
-    end = std::chrono::high_resolution_clock::now();
-    elapsed = end - start;
-    const double factor_time = elapsed.count();
-
-    start = std::chrono::high_resolution_clock::now();
-    dv = -g;
-    hessian_factorization_.SolveInPlace(&dv);
-    end = std::chrono::high_resolution_clock::now();
-    elapsed = end - start;
-    const double solve_time = elapsed.count();
-
-    // fmt::print("k: {}, MakeHessian: {}, SetMatrix: {}, Factor: {}, Solve:
-    // {}\n",
-    //            k, make_hessian_time, set_matrix_time, factor_time,
-    //            solve_time);
-    (void)make_hessian_time;
-    (void)set_matrix_time;
-    (void)factor_time;
-    (void)solve_time;
+    // Compute the search direction dv = -H⁻¹ g
+    ComputeSearchDirection(model, data, &dv,
+                           /*reuse_factorization=*/false,
+                           /*reuse_sparsity_pattern=*/(k > 0));
 
     // Compute the step size with linesearch
     std::tie(alpha, ls_iterations) = PerformExactLineSearch(model, data, dv);
@@ -373,6 +330,41 @@ T ConvexIntegrator<T>::SolveQuadraticInUnitInterval(const T& a, const T& b,
   }
 
   return s;
+}
+
+template <typename T>
+void ComputeSearchDirection(const PooledSapModel<T>&, const SapData<T>&,
+                            VectorX<T>*, bool, bool) {
+  throw std::logic_error(
+      "ConvexIntegrator: ComputeSearchDirection only supports T = double.");
+}
+
+template <>
+void ConvexIntegrator<double>::ComputeSearchDirection(
+    const PooledSapModel<double>& model, const SapData<double>& data,
+    VectorXd* dv, bool reuse_factorization, bool reuse_sparsity_pattern) {
+  DRAKE_ASSERT(dv != nullptr);
+
+  if (!reuse_factorization) {
+    // Compute the H and set up the factorization.
+    if (reuse_sparsity_pattern) {
+      model.UpdateHessian(data, hessian_.get());
+      hessian_factorization_.UpdateMatrix(*hessian_);
+    } else {
+      hessian_ = model.MakeHessian(data);
+      hessian_factorization_.SetMatrix(*hessian_);
+    }
+
+    // Factorize H
+    if (!hessian_factorization_.Factor()) {
+      throw std::runtime_error(
+          "ConvexIntegrator: Hessian factorization failed!");
+    }
+  }
+
+  // Compute the search direction dv = -H⁻¹ g
+  *dv = -data.cache().gradient;
+  hessian_factorization_.SolveInPlace(dv);
 }
 
 template <typename T>

@@ -233,6 +233,20 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Returns the root of the quadratic equation ax² + bx + c = 0, x ∈ [0, 1].
   T SolveQuadraticInUnitInterval(const T& a, const T& b, const T& c) const;
 
+  // Solve for the Newton search direction Δv = −H⁻¹g, with flags for several
+  // levels of Hessian reuse:
+  //  - reuse_factorization: reuse the exact same factorization of H as in the
+  //                         previous iteration. Do not compute the new Hessian
+  //                         at all. This is the fastest option, but gives a
+  //                         lower-quality search direction.
+  //  - reuse_sparsity_pattern: recompute H and its factorization, but reuse the
+  //                            stored sparsity pattern. This gives an exact
+  //                            Newton step, but avoids some allocations.
+  void ComputeSearchDirection(const PooledSapModel<T>& model,
+                              const SapData<T>& data, VectorX<T>* dv,
+                              bool reuse_factorization = false,
+                              bool reuse_sparsity_pattern = false);
+
   // Print solver statistics to the console for debugging.
   void PrintSolverStats() const;
 
@@ -272,6 +286,11 @@ template <>
 std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
     const PooledSapModel<double>&, const SapData<double>&,
     const VectorX<double>&);
+
+template <>
+void ConvexIntegrator<double>::ComputeSearchDirection(
+    const PooledSapModel<double>&, const SapData<double>&, VectorX<double>*,
+    bool, bool);
 
 }  // namespace systems
 }  // namespace drake
