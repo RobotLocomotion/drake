@@ -99,12 +99,19 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   // N.B. The mass matrix already include reflected inertia terms.
   M.diagonal() += plant().EvalJointDampingCache(context) * plant().time_step();
 
+  // We only add a clique for tree's with non-zero number of velocities.
+  int num_cliques = 0;
+  std::vector<int> tree_clique(topology.num_trees(), -1);
   for (TreeIndex t(0); t < topology.num_trees(); ++t) {
     const int tree_start_in_v = topology.tree_velocities_start_in_v(t);
     const int tree_nv = topology.num_tree_velocities(t);
-    typename EigenPool<MatrixX<T>>::ElementView At =
-        params->A.Add(tree_nv, tree_nv);
-    At = M.block(tree_start_in_v, tree_start_in_v, tree_nv, tree_nv);
+    if (tree_nv > 0) {
+      tree_clique[t] = num_cliques;
+      ++num_cliques;
+      typename EigenPool<MatrixX<T>>::ElementView At =
+          params->A.Add(tree_nv, tree_nv);
+      At = M.block(tree_start_in_v, tree_start_in_v, tree_nv, tree_nv);
+    }
   }
 
   // Update rigid body cliques and body Jacobians.
@@ -121,13 +128,15 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
       params->J_WB.Add(6, 1);
     } else {
       const TreeIndex t = topology.body_to_tree_index(BodyIndex(b));
+      const int clique = tree_clique[t];
+      DRAKE_ASSERT(clique >= 0);
       const bool tree_has_dofs = topology.tree_has_dofs(t);
       DRAKE_ASSERT(tree_has_dofs);
 
       const int vt_start = topology.tree_velocities_start_in_v(t);
       const int nt = topology.num_tree_velocities(t);
 
-      params->body_cliques.push_back(t);  // Single clique (dense) setup.
+      params->body_cliques.push_back(clique);
       typename EigenPool<Matrix6X<T>>::ElementView Jv_WBc_W =
           params->J_WB.Add(6, nt);
       plant().CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kV,
