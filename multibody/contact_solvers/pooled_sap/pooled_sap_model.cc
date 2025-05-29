@@ -212,9 +212,10 @@ void PooledSapModel<T>::UpdateSearchDirection(
   auto& tmp = search_data->w;
   MultiplyByDynamicsMatrix(w, &tmp);  // tmp = A⋅w
 
-  search_data->a = tmp.dot(w);  // a = ‖w‖²
-  tmp = data.v() - r();         // tmp = v - r
-  search_data->b = w.dot(tmp);  // b = w⋅(v - r)
+  const VectorX<T>& v = data.v();
+  search_data->a = tmp.dot(w);        // a = ‖w‖²
+  const T vAw = v.dot(tmp);           // vAw = vᵀ⋅A⋅w
+  search_data->b = vAw - w.dot(r());  // b = vᵀ⋅A⋅w - w⋅r
   search_data->c = data.cache().momentum_cost;
 
   search_data->w = w;  // it is now safe to overwrite with the desired value.
