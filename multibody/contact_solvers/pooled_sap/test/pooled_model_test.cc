@@ -349,8 +349,8 @@ GTEST_TEST(PooledSapModel, CostAlongLine) {
     const AutoDiffXd alpha = {
         alpha_value, VectorXd::Ones(1) /* This is the independent variable */};
 
-    const VectorX<AutoDiffXd> v_alpha = v + alpha * w;
-    model.CalcData(v_alpha, &scratch);
+    // const VectorX<AutoDiffXd> v_alpha = v + alpha * w;
+    // model.CalcData(v_alpha, &scratch);
     // const double cost_expected = scratch.cache().cost.value();
     // const double momentum_cost_expected = scratch.cache().momentum_cost.value();
     // const double dcost_expected = scratch.cache().cost.derivatives()[0];
@@ -378,7 +378,7 @@ GTEST_TEST(PooledSapModel, CostAlongLine) {
                cost.value(), dcost.value(), d2cost.value());
 
     // Reference via alternative method
-    const AutoDiffXd cost_ref = model.CalcCostAlongLine(v, w, alpha, &data, &dcost, &d2cost);
+    const AutoDiffXd cost_ref = model.CalcCostAlongLine(v, w, alpha, &scratch, &dcost, &d2cost);
     fmt::print("Ref: alpha: {}. cost: {}. dcost: {}. d2cost: {}\n\n", alpha,
                cost_ref.value(), dcost.value(), d2cost.value());
 
