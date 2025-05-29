@@ -171,7 +171,7 @@ DeformableBody<T>::DeformableBody(
     DeformableBodyIndex index, DeformableBodyId id, std::string name,
     GeometryId geometry_id, ModelInstanceIndex model_instance,
     const VolumeMesh<double>& mesh_G, const math::RigidTransform<double>& X_WG,
-    const fem::DeformableBodyConfig<T>& config, const Vector3<T>& weights)
+    const fem::DeformableBodyConfig<T>& config, const Vector3<double>& weights)
     : MultibodyElement<T>(model_instance, index),
       id_(id),
       name_(std::move(name)),
@@ -246,7 +246,7 @@ template <typename T1>
 typename std::enable_if_t<std::is_same_v<T1, double>, void>
 DeformableBody<T>::BuildLinearVolumetricModel(
     const VolumeMesh<double>& mesh, const fem::DeformableBodyConfig<T>& config,
-    const Vector3<T>& weights) {
+    const Vector3<double>& weights) {
   switch (config.material_model()) {
     case MaterialModel::kLinear:
       BuildLinearVolumetricModelHelper<fem::internal::LinearConstitutiveModel>(
@@ -272,7 +272,7 @@ template <template <typename> class Model, typename T1>
 typename std::enable_if_t<std::is_same_v<T1, double>, void>
 DeformableBody<T>::BuildLinearVolumetricModelHelper(
     const VolumeMesh<double>& mesh, const fem::DeformableBodyConfig<T>& config,
-    const Vector3<T>& weights) {
+    const Vector3<double>& weights) {
   constexpr int kNaturalDimension = 3;
   constexpr int kSpatialDimension = 3;
   constexpr int kQuadratureOrder = 1;

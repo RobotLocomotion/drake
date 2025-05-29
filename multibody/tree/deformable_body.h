@@ -78,10 +78,14 @@ class DeformableBody final : public MultibodyElement<T> {
     return external_forces_;
   }
 
+  /** Returns the index of the discrete state associated with this deformable
+   body in the MultibodyPlant that owns the body. */
   systems::DiscreteStateIndex discrete_state_index() const {
     return discrete_state_index_;
   }
 
+  /** Returns the index of the boolean parameter indicating whether this
+   deformable body is enabled. */
   systems::AbstractParameterIndex is_enabled_parameter_index() const {
     return is_enabled_parameter_index_;
   }
@@ -102,8 +106,8 @@ class DeformableBody final : public MultibodyElement<T> {
    @param[in] n_W   Outward normal to the half space expressed in the world
                     frame.
    @pre n_W.norm() > 1e-10.
-   @warning Be aware of round-off errors in floating computations when placing a
-   vertex very close to the plane defining the half space. */
+   @warning Roundoff error may cause a point very near the defining plane to be
+   mischaracterized as to which side of the plane it is on. */
   void SetWallBoundaryCondition(const Vector3<T>& p_WQ,
                                 const Vector3<T>& n_W) const;
 
@@ -140,12 +144,11 @@ class DeformableBody final : public MultibodyElement<T> {
       const RigidBody<T>& body_B, const math::RigidTransform<double>& X_BA,
       const geometry::Shape& shape, const math::RigidTransform<double>& X_BG);
 
-  /** Returns true if and only if this deformable body is under any fixed
-   constraint. */
+  /** Returns true if this deformable body is under any fixed constraint. */
   bool has_fixed_constraint() const { return !fixed_constraint_specs_.empty(); }
 
-  /** (Internal use only) Returns a reference to the all fixed constraints
-   registered with the deformable body with the given `id`. */
+  /** (Internal use only) Returns a reference to the fixed constraints
+   registered with this deformable body. */
   const std::vector<internal::DeformableRigidFixedConstraintSpec>&
   fixed_constraint_specs() const {
     return fixed_constraint_specs_;
@@ -166,7 +169,7 @@ class DeformableBody final : public MultibodyElement<T> {
   void SetPositions(systems::Context<T>* context,
                     const Eigen::Ref<const Matrix3X<T>>& q) const;
 
-  /** Returns the matrix of vertex positions for this deformable body in the
+  /** Copies out the matrix of vertex positions for this deformable body in the
    provided `context`.
 
    @param[in] context The context associated with the MultibodyPlant that owns
@@ -177,7 +180,7 @@ class DeformableBody final : public MultibodyElement<T> {
    that owns this body. */
   Matrix3X<T> GetPositions(const systems::Context<T>& context) const;
 
-  /** @return true if and only if this deformable body is enabled.
+  /** @return true if this deformable body is enabled.
    @throw std::exception if the passed in context isn't compatible with the
    MultibodyPlant that owns this body. */
   bool is_enabled(const systems::Context<T>& context) const;
@@ -231,7 +234,7 @@ class DeformableBody final : public MultibodyElement<T> {
                  const geometry::VolumeMesh<double>& mesh_G,
                  const math::RigidTransform<double>& X_WG,
                  const fem::DeformableBodyConfig<T>& config,
-                 const Vector3<T>& weights);
+                 const Vector3<double>& weights);
 
   /* Creates a deep copy of this DeformableBody. Called only in DeformableModel
    to support cloning DeformableModel. */
@@ -267,14 +270,14 @@ class DeformableBody final : public MultibodyElement<T> {
   typename std::enable_if_t<std::is_same_v<T1, double>, void>
   BuildLinearVolumetricModel(const geometry::VolumeMesh<double>& mesh,
                              const fem::DeformableBodyConfig<T>& config,
-                             const Vector3<T>& weights);
+                             const Vector3<double>& weights);
 
   /* Helper for BuildLinearVolumetricModel templated on constitutive model. */
   template <template <class> class Model, typename T1 = T>
   typename std::enable_if_t<std::is_same_v<T1, double>, void>
   BuildLinearVolumetricModelHelper(const geometry::VolumeMesh<double>& mesh,
                                    const fem::DeformableBodyConfig<T>& config,
-                                   const Vector3<T>& weights);
+                                   const Vector3<double>& weights);
 
   void DoSetTopology(const internal::MultibodyTreeTopology&) final {
     /* No-op because deformable bodies are not part of the MultibodyTree
