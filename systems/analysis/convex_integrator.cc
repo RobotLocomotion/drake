@@ -248,12 +248,31 @@ template <>
 std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
     const PooledSapModel<double>& model, const VectorXd& v,
     const VectorXd& dv) {
-  SapData<double>& data = get_data();
   const double alpha_max = solver_parameters_.alpha_max;
+
+  // Set up prerequisites for an efficient CalcCostAlongLine
+  const SapData<double>& data = data_;  // already up-to-date
+  SapData<double> scratch = scratch_data_;
+  model.ResizeData(&scratch);
+  SearchDirectionData<double>& search_data = search_direction_data_;
+  model.UpdateSearchDirection(data, dv, &search_data);
 
   // Allocate first and second derivatives of ℓ(α)
   double dell{NAN};
   double d2ell{NAN};
+
+  // DEBUG: evaluate linesearch data at alpha = 0.5
+  const double alpha = 0.5;
+  double ell = model.CalcCostAlongLine(alpha, data, search_data, &scratch, &dell, &d2ell);
+  fmt::print("New: ell: {}, dell: {}, d2ell: {}\n", ell, dell, d2ell);
+
+  SapData<double> scratch2;
+  model.ResizeData(&scratch2);
+  model.CalcData(v, &scratch2);
+  ell = model.CalcCostAlongLine(v, dv, alpha, &scratch2, &dell, &d2ell);
+  fmt::print("Ref: ell: {}, dell: {}, d2ell: {}\n", ell, dell, d2ell);
+
+  getchar();
 
   // First we'll evaluate ∂ℓ/∂α at α = 0. This should be strictly negative,
   // since the Hessian is positive definite. This is cheap since we already have
@@ -272,8 +291,9 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
 
   // Next we'll evaluate ℓ, ∂ℓ/∂α, and ∂²ℓ/∂α² at α = α_max. If the cost is
   // still decreasing here, we just accept α_max.
-  double ell =
-      model.CalcCostAlongLine(v, dv, alpha_max, &data, &dell, &d2ell);
+  ell =
+      model.CalcCostAlongLine(v, dv, alpha_max, &scratch, &dell, &d2ell);
+  // const double ell = model.CalcCostAlongLine(alpha_max, data, search_data, &scratch, &dell, &d2ell);
   if (dell <= std::numeric_limits<double>::epsilon()) {
     return std::make_pair(alpha_max, 0);
   }
@@ -306,21 +326,15 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
     alpha_guess = SolveQuadraticInUnitInterval(3 * a, 2 * b, c);
     alpha_guess *= alpha_max;
   }
-
-  // Set up prerequisites for an efficient CalcCostAlongLine
-  SapData<double>& scratch = scratch_data_;
-  model.ResizeData(&scratch);
-  SearchDirectionData<double>& search_data = search_direction_data_;
-  model.UpdateSearchDirection(data, dv, &search_data);
    
   // DEBUG: check against old version
-  model.CalcData(v, &data);
-  model.CalcData(v, &scratch);
-  ell = model.CalcCostAlongLine(alpha_guess, data, search_data, &scratch, &dell, &d2ell);
-  fmt::print("ell: {}, dell: {}, d2ell: {}\n", ell, dell, d2ell);
-  ell = model.CalcCostAlongLine(v, dv, alpha_guess, &data, &dell, &d2ell);
-  fmt::print("ell: {}, dell: {}, d2ell: {}\n", ell, dell, d2ell);
-  fmt::print("\n\n");
+  // model.CalcData(v, &data);
+  // ell = model.CalcCostAlongLine(alpha_guess, data, search_data, &scratch, &dell, &d2ell);
+  // fmt::print("New: ell: {}, dell: {}, d2ell: {}\n", ell, dell, d2ell);
+  // model.CalcData(v, &data);
+  // ell = model.CalcCostAlongLine(v, dv, alpha_guess, &data, &dell, &d2ell);
+  // fmt::print("Ref: ell: {}, dell: {}, d2ell: {}\n", ell, dell, d2ell);
+  // fmt::print("\n\n");
 
   // We've exhausted all of the early exit conditions, so now we move on to the
   // Newton method with bisection fallback. To do so, we define an anonymous
