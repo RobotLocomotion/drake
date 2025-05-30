@@ -48,7 +48,14 @@ Drake uses OSQP's default values for all options except following:
   output deterministic (upstream default is `0`, which uses non-deterministic
   timing measurements to establish the interval). N.B. Generally the interval
   should be an integer multiple of `check_termination`, so if you choose to
-  override either option you should probably override both at once. */
+  override either option you should probably override both at once.
+
+At the end of OsqpSolver::Solve() function, we always return the value of the
+primal and dual variables inside the OSQP solver, regardless of the solver
+status (whether it is optimal, infeasible, unbounded, etc), except when the
+problem has an invalid input. Users should always check the solver status before
+interpreting the returned primal and dual variables.
+  */
 class OsqpSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OsqpSolver);
