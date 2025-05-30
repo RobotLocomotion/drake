@@ -144,7 +144,7 @@ int do_main() {
     systems::lcm::LcmPublisherSystem* image_array_lcm_publisher{nullptr};
     if ((FLAGS_color || FLAGS_depth || FLAGS_label)) {
       image_array_lcm_publisher =
-          builder.template AddSystem(systems::lcm::LcmPublisherSystem::Make<
+          builder.AddSystem(systems::lcm::LcmPublisherSystem::Make<
               lcmt_image_array>(
               "DRAKE_RGBD_CAMERA_IMAGES", &lcm,
               1. / FLAGS_render_fps /* publish period */));

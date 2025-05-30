@@ -78,7 +78,8 @@ class ThreadTest : public testing::TestWithParam<Params> {};
 // This test case directly calls into RenderEngineGl to create images, without
 // relying on the SceneGraph and/or GeometryState infrastructure.
 TEST_P(ThreadTest, CallRenderEngineDirectly) {
-  const auto& [async_mode, num_workers, num_repeats] = GetParam();
+  const auto& [async_mode, num_workers, num_repeats_unpacked] = GetParam();
+  const int num_repeats = num_repeats_unpacked;  // Required for lambda capture.
   DRAKE_DEMAND(num_workers > 0);
   DRAKE_DEMAND(num_repeats > 0);
 
@@ -108,7 +109,7 @@ TEST_P(ThreadTest, CallRenderEngineDirectly) {
   // The worker functor for the i'th camera.
   MatrixX<ImageRgba8U> images(num_workers, num_repeats);
   std::atomic<int> num_errors{0};
-  auto work = [&images, &num_errors, num_repeats = num_repeats, &instance,
+  auto work = [&images, &num_errors, num_repeats, &instance,
                &perception_properties, &X_WC, &camera_params](int i) {
     try {
       // TODO(jwnimmer-tri) For the test to pass, we need to create a separate

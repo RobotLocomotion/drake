@@ -226,7 +226,7 @@ int DoMain() {
 
   LcmPublisherSystem* image_array_lcm_publisher{nullptr};
   image_array_lcm_publisher =
-      builder.template AddSystem(LcmPublisherSystem::Make<lcmt_image_array>(
+      builder.AddSystem(LcmPublisherSystem::Make<lcmt_image_array>(
           "DRAKE_RGBD_CAMERA_IMAGES", &lcm, image_publish_period));
   image_array_lcm_publisher->set_name("publisher");
 
