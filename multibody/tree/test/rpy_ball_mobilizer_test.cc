@@ -4,6 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -125,6 +126,15 @@ TEST_F(RpyBallMobilizerTest, KinematicMapping) {
   EXPECT_TRUE(CompareMatrices(Nplus_x_N, Matrix3d::Identity(), kTolerance,
                               MatrixCompareType::relative));
 
+  // Also compare N(q) to numerical values produced by MotionGenesis.
+  constexpr double epsilon64 = 64 * std::numeric_limits<double>::epsilon();
+  MatrixX<double> Ncheck(3, 3);
+  Ncheck.row(0) << 1.6180339887498949, 1.1755705045849463, 0;
+  Ncheck.row(1) << -0.58778525229247314, 0.80901699437494745, 0;
+  Ncheck.row(2) << -1.4012585384440732, -1.0180739209102541, 1;
+  EXPECT_TRUE(
+      CompareMatrices(N, Ncheck, epsilon64, MatrixCompareType::relative));
+
   // Set a generic angular velocity.
   const Vector3<double> v(0.5, -0.7, 2.3);
   mobilizer_->SetAngularVelocity(context_.get(), v);
@@ -147,6 +157,30 @@ TEST_F(RpyBallMobilizerTest, KinematicMapping) {
                               MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(NDot_Nplus, -N_NplusDot, kTolerance,
                               MatrixCompareType::relative));
+
+  // Also compare Ṅ(q,q̇) to numerical values produced by MotionGenesis.
+  MatrixX<double> NDotcheck(3, 3);
+  NDotcheck.row(0) << -0.30720756492922385, 5.4924345293948527, 0;
+  NDotcheck.row(1) << -1.8704654739876834, -1.358972714017757, 0;
+  NDotcheck.row(2) << -0.42987052164155548, -5.2622033631883367, 0;
+  EXPECT_TRUE(
+      CompareMatrices(NDot, NDotcheck, epsilon64, MatrixCompareType::relative));
+
+  // Ensure cos(pitch) ≈ 0, throws an exception.
+  const double pitch = M_PI / 2 + epsilon64;
+  const Vector3d rpy_singular_value(M_PI / 3, pitch, -M_PI / 5);
+  mobilizer_->SetAngles(context_.get(), rpy_singular_value);
+  DRAKE_EXPECT_THROWS_MESSAGE(mobilizer_->CalcNMatrix(*context_, &N),
+                              "CalcNMatrix\\(\\): The RpyBallMobilizer .*"
+                              "has reached a singularity.*");
+  DRAKE_EXPECT_NO_THROW(mobilizer_->CalcNplusMatrix(*context_, &Nplus));
+  DRAKE_EXPECT_THROWS_MESSAGE(mobilizer_->CalcNDotMatrix(*context_, &NDot),
+                              "CalcNDotMatrix\\(\\): The RpyBallMobilizer .*"
+                              "has reached a singularity.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      mobilizer_->CalcNplusDotMatrix(*context_, &NplusDot),
+      "CalcNplusDotMatrix\\(\\): The RpyBallMobilizer .*"
+      "has reached a singularity.*");
 }
 
 TEST_F(RpyBallMobilizerTest, MapUsesN) {
