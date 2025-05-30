@@ -458,20 +458,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_A"),
             py::arg("frame_E"),
-            cls_doc.CalcJacobianCenterOfMassTranslationalVelocity.doc_5args);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
+            cls_doc.CalcJacobianCenterOfMassTranslationalVelocity.doc_5args)
         .def(
             "CalcJacobianCenterOfMassTranslationalVelocity",
             [](const Class* self, const Context<T>& context,
                 JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
                 const Frame<T>& frame_E) {
-              Matrix3X<T> Js_v_ACcm_E(
+              Matrix3X<T> Js_v_AScm_E(
                   3, GetVariableSize<T>(*self, with_respect_to));
               self->CalcJacobianCenterOfMassTranslationalVelocity(
-                  context, with_respect_to, frame_A, frame_E, &Js_v_ACcm_E);
-              return Js_v_ACcm_E;
+                  context, with_respect_to, frame_A, frame_E, &Js_v_AScm_E);
+              return Js_v_AScm_E;
             },
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_A"),
             py::arg("frame_E"),
@@ -486,8 +483,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
                   3, GetVariableSize<T>(*self, with_respect_to));
               self->CalcJacobianCenterOfMassTranslationalVelocity(context,
                   model_instances, with_respect_to, frame_A, frame_E,
-                  &Js_v_ACcm_E);
-              return Js_v_ACcm_E;
+                  &Js_v_AScm_E);
+              return Js_v_AScm_E;
             },
             py::arg("context"), py::arg("model_instances"),
             py::arg("with_respect_to"), py::arg("frame_A"), py::arg("frame_E"),
