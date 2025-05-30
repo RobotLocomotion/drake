@@ -138,8 +138,8 @@ void RpyBallMobilizer<T>::ThrowSinceCosPitchIsNearZero(
       "{}(): The RpyBallMobilizer (implementing a BallRpyJoint) between "
       "body {} and body {} has reached a singularity. This occurs when the "
       "pitch angle takes values near π/2 + kπ, ∀ k ∈ ℤ. At the current "
-      "configuration, we have pitch = {}. Drake does not yet support a "
-      "comparable joint using quaternions, but the feature request is "
+      "configuration, we have pitch = {} radians. Drake does not yet support "
+      "a comparable joint using quaternions, but the feature request is "
       "tracked in https://github.com/RobotLocomotion/drake/issues/12404.",
       function_name, this->inboard_body().name(), this->outboard_body().name(),
       pitch));
@@ -292,6 +292,13 @@ void RpyBallMobilizer<T>::DoCalcNplusDotMatrix(
   const T sp = sin(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
+
+  // Throw an exception with the proper function name if a singularity would be
+  // encountered in DoMapVelocityToQDot().
+  if (abs(cp) < 1.0e-3) {
+    const char* function_name_less_Do = __func__ + 2;
+    ThrowSinceCosPitchIsNearZero(angles[1], function_name_less_Do);
+  }
 
   // Calculate time-derivative of roll, pitch, and yaw angles.
   const Vector3<T> v = get_angular_velocity(context);
