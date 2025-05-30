@@ -307,7 +307,6 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   // Certain roll pitch yaw calculations (e.g., calculating the N(q) matrix)
   // have a singularity (divide-by-zero error) when cos(pitch) ≈ 0.
-  void ThrowSinceCosPitchIsNearZero(const T& pitch) const;
   void ThrowSinceCosPitchIsNearZero(const T& pitch,
                                     const char* function_name) const;
 
