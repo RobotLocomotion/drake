@@ -10,8 +10,8 @@ def openusd_internal_repository(
         After upgrading, you must re-generate the lockfile:
         bazel run //tools/workspace/openusd_internal:upgrade -- --relock
         """,
-        commit = "v25.02a",
-        sha256 = "475cd0990366a713f19d1f0701c37be17ecd9d3de7a3503a11bbdf80d3c003ce",  # noqa
+        commit = "v25.05",
+        sha256 = "231faca9ab71fa63d6c1e0da18bda0c365f82d9bef1cfd4b3d3d6784c8d5fb96",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/upstream/00_work_thread_limits_namespace.patch",
