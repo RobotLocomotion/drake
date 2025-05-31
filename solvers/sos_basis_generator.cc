@@ -237,7 +237,14 @@ void RemoveWithRandomSeparatingHyperplanes(const ExponentList& exponents_of_p,
       }
     }
 
-    basis->conservativeResize(next_basis_size, basis->cols());
+    if (next_basis_size > 0) {
+      basis->conservativeResize(next_basis_size, Eigen::NoChange);
+    } else {
+      // Once Drake's minimum supported Eigen version is circa 2023 or newer, we
+      // can go back to calling conservativeResize even with a zero size, rather
+      // than this special 'else' case.
+      basis->resize(0, Eigen::NoChange);
+    }
 
     // Quit if the basis is now empty or if its size wasn't reduced
     // enough.
