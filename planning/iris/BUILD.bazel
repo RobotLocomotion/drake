@@ -15,6 +15,7 @@ drake_cc_package_library(
     deps = [
         ":iris_common",
         ":iris_from_clique_cover",
+        ":iris_np2",
         ":iris_zo",
     ],
 )
@@ -46,6 +47,7 @@ drake_cc_library(
     deps = [
         "//common:name_value",
         "//geometry:meshcat",
+        "//geometry/optimization:convex_set",
         "//multibody/rational:rational_forward_kinematics",
         "//solvers:mathematical_program",
     ],
@@ -69,6 +71,19 @@ drake_cc_library(
         "//solvers:osqp_solver",
         "//solvers:solve",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "iris_np2",
+    srcs = ["iris_np2.cc"],
+    hdrs = ["iris_np2.h"],
+    deps = [
+        ":iris_common",
+        "//geometry/optimization:convex_set",
+        "//geometry/optimization:iris_internal",
+        "//planning:scene_graph_collision_checker",
+        "//solvers",
     ],
 )
 
@@ -126,6 +141,25 @@ drake_cc_googletest(
         "//multibody/rational:rational_forward_kinematics",
         "//planning:robot_diagram_builder",
         "//planning:scene_graph_collision_checker",
+        "//solvers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iris_np2_test",
+    timeout = "moderate",
+    data = ["//multibody/parsing:test_models"],
+    num_threads = 2,
+    shard_count = 4,
+    tags = [
+        "no_asan",
+        "no_lsan",
+    ],
+    deps = [
+        ":iris_np2",
+        ":iris_test_utilities",
+        "//common/symbolic:expression",
+        "//common/test_utilities:expect_throws_message",
         "//solvers",
     ],
 )
