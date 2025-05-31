@@ -53,6 +53,7 @@ drake_py_unittest(
 # Runs `install_test_helper` unit tests.
 drake_py_unittest(
     name = "install_test_helper_test",
+    env = {"COMPILATION_MODE": "$(COMPILATION_MODE)"},
     deps = [":install_test_helper"],
 )
 
