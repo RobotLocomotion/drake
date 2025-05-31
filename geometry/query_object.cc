@@ -211,6 +211,17 @@ QueryObject<T>::ComputeSignedDistanceToPoint(const Vector3<T>& p_WQ,
 }
 
 template <typename T>
+std::vector<SignedDistanceToPoint<T>>
+QueryObject<T>::ComputeSignedDistanceGeometryToPoint(
+    const Vector3<T>& p_WQ, const GeometrySet& geometries) const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.ComputeSignedDistanceGeometryToPoint(p_WQ, geometries);
+}
+
+template <typename T>
 void QueryObject<T>::RenderColorImage(const ColorRenderCamera& camera,
                                       FrameId parent_frame,
                                       const RigidTransformd& X_PC,
