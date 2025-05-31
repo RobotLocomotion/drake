@@ -74,6 +74,10 @@ class BodyNodeImpl final : public BodyNode<T> {
       const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
       PositionKinematicsCache<T>* pc) const final;
 
+  void CalcPositionKinematicsCacheInM_BaseToTip(
+      const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
+      PositionKinematicsCacheInM<T>* pcm) const final;
+
   void CalcAcrossNodeJacobianWrtVExpressedInWorld(
       const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
       const PositionKinematicsCache<T>& pc,
@@ -84,34 +88,64 @@ class BodyNodeImpl final : public BodyNode<T> {
       const std::vector<Vector6<T>>& H_PB_W_cache, const T* velocities,
       VelocityKinematicsCache<T>* vc) const final;
 
-  void CalcMassMatrixContribution_TipToBase(
+  void CalcVelocityKinematicsCacheInM_BaseToTip(
+      const T* positions, const PositionKinematicsCacheInM<T>& pcm,
+      const T* velocities, VelocityKinematicsCacheInM<T>* vcm) const final;
+
+  void CalcMassMatrixContributionInWorld_TipToBase(
       const PositionKinematicsCache<T>& pc,
-      const std::vector<SpatialInertia<T>>& Mc_B_W_cache,
+      const std::vector<SpatialInertia<T>>& I_BBo_W_cache,
       const std::vector<Vector6<T>>& H_PB_W_cache,
+      EigenPtr<MatrixX<T>> M) const final;
+
+  void CalcMassMatrixContributionInM_TipToBase(
+      const T* positions, const PositionKinematicsCacheInM<T>& pcm,
+      const std::vector<SpatialInertia<T>>& I_BMo_M_cache,
       EigenPtr<MatrixX<T>> M) const final;
 
   // Declare functions for the six sizes of mass matrix off-diagonal
   // blocks.
-#define DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(Rnv)                     \
-  void CalcMassMatrixOffDiagonalBlock##Rnv(                             \
-      int R_start_in_v, const std::vector<Vector6<T>>& H_PB_W_cache,    \
-      const Eigen::Matrix<T, 6, Rnv>& Fm_CCo_W, EigenPtr<MatrixX<T>> M) \
+#define DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_IN_WORLD(Bnv)            \
+  void CalcMassMatrixOffDiagonalBlockInWorld##Bnv(                      \
+      int B_start_in_v, const std::vector<Vector6<T>>& H_PB_W_cache,    \
+      const Eigen::Matrix<T, 6, Bnv>& Fm_CCo_W, EigenPtr<MatrixX<T>> M) \
       const final
 
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(1);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(2);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(3);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(4);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(5);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(6);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_IN_WORLD(1);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_IN_WORLD(2);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_IN_WORLD(3);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_IN_WORLD(4);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_IN_WORLD(5);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_IN_WORLD(6);
 
-#undef DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK
+#undef DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_IN_WORLD
+
+#define DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_IN_M(Bnv)            \
+  void CalcMassMatrixOffDiagonalBlockInM##Bnv(                      \
+      const T* positions, const PositionKinematicsCacheInM<T>& pcm, \
+      int B_start_in_v, const Eigen::Matrix<T, 6, Bnv>& Fm_CMp_Mp,  \
+      EigenPtr<MatrixX<T>> M) const final
+
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_IN_M(1);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_IN_M(2);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_IN_M(3);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_IN_M(4);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_IN_M(5);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_IN_M(6);
+
+#undef DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_IN_M
 
   void CalcSpatialAcceleration_BaseToTip(
       const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
       const PositionKinematicsCache<T>& pc, const T* velocities,
       const VelocityKinematicsCache<T>* vc, const T* accelerations,
       std::vector<SpatialAcceleration<T>>* A_WB_array) const final;
+
+  void CalcSpatialAccelerationInM_BaseToTip(
+      const T* positions, const PositionKinematicsCacheInM<T>& pcm,
+      const T* velocities, const VelocityKinematicsCacheInM<T>& vcm,
+      const T* accelerations,
+      std::vector<SpatialAcceleration<T>>* A_WM_M_array) const final;
 
   void CalcInverseDynamics_TipToBase(
       const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
@@ -122,6 +156,16 @@ class BodyNodeImpl final : public BodyNode<T> {
       const std::vector<SpatialForce<T>>& Fapplied_Bo_W,
       const Eigen::Ref<const VectorX<T>>& tau_applied,
       std::vector<SpatialForce<T>>* F_BMo_W_array,
+      EigenPtr<VectorX<T>> tau_array) const final;
+
+  void CalcInverseDynamicsInM_TipToBase(
+      const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
+      const PositionKinematicsCacheInM<T>& pcm,
+      const VelocityKinematicsCacheInM<T>& vcm,
+      const std::vector<SpatialAcceleration<T>>& A_WM_M_array,
+      const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
+      const Eigen::Ref<const VectorX<T>>& tau_applied_array,
+      std::vector<SpatialForce<T>>* F_BMo_M_array,
       EigenPtr<VectorX<T>> tau_array) const final;
 
   void CalcArticulatedBodyInertiaCache_TipToBase(

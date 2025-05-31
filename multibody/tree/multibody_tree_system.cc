@@ -230,6 +230,7 @@ void MultibodyTreeSystem<T>::Finalize() {
       this->DeclareCacheEntry(
               std::string("frame pose in body frame"),
               FrameBodyPoseCache<T>(internal_tree().num_mobods(),
+                                    internal_tree().num_frames(),
                                     num_frame_body_poses_needed),
               &MultibodyTreeSystem<T>::CalcFrameBodyPoses,
               {this->all_parameters_ticket()})
@@ -251,6 +252,14 @@ void MultibodyTreeSystem<T>::Finalize() {
               {position_ticket, this->all_parameters_ticket()})
           .cache_index();
 
+  cache_indexes_.position_kinematics_in_m =
+      this->DeclareCacheEntry(
+              std::string("position kinematics in M"),
+              PositionKinematicsCacheInM<T>(internal_tree().num_mobods()),
+              &MultibodyTreeSystem<T>::CalcPositionKinematicsCacheInM,
+              {position_ticket, this->all_parameters_ticket()})
+          .cache_index();
+
   // Allocate cache entry to store spatial inertia M_B_W(q) for each body.
   cache_indexes_.spatial_inertia_in_world =
       this->DeclareCacheEntry(
@@ -261,13 +270,23 @@ void MultibodyTreeSystem<T>::Finalize() {
               {position_kinematics_cache_entry().ticket()})
           .cache_index();
 
-  // Allocate cache entry for composite-body inertias Mc_B_W(q) for each body.
+  // Allocate cache entry for composite-body inertias I_BBo_W(q) for each body.
   cache_indexes_.composite_body_inertia_in_world =
       this->DeclareCacheEntry(
-              std::string("composite body inertia in world (Mc_B_W)"),
+              std::string("composite body inertia in world (I_BBo_W)"),
               std::vector<SpatialInertia<T>>(internal_tree().num_bodies(),
                                              SpatialInertia<T>::NaN()),
               &MultibodyTreeSystem<T>::CalcCompositeBodyInertiasInWorld,
+              {position_kinematics_cache_entry().ticket()})
+          .cache_index();
+
+  // Allocate cache entry for composite-body inertias I_BMo_M(q) for each body.
+  cache_indexes_.composite_body_inertia_in_m =
+      this->DeclareCacheEntry(
+              std::string("composite body inertia in M (I_BMo_M)"),
+              std::vector<SpatialInertia<T>>(internal_tree().num_bodies(),
+                                             SpatialInertia<T>::NaN()),
+              &MultibodyTreeSystem<T>::CalcCompositeBodyInertiasInM,
               {position_kinematics_cache_entry().ticket()})
           .cache_index();
 
@@ -279,6 +298,14 @@ void MultibodyTreeSystem<T>::Finalize() {
               std::string("velocity kinematics"),
               VelocityKinematicsCache<T>(internal_tree().get_topology()),
               &MultibodyTreeSystem<T>::CalcVelocityKinematicsCache,
+              {position_ticket, velocity_ticket, this->all_parameters_ticket()})
+          .cache_index();
+
+  cache_indexes_.velocity_kinematics_in_m =
+      this->DeclareCacheEntry(
+              std::string("velocity kinematics in M"),
+              VelocityKinematicsCacheInM<T>(internal_tree().num_mobods()),
+              &MultibodyTreeSystem<T>::CalcVelocityKinematicsCacheInM,
               {position_ticket, velocity_ticket, this->all_parameters_ticket()})
           .cache_index();
 
