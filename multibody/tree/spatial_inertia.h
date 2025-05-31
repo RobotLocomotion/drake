@@ -12,7 +12,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/math/cross_product.h"
@@ -593,15 +592,6 @@ class SpatialInertia {
   /// (Internal use only). Returns an optional string if this SpatialInertia is
   /// invalid, otherwise returns an empty optional.
   std::optional<std::string> CreateInvalidityReport() const;
-
-  DRAKE_DEPRECATED("2025-06-01",
-                   "Will be removed.  There is no replacement. "
-                   " File an issue if that is a problem.")
-  std::string CriticizeNotPhysicallyValid() const {
-    std::optional<std::string> invalidity_report = CreateInvalidityReport();
-    if (invalidity_report.has_value()) return *invalidity_report;
-    return {};
-  }
 
   /// @anchor spatial_inertia_equivalent_shapes
   /// @name Spatial inertia equivalent shapes
