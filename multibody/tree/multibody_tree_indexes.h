@@ -50,6 +50,12 @@ using MultibodyConstraintId = Identifier<class ConstraintTag>;
 /// Type used to identify model instances by index within a multibody plant.
 using ModelInstanceIndex = TypeSafeIndex<class ModelInstanceTag>;
 
+/// Type used to identify a deformable body by id within a multibody plant.
+using DeformableBodyId = Identifier<class DeformableBodyTag>;
+
+/// Type used to identify a deformable body by index within a multibody plant.
+using DeformableBodyIndex = TypeSafeIndex<class DeformableBodyTag>;
+
 // Note:
 //   static global variables are strongly discouraged by the C++ style guide:
 // https://google.github.io/styleguide/cppguide.html#Static_and_Global_Variables

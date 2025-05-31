@@ -64,6 +64,11 @@ void PhysicalModel<T>::DeclareSceneGraphPorts() {
 }
 
 template <typename T>
+const internal::MultibodyTree<T>& PhysicalModel<T>::internal_tree() const {
+  return internal::MultibodyPlantModelAttorney<T>::internal_tree(plant());
+}
+
+template <typename T>
 void PhysicalModel<T>::ThrowIfSystemResourcesDeclared(
     const char* function_name) const {
   if (mutable_owning_plant_ == nullptr) {
