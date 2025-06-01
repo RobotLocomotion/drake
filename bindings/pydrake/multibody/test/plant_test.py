@@ -3680,3 +3680,21 @@ class TestPlant(unittest.TestCase):
             context=plant_context)
         numpy_compare.assert_float_equal(
             reference_positions_reshaped, positions_after)
+
+        # CalcCenterOfMassPositionInWorld
+        p_WScm = body.CalcCenterOfMassPositionInWorld(
+            context=plant_context)
+        self.assertIsInstance(p_WScm, np.ndarray)
+        self.assertEqual(p_WScm.size, 3)
+
+        # CalcCenterOfMassTranslationalVelocityInWorld
+        v_WScm = body.CalcCenterOfMassTranslationalVelocityInWorld(
+            context=plant_context)
+        self.assertIsInstance(v_WScm, np.ndarray)
+        self.assertEqual(v_WScm.size, 3)
+
+        # CalcEffectiveAngularVelocity
+        w_WScm = body.CalcEffectiveAngularVelocity(
+            context=plant_context)
+        self.assertIsInstance(w_WScm, np.ndarray)
+        self.assertEqual(w_WScm.size, 3)
