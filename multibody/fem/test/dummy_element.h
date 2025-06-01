@@ -68,7 +68,10 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
                ConstitutiveModel constitutive_model,
                DampingModel<T> damping_model)
       : Base(node_indices, std::move(constitutive_model),
-             std::move(damping_model)) {}
+             std::move(damping_model)) {
+    /* Set an arbitrary mass for testing. */
+    this->set_mass(1.23);
+  }
 
   /* Provides a fixed return value for CalcInverseDynamics(). */
   static Vector<T, kNumDofs> inverse_dynamics_force() {
@@ -96,6 +99,37 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
   /* Provides a fixed return value for CalcMassMatrix(). */
   static Eigen::Matrix<T, kNumDofs, kNumDofs> mass_matrix() {
     return 7.89 * MakeSpdMatrix();
+  }
+
+  /* Arbitrary values for testing. Returns the moment for this element.
+   @returns The moment of this element. */
+  Vector3<T> CalcMassTimesPositionForQuadraturePoints(
+      const Data& /*data*/) const {
+    return Vector3<T>(1.0, 2.0, 3.0);
+  }
+
+  /* Arbitrary values for testing. Returns the translational momentum for this
+   element.
+   @returns The translational momentum for this element. */
+  Vector3<T> CalcTranslationalMomentumForQuadraturePoints(
+      const Data& /*data*/) const {
+    return Vector3<T>(4.0, 5.0, 6.0);
+  }
+
+  /* Arbitrary values for testing. Returns the angular momentum about the world
+   origin for this element.
+   @returns The angular momentum about the world origin, expressed in the world
+            frame. */
+  Vector3<T> CalcAngularMomentumAboutWorldOrigin(const Data& /*data*/) const {
+    return Vector3<T>(7.0, 8.0, 9.0);
+  }
+
+  /* Arbitrary values for testing. Returns the rotational inertia tensor about
+   the world origin for this element.
+   @returns The rotational inertia tensor about the world origin, expressed in
+            the world frame. */
+  Matrix3<T> CalcInertiaAboutWorldOrigin(const Data& /*data*/) const {
+    return Matrix3<T>::Identity();
   }
 
  private:
