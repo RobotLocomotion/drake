@@ -172,6 +172,17 @@ void DeformableBody<T>::Enable(systems::Context<T>* context) const {
 }
 
 template <typename T>
+Vector3<T> DeformableBody<T>::GetComPosition(
+    const systems::Context<T>& context) const {
+  DRAKE_DEMAND(fem_model_ != nullptr);
+  const fem::FemState<T>& fem_state =
+      this->GetParentTreeSystem()
+          .get_cache_entry(fem_state_cache_index_)
+          .template Eval<fem::FemState<T>>(context);
+  return fem_model_->CalcCenterOfMassPosition(fem_state);
+}
+
+template <typename T>
 DeformableBody<T>::DeformableBody(
     DeformableBodyIndex index, DeformableBodyId id, std::string name,
     GeometryId geometry_id, ModelInstanceIndex model_instance,
@@ -315,8 +326,24 @@ DeformableBody<T>::BuildLinearVolumetricModelHelper(
   fem_model_ = std::move(concrete_fem_model);
 }
 
-}  // namespace multibody
-}  // namespace drake
+template <typename T>
+void DeformableBody<T>::CalcFemStateFromDiscreteValues(
+    const systems::Context<T>& context, fem::FemState<T>* fem_state) const {
+  DRAKE_DEMAND(fem_state != nullptr);
+  const systems::BasicVector<T>& discrete_vector =
+      context.get_discrete_state().get_vector(discrete_state_index_);
+  const VectorX<T>& discrete_value = discrete_vector.value();
+  DRAKE_DEMAND(discrete_value.size() % 3 == 0);
+  const int num_dofs = discrete_value.size() / 3;
+  DRAKE_DEMAND(num_dofs == fem_model_->num_dofs());
+
+  fem_state->SetPositions(discrete_value.head(num_dofs));
+  fem_state->SetVelocities(discrete_value.segment(num_dofs, num_dofs));
+  fem_state->SetAccelerations(discrete_value.tail(num_dofs));
+}
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::DeformableBody);
+
+}  // namespace multibody
+}  // namespace drake

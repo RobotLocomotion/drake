@@ -98,6 +98,15 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
     return 7.89 * MakeSpdMatrix();
   }
 
+  /* No-op for DummyElement as it doesn't represent a physical mass
+   distribution in the same way VolumetricElement does. */
+  void AccumulateMassAndMomentForQuadraturePoints(const Data& /*data*/,
+                                                  Vector3<T>* total_body_moment,
+                                                  T* total_body_mass) const {
+    DRAKE_ASSERT(total_body_moment != nullptr);
+    DRAKE_ASSERT(total_body_mass != nullptr);
+  }
+
  private:
   /* Friend the base class so that the interface in the CRTP base class can
    access the private implementations of this class. */

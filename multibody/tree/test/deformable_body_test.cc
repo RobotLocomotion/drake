@@ -114,6 +114,41 @@ TEST_F(DeformableBodyTest, Accessors) {
       true);
 }
 
+TEST_F(DeformableBodyTest, FemStateCache) {
+  /* fem_state_cache_index() */
+  const systems::CacheIndex fem_state_cache_index =
+      body_->fem_state_cache_index();
+  EXPECT_TRUE(fem_state_cache_index.is_valid());
+  /* Verify we can evaluate the cache entry. */
+  EXPECT_NO_THROW(plant_->get_cache_entry(fem_state_cache_index)
+                      .template Eval<fem::FemState<double>>(*plant_context_));
+}
+
+TEST_F(DeformableBodyTest, GetComPosition) {
+  constexpr double kEpsilon = 1e-14;
+  /* For the undeformed sphere centered at the origin, the CoM should be very
+   close to the origin. */
+  const Vector3d com = body_->GetComPosition(*plant_context_);
+  EXPECT_TRUE(CompareMatrices(com, Vector3d::Zero(), kEpsilon));
+
+  /* Move the sphere and check CoM. */
+  Matrix3X<double> q = body_->GetPositions(*plant_context_);
+  const Vector3d translation(1.0, 2.0, 3.0);
+  for (int i = 0; i < q.cols(); ++i) {
+    q.col(i) += translation;
+  }
+  body_->SetPositions(plant_context_, q);
+  /* Re-evaluating the CoM requires the FemState cache to be recomputed.
+   DeformableBody::SetPositions() is expected to invalidate the FemState cache
+   entry. Therefore, simply evaluating the cache entry again should trigger a
+   recomputation using the new positions. */
+  plant_->get_cache_entry(body_->fem_state_cache_index())
+      .template Eval<fem::FemState<double>>(*plant_context_);
+
+  const Vector3d com_translated = body_->GetComPosition(*plant_context_);
+  EXPECT_TRUE(CompareMatrices(com_translated, translation, kEpsilon));
+}
+
 TEST_F(DeformableBodyTest, NumDofsAndReferencePositions) {
   const int num_dofs = body_->num_dofs();
   EXPECT_GT(num_dofs, 0);

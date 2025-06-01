@@ -398,6 +398,8 @@ void DeformableModel<T>::DoDeclareSystemResources() {
           this->mutable_plant()));
       body.DeclareParameters(static_cast<internal::MultibodyTreeSystem<T>*>(
           this->mutable_plant()));
+      body.DeclareCacheEntries(static_cast<internal::MultibodyTreeSystem<T>*>(
+          this->mutable_plant()));
       const Vector3<T>& gravity =
           this->plant().gravity_field().gravity_vector();
       body.SetExternalForces(force_densities_, gravity);

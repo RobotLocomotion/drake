@@ -217,6 +217,29 @@ class VolumetricElement
     return elastic_energy;
   }
 
+  /* Accumulates the total mass and first moment of mass for the quadrature
+   points in this element.
+   @param[in] data The FEM data containing quadrature point positions and
+   deformation gradients.
+   @param[in,out] total_body_moment The accumulated first moment of mass for the
+   entire body.
+   @param[in,out] total_body_mass The accumulated total mass for the entire
+   body.
+   @pre total_body_moment != nullptr.
+   @pre total_body_mass != nullptr. */
+  void AccumulateMassAndMomentForQuadraturePoints(const Data& data,
+                                                  Vector3<T>* total_body_moment,
+                                                  T* total_body_mass) const {
+    DRAKE_ASSERT(total_body_moment != nullptr);
+    DRAKE_ASSERT(total_body_mass != nullptr);
+    for (int q = 0; q < num_quadrature_points; ++q) {
+      const T quadrature_point_mass = density_ * reference_volume_[q];
+      *total_body_mass += quadrature_point_mass;
+      *total_body_moment +=
+          quadrature_point_mass * data.quadrature_positions[q];
+    }
+  }
+
  private:
   /* Friend the base class so that FemElement::DoFoo() can reach its
    implementation. */

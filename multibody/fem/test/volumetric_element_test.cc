@@ -456,6 +456,35 @@ TEST_F(VolumetricElementTest, PerCurrentVolumeExternalForce) {
   EXPECT_TRUE(CompareMatrices(total_force, expected_force, kEpsilon));
 }
 
+TEST_F(VolumetricElementTest, AccumulateMassAndMoment) {
+  unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
+  const auto& data = EvalElementData(*fem_state);
+
+  Vector3<AD> total_moment = Vector3<AD>::Zero();
+  AD total_mass = 0.0;
+
+  element().AccumulateMassAndMomentForQuadraturePoints(data, &total_moment,
+                                                       &total_mass);
+
+  /* For a single linear tet, there's only one quadrature point at the centroid.
+   The reference_volume_[0] is the volume of the tetrahedron. */
+  const AD expected_mass = density(element()) * reference_volume()[0];
+  EXPECT_NEAR(total_mass.value(), expected_mass.value(), kEpsilon);
+
+  /* The single quadrature point is at the element centroid in the reference
+   configuration. */
+  Vector3<AD> expected_centroid = Vector3<AD>::Zero();
+  const Eigen::Matrix<AD, kSpatialDimension, kNumNodes> X_matrix =
+      reference_positions();
+  for (int i = 0; i < kNumNodes; ++i) {
+    expected_centroid += X_matrix.col(i);
+  }
+  expected_centroid /= kNumNodes;
+
+  const Vector3<AD> expected_moment = expected_mass * expected_centroid;
+  EXPECT_TRUE(CompareMatrices(total_moment, expected_moment, kEpsilon));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace fem

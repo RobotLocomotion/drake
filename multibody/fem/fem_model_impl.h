@@ -78,6 +78,20 @@ class FemModelImpl : public FemModel<typename Element::T> {
   }
 
  private:
+  Vector3<T> DoCalcCenterOfMassPosition(
+      const FemState<T>& fem_state) const final {
+    Vector3<T> total_body_moment = Vector3<T>::Zero();
+    T total_body_mass = 0.0;
+    const std::vector<Data>& element_data =
+        fem_state.template EvalElementData<Data>(element_data_index_);
+    for (int e = 0; e < num_elements(); ++e) {
+      elements_[e].AccumulateMassAndMomentForQuadraturePoints(
+          element_data[e], &total_body_moment, &total_body_mass);
+    }
+    DRAKE_DEMAND(total_body_mass > 0.0);
+    return total_body_moment / total_body_mass;
+  }
+
   void DoCalcResidual(const FemState<T>& fem_state,
                       const FemPlantData<T>& plant_data,
                       EigenPtr<VectorX<T>> residual) const final {

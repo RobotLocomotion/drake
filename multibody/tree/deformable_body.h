@@ -90,6 +90,11 @@ class DeformableBody final : public MultibodyElement<T> {
     return is_enabled_parameter_index_;
   }
 
+  /** Returns the cache index for the FemState of this deformable body. */
+  systems::CacheIndex fem_state_cache_index() const {
+    return fem_state_cache_index_;
+  }
+
   /** (Internal use only) Configures the parallelism that `this`
    %DeformableBody uses when opportunities for parallel computation arises. */
   void set_parallelism(Parallelism parallelism) {
@@ -210,6 +215,15 @@ class DeformableBody final : public MultibodyElement<T> {
    @throw std::exception if context is null. */
   void Enable(systems::Context<T>* context) const;
 
+  /** Returns the position of the center of mass of this deformable body in the
+   world frame.
+   @param[in] context The context associated with the MultibodyPlant that owns
+                      this body.
+   @retval com_position A 3D vector representing the center of mass position.
+   @throws std::exception if `context` does not belong to the MultibodyPlant
+   that owns this body. */
+  Vector3<T> GetComPosition(const systems::Context<T>& context) const;
+
  private:
   template <typename U>
   friend class DeformableModel;
@@ -298,11 +312,33 @@ class DeformableBody final : public MultibodyElement<T> {
         this->DeclareDiscreteState(tree_system, model_state);
   }
 
+  void DoDeclareCacheEntries(
+      internal::MultibodyTreeSystem<T>* tree_system) final {
+    /* Declare cache entry for FemState. */
+    DRAKE_DEMAND(fem_model_ != nullptr);
+    std::unique_ptr<fem::FemState<T>> model_state = fem_model_->MakeFemState();
+    const auto& fem_state_cache_entry = this->DeclareCacheEntry(
+        tree_system, fmt::format("fem_state_for_body_{}", id_.get_value()),
+        systems::ValueProducer(
+            *model_state,
+            std::function<void(const systems::Context<T>&, fem::FemState<T>*)>(
+                [this](const systems::Context<T>& context,
+                       fem::FemState<T>* state) {
+                  this->CalcFemStateFromDiscreteValues(context, state);
+                })),
+        {tree_system->xd_ticket()});
+    fem_state_cache_index_ = fem_state_cache_entry.cache_index();
+  }
+
   void DoDeclareParameters(
       internal::MultibodyTreeSystem<T>* tree_system) final {
     is_enabled_parameter_index_ =
         this->DeclareAbstractParameter(tree_system, Value<bool>(true));
   }
+
+  /* Private helper to populate FemState from discrete state values. */
+  void CalcFemStateFromDiscreteValues(const systems::Context<T>& context,
+                                      fem::FemState<T>* fem_state) const;
 
   /* NOTE: If a new data member is added to this list, it would need to be
    cloned accordingly in CloneToDouble(). */
@@ -321,6 +357,7 @@ class DeformableBody final : public MultibodyElement<T> {
   VectorX<double> reference_positions_;
   copyable_unique_ptr<fem::FemModel<T>> fem_model_;
   systems::DiscreteStateIndex discrete_state_index_{};
+  systems::CacheIndex fem_state_cache_index_{};
   systems::AbstractParameterIndex is_enabled_parameter_index_{};
   std::vector<internal::DeformableRigidFixedConstraintSpec>
       fixed_constraint_specs_;

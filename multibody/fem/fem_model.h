@@ -171,6 +171,12 @@ class FemModel {
       contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
       const;
 
+  /** Calculates the position of the center of mass of this FEM model.
+   @param[in] fem_state The FemState used to evaluate the center of mass.
+   @retval com_position The 3D vector representing the center of mass position.
+   @throws std::exception if the FEM state is incompatible with this model. */
+  Vector3<T> CalcCenterOfMassPosition(const FemState<T>& fem_state) const;
+
   /** Creates a symmetric block sparse matrix that has the sparsity pattern
    of the tangent matrix of this FEM model. In particular, the size of the
    tangent matrix is `num_dofs()` by `num_dofs()`. All entries are initialized
@@ -263,6 +269,12 @@ class FemModel {
       const FemState<T>& fem_state,
       contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
       const = 0;
+
+  /** FemModelImpl must override this method to provide an implementation for
+   the NVI CalcCenterOfMassPosition(). The input `fem_state` is guaranteed to be
+   compatible with `this` FEM model. */
+  virtual Vector3<T> DoCalcCenterOfMassPosition(
+      const FemState<T>& fem_state) const = 0;
 
   /** FemModelImpl must override this method to provide an implementation for
    the NVI MakeTangentMatrix(). */

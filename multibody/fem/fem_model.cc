@@ -68,6 +68,13 @@ void FemModel<T>::CalcTangentMatrix(
 }
 
 template <typename T>
+Vector3<T> FemModel<T>::CalcCenterOfMassPosition(
+    const FemState<T>& fem_state) const {
+  ThrowIfModelStateIncompatible(__func__, fem_state);
+  return DoCalcCenterOfMassPosition(fem_state);
+}
+
+template <typename T>
 std::unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
 FemModel<T>::MakeTangentMatrix() const {
   if constexpr (std::is_same_v<T, double>) {
@@ -115,6 +122,5 @@ void FemModel<T>::UpdateFemStateSystem() {
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake
-
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::fem::FemModel);
