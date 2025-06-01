@@ -177,6 +177,35 @@ class FemModel {
    @throws std::exception if the FEM state is incompatible with this model. */
   Vector3<T> CalcCenterOfMassPosition(const FemState<T>& fem_state) const;
 
+  /** Calculates the linear velocity of the center of mass of this FEM model
+   measured and expressed in the world frame.
+   @param[in] fem_state The FemState used to evaluate the center of mass linear
+                        velocity.
+   @retval v_WBcm The linear velocity of the center of mass Bcm, measured and
+                  expressed in the world frame W.
+   @throws std::exception if the FEM state is incompatible with this model. */
+  Vector3<T> CalcCenterOfMassLinearVelocity(const FemState<T>& fem_state) const;
+
+  /** Calculates the angular velocity of the center of mass of this FEM model in
+   the world frame. The angular velocity is computed using
+
+      I_BBcm * w_BcmB = h_BcmB,
+
+   where I_BBcm is the rotational inertia of this body B about its center of
+   mass (Bcm), w_BcmB is the angular velocity of the center of mass, and h_BcmB
+   is the angular momentum of the body B about its center of mass.
+   @param[in] fem_state The FemState used to evaluate the center of mass angular
+                        velocity.
+   @retval w_BcmB The angular velocity of the center of mass of this body, Bcm,
+                  measured and expressed in the body frame B, which is the
+                  fixed offset frame that aligns with the world frame W and has
+                  the origin at the center of mass of the body B.
+   @throws std::exception if the FEM state is i   @retval w_WCcm The angular
+   velocity of the center of mass C, measured and expressed in the world frame
+   W.ncompatible with this model. */
+  Vector3<T> CalcCenterOfMassAngularVelocity(
+      const FemState<T>& fem_state) const;
+
   /** Creates a symmetric block sparse matrix that has the sparsity pattern
    of the tangent matrix of this FEM model. In particular, the size of the
    tangent matrix is `num_dofs()` by `num_dofs()`. All entries are initialized
@@ -274,6 +303,18 @@ class FemModel {
    the NVI CalcCenterOfMassPosition(). The input `fem_state` is guaranteed to be
    compatible with `this` FEM model. */
   virtual Vector3<T> DoCalcCenterOfMassPosition(
+      const FemState<T>& fem_state) const = 0;
+
+  /** FemModelImpl must override this method to provide an implementation for
+   the NVI CalcCenterOfMassLinearVelocity(). The input `fem_state` is
+   guaranteed to be compatible with `this` FEM model. */
+  virtual Vector3<T> DoCalcCenterOfMassLinearVelocity(
+      const FemState<T>& fem_state) const = 0;
+
+  /** FemModelImpl must override this method to provide an implementation for
+   the NVI CalcCenterOfMassAngularVelocity(). The input `fem_state` is
+   guaranteed to be compatible with `this` FEM model. */
+  virtual Vector3<T> DoCalcCenterOfMassAngularVelocity(
       const FemState<T>& fem_state) const = 0;
 
   /** FemModelImpl must override this method to provide an implementation for

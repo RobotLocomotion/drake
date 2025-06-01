@@ -80,16 +80,63 @@ class FemModelImpl : public FemModel<typename Element::T> {
  private:
   Vector3<T> DoCalcCenterOfMassPosition(
       const FemState<T>& fem_state) const final {
-    Vector3<T> total_body_moment = Vector3<T>::Zero();
-    T total_body_mass = 0.0;
+    Vector3<T> total_moment = Vector3<T>::Zero();
+    T total_mass = 0.0;
     const std::vector<Data>& element_data =
         fem_state.template EvalElementData<Data>(element_data_index_);
     for (int e = 0; e < num_elements(); ++e) {
       elements_[e].AccumulateMassAndMomentForQuadraturePoints(
-          element_data[e], &total_body_moment, &total_body_mass);
+          element_data[e], &total_mass, &total_moment);
     }
-    DRAKE_DEMAND(total_body_mass > 0.0);
-    return total_body_moment / total_body_mass;
+    DRAKE_DEMAND(total_mass > 0.0);
+    return total_moment / total_mass;
+  }
+
+  Vector3<T> DoCalcCenterOfMassLinearVelocity(
+      const FemState<T>& fem_state) const final {
+    T total_mass = 0.0;
+    Vector3<T> dummy_moment = Vector3<T>::Zero();
+    Vector3<T> linear_momentum = Vector3<T>::Zero();
+    const std::vector<Data>& element_data =
+        fem_state.template EvalElementData<Data>(element_data_index_);
+    for (int e = 0; e < num_elements(); ++e) {
+      elements_[e].AccumulateMassAndMomentForQuadraturePoints(
+          element_data[e], &total_mass, &dummy_moment);
+      elements_[e].AccumulateLinearMomentumForQuadraturePoints(
+          element_data[e], &linear_momentum);
+    }
+    DRAKE_DEMAND(total_mass > 0.0);
+    return linear_momentum / total_mass;
+  }
+
+  Vector3<T> DoCalcCenterOfMassAngularVelocity(
+      const FemState<T>& fem_state) const final {
+    T total_mass = 0.0;
+    Vector3<T> total_moment = Vector3<T>::Zero();
+    Vector3<T> total_linear_momentum = Vector3<T>::Zero();
+
+    const std::vector<Data>& element_data =
+        fem_state.template EvalElementData<Data>(element_data_index_);
+    // First pass: Calculate total mass, CoM position, and CoM linear velocity.
+    for (int e = 0; e < num_elements(); ++e) {
+      elements_[e].AccumulateMassAndMomentForQuadraturePoints(
+          element_data[e], &total_mass, &total_moment);
+      elements_[e].AccumulateLinearMomentumForQuadraturePoints(
+          element_data[e], &total_linear_momentum);
+    }
+    DRAKE_DEMAND(total_mass > 0.0);
+    const Vector3<T> p_WCcm = total_moment / total_mass;
+    const Vector3<T> v_WCcm = total_linear_momentum / total_mass;
+
+    // Second pass: Calculate angular momentum and inertia about CoM.
+    Vector3<T> H_WCcm_total = Vector3<T>::Zero();
+    Matrix3<T> I_W_Ccm_total = Matrix3<T>::Zero();
+    for (int e = 0; e < num_elements(); ++e) {
+      elements_[e]
+          .AccumulateAngularMomentumAndInertiaAboutCoMForQuadraturePoints(
+              element_data[e], p_WCcm, v_WCcm, &H_WCcm_total, &I_W_Ccm_total);
+    }
+    return I_W_Ccm_total.ldlt().solve(H_WCcm_total);
   }
 
   void DoCalcResidual(const FemState<T>& fem_state,

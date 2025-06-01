@@ -75,6 +75,20 @@ Vector3<T> FemModel<T>::CalcCenterOfMassPosition(
 }
 
 template <typename T>
+Vector3<T> FemModel<T>::CalcCenterOfMassLinearVelocity(
+    const FemState<T>& fem_state) const {
+  ThrowIfModelStateIncompatible(__func__, fem_state);
+  return DoCalcCenterOfMassLinearVelocity(fem_state);
+}
+
+template <typename T>
+Vector3<T> FemModel<T>::CalcCenterOfMassAngularVelocity(
+    const FemState<T>& fem_state) const {
+  ThrowIfModelStateIncompatible(__func__, fem_state);
+  return DoCalcCenterOfMassAngularVelocity(fem_state);
+}
+
+template <typename T>
 std::unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
 FemModel<T>::MakeTangentMatrix() const {
   if constexpr (std::is_same_v<T, double>) {

@@ -98,13 +98,27 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
     return 7.89 * MakeSpdMatrix();
   }
 
-  /* No-op for DummyElement as it doesn't represent a physical mass
-   distribution in the same way VolumetricElement does. */
-  void AccumulateMassAndMomentForQuadraturePoints(const Data& /*data*/,
-                                                  Vector3<T>* total_body_moment,
-                                                  T* total_body_mass) const {
-    DRAKE_ASSERT(total_body_moment != nullptr);
-    DRAKE_ASSERT(total_body_mass != nullptr);
+  /* Arbitrary values for testing. */
+  void AccumulateMassAndMomentForQuadraturePoints(
+      const Data& /*data*/, T* total_body_mass,
+      Vector3<T>* total_body_moment) const {
+    *total_body_mass = 1.0;
+    *total_body_moment = Vector3<T>(1.0, 2.0, 3.0);
+  }
+
+  /* Arbitrary values for testing. */
+  void AccumulateLinearMomentumForQuadraturePoints(
+      const Data& /*data*/, Vector3<T>* linear_momentum) const {
+    *linear_momentum = Vector3<T>(4.0, 5.0, 6.0);
+  }
+
+  /* Arbitrary values for testing. */
+  void AccumulateAngularMomentumAndInertiaAboutCoMForQuadraturePoints(
+      const Data& /*data*/, const Vector3<T>& /*p_WCcm*/,
+      const Vector3<T>& /*v_WCcm*/, Vector3<T>* H_WCcm_total,
+      Matrix3<T>* I_W_Ccm_total) const {
+    *H_WCcm_total = Vector3<T>(7.0, 8.0, 9.0);
+    *I_W_Ccm_total = Matrix3<T>::Identity();
   }
 
  private:

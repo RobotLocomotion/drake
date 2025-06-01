@@ -224,6 +224,25 @@ class DeformableBody final : public MultibodyElement<T> {
    that owns this body. */
   Vector3<T> GetComPosition(const systems::Context<T>& context) const;
 
+  /** Returns the linear velocity of the center of mass of this deformable body
+   measured and expressed in the world frame.
+   @param[in] context The context associated with the MultibodyPlant that owns
+                      this body.
+   @retval v_WBcm The linear velocity of the center of mass Bcm, measured and
+                  expressed in the world frame W.
+   @throws std::exception if `context` does not belong to the MultibodyPlant
+   that owns this body. */
+  Vector3<T> GetComLinearVelocity(const systems::Context<T>& context) const;
+
+  /** Returns the angular velocity of the deformable body about its center of
+   mass, expressed in the world frame.
+   @param[in] context The context associated with the MultibodyPlant that owns
+                      this body.
+   @throws std::exception if `context` does not belong to the MultibodyPlant
+   that owns this body. */
+  Vector3<T> GetAngularVelocityAboutCom(
+      const systems::Context<T>& context) const;
+
  private:
   template <typename U>
   friend class DeformableModel;

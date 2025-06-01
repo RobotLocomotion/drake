@@ -460,29 +460,71 @@ TEST_F(VolumetricElementTest, AccumulateMassAndMoment) {
   unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
   const auto& data = EvalElementData(*fem_state);
 
-  Vector3<AD> total_moment = Vector3<AD>::Zero();
   AD total_mass = 0.0;
+  Vector3<AD> total_moment = Vector3<AD>::Zero();
 
-  element().AccumulateMassAndMomentForQuadraturePoints(data, &total_moment,
-                                                       &total_mass);
+  element().AccumulateMassAndMomentForQuadraturePoints(data, &total_mass,
+                                                       &total_moment);
 
   /* For a single linear tet, there's only one quadrature point at the centroid.
    The reference_volume_[0] is the volume of the tetrahedron. */
   const AD expected_mass = density(element()) * reference_volume()[0];
   EXPECT_NEAR(total_mass.value(), expected_mass.value(), kEpsilon);
 
-  /* The single quadrature point is at the element centroid in the reference
-   configuration. */
-  Vector3<AD> expected_centroid = Vector3<AD>::Zero();
-  const Eigen::Matrix<AD, kSpatialDimension, kNumNodes> X_matrix =
-      reference_positions();
-  for (int i = 0; i < kNumNodes; ++i) {
-    expected_centroid += X_matrix.col(i);
-  }
-  expected_centroid /= kNumNodes;
-
-  const Vector3<AD> expected_moment = expected_mass * expected_centroid;
+  const Vector3<AD> expected_moment =
+      expected_mass * data.quadrature_positions[0];
   EXPECT_TRUE(CompareMatrices(total_moment, expected_moment, kEpsilon));
+}
+
+TEST_F(VolumetricElementTest, AccumulateLinearMomentum) {
+  unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
+  // Set some non-zero velocities for testing momentum.
+  VectorX<AD> v_all = fem_state->GetVelocities();
+  for (int i = 0; i < kNumNodes; ++i) {
+    v_all.segment<3>(i * 3) = Vector3<AD>(i + 1.0, i + 2.0, i + 3.0);
+  }
+  fem_state->SetVelocities(v_all);
+  const auto& data = EvalElementData(*fem_state);
+
+  Vector3<AD> total_linear_momentum = Vector3<AD>::Zero();
+  element().AccumulateLinearMomentumForQuadraturePoints(data,
+                                                        &total_linear_momentum);
+
+  const AD expected_mass_term = density(element()) * reference_volume()[0];
+  const Vector3<AD> expected_linear_momentum =
+      expected_mass_term * data.quadrature_velocities[0];
+  EXPECT_TRUE(CompareMatrices(total_linear_momentum, expected_linear_momentum,
+                              kEpsilon));
+}
+
+TEST_F(VolumetricElementTest, AccumulateAngularMomentumAndInertiaAboutCoM) {
+  /* Test with a pure translational motion for the element. */
+  unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
+  VectorX<AD> v = VectorX<AD>::Zero(kNumDofs);
+  const Vector3<AD> translational_velocity(1.0, 2.0, 3.0);
+  for (int i = 0; i < kNumNodes; ++i) {
+    v.segment<3>(i * 3) = translational_velocity;
+  }
+  fem_state->SetVelocities(v);
+  const auto& data = EvalElementData(*fem_state);
+
+  Vector3<AD> H_WCcm = Vector3<AD>::Zero();
+  Matrix3<AD> I_W_Ccm = Matrix3<AD>::Zero();
+  /* Set the CoM position and velocity to zero for easy calculation. */
+  Vector3<AD> p_WCcm = Vector3<AD>::Zero();
+  Vector3<AD> v_WCcm = Vector3<AD>::Zero();
+
+  element().AccumulateAngularMomentumAndInertiaAboutCoMForQuadraturePoints(
+      data, p_WCcm, v_WCcm, &H_WCcm, &I_W_Ccm);
+  const Vector3<AD> p_WQ = data.quadrature_positions[0];
+  const Vector3<AD> v_WQ = data.quadrature_velocities[0];
+  const AD mass = density(element()) * reference_volume()[0];
+  const Vector3<AD> expected_H_WCcm = mass * p_WQ.cross(v_WQ);
+  const Matrix3<AD> expected_I_W_Ccm =
+      mass * p_WQ.dot(p_WQ) * Matrix3<AD>::Identity() -
+      mass * p_WQ * p_WQ.transpose();
+  EXPECT_TRUE(CompareMatrices(H_WCcm, expected_H_WCcm, kEpsilon));
+  EXPECT_TRUE(CompareMatrices(I_W_Ccm, expected_I_W_Ccm, kEpsilon));
 }
 
 }  // namespace

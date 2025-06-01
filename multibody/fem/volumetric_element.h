@@ -28,6 +28,8 @@ struct VolumetricElementData {
   Vector<T, num_dofs> element_a;
   /* The current locations of the quadrature points in the world frame. */
   std::array<Vector<T, 3>, num_quadrature_points> quadrature_positions;
+  /* The current velocities of the quadrature points in the world frame. */
+  std::array<Vector<T, 3>, num_quadrature_points> quadrature_velocities;
 
   using DeformationGradientData = typename ConstitutiveModelType::Data;
   std::array<DeformationGradientData, num_quadrature_points>
@@ -219,24 +221,69 @@ class VolumetricElement
 
   /* Accumulates the total mass and first moment of mass for the quadrature
    points in this element.
-   @param[in] data The FEM data containing quadrature point positions and
-   deformation gradients.
-   @param[in,out] total_body_moment The accumulated first moment of mass for the
-   entire body.
-   @param[in,out] total_body_mass The accumulated total mass for the entire
-   body.
-   @pre total_body_moment != nullptr.
-   @pre total_body_mass != nullptr. */
-  void AccumulateMassAndMomentForQuadraturePoints(const Data& data,
-                                                  Vector3<T>* total_body_moment,
-                                                  T* total_body_mass) const {
-    DRAKE_ASSERT(total_body_moment != nullptr);
-    DRAKE_ASSERT(total_body_mass != nullptr);
+   @param[in] data The FEM data containing quadrature point positions.
+   @param[in,out] total_mass The accumulated total mass for the entire body.
+   @param[in,out] total_moment The accumulated first moment of mass for the
+                                entire body (p_WBcm * total_mass).
+   @pre total_mass != nullptr.
+   @pre total_moment != nullptr. */
+  void AccumulateMassAndMomentForQuadraturePoints(
+      const Data& data, T* total_mass, Vector3<T>* total_moment) const {
+    DRAKE_ASSERT(total_mass != nullptr);
+    DRAKE_ASSERT(total_moment != nullptr);
     for (int q = 0; q < num_quadrature_points; ++q) {
       const T quadrature_point_mass = density_ * reference_volume_[q];
-      *total_body_mass += quadrature_point_mass;
-      *total_body_moment +=
-          quadrature_point_mass * data.quadrature_positions[q];
+      *total_mass += quadrature_point_mass;
+      *total_moment += quadrature_point_mass * data.quadrature_positions[q];
+    }
+  }
+
+  /* Accumulates the linear momentum for the quadrature points in this element.
+   @param[in] data The FEM data containing quadrature point velocities.
+   @param[in,out] linear_momentum The accumulated linear momentum for the entire
+   body.
+   @pre linear_momentum != nullptr. */
+  void AccumulateLinearMomentumForQuadraturePoints(
+      const Data& data, Vector3<T>* linear_momentum) const {
+    DRAKE_ASSERT(linear_momentum != nullptr);
+    for (int q = 0; q < num_quadrature_points; ++q) {
+      const T quadrature_point_mass = density_ * reference_volume_[q];
+      *linear_momentum += quadrature_point_mass * data.quadrature_velocities[q];
+    }
+  }
+
+  /* Accumulates the angular momentum about the center of mass (CoM) and the
+   rotational inertia tensor about the CoM for the quadrature points in this
+   element.
+   @param[in] data The FEM data containing quadrature point positions and
+                   velocities.
+   @param[in] p_WCcm The position of the center of mass of the body in the
+                     world frame.
+   @param[in] v_WCcm The velocity of the center of mass of the body in the
+                     world frame.
+   @param[in,out] H_WCcm_total The accumulated angular momentum about the CoM,
+                               expressed in the world frame.
+   @param[in,out] I_W_Ccm_total The accumulated rotational inertia tensor
+                                about the CoM, expressed in the world frame.
+   @pre H_WCcm_total != nullptr.
+   @pre I_W_Ccm_total != nullptr. */
+  void AccumulateAngularMomentumAndInertiaAboutCoMForQuadraturePoints(
+      const Data& data, const Vector3<T>& p_WCcm, const Vector3<T>& v_WCcm,
+      Vector3<T>* H_WCcm_total, Matrix3<T>* I_W_Ccm_total) const {
+    DRAKE_ASSERT(H_WCcm_total != nullptr);
+    DRAKE_ASSERT(I_W_Ccm_total != nullptr);
+    for (int q = 0; q < num_quadrature_points; ++q) {
+      const T quadrature_point_mass = density_ * reference_volume_[q];
+      const Vector3<T>& p_Wqp = data.quadrature_positions[q];
+      const Vector3<T>& v_Wqp = data.quadrature_velocities[q];
+
+      const Vector3<T> r_Ccm_qp = p_Wqp - p_WCcm;
+      const Vector3<T> v_rel_Ccm_qp = v_Wqp - v_WCcm;
+
+      *H_WCcm_total += r_Ccm_qp.cross(v_rel_Ccm_qp * quadrature_point_mass);
+      *I_W_Ccm_total += quadrature_point_mass *
+                        (r_Ccm_qp.dot(r_Ccm_qp) * Matrix3<T>::Identity() -
+                         r_Ccm_qp * r_Ccm_qp.transpose());
     }
   }
 
@@ -423,9 +470,15 @@ class VolumetricElement
     const auto& element_q_reshaped =
         Eigen::Map<const Eigen::Matrix<T, 3, num_nodes>>(data.element_q.data(),
                                                          3, num_nodes);
+    const auto& element_v_reshaped =
+        Eigen::Map<const Eigen::Matrix<T, 3, num_nodes>>(data.element_v.data(),
+                                                         3, num_nodes);
     data.quadrature_positions =
         isoparametric_element_.template InterpolateNodalValues<3>(
             element_q_reshaped);
+    data.quadrature_velocities =
+        isoparametric_element_.template InterpolateNodalValues<3>(
+            element_v_reshaped);
 
     std::array<Matrix3<T>, num_quadrature_points> F =
         CalcDeformationGradient(data.element_q);

@@ -176,6 +176,53 @@ TEST_F(DeformableBodyTest, Parallelism) {
   EXPECT_EQ(body_->fem_model().parallelism().num_threads(), 4);
 }
 
+TEST_F(DeformableBodyTest, GetComLinearVelocity) {
+  constexpr double kEpsilon = 1e-14;
+  /* Set a uniform translational velocity. */
+  VectorX<double> discrete_state =
+      plant_context_->get_discrete_state(body_->discrete_state_index()).value();
+  const int num_dofs = body_->num_dofs();
+  /* Set v to (1,2,3) for all nodes. */
+  for (int i = 0; i < num_dofs / 3; ++i) {
+    discrete_state.segment<3>(num_dofs + i * 3) << 1.0, 2.0, 3.0;
+  }
+  plant_context_->SetDiscreteState(body_->discrete_state_index(),
+                                   discrete_state);
+  const Vector3d v_WCcm = body_->GetComLinearVelocity(*plant_context_);
+  EXPECT_TRUE(CompareMatrices(v_WCcm, Vector3d(1.0, 2.0, 3.0), kEpsilon));
+}
+
+TEST_F(DeformableBodyTest, GetAngularVelocityAboutCom) {
+  constexpr double kEpsilon = 1e-14;
+  /* Set a uniform rotational velocity about the world origin. */
+  /* Set q to be a sphere centered at (1, 0, 0). */
+  VectorX<double> discrete_state =
+      plant_context_->get_discrete_state(body_->discrete_state_index()).value();
+  const int num_dofs = body_->num_dofs();
+  VectorX<double> q = discrete_state.head(num_dofs);
+  /* Translate the sphere to be centered at (1, 0, 0) */
+  for (int i = 0; i < num_dofs / 3; ++i) {
+    q.segment<3>(i * 3) += Vector3d(1.0, 0.0, 0.0);
+  }
+  /* Reshape q to a 3xN matrix. */
+  Matrix3X<double> q_matrix(3, num_dofs / 3);
+  for (int i = 0; i < num_dofs / 3; ++i) {
+    q_matrix.col(i) = q.segment<3>(i * 3);
+  }
+  body_->SetPositions(plant_context_, q_matrix);
+  /* Set v to be a uniform angular velocity about axis through (1, 0, 0) and
+   parallel to the z-axis. */
+  for (int i = 0; i < num_dofs / 3; ++i) {
+    const Vector3d p_WQ = q.segment<3>(i * 3);
+    discrete_state.segment<3>(num_dofs + i * 3) << -p_WQ.y(), p_WQ.x() - 1.0,
+        0.0;
+  }
+  plant_context_->SetDiscreteState(body_->discrete_state_index(),
+                                   discrete_state);
+  const Vector3d w_WC = body_->GetAngularVelocityAboutCom(*plant_context_);
+  EXPECT_TRUE(CompareMatrices(w_WC, Vector3d(0.0, 0.0, 1.0), kEpsilon));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

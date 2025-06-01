@@ -183,6 +183,28 @@ Vector3<T> DeformableBody<T>::GetComPosition(
 }
 
 template <typename T>
+Vector3<T> DeformableBody<T>::GetComLinearVelocity(
+    const systems::Context<T>& context) const {
+  DRAKE_DEMAND(fem_model_ != nullptr);
+  const fem::FemState<T>& fem_state =
+      this->GetParentTreeSystem()
+          .get_cache_entry(fem_state_cache_index_)
+          .template Eval<fem::FemState<T>>(context);
+  return fem_model_->CalcCenterOfMassLinearVelocity(fem_state);
+}
+
+template <typename T>
+Vector3<T> DeformableBody<T>::GetAngularVelocityAboutCom(
+    const systems::Context<T>& context) const {
+  DRAKE_DEMAND(fem_model_ != nullptr);
+  const fem::FemState<T>& fem_state =
+      this->GetParentTreeSystem()
+          .get_cache_entry(fem_state_cache_index_)
+          .template Eval<fem::FemState<T>>(context);
+  return fem_model_->CalcCenterOfMassAngularVelocity(fem_state);
+}
+
+template <typename T>
 DeformableBody<T>::DeformableBody(
     DeformableBodyIndex index, DeformableBodyId id, std::string name,
     GeometryId geometry_id, ModelInstanceIndex model_instance,
