@@ -78,17 +78,11 @@ void DeformableDriver<T>::DeclareCacheEntries(
     const fem::FemModel<T>& fem_model = deformable_model_->GetFemModel(id);
     std::unique_ptr<fem::FemState<T>> model_state = fem_model.MakeFemState();
     /* Cache entry for current FEM state. */
-    const auto& fem_state_cache_entry = manager->DeclareCacheEntry(
-        fmt::format("FEM state for body with index {}", i),
-        systems::ValueProducer(
-            *model_state,
-            std::function<void(const Context<T>&, fem::FemState<T>*)>{
-                [this, i](const Context<T>& context, fem::FemState<T>* state) {
-                  this->CalcFemState(context, i, state);
-                }}),
-        {systems::System<T>::xd_ticket(),
-         systems::System<T>::all_parameters_ticket()});
-    cache_indexes_.fem_states.emplace_back(fem_state_cache_entry.cache_index());
+    const auto& fem_state_cache_entry_ticket =
+        manager_->plant()
+            .get_cache_entry(
+                deformable_model_->GetBody(i).fem_state_cache_index())
+            .ticket();
 
     /* Constraint participation information for each body. */
     ContactParticipation empty_contact_participation(fem_model.num_nodes());
@@ -138,8 +132,7 @@ void DeformableDriver<T>::DeclareCacheEntries(
                 }}),
         /* Free motion velocities can depend on user defined external forces
          which in turn depends on input ports. */
-        {fem_state_cache_entry.ticket(),
-         vertex_permutation_cache_entry.ticket(),
+        {fem_state_cache_entry_ticket, vertex_permutation_cache_entry.ticket(),
          systems::System<T>::all_input_ports_ticket(),
          systems::System<T>::all_parameters_ticket()});
     cache_indexes_.fem_solvers.emplace_back(
@@ -918,8 +911,9 @@ void DeformableDriver<T>::CalcFemState(const Context<T>& context,
 template <typename T>
 const FemState<T>& DeformableDriver<T>::EvalFemState(
     const Context<T>& context, DeformableBodyIndex index) const {
+  const DeformableBody<T>& body = deformable_model_->GetBody(index);
   return manager_->plant()
-      .get_cache_entry(cache_indexes_.fem_states.at(index))
+      .get_cache_entry(body.fem_state_cache_index())
       .template Eval<FemState<T>>(context);
 }
 

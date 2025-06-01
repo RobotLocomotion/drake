@@ -36,6 +36,13 @@ void MultibodyElement<T>::DeclareDiscreteState(
 }
 
 template <typename T>
+void MultibodyElement<T>::DeclareCacheEntries(
+    MultibodyTreeSystem<T>* tree_system) {
+  DRAKE_DEMAND(tree_system == &GetParentTreeSystem());
+  DoDeclareCacheEntries(tree_system);
+}
+
+template <typename T>
 MultibodyElement<T>::MultibodyElement() {}
 
 template <typename T>
@@ -59,6 +66,9 @@ template <typename T>
 void MultibodyElement<T>::DoDeclareDiscreteState(MultibodyTreeSystem<T>*) {}
 
 template <typename T>
+void MultibodyElement<T>::DoDeclareCacheEntries(MultibodyTreeSystem<T>*) {}
+
+template <typename T>
 systems::NumericParameterIndex MultibodyElement<T>::DeclareNumericParameter(
     MultibodyTreeSystem<T>* tree_system,
     const systems::BasicVector<T>& model_vector) {
@@ -78,6 +88,16 @@ systems::DiscreteStateIndex MultibodyElement<T>::DeclareDiscreteState(
     MultibodyTreeSystem<T>* tree_system, const VectorX<T>& model_value) {
   return internal::MultibodyTreeSystemElementAttorney<T>::DeclareDiscreteState(
       tree_system, model_value);
+}
+
+template <typename T>
+systems::CacheEntry& MultibodyElement<T>::DeclareCacheEntry(
+    MultibodyTreeSystem<T>* tree_system, std::string description,
+    systems::ValueProducer value_producer,
+    std::set<systems::DependencyTicket> prerequisites_of_calc) {
+  return internal::MultibodyTreeSystemElementAttorney<T>::DeclareCacheEntry(
+      tree_system, std::move(description), std::move(value_producer),
+      std::move(prerequisites_of_calc));
 }
 
 template <typename T>
