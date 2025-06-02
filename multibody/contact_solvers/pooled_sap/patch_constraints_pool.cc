@@ -226,7 +226,8 @@ T PooledSapModel<T>::PatchConstraintsPool::CalcLaggedHuntCrossleyModel(
   const Vector3<T> t_hat_W = vt_AcBc_W / (vt_soft + vs);
 
   // Data.
-  const T& mu = friction_[p];
+  // TODO: use dynamic mu as well
+  const T& mu = static_friction_[p];
   const T& d = dissipation_[p];
   const T& stiffness = stiffness_[pk];
   const T& n0 = n0_[pk];

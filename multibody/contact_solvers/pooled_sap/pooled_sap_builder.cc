@@ -306,7 +306,7 @@ void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
     const T fn0 = k * pp.depth;
 
     // For point contact we add single-pair patches.
-    patches.AddPatch(bodyA->index(), bodyB->index(), d, mu.dynamic_friction(), p_AB_W);
+    patches.AddPatch(bodyA->index(), bodyB->index(), d, mu.static_friction(), p_AB_W);
     patches.AddPair(p_BoC_W, nhat_AB_W, fn0, k);
   }
 }

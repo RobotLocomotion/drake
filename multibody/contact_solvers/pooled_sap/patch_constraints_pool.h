@@ -77,7 +77,8 @@ class PooledSapModel<T>::PatchConstraintsPool {
     bodies_.resize(num_patches);
     p_AB_W_.Resize(num_patches);
     dissipation_.resize(num_patches);
-    friction_.resize(num_patches);
+    static_friction_.resize(num_patches);
+    dynamic_friction_.resize(num_patches);
 
     // per-pair data.
     normal_W_.Resize(num_pairs_capacity);
@@ -103,7 +104,8 @@ class PooledSapModel<T>::PatchConstraintsPool {
     bodies_.reserve(num_patches);
     p_AB_W_.Reserve(num_patches);
     dissipation_.reserve(num_patches);
-    friction_.reserve(num_patches);
+    static_friction_.reserve(num_patches);
+    dynamic_friction_.reserve(num_patches);
 
     // Data per patch and per pair.
     normal_W_.Reserve(num_pairs_capacity);
@@ -125,7 +127,8 @@ class PooledSapModel<T>::PatchConstraintsPool {
 
     bodies_.emplace_back(bodyB, bodyA);  // Dynamic body B always first.
     dissipation_.push_back(dissipation);
-    friction_.push_back(friction);
+    static_friction_.push_back(friction);  // TODO: separate mu_s, mu_d
+    dynamic_friction_.push_back(friction);
     p_AB_W_.PushBack(p_AB_W);
 
     const int num_cliques =
@@ -187,7 +190,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
     const T n0 = max(0.0, time_step_ * fn0) * damping;
     n0_.push_back(n0);
 
-    const T& mu = friction_[p];
+    const T& mu = static_friction_[p];
     const T Rt = CalcRegularizationOfFriction(p, p_BoC_W);
     const T sap_stiction_tolerance = mu * Rt * n0;
     const T eps = max(stiction_tolerance_, sap_stiction_tolerance);
@@ -203,7 +206,8 @@ class PooledSapModel<T>::PatchConstraintsPool {
     bodies_.clear();
     p_AB_W_.Clear();
     dissipation_.clear();
-    friction_.clear();
+    static_friction_.clear();
+    dynamic_friction_.clear();
     pair_data_start_.clear();
 
     // Data per patch and per pair.
@@ -309,9 +313,10 @@ class PooledSapModel<T>::PatchConstraintsPool {
   // .second is always body A, which might corresponds to an anchored body with
   // invalid (negative) clique.
   std::vector<std::pair<int, int>> bodies_;
-  EigenPool<Vector3<T>> p_AB_W_;  // Position of body B relative to A.
-  std::vector<T> dissipation_;    // Hunt & Crossley dissipation.
-  std::vector<T> friction_;       // Friction coefficient.
+  EigenPool<Vector3<T>> p_AB_W_;    // Position of body B relative to A.
+  std::vector<T> dissipation_;      // Hunt & Crossley dissipation.
+  std::vector<T> static_friction_;  // Friction coefficients
+  std::vector<T> dynamic_friction_;
 
   /* Data per patch and per pair. Indexed by patch_pair_index(p, k). */
   std::vector<int> pair_data_start_;  // Start into arrays indexed by
