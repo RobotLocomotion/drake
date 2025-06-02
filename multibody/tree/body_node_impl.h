@@ -84,28 +84,28 @@ class BodyNodeImpl final : public BodyNode<T> {
       const std::vector<Vector6<T>>& H_PB_W_cache, const T* velocities,
       VelocityKinematicsCache<T>* vc) const final;
 
-  void CalcMassMatrixContribution_TipToBase(
+  void CalcMassMatrixContributionViaWorld_TipToBase(
       const PositionKinematicsCache<T>& pc,
-      const std::vector<SpatialInertia<T>>& Mc_B_W_cache,
+      const std::vector<SpatialInertia<T>>& K_BBo_W_cache,  // composites
       const std::vector<Vector6<T>>& H_PB_W_cache,
       EigenPtr<MatrixX<T>> M) const final;
 
   // Declare functions for the six sizes of mass matrix off-diagonal
   // blocks.
-#define DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(Rnv)                     \
-  void CalcMassMatrixOffDiagonalBlock##Rnv(                             \
-      int R_start_in_v, const std::vector<Vector6<T>>& H_PB_W_cache,    \
-      const Eigen::Matrix<T, 6, Rnv>& Fm_CCo_W, EigenPtr<MatrixX<T>> M) \
+#define DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(Bnv)           \
+  void CalcMassMatrixOffDiagonalBlockViaWorld##Bnv(                     \
+      int B_start_in_v, const std::vector<Vector6<T>>& H_PB_W_cache,    \
+      const Eigen::Matrix<T, 6, Bnv>& Fm_CCo_W, EigenPtr<MatrixX<T>> M) \
       const final
 
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(1);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(2);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(3);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(4);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(5);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(6);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(1);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(2);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(3);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(4);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(5);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(6);
 
-#undef DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK
+#undef DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD
 
   void CalcSpatialAcceleration_BaseToTip(
       const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,

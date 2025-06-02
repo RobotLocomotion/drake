@@ -107,7 +107,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// @see ShiftInPlace() for more information and how V_MC_E is calculated.
   SpatialVelocity<T> Shift(const Vector3<T>& offset) const {
     SpatialVelocity<T> result(*this);
-    result.ShiftInPlace(offset);
+    result.ShiftInPlace(offset);  // 12 flops
     return result;
   }
 
