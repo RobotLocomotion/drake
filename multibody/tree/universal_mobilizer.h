@@ -43,13 +43,13 @@ namespace internal {
 // aligned in the direction of their respective axes. The generalized
 // velocities for this mobilizer are the rate of change of the angles, v = q̇.
 //
-//    H_FM₆ₓ₂ = [Hw_FM₃ₓ₂]        Hw_FM = [ 1   0   ]        Hv_FM = 0₃ₓ₂
-//              [Hv_FM₃ₓ₂]                [ 0 c(q₀) ]
-//                                        [ 0 s(q₀) ]
+//    H_FM_F₆ₓ₂ = [Hw_FM₃ₓ₂]        Hw_FM_F = [ 1   0   ]       Hv_FM_F = 0₃ₓ₂
+//                [Hv_FM₃ₓ₂]                  [ 0 c(q₀) ]
+//                                            [ 0 s(q₀) ]
 //
-// Hdot_FM₆ₓ₂ = [Hwdot_FM₃ₓ₂]  Hwdot_FM = [ 0    0     ]  Hvdot_FM = 0₃ₓ₂
-//              [Hvdot_FM₃ₓ₂]             [ 0 -v₀s(q₀) ]
-//                                        [ 0  v₀c(q₀) ]
+// Hdot_FM_F₆ₓ₂ = [Hwdot_FM₃ₓ₂]  Hwdot_FM_F = [ 0    0     ]  Hvdot_FM_F = 0₃ₓ₂
+//                [Hvdot_FM₃ₓ₂]               [ 0 -v₀s(q₀) ]
+//                                            [ 0  v₀c(q₀) ]
 //
 // @tparam_default_scalar
 template <typename T>
@@ -128,13 +128,13 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   // frame F and the outboard frame M as a function of the angles (θ₀, θ₁)
   // stored in `context`.
   math::RigidTransform<T> calc_X_FM(const T* q) const {
-    const T s1 = sin(q[0]), c1 = cos(q[0]);
-    const T s2 = sin(q[1]), c2 = cos(q[1]);
+    const T s0 = sin(q[0]), c0 = cos(q[0]);
+    const T s1 = sin(q[1]), c1 = cos(q[1]);
     Matrix3<T> R_FM_matrix;
     // clang-format off
-    R_FM_matrix <<   c2,    0.0,  s2,
-                   s1 * s2, c1,  -s1 * c2,
-                  -c1 * s2, s1,   c1 * c2;
+    R_FM_matrix <<   c1,    0.0,  s1,
+                   s0 * s1, c0,  -s0 * c1,
+                  -c0 * s1, s0,   c0 * c1;
     // clang-format on
     return math::RigidTransform<T>(
         math::RotationMatrix<T>::MakeUnchecked(R_FM_matrix),
@@ -173,9 +173,9 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
                                   Vector3<T>::Zero());
   }
 
-  // Returns tau = H_FMᵀ⋅F. See above for the structure of H.
+  // Returns tau = H_FM_Fᵀ ⋅ F_F. See above for the structure of H.
   void calc_tau(const T* q, const SpatialForce<T>& F_BMo_F, T* tau) const {
-    DRAKE_ASSERT(tau != nullptr);
+    DRAKE_ASSERT(q != nullptr && tau != nullptr);
     Eigen::Map<VVector<T>> tau_as_vector(tau);
     const Vector3<T>& t_B_F = F_BMo_F.rotational();  // torque
     const Eigen::Matrix<T, 3, 2> Hw_FM = this->CalcHwMatrix(q);
