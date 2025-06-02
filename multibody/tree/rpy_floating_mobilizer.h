@@ -60,6 +60,9 @@ namespace internal {
 //
 //   H_FM₆ₓ₆ = I₆ₓ₆     Hdot_FM₆ₓ₆ = 0₆ₓ₆
 //
+//   H_FM_M = R_MF ⋅ H_FM_F = [ R_MF   0₃ₓ₃ ]
+//                            [ 0₃ₓ₃   R_MF ]
+//
 // @tparam_default_scalar
 template <typename T>
 class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
