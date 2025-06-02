@@ -4,9 +4,11 @@
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/multibody/plant/contact_properties.h"
 
+using drake::multibody::CalcContactFrictionFromSurfaceProperties;
 using drake::multibody::internal::GetCombinedDynamicCoulombFriction;
 using drake::multibody::internal::GetCombinedHuntCrossleyDissipation;
 using drake::multibody::internal::GetCombinedPointContactStiffness;
+using drake::multibody::internal::GetCoulombFriction;
 using drake::multibody::internal::GetInternalTree;
 using drake::multibody::internal::GetPointContactStiffness;
 using drake::multibody::internal::MultibodyTreeTopology;
@@ -282,7 +284,13 @@ void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
                                                  inspector);
     const T d = GetCombinedHuntCrossleyDissipation(
         Mid, Nid, kM, kN, kDefaultDissipation, inspector);
-    const T mu = GetCombinedDynamicCoulombFriction(Mid, Nid, inspector);
+
+    // Friction properties
+    const auto& mu_A = GetCoulombFriction(Mid, inspector);
+    const auto& mu_B = GetCoulombFriction(Nid, inspector);
+    CoulombFriction<double> mu = CalcContactFrictionFromSurfaceProperties(mu_A, mu_B);
+
+    fmt::print("mu_d: {}, mu_s: {}\n", mu.dynamic_friction(), mu.static_friction());
 
     // We compute the position of the point contact based on Hertz's theory
     // for contact between two elastic bodies.
@@ -298,7 +306,7 @@ void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
     const T fn0 = k * pp.depth;
 
     // For point contact we add single-pair patches.
-    patches.AddPatch(bodyA->index(), bodyB->index(), d, mu, p_AB_W);
+    patches.AddPatch(bodyA->index(), bodyB->index(), d, mu.dynamic_friction(), p_AB_W);
     patches.AddPair(p_BoC_W, nhat_AB_W, fn0, k);
   }
 }
