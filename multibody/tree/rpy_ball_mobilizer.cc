@@ -222,11 +222,12 @@ void RpyBallMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>& context,
   //
   //          ⌈ -sy/cp ẏ + cy sp/cp² ṗ    cy/cp ẏ + sy sp/cp² ṗ,   0 ⌉
   // Ṅ(q,q̇) = |                  -cy ẏ,                   -sy ẏ,   0 |
-  //          ⌊  cy/cp² ṗ̇ - sp sy/cp ẏ,   sy/cp² ṗ + sp cy/cp ẏ,   0 ⌋
+  //          ⌊  cy/cp² ṗ - sp sy/cp ẏ,   sy/cp² ṗ + sp cy/cp ẏ,   0 ⌋
   //
   // where cp = cos(p), sp = sin(p), cy = cos(y), sy = sin(y).
-  // Note: Ṅ[2, 0] simplifies using: cp cy/cp ṗ + sp² cy/cp² ṗ = cy/cp² ṗ.
-  // Note: Ṅ[2, 1] simplifies using: cp sy/cp ṗ̇ + sp² sy/cp² ṗ = sy/cp² ṗ.
+  // Note: Although the elements of Ṅ(q,q̇) are simply the time-derivatives of
+  // the corresponding elements of N(q), the result for Ṅ[2, 0] was shortened
+  // as cp cy/cp ṗ + sp² cy/cp² ṗ simplifies to cy/cp² ṗ. Similarly for Ṅ[2, 1].
   using std::cos;
   using std::sin;
   const Vector3<T> angles = get_angles(context);
@@ -283,8 +284,6 @@ void RpyBallMobilizer<T>::DoCalcNplusDotMatrix(
   //           ⌊              -cp ṗ,       0,   0 ⌋
   //
   // where cp = cos(p), sp = sin(p), cy = cos(y), sy = sin(y).
-  // Note: Ṅ[2, 0] simplifies using: cp cy/cp ṗ + sp² cy/cp² ṗ = cy/cp² ṗ.
-  // Note: Ṅ[2, 1] simplifies using: cp sy/cp ṗ̇ + sp² sy/cp² ṗ = sy/cp² ṗ.
   using std::cos;
   using std::sin;
   const Vector3<T> angles = get_angles(context);
