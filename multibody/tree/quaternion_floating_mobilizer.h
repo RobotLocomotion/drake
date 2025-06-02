@@ -31,7 +31,10 @@ namespace internal {
 // introduces the angular velocity w_FM of frame M in F and the linear
 // velocity v_FM of frame M's origin in frame F, ordered (w_FM, v_FM).
 //
-//   H_FM₆ₓ₆ = I₆ₓ₆     Hdot_FM₆ₓ₆ = 0₆ₓ₆
+//   H_FM_F₆ₓ₆ = I₆ₓ₆     Hdot_FM_F₆ₓ₆ = 0₆ₓ₆
+//
+//   H_FM_M = R_MF ⋅ H_FM_F = [ R_MF   0  ]
+//                            [   0  R_MF ]
 //
 // @tparam_default_scalar
 template <typename T>
@@ -232,15 +235,16 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
     return SpatialVelocity<T>(V_FM);  // w_FM, v_FM
   }
 
-  // We chose the generalized velocities for this mobilizer so that H=I, Hdot=0.
-  // Therefore A_FM = H⋅vdot + Hdot⋅v = vdot.
+  // We chose the generalized velocities for this mobilizer so that
+  // H_F = Identity, Hdot_F = 0. Therefore A_FM_F = H_F⋅vdot + Hdot_F⋅v = vdot.
+  // 0 flops
   SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
     DRAKE_ASSERT(vdot != nullptr);
     const Eigen::Map<const VVector<T>> A_FM(vdot);
     return SpatialAcceleration<T>(A_FM);
   }
 
-  // Returns tau = H_FMᵀ⋅F. H is identity for this mobilizer.
+  // Returns tau = H_FM_Fᵀ⋅F_F. H is identity for this mobilizer.
   void calc_tau(const T*, const SpatialForce<T>& F_BMo_F, T* tau) const {
     DRAKE_ASSERT(tau != nullptr);
     Eigen::Map<VVector<T>> tau_as_vector(tau);
