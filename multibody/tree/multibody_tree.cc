@@ -1325,16 +1325,14 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
   // information for each body, we are now in position to perform a base-to-tip
   // recursion to update world positions and parent to child body transforms.
   // This skips the world, level = 0.
-  for (int level = 1; level < forest_height(); ++level) {
-    for (MobodIndex mobod_index : body_node_levels_[level]) {
-      const BodyNode<T>& node = *body_nodes_[mobod_index];
+  // Performs a base-to-tip recursion computing body poses.
+  // Skip the World which is mobod_index(0).
+  for (MobodIndex mobod_index(1); mobod_index < num_mobods(); ++mobod_index) {
+    const BodyNode<T>& node = *body_nodes_[mobod_index];
+    DRAKE_ASSERT(node.mobod_index() == mobod_index);
 
-      DRAKE_ASSERT(node.get_topology().level == level);
-      DRAKE_ASSERT(node.mobod_index() == mobod_index);
-
-      // Update per-node kinematics.
-      node.CalcPositionKinematicsCache_BaseToTip(frame_body_pose_cache, q, pc);
-    }
+    // Update per-node kinematics.
+    node.CalcPositionKinematicsCache_BaseToTip(frame_body_pose_cache, q, pc);
   }
 }
 
@@ -1359,8 +1357,7 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
 
   // Performs a base-to-tip recursion computing body velocities.
   // Skip the World which is mobod_index(0).
-  for (MobodIndex mobod_index(1); mobod_index < ssize(body_nodes_);
-       ++mobod_index) {
+  for (MobodIndex mobod_index(1); mobod_index < num_mobods(); ++mobod_index) {
     const BodyNode<T>& node = *body_nodes_[mobod_index];
     DRAKE_ASSERT(node.mobod_index() == mobod_index);
 
@@ -1397,7 +1394,8 @@ void MultibodyTree<T>::CalcSpatialInertiasInWorld(
         frame_body_pose_cache.get_M_BBo_B(body.mobod_index());
     // Re-express body B's spatial inertia in the world frame W.
     SpatialInertia<T>& M_BBo_W = (*M_B_W_all)[body.mobod_index()];
-    M_BBo_W = M_BBo_B.ReExpress(R_WB);
+    M_BBo_W = M_BBo_B;               // Wrong frame.
+    M_BBo_W.ReExpressInPlace(R_WB);  // Fixed.
   }
 }
 
@@ -1476,21 +1474,20 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
 template <typename T>
 void MultibodyTree<T>::CalcCompositeBodyInertiasInWorld(
     const systems::Context<T>& context,
-    std::vector<SpatialInertia<T>>* Mc_B_W_all) const {
+    std::vector<SpatialInertia<T>>* Mc_BBo_W_all) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  const std::vector<SpatialInertia<T>>& M_B_W_all =
+  const std::vector<SpatialInertia<T>>& M_BBo_W_all =
       EvalSpatialInertiaInWorldCache(context);
 
   // Perform tip-to-base recursion for each composite body, skipping the world.
-  for (int level = forest_height() - 1; level > 0; --level) {
-    for (MobodIndex mobod_index : body_node_levels_[level]) {
-      // Node corresponding to the base of composite body C. We'll add in
-      // everything outboard of this node.
-      const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
+  for (MobodIndex mobod_index(num_mobods() - 1); mobod_index > 0;
+       --mobod_index) {
+    // Node corresponding to the base of composite body C. We'll add in
+    // everything outboard of this node.
+    const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
 
-      composite_node.CalcCompositeBodyInertia_TipToBase(pc, M_B_W_all,
-                                                        &*Mc_B_W_all);
-    }
+    composite_node.CalcCompositeBodyInertiaInWorld_TipToBase(pc, M_BBo_W_all,
+                                                             &*Mc_BBo_W_all);
   }
 }
 
@@ -1964,20 +1961,20 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
 
   // The algorithm below does not recurse zero entries and therefore these must
   // be set a priori.
-  // In addition, we initialize diagonal entries to include the effect of rotor
-  // reflected inertia. See JointActuator::reflected_inertia().
-  (*M) = reflected_inertia.asDiagonal();
+  M->setZero();
 
   // Perform tip-to-base recursion for each composite body, skipping the world.
-  for (int level = forest_height() - 1; level > 0; --level) {
-    for (MobodIndex mobod_index : body_node_levels_[level]) {
-      // Node corresponding to the composite body C.
-      const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
+  for (MobodIndex mobod_index(num_mobods() - 1); mobod_index > 0;
+       --mobod_index) {
+    // Node corresponding to the composite body C.
+    const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
 
-      composite_node.CalcMassMatrixContribution_TipToBase(pc, Mc_B_W_cache,
-                                                          H_PB_W_cache, M);
-    }
+    composite_node.CalcMassMatrixContributionInWorld_TipToBase(pc, Mc_B_W_cache,
+                                                               H_PB_W_cache, M);
   }
+
+  // Account for reflected inertia.
+  M->diagonal() += reflected_inertia;
 }
 
 template <typename T>
