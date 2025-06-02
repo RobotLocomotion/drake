@@ -119,7 +119,8 @@ class PooledSapModel<T>::PatchConstraintsPool {
   /* Adds a contact patch between bodies A and B.
    @pre B is always dynamic (not anchored).
    @returns the index into the new patch. */
-  int AddPatch(int bodyA, int bodyB, const T& dissipation, const T& friction,
+  int AddPatch(int bodyA, int bodyB, const T& dissipation,
+               const T& static_friction, const T& dynamic_friction,
                const Vector3<T>& p_AB_W) {
     DRAKE_DEMAND(bodyA != bodyB);               // Same body never makes sense.
     DRAKE_DEMAND(!model().is_anchored(bodyB));  // B is never anchored.
@@ -127,9 +128,11 @@ class PooledSapModel<T>::PatchConstraintsPool {
 
     bodies_.emplace_back(bodyB, bodyA);  // Dynamic body B always first.
     dissipation_.push_back(dissipation);
-    static_friction_.push_back(friction);  // TODO: separate mu_s, mu_d
-    dynamic_friction_.push_back(friction);
+    static_friction_.push_back(static_friction);
+    dynamic_friction_.push_back(dynamic_friction);
     p_AB_W_.PushBack(p_AB_W);
+
+    fmt::print("mu_d: {}, mu_s: {}\n",dynamic_friction, static_friction);
 
     const int num_cliques =
         (model().is_anchored(bodyA) || model().is_anchored(bodyB)) ? 1 : 2;

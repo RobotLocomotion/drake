@@ -288,9 +288,8 @@ void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
     // Friction properties
     const auto& mu_A = GetCoulombFriction(Mid, inspector);
     const auto& mu_B = GetCoulombFriction(Nid, inspector);
-    CoulombFriction<double> mu = CalcContactFrictionFromSurfaceProperties(mu_A, mu_B);
-
-    fmt::print("mu_d: {}, mu_s: {}\n", mu.dynamic_friction(), mu.static_friction());
+    CoulombFriction<double> mu =
+        CalcContactFrictionFromSurfaceProperties(mu_A, mu_B);
 
     // We compute the position of the point contact based on Hertz's theory
     // for contact between two elastic bodies.
@@ -306,7 +305,8 @@ void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
     const T fn0 = k * pp.depth;
 
     // For point contact we add single-pair patches.
-    patches.AddPatch(bodyA->index(), bodyB->index(), d, mu.static_friction(), p_AB_W);
+    patches.AddPatch(bodyA->index(), bodyB->index(), d, mu.static_friction(),
+                     mu.dynamic_friction(), p_AB_W);
     patches.AddPair(p_BoC_W, nhat_AB_W, fn0, k);
   }
 }
@@ -366,8 +366,12 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
         s.id_N(), std::numeric_limits<double>::infinity(), inspector);
     const T d = multibody::internal::GetCombinedHuntCrossleyDissipation(
         s.id_M(), s.id_N(), Em, En, kDefaultDissipation, inspector);
-    const T mu = multibody::internal::GetCombinedDynamicCoulombFriction(
-        s.id_M(), s.id_N(), inspector);
+    
+    // Get friction properties
+    const auto& mu_A = GetCoulombFriction(s.id_M(), inspector);
+    const auto& mu_B = GetCoulombFriction(s.id_N(), inspector);
+    CoulombFriction<double> mu =
+        CalcContactFrictionFromSurfaceProperties(mu_A, mu_B);
 
     const auto& X_WA = bodyA->EvalPoseInWorld(context);
     const auto& X_WB = bodyB->EvalPoseInWorld(context);
@@ -375,7 +379,8 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
     const Vector3<T>& p_WBo = X_WB.translation();
     const Vector3<T> p_AB_W = p_WBo - p_WAo;
 
-    patches.AddPatch(bodyA->index(), bodyB->index(), d, mu, p_AB_W);
+    patches.AddPatch(bodyA->index(), bodyB->index(), d, mu.static_friction(),
+                     mu.dynamic_friction(), p_AB_W);
 
     for (int face = 0; face < s.num_faces(); ++face) {
       const T Ae = s.area(face);  // Face element area.
