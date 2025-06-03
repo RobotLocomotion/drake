@@ -132,6 +132,20 @@ void RpyBallMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
+void RpyBallMobilizer<T>::ThrowSinceCosPitchIsNearZero(
+    const T& pitch, const char* function_name) const {
+  throw std::runtime_error(fmt::format(
+      "{}(): The RpyBallMobilizer (implementing a BallRpyJoint) between "
+      "body {} and body {} has reached a singularity. This occurs when the "
+      "pitch angle takes values near π/2 + kπ, ∀ k ∈ ℤ. At the current "
+      "configuration, we have pitch = {} radians. Drake does not yet support "
+      "a comparable joint using quaternions, but the feature request is "
+      "tracked in https://github.com/RobotLocomotion/drake/issues/12404.",
+      function_name, this->inboard_body().name(), this->outboard_body().name(),
+      pitch));
+}
+
+template <typename T>
 void RpyBallMobilizer<T>::DoCalcNMatrix(const systems::Context<T>& context,
                                         EigenPtr<MatrixX<T>> N) const {
   // The matrix N(q) relates q̇ to v as q̇ = N(q) * v, where q̇ = [ṙ, ṗ, ẏ]ᵀ and
@@ -150,18 +164,10 @@ void RpyBallMobilizer<T>::DoCalcNMatrix(const systems::Context<T>& context,
   using std::sin;
   const Vector3<T> angles = get_angles(context);
   const T cp = cos(angles[1]);
-  // Ensure the calculation is not near a state in which N(q) is singular.
   if (abs(cp) < 1.0e-3) {
-    throw std::runtime_error(fmt::format(
-        "The RpyBallMobilizer (implementing a BallRpyJoint) between "
-        "body {} and body {} has reached a singularity. This occurs when the "
-        "pitch angle takes values near π/2 + kπ, ∀ k ∈ ℤ. At the current "
-        "configuration, we have pitch = {}. Drake does not yet support a "
-        "comparable joint using quaternions, but the feature request is "
-        "tracked in https://github.com/RobotLocomotion/drake/issues/12404.",
-        this->inboard_body().name(), this->outboard_body().name(), angles[1]));
+    const char* function_name_less_Do = __func__ + 2;
+    ThrowSinceCosPitchIsNearZero(angles[1], function_name_less_Do);
   }
-
   const T sp = sin(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
@@ -201,6 +207,125 @@ void RpyBallMobilizer<T>::DoCalcNplusMatrix(const systems::Context<T>& context,
 }
 
 template <typename T>
+void RpyBallMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>& context,
+                                           EigenPtr<MatrixX<T>> Ndot) const {
+  // Computes the 3x3 matrix Ṅ(q,q̇) that helps relate q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇,
+  // where q = [r, p, y]ᵀ contains the roll (r), pitch (p) and yaw (y) angles
+  // and v = [wx, wy, wz]ᵀ represents W_FM_F (the angular velocity of the
+  // mobilizer's M frame measured in its F frame, expressed in the F frame).
+  //
+  // The 3x3 matrix N(q) relates q̇ to v as q̇ = N(q)⋅v, where
+  //
+  //        [          cos(y) / cos(p),           sin(y) / cos(p),  0]
+  // N(q) = [                  -sin(y),                    cos(y),  0]
+  //        [ sin(p) * cos(y) / cos(p),  sin(p) * sin(y) / cos(p),  1]
+  //
+  //          ⌈ -sy/cp ẏ + cy sp/cp² ṗ    cy/cp ẏ + sy sp/cp² ṗ,   0 ⌉
+  // Ṅ(q,q̇) = |                  -cy ẏ,                   -sy ẏ,   0 |
+  //          ⌊  cy/cp² ṗ - sp sy/cp ẏ,   sy/cp² ṗ + sp cy/cp ẏ,   0 ⌋
+  //
+  // where cp = cos(p), sp = sin(p), cy = cos(y), sy = sin(y).
+  // Note: Although the elements of Ṅ(q,q̇) are simply the time-derivatives of
+  // corresponding elements of N(q), result were simplified as follows.
+  // Ṅ[2, 0] = cy ṗ + sp² cy/cp² ṗ - sp sy/cp ẏ
+  //         =            cy/cp² ṗ - sp sy/cp ẏ.
+  // Ṅ[2, 1] = sy ṗ + sp² sy/cp² ṗ + sp cy/cp ẏ
+  //         =            sy/cp² ṗ + sp cy/cp ẏ.
+
+  using std::cos;
+  using std::sin;
+  const Vector3<T> angles = get_angles(context);
+  const T cp = cos(angles[1]);
+  const T sp = sin(angles[1]);
+  const T sy = sin(angles[2]);
+  const T cy = cos(angles[2]);
+  if (abs(cp) < 1.0e-3) {
+    const char* function_name_less_Do = __func__ + 2;
+    ThrowSinceCosPitchIsNearZero(angles[1], function_name_less_Do);
+  }
+  const T cpi = 1.0 / cp;
+  const T cpiSqr = cpi * cpi;
+
+  // Calculate time-derivative of roll, pitch, and yaw angles.
+  const Vector3<T> v = get_angular_velocity(context);
+  Vector3<T> qdot;
+  DoMapVelocityToQDot(context, v, &qdot);
+  const T& pdot = qdot(1);  // time derivative of pitch angle.
+  const T& ydot = qdot(2);  // time derivative of yaw angle.
+  const T sp_pdot = sp * pdot;
+  const T cp_ydot = cp * ydot;
+  const T cpiSqr_pdot = cpiSqr * pdot;
+  const T sp_cpi_ydot = sp * cpi * ydot;
+
+  // The elements below are in column order (like Eigen).
+  Ndot->coeffRef(0, 0) = (cy * sp_pdot - sy * cp_ydot) * cpiSqr;
+  Ndot->coeffRef(1, 0) = -cy * ydot;
+  Ndot->coeffRef(2, 0) = cy * cpiSqr_pdot - sy * sp_cpi_ydot;
+  Ndot->coeffRef(0, 1) = (sy * sp_pdot + cy * cp_ydot) * cpiSqr;
+  Ndot->coeffRef(1, 1) = -sy * ydot;
+  Ndot->coeffRef(2, 1) = sy * cpiSqr_pdot + cy * sp_cpi_ydot;
+  Ndot->coeffRef(0, 2) = 0;
+  Ndot->coeffRef(1, 2) = 0;
+  Ndot->coeffRef(2, 2) = 0;
+}
+
+template <typename T>
+void RpyBallMobilizer<T>::DoCalcNplusDotMatrix(
+    const systems::Context<T>& context, EigenPtr<MatrixX<T>> NplusDot) const {
+  // Computes the matrix Ṅ⁺(q,q̇) that helps relate v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈,
+  // where q = [r, p, y]ᵀ contains the roll (r), pitch (p) and yaw (y) angles
+  // and v = [wx, wy, wz]ᵀ represents W_FM_F (the angular velocity of the
+  // mobilizer's M frame measured in its F frame, expressed in the F frame).
+  //
+  // The 3x3 matrix N⁺(q) relates v to q̇ as v = N⁺(q)⋅q̇, where
+  //
+  //         [ cos(y) * cos(p),  -sin(y),  0]
+  // N⁺(q) = [ sin(y) * cos(p),   cos(y),  0]
+  //         [         -sin(p),        0,  1]
+  //
+  //           ⌈ -sy cp ẏ - cy sp ṗ,   -cy ẏ,   0 ⌉
+  // Ṅ⁺(q,q̇) = |  cy cp ẏ - sy sp ṗ    -sy ẏ,   0 |
+  //           ⌊              -cp ṗ,       0,   0 ⌋
+  //
+  // where cp = cos(p), sp = sin(p), cy = cos(y), sy = sin(y).
+  using std::cos;
+  using std::sin;
+  const Vector3<T> angles = get_angles(context);
+  const T cp = cos(angles[1]);
+  const T sp = sin(angles[1]);
+  const T sy = sin(angles[2]);
+  const T cy = cos(angles[2]);
+
+  // Throw an exception with the proper function name if a singularity would be
+  // encountered in DoMapVelocityToQDot().
+  if (abs(cp) < 1.0e-3) {
+    const char* function_name_less_Do = __func__ + 2;
+    ThrowSinceCosPitchIsNearZero(angles[1], function_name_less_Do);
+  }
+
+  // Calculate time-derivative of roll, pitch, and yaw angles.
+  const Vector3<T> v = get_angular_velocity(context);
+  Vector3<T> qdot;
+  DoMapVelocityToQDot(context, v, &qdot);
+  const T& pdot = qdot(1);  // time derivative of pitch angle.
+  const T& ydot = qdot(2);  // time derivative of yaw angle.
+  const T sp_pdot = sp * pdot;
+  const T cy_ydot = cy * ydot;
+  const T sy_ydot = sy * ydot;
+
+  // The elements below are in column order (like Eigen).
+  NplusDot->coeffRef(0, 0) = -sy_ydot * cp - cy * sp_pdot;
+  NplusDot->coeffRef(1, 0) = cy_ydot * cp - sy * sp_pdot;
+  NplusDot->coeffRef(2, 0) = -cp * pdot;
+  NplusDot->coeffRef(0, 1) = -cy_ydot;
+  NplusDot->coeffRef(1, 1) = -sy_ydot;
+  NplusDot->coeffRef(2, 1) = 0;
+  NplusDot->coeffRef(0, 2) = 0;
+  NplusDot->coeffRef(1, 2) = 0;
+  NplusDot->coeffRef(2, 2) = 0;
+}
+
+template <typename T>
 void RpyBallMobilizer<T>::DoMapVelocityToQDot(
     const systems::Context<T>& context, const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
@@ -232,25 +357,14 @@ void RpyBallMobilizer<T>::DoMapVelocityToQDot(
   using std::cos;
   using std::sin;
   const Vector3<T> angles = get_angles(context);
-  const T cp = cos(angles[1]);
-  if (abs(cp) < 1.0e-3) {
-    throw std::runtime_error(fmt::format(
-        "The RpyBallMobilizer (implementing a BallRpyJoint) between "
-        "body {} and body {} has reached a singularity. This occurs when the "
-        "pitch angle takes values near π/2 + kπ, ∀ k ∈ ℤ. At the current "
-        "configuration, we have pitch = {}. Drake does not yet support a "
-        "comparable joint using quaternions, but the feature request is "
-        "tracked in https://github.com/RobotLocomotion/drake/issues/12404.",
-        this->inboard_body().name(), this->outboard_body().name(), angles[1]));
-  }
-
-  const T& w0 = v[0];
-  const T& w1 = v[1];
-  const T& w2 = v[2];
-
   const T sp = sin(angles[1]);
+  const T cp = cos(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
+  if (abs(cp) < 1.0e-3) {
+    const char* function_name_less_Do = __func__ + 2;
+    ThrowSinceCosPitchIsNearZero(angles[1], function_name_less_Do);
+  }
   const T cpi = 1.0 / cp;
 
   // Although we can calculate q̇ = N(q) * v, it is more efficient to implicitly
@@ -265,6 +379,9 @@ void RpyBallMobilizer<T>::DoMapVelocityToQDot(
   // ṙ = (cos(y) * w0 + sin(y) * w1) / cos(p)
   // ṗ = -sin(y) * w0 + cos(y) * w1
   // ẏ = sin(p) * ṙ + w2
+  const T& w0 = v[0];
+  const T& w1 = v[1];
+  const T& w2 = v[2];
   const T rdot = (cy * w0 + sy * w1) * cpi;
   *qdot = Vector3<T>(rdot, -sy * w0 + cy * w1, sp * rdot + w2);
 }
@@ -308,7 +425,7 @@ void RpyBallMobilizer<T>::DoMapQDotToVelocity(
   const T cy = cos(angles[2]);
   const T cp_x_rdot = cp * rdot;
 
-  // Compute the product v = N⁺(q) * q̇ element-by-element to leverate the zeros
+  // Compute the product v = N⁺(q) * q̇ element-by-element to leverage the zeros
   // in N⁺(q) -- which is more efficient than matrix multiplication N⁺(q) * q̇.
   *v = Vector3<T>(cy * cp_x_rdot - sy * pdot, /*+ 0 * ydot*/
                   sy * cp_x_rdot + cy * pdot, /*+ 0 * ydot*/

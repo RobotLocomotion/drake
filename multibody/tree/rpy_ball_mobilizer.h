@@ -250,6 +250,14 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   void DoCalcNplusMatrix(const systems::Context<T>& context,
                          EigenPtr<MatrixX<T>> Nplus) const final;
 
+  // Generally, q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇. For this mobilizer, Ṅ is not simple.
+  void DoCalcNDotMatrix(const systems::Context<T>& context,
+                        EigenPtr<MatrixX<T>> Ndot) const final;
+
+  // Generally, v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈. For this mobilizer, Ṅ⁺ is not simple.
+  void DoCalcNplusDotMatrix(const systems::Context<T>& context,
+                            EigenPtr<MatrixX<T>> NplusDot) const final;
+
   // Maps the generalized velocity v, which corresponds to the angular velocity
   // w_FM, to time derivatives of roll-pitch-yaw angles θ₀, θ₁, θ₂ in qdot.
   //
@@ -296,6 +304,11 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
       const MultibodyTree<symbolic::Expression>& tree_clone) const override;
+
+  // Certain roll pitch yaw calculations (e.g., calculating the N(q) matrix)
+  // have a singularity (divide-by-zero error) when cos(pitch) ≈ 0.
+  void ThrowSinceCosPitchIsNearZero(const T& pitch,
+                                    const char* function_name) const;
 
  private:
   // Helper method to make a clone templated on ToScalar.
