@@ -229,7 +229,7 @@ void RpyBallMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>& context,
   // corresponding elements of N(q), result were simplified as follows.
   // Ṅ[2, 0] = cy ṗ + sp² cy/cp² ṗ - sp sy/cp ẏ
   //         =            cy/cp² ṗ - sp sy/cp ẏ.
-  // Ṅ[2, 1] = sy ṗ̇ + sp² sy/cp² ṗ + sp cy/cp ẏ
+  // Ṅ[2, 1] = sy ṗ + sp² sy/cp² ṗ + sp cy/cp ẏ
   //         =            sy/cp² ṗ + sp cy/cp ẏ.
 
   using std::cos;
