@@ -226,8 +226,12 @@ void RpyBallMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>& context,
   //
   // where cp = cos(p), sp = sin(p), cy = cos(y), sy = sin(y).
   // Note: Although the elements of Ṅ(q,q̇) are simply the time-derivatives of
-  // the corresponding elements of N(q), the result for Ṅ[2, 0] was shortened
-  // as cp cy/cp ṗ + sp² cy/cp² ṗ simplifies to cy/cp² ṗ. Similarly for Ṅ[2, 1].
+  // corresponding elements of N(q), result were simplified as follows.
+  // Ṅ[2, 0] = cy ṗ + sp² cy/cp² ṗ - sp sy/cp ẏ
+  //         =            cy/cp² ṗ - sp sy/cp ẏ.
+  // Ṅ[2, 1] = sy ṗ̇ + sp² sy/cp² ṗ + sp cy/cp ẏ
+  //         =            sy/cp² ṗ + sp cy/cp ẏ.
+
   using std::cos;
   using std::sin;
   const Vector3<T> angles = get_angles(context);
@@ -421,7 +425,7 @@ void RpyBallMobilizer<T>::DoMapQDotToVelocity(
   const T cy = cos(angles[2]);
   const T cp_x_rdot = cp * rdot;
 
-  // Compute the product v = N⁺(q) * q̇ element-by-element to leverate the zeros
+  // Compute the product v = N⁺(q) * q̇ element-by-element to leverage the zeros
   // in N⁺(q) -- which is more efficient than matrix multiplication N⁺(q) * q̇.
   *v = Vector3<T>(cy * cp_x_rdot - sy * pdot, /*+ 0 * ydot*/
                   sy * cp_x_rdot + cy * pdot, /*+ 0 * ydot*/
