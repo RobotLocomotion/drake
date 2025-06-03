@@ -132,8 +132,6 @@ class PooledSapModel<T>::PatchConstraintsPool {
     dynamic_friction_.push_back(dynamic_friction);
     p_AB_W_.PushBack(p_AB_W);
 
-    fmt::print("mu_d: {}, mu_s: {}\n",dynamic_friction, static_friction);
-
     const int num_cliques =
         (model().is_anchored(bodyA) || model().is_anchored(bodyB)) ? 1 : 2;
     num_cliques_.push_back(num_cliques);
