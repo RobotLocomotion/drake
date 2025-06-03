@@ -41,13 +41,15 @@ class DeformableBodyTest : public ::testing::Test {
     DeformableModel<double>& deformable_model =
         plant_->mutable_deformable_model();
 
+    ModelInstanceIndex model_instance = plant_->AddModelInstance("deformable");
+
     auto sphere = std::make_unique<GeometryInstance>(
         RigidTransformd::Identity(), std::make_unique<Sphere>(1.0),
         "test_sphere");
     sphere->set_proximity_properties({});
-    body_id_ = deformable_model.RegisterDeformableBody(std::move(sphere),
-                                                       default_body_config_,
-                                                       /*resolution_hint=*/0.5);
+    body_id_ = deformable_model.RegisterDeformableBody(
+        std::move(sphere), model_instance, default_body_config_,
+        /*resolution_hint=*/0.5);
 
     plant_->Finalize();
     diagram_ = builder_.Build();
@@ -75,10 +77,11 @@ class DeformableBodyTest : public ::testing::Test {
 };
 
 TEST_F(DeformableBodyTest, Accessors) {
-  /* index(), body_id(), name(), geometry_id() */
+  /* index(), body_id(), name(), scoped_name(), geometry_id() */
   EXPECT_EQ(body_->index(), body_index_);
   EXPECT_EQ(body_->body_id(), body_id_);
   EXPECT_EQ(body_->name(), "test_sphere");
+  EXPECT_EQ(body_->scoped_name().get_full(), "deformable::test_sphere");
   EXPECT_TRUE(scene_graph_->model_inspector().IsDeformableGeometry(
       body_->geometry_id()));
   /* config() matches what we registered */

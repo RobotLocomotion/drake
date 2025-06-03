@@ -16,6 +16,7 @@
 #include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/scoped_name.h"
 
 namespace drake {
 namespace multibody {
@@ -49,6 +50,10 @@ class DeformableBody final : public MultibodyElement<T> {
 
   /** Returns the name of the body. */
   const std::string& name() const { return name_; }
+
+  /** Returns scoped name of this body. Neither of the two pieces of the name
+   will be empty (the scope name and the element name). */
+  ScopedName scoped_name() const;
 
   /** Returns the geometry id of the deformable geometry used to simulate this
    deformable body. */

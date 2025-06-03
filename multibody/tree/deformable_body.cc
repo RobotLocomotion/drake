@@ -23,6 +23,13 @@ using geometry::GeometryInstance;
 using geometry::VolumeMesh;
 
 template <typename T>
+ScopedName DeformableBody<T>::scoped_name() const {
+  return ScopedName(
+      this->get_parent_tree().GetModelInstanceName(this->model_instance()),
+      name_);
+}
+
+template <typename T>
 void DeformableBody<T>::SetWallBoundaryCondition(const Vector3<T>& p_WQ,
                                                  const Vector3<T>& n_W) const {
   DRAKE_THROW_UNLESS(n_W.norm() > 1e-10);

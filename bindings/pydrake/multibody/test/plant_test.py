@@ -3575,6 +3575,7 @@ class TestPlant(unittest.TestCase):
         # body_id, name, geometry_id, config
         self.assertEqual(body.body_id(), body_id)
         self.assertEqual(body.name(), "sphere")
+        self.assertIsInstance(body.scoped_name(), ScopedName)
         self.assertEqual(body.geometry_id(),
                          deformable_model.GetGeometryId(id=body_id))
         self.assertIsInstance(body.config(),
