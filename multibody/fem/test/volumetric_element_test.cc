@@ -456,27 +456,21 @@ TEST_F(VolumetricElementTest, PerCurrentVolumeExternalForce) {
   EXPECT_TRUE(CompareMatrices(total_force, expected_force, kEpsilon));
 }
 
-TEST_F(VolumetricElementTest, AccumulateMassAndMoment) {
+TEST_F(VolumetricElementTest, CalcMassTimesPositionForQuadraturePoints) {
   unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
   const auto& data = EvalElementData(*fem_state);
 
-  AD total_mass = 0.0;
-  Vector3<AD> total_moment = Vector3<AD>::Zero();
-
-  element().AccumulateMassAndMomentForQuadraturePoints(data, &total_mass,
-                                                       &total_moment);
+  Vector3<AD> moment = element().CalcMassTimesPositionForQuadraturePoints(data);
 
   /* For a single linear tet, there's only one quadrature point at the centroid.
    The reference_volume_[0] is the volume of the tetrahedron. */
   const AD expected_mass = density(element()) * reference_volume()[0];
-  EXPECT_NEAR(total_mass.value(), expected_mass.value(), kEpsilon);
-
   const Vector3<AD> expected_moment =
       expected_mass * data.quadrature_positions[0];
-  EXPECT_TRUE(CompareMatrices(total_moment, expected_moment, kEpsilon));
+  EXPECT_TRUE(CompareMatrices(moment, expected_moment, kEpsilon));
 }
 
-TEST_F(VolumetricElementTest, AccumulateLinearMomentum) {
+TEST_F(VolumetricElementTest, CalcTranslationalMomentumForQuadraturePoints) {
   unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
   // Set some non-zero velocities for testing momentum.
   VectorX<AD> v_all = fem_state->GetVelocities();
@@ -486,18 +480,17 @@ TEST_F(VolumetricElementTest, AccumulateLinearMomentum) {
   fem_state->SetVelocities(v_all);
   const auto& data = EvalElementData(*fem_state);
 
-  Vector3<AD> total_linear_momentum = Vector3<AD>::Zero();
-  element().AccumulateLinearMomentumForQuadraturePoints(data,
-                                                        &total_linear_momentum);
+  Vector3<AD> translational_momentum =
+      element().CalcTranslationalMomentumForQuadraturePoints(data);
 
   const AD expected_mass_term = density(element()) * reference_volume()[0];
-  const Vector3<AD> expected_linear_momentum =
+  const Vector3<AD> expected_translational_momentum =
       expected_mass_term * data.quadrature_velocities[0];
-  EXPECT_TRUE(CompareMatrices(total_linear_momentum, expected_linear_momentum,
-                              kEpsilon));
+  EXPECT_TRUE(CompareMatrices(translational_momentum,
+                              expected_translational_momentum, kEpsilon));
 }
 
-TEST_F(VolumetricElementTest, AccumulateAngularMomentumAndInertiaAboutCoM) {
+TEST_F(VolumetricElementTest, CalcAngularMomentumAboutWorldOrigin) {
   /* Test with a pure translational motion for the element. */
   unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
   VectorX<AD> v = VectorX<AD>::Zero(kNumDofs);
@@ -508,23 +501,31 @@ TEST_F(VolumetricElementTest, AccumulateAngularMomentumAndInertiaAboutCoM) {
   fem_state->SetVelocities(v);
   const auto& data = EvalElementData(*fem_state);
 
-  Vector3<AD> H_WCcm = Vector3<AD>::Zero();
-  Matrix3<AD> I_W_Ccm = Matrix3<AD>::Zero();
-  /* Set the CoM position and velocity to zero for easy calculation. */
-  Vector3<AD> p_WCcm = Vector3<AD>::Zero();
-  Vector3<AD> v_WCcm = Vector3<AD>::Zero();
+  Vector3<AD> angular_momentum =
+      element().CalcAngularMomentumAboutWorldOrigin(data);
 
-  element().AccumulateAngularMomentumAndInertiaAboutCoMForQuadraturePoints(
-      data, p_WCcm, v_WCcm, &H_WCcm, &I_W_Ccm);
   const Vector3<AD> p_WQ = data.quadrature_positions[0];
   const Vector3<AD> v_WQ = data.quadrature_velocities[0];
   const AD mass = density(element()) * reference_volume()[0];
-  const Vector3<AD> expected_H_WCcm = mass * p_WQ.cross(v_WQ);
-  const Matrix3<AD> expected_I_W_Ccm =
+  const Vector3<AD> expected_angular_momentum = mass * p_WQ.cross(v_WQ);
+
+  EXPECT_TRUE(
+      CompareMatrices(angular_momentum, expected_angular_momentum, kEpsilon));
+}
+
+TEST_F(VolumetricElementTest, CalcRotationalInertiaAboutWorldOrigin) {
+  unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
+  const auto& data = EvalElementData(*fem_state);
+
+  Matrix3<AD> inertia = element().CalcRotationalInertiaAboutWorldOrigin(data);
+
+  const Vector3<AD> p_WQ = data.quadrature_positions[0];
+  const AD mass = density(element()) * reference_volume()[0];
+  const Matrix3<AD> expected_inertia =
       mass * p_WQ.dot(p_WQ) * Matrix3<AD>::Identity() -
       mass * p_WQ * p_WQ.transpose();
-  EXPECT_TRUE(CompareMatrices(H_WCcm, expected_H_WCcm, kEpsilon));
-  EXPECT_TRUE(CompareMatrices(I_W_Ccm, expected_I_W_Ccm, kEpsilon));
+
+  EXPECT_TRUE(CompareMatrices(inertia, expected_inertia, kEpsilon));
 }
 
 }  // namespace
