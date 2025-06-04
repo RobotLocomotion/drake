@@ -40,6 +40,7 @@ void DefinePlanningDofMask(py::module m) {
         .def("GetJoints", &Class::GetJoints, py::arg("plant"),
             cls_doc.GetJoints.doc)
         .def(py::self == py::self)
+        .def("__getitem__", &DofMask::operator[], cls_doc.operator_array.doc)
         .def("Complement", &Class::Complement, cls_doc.Complement.doc)
         .def("Union", &Class::Union, py::arg("other"), cls_doc.Union.doc)
         .def("Intersect", &Class::Intersect, py::arg("other"),
