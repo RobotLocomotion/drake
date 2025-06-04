@@ -215,32 +215,48 @@ class DeformableBody final : public MultibodyElement<T> {
    @throw std::exception if context is null. */
   void Enable(systems::Context<T>* context) const;
 
-  /** Returns the position of the center of mass of this deformable body in the
-   world frame.
+  /** Calculates the body's center of mass position in world frame W.
    @param[in] context The context associated with the MultibodyPlant that owns
                       this body.
-   @retval com_position A 3D vector representing the center of mass position.
+   @retval p_WBcm_W the body's center of mass position, measured and expressed
+   in the world frame W.
    @throws std::exception if `context` does not belong to the MultibodyPlant
    that owns this body. */
-  Vector3<T> GetComPosition(const systems::Context<T>& context) const;
+  Vector3<T> CalcCenterOfMassPositionInWorld(
+      const systems::Context<T>& context) const;
 
-  /** Returns the linear velocity of the center of mass of this deformable body
-   measured and expressed in the world frame.
+  /** Calculates the body's center of mass translational velocity in world frame
+   W.
    @param[in] context The context associated with the MultibodyPlant that owns
                       this body.
-   @retval v_WBcm The linear velocity of the center of mass Bcm, measured and
-                  expressed in the world frame W.
+   @retval v_WScm_W Scm's translational velocity in frame W, expressed in W,
+   where Scm is the center of mass of this body.
    @throws std::exception if `context` does not belong to the MultibodyPlant
    that owns this body. */
-  Vector3<T> GetComLinearVelocity(const systems::Context<T>& context) const;
+  Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
+      const systems::Context<T>& context) const;
 
-  /** Returns the angular velocity of the deformable body about its center of
-   mass, expressed in the world frame.
+  /** Using an angular momentum analogy, calculates an "effective" angular
+   velocity for this body about its center of mass, measured and expressed in
+   the world frame W. The effective angular velocity is computed using an
+   angular momentum equation that assumes the body is a rigid body (albeit we
+   know it is deformable).
+
+        H_WBcm_W = I_BBcm_W * w_WBcm_W
+
+   for which when solved for w_WBcm_W gives
+
+        w_WBcm_W = inverse(I_BBcm_W) * H_WBcm_W
+
+   where H_WBcm_W is the body's angular momentum about its center of mass Bcm
+   measured and expressed in the world frame W.
    @param[in] context The context associated with the MultibodyPlant that owns
                       this body.
+   @retval w_WBcm_W the body's effective angular velocity about Bcm, measured
+   and expressed in the world frame W.
    @throws std::exception if `context` does not belong to the MultibodyPlant
    that owns this body. */
-  Vector3<T> GetAngularVelocityAboutCom(
+  Vector3<T> CalcEffectiveAngularVelocityForCenterOfMass(
       const systems::Context<T>& context) const;
 
  private:

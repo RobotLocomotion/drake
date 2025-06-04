@@ -124,11 +124,11 @@ TEST_F(DeformableBodyTest, FemStateCache) {
                       .template Eval<fem::FemState<double>>(*plant_context_));
 }
 
-TEST_F(DeformableBodyTest, GetComPosition) {
+TEST_F(DeformableBodyTest, CalcCenterOfMassPositionInWorld) {
   constexpr double kEpsilon = 1e-14;
   /* For the undeformed sphere centered at the origin, the CoM should be very
    close to the origin. */
-  const Vector3d com = body_->GetComPosition(*plant_context_);
+  const Vector3d com = body_->CalcCenterOfMassPositionInWorld(*plant_context_);
   EXPECT_TRUE(CompareMatrices(com, Vector3d::Zero(), kEpsilon));
 
   /* Move the sphere and check CoM. */
@@ -145,7 +145,8 @@ TEST_F(DeformableBodyTest, GetComPosition) {
   plant_->get_cache_entry(body_->fem_state_cache_index())
       .template Eval<fem::FemState<double>>(*plant_context_);
 
-  const Vector3d com_translated = body_->GetComPosition(*plant_context_);
+  const Vector3d com_translated =
+      body_->CalcCenterOfMassPositionInWorld(*plant_context_);
   EXPECT_TRUE(CompareMatrices(com_translated, translation, kEpsilon));
 }
 
@@ -176,7 +177,7 @@ TEST_F(DeformableBodyTest, Parallelism) {
   EXPECT_EQ(body_->fem_model().parallelism().num_threads(), 4);
 }
 
-TEST_F(DeformableBodyTest, GetComLinearVelocity) {
+TEST_F(DeformableBodyTest, CalcCenterOfMassTranslationalVelocityInWorld) {
   constexpr double kEpsilon = 1e-14;
   /* Set a uniform translational velocity. */
   VectorX<double> discrete_state =
@@ -188,11 +189,12 @@ TEST_F(DeformableBodyTest, GetComLinearVelocity) {
   }
   plant_context_->SetDiscreteState(body_->discrete_state_index(),
                                    discrete_state);
-  const Vector3d v_WCcm = body_->GetComLinearVelocity(*plant_context_);
+  const Vector3d v_WCcm =
+      body_->CalcCenterOfMassTranslationalVelocityInWorld(*plant_context_);
   EXPECT_TRUE(CompareMatrices(v_WCcm, Vector3d(1.0, 2.0, 3.0), kEpsilon));
 }
 
-TEST_F(DeformableBodyTest, GetAngularVelocityAboutCom) {
+TEST_F(DeformableBodyTest, CalcEffectiveAngularVelocityForCenterOfMass) {
   constexpr double kEpsilon = 1e-14;
   /* Set a uniform rotational velocity about the world origin. */
   /* Set q to be a sphere centered at (1, 0, 0). */
@@ -219,7 +221,8 @@ TEST_F(DeformableBodyTest, GetAngularVelocityAboutCom) {
   }
   plant_context_->SetDiscreteState(body_->discrete_state_index(),
                                    discrete_state);
-  const Vector3d w_WC = body_->GetAngularVelocityAboutCom(*plant_context_);
+  const Vector3d w_WC =
+      body_->CalcEffectiveAngularVelocityForCenterOfMass(*plant_context_);
   EXPECT_TRUE(CompareMatrices(w_WC, Vector3d(0.0, 0.0, 1.0), kEpsilon));
 }
 

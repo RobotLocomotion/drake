@@ -172,36 +172,36 @@ void DeformableBody<T>::Enable(systems::Context<T>* context) const {
 }
 
 template <typename T>
-Vector3<T> DeformableBody<T>::GetComPosition(
+Vector3<T> DeformableBody<T>::CalcCenterOfMassPositionInWorld(
     const systems::Context<T>& context) const {
   DRAKE_DEMAND(fem_model_ != nullptr);
   const fem::FemState<T>& fem_state =
       this->GetParentTreeSystem()
           .get_cache_entry(fem_state_cache_index_)
           .template Eval<fem::FemState<T>>(context);
-  return fem_model_->CalcCenterOfMassPosition(fem_state);
+  return fem_model_->CalcCenterOfMassPositionInWorld(fem_state);
 }
 
 template <typename T>
-Vector3<T> DeformableBody<T>::GetComLinearVelocity(
+Vector3<T> DeformableBody<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     const systems::Context<T>& context) const {
   DRAKE_DEMAND(fem_model_ != nullptr);
   const fem::FemState<T>& fem_state =
       this->GetParentTreeSystem()
           .get_cache_entry(fem_state_cache_index_)
           .template Eval<fem::FemState<T>>(context);
-  return fem_model_->CalcCenterOfMassLinearVelocity(fem_state);
+  return fem_model_->CalcCenterOfMassTranslationalVelocityInWorld(fem_state);
 }
 
 template <typename T>
-Vector3<T> DeformableBody<T>::GetAngularVelocityAboutCom(
+Vector3<T> DeformableBody<T>::CalcEffectiveAngularVelocityForCenterOfMass(
     const systems::Context<T>& context) const {
   DRAKE_DEMAND(fem_model_ != nullptr);
   const fem::FemState<T>& fem_state =
       this->GetParentTreeSystem()
           .get_cache_entry(fem_state_cache_index_)
           .template Eval<fem::FemState<T>>(context);
-  return fem_model_->CalcCenterOfMassAngularVelocity(fem_state);
+  return fem_model_->CalcEffectiveAngularVelocityForCenterOfMass(fem_state);
 }
 
 template <typename T>

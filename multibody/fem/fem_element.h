@@ -144,6 +144,9 @@ class FemElement {
     return ExtractElementDofs(this->node_indices(), state_dofs);
   }
 
+  /* Returns the mass of this element. */
+  T mass() const { return mass_; }
+
  protected:
   /* Constructs a new FEM element. The constructor is made protected because
    FemElement should not be constructed directly. Use the constructor of the
@@ -223,6 +226,9 @@ class FemElement {
 
   const DampingModel<T>& damping_model() const { return damping_model_; }
 
+  /* Sets the mass of this element. */
+  void set_mass(T mass) { mass_ = mass; }
+
  private:
   /* Helper to throw a descriptive exception when a given function is not
    implemented. */
@@ -239,6 +245,8 @@ class FemElement {
    for this element. */
   ConstitutiveModel constitutive_model_;
   DampingModel<T> damping_model_;
+  /* The mass of this element. */
+  T mass_{};
 };
 
 }  // namespace internal
