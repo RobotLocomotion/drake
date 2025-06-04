@@ -87,6 +87,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
     fn0_.resize(num_pairs_capacity);
     n0_.resize(num_pairs_capacity);
     epsilon_soft_.resize(num_pairs_capacity);
+    net_friction_.resize(num_pairs_capacity);
   }
 
   /* Reserve to store patch constraint data. No memory allocation performed if
@@ -114,6 +115,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
     fn0_.reserve(num_pairs_capacity);
     n0_.reserve(num_pairs_capacity);
     epsilon_soft_.reserve(num_pairs_capacity);
+    net_friction_.reserve(num_pairs_capacity);
   }
 
   /* Adds a contact patch between bodies A and B.
@@ -191,7 +193,25 @@ class PooledSapModel<T>::PatchConstraintsPool {
     const T n0 = max(0.0, time_step_ * fn0) * damping;
     n0_.push_back(n0);
 
-    const T& mu = static_friction_[p];
+    // Coefficient of friction is determined based on previous velocity. This
+    // allows us to consider a Streibeck-like curve while maintaining a convex
+    // formulation.
+    const T vt0 = v_AcBc_W.norm() - vn0;
+
+    // Friction coefficient as a function of tangential velocity
+    auto calc_friction_coefficient = [&]() -> T {
+      const T s = vt0 / stiction_tolerance_;
+      const T& mu_s = static_friction_[p];
+      const T& mu_d = dynamic_friction_[p];
+      const T x = s - 5.0;
+      return -0.5 * (mu_s - mu_d) * (x / sqrt(1 + x * x) - 1.0) + mu_d;
+    };
+    const T mu = calc_friction_coefficient();
+    net_friction_.push_back(mu);
+    fmt::print("vt0: {}\n", vt0);
+    fmt::print("mu: {}\n", mu);
+
+    // const T& mu = static_friction_[p];
     const T Rt = CalcRegularizationOfFriction(p, p_BoC_W);
     const T sap_stiction_tolerance = mu * Rt * n0;
     const T eps = max(stiction_tolerance_, sap_stiction_tolerance);
@@ -218,6 +238,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
     fn0_.clear();
     n0_.clear();
     epsilon_soft_.clear();
+    net_friction_.clear();
   }
 
   int num_patches() const { return ssize(num_pairs_); }
@@ -333,6 +354,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
   std::vector<T> fn0_;              // Previous time step normal force.
   std::vector<T> n0_;               // Previous time step impulse.
   std::vector<T> epsilon_soft_;     // Regularized stiction tolerance.
+  std::vector<T> net_friction_;     // Regularized stiction tolerance.
 
   // Scratch used during construction to compute Delassus approximation.
   mutable EigenPool<MatrixX<T>> MatrixX_pool_;
