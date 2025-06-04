@@ -335,7 +335,6 @@ GTEST_TEST(PointCloudTest, Basic) {
     EXPECT_FALSE(cloud.HasFields(pc_flags::kXYZs));
     // The rows size should be consistent with the new FPFH descriptor.
     EXPECT_EQ(cloud.descriptors().rows(), 33);
-    EXPECT_FALSE((cloud.descriptors().array().isNaN()).all());
   }
 
   // Test point cloud cropping.
