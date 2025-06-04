@@ -194,6 +194,7 @@ class VolumetricElement
       /* Degenerate element in the initial configuration is not allowed. */
       DRAKE_DEMAND(volume_scale > 0);
       reference_volume_[q] = volume_scale * quadrature_.get_weight(q);
+      quadrature_point_mass_[q] = density_ * reference_volume_[q];
     }
 
     /* Record the inverse Jacobian at the reference configuration which is used
@@ -206,6 +207,12 @@ class VolumetricElement
     for (int q = 0; q < num_quadrature_points; ++q) {
       dSdX_transpose_[q] = dSdX[q].transpose();
     }
+    T total_volume = 0.0;
+    for (int q = 0; q < num_quadrature_points; ++q) {
+      total_volume += reference_volume_[q];
+    }
+    this->set_mass(density_ * total_volume);
+
     mass_matrix_ = PrecomputeMassMatrix();
   }
 
@@ -219,72 +226,60 @@ class VolumetricElement
     return elastic_energy;
   }
 
-  /* Accumulates the total mass and first moment of mass for the quadrature
-   points in this element.
-   @param[in] data The FEM data containing quadrature point positions.
-   @param[in,out] total_mass The accumulated total mass for the entire body.
-   @param[in,out] total_moment The accumulated first moment of mass for the
-                                entire body (p_WBcm * total_mass).
-   @pre total_mass != nullptr.
-   @pre total_moment != nullptr. */
-  void AccumulateMassAndMomentForQuadraturePoints(
-      const Data& data, T* total_mass, Vector3<T>* total_moment) const {
-    DRAKE_ASSERT(total_mass != nullptr);
-    DRAKE_ASSERT(total_moment != nullptr);
+  /* Returns this element's the first moment of mass (mass * position) about
+   World origin, expressed in World.
+   @param[in] data The FEM data containing quadrature point positions. */
+  Vector3<T> CalcMassTimesPositionForQuadraturePoints(const Data& data) const {
+    Vector3<T> element_moment = Vector3<T>::Zero();
     for (int q = 0; q < num_quadrature_points; ++q) {
-      const T quadrature_point_mass = density_ * reference_volume_[q];
-      *total_mass += quadrature_point_mass;
-      *total_moment += quadrature_point_mass * data.quadrature_positions[q];
+      element_moment +=
+          quadrature_point_mass_[q] * data.quadrature_positions[q];
     }
+    return element_moment;
   }
 
-  /* Accumulates the linear momentum for the quadrature points in this element.
+  /* Returns the linear momentum for the quadrature points in this element.
    @param[in] data The FEM data containing quadrature point velocities.
-   @param[in,out] linear_momentum The accumulated linear momentum for the entire
-   body.
-   @pre linear_momentum != nullptr. */
-  void AccumulateLinearMomentumForQuadraturePoints(
-      const Data& data, Vector3<T>* linear_momentum) const {
-    DRAKE_ASSERT(linear_momentum != nullptr);
+   @returns The linear momentum for this element. */
+  Vector3<T> CalcTranslationalMomentumForQuadraturePoints(
+      const Data& data) const {
+    Vector3<T> element_translational_momentum = Vector3<T>::Zero();
     for (int q = 0; q < num_quadrature_points; ++q) {
-      const T quadrature_point_mass = density_ * reference_volume_[q];
-      *linear_momentum += quadrature_point_mass * data.quadrature_velocities[q];
+      element_translational_momentum +=
+          quadrature_point_mass_[q] * data.quadrature_velocities[q];
     }
+    return element_translational_momentum;
   }
 
-  /* Accumulates the angular momentum about the center of mass (CoM) and the
-   rotational inertia tensor about the CoM for the quadrature points in this
-   element.
+  /* Returns this element S's angular momentum about world origin, measured
+   and expressed in World.
    @param[in] data The FEM data containing quadrature point positions and
-                   velocities.
-   @param[in] p_WCcm The position of the center of mass of the body in the
-                     world frame.
-   @param[in] v_WCcm The velocity of the center of mass of the body in the
-                     world frame.
-   @param[in,out] H_WCcm_total The accumulated angular momentum about the CoM,
-                               expressed in the world frame.
-   @param[in,out] I_W_Ccm_total The accumulated rotational inertia tensor
-                                about the CoM, expressed in the world frame.
-   @pre H_WCcm_total != nullptr.
-   @pre I_W_Ccm_total != nullptr. */
-  void AccumulateAngularMomentumAndInertiaAboutCoMForQuadraturePoints(
-      const Data& data, const Vector3<T>& p_WCcm, const Vector3<T>& v_WCcm,
-      Vector3<T>* H_WCcm_total, Matrix3<T>* I_W_Ccm_total) const {
-    DRAKE_ASSERT(H_WCcm_total != nullptr);
-    DRAKE_ASSERT(I_W_Ccm_total != nullptr);
+                   velocities. */
+  Vector3<T> CalcAngularMomentumAboutWorldOrigin(const Data& data) const {
+    Vector3<T> H_SWWo_W = Vector3<T>::Zero();
     for (int q = 0; q < num_quadrature_points; ++q) {
-      const T quadrature_point_mass = density_ * reference_volume_[q];
-      const Vector3<T>& p_Wqp = data.quadrature_positions[q];
-      const Vector3<T>& v_Wqp = data.quadrature_velocities[q];
+      const Vector3<T>& p_WQ = data.quadrature_positions[q];
+      const Vector3<T>& v_WQ = data.quadrature_velocities[q];
 
-      const Vector3<T> r_Ccm_qp = p_Wqp - p_WCcm;
-      const Vector3<T> v_rel_Ccm_qp = v_Wqp - v_WCcm;
-
-      *H_WCcm_total += r_Ccm_qp.cross(v_rel_Ccm_qp * quadrature_point_mass);
-      *I_W_Ccm_total += quadrature_point_mass *
-                        (r_Ccm_qp.dot(r_Ccm_qp) * Matrix3<T>::Identity() -
-                         r_Ccm_qp * r_Ccm_qp.transpose());
+      H_SWWo_W += p_WQ.cross(v_WQ * quadrature_point_mass_[q]);
     }
+    return H_SWWo_W;
+  }
+
+  /* Returns this element's rotational inertia about world origin, expressed
+   in World.
+   @param[in] data The FEM data containing quadrature point positions. */
+  Matrix3<T> CalcRotationalInertiaAboutWorldOrigin(const Data& data) const {
+    /* Rotational inertia for this element S, about Wo, expressed in W. */
+    Matrix3<T> I_SWo_W = Matrix3<T>::Zero();
+    for (int q = 0; q < num_quadrature_points; ++q) {
+      const Vector3<T>& p_WQ = data.quadrature_positions[q];
+
+      I_SWo_W +=
+          quadrature_point_mass_[q] *
+          (p_WQ.dot(p_WQ) * Matrix3<T>::Identity() - p_WQ * p_WQ.transpose());
+    }
+    return I_SWo_W;
   }
 
  private:
@@ -618,6 +613,8 @@ class VolumetricElement
    reference domain, sum f(q)*reference_volume_[q] over all the quadrature
    points q in the element. */
   std::array<T, num_quadrature_points> reference_volume_;
+  /* Mass of the quadrature points, computed as density_ * reference_volume_. */
+  std::array<T, num_quadrature_points> quadrature_point_mass_;
   /* The uniform mass density of the element in the reference configuration with
    unit kg/m³. */
   T density_;

@@ -68,24 +68,24 @@ void FemModel<T>::CalcTangentMatrix(
 }
 
 template <typename T>
-Vector3<T> FemModel<T>::CalcCenterOfMassPosition(
+Vector3<T> FemModel<T>::CalcCenterOfMassPositionInWorld(
     const FemState<T>& fem_state) const {
   ThrowIfModelStateIncompatible(__func__, fem_state);
-  return DoCalcCenterOfMassPosition(fem_state);
+  return DoCalcCenterOfMassPositionInWorld(fem_state);
 }
 
 template <typename T>
-Vector3<T> FemModel<T>::CalcCenterOfMassLinearVelocity(
+Vector3<T> FemModel<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     const FemState<T>& fem_state) const {
   ThrowIfModelStateIncompatible(__func__, fem_state);
-  return DoCalcCenterOfMassLinearVelocity(fem_state);
+  return DoCalcCenterOfMassTranslationalVelocityInWorld(fem_state);
 }
 
 template <typename T>
-Vector3<T> FemModel<T>::CalcCenterOfMassAngularVelocity(
+Vector3<T> FemModel<T>::CalcEffectiveAngularVelocity(
     const FemState<T>& fem_state) const {
   ThrowIfModelStateIncompatible(__func__, fem_state);
-  return DoCalcCenterOfMassAngularVelocity(fem_state);
+  return DoCalcEffectiveAngularVelocity(fem_state);
 }
 
 template <typename T>
@@ -131,6 +131,7 @@ void FemModel<T>::UpdateFemStateSystem() {
   fem_state_system_ = std::make_unique<internal::FemStateSystem<T>>(
       model_positions, model_velocities, model_accelerations);
   DeclareCacheEntries(fem_state_system_.get());
+  total_mass_ = DoCalcTotalMass();
 }
 
 }  // namespace fem
