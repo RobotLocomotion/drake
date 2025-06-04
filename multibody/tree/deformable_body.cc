@@ -179,7 +179,7 @@ Vector3<T> DeformableBody<T>::GetComPosition(
       this->GetParentTreeSystem()
           .get_cache_entry(fem_state_cache_index_)
           .template Eval<fem::FemState<T>>(context);
-  return fem_model_->CalcCenterOfMassPosition(fem_state);
+  return fem_model_->CalcCenterOfMassPositionInWorld(fem_state);
 }
 
 template <typename T>
@@ -190,7 +190,7 @@ Vector3<T> DeformableBody<T>::GetComLinearVelocity(
       this->GetParentTreeSystem()
           .get_cache_entry(fem_state_cache_index_)
           .template Eval<fem::FemState<T>>(context);
-  return fem_model_->CalcCenterOfMassLinearVelocity(fem_state);
+  return fem_model_->CalcCenterOfMassTranslationalVelocityInWorld(fem_state);
 }
 
 template <typename T>

@@ -78,65 +78,74 @@ class FemModelImpl : public FemModel<typename Element::T> {
   }
 
  private:
-  Vector3<T> DoCalcCenterOfMassPosition(
+  Vector3<T> DoCalcCenterOfMassPositionInWorld(
       const FemState<T>& fem_state) const final {
-    Vector3<T> total_moment = Vector3<T>::Zero();
+    /* p_WoScm_W = ∑ (mᵢ pᵢ) / mₛ, where mᵢ is the mass of the iᵗʰ element,
+     mₛ = ∑ mᵢ is the total mass,  and pᵢ is the position vector from Wo to
+     the quadrature point of the iᵗʰ element, expressed in the world frame W,
+     and Scm is the center of mass of this FemModel S. */
+    Vector3<T> sum_mi_pi = Vector3<T>::Zero();
     T total_mass = 0.0;
     const std::vector<Data>& element_data =
         fem_state.template EvalElementData<Data>(element_data_index_);
     for (int e = 0; e < num_elements(); ++e) {
       elements_[e].AccumulateMassAndMomentForQuadraturePoints(
-          element_data[e], &total_mass, &total_moment);
+          element_data[e], &total_mass, &sum_mi_pi);
     }
     DRAKE_DEMAND(total_mass > 0.0);
-    return total_moment / total_mass;
+    return sum_mi_pi / total_mass;
   }
 
-  Vector3<T> DoCalcCenterOfMassLinearVelocity(
+  Vector3<T> DoCalcCenterOfMassTranslationalVelocityInWorld(
       const FemState<T>& fem_state) const final {
+    /* For a system S with center of mass Scm, Scm's translational velocity in
+     the world frame W is calculated as v_WScm_W = ∑ (mᵢ vᵢ) / mₛ, where mₛ = ∑
+     mᵢ, mᵢ is the mass of the iᵗʰ element, and vᵢ is the velocity evaluated at
+     the quadrature point of the iᵗʰ element, expressed in the world frame W. */
     T total_mass = 0.0;
     Vector3<T> dummy_moment = Vector3<T>::Zero();
-    Vector3<T> linear_momentum = Vector3<T>::Zero();
+    Vector3<T> sum_mi_vi = Vector3<T>::Zero();
     const std::vector<Data>& element_data =
         fem_state.template EvalElementData<Data>(element_data_index_);
     for (int e = 0; e < num_elements(); ++e) {
       elements_[e].AccumulateMassAndMomentForQuadraturePoints(
           element_data[e], &total_mass, &dummy_moment);
-      elements_[e].AccumulateLinearMomentumForQuadraturePoints(
-          element_data[e], &linear_momentum);
+      elements_[e].AccumulateTranslationalMomentumForQuadraturePoints(
+          element_data[e], &sum_mi_vi);
     }
     DRAKE_DEMAND(total_mass > 0.0);
-    return linear_momentum / total_mass;
+    return sum_mi_vi / total_mass;
   }
 
   Vector3<T> DoCalcCenterOfMassAngularVelocity(
       const FemState<T>& fem_state) const final {
     T total_mass = 0.0;
-    Vector3<T> total_moment = Vector3<T>::Zero();
-    Vector3<T> total_linear_momentum = Vector3<T>::Zero();
+    Vector3<T> sum_mi_pi = Vector3<T>::Zero();
+    Vector3<T> total_sum_mi_vi = Vector3<T>::Zero();
 
     const std::vector<Data>& element_data =
         fem_state.template EvalElementData<Data>(element_data_index_);
-    // First pass: Calculate total mass, CoM position, and CoM linear velocity.
+    // First pass: Calculate total mass, CM position, and CM linear velocity.
     for (int e = 0; e < num_elements(); ++e) {
       elements_[e].AccumulateMassAndMomentForQuadraturePoints(
-          element_data[e], &total_mass, &total_moment);
-      elements_[e].AccumulateLinearMomentumForQuadraturePoints(
-          element_data[e], &total_linear_momentum);
+          element_data[e], &total_mass, &sum_mi_pi);
+      elements_[e].AccumulateTranslationalMomentumForQuadraturePoints(
+          element_data[e], &total_sum_mi_vi);
     }
     DRAKE_DEMAND(total_mass > 0.0);
-    const Vector3<T> p_WCcm = total_moment / total_mass;
-    const Vector3<T> v_WCcm = total_linear_momentum / total_mass;
+    const Vector3<T> p_WoScm_W = sum_mi_pi / total_mass;
+    const Vector3<T> v_WScm_W = total_sum_mi_vi / total_mass;
 
-    // Second pass: Calculate angular momentum and inertia about CoM.
-    Vector3<T> H_WCcm_total = Vector3<T>::Zero();
-    Matrix3<T> I_W_Ccm_total = Matrix3<T>::Zero();
+    // Second pass: Calculate angular momentum and inertia about CM.
+    Vector3<T> H_WSScm_W_total = Vector3<T>::Zero();
+    Matrix3<T> I_SScm_W_total = Matrix3<T>::Zero();
     for (int e = 0; e < num_elements(); ++e) {
       elements_[e]
           .AccumulateAngularMomentumAndInertiaAboutCoMForQuadraturePoints(
-              element_data[e], p_WCcm, v_WCcm, &H_WCcm_total, &I_W_Ccm_total);
+              element_data[e], p_WoScm_W, v_WScm_W, &H_WSScm_W_total,
+              &I_SScm_W_total);
     }
-    return I_W_Ccm_total.ldlt().solve(H_WCcm_total);
+    return I_SScm_W_total.ldlt().solve(H_WSScm_W_total);
   }
 
   void DoCalcResidual(const FemState<T>& fem_state,

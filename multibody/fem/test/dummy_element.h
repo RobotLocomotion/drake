@@ -107,7 +107,7 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
   }
 
   /* Arbitrary values for testing. */
-  void AccumulateLinearMomentumForQuadraturePoints(
+  void AccumulateTranslationalMomentumForQuadraturePoints(
       const Data& /*data*/, Vector3<T>* linear_momentum) const {
     *linear_momentum = Vector3<T>(4.0, 5.0, 6.0);
   }

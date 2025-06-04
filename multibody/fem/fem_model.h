@@ -171,20 +171,22 @@ class FemModel {
       contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
       const;
 
-  /** Calculates the position of the center of mass of this FEM model.
+  /** Calculates the position vector from the world origin Wo to the center
+   of mass of all bodies in this FemModel S, expressed in the world frame W.
    @param[in] fem_state The FemState used to evaluate the center of mass.
-   @retval com_position The 3D vector representing the center of mass position.
+   @retval p_WoScm_W position vector from Wo to Scm expressed in world frame W,
+   where Scm is the center of mass of the system S stored by `this` FemModel.
    @throws std::exception if the FEM state is incompatible with this model. */
-  Vector3<T> CalcCenterOfMassPosition(const FemState<T>& fem_state) const;
+  Vector3<T> CalcCenterOfMassPositionInWorld(
+      const FemState<T>& fem_state) const;
 
-  /** Calculates the linear velocity of the center of mass of this FEM model
-   measured and expressed in the world frame.
-   @param[in] fem_state The FemState used to evaluate the center of mass linear
-                        velocity.
-   @retval v_WBcm The linear velocity of the center of mass Bcm, measured and
-                  expressed in the world frame W.
+  /** Calculates system center of mass translational velocity in world frame W.
+   @param[in] fem_state The FemState used for this calculation.
+   @retval v_WScm_W Scm's translational velocity in frame W, expressed in W,
+   where Scm is the center of mass of the system S stored by this FemModel.
    @throws std::exception if the FEM state is incompatible with this model. */
-  Vector3<T> CalcCenterOfMassLinearVelocity(const FemState<T>& fem_state) const;
+  Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
+      const FemState<T>& fem_state) const;
 
   /** Calculates the angular velocity of the center of mass of this FEM model in
    the world frame. The angular velocity is computed using
@@ -300,15 +302,15 @@ class FemModel {
       const = 0;
 
   /** FemModelImpl must override this method to provide an implementation for
-   the NVI CalcCenterOfMassPosition(). The input `fem_state` is guaranteed to be
-   compatible with `this` FEM model. */
-  virtual Vector3<T> DoCalcCenterOfMassPosition(
+   the NVI CalcCenterOfMassPositionInWorld(). The input `fem_state` is
+   guaranteed to be compatible with `this` FEM model. */
+  virtual Vector3<T> DoCalcCenterOfMassPositionInWorld(
       const FemState<T>& fem_state) const = 0;
 
   /** FemModelImpl must override this method to provide an implementation for
-   the NVI CalcCenterOfMassLinearVelocity(). The input `fem_state` is
-   guaranteed to be compatible with `this` FEM model. */
-  virtual Vector3<T> DoCalcCenterOfMassLinearVelocity(
+   the NVI CalcCenterOfMassTranslationalVelocityInWorld(). The input `fem_state`
+   is guaranteed to be compatible with `this` FEM model. */
+  virtual Vector3<T> DoCalcCenterOfMassTranslationalVelocityInWorld(
       const FemState<T>& fem_state) const = 0;
 
   /** FemModelImpl must override this method to provide an implementation for

@@ -487,8 +487,8 @@ TEST_F(VolumetricElementTest, AccumulateLinearMomentum) {
   const auto& data = EvalElementData(*fem_state);
 
   Vector3<AD> total_linear_momentum = Vector3<AD>::Zero();
-  element().AccumulateLinearMomentumForQuadraturePoints(data,
-                                                        &total_linear_momentum);
+  element().AccumulateTranslationalMomentumForQuadraturePoints(
+      data, &total_linear_momentum);
 
   const AD expected_mass_term = density(element()) * reference_volume()[0];
   const Vector3<AD> expected_linear_momentum =

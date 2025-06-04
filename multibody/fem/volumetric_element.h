@@ -243,7 +243,7 @@ class VolumetricElement
    @param[in,out] linear_momentum The accumulated linear momentum for the entire
    body.
    @pre linear_momentum != nullptr. */
-  void AccumulateLinearMomentumForQuadraturePoints(
+  void AccumulateTranslationalMomentumForQuadraturePoints(
       const Data& data, Vector3<T>* linear_momentum) const {
     DRAKE_ASSERT(linear_momentum != nullptr);
     for (int q = 0; q < num_quadrature_points; ++q) {

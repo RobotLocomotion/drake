@@ -68,17 +68,17 @@ void FemModel<T>::CalcTangentMatrix(
 }
 
 template <typename T>
-Vector3<T> FemModel<T>::CalcCenterOfMassPosition(
+Vector3<T> FemModel<T>::CalcCenterOfMassPositionInWorld(
     const FemState<T>& fem_state) const {
   ThrowIfModelStateIncompatible(__func__, fem_state);
-  return DoCalcCenterOfMassPosition(fem_state);
+  return DoCalcCenterOfMassPositionInWorld(fem_state);
 }
 
 template <typename T>
-Vector3<T> FemModel<T>::CalcCenterOfMassLinearVelocity(
+Vector3<T> FemModel<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     const FemState<T>& fem_state) const {
   ThrowIfModelStateIncompatible(__func__, fem_state);
-  return DoCalcCenterOfMassLinearVelocity(fem_state);
+  return DoCalcCenterOfMassTranslationalVelocityInWorld(fem_state);
 }
 
 template <typename T>
