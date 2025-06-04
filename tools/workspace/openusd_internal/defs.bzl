@@ -21,13 +21,13 @@ def pxr_library(
         subdir + "/" + x
         for x in attrs["CPPFILES"]
     ]
-    hdrs = [
+    hdrs = depset([
         subdir + "/" + x + ".h"
         for x in attrs["PUBLIC_CLASSES"] + attrs["PRIVATE_CLASSES"]
     ] + [
         subdir + "/" + x
         for x in attrs["PUBLIC_HEADERS"] + attrs["PRIVATE_HEADERS"]
-    ]
+    ]).to_list()
     defines = [
         # In Drake we use the oneAPI flavor of TBB, which is not the default
         # in OpenUSD, so we need to opt-in.
