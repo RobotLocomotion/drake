@@ -264,6 +264,20 @@ class DeformableBody final : public MultibodyElement<T> {
   Vector3<T> CalcEffectiveAngularVelocityForCenterOfMass(
       const systems::Context<T>& context) const;
 
+  /** Sets the default pose of the simulated geometry (in its reference
+   configuration) in the world frame W.
+   @param[in] X_WD The default pose of the simulated geometry in the
+   world frame W. */
+  void set_default_pose(const math::RigidTransform<double>& X_WD) {
+    X_WD_ = X_WD;
+  }
+
+  /** Returns the default pose of the simulated geometry (in its reference
+   configuration) in the world frame W. This returns pose last set by
+   set_default_pose(), or the pose of the geometry in the world frame W when the
+   body is registered if set_default_pose() has not been called. */
+  const math::RigidTransform<double>& get_default_pose() const { return X_WD_; }
+
  private:
   template <typename U>
   friend class DeformableModel;
@@ -339,18 +353,7 @@ class DeformableBody final : public MultibodyElement<T> {
   }
 
   void DoDeclareDiscreteState(
-      internal::MultibodyTreeSystem<T>* tree_system) final {
-    std::unique_ptr<fem::FemState<T>> default_fem_state =
-        fem_model_->MakeFemState();
-    const int num_dofs = default_fem_state->num_dofs();
-    VectorX<T> model_state(num_dofs * 3 /* q, v, and a */);
-    model_state.head(num_dofs) = default_fem_state->GetPositions();
-    model_state.segment(num_dofs, num_dofs) =
-        default_fem_state->GetVelocities();
-    model_state.tail(num_dofs) = default_fem_state->GetAccelerations();
-    discrete_state_index_ =
-        this->DeclareDiscreteState(tree_system, model_state);
-  }
+      internal::MultibodyTreeSystem<T>* tree_system) final;
 
   void DoDeclareCacheEntries(
       internal::MultibodyTreeSystem<T>* tree_system) final {
@@ -370,11 +373,7 @@ class DeformableBody final : public MultibodyElement<T> {
     fem_state_cache_index_ = fem_state_cache_entry.cache_index();
   }
 
-  void DoDeclareParameters(
-      internal::MultibodyTreeSystem<T>* tree_system) final {
-    is_enabled_parameter_index_ =
-        this->DeclareAbstractParameter(tree_system, Value<bool>(true));
-  }
+  void DoDeclareParameters(internal::MultibodyTreeSystem<T>* tree_system) final;
 
   /* Private helper to populate FemState from discrete state values. */
   void CalcFemStateFromDiscreteValues(const systems::Context<T>& context,
@@ -388,9 +387,12 @@ class DeformableBody final : public MultibodyElement<T> {
   /* The mesh of the deformable geometry (in its reference configuration) in
    its geometry frame. */
   geometry::VolumeMesh<double> mesh_G_;
-  /* The pose of the deformable geometry (in its reference configuration) in
-   the world frame. */
+  /* The pose of the deformable geometry (in its reference configuration) at
+   registration in the world frame. */
   math::RigidTransform<double> X_WG_;
+  /* The default pose of the deformable geometry (in its reference
+   configuration) in the world frame. */
+  math::RigidTransform<double> X_WD_;
   fem::DeformableBodyConfig<T> config_;
   /* The vertex positions of the deformable body in its reference
    configuration measured and expressed in the world frame. */

@@ -223,6 +223,7 @@ DeformableBody<T>::DeformableBody(
       geometry_id_(geometry_id),
       mesh_G_(mesh_G),
       X_WG_(X_WG),
+      X_WD_(X_WG),
       config_(config) {
   if constexpr (std::is_same_v<T, double>) {
     geometry::VolumeMesh<double> mesh_W = mesh_G;
@@ -256,6 +257,8 @@ std::unique_ptr<DeformableBody<double>> DeformableBody<T>::CloneToDouble()
     /* geometry_id_ is copied in the constructor above. */
     /* mesh_G_ is copied in the constructor above. */
     /* X_WG_ is copied in the constructor above. */
+    /* Copy over X_WD_. */
+    clone->X_WD_ = X_WD_;
     /* config_ is copied in the constructor above. */
     /* Copy over reference_positions_. */
     clone->reference_positions_ = reference_positions_;
@@ -371,8 +374,28 @@ void DeformableBody<T>::CalcFemStateFromDiscreteValues(
   fem_state->SetAccelerations(discrete_value.tail(num_dofs));
 }
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::DeformableBody);
+template <typename T>
+void DeformableBody<T>::DoDeclareDiscreteState(
+    internal::MultibodyTreeSystem<T>* tree_system) {
+  const int num_dofs = fem_model_->num_dofs();
+  VectorX<T> model_state = VectorX<T>::Zero(num_dofs * 3 /* q, v, and a */);
+  const math::RigidTransform<double> X_GD = X_WG_.inverse() * X_WD_;
+  for (int i = 0; i < num_dofs / 3; ++i) {
+    model_state.template segment<3>(3 * i) =
+        X_GD * reference_positions_.template segment<3>(3 * i);
+  }
+  discrete_state_index_ = this->DeclareDiscreteState(tree_system, model_state);
+}
+
+template <typename T>
+void DeformableBody<T>::DoDeclareParameters(
+    internal::MultibodyTreeSystem<T>* tree_system) {
+  is_enabled_parameter_index_ =
+      this->DeclareAbstractParameter(tree_system, Value<bool>(true));
+}
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::DeformableBody);
