@@ -208,8 +208,6 @@ class PooledSapModel<T>::PatchConstraintsPool {
     };
     const T mu = calc_friction_coefficient();
     net_friction_.push_back(mu);
-    fmt::print("vt0: {}\n", vt0);
-    fmt::print("mu: {}\n", mu);
 
     // const T& mu = static_friction_[p];
     const T Rt = CalcRegularizationOfFriction(p, p_BoC_W);

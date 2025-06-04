@@ -55,8 +55,8 @@ DEFINE_double(
 
 // Physical parameters.
 DEFINE_double(density, 1000.0, "The density of all objects, in kg/m³.");
-DEFINE_double(friction_coefficient, 1.0,
-              "All friction coefficients have this value.");
+DEFINE_double(static_friction, 1.0, "All bodies use this value.");
+DEFINE_double(dynamic_friction, 0.5, "All bodies use this value.");
 DEFINE_double(box_stiffness, 1.0e5, "Box point contact stiffness in N/m.");
 DEFINE_double(sphere_stiffness, 1.0e5,
               "Sphere point contact stiffness in N/m.");
@@ -143,7 +143,8 @@ std::vector<geometry::GeometryId> box_geometry_ids;
 
 const RigidBody<double>& AddBox(const std::string& name,
                                 const Vector3<double>& block_dimensions,
-                                double mass, double stiffness, double friction,
+                                double mass, double stiffness,
+                                double static_friction, double dynamic_friction,
                                 const Vector4<double>& color,
                                 bool emulate_box_multicontact,
                                 bool add_box_collision,
@@ -189,7 +190,7 @@ const RigidBody<double>& AddBox(const std::string& name,
 
   props.AddProperty(geometry::internal::kMaterialGroup,
                     geometry::internal::kFriction,
-                    CoulombFriction<double>(friction, friction));
+                    CoulombFriction<double>(static_friction, dynamic_friction));
 
   // Box's collision geometry is a solid box.
   if (emulate_box_multicontact) {
@@ -265,7 +266,8 @@ void AddSink(MultibodyPlant<double>* plant) {
   const double height = 0.8;
   const double wall_thickness = 0.04;
   const double wall_mass = 1.0;
-  const double friction_coefficient = FLAGS_friction_coefficient;
+  const double static_friction = FLAGS_static_friction;
+  const double dynamic_friction = FLAGS_dynamic_friction;
   const Vector4<double> light_blue(0.5, 0.8, 1.0, 0.3);
   const Vector4<double> transparent(0., 0.0, 0.0, 0.0);
 
@@ -274,8 +276,9 @@ void AddSink(MultibodyPlant<double>* plant) {
           const RigidTransformd& X_WB,
           const Vector4<double>& color) -> const RigidBody<double>& {
     const double kSinkStiffness = kHuge;
-    const auto& wall = AddBox(name, dimensions, wall_mass, kSinkStiffness,
-                              friction_coefficient, color, false, true, plant);
+    const auto& wall =
+        AddBox(name, dimensions, wall_mass, kSinkStiffness, static_friction,
+               dynamic_friction, color, false, true, plant);
     plant->WeldFrames(plant->world_frame(), wall.body_frame(), X_WB);
     return wall;
   };
@@ -304,7 +307,8 @@ void AddSink(MultibodyPlant<double>* plant) {
 }
 
 const RigidBody<double>& AddSphere(const std::string& name, const double radius,
-                                   double mass, double friction,
+                                   double mass, double static_friction,
+                                   double dynamic_friction,
                                    const Vector4<double>& color,
                                    MultibodyPlant<double>* plant) {
   const UnitInertia<double> G_Bcm = UnitInertia<double>::SolidSphere(radius);
@@ -320,7 +324,7 @@ const RigidBody<double>& AddSphere(const std::string& name, const double radius,
                     FLAGS_dissipation_time_constant);
   props.AddProperty(geometry::internal::kMaterialGroup,
                     geometry::internal::kFriction,
-                    CoulombFriction<double>(friction, friction));
+                    CoulombFriction<double>(static_friction, dynamic_friction));
   props.AddProperty("material", "hunt_crossley_dissipation",
                     FLAGS_hc_dissipation);
 
@@ -377,7 +381,8 @@ std::vector<BodyIndex> AddObjects(double scale_factor,
   const double density = FLAGS_density;  // kg/m^3.
   // const double mass = 0.2;
 
-  const double friction = FLAGS_friction_coefficient;
+  const double static_friction = FLAGS_static_friction;
+  const double dynamic_friction = FLAGS_dynamic_friction;
   const Vector4<double> orange(1.0, 0.55, 0.0, 1.0);
   const Vector4<double> purple(204.0 / 255, 0.0, 204.0 / 255, 1.0);
   const Vector4<double> green(0, 153.0 / 255, 0, 1.0);
@@ -418,8 +423,9 @@ std::vector<BodyIndex> AddObjects(double scale_factor,
         const double radius = radius0 * scale;
         const double volume = 4. / 3. * M_PI * radius * radius * radius;
         const double mass = density * volume;
-        bodies.push_back(
-            AddSphere(name, radius, mass, friction, color, plant).index());
+        bodies.push_back(AddSphere(name, radius, mass, static_friction,
+                                   dynamic_friction, color, plant)
+                             .index());
         break;
       }
       case 1: {
@@ -429,7 +435,7 @@ std::vector<BodyIndex> AddObjects(double scale_factor,
         Vector4<double> color50(color);
         color50.z() = 0.5;
         bodies.push_back(AddBox(name, box_size, mass, FLAGS_box_stiffness,
-                                friction, color50,
+                                static_friction, dynamic_friction, color50,
                                 FLAGS_emulate_box_multicontact, true, plant)
                              .index());
         break;

@@ -83,8 +83,7 @@ int do_main() {
   const drake::multibody::CoulombFriction<double> coef_friction_bodyB(
       FLAGS_static_friction, FLAGS_dynamic_friction);
   const drake::multibody::CoulombFriction<double> coef_friction_inclined_plane(
-      FLAGS_static_friction,
-      FLAGS_dynamic_friction);
+      FLAGS_static_friction, FLAGS_dynamic_friction);
 
   if (FLAGS_bodyB_type == "sphere") {
     const double radiusB = 0.04;      // B's radius when modeled as a sphere.
