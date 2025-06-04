@@ -68,7 +68,10 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
                ConstitutiveModel constitutive_model,
                DampingModel<T> damping_model)
       : Base(node_indices, std::move(constitutive_model),
-             std::move(damping_model)) {}
+             std::move(damping_model)) {
+    /* Set an arbitrary mass for testing. */
+    this->set_mass(1.23);
+  }
 
   /* Provides a fixed return value for CalcInverseDynamics(). */
   static Vector<T, kNumDofs> inverse_dynamics_force() {
@@ -99,26 +102,25 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
   }
 
   /* Arbitrary values for testing. */
-  void AccumulateMassAndMomentForQuadraturePoints(
-      const Data& /*data*/, T* total_body_mass,
-      Vector3<T>* total_body_moment) const {
-    *total_body_mass = 1.0;
-    *total_body_moment = Vector3<T>(1.0, 2.0, 3.0);
+  Vector3<T> CalcMassTimesPositionForQuadraturePoints(
+      const Data& /*data*/) const {
+    return Vector3<T>(1.0, 2.0, 3.0);
   }
 
   /* Arbitrary values for testing. */
-  void AccumulateLinearMomentumForQuadraturePoints(
-      const Data& /*data*/, Vector3<T>* linear_momentum) const {
-    *linear_momentum = Vector3<T>(4.0, 5.0, 6.0);
+  Vector3<T> CalcTranslationalMomentumForQuadraturePoints(
+      const Data& /*data*/) const {
+    return Vector3<T>(4.0, 5.0, 6.0);
   }
 
   /* Arbitrary values for testing. */
-  void AccumulateAngularMomentumAndInertiaAboutCoMForQuadraturePoints(
-      const Data& /*data*/, const Vector3<T>& /*p_WCcm*/,
-      const Vector3<T>& /*v_WCcm*/, Vector3<T>* H_WCcm_total,
-      Matrix3<T>* I_W_Ccm_total) const {
-    *H_WCcm_total = Vector3<T>(7.0, 8.0, 9.0);
-    *I_W_Ccm_total = Matrix3<T>::Identity();
+  Vector3<T> CalcAngularMomentumAboutWorldOrigin(const Data& /*data*/) const {
+    return Vector3<T>(7.0, 8.0, 9.0);
+  }
+
+  /* Arbitrary values for testing. */
+  Matrix3<T> CalcRotationalInertiaAboutWorldOrigin(const Data& /*data*/) const {
+    return Matrix3<T>::Identity();
   }
 
  private:
