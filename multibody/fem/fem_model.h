@@ -171,39 +171,41 @@ class FemModel {
       contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
       const;
 
-  /** Calculates the position of the center of mass of this FEM model.
+  /** Calculates the position vector from the world origin Wo to the center
+   of mass of all bodies in this FemModel S, expressed in the world frame W.
    @param[in] fem_state The FemState used to evaluate the center of mass.
-   @retval com_position The 3D vector representing the center of mass position.
+   @retval p_WoScm_W position vector from Wo to Scm expressed in world frame W,
+   where Scm is the center of mass of the system S stored by `this` FemModel.
    @throws std::exception if the FEM state is incompatible with this model. */
-  Vector3<T> CalcCenterOfMassPosition(const FemState<T>& fem_state) const;
+  Vector3<T> CalcCenterOfMassPositionInWorld(
+      const FemState<T>& fem_state) const;
 
-  /** Calculates the linear velocity of the center of mass of this FEM model
-   measured and expressed in the world frame.
-   @param[in] fem_state The FemState used to evaluate the center of mass linear
-                        velocity.
-   @retval v_WBcm The linear velocity of the center of mass Bcm, measured and
-                  expressed in the world frame W.
+  /** Calculates system center of mass translational velocity in world frame W.
+   @param[in] fem_state The FemState used for this calculation.
+   @retval v_WScm_W Scm's translational velocity in frame W, expressed in W,
+   where Scm is the center of mass of the system S stored by this FemModel.
    @throws std::exception if the FEM state is incompatible with this model. */
-  Vector3<T> CalcCenterOfMassLinearVelocity(const FemState<T>& fem_state) const;
+  Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
+      const FemState<T>& fem_state) const;
 
-  /** Calculates the angular velocity of the center of mass of this FEM model in
-   the world frame. The angular velocity is computed using
+  /** Using an angular momentum analogy, calculates a "pseudo" angular velocity
+   for this FemModel S, measured and expressed in the world frame W. The psudeo
+   angular velocity is computed using an angular momentum equation that assumes
+   S is a rigid body (albeit we know S is deformable).
 
-      I_BBcm * w_BcmB = h_BcmB,
+        H_WSSm_W = I_SScm_W * w_WScm_W
 
-   where I_BBcm is the rotational inertia of this body B about its center of
-   mass (Bcm), w_BcmB is the angular velocity of the center of mass, and h_BcmB
-   is the angular momentum of the body B about its center of mass.
-   @param[in] fem_state The FemState used to evaluate the center of mass angular
-                        velocity.
-   @retval w_BcmB The angular velocity of the center of mass of this body, Bcm,
-                  measured and expressed in the body frame B, which is the
-                  fixed offset frame that aligns with the world frame W and has
-                  the origin at the center of mass of the body B.
-   @throws std::exception if the FEM state is i   @retval w_WCcm The angular
-   velocity of the center of mass C, measured and expressed in the world frame
-   W.ncompatible with this model. */
-  Vector3<T> CalcCenterOfMassAngularVelocity(
+   for which when solved for w_WScm_W gives
+
+        w_WScm_W = inverse(I_SScm_W) * H_WSSm_W
+
+   where H_WSSm_W is the FemModel S's angular momentum about its center of mass
+   Scm measured and expressed in the world frame W.
+   @param[in] fem_state The FemState used for this calculation.
+   @retval w_WScm_W the FemModel S's pseudo angular velocity for Scm, measured
+   and expressed in the world frame W.
+   @throws std::exception if the FEM state is incompatible with this model. */
+  Vector3<T> CalcAngularVelocityForCenterOfMass(
       const FemState<T>& fem_state) const;
 
   /** Creates a symmetric block sparse matrix that has the sparsity pattern
@@ -270,6 +272,9 @@ class FemModel {
    when opportunities for parallel computation arises. */
   Parallelism parallelism() const { return parallelism_; }
 
+  /** Returns the total mass of the system. */
+  T get_total_mass() const { return total_mass_; }
+
  protected:
   /** Constructs an empty FEM model.
    @pre tangent_matrix_weights.minCoeff() >= 0.0. */
@@ -300,21 +305,21 @@ class FemModel {
       const = 0;
 
   /** FemModelImpl must override this method to provide an implementation for
-   the NVI CalcCenterOfMassPosition(). The input `fem_state` is guaranteed to be
-   compatible with `this` FEM model. */
-  virtual Vector3<T> DoCalcCenterOfMassPosition(
+   the NVI CalcCenterOfMassPositionInWorld(). The input `fem_state` is
+   guaranteed to be compatible with `this` FEM model. */
+  virtual Vector3<T> DoCalcCenterOfMassPositionInWorld(
       const FemState<T>& fem_state) const = 0;
 
   /** FemModelImpl must override this method to provide an implementation for
-   the NVI CalcCenterOfMassLinearVelocity(). The input `fem_state` is
-   guaranteed to be compatible with `this` FEM model. */
-  virtual Vector3<T> DoCalcCenterOfMassLinearVelocity(
+   the NVI CalcCenterOfMassTranslationalVelocityInWorld(). The input `fem_state`
+   is guaranteed to be compatible with `this` FEM model. */
+  virtual Vector3<T> DoCalcCenterOfMassTranslationalVelocityInWorld(
       const FemState<T>& fem_state) const = 0;
 
   /** FemModelImpl must override this method to provide an implementation for
-   the NVI CalcCenterOfMassAngularVelocity(). The input `fem_state` is
+   the NVI CalcAngularVelocityForCenterOfMass(). The input `fem_state` is
    guaranteed to be compatible with `this` FEM model. */
-  virtual Vector3<T> DoCalcCenterOfMassAngularVelocity(
+  virtual Vector3<T> DoCalcAngularVelocityForCenterOfMass(
       const FemState<T>& fem_state) const = 0;
 
   /** FemModelImpl must override this method to provide an implementation for
@@ -344,6 +349,10 @@ class FemModel {
   }
 
  private:
+  /** Computes the total mass of the system. FemModelImpl must override this
+   method to provide an implementation for the NVI CalcTotalMass(). */
+  virtual T DoCalcTotalMass() const = 0;
+
   /* The system that manages the states and cache entries of this FEM model.
    */
   std::unique_ptr<internal::FemStateSystem<T>> fem_state_system_;
@@ -353,6 +362,8 @@ class FemModel {
    order) to form the tangent matrix. */
   Vector3<T> tangent_matrix_weights_;
   Parallelism parallelism_{false};
+  /* The total mass of the system. */
+  T total_mass_{};
 };
 
 }  // namespace fem

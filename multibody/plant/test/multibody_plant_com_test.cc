@@ -17,7 +17,8 @@ namespace drake {
 namespace multibody {
 namespace {
 
-GTEST_TEST(EmptyMultibodyPlantCenterOfMassTest, CalcCenterOfMassPosition) {
+GTEST_TEST(EmptyMultibodyPlantCenterOfMassTest,
+           CalcCenterOfMassPositionInWorld) {
   MultibodyPlant<double> plant(0.0);
   plant.Finalize();
   auto context_ = plant.CreateDefaultContext();
