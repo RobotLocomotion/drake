@@ -65,15 +65,37 @@ const Frame<double>& GetUniqueBodyFrame(const ParsingWorkspace& workspace,
 
 // Implements the AddModel::default_free_body_pose logic (for one entry of that
 // std::map).
+// This handles both regular rigid bodies and deformable bodies. For deformable
+// bodies, the pose can only be specified relative to the world frame, and it
+// will use DeformableBody::set_default_pose to set the default pose. For rigid
+// bodies, it will either set the default free body pose or add a quaternion
+// floating joint depending on the parent frame and offset.
 void ApplyAddModelDefaultFreeBodyPose(
     const ParsingWorkspace& workspace, ModelInstanceIndex model_instance,
-    const Frame<double>& parent_frame, const std::string& child_frame_name,
+    const Frame<double>& parent_frame, const std::string& child_name,
     const math::RigidTransform<double>& X_PC) {
   auto& plant = *workspace.plant;
+  // First determine if the child is a deformable body.
+  if (plant.deformable_model().HasBodyNamed(child_name, model_instance)) {
+    const auto& deformable_body =
+        plant.deformable_model().GetBodyByName(child_name, model_instance);
+    if (&parent_frame != &plant.world_frame()) {
+      workspace.diagnostic.Error(fmt::format(
+          "Default pose for deformable body '{}' can only be specified "
+          "relative to the world frame.",
+          child_name));
+      return;
+    }
+    // Set the default pose for the deformable body.
+    plant.mutable_deformable_model()
+        .GetMutableBody(deformable_body.body_id())
+        .set_default_pose(X_PC);
+    return;
+  }
+  // The body is a rigid body.
   const Frame<double>& child_frame =
-      child_frame_name.empty()
-          ? GetUniqueBodyFrame(workspace, model_instance)
-          : plant.GetFrameByName(child_frame_name, model_instance);
+      child_name.empty() ? GetUniqueBodyFrame(workspace, model_instance)
+                         : plant.GetFrameByName(child_name, model_instance);
   const math::RigidTransform<double> child_offset =
       child_frame.GetFixedPoseInBodyFrame();
   if ((&parent_frame == &plant.world_frame()) &&
@@ -152,7 +174,7 @@ void ParseModelDirectivesImpl(const ModelDirectives& directives,
         plant->GetMutableJointByName(joint_name, child_model_instance_id)
             .set_default_positions(positions);
       }
-      for (const auto& [child_frame_name, pose] :
+      for (const auto& [child_name, pose] :
            directive.add_model->default_free_body_pose) {
         const std::string parent_frame_name = pose.base_frame.value_or("world");
         const Frame<double>& parent_frame =
@@ -161,7 +183,7 @@ void ParseModelDirectivesImpl(const ModelDirectives& directives,
                 : get_scoped_frame(parent_frame_name);
         const math::RigidTransform<double> X_PC = pose.GetDeterministicValue();
         ApplyAddModelDefaultFreeBodyPose(workspace, *child_model_instance_id,
-                                         parent_frame, child_frame_name, X_PC);
+                                         parent_frame, child_name, X_PC);
       }
       info.model_instance = *child_model_instance_id;
       info.model_name = name;
