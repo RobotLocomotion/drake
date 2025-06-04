@@ -54,7 +54,7 @@ where ``<job-name>`` is the name of an
 For example:
 
 * ``@drake-jenkins-bot mac-arm-sonoma-clang-bazel-experimental-release please``
-* ``@drake-jenkins-bot linux-jammy-clang-bazel-experimental-valgrind-memcheck please``
+* ``@drake-jenkins-bot linux-noble-clang-bazel-experimental-valgrind-memcheck please``
 
 A list of Jenkins bot commands that cover the full set of continuous and nightly
 production jobs are available for
@@ -110,7 +110,7 @@ When updating prerequisites with these scripts, the normal experimental CI will
 most likely fail. To test new prerequisites on Linux, you should first request an
 unprovisioned experimental build, e.g.:
 
-* ``@drake-jenkins-bot linux-jammy-unprovisioned-gcc-bazel-experimental-release please``
+* ``@drake-jenkins-bot linux-noble-unprovisioned-gcc-bazel-experimental-release please``
 
 Testing changes to the source distribution prerequisites for macOS is a work
 in progress as there are no longer unprovisioned builds.
@@ -128,31 +128,40 @@ To schedule an "experimental" build of a [binary package](/from_binary.html)
 or [debian package](/apt.html), comment on an open pull request using one or
 more of these commands:
 
-* ``@drake-jenkins-bot linux-jammy-unprovisioned-gcc-bazel-experimental-packaging please``
-* ``@drake-jenkins-bot mac-arm-sonoma-clang-bazel-experimental-packaging please``
+* ``@drake-jenkins-bot linux-noble-unprovisioned-gcc-cmake-experimental-packaging please``
+* ``@drake-jenkins-bot mac-arm-sonoma-clang-cmake-experimental-packaging please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
 to schedule a build of one of the [Packaging](https://drake-jenkins.csail.mit.edu/view/Packaging/)
 jobs with **experimental** in its name.
 
 To download the built package, open the Jenkins console log for the completed
-build (click on "Console Output" then "Full Log") and search for the text
-"Upload complete" to find the download URL.  For example:
+build (click on "Details" for a packaging build in the pull request's
+list of checks, then "Console Output") and search for the text "Artifacts
+uploaded to AWS" to find the download URL (usually about a screen's-worth of
+text above the end of the log).  For example:
 
 ```
 ...
-[9:49:51 AM]  -- Upload complete: https://drake-packages.csail.mit.edu/drake/experimental/drake-20230427164706-0b666a17ba2ce3ca7505655dc724960d88a34645-jammy.tar.gz
-...
-[9:49:53 AM]  -- Upload complete: https://drake-packages.csail.mit.edu/drake/experimental/drake-dev_0.0.20230427164706-0b666a17ba2ce3ca7505655dc724960d88a34645-1_amd64-jammy.deb
+[2:30:23 PM]  -- Artifacts uploaded to AWS:
+[2:30:23 PM]  https://drake-packages.csail.mit.edu/drake/experimental/drake-0.0.20250530.180720%2Bgit3468349f-noble.tar.gz
+[2:30:23 PM]  https://drake-packages.csail.mit.edu/drake/experimental/drake-dev_0.0.20250530.180720%2Bgit3468349f-1_amd64-noble.deb
 ...
 ```
+
+(In some cases, it may be necessary to click the "Full Log" and search for the
+text "Upload complete", particularly if you wish to also find the checksum
+URLs.)
+
+To download the package, simply click the link or use your favorite HTTP
+retrieval tool (e.g. ``wget`` or ``curl``).
 
 ### Wheel
 
 To schedule an "experimental" build of a [wheel package](/pip.html),
 comment on an open pull request using one or more of these commands:
 
-* ``@drake-jenkins-bot linux-jammy-unprovisioned-gcc-wheel-experimental-release please``
+* ``@drake-jenkins-bot linux-noble-unprovisioned-gcc-wheel-experimental-release please``
 * ``@drake-jenkins-bot mac-arm-sonoma-clang-wheel-experimental-release please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
@@ -167,8 +176,11 @@ text above the end of the log).  For example:
 
 ```
 ...
-[12:00:00 AM]  -- Artifacts uploaded to AWS:
-[12:00:00 AM]  https://drake-packages.csail.mit.edu/drake/experimental/drake-0.0.1999.1.1.0.0.0%2Bgitffffffff-cp310-cp310-manylinux_2_31_x86_64.whl
+[2:17:49 PM]  -- Artifacts uploaded to AWS:
+[2:17:49 PM]  https://drake-packages.csail.mit.edu/drake/experimental/drake-0.0.20250521.172625%2Bgitbbcde5ab-cp310-cp310-manylinux_2_34_x86_64.whl
+[2:17:49 PM]  https://drake-packages.csail.mit.edu/drake/experimental/drake-0.0.20250521.172625%2Bgitbbcde5ab-cp311-cp311-manylinux_2_34_x86_64.whl
+[2:17:49 PM]  https://drake-packages.csail.mit.edu/drake/experimental/drake-0.0.20250521.172625%2Bgitbbcde5ab-cp312-cp312-manylinux_2_34_x86_64.whl
+[2:17:49 PM]  https://drake-packages.csail.mit.edu/drake/experimental/drake-0.0.20250521.172625%2Bgitbbcde5ab-cp313-cp313-manylinux_2_34_x86_64.whl
 ...
 ```
 
