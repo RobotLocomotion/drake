@@ -43,7 +43,7 @@ The docker tags for Drake's stable releases are spelled like:
 
 * ``jammy-X.Y.Z`` for the Ubuntu 22.04 image of Drake vX.Y.Z.
 * ``noble-X.Y.Z`` for the Ubuntu 24.04 image of Drake vX.Y.Z.
-* ``X.Y.Z`` is a synonym for ``jammy-X.Y.Z``.
+* ``X.Y.Z`` is a synonym for ``noble-X.Y.Z``.
 
 Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
@@ -63,7 +63,7 @@ The docker tags for Drake's nightly releases are spelled like:
 * ``jammy`` is a synonym for the most recent ``jammy-YYYYMMDD``.
 * ``noble-YYYYMMDD`` for the Ubuntu 24.04 image of Drake as of date YYYY-MM-DD.
 * ``noble`` is a synonym for the most recent ``noble-YYYYMMDD``.
-* ``YYYYMMDD`` is a synonym for the most recent ``jammy-YYYYMMDD``.
+* ``YYYYMMDD`` is a synonym for the most recent ``noble-YYYYMMDD``.
 * ``latest`` is a synonym for the most recent ``YYYYMMDD``.
 
 Refer to [Quickstart](/installation.html#quickstart) for next steps.
