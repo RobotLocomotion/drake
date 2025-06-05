@@ -154,38 +154,24 @@ int do_main() {
 
   // Set a monitor to save stats to a file
   std::ofstream ofile("conveyor_belt_data.csv");
-  ofile << "time,ft,vt\n";
+  ofile << "time,vt,f_app\n";
   ofile.close();
-  simulator.set_monitor([&simulator, &plant](const Context<double>& context) {
+  simulator.set_monitor([&simulator, &plant, &sine](const Context<double>& context) {
     const double time = context.get_time();
     const Context<double>& plant_ctx = plant.GetMyContextFromRoot(context);
-    const auto& contact_results =
-        plant.get_contact_results_output_port().Eval<ContactResults<double>>(
-            plant_ctx);
-
-    double ft = 0.0;
-    
-    // We should have a single hydroelastic contact if use_hydro=true
-    if (contact_results.num_hydroelastic_contacts() == 1) {
-      const SpatialForce<double>& Fc =
-          contact_results.hydroelastic_contact_info(0).F_Ac_W();
-      ft =
-          Fc.dot(SpatialVelocity<double>(Vector3d(0, 0, 0), Vector3d(1, 0, 0)));
-    } else {
-      const int nc = contact_results.num_point_pair_contacts();
-      for (int i = 0; i < nc; ++i) {
-        const auto& point_pair_info = contact_results.point_pair_contact_info(i);
-        ft += point_pair_info.contact_force()(0);
-      }
-      ft /= nc;
-    }
 
     // We can just read the tangential velocity from the plant state
     const double vt = plant.GetVelocities(plant_ctx)(3);
 
-    // fmt::print("time: {}, ft: {}, vt: {}\n", time, ft, vt);
+    // Get the applied force on the block. We'll use this to compute the net
+    // contact force, since the contact_results_output_port and
+    // generalized_acceleration_output_port of the plant aren't set correctly
+    // for the convex integrator.
+    const Context<double>& sine_context = sine->GetMyContextFromRoot(context);
+    const double f_app = sine->get_output_port(0).Eval<systems::BasicVector<double>>(sine_context)[0];
+    
     std::ofstream outfile("conveyor_belt_data.csv", std::ios::app);
-    outfile << fmt::format("{},{},{}\n", time, ft, vt);
+    outfile << fmt::format("{},{},{}\n", time, vt, f_app);
     outfile.close();
 
     return systems::EventStatus::Succeeded();
