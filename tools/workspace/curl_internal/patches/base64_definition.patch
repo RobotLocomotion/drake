@@ -1,6 +1,6 @@
 [curl_internal] Fix a "missing symbol" error in debug builds
 
-The https://github.com/curl/curl/pull/17309 make one of the constants
+The https://github.com/curl/curl/pull/17309 made one of the constants
 here public, but failed to update the preprocessor logic to match.
 
 Reason for not upstreaming this patch: hassle with low bang for the buck.
