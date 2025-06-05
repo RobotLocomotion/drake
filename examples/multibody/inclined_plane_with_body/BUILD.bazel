@@ -32,4 +32,25 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "dynamic_friction_demo",
+    srcs = [
+        "dynamic_friction_demo.cc",
+    ],
+    deps = [
+        "//common:add_text_logging_gflags",
+        "//lcm",
+        "//multibody/benchmarks/inclined_plane",
+        "//multibody/plant:contact_results_to_lcm",
+        "//systems/analysis:convex_integrator",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_print_stats",
+        "//systems/framework:diagram",
+        "//systems/controllers:pid_controller",
+        "//systems/primitives",
+        "//visualization",
+        "@gflags",
+    ],
+)
+
 add_lint_tests(enable_clang_format_lint = False)
