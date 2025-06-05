@@ -57,7 +57,7 @@ void Serialize(Archive* a, DefaultSettings<double>& settings) {
   DRAKE_VISIT(chordal_decomposition_compact);
   DRAKE_VISIT(chordal_decomposition_complete_dual);
   // skipped: pardiso_iparm[64]
-  DRAKE_VISIT(pardiso_verbose);
+  // skipped: pardiso_verbose
 #undef DRAKE_VISIT
 }
 
