@@ -46,6 +46,17 @@
 
 namespace drake {
 namespace multibody {
+
+// Forward declaration for giving the pooled sap builder private access
+namespace contact_solvers {
+namespace pooled_sap {
+
+template <typename>
+class PooledSapBuilder;
+
+}  // namespace pooled_sap
+}  // namespace contact_solvers
+
 namespace internal {
 
 // Data stored in the cache entry for joint locking.
@@ -5653,6 +5664,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   // implementations that need it.
   friend class internal::MultibodyPlantModelAttorney<T>;
   friend class internal::MultibodyPlantDiscreteUpdateManagerAttorney<T>;
+
+  // Pooled sap builder gets private acces
+  friend class contact_solvers::pooled_sap::PooledSapBuilder<T>;
 
   // This struct stores in one single place the index of all of our inputs.
   // The order of the items matches our Doxygen system overview figure.

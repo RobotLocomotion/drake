@@ -25,6 +25,7 @@ namespace {
 // frame) by applying a sinusoidal horizontal force to the block.
 
 DEFINE_double(mbp_time_step, 0.0, "Time step for plant (0 => continuous).");
+DEFINE_double(integrator_time_step, 0.0, "Time step for the integrator.");
 DEFINE_double(simulation_time, 3.0, "Simulation duration in seconds");
 DEFINE_double(static_friction, 1.0, "Coefficient of static friction.");
 DEFINE_double(dynamic_friction, 0.5, "Coefficient of dynamic friciton.");
@@ -147,12 +148,12 @@ int do_main() {
     systems::ConvexIntegrator<double>& ci =
         simulator.reset_integrator<systems::ConvexIntegrator<double>>();
     ci.set_plant(&plant);
-    ci.set_maximum_step_size(0.001);   // fixed time step dt
+    ci.set_maximum_step_size(FLAGS_integrator_time_step);
     ci.set_print_solver_stats(false);
     ci.set_log_solver_stats(false);
   }
   simulator.set_publish_every_time_step(true);
-  simulator.set_target_realtime_rate(1.0);
+  simulator.set_target_realtime_rate(0.0);
   simulator.Initialize();
     
   // Wait for meshcat to load

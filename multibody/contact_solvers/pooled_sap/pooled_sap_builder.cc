@@ -190,6 +190,8 @@ void PooledSapBuilder<T>::AccumulateForceElementForces(
   MultibodyForces<T>& forces = *scratch_.forces;
   VectorX<T>& tau_g = scratch_.tmp_v1;
   plant().CalcForceElementsContribution(context, &forces);
+  plant().AddAppliedExternalSpatialForces(context, &forces);
+  plant().AddAppliedExternalGeneralizedForces(context, &forces);
   plant().CalcGeneralizedForces(context, forces, &tau_g);
   *r += tau_g;
 }
