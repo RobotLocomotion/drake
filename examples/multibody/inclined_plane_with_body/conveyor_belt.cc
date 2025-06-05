@@ -26,14 +26,14 @@ namespace {
 // frame) by applying a sinusoidal horizontal force to the block.
 
 DEFINE_double(mbp_time_step, 0.0, "Time step for plant (0 => continuous).");
-DEFINE_double(integrator_time_step, 0.0, "Time step for the integrator.");
-DEFINE_double(simulation_time, 3.0, "Simulation duration in seconds");
+DEFINE_double(integrator_time_step, 1e-3, "Time step for the integrator.");
+DEFINE_double(simulation_time, 4.0, "Simulation duration in seconds");
 DEFINE_double(static_friction, 1.0, "Coefficient of static friction.");
-DEFINE_double(dynamic_friction, 0.5, "Coefficient of dynamic friciton.");
-DEFINE_double(frequency, 1.0, "Oscillation frequency (Hz).");
+DEFINE_double(dynamic_friction, 0.3, "Coefficient of dynamic friciton.");
+DEFINE_double(frequency, 0.5, "Oscillation frequency (Hz).");
 DEFINE_double(amplitude, 10.0, "Force amplitude (N).");
 DEFINE_double(stiction_tolerance, 1e-4, "Stiction velocity (m/s).");
-DEFINE_bool(use_hydro, true, "Whether to use hydroelastic contact.");
+DEFINE_bool(use_hydro, false, "Whether to use hydroelastic contact.");
 
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
@@ -59,15 +59,17 @@ int do_main() {
   plant_config.stiction_tolerance = FLAGS_stiction_tolerance;
   auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
 
+  SceneGraphConfig sg_config;
   if (FLAGS_use_hydro) {
-    SceneGraphConfig sg_config;
     sg_config.default_proximity_properties.compliance_type = "compliant";
-    scene_graph.set_config(sg_config);
+    sg_config.default_proximity_properties.hydroelastic_modulus = 1e8;
   }
+  sg_config.default_proximity_properties.hunt_crossley_dissipation = 500;
+  scene_graph.set_config(sg_config);
 
   // Add flat ground with friction
   RigidTransform<double> X_WG(Vector3d(0, 0, -0.05));
-  plant.RegisterCollisionGeometry(plant.world_body(), X_WG, Box(10, 10, 0.1),
+  plant.RegisterCollisionGeometry(plant.world_body(), X_WG, Box(100, 100, 0.1),
                                   "ground", friction);
 
   // Add a block
@@ -161,13 +163,21 @@ int do_main() {
         plant.get_contact_results_output_port().Eval<ContactResults<double>>(
             plant_ctx);
 
-    // We should have a single hydroelastic contact for this example
     double ft = 0.0;
+    
+    // We should have a single hydroelastic contact if use_hydro=true
     if (contact_results.num_hydroelastic_contacts() == 1) {
       const SpatialForce<double>& Fc =
           contact_results.hydroelastic_contact_info(0).F_Ac_W();
       ft =
           Fc.dot(SpatialVelocity<double>(Vector3d(0, 0, 0), Vector3d(1, 0, 0)));
+    } else {
+      const int nc = contact_results.num_point_pair_contacts();
+      for (int i = 0; i < nc; ++i) {
+        const auto& point_pair_info = contact_results.point_pair_contact_info(i);
+        ft += point_pair_info.contact_force()(0);
+      }
+      ft /= nc;
     }
 
     // We can just read the tangential velocity from the plant state
