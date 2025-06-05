@@ -1,3 +1,4 @@
+#include <fstream>
 #include <iostream>
 #include <memory>
 
@@ -34,16 +35,17 @@ DEFINE_double(amplitude, 10.0, "Force amplitude (N).");
 DEFINE_double(stiction_tolerance, 1e-4, "Stiction velocity (m/s).");
 DEFINE_bool(use_hydro, true, "Whether to use hydroelastic contact.");
 
+using Eigen::MatrixXd;
+using Eigen::Vector3d;
 using geometry::Box;
 using geometry::Meshcat;
 using geometry::SceneGraphConfig;
 using math::RigidTransform;
 using multibody::CoulombFriction;
+using systems::Context;
 using systems::DiagramBuilder;
-using Eigen::Vector3d;
-using Eigen::MatrixXd;
-using systems::Sine;
 using systems::MatrixGain;
+using systems::Sine;
 
 int do_main() {
   auto meshcat = std::make_shared<Meshcat>();
@@ -114,14 +116,9 @@ int do_main() {
   D(3, 0) = 1.0;
   auto multiplier = builder.AddSystem<MatrixGain>(D);
 
-  builder.Connect(
-    sine->get_output_port(0),
-    multiplier->get_input_port()
-  );
-  builder.Connect(
-    multiplier->get_output_port(),
-    plant.get_applied_generalized_force_input_port()
-  );
+  builder.Connect(sine->get_output_port(0), multiplier->get_input_port());
+  builder.Connect(multiplier->get_output_port(),
+                  plant.get_applied_generalized_force_input_port());
 
   // Visualizer setup
   visualization::VisualizationConfig vis_config;
@@ -141,7 +138,7 @@ int do_main() {
   const Vector3<double> p_WoBo_W(0.0, 0.0, LBz / 2.0);
   const math::RigidTransform<double> X_WB(p_WoBo_W);
   plant.SetFreeBodyPoseInWorldFrame(&plant_context, block, X_WB);
- 
+
   // Set up the simulator with the convex integrator
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
   if (FLAGS_mbp_time_step == 0.0) {
@@ -152,10 +149,42 @@ int do_main() {
     ci.set_print_solver_stats(false);
     ci.set_log_solver_stats(false);
   }
+
+  // Set a monitor to save stats to a file
+  std::ofstream ofile("conveyor_belt_data.csv");
+  ofile << "time,ft,vt\n";
+  ofile.close();
+  simulator.set_monitor([&simulator, &plant](const Context<double>& context) {
+    const double time = context.get_time();
+    const Context<double>& plant_ctx = plant.GetMyContextFromRoot(context);
+    const auto& contact_results =
+        plant.get_contact_results_output_port().Eval<ContactResults<double>>(
+            plant_ctx);
+
+    // We should have a single hydroelastic contact for this example
+    double ft = 0.0;
+    if (contact_results.num_hydroelastic_contacts() == 1) {
+      const SpatialForce<double>& Fc =
+          contact_results.hydroelastic_contact_info(0).F_Ac_W();
+      ft =
+          Fc.dot(SpatialVelocity<double>(Vector3d(0, 0, 0), Vector3d(1, 0, 0)));
+    }
+
+    // We can just read the tangential velocity from the plant state
+    const double vt = plant.GetVelocities(plant_ctx)(3);
+
+    // fmt::print("time: {}, ft: {}, vt: {}\n", time, ft, vt);
+    std::ofstream outfile("conveyor_belt_data.csv", std::ios::app);
+    outfile << fmt::format("{},{},{}\n", time, ft, vt);
+    outfile.close();
+
+    return systems::EventStatus::Succeeded();
+  });
+
   simulator.set_publish_every_time_step(true);
   simulator.set_target_realtime_rate(0.0);
   simulator.Initialize();
-    
+
   // Wait for meshcat to load
   std::cout << "Press [ENTER] to continue ...\n";
   getchar();
@@ -167,7 +196,7 @@ int do_main() {
   meshcat->PublishRecording();
 
   PrintSimulatorStatistics(simulator);
-  
+
   // Wait for meshcat to load
   std::cout << "Press [ENTER] to continue ...\n";
   getchar();
