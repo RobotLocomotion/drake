@@ -25,11 +25,11 @@ namespace {
 // frame) by applying a sinusoidal horizontal force to the block.
 
 DEFINE_double(mbp_time_step, 0.0, "Time step for plant (0 => continuous).");
-DEFINE_double(simulation_time, 10.0, "Simulation duration in seconds");
+DEFINE_double(simulation_time, 3.0, "Simulation duration in seconds");
 DEFINE_double(static_friction, 1.0, "Coefficient of static friction.");
 DEFINE_double(dynamic_friction, 0.5, "Coefficient of dynamic friciton.");
 DEFINE_double(frequency, 1.0, "Oscillation frequency (Hz).");
-DEFINE_double(amplitude, 1.0, "Force amplitude (N).");
+DEFINE_double(amplitude, 10.0, "Force amplitude (N).");
 DEFINE_double(stiction_tolerance, 1e-4, "Stiction velocity (m/s).");
 DEFINE_bool(use_hydro, true, "Whether to use hydroelastic contact.");
 
@@ -107,7 +107,8 @@ int do_main() {
   plant.Finalize();
 
   // Add an external force supplier
-  auto sine = builder.AddSystem<Sine>(FLAGS_amplitude, FLAGS_frequency, 0.0, 1);
+  auto sine = builder.AddSystem<Sine>(FLAGS_amplitude,
+                                      2 * M_PI * FLAGS_frequency, 0.0, 1);
   MatrixXd D = MatrixXd::Zero(6, 1);
   D(3, 0) = 1.0;
   auto multiplier = builder.AddSystem<MatrixGain>(D);
