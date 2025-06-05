@@ -1174,9 +1174,10 @@ void DefineDeformableBody(py::module m) {
   py::class_<Class> cls(m, "DeformableBody", cls_doc.doc);
   BindMultibodyElementMixin<double>(&cls);
   cls  // BR
-      .def("body_id", &Class::body_id)
-      .def("name", &Class::name)
-      .def("geometry_id", &Class::geometry_id)
+      .def("body_id", &Class::body_id, cls_doc.body_id.doc)
+      .def("name", &Class::name, cls_doc.name.doc)
+      .def("scoped_name", &Class::scoped_name, cls_doc.scoped_name.doc)
+      .def("geometry_id", &Class::geometry_id, cls_doc.geometry_id.doc)
       .def("config", &Class::config, py_rvp::reference_internal,
           cls_doc.config.doc)
       .def("num_dofs", &Class::num_dofs, cls_doc.num_dofs.doc)
