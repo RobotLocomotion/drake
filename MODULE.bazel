@@ -244,7 +244,7 @@ use_repo(
     "crate__autocfg-1.4.0",
     "crate__blas-0.22.0",
     "crate__blas-sys-0.7.1",
-    "crate__bumpalo-3.17.0",
+    "crate__bumpalo-3.18.1",
     "crate__cfg-if-1.0.0",
     "crate__clarabel-0.10.0",
     "crate__darling-0.14.4",
