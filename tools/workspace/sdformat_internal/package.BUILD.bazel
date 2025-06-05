@@ -280,8 +280,9 @@ cc_library_vendored(
 )
 
 _IGN_CMDLINE_SRCS = [
-    "src/gz.cc",
-    "src/gz.hh",
+    "src/cmd/gz.cc",
+    "src/cmd/gz.hh",
+    "src/cmd/sdf_main.cc",
 ]
 
 cc_library_vendored(
