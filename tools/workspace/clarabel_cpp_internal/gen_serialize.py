@@ -11,6 +11,7 @@ _FIELDS_TO_SKIP = {
     # These are enums, which we don't support yet.
     "chordal_decomposition_merge_method",
     "direct_solve_method",
+    "pardiso_iparm[64]",
 }
 
 _PROLOGUE = """\
