@@ -33,12 +33,12 @@ ARCHIVES = [
         build_file = Label("//tools/workspace/crate_universe/lock/details:BUILD.blas-sys-0.7.1.bazel"),
     ),
     dict(
-        name = "crate__bumpalo-3.17.0",
-        sha256 = "1628fb46dfa0b37568d12e5edd512553eccf6a22a78e8bde00bb4aed84d5bdbf",
+        name = "crate__bumpalo-3.18.1",
+        sha256 = "793db76d6187cd04dff33004d8e6c9cc4e05cd330500379d2394209271b4aeee",
         type = "tar.gz",
-        urls = ["https://static.crates.io/crates/bumpalo/3.17.0/download"],
-        strip_prefix = "bumpalo-3.17.0",
-        build_file = Label("//tools/workspace/crate_universe/lock/details:BUILD.bumpalo-3.17.0.bazel"),
+        urls = ["https://static.crates.io/crates/bumpalo/3.18.1/download"],
+        strip_prefix = "bumpalo-3.18.1",
+        build_file = Label("//tools/workspace/crate_universe/lock/details:BUILD.bumpalo-3.18.1.bazel"),
     ),
     dict(
         name = "crate__cfg-if-1.0.0",
