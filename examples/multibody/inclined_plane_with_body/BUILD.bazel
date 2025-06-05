@@ -52,5 +52,20 @@ drake_cc_binary(
         "@gflags",
     ],
 )
+drake_cc_binary(
+    name = "conveyor_belt",
+    srcs = [
+        "conveyor_belt.cc",
+    ],
+    deps = [
+        "//systems/analysis:convex_integrator",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_print_stats",
+        "//systems/framework:diagram",
+        "//systems/primitives",
+        "//visualization",
+        "@gflags",
+    ],
+)
 
 add_lint_tests(enable_clang_format_lint = False)
