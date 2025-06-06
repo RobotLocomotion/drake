@@ -1361,6 +1361,11 @@ class MultibodyTree {
   void CalcPositionKinematicsCache(const systems::Context<T>& context,
                                    PositionKinematicsCache<T>* pc) const;
 
+  // Computes the per-Tree block structured, World-frame System Jacobian
+  // Jv_V_WB.
+  void CalcSystemJacobianCache(const systems::Context<T>& context,
+                               SystemJacobianCache<T>* sjc) const;
+
   // Computes all the kinematic quantities that depend on the generalized
   // velocities and stores them in the velocity kinematics cache `vc`.
   // These include:

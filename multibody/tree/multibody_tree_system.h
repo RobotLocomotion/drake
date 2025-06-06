@@ -17,6 +17,7 @@
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
 #include "drake/multibody/tree/spatial_inertia.h"
+#include "drake/multibody/tree/system_jacobian_cache.h"
 #include "drake/multibody/tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/cache_entry.h"
 #include "drake/systems/framework/context.h"
@@ -109,6 +110,16 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     this->ValidateContext(context);
     return position_kinematics_cache_entry()
         .template Eval<PositionKinematicsCache<T>>(context);
+  }
+
+  /* Returns a reference to the up-to-date SystemJacobianCache in the
+  given Context, recalculating it first if necessary. Also if necessary, the
+  PositionKinematicsCache will be recalculated as well. */
+  const SystemJacobianCache<T>& EvalBlockSystemJacobianCache(
+      const systems::Context<T>& context) const {
+    this->ValidateContext(context);
+    return system_jacobian_cache_entry().template Eval<SystemJacobianCache<T>>(
+        context);
   }
 
   /* Returns a reference to the up-to-date VelocityKinematicsCache in the
@@ -259,6 +270,11 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     return this->get_cache_entry(cache_indexes_.position_kinematics);
   }
 
+  /* Returns the cache entry that holds the system Jacobian. */
+  const systems::CacheEntry& system_jacobian_cache_entry() const {
+    return this->get_cache_entry(cache_indexes_.system_jacobian);
+  }
+
   /* Returns the cache entry that holds velocity kinematics results. */
   const systems::CacheEntry& velocity_kinematics_cache_entry() const {
     return this->get_cache_entry(cache_indexes_.velocity_kinematics);
@@ -402,6 +418,12 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       PositionKinematicsCache<T>* position_cache) const {
     internal_tree().CalcPositionKinematicsCache(context, position_cache);
+  }
+
+  void CalcSystemJacobianCache(
+      const systems::Context<T>& context,
+      SystemJacobianCache<T>* system_jacobian_cache) const {
+    internal_tree().CalcSystemJacobianCache(context, system_jacobian_cache);
   }
 
   void CalcSpatialInertiasInWorld(
@@ -550,6 +572,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     systems::CacheIndex composite_body_inertia_in_world;
     systems::CacheIndex spatial_acceleration_bias;
     systems::CacheIndex velocity_kinematics;
+    systems::CacheIndex system_jacobian;
   };
 
   // This is the one real constructor. From the public API, a null tree is

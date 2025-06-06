@@ -135,6 +135,8 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityNonUnitQuaternion) {
 }
 
 TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
   // Herein, E is the robot's end-effector frame and Ep is a point fixed on E.
   // This test does the following:
   // 1. Calculates Ep's spatial velocity Jacobian with respect to generalized
@@ -164,6 +166,25 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
   plant_->CalcJacobianSpatialVelocity(*context_, JacobianWrtVariable::kQDot,
                                       end_effector_frame, p_EoEp_E, world_frame,
                                       world_frame, &Jq_V_WEp);
+
+  // Calculate the System Jacobian Jv_V_WB_W two ways and compare.
+  // TODO(sherm1) Should be num_mobods.
+  MatrixX<double> Jv_V_WB_W1(6 * plant_->num_bodies(),
+                             plant_->num_velocities());
+  Jv_V_WB_W1.setZero();
+  for (BodyIndex index{1}; index < plant_->num_bodies(); ++index) {
+    const Frame<double>& body_frame = plant_->get_body(index).body_frame();
+    auto J = Jv_V_WB_W1.block(6 * index, 0, 6, plant_->num_velocities());
+    plant_->CalcJacobianSpatialVelocity(*context_, JacobianWrtVariable::kV,
+                                        body_frame, Vector3d::Zero(),
+                                        world_frame, world_frame, &J);
+  }
+
+  MatrixX<double> Jv_V_WB_W2 = plant_->CalcFullSystemJacobian(*context_);
+  EXPECT_EQ(Jv_V_WB_W2.rows(), 6 * plant_->num_bodies());
+  EXPECT_EQ(Jv_V_WB_W2.cols(), plant_->num_velocities());
+
+  EXPECT_TRUE(CompareMatrices(Jv_V_WB_W1, Jv_V_WB_W2, kTolerance));
 
   // Alternately, compute the spatial velocity Jacobian via the gradient of the
   // spatial velocity V_WEp with respect to q̇, since V_WEp = Jq_V_WEp * q̇.
@@ -204,7 +225,6 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
 
   // Verify the spatial Jacobian Jq_V_WEp computed by the method under test
   // matches the one obtained using automatic differentiation.
-  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(Jq_V_WEp, Jq_V_WEp_autodiff, kTolerance,
                               MatrixCompareType::relative));
 
@@ -410,6 +430,25 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasAccelerations) {
   joint2_->set_angle(context_.get(), state[1]);
   joint1_->set_angular_rate(context_.get(), state[2]);
   joint2_->set_angular_rate(context_.get(), state[3]);
+
+  // Calculate the System Jacobian Jv_V_WB_W two ways and compare.
+  // TODO(sherm1) Should be num_mobods.
+  MatrixX<double> Jv_V_WB_W1(6 * plant_->num_bodies(),
+                             plant_->num_velocities());
+  Jv_V_WB_W1.setZero();
+  for (BodyIndex index{1}; index < plant_->num_bodies(); ++index) {
+    const Frame<double>& body_frame = plant_->get_body(index).body_frame();
+    auto J = Jv_V_WB_W1.block(6 * index, 0, 6, plant_->num_velocities());
+    plant_->CalcJacobianSpatialVelocity(
+        *context_, JacobianWrtVariable::kV, body_frame, Vector3d::Zero(),
+        plant_->world_frame(), plant_->world_frame(), &J);
+  }
+
+  MatrixX<double> Jv_V_WB_W2 = plant_->CalcFullSystemJacobian(*context_);
+  EXPECT_EQ(Jv_V_WB_W2.rows(), 6 * plant_->num_bodies());
+  EXPECT_EQ(Jv_V_WB_W2.cols(), plant_->num_velocities());
+
+  EXPECT_TRUE(CompareMatrices(Jv_V_WB_W1, Jv_V_WB_W2, kTolerance));
 
   // Point Ap is the point of A located at the revolute joint connecting link A
   // and link B.  Calculate Ap's bias spatial acceleration in world W.

@@ -4449,6 +4449,26 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// CalcJacobianCenterOfMassTranslationalVelocity()
   ///@{
 
+  /// Returns the System Jacobian Jv_V_WB_W(q) in block form. Each block is
+  /// dense and corresponds to one Tree of the as-built SpanningForest. Each
+  /// mobilized body generates a row and each mobility a column.
+  const std::vector<Eigen::MatrixX<T>>& EvalBlockSystemJacobian(
+      const systems::Context<T>& context) const {
+    const internal::SystemJacobianCache<T>& sjc =
+        this->EvalBlockSystemJacobianCache(context);
+    return sjc.block_system_jacobian();
+  }
+
+  /// Evaluates the block system Jacobian, then uses it to fill in an equivalent
+  /// full matrix of size 6n x m where n is the number of mobilized bodies and
+  /// m the number of mobilities.
+  Eigen::MatrixX<T> CalcFullSystemJacobian(
+      const systems::Context<T>& context) const {
+    const internal::SystemJacobianCache<T>& sjc =
+        this->EvalBlockSystemJacobianCache(context);
+    return sjc.ToFullMatrix();
+  }
+
   /// For one point Bp fixed/welded to a frame B, calculates J𝑠_V_ABp, Bp's
   /// spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>

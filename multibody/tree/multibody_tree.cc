@@ -1339,6 +1339,71 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
 }
 
 template <typename T>
+void MultibodyTree<T>::CalcSystemJacobianCache(
+    const systems::Context<T>& context, SystemJacobianCache<T>* sjc) const {
+  DRAKE_DEMAND(sjc != nullptr);
+
+  const PositionKinematicsCache<T>& pc = this->EvalPositionKinematics(context);
+  const std::vector<Vector6<T>>& H_PB_W_cache =
+      EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
+
+  // Each treei generates an ni x mi block.
+  for (const SpanningForest::Tree& tree : forest().trees()) {
+    const int n = 6 * tree.num_mobods();
+    const int m = tree.nv();
+    MatrixX<T>& J = (*sjc)[tree.index()];
+    DRAKE_DEMAND(J.rows() == n && J.cols() == m);
+
+    // The J(0,0) element for this tree is the Jacobian of the base body
+    // w.r.t. to its first mobility (velocity coordinate). Both the bodies
+    // (rows) and mobilities (columns) are numbered consecutively from there.
+    const MobodIndex base_index = tree.base_mobod();  // row 0
+    const int base_v_start = tree.v_start();          // column 0
+
+    // Each mobod Bi fills in a 6xm row of the Jacobian. All the columns
+    // outboard of Bi are left zero. Those inboard of Bi are the same as the
+    // parent's corresponding row except shifted to Bi's body origin Bio.
+    // Note: Tree mobods never include World.
+    for (const SpanningForest::Mobod& mobod : tree) {
+      const MobodIndex index_B = mobod.index();
+      const MobodIndex index_P = mobod.inboard();
+      const SpanningForest::Mobod& parent = forest().mobods(index_P);
+      const Vector3<T>& p_PoBo_W = pc.get_p_PoBo_W(index_B);
+      const int row_B = 6 * (index_B - base_index);
+      const int row_P = 6 * (index_P - base_index);
+
+      // Run through all the parent's non-zero Jacobian entries, shift to Bio
+      // and put the result in the same column of the new row. We are always
+      // shifting the _parent_'s entries; we're running down the ancestors
+      // just to find all the mobilities that affect the parent.
+      const SpanningForest::Mobod* ancestor = &parent;
+      while (!ancestor->is_world()) {
+        for (int i = 0; i < ancestor->nv(); ++i) {
+          const int avi = ancestor->v_start() + i;
+          const int col = avi - base_v_start;
+          const auto Jvi_V_WP = J.template block<6, 1>(row_P, col);
+          const Vector3<T> w_WP = Jvi_V_WP.template head<3>();
+          const Vector3<T> v_WP = Jvi_V_WP.template tail<3>();
+          auto Jvi_V_WB = J.template block<6, 1>(row_B, col);
+          Jvi_V_WB.template head<3>() = w_WP;
+          Jvi_V_WB.template tail<3>() = v_WP + w_WP.cross(p_PoBo_W);
+        }
+        ancestor = &forest().mobods(ancestor->inboard());
+      }
+      // Parent contributions are done, just need to fill in the local
+      // contribution from H_PB_W.
+      for (int i = 0; i < mobod.nv(); ++i) {
+        const int vi = mobod.v_start() + i;
+        const int col = vi - base_v_start;
+        const Vector6<T>& Hi_PB_W = H_PB_W_cache[vi];
+        auto Jvi_V_WB = J.template block<6, 1>(row_B, col);
+        Jvi_V_WB = Hi_PB_W;
+      }
+    }
+  }
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcVelocityKinematicsCache(
     const systems::Context<T>& context, const PositionKinematicsCache<T>& pc,
     VelocityKinematicsCache<T>* vc) const {
