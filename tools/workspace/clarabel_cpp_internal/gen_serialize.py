@@ -11,6 +11,9 @@ _FIELDS_TO_SKIP = {
     # These are enums, which we don't support yet.
     "chordal_decomposition_merge_method",
     "direct_solve_method",
+    # We don't use FEATURE_PARDISO_ANY, so these don't actually exist.
+    "pardiso_iparm[64]",
+    "pardiso_verbose",
 }
 
 _PROLOGUE = """\

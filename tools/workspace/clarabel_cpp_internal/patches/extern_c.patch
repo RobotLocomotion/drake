@@ -25,7 +25,7 @@ improve vendor_cxx to handle the original file, instead.
 
 --- include/cpp/DefaultSolver.h
 +++ include/cpp/DefaultSolver.h
-@@ -166,7 +166,7 @@
+@@ -202,7 +202,7 @@
      }
  };
  
@@ -34,7 +34,7 @@ improve vendor_cxx to handle the original file, instead.
  RustDefaultSolverHandle_f64 clarabel_DefaultSolver_f64_new(const CscMatrix<double> *P,
                                                             const double *q,
                                                             const CscMatrix<double> *A,
-@@ -175,6 +175,7 @@
+@@ -211,6 +211,7 @@
                                                             const SupportedConeT<double> *cones,
                                                             const DefaultSettings<double> *settings);
  
@@ -42,7 +42,7 @@ improve vendor_cxx to handle the original file, instead.
  RustDefaultSolverHandle_f32 clarabel_DefaultSolver_f32_new(const CscMatrix<float> *P,
                                                             const float *q,
                                                             const CscMatrix<float> *A,
-@@ -183,52 +184,83 @@
+@@ -219,68 +220,112 @@
                                                             const SupportedConeT<float> *cones,
                                                             const DefaultSettings<float> *settings);
  
@@ -67,6 +67,16 @@ improve vendor_cxx to handle the original file, instead.
  
 +extern "C"
  DefaultInfo<float> clarabel_DefaultSolver_f32_info(RustDefaultSolverHandle_f32 solver);
+ 
++extern "C"
+ void clarabel_DefaultSolver_f64_set_termination_callback(RustDefaultSolverHandle_f64 solver, int (*callback)(DefaultInfo<double>& ,void*),void* userdata);
++extern "C"
+ void clarabel_DefaultSolver_f32_set_termination_callback(RustDefaultSolverHandle_f32 solver, int (*callback)(DefaultInfo<float>&, void*),void* userdata);
++extern "C"
+ void clarabel_DefaultSolver_f64_unset_termination_callback(RustDefaultSolverHandle_f64 solver);
++extern "C"
+ void clarabel_DefaultSolver_f32_unset_termination_callback(RustDefaultSolverHandle_f32 solver);
+ 
  
 +extern "C"
  void clarabel_DefaultSolver_f64_update_P_csc(RustDefaultSolverHandle_f64 solver, const CscMatrix<double> *P);
@@ -114,16 +124,35 @@ improve vendor_cxx to handle the original file, instead.
  
  #ifdef FEATURE_SERDE
 +extern "C"
- void clarabel_DefaultSolver_f64_write_to_file(RustDefaultSolverHandle_f64 solver, const char *filename);
+ void clarabel_DefaultSolver_f64_save_to_file(RustDefaultSolverHandle_f64 solver, const char *filename);
 +extern "C"
- void clarabel_DefaultSolver_f32_write_to_file(RustDefaultSolverHandle_f32 solver, const char *filename);
+ void clarabel_DefaultSolver_f32_save_to_file(RustDefaultSolverHandle_f32 solver, const char *filename);
 +extern "C"
- RustDefaultSolverHandle_f64 clarabel_DefaultSolver_f64_read_from_file( const char *filename);
+ RustDefaultSolverHandle_f64 clarabel_DefaultSolver_f64_load_from_file( const char *filename);
 +extern "C"
- RustDefaultSolverHandle_f32 clarabel_DefaultSolver_f32_read_from_file( const char *filename);
+ RustDefaultSolverHandle_f32 clarabel_DefaultSolver_f32_load_from_file( const char *filename);
  #endif
  
++extern "C"
+ void clarabel_DefaultSolver_f64_print_to_stdout(RustDefaultSolverHandle_f64 solver);
++extern "C"
+ void clarabel_DefaultSolver_f32_print_to_stdout(RustDefaultSolverHandle_f32 solver);
++extern "C"
+ void clarabel_DefaultSolver_f64_print_to_file(RustDefaultSolverHandle_f64 solver, const char *filename);
++extern "C"
+ void clarabel_DefaultSolver_f32_print_to_file(RustDefaultSolverHandle_f32 solver, const char *filename);
++extern "C"
+ void clarabel_DefaultSolver_f64_print_to_buffer(RustDefaultSolverHandle_f64 solver);
++extern "C"
+ void clarabel_DefaultSolver_f32_print_to_buffer(RustDefaultSolverHandle_f32 solver);
++extern "C"
+ const char* clarabel_DefaultSolver_f64_get_print_buffer(RustDefaultSolverHandle_f64 solver);
++extern "C"
+ const char* clarabel_DefaultSolver_f32_get_print_buffer(RustDefaultSolverHandle_f32 solver);
++extern "C"
+ void clarabel_free_print_buffer(const char *s);
  
--}
+-} // extern "C"
  
- // Convert unique_ptr P, A to CscMatrix objects, then init the solver
+ 
+ 

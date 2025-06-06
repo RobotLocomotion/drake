@@ -141,6 +141,8 @@ std::string SolverStatusToString(const clarabel::SolverStatus status) {
       return "NumericalError";
     case clarabel::SolverStatus::InsufficientProgress:
       return "InsufficientProgress";
+    case clarabel::SolverStatus::CallbackTerminated:
+      return "CallbackTerminated";
   }
   DRAKE_UNREACHABLE();
 }

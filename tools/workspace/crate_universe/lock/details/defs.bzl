@@ -296,7 +296,7 @@ _NORMAL_DEPENDENCIES = {
     "": {
         _COMMON_CONDITION: {
             "cfg-if": Label("@crate__cfg-if-1.0.0//:cfg_if"),
-            "clarabel": Label("@crate__clarabel-0.10.0//:clarabel"),
+            "clarabel": Label("@crate__clarabel-0.11.0//:clarabel"),
         },
     },
 }
