@@ -95,6 +95,11 @@ class DeformableBody final : public MultibodyElement<T> {
     return is_enabled_parameter_index_;
   }
 
+  /** Returns the cache index for the FemState of this deformable body. */
+  systems::CacheIndex fem_state_cache_index() const {
+    return fem_state_cache_index_;
+  }
+
   /** (Internal use only) Configures the parallelism that `this`
    %DeformableBody uses when opportunities for parallel computation arises. */
   void set_parallelism(Parallelism parallelism) {
@@ -215,6 +220,50 @@ class DeformableBody final : public MultibodyElement<T> {
    @throw std::exception if context is null. */
   void Enable(systems::Context<T>* context) const;
 
+  /** Calculates the body's center of mass position in world frame W.
+   @param[in] context The context associated with the MultibodyPlant that owns
+                      this body.
+   @retval p_WBcm_W the body's center of mass position, measured and expressed
+   in the world frame W.
+   @throws std::exception if `context` does not belong to the MultibodyPlant
+   that owns this body. */
+  Vector3<T> CalcCenterOfMassPositionInWorld(
+      const systems::Context<T>& context) const;
+
+  /** Calculates the body's center of mass translational velocity in world frame
+   W.
+   @param[in] context The context associated with the MultibodyPlant that owns
+                      this body.
+   @retval v_WScm_W Scm's translational velocity in frame W, expressed in W,
+   where Scm is the center of mass of this body.
+   @throws std::exception if `context` does not belong to the MultibodyPlant
+   that owns this body. */
+  Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
+      const systems::Context<T>& context) const;
+
+  /** Using an angular momentum analogy, calculates an "effective" angular
+   velocity for this body about its center of mass, measured and expressed in
+   the world frame W. The effective angular velocity is computed using an
+   angular momentum equation that assumes the body is a rigid body (albeit we
+   know it is deformable).
+
+        H_WBcm_W = I_BBcm_W * w_WBcm_W
+
+   for which when solved for w_WBcm_W gives
+
+        w_WBcm_W = inverse(I_BBcm_W) * H_WBcm_W
+
+   where H_WBcm_W is the body's angular momentum about its center of mass Bcm
+   measured and expressed in the world frame W.
+   @param[in] context The context associated with the MultibodyPlant that owns
+                      this body.
+   @retval w_WBcm_W the body's effective angular velocity about Bcm, measured
+   and expressed in the world frame W.
+   @throws std::exception if `context` does not belong to the MultibodyPlant
+   that owns this body. */
+  Vector3<T> CalcEffectiveAngularVelocityForCenterOfMass(
+      const systems::Context<T>& context) const;
+
  private:
   template <typename U>
   friend class DeformableModel;
@@ -303,11 +352,33 @@ class DeformableBody final : public MultibodyElement<T> {
         this->DeclareDiscreteState(tree_system, model_state);
   }
 
+  void DoDeclareCacheEntries(
+      internal::MultibodyTreeSystem<T>* tree_system) final {
+    /* Declare cache entry for FemState. */
+    DRAKE_DEMAND(fem_model_ != nullptr);
+    std::unique_ptr<fem::FemState<T>> model_state = fem_model_->MakeFemState();
+    const auto& fem_state_cache_entry = this->DeclareCacheEntry(
+        tree_system, fmt::format("fem_state_for_body_{}", id_.get_value()),
+        systems::ValueProducer(
+            *model_state,
+            std::function<void(const systems::Context<T>&, fem::FemState<T>*)>(
+                [this](const systems::Context<T>& context,
+                       fem::FemState<T>* state) {
+                  this->CalcFemStateFromDiscreteValues(context, state);
+                })),
+        {tree_system->xd_ticket()});
+    fem_state_cache_index_ = fem_state_cache_entry.cache_index();
+  }
+
   void DoDeclareParameters(
       internal::MultibodyTreeSystem<T>* tree_system) final {
     is_enabled_parameter_index_ =
         this->DeclareAbstractParameter(tree_system, Value<bool>(true));
   }
+
+  /* Private helper to populate FemState from discrete state values. */
+  void CalcFemStateFromDiscreteValues(const systems::Context<T>& context,
+                                      fem::FemState<T>* fem_state) const;
 
   /* NOTE: If a new data member is added to this list, it would need to be
    cloned accordingly in CloneToDouble(). */
@@ -326,6 +397,7 @@ class DeformableBody final : public MultibodyElement<T> {
   VectorX<double> reference_positions_;
   copyable_unique_ptr<fem::FemModel<T>> fem_model_;
   systems::DiscreteStateIndex discrete_state_index_{};
+  systems::CacheIndex fem_state_cache_index_{};
   systems::AbstractParameterIndex is_enabled_parameter_index_{};
   std::vector<internal::DeformableRigidFixedConstraintSpec>
       fixed_constraint_specs_;

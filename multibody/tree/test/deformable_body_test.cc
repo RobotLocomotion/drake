@@ -117,6 +117,42 @@ TEST_F(DeformableBodyTest, Accessors) {
       true);
 }
 
+TEST_F(DeformableBodyTest, FemStateCache) {
+  /* fem_state_cache_index() */
+  const systems::CacheIndex fem_state_cache_index =
+      body_->fem_state_cache_index();
+  EXPECT_TRUE(fem_state_cache_index.is_valid());
+  /* Verify we can evaluate the cache entry. */
+  EXPECT_NO_THROW(plant_->get_cache_entry(fem_state_cache_index)
+                      .template Eval<fem::FemState<double>>(*plant_context_));
+}
+
+TEST_F(DeformableBodyTest, CalcCenterOfMassPositionInWorld) {
+  constexpr double kEpsilon = 1e-14;
+  /* For the undeformed sphere centered at the origin, the CoM should be very
+   close to the origin. */
+  const Vector3d com = body_->CalcCenterOfMassPositionInWorld(*plant_context_);
+  EXPECT_TRUE(CompareMatrices(com, Vector3d::Zero(), kEpsilon));
+
+  /* Move the sphere and check CoM. */
+  Matrix3X<double> q = body_->GetPositions(*plant_context_);
+  const Vector3d translation(1.0, 2.0, 3.0);
+  for (int i = 0; i < q.cols(); ++i) {
+    q.col(i) += translation;
+  }
+  body_->SetPositions(plant_context_, q);
+  /* Re-evaluating the CoM requires the FemState cache to be recomputed.
+   DeformableBody::SetPositions() is expected to invalidate the FemState cache
+   entry. Therefore, simply evaluating the cache entry again should trigger a
+   recomputation using the new positions. */
+  plant_->get_cache_entry(body_->fem_state_cache_index())
+      .template Eval<fem::FemState<double>>(*plant_context_);
+
+  const Vector3d com_translated =
+      body_->CalcCenterOfMassPositionInWorld(*plant_context_);
+  EXPECT_TRUE(CompareMatrices(com_translated, translation, kEpsilon));
+}
+
 TEST_F(DeformableBodyTest, NumDofsAndReferencePositions) {
   const int num_dofs = body_->num_dofs();
   EXPECT_GT(num_dofs, 0);
@@ -142,6 +178,55 @@ TEST_F(DeformableBodyTest, SetGetPositions) {
 TEST_F(DeformableBodyTest, Parallelism) {
   mutable_body_->set_parallelism(Parallelism(4));
   EXPECT_EQ(body_->fem_model().parallelism().num_threads(), 4);
+}
+
+TEST_F(DeformableBodyTest, CalcCenterOfMassTranslationalVelocityInWorld) {
+  constexpr double kEpsilon = 1e-14;
+  /* Set a uniform translational velocity. */
+  VectorX<double> discrete_state =
+      plant_context_->get_discrete_state(body_->discrete_state_index()).value();
+  const int num_dofs = body_->num_dofs();
+  /* Set v to (1,2,3) for all nodes. */
+  for (int i = 0; i < num_dofs / 3; ++i) {
+    discrete_state.segment<3>(num_dofs + i * 3) << 1.0, 2.0, 3.0;
+  }
+  plant_context_->SetDiscreteState(body_->discrete_state_index(),
+                                   discrete_state);
+  const Vector3d v_WCcm =
+      body_->CalcCenterOfMassTranslationalVelocityInWorld(*plant_context_);
+  EXPECT_TRUE(CompareMatrices(v_WCcm, Vector3d(1.0, 2.0, 3.0), kEpsilon));
+}
+
+TEST_F(DeformableBodyTest, CalcEffectiveAngularVelocityForCenterOfMass) {
+  constexpr double kEpsilon = 1e-14;
+  /* Set a uniform rotational velocity about the world origin. */
+  /* Set q to be a sphere centered at (1, 0, 0). */
+  VectorX<double> discrete_state =
+      plant_context_->get_discrete_state(body_->discrete_state_index()).value();
+  const int num_dofs = body_->num_dofs();
+  VectorX<double> q = discrete_state.head(num_dofs);
+  /* Translate the sphere to be centered at (1, 0, 0) */
+  for (int i = 0; i < num_dofs / 3; ++i) {
+    q.segment<3>(i * 3) += Vector3d(1.0, 0.0, 0.0);
+  }
+  /* Reshape q to a 3xN matrix. */
+  Matrix3X<double> q_matrix(3, num_dofs / 3);
+  for (int i = 0; i < num_dofs / 3; ++i) {
+    q_matrix.col(i) = q.segment<3>(i * 3);
+  }
+  body_->SetPositions(plant_context_, q_matrix);
+  /* Set v to be a uniform angular velocity about axis through (1, 0, 0) and
+   parallel to the z-axis. */
+  for (int i = 0; i < num_dofs / 3; ++i) {
+    const Vector3d p_WQ = q.segment<3>(i * 3);
+    discrete_state.segment<3>(num_dofs + i * 3) << -p_WQ.y(), p_WQ.x() - 1.0,
+        0.0;
+  }
+  plant_context_->SetDiscreteState(body_->discrete_state_index(),
+                                   discrete_state);
+  const Vector3d w_WC =
+      body_->CalcEffectiveAngularVelocityForCenterOfMass(*plant_context_);
+  EXPECT_TRUE(CompareMatrices(w_WC, Vector3d(0.0, 0.0, 1.0), kEpsilon));
 }
 
 }  // namespace
