@@ -31,13 +31,22 @@ plt.rcParams.update({'font.size': 14})
 fig, ax = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
 
 ax[0].plot(times, vt)
-ax[0].set_ylabel('Velocity $v_t$')
+ax[0].set_ylabel('Velocity $v_t$ (m/s)')
 ax[0].grid()
 
-ax[1].plot(times, ft)
-ax[1].plot(times, -f_app, linestyle="--")
-ax[1].set_ylabel('Friction $f_t$')
+ax[1].plot(times, ft, label='friction')
+ax[1].plot(times, -f_app, linestyle="--", label='applied')
+ax[1].set_ylabel('Tangential Force (N)')
+ax[1].set_xlabel('Time (s)')
 ax[1].grid()
-
+ax[1].legend()
 plt.tight_layout()
+
+plt.figure()
+plt.scatter(vt[0:-1], ft[0:-1] / 9.81)
+plt.grid()
+plt.xlabel('$v_t$')
+plt.ylabel('$\\frac{f_t}{mg}$')
+plt.tight_layout()
+
 plt.show()
