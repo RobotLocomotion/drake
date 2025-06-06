@@ -129,6 +129,9 @@ fi
 if [[ "${with_test_only}" -eq 1 ]]; then
   packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-test-only.txt")
   apt-get install ${maybe_yes} --no-install-recommends ${packages}
+  if [[ "${codename}" == "noble" ]]; then
+    "${BASH_SOURCE%/*}/install_kcov.sh"
+  fi
 fi
 
 if [[ "${with_maintainer_only}" -eq 1 ]]; then
