@@ -6,6 +6,9 @@ Provides a C++ version libsdformat's `gz sdf` ruby command-line interface.
 #include <string>
 
 #include <gflags/gflags.h>
+#include <sdf/config.hh>
+// XXX This include path spelling is terrible; can we do better??
+#include "drake_src/src/cmd/gz.hh"
 
 #include "drake/common/drake_assert.h"
 
@@ -16,20 +19,13 @@ DEFINE_string(
     "Prints an SDFormat file after parsing and converting to the converted "
     "to the latest specification");
 
-// These following `extern` functions are defined in gz.cc, and are normally
-// consumed by Ruby in libsdformat as a shared library. However, we don't want
-// Ruby, and the current header file (gz.hh) does not export all function, so
-// we must declare them here.
-// TODO(eric.cousineau): Remove these and include `gz.hh`. See:
-// https://github.com/osrf/sdformat/issues/323
-extern "C" int cmdCheck(const char* _path);
-extern "C" int cmdDescribe(const char* _version);
-extern "C" int cmdPrint(const char* _path, int _inDegrees, int _snapToDegrees,
-                        float _snapTolerance, int _preserveIncludes,
-                        int _outPrecision);
-
 namespace drake {
 namespace {
+
+namespace cmd_gz = drake_vendor::sdf::SDF_VERSION_NAMESPACE;
+using cmd_gz::cmdCheck;
+using cmd_gz::cmdDescribe;
+using cmd_gz::cmdPrint;
 
 int DoMain() {
   // All flags are mutually exclusive.
@@ -44,7 +40,7 @@ int DoMain() {
   } else if (!FLAGS_describe.empty()) {
     return cmdDescribe(FLAGS_describe.c_str());
   } else if (!FLAGS_print.empty()) {
-    return cmdPrint(FLAGS_print.c_str(), 0, 0, 0, 0, -1);
+    return cmdPrint(FLAGS_print.c_str(), 0, 0, 0, 0, -1, 0);
   }
   DRAKE_UNREACHABLE();
 }

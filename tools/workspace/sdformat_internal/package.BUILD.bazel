@@ -282,7 +282,6 @@ cc_library_vendored(
 _IGN_CMDLINE_SRCS = [
     "src/cmd/gz.cc",
     "src/cmd/gz.hh",
-    "src/cmd/sdf_main.cc",
 ]
 
 cc_library_vendored(
@@ -297,6 +296,7 @@ cc_library_vendored(
     visibility = ["@drake//tools/workspace/sdformat_internal:__pkg__"],
     deps = [
         ":sdformat",
+        "@gz_utils_internal//:gz_utils",
     ],
 )
 
@@ -312,6 +312,8 @@ check_lists_consistency(
         "include/sdf/sdf.hh",
         # Drake doesn't use sdformat's URDF parser; we have our own.
         "src/parser_urdf.*",
+        # This is an unused main program, not library code.
+        "src/cmd/sdf_main.cc",
         # These are test code, not library code.
         "**/*TEST*",
     ],
