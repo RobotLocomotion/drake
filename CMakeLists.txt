@@ -40,11 +40,15 @@ set(BAZELRC_IMPORTS "tools/bazel.rc")
 set(UNIX_DISTRIBUTION_ID)
 set(UNIX_DISTRIBUTION_CODENAME)
 
+# The minimum Darwin version should correspond to the minimum supported macOS
+# version listed doc/_pages/installation.md and doc/_pages/from_source.md.
+set(MINIMUM_DARWIN_VERSION 23)
+
 if(APPLE)
-  if(CMAKE_SYSTEM_VERSION VERSION_LESS 21)
+  if(CMAKE_SYSTEM_VERSION VERSION_LESS ${MINIMUM_DARWIN_VERSION})
     message(WARNING
       "Darwin ${CMAKE_SYSTEM_VERSION} is NOT supported. Please use "
-      "Darwin 21.x (macOS Monterey) or newer."
+      "Darwin ${MINIMUM_DARWIN_VERSION}.x or newer."
     )
   endif()
 
@@ -114,7 +118,7 @@ endif()
 
 # The minimum compiler versions should match those listed in both
 # doc/_pages/from_source.md and tools/workspace/cc/repository.bzl.
-set(MINIMUM_APPLE_CLANG_VERSION 14)
+set(MINIMUM_APPLE_CLANG_VERSION 16)
 set(MINIMUM_CLANG_VERSION 15)
 set(MINIMUM_GNU_VERSION 11)
 
