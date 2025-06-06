@@ -121,7 +121,7 @@ class IrregularExpression:
         else:
             path = None
         if self.extended:
-            groups = (explicit_modname, path, base, arg, retann)
+            groups = (explicit_modname, path, base, None, arg, retann)
         else:
             assert explicit_modname is None
             groups = (path, base, arg, retann)
