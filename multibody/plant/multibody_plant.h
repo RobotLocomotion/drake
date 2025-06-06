@@ -4449,6 +4449,52 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// CalcJacobianCenterOfMassTranslationalVelocity()
   ///@{
 
+  /// (Internal use only) Returns the System Jacobian Jv_V_WB(q) in block form.
+  /// Each block is dense and corresponds to one Tree of the as-built
+  /// internal::SpanningForest. The blocks follow the Tree ordering defined by
+  /// the SpanningForest, so are in TreeIndex order. The block for Treeᵢ is a
+  /// MatrixX of size 6nᵢ x mᵢ, where nᵢ is the number of mobilized bodies in
+  /// Treeᵢ and mᵢ is the total number of mobilizer velocity degrees of freedom
+  /// (mobilities) in the Tree. Every Tree has an entry even if it has no
+  /// mobilities (in that case mᵢ=0). World is not part of any Tree so there
+  /// is no block corresponding to World here.
+  ///
+  /// To be precise: the iᵗʰ block Jvi_V_WB ≡ ∂Vi_WB/∂vᵢ where Vi_WB is the
+  /// stacked spatial velocities for each mobilized body in Treeᵢ (in order of
+  /// MobodIndex), and vᵢ is the vector of generalized velocities associated
+  /// with those mobilized bodies, in the same order. Thus Jvi_V_WB⋅v for some
+  /// set of mᵢ generalized velocities v, returns the spatial velocities for
+  /// each body in Treeᵢ that would result from velocities v.
+  ///
+  /// Note that locking and unlocking mobilizers does not affect the Jacobian;
+  /// the Jacobian reflects what would happen if a velocity variable changed
+  /// regardless of whether it can currently do so.
+  /// @see CalcJacobianSpatialVelocity(), CalcFullSystemJacobian()
+  const std::vector<Eigen::MatrixX<T>>& EvalBlockSystemJacobian(
+      const systems::Context<T>& context) const {
+    const internal::BlockSystemJacobianCache<T>& sjc =
+        this->EvalBlockSystemJacobianCache(context);
+    return sjc.block_system_jacobian();
+  }
+
+  /// (Internal use only) Evaluates the block system Jacobian, then uses it to
+  /// fill in an equivalent full matrix of size 6n x m where n is the number of
+  /// mobilized bodies and m the number of generalized velocities (mobilities).
+  /// Each mobilized body generates a 6 x m strip of the Jacobian (6 rows) and
+  /// those are ordered by MobodIndex. Note that World is the 0th mobilized body
+  /// so to keep the numbering consistent the first 6 rows of the Jacobian
+  /// correspond to the World Mobod (and are thus all zero).
+  ///
+  /// This is most useful for testing; it is more efficient to use
+  /// EvalBlockSystemJacobian() and to work with the individual blocks.
+  /// @see EvalBlockSystemJacobian(), CalcJacobianSpatialVelocity()
+  Eigen::MatrixX<T> CalcFullSystemJacobian(
+      const systems::Context<T>& context) const {
+    const internal::BlockSystemJacobianCache<T>& sjc =
+        this->EvalBlockSystemJacobianCache(context);
+    return sjc.ToFullMatrix();
+  }
+
   /// For one point Bp fixed/welded to a frame B, calculates J𝑠_V_ABp, Bp's
   /// spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>
@@ -5623,12 +5669,20 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     return scene_graph_;
   }
 
+  /// (Internal use only) Provides access to the internal::LinkJointGraph.
+  /// You can use graph().forest() to access the as-built
+  /// internal::SpanningForest if you've already called Finalize().
+  const internal::LinkJointGraph& graph() const {
+    return internal_tree().graph();
+  }
+
   /// @} <!-- Introspection -->
 
 #ifndef DRAKE_DOXYGEN_CXX
   // Internal-only access to LinkJointGraph::FindSubgraphsOfWeldedBodies();
   // TODO(calderpg-tri) Properly expose this method (docs/tests/bindings).
   std::vector<std::set<BodyIndex>> FindSubgraphsOfWeldedBodies() const;
+
 #endif
 
   using internal::MultibodyTreeSystem<T>::is_discrete;
