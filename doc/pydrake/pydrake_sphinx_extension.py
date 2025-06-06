@@ -121,7 +121,11 @@ class IrregularExpression:
         else:
             path = None
         if self.extended:
-            groups = (explicit_modname, path, base, arg, retann)
+            if sphinx_version[:3] >= (7, 1, 0):
+                type_par = ""
+                groups = (explicit_modname, path, base, type_par, arg, retann)
+            else:
+                groups = (explicit_modname, path, base, arg, retann)
         else:
             assert explicit_modname is None
             groups = (path, base, arg, retann)
