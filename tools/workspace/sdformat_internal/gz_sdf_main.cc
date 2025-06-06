@@ -7,10 +7,10 @@ Provides a C++ version libsdformat's `gz sdf` ruby command-line interface.
 
 #include <gflags/gflags.h>
 #include <sdf/config.hh>
-// XXX This include path spelling is terrible; can we do better??
-#include "drake_src/src/cmd/gz.hh"
 
 #include "drake/common/drake_assert.h"
+// XXX This include path spelling is terrible; can we do better??
+#include "drake_src/src/cmd/gz.hh"
 
 DEFINE_string(check, "", "Checks an SDFormat file");
 DEFINE_string(describe, "", "Describes a given SDFormat version");
