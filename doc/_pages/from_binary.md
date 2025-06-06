@@ -112,7 +112,7 @@ Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
 ## Nightly Releases
 
-Binary packages of Drake for Ubuntu 22.04 (Jammy) and
+Binary packages of Drake for Ubuntu 22.04 (Jammy), Ubuntu 24.04 (Noble), and
 Mac are generated nightly and are available to download at:
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-jammy.tar.gz)
