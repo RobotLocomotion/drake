@@ -203,6 +203,7 @@ use_repo(
     "openusd_internal",
     "org_apache_xmlgraphics_commons",  # TODO(jwnimmer-tri) Mark as internal.
     "osqp_internal",
+    "pathspec_internal",
     "picosha2_internal",
     "pkgconfig_blas_internal",
     "pkgconfig_lapack_internal",
