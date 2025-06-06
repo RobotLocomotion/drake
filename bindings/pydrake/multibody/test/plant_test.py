@@ -3680,3 +3680,9 @@ class TestPlant(unittest.TestCase):
             context=plant_context)
         numpy_compare.assert_float_equal(
             reference_positions_reshaped, positions_after)
+
+        # set_default_pose and get_default_pose
+        X_WD = RigidTransform_[float](
+            RollPitchYaw_[float](np.pi / 2, 0, np.pi / 2), [1, 2, 3])
+        body.set_default_pose(X_WD=X_WD)
+        self.assertTrue(body.get_default_pose().IsExactlyEqualTo(X_WD))

@@ -144,6 +144,19 @@ TEST_F(DeformableBodyTest, Parallelism) {
   EXPECT_EQ(body_->fem_model().parallelism().num_threads(), 4);
 }
 
+TEST_F(DeformableBodyTest, DefaultPose) {
+  const math::RigidTransformd initial_pose = body_->get_default_pose();
+  /* Create a new pose different from the initial one. */
+  const math::RigidTransformd new_pose(
+      math::RotationMatrixd::MakeXRotation(M_PI / 3), Vector3d(1.0, 2.0, 3.0));
+  /* Set the new pose. */
+  mutable_body_->set_default_pose(new_pose);
+  /* Verify the new pose is correctly set. */
+  const math::RigidTransformd retrieved_pose = body_->get_default_pose();
+  EXPECT_TRUE(retrieved_pose.IsExactlyEqualTo(new_pose));
+  EXPECT_FALSE(retrieved_pose.IsNearlyEqualTo(initial_pose, 0.1));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
