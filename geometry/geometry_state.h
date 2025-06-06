@@ -648,6 +648,10 @@ class GeometryState {
         p_WQ, kinematics_data_.X_WGs, threshold);
   }
 
+  /** Implementation of QueryObject::ComputeSignedDistanceGeometryToPoint().  */
+  std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceGeometryToPoint(
+      const Vector3<T>& p_WQ, const GeometrySet& geometries) const;
+
   //@}
 
   //---------------------------------------------------------------------------
