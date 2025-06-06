@@ -97,4 +97,8 @@ def main():
 
 
 if __name__ == '__main__':
+    if install_test_helper.IS_JAMMY_DEBUG:
+        print("Skipping: ld.mold is too old")
+        sys.exit(0)
+
     main()

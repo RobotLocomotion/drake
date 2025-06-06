@@ -1,10 +1,24 @@
 import errno
 import os
+import platform
 import signal
 import stat
 import subprocess
 import sys
 import time
+
+
+# Delete all of this skip logic when jammy support is removed.
+def _is_jammy_debug():
+    is_debug = os.environ.get("COMPILATION_MODE") == "dbg"
+    is_jammy = (
+        platform.system() == 'Linux'
+        and platform.freedesktop_os_release().get('VERSION_CODENAME')
+        == 'jammy')
+    return is_jammy and is_debug
+
+
+IS_JAMMY_DEBUG = _is_jammy_debug()
 
 
 def _make_read_only(path):
