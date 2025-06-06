@@ -86,27 +86,27 @@ class DummyBodyNode : public BodyNode<double> {
     DRAKE_UNREACHABLE();
   }
 
-  void CalcMassMatrixContribution_TipToBase(
+  void CalcMassMatrixContributionViaWorld_TipToBase(
       const PositionKinematicsCache<T>&, const std::vector<SpatialInertia<T>>&,
       const std::vector<Vector6<T>>&, EigenPtr<MatrixX<T>>) const final {
     DRAKE_UNREACHABLE();
   }
 
-#define DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(Rnv)                                \
-  void CalcMassMatrixOffDiagonalBlock##Rnv(                                 \
-      int, const std::vector<Vector6<T>>&, const Eigen::Matrix<T, 6, Rnv>&, \
+#define DEFINE_DUMMY_OFF_DIAGONAL_BLOCK_VIA_WORLD(Bnv)                      \
+  void CalcMassMatrixOffDiagonalBlockViaWorld##Bnv(                         \
+      int, const std::vector<Vector6<T>>&, const Eigen::Matrix<T, 6, Bnv>&, \
       EigenPtr<MatrixX<T>>) const final {                                   \
     DRAKE_UNREACHABLE();                                                    \
   }
 
-  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(1)
-  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(2)
-  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(3)
-  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(4)
-  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(5)
-  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(6)
+  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK_VIA_WORLD(1)
+  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK_VIA_WORLD(2)
+  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK_VIA_WORLD(3)
+  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK_VIA_WORLD(4)
+  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK_VIA_WORLD(5)
+  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK_VIA_WORLD(6)
 
-#undef DEFINE_DUMMY_OFF_DIAGONAL_BLOCK
+#undef DEFINE_DUMMY_OFF_DIAGONAL_BLOCK_VIA_WORLD
 
   void CalcSpatialAcceleration_BaseToTip(
       const FrameBodyPoseCache<T>&, const T*, const PositionKinematicsCache<T>&,
@@ -153,7 +153,7 @@ class DummyBodyNode : public BodyNode<double> {
     DRAKE_UNREACHABLE();
   }
 
-  void CalcCompositeBodyInertia_TipToBase(
+  void CalcCompositeBodyInertiaInWorld_TipToBase(
       const PositionKinematicsCache<T>&, const std::vector<SpatialInertia<T>>&,
       std::vector<SpatialInertia<T>>*) const final {
     DRAKE_UNREACHABLE();

@@ -23,9 +23,10 @@ namespace {
 
 // We verify the computation of the mass matrix by comparing two significantly
 // different implementations:
-//   - CalcMassMatrix(): uses the Composite Body Algorithm.
+//   - CalcMassMatrix(): Composite Body Algorithm, via recursion using World
+//     frame quantities.
 //   - CalcMassMatrixViaInverseDynamics(): uses inverse dynamics to compute each
-//     column of the mass matrix at a time.
+//     column of the mass matrix one at a time.
 class MultibodyPlantMassMatrixTests : public ::testing::Test {
  public:
   void LoadUrl(const std::string& url) {
@@ -60,30 +61,33 @@ class MultibodyPlantMassMatrixTests : public ::testing::Test {
   // mass matrix by comparing the results from CalcMassMatrix() and
   // CalcMassMatrixViaInverseDynamics().
   void VerifyMassMatrixComputation(const Context<double>& context) {
-    // Compute mass matrix via the Composite Body Algorithm.
-    MatrixX<double> Mcba(plant_.num_velocities(), plant_.num_velocities());
-    plant_.CalcMassMatrix(context, &Mcba);
+    // Compute mass matrix using the Composite Body Algorithm via recursion
+    // using World frame quantities (indicated by "_via_W" here).
+    MatrixX<double> Mcba_via_W(plant_.num_velocities(),
+                               plant_.num_velocities());
+    plant_.CalcMassMatrix(context, &Mcba_via_W);
 
     // After a first warm-up call, subsequent calls to CalcMassMatrix<double>()
     // should never allocate.
     {
       LimitMalloc guard;
-      plant_.CalcMassMatrix(context, &Mcba);
+      plant_.CalcMassMatrix(context, &Mcba_via_W);
     }
 
-    // Compute mass matrix using inverse dynamics for each column.
-    MatrixX<double> Mid(plant_.num_velocities(), plant_.num_velocities());
-    plant_.CalcMassMatrixViaInverseDynamics(context, &Mid);
+    // Compute mass matrix using inverse dynamics for each column (indicated
+    // by "_via_id" here).
+    MatrixX<double> M_via_id(plant_.num_velocities(), plant_.num_velocities());
+    plant_.CalcMassMatrixViaInverseDynamics(context, &M_via_id);
 
     // Compute a suitable tolerance scaled with the norm of the mass matrix.
     // Since .norm() computes the Frobenius norm, and num_velocities() is the
     // squared root of the number of elements in the matrix, this tolerance is
     // effectively being scaled by the RMS value of the elements in the mass
     // matrix.
-    const double kTolerance = 10.0 * std::numeric_limits<double>::epsilon() *
-                              Mcba.norm() / plant_.num_velocities();
-    EXPECT_TRUE(
-        CompareMatrices(Mcba, Mid, kTolerance, MatrixCompareType::relative));
+    const double tolerance = 10.0 * std::numeric_limits<double>::epsilon() *
+                             Mcba_via_W.norm() / plant_.num_velocities();
+    EXPECT_TRUE(CompareMatrices(Mcba_via_W, M_via_id, tolerance,
+                                MatrixCompareType::relative));
   }
 
  protected:

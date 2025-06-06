@@ -81,8 +81,8 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
     return v_M;
   }
 
-  /* Computes the across-mobilizer velocity V_FM which for this mobilizer is
-  always zero. */
+  // Computes the across-mobilizer velocity V_FM which for this mobilizer is
+  // always zero since the outboard frame M is fixed to the inboard frame F.
   SpatialVelocity<T> calc_V_FM(const T*, const T*) const {
     return SpatialVelocity<T>::Zero();
   }
