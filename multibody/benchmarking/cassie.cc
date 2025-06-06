@@ -25,21 +25,19 @@ using systems::System;
 // In the benchmark case instantiations at the bottom of this file, we'll use
 // a bitmask for the case's "Arg" to denote which quantities are in scope as
 // either gradients (for T=AutoDiffXd) or variables (for T=Expression).
-constexpr int kWantNoGrad   = 0x0;
-constexpr int kWantGradQ    = 0x1;
-constexpr int kWantGradV    = 0x2;
-constexpr int kWantGradX    = kWantGradQ | kWantGradV;
+constexpr int kWantNoGrad = 0x0;
+constexpr int kWantGradQ = 0x1;
+constexpr int kWantGradV = 0x2;
+constexpr int kWantGradX = kWantGradQ | kWantGradV;
 constexpr int kWantGradVdot = 0x4;
-constexpr int kWantGradU    = 0x8;
+constexpr int kWantGradU = 0x8;
 
 // Fixture that holds a Cassie robot model and offers helper functions to
 // configure the benchmark case.
 template <typename T>
 class Cassie : public benchmark::Fixture {
  public:
-  Cassie() {
-    tools::performance::AddMinMaxStatistics(this);
-  }
+  Cassie() { tools::performance::AddMinMaxStatistics(this); }
 
   void SetUp(benchmark::State& state) override {
     SetUpNonZeroState();
@@ -89,60 +87,129 @@ class Cassie : public benchmark::Fixture {
   // those would get computed once and re-used (like in real applications) but
   // with caching off they would get recalculated repeatedly, affecting the
   // timing results.
-  void InvalidateInput() {
-    input_.GetMutableData();
-  }
-  void InvalidateState() {
-    context_->NoteContinuousStateChange();
-  }
+  void InvalidateInput() { input_.GetMutableData(); }
+  void InvalidateState() { context_->NoteContinuousStateChange(); }
 
-  // Runs the PositionKinematics benchmark.
+  // Runs the PositionKinematicsInW benchmark.
   // NOLINTNEXTLINE(runtime/references)
-  void DoPositionKinematics(benchmark::State& state) {
+  void DoPositionKinematicsInW(benchmark::State& state) {
     DRAKE_DEMAND(want_grad_vdot(state) == false);
     DRAKE_DEMAND(want_grad_u(state) == false);
-    // A distal body. Asking for pose of one body calculates poses of all
-    // of them in the PositionKinematicsCache.
-    const RigidBody<T>& toe_right = plant_->GetBodyByName("toe_right");
     for (auto _ : state) {
       InvalidateState();
-      plant_->EvalBodyPoseInWorld(*context_, toe_right);
+      plant_->EvalPositionKinematics(*context_);  // in W
     }
   }
 
-  // Runs the PosAndVelKinematics benchmark.
+  // Runs the PositionKinematicsInM benchmark.
   // NOLINTNEXTLINE(runtime/references)
-  void DoPosAndVelKinematics(benchmark::State& state) {
+  void DoPositionKinematicsInM(benchmark::State& state) {
     DRAKE_DEMAND(want_grad_vdot(state) == false);
     DRAKE_DEMAND(want_grad_u(state) == false);
-    // A distal body. Asking for kinematics of one body calculates it for all
-    // of them in the PositionKinematicsCache and VelocityKinematicsCache.
-    const RigidBody<T>& toe_right = plant_->GetBodyByName("toe_right");
+    for (auto _ : state) {
+      InvalidateState();
+      plant_->EvalPositionKinematicsInM(*context_);
+    }
+  }
+
+  // Runs the CompositeBodyInertiaInW benchmark.
+  // NOLINTNEXTLINE(runtime/references)
+  void DoCompositeBodyInertiaInW(benchmark::State& state) {
+    DRAKE_DEMAND(want_grad_vdot(state) == false);
+    DRAKE_DEMAND(want_grad_u(state) == false);
+    for (auto _ : state) {
+      InvalidateState();
+      plant_->EvalCompositeBodyInertiaInWorldCache(*context_);
+    }
+  }
+
+  // Runs the CompositeBodyInertiaInM benchmark.
+  // NOLINTNEXTLINE(runtime/references)
+  void DoCompositeBodyInertiaInM(benchmark::State& state) {
+    DRAKE_DEMAND(want_grad_vdot(state) == false);
+    DRAKE_DEMAND(want_grad_u(state) == false);
+    for (auto _ : state) {
+      InvalidateState();
+      plant_->EvalCompositeBodyInertiaInMCache(*context_);
+    }
+  }
+
+  // Runs the PosAndVelKinematicsInW benchmark.
+  // NOLINTNEXTLINE(runtime/references)
+  void DoPosAndVelKinematicsInW(benchmark::State& state) {
+    DRAKE_DEMAND(want_grad_vdot(state) == false);
+    DRAKE_DEMAND(want_grad_u(state) == false);
     for (auto _ : state) {
       InvalidateState();
       // This requires both position and velocity kinematics.
-      plant_->EvalBodySpatialVelocityInWorld(*context_, toe_right);
+      plant_->EvalVelocityKinematics(*context_);  // in W
     }
   }
 
-  // Runs the MassMatrix benchmark.
+  // Runs the PosAndVelKinematicsInM benchmark.
   // NOLINTNEXTLINE(runtime/references)
-  void DoMassMatrix(benchmark::State& state) {
+  void DoPosAndVelKinematicsInM(benchmark::State& state) {
     DRAKE_DEMAND(want_grad_vdot(state) == false);
     DRAKE_DEMAND(want_grad_u(state) == false);
     for (auto _ : state) {
       InvalidateState();
-      plant_->CalcMassMatrix(*context_, &mass_matrix_out_);
+      // This requires both position and velocity kinematics.
+      plant_->EvalVelocityKinematicsInM(*context_);
+    }
+  }
+
+  // Runs the MassMatrixViaID benchmark.
+  // NOLINTNEXTLINE(runtime/references)
+  void DoMassMatrixViaID(benchmark::State& state) {
+    DRAKE_DEMAND(want_grad_vdot(state) == false);
+    DRAKE_DEMAND(want_grad_u(state) == false);
+    for (auto _ : state) {
+      InvalidateState();
+      plant_->CalcMassMatrixViaInverseDynamics(*context_, &mass_matrix_out_);
+    }
+  }
+
+  // Runs the MassMatrixViaW benchmark.
+  // NOLINTNEXTLINE(runtime/references)
+  void DoMassMatrixViaW(benchmark::State& state) {
+    DRAKE_DEMAND(want_grad_vdot(state) == false);
+    DRAKE_DEMAND(want_grad_u(state) == false);
+    for (auto _ : state) {
+      InvalidateState();
+      plant_->CalcMassMatrix(*context_, &mass_matrix_out_);  // via W
+    }
+  }
+
+  // Runs the MassMatrixViaM benchmark.
+  // NOLINTNEXTLINE(runtime/references)
+  void DoMassMatrixViaM(benchmark::State& state) {
+    DRAKE_DEMAND(want_grad_vdot(state) == false);
+    DRAKE_DEMAND(want_grad_u(state) == false);
+    for (auto _ : state) {
+      InvalidateState();
+      plant_->CalcMassMatrixViaM(*context_, &mass_matrix_out_);
     }
   }
 
   // Runs the InverseDynamics benchmark.
   // NOLINTNEXTLINE(runtime/references)
-  void DoInverseDynamics(benchmark::State& state) {
+  void DoInverseDynamicsViaW(benchmark::State& state) {
     DRAKE_DEMAND(want_grad_u(state) == false);
     for (auto _ : state) {
       InvalidateState();
-      plant_->CalcInverseDynamics(*context_, desired_vdot_, external_forces_);
+      plant_->CalcInverseDynamics(*context_, desired_vdot_,
+                                  external_forces_);  // via W
+    }
+  }
+
+  // Runs the InverseDynamicsViaM benchmark.
+  // NOLINTNEXTLINE(runtime/references)
+  void DoInverseDynamicsViaM(benchmark::State& state) {
+    DRAKE_DEMAND(want_grad_u(state) == false);
+    for (auto _ : state) {
+      InvalidateState();
+      plant_->CalcInverseDynamicsViaM(*context_, desired_vdot_,
+                                      external_forces_);
     }
   }
 
@@ -201,8 +268,8 @@ void Cassie<T>::SetUpNonZeroState() {
       VectorX<T>::LinSpaced(nq_ + nv_, 0.1, 0.9));
   for (const BodyIndex& index : plant_->GetFloatingBaseBodies()) {
     const RigidBody<T>& body = plant_->get_body(index);
-    const RigidTransform<T> pose(
-        RollPitchYaw<T>(0.1, 0.2, 0.3), Vector3<T>(0.4, 0.5, 0.6));
+    const RigidTransform<T> pose(RollPitchYaw<T>(0.1, 0.2, 0.3),
+                                 Vector3<T>(0.4, 0.5, 0.6));
     plant_->SetFreeBodyPose(context_.get(), body, pose);
   }
 
@@ -296,61 +363,124 @@ void Cassie<Expression>::SetUpGradientsOrVariables(benchmark::State& state) {
 // For T=Expression, the range arg sets which variables to use, using a bitmask.
 
 // NOLINTNEXTLINE(runtime/references)
-BENCHMARK_DEFINE_F(CassieDouble, PositionKinematics)(benchmark::State& state) {
-  DoPositionKinematics(state);
+BENCHMARK_DEFINE_F(CassieDouble, PositionKinematicsInW)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoPositionKinematicsInW(state);
 }
-BENCHMARK_REGISTER_F(CassieDouble, PositionKinematics)
+BENCHMARK_REGISTER_F(CassieDouble, PositionKinematicsInW)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
+
+BENCHMARK_DEFINE_F(CassieDouble, PositionKinematicsInM)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoPositionKinematicsInM(state);
+}
+BENCHMARK_REGISTER_F(CassieDouble, PositionKinematicsInM)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
+
+BENCHMARK_DEFINE_F(CassieDouble, CompositeBodyInertiaInW)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoCompositeBodyInertiaInW(state);
+}
+BENCHMARK_REGISTER_F(CassieDouble, CompositeBodyInertiaInW)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
+
+BENCHMARK_DEFINE_F(CassieDouble, CompositeBodyInertiaInM)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoCompositeBodyInertiaInM(state);
+}
+BENCHMARK_REGISTER_F(CassieDouble, CompositeBodyInertiaInM)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
+
+BENCHMARK_DEFINE_F(CassieDouble, PosAndVelKinematicsInW)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoPosAndVelKinematicsInW(state);
+}
+BENCHMARK_REGISTER_F(CassieDouble, PosAndVelKinematicsInW)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
+
+BENCHMARK_DEFINE_F(CassieDouble, PosAndVelKinematicsInM)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoPosAndVelKinematicsInM(state);
+}
+BENCHMARK_REGISTER_F(CassieDouble, PosAndVelKinematicsInM)
     ->Unit(benchmark::kMicrosecond)
     ->Arg(kWantNoGrad);
 
 // NOLINTNEXTLINE(runtime/references)
-BENCHMARK_DEFINE_F(CassieDouble, PosAndVelKinematics)(benchmark::State& state) {
-  DoPosAndVelKinematics(state);
+BENCHMARK_DEFINE_F(CassieDouble, MassMatrixViaID)(benchmark::State& state) {
+  DoMassMatrixViaID(state);
 }
-BENCHMARK_REGISTER_F(CassieDouble, PosAndVelKinematics)
+BENCHMARK_REGISTER_F(CassieDouble, MassMatrixViaID)
     ->Unit(benchmark::kMicrosecond)
     ->Arg(kWantNoGrad);
 
 // NOLINTNEXTLINE(runtime/references)
-BENCHMARK_DEFINE_F(CassieDouble, MassMatrix)(benchmark::State& state) {
-  DoMassMatrix(state);
+BENCHMARK_DEFINE_F(CassieDouble, MassMatrixViaW)(benchmark::State& state) {
+  DoMassMatrixViaW(state);
 }
-BENCHMARK_REGISTER_F(CassieDouble, MassMatrix)
-  ->Unit(benchmark::kMicrosecond)
-  ->Arg(kWantNoGrad);
+BENCHMARK_REGISTER_F(CassieDouble, MassMatrixViaW)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
 
 // NOLINTNEXTLINE(runtime/references)
-BENCHMARK_DEFINE_F(CassieDouble, InverseDynamics)(benchmark::State& state) {
-  DoInverseDynamics(state);
+BENCHMARK_DEFINE_F(CassieDouble, MassMatrixViaM)(benchmark::State& state) {
+  DoMassMatrixViaM(state);
 }
-BENCHMARK_REGISTER_F(CassieDouble, InverseDynamics)
-  ->Unit(benchmark::kMicrosecond)
-  ->Arg(kWantNoGrad);
+BENCHMARK_REGISTER_F(CassieDouble, MassMatrixViaM)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
+
+// NOLINTNEXTLINE(runtime/references)
+BENCHMARK_DEFINE_F(CassieDouble, InverseDynamicsViaW)(benchmark::State& state) {
+  DoInverseDynamicsViaW(state);
+}
+BENCHMARK_REGISTER_F(CassieDouble, InverseDynamicsViaW)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
+
+// NOLINTNEXTLINE(runtime/references)
+BENCHMARK_DEFINE_F(CassieDouble, InverseDynamicsViaM)(benchmark::State& state) {
+  DoInverseDynamicsViaM(state);
+}
+BENCHMARK_REGISTER_F(CassieDouble, InverseDynamicsViaM)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
 
 // NOLINTNEXTLINE(runtime/references)
 BENCHMARK_DEFINE_F(CassieDouble, ForwardDynamics)(benchmark::State& state) {
   DoForwardDynamics(state);
 }
 BENCHMARK_REGISTER_F(CassieDouble, ForwardDynamics)
-  ->Unit(benchmark::kMicrosecond)
-  ->Arg(kWantNoGrad);
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
 
-BENCHMARK_DEFINE_F(CassieAutoDiff, PositionKinematics)
+BENCHMARK_DEFINE_F(CassieAutoDiff, PositionKinematicsInW)
 // NOLINTNEXTLINE(runtime/references)
 (benchmark::State& state) {
-  DoPositionKinematics(state);
+  DoPositionKinematicsInW(state);
 }
-BENCHMARK_REGISTER_F(CassieAutoDiff, PositionKinematics)
+BENCHMARK_REGISTER_F(CassieAutoDiff, PositionKinematicsInW)
     ->Unit(benchmark::kMicrosecond)
     ->Arg(kWantNoGrad)
     ->Arg(kWantGradQ);
 
-BENCHMARK_DEFINE_F(CassieAutoDiff, PosAndVelKinematics)
+BENCHMARK_DEFINE_F(CassieAutoDiff, PosAndVelKinematicsInW)
 // NOLINTNEXTLINE(runtime/references)
 (benchmark::State& state) {
-  DoPosAndVelKinematics(state);
+  DoPosAndVelKinematicsInW(state);
 }
-BENCHMARK_REGISTER_F(CassieAutoDiff, PosAndVelKinematics)
+BENCHMARK_REGISTER_F(CassieAutoDiff, PosAndVelKinematicsInW)
     ->Unit(benchmark::kMicrosecond)
     ->Arg(kWantNoGrad)
     ->Arg(kWantGradQ)
@@ -358,62 +488,79 @@ BENCHMARK_REGISTER_F(CassieAutoDiff, PosAndVelKinematics)
     ->Arg(kWantGradX);
 
 // NOLINTNEXTLINE(runtime/references)
-BENCHMARK_DEFINE_F(CassieAutoDiff, MassMatrix)(benchmark::State& state) {
-  DoMassMatrix(state);
+BENCHMARK_DEFINE_F(CassieAutoDiff, MassMatrixViaW)(benchmark::State& state) {
+  DoMassMatrixViaW(state);
 }
-BENCHMARK_REGISTER_F(CassieAutoDiff, MassMatrix)
-  ->Unit(benchmark::kMicrosecond)
-  ->Arg(kWantNoGrad)
-  ->Arg(kWantGradQ)
-  ->Arg(kWantGradV)
-  ->Arg(kWantGradX);
+BENCHMARK_REGISTER_F(CassieAutoDiff, MassMatrixViaW)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad)
+    ->Arg(kWantGradQ)
+    ->Arg(kWantGradV)
+    ->Arg(kWantGradX);
 
+BENCHMARK_DEFINE_F(CassieAutoDiff, InverseDynamicsViaW)
 // NOLINTNEXTLINE(runtime/references)
-BENCHMARK_DEFINE_F(CassieAutoDiff, InverseDynamics)(benchmark::State& state) {
-  DoInverseDynamics(state);
+(benchmark::State& state) {
+  DoInverseDynamicsViaW(state);
 }
-BENCHMARK_REGISTER_F(CassieAutoDiff, InverseDynamics)
-  ->Unit(benchmark::kMicrosecond)
-  ->Arg(kWantNoGrad)
-  ->Arg(kWantGradQ)
-  ->Arg(kWantGradV)
-  ->Arg(kWantGradX)
-  ->Arg(kWantGradVdot)
-  ->Arg(kWantGradQ|kWantGradVdot)
-  ->Arg(kWantGradV|kWantGradVdot)
-  ->Arg(kWantGradX|kWantGradVdot);
+BENCHMARK_REGISTER_F(CassieAutoDiff, InverseDynamicsViaW)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad)
+    ->Arg(kWantGradQ)
+    ->Arg(kWantGradV)
+    ->Arg(kWantGradX)
+    ->Arg(kWantGradVdot)
+    ->Arg(kWantGradQ | kWantGradVdot)
+    ->Arg(kWantGradV | kWantGradVdot)
+    ->Arg(kWantGradX | kWantGradVdot);
+
+BENCHMARK_DEFINE_F(CassieAutoDiff, InverseDynamicsViaM)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoInverseDynamicsViaM(state);
+}
+BENCHMARK_REGISTER_F(CassieAutoDiff, InverseDynamicsViaM)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad)
+    ->Arg(kWantGradQ)
+    ->Arg(kWantGradV)
+    ->Arg(kWantGradX)
+    ->Arg(kWantGradVdot)
+    ->Arg(kWantGradQ | kWantGradVdot)
+    ->Arg(kWantGradV | kWantGradVdot)
+    ->Arg(kWantGradX | kWantGradVdot);
 
 // NOLINTNEXTLINE(runtime/references)
 BENCHMARK_DEFINE_F(CassieAutoDiff, ForwardDynamics)(benchmark::State& state) {
   DoForwardDynamics(state);
 }
 BENCHMARK_REGISTER_F(CassieAutoDiff, ForwardDynamics)
-  ->Unit(benchmark::kMicrosecond)
-  ->Arg(kWantNoGrad)
-  ->Arg(kWantGradQ)
-  ->Arg(kWantGradV)
-  ->Arg(kWantGradX)
-  ->Arg(kWantGradU)
-  ->Arg(kWantGradQ|kWantGradU)
-  ->Arg(kWantGradV|kWantGradU)
-  ->Arg(kWantGradX|kWantGradU);
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad)
+    ->Arg(kWantGradQ)
+    ->Arg(kWantGradV)
+    ->Arg(kWantGradX)
+    ->Arg(kWantGradU)
+    ->Arg(kWantGradQ | kWantGradU)
+    ->Arg(kWantGradV | kWantGradU)
+    ->Arg(kWantGradX | kWantGradU);
 
-BENCHMARK_DEFINE_F(CassieExpression, PositionKinematics)
+BENCHMARK_DEFINE_F(CassieExpression, PositionKinematicsInW)
 // NOLINTNEXTLINE(runtime/references)
 (benchmark::State& state) {
-  DoPositionKinematics(state);
+  DoPositionKinematicsInW(state);
 }
-BENCHMARK_REGISTER_F(CassieExpression, PositionKinematics)
+BENCHMARK_REGISTER_F(CassieExpression, PositionKinematicsInW)
     ->Unit(benchmark::kMicrosecond)
     ->Arg(kWantNoGrad)
     ->Arg(kWantGradQ);
 
-BENCHMARK_DEFINE_F(CassieExpression, PosAndVelKinematics)
+BENCHMARK_DEFINE_F(CassieExpression, PosAndVelKinematicsInW)
 // NOLINTNEXTLINE(runtime/references)
 (benchmark::State& state) {
-  DoPosAndVelKinematics(state);
+  DoPosAndVelKinematicsInW(state);
 }
-BENCHMARK_REGISTER_F(CassieExpression, PosAndVelKinematics)
+BENCHMARK_REGISTER_F(CassieExpression, PosAndVelKinematicsInW)
     ->Unit(benchmark::kMicrosecond)
     ->Arg(kWantNoGrad)
     ->Arg(kWantGradQ)
@@ -421,42 +568,43 @@ BENCHMARK_REGISTER_F(CassieExpression, PosAndVelKinematics)
     ->Arg(kWantGradX);
 
 // NOLINTNEXTLINE(runtime/references)
-BENCHMARK_DEFINE_F(CassieExpression, MassMatrix)(benchmark::State& state) {
-  DoMassMatrix(state);
+BENCHMARK_DEFINE_F(CassieExpression, MassMatrixViaW)(benchmark::State& state) {
+  DoMassMatrixViaW(state);
 }
-BENCHMARK_REGISTER_F(CassieExpression, MassMatrix)
-  ->Unit(benchmark::kMicrosecond)
-  ->Arg(kWantNoGrad)
-  ->Arg(kWantGradQ)
-  ->Arg(kWantGradV)
-  ->Arg(kWantGradX);
+BENCHMARK_REGISTER_F(CassieExpression, MassMatrixViaW)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad)
+    ->Arg(kWantGradQ)
+    ->Arg(kWantGradV)
+    ->Arg(kWantGradX);
 
+BENCHMARK_DEFINE_F(CassieExpression, InverseDynamicsViaW)
 // NOLINTNEXTLINE(runtime/references)
-BENCHMARK_DEFINE_F(CassieExpression, InverseDynamics)(benchmark::State& state) {
-  DoInverseDynamics(state);
+(benchmark::State& state) {
+  DoInverseDynamicsViaW(state);
 }
-BENCHMARK_REGISTER_F(CassieExpression, InverseDynamics)
-  ->Unit(benchmark::kMicrosecond)
-  ->Arg(kWantNoGrad)
-  ->Arg(kWantGradQ)
-  ->Arg(kWantGradV)
-  ->Arg(kWantGradX)
-  ->Arg(kWantGradVdot)
-  ->Arg(kWantGradQ|kWantGradVdot)
-  ->Arg(kWantGradV|kWantGradVdot)
-  ->Arg(kWantGradX|kWantGradVdot);
+BENCHMARK_REGISTER_F(CassieExpression, InverseDynamicsViaW)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad)
+    ->Arg(kWantGradQ)
+    ->Arg(kWantGradV)
+    ->Arg(kWantGradX)
+    ->Arg(kWantGradVdot)
+    ->Arg(kWantGradQ | kWantGradVdot)
+    ->Arg(kWantGradV | kWantGradVdot)
+    ->Arg(kWantGradX | kWantGradVdot);
 
 // NOLINTNEXTLINE(runtime/references)
 BENCHMARK_DEFINE_F(CassieExpression, ForwardDynamics)(benchmark::State& state) {
   DoForwardDynamics(state);
 }
 BENCHMARK_REGISTER_F(CassieExpression, ForwardDynamics)
-  ->Unit(benchmark::kMicrosecond)
-  ->Arg(kWantNoGrad)
-  // N.B. MbP does not support forward dynamics with Variables in 'q'.
-  ->Arg(kWantGradV)
-  ->Arg(kWantGradU)
-  ->Arg(kWantGradV|kWantGradU);
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad)
+    // N.B. MbP does not support forward dynamics with Variables in 'q'.
+    ->Arg(kWantGradV)
+    ->Arg(kWantGradU)
+    ->Arg(kWantGradV | kWantGradU);
 
 }  // namespace
 }  // namespace multibody
