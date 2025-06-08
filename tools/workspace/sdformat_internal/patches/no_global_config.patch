@@ -17,8 +17,6 @@ Reasoning for not upstreaming this patch: Drake-specific build option.
  }
  
  /////////////////////////////////////////////////
-diff --git src/Root.cc src/Root.cc
-index 2ff9a88d..1605f432 100644
 --- src/Root.cc
 +++ src/Root.cc
 @@ -218,7 +218,7 @@ Errors Root::LoadSdfString(const std::string &_sdf, const ParserConfig &_config)
@@ -30,8 +28,6 @@ index 2ff9a88d..1605f432 100644
  
    // Read an SDF string, and store the result in sdfParsed.
    if (!readString(_sdf, _config, sdfParsed, errors))
-diff --git src/cmd/gz.cc src/cmd/gz.cc
-index 751ab569..d61c5464 100644
 --- src/cmd/gz.cc
 +++ src/cmd/gz.cc
 @@ -51,7 +51,7 @@ namespace sdf
@@ -43,7 +39,7 @@ index 751ab569..d61c5464 100644
      if (!errors.empty())
      {
        for (auto &error : errors)
-@@ -94,14 +94,19 @@ namespace sdf
+@@ -94,14 +94,18 @@ namespace sdf
  
      sdf::SDFPtr sdf(new sdf::SDF());
  
@@ -61,7 +57,6 @@ index 751ab569..d61c5464 100644
 +      {
 +        std::cerr << error << std::endl;
 +      }
-+      if (!sdf::readFile(_path, sdf))
        std::cerr << "Error: SDF parsing the xml failed.\n";
        return -1;
      }
