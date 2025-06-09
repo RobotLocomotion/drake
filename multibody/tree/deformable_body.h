@@ -66,11 +66,12 @@ class DeformableBody final : public MultibodyElement<T> {
   int num_dofs() const { return fem_model_->num_dofs(); }
 
   /** Returns the reference positions of the vertices of the deformable body
-   identified by the given `id`.
-   The reference positions are represented as a VectorX with 3N values where N
-   is the number of vertices. The x-, y-, and z-positions (measured and
-   expressed in the world frame) of the j-th vertex are 3j, 3j + 1, and 3j + 2
-   in the VectorX. */
+   identified by the given `id`. The reference positions are the positions of
+   the vertices of the mesh geometry representing the body at registration time,
+   measured and expressed in the world frame. The reference positions are
+   represented as a VectorX with 3N values where N is the number of vertices.
+   The x-, y-, and z-positions (measured and expressed in the world frame) of
+   the j-th vertex are 3j, 3j + 1, and 3j + 2 in the VectorX. */
   const VectorX<double>& reference_positions() const {
     return reference_positions_;
   }
@@ -305,6 +306,16 @@ class DeformableBody final : public MultibodyElement<T> {
 
   void DoDeclareDiscreteState(
       internal::MultibodyTreeSystem<T>* tree_system) final;
+
+  /* Sets the default state of this deformable body. This is called by
+   DeformableModel::SetDefaultState. */
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const;
+
+  /* Returns the default positions of the vertices of the deformable body. This
+   provides the positions of the registered mesh posed in the default pose,
+   measured and expressed in the world frame. */
+  VectorX<T> CalcDefaultPositions() const;
 
   void DoDeclareParameters(internal::MultibodyTreeSystem<T>* tree_system) final;
 

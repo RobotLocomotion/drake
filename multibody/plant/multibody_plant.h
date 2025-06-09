@@ -3069,6 +3069,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     this->ValidateContext(context);
     this->ValidateCreatedForThisSystem(state);
     internal_tree().SetDefaultState(context, state);
+    deformable_model().SetDefaultState(context, state);
   }
 
   /// Assigns random values to all elements of the state, by drawing samples
