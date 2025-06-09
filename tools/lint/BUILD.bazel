@@ -151,6 +151,9 @@ drake_py_unittest(
         "external",
         # This test looks outside the sandbox.
         "no-sandbox",
+        # Our custom install of kcov for Ubuntu 24.04 Noble in
+        # setup/ubuntu/install_kcov.sh trips up this test.
+        "no_kcov",
     ],
     deps = [":util"],
 )
