@@ -21,7 +21,7 @@ vt = data["vt"].values  # tangential velocity
 f_app = data["f_app"].values  # applied external force
 
 # Compute friction force based on measured accelerations
-dt = times[1] - times[0]
+dt = times[1:] - times[0:-1]
 at = (vt[1:] - vt[0:-1]) / dt
 at = np.insert(at, 0, 0.0)  # initial acceleration is zero
 ft = at - f_app  # assumes mass = 1kg

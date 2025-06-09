@@ -22,7 +22,7 @@ namespace examples {
 namespace conveyor_belt {
 namespace {
 
-// Simulates a block on an oscillating coveyor belt (in the belt's reference
+// Simulates a block on an oscillating conveyor belt (in the belt's reference
 // frame) by applying a sinusoidal horizontal force to the block.
 
 DEFINE_double(mbp_time_step, 0.0, "Time step for plant (0 => continuous).");
@@ -34,6 +34,9 @@ DEFINE_double(frequency, 0.5, "Oscillation frequency (Hz).");
 DEFINE_double(amplitude, 10.0, "Force amplitude (N).");
 DEFINE_double(stiction_tolerance, 1e-4, "Stiction velocity (m/s).");
 DEFINE_bool(use_hydro, false, "Whether to use hydroelastic contact.");
+DEFINE_bool(use_error_control, true,
+            "Whether to use error control in the integrator.");
+DEFINE_double(accuracy, 1e-1, "Target accuracy for error control.");
 
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
@@ -148,6 +151,8 @@ int do_main() {
         simulator.reset_integrator<systems::ConvexIntegrator<double>>();
     ci.set_plant(&plant);
     ci.set_maximum_step_size(FLAGS_integrator_time_step);
+    ci.set_fixed_step_mode(!FLAGS_use_error_control);
+    ci.set_target_accuracy(FLAGS_accuracy);
     ci.set_print_solver_stats(false);
     ci.set_log_solver_stats(false);
   }
