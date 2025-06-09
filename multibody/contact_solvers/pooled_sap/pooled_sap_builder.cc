@@ -157,10 +157,6 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
             Vector3<T>::Zero(), world_frame, world_frame, &J_V_WB);
         Jv_WBc_W = J_V_WB.middleCols(vt_start, nt);
       }
-      // if (body.is_floating()) {
-      //   fmt::print("b: {}. name: {}. J:\n{}\n", b, body.name(),
-      //              fmt_eigen(Jv_WBc_W));
-      // }
     }
   }
 

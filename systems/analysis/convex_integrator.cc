@@ -155,10 +155,12 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     // is necessary because our main convergence criterion requires comparing dv
     // over several iterations.
     const double scale =
-        std::max(data.cache().Av.norm(), model.params().r.norm());
-    if (stats_.gradient_norm.back() <
-        solver_parameters_.abs_tolerance +
-            solver_parameters_.rel_tolerance * scale) {
+        model.params().time_step *
+        std::max(data.cache().Av.norm(), model.r().norm());
+
+    const double eps = solver_parameters_.abs_tolerance +
+                       solver_parameters_.rel_tolerance * scale;
+    if (stats_.gradient_norm.back() < eps) {
       stats_.ls_iterations.push_back(0);
       stats_.alpha.push_back(NAN);
       stats_.step_size.push_back(NAN);
