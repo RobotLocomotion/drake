@@ -1,25 +1,8 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:drake_cc.bzl", "drake_cc_binary")
-load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
 
 exports_files(
     ["embed_sdf.py"],
     visibility = ["@sdformat_internal//:__pkg__"],
-)
-
-drake_cc_binary(
-    name = "gz_sdf",
-    srcs = ["gz_sdf_main.cc"],
-    deps = [
-        "//common:essential",
-        "@gflags",
-        "@sdformat_internal//:ign_cmdline",
-    ],
-)
-
-drake_py_unittest(
-    name = "gz_sdf_test",
-    data = [":gz_sdf"],
 )
 
 add_lint_tests(
