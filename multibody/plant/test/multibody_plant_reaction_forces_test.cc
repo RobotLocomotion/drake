@@ -6,13 +6,16 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/drake_visualizer.h"
+#include "drake/geometry/proximity/deformable_contact_geometries.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -23,8 +26,11 @@
 #include "drake/systems/framework/diagram_builder.h"
 
 using drake::geometry::Box;
+using drake::geometry::GeometryInstance;
 using drake::geometry::SceneGraph;
+using drake::geometry::SceneGraphInspector;
 using drake::geometry::Sphere;
+using drake::geometry::VolumeMesh;
 using drake::geometry::internal::HydroelasticType;
 using drake::geometry::internal::kComplianceType;
 using drake::geometry::internal::kElastic;
@@ -35,6 +41,8 @@ using drake::geometry::internal::kRezHint;
 using drake::math::RigidTransformd;
 using drake::math::RollPitchYawd;
 using drake::multibody::ConnectContactResultsToDrakeVisualizer;
+using drake::multibody::DeformableBodyId;
+using drake::multibody::Parser;
 using drake::multibody::RevoluteJoint;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
 using drake::multibody::internal::CompliantContactManager;
@@ -1008,6 +1016,178 @@ TEST_P(WeldedAndFloatingTest, ReactionForcesOrdinalIndexing) {
 
 INSTANTIATE_TEST_SUITE_P(ReactionForcesTests, WeldedAndFloatingTest,
                          testing::ValuesIn({false, true}));
+
+// This test verifies the computation of joint reaction forces in a model with a
+// deformable object sitting on a rigid floor. The deformable is a floating
+// body. The floor is welded to the world frame. The position of the weld joint
+// is such that its aligned with the center of mass of the rigid floor and the
+// deformable box that sits atop it. The reaction force for the weld joint
+// connecting the floor to the world should equal the combined weight of the
+// deformable object and the floor. Since the weld joint is aligned with the
+// center of mass of the rigid floor and deformable box, there should be zero
+// reaction torque.
+class DeformableReactionForcesTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    systems::DiagramBuilder<double> builder;
+    std::tie(plant_, scene_graph_) =
+        AddMultibodyPlantSceneGraph(&builder, kTimeStep);
+
+    // Add a rigid floor welded to the world
+    AddFloor();
+
+    // Add a deformable model to the plant
+    Parser parser(&builder);
+    const std::string absolute_path =
+        FindResourceOrThrow("drake/multibody/plant/test/deformable_box.sdf");
+    const auto model_instances =
+        parser.AddModelsFromUrl("file://" + absolute_path);
+    DeformableModel<double>& deformable_model =
+        plant_->mutable_deformable_model();
+    deformable_model_ptr_ = &deformable_model;
+    const std::vector<DeformableBodyId> deformable_body_ids =
+        deformable_model.GetBodyIds(model_instances[0]);
+    deformable_body_id_ = deformable_body_ids[0];
+
+    // Set gravity
+    plant_->mutable_gravity_field().set_gravity_vector(
+        Vector3d(0.0, 0.0, -kGravity));
+
+    // Finalize plant
+    plant_->Finalize();
+
+    // Connect visualizer for debugging
+    geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph_);
+
+    diagram_ = builder.Build();
+  }
+
+  // Adds a rigid floor welded to the world
+  void AddFloor() {
+    // Create a rigid body for the floor
+    const SpatialInertia<double> M_FloorCm =
+        SpatialInertia<double>::SolidBoxWithMass(kFloorMass, kFloorWidth,
+                                                 kFloorWidth, kFloorHeight);
+    floor_ = &plant_->AddRigidBody("floor", M_FloorCm);
+
+    // Position the floor such that the top of the floor makes contact with
+    // the bottom of the deformable box when the sim starts
+    const auto floor_z_pos = -kFloorHeight / 2.0 - kBoxSize / 2.0;
+    const RigidTransformd X_WF(Vector3d(0.0, 0.0, floor_z_pos));
+
+    // Weld the floor to the world
+    weld_ = &plant_->WeldFrames(plant_->world_body().body_frame(),
+                                floor_->body_frame(), X_WF);
+
+    // Add collision geometry for the floor
+    geometry::ProximityProperties proximity_props;
+    geometry::AddContactMaterial({}, {}, kFriction, &proximity_props);
+    const Box floor_shape(kFloorWidth, kFloorWidth, kFloorHeight);
+    plant_->RegisterCollisionGeometry(*floor_, RigidTransformd::Identity(),
+                                      floor_shape, "floor_collision",
+                                      proximity_props);
+
+    // Add visual geometry for the floor
+    const Vector4<double> floor_color(0.5, 0.5, 0.5, 1.0);  // Gray
+    plant_->RegisterVisualGeometry(*floor_, RigidTransformd::Identity(),
+                                   floor_shape, "floor_visual", floor_color);
+  }
+
+  // Computes the reference volume of the registered deformable body
+  double CalcDeformableReferenceVolume() const {
+    const SceneGraphInspector<double>& inspector =
+        scene_graph_->model_inspector();
+    const geometry::GeometryId g_id =
+        deformable_model_ptr_->GetGeometryId(deformable_body_id_);
+    const VolumeMesh<double>* reference_mesh = inspector.GetReferenceMesh(g_id);
+    DRAKE_DEMAND(reference_mesh != nullptr);
+    return reference_mesh->CalcVolume();
+  }
+
+  // Run a simulation
+  std::unique_ptr<Simulator<double>> Simulate() {
+    auto simulator = std::make_unique<Simulator<double>>(*diagram_);
+    simulator->set_target_realtime_rate(kTargetRealtimeRate);
+    simulator->AdvanceTo(kSimulationTime);
+    return simulator;
+  }
+
+  // Verify that joint reaction forces match the expected values
+  void VerifyJointReactionForces(const Simulator<double>& simulator) {
+    const auto& diagram_context = simulator.get_context();
+
+    const Context<double>& plant_context =
+        plant_->GetMyContextFromRoot(diagram_context);
+
+    // Get the reaction forces at the weld joint
+    const auto& reaction_forces =
+        plant_->get_reaction_forces_output_port()
+            .Eval<std::vector<SpatialForce<double>>>(plant_context);
+
+    // There should be one joint (the weld joint)
+    ASSERT_EQ(reaction_forces.size(), 1u)
+        << "Expected 1 joint in reaction forces, got "
+        << reaction_forces.size();
+
+    // Get the reaction force at the weld joint
+    const SpatialForce<double>& F_Weld = reaction_forces[weld_->ordinal()];
+
+    // Calculate the expected reaction force (equal to the weight of the
+    // deformable object plus the weight of the rigid floor)
+    const double volume = CalcDeformableReferenceVolume();
+    const double deformable_mass = volume * kMassDensity;
+    const double deformable_weight = deformable_mass * kGravity;
+    const double floor_weight = kFloorMass * kGravity;
+
+    // The reaction force should be equal to the combined weight of the
+    // deformable object and floor
+    const Vector3d expected_force(0.0, 0.0, deformable_weight + floor_weight);
+
+    // Verify the reaction force
+    EXPECT_TRUE(CompareMatrices(F_Weld.translational(), expected_force,
+                                kTolerance, MatrixCompareType::relative));
+
+    // There should be no reaction torque since the weld joint is aligned
+    // (in world frame x and y) with the center of mass of both the
+    // rigid floor and deformable object.
+    const Vector3d expected_torque = Vector3d::Zero();
+    EXPECT_TRUE(CompareMatrices(F_Weld.rotational(), expected_torque,
+                                kTolerance, MatrixCompareType::relative));
+  }
+
+  // Deformable object parameters (from the SDFormat file).
+  const double kMassDensity{1000.0};  // Mass density in kg/m³
+  const double kBoxSize{0.1};         // Size of the box edge in m
+
+  // Floor parameters
+  const double kFloorWidth{10.0};  // Width of the floor in m
+  const double kFloorHeight{1.0};  // Height of the floor in m
+  const double kFloorMass{10.0};   // Mass of the floor in kg
+
+  // Simulation parameters
+  const double kTimeStep{0.01};         // Time step in s
+  const double kSimulationTime{1.0};    // Maximum simulation time in s
+  const double kTargetRealtimeRate{0};  // Target realtime rate
+  const double kGravity{9.81};          // Gravity in m/s²
+  const CoulombFriction<double> kFriction{0.4, 0.4};  // Friction
+  const double kTolerance{1e-8};  // Tolerance for comparisons
+
+  // System components
+  MultibodyPlant<double>* plant_{nullptr};
+  SceneGraph<double>* scene_graph_{nullptr};
+  DeformableModel<double>* deformable_model_ptr_{nullptr};
+  std::unique_ptr<systems::Diagram<double>> diagram_;
+
+  // Bodies and joints
+  const RigidBody<double>* floor_{nullptr};
+  const WeldJoint<double>* weld_{nullptr};
+  DeformableBodyId deformable_body_id_;
+};
+
+TEST_F(DeformableReactionForcesTest, ReactionForcesMatchCombinedWeight) {
+  auto simulator = Simulate();
+  VerifyJointReactionForces(*simulator);
+}
 
 }  // namespace
 }  // namespace multibody

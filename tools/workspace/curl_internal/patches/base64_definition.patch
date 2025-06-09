@@ -1,0 +1,18 @@
+[curl_internal] Fix a "missing symbol" error in debug builds
+
+The https://github.com/curl/curl/pull/17309 made one of the constants
+here public, but failed to update the preprocessor logic to match.
+
+Reason for not upstreaming this patch: hassle with low bang for the buck.
+
+--- lib/curlx/base64.c
++++ lib/curlx/base64.c
+@@ -26,7 +26,7 @@
+ 
+ #include "../curl_setup.h"
+ 
+-#if !defined(CURL_DISABLE_HTTP_AUTH) || defined(USE_SSH) || \
++#if 1 || !defined(CURL_DISABLE_HTTP_AUTH) || defined(USE_SSH) || \
+   !defined(CURL_DISABLE_LDAP) || \
+   !defined(CURL_DISABLE_SMTP) || \
+   !defined(CURL_DISABLE_POP3) || \

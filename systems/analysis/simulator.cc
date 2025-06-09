@@ -882,21 +882,6 @@ void Simulator<T>::reset_context_from_shared(
 }
 
 template <typename T>
-std::unique_ptr<Context<T>> Simulator<T>::release_context() {
-  integrator_->reset_context(nullptr);
-  initialization_done_ = false;
-  std::unique_ptr<Context<T>> result;
-  if (std::holds_alternative<std::shared_ptr<Context<T>>>(context_.ptr)) {
-    result = context_.get()->Clone();
-    context_.ptr = std::unique_ptr<Context<T>>();
-  } else if (std::holds_alternative<std::unique_ptr<Context<T>>>(
-                 context_.ptr)) {
-    result = std::move(std::get<std::unique_ptr<Context<T>>>(context_.ptr));
-  }
-  return result;
-}
-
-template <typename T>
 void Simulator<T>::ResetStatistics() {
   integrator_->ResetStatistics();
   num_steps_taken_ = 0;

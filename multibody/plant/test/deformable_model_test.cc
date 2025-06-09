@@ -6,6 +6,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
+#include "drake/multibody/tree/force_density_field.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -84,6 +85,15 @@ TEST_F(DeformableModelTest, RegisterDeformableBody) {
                                         make_unique<Sphere>(1), "sphere"),
           default_body_config_, kRezHint),
       ".*RegisterDeformableBody.*after system resources have been declared.*");
+
+  /* Registering a deformable body within a continous plant throws. */
+  MultibodyPlant<double> continuous_plant(0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      continuous_plant.mutable_deformable_model().RegisterDeformableBody(
+          make_unique<GeometryInstance>(RigidTransformd(),
+                                        make_unique<Sphere>(1), "sphere"),
+          default_body_config_, kRezHint),
+      ".*RegisterDeformableBody.*continuous MultibodyPlant.*not allowed.*");
 }
 
 /* Coarsely tests that SetWallBoundaryCondition adds some sort of boundary
@@ -116,13 +126,6 @@ TEST_F(DeformableModelTest, SetWallBoundaryCondition) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       deformable_model_ptr_->SetWallBoundaryCondition(fake_body_id, p_WQ2, n_W),
       fmt::format(".*No.*id.*{}.*registered.*", fake_body_id));
-
-  /* Setting boundary condition must be done pre-finalize. */
-  plant_->Finalize();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      deformable_model_ptr_->SetWallBoundaryCondition(body_id, p_WQ2, n_W),
-      ".*SetWallBoundaryCondition.*after system resources have been "
-      "declared.*");
 }
 
 TEST_F(DeformableModelTest, DiscreteStateIndexAndReferencePositions) {
@@ -182,9 +185,6 @@ TEST_F(DeformableModelTest, InvalidBodyId) {
 TEST_F(DeformableModelTest, GetBodyIdFromBodyIndex) {
   constexpr double kRezHint = 0.5;
   const DeformableBodyId body_id = RegisterSphere(kRezHint);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      deformable_model_ptr_->GetBodyId(DeformableBodyIndex(0)),
-      ".*GetBodyId.*before system resources have been declared.*");
   plant_->Finalize();
   EXPECT_EQ(deformable_model_ptr_->GetBodyId(DeformableBodyIndex(0)), body_id);
   // Throws for invalid indexes.
@@ -197,9 +197,6 @@ TEST_F(DeformableModelTest, GetBodyIdFromBodyIndex) {
 TEST_F(DeformableModelTest, GetBodyIndex) {
   constexpr double kRezHint = 0.5;
   const DeformableBodyId body_id = RegisterSphere(kRezHint);
-  /* Throws for pre-finalize call. */
-  DRAKE_EXPECT_THROWS_MESSAGE(deformable_model_ptr_->GetBodyIndex(body_id),
-                              ".*before system resources.*declared.*");
   plant_->Finalize();
   EXPECT_EQ(deformable_model_ptr_->GetBodyIndex(body_id),
             DeformableBodyIndex(0));
@@ -290,15 +287,17 @@ TEST_F(DeformableModelTest, AddFixedConstraint) {
   geometry::Box box(1.0, 1.0, 1.0);
   const RigidTransformd X_BA(Vector3d(-2, 0, 0));
   const RigidTransformd X_BG(Vector3d(-1, 0, 0));
-  const MultibodyConstraintId constraint_id =
-      deformable_model_ptr_->AddFixedConstraint(deformable_id, rigid_body, X_BA,
-                                                box, X_BG);
-
+  deformable_model_ptr_->AddFixedConstraint(deformable_id, rigid_body, X_BA,
+                                            box, X_BG);
+  const DeformableBody<double>& body =
+      deformable_model_ptr_->GetBody(deformable_id);
+  ASSERT_EQ(body.body_id(), deformable_id);
   EXPECT_TRUE(deformable_model_ptr_->HasConstraint(deformable_id));
-  EXPECT_EQ(deformable_model_ptr_->fixed_constraint_ids(deformable_id).size(),
-            1);
+  EXPECT_TRUE(body.has_fixed_constraint());
+  ASSERT_EQ(body.fixed_constraint_specs().size(), 1);
   const DeformableRigidFixedConstraintSpec& spec =
-      deformable_model_ptr_->fixed_constraint_spec(constraint_id);
+      body.fixed_constraint_specs()[0];
+
   EXPECT_EQ(spec.body_A, deformable_id);
   EXPECT_EQ(spec.body_B, rigid_body.index());
   /* Only the right-most deformable body vertex (with world position (1, 0, 0))
@@ -313,7 +312,8 @@ TEST_F(DeformableModelTest, AddFixedConstraint) {
   /* Qi should be coincident with Pi. */
   ASSERT_EQ(spec.p_BQs.size(), 1);
   const Vector3d p_BQi = spec.p_BQs[0];
-  EXPECT_EQ(X_BA * p_APi, p_BQi);
+  EXPECT_TRUE(CompareMatrices(X_BA * p_APi, p_BQi,
+                              4.0 * std::numeric_limits<double>::epsilon()));
 
   /* Throw conditions */
   /* Non-existant deformable body. */
@@ -335,10 +335,11 @@ TEST_F(DeformableModelTest, AddFixedConstraint) {
                    deformable_id, rigid_body, X_BA, mesh, X_BG),
                std::exception);
   /* No constraint is added . */
-  DRAKE_EXPECT_THROWS_MESSAGE(deformable_model_ptr_->AddFixedConstraint(
-                                  deformable_id, rigid_body, X_BA, box,
-                                  RigidTransformd(Vector3d(100, 100, 100))),
-                              "No constraint has been added.*box.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      deformable_model_ptr_->AddFixedConstraint(
+          deformable_id, rigid_body, X_BA, box,
+          RigidTransformd(Vector3d(100, 100, 100))),
+      "AddFixedConstraint.*No constraint has been added.*box.*");
   /* Adding constraint after finalize. */
   plant_->Finalize();
   EXPECT_THROW(deformable_model_ptr_->AddFixedConstraint(
@@ -370,7 +371,7 @@ TEST_F(DeformableModelTest, ExternalForces) {
       return get_input_port().Eval(context)(0) * field_(p_WQ);
     };
 
-    std::unique_ptr<ForceDensityField<double>> DoClone() const final {
+    std::unique_ptr<ForceDensityFieldBase<double>> DoClone() const final {
       return std::make_unique<ConstantForceDensityField>(*this);
     }
 
@@ -415,7 +416,7 @@ TEST_F(DeformableModelTest, ExternalForces) {
       deformable_model_ptr_->GetExternalForces(fake_id),
       fmt::format(".*No.*id.*{}.*registered.*", fake_id));
 
-  const std::vector<const ForceDensityField<double>*>& external_forces =
+  const std::vector<const ForceDensityFieldBase<double>*>& external_forces =
       deformable_model_ptr_->GetExternalForces(body_id);
   for (const auto* force : external_forces) {
     const auto* g = dynamic_cast<const GravityForceField<double>*>(force);
@@ -437,6 +438,13 @@ TEST_F(DeformableModelTest, ExternalForces) {
       EXPECT_EQ(force->EvaluateAt(*plant_context, p_WQ), scale * 3.14 * p_WQ);
     }
   }
+
+  /* Registering an external force within a continous plant throws. */
+  MultibodyPlant<double> continuous_plant(0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      continuous_plant.mutable_deformable_model().AddExternalForce(
+          std::make_unique<ConstantForceDensityField>(force_field)),
+      ".*AddExternalForce.*continuous MultibodyPlant.*not allowed.*");
 }
 
 TEST_F(DeformableModelTest, CloneBeforeFinalizeThrows) {
@@ -486,9 +494,8 @@ TEST_F(DeformableModelTest, NonEmptyClone) {
   geometry::Box box(1.0, 1.0, 1.0);
   const RigidTransformd X_BA(Vector3d(-2, 0, 0));
   const RigidTransformd X_BG(Vector3d(-1, 0, 0));
-  const MultibodyConstraintId constraint_id =
-      deformable_model_ptr_->AddFixedConstraint(body_id, rigid_body, X_BA, box,
-                                                X_BG);
+  deformable_model_ptr_->AddFixedConstraint(body_id, rigid_body, X_BA, box,
+                                            X_BG);
 
   EXPECT_FALSE(deformable_model_ptr_->is_empty());
   /* Plant owning the cloned from models need to be finalized. */
@@ -525,10 +532,6 @@ TEST_F(DeformableModelTest, NonEmptyClone) {
             deformable_model_ptr_->GetBodyId(geometry_id));
   EXPECT_EQ(double_clone_ptr->HasConstraint(body_id),
             deformable_model_ptr_->HasConstraint(body_id));
-  EXPECT_EQ(double_clone_ptr->fixed_constraint_spec(constraint_id),
-            deformable_model_ptr_->fixed_constraint_spec(constraint_id));
-  EXPECT_EQ(double_clone_ptr->fixed_constraint_ids(body_id),
-            deformable_model_ptr_->fixed_constraint_ids(body_id));
 }
 
 /* An empty DeformableModel doesn't get in the way of a TAMSI plant. */
@@ -723,11 +726,8 @@ TEST_F(DeformableModelTest, Parallelism) {
 TEST_F(DeformableModelTest, BodyName) {
   const DeformableBodyId body_id = RegisterSphere(0.5);
   EXPECT_TRUE(deformable_model_ptr_->HasBodyNamed("sphere"));
-  EXPECT_EQ(deformable_model_ptr_->GetBodyIdByName("sphere"), body_id);
+  EXPECT_EQ(deformable_model_ptr_->GetBodyByName("sphere").body_id(), body_id);
   EXPECT_FALSE(deformable_model_ptr_->HasBodyNamed("nonexistent_body_name"));
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      deformable_model_ptr_->GetBodyIdByName("nonexistent_body_name"),
-      ".*No deformable body.*nonexistent_body_name.*registered.*");
 }
 
 /* Tests registering deformable bodies into a prescribed model instance as well
@@ -748,6 +748,38 @@ TEST_F(DeformableModelTest, ModelInstance) {
       deformable_model_ptr_->GetBodyIds(model_instance);
   ASSERT_EQ(bodies_in_model_instance.size(), 1);
   EXPECT_EQ(bodies_in_model_instance[0], body_id);
+}
+
+TEST_F(DeformableModelTest, DuplicatedNames) {
+  const double kRezHint = 0.5;
+  const ModelInstanceIndex instance0 = plant_->AddModelInstance("instance0");
+  const ModelInstanceIndex instance1 = plant_->AddModelInstance("instance1");
+  const DeformableBodyId body0_id = RegisterSphere(
+      deformable_model_ptr_, kRezHint, RigidTransformd{}, instance0);
+  /* Registering a body with duplicated name within the same model instance is a
+   throw. */
+  DRAKE_EXPECT_THROWS_MESSAGE(RegisterSphere(deformable_model_ptr_, kRezHint,
+                                             RigidTransformd{}, instance0),
+                              ".*instance0.*already contains.*sphere.*");
+  /* Getting body by name without specifying model instance is fine as long as
+   the name is unique within DeformableModel. */
+  const DeformableBody<double>& body0 =
+      deformable_model_ptr_->GetBodyByName("sphere");
+  EXPECT_EQ(body0.body_id(), body0_id);
+
+  /* Registering a body with duplicated name in a different model instance is
+   fine. */
+  const DeformableBodyId body1_id = RegisterSphere(
+      deformable_model_ptr_, kRezHint, RigidTransformd{}, instance1);
+  EXPECT_EQ(deformable_model_ptr_->num_bodies(), 2);
+  /* If a body name is shared across bodies in different model instances,
+   specifying just the name is ambiguous, and thus we should throw. */
+  DRAKE_EXPECT_THROWS_MESSAGE(deformable_model_ptr_->GetBodyByName("sphere"),
+                              ".*The name sphere is not unique.*");
+  /* We can get body by name after specifying the model instance. */
+  const DeformableBody<double>& body1 =
+      deformable_model_ptr_->GetBodyByName("sphere", instance1);
+  EXPECT_EQ(body1.body_id(), body1_id);
 }
 
 }  // namespace

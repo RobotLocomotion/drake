@@ -80,7 +80,6 @@ from pydrake.multibody.plant import (
     ContactResultsToLcmSystem,
     CoulombFriction_,
     DeformableContactInfo_,
-    DeformableModel,
     DiscreteContactApproximation,
     DiscreteContactSolver,
     DistanceConstraintParams,
@@ -133,6 +132,7 @@ from pydrake.math import (
 )
 from pydrake.systems.analysis import Simulator_
 from pydrake.systems.framework import (
+    AbstractParameterIndex,
     DiagramBuilder,
     DiagramBuilder_,
     DiscreteStateIndex,
@@ -3366,89 +3366,317 @@ class TestPlant(unittest.TestCase):
         numpy_compare.assert_equal(dut.F_Ac_W().rotational(),
                                    F_Ac_W.rotational())
 
-    def test_deformable_model(self):
+    def test_deformable_model_empty_model(self):
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
+        dut = plant.deformable_model()
+        self.assertEqual(dut.num_bodies(), 0)
+        self.assertTrue(dut.is_empty())
+
+    def test_deformable_model_registration_and_query(self):
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
+        dut = plant.mutable_deformable_model()
+
+        config = DeformableBodyConfig_[float]()
+        sphere = GeometryInstance(RigidTransform(), Sphere(1.0), "sphere")
+        props = ProximityProperties()
+        props.AddProperty("material", "coulomb_friction",
+                          CoulombFriction_[float](1.0, 1.0))
+        sphere.set_proximity_properties(props)
+        id1 = dut.RegisterDeformableBody(
+            geometry_instance=sphere,
+            config=config,
+            resolution_hint=1.0)
+
+        model_instance = plant.AddModelInstance("deformable_instance")
+        sphere2 = GeometryInstance(RigidTransform(), Sphere(2.0), "sphere2")
+        sphere2.set_proximity_properties(props)
+        id2 = dut.RegisterDeformableBody(
+            geometry_instance=sphere2,
+            model_instance=model_instance,
+            config=config,
+            resolution_hint=1.0)
+
+        # Two bodies registered
+        self.assertEqual(dut.num_bodies(), 2)
+
+        # Round-trip geometry <-> body id
+        geom_id = dut.GetGeometryId(id1)
+        self.assertEqual(dut.GetBodyId(geometry_id=geom_id), id1)
+
+        # GetBody by id
+        body1 = dut.GetBody(id=id1)
+        index1 = body1.index()
+
+        # GetBody by index
+        body1_again = dut.GetBody(index=index1)
+        self.assertEqual(body1.body_id(), body1_again.body_id())
+
+        # index <-> id
+        self.assertEqual(dut.GetBodyId(index=index1), id1)
+        self.assertEqual(dut.GetBodyIndex(id=id1), index1)
+
+        # Mutable body
+        self.assertEqual(dut.GetMutableBody(id=id1).body_id(), id1)
+
+        # Per-instance listing
+        ids = dut.GetBodyIds(model_instance=model_instance)
+        self.assertEqual(ids, [id2])
+
+        # Name-based lookup
+        self.assertTrue(dut.HasBodyNamed(name="sphere"))
+        self.assertTrue(
+            dut.HasBodyNamed(name="sphere2", model_instance=model_instance))
+        body1 = plant.deformable_model().GetBodyByName(name="sphere")
+        self.assertEqual(body1.body_id(), id1)
+        body2 = plant.deformable_model().GetBodyByName(
+            name="sphere2", model_instance=model_instance)
+        self.assertEqual(body2.body_id(), id2)
+
+    def test_deformable_model_constraints_and_lookup(self):
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
+        dut = plant.mutable_deformable_model()
+
+        # Register one body
+        config = DeformableBodyConfig_[float]()
+        geometry = GeometryInstance(RigidTransform(), Sphere(1.0), "sphere")
+        body_id = dut.RegisterDeformableBody(
+            geometry_instance=geometry, config=config, resolution_hint=1.0)
+
+        # Wall boundary condition
+        dut.SetWallBoundaryCondition(id=body_id, p_WQ=[0, 0, 0], n_W=[0, 0, 1])
+
+        # Add a rigid body and fixed constraint
+        model_instance = plant.AddModelInstance("deformable_instance")
+        inertia = SpatialInertia_[float].SolidCubeWithDensity(1, 1)
+        rigid_body = plant.AddRigidBody("rigid_body", model_instance, inertia)
+        dut.AddFixedConstraint(
+            body_A_id=body_id,
+            body_B=rigid_body,
+            X_BA=RigidTransform(),
+            shape_G=Box(1, 1, 1),
+            X_BG=RigidTransform())
+        self.assertTrue(dut.HasConstraint(id=body_id))
+
+    def test_deformable_model_parallelism(self):
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
+        dut = plant.mutable_deformable_model()
+
+        # Switch to 2 threads
+        dut._set_parallelism(parallelism=Parallelism(2))
+        self.assertEqual(dut._parallelism().num_threads(), 2)
+        # Back to single thread
+        dut._set_parallelism(parallelism=Parallelism(False))
+        self.assertEqual(dut._parallelism().num_threads(), 1)
+
+    def test_deformable_model_simulation_and_positions(self):
         builder = DiagramBuilder_[float]()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1.0e-3)
         dut = plant.mutable_deformable_model()
-        self.assertEqual(dut.num_bodies(), 0)
-        # Add two deformable bodies to the model with the two overloads of
-        # RegisterDeformableBody.
-        deformable_body_config = DeformableBodyConfig_[float]()
-        geometry = GeometryInstance(X_PG=RigidTransform(),
-                                    shape=Sphere(1.0), name="sphere")
+
+        # Register one body
+        config = DeformableBodyConfig_[float]()
+        geometry = GeometryInstance(RigidTransform(), Sphere(1.0), "sphere")
         props = ProximityProperties()
         props.AddProperty("material", "coulomb_friction",
                           CoulombFriction_[float](1.0, 1.0))
         geometry.set_proximity_properties(props)
         body_id = dut.RegisterDeformableBody(
-            geometry_instance=geometry,
-            config=deformable_body_config,
-            resolution_hint=1.0)
-        model_instance = plant.AddModelInstance("deformable_instance")
-        geometry2 = GeometryInstance(X_PG=RigidTransform(),
-                                     shape=Sphere(2.0), name="sphere2")
-        geometry2.set_proximity_properties(props)
-        body_id2 = dut.RegisterDeformableBody(
-            geometry_instance=geometry2,
-            config=deformable_body_config,
-            model_instance=model_instance,
-            resolution_hint=1.0)
-        self.assertEqual(dut.num_bodies(), 2)
-
-        geometry_id = dut.GetGeometryId(body_id)
-        self.assertEqual(dut.GetBodyId(geometry_id), body_id)
-        deformable_body_ids = dut.GetBodyIds(model_instance=model_instance)
-        self.assertEqual(len(deformable_body_ids), 1)
-        self.assertEqual(deformable_body_ids[0], body_id2)
-        dut.SetWallBoundaryCondition(body_id, [1, 1, -1], [0, 0, 1])
-
-        spatial_inertia = SpatialInertia_[float].SolidCubeWithDensity(1, 1)
-        rigid_body = plant.AddRigidBody("rigid_body", model_instance,
-                                        spatial_inertia)
-        dut.AddFixedConstraint(body_A_id=body_id,
-                               body_B=rigid_body,
-                               X_BA=RigidTransform(), shape=Box(1, 1, 1),
-                               X_BG=RigidTransform())
-
-        # Verify that both bodies have been added to the model.
-        self.assertIsInstance(dut.GetReferencePositions(body_id), np.ndarray)
-
-        deformable_model = plant.deformable_model()
-        self.assertEqual(deformable_model.num_bodies(), 2)
-
-        mutable_deformable_model = plant.mutable_deformable_model()
-        mutable_deformable_model._set_parallelism(parallelism=Parallelism(2))
-        self.assertEqual(deformable_model._parallelism().num_threads(), 2)
-        mutable_deformable_model._set_parallelism(
-            parallelism=Parallelism(False))
-        self.assertEqual(deformable_model._parallelism().num_threads(), 1)
+            geometry_instance=geometry, config=config, resolution_hint=1.0)
 
         plant.Finalize()
-
-        self.assertIsInstance(
-            plant.get_deformable_body_configuration_output_port(),
-            OutputPort_[float])
-        self.assertIsInstance(deformable_model.GetDiscreteStateIndex(body_id),
-                              DiscreteStateIndex)
-
         diagram = builder.Build()
-        # Ensure we can simulate this system.
-        simulator = Simulator_[float](diagram)
-        simulator.AdvanceTo(0.01)
-        plant_context = plant.GetMyContextFromRoot(simulator.get_context())
+        sim = Simulator_[float](diagram)
+        sim.AdvanceTo(0.01)
+        plant_context = plant.GetMyContextFromRoot(sim.get_context())
+
+        # Reference vs. simulated positions
+        q_ref = dut.GetReferencePositions(id=body_id).reshape((3, -1))
+        q_sim = dut.GetPositions(context=plant_context, id=body_id)
+        numpy_compare.assert_float_not_equal(q_ref, q_sim)
+
+        # Positions from state
+        num_dofs = q_sim.size
+        state_index = dut.GetDiscreteStateIndex(id=body_id)
+        discrete_state = plant_context.get_discrete_state(state_index)
+        state_value = discrete_state.get_value()
+        q_state = state_value[:num_dofs]
+        numpy_compare.assert_float_equal(q_state.reshape((3, -1), order='F'),
+                                         q_sim)
+
+        # Round-trip set/get under context
+        dut.SetPositions(context=plant_context, id=body_id, q=q_ref)
+        q2 = dut.GetPositions(context=plant_context, id=body_id)
+        numpy_compare.assert_float_equal(q_ref, q2)
+
         contact_results = (
             plant.get_contact_results_output_port().Eval(plant_context))
-
-        q0 = dut.GetReferencePositions(body_id).reshape((3, -1))
-        q1 = dut.GetPositions(context=plant_context, id=body_id)
-        numpy_compare.assert_float_not_equal(q0, q1)
-        dut.SetPositions(context=plant_context, id=body_id, q=q0)
-        q2 = dut.GetPositions(context=plant_context, id=body_id)
-        numpy_compare.assert_float_equal(q0, q2)
-
         # There is no deformable contact, but we can still try the API.
         self.assertEqual(contact_results.num_deformable_contacts(), 0)
         # Complains about index out of range.
         with self.assertRaisesRegex(SystemExit,
                                     '.*i < num_deformable_contacts().*'):
             contact_results.deformable_contact_info(0)
+
+    def test_deformable_model_disable_enable(self):
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1.0e-3)
+        dut = plant.deformable_model()
+
+        # Register one body
+        config = DeformableBodyConfig_[float]()
+        geometry = GeometryInstance(RigidTransform(), Sphere(1.0), "sphere")
+        props = ProximityProperties()
+        props.AddProperty("material", "coulomb_friction",
+                          CoulombFriction_[float](1.0, 1.0))
+        geometry.set_proximity_properties(props)
+        body_id = dut.RegisterDeformableBody(
+            geometry_instance=geometry, config=config, resolution_hint=1.0)
+
+        plant.Finalize()
+        diagram = builder.Build()
+        context = diagram.CreateDefaultContext()
+        plant_context = plant.GetMyContextFromRoot(context)
+
+        # Disable and re-enable the deformable body
+        self.assertTrue(
+            dut.is_enabled(id=body_id, context=plant_context))
+        dut.Disable(id=body_id, context=plant_context)
+        self.assertFalse(dut.is_enabled(id=body_id, context=plant_context))
+        dut.Enable(id=body_id, context=plant_context)
+        self.assertTrue(dut.is_enabled(id=body_id, context=plant_context))
+
+    def test_deformable_body_creation_and_metadata(self):
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(
+            builder=builder, time_step=0.01)
+        deformable_model = plant.mutable_deformable_model()
+
+        config = DeformableBodyConfig_[float]()
+        props = ProximityProperties()
+        props.AddProperty("material", "coulomb_friction",
+                          CoulombFriction_[float](static_friction=1.0,
+                                                  dynamic_friction=1.0))
+        geometry = GeometryInstance(
+            X_PG=RigidTransform(), shape=Sphere(radius=1.0), name="sphere")
+        geometry.set_proximity_properties(properties=props)
+
+        body_id = deformable_model.RegisterDeformableBody(
+            geometry_instance=geometry,
+            config=config,
+            resolution_hint=1.0)
+        plant.Finalize()
+
+        body = deformable_model.GetBody(id=body_id)
+
+        # body_id, name, geometry_id, config
+        self.assertEqual(body.body_id(), body_id)
+        self.assertEqual(body.name(), "sphere")
+        self.assertIsInstance(body.scoped_name(), ScopedName)
+        self.assertEqual(body.geometry_id(),
+                         deformable_model.GetGeometryId(id=body_id))
+        self.assertIsInstance(body.config(),
+                              DeformableBodyConfig_[float])
+
+        # num_dofs() and reference_positions()
+        num_dofs = body.num_dofs()
+        reference_positions = body.reference_positions()
+        self.assertIsInstance(reference_positions, np.ndarray)
+        self.assertEqual(num_dofs, reference_positions.size)
+
+        # discrete_state_index()
+        state_index = body.discrete_state_index()
+        self.assertIsInstance(state_index, DiscreteStateIndex)
+
+        # is_enabled_parameter_index()
+        parameter_index = body.is_enabled_parameter_index()
+        self.assertIsInstance(parameter_index, AbstractParameterIndex)
+
+    def test_deformable_body_boundary_and_constraints(self):
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(
+            builder=builder, time_step=0.01)
+        deformable_model = plant.mutable_deformable_model()
+
+        config = DeformableBodyConfig_[float]()
+        props = ProximityProperties()
+        props.AddProperty("material", "coulomb_friction",
+                          CoulombFriction_[float](static_friction=1.0,
+                                                  dynamic_friction=1.0))
+        geometry = GeometryInstance(
+            X_PG=RigidTransform(), shape=Sphere(radius=1.0), name="sphere")
+        geometry.set_proximity_properties(properties=props)
+        id = deformable_model.RegisterDeformableBody(
+            geometry_instance=geometry,
+            config=config,
+            resolution_hint=1.0)
+        body = deformable_model.GetBody(id=id)
+
+        # No fixed constraint yet
+        self.assertFalse(body.has_fixed_constraint())
+
+        # Wall boundary condition
+        body.SetWallBoundaryCondition(p_WQ=[0, 0, 1], n_W=[0, 0, 1])
+
+        # Add a fixed constraint.
+        inertia = SpatialInertia_[float].SolidCubeWithDensity(1, 1)
+        rigid_body = plant.AddRigidBody("rigid_body", inertia)
+        constraint_id = body.AddFixedConstraint(
+            body_B=rigid_body,
+            X_BA=RigidTransform(),
+            shape_G=Box(width=0.5, depth=0.5, height=0.5),
+            X_BG=RigidTransform())
+        self.assertTrue(body.has_fixed_constraint())
+
+    def test_deformable_body_state_methods(self):
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(
+            builder=builder, time_step=0.01)
+        deformable_model = plant.mutable_deformable_model()
+
+        config = DeformableBodyConfig_[float]()
+        props = ProximityProperties()
+        props.AddProperty(
+            "material", "coulomb_friction",
+            CoulombFriction_[float](static_friction=1.0,
+                                    dynamic_friction=1.0))
+        geometry = GeometryInstance(
+            X_PG=RigidTransform(), shape=Sphere(radius=1.0), name="sphere")
+        geometry.set_proximity_properties(properties=props)
+        body_id = deformable_model.RegisterDeformableBody(
+            geometry_instance=geometry,
+            config=config,
+            resolution_hint=1.0)
+
+        # Build and finalize the diagram
+        plant.Finalize()
+        diagram = builder.Build()
+        diagram_context = diagram.CreateDefaultContext()
+        plant_context = plant.GetMyContextFromRoot(
+            root_context=diagram_context)
+
+        body = deformable_model.GetBody(id=body_id)
+
+        # Enabled by default
+        self.assertTrue(body.is_enabled(context=plant_context))
+
+        # Disable then re-enable
+        body.Disable(context=plant_context)
+        self.assertFalse(body.is_enabled(context=plant_context))
+        body.Enable(context=plant_context)
+        self.assertTrue(body.is_enabled(context=plant_context))
+
+        # Round-trip SetPositions / GetPositions
+        reference_positions = body.reference_positions()
+        reference_positions_reshaped = reference_positions.reshape(
+            (3, -1), order='F')
+        body.SetPositions(
+            context=plant_context,
+            q=reference_positions_reshaped)
+        positions_after = body.GetPositions(
+            context=plant_context)
+        numpy_compare.assert_float_equal(
+            reference_positions_reshaped, positions_after)

@@ -82,17 +82,6 @@ std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
                                                       context, L);
 }
 
-// N.B. This is the to-be-deprecated overload.
-std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
-    std::unique_ptr<System<double>> system,
-    std::unique_ptr<Context<double>> context,
-    const Eigen::Ref<const Eigen::MatrixXd>& W,
-    const Eigen::Ref<const Eigen::MatrixXd>& V) {
-  DRAKE_THROW_UNLESS(context != nullptr);
-  return SteadyStateKalmanFilter(
-      std::shared_ptr<const System<double>>(std::move(system)), *context, W, V);
-}
-
 }  // namespace estimators
 }  // namespace systems
 }  // namespace drake

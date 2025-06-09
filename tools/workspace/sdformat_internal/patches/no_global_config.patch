@@ -7,7 +7,7 @@ Reasoning for not upstreaming this patch: Drake-specific build option.
 
 --- src/ParserConfig.cc
 +++ src/ParserConfig.cc
-@@ -65,8 +65,7 @@
+@@ -83,8 +83,7 @@ ParserConfig::ParserConfig()
  /////////////////////////////////////////////////
  ParserConfig &ParserConfig::GlobalConfig()
  {
@@ -19,7 +19,7 @@ Reasoning for not upstreaming this patch: Drake-specific build option.
  /////////////////////////////////////////////////
 --- src/Root.cc
 +++ src/Root.cc
-@@ -179,7 +179,7 @@
+@@ -218,7 +218,7 @@ Errors Root::LoadSdfString(const std::string &_sdf, const ParserConfig &_config)
  {
    Errors errors;
    SDFPtr sdfParsed(new SDF());
@@ -28,62 +28,62 @@ Reasoning for not upstreaming this patch: Drake-specific build option.
  
    // Read an SDF string, and store the result in sdfParsed.
    if (!readString(_sdf, _config, sdfParsed, errors))
---- src/gz.cc
-+++ src/gz.cc
-@@ -44,7 +44,7 @@ extern "C" SDFORMAT_VISIBLE int cmdCheck(const char *_path)
-   int result = 0;
+--- src/cmd/gz.cc
++++ src/cmd/gz.cc
+@@ -51,7 +51,7 @@ namespace sdf
+     int result = 0;
  
-   sdf::Root root;
--  sdf::Errors errors = root.Load(_path);
-+  sdf::Errors errors = root.Load(_path, sdf::ParserConfig{});
-   if (!errors.empty())
-   {
-     for (auto &error : errors)
-@@ -87,14 +87,18 @@ extern "C" SDFORMAT_VISIBLE int cmdCheck(const char *_path)
+     sdf::Root root;
+-    sdf::Errors errors = root.Load(_path);
++    sdf::Errors errors = root.Load(_path, sdf::ParserConfig{});
+     if (!errors.empty())
+     {
+       for (auto &error : errors)
+@@ -94,14 +94,18 @@ namespace sdf
  
-   sdf::SDFPtr sdf(new sdf::SDF());
+     sdf::SDFPtr sdf(new sdf::SDF());
  
--  if (!sdf::init(sdf))
-+  if (!sdf::init(sdf, sdf::ParserConfig{}))
-   {
-     std::cerr << "Error: SDF schema initialization failed.\n";
-     return -1;
-   }
+-    if (!sdf::init(sdf))
++    if (!sdf::init(sdf, sdf::ParserConfig{}))
+     {
+       std::cerr << "Error: SDF schema initialization failed.\n";
+       return -1;
+     }
  
--  if (!sdf::readFile(_path, sdf))
-+  if (!sdf::readFile(_path, sdf::ParserConfig{}, sdf, errors))
-   {
-+    for (auto &error : errors)
-+    {
-+      std::cerr << error << std::endl;
-+    }
-     std::cerr << "Error: SDF parsing the xml failed.\n";
-     return -1;
-   }
-@@ -127,7 +131,7 @@ extern "C" SDFORMAT_VISIBLE int cmdDescribe(const char *_version)
-   {
-     sdf->Version(_version);
-   }
--  if (!sdf::init(sdf))
-+  if (!sdf::init(sdf, sdf::ParserConfig{}))
-   {
-     std::cerr << "Error: SDF schema initialization failed.\n";
-     return -1;
-@@ -202,7 +206,7 @@ extern "C" SDFORMAT_VISIBLE int cmdGraph(
-   }
+-    if (!sdf::readFile(_path, sdf))
++    if (!sdf::readFile(_path, sdf::ParserConfig{}, sdf, errors))
+     {
++      for (auto &error : errors)
++      {
++        std::cerr << error << std::endl;
++      }
+       std::cerr << "Error: SDF parsing the xml failed.\n";
+       return -1;
+     }
+@@ -122,7 +127,7 @@ namespace sdf
+     {
+       sdf->Version(_version);
+     }
+-    if (!sdf::init(sdf))
++    if (!sdf::init(sdf, sdf::ParserConfig{}))
+     {
+       std::cerr << "Error: SDF schema initialization failed.\n";
+       return -1;
+@@ -195,7 +200,7 @@ namespace sdf
+     }
  
-   sdf::Root root;
--  sdf::Errors errors = root.Load(_path);
-+  sdf::Errors errors = root.Load(_path, sdf::ParserConfig{});
-   if (!errors.empty())
-   {
-     std::cerr << errors << std::endl;
-@@ -268,7 +272,7 @@ extern "C" SDFORMAT_VISIBLE int cmdInertialStats(
-   }
+     sdf::Root root;
+-    sdf::Errors errors = root.Load(_path);
++    sdf::Errors errors = root.Load(_path, sdf::ParserConfig{});
+     if (!errors.empty())
+     {
+       std::cerr << errors << std::endl;
+@@ -260,7 +265,7 @@ namespace sdf
+     }
  
-   sdf::Root root;
--  sdf::Errors errors = root.Load(_path);
-+  sdf::Errors errors = root.Load(_path, sdf::ParserConfig{});
-   if (!errors.empty())
-   {
-     std::cerr << errors << std::endl;
+     sdf::Root root;
+-    sdf::Errors errors = root.Load(_path);
++    sdf::Errors errors = root.Load(_path, sdf::ParserConfig{});
+     if (!errors.empty())
+     {
+       std::cerr << errors << std::endl;

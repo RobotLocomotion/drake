@@ -356,35 +356,35 @@ void OsqpSolver::DoSolve2(const MathematicalProgram& prog,
     solver_details.run_time = work->info->run_time;
     solver_details.rho_updates = work->info->rho_updates;
 
+    // We set the primal and dual variables as long as osqp_solve() is finished.
+    const Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> osqp_sol(
+        work->solution->x, prog.num_vars());
+
+    // Scale solution back if `scale_map` is not empty.
+    const auto& scale_map = prog.GetVariableScaling();
+    if (!scale_map.empty()) {
+      drake::VectorX<double> scaled_sol = osqp_sol.cast<double>();
+      for (const auto& [index, scale] : scale_map) {
+        scaled_sol(index) *= scale;
+      }
+      result->set_x_val(scaled_sol);
+    } else {
+      result->set_x_val(osqp_sol.cast<double>());
+    }
+    solver_details.y =
+        Eigen::Map<Eigen::VectorXd>(work->solution->y, work->data->m);
+    SetDualSolution(prog.linear_constraints(), solver_details.y,
+                    constraint_start_row, result);
+    SetDualSolution(prog.linear_equality_constraints(), solver_details.y,
+                    constraint_start_row, result);
+    SetDualSolution(prog.bounding_box_constraints(), solver_details.y,
+                    constraint_start_row, result);
+
     switch (work->info->status_val) {
       case OSQP_SOLVED:
       case OSQP_SOLVED_INACCURATE: {
-        const Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> osqp_sol(
-            work->solution->x, prog.num_vars());
-
-        // Scale solution back if `scale_map` is not empty.
-        const auto& scale_map = prog.GetVariableScaling();
-        if (!scale_map.empty()) {
-          drake::VectorX<double> scaled_sol = osqp_sol.cast<double>();
-          for (const auto& [index, scale] : scale_map) {
-            scaled_sol(index) *= scale;
-          }
-          result->set_x_val(scaled_sol);
-        } else {
-          result->set_x_val(osqp_sol.cast<double>());
-        }
-
         result->set_optimal_cost(work->info->obj_val + constant_cost_term);
-        solver_details.y =
-            Eigen::Map<Eigen::VectorXd>(work->solution->y, work->data->m);
         solution_result = SolutionResult::kSolutionFound;
-        SetDualSolution(prog.linear_constraints(), solver_details.y,
-                        constraint_start_row, result);
-        SetDualSolution(prog.linear_equality_constraints(), solver_details.y,
-                        constraint_start_row, result);
-        SetDualSolution(prog.bounding_box_constraints(), solver_details.y,
-                        constraint_start_row, result);
-
         break;
       }
       case OSQP_PRIMAL_INFEASIBLE:

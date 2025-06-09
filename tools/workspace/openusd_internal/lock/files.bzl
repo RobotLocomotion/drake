@@ -633,7 +633,9 @@ FILES = {
             "api.h",
             "valueTypeDispatch.h",
         ],
-        "PRIVATE_CLASSES": [],
+        "PRIVATE_CLASSES": [
+            "sample",
+        ],
         "PRIVATE_HEADERS": [],
         "CPPFILES": [],
     },
@@ -957,6 +959,9 @@ FILES = {
     "pxr/usd/sdr": {
         "NAME": "sdr",
         "LIBRARIES": [
+            "arch",
+            "plug",
+            "trace",
             "tf",
             "vt",
             "ar",
@@ -965,6 +970,11 @@ FILES = {
         ],
         "PUBLIC_CLASSES": [
             "debugCodes",
+            "declare",
+            "discoveryPlugin",
+            "filesystemDiscovery",
+            "filesystemDiscoveryHelpers",
+            "parserPlugin",
             "registry",
             "shaderMetadataHelpers",
             "shaderNode",
@@ -972,7 +982,8 @@ FILES = {
         ],
         "PUBLIC_HEADERS": [
             "api.h",
-            "declare.h",
+            "sdfTypeIndicator.h",
+            "shaderNodeDiscoveryResult.h",
         ],
         "PRIVATE_CLASSES": [],
         "PRIVATE_HEADERS": [],
@@ -1167,6 +1178,7 @@ FILES = {
             "materialAPI",
             "meshCollisionAPI",
             "metrics",
+            "parseUtils",
             "prismaticJoint",
             "revoluteJoint",
             "rigidBodyAPI",
@@ -1177,6 +1189,8 @@ FILES = {
         "PUBLIC_HEADERS": [
             "api.h",
             "massProperties.h",
+            "parseUtils.h",
+            "parseDesc.h",
         ],
         "PRIVATE_CLASSES": [],
         "PRIVATE_HEADERS": [],
@@ -1189,7 +1203,6 @@ FILES = {
             "vt",
             "js",
             "sdf",
-            "ndr",
             "sdr",
             "usd",
             "usdGeom",

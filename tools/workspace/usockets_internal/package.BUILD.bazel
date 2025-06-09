@@ -20,6 +20,7 @@ cc_library(
     copts = [
         "-DLIBUS_NO_SSL",
         "-fvisibility=hidden",
+        "-w",
     ],
     linkstatic = 1,
 )

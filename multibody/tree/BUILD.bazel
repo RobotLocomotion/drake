@@ -89,9 +89,11 @@ drake_cc_library(
         "body_node_impl_mass_matrix.cc",
         "curvilinear_joint.cc",
         "curvilinear_mobilizer.cc",
+        "deformable_body.cc",
         "door_hinge.cc",
         "element_collection.cc",
         "fixed_offset_frame.cc",
+        "force_density_field.cc",
         "force_element.cc",
         "frame.cc",
         "joint.cc",
@@ -134,9 +136,11 @@ drake_cc_library(
         "body_node_world.h",
         "curvilinear_joint.h",
         "curvilinear_mobilizer.h",
+        "deformable_body.h",
         "door_hinge.h",
         "element_collection.h",
         "fixed_offset_frame.h",
+        "force_density_field.h",
         "force_element.h",
         "frame.h",
         "joint.h",
@@ -188,7 +192,10 @@ drake_cc_library(
         "//common:string_container",
         "//common:unused",
         "//common/trajectories:piecewise_constant_curvature_trajectory",
+        "//geometry",
         "//math:geometric_transform",
+        "//multibody/fem",
+        "//multibody/plant:constraint_specs",
         "//multibody/topology",
         "//systems/framework:leaf_system",
     ],
@@ -298,6 +305,16 @@ drake_cc_googletest(
         ":multibody_tree_core",
         ":rotational_inertia",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_body_test",
+    deps = [
+        ":multibody_tree_core",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry",
+        "//multibody/plant",
     ],
 )
 
@@ -514,6 +531,7 @@ drake_cc_googletest(
         ":mobilizer_tester",
         ":tree",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],
 )

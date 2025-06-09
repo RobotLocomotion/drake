@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/plant/deformable_ids.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
@@ -101,7 +100,7 @@ struct WeldConstraintSpec {
 // body A.
 struct DeformableRigidFixedConstraintSpec {
   bool operator==(const DeformableRigidFixedConstraintSpec&) const = default;
-  DeformableBodyId body_A;    // Index of the deformable body A.
+  DeformableBodyId body_A;    // Id of the deformable body A.
   BodyIndex body_B;           // Index of the rigid body B.
   std::vector<int> vertices;  // Indices of the Pᵢ in the deformable body A.
   std::vector<Vector3<double>>

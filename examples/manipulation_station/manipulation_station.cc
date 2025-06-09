@@ -765,7 +765,7 @@ void ManipulationStation<T>::Finalize(
     builder.ExportInput(wsg_controller->get_force_limit_input_port(),
                         "wsg_force_limit");
 
-    auto wsg_mbp_state_to_wsg_state = builder.template AddSystem(
+    auto wsg_mbp_state_to_wsg_state = builder.AddSystem(
         manipulation::schunk_wsg::MakeMultibodyStateToWsgStateSystem<double>());
     builder.Connect(plant_->get_state_output_port(wsg_model_.model_instance),
                     wsg_mbp_state_to_wsg_state->get_input_port());

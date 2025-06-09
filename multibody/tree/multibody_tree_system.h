@@ -592,7 +592,7 @@ class ForceDensityField;
 
 namespace internal {
 
-// Attorney to give access to MultibodyElement and ForceDensityField to a
+// Attorney to give access to MultibodyElement and ForceDensityFieldBase to a
 // selection of protected methods for declaring/accessing/mutating
 // MultibodyTreeSystem parameters, cache entries, and input ports.
 template <typename T>
@@ -642,6 +642,12 @@ class MultibodyTreeSystemElementAttorney {
       const systems::BasicVector<T>& model_value) {
     DRAKE_DEMAND(tree_system != nullptr);
     return tree_system->DeclareVectorInputPort(std::move(name), model_value);
+  }
+
+  static systems::DiscreteStateIndex DeclareDiscreteState(
+      MultibodyTreeSystem<T>* tree_system, const VectorX<T>& model_value) {
+    DRAKE_DEMAND(tree_system != nullptr);
+    return tree_system->DeclareDiscreteState(model_value);
   }
 };
 }  // namespace internal

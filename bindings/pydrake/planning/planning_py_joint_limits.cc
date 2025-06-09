@@ -15,13 +15,26 @@ void DefinePlanningJointLimits(py::module m) {
   using Class = JointLimits;
   constexpr auto& cls_doc = doc.JointLimits;
   py::class_<Class>(m, "JointLimits")
-      .def(py::init<>(), cls_doc.ctor.doc_0args)
+      .def(py::init<>(), cls_doc.ctor.doc)
       .def(py::init<const multibody::MultibodyPlant<double>&, bool, bool,
                bool>(),
           py::arg("plant"), py::arg("require_finite_positions") = false,
           py::arg("require_finite_velocities") = false,
           py::arg("require_finite_accelerations") = false,
-          cls_doc.ctor.doc_4args)
+          cls_doc.ctor.doc_plant)
+      .def(py::init<const multibody::MultibodyPlant<double>&, const DofMask&,
+               bool, bool, bool>(),
+          py::arg("plant"), py::arg("active_dof"),
+          py::arg("require_finite_positions") = false,
+          py::arg("require_finite_velocities") = false,
+          py::arg("require_finite_accelerations") = false,
+          cls_doc.ctor.doc_plant_select)
+      .def(py::init<const JointLimits&, const DofMask&, bool, bool, bool>(),
+          py::arg("other"), py::arg("active_dof"),
+          py::arg("require_finite_positions") = false,
+          py::arg("require_finite_velocities") = false,
+          py::arg("require_finite_accelerations") = false,
+          cls_doc.ctor.doc_copy_select)
       .def(py::init<const Eigen::VectorXd&, const Eigen::VectorXd&,
                const Eigen::VectorXd&, const Eigen::VectorXd&,
                const Eigen::VectorXd&, const Eigen::VectorXd&, bool, bool,
@@ -32,7 +45,7 @@ void DefinePlanningJointLimits(py::module m) {
           py::arg("require_finite_positions") = false,
           py::arg("require_finite_velocities") = false,
           py::arg("require_finite_accelerations") = false,
-          cls_doc.ctor.doc_9args)
+          cls_doc.ctor.doc_vectors)
       .def("num_positions", &Class::num_positions, cls_doc.num_positions.doc)
       .def("num_velocities", &Class::num_velocities, cls_doc.num_velocities.doc)
       .def("num_accelerations", &Class::num_accelerations,

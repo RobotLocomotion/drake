@@ -763,6 +763,8 @@ void DoDefineFrameworkDiagramBuilder(py::module m) {
       .def("ExportOutput", &DiagramBuilder<T>::ExportOutput, py::arg("output"),
           py::arg("name") = kUseDefaultName, py_rvp::reference_internal,
           doc.DiagramBuilder.ExportOutput.doc)
+      .def("Disconnect", &DiagramBuilder<T>::Disconnect, py::arg("source"),
+          py::arg("dest"), doc.DiagramBuilder.Disconnect.doc)
       .def(
           "Build",
           [](DiagramBuilder<T>* self) {

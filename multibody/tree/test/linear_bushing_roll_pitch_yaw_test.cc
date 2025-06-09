@@ -63,7 +63,7 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
 
     // Before adding a rigid link C to the model, form a spatial inertia that
     // contains C's mass and inertia properties about Ccm, expressed in C.
-    // Note: Point Co (C's origin) is coincident with CCm (C's center of mass).
+    // Note: Point Co (C's origin) is coincident with Ccm (C's center of mass).
     const RotationalInertia<double> I_CCcm_C(Ixx_, Iyy_, Izz_, Ixy_, Ixz_,
                                              Iyz_);
     const SpatialInertia<double> M_CCo_C =

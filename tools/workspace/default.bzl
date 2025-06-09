@@ -61,6 +61,7 @@ load("//tools/workspace/opencl:repository.bzl", "opencl_repository")
 load("//tools/workspace/openusd_internal:repository.bzl", "openusd_internal_repository")  # noqa
 load("//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apache_xmlgraphics_commons_repository")  # noqa
 load("//tools/workspace/osqp_internal:repository.bzl", "osqp_internal_repository")  # noqa
+load("//tools/workspace/pathspec_internal:repository.bzl", "pathspec_internal_repository")  # noqa
 load("//tools/workspace/picosha2_internal:repository.bzl", "picosha2_internal_repository")  # noqa
 load("//tools/workspace/pkgconfig_blas_internal:repository.bzl", "pkgconfig_blas_internal_repository")  # noqa
 load("//tools/workspace/pkgconfig_lapack_internal:repository.bzl", "pkgconfig_lapack_internal_repository")  # noqa
@@ -256,6 +257,8 @@ def add_default_repositories(
         org_apache_xmlgraphics_commons_repository(name = "org_apache_xmlgraphics_commons", mirrors = mirrors, _is_drake_self_call = True)  # noqa
     if "osqp_internal" not in excludes:
         osqp_internal_repository(name = "osqp_internal", mirrors = mirrors)
+    if "pathspec_internal" not in excludes:
+        pathspec_internal_repository(name = "pathspec_internal", mirrors = mirrors)  # noqa
     if "picosha2_internal" not in excludes:
         picosha2_internal_repository(name = "picosha2_internal", mirrors = mirrors)  # noqa
     if "pkgconfig_blas_internal" not in excludes:

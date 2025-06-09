@@ -950,6 +950,9 @@ class TestGeneral(unittest.TestCase):
             builder.Connect(adder1.get_output_port(), adder2.get_input_port())
             self.assertTrue(
                 builder.IsConnectedOrExported(port=adder2.get_input_port()))
+            builder.Connect(adder2.get_output_port(), adder1.get_input_port(0))
+            builder.Disconnect(source=adder2.get_output_port(),
+                               dest=adder1.get_input_port(0))
             builder.ExportInput(adder1.get_input_port(0), "in0")
             builder.ExportInput(adder1.get_input_port(1), "in1")
             builder.ExportOutput(adder2.get_output_port(), "out")

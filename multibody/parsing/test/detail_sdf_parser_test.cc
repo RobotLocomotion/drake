@@ -4230,8 +4230,8 @@ TEST_F(SdfParserTest, ParseMinimalDeformableModel) {
   plant_.Finalize();
   EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
   // Without specifying any proximity properties, the default values are used.
-  GeometryId g_id = plant_.deformable_model().GetGeometryId(
-      plant_.deformable_model().GetBodyIdByName("body"));
+  GeometryId g_id =
+      plant_.deformable_model().GetBodyByName("body").geometry_id();
   const auto* proximity_props_ptr =
       scene_graph_.model_inspector().GetProximityProperties(g_id);
   ASSERT_NE(proximity_props_ptr, nullptr);
@@ -4282,7 +4282,7 @@ TEST_F(SdfParserTest, ParseFullFeatureDeformableModel) {
   plant_.Finalize();
   EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
   const DeformableBodyId body_id =
-      plant_.deformable_model().GetBodyIdByName("body");
+      plant_.deformable_model().GetBodyByName("body").body_id();
   auto geometry_id = plant_.deformable_model().GetGeometryId(body_id);
   const geometry::ProximityProperties* props =
       scene_graph_.model_inspector().GetProximityProperties(geometry_id);
@@ -4578,7 +4578,7 @@ TEST_F(SdfParserTest, ComposedPoseForDeformable) {
   plant_.Finalize();
   EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
   const DeformableBodyId body_id =
-      plant_.deformable_model().GetBodyIdByName("body");
+      plant_.deformable_model().GetBodyByName("body").body_id();
   const VectorXd q_WB =
       plant_.deformable_model().GetReferencePositions(body_id);
   VectorXd q_WB_expected(12);

@@ -62,6 +62,52 @@ TEST_F(JointLimitsTest, AcrobotPlantCtor) {
   EXPECT_EQ(dut.num_accelerations(), 2);
 }
 
+TEST_F(JointLimitsTest, EmptyPlantSelectingCtor) {
+  DofMask none(0, true);
+  DofMask too_many(2, true);
+  MultibodyPlant<double> plant{0.01};
+  DRAKE_EXPECT_THROWS_MESSAGE(JointLimits(plant, none),
+                              ".*must call Finalize.*");
+  plant.Finalize();  // Required for certain APIs used.
+  DRAKE_EXPECT_THROWS_MESSAGE(JointLimits(plant, too_many, true, true, true),
+                              ".*GetFromArray.*size.*==.*size.*");
+  JointLimits dut(plant, none, true, true, true);
+  EXPECT_EQ(dut.num_positions(), 0);
+  EXPECT_EQ(dut.num_velocities(), 0);
+  EXPECT_EQ(dut.num_accelerations(), 0);
+}
+
+TEST_F(JointLimitsTest, AcrobotPlantSelectingCtors) {
+  DofMask too_few(0, true);
+  DofMask some{false, true};
+  DofMask too_many{true, false, true};
+  auto plant = multibody::benchmarks::acrobot::MakeAcrobotPlant(
+      {}, /* finalized= */ true);
+  // The acrobot plant built above has infinite limits for all derivatives.
+  DRAKE_EXPECT_THROWS_MESSAGE(JointLimits(*plant, some, true),
+                              "Position.*not finite[\\s\\S]*");
+  DRAKE_EXPECT_THROWS_MESSAGE(JointLimits(*plant, some, false, true),
+                              "Velocity.*not finite[\\s\\S]*");
+  DRAKE_EXPECT_THROWS_MESSAGE(JointLimits(*plant, some, false, false, true),
+                              "Acceleration.*not finite[\\s\\S]*");
+  // The active_dofs.size() must match the size of all limits vectors.
+  DRAKE_EXPECT_THROWS_MESSAGE(JointLimits(*plant, too_few),
+                              ".*GetFromArray.*size.*==.*size.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(JointLimits(*plant, too_many),
+                              ".*GetFromArray.*size.*==.*size.*");
+
+  JointLimits dut(*plant, some);
+  EXPECT_EQ(dut.num_positions(), 1);
+  EXPECT_EQ(dut.num_velocities(), 1);
+  EXPECT_EQ(dut.num_accelerations(), 1);
+
+  JointLimits from_plant(*plant);
+  JointLimits selected(from_plant, some);
+  EXPECT_EQ(selected.num_positions(), 1);
+  EXPECT_EQ(selected.num_velocities(), 1);
+  EXPECT_EQ(selected.num_accelerations(), 1);
+}
+
 TEST_F(JointLimitsTest, Position) {
   DRAKE_EXPECT_THROWS_MESSAGE(JointLimits(five_, hi_, lo_, hi_, lo_, hi_),
                               "Position.*must.*same size.*");
@@ -166,6 +212,19 @@ TEST_F(JointLimitsTest, AccelerationVelocitySizeMismatch) {
                               ".*velocity.*size.*==.*acceleration.*size.*");
   // Position being a different size is fine.
   JointLimits this_is_fine(five_, five_, lo_, lo_, lo_, lo_);
+}
+
+TEST_F(JointLimitsTest, CopySelectCtor) {
+  JointLimits mismatched(five_, five_, lo_, lo_, lo_, lo_);
+  // Copy-select constructor requires all vectors to be the same size.
+  DRAKE_EXPECT_THROWS_MESSAGE(JointLimits(mismatched, DofMask(5, true)),
+                              ".*size.*==.*size.*");
+
+  JointLimits matched(lo_, hi_, lo_, hi_, lo_, hi_);
+  JointLimits dut(matched, DofMask{true, false, true});
+  EXPECT_EQ(dut.num_positions(), 2);
+  EXPECT_EQ(dut.num_velocities(), 2);
+  EXPECT_EQ(dut.num_accelerations(), 2);
 }
 
 }  // namespace

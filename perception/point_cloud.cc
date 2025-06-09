@@ -60,30 +60,43 @@ class PointCloud::Storage {
   // Returns size of the storage.
   int size() const { return size_; }
 
+  // A repaired implementation of Eigen::Matrix::conservativeResize that is safe
+  // to call when the new size is zero. (Eigen 3.4.0 calls 'realloc(size=0)' in
+  // that case, which is undefined.)
+  //
+  // Once Drake's minimum supported Eigen version is circa 2023 or newer, we can
+  // go back to calling conservativeResize even with a zero size.
+  template <typename EigenMatrix>
+  static void ConservativeResizeCols(EigenMatrix* m, int cols) {
+    if (cols == 0) {
+      m->resize(m->rows(), cols);
+    } else {
+      m->conservativeResize(NoChange, cols);
+    }
+  }
+
   // Resize to parent cloud's size.
   void resize(int new_size) {
     size_ = new_size;
     if (fields_.contains(pc_flags::kXYZs))
-      xyzs_.conservativeResize(NoChange, new_size);
+      ConservativeResizeCols(&xyzs_, new_size);
     if (fields_.contains(pc_flags::kNormals))
-      normals_.conservativeResize(NoChange, new_size);
+      ConservativeResizeCols(&normals_, new_size);
     if (fields_.contains(pc_flags::kRGBs))
-      rgbs_.conservativeResize(NoChange, new_size);
+      ConservativeResizeCols(&rgbs_, new_size);
     if (fields_.has_descriptor())
-      descriptors_.conservativeResize(NoChange, new_size);
+      ConservativeResizeCols(&descriptors_, new_size);
     CheckInvariants();
   }
 
   // Update fields, allocating (but not initializing) new fields when needed.
   void UpdateFields(pc_flags::Fields f) {
-    xyzs_.conservativeResize(NoChange, f.contains(pc_flags::kXYZs) ? size_ : 0);
-    normals_.conservativeResize(NoChange,
-                                f.contains(pc_flags::kNormals) ? size_ : 0);
-    rgbs_.conservativeResize(NoChange, f.contains(pc_flags::kRGBs) ? size_ : 0);
-    // Note: The row size can change depends on whether 'f' contains a
-    // descriptor field and the type of the descriptor.
-    descriptors_.conservativeResize(f.descriptor_type().size(),
-                                    f.has_descriptor() ? size_ : 0);
+    xyzs_.resize(Eigen::NoChange, f.contains(pc_flags::kXYZs) ? size_ : 0);
+    normals_.resize(Eigen::NoChange,
+                    f.contains(pc_flags::kNormals) ? size_ : 0);
+    rgbs_.resize(Eigen::NoChange, f.contains(pc_flags::kRGBs) ? size_ : 0);
+    descriptors_.resize(f.descriptor_type().size(),
+                        f.has_descriptor() ? size_ : 0);
     fields_ = f;
     CheckInvariants();
   }

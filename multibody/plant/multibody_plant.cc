@@ -3279,15 +3279,8 @@ systems::EventStatus MultibodyPlant<T>::CalcStepUnrestricted(
           .template Allocate<T>(internal_tree().get_topology());
   discrete_update_manager_->CalcDiscreteValues(context0, &next_discrete_state,
                                                &next_memory);
-  if (discrete_update_manager_->deformable_driver() == nullptr) {
-    next_memory.reaction_forces.resize(num_joints());
-    CalcReactionForces(context0, &next_memory.reaction_forces);
-  } else {
-    // For deformables, SapDriver does not yet support the computation of
-    // reaction forces. Therefore, we skip it here and delay throwing an
-    // exception until someone asks for this output during
-    // CalcReactionForcesOutput<true>().
-  }
+  next_memory.reaction_forces.resize(num_joints());
+  CalcReactionForces(context0, &next_memory.reaction_forces);
   return systems::EventStatus::Succeeded();
 }
 
@@ -3991,16 +3984,6 @@ void MultibodyPlant<T>::CalcReactionForcesOutput(
   this->ValidateContext(context);
   DRAKE_DEMAND(output != nullptr);
   DRAKE_DEMAND(ssize(*output) == num_joints());
-
-  if (discrete_update_manager_ != nullptr &&
-      discrete_update_manager_->deformable_driver() != nullptr) {
-    // SapDriver<T>::CalcDiscreteUpdateMultibodyForces doesn't support
-    // reaction forces yet, so our CalcStepUnrestricted can't sample
-    // this output port.
-    throw std::logic_error(
-        "The computation of MultibodyForces must be updated to include "
-        "deformable objects.");
-  }
 
   // Sampled mode is a simple copy.
   if constexpr (sampled) {

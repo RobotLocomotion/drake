@@ -106,10 +106,14 @@ void DoScalarIndependentDefinitions(py::module m) {
   BindTypeSafeIndex<JointIndex>(m, "JointIndex", doc.JointIndex.doc);
   BindTypeSafeIndex<JointActuatorIndex>(
       m, "JointActuatorIndex", doc.JointActuatorIndex.doc);
-  BindTypeSafeIndex<ModelInstanceIndex>(
-      m, "ModelInstanceIndex", doc.ModelInstanceIndex.doc);
   BindIdentifier<MultibodyConstraintId>(
       m, "MultibodyConstraintId", doc.MultibodyConstraintId.doc);
+  BindTypeSafeIndex<ModelInstanceIndex>(
+      m, "ModelInstanceIndex", doc.ModelInstanceIndex.doc);
+  BindIdentifier<DeformableBodyId>(
+      m, "DeformableBodyId", doc.DeformableBodyId.doc);
+  BindTypeSafeIndex<DeformableBodyIndex>(
+      m, "DeformableBodyIndex", doc.DeformableBodyIndex.doc);
   m.def("world_index", &world_index, doc.world_index.doc);
   m.def("world_frame_index", &world_frame_index, doc.world_frame_index.doc);
   m.def("world_model_instance", &world_model_instance,
@@ -1163,6 +1167,45 @@ void DefineMultibodyForces(py::module m, T) {
     DefCopyAndDeepCopy(&cls);
   }
 }
+
+void DefineDeformableBody(py::module m) {
+  using Class = DeformableBody<double>;
+  constexpr auto& cls_doc = doc.DeformableBody;
+  py::class_<Class> cls(m, "DeformableBody", cls_doc.doc);
+  BindMultibodyElementMixin<double>(&cls);
+  cls  // BR
+      .def("body_id", &Class::body_id, cls_doc.body_id.doc)
+      .def("name", &Class::name, cls_doc.name.doc)
+      .def("scoped_name", &Class::scoped_name, cls_doc.scoped_name.doc)
+      .def("geometry_id", &Class::geometry_id, cls_doc.geometry_id.doc)
+      .def("config", &Class::config, py_rvp::reference_internal,
+          cls_doc.config.doc)
+      .def("num_dofs", &Class::num_dofs, cls_doc.num_dofs.doc)
+      .def("reference_positions", &Class::reference_positions,
+          py_rvp::reference_internal, cls_doc.reference_positions.doc)
+      // TODO(xuchenhan-tri): Bind fem_model() or make it internal.
+      // TODO(xuchenhan-tri): Bind external_forces().
+      .def("discrete_state_index", &Class::discrete_state_index,
+          cls_doc.discrete_state_index.doc)
+      .def("is_enabled_parameter_index", &Class::is_enabled_parameter_index,
+          cls_doc.is_enabled_parameter_index.doc)
+      .def("SetWallBoundaryCondition", &Class::SetWallBoundaryCondition,
+          py::arg("p_WQ"), py::arg("n_W"), cls_doc.SetWallBoundaryCondition.doc)
+      .def("AddFixedConstraint", &Class::AddFixedConstraint, py::arg("body_B"),
+          py::arg("X_BA"), py::arg("shape_G"), py::arg("X_BG"),
+          cls_doc.AddFixedConstraint.doc)
+      .def("has_fixed_constraint", &Class::has_fixed_constraint,
+          cls_doc.has_fixed_constraint.doc)
+      .def("SetPositions", &Class::SetPositions, py::arg("context"),
+          py::arg("q"), cls_doc.SetPositions.doc)
+      .def("GetPositions", &Class::GetPositions, py::arg("context"),
+          cls_doc.GetPositions.doc)
+      .def("is_enabled", &Class::is_enabled, py::arg("context"),
+          cls_doc.is_enabled.doc)
+      .def("Disable", &Class::Disable, py::arg("context"), cls_doc.Disable.doc)
+      .def("Enable", &Class::Enable, py::arg("context"), cls_doc.Enable.doc);
+}
+
 }  // namespace
 
 PYBIND11_MODULE(tree, m) {
@@ -1173,7 +1216,9 @@ PYBIND11_MODULE(tree, m) {
 
   py::module::import("pydrake.common.eigen_geometry");
   py::module::import("pydrake.multibody.math");
+  py::module::import("pydrake.multibody.fem");
   py::module::import("pydrake.systems.framework");
+  py::module::import("pydrake.geometry");
 
   internal::DefineTreeInertia(m);
   DoScalarIndependentDefinitions(m);
@@ -1183,6 +1228,7 @@ PYBIND11_MODULE(tree, m) {
         DoScalarDependentDefinitions(m, dummy);
       },
       CommonScalarPack{});
+  DefineDeformableBody(m);
 
   ExecuteExtraPythonCode(m);
 }

@@ -33,12 +33,12 @@ ARCHIVES = [
         build_file = Label("//tools/workspace/crate_universe/lock/details:BUILD.blas-sys-0.7.1.bazel"),
     ),
     dict(
-        name = "crate__bumpalo-3.17.0",
-        sha256 = "1628fb46dfa0b37568d12e5edd512553eccf6a22a78e8bde00bb4aed84d5bdbf",
+        name = "crate__bumpalo-3.18.1",
+        sha256 = "793db76d6187cd04dff33004d8e6c9cc4e05cd330500379d2394209271b4aeee",
         type = "tar.gz",
-        urls = ["https://static.crates.io/crates/bumpalo/3.17.0/download"],
-        strip_prefix = "bumpalo-3.17.0",
-        build_file = Label("//tools/workspace/crate_universe/lock/details:BUILD.bumpalo-3.17.0.bazel"),
+        urls = ["https://static.crates.io/crates/bumpalo/3.18.1/download"],
+        strip_prefix = "bumpalo-3.18.1",
+        build_file = Label("//tools/workspace/crate_universe/lock/details:BUILD.bumpalo-3.18.1.bazel"),
     ),
     dict(
         name = "crate__cfg-if-1.0.0",
@@ -49,15 +49,15 @@ ARCHIVES = [
         build_file = Label("//tools/workspace/crate_universe/lock/details:BUILD.cfg-if-1.0.0.bazel"),
     ),
     dict(
-        name = "crate__clarabel-0.10.0",
+        name = "crate__clarabel-0.11.0",
         patches = [
             "@drake//tools/workspace/crate_universe:patches/clarabel_blas.patch",
         ],
-        sha256 = "4774f2d1bda27fc0ac5caa136ba5e682f7b002aee1e1fe7f9e2d9219e7a81cb3",
+        sha256 = "0eaca5f78f7c6aa17faebe71cfa88bac329a1694d6e921fa21075008d5896f4f",
         type = "tar.gz",
-        urls = ["https://static.crates.io/crates/clarabel/0.10.0/download"],
-        strip_prefix = "clarabel-0.10.0",
-        build_file = Label("//tools/workspace/crate_universe/lock/details:BUILD.clarabel-0.10.0.bazel"),
+        urls = ["https://static.crates.io/crates/clarabel/0.11.0/download"],
+        strip_prefix = "clarabel-0.11.0",
+        build_file = Label("//tools/workspace/crate_universe/lock/details:BUILD.clarabel-0.11.0.bazel"),
     ),
     dict(
         name = "crate__darling-0.14.4",
@@ -298,6 +298,14 @@ ARCHIVES = [
         urls = ["https://static.crates.io/crates/serde/1.0.219/download"],
         strip_prefix = "serde-1.0.219",
         build_file = Label("//tools/workspace/crate_universe/lock/details:BUILD.serde-1.0.219.bazel"),
+    ),
+    dict(
+        name = "crate__serde-big-array-0.5.1",
+        sha256 = "11fc7cc2c76d73e0f27ee52abbd64eec84d46f370c88371120433196934e4b7f",
+        type = "tar.gz",
+        urls = ["https://static.crates.io/crates/serde-big-array/0.5.1/download"],
+        strip_prefix = "serde-big-array-0.5.1",
+        build_file = Label("//tools/workspace/crate_universe/lock/details:BUILD.serde-big-array-0.5.1.bazel"),
     ),
     dict(
         name = "crate__serde_derive-1.0.219",

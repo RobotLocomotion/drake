@@ -231,7 +231,7 @@ class RigidBody : public MultibodyElement<T> {
   /// empty.
   const std::string& name() const { return name_; }
 
-  /// Returns scoped name of this frame. Neither of the two pieces of the name
+  /// Returns scoped name of this body. Neither of the two pieces of the name
   /// will be empty (the scope name and the element name).
   ScopedName scoped_name() const;
 

@@ -279,28 +279,8 @@ cc_library_vendored(
     ],
 )
 
-_IGN_CMDLINE_SRCS = [
-    "src/gz.cc",
-    "src/gz.hh",
-]
-
-cc_library_vendored(
-    name = "ign_cmdline",
-    srcs = _IGN_CMDLINE_SRCS,
-    srcs_vendored = [
-        x.replace("src/", "drake_src/src/")
-        for x in _IGN_CMDLINE_SRCS
-    ],
-    copts = ["-w"],
-    linkstatic = 1,
-    visibility = ["@drake//tools/workspace/sdformat_internal:__pkg__"],
-    deps = [
-        ":sdformat",
-    ],
-)
-
 check_lists_consistency(
-    files = _MOST_HDRS + _SRCS + _SKIP_SRCS + _IGN_CMDLINE_SRCS,
+    files = _MOST_HDRS + _SRCS + _SKIP_SRCS,
     glob_include = [
         "include/**/*.hh",
         "src/**/*.hh",
@@ -311,6 +291,8 @@ check_lists_consistency(
         "include/sdf/sdf.hh",
         # Drake doesn't use sdformat's URDF parser; we have our own.
         "src/parser_urdf.*",
+        # This is unused binary program code, not library code.
+        "src/cmd/*",
         # These are test code, not library code.
         "**/*TEST*",
     ],

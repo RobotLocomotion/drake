@@ -106,12 +106,11 @@ GTEST_TEST(ThreadSafetyTest, TextureLibrary) {
  - Cloned contexts created in one thread can be bound in other threads, even
    even if the original context is bound in a different thread. */
 GTEST_TEST(ThreadSafetyTest, OpenGlContext) {
-  std::vector<OpenGlContext> contexts;
   /* The first is the "source" and we'll add two that are clones of it. */
-  contexts.emplace_back(false /* debug */);
-  contexts.emplace_back(contexts.front());
-  contexts.emplace_back(contexts.front());
-  const OpenGlContext& source = contexts.front();
+  OpenGlContext source(/* debug = */ false);
+  OpenGlContext clone1(source);
+  OpenGlContext clone2(source);
+  std::vector<OpenGlContext*> contexts{&source, &clone1, &clone2};
 
   /* We can bind the source in the main thread, no problem. */
   ASSERT_NO_THROW(source.MakeCurrent());
@@ -120,7 +119,7 @@ GTEST_TEST(ThreadSafetyTest, OpenGlContext) {
   std::atomic<int> num_errors{0};
   auto work = [&num_errors, &contexts](int i) {
     try {
-      const OpenGlContext& context = contexts.at(i);
+      const OpenGlContext& context = *contexts.at(i);
       context.MakeCurrent();
       if (i == 0) {
         /* Successfully binding contexts[0] (aka source) *should've* been an

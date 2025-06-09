@@ -84,7 +84,7 @@ int do_main(int argc, char* argv[]) {
     builder.Connect(station->GetOutputPort("camera_" + name + "_rgb_image"),
                     cam_port);
   }
-  auto image_array_lcm_publisher = builder.template AddSystem(
+  auto image_array_lcm_publisher = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_image_array>(
           "DRAKE_RGBD_CAMERA_IMAGES", nullptr,
           1.0 / 10 /* 10 fps publish period */));
