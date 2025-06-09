@@ -207,9 +207,16 @@ class ConvexIntegrator final : public IntegratorBase<T> {
    */
   int get_total_ls_iterations() const { return total_ls_iterations_; }
 
-  // TODO(vincekurtz): add support for error estimation.
-  bool supports_error_estimation() const final { return false; }
-  int get_error_estimate_order() const final { return 0; }
+  /**
+   * Error estimation is supported via half-stepping.
+   */
+  bool supports_error_estimation() const final { return true; }
+
+  /**
+   * Half-stepping error estimation gives a second-order error estimate. See
+   * ImplicitEulerIntegrator for details.
+   */
+  int get_error_estimate_order() const final { return 2; }
 
  private:
   // Perform final checks and allocations before beginning integration.
@@ -218,6 +225,16 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Perform the main integration step, setting x_{t+h} and the error
   // estimate.
   bool DoStep(const T& h) override;
+
+  // Solve the SAP problem to compute x_{t+h} at a given step size. This will be
+  // called multiple times for each DoStep to compute the error estimate.
+  //
+  // @param h the time step to use
+  // @param v_guess the initial guess for the MbP plant velocities.
+  // @param x_next the output continuous state, includes state for both the
+  //               plant and any external systems.
+  void ComputeNextContinuousState(const T& h, const VectorX<T>& v_guess,
+                                  ContinuousState<T>* x_next);
 
   // Solve the convex SAP problem for next-step velocities v = min ℓ(v).
   // The solution is written back into the initial guess v. Returns true if

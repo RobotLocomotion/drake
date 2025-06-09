@@ -36,6 +36,9 @@ void ConvexIntegrator<T>::DoInitialize() {
         "set_plant() before initialization.");
   }
 
+  // Convex integration works best at loose accuracies.
+  const double kDefaultAccuracy = 1e-1;
+
   // Get the plant context from the overall context. This will throw if plant()
   // is not part of the system diagram.
   const Context<T>& context = this->get_context();
@@ -48,10 +51,23 @@ void ConvexIntegrator<T>::DoInitialize() {
   DRAKE_THROW_UNLESS(nq == plant().num_positions());
   DRAKE_THROW_UNLESS(nv == plant().num_velocities());
 
+  // Set the initial time step and accuracy.
+  if (isnan(this->get_initial_step_size_target())) {
+    if (isnan(this->get_maximum_step_size()))
+      throw std::logic_error(
+          "Neither initial step size target nor maximum "
+          "step size has been set!");
+    this->request_initial_step_size_target(this->get_maximum_step_size());
+  }
+
+  double working_accuracy = this->get_target_accuracy();
+  if (isnan(working_accuracy)) working_accuracy = kDefaultAccuracy;
+  this->set_accuracy_in_use(working_accuracy);
+
   // Allocate and initialize SAP problem objects
-  // TODO(vincekurtz): don't hardcode the initial time step.
   builder_ = std::make_unique<PooledSapBuilder<T>>(plant());
-  builder_->UpdateModel(plant_context, 0.01, &model_);
+  const T& dt = this->get_initial_step_size_target();
+  builder_->UpdateModel(plant_context, dt, &model_);
   model_.ResizeData(&data_);
   search_direction_.resize(model_.num_velocities());
 
@@ -68,6 +84,8 @@ void ConvexIntegrator<T>::DoInitialize() {
 
 template <typename T>
 bool ConvexIntegrator<T>::DoStep(const T& h) {
+  fmt::print("h: {}, fixed_step: {}\n", h, this->get_fixed_step_mode());
+
   INSTRUMENT_FUNCTION("Convex integrator step");
   // Get plant context storing initial state [q₀, v₀].
   const Context<T>& context = this->get_context();
