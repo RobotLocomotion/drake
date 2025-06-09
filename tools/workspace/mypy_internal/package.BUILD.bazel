@@ -11,6 +11,7 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         "@mypy_extensions_internal//:mypy_extensions",
+        "@pathspec_internal//:pathspec",
         "@tomli_internal//:tomli",
         "@typing_extensions_internal//:typing_extensions",
     ],
