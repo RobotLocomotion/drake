@@ -28,6 +28,21 @@ class PooledSapBuilder {
   void UpdateModel(const systems::Context<T>& context, double time_step,
                    PooledSapModel<T>* model) const;
 
+  /* Updates the dynamics matrix A and the linear term r to incorporate modeling
+   of external forces according to:
+     τ = −Kₑ⋅v + bₑ
+   where Kₑ positive semi-definite gain matrix and bₑ a bias term. Matrix Kₑ is
+   diagonal.
+
+   More specifically, the model is updated according to:
+     A += δt⋅Kₑ
+     r += δt⋅bₑ
+
+   @pre Ke has positive (or zero) entries.
+   @pre Both Ke and be are vectors of size model->num_velocities(). */
+  void AddExternalGains(const VectorX<T>& Ke, const VectorX<T>& be,
+                        PooledSapModel<T>* model) const;
+
   const MultibodyPlant<T>& plant() const { return *plant_; }
 
  private:

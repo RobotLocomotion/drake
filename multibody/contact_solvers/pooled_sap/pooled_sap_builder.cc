@@ -393,6 +393,57 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
   }
 }
 
+#if 0
+template <typename T>
+void ConvexIntegrator<T>::AddActuationConstraints(
+    const VectorX<T>& Ku, const VectorX<T>& ku,
+    SapContactProblem<T>* problem) const {
+  // Iterative over each joint actuator, and add the corresponding controller
+  // constraint.
+  for (JointActuatorIndex actuator_index : plant().GetJointActuatorIndices()) {
+    const JointActuator<T>& actuator =
+        plant().get_joint_actuator(actuator_index);
+    const Joint<T>& joint = actuator.joint();
+
+    const int dof = joint.velocity_start();
+    const TreeIndex tree = tree_topology().velocity_to_tree_index(dof);
+    const int tree_dof = dof - tree_topology().tree_velocities_start_in_v(tree);
+    const int tree_nv = tree_topology().num_tree_velocities(tree);
+
+    const T& k = Ku(dof);
+    const T& u = ku(dof);
+    const T e = actuator.effort_limit();
+
+    typename SapExternalSystemConstraint<T>::Configuration configuration{
+        tree, tree_nv, tree_dof};
+    problem->AddConstraint(std::make_unique<SapExternalSystemConstraint<T>>(
+        configuration, k, u, e));
+  }
+}
+#endif
+
+template <typename T>
+void PooledSapBuilder<T>::AddExternalGains(const VectorX<T>& Ke,
+                                           const VectorX<T>& be,
+                                           PooledSapModel<T>* model) const {
+  DRAKE_DEMAND(model != nullptr);
+  const int nv = model->num_velocities();
+  DRAKE_DEMAND(Ke.size() == nv);
+  DRAKE_DEMAND(be.size() == nv);
+
+  const T& dt = model->time_step();
+  PooledSapParameters<T>& params = model->params();
+  for (int c = 0; c < model->num_cliques(); ++c) {
+    auto A_c = params.A[c];
+    const auto Ke_c = model->clique_segment(c, Ke);
+    A_c.diagonal() += dt * Ke_c;
+
+    const auto be_c = model->clique_segment(c, be);
+    auto r_c = model->clique_segment(c, &params.r);
+    r_c += dt * be_c;
+  }
+}
+
 }  // namespace pooled_sap
 }  // namespace contact_solvers
 }  // namespace multibody

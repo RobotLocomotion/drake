@@ -387,6 +387,143 @@ GTEST_TEST(PooledSapModel, CostAlongLine) {
   }
 }
 
+GTEST_TEST(PooledSapModel, GainConstraint) {
+  PooledSapModel<AutoDiffXd> model;
+  MakeModel(&model, false /* multiple cliques */);
+  EXPECT_EQ(model.num_cliques(), 3);
+  EXPECT_EQ(model.num_velocities(), 18);
+  EXPECT_EQ(model.num_constraints(), 3);
+  // const int nv = model.num_velocities();
+
+  SapData<AutoDiffXd> data;
+  model.ResizeData(&data);
+  EXPECT_EQ(data.num_velocities(), model.num_velocities());
+  EXPECT_EQ(data.num_patches(), model.num_constraints());
+  EXPECT_EQ(data.num_gains(), 0);
+
+  // At this point there should be no gain constraints.
+  EXPECT_EQ(model.num_gain_constraints(), 0);
+
+  // Add gain constraints.
+  auto& gain_constraints = model.gain_constraints_pool();
+
+  // On clique 0:
+  const int nv0 = model.clique_size(0);
+  VectorX<AutoDiffXd> K0 = 1.1 * VectorX<AutoDiffXd>::Ones(nv0);
+  VectorX<AutoDiffXd> u0 = -6.0 * VectorX<AutoDiffXd>::Ones(nv0);
+  VectorX<AutoDiffXd> e0 = 0.9 * VectorX<AutoDiffXd>::Ones(nv0);
+  gain_constraints.Add(0, K0, u0, e0);
+
+  // On clique 2:
+  const int nv2 = model.clique_size(2);
+  VectorX<AutoDiffXd> K2 = 2.3 * VectorX<AutoDiffXd>::Ones(nv2);
+  VectorX<AutoDiffXd> u2 = -0.5 * VectorX<AutoDiffXd>::Ones(nv2);
+  VectorX<AutoDiffXd> e2 = 11.1 * VectorX<AutoDiffXd>::Ones(nv2);
+  // Test cases with zero gain.
+  K2(1) = K2(2) = K2(4) = 0.0;
+  u2(1) = -13.5;  // bias below limit.
+  u2(2) = -5.5;   // bias within limits.
+  u2(4) = 15.2;   // bias above limits.
+  gain_constraints.Add(2, K2, u2, e2);
+
+  EXPECT_EQ(model.num_gain_constraints(), 2);
+  EXPECT_EQ(model.num_constraints(), 5);
+
+  // Resize data to include gain constraints data.
+  model.ResizeData(&data);
+  EXPECT_EQ(data.num_gains(), 2);
+
+  const int nv = model.num_velocities();
+  VectorXd v_value = VectorXd::LinSpaced(nv, -10, 10.0);
+  VectorX<AutoDiffXd> v(nv);
+  math::InitializeAutoDiff(v_value, &v);
+  model.CalcData(v, &data);
+
+  const GainConstraintsDataPool<AutoDiffXd> gains_data =
+      data.cache().gain_constraints_data;
+  EXPECT_EQ(gains_data.num_constraints(), 2);
+
+  const VectorXd K0_value = math::ExtractValue(K0);
+  const VectorXd u0_value = math::ExtractValue(u0);
+  const VectorXd e0_value = math::ExtractValue(e0);
+  const VectorXd v0_value = v_value.segment<6>(0);  // Clique 0's values.
+  VectorXd tau0_expected = -K0_value.cwiseProduct(v0_value) + u0_value;
+
+  const VectorXd K2_value = math::ExtractValue(K2);
+  const VectorXd u2_value = math::ExtractValue(u2);
+  const VectorXd e2_value = math::ExtractValue(e2);
+  const VectorXd v2_value = v_value.segment<6>(12);  // Clique 2's values.
+  VectorXd tau2_expected = -K2_value.cwiseProduct(v2_value) + u2_value;
+
+  fmt::print("tau0_expected: {}\n", fmt_eigen(tau0_expected.transpose()));
+  fmt::print("tau2_expected: {}\n", fmt_eigen(tau2_expected.transpose()));
+
+  // For this test we verify some values are below, within and above effort
+  // limits.
+  EXPECT_GT(tau0_expected(0), 0.9);
+  EXPECT_GT(tau0_expected(1), 0.9);
+  EXPECT_GT(tau0_expected(2), 0.9);
+  EXPECT_GT(tau0_expected(3), 0.9);
+  EXPECT_GT(tau0_expected(4), -0.9);
+  EXPECT_LT(tau0_expected(4), 0.9);
+  EXPECT_LT(tau0_expected(5), -0.9);
+  // Apply the limit.
+  tau0_expected(0) = tau0_expected(1) = tau0_expected(2) = tau0_expected(3) =
+      0.9;
+  tau0_expected(5) = -0.9;
+  const VectorXd gamma0_expected = tau0_expected * model.time_step().value();
+
+  const double cost_value = gains_data.cost().value();
+  const VectorXd cost_gradient = gains_data.cost().derivatives();
+  fmt::print("cost: {}\n", cost_value);
+  fmt::print("gradient: {}\n", fmt_eigen(cost_gradient.transpose()));
+
+  const VectorX<AutoDiffXd> gamma0 = gains_data.gamma(0);
+  EXPECT_EQ(gamma0.size(), nv0);
+  const VectorXd gamma0_value = math::ExtractValue(gamma0);
+  fmt::print("gamma: {}\n", fmt_eigen(gamma0_value.transpose()));
+  EXPECT_TRUE(CompareMatrices(gamma0_value, gamma0_expected, kEps,
+                              MatrixCompareType::relative));
+
+  // Gradient of the cost.
+  const VectorXd minus_cost0_gradient = -cost_gradient.segment<6>(0);
+  EXPECT_TRUE(CompareMatrices(gamma0_value, minus_cost0_gradient, kEps,
+                              MatrixCompareType::relative));
+
+  // Verify gradients for gain on clique 2.
+  const VectorX<AutoDiffXd> gamma2 = gains_data.gamma(1 /* constraint index */);
+  EXPECT_EQ(gamma2.size(), nv2);
+  const VectorXd gamma2_value = math::ExtractValue(gamma2);
+  fmt::print("gamma: {}\n", fmt_eigen(gamma2_value.transpose()));
+  const VectorXd minus_cost2_gradient =
+      -cost_gradient.segment<6>(12 /* first velocity index */);
+  EXPECT_TRUE(CompareMatrices(gamma2_value, minus_cost2_gradient, kEps,
+                              MatrixCompareType::relative));
+
+  // Verify accumulated total cost and gradients.
+  const double total_cost_value = data.cache().cost.value();
+  const VectorXd total_cost_derivatives = data.cache().cost.derivatives();
+  const VectorXd total_gradient_value =
+      math::ExtractValue(data.cache().gradient);
+
+  fmt::print("Cost: {}\n", total_cost_value);
+  fmt::print("Gradient: {}\n", fmt_eigen(total_gradient_value.transpose()));
+  fmt::print("|grad-grad_ref|/|grad| = {}\n",
+             (total_gradient_value - total_cost_derivatives).norm() /
+                 total_gradient_value.norm());
+
+  EXPECT_TRUE(CompareMatrices(total_gradient_value, total_cost_derivatives,
+                              2 * kEps, MatrixCompareType::relative));
+
+  // Verify contributions to Hessian.
+  auto hessian = model.MakeHessian(data);
+  MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
+  MatrixXd gradient_derivatives = math::ExtractGradient(data.cache().gradient);
+  fmt::print("|H-Href| = {}\n", (hessian_value - gradient_derivatives).norm());
+  EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives, 10 * kEps,
+                              MatrixCompareType::relative));
+}
+
 }  // namespace pooled_sap
 }  // namespace contact_solvers
 }  // namespace multibody

@@ -85,6 +85,8 @@ class PooledSapModel {
 
   // Defined in separate headers.
   class PatchConstraintsPool;
+  class GainConstraintsPool;
+
   // TODO(amcastro-tri).
   // class LimitConstraintsPool;
   // class ActuationConstraintsPool;
@@ -95,6 +97,7 @@ class PooledSapModel {
   // Constructor for an empty model.
   PooledSapModel()
       : params_(std::make_unique<PooledSapParameters<T>>()),
+        gain_constraints_pool_(this),
         patch_constraints_pool_(this) {}
 
   /* Resets problem parameters.
@@ -125,6 +128,9 @@ class PooledSapModel {
           math::LinearSolver<Eigen::LDLT, MatrixX<T>>(MatrixX<T>(A[c])));
     }
     DRAKE_DEMAND(params_->r.size() == num_velocities_);
+    gain_constraints_pool_.Clear();
+    gain_constraints_pool_.Reset();
+
     patch_constraints_pool_.Clear();
     patch_constraints_pool_.Reset(params_->time_step, clique_start_,
                                   clique_sizes_);
@@ -142,6 +148,16 @@ class PooledSapModel {
   const PooledSapParameters<T>& params() const {
     DRAKE_ASSERT(params_ != nullptr);
     return *params_;
+  }
+
+  PooledSapParameters<T>& params() {
+    DRAKE_ASSERT(params_ != nullptr);
+    return *params_;
+  }
+
+  const T& time_step() const {
+    DRAKE_ASSERT(params_ != nullptr);
+    return params().time_step;
   }
 
   int body_clique(int body) const {
@@ -228,15 +244,22 @@ class PooledSapModel {
   }
 
   /* Total number of constraints. */
-  int num_constraints() const { return num_patch_constraints(); }
+  int num_constraints() const {
+    return num_patch_constraints() + num_gain_constraints();
+  }
 
   /* Total number of constraint equations. */
   int num_constraint_equations() const {
-    return patch_constraints_pool_.num_constraint_equations();
+    return patch_constraints_pool_.num_constraint_equations() +
+           gain_constraints_pool_.num_constraint_equations();
   }
 
   PatchConstraintsPool& patch_constraints_pool() {
     return patch_constraints_pool_;
+  }
+
+  GainConstraintsPool& gain_constraints_pool() {
+    return gain_constraints_pool_;
   }
 
   /* Limit constraints are added on a per-clique basis. Therefore this method
@@ -252,6 +275,10 @@ class PooledSapModel {
 
   int num_patch_constraints() const {
     return patch_constraints_pool_.num_patches();
+  }
+
+  int num_gain_constraints() const {
+    return gain_constraints_pool_.num_constraints();
   }
 
   // Helpers to access the subset of elements from clique vectors (e.g.
@@ -346,6 +373,7 @@ class PooledSapModel {
   std::vector<math::LinearSolver<Eigen::LDLT, MatrixX<T>>> Aldlt_;
   EigenPool<Vector6<T>> V_WB0_;  // Initial spatial velocities.
 
+  GainConstraintsPool gain_constraints_pool_;
   PatchConstraintsPool patch_constraints_pool_;
 };
 

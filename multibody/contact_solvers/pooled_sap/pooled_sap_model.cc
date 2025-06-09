@@ -117,15 +117,19 @@ void PooledSapModel<T>::CalcData(const VectorX<T>& v, SapData<T>* data) const {
   typename SapData<T>::Cache& cache = data->cache();
   CalcMomentumTerms(*data, &cache);
   CalcBodySpatialVelocities(v, &cache.spatial_velocities);
+  gain_constraints_pool_.CalcData(v, &cache.gain_constraints_data);
   patch_constraints_pool_.CalcData(cache.spatial_velocities,
                                    &cache.patch_constraints_data);
 
   // Include patch constraints contributions.
   // TODO(amcastro-tri): factor out this function into a ConstraintPool class,
   // along with clique data size and other common per-pool functionality.
+  gain_constraints_pool_.AccumulateGradient(*data, &cache.gradient);
   patch_constraints_pool_.AccumulateGradient(*data, &cache.gradient);
 
-  cache.cost = cache.momentum_cost + cache.patch_constraints_data.cost();
+  cache.cost = cache.momentum_cost;
+  cache.cost += cache.gain_constraints_data.cost();
+  cache.cost += cache.patch_constraints_data.cost();
 }
 
 template <typename T>
@@ -151,6 +155,7 @@ void PooledSapModel<T>::UpdateHessian(
   }
 
   // Add constraints' contributions.
+  gain_constraints_pool_.AccumulateHessian(data, hessian);
   patch_constraints_pool_.AccumulateHessian(data, hessian);
 }
 
@@ -178,6 +183,7 @@ template <typename T>
 void PooledSapModel<T>::ResizeData(SapData<T>* data) const {
   data->Resize(num_bodies_, num_velocities_, clique_sizes_,
                patch_constraints_pool_.patch_sizes());
+  gain_constraints_pool_.ResizeData(&data->cache().gain_constraints_data);
 }
 
 template <typename T>
