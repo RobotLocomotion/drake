@@ -1,8 +1,5 @@
 #include "drake/systems/analysis/convex_integrator.h"
 
-#include <chrono>
-
-#include "drake/common/profiler.h"
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
 
 namespace drake {
@@ -191,7 +188,6 @@ bool ConvexIntegrator<T>::SolveWithGuess(const PooledSapModel<T>&,
 template <>
 bool ConvexIntegrator<double>::SolveWithGuess(
     const PooledSapModel<double>& model, VectorXd* v_guess) {
-  INSTRUMENT_FUNCTION("SAP Solve");
   SapData<double>& data = get_data();
   VectorXd& v = *v_guess;
   VectorXd& dv = search_direction_;
@@ -277,7 +273,6 @@ template <>
 std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
     const PooledSapModel<double>& model, const SapData<double>& data,
     const VectorXd& dv) {
-  INSTRUMENT_FUNCTION("Linesearch");
   const double alpha_max = solver_parameters_.alpha_max;
 
   // Set up prerequisites for an efficient CalcCostAlongLine
@@ -414,7 +409,6 @@ template <>
 void ConvexIntegrator<double>::ComputeSearchDirection(
     const PooledSapModel<double>& model, const SapData<double>& data,
     VectorXd* dv, bool reuse_factorization, bool reuse_sparsity_pattern) {
-  INSTRUMENT_FUNCTION("Newton step");
   DRAKE_ASSERT(dv != nullptr);
 
   if (!reuse_factorization) {

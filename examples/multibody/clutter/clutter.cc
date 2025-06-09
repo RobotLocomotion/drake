@@ -10,9 +10,6 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/nice_type_name.h"
-// N.B. Follow instructions at the top of profiler.h.
-// Enable profiling by running with --copt=-DENABLE_TIMERS.
-#include "drake/common/profiler.h"
 #include "drake/common/temp_directory.h"
 #include "drake/geometry/collision_filter_declaration.h"
 #include "drake/geometry/drake_visualizer.h"
@@ -613,10 +610,7 @@ int do_main() {
       FLAGS_mbp_time_step == 0 ? 32 : 1.0 / FLAGS_mbp_time_step;
   meshcat->StartRecording(recording_frames_per_second);
   clock::time_point sim_start_time = clock::now();
-  [&]() {
-    INSTRUMENT_FUNCTION("simulator.AdvanceTo");
-    simulator->AdvanceTo(FLAGS_simulation_time);
-  }();
+  simulator->AdvanceTo(FLAGS_simulation_time);
   clock::time_point sim_end_time = clock::now();
   const double sim_time =
       std::chrono::duration<double>(sim_end_time - sim_start_time).count();
@@ -625,9 +619,6 @@ int do_main() {
   meshcat->PublishRecording();
 
   PrintSimulatorStatistics(*simulator);
-
-  std::cout << std::endl;
-  std::cout << TableOfAverages() << std::endl;
 
   if (FLAGS_visualize) {
     // Wait for meshcat to finish rendering.

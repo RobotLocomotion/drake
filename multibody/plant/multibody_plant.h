@@ -17,7 +17,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_export.h"
-#include "drake/common/profiler.h"
 #include "drake/common/random.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
@@ -4336,7 +4335,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @see CalcMassMatrixViaInverseDynamics() (slower)
   void CalcMassMatrix(const systems::Context<T>& context,
                       EigenPtr<MatrixX<T>> M) const {
-    INSTRUMENT_FUNCTION("Mass matrix");
     this->ValidateContext(context);
     DRAKE_DEMAND(M != nullptr);
     internal_tree().CalcMassMatrix(context, M);

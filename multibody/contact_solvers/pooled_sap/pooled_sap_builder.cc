@@ -1,6 +1,5 @@
 #include "drake/multibody/contact_solvers/pooled_sap/pooled_sap_builder.h"
 
-#include "drake/common/profiler.h"
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/multibody/plant/contact_properties.h"
 
@@ -34,7 +33,6 @@ namespace pooled_sap {
 template <typename T>
 void PooledSapBuilder<T>::CalcGeometryContactData(
     const systems::Context<T>& context) const {
-  INSTRUMENT_FUNCTION("Geometry queries");
   auto& surfaces = scratch_.surfaces;
   auto& point_pairs = scratch_.point_pairs;
 
@@ -80,7 +78,6 @@ template <typename T>
 void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
                                       const T& time_step,
                                       PooledSapModel<T>* model) const {
-  INSTRUMENT_FUNCTION("Build PooledSapModel");
   const MultibodyTreeTopology& topology =
       GetInternalTree(plant()).get_topology();
 
@@ -224,7 +221,6 @@ void PooledSapBuilder<T>::CalcActuationInput(
 template <typename T>
 void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
     const systems::Context<T>& context, PooledSapModel<T>* model) const {
-  INSTRUMENT_FUNCTION("build point constraints");
   const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs =
       scratch_.point_pairs;
   const int num_point_contacts = point_pairs.size();
@@ -312,7 +308,6 @@ void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
 template <typename T>
 void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
     const systems::Context<T>& context, PooledSapModel<T>* model) const {
-  INSTRUMENT_FUNCTION("build Hydro constraints");
   // Add contact constraints for hydro.
   const std::vector<geometry::ContactSurface<T>>& surfaces = scratch_.surfaces;
 
