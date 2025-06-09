@@ -71,6 +71,11 @@ void ConvexIntegrator<T>::DoInitialize() {
   model_.ResizeData(&data_);
   search_direction_.resize(model_.num_velocities());
 
+  // Allocate intermediate states for error control
+  x_next_full_ = this->get_system().AllocateTimeDerivatives();
+  x_next_half_1_ = this->get_system().AllocateTimeDerivatives();
+  x_next_half_2_ = this->get_system().AllocateTimeDerivatives();
+
   // Allocate memory for the solver statistics.
   stats_.Reserve(solver_parameters_.max_iterations);
 
@@ -84,9 +89,61 @@ void ConvexIntegrator<T>::DoInitialize() {
 
 template <typename T>
 bool ConvexIntegrator<T>::DoStep(const T& h) {
-  fmt::print("h: {}, fixed_step: {}\n", h, this->get_fixed_step_mode());
+  Context<T>& context = *this->get_mutable_context();
+  ContinuousState<T>& x_next = context.get_mutable_continuous_state();
+  const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
+  const T t0 = context.get_time();
 
-  INSTRUMENT_FUNCTION("Convex integrator step");
+  // TODO(vincekurtz): consider delaying this to encourage cache hits
+
+  // Solve for the full step x_{t+h}. We'll need this regardless of whether
+  // error control is enabled or not.
+  // TODO(vincekurtz): consider pre-allocating v_guess
+  VectorX<T> v_guess = plant().GetVelocities(plant_context);
+  ComputeNextContinuousState(h, v_guess, x_next_full_.get());
+
+  if (this->get_fixed_step_mode()) {
+    // We're using fixed step mode, so we can just set the state to x_{t+h} and
+    // move on. No need for error estimation.
+    x_next.SetFrom(*x_next_full_);
+    context.SetTimeAndNoteContinuousStateChange(t0 + h);
+  } else {
+    // We're using error control, and will compare with two half-sized steps.
+
+    // First half-step to (t + h/2) uses the average of v_t and v_{t+1} as the
+    // initial guess
+    v_guess += x_next_full_->get_generalized_velocity().CopyToVector();
+    v_guess /= 2.0;
+    ComputeNextContinuousState(0.5 * h, v_guess, x_next_half_1_.get());
+
+    // For the second half-step to (t + h), we need to start from (t + h/2). So
+    // we'll first set the system state to the result of the first half-step.
+    x_next.SetFrom(*x_next_half_1_);
+    context.SetTimeAndNoteContinuousStateChange(t0 + 0.5 * h);
+
+    // Now we can take the second half-step. We'll use the solution of the full
+    // step as our initial guess here.
+    v_guess = x_next_full_->get_generalized_velocity().CopyToVector();
+    ComputeNextContinuousState(0.5 * h, v_guess, x_next_half_2_.get());
+
+    // Set the state to the result of the second half-step (since this is more
+    // accurate than the full step, and we have it anyway).
+    x_next.SetFrom(*x_next_half_2_);
+    context.SetTimeAndNoteContinuousStateChange(t0 + h);
+
+    // Estimate the error as the difference between the full step and the
+    // two half-steps.
+    ContinuousState<T>& err = *this->get_mutable_error_estimate();
+    err.SetFrom(*x_next_full_);
+    err.get_mutable_vector().PlusEqScaled(-1.0, x_next_half_2_->get_vector());
+  }
+
+  return true;  // step was successful
+}
+
+template <typename T>
+void ConvexIntegrator<T>::ComputeNextContinuousState(
+    const T& h, const VectorX<T>& v_guess, ContinuousState<T>* x_next) {
   // Get plant context storing initial state [q₀, v₀].
   const Context<T>& context = this->get_context();
   const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
@@ -95,9 +152,8 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   PooledSapModel<T>& model = get_model();
   builder().UpdateModel(plant_context, h, &model);
 
-  // The initial guess is the current velocity v₀.
   // TODO(vincekurtz): pre-allocate v
-  VectorX<T> v = plant().GetVelocities(plant_context);
+  VectorX<T> v = v_guess;
 
   // Solve the optimization problem for next-step velocities v = min ℓ(v).
   if (!SolveWithGuess(model, &v)) {
@@ -117,18 +173,10 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   plant().MapVelocityToQDot(plant_context, h * v, &q);
   q += plant().GetPositions(plant_context);
 
-  // Set the updated state and time
+  // Set the updated state
   // TODO(vincekurtz): update the non-plant states z.
-  Context<T>& mutable_context = *this->get_mutable_context();
-  Context<T>& mutable_plant_context =
-      plant().GetMyMutableContextFromRoot(&mutable_context);
-
-  plant().SetPositions(&mutable_plant_context, q);
-  plant().SetVelocities(&mutable_plant_context, v);
-
-  mutable_context.SetTime(mutable_context.get_time() + h);
-
-  return true;
+  x_next->get_mutable_generalized_position().SetFromVector(q);
+  x_next->get_mutable_generalized_velocity().SetFromVector(v);
 }
 
 template <typename T>

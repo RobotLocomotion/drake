@@ -293,6 +293,12 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   ConvexIntegratorSolverStats stats_;
   int total_solver_iterations_{0};
   int total_ls_iterations_{0};
+
+  // Intermediate states for error control, which compares a single large
+  // step (x_next_full_) to the result of two smaller steps (x_next_half_2_).
+  std::unique_ptr<ContinuousState<T>> x_next_full_;    // x_{t+h}
+  std::unique_ptr<ContinuousState<T>> x_next_half_1_;  // x_{t+h/2}
+  std::unique_ptr<ContinuousState<T>> x_next_half_2_;  // x_{t+h/2+h/2}
 };
 
 // Forward-declare specializations to double, prior to DRAKE_DECLARE... below.

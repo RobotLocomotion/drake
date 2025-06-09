@@ -575,6 +575,7 @@ int do_main() {
     ci.set_plant(&plant);
     ci.set_maximum_step_size(FLAGS_simulator_max_time_step);
     ci.set_fixed_step_mode(!FLAGS_simulator_use_error_control);
+    ci.set_target_accuracy(FLAGS_simulator_accuracy);
     ci.set_log_solver_stats(FLAGS_log_solver_stats);
     ci.set_print_solver_stats(FLAGS_print_solver_stats);
   }

@@ -43,6 +43,7 @@ GTEST_TEST(ConvexIntegratorTest, TestConstruction) {
 
   // Set up the integrator, without specifying the plant.
   ConvexIntegrator<double> integrator(*diagram, context.get());
+  integrator.set_maximum_step_size(0.01);
 
   // Integrator initialization should fail unless the plant is set correctly.
   EXPECT_THROW(integrator.Initialize(), std::runtime_error);
@@ -70,6 +71,8 @@ GTEST_TEST(ConvexIntegratorTest, TestStep) {
 
   // Set up the integrator
   ConvexIntegrator<double> integrator(*diagram, &plant, diagram_context.get());
+  integrator.set_maximum_step_size(0.01);
+  integrator.set_fixed_step_mode(true);
   integrator.Initialize();
 
   // Set initial conditions
