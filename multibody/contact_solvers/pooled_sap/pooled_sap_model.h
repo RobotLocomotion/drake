@@ -28,6 +28,7 @@ struct PooledSapParameters {
   void VerifyInvariants() const {
     DRAKE_DEMAND(time_step > 0);
     const int num_bodies = ssize(body_cliques);
+    DRAKE_DEMAND(ssize(body_is_floating) == num_bodies);
     DRAKE_DEMAND(num_bodies > 0);
     DRAKE_DEMAND(body_cliques[0] < 0);  // Always for the world.
 
