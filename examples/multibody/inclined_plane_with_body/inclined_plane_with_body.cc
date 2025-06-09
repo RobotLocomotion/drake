@@ -53,7 +53,8 @@ DEFINE_double(dynamic_friction, 1.0,
               "Coefficient of kinetic friction (no units).");
 DEFINE_bool(is_inclined_plane_half_space, false,
             "Is inclined plane a half-space (true) or box (false).");
-DEFINE_string(bodyB_type, "block_with_4Spheres", "Valid body types are "
+DEFINE_string(bodyB_type, "block_with_4Spheres",
+              "Valid body types are "
               "'sphere', 'block', or 'block_with_4Spheres'");
 DEFINE_string(contact_approximation, "lagged",
               "Discrete contact approximation. Options are: 'tamsi', "
@@ -73,8 +74,8 @@ int do_main() {
       multibody::AddMultibodyPlant(plant_config, &builder);
 
   // Set constants that are relevant whether body B is a sphere or block.
-  const double massB = 0.1;       // Body B's mass (kg).
-  const double gravity = 9.8;     // Earth's gravitational acceleration (m/s^2).
+  const double massB = 0.1;    // Body B's mass (kg).
+  const double gravity = 9.8;  // Earth's gravitational acceleration (m/s^2).
   const double inclined_plane_angle =
       FLAGS_inclined_plane_angle_degrees / 180 * M_PI;
 
@@ -92,12 +93,13 @@ int do_main() {
     const double LAz = radiusB;       // Inclined plane length in Az direction.
     const Vector3<double> LAxyz(LAx, LAy, LAz);
     const std::optional<Vector3<double>> inclined_plane_dimensions =
-        FLAGS_is_inclined_plane_half_space ? std::nullopt
+        FLAGS_is_inclined_plane_half_space
+            ? std::nullopt
             : std::optional<Vector3<double>>(LAxyz);
     benchmarks::inclined_plane::AddInclinedPlaneWithSphereToPlant(
         gravity, inclined_plane_angle, inclined_plane_dimensions,
-        coef_friction_inclined_plane, coef_friction_bodyB,
-        massB, radiusB, &plant);
+        coef_friction_inclined_plane, coef_friction_bodyB, massB, radiusB,
+        &plant);
   } else if (FLAGS_bodyB_type == "block" ||
              FLAGS_bodyB_type == "block_with_4Spheres") {
     // B's contacting surface can be modeled with 4 spheres or a single box.
@@ -112,13 +114,13 @@ int do_main() {
     const Vector3<double> block_dimensions(LBx, LBy, LBz);
     const Vector3<double> LAxyz(LAx, LAy, LAz);
     const std::optional<Vector3<double>> inclined_plane_dimensions =
-        FLAGS_is_inclined_plane_half_space ? std::nullopt
+        FLAGS_is_inclined_plane_half_space
+            ? std::nullopt
             : std::optional<Vector3<double>>(LAxyz);
     benchmarks::inclined_plane::AddInclinedPlaneWithBlockToPlant(
         gravity, inclined_plane_angle, inclined_plane_dimensions,
-        coef_friction_inclined_plane, coef_friction_bodyB,
-        massB, block_dimensions,
-        is_bodyB_block_with_4Spheres, &plant);
+        coef_friction_inclined_plane, coef_friction_bodyB, massB,
+        block_dimensions, is_bodyB_block_with_4Spheres, &plant);
   } else {
     std::cerr << "Invalid body_type '" << FLAGS_bodyB_type
               << "' (note that types are case sensitive)." << std::endl;
@@ -168,7 +170,7 @@ int do_main() {
   plant.SetFreeBodyPoseInWorldFrame(&plant_context, bodyB, X_WB);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
- 
+
   // Choose the convex integrator
   if (FLAGS_time_step == 0.0) {
     systems::ConvexIntegrator<double>& ci =
@@ -179,17 +181,16 @@ int do_main() {
     ci.set_log_solver_stats(false);
   }
 
-  
   // Set the integration accuracy when the plant is integrated with a variable-
   // step integrator. This value is not used if time_step > 0 (fixed-time step).
-//   systems::IntegratorBase<double>& integrator =
-//       simulator.get_mutable_integrator();
-//   integrator.set_target_accuracy(FLAGS_integration_accuracy);
+  //   systems::IntegratorBase<double>& integrator =
+  //       simulator.get_mutable_integrator();
+  //   integrator.set_target_accuracy(FLAGS_integration_accuracy);
 
   simulator.set_publish_every_time_step(true);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-    
+
   // Wait for meshcat to load
   std::cout << "Press [ENTER] to continue ...\n";
   getchar();
@@ -202,7 +203,7 @@ int do_main() {
   meshcat->PublishRecording();
 
   PrintSimulatorStatistics(simulator);
-  
+
   // Wait for meshcat to load
   std::cout << "Press [ENTER] to continue ...\n";
   getchar();

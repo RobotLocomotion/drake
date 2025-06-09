@@ -34,15 +34,15 @@ DEFINE_double(dynamic_friction, 0.5, "Coefficient of dynamic friciton.");
 DEFINE_double(stiction_tolerance, 1e-4, "Stiction velocity (m/s).");
 DEFINE_bool(use_hydro, true, "Whether to use hydroelastic contact.");
 
-using math::RigidTransform;
 using geometry::SceneGraphConfig;
-using systems::controllers::PidController;
+using math::RigidTransform;
 using systems::ConstantVectorSource;
+using systems::controllers::PidController;
 
 int do_main() {
   auto meshcat = std::make_shared<drake::geometry::Meshcat>();
   systems::DiagramBuilder<double> builder;
-  
+
   const drake::multibody::CoulombFriction<double> friction(
       FLAGS_static_friction, FLAGS_dynamic_friction);
 
@@ -62,7 +62,7 @@ int do_main() {
   const double LPx = 2.0;  // plane dimensions
   const double LPy = 1.0;
   const double LPz = 0.05;
-  
+
   const SpatialInertia<double> M_PPcm_P =
       SpatialInertia<double>::SolidBoxWithMass(10.0, LPx, LPy, LPz);
   const RigidBody<double>& plane = plant.AddRigidBody("plane", M_PPcm_P);
@@ -72,14 +72,14 @@ int do_main() {
                                "plane_visual", lightGreen);
   plant.RegisterCollisionGeometry(plane, X_PG, geometry::Box(LPx, LPy, LPz),
                                   "plane_collision", friction);
-  
+
   // Add an actuated revolute joint on the plane
   const double damping = 100.0;
   const RevoluteJoint<double>& joint = plant.AddJoint<RevoluteJoint>(
       "plane_joint", plant.world_body(), RigidTransform<double>(), plane,
       std::optional<RigidTransform<double>>{}, Eigen::Vector3d::UnitY(),
       damping);
-  plant.AddJointActuator("actuator", joint); 
+  plant.AddJointActuator("actuator", joint);
 
   // Add a box on the plane
   const double LBx = 0.2;  // block dimensions
@@ -110,12 +110,10 @@ int do_main() {
         const Vector3<double> p_BoSpherei_B(x, y, z);
         const RigidTransform<double> X_BSpherei(p_BoSpherei_B);
         plant.RegisterCollisionGeometry(block, X_BSpherei,
-                                         geometry::Sphere(radius),
-                                         name_spherei,
-                                         friction);
-        plant.RegisterVisualGeometry(block, X_BSpherei,
-                                      geometry::Sphere(radius),
-                                      name_spherei, red);
+                                        geometry::Sphere(radius), name_spherei,
+                                        friction);
+        plant.RegisterVisualGeometry(
+            block, X_BSpherei, geometry::Sphere(radius), name_spherei, red);
       }
     }
   }
@@ -134,19 +132,12 @@ int do_main() {
   const Eigen::Vector2d x_des(1.0, 0.0);
   auto x_des_sender = builder.AddSystem<ConstantVectorSource>(x_des);
 
-  builder.Connect(
-    ctrl->get_output_port(),
-    plant.get_actuation_input_port()
-  );
-  builder.Connect(
-    plant.get_state_output_port(),
-    ctrl->get_input_port_estimated_state()
-  );
-  builder.Connect(
-    x_des_sender->get_output_port(),
-    ctrl->get_input_port_desired_state()
-  );
- 
+  builder.Connect(ctrl->get_output_port(), plant.get_actuation_input_port());
+  builder.Connect(plant.get_state_output_port(),
+                  ctrl->get_input_port_estimated_state());
+  builder.Connect(x_des_sender->get_output_port(),
+                  ctrl->get_input_port_desired_state());
+
   // Visualizer setup
   visualization::VisualizationConfig vis_config;
   vis_config.publish_period = std::numeric_limits<double>::infinity();
@@ -165,21 +156,21 @@ int do_main() {
   const Vector3<double> p_WoBo_W(-0.8, 0.0, 0.1);
   const math::RigidTransform<double> X_WB(p_WoBo_W);
   plant.SetFreeBodyPoseInWorldFrame(&plant_context, block, X_WB);
- 
+
   // Set up the simulator with the convex integrator
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
   if (FLAGS_mbp_time_step == 0.0) {
     systems::ConvexIntegrator<double>& ci =
         simulator.reset_integrator<systems::ConvexIntegrator<double>>();
     ci.set_plant(&plant);
-    ci.set_maximum_step_size(0.001);   // fixed time step dt
+    ci.set_maximum_step_size(0.001);  // fixed time step dt
     ci.set_print_solver_stats(false);
     ci.set_log_solver_stats(false);
   }
   simulator.set_publish_every_time_step(true);
   simulator.set_target_realtime_rate(1.0);
   simulator.Initialize();
-    
+
   // Wait for meshcat to load
   std::cout << "Press [ENTER] to continue ...\n";
   getchar();
@@ -191,7 +182,7 @@ int do_main() {
   meshcat->PublishRecording();
 
   PrintSimulatorStatistics(simulator);
-  
+
   // Wait for meshcat to load
   std::cout << "Press [ENTER] to continue ...\n";
   getchar();

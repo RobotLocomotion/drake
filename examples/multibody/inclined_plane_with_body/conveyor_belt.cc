@@ -156,7 +156,8 @@ int do_main() {
   std::ofstream ofile("conveyor_belt_data.csv");
   ofile << "time,vt,f_app\n";
   ofile.close();
-  simulator.set_monitor([&simulator, &plant, &sine](const Context<double>& context) {
+  simulator.set_monitor([&simulator, &plant,
+                         &sine](const Context<double>& context) {
     const double time = context.get_time();
     const Context<double>& plant_ctx = plant.GetMyContextFromRoot(context);
 
@@ -168,8 +169,10 @@ int do_main() {
     // generalized_acceleration_output_port of the plant aren't set correctly
     // for the convex integrator.
     const Context<double>& sine_context = sine->GetMyContextFromRoot(context);
-    const double f_app = sine->get_output_port(0).Eval<systems::BasicVector<double>>(sine_context)[0];
-    
+    const double f_app =
+        sine->get_output_port(0).Eval<systems::BasicVector<double>>(
+            sine_context)[0];
+
     std::ofstream outfile("conveyor_belt_data.csv", std::ios::app);
     outfile << fmt::format("{},{},{}\n", time, vt, f_app);
     outfile.close();
