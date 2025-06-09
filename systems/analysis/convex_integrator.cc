@@ -160,7 +160,7 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
   // Log and print solver statistics, as requested.
   if (print_solver_stats_) PrintSolverStats();
   if (log_solver_stats_) LogSolverStats();
-  total_solver_iterations_ += stats_.iterations + 1;  // zero-indexed
+  total_solver_iterations_ += stats_.iterations;
   total_ls_iterations_ += std::accumulate(stats_.ls_iterations.begin(),
                                           stats_.ls_iterations.end(), 0);
 
@@ -207,24 +207,15 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     // Compute the cost and gradient
     model.CalcData(v, &data);
 
-    // Update the statistics we have available so far
-    stats_.iterations = k;
-    stats_.cost.push_back(data.cache().cost);
-    stats_.gradient_norm.push_back(data.cache().gradient.norm());
-
     // Early convergence check. Allows for early exit if v_guess is already
     // optimal, or a single Newton step for simple unconstrained problems. This
     // is necessary because our main convergence criterion requires comparing dv
     // over several iterations.
     const double scale = model.params().time_step *
                          std::max(data.cache().Av.norm(), model.r().norm());
-
     const double eps = solver_parameters_.abs_tolerance +
                        solver_parameters_.rel_tolerance * scale;
-    if (stats_.gradient_norm.back() < eps) {
-      stats_.ls_iterations.push_back(0);
-      stats_.alpha.push_back(NAN);
-      stats_.step_size.push_back(NAN);
+    if (data.cache().gradient.norm() < eps) {
       return true;
     }
 
@@ -240,7 +231,10 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     dv *= alpha;
     v += dv;
 
-    // Log the remaining solver statistics.
+    // Log statistics.
+    stats_.iterations++;
+    stats_.cost.push_back(data.cache().cost);
+    stats_.gradient_norm.push_back(data.cache().gradient.norm());
     stats_.ls_iterations.push_back(ls_iterations);
     stats_.alpha.push_back(alpha);
     stats_.step_size.push_back(dv.norm());
@@ -426,6 +420,7 @@ void ConvexIntegrator<double>::ComputeSearchDirection(
       throw std::runtime_error(
           "ConvexIntegrator: Hessian factorization failed!");
     }
+    total_hessian_factorizations_++;
   }
 
   // Compute the search direction dv = -H⁻¹ g
@@ -435,8 +430,8 @@ void ConvexIntegrator<double>::ComputeSearchDirection(
 
 template <typename T>
 void ConvexIntegrator<T>::PrintSolverStats() const {
-  fmt::print("ConvexIntegrator: {} iters\n", stats_.iterations + 1);
-  for (int k = 0; k <= stats_.iterations; ++k) {
+  fmt::print("ConvexIntegrator: {} iters\n", stats_.iterations);
+  for (int k = 0; k < stats_.iterations; ++k) {
     fmt::print(
         "  Iteration {}: cost = {}, gradient norm = {}, ls_iterations = {}, "
         "alpha = {}, step size = {}\n",
@@ -449,7 +444,7 @@ template <typename T>
 void ConvexIntegrator<T>::LogSolverStats() {
   DRAKE_THROW_UNLESS(log_file_.is_open());
   const T time = this->get_context().get_time();
-  for (int k = 0; k <= stats_.iterations; ++k) {
+  for (int k = 0; k < stats_.iterations; ++k) {
     log_file_ << time << "," << k << "," << stats_.cost[k] << ","
               << stats_.gradient_norm[k] << "," << stats_.ls_iterations[k]
               << "," << stats_.alpha[k] << "," << stats_.step_size[k] << "\n";

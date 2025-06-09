@@ -172,6 +172,8 @@ void PrintSimulatorStatistics(const Simulator<T>& simulator) {
     fmt::print("Convex Integrator Statistics:\n");
     fmt::print("Number of solver iterations = {:d}\n",
                ci.get_total_solver_iterations());
+    fmt::print("Number of hessian factorizations = {:d}\n",
+               ci.get_total_hessian_factorizations());
     fmt::print("Number of linesearch iterations = {:d}\n",
                ci.get_total_ls_iterations());
   }

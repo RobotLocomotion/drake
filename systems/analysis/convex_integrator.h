@@ -208,6 +208,14 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   int get_total_ls_iterations() const { return total_ls_iterations_; }
 
   /**
+   * Get the current total number of Hessian factorizations performed, across
+   * all time steps and solver iterations.
+   */
+  int get_total_hessian_factorizations() const {
+    return total_hessian_factorizations_;
+  }
+
+  /**
    * Error estimation is supported via half-stepping.
    */
   bool supports_error_estimation() const final { return true; }
@@ -293,6 +301,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   ConvexIntegratorSolverStats stats_;
   int total_solver_iterations_{0};
   int total_ls_iterations_{0};
+  int total_hessian_factorizations_{0};
 
   // Intermediate states for error control, which compares a single large
   // step (x_next_full_) to the result of two smaller steps (x_next_half_2_).
