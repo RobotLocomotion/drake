@@ -154,9 +154,8 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     // optimal, or a single Newton step for simple unconstrained problems. This
     // is necessary because our main convergence criterion requires comparing dv
     // over several iterations.
-    const double scale =
-        model.params().time_step *
-        std::max(data.cache().Av.norm(), model.r().norm());
+    const double scale = model.params().time_step *
+                         std::max(data.cache().Av.norm(), model.r().norm());
 
     const double eps = solver_parameters_.abs_tolerance +
                        solver_parameters_.rel_tolerance * scale;

@@ -364,7 +364,7 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
         s.id_N(), std::numeric_limits<double>::infinity(), inspector);
     const T d = multibody::internal::GetCombinedHuntCrossleyDissipation(
         s.id_M(), s.id_N(), Em, En, kDefaultDissipation, inspector);
-    
+
     // Get friction properties
     const auto& mu_A = GetCoulombFriction(s.id_M(), inspector);
     const auto& mu_B = GetCoulombFriction(s.id_N(), inspector);
