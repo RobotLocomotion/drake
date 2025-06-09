@@ -50,23 +50,18 @@ int do_main(int argc, char* argv[]) {
     }
   }
 
-  VolumeMesh<double> mesh =
-      internal::ReadVtkToVolumeMesh(std::filesystem::path(argv[1]));
-  std::vector<int> bad_tets =
-      internal::DetectTetrahedronWithAllBoundaryVertices(mesh);
-  std::vector<internal::SortedTriplet<int>> bad_triangles =
-      internal::DetectInteriorTriangleWithAllBoundaryVertices(mesh);
-  std::vector<SortedPair<int>> bad_edges =
-      internal::DetectInteriorEdgeWithAllBoundaryVertices(mesh);
+  const VolumeMesh<double> input_mesh =
+      ReadVtkToVolumeMesh(std::filesystem::path(argv[1]));
 
-  drake::log()->info(
-      "Found {} bad tets, {} bad triangles, and {} bad edges."
-      "The mesh has {} tets and {} vertices.",
-      bad_tets.size(), bad_triangles.size(), bad_edges.size(),
-      mesh.tetrahedra().size(), mesh.vertices().size());
-  bool found_bad =
-      (!bad_tets.empty() || !bad_triangles.empty() || !bad_edges.empty());
-  if (!found_bad) {
+  drake::log()->info("Input mesh has {} tets and {} vertices.",
+                     input_mesh.tetrahedra().size(),
+                     input_mesh.vertices().size());
+
+  // Refine the mesh.
+  VolumeMesh<double> refined_mesh = RefineVolumeMesh(input_mesh);
+
+  // If no refinement was needed, exit early.
+  if (refined_mesh.Equal(input_mesh)) {
     drake::log()->info(
         "No problems found in input mesh '{}';"
         " not writing an output mesh.",
@@ -74,11 +69,9 @@ int do_main(int argc, char* argv[]) {
     return 0;
   }
 
-  VolumeMesh<double> refined_mesh = internal::VolumeMeshRefiner(mesh).Refine();
-
   std::filesystem::path outfile(argv[2]);
-  internal::WriteVolumeMeshToVtk(outfile.string(), refined_mesh,
-                                 "refined by //geometry/proximity:refine_mesh");
+  WriteVolumeMeshToVtk(outfile.string(), refined_mesh,
+                       "refined by //geometry/proximity:refine_mesh");
   drake::log()->info(
       "wrote refined mesh to file '{}' with {} tets and {} "
       "vertices.",

@@ -18,7 +18,7 @@ using Eigen::Vector3d;
 GTEST_TEST(VtkToVolumeMeshTest, OneTetrahedronFile) {
   const fs::path test_file =
       FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
-  VolumeMesh<double> volume_mesh = internal::ReadVtkToVolumeMesh(test_file);
+  VolumeMesh<double> volume_mesh = ReadVtkToVolumeMesh(test_file);
 
   const VolumeMesh<double> expected_mesh{
       {{0, 1, 2, 3}},
@@ -31,7 +31,7 @@ GTEST_TEST(VtkToVolumeMeshTest, OneTetrahedronFile) {
 GTEST_TEST(VtkToVolumeMeshTest, KeepMeshIgnoreFieldVariables) {
   const fs::path test_file = FindResourceOrThrow(
       "drake/geometry/test/two_tetrahedra_with_field_variable.vtk");
-  VolumeMesh<double> volume_mesh = internal::ReadVtkToVolumeMesh(test_file);
+  VolumeMesh<double> volume_mesh = ReadVtkToVolumeMesh(test_file);
 
   const VolumeMesh<double> expected_mesh{
       {{0, 1, 2, 3}, {0, 2, 1, 4}},
@@ -45,8 +45,7 @@ GTEST_TEST(VtkToVolumeMeshTest, Scale) {
       FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
   // Scale from a one-meter object to a one-centimeter-ish object.
   const Vector3d kScale(0.01, 0.02, 0.03);
-  VolumeMesh<double> volume_mesh =
-      internal::ReadVtkToVolumeMesh(test_file, kScale);
+  VolumeMesh<double> volume_mesh = ReadVtkToVolumeMesh(test_file, kScale);
 
   const VolumeMesh<double> expected_mesh{
       {{0, 1, 2, 3}},
@@ -62,7 +61,7 @@ GTEST_TEST(VtkToVolumeMeshTest, FromMemory) {
   const double kScale = 0.01;
   const fs::path test_file =
       FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
-  VolumeMesh<double> volume_mesh = internal::ReadVtkToVolumeMesh(
+  VolumeMesh<double> volume_mesh = ReadVtkToVolumeMesh(
       InMemoryMesh{MemoryFile::Make(test_file)}, Vector3d::Constant(kScale));
 
   const VolumeMesh<double> expected_mesh{
@@ -84,8 +83,7 @@ GTEST_TEST(VtkToVolumeMeshTest, InverseScaleWinding) {
       for (double sz : {-1.0, 1.0}) {
         const Eigen::Vector3d scale(sx, sy, sz);
         SCOPED_TRACE(fmt::format("Scale [{}]", fmt_eigen(scale.transpose())));
-        const VolumeMesh<double> mesh =
-            internal::ReadVtkToVolumeMesh(vtk_file, scale);
+        const VolumeMesh<double> mesh = ReadVtkToVolumeMesh(vtk_file, scale);
         ASSERT_EQ(mesh.num_elements(), 12);
         EXPECT_EQ(mesh.CalcVolume(), 8);
       }
@@ -95,36 +93,35 @@ GTEST_TEST(VtkToVolumeMeshTest, InverseScaleWinding) {
 
 GTEST_TEST(VtkToVolumeMeshTest, BogusFileName) {
   const fs::path bogus_filename = "bogus_filename";
-  DRAKE_EXPECT_THROWS_MESSAGE(internal::ReadVtkToVolumeMesh(bogus_filename),
+  DRAKE_EXPECT_THROWS_MESSAGE(ReadVtkToVolumeMesh(bogus_filename),
                               ".*at least one tetra.*");
 }
 
 GTEST_TEST(VtkToVolumeMeshTest, WrongFileType) {
   const fs::path require_vtk_but_this_is_obj =
       FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      internal::ReadVtkToVolumeMesh(require_vtk_but_this_is_obj),
-      ".*at least one tetra.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(ReadVtkToVolumeMesh(require_vtk_but_this_is_obj),
+                              ".*at least one tetra.*");
 }
 
 GTEST_TEST(VtkToVolumeMeshTest, WrongFileContentsCube) {
   const fs::path cube_vtk =
       FindResourceOrThrow("drake/geometry/test/cube_as_6_squares.vtk");
-  DRAKE_EXPECT_THROWS_MESSAGE(internal::ReadVtkToVolumeMesh(cube_vtk),
+  DRAKE_EXPECT_THROWS_MESSAGE(ReadVtkToVolumeMesh(cube_vtk),
                               ".*at least one tetra.*");
 }
 
 GTEST_TEST(VtkToVolumeMeshTest, WrongFileContentsVolume) {
   const fs::path volume_vtk =
       FindResourceOrThrow("drake/geometry/test/some_volume.vtk");
-  DRAKE_EXPECT_THROWS_MESSAGE(internal::ReadVtkToVolumeMesh(volume_vtk),
+  DRAKE_EXPECT_THROWS_MESSAGE(ReadVtkToVolumeMesh(volume_vtk),
                               ".*at least one tetra.*");
 }
 
 GTEST_TEST(VtkToVolumeMeshTest, WrongFileContentsUnstructured) {
   const fs::path unstructured_vtk =
       FindResourceOrThrow("drake/geometry/test/unstructured.vtk");
-  DRAKE_EXPECT_THROWS_MESSAGE(internal::ReadVtkToVolumeMesh(unstructured_vtk),
+  DRAKE_EXPECT_THROWS_MESSAGE(ReadVtkToVolumeMesh(unstructured_vtk),
                               ".*should only contain tetrahedra.*");
 }
 

@@ -125,5 +125,13 @@ class VolumeMeshRefiner {
 };
 
 }  // namespace internal
+
+// Refines a tetrahedral mesh to eliminate problematic simplices.
+//
+//  @param mesh  The mesh to refine.
+//  @return      The refined mesh, or the input mesh if no refinement was
+//               needed.
+VolumeMesh<double> RefineVolumeMesh(const VolumeMesh<double>& mesh);
+
 }  // namespace geometry
 }  // namespace drake

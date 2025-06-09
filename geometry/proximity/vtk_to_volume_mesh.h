@@ -7,7 +7,6 @@
 
 namespace drake {
 namespace geometry {
-namespace internal {
 
 /* Instantiates a VolumeMesh from VTK file data.
 
@@ -58,6 +57,5 @@ VolumeMesh<double> ReadVtkToVolumeMesh(const MeshSource& mesh_source,
                                        const Eigen::Vector3d& scale = {1, 1,
                                                                        1});
 
-}  // namespace internal
 }  // namespace geometry
 }  // namespace drake

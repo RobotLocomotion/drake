@@ -211,5 +211,24 @@ std::vector<int> VolumeMeshRefiner::GetTetrahedraOnEdge(int v0, int v1) const {
 }
 
 }  // namespace internal
+
+VolumeMesh<double> RefineVolumeMesh(const VolumeMesh<double>& mesh) {
+  // Check for problematic simplices.
+  std::vector<int> bad_tets =
+      internal::DetectTetrahedronWithAllBoundaryVertices(mesh);
+  std::vector<internal::SortedTriplet<int>> bad_triangles =
+      internal::DetectInteriorTriangleWithAllBoundaryVertices(mesh);
+  std::vector<SortedPair<int>> bad_edges =
+      internal::DetectInteriorEdgeWithAllBoundaryVertices(mesh);
+
+  // If no problems found, return the input mesh.
+  if (bad_tets.empty() && bad_triangles.empty() && bad_edges.empty()) {
+    return mesh;
+  }
+
+  // Refine the mesh.
+  return internal::VolumeMeshRefiner(mesh).Refine();
+}
+
 }  // namespace geometry
 }  // namespace drake

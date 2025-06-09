@@ -205,6 +205,42 @@ GTEST_TEST(VolumeMeshRefinerTest, InputGoodAlready) {
   EXPECT_TRUE(refined_mesh.Equal(test_mesh));
 }
 
+// Test RefineVolumeMesh with a mesh that needs refinement.
+GTEST_TEST(VolumeMeshRefinerTest, TestRefineVolumeMesh) {
+  const VolumeMesh<double> test_mesh(
+      std::vector<VolumeElement>{{0, 1, 2, 3}},
+      std::vector<Vector3d>{Vector3d::Zero(), Vector3d::UnitX(),
+                            Vector3d::UnitY(), Vector3d::UnitZ()});
+  ASSERT_EQ(DetectTetrahedronWithAllBoundaryVertices(test_mesh).size(), 1);
+  ASSERT_EQ(DetectInteriorTriangleWithAllBoundaryVertices(test_mesh).size(), 0);
+  ASSERT_EQ(DetectInteriorEdgeWithAllBoundaryVertices(test_mesh).size(), 0);
+  ASSERT_EQ(test_mesh.num_vertices(), 4);
+  ASSERT_EQ(test_mesh.num_elements(), 1);
+
+  VolumeMesh<double> refined_mesh = RefineVolumeMesh(test_mesh);
+  EXPECT_FALSE(refined_mesh.Equal(test_mesh));
+  EXPECT_EQ(refined_mesh.num_vertices(), 5);
+  EXPECT_EQ(refined_mesh.num_elements(), 4);
+}
+
+// Test RefineVolumeMesh with a mesh that doesn't need refinement.
+GTEST_TEST(VolumeMeshRefinerTest, TestRefineVolumeMeshNoRefinement) {
+  const VolumeMesh<double> test_mesh(
+      std::vector<VolumeElement>{
+          {0, 1, 2, 4}, {0, 3, 1, 4}, {3, 2, 1, 4}, {3, 0, 2, 4}},
+      std::vector<Vector3d>{Vector3d::Zero(), Vector3d::UnitX(),
+                            Vector3d::UnitY(), Vector3d::UnitZ(),
+                            Vector3d{0.25, 0.25, 0.25}});
+  ASSERT_EQ(DetectTetrahedronWithAllBoundaryVertices(test_mesh).size(), 0);
+  ASSERT_EQ(DetectInteriorTriangleWithAllBoundaryVertices(test_mesh).size(), 0);
+  ASSERT_EQ(DetectInteriorEdgeWithAllBoundaryVertices(test_mesh).size(), 0);
+  ASSERT_EQ(test_mesh.num_vertices(), 5);
+  ASSERT_EQ(test_mesh.num_elements(), 4);
+
+  VolumeMesh<double> refined_mesh = RefineVolumeMesh(test_mesh);
+  EXPECT_TRUE(refined_mesh.Equal(test_mesh));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry
