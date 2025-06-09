@@ -306,6 +306,16 @@ class DeformableBody final : public MultibodyElement<T> {
   void DoDeclareDiscreteState(
       internal::MultibodyTreeSystem<T>* tree_system) final;
 
+  /* Sets the default state of this deformable body. This is called by
+   DeformableModel::SetDefaultState. */
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const;
+
+  /* Returns the default positions of the vertices of the deformable body. This
+   provides the positions of the registered mesh posed in the default pose,
+   measured and expressed in the world frame. */
+  VectorX<T> CalcDefaultPositions() const;
+
   void DoDeclareParameters(internal::MultibodyTreeSystem<T>* tree_system) final;
 
   /* NOTE: If a new data member is added to this list, it would need to be

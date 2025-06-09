@@ -1,6 +1,7 @@
 #include "drake/multibody/plant/deformable_model.h"
 
 #include <algorithm>
+#include <memory_resource>
 #include <utility>
 
 #include "drake/geometry/proximity/volume_mesh.h"
@@ -305,6 +306,20 @@ void DeformableModel<T>::SetParallelism(Parallelism parallelism) {
       deformable_bodies_.indices();
   for (const DeformableBodyIndex& index : body_indices) {
     deformable_bodies_.get_mutable_element(index).set_parallelism(parallelism);
+  }
+}
+
+template <typename T>
+void DeformableModel<T>::SetDefaultState(const systems::Context<T>& context,
+                                         systems::State<T>* state) const {
+  if constexpr (!std::is_same_v<T, double>) {
+    DRAKE_DEMAND(is_empty());
+    return;
+  } else {
+    for (const DeformableBodyIndex& index : deformable_bodies_.indices()) {
+      const DeformableBody<T>& body = deformable_bodies_.get_element(index);
+      body.SetDefaultState(context, state);
+    }
   }
 }
 

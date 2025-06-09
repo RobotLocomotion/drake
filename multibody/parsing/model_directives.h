@@ -73,8 +73,10 @@ struct AddModel {
   /// empty, then the posed frame will be the body frame of the model's sole
   /// body (and if the model has >1 body then it is an error).
   ///
-  /// For deformable bodies, the body pose defines the pose of the simulated
-  /// geometry in its reference configuration.
+  /// For deformable bodies, the body pose defines the world pose of the
+  /// reference configuration, i.e. the undeformed geometry of the deformable
+  /// body will have this pose in the world frame.
+
   ///
   /// However, the schema::Transform associated with that named body/frame can
   /// define a `base_frame` referring to any frame that has been added prior to

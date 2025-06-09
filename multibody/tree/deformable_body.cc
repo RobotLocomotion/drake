@@ -330,12 +330,36 @@ void DeformableBody<T>::DoDeclareDiscreteState(
     internal::MultibodyTreeSystem<T>* tree_system) {
   const int num_dofs = fem_model_->num_dofs();
   VectorX<T> model_state = VectorX<T>::Zero(num_dofs * 3 /* q, v, and a */);
-  const math::RigidTransform<double> X_GD = X_WG_.inverse() * X_WD_;
-  for (int i = 0; i < num_dofs / 3; ++i) {
-    model_state.template segment<3>(3 * i) =
-        X_GD * reference_positions_.template segment<3>(3 * i);
-  }
+  model_state.head(num_dofs) = CalcDefaultPositions();
   discrete_state_index_ = this->DeclareDiscreteState(tree_system, model_state);
+}
+
+template <typename T>
+void DeformableBody<T>::SetDefaultState(const systems::Context<T>&,
+                                        systems::State<T>* state) const {
+  state->get_mutable_discrete_state(discrete_state_index_)
+      .get_mutable_value()
+      .head(fem_model_->num_dofs()) = CalcDefaultPositions();
+}
+
+template <typename T>
+VectorX<T> DeformableBody<T>::CalcDefaultPositions() const {
+  const VectorX<double>& p_WVg_W = reference_positions_;
+  const int num_dofs = fem_model_->num_dofs();
+  VectorX<T> p_WVd_W = VectorX<T>::Zero(num_dofs);
+  /* `reference_positions_` stores the list of p_WV_W for all vertices V
+   in the mesh and we have p_WVg_W = X_WG * p_GV_G, where p_GV_G is the position
+   of vertex V in the geometry frame G.
+   Now we want the default state to store the poisitions p_WVd_W, the positions
+   of the vertices of the deformable body with the default pose D, which is
+   given by P_WVd_W = X_WD * p_DV_D. By noting p_DV_D = p_GV_G, we get
+   P_WVd_W = X_WD * p_GV_G = X_WD * X_WG⁻¹ * p_WVd_W. */
+  const math::RigidTransform<double> X_DG = X_WD_ * X_WG_.inverse();
+  for (int i = 0; i < num_dofs / 3; ++i) {
+    p_WVd_W.template segment<3>(3 * i) =
+        X_DG * p_WVg_W.template segment<3>(3 * i);
+  }
+  return p_WVd_W;
 }
 
 template <typename T>

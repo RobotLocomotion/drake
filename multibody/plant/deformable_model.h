@@ -431,6 +431,12 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    uses when opportunities for parallel computation arises. */
   Parallelism parallelism() const { return parallelism_; }
 
+  /** (Internal use only) Sets the default state for the deformable model. This
+   should only be called by MultibodyPlant as a part of
+   MultibodyPlant::SetDefaultState(). */
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const;
+
  private:
   /* Allow different specializations to access each other's private data for
    scalar conversion. */
