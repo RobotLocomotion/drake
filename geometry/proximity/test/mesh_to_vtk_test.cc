@@ -35,6 +35,25 @@ GTEST_TEST(MeshToVtkTest, BoxTetrahedra) {
                        "Tetrahedral Mesh of Box");
 }
 
+GTEST_TEST(MeshToVtkTest, BoxTetrahedraToString) {
+  const Box box(4.0, 4.0, 2.0);
+  // resolution_hint 0.5 is enough to have vertices on the medial axis.
+  const auto mesh = MakeBoxVolumeMesh<double>(box, 0.5);
+  const std::string vtk_string =
+      WriteVolumeMeshToVtkString(mesh, "Tetrahedral Mesh of Box");
+
+  // Verify the string contains key VTK elements.
+  EXPECT_TRUE(vtk_string.find("# vtk DataFile Version 3.0") !=
+              std::string::npos);
+  EXPECT_TRUE(vtk_string.find("Tetrahedral Mesh of Box") != std::string::npos);
+  EXPECT_TRUE(vtk_string.find("ASCII") != std::string::npos);
+  EXPECT_TRUE(vtk_string.find("DATASET UNSTRUCTURED_GRID") !=
+              std::string::npos);
+  EXPECT_TRUE(vtk_string.find("POINTS") != std::string::npos);
+  EXPECT_TRUE(vtk_string.find("CELLS") != std::string::npos);
+  EXPECT_TRUE(vtk_string.find("CELL_TYPES") != std::string::npos);
+}
+
 GTEST_TEST(MeshToVtkTest, BoxTriangles) {
   const Box box(4.0, 4.0, 2.0);
   // Very coarse resolution_hint 4.0 should give the coarsest mesh.

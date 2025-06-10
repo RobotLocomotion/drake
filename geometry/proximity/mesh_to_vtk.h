@@ -32,6 +32,16 @@ void WriteVolumeMeshToVtk(const std::string& file_name,
                           const std::string& title);
 
 /*
+ Writes VolumeMesh to VTK string.
+ @param mesh       A tetrahedral volume mesh.
+ @param title      Name of the data set will be written on the second line of
+                   the VTK file.
+ @return           The VTK string.
+ */
+std::string WriteVolumeMeshToVtkString(const VolumeMesh<double>& mesh,
+                                       const std::string& title);
+
+/*
  Writes TriangleSurfaceMesh to VTK file.
  @param file_name  A file name with absolute path or relative path.
  @param mesh       A triangulated surface mesh.

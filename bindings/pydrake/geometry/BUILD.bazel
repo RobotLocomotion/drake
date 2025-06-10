@@ -112,6 +112,7 @@ drake_py_unittest(
     name = "meshes_test",
     data = [
         "//geometry:test_obj_files",
+        "//geometry:test_vtk_files",
     ],
     deps = [
         ":geometry",

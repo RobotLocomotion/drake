@@ -1,6 +1,7 @@
 import pydrake.geometry as mut
 import pydrake.geometry._testing as mut_testing
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common import MemoryFile
 
 import copy
 import unittest
@@ -224,6 +225,22 @@ class TestGeometryMeshes(unittest.TestCase):
 
         # Verify the refined mesh is identical to the input mesh.
         self.assertTrue(refined_mesh.Equal(mesh))
+
+    def test_refine_volume_mesh_to_string(self):
+        # Get a path to a test mesh file.
+        mesh_path = FindResourceOrThrow(
+            "drake/geometry/test/one_tetrahedron.vtk")
+
+        # Get both the refined mesh and its bytes representation.
+        vtk_string = mut.RefineVolumeMesh(mesh=mut.MeshSource(mesh_path))
+
+        # Verify the string contains key VTK elements.
+        self.assertIn("# vtk DataFile Version 3.0", vtk_string)
+        self.assertIn("ASCII", vtk_string)
+        self.assertIn("DATASET UNSTRUCTURED_GRID", vtk_string)
+        self.assertIn("POINTS", vtk_string)
+        self.assertIn("CELLS", vtk_string)
+        self.assertIn("CELL_TYPES", vtk_string)
 
     def test_read_obj_to_surface_mesh(self):
         mesh_path = FindResourceOrThrow("drake/geometry/test/quad_cube.obj")

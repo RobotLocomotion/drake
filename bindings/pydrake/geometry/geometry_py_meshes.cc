@@ -7,6 +7,7 @@
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
+#include "drake/geometry/mesh_source.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
@@ -142,8 +143,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
   m.def("ConvertVolumeToSurfaceMesh", &ConvertVolumeToSurfaceMesh<T>,
       py::arg("volume"), doc.ConvertVolumeToSurfaceMesh.doc);
 
-  m.def("RefineVolumeMesh", &RefineVolumeMesh, py::arg("mesh"),
-      doc.RefineVolumeMesh.doc);
+  m.def("RefineVolumeMesh",
+      py::overload_cast<const VolumeMesh<double>&>(&RefineVolumeMesh),
+      py::arg("mesh"), doc.RefineVolumeMesh.doc);
 }
 
 void DoScalarIndependentDefinitions(py::module m) {

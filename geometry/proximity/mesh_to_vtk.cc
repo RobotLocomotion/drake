@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity/mesh_to_vtk.h"
 
 #include <fstream>
+#include <sstream>
 
 #include <fmt/format.h>
 
@@ -13,7 +14,7 @@ namespace {
 // the types of meshes or fields. They are used by the functions declared in
 // the header file, which are defined at the end of this file.
 
-void WriteVtkHeader(std::ofstream& out, const std::string& title) {
+void WriteVtkHeader(std::ostream& out, const std::string& title) {
   out << "# vtk DataFile Version 3.0\n";
   out << title << std::endl;
   out << "ASCII\n";
@@ -25,7 +26,7 @@ void WriteVtkHeader(std::ofstream& out, const std::string& title) {
  @tparam Mesh  VolumeMesh<double> or TriangleSurfaceMesh<double>
  */
 template <typename Mesh>
-void WriteVtkUnstructuredGrid(std::ofstream& out, const Mesh& mesh) {
+void WriteVtkUnstructuredGrid(std::ostream& out, const Mesh& mesh) {
   const int num_points = mesh.num_vertices();
   out << "DATASET UNSTRUCTURED_GRID\n";
   out << "POINTS " << num_points << " double\n";
@@ -69,14 +70,23 @@ void WriteVtkUnstructuredGrid(std::ofstream& out, const Mesh& mesh) {
  @tparam Mesh  VolumeMesh<double> or TriangleSurfaceMesh<double>
  */
 template <typename Mesh>
+void WriteMeshToVtk(std::ostream& out, const Mesh& mesh,
+                    const std::string& title) {
+  WriteVtkHeader(out, title);
+  WriteVtkUnstructuredGrid(out, mesh);
+}
+
+/*
+ @tparam Mesh  VolumeMesh<double> or TriangleSurfaceMesh<double>
+ */
+template <typename Mesh>
 void WriteMeshToVtk(const std::string& file_name, const Mesh& mesh,
                     const std::string& title) {
   std::ofstream file(file_name);
   if (file.fail()) {
     throw std::runtime_error(fmt::format("Cannot create file: {}.", file_name));
   }
-  WriteVtkHeader(file, title);
-  WriteVtkUnstructuredGrid(file, mesh);
+  WriteMeshToVtk(file, mesh, title);
   file.close();
 }
 
@@ -85,7 +95,7 @@ void WriteMeshToVtk(const std::string& file_name, const Mesh& mesh,
                TriangleSurfaceMeshFieldLinear<double, double>
  */
 template <typename Field>
-void WriteVtkScalarField(std::ofstream& out, std::string name,
+void WriteVtkScalarField(std::ostream& out, std::string name,
                          const Field& field) {
   out << fmt::format("POINT_DATA {}\n", field.values().size());
   // VTK doesn't like space ' ' in the name of the scalar field.
@@ -123,6 +133,13 @@ void WriteVolumeMeshToVtk(const std::string& file_name,
                           const VolumeMesh<double>& mesh,
                           const std::string& title) {
   WriteMeshToVtk(file_name, mesh, title);
+}
+
+std::string WriteVolumeMeshToVtkString(const VolumeMesh<double>& mesh,
+                                       const std::string& title) {
+  std::stringstream ss;
+  WriteMeshToVtk(ss, mesh, title);
+  return ss.str();
 }
 
 void WriteSurfaceMeshToVtk(const std::string& file_name,

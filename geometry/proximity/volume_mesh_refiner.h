@@ -1,8 +1,10 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include "drake/common/sorted_pair.h"
+#include "drake/geometry/mesh_source.h"
 #include "drake/geometry/proximity/sorted_triplet.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
@@ -126,12 +128,17 @@ class VolumeMeshRefiner {
 
 }  // namespace internal
 
-// Refines a tetrahedral mesh to eliminate problematic simplices.
-//
-//  @param mesh  The mesh to refine.
-//  @return      The refined mesh, or the input mesh if no refinement was
-//               needed.
+/** Refines a tetrahedral mesh to eliminate problematic simplices.
+@param mesh  The mesh to refine.
+@return      The refined mesh, or the input mesh if no refinement was
+             needed. */
 VolumeMesh<double> RefineVolumeMesh(const VolumeMesh<double>& mesh);
+
+/** Refines a tetrahedral mesh to eliminate problematic simplices.
+@param mesh  The mesh to refine.
+@return      The refined mesh, or the input mesh if no refinement was
+             needed. */
+std::string RefineVolumeMesh(const MeshSource& mesh);
 
 }  // namespace geometry
 }  // namespace drake

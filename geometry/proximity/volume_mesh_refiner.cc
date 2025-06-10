@@ -6,6 +6,8 @@
 #include <vector>
 
 #include "drake/geometry/proximity/detect_zero_simplex.h"
+#include "drake/geometry/proximity/mesh_to_vtk.h"
+#include "drake/geometry/proximity/vtk_to_volume_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -228,6 +230,13 @@ VolumeMesh<double> RefineVolumeMesh(const VolumeMesh<double>& mesh) {
 
   // Refine the mesh.
   return internal::VolumeMeshRefiner(mesh).Refine();
+}
+
+std::string RefineVolumeMesh(const MeshSource& mesh) {
+  const VolumeMesh<double> original = internal::ReadVtkToVolumeMesh(mesh);
+  const VolumeMesh<double> refined = RefineVolumeMesh(original);
+  return internal::WriteVolumeMeshToVtkString(
+      refined, "refined by //geometry/proximity:volume_mesh_refiner");
 }
 
 }  // namespace geometry

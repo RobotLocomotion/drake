@@ -58,7 +58,7 @@ int do_main(int argc, char* argv[]) {
                      input_mesh.vertices().size());
 
   // Refine the mesh.
-  VolumeMesh<double> refined_mesh = RefineVolumeMesh(input_mesh);
+  const VolumeMesh<double> refined_mesh = RefineVolumeMesh(input_mesh);
 
   // If no refinement was needed, exit early.
   if (refined_mesh.Equal(input_mesh)) {

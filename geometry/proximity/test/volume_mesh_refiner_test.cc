@@ -2,7 +2,11 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/memory_file.h"
+#include "drake/geometry/in_memory_mesh.h"
+#include "drake/geometry/mesh_source.h"
 #include "drake/geometry/proximity/detect_zero_simplex.h"
+#include "drake/geometry/proximity/mesh_to_vtk.h"
 
 namespace drake {
 namespace geometry {
@@ -239,6 +243,43 @@ GTEST_TEST(VolumeMeshRefinerTest, TestRefineVolumeMeshNoRefinement) {
 
   VolumeMesh<double> refined_mesh = RefineVolumeMesh(test_mesh);
   EXPECT_TRUE(refined_mesh.Equal(test_mesh));
+}
+
+// Test that RefineVolumeMesh can output VTK string directly.
+GTEST_TEST(VolumeMeshRefinerTest, TestRefineVolumeMeshToString) {
+  const VolumeMesh<double> test_mesh(
+      std::vector<VolumeElement>{{0, 1, 2, 3}},
+      std::vector<Vector3d>{Vector3d::Zero(), Vector3d::UnitX(),
+                            Vector3d::UnitY(), Vector3d::UnitZ()});
+  ASSERT_EQ(DetectTetrahedronWithAllBoundaryVertices(test_mesh).size(), 1);
+  ASSERT_EQ(DetectInteriorTriangleWithAllBoundaryVertices(test_mesh).size(), 0);
+  ASSERT_EQ(DetectInteriorEdgeWithAllBoundaryVertices(test_mesh).size(), 0);
+  ASSERT_EQ(test_mesh.num_vertices(), 4);
+  ASSERT_EQ(test_mesh.num_elements(), 1);
+
+  // Get both the refined mesh and its VTK string representation.
+  const VolumeMesh<double> refined_mesh = RefineVolumeMesh(test_mesh);
+  const std::string vtk_string = RefineVolumeMesh(MeshSource(InMemoryMesh{
+      MemoryFile(WriteVolumeMeshToVtkString(test_mesh, "test_mesh"), ".vtk",
+                 "test_mesh.vtk")}));
+
+  // Verify the string contains key VTK elements.
+  EXPECT_TRUE(vtk_string.find("# vtk DataFile Version 3.0") !=
+              std::string::npos);
+  EXPECT_TRUE(vtk_string.find("ASCII") != std::string::npos);
+  EXPECT_TRUE(vtk_string.find("DATASET UNSTRUCTURED_GRID") !=
+              std::string::npos);
+  EXPECT_TRUE(vtk_string.find("POINTS") != std::string::npos);
+  EXPECT_TRUE(vtk_string.find("CELLS") != std::string::npos);
+  EXPECT_TRUE(vtk_string.find("CELL_TYPES") != std::string::npos);
+
+  // Verify the number of points and cells matches the refined mesh.
+  const std::string points_line =
+      fmt::format("POINTS {}", refined_mesh.num_vertices());
+  const std::string cells_line =
+      fmt::format("CELLS {}", refined_mesh.num_elements());
+  EXPECT_TRUE(vtk_string.find(points_line) != std::string::npos);
+  EXPECT_TRUE(vtk_string.find(cells_line) != std::string::npos);
 }
 
 }  // namespace
