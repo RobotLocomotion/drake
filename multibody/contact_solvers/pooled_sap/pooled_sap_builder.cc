@@ -161,7 +161,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   r.resize(nv);
   MultibodyForces<T>& forces = *scratch_.forces;
   VectorX<T>& vdot = scratch_.tmp_v1;
-  vdot = v0 / dt;
+  vdot = -v0 / dt;
   plant().CalcForceElementsContribution(context, &forces);
   plant().AddInForcesFromInputPorts(context, &forces);
 
