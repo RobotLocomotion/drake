@@ -113,6 +113,21 @@ DEFINE_string(
 DEFINE_bool(full_newton, false, "Update Jacobian every iteration.");
 DEFINE_bool(trapezoid, false, "Implicit trapezoid rule for error estimation.");
 
+// Convex integrator parameters.
+DEFINE_bool(enable_hessian_reuse, true,
+            "Whether to reuse the Hessian factorization between iterations.");
+DEFINE_int32(k_max, 10,
+             "Maximum number of iterations before re-computing the Hessian.");
+DEFINE_double(kappa, 0.05,
+              "Scaling factor for the relaxed convergence check (θ method of "
+              "Hairer 1996) used to exit early under loose accuracies.");
+DEFINE_double(
+    alpha_max, 1.0,
+    "Maximum line search step size for the convex integrator (α_max).");
+DEFINE_double(
+    ls_tolerance, 1e-6,
+    "Tolerance for the exact line search performed by the convex integrator.");
+
 using drake::geometry::CollisionFilterDeclaration;
 using drake::math::RigidTransform;
 using drake::math::RigidTransformd;
@@ -129,6 +144,7 @@ using drake::multibody::contact_solvers::internal::SapHessianFactorizationType;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
 using drake::multibody::internal::CompliantContactManager;
 using drake::systems::ConvexIntegrator;
+using drake::systems::ConvexIntegratorSolverParameters;
 using drake::visualization::ApplyVisualizationConfig;
 using drake::visualization::VisualizationConfig;
 
@@ -575,6 +591,14 @@ int do_main() {
     ci.set_target_accuracy(FLAGS_simulator_accuracy);
     ci.set_log_solver_stats(FLAGS_log_solver_stats);
     ci.set_print_solver_stats(FLAGS_print_solver_stats);
+
+    ConvexIntegratorSolverParameters ci_params;
+    ci_params.enable_hessian_reuse = FLAGS_enable_hessian_reuse;
+    ci_params.max_iterations_for_hessian_reuse = FLAGS_k_max;
+    ci_params.kappa = FLAGS_kappa;
+    ci_params.alpha_max = FLAGS_alpha_max;
+    ci_params.ls_tolerance = FLAGS_ls_tolerance;
+    ci.set_solver_parameters(ci_params);
   }
 
   drake::systems::IntegratorBase<double>& integrator =

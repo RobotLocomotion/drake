@@ -47,6 +47,10 @@ struct ConvexIntegratorSolverParameters {
   // Scaling factor for the relaxed convergence check (θ method of Hairer 1996)
   // used to exit early under loose accuracies.
   double kappa{0.05};
+
+  // Whether hessian reuse between iterations and time steps is enabled.
+  bool enable_hessian_reuse{true};
+  int max_iterations_for_hessian_reuse{10};  // k_max from [Hairer, 1996]
 };
 
 /**

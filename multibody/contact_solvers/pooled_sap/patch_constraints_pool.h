@@ -209,7 +209,6 @@ class PooledSapModel<T>::PatchConstraintsPool {
     const T mu = calc_friction_coefficient();
     net_friction_.push_back(mu);
 
-    // const T& mu = static_friction_[p];
     const T Rt = CalcRegularizationOfFriction(p, p_BoC_W);
     const T sap_stiction_tolerance = mu * Rt * n0;
     const T eps = max(stiction_tolerance_, sap_stiction_tolerance);

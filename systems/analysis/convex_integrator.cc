@@ -226,11 +226,12 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     bool reuse_sparsity_pattern = (k > 0) || !SparsityPatternChanged(model);
 
     // Hessian reuse is enabled based when
-    //   1. the sparsity pattern is unchanged,
-    //   2. the "anticipated residual" heuristics indicate that we'll converge
+    //   1. reuse is enabled in the solver parameters,
+    //   2. the sparsity pattern is unchanged,
+    //   3. the "anticipated residual" heuristics indicate that we'll converge
     //      in time under a linear convergence assumption,
-    //   3. TODO(vincekurtz): reuse is enabled in the solver
-    bool reuse_hessian = reuse_sparsity_pattern && reuse_hessian_factorization_;
+    bool reuse_hessian = solver_parameters_.enable_hessian_reuse &&
+                         reuse_sparsity_pattern && reuse_hessian_factorization_;
 
     // Compute the search direction dv = -H⁻¹ g
     ComputeSearchDirection(model, data, &dv, reuse_hessian,
@@ -270,9 +271,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(
       // Choose whether to re-compute the Hessian factorization using Equation
       // IV.8.11 of [Hairer, 1996]. This essentially predicts whether we'll
       // converge within (k_max - k) iterations, assuming linear convergence.
-      // We'll set k_max to something a smaller that the hard iteration limit,
-      // to give ourselves some room.
-      const int k_max = solver_parameters_.max_iterations / 2;
+      const int k_max = solver_parameters_.max_iterations_for_hessian_reuse;
       const double anticipated_residual =
           std::pow(theta, k_max - k) / (1 - theta) * stats_.step_size[k];
 
