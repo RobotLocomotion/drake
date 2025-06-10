@@ -10,7 +10,7 @@ package(default_visibility = ["//visibility:private"])
 
 drake_cc_package_library(
     name = "ad",
-    visibility = ["//visibility:private"],
+    visibility = ["//common/benchmarking:__pkg__"],
     deps = [
         ":auto_diff",
     ],
