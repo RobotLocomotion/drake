@@ -220,7 +220,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     }
 
     bool reuse_hessian = false;
-    bool reuse_sparsity_pattern = !SparsityPatternChanged(model);
+    bool reuse_sparsity_pattern = (k > 0) || !SparsityPatternChanged(model);
 
     // Compute the search direction dv = -H⁻¹ g
     ComputeSearchDirection(model, data, &dv, reuse_hessian,
