@@ -84,8 +84,6 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   const int nv = plant().num_velocities();
   MatrixX<T>& M = scratch_.M;
   Matrix6X<T>& J_V_WB = scratch_.J_V_WB;
-  VectorX<T>& u_no_pd = scratch_.u_no_pd;
-  VectorX<T>& u_w_pd = scratch_.u_w_pd;
 
   std::unique_ptr<PooledSapParameters<T>> params = model->ReleaseParameters();
   params->time_step = time_step;
@@ -161,13 +159,15 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   const T& dt = params->time_step;
   auto& r = params->r;
   r.resize(nv);
-  CalcActuationInput(context, &u_w_pd, &u_no_pd);
-  plant().CalcBiasTerm(context, &r);
-  r = -r;                                     // r = -C(q₀, v₀)
-  r += u_no_pd;                               // r = u₀ - C(q₀, v₀)
-  AccumulateForceElementForces(context, &r);  // r = u₀ + τᵉˣ - C(q₀,v₀)
-  r *= dt;                                    // r = dt⋅(u₀ + τᵉˣ - C(q₀,v₀))
-  r += M * v0;  // r = dt⋅(u₀ + τᵉˣ - C(q₀,v₀)) + M⋅v₀
+  MultibodyForces<T>& forces = *scratch_.forces;
+  VectorX<T>& vdot = scratch_.tmp_v1;
+  vdot = v0 / dt;
+  plant().CalcForceElementsContribution(context, &forces);
+  plant().AddInForcesFromInputPorts(context, &forces);
+
+  // TODO(vincekurtz): use a CalcInverseDynamics signature that doesn't allocate
+  // a return value.
+  r = -dt * plant().CalcInverseDynamics(context, vdot, forces);
 
   model->ResetParameters(std::move(params));
   CalcGeometryContactData(context);
