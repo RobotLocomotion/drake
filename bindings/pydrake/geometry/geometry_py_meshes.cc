@@ -7,14 +7,12 @@
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
-#include "drake/geometry/proximity/mesh_to_vtk.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_refiner.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
-#include "drake/geometry/proximity/vtk_to_volume_mesh.h"
 
 namespace drake {
 namespace pydrake {
@@ -212,21 +210,6 @@ void DoMeshDependentDefinitions(py::module m) {
       py::arg("filename"), py::arg("scale3"),
       // N.B. We have not bound the optional "on_warning" argument.
       doc.ReadObjToTriangleSurfaceMesh.doc_3args_filename_scale3_on_warning);
-  m.def(
-      "ReadVtkToVolumeMesh",
-      [](const std::filesystem::path& filename, const Eigen::Vector3d& scale) {
-        return geometry::ReadVtkToVolumeMesh(filename, scale);
-      },
-      py::arg("filename"), py::arg("scale") = Eigen::Vector3d::Ones(),
-      doc.ReadVtkToVolumeMesh.doc);
-  m.def(
-      "WriteVolumeMeshToVtk",
-      [](const std::string& file_name, const VolumeMesh<double>& mesh,
-          const std::string& title) {
-        geometry::WriteVolumeMeshToVtk(file_name, mesh, title);
-      },
-      py::arg("file_name"), py::arg("mesh"), py::arg("title"),
-      doc.WriteVolumeMeshToVtk.doc);
   // Note: we're not binding the MeshSource variants to avoid having to resolve
   // the binding dependency chain on MeshSource.
 }

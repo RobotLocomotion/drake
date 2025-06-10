@@ -16,6 +16,7 @@
 
 namespace drake {
 namespace geometry {
+namespace internal {
 
 using Eigen::Vector3d;
 
@@ -80,5 +81,6 @@ VolumeMesh<double> ReadVtkToVolumeMesh(const MeshSource& mesh_source,
   return {std::move(elements), std::move(vertices)};
 }
 
+}  // namespace internal
 }  // namespace geometry
 }  // namespace drake

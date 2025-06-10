@@ -51,7 +51,7 @@ int do_main(int argc, char* argv[]) {
   }
 
   const VolumeMesh<double> input_mesh =
-      ReadVtkToVolumeMesh(std::filesystem::path(argv[1]));
+      internal::ReadVtkToVolumeMesh(std::filesystem::path(argv[1]));
 
   drake::log()->info("Input mesh has {} tets and {} vertices.",
                      input_mesh.tetrahedra().size(),
@@ -70,8 +70,8 @@ int do_main(int argc, char* argv[]) {
   }
 
   std::filesystem::path outfile(argv[2]);
-  WriteVolumeMeshToVtk(outfile.string(), refined_mesh,
-                       "refined by //geometry/proximity:refine_mesh");
+  internal::WriteVolumeMeshToVtk(outfile.string(), refined_mesh,
+                                 "refined by //geometry/proximity:refine_mesh");
   drake::log()->info(
       "wrote refined mesh to file '{}' with {} tets and {} "
       "vertices.",

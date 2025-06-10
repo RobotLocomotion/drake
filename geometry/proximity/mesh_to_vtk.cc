@@ -6,6 +6,7 @@
 
 namespace drake {
 namespace geometry {
+namespace internal {
 namespace {
 
 // Most of the functions in this anonymous namespace are templated on
@@ -144,5 +145,6 @@ void WriteTriangleSurfaceMeshFieldLinearToVtk(
   WriteMeshFieldLinearToVtk(file_name, field_name, field, title);
 }
 
+}  // namespace internal
 }  // namespace geometry
 }  // namespace drake

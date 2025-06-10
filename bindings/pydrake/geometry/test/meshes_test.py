@@ -1,7 +1,6 @@
 import pydrake.geometry as mut
 import pydrake.geometry._testing as mut_testing
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common import temp_directory
 
 import copy
 import unittest
@@ -259,37 +258,3 @@ class TestGeometryMeshes(unittest.TestCase):
             ]) * scale
             for i, expected in enumerate(expected_vertices):
                 np.testing.assert_array_equal(vertices[i], expected)
-
-    def test_read_vtk_to_volume_mesh(self):
-        # Test reading a simple one-tetrahedron mesh.
-        mesh_path = FindResourceOrThrow(
-            "drake/geometry/test/one_tetrahedron.vtk")
-        mesh = mut.ReadVtkToVolumeMesh(filename=mesh_path)
-
-        # Verify the mesh matches the expected one-tetrahedron mesh.
-        expected_mesh = mut.VolumeMesh(
-            elements=(mut.VolumeElement(v0=0, v1=1, v2=2, v3=3),),
-            vertices=((0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)))
-        self.assertTrue(mesh.Equal(mesh=expected_mesh))
-
-        # Test reading a mesh with a scale.
-        mesh = mut.ReadVtkToVolumeMesh(
-            filename=mesh_path, scale=np.array([0.1, 0.1, 0.1]))
-        expected_mesh = mut.VolumeMesh(
-            elements=(mut.VolumeElement(v0=0, v1=1, v2=2, v3=3),),
-            vertices=((0, 0, 0), (0.1, 0, 0), (0, 0.1, 0), (0, 0, 0.1)))
-        self.assertTrue(mesh.Equal(mesh=expected_mesh))
-
-    def test_write_volume_mesh_to_vtk(self):
-        # Create a simple tetrahedral mesh.
-        t = mut.VolumeElement(v0=0, v1=1, v2=2, v3=3)
-        v0 = (0, 0, 0)
-        v1 = (1, 0, 0)
-        v2 = (0, 1, 0)
-        v3 = (0, 0, 1)
-        mesh = mut.VolumeMesh(elements=(t,), vertices=(v0, v1, v2, v3))
-
-        # Write the mesh to a VTK file.
-        temp_file = f"{temp_directory()}/test_mesh.vtk"
-        mut.WriteVolumeMeshToVtk(
-            file_name=temp_file, mesh=mesh, title="Test Mesh")

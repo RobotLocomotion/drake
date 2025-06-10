@@ -9,6 +9,7 @@
 
 namespace drake {
 namespace geometry {
+namespace internal {
 
 /* @name Export Volume/Surface Mesh and Field for visualization in ParaView.
  These functions export VolumeMesh, TriangleSurfaceMesh, VolumeMeshFieldLinear,
@@ -76,5 +77,6 @@ void WriteTriangleSurfaceMeshFieldLinearToVtk(
 
 //@}
 
+}  // namespace internal
 }  // namespace geometry
 }  // namespace drake
