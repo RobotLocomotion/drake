@@ -37,14 +37,16 @@ if(ANDROID OR CYGWIN OR IOS OR NOT UNIX)
 endif()
 
 set(BAZELRC_IMPORTS "tools/bazel.rc")
-set(UNIX_DISTRIBUTION_ID)
 set(UNIX_DISTRIBUTION_CODENAME)
+set(UNIX_DISTRIBUTION_VERSION)
 
-# The minimum Darwin version and codename should correspond to the minimum
-# supported macOS version listed in doc/_pages/installation.md and
+# The minimum versions and codenames for each platform should correspond to
+# the minimum supported versions listed in doc/_pages/installation.md and
 # doc/_pages/from_source.md.
 set(MINIMUM_DARWIN_VERSION 23)
 set(MINIMUM_MACOS_CODENAME "Sonoma")
+set(MINIMUM_UBUNTU_VERSION 22.04)
+set(MINIMUM_UBUNTU_CODENAME "jammy")
 
 if(APPLE)
   if(CMAKE_SYSTEM_VERSION VERSION_LESS ${MINIMUM_DARWIN_VERSION})
@@ -77,12 +79,20 @@ else()
       OUTPUT_VARIABLE UNIX_DISTRIBUTION_CODENAME
       OUTPUT_STRIP_TRAILING_WHITESPACE
     )
+    execute_process(COMMAND "${LSB_RELEASE_EXECUTABLE}" --release --short
+      RESULT_VARIABLE LSB_RELEASE_VERSION_SHORT_RESULT_VARIABLE
+      OUTPUT_VARIABLE UNIX_DISTRIBUTION_VERSION
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
     if(NOT LSB_RELEASE_CODENAME_SHORT_RESULT_VARIABLE EQUAL 0)
       message(WARNING "Could NOT run the lsb_release executable")
     else()
-      # TODO(tyler-yankee): Replicate the warning message with the minimum
-      # OS version logic from the macOS branch above, rather than giving an
-      # unclear warning message about an unfound .bazelrc file.
+      if(UNIX_DISTRIBUTION_VERSION VERSION_LESS ${MINIMUM_UBUNTU_VERSION})
+        message(WARNING "Ubuntu ${UNIX_DISTRIBUTION_VERSION} "
+          "(${UNIX_DISTRIBUTION_CODENAME}) is NOT supported. Please use Ubuntu "
+          "${MINIMUM_UBUNTU_VERSION} (${MINIMUM_UBUNTU_CODENAME}) or newer."
+        )
+      endif()
       set(MAYBE_RC "tools/ubuntu-${UNIX_DISTRIBUTION_CODENAME}.bazelrc")
       if(NOT EXISTS "${PROJECT_SOURCE_DIR}/${MAYBE_RC}")
         message(WARNING "Could NOT find config file ${MAYBE_RC}")
