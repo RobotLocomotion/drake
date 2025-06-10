@@ -23,6 +23,8 @@ namespace multibody {
 namespace contact_solvers {
 namespace pooled_sap {
 
+using internal::BlockSparsityPattern;
+
 template <typename T>
 struct PooledSapParameters {
   void VerifyInvariants() const {
@@ -331,15 +333,26 @@ class PooledSapModel {
                       SapData<T>* scratch, T* dcost_dalpha,
                       T* d2cost_dalpha2) const;
 
+  /* Compute and store the Hessian sparsity pattern. */
+  void SetSparsityPattern();
+
+  const BlockSparsityPattern& sparsity_pattern() const {
+    DRAKE_ASSERT(sparsity_pattern_ != nullptr);
+    return *sparsity_pattern_;
+  }
+
  private:
   void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* result) const;
   void CalcMomentumTerms(const SapData<T>& data,
                          typename SapData<T>::Cache* cache) const;
   void CalcBodySpatialVelocities(const VectorX<T>& v,
                                  EigenPool<Vector6<T>>* V_pool) const;
-  internal::BlockSparsityPattern CalcSparsityPattern() const;
 
   std::unique_ptr<PooledSapParameters<T>> params_;
+
+  // Sparsity pattern for the Hessian is set once at construction, and used
+  // later to detect when the sparsity pattern has changed.
+  std::unique_ptr<BlockSparsityPattern> sparsity_pattern_;
 
   // Total number of generalized velocities. = sum(clique_sizes_).
   int num_bodies_{0};

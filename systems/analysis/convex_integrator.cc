@@ -219,10 +219,18 @@ bool ConvexIntegrator<double>::SolveWithGuess(
       return true;
     }
 
+    bool reuse_hessian = false;
+    bool reuse_sparsity_pattern = !SparsityPatternChanged(model);
+
     // Compute the search direction dv = -H⁻¹ g
-    ComputeSearchDirection(model, data, &dv,
-                           /*reuse_factorization=*/false,
-                           /*reuse_sparsity_pattern=*/(k > 0));
+    ComputeSearchDirection(model, data, &dv, reuse_hessian,
+                           reuse_sparsity_pattern);
+
+    // If the sparsity pattern changed, store it for future reuse.
+    if (!reuse_sparsity_pattern) {
+      previous_sparsity_pattern_ =
+          std::make_unique<BlockSparsityPattern>(model.sparsity_pattern());
+    }
 
     // Compute the step size with linesearch
     std::tie(alpha, ls_iterations) = PerformExactLineSearch(model, data, dv);
@@ -245,11 +253,22 @@ bool ConvexIntegrator<double>::SolveWithGuess(
       // both ||Δvₖ|| and ||Δvₖ₋₁|| to compute θ = ||Δvₖ|| / ||Δvₖ₋₁||.
       const double theta = stats_.step_size[k] / stats_.step_size[k - 1];
       const double eta = theta / (1.0 - theta);
-      if ((theta < 1.0) && (eta < k_dot_tol)) {
+      if ((theta < 1.0) && (eta * stats_.step_size[k] < k_dot_tol)) {
         return true;
       }
 
-      // TODO(vincekurtz): use theta to trigger hessian re-computation.
+      // Choose whether to re-compute the Hessian factorization using Equation
+      // IV.8.11 of [Hairer, 1996]. This essentially predicts whether we'll
+      // converge within (k_max - k) iterations, assuming linear convergence.
+      // We'll set k_max to something a smaller that the hard iteration limit,
+      // to give ourselves some room.
+      const int k_max = solver_parameters_.max_iterations / 2;
+      const double anticipated_residual =
+          std::pow(theta, k_max - k) / (1 - theta) * stats_.step_size[k];
+
+      if (anticipated_residual > k_dot_tol || theta >= 1.0) {
+        reuse_hessian_factorization_ = false;
+      }
     }
   }
 
@@ -312,6 +331,7 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
     // doesn't work very well. Instead, we'll set the guess based on a quadratic
     // approximation around α_max.
     alpha_guess = alpha_max - dell / d2ell;
+    alpha_guess = std::clamp(alpha_guess, 1e-8, alpha_max);
   } else {
     // Set the initial guess for linesearch based on a cubic hermite spline
     // between α = 0 and α = α_max. This spline takes the form
@@ -449,6 +469,18 @@ void ConvexIntegrator<T>::LogSolverStats() {
               << stats_.gradient_norm[k] << "," << stats_.ls_iterations[k]
               << "," << stats_.alpha[k] << "," << stats_.step_size[k] << "\n";
   }
+}
+
+template <typename T>
+bool ConvexIntegrator<T>::SparsityPatternChanged(
+    const PooledSapModel<T>& model) const {
+  if (previous_sparsity_pattern_ == nullptr) {
+    return true;  // No previous sparsity pattern to compare against.
+  }
+  return (model.sparsity_pattern().neighbors() !=
+          previous_sparsity_pattern_->neighbors()) ||
+         (model.sparsity_pattern().block_sizes() !=
+          previous_sparsity_pattern_->block_sizes());
 }
 
 }  // namespace systems

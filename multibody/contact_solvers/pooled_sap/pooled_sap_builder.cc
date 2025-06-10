@@ -173,6 +173,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   CalcGeometryContactData(context);
   AddPatchConstraintsForHydroelasticContact(context, model);
   AddPatchConstraintsForPointContact(context, model);
+  model->SetSparsityPattern();
 
   model->set_stiction_tolerance(plant().stiction_tolerance());
 }

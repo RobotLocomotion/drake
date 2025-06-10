@@ -19,6 +19,7 @@ namespace systems {
 using multibody::MultibodyPlant;
 using multibody::contact_solvers::internal::BlockSparseCholeskySolver;
 using multibody::contact_solvers::internal::BlockSparseSymmetricMatrixT;
+using multibody::contact_solvers::internal::BlockSparsityPattern;
 using multibody::contact_solvers::pooled_sap::PooledSapBuilder;
 using multibody::contact_solvers::pooled_sap::PooledSapModel;
 using multibody::contact_solvers::pooled_sap::SapData;
@@ -278,6 +279,10 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Log solver statistics to a CSV file for later analysis.
   void LogSolverStats();
 
+  // Indicate whether a change in problem structure requires a Hessian with a
+  // new sparsity pattern.
+  bool SparsityPatternChanged(const PooledSapModel<T>& model) const;
+
   // The multibody plant used as the basis of the convex optimization problem.
   MultibodyPlant<T>* plant_{nullptr};
 
@@ -290,6 +295,18 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   BlockSparseCholeskySolver<Eigen::MatrixXd> hessian_factorization_;
   VectorX<T> search_direction_;
   SearchDirectionData<T> search_direction_data_;
+
+  // Track previous model size for hessian reuse
+  // TODO(vincekurtz): consider separating this into a helper object.
+  int previous_num_cliques_{-1};
+  int previous_num_velocities_{-1};
+  int previous_num_bodies_{-1};
+  int previous_num_constraints_{-1};
+  int previous_num_constraint_equations_{-1};
+  std::unique_ptr<BlockSparsityPattern> previous_sparsity_pattern_;
+
+  // Flag for Hessian factorization re-use (changes between iterations)
+  bool reuse_hessian_factorization_{true};
 
   // Solver tolerances and other parameters
   ConvexIntegratorSolverParameters solver_parameters_;

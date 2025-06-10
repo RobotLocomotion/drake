@@ -132,7 +132,7 @@ template <typename T>
 std::unique_ptr<internal::BlockSparseSymmetricMatrixT<T>>
 PooledSapModel<T>::MakeHessian(const SapData<T>& data) const {
   auto hessian = std::make_unique<internal::BlockSparseSymmetricMatrixT<T>>(
-      CalcSparsityPattern());
+      sparsity_pattern());
   UpdateHessian(data, hessian.get());
   return hessian;
 }
@@ -155,7 +155,7 @@ void PooledSapModel<T>::UpdateHessian(
 }
 
 template <typename T>
-internal::BlockSparsityPattern PooledSapModel<T>::CalcSparsityPattern() const {
+void PooledSapModel<T>::SetSparsityPattern() {
   std::vector<int> block_sizes = clique_sizes_;
   const int num_nodes = block_sizes.size();
 
@@ -170,8 +170,8 @@ internal::BlockSparsityPattern PooledSapModel<T>::CalcSparsityPattern() const {
   // types.
   patch_constraints_pool_.CalcSparsityPattern(&sparsity);
 
-  return internal::BlockSparsityPattern(std::move(block_sizes),
-                                        std::move(sparsity));
+  sparsity_pattern_ = std::make_unique<internal::BlockSparsityPattern>(
+      std::move(block_sizes), std::move(sparsity));
 }
 
 template <typename T>

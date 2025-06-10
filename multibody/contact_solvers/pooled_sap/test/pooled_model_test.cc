@@ -128,6 +128,9 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
     const T fn0 = 1.5;
     patches.AddPair(p_BC_W, nhat_AB_W, fn0, stiffness);
   }
+
+  // Establish the sparsity pattern.
+  model->SetSparsityPattern();
 }
 
 GTEST_TEST(PooledSapModel, Construction) {
