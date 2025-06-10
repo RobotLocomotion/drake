@@ -173,11 +173,8 @@ T PooledSapModel<T>::PatchConstraintsPool::CalcRegularizationOfFriction(
     J_Bk.col(i) = J_WBv.col(i) + J_WBw.col(i).cross(p_BoC_W);
   }
 
-  const math::LinearSolver<Eigen::LDLT, MatrixX<T>>& Ab_ldlt =
-      model().get_dynamics_factoriazation(c_b);
-  auto Ab_inv_JT = MatrixX_pool_.Add(nv_b, 3);
-  Ab_inv_JT = Ab_ldlt.Solve(J_Bk.transpose());
-  Wkk = J_Bk * Ab_inv_JT;
+  const auto& Ab = model().get_dynamics_matrix(c_b);
+  Wkk = J_Bk * Ab.diagonal().cwiseInverse().asDiagonal() * J_Bk.transpose();
 
   const int num_cliques = num_cliques_[p];
   if (num_cliques == 2) {
@@ -194,11 +191,8 @@ T PooledSapModel<T>::PatchConstraintsPool::CalcRegularizationOfFriction(
       J_Ak.col(i) = J_WAv.col(i) + J_WAw.col(i).cross(p_AoC_W);
     }
 
-    const math::LinearSolver<Eigen::LDLT, MatrixX<T>>& Aa_ldlt =
-        model().get_dynamics_factoriazation(c_a);
-    auto Aa_inv_JT = MatrixX_pool_.Add(nv_a, 3);
-    Aa_inv_JT = Aa_ldlt.Solve(J_Ak.transpose());
-    Wkk += J_Ak * Aa_inv_JT;
+    const auto& Aa = model().get_dynamics_matrix(c_a);
+    Wkk += J_Ak * Aa.diagonal().cwiseInverse().asDiagonal() * J_Ak.transpose();
   }
 
   const Vector3<T> Wdiag = Wkk.diagonal();

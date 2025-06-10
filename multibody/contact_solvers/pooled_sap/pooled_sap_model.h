@@ -107,12 +107,10 @@ class PooledSapModel {
     num_bodies_ = ssize(params_->body_cliques);
     clique_sizes_.clear();
     clique_start_.clear();
-    Aldlt_.clear();
 
     const int num_cliques = params_->A.size();
     clique_sizes_.reserve(num_cliques);
     clique_start_.reserve(num_cliques + 1);
-    Aldlt_.reserve(num_cliques);
     clique_start_.push_back(0);
     num_velocities_ = 0;
     auto& A = params_->A;
@@ -122,8 +120,6 @@ class PooledSapModel {
       clique_sizes_.push_back(clique_nv);
       // Here we are pushing the start for the next clique, c+1.
       clique_start_.push_back(clique_start_.back() + clique_nv);
-      Aldlt_.push_back(
-          math::LinearSolver<Eigen::LDLT, MatrixX<T>>(MatrixX<T>(A[c])));
     }
     DRAKE_DEMAND(params_->r.size() == num_velocities_);
     patch_constraints_pool_.Clear();
@@ -189,12 +185,6 @@ class PooledSapModel {
   ConstSpatialVelocityJacobianView get_jacobian(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return params().J_WB[body];
-  }
-
-  /* Returns the `clique` diagonal block of the dynamics matrix A. */
-  const math::LinearSolver<Eigen::LDLT, MatrixX<T>>&
-  get_dynamics_factoriazation(int clique) const {
-    return Aldlt_[clique];
   }
 
   typename EigenPool<MatrixX<T>>::ConstElementView get_dynamics_matrix(
@@ -359,8 +349,7 @@ class PooledSapModel {
   int num_velocities_{0};
   std::vector<int> clique_start_;  // Clique first velocity.
   std::vector<int> clique_sizes_;  // Number of velocities per clique.
-  std::vector<math::LinearSolver<Eigen::LDLT, MatrixX<T>>> Aldlt_;
-  EigenPool<Vector6<T>> V_WB0_;  // Initial spatial velocities.
+  EigenPool<Vector6<T>> V_WB0_;    // Initial spatial velocities.
 
   PatchConstraintsPool patch_constraints_pool_;
 };
