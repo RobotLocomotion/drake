@@ -219,8 +219,18 @@ bool ConvexIntegrator<double>::SolveWithGuess(
       return true;
     }
 
-    bool reuse_hessian = false;
+    // For iterations other than the first, we know the sparsity pattern is
+    // unchanged, so we can reuse it without checking. The sparsity pattern is
+    // often but not always the same between solves, so we need to perform the
+    // full check when k = 0.
     bool reuse_sparsity_pattern = (k > 0) || !SparsityPatternChanged(model);
+
+    // Hessian reuse is enabled based when
+    //   1. the sparsity pattern is unchanged,
+    //   2. the "anticipated residual" heuristics indicate that we'll converge
+    //      in time under a linear convergence assumption,
+    //   3. TODO(vincekurtz): reuse is enabled in the solver
+    bool reuse_hessian = reuse_sparsity_pattern && reuse_hessian_factorization_;
 
     // Compute the search direction dv = -H⁻¹ g
     ComputeSearchDirection(model, data, &dv, reuse_hessian,
@@ -441,6 +451,7 @@ void ConvexIntegrator<double>::ComputeSearchDirection(
           "ConvexIntegrator: Hessian factorization failed!");
     }
     total_hessian_factorizations_++;
+    reuse_hessian_factorization_ = true;
   }
 
   // Compute the search direction dv = -H⁻¹ g
