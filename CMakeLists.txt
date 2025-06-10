@@ -37,12 +37,14 @@ if(ANDROID OR CYGWIN OR IOS OR NOT UNIX)
 endif()
 
 set(BAZELRC_IMPORTS "tools/bazel.rc")
-set(UNIX_DISTRIBUTION_ID)
 set(UNIX_DISTRIBUTION_CODENAME)
 
 # The minimum Darwin version and codename should correspond to the minimum
 # supported macOS version listed in doc/_pages/installation.md and
 # doc/_pages/from_source.md.
+# For Ubuntu, don't make as harsh a check for minimum supported version
+# since Drake *can* compile on non-Ubuntu UNIX, even though it's not
+# officially supported.
 set(MINIMUM_DARWIN_VERSION 23)
 set(MINIMUM_MACOS_CODENAME "Sonoma")
 
@@ -80,12 +82,13 @@ else()
     if(NOT LSB_RELEASE_CODENAME_SHORT_RESULT_VARIABLE EQUAL 0)
       message(WARNING "Could NOT run the lsb_release executable")
     else()
-      # TODO(tyler-yankee): Replicate the warning message with the minimum
-      # OS version logic from the macOS branch above, rather than giving an
-      # unclear warning message about an unfound .bazelrc file.
       set(MAYBE_RC "tools/ubuntu-${UNIX_DISTRIBUTION_CODENAME}.bazelrc")
       if(NOT EXISTS "${PROJECT_SOURCE_DIR}/${MAYBE_RC}")
-        message(WARNING "Could NOT find config file ${MAYBE_RC}")
+        message(WARNING "Could not find config file ${MAYBE_RC}. "
+          "This may indicate that you're using an OS or OS version that "
+          "is not officially supported, so the build configuration cannot be "
+          "fine-tuned. See https://drake.mit.edu/from_source.html for details "
+          "on officially supported platforms when building from source.")
       else()
         list(APPEND BAZELRC_IMPORTS "${MAYBE_RC}")
       endif()
