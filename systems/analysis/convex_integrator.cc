@@ -195,9 +195,11 @@ bool ConvexIntegrator<double>::SolveWithGuess(
   dv.resize(data.num_velocities());
   DRAKE_DEMAND(data.num_velocities() == v.size());
 
-  // Tolerance for a more relaxed convergence check under looser accuracies.
-  const double k_dot_tol =
-      solver_parameters_.kappa * this->get_accuracy_in_use();
+  // Convergence tolerance is looser when we're using error control.
+  double tol = solver_parameters_.tolerance * model.params().scale;
+  if (!this->get_fixed_step_mode()) {
+    tol = solver_parameters_.kappa * this->get_accuracy_in_use();
+  }
 
   double alpha{NAN};
   int ls_iterations{0};
@@ -208,14 +210,8 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     model.CalcData(v, &data);
 
     // Early convergence check. Allows for early exit if v_guess is already
-    // optimal, or a single Newton step for simple unconstrained problems. This
-    // is necessary because our main convergence criterion requires comparing dv
-    // over several iterations.
-    const double scale = model.params().time_step *
-                         std::max(data.cache().Av.norm(), model.r().norm());
-    const double eps = solver_parameters_.abs_tolerance +
-                       solver_parameters_.rel_tolerance * scale;
-    if (data.cache().gradient.norm() < eps) {
+    // close enough to the solution.
+    if (data.cache().gradient.norm() < tol) {
       return true;
     }
 
@@ -258,13 +254,13 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     stats_.alpha.push_back(alpha);
     stats_.step_size.push_back(dv.norm());
 
-    // Convergence check from on [Hairer, 1996], Eq. IV.8.10.
+    // Convergence check based on [Hairer, 1996], Eq. IV.8.10.
     if (k > 0) {
       // N.B. this only comes into effect in the second iteration, since we need
       // both ||Δvₖ|| and ||Δvₖ₋₁|| to compute θ = ||Δvₖ|| / ||Δvₖ₋₁||.
       const double theta = stats_.step_size[k] / stats_.step_size[k - 1];
       const double eta = theta / (1.0 - theta);
-      if ((theta < 1.0) && (eta * stats_.step_size[k] < k_dot_tol)) {
+      if ((theta < 1.0) && (eta * stats_.step_size[k] < tol)) {
         return true;
       }
 
@@ -275,7 +271,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(
       const double anticipated_residual =
           std::pow(theta, k_max - k) / (1 - theta) * stats_.step_size[k];
 
-      if (anticipated_residual > k_dot_tol || theta >= 1.0) {
+      if (anticipated_residual > tol || theta >= 1.0) {
         reuse_hessian_factorization_ = false;
       }
     }

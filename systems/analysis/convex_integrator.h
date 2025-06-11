@@ -36,10 +36,9 @@ struct ConvexIntegratorSolverParameters {
   // Maximum line search step size
   double alpha_max{1.0};
 
-  // Absolute tolerance for the stricter gradient-based convergence check,
-  // ‖∇ℓ‖ ≤ εₐ + εᵣ⋅δt⋅max(‖A⋅v‖, ‖r‖)
-  double abs_tolerance{1e-12};
-  double rel_tolerance{1e-4};
+  // Tolerance for the stricter gradient-based convergence check,
+  // ‖∇ℓ‖ ≤ ε⋅‖diag(A)‖
+  double tolerance{1e-8};
 
   // Tolerance for exact line search.
   double ls_tolerance{1e-6};

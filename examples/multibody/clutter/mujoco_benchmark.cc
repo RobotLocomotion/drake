@@ -31,8 +31,9 @@ DEFINE_double(
     "If mbp_time_step = 0, the plant is modeled as a continuous system "
     "and no contact forces are displayed.  mbp_time_step must be >= 0.");
 DEFINE_double(stiction_tolerance, 1e-4, "Stiction velocity (m/s). ");
-DEFINE_double(use_hydro, false,
-              "If true, use hydro. Otherwise point contact.");
+DEFINE_double(use_hydro, false, "If true, use hydro. Otherwise point contact.");
+DEFINE_double(hc_dissipation, 50.0, "Hunt & Crossley dissipation (s/m). ");
+DEFINE_double(point_stiffness, 1.0e6, "Point contact stiffness (N/m).");
 
 // Visualization.
 DEFINE_bool(visualize, true, "Whether to visualize (true) or not (false).");
@@ -147,7 +148,10 @@ int do_main() {
   Parser(&plant, &scene_graph).AddModelsFromString(mjcf, "xml");
 
   SceneGraphConfig sg_config;
-  sg_config.default_proximity_properties.compliance_type = "compliant";
+  sg_config.default_proximity_properties.hunt_crossley_dissipation =
+      FLAGS_hc_dissipation;
+  sg_config.default_proximity_properties.point_stiffness =
+      FLAGS_point_stiffness;
   scene_graph.set_config(sg_config);
 
   plant.Finalize();

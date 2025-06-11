@@ -29,6 +29,7 @@ template <typename T>
 struct PooledSapParameters {
   void VerifyInvariants() const {
     DRAKE_DEMAND(time_step > 0);
+    DRAKE_DEMAND(scale > 0);
     const int num_bodies = ssize(body_cliques);
     DRAKE_DEMAND(num_bodies > 0);
     DRAKE_DEMAND(body_cliques[0] < 0);  // Always for the world.
@@ -59,6 +60,7 @@ struct PooledSapParameters {
   EigenPool<MatrixX<T>> A;
   // Cost linear term
   VectorX<T> r;
+  T scale{0.0};  // Scale factor for the early convergence check.
   // Clique for the b-th rigid body. Negative if anchored.
   // body_cliques[0]  < 0 must correspond to the world.
   std::vector<int> body_cliques;

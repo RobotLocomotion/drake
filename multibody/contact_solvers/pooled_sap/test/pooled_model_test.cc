@@ -81,6 +81,9 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
   // None of the bodies are marked as floating
   params->body_is_floating = {0, 0, 0, 0};
 
+  // Scale factor for convergence check.
+  params->scale = 1.0;
+
   // Reset model.
   model->ResetParameters(std::move(params));
 
