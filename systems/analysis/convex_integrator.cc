@@ -340,7 +340,7 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
     // doesn't work very well. Instead, we'll set the guess based on a quadratic
     // approximation around α_max.
     alpha_guess = alpha_max - dell / d2ell;
-    alpha_guess = std::clamp(alpha_guess, 1e-8, alpha_max);
+    alpha_guess = std::clamp(alpha_guess, 0.0, alpha_max);
   } else {
     // Set the initial guess for linesearch based on a cubic hermite spline
     // between α = 0 and α = α_max. This spline takes the form
@@ -381,7 +381,7 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
   const Bracket bracket(0.0, -1.0, alpha_max, dell / dell_scale);
 
   // TODO(vincekurtz): scale linesearch tolerance based on accuracy.
-  const double alpha_tolerance = solver_parameters_.ls_tolerance * alpha_guess;
+  const double alpha_tolerance = solver_parameters_.ls_tolerance;
   return DoNewtonWithBisectionFallback(
       cost_and_gradient, bracket, alpha_guess, alpha_tolerance,
       solver_parameters_.ls_tolerance, solver_parameters_.max_ls_iterations);

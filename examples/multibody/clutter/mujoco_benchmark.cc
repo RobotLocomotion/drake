@@ -30,10 +30,13 @@ DEFINE_double(
     "updates for the plant (modeled as a discrete system). "
     "If mbp_time_step = 0, the plant is modeled as a continuous system "
     "and no contact forces are displayed.  mbp_time_step must be >= 0.");
+DEFINE_double(stiction_tolerance, 1e-4, "Stiction velocity (m/s). ");
+DEFINE_double(use_hydro, false,
+              "If true, use hydro. Otherwise point contact.");
 
 // Visualization.
 DEFINE_bool(visualize, true, "Whether to visualize (true) or not (false).");
-DEFINE_bool(visualize_forces, false,
+DEFINE_bool(visualize_forces, true,
             "Whether to visualize forces (true) or not (false).");
 DEFINE_double(viz_period, std::numeric_limits<double>::infinity(),
               "Viz period.");
@@ -59,7 +62,9 @@ DEFINE_double(
     ls_tolerance, 1e-6,
     "Tolerance for the exact line search performed by the convex integrator.");
 
-using multibody::AddMultibodyPlantSceneGraph;
+using geometry::SceneGraphConfig;
+using multibody::AddMultibodyPlant;
+using multibody::MultibodyPlantConfig;
 using multibody::Parser;
 using systems::Context;
 using systems::ConvexIntegrator;
@@ -134,9 +139,17 @@ int do_main() {
   DiagramBuilder<double> builder;
 
   // Add the plant model
-  auto [plant, scene_graph] =
-      AddMultibodyPlantSceneGraph(&builder, FLAGS_mbp_time_step);
+  MultibodyPlantConfig plant_config;
+  plant_config.time_step = FLAGS_mbp_time_step;
+  plant_config.stiction_tolerance = FLAGS_stiction_tolerance;
+  plant_config.contact_model = FLAGS_use_hydro ? "hydroelastic" : "point";
+  auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
   Parser(&plant, &scene_graph).AddModelsFromString(mjcf, "xml");
+
+  SceneGraphConfig sg_config;
+  sg_config.default_proximity_properties.compliance_type = "compliant";
+  scene_graph.set_config(sg_config);
+
   plant.Finalize();
 
   fmt::print("Num positions: {:d}\n", plant.num_positions());
