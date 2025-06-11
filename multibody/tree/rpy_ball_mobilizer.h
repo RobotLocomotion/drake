@@ -299,6 +299,20 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
                            const Eigen::Ref<const VectorX<T>>& qdot,
                            EigenPtr<VectorX<T>> v) const final;
 
+  // Maps vdot to qddot, which for this mobilizer is q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇.
+  // For simple mobilizers q̈ = v̇. This mobilizer's N and Ṅ are more elaborate.
+  void DoMapAccelerationToQDDot(const systems::Context<T>& context,
+                                const Eigen::Ref<const VectorX<T>>& vdot,
+                                EigenPtr<VectorX<T>> qddot) const final;
+
+#if 0
+  // Maps qddot to vdot, which for this mobilizer is v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
+  // For simple mobilizers v̇ = q̈. This mobilizer's N and Ṅ⁺ are more elaborate.
+  void DoMapQDDotToAcceleration(const systems::Context<T>& context,
+                                const Eigen::Ref<const VectorX<T>>& qddot,
+                                EigenPtr<VectorX<T>> vdot) const final;
+#endif
+
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
 
