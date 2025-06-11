@@ -135,11 +135,11 @@ void WriteVolumeMeshToVtk(const std::string& file_name,
   WriteMeshToVtk(file_name, mesh, title);
 }
 
-std::string WriteVolumeMeshToVtkString(const VolumeMesh<double>& mesh,
-                                       const std::string& title) {
+std::string WriteVolumeMeshToVtkFileContents(const VolumeMesh<double>& mesh,
+                                             const std::string& title) {
   std::stringstream ss;
   WriteMeshToVtk(ss, mesh, title);
-  return ss.str();
+  return std::move(ss).str();
 }
 
 void WriteSurfaceMeshToVtk(const std::string& file_name,

@@ -53,9 +53,20 @@ int do_main(int argc, char* argv[]) {
   const VolumeMesh<double> input_mesh =
       internal::ReadVtkToVolumeMesh(std::filesystem::path(argv[1]));
 
-  drake::log()->info("Input mesh has {} tets and {} vertices.",
-                     input_mesh.tetrahedra().size(),
-                     input_mesh.vertices().size());
+  // Log statistics.
+  VolumeMesh<double> mesh =
+      internal::ReadVtkToVolumeMesh(std::filesystem::path(argv[1]));
+  std::vector<int> bad_tets =
+      internal::DetectTetrahedronWithAllBoundaryVertices(mesh);
+  std::vector<internal::SortedTriplet<int>> bad_triangles =
+      internal::DetectInteriorTriangleWithAllBoundaryVertices(mesh);
+  std::vector<SortedPair<int>> bad_edges =
+      internal::DetectInteriorEdgeWithAllBoundaryVertices(mesh);
+  drake::log()->info(
+      "Found {} bad tets, {} bad triangles, and {} bad edges."
+      "The mesh has {} tets and {} vertices.",
+      bad_tets.size(), bad_triangles.size(), bad_edges.size(),
+      mesh.tetrahedra().size(), mesh.vertices().size());
 
   // Refine the mesh.
   const VolumeMesh<double> refined_mesh = RefineVolumeMesh(input_mesh);

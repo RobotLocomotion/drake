@@ -246,7 +246,7 @@ GTEST_TEST(VolumeMeshRefinerTest, TestRefineVolumeMeshNoRefinement) {
 }
 
 // Test that RefineVolumeMesh can output VTK string directly.
-GTEST_TEST(VolumeMeshRefinerTest, TestRefineVolumeMeshToString) {
+GTEST_TEST(VolumeMeshRefinerTest, TestRefineVolumeMeshIntoVktString) {
   const VolumeMesh<double> test_mesh(
       std::vector<VolumeElement>{{0, 1, 2, 3}},
       std::vector<Vector3d>{Vector3d::Zero(), Vector3d::UnitX(),
@@ -259,9 +259,10 @@ GTEST_TEST(VolumeMeshRefinerTest, TestRefineVolumeMeshToString) {
 
   // Get both the refined mesh and its VTK string representation.
   const VolumeMesh<double> refined_mesh = RefineVolumeMesh(test_mesh);
-  const std::string vtk_string = RefineVolumeMesh(MeshSource(InMemoryMesh{
-      MemoryFile(WriteVolumeMeshToVtkString(test_mesh, "test_mesh"), ".vtk",
-                 "test_mesh.vtk")}));
+  const std::string vtk_string =
+      RefineVolumeMeshIntoVtkFileContents(MeshSource(InMemoryMesh{
+          MemoryFile(WriteVolumeMeshToVtkFileContents(test_mesh, "test_mesh"),
+                     ".vtk", "test_mesh.vtk")}));
 
   // Verify the string contains key VTK elements.
   EXPECT_TRUE(vtk_string.find("# vtk DataFile Version 3.0") !=

@@ -385,11 +385,6 @@ void DefineMeshSource(py::module m) {
     py::implicitly_convertible<std::filesystem::path, MeshSource>();
     py::implicitly_convertible<InMemoryMesh&&, MeshSource>();
   }
-
-  // Add RefineVolumeMesh overload for MeshSource
-  m.def("RefineVolumeMesh",
-      py::overload_cast<const MeshSource&>(&RefineVolumeMesh), py::arg("mesh"),
-      doc.RefineVolumeMesh.doc);
 }
 
 void DefineRgba(py::module m) {

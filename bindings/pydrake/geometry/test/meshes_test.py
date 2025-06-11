@@ -1,7 +1,6 @@
 import pydrake.geometry as mut
 import pydrake.geometry._testing as mut_testing
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common import MemoryFile
 
 import copy
 import unittest
@@ -232,7 +231,8 @@ class TestGeometryMeshes(unittest.TestCase):
             "drake/geometry/test/one_tetrahedron.vtk")
 
         # Get both the refined mesh and its bytes representation.
-        vtk_string = mut.RefineVolumeMesh(mesh=mut.MeshSource(mesh_path))
+        vtk_string = mut.RefineVolumeMeshIntoVtkFileContents(
+            mesh=mut.MeshSource(mesh_path))
 
         # Verify the string contains key VTK elements.
         self.assertIn("# vtk DataFile Version 3.0", vtk_string)

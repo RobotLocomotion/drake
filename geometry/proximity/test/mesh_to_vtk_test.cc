@@ -40,7 +40,7 @@ GTEST_TEST(MeshToVtkTest, BoxTetrahedraToString) {
   // resolution_hint 0.5 is enough to have vertices on the medial axis.
   const auto mesh = MakeBoxVolumeMesh<double>(box, 0.5);
   const std::string vtk_string =
-      WriteVolumeMeshToVtkString(mesh, "Tetrahedral Mesh of Box");
+      WriteVolumeMeshToVtkFileContents(mesh, "Tetrahedral Mesh of Box");
 
   // Verify the string contains key VTK elements.
   EXPECT_TRUE(vtk_string.find("# vtk DataFile Version 3.0") !=

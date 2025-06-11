@@ -57,6 +57,7 @@ drake_pybind_library(
         "geometry_py_render.cc",
         "geometry_py_scene_graph.cc",
         "geometry_py_visualizers.cc",
+        "geometry_py_refine.cc",
     ],
     package_info = PACKAGE_INFO,
     py_data = [

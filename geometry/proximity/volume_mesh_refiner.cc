@@ -232,10 +232,10 @@ VolumeMesh<double> RefineVolumeMesh(const VolumeMesh<double>& mesh) {
   return internal::VolumeMeshRefiner(mesh).Refine();
 }
 
-std::string RefineVolumeMesh(const MeshSource& mesh) {
+std::string RefineVolumeMeshIntoVtkFileContents(const MeshSource& mesh) {
   const VolumeMesh<double> original = internal::ReadVtkToVolumeMesh(mesh);
   const VolumeMesh<double> refined = RefineVolumeMesh(original);
-  return internal::WriteVolumeMeshToVtkString(
+  return internal::WriteVolumeMeshToVtkFileContents(
       refined, "refined by //geometry/proximity:volume_mesh_refiner");
 }
 
