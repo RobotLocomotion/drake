@@ -10,6 +10,10 @@
 #include <utility>
 #include <vector>
 
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
+
 #include <fcl/fcl.h>
 #include <fmt/format.h>
 
@@ -794,6 +798,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // allocated and prepared vector for results of the parallelizable step.
     vector<std::unique_ptr<ContactSurface<T>>> surface_ptrs(candidates.size());
     // TODO(rpoyner-tri): try some thread parallelism here.
+#if defined(_OPENMP)
+int num_threads = std::min(16, omp_get_max_threads());
+#pragma omp parallel for num_threads(num_threads) schedule(dynamic)
+#endif
     for (int k = 0; k < ssize(candidates); ++k) {
       const auto& [id0, id1] = candidates[k];
       auto [result, surface] = calculator.MaybeMakeContactSurface(id0, id1);
