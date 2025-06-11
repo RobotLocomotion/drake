@@ -97,15 +97,18 @@ class UnitInertia : public RotationalInertia<T> {
 
   /// Sets `this` unit inertia from a generally non-unit inertia I corresponding
   /// to a body with a given `mass`.
-  /// @note In Debug builds, this operation aborts if the provided `mass` is
-  ///       not strictly positive.
+  /// @throws std::exception if the provided `mass` is not strictly positive.
   UnitInertia<T>& SetFromRotationalInertia(const RotationalInertia<T>& I,
-                                           const T& mass);
+                                           const T& mass) {
+    DRAKE_THROW_UNLESS(mass > 0);
+    RotationalInertia<T>::operator=(I / mass);
+    return *this;
+  }
 
   /// Re-express a unit inertia in a different frame, performing the operation
   /// in place and modifying the original object. @see ReExpress() for details.
   void ReExpressInPlace(const math::RotationMatrix<T>& R_AE) {
-    RotationalInertia<T>::ReExpressInPlace(R_AE);
+    RotationalInertia<T>::ReExpressInPlace(R_AE);  // 57 flops
   }
 
   /// Given `this` unit inertia `G_BP_E` of a body B about a point P and
@@ -128,7 +131,7 @@ class UnitInertia : public RotationalInertia<T> {
   ///                     expressed in the same frame E in which `this`
   ///                     inertia is expressed.
   void ShiftFromCenterOfMassInPlace(const Vector3<T>& p_BcmQ_E) {
-    RotationalInertia<T>::operator+=(PointMass(p_BcmQ_E));
+    RotationalInertia<T>::operator+=(PointMass(p_BcmQ_E));  // 17 flops
   }
 
   /// Shifts this central unit inertia to a different point, and returns the
@@ -165,6 +168,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// Use with care.
   // TODO(mitiguy) Issue #6147.  If invalid inertia, should throw exception.
   void ShiftToCenterOfMassInPlace(const Vector3<T>& p_QBcm_E) {
+    // 17 flops
     RotationalInertia<T>::MinusEqualsUnchecked(PointMass(p_QBcm_E));
   }
 
@@ -183,7 +187,7 @@ class UnitInertia : public RotationalInertia<T> {
   [[nodiscard]] UnitInertia<T> ShiftToCenterOfMass(
       const Vector3<T>& p_QBcm_E) const {
     UnitInertia<T> result(*this);
-    result.ShiftToCenterOfMassInPlace(p_QBcm_E);
+    result.ShiftToCenterOfMassInPlace(p_QBcm_E);  // 17 flops
     return result;
   }
 
@@ -221,7 +225,18 @@ class UnitInertia : public RotationalInertia<T> {
   /// symmetric matrix with non-negative diagonals and obeys the triangle
   /// inequality. Matrix `px²` can be used to compute the triple vector product
   /// as `-p x (p x a) = -p.cross(p.cross(a)) = px² * a`.
-  static UnitInertia<T> PointMass(const Vector3<T>& p_FQ);
+  static UnitInertia<T> PointMass(const Vector3<T>& p_FQ) {
+    // Square each coefficient in p_FQ, better with p_FQ.array().square()?
+    const Vector3<T> p2m = p_FQ.cwiseAbs2();  // [x²  y²  z²].
+    const T mp0 = -p_FQ(0);                   // -x
+    const T mp1 = -p_FQ(1);                   // -y
+    return UnitInertia<T>(
+        // Gxx = y² + z²,  Gyy = x² + z²,  Gzz = x² + y²
+        p2m[1] + p2m[2], p2m[0] + p2m[2], p2m[0] + p2m[1],
+        // Gxy = -x y,  Gxz = -x z,   Gyz = -y z
+        mp0 * p_FQ[1], mp0 * p_FQ[2], mp1 * p_FQ[2]);
+    // 11 flops total, hence should be inlined.
+  }
 
   /// Computes the unit inertia for a unit-mass solid ellipsoid of uniform
   /// density taken about its center. The lengths of the semi-axes of the

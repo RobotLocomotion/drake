@@ -500,7 +500,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
   //   Ftot_BBo = M_B * A_WB + Fb_Bo
   const SpatialInertia<T>& M_B_W = M_B_W_cache[mobod_index()];
   const SpatialAcceleration<T>& A_WB = A_WB_array[mobod_index()];
-  SpatialForce<T> Ftot_BBo_W = M_B_W * A_WB;  // 66 flops
+  SpatialForce<T> Ftot_BBo_W = M_B_W * A_WB;  // 45 flops
   if (Fb_Bo_W_cache != nullptr) {
     // Dynamic bias for body B.
     const SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_cache)[mobod_index()];
