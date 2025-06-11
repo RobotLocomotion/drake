@@ -36,6 +36,17 @@ constexpr auto& doc = pydrake_doc.drake.geometry;
 // TODO(jwnimmer-tri) Reformat this entire file to remove the unnecessary
 // indentation.
 
+void DefineCollisionFilterScope(py::module m) {
+  {
+    using Class = CollisionFilterScope;
+    constexpr auto& cls_doc = doc.CollisionFilterScope;
+    py::enum_<Class>(m, "CollisionFilterScope", cls_doc.doc)
+        .value("kAll", Class::kAll, cls_doc.kAll.doc)
+        .value("kOmitDeformable", Class::kOmitDeformable,
+            cls_doc.kOmitDeformable.doc);
+  }
+}
+
 void DefineCollisionFilterDeclaration(py::module m) {
   {
     using Class = CollisionFilterDeclaration;
@@ -43,6 +54,8 @@ void DefineCollisionFilterDeclaration(py::module m) {
 
     py::class_<Class>(m, "CollisionFilterDeclaration", cls_doc.doc)
         .def(py::init(), cls_doc.ctor.doc)
+        .def(py::init<CollisionFilterScope>(), py::arg("scope"),
+            cls_doc.ctor.doc)
         .def("AllowBetween", &Class::AllowBetween, py::arg("set_A"),
             py::arg("set_B"), py_rvp::reference, cls_doc.AllowBetween.doc)
         .def("AllowWithin", &Class::AllowWithin, py::arg("geometry_set"),
@@ -735,6 +748,7 @@ void DefineGeometryCommon(py::module m) {
   DefineMeshSource(m);
   DefineShapes(m);
   DefineGeometrySet(m);
+  DefineCollisionFilterScope(m);
   DefineCollisionFilterDeclaration(m);
   DefineCollisionFilterManager(m);
   DefineGeometryInstance(m);
