@@ -254,6 +254,17 @@ TEST_F(VolumetricModelTest, Clone) {
   EXPECT_EQ(state->num_nodes(), clone_state->num_nodes());
 }
 
+/* Tests the get_total_mass() function for VolumetricModel. */
+TEST_F(VolumetricModelTest, TotalMass) {
+  using DoubleModel = VolumetricModel<DoubleElement>;
+  DoubleModel single_box_model(double_integrator_.GetWeights());
+  AddBoxToModel(&single_box_model);
+  /* Calculate expected mass: density * volume. */
+  const double volume = kBoxLength * kBoxLength * kBoxLength;
+  const double expected_mass = kDensity * volume;
+  EXPECT_DOUBLE_EQ(single_box_model.get_total_mass(), expected_mass);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace fem

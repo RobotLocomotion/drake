@@ -204,7 +204,6 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
    the manager. */
   struct CacheIndexes {
     /* Per body cache entries indexed by DeformableBodyIndex. */
-    std::vector<systems::CacheIndex> fem_states;
     std::vector<systems::CacheIndex> fem_solvers;
     std::vector<systems::CacheIndex> next_fem_states;
     std::vector<systems::CacheIndex> constraint_participations;

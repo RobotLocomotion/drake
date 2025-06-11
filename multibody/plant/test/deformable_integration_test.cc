@@ -81,7 +81,7 @@ class DeformableIntegrationTest : public ::testing::Test {
     proximity_prop.AddProperty(geometry::internal::kHydroGroup,
                                geometry::internal::kRezHint, 1.0);
     const RigidTransformd X_WG(RollPitchYawd(kSlopeAngle, 0, 0),
-                               Vector3d(0, 0, -0.7));
+                               Vector3d(0, 0, 0));
     const Box box(10, 10, 1);
     ground_collision_id_ = plant_->RegisterCollisionGeometry(
         plant_->world_body(), X_WG, box, "ground_collision", proximity_prop);
@@ -90,6 +90,11 @@ class DeformableIntegrationTest : public ::testing::Test {
                                    Vector4d(0.1, 0.8, 0.1, 0.8));
     plant_->RegisterVisualGeometry(plant_->world_body(), X_WG, box,
                                    "ground_visual", illustration_props);
+    /* Set the initial position of the deformable body to be 0.7m above the
+     ground. */
+    plant_->mutable_deformable_model()
+        .GetMutableBody(body_id_)
+        .set_default_pose(RigidTransformd(Vector3d(0, 0, 0.7)));
     plant_->Finalize();
 
     auto contact_manager = make_unique<CompliantContactManager<double>>();

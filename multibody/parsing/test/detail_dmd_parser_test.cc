@@ -456,8 +456,9 @@ directives:
   EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
 }
 
-/* default_free_body_pose should not be used to pose a deformable body. */
-TEST_F(DmdParserTest, FreeBodyPoseDeformable) {
+/* default_free_body_pose can be used to pose a deformable body in the world
+ frame. */
+TEST_F(DmdParserTest, FreeBodyPoseDeformableWorldFrame) {
   AddSceneGraph();
   const std::string deformable_sdf = "file://" + MakeDeformableSdf().string();
   const ModelDirectives directives = LoadYamlString<ModelDirectives>(
@@ -468,15 +469,54 @@ directives:
     name: deformable
     file: {deformable_sdf}
     default_free_body_pose:
-        ball:
-            base_frame: world
+        body:
             translation: [1, 2, 3]
 )""",
           fmt::arg("deformable_sdf", deformable_sdf)),
       {}, ModelDirectives());
-  /* There's no "body frame" for a deformable body. */
-  DRAKE_EXPECT_THROWS_MESSAGE(ParseModelDirectives(directives),
-                              ".*no Frame named.*ball.*");
+  ParseModelDirectives(directives);
+  plant_.Finalize();
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
+  EXPECT_TRUE(plant_.deformable_model()
+                  .GetBodyByName("body")
+                  .get_default_pose()
+                  .IsExactlyEqualTo(RigidTransformd(Vector3d(1, 2, 3))));
+}
+
+/* default_free_body_pose should not be used to pose a deformable body in a
+ non-world frame. */
+TEST_F(DmdParserTest, FreeBodyPoseDeformableNonWorldFrame) {
+  AddSceneGraph();
+  const std::string sphere_sdf =
+      "file://" + MakeSphereSdf(Vector3d::Zero()).string();
+  const std::string deformable_sdf = "file://" + MakeDeformableSdf().string();
+  const ModelDirectives directives = LoadYamlString<ModelDirectives>(
+      fmt::format(
+          R"""(
+directives:
+- add_model:
+       name: rigid
+       file: {sphere_sdf}
+- add_model:
+    name: deformable
+    file: {deformable_sdf}
+    default_free_body_pose:
+        body:
+            base_frame: rigid::ball
+            translation: [1, 2, 3]
+)""",
+          fmt::arg("sphere_sdf", sphere_sdf),
+          fmt::arg("deformable_sdf", deformable_sdf)),
+      {}, ModelDirectives());
+
+  /* Deformable bodies can only have their poses set relative to the world
+   frame. */
+  ParseModelDirectives(directives);
+  EXPECT_THAT(
+      TakeError(),
+      testing::MatchesRegex(
+          ".*Default pose for deformable body 'body' can only be specified "
+          "relative to the world frame.*"));
 }
 
 /* default_joint_positions should not be used to pose a deformable body. */
