@@ -149,6 +149,9 @@ int do_main() {
   if (FLAGS_mbp_time_step == 0.0) {
     systems::ConvexIntegrator<double>& ci =
         simulator.reset_integrator<systems::ConvexIntegrator<double>>();
+    systems::ConvexIntegratorSolverParameters params;
+    params.enable_hessian_reuse = false;
+    ci.set_solver_parameters(params);
     ci.set_plant(&plant);
     ci.set_maximum_step_size(FLAGS_integrator_time_step);
     ci.set_fixed_step_mode(!FLAGS_use_error_control);
