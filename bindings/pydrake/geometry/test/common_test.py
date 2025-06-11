@@ -58,6 +58,25 @@ class TestGeometryCore(unittest.TestCase):
         self.assertTrue(dut.IsActive(filter_id=id))
         self.assertTrue(dut.RemoveDeclaration(filter_id=id))
 
+        # Test CollisionFilterScope enum.
+        self.assertIsInstance(
+            mut.CollisionFilterScope.kAll, mut.CollisionFilterScope)
+        self.assertIsInstance(
+            mut.CollisionFilterScope.kOmitDeformable, mut.CollisionFilterScope)
+
+        # Test CollisionFilterDeclaration constructor with scope parameter.
+        declaration_all = mut.CollisionFilterDeclaration(
+            scope=mut.CollisionFilterScope.kAll)
+        id = dut.ApplyTransient(
+            declaration=declaration_all.ExcludeWithin(geometries))
+        self.assertTrue(dut.IsActive(filter_id=id))
+
+        declaration_omit = mut.CollisionFilterDeclaration(
+            scope=mut.CollisionFilterScope.kOmitDeformable)
+        id = dut.ApplyTransient(
+            declaration=declaration_omit.ExcludeWithin(geometries))
+        self.assertTrue(dut.IsActive(filter_id=id))
+
     def test_geometry_frame_api(self):
         frame = mut.GeometryFrame(frame_name="test_frame")
         self.assertIsInstance(frame.id(), mut.FrameId)
