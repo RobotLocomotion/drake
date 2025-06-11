@@ -447,6 +447,108 @@ RpyBallMobilizer<T>::TemplatedDoCloneToScalar(
 }
 
 template <typename T>
+void RpyBallMobilizer<T>::DoMapAccelerationToQDDot(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& vdot,
+    EigenPtr<VectorX<T>> qddot) const {
+  // --------------------------------------------------------------------------
+  // Seen in MapVelocityToQDot(), the time-derivatives of generalized positions
+  // q̇ = [ṙ, ṗ, ẏ]ᵀ are related to the generalized velocities v = [ωx, ωy, ωz]ᵀ
+  // as shown below, whose matrix form is q̇ = N(q)⋅v, where N is the 3x3 matrix.
+  //
+  // ⌈ ṙ ⌉   ⌈  cos(y) / cos(p)           sin(y) / cos(p)           0 ⌉ ⌈ ωx ⌉
+  // | ṗ | = | -sin(y)                    cos(y)                    0 | | ωy |
+  // ⌊ ẏ ⌋   ⌊  sin(p) * cos(y) / cos(p)  sin(p) * sin(y) / cos(p)  1 ⌋ ⌊ ωz ⌋
+  //
+  // where, for this mobilizer, the angular velocity of the "fixed frame" F in
+  // the "mobilized frame" M, expressed in frame F is w_FM_F = [ωx, ωy, ωz]ᵀ
+  // and r, p, y denote roll, pitch, yaw angles.
+  //
+  // There are various ways to calculate q̈ = [r̈, p̈, ÿ]ᵀ (the 2ⁿᵈ time
+  // derivatives of the generalized positions) in terms of v̇ = [ω̇x, ω̇y, ω̇z]ᵀ.
+  // A simple calculation is q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇.  A more efficient method is
+  //
+  // ⌈ r̈ ⌉   ⌈        ⌉ ⌈ ω̇x ⌉   ⌈ -ωy ẏ - sin(p) cos(y) ṙ ṗ ⌉
+  // | p̈ | = |  N(q)  | | ω̇y | - |  wx ẏ - sin(p) sin(y) ṙ ṗ |
+  // ⌊ ÿ ⌋   ⌊        ⌋ ⌊ ω̇z ⌋   ⌊               -cos(p) ṙ ṗ ⌋
+  // --------------------------------------------------------------------------
+  using std::cos;
+  using std::sin;
+  const Vector3<T> angles = get_angles(context);
+  const T cp = cos(angles[1]);
+  const T sp = sin(angles[1]);
+  const T sy = sin(angles[2]);
+  const T cy = cos(angles[2]);
+
+  // Mathematical trick to calculate the first terms in the results.
+  DoMapVelocityToQDot(context, vdot, qddot);
+
+  const Vector3<T> v = get_angular_velocity(context);
+  Vector3<T> qdot;
+  DoMapVelocityToQDot(context, v, &qdot);
+
+  const T& rdot = qdot[0];
+  const T& pdot = qdot[1];
+  const T& ydot = qdot[2];
+  const T rdot_pdot = rdot * pdot;
+  const T sp_rdot_pdot = sp * rdot_pdot;
+  const T& wx = v[0];
+  const T& wy = v[1];
+  const Vector3<T> alfExtra(-wy * ydot - cy * sp_rdot_pdot,
+                            wx * ydot - sy * sp_rdot_pdot, -cp * rdot_pdot);
+  *qddot -= alfExtra;  // PAUL CHECK and FIX THIS.
+}
+
+#if 0
+template <typename T>
+void RpyBallMobilizer<T>::DoMapQDDotToAcceleration(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& qddot,
+    EigenPtr<VectorX<T>> vdot) const {
+  // --------------------------------------------------------------------------
+  // Shown in MapQDotToVelocity(), the generalized velocities v = [ωx, ωy, ωz]ᵀ
+  // are linearly related to q̇ = [ṙ, ṗ, ẏ]ᵀ (the time-derivatives of generalized
+  // positions) as
+  //
+  // ⌈ ωx ⌉   ⌈cos(y) cos(p)  -sin(y)  0⌉ ⌈ ṙ ⌉
+  // | ωy | = |sin(y) cos(p)   cos(y)  0| | ṗ |
+  // ⌊ ωz ⌋   ⌊      -sin(p)       0   1⌋ ⌊ ẏ ⌋
+  //
+  // where, for this mobilizer, the angular velocity of the "fixed frame" F in
+  // the "mobilized frame" M, expressed in frame F is w_FM_F = [ωx, ωy, ωz]ᵀ
+  // and r, p, y denote roll, pitch, yaw angles.
+  //
+  // There are various ways to calculate v̇ = [ω̇x, ω̇y, ω̇z]ᵀ (the time-derivatives
+  // of the generalized velocities). One efficient calculation uses
+  //
+  // ⌈ ω̇x ⌉   ⌈ cos(y) cos(p)  -sin(y)  0 ⌉ ⌈ r̈ ⌉   ⌈-ωy ẏ - sin(p) cos(y) ṙ ṗ ⌉
+  // | ω̇y | = | sin(y) cos(p)   cos(y)  0 | | p̈ | + | wx ẏ - sin(p) sin(y) ṙ ṗ |
+  // ⌊ ω̇z ⌋   ⌊       -sin(p)       0   1 ⌋ ⌊ ÿ ⌋   ⌊              -cos(p) ṙ ṗ ⌋
+  // --------------------------------------------------------------------------
+  using std::cos;
+  using std::sin;
+  const Vector3<T> angles = get_angles(context);
+  const T sp = sin(angles[1]);
+  const T cp = cos(angles[1]);
+  const T sy = sin(angles[2]);
+  const T cy = cos(angles[2]);
+  CalcNPlusMatrixTimes<T>(sp, cp, sy, cy, qddot, vdot);
+
+  const Vector3<T> v = get_angular_velocity(context);
+  const T& wx = v[0];
+  const T& wy = v[1];
+  const T& wz = v[2];
+  // const T rdot = (wx*cy + wy*sy) / cp;
+  const T pdot = wy * cy - wx * sy;
+  const T ydot = wz + sp / cp * (wx * cy + wy * sy);
+  const T pdot_ydot = pdot * ydot;
+  Vector3<T> alfExtra(-wy * ydot - sp * cy * pdot_ydot,
+                      wx * ydot - sp * sy * pdot_ydot, -cp * pdot_ydot);
+  *vdot += alfExtra;
+}
+#endif
+
+template <typename T>
 std::unique_ptr<Mobilizer<double>> RpyBallMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<double>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
