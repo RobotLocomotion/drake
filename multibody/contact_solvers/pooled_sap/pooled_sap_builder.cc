@@ -97,7 +97,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
 
   // Implicit damping.
   // N.B. The mass matrix already include reflected inertia terms.
-  M.diagonal() += plant().EvalJointDampingCache(context) * plant().time_step();
+  M.diagonal() += plant().EvalJointDampingCache(context) * time_step;
 
   // We only add a clique for tree's with non-zero number of velocities.
   int num_cliques = 0;
@@ -155,7 +155,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
     }
   }
 
-  // r = dt⋅(u₀ + τᵉˣ - C(q₀,v₀)) + M⋅v₀
+  // r = dt⋅(u₀ + τᵉˣ - C(q₀,v₀)) + A⋅v₀
   const T& dt = params->time_step;
   auto& r = params->r;
   r.resize(nv);
@@ -168,6 +168,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   // TODO(vincekurtz): use a CalcInverseDynamics signature that doesn't allocate
   // a return value.
   r = -dt * plant().CalcInverseDynamics(context, vdot, forces);
+  r += dt * plant().EvalJointDampingCache(context).asDiagonal() * v0;
 
   model->ResetParameters(std::move(params));
   CalcGeometryContactData(context);

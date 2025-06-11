@@ -21,10 +21,10 @@ const char double_pendulum_xml[] = R"""(
 <mujoco model="double_pendulum">
 <worldbody>
   <body>
-  <joint type="hinge" axis="0 1 0" pos="0 0 0.1" damping="0.0"/>
+  <joint type="hinge" axis="0 1 0" pos="0 0 0.1" damping="0.001"/>
   <geom type="capsule" size="0.01 0.1"/>
   <body>
-    <joint type="hinge" axis="0 1 0" pos="0 0 -0.1" damping="0.0"/>
+    <joint type="hinge" axis="0 1 0" pos="0 0 -0.1" damping="0.001"/>
     <geom type="capsule" size="0.01 0.1" pos="0 0 -0.2"/>
   </body>
   </body>
@@ -77,8 +77,11 @@ GTEST_TEST(ConvexIntegratorTest, TestStep) {
 
   // Set initial conditions
   VectorXd q0(2);
+  VectorXd v0(2);
   q0 << 0.1, 0.2;
+  v0 << 0.3, 0.4;
   plant.SetPositions(&plant_context, q0);
+  plant.SetVelocities(&plant_context, v0);
 
   // Perform a step
   const double dt = 0.01;
@@ -92,6 +95,7 @@ GTEST_TEST(ConvexIntegratorTest, TestStep) {
   reference_plant.Finalize();
   auto reference_context = reference_plant.CreateDefaultContext();
   reference_plant.SetPositions(reference_context.get(), q0);
+  reference_plant.SetVelocities(reference_context.get(), v0);
 
   Simulator<double> simulator(reference_plant, std::move(reference_context));
   simulator.Initialize();
