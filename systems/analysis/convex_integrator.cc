@@ -330,31 +330,21 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
   // machine epsilon, as in SapSolver. We'll need to be mindful of the fact that
   // the cost can be negative in the pooled SAP formulation.
 
-  double alpha_guess;
-  if (dell <= std::sqrt(std::numeric_limits<double>::epsilon())) {
-    // We're barely decreasing at α_max, so the fancy spline method below
-    // doesn't work very well. Instead, we'll set the guess based on a quadratic
-    // approximation around α_max.
-    alpha_guess = alpha_max - dell / d2ell;
-    alpha_guess = std::clamp(alpha_guess, 0.0, alpha_max);
-  } else {
-    // Set the initial guess for linesearch based on a cubic hermite spline
-    // between α = 0 and α = α_max. This spline takes the form
-    // p(t) = a t³ + b t² + c t + d, where
-    //   p(0) = ℓ(0),
-    //   p(1) = ℓ(α_max),
-    //   p'(0) = α_max⋅ℓ'(0),
-    //   p'(1) = α_max⋅ℓ'(α_max).
-    // We can then find the analytical minimum in [0, α_max], and use that to
-    // establish an initial guess for linesearch.
-    const double a = 2 * ell0 - 2 * ell + dell0 * alpha_max + dell * alpha_max;
-    const double b =
-        -3 * ell0 + 3 * ell - 2 * dell0 * alpha_max - dell * alpha_max;
-    const double c = dell0 * alpha_max;
-    // N.B. throws if a solution cannot be found in [0, 1]
-    alpha_guess = SolveQuadraticInUnitInterval(3 * a, 2 * b, c);
-    alpha_guess *= alpha_max;
-  }
+  // Set the initial guess for linesearch based on a cubic hermite spline
+  // between α = 0 and α = α_max. This spline takes the form
+  // p(t) = a t³ + b t² + c t + d, where
+  //   p(0) = ℓ(0),
+  //   p(1) = ℓ(α_max),
+  //   p'(0) = α_max⋅ℓ'(0),
+  //   p'(1) = α_max⋅ℓ'(α_max).
+  // We can then find the analytical minimum in [0, α_max], and use that to
+  // establish an initial guess for linesearch.
+  const double a = 2 * (ell0 - ell) + dell0 * alpha_max + dell * alpha_max;
+  const double b = -3 * (ell0 - ell) - 2 * dell0 * alpha_max - dell * alpha_max;
+  const double c = dell0 * alpha_max;
+  // N.B. throws if a solution cannot be found in [0, 1]
+  const double alpha_guess =
+      alpha_max * SolveQuadraticInUnitInterval(3 * a, 2 * b, c);
 
   // We've exhausted all of the early exit conditions, so now we move on to the
   // Newton method with bisection fallback. To do so, we define an anonymous
@@ -388,28 +378,33 @@ T ConvexIntegrator<T>::SolveQuadraticInUnitInterval(const T& a, const T& b,
                                                     const T& c) const {
   using std::sqrt;
 
+  // Sign function that returns 1 for positive numbers, -1 for
+  // negative numbers, and 0 for zero.
+  auto sign = [](const T& x) {
+    return (x > 0) - (x < 0);
+  };
+
   T s;
   if (a < std::numeric_limits<T>::epsilon()) {
     // If a ≈ 0, just solve b x + c = 0.
     s = -c / b;
   } else {
-    // Normalize everything by a
-    const T b_tilde = b / a;
-    const T c_tilde = c / a;
-
-    const T discriminant = b_tilde * b_tilde - 4 * c_tilde;
+    // Use the numerically stable root-finding method described here:
+    // https://math.stackexchange.com/questions/866331/
+    const T discriminant = b * b - 4 * a * c;
     DRAKE_DEMAND(discriminant >= 0);  // must have a real root
-
-    // Try the larger root first.
-    s = (-b_tilde + sqrt(discriminant)) / 2.0;
-    if (s > 1.0) {
-      fmt::print("s: {}\n", s);
-      s = (-b_tilde - sqrt(discriminant)) / 2.0;
+    s = -b - sign(b) * sqrt(discriminant);
+    s /= 2 * a;
+    // If the first root is outside [0, 1], try the second root.
+    if (s < 0.0 || s > 1.0) {
+      s = c / (a * s);
     }
   }
 
   // The solution must be in [0, 1]
   if (s < 0.0 || s > 1.0) {
+    fmt::print("a: {}, b: {}, c: {}\n", a, b, c);
+    fmt::print("s: {}\n", s);
     throw std::runtime_error(
         "ConvexIntegrator: quadratic root falls outside [0, 1].");
   }
