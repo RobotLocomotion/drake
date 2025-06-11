@@ -22,7 +22,6 @@
 #include "drake/geometry/geometry_version.h"
 #include "drake/geometry/in_memory_mesh.h"
 #include "drake/geometry/mesh_source.h"
-#include "drake/geometry/proximity/volume_mesh_refiner.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
 
