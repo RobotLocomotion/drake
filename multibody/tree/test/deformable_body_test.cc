@@ -19,6 +19,7 @@ namespace {
 
 using Eigen::Matrix3X;
 using Eigen::Vector3d;
+using Eigen::VectorXd;
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
 using geometry::Sphere;
@@ -43,13 +44,17 @@ class DeformableBodyTest : public ::testing::Test {
 
     ModelInstanceIndex model_instance = plant_->AddModelInstance("deformable");
 
+    const math::RigidTransformd X_WG(
+        math::RotationMatrixd::MakeZRotation(M_PI / 2),
+        Vector3d(3.0, 2.0, 1.0));
     auto sphere = std::make_unique<GeometryInstance>(
-        RigidTransformd::Identity(), std::make_unique<Sphere>(1.0),
-        "test_sphere");
+        X_WG, std::make_unique<Sphere>(1.0), "test_sphere");
     sphere->set_proximity_properties({});
+    /* Register with the coarsest resolution hint for the sphere so that we know
+     the mesh is an octahedron. */
     body_id_ = deformable_model.RegisterDeformableBody(
         std::move(sphere), model_instance, default_body_config_,
-        /*resolution_hint=*/0.5);
+        /*resolution_hint=*/2.0);
 
     plant_->Finalize();
     diagram_ = builder_.Build();
@@ -118,6 +123,7 @@ TEST_F(DeformableBodyTest, Accessors) {
 }
 
 TEST_F(DeformableBodyTest, NumDofsAndReferencePositions) {
+  const double kTolerance = 4.0 * std::numeric_limits<double>::epsilon();
   const int num_dofs = body_->num_dofs();
   EXPECT_GT(num_dofs, 0);
   const VectorX<double>& q_ref = body_->reference_positions();
@@ -126,7 +132,7 @@ TEST_F(DeformableBodyTest, NumDofsAndReferencePositions) {
    */
   Matrix3X<double> q = body_->GetPositions(*plant_context_);
   Eigen::Map<const Eigen::VectorXd> q_flat(q.data(), q.size());
-  EXPECT_TRUE(CompareMatrices(q_flat, q_ref));
+  EXPECT_TRUE(CompareMatrices(q_flat, q_ref, kTolerance));
 }
 
 TEST_F(DeformableBodyTest, SetGetPositions) {
@@ -142,6 +148,59 @@ TEST_F(DeformableBodyTest, SetGetPositions) {
 TEST_F(DeformableBodyTest, Parallelism) {
   mutable_body_->set_parallelism(Parallelism(4));
   EXPECT_EQ(body_->fem_model().parallelism().num_threads(), 4);
+}
+
+TEST_F(DeformableBodyTest, DefaultPose) {
+  const double kTolerance = 4.0 * std::numeric_limits<double>::epsilon();
+  /* The registered sphere looks like this in its geometry frame, G.
+                  +Gz   -Gx
+                   |   /
+                   v5 v3
+                   | /
+                   |/
+   -Gy---v4------v0+------v2---+ Gy
+                  /| Fo
+                 / |
+               v1  v6
+               /   |
+             +Gx   |
+                  -Gz  */
+  VectorXd p_GV(7 * 3);
+  p_GV.segment<3>(0) = Vector3d(0, 0, 0);    // v0
+  p_GV.segment<3>(3) = Vector3d(1, 0, 0);    // v1
+  p_GV.segment<3>(6) = Vector3d(0, 1, 0);    // v2
+  p_GV.segment<3>(9) = Vector3d(-1, 0, 0);   // v3
+  p_GV.segment<3>(12) = Vector3d(0, -1, 0);  // v4
+  p_GV.segment<3>(15) = Vector3d(0, 0, 1);   // v5
+  p_GV.segment<3>(18) = Vector3d(0, 0, -1);  // v6
+
+  const VectorXd p_WVg =
+      plant_context_->get_discrete_state(body_->discrete_state_index()).value();
+  const math::RigidTransformd X_WG = body_->get_default_pose();
+  for (int v = 0; v < 7; ++v) {
+    EXPECT_TRUE(CompareMatrices(p_WVg.segment<3>(3 * v),
+                                X_WG * p_GV.segment<3>(3 * v), kTolerance));
+  }
+
+  /* Create a new pose different from the initial one. */
+  const math::RigidTransformd X_WD_expected(
+      math::RotationMatrixd::MakeXRotation(M_PI / 3), Vector3d(1.0, 2.0, 3.0));
+  /* Set the new pose. */
+  mutable_body_->set_default_pose(X_WD_expected);
+  /* Verify the new pose is correctly set. */
+  const math::RigidTransformd X_WD = body_->get_default_pose();
+  EXPECT_TRUE(X_WD.IsExactlyEqualTo(X_WD_expected));
+  EXPECT_FALSE(X_WD.IsNearlyEqualTo(X_WG, 0.1));
+  /* Verify the default state is updated. */
+  plant_->SetDefaultState(*plant_context_,
+                          &plant_context_->get_mutable_state());
+  const VectorXd p_WVd =
+      plant_context_->get_discrete_state(body_->discrete_state_index()).value();
+  const VectorXd& p_DV = p_GV;
+  for (int v = 0; v < 7; ++v) {
+    EXPECT_TRUE(CompareMatrices(p_WVd.segment<3>(3 * v),
+                                X_WD * p_DV.segment<3>(3 * v), kTolerance));
+  }
 }
 
 }  // namespace
