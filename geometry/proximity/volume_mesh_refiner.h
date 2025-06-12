@@ -132,23 +132,15 @@ class VolumeMeshRefiner {
 @param mesh  The mesh to refine.
 @return      The refined mesh, or a copy of the input mesh if no refinement
              was needed.
-@throws std::exception if:
-   - The mesh contains vertex indices that are out of bounds
-   - The mesh contains triangles that are not shared by exactly two tetrahedra
-   - The mesh contains edges that are not shared by any tetrahedra
-   - The mesh contains tetrahedra with invalid vertex connectivity */
+@throws std::exception if `mesh` is not a valid tetrahedral mesh. */
 VolumeMesh<double> RefineVolumeMesh(const VolumeMesh<double>& mesh);
 
 /** Refines a tetrahedral mesh to eliminate problematic simplices.
 @param mesh_source  The mesh to refine.
 @return             A valid, ASCII VTK file defining the refined tetrahedral
                     mesh. Represents the input mesh if no refinement was needed.
-@throws std::exception if:
-   - The input VTK file is invalid or cannot be read
-   - The mesh contains vertex indices that are out of bounds
-   - The mesh contains triangles that are not shared by exactly two tetrahedra
-   - The mesh contains edges that are not shared by any tetrahedra
-   - The mesh contains tetrahedra with invalid vertex connectivity */
+@throws std::exception if `mesh_source` does not reference a valid VTK-formatted
+                       tetrahedral mesh. */
 std::string RefineVolumeMeshIntoVtkFileContents(const MeshSource& mesh_source);
 
 }  // namespace geometry
