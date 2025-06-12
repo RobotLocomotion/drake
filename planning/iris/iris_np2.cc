@@ -46,9 +46,10 @@ int FindCollisionPairIndex(
     const std::vector<GeometryPairWithDistance>& sorted_pairs) {
   int pair_in_collision = -1;
   int i_pair = 0;
+  auto query_object =
+      plant.get_geometry_query_input_port().template Eval<QueryObject<double>>(
+          context);
   for (const auto& pair : sorted_pairs) {
-    auto query_object = plant.get_geometry_query_input_port()
-                            .template Eval<QueryObject<double>>(context);
     const double distance =
         query_object
             .ComputeSignedDistancePairClosestPoints(pair.geomA, pair.geomB)
@@ -63,13 +64,12 @@ int FindCollisionPairIndex(
   return pair_in_collision;
 }
 
-/* Check if any unsuppoorted features have been used, as well as any other
+/* Check if any unsupported features have been used, as well as any other
  * initial conditions that must be satisfied by the user inputs. */
 void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
                             const Hyperellipsoid& starting_ellipsoid,
                             const HPolyhedron& domain,
                             const IrisNp2Options& options) {
-  // Check for features which are currently unsupported.
   if (options.sampled_iris_options.containment_points != std::nullopt) {
     // TODO(cohnt): Support enforcing additional containment points.
     throw std::runtime_error(
@@ -188,25 +188,9 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
     frames.emplace(geom_id, &plant.GetBodyFromFrameId(frame_id)->body_frame());
   }
 
-  std::set<std::pair<GeometryId, GeometryId>> pairs;
-  std::set<std::pair<GeometryId, GeometryId>> possible_pairs =
+  std::set<std::pair<GeometryId, GeometryId>> pairs =
       inspector.GetCollisionCandidates();
-  for (const auto& [geom_A, geom_B] : possible_pairs) {
-    const geometry::FrameId frame_A = inspector.GetFrameId(geom_A);
-    const multibody::Body<double>* body_A_ptr =
-        plant.GetBodyFromFrameId(frame_A);
-    DRAKE_DEMAND(body_A_ptr != nullptr);
-
-    const geometry::FrameId frame_B = inspector.GetFrameId(geom_B);
-    const multibody::Body<double>* body_B_ptr =
-        plant.GetBodyFromFrameId(frame_B);
-    DRAKE_DEMAND(body_B_ptr != nullptr);
-
-    if (!checker.IsCollisionFilteredBetween(*body_A_ptr, *body_B_ptr)) {
-      pairs.insert(std::make_pair(geom_A, geom_B));
-    }
-  }
-  const int n = static_cast<int>(pairs.size());
+  const int n_collision_pairs = static_cast<int>(pairs.size());
   auto same_point_constraint =
       std::make_shared<SamePointConstraint>(&plant, context);
   std::map<std::pair<GeometryId, GeometryId>, std::vector<VectorXd>>
@@ -235,8 +219,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   // as {x | A * x <= b}.  Here we pre-allocate matrices with a generous
   // maximum size.
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A(
-      P.A().rows() + 2 * n, nq);
-  VectorXd b(P.A().rows() + 2 * n);
+      P.A().rows() + 2 * n_collision_pairs, nq);
+  VectorXd b(P.A().rows() + 2 * n_collision_pairs);
   A.topRows(P.A().rows()) = P.A();
   b.head(P.A().rows()) = P.b();
   int num_initial_constraints = P.A().rows();

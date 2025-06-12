@@ -57,7 +57,7 @@ The produced polytope P is probabilistically collision-free in the sense that
 one gets to control the probability δ that the fraction of the
 volume-in-collision is larger than ε
 
-Pr[λ(P\Cfree)/λ(P) > ε] ⋞ δ.
+Pr[λ(P\Cfree)/λ(P) > ε] ≤ δ.
 
 @param starting_ellipsoid provides the initial ellipsoid around which to grow
 the region. This is typically a small ball around a collision-free
@@ -85,7 +85,8 @@ of the user-specified constraints in `options.prog_with_additional_constraints`.
 have a solver which requires a license, consider acquiring the license before
 solving this function. See AcquireLicense for more details.
 
-This feature is still in development, so certain features are not yet supported.
+IrisNp2 is still in development, so certain features of
+SceneGraphCollisionChecker and parts of the paper are not yet supported.
 
 @throws if you set `options.sampled_iris_options.containment_points`,
 `options.sampled_iris_options.prog_with_additional_constraints`, or
