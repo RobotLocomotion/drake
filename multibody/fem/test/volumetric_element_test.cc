@@ -456,6 +456,78 @@ TEST_F(VolumetricElementTest, PerCurrentVolumeExternalForce) {
   EXPECT_TRUE(CompareMatrices(total_force, expected_force, kEpsilon));
 }
 
+TEST_F(VolumetricElementTest, CalcMassTimesPositionForQuadraturePoints) {
+  unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
+  const auto& data = EvalElementData(*fem_state);
+
+  Vector3<AD> moment = element().CalcMassTimesPositionForQuadraturePoints(data);
+
+  /* For a single linear tet, there's only one quadrature point at the centroid.
+   The reference_volume_[0] is the volume of the tetrahedron. */
+  const AD expected_mass = density(element()) * reference_volume()[0];
+  const Vector3<AD> expected_moment =
+      expected_mass * data.quadrature_positions[0];
+  EXPECT_TRUE(CompareMatrices(moment, expected_moment, kEpsilon));
+}
+
+TEST_F(VolumetricElementTest, CalcTranslationalMomentumForQuadraturePoints) {
+  unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
+  // Set some non-zero velocities for testing momentum.
+  VectorX<AD> v_all = fem_state->GetVelocities();
+  for (int i = 0; i < kNumNodes; ++i) {
+    v_all.segment<3>(i * 3) = Vector3<AD>(i + 1.0, i + 2.0, i + 3.0);
+  }
+  fem_state->SetVelocities(v_all);
+  const auto& data = EvalElementData(*fem_state);
+
+  Vector3<AD> translational_momentum =
+      element().CalcTranslationalMomentumForQuadraturePoints(data);
+
+  const AD expected_mass_term = density(element()) * reference_volume()[0];
+  const Vector3<AD> expected_translational_momentum =
+      expected_mass_term * data.quadrature_velocities[0];
+  EXPECT_TRUE(CompareMatrices(translational_momentum,
+                              expected_translational_momentum, kEpsilon));
+}
+
+TEST_F(VolumetricElementTest, CalcAngularMomentumAboutWorldOrigin) {
+  /* Test with a pure translational motion for the element. */
+  unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
+  VectorX<AD> v = VectorX<AD>::Zero(kNumDofs);
+  const Vector3<AD> translational_velocity(1.0, 2.0, 3.0);
+  for (int i = 0; i < kNumNodes; ++i) {
+    v.segment<3>(i * 3) = translational_velocity;
+  }
+  fem_state->SetVelocities(v);
+  const auto& data = EvalElementData(*fem_state);
+
+  Vector3<AD> angular_momentum =
+      element().CalcAngularMomentumAboutWorldOrigin(data);
+
+  const Vector3<AD> p_WQ = data.quadrature_positions[0];
+  const Vector3<AD> v_WQ = data.quadrature_velocities[0];
+  const AD mass = density(element()) * reference_volume()[0];
+  const Vector3<AD> expected_angular_momentum = mass * p_WQ.cross(v_WQ);
+
+  EXPECT_TRUE(
+      CompareMatrices(angular_momentum, expected_angular_momentum, kEpsilon));
+}
+
+TEST_F(VolumetricElementTest, CalcRotationalInertiaAboutWorldOrigin) {
+  unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
+  const auto& data = EvalElementData(*fem_state);
+
+  Matrix3<AD> inertia = element().CalcRotationalInertiaAboutWorldOrigin(data);
+
+  const Vector3<AD> p_WQ = data.quadrature_positions[0];
+  const AD mass = density(element()) * reference_volume()[0];
+  const Matrix3<AD> expected_inertia =
+      mass * p_WQ.dot(p_WQ) * Matrix3<AD>::Identity() -
+      mass * p_WQ * p_WQ.transpose();
+
+  EXPECT_TRUE(CompareMatrices(inertia, expected_inertia, kEpsilon));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace fem

@@ -28,6 +28,8 @@ struct VolumetricElementData {
   Vector<T, num_dofs> element_a;
   /* The current locations of the quadrature points in the world frame. */
   std::array<Vector<T, 3>, num_quadrature_points> quadrature_positions;
+  /* The current velocities of the quadrature points in the world frame. */
+  std::array<Vector<T, 3>, num_quadrature_points> quadrature_velocities;
 
   using DeformationGradientData = typename ConstitutiveModelType::Data;
   std::array<DeformationGradientData, num_quadrature_points>
@@ -192,6 +194,7 @@ class VolumetricElement
       /* Degenerate element in the initial configuration is not allowed. */
       DRAKE_DEMAND(volume_scale > 0);
       reference_volume_[q] = volume_scale * quadrature_.get_weight(q);
+      quadrature_point_mass_[q] = density_ * reference_volume_[q];
     }
 
     /* Record the inverse Jacobian at the reference configuration which is used
@@ -204,6 +207,12 @@ class VolumetricElement
     for (int q = 0; q < num_quadrature_points; ++q) {
       dSdX_transpose_[q] = dSdX[q].transpose();
     }
+    T total_volume = 0.0;
+    for (int q = 0; q < num_quadrature_points; ++q) {
+      total_volume += reference_volume_[q];
+    }
+    this->set_mass(density_ * total_volume);
+
     mass_matrix_ = PrecomputeMassMatrix();
   }
 
@@ -215,6 +224,62 @@ class VolumetricElement
       elastic_energy += reference_volume_[q] * Psi[q];
     }
     return elastic_energy;
+  }
+
+  /* Returns this element's the first moment of mass (mass * position) about
+   World origin, expressed in World.
+   @param[in] data The FEM data containing quadrature point positions. */
+  Vector3<T> CalcMassTimesPositionForQuadraturePoints(const Data& data) const {
+    Vector3<T> element_moment = Vector3<T>::Zero();
+    for (int q = 0; q < num_quadrature_points; ++q) {
+      element_moment +=
+          quadrature_point_mass_[q] * data.quadrature_positions[q];
+    }
+    return element_moment;
+  }
+
+  /* Returns the linear momentum for the quadrature points in this element.
+   @param[in] data The FEM data containing quadrature point velocities.
+   @returns The linear momentum for this element. */
+  Vector3<T> CalcTranslationalMomentumForQuadraturePoints(
+      const Data& data) const {
+    Vector3<T> element_translational_momentum = Vector3<T>::Zero();
+    for (int q = 0; q < num_quadrature_points; ++q) {
+      element_translational_momentum +=
+          quadrature_point_mass_[q] * data.quadrature_velocities[q];
+    }
+    return element_translational_momentum;
+  }
+
+  /* Returns this element S's angular momentum about world origin, measured
+   and expressed in World.
+   @param[in] data The FEM data containing quadrature point positions and
+                   velocities. */
+  Vector3<T> CalcAngularMomentumAboutWorldOrigin(const Data& data) const {
+    Vector3<T> H_SWWo_W = Vector3<T>::Zero();
+    for (int q = 0; q < num_quadrature_points; ++q) {
+      const Vector3<T>& p_WQ = data.quadrature_positions[q];
+      const Vector3<T>& v_WQ = data.quadrature_velocities[q];
+
+      H_SWWo_W += p_WQ.cross(v_WQ * quadrature_point_mass_[q]);
+    }
+    return H_SWWo_W;
+  }
+
+  /* Returns this element's rotational inertia about world origin, expressed
+   in World.
+   @param[in] data The FEM data containing quadrature point positions. */
+  Matrix3<T> CalcRotationalInertiaAboutWorldOrigin(const Data& data) const {
+    /* Rotational inertia for this element S, about Wo, expressed in W. */
+    Matrix3<T> I_SWo_W = Matrix3<T>::Zero();
+    for (int q = 0; q < num_quadrature_points; ++q) {
+      const Vector3<T>& p_WQ = data.quadrature_positions[q];
+
+      I_SWo_W +=
+          quadrature_point_mass_[q] *
+          (p_WQ.dot(p_WQ) * Matrix3<T>::Identity() - p_WQ * p_WQ.transpose());
+    }
+    return I_SWo_W;
   }
 
  private:
@@ -400,9 +465,15 @@ class VolumetricElement
     const auto& element_q_reshaped =
         Eigen::Map<const Eigen::Matrix<T, 3, num_nodes>>(data.element_q.data(),
                                                          3, num_nodes);
+    const auto& element_v_reshaped =
+        Eigen::Map<const Eigen::Matrix<T, 3, num_nodes>>(data.element_v.data(),
+                                                         3, num_nodes);
     data.quadrature_positions =
         isoparametric_element_.template InterpolateNodalValues<3>(
             element_q_reshaped);
+    data.quadrature_velocities =
+        isoparametric_element_.template InterpolateNodalValues<3>(
+            element_v_reshaped);
 
     std::array<Matrix3<T>, num_quadrature_points> F =
         CalcDeformationGradient(data.element_q);
@@ -542,6 +613,8 @@ class VolumetricElement
    reference domain, sum f(q)*reference_volume_[q] over all the quadrature
    points q in the element. */
   std::array<T, num_quadrature_points> reference_volume_;
+  /* Mass of the quadrature points, computed as density_ * reference_volume_. */
+  std::array<T, num_quadrature_points> quadrature_point_mass_;
   /* The uniform mass density of the element in the reference configuration with
    unit kg/m³. */
   T density_;

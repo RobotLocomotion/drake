@@ -78,6 +78,80 @@ class FemModelImpl : public FemModel<typename Element::T> {
   }
 
  private:
+  Vector3<T> DoCalcCenterOfMassPositionInWorld(
+      const FemState<T>& fem_state) const final {
+    /* p_WoScm_W = ∑ (mᵢ pᵢ) / mₛ, where mᵢ is the mass of the iᵗʰ element,
+     mₛ = ∑ mᵢ is the total mass,  and pᵢ is the position vector from Wo to
+     the quadrature point of the iᵗʰ element, expressed in the world frame W,
+     and Scm is the center of mass of this FemModel S. */
+    Vector3<T> sum_mi_pi = Vector3<T>::Zero();
+    const T total_mass = this->get_total_mass();
+    const std::vector<Data>& element_data =
+        fem_state.template EvalElementData<Data>(element_data_index_);
+    for (int e = 0; e < num_elements(); ++e) {
+      sum_mi_pi += elements_[e].CalcMassTimesPositionForQuadraturePoints(
+          element_data[e]);
+    }
+    DRAKE_DEMAND(total_mass > 0.0);
+    return sum_mi_pi / total_mass;
+  }
+
+  Vector3<T> DoCalcCenterOfMassTranslationalVelocityInWorld(
+      const FemState<T>& fem_state) const final {
+    /* For a system S with center of mass Scm, Scm's translational velocity in
+     the world frame W is calculated as v_WScm_W = ∑ (mᵢ vᵢ) / mₛ, where mₛ = ∑
+     mᵢ, mᵢ is the mass of the iᵗʰ element, and vᵢ is the velocity evaluated at
+     the quadrature point of the iᵗʰ element, expressed in the world frame W. */
+    const T total_mass = this->get_total_mass();
+    Vector3<T> sum_mi_vi = Vector3<T>::Zero();
+    const std::vector<Data>& element_data =
+        fem_state.template EvalElementData<Data>(element_data_index_);
+    for (int e = 0; e < num_elements(); ++e) {
+      sum_mi_vi += elements_[e].CalcTranslationalMomentumForQuadraturePoints(
+          element_data[e]);
+    }
+    DRAKE_DEMAND(total_mass > 0.0);
+    return sum_mi_vi / total_mass;
+  }
+
+  Vector3<T> DoCalcEffectiveAngularVelocity(
+      const FemState<T>& fem_state) const final {
+    const T total_mass = this->get_total_mass();
+    Vector3<T> sum_mi_pi = Vector3<T>::Zero();
+    Vector3<T> sum_mi_vi = Vector3<T>::Zero();
+    Vector3<T> H_WSWo_W = Vector3<T>::Zero();
+    Matrix3<T> I_SWo_W = Matrix3<T>::Zero();
+
+    const std::vector<Data>& element_data =
+        fem_state.template EvalElementData<Data>(element_data_index_);
+    for (int e = 0; e < num_elements(); ++e) {
+      sum_mi_pi += elements_[e].CalcMassTimesPositionForQuadraturePoints(
+          element_data[e]);
+      sum_mi_vi += elements_[e].CalcTranslationalMomentumForQuadraturePoints(
+          element_data[e]);
+      H_WSWo_W +=
+          elements_[e].CalcAngularMomentumAboutWorldOrigin(element_data[e]);
+      I_SWo_W +=
+          elements_[e].CalcRotationalInertiaAboutWorldOrigin(element_data[e]);
+    }
+    DRAKE_DEMAND(total_mass > 0.0);
+    const Vector3<T> p_WoScm_W = sum_mi_pi / total_mass;
+    const Vector3<T> v_WScm_W = sum_mi_vi / total_mass;
+    /* Shift angular momentum from world origin to center of mass
+       H_WScm = H_WO - p_WoScm × mv_WScm. */
+    const Vector3<T> H_WScm_W =
+        H_WSWo_W - p_WoScm_W.cross(total_mass * v_WScm_W);
+
+    /* Shift inertia from world origin to center of mass using the "parallel
+     axis theorem" below, with I₃₃ being the 3x3 identity matrix. I_SScm = I_SWO
+     - m(p_WoScm · p_WoScm) I₃₃ + m(p_WoScm ⊗ p_WoScm) */
+    const Matrix3<T> I_SScm_W =
+        I_SWo_W -
+        total_mass * (p_WoScm_W.dot(p_WoScm_W) * Matrix3<T>::Identity() -
+                      p_WoScm_W * p_WoScm_W.transpose());
+    return I_SScm_W.ldlt().solve(H_WScm_W);
+  }
+
   void DoCalcResidual(const FemState<T>& fem_state,
                       const FemPlantData<T>& plant_data,
                       EigenPtr<VectorX<T>> residual) const final {
@@ -200,6 +274,14 @@ class FemModelImpl : public FemModel<typename Element::T> {
   }
 
   bool do_is_linear() const final { return Element::is_linear; }
+
+  T DoCalcTotalMass() const final {
+    T total_mass = 0.0;
+    for (int e = 0; e < num_elements(); ++e) {
+      total_mass += elements_[e].mass();
+    }
+    return total_mass;
+  }
 
   /* Computes the element data for each element in this FEM model. */
   void CalcElementData(const systems::Context<T>& context,
