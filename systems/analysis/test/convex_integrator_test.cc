@@ -14,6 +14,7 @@ namespace systems {
 using Eigen::VectorXd;
 using multibody::AddMultibodyPlantSceneGraph;
 using multibody::Parser;
+using multibody::SpatialInertia;
 
 // MJCF model of a simple double pendulum
 const char double_pendulum_xml[] = R"""(
@@ -108,6 +109,49 @@ GTEST_TEST(ConvexIntegratorTest, TestStep) {
   const double kTol = std::sqrt(std::numeric_limits<double>::epsilon());
 
   EXPECT_TRUE(CompareMatrices(q, q_ref, kTol, MatrixCompareType::relative));
+}
+
+/* A single free body spins away with a massive angular velocity. The quaternion
+portion of the state should remain normalized. */
+GTEST_TEST(ConvexIntegratorTest, TestQuaternions) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+
+  // Add a free body with a quaternion state.
+  SpatialInertia<double> M_BBcm =
+      SpatialInertia<double>::SolidSphereWithMass(0.1, 0.1);
+  plant.AddRigidBody("Ball", M_BBcm);
+  plant.Finalize();
+  auto diagram = builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(diagram_context.get());
+
+  // Set initial velocity to be spinning fast
+  VectorXd v0(6);
+  v0 << 1e3, 1e3, 1e3, 0, 0, 0;
+  plant.SetVelocities(&plant_context, v0);
+  fmt::print("Initial velocity: {}\n", fmt_eigen(v0.transpose()));
+
+  // Set up the integrator
+  Simulator<double> simulator(*diagram, std::move(diagram_context));
+  ConvexIntegrator<double>& integrator =
+      simulator.reset_integrator<ConvexIntegrator<double>>();
+  integrator.set_plant(&plant);
+  integrator.set_maximum_step_size(0.1);  // fairly large dt
+  integrator.set_fixed_step_mode(true);
+
+  // Simulate for a few seconds
+  simulator.Initialize();
+  simulator.AdvanceTo(10.0);
+
+  VectorXd v = plant.GetVelocities(plant_context);
+  VectorXd q = plant.GetPositions(plant_context);
+  fmt::print("Final velocity: {}\n", fmt_eigen(v.transpose()));
+  fmt::print("Final position: {}\n", fmt_eigen(q.transpose()));
+
+  VectorXd quat = q.head(4);
+  fmt::print("Quat norm: {}\n", quat.norm());
 }
 
 }  // namespace systems

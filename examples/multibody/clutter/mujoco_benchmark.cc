@@ -62,6 +62,8 @@ DEFINE_double(
 DEFINE_double(
     ls_tolerance, 1e-6,
     "Tolerance for the exact line search performed by the convex integrator.");
+DEFINE_double(tolerance, 1e-8,
+              "Convergence tolerance for the convex integrator.");
 
 using geometry::SceneGraphConfig;
 using multibody::AddMultibodyPlant;
@@ -195,6 +197,7 @@ int do_main() {
     ci_params.kappa = FLAGS_kappa;
     ci_params.alpha_max = FLAGS_alpha_max;
     ci_params.ls_tolerance = FLAGS_ls_tolerance;
+    ci_params.tolerance = FLAGS_tolerance;
     ci.set_solver_parameters(ci_params);
   }
 
