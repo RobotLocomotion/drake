@@ -37,7 +37,7 @@ DEFINE_double(point_stiffness, 1.0e6, "Point contact stiffness (N/m).");
 
 // Visualization.
 DEFINE_bool(visualize, true, "Whether to visualize (true) or not (false).");
-DEFINE_bool(visualize_forces, true,
+DEFINE_bool(visualize_forces, false,
             "Whether to visualize forces (true) or not (false).");
 DEFINE_double(viz_period, std::numeric_limits<double>::infinity(),
               "Viz period.");

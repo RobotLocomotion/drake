@@ -192,9 +192,9 @@ void ConvexIntegrator<T>::AdvancePlantConfiguration(const T& h,
 
   // We'll treat each joint individually, because quaternion DoFs need special
   // attention. In particular, quaternions are not closed under addition so
-  //   q = q₀ + δq
+  //   q = q₀ + δt q̇
   // is incorrect if q is a quaternion. Instead we should use
-  //   q = q₀ * exp(δq⋅q̅₀),
+  //   q = exp(δt q̇ * q̅₀) * q₀,
   // where "*" and "exp" are quaternion multiplication and exponentiation, and
   // q̅₀ is the conjugate of q₀.
   for (JointIndex joint_index : plant().GetJointIndices()) {
@@ -205,7 +205,9 @@ void ConvexIntegrator<T>::AdvancePlantConfiguration(const T& h,
 
     // TODO(vincekurtz): consider special treatment for ball joints too
     if (joint_type == "quaternion_floating") {
-      // q = q₀ * exp(δq⋅q̅₀) for the orientation component
+      // q = exp(δt q̇ * q̅₀) * q₀ for the orientation component
+      // TODO(vincekurtz): this could probably be optimized by going straight
+      // from v rather than through q̇
       const auto& q0_quat = q0.template segment<4>(i);
       const auto& dq_quat = dq.template segment<4>(i);
       const auto q0_bar = math::quatConjugate(q0_quat);
