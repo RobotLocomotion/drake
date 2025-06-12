@@ -54,8 +54,9 @@ int do_main(int argc, char* argv[]) {
       internal::ReadVtkToVolumeMesh(std::filesystem::path(argv[1]));
 
   // Log statistics.
-  // TODO(nepfaff): Computing the statistics is redundant and only in
-  // place for printing the message.
+  // TODO(nepfaff): Computing the statistics is redundant and only
+  // here for printing the diagnostics message. Change the call to
+  // RefineVolumeMesh() so that it returns this diagnostic information.
   VolumeMesh<double> mesh =
       internal::ReadVtkToVolumeMesh(std::filesystem::path(argv[1]));
   std::vector<int> bad_tets =
