@@ -112,6 +112,38 @@ class Cassie : public benchmark::Fixture {
     }
   }
 
+  // Runs the SlowSystemJacobian benchmark.
+  // NOLINTNEXTLINE(runtime/references)
+  void DoSlowSystemJacobian(benchmark::State& state) {
+    DRAKE_DEMAND(want_grad_vdot(state) == false);
+    DRAKE_DEMAND(want_grad_u(state) == false);
+    const int num_mobods = ssize(plant_->graph().forest().mobods());
+    MatrixX<double> Jv_V_WB_W(6 * num_mobods, plant_->num_velocities());
+    for (auto _ : state) {
+      InvalidateState();
+      Jv_V_WB_W.setZero();
+      for (BodyIndex index{1}; index < plant_->num_bodies(); ++index) {
+        const Frame<double>& body_frame = plant_->get_body(index).body_frame();
+        auto J = Jv_V_WB_W.block(6 * index, 0, 6, plant_->num_velocities());
+        plant_->CalcJacobianSpatialVelocity(
+            *context_, JacobianWrtVariable::kV, body_frame,
+            Eigen::Vector3<double>::Zero(), plant_->world_frame(),
+            plant_->world_frame(), &J);
+      }
+    }
+  }
+
+  // Runs the BlockSystemJacobian benchmark.
+  // NOLINTNEXTLINE(runtime/references)
+  void DoBlockSystemJacobian(benchmark::State& state) {
+    DRAKE_DEMAND(want_grad_vdot(state) == false);
+    DRAKE_DEMAND(want_grad_u(state) == false);
+    for (auto _ : state) {
+      InvalidateState();
+      (void)plant_->EvalBlockSystemJacobian(*context_);
+    }
+  }
+
   // Runs the PosAndVelKinematics benchmark.
   // NOLINTNEXTLINE(runtime/references)
   void DoPosAndVelKinematics(benchmark::State& state) {
@@ -319,6 +351,22 @@ BENCHMARK_DEFINE_F(CassieDouble, CompositeBodyInertiaInWorld)
   DoCompositeBodyInertiaInWorld(state);
 }
 BENCHMARK_REGISTER_F(CassieDouble, CompositeBodyInertiaInWorld)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
+
+// NOLINTNEXTLINE(runtime/references)
+BENCHMARK_DEFINE_F(CassieDouble, SlowSystemJacobian)(benchmark::State& state) {
+  DoSlowSystemJacobian(state);
+}
+BENCHMARK_REGISTER_F(CassieDouble, SlowSystemJacobian)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
+
+// NOLINTNEXTLINE(runtime/references)
+BENCHMARK_DEFINE_F(CassieDouble, BlockSystemJacobian)(benchmark::State& state) {
+  DoBlockSystemJacobian(state);
+}
+BENCHMARK_REGISTER_F(CassieDouble, BlockSystemJacobian)
     ->Unit(benchmark::kMicrosecond)
     ->Arg(kWantNoGrad);
 

@@ -251,6 +251,15 @@ void MultibodyTreeSystem<T>::Finalize() {
               {position_ticket, this->all_parameters_ticket()})
           .cache_index();
 
+  // Allocate system Jacobian cache.
+  cache_indexes_.block_system_jacobian =
+      this->DeclareCacheEntry(
+              std::string("system Jacobian"),
+              BlockSystemJacobianCache<T>(internal_tree().forest()),
+              &MultibodyTreeSystem<T>::CalcBlockSystemJacobianCache,
+              {position_kinematics_cache_entry().ticket()})
+          .cache_index();
+
   // Allocate cache entry to store spatial inertia M_B_W(q) for each body.
   cache_indexes_.spatial_inertia_in_world =
       this->DeclareCacheEntry(

@@ -36,7 +36,7 @@ class SpanningForest::Tree {
   body of the %Tree but not counting World. */
   int height() const { return height_; }
 
-  /* The level-1 Mobod that is the base (root) Mobod of this %Tree. This is
+  /* The level 1 Mobod that is the base (root) Mobod of this %Tree. This is
   the lowest-numbered Mobod in this %Tree. */
   MobodIndex base_mobod() const { return base_mobod_; }
 
