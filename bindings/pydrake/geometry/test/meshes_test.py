@@ -232,7 +232,7 @@ class TestGeometryMeshes(unittest.TestCase):
 
         # Get both the refined mesh and its bytes representation.
         vtk_string = mut.RefineVolumeMeshIntoVtkFileContents(
-            mesh=mut.MeshSource(mesh_path))
+            mesh_source=mut.MeshSource(mesh_path))
 
         # Verify the string contains key VTK elements.
         self.assertIn("# vtk DataFile Version 3.0", vtk_string)

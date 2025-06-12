@@ -18,7 +18,7 @@ void DefineGeometryRefine(py::module m) {
       doc.RefineVolumeMesh.doc);
 
   m.def("RefineVolumeMeshIntoVtkFileContents",
-      &RefineVolumeMeshIntoVtkFileContents, py::arg("mesh"),
+      &RefineVolumeMeshIntoVtkFileContents, py::arg("mesh_source"),
       doc.RefineVolumeMeshIntoVtkFileContents.doc);
 }
 
