@@ -12,6 +12,7 @@
 #pragma once
 
 #include <cmath>
+#include <limits>
 
 #include <Eigen/Dense>
 
@@ -69,6 +70,33 @@ Vector4<typename Derived1::Scalar> quatProduct(
   r << ret_eigen.w(), ret_eigen.x(), ret_eigen.y(), ret_eigen.z();
 
   return r;
+}
+
+template <typename Derived>
+Vector4<typename Derived::Scalar> quatExp(const Eigen::MatrixBase<Derived>& q) {
+  using std::cos;
+  using std::exp;
+  using std::sin;
+  static_assert(Derived::SizeAtCompileTime == 4, "Wrong size.");
+
+  Vector4<typename Derived::Scalar> q_exp;
+  const auto theta = q.template tail<3>().norm();
+
+  // Numerically stable s = sin(θ)/θ, per
+  // https://www.cs.cmu.edu/~spiff/moedit99/expmap.pdf
+  typename Derived::Scalar s;
+  const typename Derived::Scalar theta_pow4 = theta * theta * theta * theta;
+  if (theta_pow4 < std::numeric_limits<typename Derived::Scalar>::epsilon()) {
+    // Use Taylor expansion for small theta
+    s = 1 - theta * theta / 6.0 + theta_pow4 / 120.0;
+  } else {
+    s = sin(theta) / theta;
+  }
+
+  q_exp << cos(theta), s * q(1), s * q(2), s * q(3);
+  q_exp *= exp(q(0));
+
+  return q_exp;
 }
 
 template <typename DerivedQ, typename DerivedV>
