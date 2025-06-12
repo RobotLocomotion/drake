@@ -233,7 +233,8 @@ class IrisParameterizationFunction {
 
 namespace internal {
 
-// See Definition 1 in the paper.
+// See Definition 1 from the paper "Faster Algorithms for Growing Collision-Free
+// Convex Polytopes in Robot Configuration Space" by Peter Werner et al.
 int unadaptive_test_samples(double epsilon, double delta, double tau);
 
 float calc_delta_min(double delta, int max_iterations);

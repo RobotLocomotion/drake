@@ -62,7 +62,7 @@ produced polytope P is probabilistically collision-free in the sense that one
 gets to control the probability δ that the fraction of the volume-in-collision
 is larger than ε
 
-Pr[λ(P\Cfree)/λ(P) > ε] ⋞ δ.
+Pr[λ(P\Cfree)/λ(P) > ε] ≤ δ.
 
 @param starting_ellipsoid provides the initial ellipsoid around which to grow
 the region. This is typically a small ball around a collision-free

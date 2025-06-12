@@ -19,7 +19,6 @@ using geometry::optimization::HPolyhedron;
 using symbolic::Expression;
 using symbolic::Variable;
 
-// Reproduced from the IrisInConfigurationSpace unit tests.
 TEST_F(JointLimits1D, JointLimitsBasic) {
   IrisNp2Options options;
   auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
@@ -80,7 +79,6 @@ TEST_F(DoublePendulum, PaddingUnsupported) {
       ".*nonzero padding.*");
 }
 
-// Reproduced from the IrisInConfigurationSpace unit tests.
 TEST_F(DoublePendulum, IrisNp2Test) {
   IrisNp2Options options;
   auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
@@ -128,7 +126,6 @@ TEST_F(DoublePendulum, FilterCollisions) {
   PlotEnvironmentAndRegion(region);
 }
 
-// Reproduced from the IrisInConfigurationSpace unit tests.
 TEST_F(BlockOnGround, IrisNp2Test) {
   IrisNp2Options options;
   auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
@@ -143,7 +140,6 @@ TEST_F(BlockOnGround, IrisNp2Test) {
   PlotEnvironmentAndRegion(region);
 }
 
-// Reproduced from the IrisInConfigurationSpace unit tests.
 TEST_F(ConvexConfigurationSpace, IrisNp2Test) {
   IrisNp2Options options;
   auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
