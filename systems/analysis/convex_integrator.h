@@ -248,6 +248,12 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   void ComputeNextContinuousState(const T& h, const VectorX<T>& v_guess,
                                   ContinuousState<T>* x_next);
 
+  // Advance the plant's generalized positions, q = q₀ + h N(q₀) v, taking care
+  // to handle quaternion DoFs properly.
+  // N.B. q₀ is stored in this->get_context().
+  void AdvancePlantConfiguration(const T& h, const VectorX<T>& v,
+                                 VectorX<T>* q) const;
+
   // Solve the convex SAP problem for next-step velocities v = min ℓ(v).
   // The solution is written back into the initial guess v. Returns true if
   // and only if the optimization converged.

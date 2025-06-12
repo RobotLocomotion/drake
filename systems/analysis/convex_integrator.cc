@@ -1,5 +1,6 @@
 #include "drake/systems/analysis/convex_integrator.h"
 
+#include "drake/math/quaternion.h"
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
 
 namespace drake {
@@ -7,6 +8,8 @@ namespace systems {
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+using multibody::Joint;
+using multibody::JointIndex;
 using multibody::contact_solvers::internal::Bracket;
 using multibody::contact_solvers::internal::DoNewtonWithBisectionFallback;
 
@@ -164,16 +167,61 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
   total_ls_iterations_ += std::accumulate(stats_.ls_iterations.begin(),
                                           stats_.ls_iterations.end(), 0);
 
-  // Advance configurations q = q₀ + h N(q₀) v
+  // q = q₀ + h N(q₀) v
   // TODO(vincekurtz): pre-allocate q
   VectorX<T> q(plant().num_positions());
-  plant().MapVelocityToQDot(plant_context, h * v, &q);
-  q += plant().GetPositions(plant_context);
+  AdvancePlantConfiguration(h, v, &q);
 
   // Set the updated state
   // TODO(vincekurtz): update the non-plant states z.
   x_next->get_mutable_generalized_position().SetFromVector(q);
   x_next->get_mutable_generalized_velocity().SetFromVector(v);
+}
+
+template <typename T>
+void ConvexIntegrator<T>::AdvancePlantConfiguration(const T& h,
+                                                    const VectorX<T>& v,
+                                                    VectorX<T>* q) const {
+  const Context<T>& context = this->get_context();
+  const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
+  const VectorX<T>& q0 = plant().GetPositions(plant_context);
+
+  // TODO(vincekurtz): pre-allocate δq = h N(q₀) v
+  VectorX<T> dq(plant().num_positions());
+  plant().MapVelocityToQDot(plant_context, h * v, &dq);
+
+  // We'll treat each joint individually, because quaternion DoFs need special
+  // attention. In particular, quaternions are not closed under addition so
+  //   q = q₀ + δq
+  // is incorrect if q is a quaternion. Instead we should use
+  //   q = q₀ * exp(δq⋅q̅₀),
+  // where "*" and "exp" are quaternion multiplication and exponentiation, and
+  // q̅₀ is the conjugate of q₀.
+  for (JointIndex joint_index : plant().GetJointIndices()) {
+    const Joint<T>& joint = plant().get_joint(joint_index);
+    const std::string& joint_type = joint.type_name();
+    const int i = joint.position_start();
+    const int n = joint.num_positions();
+
+    // TODO(vincekurtz): consider special treatment for ball joints too
+    if (joint_type == "quaternion_floating") {
+      // q = q₀ * exp(δq⋅q̅₀) for the orientation component
+      const auto& q0_quat = q0.template segment<4>(i);
+      const auto& dq_quat = dq.template segment<4>(i);
+      const auto q0_bar = math::quatConjugate(q0_quat);
+      const auto dq_qbar = math::quatProduct(dq_quat, q0_bar);
+      const auto exp_dq_qbar = math::quatExp(dq_qbar);
+      q->template segment<4>(i) = math::quatProduct(exp_dq_qbar, q0_quat);
+      q->template segment<4>(i).normalize();
+
+      // q = q₀ + δq for the position component
+      q->template segment<3>(i + 4) =
+          q0.template segment<3>(i + 4) + dq.template segment<3>(i + 4);
+    } else {
+      // q = q₀ + δq
+      q->segment(i, n) = q0.segment(i, n) + dq.segment(i, n);
+    }
+  }
 }
 
 template <typename T>

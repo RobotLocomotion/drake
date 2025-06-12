@@ -13,6 +13,8 @@ namespace systems {
 
 using Eigen::VectorXd;
 using multibody::AddMultibodyPlantSceneGraph;
+using multibody::Joint;
+using multibody::JointIndex;
 using multibody::Parser;
 using multibody::SpatialInertia;
 
@@ -129,9 +131,13 @@ GTEST_TEST(ConvexIntegratorTest, TestQuaternions) {
 
   // Set initial velocity to be spinning fast
   VectorXd v0(6);
-  v0 << 1e3, 1e3, 1e3, 0, 0, 0;
+  v0 << 1e3, 2e3, 3e3, 0, 0, 0;
   plant.SetVelocities(&plant_context, v0);
   fmt::print("Initial velocity: {}\n", fmt_eigen(v0.transpose()));
+
+  VectorXd q0(7);
+  q0 << 0.707, 0.707, 0, 0, 0, 0, 0;
+  plant.SetPositions(&plant_context, q0);
 
   // Set up the integrator
   Simulator<double> simulator(*diagram, std::move(diagram_context));
@@ -140,10 +146,12 @@ GTEST_TEST(ConvexIntegratorTest, TestQuaternions) {
   integrator.set_plant(&plant);
   integrator.set_maximum_step_size(0.1);  // fairly large dt
   integrator.set_fixed_step_mode(true);
+  integrator.set_print_solver_stats(false);
+  integrator.set_log_solver_stats(false);
 
   // Simulate for a few seconds
   simulator.Initialize();
-  simulator.AdvanceTo(10.0);
+  simulator.AdvanceTo(5.0);
 
   VectorXd v = plant.GetVelocities(plant_context);
   VectorXd q = plant.GetPositions(plant_context);
@@ -152,6 +160,7 @@ GTEST_TEST(ConvexIntegratorTest, TestQuaternions) {
 
   VectorXd quat = q.head(4);
   fmt::print("Quat norm: {}\n", quat.norm());
+  EXPECT_NEAR(quat.norm(), 1.0, 1e-6);
 }
 
 }  // namespace systems
