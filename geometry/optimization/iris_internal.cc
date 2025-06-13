@@ -167,6 +167,59 @@ bool ClosestCollisionProgram::Solve(
   }
   return false;
 }
+
+void IrisConvexSetMaker::ImplementGeometry(const Box&, void* data) {
+  DRAKE_DEMAND(geom_id_.is_valid());
+  auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
+  // Note: We choose HPolyhedron over VPolytope here, but the IRIS paper
+  // discusses a significant performance improvement using a "least-distance
+  // programming" instance from CVXGEN that exploited the VPolytope
+  // representation.  So we may wish to revisit this.
+  set = std::make_unique<HPolyhedron>(query_, geom_id_, reference_frame_);
+}
+
+void IrisConvexSetMaker::ImplementGeometry(const Capsule&, void* data) {
+  DRAKE_DEMAND(geom_id_.is_valid());
+  auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
+  set = std::make_unique<MinkowskiSum>(query_, geom_id_, reference_frame_);
+}
+
+void IrisConvexSetMaker::ImplementGeometry(const Cylinder&, void* data) {
+  DRAKE_DEMAND(geom_id_.is_valid());
+  auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
+  set = std::make_unique<CartesianProduct>(query_, geom_id_, reference_frame_);
+}
+
+void IrisConvexSetMaker::ImplementGeometry(const Ellipsoid&, void* data) {
+  DRAKE_DEMAND(geom_id_.is_valid());
+  auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
+  set = std::make_unique<Hyperellipsoid>(query_, geom_id_, reference_frame_);
+}
+
+void IrisConvexSetMaker::ImplementGeometry(const HalfSpace&, void* data) {
+  DRAKE_DEMAND(geom_id_.is_valid());
+  auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
+  set = std::make_unique<HPolyhedron>(query_, geom_id_, reference_frame_);
+}
+
+void IrisConvexSetMaker::ImplementGeometry(const Sphere&, void* data) {
+  DRAKE_DEMAND(geom_id_.is_valid());
+  auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
+  set = std::make_unique<Hyperellipsoid>(query_, geom_id_, reference_frame_);
+}
+
+void IrisConvexSetMaker::ImplementGeometry(const Convex&, void* data) {
+  DRAKE_DEMAND(geom_id_.is_valid());
+  auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
+  set = std::make_unique<VPolytope>(query_, geom_id_, reference_frame_);
+}
+
+void IrisConvexSetMaker::ImplementGeometry(const Mesh&, void* data) {
+  DRAKE_DEMAND(geom_id_.is_valid());
+  auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
+  set = std::make_unique<VPolytope>(query_, geom_id_, reference_frame_);
+}
+
 }  // namespace internal
 }  // namespace optimization
 }  // namespace geometry
