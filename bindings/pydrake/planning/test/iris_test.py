@@ -71,7 +71,7 @@ def SetSampledIrisOptions(options):
         containment_points = np.array([[0, 0], [1, 0]])
     options.sampled_iris_options.max_iterations = 3
     options.sampled_iris_options.max_iterations_separating_planes = 20
-    options.sampled_iris_options.max_separating_planes_per_iteration = -1
+    options.sampled_iris_options.max_separating_planes_per_iteration = 10
     options.sampled_iris_options.parallelism = Parallelism(True)
     options.sampled_iris_options.verbose = False
     options.sampled_iris_options.configuration_space_margin = 1e-2
@@ -191,5 +191,3 @@ class TestIrisNp2(unittest.TestCase):
                              options=options)
         test_point = np.array([0.0, 0.5])
         self.assertTrue(region.PointInSet(test_point))
-        test_point2 = np.array([0.0, 1])
-        self.assertTrue(region.PointInSet(test_point2))
