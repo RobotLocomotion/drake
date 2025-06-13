@@ -267,7 +267,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
     log()->info("IrisNp2 worst case test requires {} samples.", N_max);
   }
 
-  // TODO(cohnt): Do an argsort so we don't have to have two separate copies
+  // TODO(cohnt): Do an argsort so we don't have to have two separate copies.
   std::vector<Eigen::VectorXd> particles;
   std::vector<Eigen::VectorXd> particles_in_collision;
   particles.reserve(N_max);
@@ -279,24 +279,22 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
     HPolyhedron P_candidate = HPolyhedron(A.topRows(num_initial_constraints),
                                           b.head(num_initial_constraints));
     DRAKE_ASSERT(last_iteration_volume > 0);
-    // Find separating hyperplanes
 
-    // Separating Planes Step
+    // Find separating hyperplanes.
     int num_iterations_separating_planes = 0;
 
     double outer_delta = options.sampled_iris_options.delta * 6 /
                          (M_PI * M_PI * (iteration + 1) * (iteration + 1));
 
-    // No need for decaying outer delta if we are guaranteed to terminate after
-    // one step. In this case we can be less conservative and set it to our
-    // total accepted error probability.
+    // There is no need for decaying outer delta if we are guaranteed to
+    // terminate after one step. In this case we can be less conservative and
+    // set it to our total accepted error probability.
     if (options.sampled_iris_options.max_iterations == 1) {
       outer_delta = options.sampled_iris_options.delta;
     }
 
     while (num_iterations_separating_planes <
            options.sampled_iris_options.max_iterations_separating_planes) {
-      // log()->info("starting inner loop.");
       int k_squared = num_iterations_separating_planes + 1;
       k_squared *= k_squared;
       double delta_k = outer_delta * 6 / (M_PI * M_PI * k_squared);
@@ -309,13 +307,13 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
       particles.resize(N_k);
       particles.at(0) = P_candidate.UniformSample(
           &generator, E.center(), options.sampled_iris_options.mixing_steps);
-      // populate particles by uniform sampling
+      // Populate particles by uniform sampling.
       for (int i = 1; i < N_k; ++i) {
         particles.at(i) = P_candidate.UniformSample(
             &generator, particles.at(i - 1),
             options.sampled_iris_options.mixing_steps);
       }
-      // Find all particles in collision
+      // Find all particles in collision.
       std::vector<uint8_t> particle_col_free =
           checker.CheckConfigsCollisionFree(
               particles, options.sampled_iris_options.parallelism);
@@ -329,12 +327,12 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
         }
       }
 
-      // Sort collision order
+      // Sort collision order.
       auto my_comparator = [](const VectorXd& t1, const VectorXd& t2,
                               const Hyperellipsoid& E_comparator) {
         return (t1 - E_comparator.center()).squaredNorm() <
-               (t2 - E_comparator.center())
-                   .squaredNorm();  // or use a custom compare function
+               (t2 - E_comparator.center()).squaredNorm();
+        // TODO(cohnt): Support a custom comparator function?
       };
       std::sort(
           std::begin(particles_in_collision),
@@ -349,13 +347,13 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
                         options.sampled_iris_options.epsilon * N_k);
       }
 
-      // break if threshold is passed
+      // Break if threshold is passed.
       if (number_particles_in_collision <=
           (1 - options.sampled_iris_options.tau) *
               options.sampled_iris_options.epsilon * N_k) {
         break;
       }
-      // warn user if test fails on last iteration
+      // Warn user if test fails on last iteration.
       if (num_iterations_separating_planes ==
           options.sampled_iris_options.max_iterations_separating_planes - 1) {
         log()->warn(
@@ -381,69 +379,71 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
             FindCollisionPairIndex(plant, checker.UpdatePositions(particle),
                                    sorted_pairs));
 
-        if (closest_collision_info.second >= 0) {
-          // pair is actually in collision
-          auto pair_iterator =
-              std::next(sorted_pairs.begin(), closest_collision_info.second);
-          const auto collision_pair = *pair_iterator;
-          std::pair<GeometryId, GeometryId> geom_pair(collision_pair.geomA,
-                                                      collision_pair.geomB);
+        // Because the particle is from particles_in_collision,
+        // FindCollisionPairIndex will always return an index corresponding to a
+        // collision pair in sorted_pairs.
+        DRAKE_ASSERT(closest_collision_info.second >= 0);
+        DRAKE_ASSERT(closest_collision_info.second < ssize(sorted_pairs));
 
-          ClosestCollisionProgram prog(
-              same_point_constraint, *frames.at(collision_pair.geomA),
-              *frames.at(collision_pair.geomB), *sets.at(collision_pair.geomA),
-              *sets.at(collision_pair.geomB), E, A.topRows(num_constraints),
-              b.head(num_constraints));
+        auto pair_iterator =
+            std::next(sorted_pairs.begin(), closest_collision_info.second);
+        const auto collision_pair = *pair_iterator;
+        std::pair<GeometryId, GeometryId> geom_pair(collision_pair.geomA,
+                                                    collision_pair.geomB);
 
+        ClosestCollisionProgram prog(
+            same_point_constraint, *frames.at(collision_pair.geomA),
+            *frames.at(collision_pair.geomB), *sets.at(collision_pair.geomA),
+            *sets.at(collision_pair.geomB), E, A.topRows(num_constraints),
+            b.head(num_constraints));
+
+        if (do_debugging_visualization) {
+          ++num_points_drawn;
+          point_to_draw.head(nq) = particle;
+          std::string path = fmt::format("iteration{:02}/{:03}/particle",
+                                         iteration, num_points_drawn);
+          options.sampled_iris_options.meshcat->SetObject(
+              path, Sphere(0.01), geometry::Rgba(0.1, 0.1, 0.1, 1.0));
+          options.sampled_iris_options.meshcat->SetTransform(
+              path, RigidTransform<double>(point_to_draw));
+        }
+
+        // TODO(cohnt): Allow the user to specify the solver options used here.
+        if (prog.Solve(*solver, particle, {}, &closest)) {
           if (do_debugging_visualization) {
-            ++num_points_drawn;
-            point_to_draw.head(nq) = particle;
-            std::string path = fmt::format("iteration{:02}/{:03}/particle",
+            point_to_draw.head(nq) = closest;
+            std::string path = fmt::format("iteration{:02}/{:03}/found",
                                            iteration, num_points_drawn);
             options.sampled_iris_options.meshcat->SetObject(
-                path, Sphere(0.01), geometry::Rgba(0.1, 0.1, 0.1, 1.0));
+                path, Sphere(0.01), geometry::Rgba(0.8, 0.1, 0.8, 1.0));
             options.sampled_iris_options.meshcat->SetTransform(
                 path, RigidTransform<double>(point_to_draw));
           }
-
-          // TODO(cohnt): Allow the user to specify the solver options here.
-          if (prog.Solve(*solver, particle, {}, &closest)) {
-            if (do_debugging_visualization) {
-              point_to_draw.head(nq) = closest;
-              std::string path = fmt::format("iteration{:02}/{:03}/found",
-                                             iteration, num_points_drawn);
-              options.sampled_iris_options.meshcat->SetObject(
-                  path, Sphere(0.01), geometry::Rgba(0.8, 0.1, 0.8, 1.0));
-              options.sampled_iris_options.meshcat->SetTransform(
-                  path, RigidTransform<double>(point_to_draw));
+          internal::AddTangentToPolytope(
+              E, closest,
+              options.sampled_iris_options.configuration_space_margin, &A, &b,
+              &num_constraints);
+          P_candidate =
+              HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
+          if (options.sampled_iris_options.require_sample_point_is_contained) {
+            const bool seed_point_requirement =
+                A.row(num_constraints - 1) * seed <= b(num_constraints - 1);
+            if (!seed_point_requirement) {
+              log()->info(seed_point_msg);
+              return P;
             }
-            internal::AddTangentToPolytope(
-                E, closest,
-                options.sampled_iris_options.configuration_space_margin, &A, &b,
-                &num_constraints);
-            P_candidate = HPolyhedron(A.topRows(num_constraints),
-                                      b.head(num_constraints));
-            if (options.sampled_iris_options
-                    .require_sample_point_is_contained) {
-              const bool seed_point_requirement =
-                  A.row(num_constraints - 1) * seed <= b(num_constraints - 1);
-              if (!seed_point_requirement) {
-                log()->info(seed_point_msg);
-                return P;
-              }
-            }
-            prog.UpdatePolytope(A.topRows(num_constraints),
-                                b.head(num_constraints));
-          } else {
-            if (do_debugging_visualization) {
-              point_to_draw.head(nq) = closest;
-              std::string path = fmt::format("iteration{:02}/{:03}/closest",
-                                             iteration, num_points_drawn);
-              options.sampled_iris_options.meshcat->SetObject(
-                  path, Sphere(0.01), geometry::Rgba(0.1, 0.8, 0.8, 1.0));
-              options.sampled_iris_options.meshcat->SetTransform(
-                  path, RigidTransform<double>(point_to_draw));
-            }
+          }
+          prog.UpdatePolytope(A.topRows(num_constraints),
+                              b.head(num_constraints));
+        } else {
+          if (do_debugging_visualization) {
+            point_to_draw.head(nq) = closest;
+            std::string path = fmt::format("iteration{:02}/{:03}/closest",
+                                           iteration, num_points_drawn);
+            options.sampled_iris_options.meshcat->SetObject(
+                path, Sphere(0.01), geometry::Rgba(0.1, 0.8, 0.8, 1.0));
+            options.sampled_iris_options.meshcat->SetTransform(
+                path, RigidTransform<double>(point_to_draw));
           }
         }
       }

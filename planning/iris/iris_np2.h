@@ -43,9 +43,9 @@ class IrisNp2Options {
 /** The IRIS-NP2 (Iterative Regional Inflation by Semidefinite and Nonlinear
 Programming 2) algorithm, as described in
 
-P. Werner, T. Cohn\*, R. H. Jiang\*, T. Seyde, M. Simchowitz, R. Tedrake, and D.
-Rus, "Faster Algorithms for Growing Collision-Free Convex Polytopes in Robot
-Configuration Space,"
+[Werner et al., 2024] P. Werner, T. Cohn\*, R. H. Jiang\*, T. Seyde, M.
+Simchowitz, R. Tedrake, and D. Rus, "Faster Algorithms for Growing
+Collision-Free Convex Polytopes in Robot Configuration Space,"
 &nbsp;* Denotes equal contribution.
 
 https://groups.csail.mit.edu/robotics-center/public_papers/Werner24.pdf
@@ -86,7 +86,8 @@ have a solver which requires a license, consider acquiring the license before
 solving this function. See AcquireLicense for more details.
 
 IrisNp2 is still in development, so certain features of
-SceneGraphCollisionChecker and parts of the paper are not yet supported.
+SceneGraphCollisionChecker and parts of [Werner et al., 2024] are not yet
+supported.
 
 @throws if you set `options.sampled_iris_options.containment_points`,
 `options.sampled_iris_options.prog_with_additional_constraints`, or
