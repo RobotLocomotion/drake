@@ -50,6 +50,13 @@ int do_main(int argc, char* argv[]) {
     }
   }
 
+  const VolumeMesh<double> input_mesh =
+      internal::ReadVtkToVolumeMesh(std::filesystem::path(argv[1]));
+
+  // Log statistics.
+  // TODO(nepfaff): Computing the statistics is redundant and only
+  // here for printing the diagnostics message. Change the call to
+  // RefineVolumeMesh() so that it returns this diagnostic information.
   VolumeMesh<double> mesh =
       internal::ReadVtkToVolumeMesh(std::filesystem::path(argv[1]));
   std::vector<int> bad_tets =
@@ -58,23 +65,23 @@ int do_main(int argc, char* argv[]) {
       internal::DetectInteriorTriangleWithAllBoundaryVertices(mesh);
   std::vector<SortedPair<int>> bad_edges =
       internal::DetectInteriorEdgeWithAllBoundaryVertices(mesh);
-
   drake::log()->info(
       "Found {} bad tets, {} bad triangles, and {} bad edges."
       "The mesh has {} tets and {} vertices.",
       bad_tets.size(), bad_triangles.size(), bad_edges.size(),
       mesh.tetrahedra().size(), mesh.vertices().size());
-  bool found_bad =
-      (!bad_tets.empty() || !bad_triangles.empty() || !bad_edges.empty());
-  if (!found_bad) {
+
+  // Refine the mesh.
+  const VolumeMesh<double> refined_mesh = RefineVolumeMesh(input_mesh);
+
+  // If no refinement was needed, exit early.
+  if (refined_mesh.Equal(input_mesh)) {
     drake::log()->info(
         "No problems found in input mesh '{}';"
         " not writing an output mesh.",
         argv[1]);
     return 0;
   }
-
-  VolumeMesh<double> refined_mesh = internal::VolumeMeshRefiner(mesh).Refine();
 
   std::filesystem::path outfile(argv[2]);
   internal::WriteVolumeMeshToVtk(outfile.string(), refined_mesh,

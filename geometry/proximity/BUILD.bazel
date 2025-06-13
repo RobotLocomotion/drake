@@ -975,7 +975,9 @@ drake_cc_library(
     hdrs = ["volume_mesh_refiner.h"],
     deps = [
         ":detect_zero_simplex",
+        ":mesh_to_vtk",
         ":volume_mesh",
+        ":vtk_to_volume_mesh",
         "//common:essential",
     ],
 )
