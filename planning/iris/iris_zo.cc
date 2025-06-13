@@ -361,13 +361,19 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
       // Copy top slice of particles, applying thet parameterization function to
       // each one, due to collision checker only accepting vectors of
       // configurations.
-      // TODO(wernerpe, cohnt): Remove this copy operation.
-      // TODO(cohnt): Consider parallelizing the parameterization calls, in case
-      // it's an expensive operation.
       std::vector<Eigen::VectorXd> ambient_particles(N_k);
-      std::transform(particles.begin(), particles.begin() + N_k,
-                     ambient_particles.begin(),
-                     options.parameterization.get_parameterization());
+      const auto apply_parameterization = [&particles, &ambient_particles,
+                                           &options](const int thread_num,
+                                                     const int64_t index) {
+        unused(thread_num);
+        const int i = static_cast<int>(index);
+        ambient_particles[i] =
+            options.parameterization.get_parameterization()(particles[i]);
+      };
+
+      StaticParallelForIndexLoop(DegreeOfParallelism(num_threads_to_use), 0,
+                                 N_k, apply_parameterization,
+                                 ParallelForBackend::BEST_AVAILABLE);
 
       for (int i = 0; i < ssize(ambient_particles); ++i) {
         // Only run this check in debug mode, because it's expensive.
@@ -582,19 +588,25 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
 
           // Loop over remaining non-redundant particles and check for
           // redundancy.
-          // TODO(cohnt): Revert this back to parallel but with CRU.
-          for (int particle_index = 0;
-               particle_index < number_particles_in_collision;
-               ++particle_index) {
+          const auto mark_redundant_particles = [&](const int thread_num,
+                                                    const int64_t index) {
+            unused(thread_num);
+            const int particle_index = static_cast<int>(index);
             if (!particle_is_redundant[particle_index]) {
-              if (A.row(current_num_faces - 1) *
-                          particles_in_collision_updated[particle_index] -
-                      b(current_num_faces - 1) >=
-                  0) {
+              const double margin =
+                  A.row(current_num_faces - 1) *
+                      particles_in_collision_updated[particle_index] -
+                  b(current_num_faces - 1);
+              if (margin >= 0) {
                 particle_is_redundant[particle_index] = 1;
               }
             }
-          }
+          };
+
+          StaticParallelForIndexLoop(DegreeOfParallelism(num_threads_to_use), 0,
+                                     number_particles_in_collision,
+                                     mark_redundant_particles,
+                                     ParallelForBackend::BEST_AVAILABLE);
         }
       }
 
