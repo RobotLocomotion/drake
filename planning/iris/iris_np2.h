@@ -9,7 +9,7 @@
 namespace drake {
 namespace planning {
 /**
- * IrisNP2Options collects all parameters for the IRIS-NP2 algorithm.
+ * IrisNp2Options collects all parameters for the IRIS-NP2 algorithm.
  *
  * @experimental
  * @see IrisNp2 for more details.
@@ -30,9 +30,6 @@ class IrisNp2Options {
 
   /** Options common to IRIS-type algorithms. */
   CommonSampledIrisOptions sampled_iris_options{};
-
-  /** Maximum number of bisection steps. */
-  int bisection_steps{10};
 
   /** Parameterization of the subspace along which to grow the region. Default
    * is the identity parameterization, corresponding to growing regions in the
