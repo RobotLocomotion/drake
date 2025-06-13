@@ -42,6 +42,7 @@ drake_pybind_library(
         "planning_py_graph_algorithms.cc",
         "planning_py_iris_common.cc",
         "planning_py_iris_from_clique_cover.cc",
+        "planning_py_iris_np2.cc",
         "planning_py_iris_zo.cc",
         "planning_py_joint_limits.cc",
         "planning_py_robot_diagram.cc",
