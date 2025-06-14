@@ -150,6 +150,7 @@ class _State:
         """
         if self.options.dry_run:
             print(f'push {asset.name!r} to s3://{bucket}/{path}')
+            print(f'content_type {asset.content_type}')
         else:
             self._begin('downloading', asset.name)
             local_path = os.path.join(self._scratch.name, asset.name)
@@ -182,13 +183,19 @@ class _State:
         If --dry-run was given, rather than actually uploading files to GitHub,
         prints what would be done.
         """
+        if (local_path.endswith(".tar.gz")):
+            content_type = "application/gzip"
+        elif (local_path.endswith(".sha512") or local_path.endswith(".sha256")):
+            content_type = "application/octet-stream"
+        else:
+            content_type = mimetypes.guess_type(local_path)[0]
+            assert content_type is not None
+
         if self.options.dry_run:
-            print(f'push {name!r} to {self.release.html_url!r}')
+            print(f'push {name!r} to {self.release.html_url!r} with content_type {content_type}')
         else:
             self._begin('pushing', name, self.release.html_url)
-            mime_type = mimetypes.guess_type(local_path)
-            assert mime_type is not None
-            self.release.upload_asset(mime_type, name, local_path)
+            self.release.upload_asset(content_type, name, local_path)
             self._done()
 
     def _compute_hash(self, path: str, algorithm: str):
@@ -270,13 +277,12 @@ class _State:
         for algorithm in _ARCHIVE_HASHES:
             hashfile_name = f'{name}.{algorithm}'
             hashfile_path = os.path.join(self._scratch.name, hashfile_name)
-            s3_hashfile_path = f'{path}/{hashfile_name}'
 
             digest = self._write_hashfile(name, algorithm,
                                           local_path, hashfile_path)
             print(f'{name!r} {algorithm}: {digest.hexdigest()}')
             self._upload_file_s3(hashfile_name, bucket,
-                                 s3_hashfile_path, hashfile_path)
+                                 path, hashfile_path)
             self._upload_file_github(hashfile_name, hashfile_path)
 
     def push_docker_tag(self, old_tag_name: str, new_tag_name: str,

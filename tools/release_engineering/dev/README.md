@@ -54,9 +54,9 @@ The Docker ID and password may be found in the AWS Secrets Manager.
 ### Create GitHub API Token
 
 To create the required `~/.config/readonly_github_api_token.txt` file, open a
-browser to https://github.com/settings/tokens and create a new token (it does
-not need any extra permissions; the default "no checkboxes are set" is good),
-and save the plaintext hexadecimal token to that file.
+browser to https://github.com/settings/tokens and create a new token making
+sure that `repo` is selected. Save the plaintext hexadecimal token to that
+file.
 
 ### Get the push_release scripts
 
@@ -85,13 +85,20 @@ use `v` on the version string. For example:
 Verify that:
 
 1. [s3://drake-packages/drake/release](https://s3.console.aws.amazon.com/s3/buckets/drake-packages?region=us-east-1&prefix=drake/release/&showversions=false)
-contains a set of `drake-<version>-[...].tar.gz[...]` files for each supported
-configuration (e.g. jammy, noble, and mac).
+contains a set of `drake-<version>-[...].tar.gz` files for each supported
+configuration (e.g. jammy, noble, and mac). In addition, there should be
+`.sha256` and `.sha512` files for each `.tar.gz` file.
+
+1. [s3://drake-packages/drake/release](https://s3.console.aws.amazon.com/s3/buckets/drake-packages?region=us-east-1&prefix=drake/release/&showversions=false)
+contains `drake-<version>-src.tar.gz` and corresponding `.sha256` and `.sha512` files.
+
+1. https://github.com/RobotLocomotion/drake/releases/tag/v<version> contains
+`drake-<version>-src.tar.gz` and corresponding `.sha256` and `.sha512` files.
 
 1. [Dockerhub](https://hub.docker.com/r/robotlocomotion/drake/tags?ordering=last_updated&page=1)
-has `<version>` tags for each supported configuration (e.g. jammy and noble).
+has `<version>` tag as well as a `<version>` tag for each supported configuration (e.g. jammy and noble).
 
-1. The `*.deb` files are in AWS
+1. The `*.deb` and corresponding `.sha256` and `.sha512`  files are in AWS
 [s3://drake-packages/drake/release](https://s3.console.aws.amazon.com/s3/buckets/drake-packages?region=us-east-1&prefix=drake/release/&showversions=false)
 `/drake-dev_<version>-1_amd64-<configuration>.deb` for each supported configuration (e.g. jammy and noble)
 
