@@ -183,15 +183,28 @@ void ComputeGreedyTruncatedCliqueCover(
 std::queue<HPolyhedron> IrisWorker(
     const CollisionChecker& checker,
     const Eigen::Ref<const Eigen::MatrixXd>& points, const int builder_id,
-    const IrisFromCliqueCoverOptions& options,
+    const IrisFromCliqueCoverOptions& options, const HPolyhedron& domain,
     AsyncQueue<VectorX<bool>>* computed_cliques, bool disable_meshcat = true) {
   // Copy the IrisOptions as we will change the value of the starting ellipse
   // in this worker.
-  IrisOptions iris_options = options.iris_options;
+  std::variant<geometry::optimization::IrisOptions, IrisNp2Options,
+               IrisZoOptions>
+      iris_options = options.iris_options;
+
   // Disable the IRIS meshcat option in this worker since we cannot write to
   // meshcat from a different thread.
   if (disable_meshcat) {
-    iris_options.meshcat = nullptr;
+    std::visit(
+        [](auto&& arg) {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T,
+                                       geometry::optimization::IrisOptions>) {
+            arg.meshcat = nullptr;
+          } else {
+            arg.CommonSampledIrisOptions.meshcat = nullptr;
+          }
+        },
+        iris_options);
   }
 
   std::queue<HPolyhedron> ret{};
@@ -218,25 +231,40 @@ std::queue<HPolyhedron> IrisWorker(
       current_clique = computed_cliques->pop();
       continue;
     }
-
-    if (checker.CheckConfigCollisionFree(clique_ellipse.center(), builder_id)) {
-      iris_options.starting_ellipse = clique_ellipse;
-    } else {
-      // Find the nearest clique member to the center that is not in collision.
+    if (!checker.CheckConfigCollisionFree(clique_ellipse.center(),
+                                          builder_id)) {
       Eigen::Index nearest_point_col;
       (clique_points.colwise() - clique_ellipse.center())
           .colwise()
           .norm()
           .minCoeff(&nearest_point_col);
       Eigen::VectorXd center = clique_points.col(nearest_point_col);
-      iris_options.starting_ellipse =
-          Hyperellipsoid(clique_ellipse.A(), center);
+      clique_ellipse = Hyperellipsoid(clique_ellipse.A(), center);
     }
-    checker.UpdatePositions(iris_options.starting_ellipse->center(),
-                            builder_id);
+    checker.UpdatePositions(clique_ellipse->center(), builder_id);
     log()->debug("Iris builder thread {} is constructing a set.", builder_id);
-    ret.emplace(IrisInConfigurationSpace(
-        checker.plant(), checker.plant_context(builder_id), iris_options));
+    std::visit(
+        [&clique_ellipse, &ret](auto&& arg) {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T,
+                                       geometry::optimization::IrisOptions>) {
+            arg.starting_ellipse = clique_ellipse;
+            ret.emplace(IrisInConfigurationSpace(
+                checker.plant(), checker.plant_context(builder_id), arg));
+
+          } else if constexpr (std::is_same_v<T, IrisNp2Options>) {
+            ret.emplace(IrisNp2(*static_cast<const SceneGraphCollisionChecker*>(
+                                    &checker),
+                                clique_ellipse, domain, arg);)
+          } else if constexpr (std::is_same_v<T, IrisZoOptions>) {
+            ret.emplace(IrisInConfigurationSpace(checker.plant(),
+                                                 clique_ellipse, domain, arg));
+          } else {
+            throw std::runtime_error(
+                "IrisFromCliqueCover: Unrecognized IrisOptions variant.");
+          }
+        },
+        iris_options);
     log()->debug("Iris builder thread {} has constructed a set.", builder_id);
 
     current_clique = computed_cliques->pop();
@@ -331,6 +359,11 @@ void IrisInConfigurationSpaceFromCliqueCover(
         max_clique_solver_ptr) {
   DRAKE_THROW_UNLESS(options.coverage_termination_threshold > 0);
   DRAKE_THROW_UNLESS(options.iteration_limit > 0);
+  if (std::holds_alternative<IrisNp2Options>(options.iris_options)) {
+    // IrisNp2Options only supports SceneGraphCollisionChecker.
+    DRAKE_THROW_UNLESS(
+        std::dynamic_cast<SceneGraphCollisionChecker*>(&checker) != nullptr);
+  }
 
   // Note: Even though the iris_options.bounding_region may be provided,
   // IrisInConfigurationSpace (currently) requires finite joint limits.
@@ -339,9 +372,19 @@ void IrisInConfigurationSpaceFromCliqueCover(
   DRAKE_THROW_UNLESS(
       checker.plant().GetPositionUpperLimits().array().isFinite().all());
 
-  const HPolyhedron domain = options.iris_options.bounding_region.value_or(
+  const HPolyhedron default_domain =
       HPolyhedron::MakeBox(checker.plant().GetPositionLowerLimits(),
-                           checker.plant().GetPositionUpperLimits()));
+                           checker.plant().GetPositionUpperLimits());
+  const HPolyhedron domain =
+      std::holds_alternative<geometry::optimization::IrisOptions>(
+          options.iris_options)
+          ? options.iris_options.bounding_region.value_or(default_domain)
+          : default_domain;
+
+  const HPolyhedron domain =
+      HPolyhedron::MakeBox(checker.plant().GetPositionLowerLimits(),
+                           checker.plant().GetPositionUpperLimits());
+
   DRAKE_THROW_UNLESS(domain.ambient_dimension() ==
                      checker.plant().num_positions());
   Eigen::VectorXd last_polytope_sample = domain.UniformSample(generator);
@@ -402,16 +445,26 @@ void IrisInConfigurationSpaceFromCliqueCover(
     }
 
     // Show the samples used in build cliques. Debugging visualization.
-    if (options.iris_options.meshcat && domain.ambient_dimension() <= 3) {
+    auto meshcat_ptr = std::visit(
+        [](auto&& arg) -> Meshcat* {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T,
+                                       geometry::optimization::IrisOptions>) {
+            return arg.meshcat;
+          } else {
+            return arg.CommonSampledIrisOptions.meshcat;
+          }
+        },
+        options.iris_options);
+    if (meshcat_ptr && domain.ambient_dimension() <= 3) {
       Eigen::Vector3d point_to_draw = Eigen::Vector3d::Zero();
       for (int pt_to_draw = 0; pt_to_draw < points.cols(); ++pt_to_draw) {
         std::string path = fmt::format("iteration{:02}/sample_{:03}",
                                        num_iterations, pt_to_draw);
-        options.iris_options.meshcat->SetObject(
-            path, Sphere(0.01), geometry::Rgba(1, 0.1, 0.1, 1.0));
+        meshcat_ptr->SetObject(path, Sphere(0.01),
+                               geometry::Rgba(1, 0.1, 0.1, 1.0));
         point_to_draw.head(domain.ambient_dimension()) = points.col(pt_to_draw);
-        options.iris_options.meshcat->SetTransform(
-            path, RigidTransform<double>(point_to_draw));
+        meshcat_ptr->SetTransform(path, RigidTransform<double>(point_to_draw));
       }
     }
 
@@ -434,7 +487,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
       ComputeGreedyTruncatedCliqueCover(minimum_clique_size, *max_clique_solver,
                                         &visibility_graph, &computed_cliques);
       std::queue<HPolyhedron> new_set_queue =
-          IrisWorker(checker, points, 0, options, &computed_cliques,
+          IrisWorker(checker, points, 0, options, domain, &computed_cliques,
                      false /* No need to disable meshcat */);
       while (!new_set_queue.empty()) {
         sets->push_back(std::move(new_set_queue.front()));
@@ -458,7 +511,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
       for (int i = 0; i < num_builder_threads; ++i) {
         build_sets_future.emplace_back(
             std::async(std::launch::async, IrisWorker, std::ref(checker),
-                       points, i, std::ref(options), &computed_cliques,
+                       points, i, std::ref(options), domain, &computed_cliques,
                        // NOLINTNEXTLINE
                        true /* Disable meshcat since IRIS runs outside the main thread */));
       }

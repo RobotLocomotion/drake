@@ -12,16 +12,23 @@
 #include "drake/geometry/optimization/iris.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_base.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_via_greedy.h"
+#include "drake/planning/iris_np2.h"
+#include "drake/planning/iris_zo.h"
 #include "drake/planning/scene_graph_collision_checker.h"
 
 namespace drake {
 namespace planning {
 
 struct IrisFromCliqueCoverOptions {
+  IrisFromCliqueCoverOptions()
+      : iris_options(
+            geometry::optimization::IrisOptions{/*iteration_limit=*/1}) {}
+
   /**
-   * The options used on internal calls to Iris.  Currently, it is recommended
-   * to only run Iris for one iteration when building from a clique so as to
-   * avoid discarding the information gained from the clique.
+   * The options used on internal calls to Iris. The type of this option
+   * determines which variant of Iris is called. Currently, it is recommended to
+   * only run Iris for one iteration when building from a clique so as to avoid
+   * discarding the information gained from the clique.
    *
    * Note that `IrisOptions` can optionally include a meshcat instance to
    * provide debugging visualization. If this is provided `IrisFromCliqueCover`
@@ -30,8 +37,13 @@ struct IrisFromCliqueCoverOptions {
    * allow more than 1 thread, then the debug visualizations of internal Iris
    * calls will be disabled. This is due to a limitation of drawing to meshcat
    * from outside the main thread.
+   *
+   * @note If IrisNp2Options is used, then the collision checker must be a
+   * SceneGraphCollisionChecker.
    */
-  geometry::optimization::IrisOptions iris_options{.iteration_limit = 1};
+  std::variant<geometry::optimization::IrisOptions, IrisNp2Options,
+               IrisZoOptions>
+      iris_options;
 
   /**
    * The fraction of the domain that must be covered before we terminate the
