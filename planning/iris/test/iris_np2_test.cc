@@ -6,6 +6,9 @@
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/planning/iris/iris_common.h"
 #include "drake/planning/iris/test/iris_test_utilities.h"
+#include "drake/solvers/equality_constrained_qp_solver.h"
+#include "drake/solvers/ipopt_solver.h"
+#include "drake/solvers/nlopt_solver.h"
 
 namespace drake {
 namespace planning {
@@ -126,6 +129,22 @@ TEST_F(DoublePendulum, FilterCollisions) {
   PlotEnvironmentAndRegion(region);
 }
 
+// Verify we can specify the solver for the counterexample search by
+// deliberately specifying a solver that can't solve problems of that type, and
+// catch the error message.
+TEST_F(DoublePendulum, SpecifySolver) {
+  IrisNp2Options options;
+  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  solvers::EqualityConstrainedQPSolver invalid_solver;
+  options.solver = &invalid_solver;
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options),
+      ".*EqualityConstrainedQPSolver is unable to solve.*");
+}
+
 TEST_F(BlockOnGround, IrisNp2Test) {
   IrisNp2Options options;
   auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
@@ -156,6 +175,10 @@ TEST_F(ConvexConfigurationSpace, IrisNp2Test) {
   meshcat_->Delete();
   options.sampled_iris_options.meshcat = meshcat_;
   options.sampled_iris_options.verbose = true;
+
+  solvers::IpoptSolver solver;
+  options.solver = &solver;
+
   HPolyhedron region =
       IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
   CheckRegion(region);

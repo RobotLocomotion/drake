@@ -11,6 +11,7 @@ from pydrake.planning import (
     CollisionCheckerParams,
     IrisParameterizationFunction,
 )
+from pydrake.solvers import IpoptSolver
 from pydrake.symbolic import Variable
 
 import numpy as np
@@ -180,6 +181,9 @@ class TestIrisNp2(unittest.TestCase):
 
         # Feature still TODO.
         options.sampled_iris_options.containment_points = None
+
+        # For speed reasons -- IPOPT seems to be faster than SNOPT here.
+        options.solver = IpoptSolver()
 
         domain = HPolyhedron.MakeBox(plant.GetPositionLowerLimits(),
                                      plant.GetPositionUpperLimits())
