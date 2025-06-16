@@ -57,6 +57,9 @@ void DefinePlanningCommonSampledIrisOptions(py::module m) {
           cls_doc.random_seed.doc)
       .def_readwrite("mixing_steps", &CommonSampledIrisOptions::mixing_steps,
           cls_doc.mixing_steps.doc)
+      .def_readwrite("remove_all_collisions_possible",
+          &CommonSampledIrisOptions::remove_all_collisions_possible,
+          cls_doc.remove_all_collisions_possible.doc)
       .def("__repr__", [](const CommonSampledIrisOptions& self) {
         return py::str(
             "CommonSampledIrisOptions("

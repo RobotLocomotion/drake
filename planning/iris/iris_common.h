@@ -110,6 +110,13 @@ class CommonSampledIrisOptions {
   This termination condition can be disabled by setting to a negative value. */
   double relative_termination_threshold{1e-3};
 
+  /** A region may satisfy the user-requested fraction in-collision, but still
+   * have some of the samples drawn be in-collision. If this flag is true, those
+   * samples will also be used to produce hyperplanes. This produces slightly
+   * smaller regions with more faces, but the region will beat the
+   * user-requested fraction in-collision by a larger margin. */
+  bool remove_all_collisions_possible{true};
+
   /** This option sets the random seed for random sampling throughout the
    * algorithm. */
   int random_seed{1234};

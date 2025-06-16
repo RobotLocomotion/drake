@@ -126,6 +126,32 @@ TEST_F(DoublePendulum, FilterCollisions) {
   PlotEnvironmentAndRegion(region);
 }
 
+TEST_F(DoublePendulum, PostprocessRemoveCollisions) {
+  IrisNp2Options options;
+  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  // Deliberately set parameters so the initial region will pass the
+  // probabilistic test.
+  options.sampled_iris_options.tau = 0.01;
+  options.sampled_iris_options.epsilon = 0.99;
+  options.sampled_iris_options.delta = 0.99;
+  options.sampled_iris_options.max_iterations = 1;
+  options.sampled_iris_options.verbose = true;
+  options.sampled_iris_options.remove_all_collisions_possible = false;
+
+  HPolyhedron region =
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+
+  Vector2d query_point(0.5, 0.0);
+  EXPECT_FALSE(sgcc_ptr->CheckConfigCollisionFree(query_point));
+  EXPECT_TRUE(region.PointInSet(query_point));
+
+  options.sampled_iris_options.remove_all_collisions_possible = true;
+  region = IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+  EXPECT_FALSE(region.PointInSet(query_point));
+}
+
 TEST_F(BlockOnGround, IrisNp2Test) {
   IrisNp2Options options;
   auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
