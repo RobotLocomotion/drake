@@ -37,6 +37,8 @@ DEFINE_bool(use_hydro, false, "Whether to use hydroelastic contact.");
 DEFINE_bool(use_error_control, true,
             "Whether to use error control in the integrator.");
 DEFINE_double(accuracy, 1e-1, "Target accuracy for error control.");
+DEFINE_bool(hessian_reuse, false,
+            "Whether to reuse Hessian in the convex integrator.");
 
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
@@ -150,7 +152,7 @@ int do_main() {
     systems::ConvexIntegrator<double>& ci =
         simulator.reset_integrator<systems::ConvexIntegrator<double>>();
     systems::ConvexIntegratorSolverParameters params;
-    params.enable_hessian_reuse = false;
+    params.enable_hessian_reuse = FLAGS_hessian_reuse;
     ci.set_solver_parameters(params);
     ci.set_plant(&plant);
     ci.set_maximum_step_size(FLAGS_integrator_time_step);

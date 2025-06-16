@@ -203,7 +203,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
       const T s = vt0 / stiction_tolerance_;
       const T& mu_s = static_friction_[p];
       const T& mu_d = dynamic_friction_[p];
-      const T x = s - 5.0;
+      const T x = s - 10.0;
       return -0.5 * (mu_s - mu_d) * (x / sqrt(1 + x * x) - 1.0) + mu_d;
     };
     const T mu = calc_friction_coefficient();
