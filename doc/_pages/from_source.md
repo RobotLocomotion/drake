@@ -45,7 +45,7 @@ with other versions of Python or Java. However, these are not supported
 so if it doesn't work for you then please file a pull request with the fix,
 not a bug report.
 
-All else being equal, we would recommend developers use Ubuntu 22.04 (Jammy).
+All else being equal, we would recommend developers use Ubuntu 24.04 (Noble).
 
 ⁽¹⁾ Drake features that perform image rendering (e.g., camera simulation)
 maybe require extra setup. See the
