@@ -15,7 +15,7 @@ void DefinePlanningIrisNp2(py::module m) {
   constexpr auto& doc = pydrake_doc.drake.planning;
 
   // IrisNp2Options
-  const auto& cls_doc = doc.IrisZoOptions;
+  const auto& cls_doc = doc.IrisNp2Options;
   py::class_<IrisNp2Options> iris_np2_options(m, "IrisNp2Options", cls_doc.doc);
   iris_np2_options.def(py::init<>())
       .def_readwrite("sampled_iris_options",
