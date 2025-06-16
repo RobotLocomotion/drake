@@ -186,42 +186,23 @@ void ConvexIntegrator<T>::AdvancePlantConfiguration(const T& h,
   const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
   const VectorX<T>& q0 = plant().GetPositions(plant_context);
 
-  // TODO(vincekurtz): pre-allocate δq = h N(q₀) v
-  VectorX<T> dq(plant().num_positions());
-  plant().MapVelocityToQDot(plant_context, h * v, &dq);
+  // q = q₀ + h N(q₀) v
+  plant().MapVelocityToQDot(plant_context, h * v, q);  // δq = h N(q₀) v
+  *q += q0;                                            // q = q₀ + δq
 
-  // We'll treat each joint individually, because quaternion DoFs need special
-  // attention. In particular, quaternions are not closed under addition so
-  //   q = q₀ + δt q̇
-  // is incorrect if q is a quaternion. Instead we should use
-  //   q = exp(δt q̇ * q̅₀) * q₀,
+  // Normalize quaternions. Note that the more exact solution would be
+  //   q = exp(h q̇ * q̅₀) * q₀,
   // where "*" and "exp" are quaternion multiplication and exponentiation, and
-  // q̅₀ is the conjugate of q₀.
+  // q̅₀ is the conjugate of q₀. However, just normalizing
+  //   q = q₀ + δq,
+  // is a fine approximation for small h, and error control ensure that the
+  // resulting error doesn't get out of hand.
   for (JointIndex joint_index : plant().GetJointIndices()) {
     const Joint<T>& joint = plant().get_joint(joint_index);
-    const std::string& joint_type = joint.type_name();
-    const int i = joint.position_start();
-    const int n = joint.num_positions();
 
-    // TODO(vincekurtz): consider special treatment for ball joints too
-    if (joint_type == "quaternion_floating") {
-      // q = exp(δt q̇ * q̅₀) * q₀ for the orientation component
-      // TODO(vincekurtz): this could probably be optimized by going straight
-      // from v rather than through q̇
-      const auto& q0_quat = q0.template segment<4>(i);
-      const auto& dq_quat = dq.template segment<4>(i);
-      const auto q0_bar = math::quatConjugate(q0_quat);
-      const auto dq_qbar = math::quatProduct(dq_quat, q0_bar);
-      const auto exp_dq_qbar = math::quatExp(dq_qbar);
-      q->template segment<4>(i) = math::quatProduct(exp_dq_qbar, q0_quat);
+    if (joint.type_name() == "quaternion_floating") {
+      const int i = joint.position_start();
       q->template segment<4>(i).normalize();
-
-      // q = q₀ + δq for the position component
-      q->template segment<3>(i + 4) =
-          q0.template segment<3>(i + 4) + dq.template segment<3>(i + 4);
-    } else {
-      // q = q₀ + δq
-      q->segment(i, n) = q0.segment(i, n) + dq.segment(i, n);
     }
   }
 }
