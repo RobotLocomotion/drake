@@ -164,13 +164,13 @@ int do_main() {
   std::ofstream ofile("conveyor_belt_data.csv");
   ofile << "time,vt,f_app\n";
   ofile.close();
-  simulator.set_monitor([&simulator, &plant,
-                         &sine](const Context<double>& context) {
+  const auto& plant_ref = plant;
+  simulator.set_monitor([&plant_ref, &sine](const Context<double>& context) {
     const double time = context.get_time();
-    const Context<double>& plant_ctx = plant.GetMyContextFromRoot(context);
+    const Context<double>& plant_ctx = plant_ref.GetMyContextFromRoot(context);
 
     // We can just read the tangential velocity from the plant state
-    const double vt = plant.GetVelocities(plant_ctx)(3);
+    const double vt = plant_ref.GetVelocities(plant_ctx)(3);
 
     // Get the applied force on the block. We'll use this to compute the net
     // contact force, since the contact_results_output_port and
