@@ -226,25 +226,24 @@ bool ConvexIntegrator<double>::SolveWithGuess(
   DRAKE_DEMAND(data.num_velocities() == v.size());
 
   // Gradient convergence tolerance is scaled by D = diag(M)^{-1/2}, so that all
-  // entries of g̃ = Dg have the same units [Castro 2021, IV.E].
+  // entries of g̃ = Dg and ṽ = D⁻¹v have the same units [Castro 2021, IV.E].
   //
   // Convergence is achieved when either the (normalized) gradient is small
   //   ‖D g‖ ≤ ε max(1, ‖D r‖),
   // or the normalized) step size is sufficiently small,
-  //   η ‖D Δvₖ‖ ≤ ε max(1, ‖D r‖).
-  // where η = θ / (1 − θ), θ = ‖D Δvₖ‖ / ‖D Δvₖ₋₁‖, as per [Hairer, 1996].
+  //   η ‖D⁻¹ Δv‖ ≤ ε max(1, ‖D r‖).
+  // where η = θ / (1 − θ), θ = ‖D⁻¹ Δvₖ‖ / ‖D⁻¹ Δvₖ₋₁‖, as per [Hairer, 1996].
   const VectorXd& D = model.params().D;
-  double tol = std::max(1.0, (D.asDiagonal() * model.r()).norm());
+  const double scale = std::max(1.0, (D.asDiagonal() * model.r()).norm());
 
-  if (this->get_fixed_step_mode()) {
-    // Without error control, we'll set ε to the user-defined tolerance.
-    tol *= solver_parameters_.tolerance;
-  } else {
-    // Without error control, we'll scale ε with the desired accuracy. This is
-    // typically quite a bit looser than solver_parameters_.tolerance, and
-    // ensures that we don't waste effort on tight convergence.
-    tol *= solver_parameters_.kappa * this->get_accuracy_in_use();
-  }
+  // Without error control, we'll set ε to the user-defined tolerance. With
+  // error control, we'll scale ε with the desired accuracy. This is typically
+  // quite a bit looser, and ensures that we don't waste effort on tight
+  // convergence.
+  const double eps =
+      this->get_fixed_step_mode()
+          ? solver_parameters_.tolerance
+          : solver_parameters_.kappa * this->get_accuracy_in_use();
 
   double alpha{NAN};
   int ls_iterations{0};
@@ -271,16 +270,16 @@ bool ConvexIntegrator<double>::SolveWithGuess(
 
     // Gradient-based convergence check. Allows for early exit if v_guess is
     // already close enough to the solution.
-    if (grad_norm < tol) {
+    if (grad_norm < eps * scale) {
       return true;
     }
 
     // Step-size-based convergence check. This is only valid after the first
-    // iteration has been completed, since we need ||D Δvₖ||
+    // iteration has been completed, since we need ||D⁻¹ Δvₖ||
     if (k > 0) {
-      // For k = 1, we have η = 1, so this is equivalent to ||D Δvₖ|| < tol.
-      // Otherwise we use η = θ/(1 − θ) (see Hairer 1996, p.120).
-      if (eta * stats_.step_size.back() < tol) {
+      // For k = 1, we have η = 1, so this is equivalent to ||D⁻¹ Δvₖ|| < tol.
+      // Otherwise we use η = θ/(1−θ) (see Hairer 1996, p.120).
+      if (eta * stats_.step_size.back() < eps * scale) {
         return true;
       }
     }
@@ -289,8 +288,8 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     // IV.8.11 of [Hairer, 1996]. This essentially predicts whether we'll
     // converge within (k_max - k) iterations, assuming linear convergence.
     if (k > 1) {
-      const double dvk = stats_.step_size[k - 1];    // ||D Δvₖ||
-      const double dvkm1 = stats_.step_size[k - 2];  // ||D Δvₖ₋₁||
+      const double dvk = stats_.step_size[k - 1];    // ||D⁻¹ Δvₖ||
+      const double dvkm1 = stats_.step_size[k - 2];  // ||D⁻¹ Δvₖ₋₁||
       const double theta = dvk / dvkm1;
       eta = theta / (1.0 - theta);
 
@@ -298,7 +297,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(
       const double anticipated_residual =
           std::pow(theta, k_max - k) / (1 - theta) * dvk;
 
-      if (anticipated_residual > tol || theta >= 1.0) {
+      if (anticipated_residual > eps * scale || theta >= 1.0) {
         // We likely won't converge in time at this (linear) rate, so we should
         // use a fresh Hessian in hopes of faster (quadratic) convergence.
         reuse_hessian_factorization_ = false;
@@ -342,7 +341,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     stats_.gradient_norm.push_back(data.cache().gradient.norm());
     stats_.ls_iterations.push_back(ls_iterations);
     stats_.alpha.push_back(alpha);
-    stats_.step_size.push_back((D.asDiagonal() * dv).norm());
+    stats_.step_size.push_back((D.cwiseInverse().asDiagonal() * dv).norm());
   }
 
   return false;  // Failed to converge.
