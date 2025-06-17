@@ -105,8 +105,10 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   if (this->get_fixed_step_mode()) {
     // We're using fixed step mode, so we can just set the state to x_{t+h} and
     // move on. No need for error estimation.
-    x_next.SetFrom(*x_next_full_);
-    context.SetTimeAndNoteContinuousStateChange(t0 + h);
+    // N.B. this is slightly faster than x_next.SetFrom(*x_next_full_), because
+    // it saves an intermediate Eigen representation.
+    x_next.get_mutable_vector().SetFrom(x_next_full_->get_vector());
+    context.SetTime(t0 + h);
   } else {
     // We're using error control, and will compare with two half-sized steps.
 
@@ -118,7 +120,7 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
 
     // For the second half-step to (t + h), we need to start from (t + h/2). So
     // we'll first set the system state to the result of the first half-step.
-    x_next.SetFrom(*x_next_half_1_);
+    x_next.get_mutable_vector().SetFrom(x_next_half_1_->get_vector());
     context.SetTimeAndNoteContinuousStateChange(t0 + 0.5 * h);
 
     // Now we can take the second half-step. We'll use the solution of the full
@@ -128,13 +130,13 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
 
     // Set the state to the result of the second half-step (since this is more
     // accurate than the full step, and we have it anyway).
-    x_next.SetFrom(*x_next_half_2_);
+    x_next.get_mutable_vector().SetFrom(x_next_half_2_->get_vector());
     context.SetTimeAndNoteContinuousStateChange(t0 + h);
 
     // Estimate the error as the difference between the full step and the
     // two half-steps.
     ContinuousState<T>& err = *this->get_mutable_error_estimate();
-    err.SetFrom(*x_next_full_);
+    err.get_mutable_vector().SetFrom(x_next_full_->get_vector());
     err.get_mutable_vector().PlusEqScaled(-1.0, x_next_half_2_->get_vector());
   }
 
