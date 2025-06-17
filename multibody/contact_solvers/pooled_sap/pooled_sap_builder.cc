@@ -192,6 +192,22 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   r = -dt * plant().CalcInverseDynamics(context, vdot, forces);
   r += dt * plant().EvalJointDampingCache(context).asDiagonal() * v0;
 
+  // Collect effort limits for each clique.
+  params->clique_nu.resize(num_cliques, 0);
+  params->effort_limits.resize(nv);
+  params->effort_limits.setZero();
+
+  for (JointActuatorIndex actuator_index : plant().GetJointActuatorIndices()) {
+    const JointActuator<T>& actuator =
+        plant().get_joint_actuator(actuator_index);
+    const Joint<T>& joint = actuator.joint();
+    const int dof = joint.velocity_start();
+    const TreeIndex t = topology.velocity_to_tree_index(dof);
+    const int c = tree_clique[t];
+    ++params->clique_nu[c];
+    params->effort_limits[dof] = actuator.effort_limit();
+  }
+
   model->ResetParameters(std::move(params));
   CalcGeometryContactData(context);
   AddPatchConstraintsForHydroelasticContact(context, model);
@@ -432,34 +448,31 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
   }
 }
 
-#if 0
 template <typename T>
-void ConvexIntegrator<T>::AddActuationConstraints(
-    const VectorX<T>& Ku, const VectorX<T>& ku,
-    SapContactProblem<T>* problem) const {
-  // Iterative over each joint actuator, and add the corresponding controller
-  // constraint.
-  for (JointActuatorIndex actuator_index : plant().GetJointActuatorIndices()) {
-    const JointActuator<T>& actuator =
-        plant().get_joint_actuator(actuator_index);
-    const Joint<T>& joint = actuator.joint();
+void PooledSapBuilder<T>::AddActuationGains(const VectorX<T>& Ku,
+                                            const VectorX<T>& bu,
+                                            PooledSapModel<T>* model) const {
+  DRAKE_DEMAND(model != nullptr);
+  DRAKE_DEMAND(model->num_velocities() == plant().num_velocities());
+  const int nv = model->num_velocities();
+  DRAKE_DEMAND(Ku.size() == nv);
+  DRAKE_DEMAND(bu.size() == nv);
 
-    const int dof = joint.velocity_start();
-    const TreeIndex tree = tree_topology().velocity_to_tree_index(dof);
-    const int tree_dof = dof - tree_topology().tree_velocities_start_in_v(tree);
-    const int tree_nv = tree_topology().num_tree_velocities(tree);
+  // Quick no-op exit.
+  if (plant().num_actuators() == 0) return;
 
-    const T& k = Ku(dof);
-    const T& u = ku(dof);
-    const T e = actuator.effort_limit();
+  auto& gain_constraints = model->gain_constraints_pool();
 
-    typename SapExternalSystemConstraint<T>::Configuration configuration{
-        tree, tree_nv, tree_dof};
-    problem->AddConstraint(std::make_unique<SapExternalSystemConstraint<T>>(
-        configuration, k, u, e));
+  for (int c = 0; c < model->num_cliques(); ++c) {
+    if (model->params().clique_nu[c] == 0) continue;
+
+    const auto Ku_c = model->clique_segment(c, Ku);
+    const auto bu_c = model->clique_segment(c, bu);
+    const auto e_c = model->clique_segment(c, model->params().effort_limits);
+
+    gain_constraints.Add(c, Ku_c, bu_c, e_c);
   }
 }
-#endif
 
 template <typename T>
 void PooledSapBuilder<T>::AddExternalGains(const VectorX<T>& Ke,

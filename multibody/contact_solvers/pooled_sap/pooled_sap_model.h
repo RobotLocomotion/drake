@@ -36,13 +36,16 @@ struct PooledSapParameters {
 
     int num_velocities = 0;
     const int num_cliques = A.size();
+    DRAKE_DEMAND(ssize(clique_nu) == num_cliques);
     for (int c = 0; c < num_cliques; ++c) {
       DRAKE_DEMAND(A[c].rows() == A[c].cols());
       const int clique_nv = A[c].rows();
       num_velocities += clique_nv;
+      DRAKE_DEMAND(clique_nu[c] <= clique_nv);
     }
     DRAKE_DEMAND(r.size() == num_velocities);
     DRAKE_DEMAND(v0.size() == num_velocities);
+    DRAKE_DEMAND(effort_limits.size() == num_velocities);
 
     DRAKE_DEMAND(J_WB.size() == num_bodies);
     for (int b = 0; b < num_bodies; ++b) {
@@ -71,6 +74,10 @@ struct PooledSapParameters {
   std::vector<int> body_is_floating;  // 1 if floating.
   EigenPool<Matrix6X<T>> J_WB;        // Rigid body spatial velocity Jacobians.
   VectorX<T> v0;                      // The current generalized velocities.
+
+  // Effort limits for the entire model.
+  std::vector<int> clique_nu;  // Num actuators per clique.
+  VectorX<T> effort_limits;  // of size model.num_velocities(). Zero if unused.
 };
 
 /* A model of the SAP problem.
