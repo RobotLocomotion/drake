@@ -263,9 +263,11 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     // We'll print stats before doing any convergence checks. That ensures that
     // we get a printout even v_guess is already good enough.
     if (solver_parameters_.print_solver_stats) {
+      const double step_size = (k == 0) ? NAN : stats_.step_size.back();
       fmt::print(
-          "  k: {}, cost: {}, gradient: {:e}, ls_iterations: {}, alpha: {}\n",
-          k, data.cache().cost, grad_norm, ls_iterations, alpha);
+          "  k: {}, cost: {}, gradient: {:e}, step: {:e}, ls_iterations: {}, "
+          "alpha: {}\n",
+          k, data.cache().cost, grad_norm, step_size, ls_iterations, alpha);
     }
 
     // Gradient-based convergence check. Allows for early exit if v_guess is
@@ -291,7 +293,13 @@ bool ConvexIntegrator<double>::SolveWithGuess(
       const double dvk = stats_.step_size[k - 1];    // ||D⁻¹ Δvₖ||
       const double dvkm1 = stats_.step_size[k - 2];  // ||D⁻¹ Δvₖ₋₁||
       const double theta = dvk / dvkm1;
-      eta = theta / (1.0 - theta);
+
+      // For the step-size-based convergence check η ‖D⁻¹ Δv‖ ≤ ε max(1, ‖D r‖),
+      // we need η \in (0, 1]. Therefore we only use η = θ/(1−θ) when θ < 1.0,
+      // and otherwise make the (conservative) choice of η = 1.0.
+      // N.B. unlike in the Newton-Raphson steps discussed in [Hairer, 1996],
+      // it is possible that θ ≥ 1 without diverging, thanks to linesearch.
+      eta = (theta < 1.0) ? theta / (1.0 - theta) : 1.0;
 
       const int k_max = solver_parameters_.max_iterations_for_hessian_reuse;
       const double anticipated_residual =

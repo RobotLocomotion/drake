@@ -31,7 +31,7 @@ DEFINE_double(
     "If mbp_time_step = 0, the plant is modeled as a continuous system "
     "and no contact forces are displayed.  mbp_time_step must be >= 0.");
 DEFINE_double(stiction_tolerance, 1e-4, "Stiction velocity (m/s). ");
-DEFINE_double(use_hydro, false, "If true, use hydro. Otherwise point contact.");
+DEFINE_bool(use_hydro, false, "If true, use hydro. Otherwise point contact.");
 DEFINE_double(hc_dissipation, 50.0, "Hunt & Crossley dissipation (s/m). ");
 DEFINE_double(point_stiffness, 1.0e6, "Point contact stiffness (N/m).");
 
@@ -64,6 +64,11 @@ DEFINE_double(
     "Tolerance for the exact line search performed by the convex integrator.");
 DEFINE_double(tolerance, 1e-8,
               "Convergence tolerance for the convex integrator.");
+
+// Discrete contact solver.
+DEFINE_string(discrete_contact_approximation, "lagged",
+              "Discrete contact solver. Options are: 'tamsi', 'sap', 'lagged', "
+              "'similar'.");
 
 using geometry::SceneGraphConfig;
 using multibody::AddMultibodyPlant;
@@ -146,6 +151,8 @@ int do_main() {
   plant_config.time_step = FLAGS_mbp_time_step;
   plant_config.stiction_tolerance = FLAGS_stiction_tolerance;
   plant_config.contact_model = FLAGS_use_hydro ? "hydroelastic" : "point";
+  plant_config.discrete_contact_approximation =
+      FLAGS_discrete_contact_approximation;
   auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
   Parser(&plant, &scene_graph).AddModelsFromString(mjcf, "xml");
 
@@ -154,6 +161,9 @@ int do_main() {
       FLAGS_hc_dissipation;
   sg_config.default_proximity_properties.point_stiffness =
       FLAGS_point_stiffness;
+  if (FLAGS_use_hydro) {
+    sg_config.default_proximity_properties.compliance_type = "compliant";
+  }
   scene_graph.set_config(sg_config);
 
   plant.Finalize();
