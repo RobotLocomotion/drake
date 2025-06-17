@@ -80,6 +80,7 @@ def SetSampledIrisOptions(options):
     options.sampled_iris_options.relative_termination_threshold = 1e-3
     options.sampled_iris_options.random_seed = 1337
     options.sampled_iris_options.mixing_steps = 50
+    options.sampled_iris_options.remove_all_collisions_possible = True
 
 
 class TestIrisZo(unittest.TestCase):
