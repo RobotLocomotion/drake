@@ -603,10 +603,10 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
             }
           };
 
-          StaticParallelForIndexLoop(DegreeOfParallelism(num_threads_to_use), 0,
-                                     number_particles_in_collision,
-                                     mark_redundant_particles,
-                                     ParallelForBackend::BEST_AVAILABLE);
+          DynamicParallelForIndexLoop(DegreeOfParallelism(num_threads_to_use),
+                                      0, number_particles_in_collision,
+                                      mark_redundant_particles,
+                                      ParallelForBackend::BEST_AVAILABLE);
         }
       }
 
