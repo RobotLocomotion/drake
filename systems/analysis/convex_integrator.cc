@@ -225,14 +225,30 @@ bool ConvexIntegrator<double>::SolveWithGuess(
   dv.resize(data.num_velocities());
   DRAKE_DEMAND(data.num_velocities() == v.size());
 
-  // Convergence tolerance is looser when we're using error control.
-  double tol = solver_parameters_.tolerance * model.params().scale;
-  if (!this->get_fixed_step_mode()) {
-    tol = solver_parameters_.kappa * this->get_accuracy_in_use();
+  // Gradient convergence tolerance is scaled by D = diag(M)^{-1/2}, so that all
+  // entries of g̃ = Dg have the same units [Castro 2021, IV.E].
+  //
+  // Convergence is achieved when either the (normalized) gradient is small
+  //   ‖D g‖ ≤ ε max(1, ‖D r‖),
+  // or the normalized) step size is sufficiently small,
+  //   η ‖D Δvₖ‖ ≤ ε max(1, ‖D r‖).
+  // where η = θ / (1 − θ), θ = ‖D Δvₖ‖ / ‖D Δvₖ₋₁‖, as per [Hairer, 1996].
+  const VectorXd& D = model.params().D;
+  double tol = std::max(1.0, (D.asDiagonal() * model.r()).norm());
+
+  if (this->get_fixed_step_mode()) {
+    // Without error control, we'll set ε to the user-defined tolerance.
+    tol *= solver_parameters_.tolerance;
+  } else {
+    // Without error control, we'll scale ε with the desired accuracy. This is
+    // typically quite a bit looser than solver_parameters_.tolerance, and
+    // ensures that we don't waste effort on tight convergence.
+    tol *= solver_parameters_.kappa * this->get_accuracy_in_use();
   }
 
   double alpha{NAN};
   int ls_iterations{0};
+  double eta = 1.0;
 
   stats_.Reset(this->get_context().get_time());
   if (solver_parameters_.print_solver_stats) {
@@ -243,39 +259,41 @@ bool ConvexIntegrator<double>::SolveWithGuess(
   for (int k = 0; k < solver_parameters_.max_iterations; ++k) {
     // Compute the cost and gradient
     model.CalcData(v, &data);
+    const double grad_norm = (D.asDiagonal() * data.cache().gradient).norm();
 
     // We'll print stats before doing any convergence checks. That ensures that
     // we get a printout even v_guess is already good enough.
     if (solver_parameters_.print_solver_stats) {
       fmt::print(
           "  k: {}, cost: {}, gradient: {:e}, ls_iterations: {}, alpha: {}\n",
-          k, data.cache().cost, data.cache().gradient.norm(), ls_iterations,
-          alpha);
+          k, data.cache().cost, grad_norm, ls_iterations, alpha);
     }
-
-    // Log the solver stats that we have so far
 
     // Gradient-based convergence check. Allows for early exit if v_guess is
     // already close enough to the solution.
-    if (data.cache().gradient.norm() < tol) {
+    if (grad_norm < tol) {
       return true;
     }
 
-    // Step-size-based convergence check from [Hairer, 1996], Eq. IV.8.10.
-    if (k > 1) {
-      // N.B. this only comes into effect after the second iteration, since we
-      // need both ||Δvₖ|| and ||Δvₖ₋₁|| to compute θ = ||Δvₖ|| / ||Δvₖ₋₁||.
-      const double dvk = stats_.step_size[k - 1];    // ||Δvₖ||
-      const double dvkm1 = stats_.step_size[k - 2];  // ||Δvₖ₋₁||
-      const double theta = dvk / dvkm1;
-      const double eta = theta / (1.0 - theta);
-      if ((theta < 1.0) && (eta * dvk < tol)) {
+    // Step-size-based convergence check. This is only valid after the first
+    // iteration has been completed, since we need ||D Δvₖ||
+    if (k > 0) {
+      // For k = 1, we have η = 1, so this is equivalent to ||D Δvₖ|| < tol.
+      // Otherwise we use η = θ/(1 − θ) (see Hairer 1996, p.120).
+      if (eta * stats_.step_size.back() < tol) {
         return true;
       }
+    }
 
-      // Choose whether to re-compute the Hessian factorization using Equation
-      // IV.8.11 of [Hairer, 1996]. This essentially predicts whether we'll
-      // converge within (k_max - k) iterations, assuming linear convergence.
+    // Choose whether to re-compute the Hessian factorization using Equation
+    // IV.8.11 of [Hairer, 1996]. This essentially predicts whether we'll
+    // converge within (k_max - k) iterations, assuming linear convergence.
+    if (k > 1) {
+      const double dvk = stats_.step_size[k - 1];    // ||D Δvₖ||
+      const double dvkm1 = stats_.step_size[k - 2];  // ||D Δvₖ₋₁||
+      const double theta = dvk / dvkm1;
+      eta = theta / (1.0 - theta);
+
       const int k_max = solver_parameters_.max_iterations_for_hessian_reuse;
       const double anticipated_residual =
           std::pow(theta, k_max - k) / (1 - theta) * dvk;
@@ -293,11 +311,11 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     // full check when k = 0.
     bool reuse_sparsity_pattern = (k > 0) || !SparsityPatternChanged(model);
 
-    // Hessian reuse is enabled based when
+    // Hessian reuse is enabled when all of the following hold:
     //   1. reuse is enabled in the solver parameters,
     //   2. the sparsity pattern is unchanged,
     //   3. the "anticipated residual" heuristics indicate that we'll converge
-    //      in time under a linear convergence assumption,
+    //      in time under a linear convergence assumption.
     bool reuse_hessian = solver_parameters_.enable_hessian_reuse &&
                          reuse_sparsity_pattern && reuse_hessian_factorization_;
 
@@ -305,7 +323,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     ComputeSearchDirection(model, data, &dv, reuse_hessian,
                            reuse_sparsity_pattern);
 
-    // If the sparsity pattern changed, store it for future reuse.
+    // If the sparsity pattern changed, store it for future checks.
     if (!reuse_sparsity_pattern) {
       previous_sparsity_pattern_ =
           std::make_unique<BlockSparsityPattern>(model.sparsity_pattern());
@@ -324,7 +342,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     stats_.gradient_norm.push_back(data.cache().gradient.norm());
     stats_.ls_iterations.push_back(ls_iterations);
     stats_.alpha.push_back(alpha);
-    stats_.step_size.push_back(dv.norm());
+    stats_.step_size.push_back((D.asDiagonal() * dv).norm());
   }
 
   return false;  // Failed to converge.

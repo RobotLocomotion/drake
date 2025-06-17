@@ -116,7 +116,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
 
   // Update rigid body cliques and body Jacobians.
   const auto& world_frame = plant().world_frame();
-  params->scale = M.diagonal().norm();
+  params->D = M.diagonal().cwiseSqrt().cwiseInverse();
   params->body_cliques.clear();
   params->body_cliques.reserve(plant().num_bodies());
   params->body_is_floating.clear();

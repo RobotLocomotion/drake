@@ -82,7 +82,7 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
   params->body_is_floating = {0, 0, 0, 0};
 
   // Scale factor for convergence check.
-  params->scale = 1.0;
+  params->D = VectorX<T>::Ones(nv);
 
   // Reset model.
   model->ResetParameters(std::move(params));
