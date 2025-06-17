@@ -164,8 +164,6 @@ int do_main() {
         simulator.reset_integrator<systems::ConvexIntegrator<double>>();
     ci.set_plant(&plant);
     ci.set_maximum_step_size(0.001);  // fixed time step dt
-    ci.set_print_solver_stats(false);
-    ci.set_log_solver_stats(false);
   }
   simulator.set_publish_every_time_step(true);
   simulator.set_target_realtime_rate(1.0);

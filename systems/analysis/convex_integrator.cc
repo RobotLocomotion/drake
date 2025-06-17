@@ -80,7 +80,7 @@ void ConvexIntegrator<T>::DoInitialize() {
   stats_.Reserve(solver_parameters_.max_iterations);
 
   // Set up the CSV file and write a header, if logging is enabled.
-  if (log_solver_stats_) {
+  if (solver_parameters_.log_solver_stats) {
     log_file_.open("convex_integrator_stats.csv");
     log_file_
         << "time,iteration,cost,gradient_norm,ls_iterations,alpha,step_size\n";
@@ -160,9 +160,8 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
     throw std::runtime_error("ConvexIntegrator: optimization failed.");
   }
 
-  // Log and print solver statistics, as requested.
-  if (print_solver_stats_) PrintSolverStats();
-  if (log_solver_stats_) LogSolverStats();
+  // Accumulate solver statistics, log as requested.
+  if (solver_parameters_.log_solver_stats) LogSolverStats();
   total_solver_iterations_ += stats_.iterations;
   total_ls_iterations_ += std::accumulate(stats_.ls_iterations.begin(),
                                           stats_.ls_iterations.end(), 0);
@@ -235,15 +234,57 @@ bool ConvexIntegrator<double>::SolveWithGuess(
   double alpha{NAN};
   int ls_iterations{0};
 
-  stats_.Reset();
+  stats_.Reset(this->get_context().get_time());
+  if (solver_parameters_.print_solver_stats) {
+    fmt::print("ConvexIntegrator: solving at t = {:.4f}\n",
+               this->get_context().get_time());
+  }
+
   for (int k = 0; k < solver_parameters_.max_iterations; ++k) {
     // Compute the cost and gradient
     model.CalcData(v, &data);
 
-    // Early convergence check. Allows for early exit if v_guess is already
-    // close enough to the solution.
+    // We'll print stats before doing any convergence checks. That ensures that
+    // we get a printout even v_guess is already good enough.
+    if (solver_parameters_.print_solver_stats) {
+      fmt::print(
+          "  k: {}, cost: {}, gradient: {:e}, ls_iterations: {}, alpha: {}\n",
+          k, data.cache().cost, data.cache().gradient.norm(), ls_iterations,
+          alpha);
+    }
+
+    // Log the solver stats that we have so far
+
+    // Gradient-based convergence check. Allows for early exit if v_guess is
+    // already close enough to the solution.
     if (data.cache().gradient.norm() < tol) {
       return true;
+    }
+
+    // Step-size-based convergence check from [Hairer, 1996], Eq. IV.8.10.
+    if (k > 1) {
+      // N.B. this only comes into effect after the second iteration, since we
+      // need both ||Δvₖ|| and ||Δvₖ₋₁|| to compute θ = ||Δvₖ|| / ||Δvₖ₋₁||.
+      const double dvk = stats_.step_size[k - 1];    // ||Δvₖ||
+      const double dvkm1 = stats_.step_size[k - 2];  // ||Δvₖ₋₁||
+      const double theta = dvk / dvkm1;
+      const double eta = theta / (1.0 - theta);
+      if ((theta < 1.0) && (eta * dvk < tol)) {
+        return true;
+      }
+
+      // Choose whether to re-compute the Hessian factorization using Equation
+      // IV.8.11 of [Hairer, 1996]. This essentially predicts whether we'll
+      // converge within (k_max - k) iterations, assuming linear convergence.
+      const int k_max = solver_parameters_.max_iterations_for_hessian_reuse;
+      const double anticipated_residual =
+          std::pow(theta, k_max - k) / (1 - theta) * dvk;
+
+      if (anticipated_residual > tol || theta >= 1.0) {
+        // We likely won't converge in time at this (linear) rate, so we should
+        // use a fresh Hessian in hopes of faster (quadratic) convergence.
+        reuse_hessian_factorization_ = false;
+      }
     }
 
     // For iterations other than the first, we know the sparsity pattern is
@@ -277,35 +318,13 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     dv *= alpha;
     v += dv;
 
-    // Log statistics.
+    // Finalize solver stats that we now have after taking the step
     stats_.iterations++;
     stats_.cost.push_back(data.cache().cost);
     stats_.gradient_norm.push_back(data.cache().gradient.norm());
     stats_.ls_iterations.push_back(ls_iterations);
     stats_.alpha.push_back(alpha);
     stats_.step_size.push_back(dv.norm());
-
-    // Convergence check based on [Hairer, 1996], Eq. IV.8.10.
-    if (k > 0) {
-      // N.B. this only comes into effect in the second iteration, since we need
-      // both ||Δvₖ|| and ||Δvₖ₋₁|| to compute θ = ||Δvₖ|| / ||Δvₖ₋₁||.
-      const double theta = stats_.step_size[k] / stats_.step_size[k - 1];
-      const double eta = theta / (1.0 - theta);
-      if ((theta < 1.0) && (eta * stats_.step_size[k] < tol)) {
-        return true;
-      }
-
-      // Choose whether to re-compute the Hessian factorization using Equation
-      // IV.8.11 of [Hairer, 1996]. This essentially predicts whether we'll
-      // converge within (k_max - k) iterations, assuming linear convergence.
-      const int k_max = solver_parameters_.max_iterations_for_hessian_reuse;
-      const double anticipated_residual =
-          std::pow(theta, k_max - k) / (1 - theta) * stats_.step_size[k];
-
-      if (anticipated_residual > tol || theta >= 1.0) {
-        reuse_hessian_factorization_ = false;
-      }
-    }
   }
 
   return false;  // Failed to converge.
@@ -481,23 +500,10 @@ void ConvexIntegrator<double>::ComputeSearchDirection(
 }
 
 template <typename T>
-void ConvexIntegrator<T>::PrintSolverStats() const {
-  fmt::print("ConvexIntegrator: {} iters\n", stats_.iterations);
-  for (int k = 0; k < stats_.iterations; ++k) {
-    fmt::print(
-        "  Iteration {}: cost = {}, gradient norm = {}, ls_iterations = {}, "
-        "alpha = {}, step size = {}\n",
-        k, stats_.cost[k], stats_.gradient_norm[k], stats_.ls_iterations[k],
-        stats_.alpha[k], stats_.step_size[k]);
-  }
-}
-
-template <typename T>
 void ConvexIntegrator<T>::LogSolverStats() {
   DRAKE_THROW_UNLESS(log_file_.is_open());
-  const T time = this->get_context().get_time();
   for (int k = 0; k < stats_.iterations; ++k) {
-    log_file_ << time << "," << k << "," << stats_.cost[k] << ","
+    log_file_ << stats_.time << "," << k << "," << stats_.cost[k] << ","
               << stats_.gradient_norm[k] << "," << stats_.ls_iterations[k]
               << "," << stats_.alpha[k] << "," << stats_.step_size[k] << "\n";
   }

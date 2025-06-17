@@ -158,8 +158,6 @@ int do_main() {
     ci.set_maximum_step_size(FLAGS_integrator_time_step);
     ci.set_fixed_step_mode(!FLAGS_use_error_control);
     ci.set_target_accuracy(FLAGS_accuracy);
-    ci.set_print_solver_stats(false);
-    ci.set_log_solver_stats(false);
   }
 
   // Set a monitor to save stats to a file

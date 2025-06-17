@@ -146,8 +146,6 @@ GTEST_TEST(ConvexIntegratorTest, TestQuaternions) {
   integrator.set_plant(&plant);
   integrator.set_maximum_step_size(0.1);  // fairly large dt
   integrator.set_fixed_step_mode(true);
-  integrator.set_print_solver_stats(false);
-  integrator.set_log_solver_stats(false);
 
   // Simulate for a few seconds
   simulator.Initialize();

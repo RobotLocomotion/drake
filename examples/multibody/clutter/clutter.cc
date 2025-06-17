@@ -589,8 +589,6 @@ int do_main() {
     ci.set_maximum_step_size(FLAGS_simulator_max_time_step);
     ci.set_fixed_step_mode(!FLAGS_simulator_use_error_control);
     ci.set_target_accuracy(FLAGS_simulator_accuracy);
-    ci.set_log_solver_stats(FLAGS_log_solver_stats);
-    ci.set_print_solver_stats(FLAGS_print_solver_stats);
 
     ConvexIntegratorSolverParameters ci_params;
     ci_params.enable_hessian_reuse = FLAGS_enable_hessian_reuse;
@@ -598,6 +596,8 @@ int do_main() {
     ci_params.kappa = FLAGS_kappa;
     ci_params.alpha_max = FLAGS_alpha_max;
     ci_params.ls_tolerance = FLAGS_ls_tolerance;
+    ci_params.log_solver_stats = FLAGS_log_solver_stats;
+    ci_params.print_solver_stats = FLAGS_print_solver_stats;
     ci.set_solver_parameters(ci_params);
   }
 

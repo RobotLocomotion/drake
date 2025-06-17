@@ -50,12 +50,19 @@ struct ConvexIntegratorSolverParameters {
   // Whether hessian reuse between iterations and time steps is enabled.
   bool enable_hessian_reuse{true};
   int max_iterations_for_hessian_reuse{10};  // k_max from [Hairer, 1996]
+
+  // Logging/performance tracking flags
+  bool print_solver_stats{false};  // Whether to print stats to console.
+  bool log_solver_stats{false};    // Whether to log stats to a file.
 };
 
 /**
  * Statistics to track during the optimization process.
  */
 struct ConvexIntegratorSolverStats {
+  // The simulation time at which the solve was performed.
+  double time;
+
   // The number of solver iterations
   int iterations;
 
@@ -75,7 +82,8 @@ struct ConvexIntegratorSolverStats {
   std::vector<double> step_size;
 
   // Reset the stats to start a new iteration.
-  void Reset() {
+  void Reset(const double t) {
+    time = t;
     iterations = 0;
     cost.resize(0);
     gradient_norm.resize(0);
@@ -189,18 +197,6 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   const ConvexIntegratorSolverStats& get_solver_stats() const { return stats_; }
 
   /**
-   * Set whether to record solver statistics to a CSV file.
-   */
-  void set_log_solver_stats(bool log_stats) { log_solver_stats_ = log_stats; }
-
-  /**
-   * Set whether to print solver statistics to the console.
-   */
-  void set_print_solver_stats(bool print_stats) {
-    print_solver_stats_ = print_stats;
-  }
-
-  /**
    * Get the current total number of solver iterations across all time steps.
    */
   int get_total_solver_iterations() const { return total_solver_iterations_; }
@@ -282,9 +278,6 @@ class ConvexIntegrator final : public IntegratorBase<T> {
                               bool reuse_factorization = false,
                               bool reuse_sparsity_pattern = false);
 
-  // Print solver statistics to the console for debugging.
-  void PrintSolverStats() const;
-
   // Log solver statistics to a CSV file for later analysis.
   void LogSolverStats();
 
@@ -321,9 +314,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   ConvexIntegratorSolverParameters solver_parameters_;
 
   // Logging/performance tracking utilities
-  bool print_solver_stats_{true};  // Whether to print stats to console.
-  bool log_solver_stats_{true};    // Whether to log stats to a file.
-  std::ofstream log_file_;         // CSV file for logging stats.
+  std::ofstream log_file_;
   ConvexIntegratorSolverStats stats_;
   int total_solver_iterations_{0};
   int total_ls_iterations_{0};

@@ -177,8 +177,6 @@ int do_main() {
         simulator.reset_integrator<systems::ConvexIntegrator<double>>();
     ci.set_plant(&plant);
     ci.set_maximum_step_size(0.01);
-    ci.set_print_solver_stats(false);
-    ci.set_log_solver_stats(false);
   }
 
   // Set the integration accuracy when the plant is integrated with a variable-

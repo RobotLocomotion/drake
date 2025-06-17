@@ -20,19 +20,17 @@ total_ls_iterations = []
 avg_ls_iterations = []
 
 for i in range(len(times)):
-    if i == 0 or times[i] != times[i - 1]:
-        timesteps.append(times[i])
-        total_iterations.append(iterations[i] + 1)
-        total_ls_iterations.append(ls_iterations[i])
+    k = iterations[i]
+    if k == 0:
+         timesteps.append(times[i])
+         total_iterations.append(k)
+         total_ls_iterations.append(ls_iterations[i])
     else:
         # Iteration count is just the highest number
-        total_iterations[-1] = iterations[i] + 1
+        total_iterations[-1] = iterations[i] 
 
         # Linesearch iterations are cumulative
         total_ls_iterations[-1] += ls_iterations[i]
-
-for i in range(len(total_ls_iterations)):
-    avg_ls_iterations.append(total_ls_iterations[i] / total_iterations[i])
 
 # Print some overall stats
 print("Total Timesteps             :", len(timesteps))
@@ -43,12 +41,12 @@ print("Total Linesearch Iterations :", sum(total_ls_iterations))
 plt.rcParams.update({'font.size': 14})
 fig, ax = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
 
-ax[0].plot(timesteps, total_iterations, marker='o', label='Total Iterations')
+ax[0].plot(timesteps, total_iterations, marker='o')
 ax[0].set_ylabel('Solver Iterations')
 ax[0].grid()
 
-ax[1].plot(timesteps, avg_ls_iterations, marker='x', label='Average Linesearch Iterations', color='green')
-ax[1].set_ylabel('Linesearch Iterations\n(avg per solver iteration)')
+ax[1].plot(timesteps, total_ls_iterations, marker='x', color='green')
+ax[1].set_ylabel('Linesearch Iterations')
 ax[1].set_xlabel('Simulation Time (s)')
 ax[1].grid()
 
