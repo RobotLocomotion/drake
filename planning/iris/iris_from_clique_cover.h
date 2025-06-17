@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <memory>
 #include <optional>
+#include <variant>
 #include <vector>
 
 #include "drake/common/parallelism.h"
@@ -12,8 +13,8 @@
 #include "drake/geometry/optimization/iris.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_base.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_via_greedy.h"
-#include "drake/planning/iris_np2.h"
-#include "drake/planning/iris_zo.h"
+#include "drake/planning/iris/iris_np2.h"
+#include "drake/planning/iris/iris_zo.h"
 #include "drake/planning/scene_graph_collision_checker.h"
 
 namespace drake {

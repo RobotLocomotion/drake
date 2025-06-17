@@ -201,7 +201,7 @@ std::queue<HPolyhedron> IrisWorker(
                                        geometry::optimization::IrisOptions>) {
             arg.meshcat = nullptr;
           } else {
-            arg.CommonSampledIrisOptions.meshcat = nullptr;
+            arg.sampled_iris_options.meshcat = nullptr;
           }
         },
         iris_options);
@@ -241,27 +241,22 @@ std::queue<HPolyhedron> IrisWorker(
       Eigen::VectorXd center = clique_points.col(nearest_point_col);
       clique_ellipse = Hyperellipsoid(clique_ellipse.A(), center);
     }
-    checker.UpdatePositions(clique_ellipse->center(), builder_id);
+    checker.UpdatePositions(clique_ellipse.center(), builder_id);
     log()->debug("Iris builder thread {} is constructing a set.", builder_id);
     std::visit(
-        [&clique_ellipse, &ret](auto&& arg) {
+        [&](auto&& arg) {
           using T = std::decay_t<decltype(arg)>;
           if constexpr (std::is_same_v<T,
                                        geometry::optimization::IrisOptions>) {
             arg.starting_ellipse = clique_ellipse;
             ret.emplace(IrisInConfigurationSpace(
                 checker.plant(), checker.plant_context(builder_id), arg));
-
           } else if constexpr (std::is_same_v<T, IrisNp2Options>) {
-            ret.emplace(IrisNp2(*static_cast<const SceneGraphCollisionChecker*>(
-                                    &checker),
-                                clique_ellipse, domain, arg);)
+            ret.emplace(IrisNp2(
+                *static_cast<const SceneGraphCollisionChecker*>(&checker),
+                clique_ellipse, domain, arg));
           } else if constexpr (std::is_same_v<T, IrisZoOptions>) {
-            ret.emplace(IrisInConfigurationSpace(checker.plant(),
-                                                 clique_ellipse, domain, arg));
-          } else {
-            throw std::runtime_error(
-                "IrisFromCliqueCover: Unrecognized IrisOptions variant.");
+            ret.emplace(IrisZo(checker, clique_ellipse, domain, arg));
           }
         },
         iris_options);
@@ -269,6 +264,7 @@ std::queue<HPolyhedron> IrisWorker(
 
     current_clique = computed_cliques->pop();
   }
+
   log()->debug("Iris builder thread {} has completed.", builder_id);
   return ret;
 }
@@ -362,7 +358,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
   if (std::holds_alternative<IrisNp2Options>(options.iris_options)) {
     // IrisNp2Options only supports SceneGraphCollisionChecker.
     DRAKE_THROW_UNLESS(
-        std::dynamic_cast<SceneGraphCollisionChecker*>(&checker) != nullptr);
+        dynamic_cast<const SceneGraphCollisionChecker*>(&checker) != nullptr);
   }
 
   // Note: Even though the iris_options.bounding_region may be provided,
@@ -378,12 +374,9 @@ void IrisInConfigurationSpaceFromCliqueCover(
   const HPolyhedron domain =
       std::holds_alternative<geometry::optimization::IrisOptions>(
           options.iris_options)
-          ? options.iris_options.bounding_region.value_or(default_domain)
+          ? std::get<geometry::optimization::IrisOptions>(options.iris_options)
+                .bounding_region.value_or(default_domain)
           : default_domain;
-
-  const HPolyhedron domain =
-      HPolyhedron::MakeBox(checker.plant().GetPositionLowerLimits(),
-                           checker.plant().GetPositionUpperLimits());
 
   DRAKE_THROW_UNLESS(domain.ambient_dimension() ==
                      checker.plant().num_positions());
@@ -446,13 +439,13 @@ void IrisInConfigurationSpaceFromCliqueCover(
 
     // Show the samples used in build cliques. Debugging visualization.
     auto meshcat_ptr = std::visit(
-        [](auto&& arg) -> Meshcat* {
+        [](auto&& arg) -> std::shared_ptr<geometry::Meshcat> {
           using T = std::decay_t<decltype(arg)>;
           if constexpr (std::is_same_v<T,
                                        geometry::optimization::IrisOptions>) {
             return arg.meshcat;
           } else {
-            return arg.CommonSampledIrisOptions.meshcat;
+            return arg.sampled_iris_options.meshcat;
           }
         },
         options.iris_options);
