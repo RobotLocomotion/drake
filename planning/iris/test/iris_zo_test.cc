@@ -157,6 +157,29 @@ TEST_F(DoublePendulum, IrisZoTest) {
   PlotEnvironmentAndRegion(region);
 }
 
+TEST_F(DoublePendulum, PostprocessRemoveCollisions) {
+  IrisZoOptions options;
+
+  // Deliberately set parameters so the initial region will pass the
+  // probabilistic test.
+  options.sampled_iris_options.tau = 0.01;
+  options.sampled_iris_options.epsilon = 0.99;
+  options.sampled_iris_options.delta = 0.99;
+  options.sampled_iris_options.max_iterations = 1;
+  options.sampled_iris_options.verbose = true;
+  options.sampled_iris_options.remove_all_collisions_possible = false;
+
+  HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
+
+  Vector2d query_point(0.5, 0.0);
+  EXPECT_FALSE(checker_->CheckConfigCollisionFree(query_point));
+  EXPECT_TRUE(region.PointInSet(query_point));
+
+  options.sampled_iris_options.remove_all_collisions_possible = true;
+  region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
+  EXPECT_FALSE(region.PointInSet(query_point));
+}
+
 // Test growing a region for the double pendulum along a parameterization of the
 // configuration space built from RationalForwardKinematics.
 TEST_F(DoublePendulumRationalForwardKinematics,

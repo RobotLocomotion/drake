@@ -300,6 +300,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
       outer_delta = options.sampled_iris_options.delta;
     }
 
+    // TODO(cohnt): Rewrite as a for loop for better readability.
     while (num_iterations_separating_planes <
            options.sampled_iris_options.max_iterations_separating_planes) {
       int k_squared = num_iterations_separating_planes + 1;
@@ -354,15 +355,38 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
                         options.sampled_iris_options.epsilon * N_k);
       }
 
-      // Break if threshold is passed.
-      if (number_particles_in_collision <=
+      const bool probabilistic_test_passed =
+          number_particles_in_collision <=
           (1 - options.sampled_iris_options.tau) *
-              options.sampled_iris_options.epsilon * N_k) {
+              options.sampled_iris_options.epsilon * N_k;
+
+      if (options.sampled_iris_options.verbose) {
+        if (!options.sampled_iris_options.remove_all_collisions_possible &&
+            probabilistic_test_passed) {
+          log()->info(
+              "IrisNp2 probabilistic test passed! Finished computing "
+              "hyperplanes.");
+          break;
+        } else if (probabilistic_test_passed) {
+          log()->info(
+              "IrisNp2 probabilistic test passed! Computing hyperplanes for "
+              "remaining particles, then this iteration is finished.");
+        } else {
+          log()->info(
+              "IrisNp2 probabilistic test failed! Continuing to compute "
+              "hyperplanes.");
+        }
+      }
+      if (!options.sampled_iris_options.remove_all_collisions_possible &&
+          probabilistic_test_passed) {
         break;
       }
+
       // Warn user if test fails on last iteration.
-      if (num_iterations_separating_planes ==
-          options.sampled_iris_options.max_iterations_separating_planes - 1) {
+      const bool is_last_iteration =
+          (num_iterations_separating_planes + 1) >=
+          options.sampled_iris_options.max_iterations_separating_planes;
+      if (is_last_iteration && !probabilistic_test_passed) {
         log()->warn(
             "IrisNp2 WARNING, separating planes hit max iterations without "
             "passing the bernoulli test, this voids the probabilistic "
@@ -471,6 +495,10 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
             "SnoptSolver or NloptSolver, consider using IpoptSolver instead.",
             num_prog_successes, num_prog_successes + num_prog_failures,
             failure_rate));
+      }
+
+      if (probabilistic_test_passed) {
+        break;
       }
 
       ++num_iterations_separating_planes;
