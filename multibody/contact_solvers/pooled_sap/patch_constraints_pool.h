@@ -77,7 +77,8 @@ class PooledSapModel<T>::PatchConstraintsPool {
     bodies_.resize(num_patches);
     p_AB_W_.Resize(num_patches);
     dissipation_.resize(num_patches);
-    friction_.resize(num_patches);
+    static_friction_.resize(num_patches);
+    dynamic_friction_.resize(num_patches);
 
     // per-pair data.
     normal_W_.Resize(num_pairs_capacity);
@@ -86,6 +87,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
     fn0_.resize(num_pairs_capacity);
     n0_.resize(num_pairs_capacity);
     epsilon_soft_.resize(num_pairs_capacity);
+    net_friction_.resize(num_pairs_capacity);
   }
 
   /* Reserve to store patch constraint data. No memory allocation performed if
@@ -103,7 +105,8 @@ class PooledSapModel<T>::PatchConstraintsPool {
     bodies_.reserve(num_patches);
     p_AB_W_.Reserve(num_patches);
     dissipation_.reserve(num_patches);
-    friction_.reserve(num_patches);
+    static_friction_.reserve(num_patches);
+    dynamic_friction_.reserve(num_patches);
 
     // Data per patch and per pair.
     normal_W_.Reserve(num_pairs_capacity);
@@ -112,12 +115,14 @@ class PooledSapModel<T>::PatchConstraintsPool {
     fn0_.reserve(num_pairs_capacity);
     n0_.reserve(num_pairs_capacity);
     epsilon_soft_.reserve(num_pairs_capacity);
+    net_friction_.reserve(num_pairs_capacity);
   }
 
   /* Adds a contact patch between bodies A and B.
    @pre B is always dynamic (not anchored).
    @returns the index into the new patch. */
-  int AddPatch(int bodyA, int bodyB, const T& dissipation, const T& friction,
+  int AddPatch(int bodyA, int bodyB, const T& dissipation,
+               const T& static_friction, const T& dynamic_friction,
                const Vector3<T>& p_AB_W) {
     DRAKE_DEMAND(bodyA != bodyB);               // Same body never makes sense.
     DRAKE_DEMAND(!model().is_anchored(bodyB));  // B is never anchored.
@@ -125,7 +130,8 @@ class PooledSapModel<T>::PatchConstraintsPool {
 
     bodies_.emplace_back(bodyB, bodyA);  // Dynamic body B always first.
     dissipation_.push_back(dissipation);
-    friction_.push_back(friction);
+    static_friction_.push_back(static_friction);
+    dynamic_friction_.push_back(dynamic_friction);
     p_AB_W_.PushBack(p_AB_W);
 
     const int num_cliques =
@@ -187,7 +193,22 @@ class PooledSapModel<T>::PatchConstraintsPool {
     const T n0 = max(0.0, time_step_ * fn0) * damping;
     n0_.push_back(n0);
 
-    const T& mu = friction_[p];
+    // Coefficient of friction is determined based on previous velocity. This
+    // allows us to consider a Streibeck-like curve while maintaining a convex
+    // formulation.
+    const T vt0 = v_AcBc_W.norm() - vn0;
+
+    // Friction coefficient as a function of tangential velocity
+    auto calc_friction_coefficient = [&]() -> T {
+      const T s = vt0 / stiction_tolerance_;
+      const T& mu_s = static_friction_[p];
+      const T& mu_d = dynamic_friction_[p];
+      const T x = s - 10.0;
+      return -0.5 * (mu_s - mu_d) * (x / sqrt(1 + x * x) - 1.0) + mu_d;
+    };
+    const T mu = calc_friction_coefficient();
+    net_friction_.push_back(mu);
+
     const T Rt = CalcRegularizationOfFriction(p, p_BoC_W);
     const T sap_stiction_tolerance = mu * Rt * n0;
     const T eps = max(stiction_tolerance_, sap_stiction_tolerance);
@@ -203,7 +224,8 @@ class PooledSapModel<T>::PatchConstraintsPool {
     bodies_.clear();
     p_AB_W_.Clear();
     dissipation_.clear();
-    friction_.clear();
+    static_friction_.clear();
+    dynamic_friction_.clear();
     pair_data_start_.clear();
 
     // Data per patch and per pair.
@@ -213,6 +235,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
     fn0_.clear();
     n0_.clear();
     epsilon_soft_.clear();
+    net_friction_.clear();
   }
 
   int num_patches() const { return ssize(num_pairs_); }
@@ -226,6 +249,12 @@ class PooledSapModel<T>::PatchConstraintsPool {
   int num_pairs(int patch_index) const {
     DRAKE_ASSERT(0 <= patch_index && patch_index < num_patches());
     return num_pairs_[patch_index];
+  }
+
+  void set_stiction_tolerance(double stiction_tolerance) {
+    DRAKE_DEMAND(stiction_tolerance > 0.0);
+    stiction_tolerance_ = stiction_tolerance;
+    vs2_ = stiction_tolerance_ * stiction_tolerance_;
   }
 
   /* Computes sparsity pattern for the pool. That is, cliques i is connected to
@@ -303,9 +332,10 @@ class PooledSapModel<T>::PatchConstraintsPool {
   // .second is always body A, which might corresponds to an anchored body with
   // invalid (negative) clique.
   std::vector<std::pair<int, int>> bodies_;
-  EigenPool<Vector3<T>> p_AB_W_;  // Position of body B relative to A.
-  std::vector<T> dissipation_;    // Hunt & Crossley dissipation.
-  std::vector<T> friction_;       // Friction coefficient.
+  EigenPool<Vector3<T>> p_AB_W_;    // Position of body B relative to A.
+  std::vector<T> dissipation_;      // Hunt & Crossley dissipation.
+  std::vector<T> static_friction_;  // Friction coefficients
+  std::vector<T> dynamic_friction_;
 
   /* Data per patch and per pair. Indexed by patch_pair_index(p, k). */
   std::vector<int> pair_data_start_;  // Start into arrays indexed by
@@ -321,6 +351,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
   std::vector<T> fn0_;              // Previous time step normal force.
   std::vector<T> n0_;               // Previous time step impulse.
   std::vector<T> epsilon_soft_;     // Regularized stiction tolerance.
+  std::vector<T> net_friction_;     // Regularized stiction tolerance.
 
   // Scratch used during construction to compute Delassus approximation.
   mutable EigenPool<MatrixX<T>> MatrixX_pool_;

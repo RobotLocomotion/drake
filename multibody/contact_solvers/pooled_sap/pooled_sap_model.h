@@ -23,6 +23,8 @@ namespace multibody {
 namespace contact_solvers {
 namespace pooled_sap {
 
+using internal::BlockSparsityPattern;
+
 template <typename T>
 struct PooledSapParameters {
   void VerifyInvariants() const {
@@ -58,6 +60,11 @@ struct PooledSapParameters {
   EigenPool<MatrixX<T>> A;
   // Cost linear term
   VectorX<T> r;
+
+  // Scaling factor D = diag(M)^{-1/2} for convergence check. Scales all
+  // components of the gradient to the same units, see [Castro 2021, IV.E].
+  VectorX<T> D;
+
   // Clique for the b-th rigid body. Negative if anchored.
   // body_cliques[0]  < 0 must correspond to the world.
   std::vector<int> body_cliques;
@@ -109,12 +116,10 @@ class PooledSapModel {
     num_bodies_ = ssize(params_->body_cliques);
     clique_sizes_.clear();
     clique_start_.clear();
-    Aldlt_.clear();
 
     const int num_cliques = params_->A.size();
     clique_sizes_.reserve(num_cliques);
     clique_start_.reserve(num_cliques + 1);
-    Aldlt_.reserve(num_cliques);
     clique_start_.push_back(0);
     num_velocities_ = 0;
     auto& A = params_->A;
@@ -124,8 +129,6 @@ class PooledSapModel {
       clique_sizes_.push_back(clique_nv);
       // Here we are pushing the start for the next clique, c+1.
       clique_start_.push_back(clique_start_.back() + clique_nv);
-      Aldlt_.push_back(
-          math::LinearSolver<Eigen::LDLT, MatrixX<T>>(MatrixX<T>(A[c])));
     }
     DRAKE_DEMAND(params_->r.size() == num_velocities_);
     gain_constraints_pool_.Clear();
@@ -206,12 +209,6 @@ class PooledSapModel {
     return params().J_WB[body];
   }
 
-  /* Returns the `clique` diagonal block of the dynamics matrix A. */
-  const math::LinearSolver<Eigen::LDLT, MatrixX<T>>&
-  get_dynamics_factoriazation(int clique) const {
-    return Aldlt_[clique];
-  }
-
   typename EigenPool<MatrixX<T>>::ConstElementView get_dynamics_matrix(
       int clique) const {
     DRAKE_ASSERT(params_ != nullptr);
@@ -252,6 +249,10 @@ class PooledSapModel {
   int num_constraint_equations() const {
     return patch_constraints_pool_.num_constraint_equations() +
            gain_constraints_pool_.num_constraint_equations();
+  }
+
+  void set_stiction_tolerance(double stiction_tolerance) {
+    patch_constraints_pool_.set_stiction_tolerance(stiction_tolerance);
   }
 
   PatchConstraintsPool& patch_constraints_pool() {
@@ -355,23 +356,33 @@ class PooledSapModel {
                       SapData<T>* scratch, T* dcost_dalpha,
                       T* d2cost_dalpha2) const;
 
+  /* Compute and store the Hessian sparsity pattern. */
+  void SetSparsityPattern();
+
+  const BlockSparsityPattern& sparsity_pattern() const {
+    DRAKE_ASSERT(sparsity_pattern_ != nullptr);
+    return *sparsity_pattern_;
+  }
+
  private:
   void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* result) const;
   void CalcMomentumTerms(const SapData<T>& data,
                          typename SapData<T>::Cache* cache) const;
   void CalcBodySpatialVelocities(const VectorX<T>& v,
                                  EigenPool<Vector6<T>>* V_pool) const;
-  internal::BlockSparsityPattern CalcSparsityPattern() const;
 
   std::unique_ptr<PooledSapParameters<T>> params_;
+
+  // Sparsity pattern for the Hessian is set once at construction, and used
+  // later to detect when the sparsity pattern has changed.
+  std::unique_ptr<BlockSparsityPattern> sparsity_pattern_;
 
   // Total number of generalized velocities. = sum(clique_sizes_).
   int num_bodies_{0};
   int num_velocities_{0};
   std::vector<int> clique_start_;  // Clique first velocity.
   std::vector<int> clique_sizes_;  // Number of velocities per clique.
-  std::vector<math::LinearSolver<Eigen::LDLT, MatrixX<T>>> Aldlt_;
-  EigenPool<Vector6<T>> V_WB0_;  // Initial spatial velocities.
+  EigenPool<Vector6<T>> V_WB0_;    // Initial spatial velocities.
 
   GainConstraintsPool gain_constraints_pool_;
   PatchConstraintsPool patch_constraints_pool_;

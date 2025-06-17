@@ -81,6 +81,12 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
     params->J_WB.Add(6, 6) = J_WB2;
   }
 
+  // None of the bodies are marked as floating
+  params->body_is_floating = {0, 0, 0, 0};
+
+  // Scale factor for convergence check.
+  params->D = VectorX<T>::Ones(nv);
+
   // Reset model.
   model->ResetParameters(std::move(params));
 
@@ -97,7 +103,7 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
   {
     const Vector3<T> p_AB_W(0.1, 0.0, 0.0);
     patches.AddPatch(1 /* body A */, 2 /* body B */, dissipation, friction,
-                     p_AB_W);
+                     friction, p_AB_W);
 
     const Vector3<T> nhat_AB_W(1.0, 0.0, 0.0);
     const Vector3<T> p_BC_W = -0.5 * p_AB_W;
@@ -109,7 +115,7 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
   {
     const Vector3<T> p_AB_W(0.0, 0.05, 0.0);  // A = World.
     patches.AddPatch(0 /* World */, 2 /* body B */, dissipation, friction,
-                     p_AB_W);
+                     friction, p_AB_W);
 
     const Vector3<T> nhat_AB_W(0.0, 1.0, 0.0);
     const Vector3<T> p_BC_W(0.0, -0.05, 0.0);
@@ -121,13 +127,16 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
   {
     const Vector3<T> p_AB_W(-0.1, 0.0, 0.0);
     patches.AddPatch(3 /* World */, 2 /* body B */, dissipation, friction,
-                     p_AB_W);
+                     friction, p_AB_W);
 
     const Vector3<T> nhat_AB_W(-1.0, 0.0, 0.0);
     const Vector3<T> p_BC_W = -0.5 * p_AB_W;
     const T fn0 = 1.5;
     patches.AddPair(p_BC_W, nhat_AB_W, fn0, stiffness);
   }
+
+  // Establish the sparsity pattern.
+  model->SetSparsityPattern();
 }
 
 GTEST_TEST(PooledSapModel, Construction) {

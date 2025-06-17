@@ -25,7 +25,7 @@ class PooledSapBuilder {
 
   explicit PooledSapBuilder(const MultibodyPlant<T>& plant);
 
-  void UpdateModel(const systems::Context<T>& context, double time_step,
+  void UpdateModel(const systems::Context<T>& context, const T& time_step,
                    PooledSapModel<T>* model) const;
 
   /* Updates the dynamics matrix A and the linear term r to incorporate modeling

@@ -3,9 +3,11 @@
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/multibody/plant/contact_properties.h"
 
+using drake::multibody::CalcContactFrictionFromSurfaceProperties;
 using drake::multibody::internal::GetCombinedDynamicCoulombFriction;
 using drake::multibody::internal::GetCombinedHuntCrossleyDissipation;
 using drake::multibody::internal::GetCombinedPointContactStiffness;
+using drake::multibody::internal::GetCoulombFriction;
 using drake::multibody::internal::GetInternalTree;
 using drake::multibody::internal::GetPointContactStiffness;
 using drake::multibody::internal::MultibodyTreeTopology;
@@ -74,7 +76,7 @@ PooledSapBuilder<T>::PooledSapBuilder(const MultibodyPlant<T>& plant)
 
 template <typename T>
 void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
-                                      double time_step,
+                                      const T& time_step,
                                       PooledSapModel<T>* model) const {
   const MultibodyTreeTopology& topology =
       GetInternalTree(plant()).get_topology();
@@ -82,8 +84,6 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   const int nv = plant().num_velocities();
   MatrixX<T>& M = scratch_.M;
   Matrix6X<T>& J_V_WB = scratch_.J_V_WB;
-  VectorX<T>& u_no_pd = scratch_.u_no_pd;
-  VectorX<T>& u_w_pd = scratch_.u_w_pd;
 
   std::unique_ptr<PooledSapParameters<T>> params = model->ReleaseParameters();
   params->time_step = time_step;
@@ -97,7 +97,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
 
   // Implicit damping.
   // N.B. The mass matrix already include reflected inertia terms.
-  M.diagonal() += plant().EvalJointDampingCache(context) * plant().time_step();
+  M.diagonal() += plant().EvalJointDampingCache(context) * time_step;
 
   // We only add a clique for tree's with non-zero number of velocities.
   int num_cliques = 0;
@@ -116,6 +116,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
 
   // Update rigid body cliques and body Jacobians.
   const auto& world_frame = plant().world_frame();
+  params->D = M.diagonal().cwiseSqrt().cwiseInverse();
   params->body_cliques.clear();
   params->body_cliques.reserve(plant().num_bodies());
   params->body_is_floating.clear();
@@ -152,29 +153,31 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
             Vector3<T>::Zero(), world_frame, world_frame, &J_V_WB);
         Jv_WBc_W = J_V_WB.middleCols(vt_start, nt);
       }
-      // if (body.is_floating()) {
-      //   fmt::print("b: {}. name: {}. J:\n{}\n", b, body.name(),
-      //              fmt_eigen(Jv_WBc_W));
-      // }
     }
   }
 
-  // r = dt⋅(u₀ + τᵉˣ - C(q₀,v₀)) + M⋅v₀
+  // r = dt⋅(u₀ + τᵉˣ - C(q₀,v₀)) + A⋅v₀
   const T& dt = params->time_step;
   auto& r = params->r;
   r.resize(nv);
-  CalcActuationInput(context, &u_w_pd, &u_no_pd);
-  plant().CalcBiasTerm(context, &r);
-  r = -r;                                     // r = -C(q₀, v₀)
-  r += u_no_pd;                               // r = u₀ - C(q₀, v₀)
-  AccumulateForceElementForces(context, &r);  // r = u₀ + τᵉˣ - C(q₀,v₀)
-  r *= dt;                                    // r = dt⋅(u₀ + τᵉˣ - C(q₀,v₀))
-  r += M * v0;  // r = dt⋅(u₀ + τᵉˣ - C(q₀,v₀)) + M⋅v₀
+  MultibodyForces<T>& forces = *scratch_.forces;
+  VectorX<T>& vdot = scratch_.tmp_v1;
+  vdot = -v0 / dt;
+  plant().CalcForceElementsContribution(context, &forces);
+  plant().AddInForcesFromInputPorts(context, &forces);
+
+  // TODO(vincekurtz): use a CalcInverseDynamics signature that doesn't allocate
+  // a return value.
+  r = -dt * plant().CalcInverseDynamics(context, vdot, forces);
+  r += dt * plant().EvalJointDampingCache(context).asDiagonal() * v0;
 
   model->ResetParameters(std::move(params));
   CalcGeometryContactData(context);
   AddPatchConstraintsForHydroelasticContact(context, model);
   AddPatchConstraintsForPointContact(context, model);
+  model->SetSparsityPattern();
+
+  model->set_stiction_tolerance(plant().stiction_tolerance());
 }
 
 template <typename T>
@@ -183,6 +186,8 @@ void PooledSapBuilder<T>::AccumulateForceElementForces(
   MultibodyForces<T>& forces = *scratch_.forces;
   VectorX<T>& tau_g = scratch_.tmp_v1;
   plant().CalcForceElementsContribution(context, &forces);
+  plant().AddAppliedExternalSpatialForces(context, &forces);
+  plant().AddAppliedExternalGeneralizedForces(context, &forces);
   plant().CalcGeneralizedForces(context, forces, &tau_g);
   *r += tau_g;
 }
@@ -276,7 +281,12 @@ void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
                                                  inspector);
     const T d = GetCombinedHuntCrossleyDissipation(
         Mid, Nid, kM, kN, kDefaultDissipation, inspector);
-    const T mu = GetCombinedDynamicCoulombFriction(Mid, Nid, inspector);
+
+    // Friction properties
+    const auto& mu_A = GetCoulombFriction(Mid, inspector);
+    const auto& mu_B = GetCoulombFriction(Nid, inspector);
+    CoulombFriction<double> mu =
+        CalcContactFrictionFromSurfaceProperties(mu_A, mu_B);
 
     // We compute the position of the point contact based on Hertz's theory
     // for contact between two elastic bodies.
@@ -292,7 +302,8 @@ void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
     const T fn0 = k * pp.depth;
 
     // For point contact we add single-pair patches.
-    patches.AddPatch(bodyA->index(), bodyB->index(), d, mu, p_AB_W);
+    patches.AddPatch(bodyA->index(), bodyB->index(), d, mu.static_friction(),
+                     mu.dynamic_friction(), p_AB_W);
     patches.AddPair(p_BoC_W, nhat_AB_W, fn0, k);
   }
 }
@@ -351,8 +362,12 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
         s.id_N(), std::numeric_limits<double>::infinity(), inspector);
     const T d = multibody::internal::GetCombinedHuntCrossleyDissipation(
         s.id_M(), s.id_N(), Em, En, kDefaultDissipation, inspector);
-    const T mu = multibody::internal::GetCombinedDynamicCoulombFriction(
-        s.id_M(), s.id_N(), inspector);
+
+    // Get friction properties
+    const auto& mu_A = GetCoulombFriction(s.id_M(), inspector);
+    const auto& mu_B = GetCoulombFriction(s.id_N(), inspector);
+    CoulombFriction<double> mu =
+        CalcContactFrictionFromSurfaceProperties(mu_A, mu_B);
 
     const auto& X_WA = bodyA->EvalPoseInWorld(context);
     const auto& X_WB = bodyB->EvalPoseInWorld(context);
@@ -360,7 +375,8 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
     const Vector3<T>& p_WBo = X_WB.translation();
     const Vector3<T> p_AB_W = p_WBo - p_WAo;
 
-    patches.AddPatch(bodyA->index(), bodyB->index(), d, mu, p_AB_W);
+    patches.AddPatch(bodyA->index(), bodyB->index(), d, mu.static_friction(),
+                     mu.dynamic_friction(), p_AB_W);
 
     for (int face = 0; face < s.num_faces(); ++face) {
       const T Ae = s.area(face);  // Face element area.
