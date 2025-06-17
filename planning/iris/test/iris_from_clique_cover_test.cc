@@ -50,10 +50,12 @@ void Draw2dVPolytope(const VPolytope& polytope, const std::string& meshcat_name,
 GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
            TestIrisFromCliqueCoverOptions) {
   IrisFromCliqueCoverOptions options;
+  EXPECT_TRUE(std::holds_alternative<IrisOptions>(options.iris_options));
+  IrisOptions iris_options = std::get<IrisOptions>(options.iris_options);
 
-  EXPECT_EQ(options.iris_options.iteration_limit, 1);
-  options.iris_options.iteration_limit = 100;
-  EXPECT_EQ(options.iris_options.iteration_limit, 100);
+  EXPECT_EQ(iris_options.iteration_limit, 1);
+  iris_options.iteration_limit = 100;
+  EXPECT_EQ(iris_options.iteration_limit, 100);
 
   EXPECT_EQ(options.coverage_termination_threshold, 0.7);
   options.coverage_termination_threshold = 0.1;
@@ -142,7 +144,7 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, BoxConfigurationSpaceTest) {
   options.iteration_limit = 1;
   // Set a large bounding region to test the path where this is set in the
   // IrisOptions.
-  options.iris_options.bounding_region =
+  std::get<IrisOptions>(options.iris_options).bounding_region =
       HPolyhedron::MakeBox(Eigen::Vector2d{-2, -2}, Eigen::Vector2d{2, 2});
   // Run this test without parallelism to test that no bugs occur in the
   // non-parallel version.
@@ -262,18 +264,19 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   EXPECT_TRUE(checker->CheckConfigCollisionFree(config));
 
   IrisFromCliqueCoverOptions options;
+  IrisOptions& iris_options = std::get<IrisOptions>(options.iris_options);
 
   options.num_points_per_coverage_check = 100;
   options.num_points_per_visibility_round = 20;
   options.iteration_limit = 1;
   // Set a large bounding region to test the path where this is set in the
   // IrisOptions.
-  options.iris_options.bounding_region =
+  iris_options.bounding_region =
       HPolyhedron::MakeBox(Eigen::Vector2d{-2, -2}, Eigen::Vector2d{2, 2});
   // Run this test without parallelism to test that no bugs occur in the
   // non-parallel version.
   options.parallelism = Parallelism{1};
-  options.iris_options.meshcat = meshcat;
+  iris_options.meshcat = meshcat;
   std::vector<HPolyhedron> sets;
 
   RandomGenerator generator(0);
@@ -425,7 +428,8 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
 
     params.model = builder.Build();
     checker = std::make_unique<SceneGraphCollisionChecker>(std::move(params));
-    options.iris_options.meshcat = meshcat;
+    IrisOptions& iris_options = std::get<IrisOptions>(options.iris_options);
+    iris_options.meshcat = meshcat;
 
     options.num_points_per_coverage_check = 1000;
     options.num_points_per_visibility_round = 140;

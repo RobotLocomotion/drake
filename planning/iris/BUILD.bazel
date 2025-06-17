@@ -24,21 +24,21 @@ drake_cc_library(
     name = "iris_from_clique_cover",
     srcs = ["iris_from_clique_cover.cc"],
     hdrs = ["iris_from_clique_cover.h"],
-    implementation_deps = [
-        "@common_robotics_utilities_internal//:common_robotics_utilities",
-    ],
     deps = [
         "//geometry:meshcat",
         "//geometry/optimization:convex_set",
         "//geometry/optimization:iris",
-        "//planning:iris_np2",
-        "//planning:iris_zo",
         "//planning:scene_graph_collision_checker",
         "//planning:visibility_graph",
         "//planning/graph_algorithms:max_clique_solver_base",
         "//planning/graph_algorithms:max_clique_solver_via_greedy",
+        "//planning/iris:iris_np2",
+        "//planning/iris:iris_zo",
         "//solvers:gurobi_solver",
         "//solvers:mosek_solver",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
     ],
 )
 
@@ -59,6 +59,11 @@ drake_cc_library(
     name = "iris_zo",
     srcs = ["iris_zo.cc"],
     hdrs = ["iris_zo.h"],
+    deps = [
+        ":iris_common",
+        "//geometry/optimization:convex_set",
+        "//planning:collision_checker",
+    ],
     implementation_deps = [
         "//solvers:choose_best_solver",
         "//solvers:clarabel_solver",
@@ -68,11 +73,6 @@ drake_cc_library(
         "//solvers:osqp_solver",
         "//solvers:solve",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
-    ],
-    deps = [
-        ":iris_common",
-        "//geometry/optimization:convex_set",
-        "//planning:collision_checker",
     ],
 )
 
