@@ -48,7 +48,7 @@ void Draw2dVPolytope(const VPolytope& polytope, const std::string& meshcat_name,
 }
 
 GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
-           TestIrisFromCliqueCoverOptions) {
+           TestIrisFromCliqueCoverDefaultOptions) {
   IrisFromCliqueCoverOptions options;
   EXPECT_TRUE(std::holds_alternative<IrisOptions>(options.iris_options));
   IrisOptions iris_options = std::get<IrisOptions>(options.iris_options);
@@ -380,6 +380,7 @@ const char boxes_in_corners[] = R"""(
 </robot>
 )""";
 
+template <typename IrisOptionsVariantType>
 class IrisInConfigurationSpaceFromCliqueCoverTestFixture
     : public ::testing::Test {
  protected:
@@ -428,8 +429,26 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
 
     params.model = builder.Build();
     checker = std::make_unique<SceneGraphCollisionChecker>(std::move(params));
-    IrisOptions& iris_options = std::get<IrisOptions>(options.iris_options);
-    iris_options.meshcat = meshcat;
+    if constexpr (std::is_same_v<IrisOptionsVariantType,
+                                 geometry::optimization::IrisOptions>) {
+      options.iris_options = geometry::optimization::IrisOptions{
+          .iteration_limit = 1, .meshcat = meshcat};
+    } else {
+      CommonSampledIrisOptions sampled_options;
+      sampled_options.max_iterations = 1;
+      sampled_options.meshcat = meshcat;
+      if constexpr (std::is_same_v<IrisOptionsVariantType, IrisNp2Options>) {
+        IrisNp2Options np2_options;
+        np2_options.sampled_iris_options = sampled_options;
+        options.iris_options = np2_options;
+      } else {
+        if constexpr (std::is_same_v<IrisOptionsVariantType, IrisZoOptions>) {
+          IrisZoOptions iris_options;
+          iris_options.sampled_iris_options = sampled_options;
+          options.iris_options = iris_options;
+        }
+      }
+    }
 
     options.num_points_per_coverage_check = 1000;
     options.num_points_per_visibility_round = 140;
@@ -479,8 +498,14 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
   Eigen::VectorXd color;
 };
 
-TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
-       BoxWithCornerObstaclesTestMip) {
+using IrisOptionsVariantTypes =
+    ::testing::Types<geometry::optimization::IrisOptions, IrisNp2Options,
+                     IrisZoOptions>;
+TYPED_TEST_SUITE(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
+                 IrisOptionsVariantTypes);
+
+TYPED_TEST(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
+           BoxWithCornerObstaclesTestMip) {
   // Only run this test if a MIP solver is available.
   if ((solvers::MosekSolver::is_available() &&
        solvers::MosekSolver::is_enabled()) ||
@@ -507,29 +532,30 @@ TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
     planning::graph_algorithms::MaxCliqueSolverViaMip solver{std::nullopt,
                                                              solver_options};
 
-    IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
-                                            &sets, &solver);
-    EXPECT_EQ(ssize(sets), 6);
+    IrisInConfigurationSpaceFromCliqueCover(
+        *this->checker, this->options, &this->generator, &this->sets, &solver);
+    EXPECT_EQ(ssize(this->sets), 6);
     // Show the IrisFromCliqueCoverDecomposition
-    for (int i = 0; i < ssize(sets); ++i) {
+    for (int i = 0; i < ssize(this->sets); ++i) {
       // Choose a random color.
-      for (int j = 0; j < color.size(); ++j) {
-        color[j] = abs(gaussian(generator));
+      for (int j = 0; j < this->color.size(); ++j) {
+        this->color[j] = abs(this->gaussian(this->generator));
       }
-      color.normalize();
-      VPolytope vregion = VPolytope(sets.at(i)).GetMinimalRepresentation();
+      this->color.normalize();
+      VPolytope vregion =
+          VPolytope(this->sets.at(i)).GetMinimalRepresentation();
       Draw2dVPolytope(vregion, fmt::format("iris_from_clique_cover_mip{}", i),
-                      color, meshcat);
+                      this->color, this->meshcat);
     }
 
     // Now check the coverage by drawing points from the manual decomposition
     // and checking if they are inside the IrisFromCliqueCover decomposition.
     int num_samples_per_set = 1000;
     int num_in_automatic_decomposition = 0;
-    for (const auto& manual_set : manual_decomposition) {
+    for (const auto& manual_set : this->manual_decomposition) {
       for (int i = 0; i < num_samples_per_set; ++i) {
-        Eigen::Vector2d sample = manual_set.UniformSample(&generator);
-        for (const auto& set : sets) {
+        Eigen::Vector2d sample = manual_set.UniformSample(&this->generator);
+        for (const auto& set : this->sets) {
           if (set.PointInSet(sample)) {
             ++num_in_automatic_decomposition;
             break;
@@ -539,7 +565,8 @@ TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
     }
     double coverage_estimate =
         static_cast<double>(num_in_automatic_decomposition) /
-        static_cast<double>(num_samples_per_set * ssize(manual_decomposition));
+        static_cast<double>(num_samples_per_set *
+                            ssize(this->manual_decomposition));
     // We set the termination threshold to be at 0.9 with 1000 points for a
     // coverage check. This number is low enough that the test passes regardless
     // of the random seed. (The probability of success is larger than 1-1e-9).
@@ -549,34 +576,34 @@ TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
   }
 }
 
-TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
-       BoxWithCornerObstaclesTestGreedy) {
+TYPED_TEST(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
+           BoxWithCornerObstaclesTestGreedy) {
   // use default solver MaxCliqueSovlerViaGreedy
-  IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
-                                          nullptr);
+  IrisInConfigurationSpaceFromCliqueCover(
+      *this->checker, this->options, &this->generator, &this->sets, nullptr);
 
-  EXPECT_EQ(ssize(sets), 6);
+  EXPECT_EQ(ssize(this->sets), 6);
 
   // Show the IrisFromCliqueCoverDecomposition
-  for (int i = 0; i < ssize(sets); ++i) {
+  for (int i = 0; i < ssize(this->sets); ++i) {
     // Choose a random color.
-    for (int j = 0; j < color.size(); ++j) {
-      color[j] = abs(gaussian(generator));
+    for (int j = 0; j < this->color.size(); ++j) {
+      this->color[j] = abs(this->gaussian(this->generator));
     }
-    color.normalize();
-    VPolytope vregion = VPolytope(sets.at(i)).GetMinimalRepresentation();
+    this->color.normalize();
+    VPolytope vregion = VPolytope(this->sets.at(i)).GetMinimalRepresentation();
     Draw2dVPolytope(vregion, fmt::format("iris_from_clique_cover_greedy{}", i),
-                    color, meshcat);
+                    this->color, this->meshcat);
   }
 
   // Now check the coverage by drawing points from the manual decomposition and
   // checking if they are inside the IrisFromCliqueCover decomposition.
   int num_samples_per_set = 1000;
   int num_in_automatic_decomposition = 0;
-  for (const auto& manual_set : manual_decomposition) {
+  for (const auto& manual_set : this->manual_decomposition) {
     for (int i = 0; i < num_samples_per_set; ++i) {
-      Eigen::Vector2d sample = manual_set.UniformSample(&generator);
-      for (const auto& set : sets) {
+      Eigen::Vector2d sample = manual_set.UniformSample(&this->generator);
+      for (const auto& set : this->sets) {
         if (set.PointInSet(sample)) {
           ++num_in_automatic_decomposition;
           break;
@@ -586,7 +613,8 @@ TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
   }
   double coverage_estimate =
       static_cast<double>(num_in_automatic_decomposition) /
-      static_cast<double>(num_samples_per_set * ssize(manual_decomposition));
+      static_cast<double>(num_samples_per_set *
+                          ssize(this->manual_decomposition));
   // We set the termination threshold to be at 0.9 with 1000 points for a
   // coverage check. This number is low enough that the test passes regardless
   // of the random seed. (The probability of success is larger than 1-1e-9).
