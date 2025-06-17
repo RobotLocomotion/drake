@@ -25,6 +25,27 @@ class MultibodyPlantTester {
                                            const systems::Context<T>& context) {
     return plant.AssembleActuationInput(context);
   }
+
+  template <typename T>
+  static void AddInForcesFromInputPorts(const MultibodyPlant<T>& plant,
+                                        const systems::Context<T>& context,
+                                        MultibodyForces<T>* forces) {
+    plant.AddInForcesFromInputPorts(context, forces);
+  }
+
+  template <typename T>
+  static void AddAppliedExternalSpatialForces(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context,
+      MultibodyForces<T>* forces) {
+    plant.AddAppliedExternalSpatialForces(context, forces);
+  }
+
+  template <typename T>
+  static void AddAppliedExternalGeneralizedForces(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context,
+      MultibodyForces<T>* forces) {
+    plant.AddAppliedExternalGeneralizedForces(context, forces);
+  }
 };
 
 namespace contact_solvers {
@@ -164,7 +185,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   VectorX<T>& vdot = scratch_.tmp_v1;
   vdot = -v0 / dt;
   plant().CalcForceElementsContribution(context, &forces);
-  plant().AddInForcesFromInputPorts(context, &forces);
+  MultibodyPlantTester::AddInForcesFromInputPorts(plant(), context, &forces);
 
   // TODO(vincekurtz): use a CalcInverseDynamics signature that doesn't allocate
   // a return value.
@@ -186,8 +207,10 @@ void PooledSapBuilder<T>::AccumulateForceElementForces(
   MultibodyForces<T>& forces = *scratch_.forces;
   VectorX<T>& tau_g = scratch_.tmp_v1;
   plant().CalcForceElementsContribution(context, &forces);
-  plant().AddAppliedExternalSpatialForces(context, &forces);
-  plant().AddAppliedExternalGeneralizedForces(context, &forces);
+  MultibodyPlantTester::AddAppliedExternalSpatialForces(plant(), context,
+                                                        &forces);
+  MultibodyPlantTester::AddAppliedExternalGeneralizedForces(plant(), context,
+                                                            &forces);
   plant().CalcGeneralizedForces(context, forces, &tau_g);
   *r += tau_g;
 }
