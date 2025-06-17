@@ -5,6 +5,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/planning/iris/iris_common.h"
 #include "drake/planning/scene_graph_collision_checker.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace planning {
@@ -27,6 +28,11 @@ class IrisNp2Options {
   }
 
   IrisNp2Options() = default;
+
+  /** The user can specify a solver to use for the counterexample search
+   * program. If nullptr (the default value) is given, then
+   * solvers::MakeFirstAvailableSolver will be used to pick the solver. */
+  const solvers::SolverInterface* solver{nullptr};
 
   /** Options common to IRIS-type algorithms. */
   CommonSampledIrisOptions sampled_iris_options{};

@@ -31,6 +31,9 @@ void DefinePlanningIrisNp2(py::module m) {
             .format(self.sampled_iris_options);
       });
 
+  DefReadWriteKeepAlive(
+      &iris_np2_options, "solver", &IrisNp2Options::solver, cls_doc.solver.doc);
+
   // The `options` contains a `Parallelism`; we must release the GIL.
   m.def("IrisNp2", &IrisNp2, py::arg("checker"), py::arg("starting_ellipsoid"),
       py::arg("domain"), py::arg("options") = IrisNp2Options(),
