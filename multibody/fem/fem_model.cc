@@ -68,6 +68,27 @@ void FemModel<T>::CalcTangentMatrix(
 }
 
 template <typename T>
+Vector3<T> FemModel<T>::CalcCenterOfMassPositionInWorld(
+    const FemState<T>& fem_state) const {
+  ThrowIfModelStateIncompatible(__func__, fem_state);
+  return DoCalcCenterOfMassPositionInWorld(fem_state);
+}
+
+template <typename T>
+Vector3<T> FemModel<T>::CalcCenterOfMassTranslationalVelocityInWorld(
+    const FemState<T>& fem_state) const {
+  ThrowIfModelStateIncompatible(__func__, fem_state);
+  return DoCalcCenterOfMassTranslationalVelocityInWorld(fem_state);
+}
+
+template <typename T>
+Vector3<T> FemModel<T>::CalcEffectiveAngularVelocity(
+    const FemState<T>& fem_state) const {
+  ThrowIfModelStateIncompatible(__func__, fem_state);
+  return DoCalcEffectiveAngularVelocity(fem_state);
+}
+
+template <typename T>
 std::unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
 FemModel<T>::MakeTangentMatrix() const {
   if constexpr (std::is_same_v<T, double>) {
@@ -110,11 +131,11 @@ void FemModel<T>::UpdateFemStateSystem() {
   fem_state_system_ = std::make_unique<internal::FemStateSystem<T>>(
       model_positions, model_velocities, model_accelerations);
   DeclareCacheEntries(fem_state_system_.get());
+  total_mass_ = DoCalcTotalMass();
 }
 
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake
-
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::fem::FemModel);

@@ -9,6 +9,7 @@
 #include "drake/common/name_value.h"
 #include "drake/common/parallelism.h"
 #include "drake/geometry/meshcat.h"
+#include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -230,5 +231,20 @@ class IrisParameterizationFunction {
       }};
 };
 
+namespace internal {
+
+// See Definition 1 from the paper [Werner et al., 2024].
+int unadaptive_test_samples(double epsilon, double delta, double tau);
+
+float calc_delta_min(double delta, int max_iterations);
+
+void AddTangentToPolytope(
+    const geometry::optimization::Hyperellipsoid& E,
+    const Eigen::Ref<const Eigen::VectorXd>& point,
+    double configuration_space_margin,
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>* A,
+    Eigen::VectorXd* b, int* num_constraints);
+
+}  // namespace internal
 }  // namespace planning
 }  // namespace drake

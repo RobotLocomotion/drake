@@ -66,11 +66,12 @@ class DeformableBody final : public MultibodyElement<T> {
   int num_dofs() const { return fem_model_->num_dofs(); }
 
   /** Returns the reference positions of the vertices of the deformable body
-   identified by the given `id`.
-   The reference positions are represented as a VectorX with 3N values where N
-   is the number of vertices. The x-, y-, and z-positions (measured and
-   expressed in the world frame) of the j-th vertex are 3j, 3j + 1, and 3j + 2
-   in the VectorX. */
+   identified by the given `id`. The reference positions are the positions of
+   the vertices of the mesh geometry representing the body at registration time,
+   measured and expressed in the world frame. The reference positions are
+   represented as a VectorX with 3N values where N is the number of vertices.
+   The x-, y-, and z-positions (measured and expressed in the world frame) of
+   the j-th vertex are 3j, 3j + 1, and 3j + 2 in the VectorX. */
   const VectorX<double>& reference_positions() const {
     return reference_positions_;
   }
@@ -93,6 +94,11 @@ class DeformableBody final : public MultibodyElement<T> {
    deformable body is enabled. */
   systems::AbstractParameterIndex is_enabled_parameter_index() const {
     return is_enabled_parameter_index_;
+  }
+
+  /** Returns the cache index for the FemState of this deformable body. */
+  systems::CacheIndex fem_state_cache_index() const {
+    return fem_state_cache_index_;
   }
 
   /** (Internal use only) Configures the parallelism that `this`
@@ -215,6 +221,64 @@ class DeformableBody final : public MultibodyElement<T> {
    @throw std::exception if context is null. */
   void Enable(systems::Context<T>* context) const;
 
+  /** Sets the default pose of the simulated geometry (in its reference
+   configuration) in the world frame W.
+   @param[in] X_WD The default pose of the simulated geometry in the
+   world frame W. */
+  void set_default_pose(const math::RigidTransform<double>& X_WD) {
+    X_WD_ = X_WD;
+  }
+
+  /** Returns the default pose of the simulated geometry (in its reference
+   configuration) in the world frame W. This returns pose last set by
+   set_default_pose(), or the pose of the geometry in the world frame W when the
+   body is registered if set_default_pose() has not been called. */
+  const math::RigidTransform<double>& get_default_pose() const { return X_WD_; }
+
+  /** Calculates the body's center of mass position in world frame W.
+   @param[in] context The context associated with the MultibodyPlant that owns
+                      this body.
+   @retval p_WBcm_W the body's center of mass position, measured and expressed
+   in the world frame W.
+   @throws std::exception if `context` does not belong to the MultibodyPlant
+   that owns this body. */
+  Vector3<T> CalcCenterOfMassPositionInWorld(
+      const systems::Context<T>& context) const;
+
+  /** Calculates the body's center of mass translational velocity in world frame
+   W.
+   @param[in] context The context associated with the MultibodyPlant that owns
+                      this body.
+   @retval v_WScm_W Scm's translational velocity in frame W, expressed in W,
+   where Scm is the center of mass of this body.
+   @throws std::exception if `context` does not belong to the MultibodyPlant
+   that owns this body. */
+  Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
+      const systems::Context<T>& context) const;
+
+  /** Using an angular momentum analogy, calculates an "effective" angular
+   velocity for this body about its center of mass, measured and expressed in
+   the world frame W. The effective angular velocity is computed using an
+   angular momentum equation that assumes the body is a rigid body (albeit we
+   know it is deformable).
+
+        H_WBcm_W = I_BBcm_W * w_WBcm_W
+
+   for which when solved for w_WBcm_W gives
+
+        w_WBcm_W = inverse(I_BBcm_W) * H_WBcm_W
+
+   where H_WBcm_W is the body's angular momentum about its center of mass Bcm
+   measured and expressed in the world frame W.
+   @param[in] context The context associated with the MultibodyPlant that owns
+                      this body.
+   @retval w_WBcm_W the body's effective angular velocity about Bcm, measured
+   and expressed in the world frame W.
+   @throws std::exception if `context` does not belong to the MultibodyPlant
+   that owns this body. */
+  Vector3<T> CalcEffectiveAngularVelocity(
+      const systems::Context<T>& context) const;
+
  private:
   template <typename U>
   friend class DeformableModel;
@@ -290,24 +354,26 @@ class DeformableBody final : public MultibodyElement<T> {
   }
 
   void DoDeclareDiscreteState(
-      internal::MultibodyTreeSystem<T>* tree_system) final {
-    std::unique_ptr<fem::FemState<T>> default_fem_state =
-        fem_model_->MakeFemState();
-    const int num_dofs = default_fem_state->num_dofs();
-    VectorX<T> model_state(num_dofs * 3 /* q, v, and a */);
-    model_state.head(num_dofs) = default_fem_state->GetPositions();
-    model_state.segment(num_dofs, num_dofs) =
-        default_fem_state->GetVelocities();
-    model_state.tail(num_dofs) = default_fem_state->GetAccelerations();
-    discrete_state_index_ =
-        this->DeclareDiscreteState(tree_system, model_state);
-  }
+      internal::MultibodyTreeSystem<T>* tree_system) final;
 
-  void DoDeclareParameters(
-      internal::MultibodyTreeSystem<T>* tree_system) final {
-    is_enabled_parameter_index_ =
-        this->DeclareAbstractParameter(tree_system, Value<bool>(true));
-  }
+  /* Sets the default state of this deformable body. This is called by
+   DeformableModel::SetDefaultState. */
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const;
+
+  /* Returns the default positions of the vertices of the deformable body. This
+   provides the positions of the registered mesh posed in the default pose,
+   measured and expressed in the world frame. */
+  VectorX<T> CalcDefaultPositions() const;
+
+  void DoDeclareParameters(internal::MultibodyTreeSystem<T>* tree_system) final;
+
+  void DoDeclareCacheEntries(
+      internal::MultibodyTreeSystem<T>* tree_system) final;
+
+  /* Private helper to populate FemState from discrete state values. */
+  void CalcFemStateFromDiscreteValues(const systems::Context<T>& context,
+                                      fem::FemState<T>* fem_state) const;
 
   /* NOTE: If a new data member is added to this list, it would need to be
    cloned accordingly in CloneToDouble(). */
@@ -317,15 +383,19 @@ class DeformableBody final : public MultibodyElement<T> {
   /* The mesh of the deformable geometry (in its reference configuration) in
    its geometry frame. */
   geometry::VolumeMesh<double> mesh_G_;
-  /* The pose of the deformable geometry (in its reference configuration) in
-   the world frame. */
+  /* The pose of the deformable geometry (in its reference configuration) at
+   registration in the world frame. */
   math::RigidTransform<double> X_WG_;
+  /* The default pose of the deformable geometry (in its reference
+   configuration) in the world frame. */
+  math::RigidTransform<double> X_WD_;
   fem::DeformableBodyConfig<T> config_;
   /* The vertex positions of the deformable body in its reference
    configuration measured and expressed in the world frame. */
   VectorX<double> reference_positions_;
   copyable_unique_ptr<fem::FemModel<T>> fem_model_;
   systems::DiscreteStateIndex discrete_state_index_{};
+  systems::CacheIndex fem_state_cache_index_{};
   systems::AbstractParameterIndex is_enabled_parameter_index_{};
   std::vector<internal::DeformableRigidFixedConstraintSpec>
       fixed_constraint_specs_;

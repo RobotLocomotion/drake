@@ -24,119 +24,121 @@ namespace multibody {
 namespace internal {
 
 template <typename T, class ConcreteMobilizer>
-void BodyNodeImpl<T, ConcreteMobilizer>::CalcMassMatrixContribution_TipToBase(
-    const PositionKinematicsCache<T>& pc,
-    const std::vector<SpatialInertia<T>>& Mc_B_W_cache,
-    const std::vector<Vector6<T>>& H_PB_W_cache, EigenPtr<MatrixX<T>> M) const {
+void BodyNodeImpl<T, ConcreteMobilizer>::
+    CalcMassMatrixContributionViaWorld_TipToBase(
+        const PositionKinematicsCache<T>& pc,
+        const std::vector<SpatialInertia<T>>& K_BBo_W_cache,
+        const std::vector<Vector6<T>>& H_PB_W_cache,
+        EigenPtr<MatrixX<T>> M) const {
   // Welds only contribute to composite mass properties. Their effect on the
   // mass matrix gets included when we get to the composite's non-weld inboard
   // mobilizer.
   if constexpr (kNv != 0) {
     // This node's 6x6 composite body inertia.
-    const SpatialInertia<T>& Mc_C_W = Mc_B_W_cache[mobod_index()];
+    const SpatialInertia<T>& K_BBo_W = K_BBo_W_cache[mobod_index()];
 
-    // Across-mobilizer 6 x cnv hinge matrix, from C's parent Cp to C.
-    const auto H_CpC_W = get_H(H_PB_W_cache);  // 6 x kNv fixed size Map.
+    // Across-mobilizer 6 x kNv hinge matrix, from C's parent Cp to C.
+    const auto H_PB_W = get_H(H_PB_W_cache);  // 6 x kNv fixed size Map.
 
     // The composite body algorithm considers the system at rest, when
-    // generalized velocities are zero.
+    // generalized velocities are zero. Here m=kNv, this body's mobilizer's
+    // number of dofs.
     // Now if we consider this node's generalized accelerations as the matrix
-    // vm_dot = Iₘ, the identity matrix in ℝᵐˣᵐ, the spatial acceleration A_WC
+    // vm_dot = Iₘ, the identity matrix in ℝᵐˣᵐ, the spatial acceleration A_WB
     // is in ℝ⁶ˣᵐ. That is, we are considering each case in which all
     // generalized accelerations are zero but the m-th generalized
     // acceleration for this node equals one.
     // This node's spatial acceleration can be written as:
-    //   A_WC = Φᵀ(p_CpC) * A_WCp + Ac_WC + Ab_CpC_W + H_CpC_W * vm_dot
-    // where A_WCp is the spatial acceleration of the parent node's body Cp,
-    // Ac_WC include the centrifugal and Coriolis terms, and Ab_CpC_W is the
-    // spatial acceleration bias of the hinge Jacobian matrix H_CpC_W.
-    // Now, since all generalized accelerations but vm_dot are zero, then
-    // A_WCp is zero.  Since the system is at rest, Ac_WC and Ab_CpC_W are
-    // zero.
-    // Therefore, for vm_dot = Iₘ, we have that A_WC = H_CpC_W.
-    const auto& A_WC = H_CpC_W;  // 6 x cnv, fixed-size Map.
+    //   A_WB = Φᵀ(p_PB) * A_WP + A_WB + Ab_PB_W + H_PB_W * vm_dot
+    // where A_WP is the spatial acceleration of the parent node's body P. Φᵀ is
+    // the shift operator from Abhi Jain's book, p_PB is the position vector
+    // from Po to Bo expressed in P. A_WB includes the centrifugal and Coriolis
+    // terms, and Ab_PC_W is the spatial acceleration bias of the hinge Jacobian
+    // matrix H_PB_W. Now, since all generalized accelerations but vm_dot are
+    // zero, then A_WP is zero.  Since the system is at rest, A_WB and Ab_PB_W
+    // are also zero. Therefore, for vm_dot = Iₘ, we have that A_WB = H_PB_W.
+    const auto& A_WB = H_PB_W;  // 6 x kNv, fixed-size Map.
 
     // If we consider the closed system composed of the composite body held by
     // its mobilizer, the Newton-Euler equations state:
-    //   Fm_CCo_W = Mc_C_W * A_WC + Fb_C_W
-    // where Fm_CCo_W is the spatial force at this node's mobilizer.
-    // Since the system is at rest, we have Fb_C_W = 0 and thus:
-    const Eigen::Matrix<T, 6, kNv> Fm_CCo_W = Mc_C_W * A_WC;  // 6 x cnv.
+    //   Fm_BBo_W = K_BBo_W * A_WB + Fb_BBo_W
+    // where Fm_BBo_W is the spatial force at this node's mobilizer.
+    // Since the system is at rest, we have Fb_BBo_W = 0 and thus:
+    const Eigen::Matrix<T, 6, kNv> Fm_BBo_W = K_BBo_W * A_WB;
 
-    const int composite_start_in_v = mobilizer().velocity_start_in_v();
+    const int B_start_in_v = mobilizer().velocity_start_in_v();
 
     // Diagonal block corresponding to current node (mobod_index).
-    M->template block<kNv, kNv>(composite_start_in_v, composite_start_in_v) +=
-        H_CpC_W.transpose() * Fm_CCo_W;
+    M->template block<kNv, kNv>(B_start_in_v, B_start_in_v) =
+        H_PB_W.transpose() * Fm_BBo_W;  // kNv * kNv * 11 flops
 
-    // We recurse the tree inwards from C all the way to the root. We define
+    // We recurse the tree inwards from B all the way to the root. We define
     // the frames:
-    //  - B:  the frame for the current node, body_node.
-    //  - Bc: B's child node frame, child_node.
-    //  - P:  B's parent node frame.
-    const BodyNode<T>* child_node = this;  // Child starts at frame C.
-    const BodyNode<T>* body_node = this->parent_body_node();  // Inboard body.
-    Eigen::Matrix<T, 6, kNv> Fm_CBo_W = Fm_CCo_W;             // 6 x cnv
+    //  - C: child composite body, initially B
+    //  - P: parent composite body, initially B's inboard body
+    const BodyNode<T>* child_node = this;
+    const BodyNode<T>* parent_node = this->parent_body_node();
+    Eigen::Matrix<T, 6, kNv> Fm_CPo_W = Fm_BBo_W;  // Initially Fm_CCo_W.
 
-    while (body_node->mobod_index() != world_mobod_index()) {
-      const Vector3<T>& p_BoBc_W = pc.get_p_PoBo_W(child_node->mobod_index());
-      // In place rigid shift of the spatial force in each column of
-      // Fm_CBo_W, from Bc to Bo. Before this computation, Fm_CBo_W actually
-      // stores Fm_CBc_W from the previous recursion. At the end of this
-      // computation, Fm_CBo_W stores the spatial force on composite body C,
-      // shifted to Bo, and expressed in the world W. That is, we are doing
-      // Fm_CBo_W = Fm_CBc_W.Shift(p_BcB_W).
+    while (parent_node->mobod_index() != world_mobod_index()) {
+      const Vector3<T>& p_PC_W = pc.get_p_PoBo_W(child_node->mobod_index());
 
-      // This is SpatialForce<T>::ShiftInPlace(&Fm_CBo_W, -p_BoBc_W) but
-      // done with fixed sizes (no loop if kNv==1).
-      // TODO(sherm1) Consider moving this to a templatized ShiftInPlace
-      //  API in SpatialForce (and other spatial vector classes?).
+      // In place rigid shift of the spatial force in each column of Fm_CCo_W,
+      // from Co to Po. Before this computation, Fm_CPo_W actually stores
+      // Fm_CCo_W from the previous recursion. At the end of this computation,
+      // Fm_CPo_W stores the spatial force on child composite body C, shifted to
+      // parent origin Po, and expressed in the world W. That is, we are doing
+      // Fm_CPo_W = Fm_CCo_W.Shift(p_CoPo_W).
+
+      // This is SpatialForce<T>::ShiftInPlace(&Fm_CCo_W, -p_PoCo_W) but
+      // done with fixed sizes (no loop if kNv==1). 12 * kNv flops
       for (int col = 0; col < kNv; ++col) {
         // Ugly Eigen intermediate types; don't look!
-        auto torque = Fm_CBo_W.template block<3, 1>(0, col);
-        const auto force = Fm_CBo_W.template block<3, 1>(3, col);
-        torque += p_BoBc_W.cross(force);  // + because we're negating p_BoBc
+        auto torque = Fm_CPo_W.template block<3, 1>(0, col);
+        const auto force = Fm_CPo_W.template block<3, 1>(3, col);
+        torque += p_PC_W.cross(force);  // + because we're negating p_PC
       }
 
-      CalcMassMatrixOffDiagonalDispatcher<T, kNv>::Dispatch(
-          *body_node, composite_start_in_v, H_PB_W_cache, Fm_CBo_W, M);
+      CalcMassMatrixOffDiagonalViaWorldDispatcher<T, kNv>::Dispatch(
+          *parent_node, B_start_in_v, H_PB_W_cache, Fm_CPo_W, M);
 
-      child_node = body_node;                      // Update child node Bc.
-      body_node = child_node->parent_body_node();  // Update node B.
+      child_node = parent_node;                      // Update child node C.
+      parent_node = child_node->parent_body_node();  // Update parent node P.
     }
   }
 }
 
-// This is the inner loop of the CalcMassMatrix() algorithm. Rnv is the
-// size of the outer-loop body node R's mobilizer, kNv is the size of the
-// current body B's ConcreteMobilizer encountered on R's inboard sweep.
-#define DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(Rnv)                             \
-  template <typename T, class ConcreteMobilizer>                               \
-  void                                                                         \
-      BodyNodeImpl<T, ConcreteMobilizer>::CalcMassMatrixOffDiagonalBlock##Rnv( \
-          int R_start_in_v, const std::vector<Vector6<T>>& H_PB_W_cache,       \
-          const Eigen::Matrix<T, 6, Rnv>& Fm_CBo_W, EigenPtr<MatrixX<T>> M)    \
-          const {                                                              \
-    if constexpr (kNv != 0) {                                                  \
-      const auto H_PB_W = get_H(H_PB_W_cache); /* 6 x kNv fixed-size Map */    \
-      const Eigen::Matrix<T, kNv, Rnv> HtFm = H_PB_W.transpose() * Fm_CBo_W;   \
-      const int body_start_in_v = mobilizer().velocity_start_in_v();           \
-      /* Update the appropriate block and its symmetric partner. */            \
-      auto block = M->template block<kNv, Rnv>(body_start_in_v, R_start_in_v); \
-      block += HtFm;                                                           \
-      M->template block<Rnv, kNv>(R_start_in_v, body_start_in_v) =             \
-          block.transpose();                                                   \
-    }                                                                          \
+// This is the inner loop of the CalcMassMatrix() algorithm. Bnv is the
+// size of the outer-loop body node B's mobilizer, kNv is the size of the
+// current inboard body P's ConcreteMobilizer encountered on B's inboard sweep.
+// Cost is Bnv*kNv*11 flops.
+#define DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(Bnv)                 \
+  template <typename T, class ConcreteMobilizer>                             \
+  void BodyNodeImpl<T, ConcreteMobilizer>::                                  \
+      CalcMassMatrixOffDiagonalBlockViaWorld##Bnv(                           \
+          int B_start_in_v, const std::vector<Vector6<T>>& H_PB_W_cache,     \
+          const Eigen::Matrix<T, 6, Bnv>& Fm_CPo_W, EigenPtr<MatrixX<T>> M)  \
+          const {                                                            \
+    if constexpr (kNv != 0) {                                                \
+      const auto H_PC_W = get_H(H_PB_W_cache); /* 6 x kNv fixed-size Map */  \
+      const Eigen::Matrix<T, kNv, Bnv> HtFm = H_PC_W.transpose() * Fm_CPo_W; \
+      const int P_start_in_v = mobilizer().velocity_start_in_v();            \
+      /* Update the appropriate block and its symmetric partner. */          \
+      auto block = M->template block<kNv, Bnv>(P_start_in_v, B_start_in_v);  \
+      block = HtFm;                                                          \
+      M->template block<Bnv, kNv>(B_start_in_v, P_start_in_v) =              \
+          block.transpose();                                                 \
+    }                                                                        \
   }
 
-DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(1)
-DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(2)
-DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(3)
-DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(4)
-DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(5)
-DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(6)
+DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(1)
+DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(2)
+DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(3)
+DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(4)
+DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(5)
+DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(6)
 
-#undef DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK
+#undef DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD
 
 // Macro used to explicitly instantiate implementations for every mobilizer.
 #define EXPLICITLY_INSTANTIATE_IMPLS(T)                           \

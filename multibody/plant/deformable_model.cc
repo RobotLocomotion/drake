@@ -309,6 +309,20 @@ void DeformableModel<T>::SetParallelism(Parallelism parallelism) {
 }
 
 template <typename T>
+void DeformableModel<T>::SetDefaultState(const systems::Context<T>& context,
+                                         systems::State<T>* state) const {
+  if constexpr (!std::is_same_v<T, double>) {
+    DRAKE_DEMAND(is_empty());
+    return;
+  } else {
+    for (const DeformableBodyIndex& index : deformable_bodies_.indices()) {
+      const DeformableBody<T>& body = deformable_bodies_.get_element(index);
+      body.SetDefaultState(context, state);
+    }
+  }
+}
+
+template <typename T>
 std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
     MultibodyPlant<double>* plant) const {
   auto result = std::make_unique<DeformableModel<double>>(plant);
@@ -391,6 +405,8 @@ void DeformableModel<T>::DoDeclareSystemResources() {
       body.DeclareDiscreteState(static_cast<internal::MultibodyTreeSystem<T>*>(
           this->mutable_plant()));
       body.DeclareParameters(static_cast<internal::MultibodyTreeSystem<T>*>(
+          this->mutable_plant()));
+      body.DeclareCacheEntries(static_cast<internal::MultibodyTreeSystem<T>*>(
           this->mutable_plant()));
       const Vector3<T>& gravity =
           this->plant().gravity_field().gravity_vector();

@@ -1203,7 +1203,20 @@ void DefineDeformableBody(py::module m) {
       .def("is_enabled", &Class::is_enabled, py::arg("context"),
           cls_doc.is_enabled.doc)
       .def("Disable", &Class::Disable, py::arg("context"), cls_doc.Disable.doc)
-      .def("Enable", &Class::Enable, py::arg("context"), cls_doc.Enable.doc);
+      .def("Enable", &Class::Enable, py::arg("context"), cls_doc.Enable.doc)
+      .def("set_default_pose", &Class::set_default_pose, py::arg("X_WD"),
+          cls_doc.set_default_pose.doc)
+      .def("get_default_pose", &Class::get_default_pose,
+          cls_doc.get_default_pose.doc)
+      .def("CalcCenterOfMassPositionInWorld",
+          &Class::CalcCenterOfMassPositionInWorld, py::arg("context"),
+          cls_doc.CalcCenterOfMassPositionInWorld.doc)
+      .def("CalcCenterOfMassTranslationalVelocityInWorld",
+          &Class::CalcCenterOfMassTranslationalVelocityInWorld,
+          py::arg("context"),
+          cls_doc.CalcCenterOfMassTranslationalVelocityInWorld.doc)
+      .def("CalcEffectiveAngularVelocity", &Class::CalcEffectiveAngularVelocity,
+          py::arg("context"), cls_doc.CalcEffectiveAngularVelocity.doc);
 }
 
 }  // namespace

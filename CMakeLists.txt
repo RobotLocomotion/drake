@@ -37,14 +37,22 @@ if(ANDROID OR CYGWIN OR IOS OR NOT UNIX)
 endif()
 
 set(BAZELRC_IMPORTS "tools/bazel.rc")
-set(UNIX_DISTRIBUTION_ID)
 set(UNIX_DISTRIBUTION_CODENAME)
 
+# The minimum Darwin version and codename should correspond to the minimum
+# supported macOS version listed in doc/_pages/installation.md and
+# doc/_pages/from_source.md.
+# For Ubuntu, don't make as harsh a check for minimum supported version
+# since Drake *can* compile on non-Ubuntu UNIX, even though it's not
+# officially supported.
+set(MINIMUM_DARWIN_VERSION 23)
+set(MINIMUM_MACOS_CODENAME "Sonoma")
+
 if(APPLE)
-  if(CMAKE_SYSTEM_VERSION VERSION_LESS 21)
-    message(WARNING
-      "Darwin ${CMAKE_SYSTEM_VERSION} is NOT supported. Please use "
-      "Darwin 21.x (macOS Monterey) or newer."
+  if(CMAKE_SYSTEM_VERSION VERSION_LESS ${MINIMUM_DARWIN_VERSION})
+    message(WARNING "Darwin ${CMAKE_SYSTEM_VERSION} is NOT supported. "
+      "Please use Darwin ${MINIMUM_DARWIN_VERSION}.x (macOS "
+      "${MINIMUM_MACOS_CODENAME}) or newer."
     )
   endif()
 
@@ -76,7 +84,11 @@ else()
     else()
       set(MAYBE_RC "tools/ubuntu-${UNIX_DISTRIBUTION_CODENAME}.bazelrc")
       if(NOT EXISTS "${PROJECT_SOURCE_DIR}/${MAYBE_RC}")
-        message(WARNING "Could NOT find config file ${MAYBE_RC}")
+        message(WARNING "Could not find config file ${MAYBE_RC}. "
+          "This may indicate that you're using an OS or OS version that "
+          "is not officially supported, so the build configuration cannot be "
+          "fine-tuned. See https://drake.mit.edu/from_source.html for details "
+          "on officially supported platforms when building from source.")
       else()
         list(APPEND BAZELRC_IMPORTS "${MAYBE_RC}")
       endif()
@@ -114,7 +126,7 @@ endif()
 
 # The minimum compiler versions should match those listed in both
 # doc/_pages/from_source.md and tools/workspace/cc/repository.bzl.
-set(MINIMUM_APPLE_CLANG_VERSION 14)
+set(MINIMUM_APPLE_CLANG_VERSION 16)
 set(MINIMUM_CLANG_VERSION 15)
 set(MINIMUM_GNU_VERSION 11)
 

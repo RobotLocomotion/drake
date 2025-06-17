@@ -121,7 +121,14 @@ class IrregularExpression:
         else:
             path = None
         if self.extended:
-            groups = (explicit_modname, path, base, arg, retann)
+            # Different versions of sphinx have different groups in their
+            # regular expressions, so our returned groups must match the
+            # signature of the specific version of sphinx being wrapped.
+            if sphinx_version[:3] >= (7, 1, 0):
+                type_par = ""
+                groups = (explicit_modname, path, base, type_par, arg, retann)
+            else:
+                groups = (explicit_modname, path, base, arg, retann)
         else:
             assert explicit_modname is None
             groups = (path, base, arg, retann)

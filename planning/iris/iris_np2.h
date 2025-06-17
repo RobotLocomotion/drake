@@ -1,26 +1,22 @@
 #pragma once
 
-#include <filesystem>
-#include <memory>
-#include <optional>
-#include <utility>
-
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
-#include "drake/planning/collision_checker.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/planning/iris/iris_common.h"
+#include "drake/planning/scene_graph_collision_checker.h"
 
 namespace drake {
 namespace planning {
 /**
- * IrisZoOptions collects all parameters for the IRIS-ZO algorithm.
+ * IrisNp2Options collects all parameters for the IRIS-NP2 algorithm.
  *
  * @experimental
- * @see IrisZo for more details.
+ * @see IrisNp2 for more details.
  **/
-class IrisZoOptions {
+class IrisNp2Options {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IrisZoOptions);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IrisNp2Options);
 
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background.
@@ -28,16 +24,12 @@ class IrisZoOptions {
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(sampled_iris_options));
-    a->Visit(DRAKE_NVP(bisection_steps));
   }
 
-  IrisZoOptions() = default;
+  IrisNp2Options() = default;
 
-  /** Options pertaining to the sampling and termination conditions. */
+  /** Options common to IRIS-type algorithms. */
   CommonSampledIrisOptions sampled_iris_options{};
-
-  /** Maximum number of bisection steps. */
-  int bisection_steps{10};
 
   /** Parameterization of the subspace along which to grow the region. Default
    * is the identity parameterization, corresponding to growing regions in the
@@ -45,22 +37,22 @@ class IrisZoOptions {
   IrisParameterizationFunction parameterization{};
 };
 
-/** The IRIS-ZO (Iterative Regional Inflation by Semidefinite programming - Zero
-Order) algorithm, as described in
+/** The IRIS-NP2 (Iterative Regional Inflation by Semidefinite and Nonlinear
+Programming 2) algorithm, as described in
 
-P. Werner, T. Cohn\*, R. H. Jiang\*, T. Seyde, M. Simchowitz, R. Tedrake, and D.
-Rus, "Faster Algorithms for Growing Collision-Free Convex Polytopes in Robot
-Configuration Space,"
+[Werner et al., 2024] P. Werner, T. Cohn\*, R. H. Jiang\*, T. Seyde, M.
+Simchowitz, R. Tedrake, and D. Rus, "Faster Algorithms for Growing
+Collision-Free Convex Polytopes in Robot Configuration Space,"
 &nbsp;* Denotes equal contribution.
 
 https://groups.csail.mit.edu/robotics-center/public_papers/Werner24.pdf
 
 This algorithm constructs probabilistically collision-free polytopes in robot
-configuration space while only relying on a collision checker. The sets are
-constructed using a simple parallel zero-order optimization strategy. The
-produced polytope P is probabilistically collision-free in the sense that one
-gets to control the probability δ that the fraction of the volume-in-collision
-is larger than ε
+configuration space using a scene graph collision checker. The sets are
+constructed by identifying collisions with sampling and nonlinear programming.
+The produced polytope P is probabilistically collision-free in the sense that
+one gets to control the probability δ that the fraction of the
+volume-in-collision is larger than ε
 
 Pr[λ(P\Cfree)/λ(P) > ε] ≤ δ.
 
@@ -89,12 +81,22 @@ of the user-specified constraints in `options.prog_with_additional_constraints`.
 @note This can be a long running function that needs to solve many QPs. If you
 have a solver which requires a license, consider acquiring the license before
 solving this function. See AcquireLicense for more details.
+
+IrisNp2 is still in development, so certain features of
+SceneGraphCollisionChecker and parts of [Werner et al., 2024] are not yet
+supported.
+
+@throws if you set `options.sampled_iris_options.containment_points`,
+`options.sampled_iris_options.prog_with_additional_constraints`, or
+`options.parameterization`.
+@throws if any collision pairs in `checker` have nonzero padding.
+@throws if any collision geometries have been been added in `checker`.
 */
 
-geometry::optimization::HPolyhedron IrisZo(
-    const CollisionChecker& checker,
+geometry::optimization::HPolyhedron IrisNp2(
+    const SceneGraphCollisionChecker& checker,
     const geometry::optimization::Hyperellipsoid& starting_ellipsoid,
     const geometry::optimization::HPolyhedron& domain,
-    const IrisZoOptions& options = IrisZoOptions());
+    const IrisNp2Options& options = IrisNp2Options());
 }  // namespace planning
 }  // namespace drake

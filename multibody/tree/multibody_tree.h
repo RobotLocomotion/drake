@@ -1361,6 +1361,11 @@ class MultibodyTree {
   void CalcPositionKinematicsCache(const systems::Context<T>& context,
                                    PositionKinematicsCache<T>* pc) const;
 
+  // Computes the per-Tree block structured, World-frame System Jacobian
+  // Jv_V_WB.
+  void CalcBlockSystemJacobianCache(const systems::Context<T>& context,
+                                    BlockSystemJacobianCache<T>* sjc) const;
+
   // Computes all the kinematic quantities that depend on the generalized
   // velocities and stores them in the velocity kinematics cache `vc`.
   // These include:
@@ -1416,21 +1421,22 @@ class MultibodyTree {
   void CalcFrameBodyPoses(const systems::Context<T>& context,
                           FrameBodyPoseCache<T>* frame_body_poses) const;
 
-  // Computes the composite body inertia Mc_B_W(q) for each body B in the
+  // Computes the composite body inertia K_BBo_W(q) for each body B in the
   // model about its frame origin Bo and expressed in the world frame W.
   // The composite body inertia is the effective mass properties B would have
   // if every joint outboard of B was welded in its current configuration.
   // @param[in] context
   //   The context storing the state of the model.
-  // @param[out] Mc_B_W_all
-  //   For each body in the model, entry RigidBody::mobod_index() in M_B_W_all
-  //   contains the updated composite body inertia `Mc_B_W(q)` for that body.
-  //   On input it must be a valid pointer to a vector of size num_bodies().
-  // @throws std::exception if Mc_B_W_all is nullptr or if its size is not
-  // num_bodies().
+  // @param[out] K_BBo_W_all
+  //   For each body B in the model, entry RigidBody::mobod_index() in
+  //   M_BBo_W_all contains the updated composite body inertia K_BBo_W(q) for
+  //   that body. On input it must be a valid pointer to a vector of size
+  //   num_mobods().
+  // @throws std::exception if K_BBo_W_all is nullptr or if its size is not
+  //   num_mobods().
   void CalcCompositeBodyInertiasInWorld(
       const systems::Context<T>& context,
-      std::vector<SpatialInertia<T>>* Mc_B_W_all) const;
+      std::vector<SpatialInertia<T>>* K_BBo_W_all) const;
 
   // Computes the bias force `Fb_Bo_W(q, v)` for each body in the model.
   // For a body B, this is the bias term `Fb_Bo_W` in the equation

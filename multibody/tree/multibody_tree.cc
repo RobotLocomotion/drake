@@ -1325,15 +1325,85 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
   // information for each body, we are now in position to perform a base-to-tip
   // recursion to update world positions and parent to child body transforms.
   // This skips the world, level = 0.
-  for (int level = 1; level < forest_height(); ++level) {
-    for (MobodIndex mobod_index : body_node_levels_[level]) {
-      const BodyNode<T>& node = *body_nodes_[mobod_index];
+  // Performs a base-to-tip recursion computing body poses.
+  // Skip the World which is mobod_index(0).
+  for (MobodIndex mobod_index(1); mobod_index < num_mobods(); ++mobod_index) {
+    const BodyNode<T>& node = *body_nodes_[mobod_index];
+    DRAKE_ASSERT(node.mobod_index() == mobod_index);
 
-      DRAKE_ASSERT(node.get_topology().level == level);
-      DRAKE_ASSERT(node.mobod_index() == mobod_index);
+    // Update per-node kinematics.
+    node.CalcPositionKinematicsCache_BaseToTip(frame_body_pose_cache, q, pc);
+  }
+}
 
-      // Update per-node kinematics.
-      node.CalcPositionKinematicsCache_BaseToTip(frame_body_pose_cache, q, pc);
+template <typename T>
+void MultibodyTree<T>::CalcBlockSystemJacobianCache(
+    const systems::Context<T>& context,
+    BlockSystemJacobianCache<T>* sjc) const {
+  DRAKE_DEMAND(sjc != nullptr);
+
+  const PositionKinematicsCache<T>& pc = this->EvalPositionKinematics(context);
+  const std::vector<Vector6<T>>& H_PB_W_cache =
+      EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
+  std::vector<Eigen::MatrixX<T>>& tree_jacobians =
+      sjc->mutable_block_system_jacobian();
+
+  // The iᵗʰ tree (treeᵢ) generates an nᵢ x mᵢ block. Note that we are relying
+  // on the BlockSystemJacobianCache initialization to have zeroed out the
+  // entire Jacobian so that it is safe for us to fill in only the pieces that
+  // we know might be non-zero. The fill-in structure is always the same once
+  // allocated so we only need to rewrite the non-zero pieces.
+  for (const SpanningForest::Tree& tree : forest().trees()) {
+    const int n = 6 * tree.num_mobods();
+    const int m = tree.nv();
+    MatrixX<T>& J = tree_jacobians[tree.index()];  // J_V_WB_W(tree)
+    DRAKE_DEMAND(J.rows() == n && J.cols() == m);
+
+    // The J(0,0) element for this tree is the Jacobian of the base body
+    // w.r.t. to its first mobility (velocity coordinate). Both the bodies
+    // (rows) and mobilities (columns) are numbered consecutively from there.
+    const MobodIndex base_index = tree.base_mobod();  // row 0
+    const int base_v_start = tree.v_start();          // column 0
+
+    // Each mobod Bi fills in a 6xm row of the Jacobian. All the columns
+    // outboard of Bi are left zero. Those inboard of Bi are the same as the
+    // parent's corresponding row except shifted to Bi's body origin Bio.
+    // Note: Tree mobods never include World.
+    for (const SpanningForest::Mobod& mobod : tree) {
+      const MobodIndex index_B = mobod.index();
+      const MobodIndex index_P = mobod.inboard();
+      const SpanningForest::Mobod& parent = forest().mobods(index_P);
+      const Vector3<T>& p_PoBo_W = pc.get_p_PoBo_W(index_B);
+      const int row_B = 6 * (index_B - base_index);
+      const int row_P = 6 * (index_P - base_index);
+
+      // Run through all the parent's non-zero Jacobian entries, shift to Bio
+      // and put the result in the same column of the new row. We are always
+      // shifting the _parent_'s entries; we're running down the ancestors
+      // just to find all the mobilities that affect the parent.
+      const SpanningForest::Mobod* ancestor = &parent;
+      while (!ancestor->is_world()) {
+        for (int i = 0; i < ancestor->nv(); ++i) {
+          const int avi = ancestor->v_start() + i;
+          const int col = avi - base_v_start;
+          const auto Jvi_V_WP = J.template block<6, 1>(row_P, col);
+          const Vector3<T> w_WP = Jvi_V_WP.template head<3>();
+          const Vector3<T> v_WP = Jvi_V_WP.template tail<3>();
+          auto Jvi_V_WB = J.template block<6, 1>(row_B, col);
+          Jvi_V_WB.template head<3>() = w_WP;
+          Jvi_V_WB.template tail<3>() = v_WP + w_WP.cross(p_PoBo_W);
+        }
+        ancestor = &forest().mobods(ancestor->inboard());
+      }
+      // Parent contributions are done, just need to fill in the local
+      // contribution from H_PB_W.
+      for (int i = 0; i < mobod.nv(); ++i) {
+        const int vi = mobod.v_start() + i;
+        const int col = vi - base_v_start;
+        const Vector6<T>& Hi_PB_W = H_PB_W_cache[vi];
+        auto Jvi_V_WB = J.template block<6, 1>(row_B, col);
+        Jvi_V_WB = Hi_PB_W;
+      }
     }
   }
 }
@@ -1359,8 +1429,7 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
 
   // Performs a base-to-tip recursion computing body velocities.
   // Skip the World which is mobod_index(0).
-  for (MobodIndex mobod_index(1); mobod_index < ssize(body_nodes_);
-       ++mobod_index) {
+  for (MobodIndex mobod_index(1); mobod_index < num_mobods(); ++mobod_index) {
     const BodyNode<T>& node = *body_nodes_[mobod_index];
     DRAKE_ASSERT(node.mobod_index() == mobod_index);
 
@@ -1397,7 +1466,8 @@ void MultibodyTree<T>::CalcSpatialInertiasInWorld(
         frame_body_pose_cache.get_M_BBo_B(body.mobod_index());
     // Re-express body B's spatial inertia in the world frame W.
     SpatialInertia<T>& M_BBo_W = (*M_B_W_all)[body.mobod_index()];
-    M_BBo_W = M_BBo_B.ReExpress(R_WB);
+    M_BBo_W = M_BBo_B;               // Wrong frame.
+    M_BBo_W.ReExpressInPlace(R_WB);  // Fixed.
   }
 }
 
@@ -1476,21 +1546,20 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
 template <typename T>
 void MultibodyTree<T>::CalcCompositeBodyInertiasInWorld(
     const systems::Context<T>& context,
-    std::vector<SpatialInertia<T>>* Mc_B_W_all) const {
+    std::vector<SpatialInertia<T>>* K_BBo_W_all) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  const std::vector<SpatialInertia<T>>& M_B_W_all =
+  const std::vector<SpatialInertia<T>>& M_BBo_W_all =
       EvalSpatialInertiaInWorldCache(context);
 
   // Perform tip-to-base recursion for each composite body, skipping the world.
-  for (int level = forest_height() - 1; level > 0; --level) {
-    for (MobodIndex mobod_index : body_node_levels_[level]) {
-      // Node corresponding to the base of composite body C. We'll add in
-      // everything outboard of this node.
-      const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
+  for (MobodIndex mobod_index(num_mobods() - 1); mobod_index > 0;
+       --mobod_index) {
+    // Node corresponding to the base of composite body C. We'll add in
+    // everything outboard of this node.
+    const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
 
-      composite_node.CalcCompositeBodyInertia_TipToBase(pc, M_B_W_all,
-                                                        &*Mc_B_W_all);
-    }
+    composite_node.CalcCompositeBodyInertiaInWorld_TipToBase(pc, M_BBo_W_all,
+                                                             &*K_BBo_W_all);
   }
 }
 
@@ -1948,15 +2017,15 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
   //   is the across-mobilizer Jacobian such that we can write
   //   V_PB_W = H_PB_W * v_B, with v_B the generalized velocities of body B's
   //   mobilizer.
-  // - In code we use the monogram notation Mc_C_W to denote the spatial inertia
-  //   of composite body C, about it's frame origin Co, and expressed in the
-  //   world frame W.
+  // - In code we use the monogram notation K_BBo_W to denote the spatial
+  //   inertia of composite body B, about it's frame origin Bo, and expressed in
+  //   the world frame W.
   //
   // - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
   //               algorithms. Springer Science & Business Media, pp. 123-130.
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  const std::vector<SpatialInertia<T>>& Mc_B_W_cache =
+  const std::vector<SpatialInertia<T>>& K_BBo_W_cache =
       EvalCompositeBodyInertiaInWorldCache(context);
   const std::vector<Vector6<T>>& H_PB_W_cache =
       EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
@@ -1964,20 +2033,20 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
 
   // The algorithm below does not recurse zero entries and therefore these must
   // be set a priori.
-  // In addition, we initialize diagonal entries to include the effect of rotor
-  // reflected inertia. See JointActuator::reflected_inertia().
-  (*M) = reflected_inertia.asDiagonal();
+  M->setZero();
 
   // Perform tip-to-base recursion for each composite body, skipping the world.
-  for (int level = forest_height() - 1; level > 0; --level) {
-    for (MobodIndex mobod_index : body_node_levels_[level]) {
-      // Node corresponding to the composite body C.
-      const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
+  for (MobodIndex mobod_index(num_mobods() - 1); mobod_index > 0;
+       --mobod_index) {
+    // Node corresponding to the composite body C.
+    const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
 
-      composite_node.CalcMassMatrixContribution_TipToBase(pc, Mc_B_W_cache,
-                                                          H_PB_W_cache, M);
-    }
+    composite_node.CalcMassMatrixContributionViaWorld_TipToBase(
+        pc, K_BBo_W_cache, H_PB_W_cache, M);
   }
+
+  // Account for reflected inertia.
+  M->diagonal() += reflected_inertia;
 }
 
 template <typename T>
@@ -2587,7 +2656,7 @@ void MultibodyTree<T>::CalcAcrossNodeJacobianWrtVExpressedInWorld(
   const FrameBodyPoseCache<T>& frame_body_pose_cache =
       EvalFrameBodyPoses(context);
 
-  // TODO(joemasterjohn): Consider and optimization where we avoid computing
+  // TODO(joemasterjohn): Consider an optimization where we avoid computing
   //  `H_PB_W` for locked floating bodies.
   for (MobodIndex mobod_index(1); mobod_index < topology_.num_mobods();
        ++mobod_index) {
