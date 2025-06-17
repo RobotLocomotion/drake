@@ -24,7 +24,9 @@ def _snopt_and_mip_solver_available():
         and MosekSolver().enabled()
         or (GurobiSolver().available() and GurobiSolver().enabled())
     )
-    snopt_solver_available = SnoptSolver().available() and SnoptSolver().enabled()
+    snopt_solver_available = (
+        SnoptSolver().available() and SnoptSolver().enabled()
+    )
     return mip_solver_available and snopt_solver_available
 
 
@@ -102,12 +104,16 @@ class TestIrisFromCliqueCover(unittest.TestCase):
         options.iris_options = IrisZoOptions()
         self.assertIsInstance(options.iris_options, IrisZoOptions)
         options.iris_options.sampled_iris_options.max_iterations = 2
-        self.assertEqual(options.iris_options.sampled_iris_options.max_iterations, 2)
+        self.assertEqual(
+            options.iris_options.sampled_iris_options.max_iterations, 2
+        )
 
         options.iris_options = IrisNp2Options()
         self.assertIsInstance(options.iris_options, IrisNp2Options)
         options.iris_options.sampled_iris_options.max_iterations = 1
-        self.assertEqual(options.iris_options.sampled_iris_options.max_iterations, 1)
+        self.assertEqual(
+            options.iris_options.sampled_iris_options.max_iterations, 1
+        )
 
     # IPOPT performs poorly on this test. We also need a MIP solver to
     # be available.  Hence only run this test if both SNOPT and a MIP solver
