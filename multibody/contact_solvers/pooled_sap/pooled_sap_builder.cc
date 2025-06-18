@@ -193,7 +193,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   r += dt * plant().EvalJointDampingCache(context).asDiagonal() * v0;
 
   // Collect effort limits for each clique.
-  params->clique_nu.resize(num_cliques, 0);
+  params->clique_nu.assign(num_cliques, 0);
   params->effort_limits.resize(nv);
   params->effort_limits.setZero();
 
