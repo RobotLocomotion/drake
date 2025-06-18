@@ -490,15 +490,13 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
               path, RigidTransform<double>(point_to_draw));
         }
 
-        // The initialization can be removed once the logic is finished.
-        bool solve_succeeded = false;
-
         std::pair<Eigen::VectorXd, int> closest_collision_info;
         closest_collision_info = std::make_pair(
             particle,
             FindCollisionPairIndex(plant, checker.UpdatePositions(particle),
                                    sorted_pairs));
 
+        bool solve_succeeded;
         if (closest_collision_info.second >= 0) {
           // We have found a collision pair corresponding to this particle, so
           // the particle is in collision. Thus, we solve the corresponding
@@ -529,6 +527,53 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           // We did not find a collision pair corresponding to this particle, so
           // the particle must be violating one of the constraints from
           // options.sampled_iris_options.prog_with_additional_constraints.
+          DRAKE_THROW_UNLESS(
+              options.sampled_iris_options.prog_with_additional_constraints !=
+              nullptr);
+
+          // Find the constraint in prog_with_additional_constraints that is
+          // violated.
+          bool found_violated_constraint = false;
+          for (const auto& binding : additional_constraint_bindings) {
+            VectorXd value;
+            binding.evaluator()->Eval(particle, &value);
+            for (int index = 0; index < binding.evaluator()->num_constraints();
+                 ++index) {
+              if (value[index] >
+                  binding.evaluator()->upper_bound()[index] + constraints_tol) {
+                found_violated_constraint = true;
+                counter_example_constraint->set(
+                    &binding, index,
+                    /* falsify_lower_bound */ false);
+              } else if (value[index] <
+                         binding.evaluator()->lower_bound()[index] -
+                             constraints_tol) {
+                found_violated_constraint = true;
+                counter_example_constraint->set(&binding, index,
+                                                /* falsify_lower_bound */ true);
+              }
+
+              if (found_violated_constraint) {
+                break;
+              }
+            }
+            if (found_violated_constraint) {
+              break;
+            }
+          }
+
+          // We must have found a violated constraint.
+          DRAKE_THROW_UNLESS(found_violated_constraint);
+
+          // TODO(cohnt): Allow the user to specify the solver options used
+          // here.
+          solve_succeeded =
+              counter_example_prog->Solve(*solver, particle, {}, &closest);
+
+          if (solve_succeeded) {
+            counter_example_prog->UpdatePolytope(A.topRows(num_constraints),
+                                                 b.head(num_constraints));
+          }
         }
 
         if (solve_succeeded) {
