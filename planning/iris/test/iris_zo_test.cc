@@ -250,6 +250,8 @@ TEST_F(BlockOnGround, IrisZoTest) {
 TEST_F(ConvexConfigurationSpace, IrisZoTest) {
   IrisZoOptions options;
 
+  options.sampled_iris_options.sample_particles_in_parallel = true;
+
   // Turn on meshcat for addition debugging visualizations.
   // This example is truly adversarial for IRIS. After one iteration, the
   // maximum-volume inscribed ellipse is approximately centered in C-free. So

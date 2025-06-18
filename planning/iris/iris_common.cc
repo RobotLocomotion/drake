@@ -1,5 +1,8 @@
 #include "drake/planning/iris/iris_common.h"
 
+#include <common_robotics_utilities/parallelism.hpp>
+
+#include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 
 namespace drake {
@@ -62,6 +65,12 @@ IrisParameterizationFunction::IrisParameterizationFunction(
 }
 
 namespace internal {
+
+using common_robotics_utilities::parallelism::DegreeOfParallelism;
+using common_robotics_utilities::parallelism::DynamicParallelForIndexLoop;
+using common_robotics_utilities::parallelism::ParallelForBackend;
+using common_robotics_utilities::parallelism::StaticParallelForIndexLoop;
+
 int unadaptive_test_samples(double epsilon, double delta, double tau) {
   return static_cast<int>(-2 * std::log(delta) / (tau * tau * epsilon) + 0.5);
 }
@@ -96,6 +105,41 @@ void AddTangentToPolytope(
         "surrounding the sample point must have an interior.");
   }
   *num_constraints += 1;
+}
+
+void PopulateParticlesByUniformSampling(
+    const geometry::optimization::HPolyhedron& P,
+    std::vector<Eigen::VectorXd>* particles_ptr, const int number_to_sample,
+    const int mixing_steps, const int num_threads,
+    std::vector<RandomGenerator>* generators) {
+  DRAKE_THROW_UNLESS(number_to_sample <= ssize(*particles_ptr));
+  DRAKE_THROW_UNLESS(ssize(*generators) == num_threads);
+
+  std::vector<int> thread_start_index;
+  std::vector<int> thread_end_index;
+  for (int i = 0; i < num_threads; ++i) {
+    thread_start_index.push_back(i * number_to_sample / num_threads);
+    thread_end_index.push_back((i + 1) * number_to_sample / num_threads);
+  }
+
+  const auto hit_and_run_sample_work =
+      [&P, &particles_ptr, &generators, &thread_start_index, &thread_end_index,
+       &mixing_steps](const int thread_num, const int64_t index) {
+        DRAKE_ASSERT(thread_num == index);
+        const int start_index = thread_start_index[index];
+        const int end_index = thread_end_index[index];
+        RandomGenerator* generator_ptr = &(generators->at(index));
+        (*particles_ptr)[start_index] =
+            P.UniformSample(generator_ptr, mixing_steps);
+        for (int j = start_index + 1; j < end_index; ++j) {
+          (*particles_ptr)[j] = P.UniformSample(
+              generator_ptr, (*particles_ptr)[j - 1], mixing_steps);
+        }
+      };
+
+  StaticParallelForIndexLoop(DegreeOfParallelism(num_threads), 0, num_threads,
+                             hit_and_run_sample_work,
+                             ParallelForBackend::BEST_AVAILABLE);
 }
 
 }  // namespace internal
