@@ -223,7 +223,7 @@ TEST_F(RpyBallMobilizerTest, MapUsesNplus) {
                               MatrixCompareType::relative));
 }
 
-TEST_F(RpyBallMobilizerTest, MapAccelerationToQDDot) {
+TEST_F(RpyBallMobilizerTest, MapAccelerationToQDDotAndViceVersa) {
   // Set an arbitrary non-zero state.
   const Vector3<double> rpy(M_PI / 3, -M_PI / 4, M_PI / 5);
   const Vector3<double> wxyz(5.4, -9.8, 3.2);
@@ -241,10 +241,9 @@ TEST_F(RpyBallMobilizerTest, MapAccelerationToQDDot) {
   mobilizer_->CalcNDotMatrix(*context_, &Ndot);
 
   // Verify equivalence of q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇ and MapAccelerationToQDDot().
-  // PAUL FIX THIS TEST -- NOT WORKING.  SHOULD BE EXPECT_TRUE(...);
   const Vector3<double> qddot_expected = Ndot * wxyz + N * vdot;
-  EXPECT_FALSE(CompareMatrices(qddot, qddot_expected, kTolerance,
-                               MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(qddot, qddot_expected, kTolerance,
+                              MatrixCompareType::relative));
 }
 
 TEST_F(RpyBallMobilizerTest, SingularityError) {
