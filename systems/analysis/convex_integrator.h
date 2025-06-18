@@ -133,13 +133,6 @@ class ConvexIntegrator final : public IntegratorBase<T> {
                             Context<T>* context = nullptr);
 
   /**
-   * Constructs the convex integrator, specifying the MultibodyPlant used to
-   * formulate the convex optimization problem.
-   */
-  ConvexIntegrator(const System<T>& system, MultibodyPlant<T>* plant,
-                   Context<T>* context = nullptr);
-
-  /**
    * Specifies the MultibodyPlant used to set up the optimization problem.
    */
   void set_plant(MultibodyPlant<T>* plant) {

@@ -19,21 +19,12 @@ ConvexIntegrator<T>::ConvexIntegrator(const System<T>& system,
     : IntegratorBase<T>(system, context) {}
 
 template <typename T>
-ConvexIntegrator<T>::ConvexIntegrator(const System<T>& system,
-                                      MultibodyPlant<T>* plant,
-                                      Context<T>* context)
-    : IntegratorBase<T>(system, context) {
-  set_plant(plant);
-}
-
-template <typename T>
 void ConvexIntegrator<T>::DoInitialize() {
   using std::isnan;
   if (plant_ == nullptr) {
     throw std::runtime_error(
-        "ConvexIntegrator: MultibodyPlant not set. You must either use the "
-        "constructor that specifies a plant, or call ConvexIntegrator::"
-        "set_plant() before initialization.");
+        "ConvexIntegrator: MultibodyPlant not set. You must call "
+        "ConvexIntegrator::set_plant() before initialization.");
   }
 
   // Convex integration works best at loose accuracies.

@@ -73,7 +73,8 @@ GTEST_TEST(ConvexIntegratorTest, TestStep) {
       plant.GetMyMutableContextFromRoot(diagram_context.get());
 
   // Set up the integrator
-  ConvexIntegrator<double> integrator(*diagram, &plant, diagram_context.get());
+  ConvexIntegrator<double> integrator(*diagram, diagram_context.get());
+  integrator.set_plant(&plant);
   integrator.set_maximum_step_size(0.01);
   integrator.set_fixed_step_mode(true);
   integrator.Initialize();
