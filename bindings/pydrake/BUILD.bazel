@@ -60,6 +60,7 @@ generate_pybind_documentation_header(
     exclude_hdr_patterns = [
         "drake/common/overloaded.h",
         "drake/multibody/contact_solvers/pooled_sap/patch_constraints_pool.h",
+        "drake/multibody/contact_solvers/pooled_sap/gain_constraints_pool.h",
     ],
     root_name = "pydrake_doc",
     targets = [
