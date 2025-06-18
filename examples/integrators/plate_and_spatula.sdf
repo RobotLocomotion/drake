@@ -1,0 +1,121 @@
+<?xml version="1.0"?>
+<sdf version="1.7" xmlns:drake="http://drake.mit.edu">
+  <model name="plate_and_spatula">
+    <!-- The table is fixed to the world -->
+    <link name="table">
+      <inertial>
+        <inertia>
+          <ixx>0.12003</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.12003</iyy>
+          <iyz>0</iyz>
+          <izz>0.24</izz>
+        </inertia>
+        <mass>1</mass>
+        <pose>0 0 0 0 0 0</pose>
+      </inertial>
+      <visual name="table_visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>1.2 1.2 0.02</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.9 0.8 0.7 1</diffuse>
+        </material>
+      </visual>
+      <collision name="table_collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>1.2 1.2 0.02</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+    <joint name="table_joint" type="fixed">
+      <parent>world</parent>
+      <child>table</child>
+    </joint>
+
+    <!-- The free-floating plate-->
+    <link name="plate_8in">
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>-2.8414e-08 -1.0184e-08 0.0073696 0 0 0</pose>
+        <mass>0.375</mass>
+        <inertia>
+          <ixx>0.0007666</ixx>
+          <ixy>2.0415e-10</ixy>
+          <ixz>5.0074e-11</ixz>
+          <iyy>0.0007666</iyy>
+          <iyz>1.2488e-11</iyz>
+          <izz>0.0015217</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://drake_models/dishes/assets/plate_8in.gltf</uri>
+            <scale>1.0 1.0 1.0</scale>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://drake_models/dishes/assets/plate_8in_col.obj</uri>
+            <scale>1.0 1.0 1.0</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic/>
+          <!--
+          We do not set drake:mesh_resolution_hint here because it has no
+          effect on meshes imported from obj file.
+          -->
+        </drake:proximity_properties>
+      </collision>
+    </link>
+
+    <!-- The free-floating spatula above the plate -->
+    <link name="spatula">
+      <pose>0 0 0.01 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.1</mass>
+        <inertia>
+          <ixx>3.4083e-06</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.00018757</iyy>
+          <iyz>0</iyz>
+          <izz>0.00019083</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.15 0.02 0.003</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.2 0.2 0.2 1</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.15 0.02 0.003</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>

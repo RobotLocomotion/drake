@@ -1,0 +1,40 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_library")
+
+package(default_visibility = ["//visibility:private"])
+
+filegroup(
+    name = "models",
+    srcs = [
+        "ball_on_table.xml",
+        "clutter.xml",
+        "cylinder.xml",
+        "double_pendulum.xml",
+        "gripper.xml",
+        "plate_and_spatula.sdf",
+    ],
+    visibility = ["//:__pkg__"],
+)
+
+drake_py_binary(
+    name = "error_control_demo",
+    srcs = ["error_control_demo.py"],
+    data = [
+        ":models",
+        "@drake_models//:dishes",
+    ],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_library(
+    name = "error_control",
+    srcs = ["error_control_demo.py"],
+    data = [":models"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+add_lint_tests()

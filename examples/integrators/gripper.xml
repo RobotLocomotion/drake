@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<mujoco model="robot">
+    <worldbody>
+    <geom name="table" type="box" size="0.5 0.5 0.02" rgba="0.5 0.5 0.5 0.5"/>
+    <body>
+        <joint type="slide" />
+        <geom name="post" type="box" pos="0 0 0.3" size="0.02 0.02 0.1" rgba="0.5 0.5 0.5 0.5"/>
+        <geom name="finger1" type="box" pos="0.01 0.025 0.39" size="0.005 0.04 0.005" rgba="0.5 0.5 0.5 0.5"/>
+        <geom name="finger2" type="box" pos="-0.01 0.025 0.39" size="0.005 0.04 0.005" rgba="0.5 0.5 0.5 0.5"/>
+    </body>
+    <body>
+        <joint type="free" />
+        <geom name="manipuland" type="box" pos="0.0 0.05 0.36" euler="10 0 0" size="0.00501 0.005 0.04" rgba="0.9 0.8 0.7 1.0"/>
+    </body>
+    </worldbody>
+</mujoco>
