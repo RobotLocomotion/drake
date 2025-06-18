@@ -87,6 +87,14 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
   // Scale factor for convergence check.
   params->D = VectorX<T>::Ones(nv);
 
+  // There is no actuation in this problem.
+  params->effort_limits.resize(nv);
+  if (single_clique) {
+    params->clique_nu = {0};
+  } else {
+    params->clique_nu = {0, 0, 0};
+  }
+
   // Reset model.
   model->ResetParameters(std::move(params));
 

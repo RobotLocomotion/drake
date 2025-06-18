@@ -204,6 +204,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
     const int dof = joint.velocity_start();
     const TreeIndex t = topology.velocity_to_tree_index(dof);
     const int c = tree_clique[t];
+    DRAKE_ASSERT(c >= 0);
     ++params->clique_nu[c];
     params->effort_limits[dof] = actuator.effort_limit();
   }
