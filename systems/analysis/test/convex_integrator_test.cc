@@ -290,11 +290,6 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   const VectorXd K_ref = -(B * Du).diagonal();
   const VectorXd b_ref = B * u0;
 
-  fmt::print("K     : {}\n", fmt_eigen(K.transpose()));
-  fmt::print("K_ref : {}\n", fmt_eigen(K_ref.transpose()));
-  fmt::print("b_ref : {}\n", fmt_eigen(b_ref.transpose()));
-  fmt::print("b     : {}\n", fmt_eigen(b.transpose()));
-
   // Confirm that our finite difference linearization is close to the reference
   const double kTolerance = std::sqrt(std::numeric_limits<double>::epsilon());
 
@@ -303,42 +298,59 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   EXPECT_TRUE(
       CompareMatrices(b, b_ref, kTolerance, MatrixCompareType::relative));
 
-  // // Compute the gradient of the cost, and check that this matches the momentum
-  // // balance conditions, M(v − v*) + h A v − h τ₀ = 0.
-  // const VectorXd v = v0;
-  // MatrixXd M(nv, nv);
-  // plant.CalcMassMatrix(plant_context, &M);
-  // MultibodyForces<double> f_ext(plant);
-  // plant.CalcForceElementsContribution(plant_context, &f_ext);
-  // const VectorXd k =
-  //     plant.CalcInverseDynamics(plant_context, VectorXd::Zero(2), f_ext);
-  // const VectorXd v_star = v0 - h * M.ldlt().solve(k);
-  // const VectorXd dl_ref = M * (v - v_star) + h * A * v - h * tau;
+  // Compute the cost, gradient and Hessian analytically, and check that
+  // these match what we get from the PooledSap model.
+  // 
+  // Cost: ℓ = 1/2 v'Mv − r v + h (1/2 v'Kv + b v)
+  // Gradient: dℓ/dv = Mv − r + h (Kv + b)
+  // Hessian: d²ℓ/dv² = M + h K
+  const VectorXd v = v0;
+  MatrixXd M(nv, nv);
+  plant.CalcMassMatrix(plant_context, &M);
+  MultibodyForces<double> f_ext(plant);
+  plant.CalcForceElementsContribution(plant_context, &f_ext);
+  const VectorXd r =
+      -h * plant.CalcInverseDynamics(plant_context, -v0 / h, f_ext);
 
-  // SapContactProblem<double> problem =
-  //     ConvexIntegratorTester::MakeSapContactProblem(&integrator, plant_context,
-  //                                                   h);
-  // SapModel<double> model(&problem);
-  // auto model_context = model.MakeContext();
-  // Eigen::VectorBlock<VectorXd> v_model =
-  //     model.GetMutableVelocities(model_context.get());
-  // model.velocities_permutation().Apply(v, &v_model);
-  // const VectorXd dl = model.EvalCostGradient(*model_context);
+  const double l_ref = 0.5 * v.dot(M * v) - r.dot(v) +
+                       h * 0.5 * v.dot(K_ref.asDiagonal() * v) - h * b_ref.dot(v);
+  const VectorXd dl_ref = M * v - r + h * K_ref.asDiagonal() * v - h * b_ref;
+  const MatrixXd H_ref = M + h * K_ref.asDiagonal() * MatrixXd::Identity(nv, nv);
 
-  // EXPECT_TRUE(
-  //     CompareMatrices(dl, dl_ref, kTolerance, MatrixCompareType::relative));
+  fmt::print("l_ref : {}\n", l_ref);
 
-  // Simulate for a few seconds
-  const int fps = 32;
-  meshcat->StartRecording(fps);
-  simulator.set_target_realtime_rate(0.1);
-  simulator.AdvanceTo(1.0);
-  meshcat->StopRecording();
-  meshcat->PublishRecording();
+  const PooledSapBuilder<double>& sap_builder = integrator.builder();
+  PooledSapModel<double>& model = integrator.get_model();
+  SapData<double>& data = integrator.get_data();
+  sap_builder.UpdateModel(plant_context, h, &model);
+  // sap_builder.AddExternalGains(K, b, &model);
+  sap_builder.AddActuationGains(K, b, &model);
+  model.ResizeData(&data);
+  model.CalcData(v, &data); 
+  const VectorXd dl = data.cache().gradient;
+  const double l = data.cache().cost;
+  const MatrixXd H = model.MakeHessian(data)->MakeDenseMatrix();
 
-  std::cout << std::endl;
-  PrintSimulatorStatistics(simulator);
-  std::cout << std::endl;
+  fmt::print("l     : {}\n", l);
+  
+  EXPECT_TRUE(
+      CompareMatrices(dl, dl_ref, kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(
+      CompareMatrices(H, H_ref, kTolerance, MatrixCompareType::relative));
+  EXPECT_NEAR(l, l_ref, kTolerance);
+     
+
+  // // Simulate for a few seconds to make sure nothing breaks
+  // const int fps = 32;
+  // meshcat->StartRecording(fps);
+  // simulator.set_target_realtime_rate(0.1);
+  // simulator.AdvanceTo(1.0);
+  // meshcat->StopRecording();
+  // meshcat->PublishRecording();
+
+  // std::cout << std::endl;
+  // PrintSimulatorStatistics(simulator);
+  // std::cout << std::endl;
 }
 
 }  // namespace systems
