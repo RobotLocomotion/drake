@@ -7,6 +7,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/scope_exit.h"
 #include "drake/systems/analysis/batch_eval.h"
+#include "drake/systems/analysis/convex_integrator.h"
 #include "drake/systems/analysis/discrete_time_approximation.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/monte_carlo.h"
@@ -278,6 +279,17 @@ PYBIND11_MODULE(analysis, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 3>(), doc.RungeKutta3Integrator.ctor.doc);
+
+    DefineTemplateClassWithDefault<ConvexIntegrator<T>, IntegratorBase<T>>(
+        m, "ConvexIntegrator", GetPyParam<T>(), doc.ConvexIntegrator.doc)
+        .def(py::init<const System<T>&, Context<T>*>(), py::arg("system"),
+            py::arg("context") = nullptr,
+            // Keep alive, reference: `self` keeps `system` alive.
+            py::keep_alive<1, 2>(),
+            // Keep alive, reference: `self` keeps `context` alive.
+            py::keep_alive<1, 3>(), doc.ConvexIntegrator.ctor.doc)
+        .def("set_plant", &ConvexIntegrator<T>::set_plant, py::arg("plant"),
+            doc.ConvexIntegrator.set_plant.doc);
 
     // See equivalent note about EventCallback in `framework_py_systems.cc`.
     using MonitorCallback =

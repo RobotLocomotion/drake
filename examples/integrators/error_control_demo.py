@@ -245,8 +245,7 @@ def run_simulation(
 
     if integrator == "convex":
         # The convex integrator needs to be told which subsystem is the plant
-        # TODO(vincekurtz): add bindings for integrator.set_multibody_plant()
-        breakpoint()
+        simulator.get_mutable_integrator().set_plant(plant)
 
     simulator.Initialize()
 
