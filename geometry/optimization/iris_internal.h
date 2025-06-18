@@ -4,6 +4,7 @@
  call these functions, but we expose them for unit tests.
  */
 
+#include <limits>
 #include <memory>
 #include <optional>
 
@@ -85,6 +86,94 @@ class ClosestCollisionProgram {
                       const Eigen::Ref<const Eigen::VectorXd>& b);
 
   // Returns true iff a collision is found.
+  // Sets `closest` to an optimizing solution q*, if a solution is found.
+  bool Solve(const solvers::SolverInterface& solver,
+             const Eigen::Ref<const Eigen::VectorXd>& q_guess,
+             const std::optional<solvers::SolverOptions>& solver_options,
+             Eigen::VectorXd* closest);
+
+ private:
+  solvers::MathematicalProgram prog_;
+  solvers::VectorXDecisionVariable q_;
+  std::optional<solvers::Binding<solvers::LinearConstraint>> P_constraint_{};
+};
+
+// Takes a constraint bound to another mathematical program and defines a new
+// constraint that is the negation of one index and one (lower/upper) bound.
+class CounterExampleConstraint : public solvers::Constraint {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CounterExampleConstraint);
+
+  explicit CounterExampleConstraint(const solvers::MathematicalProgram* prog)
+      : solvers::Constraint(
+            1, prog->num_vars(),
+            Vector1d(-std::numeric_limits<double>::infinity()),
+            Vector1d::Constant(-kSolverConstraintTolerance - 1e-14)),
+        prog_{prog} {
+    DRAKE_DEMAND(prog != nullptr);
+  }
+
+  ~CounterExampleConstraint() = default;
+
+  // Sets the actual constraint to be falsified, overwriting any previously set
+  // constraints. The Binding<Constraint> must remain valid for the lifetime of
+  // this object (or until a new Binding<Constraint> is set).
+  void set(const solvers::Binding<solvers::Constraint>*
+               binding_with_constraint_to_be_falsified,
+           int index, bool falsify_lower_bound);
+
+ private:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const Eigen::VectorX<symbolic::Variable>>&,
+              Eigen::VectorX<symbolic::Expression>*) const override {
+    // MathematicalProgram::EvalBinding doesn't support symbolic, and we
+    // shouldn't get here.
+    throw std::logic_error(
+        "CounterExampleConstraint doesn't support DoEval for symbolic.");
+  }
+
+  const solvers::MathematicalProgram* prog_{};
+  const solvers::Binding<solvers::Constraint>* binding_{};
+  int index_{0};
+  bool falsify_lower_bound_{true};
+
+  // To find a counter-example for a constraints,
+  //  g(x) ≤ ub,
+  // we need to ask the solver to find
+  //  g(x) + kSolverConstraintTolerance > ub,
+  // which we implement as
+  //  g(x) + kSolverConstraintTolerance ≥ ub + eps.
+  // The variable is static so that it is initialized by the time it is accessed
+  // in the initializer list of the constructor.
+  // TODO(russt): We need a more robust way to get this from the solver. This
+  // value works for SNOPT and is reasonable for most solvers.
+  static constexpr double kSolverConstraintTolerance{1e-6};
+};
+
+// Defines a MathematicalProgram to solve the problem
+// min_q (q-d)*CᵀC(q-d)
+// s.t. counter-example-constraint
+//      Aq ≤ b.
+// where C, d are the matrix and center from the hyperellipsoid E.
+//
+// The class design supports repeated solutions of the (nearly) identical
+// problem from different initial guesses.
+class CounterExampleProgram {
+ public:
+  CounterExampleProgram(
+      std::shared_ptr<CounterExampleConstraint> counter_example_constraint,
+      const Hyperellipsoid& E, const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b);
+
+  void UpdatePolytope(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                      const Eigen::Ref<const Eigen::VectorXd>& b);
+
+  // Returns true iff a counter-example is found.
   // Sets `closest` to an optimizing solution q*, if a solution is found.
   bool Solve(const solvers::SolverInterface& solver,
              const Eigen::Ref<const Eigen::VectorXd>& q_guess,

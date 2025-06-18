@@ -9,6 +9,8 @@ namespace internal {
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+using solvers::Binding;
+using solvers::Constraint;
 
 SamePointConstraint::SamePointConstraint(
     const multibody::MultibodyPlant<double>* plant,
@@ -154,6 +156,87 @@ void ClosestCollisionProgram::UpdatePolytope(
 // Returns true iff a collision is found.
 // Sets `closest` to an optimizing solution q*, if a solution is found.
 bool ClosestCollisionProgram::Solve(
+    const solvers::SolverInterface& solver,
+    const Eigen::Ref<const Eigen::VectorXd>& q_guess,
+    const std::optional<solvers::SolverOptions>& solver_options,
+    VectorXd* closest) {
+  prog_.SetInitialGuess(q_, q_guess);
+  solvers::MathematicalProgramResult result;
+  solver.Solve(prog_, std::nullopt, solver_options, &result);
+  if (result.is_success()) {
+    *closest = result.GetSolution(q_);
+    return true;
+  }
+  return false;
+}
+
+void CounterExampleConstraint::set(
+    const Binding<Constraint>* binding_with_constraint_to_be_falsified,
+    int index, bool falsify_lower_bound) {
+  DRAKE_DEMAND(binding_with_constraint_to_be_falsified != nullptr);
+  const int N =
+      binding_with_constraint_to_be_falsified->evaluator()->num_constraints();
+  DRAKE_DEMAND(index >= 0 && index < N);
+  binding_ = binding_with_constraint_to_be_falsified;
+  index_ = index;
+  falsify_lower_bound_ = falsify_lower_bound;
+}
+
+void CounterExampleConstraint::DoEval(const Eigen::Ref<const VectorXd>& x,
+                                      VectorXd* y) const {
+  DRAKE_DEMAND(binding_ != nullptr);
+  const double val = prog_->EvalBinding(*binding_, x)[index_];
+  if (falsify_lower_bound_) {
+    // val - lb <= -kSolverConstraintTolerance < 0.
+    (*y)[0] = val - binding_->evaluator()->lower_bound()[index_];
+  } else {
+    // ub - val <= -kSolverConstraintTolerance < 0.
+    (*y)[0] = binding_->evaluator()->upper_bound()[index_] - val;
+  }
+}
+
+void CounterExampleConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                                      AutoDiffVecXd* y) const {
+  DRAKE_DEMAND(binding_ != nullptr);
+  const AutoDiffXd val = prog_->EvalBinding(*binding_, x)[index_];
+  if (falsify_lower_bound_) {
+    // val - lb <= -kSolverConstraintTolerance < 0.
+    (*y)[0] = val - binding_->evaluator()->lower_bound()[index_];
+  } else {
+    // ub - val <= -kSolverConstraintTolerance < 0.
+    (*y)[0] = binding_->evaluator()->upper_bound()[index_] - val;
+  }
+}
+
+CounterExampleProgram::CounterExampleProgram(
+    std::shared_ptr<CounterExampleConstraint> counter_example_constraint,
+    const Hyperellipsoid& E, const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b) {
+  q_ = prog_.NewContinuousVariables(A.cols(), "q");
+
+  P_constraint_ = prog_.AddLinearConstraint(
+      A, VectorXd::Constant(b.size(), -std::numeric_limits<double>::infinity()),
+      b, q_);
+  // Scale the objective so the eigenvalues are close to 1, using
+  // scale*lambda_min = 1/scale*lambda_max.
+  const MatrixXd Asq = E.A().transpose() * E.A();
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(Asq);
+  const double scale = 1.0 / std::sqrt(es.eigenvalues().maxCoeff() *
+                                       es.eigenvalues().minCoeff());
+  prog_.AddQuadraticErrorCost(scale * Asq, E.center(), q_);
+
+  prog_.AddConstraint(counter_example_constraint, q_);
+}
+
+void CounterExampleProgram::UpdatePolytope(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b) {
+  P_constraint_->evaluator()->UpdateCoefficients(
+      A, VectorXd::Constant(b.size(), -std::numeric_limits<double>::infinity()),
+      b);
+}
+
+bool CounterExampleProgram::Solve(
     const solvers::SolverInterface& solver,
     const Eigen::Ref<const Eigen::VectorXd>& q_guess,
     const std::optional<solvers::SolverOptions>& solver_options,
