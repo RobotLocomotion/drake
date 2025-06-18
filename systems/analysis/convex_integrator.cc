@@ -153,8 +153,9 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
   //       ≈ clamp(-Kᵤ v + bᵤ) - Kₑ v + bₑ,
   // TODO(vincekurtz): check model instance specific external force ports
   if (plant().num_actuators() > 0 ||
-      plant().get_applied_generalized_force_input_port().HasValue(context) ||
-      plant().get_applied_spatial_force_input_port().HasValue(context)) {
+      plant().get_applied_generalized_force_input_port().HasValue(
+          plant_context) ||
+      plant().get_applied_spatial_force_input_port().HasValue(plant_context)) {
     // Only do the linearization if a controller is connected
     LinearizeExternalSystem(h, &Ku, &bu, &Ke, &be);
   } else {
@@ -170,8 +171,8 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
   
   // TODO(vincekurtz): only add these constraints if the associated ports are
   // actually connected.
-  // builder().AddActuationGains(Ku, bu, &model);
-  // builder().AddExternalGains(Ke, be, &model);
+  builder().AddActuationGains(Ku, bu, &model);
+  builder().AddExternalGains(Ke, be, &model);
 
   // TODO(vincekurtz): pre-allocate v
   VectorX<T> v = v_guess;

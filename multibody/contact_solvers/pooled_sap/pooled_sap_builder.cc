@@ -15,39 +15,6 @@ using drake::multibody::internal::TreeIndex;
 
 namespace drake {
 namespace multibody {
-
-// Temporary hack to gain access to MultibodyPlant's private functions.
-class MultibodyPlantTester {
- public:
-  MultibodyPlantTester() = default;
-  template <typename T>
-  static VectorX<T> AssembleActuationInput(const MultibodyPlant<T>& plant,
-                                           const systems::Context<T>& context) {
-    return plant.AssembleActuationInput(context);
-  }
-
-  template <typename T>
-  static void AddInForcesFromInputPorts(const MultibodyPlant<T>& plant,
-                                        const systems::Context<T>& context,
-                                        MultibodyForces<T>* forces) {
-    plant.AddInForcesFromInputPorts(context, forces);
-  }
-
-  template <typename T>
-  static void AddAppliedExternalSpatialForces(
-      const MultibodyPlant<T>& plant, const systems::Context<T>& context,
-      MultibodyForces<T>* forces) {
-    plant.AddAppliedExternalSpatialForces(context, forces);
-  }
-
-  template <typename T>
-  static void AddAppliedExternalGeneralizedForces(
-      const MultibodyPlant<T>& plant, const systems::Context<T>& context,
-      MultibodyForces<T>* forces) {
-    plant.AddAppliedExternalGeneralizedForces(context, forces);
-  }
-};
-
 namespace contact_solvers {
 namespace pooled_sap {
 
@@ -185,7 +152,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   VectorX<T>& vdot = scratch_.tmp_v1;
   vdot = -v0 / dt;
   plant().CalcForceElementsContribution(context, &forces);
-  MultibodyPlantTester::AddInForcesFromInputPorts(plant(), context, &forces);
+  plant().AddInForcesFromInputPorts(context, &forces);
 
   // TODO(vincekurtz): use a CalcInverseDynamics signature that doesn't allocate
   // a return value.
@@ -224,10 +191,8 @@ void PooledSapBuilder<T>::AccumulateForceElementForces(
   MultibodyForces<T>& forces = *scratch_.forces;
   VectorX<T>& tau_g = scratch_.tmp_v1;
   plant().CalcForceElementsContribution(context, &forces);
-  MultibodyPlantTester::AddAppliedExternalSpatialForces(plant(), context,
-                                                        &forces);
-  MultibodyPlantTester::AddAppliedExternalGeneralizedForces(plant(), context,
-                                                            &forces);
+  plant().AddAppliedExternalSpatialForces(context, &forces);
+  plant().AddAppliedExternalGeneralizedForces(context, &forces);
   plant().CalcGeneralizedForces(context, forces, &tau_g);
   *r += tau_g;
 }
@@ -243,8 +208,7 @@ void PooledSapBuilder<T>::CalcActuationInput(
   actuation_w_pd->setZero();
   actuation_wo_pd->setZero();
   if (plant().num_actuators() > 0) {
-    const VectorX<T> u =
-        MultibodyPlantTester::AssembleActuationInput(plant(), context);
+    const VectorX<T> u = plant().AssembleActuationInput(context);
 
     for (JointActuatorIndex actuator_index :
          plant().GetJointActuatorIndices()) {
