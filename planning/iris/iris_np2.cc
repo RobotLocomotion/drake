@@ -30,11 +30,15 @@ using geometry::optimization::ConvexSet;
 using geometry::optimization::HPolyhedron;
 using geometry::optimization::Hyperellipsoid;
 using geometry::optimization::internal::ClosestCollisionProgram;
+using geometry::optimization::internal::CounterExampleConstraint;
+using geometry::optimization::internal::CounterExampleProgram;
 using geometry::optimization::internal::GeometryPairWithDistance;
 using geometry::optimization::internal::IrisConvexSetMaker;
 using geometry::optimization::internal::SamePointConstraint;
 using math::RigidTransform;
 using multibody::MultibodyPlant;
+using solvers::Binding;
+using solvers::Constraint;
 using solvers::SolverInterface;
 using systems::Context;
 
@@ -246,6 +250,66 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   A.topRows(P.A().rows()) = P.A();
   b.head(P.A().rows()) = P.b();
   int num_initial_constraints = P.A().rows();
+
+  // Make the additional constraint counterexample programs (if applicable).
+  std::shared_ptr<CounterExampleConstraint> counter_example_constraint{};
+  std::unique_ptr<CounterExampleProgram> counter_example_prog{};
+  std::vector<Binding<Constraint>> additional_constraint_bindings{};
+  if (options.sampled_iris_options.prog_with_additional_constraints) {
+    counter_example_constraint = std::make_shared<CounterExampleConstraint>(
+        options.sampled_iris_options.prog_with_additional_constraints);
+    additional_constraint_bindings =
+        options.sampled_iris_options.prog_with_additional_constraints
+            ->GetAllConstraints();
+
+    // Handle bounding box and linear constraints as a special case
+    // (extracting them from the additional_constraint_bindings).
+    auto AddConstraint = [&](const Eigen::MatrixXd& new_A,
+                             const Eigen::VectorXd& new_b,
+                             const solvers::VectorXDecisionVariable& vars) {
+      while (num_initial_constraints + new_A.rows() >= A.rows()) {
+        // Increase pre-allocated polytope size.
+        A.conservativeResize(A.rows() * 2, A.cols());
+        b.conservativeResize(b.rows() * 2);
+      }
+      for (int i = 0; i < new_b.rows(); ++i) {
+        if (!std::isinf(new_b[i])) {
+          A.row(num_initial_constraints).setZero();
+          for (int j = 0; j < vars.rows(); ++j) {
+            const int index =
+                options.sampled_iris_options.prog_with_additional_constraints
+                    ->FindDecisionVariableIndex(vars[j]);
+            A(num_initial_constraints, index) = new_A(i, j);
+          }
+          b[num_initial_constraints++] = new_b[i];
+        }
+      }
+    };
+    auto HandleLinearConstraints = [&](const auto& bindings) {
+      for (const auto& binding : bindings) {
+        AddConstraint(binding.evaluator()->get_sparse_A(),
+                      binding.evaluator()->upper_bound(), binding.variables());
+        AddConstraint(-binding.evaluator()->get_sparse_A(),
+                      -binding.evaluator()->lower_bound(), binding.variables());
+        auto pos = std::find(additional_constraint_bindings.begin(),
+                             additional_constraint_bindings.end(), binding);
+        DRAKE_ASSERT(pos != additional_constraint_bindings.end());
+        additional_constraint_bindings.erase(pos);
+      }
+    };
+    HandleLinearConstraints(
+        options.sampled_iris_options.prog_with_additional_constraints
+            ->bounding_box_constraints());
+    HandleLinearConstraints(
+        options.sampled_iris_options.prog_with_additional_constraints
+            ->linear_constraints());
+    counter_example_prog = std::make_unique<CounterExampleProgram>(
+        counter_example_constraint, E, A.topRows(num_initial_constraints),
+        b.head(num_initial_constraints));
+
+    P = HPolyhedron(A.topRows(num_initial_constraints),
+                    b.head(num_initial_constraints));
+  }
 
   DRAKE_THROW_UNLESS(P.PointInSet(seed, 1e-12));
 
@@ -461,6 +525,10 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
             prog.UpdatePolytope(A.topRows(num_constraints),
                                 b.head(num_constraints));
           }
+        } else {
+          // We did not find a collision pair corresponding to this particle, so
+          // the particle must be violating one of the constraints from
+          // options.sampled_iris_options.prog_with_additional_constraints.
         }
 
         if (solve_succeeded) {
