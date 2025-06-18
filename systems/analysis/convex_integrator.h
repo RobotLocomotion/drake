@@ -17,6 +17,7 @@ namespace drake {
 namespace systems {
 
 using multibody::MultibodyPlant;
+using multibody::MultibodyForces;
 using multibody::contact_solvers::internal::BlockSparseCholeskySolver;
 using multibody::contact_solvers::internal::BlockSparseSymmetricMatrixT;
 using multibody::contact_solvers::internal::BlockSparsityPattern;
@@ -220,6 +221,8 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   int get_error_estimate_order() const final { return 2; }
 
  private:
+  friend class ConvexIntegratorTester;
+
   // Perform final checks and allocations before beginning integration.
   void DoInitialize() final;
 
@@ -278,10 +281,34 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // new sparsity pattern.
   bool SparsityPatternChanged(const PooledSapModel<T>& model) const;
 
+  // Compute external forces τ = τₑₓₜ(x) from the plant's spatial and
+  // generalized force input ports.
+  void CalcExternalForces(const Context<T>& context, VectorX<T>* tau);
+
+  // Compute actuator forces τ = B u(x) from the plant's actuation input
+  // ports (including the general actuation input port and any
+  // model-instance-specific ports).
+  void CalcActuationForces(const Context<T>& context, VectorX<T>* tau);
+
+  // (Partially) linearize all the external (controller) systems connected to
+  // the plant with finite differences.
+  //
+  // Torques from externally connected systems are given by
+  //     τ = B u(x) + τₑₓₜ(x),
+  // which we will approximate as
+  //     τ ≈ clamp(-Kᵤ v + bᵤ) - Kₑ v + bₑ,
+  // where Kᵤ, Kₑ are diagonal and positive semi-definite.
+  //
+  // Note that contributions due to controls u(x) will be clamped to effort
+  // limits, while contributions due to external generalized and spatial forces
+  // τₑₓₜ(x) will not be.
+  void LinearizeExternalSystem(const T& h, VectorX<T>* Ku, VectorX<T>* bu,
+                               VectorX<T>* Ke, VectorX<T>* be);
+
   // The multibody plant used as the basis of the convex optimization problem.
   MultibodyPlant<T>* plant_{nullptr};
 
-  // Objects used to formulate and solve the convex optimization problem.
+  // Pre-allocated objects used to formulate and solve the optimization problem.
   std::unique_ptr<PooledSapBuilder<T>> builder_;
   PooledSapModel<T> model_;
   SapData<T> data_;
@@ -290,6 +317,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   BlockSparseCholeskySolver<Eigen::MatrixXd> hessian_factorization_;
   VectorX<T> search_direction_;
   SearchDirectionData<T> search_direction_data_;
+  std::unique_ptr<MultibodyForces<T>> f_ext_;
 
   // Track previous model size for hessian reuse
   // TODO(vincekurtz): consider separating this into a helper object.

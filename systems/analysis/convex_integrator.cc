@@ -61,6 +61,7 @@ void ConvexIntegrator<T>::DoInitialize() {
   builder_->UpdateModel(plant_context, dt, &model_);
   model_.ResizeData(&data_);
   search_direction_.resize(model_.num_velocities());
+  f_ext_ = std::make_unique<MultibodyForces<T>>(plant());
 
   // Allocate intermediate states for error control
   x_next_full_ = this->get_system().AllocateTimeDerivatives();
@@ -141,9 +142,36 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
   const Context<T>& context = this->get_context();
   const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
 
+  // TODO(vincekurtz): pre-allocate these
+  VectorX<T> Ku(plant().num_velocities());
+  VectorX<T> bu(plant().num_velocities());
+  VectorX<T> Ke(plant().num_velocities());
+  VectorX<T> be(plant().num_velocities());
+
+  // Linearize any external systems (e.g., controllers) connected to the plant,
+  //     τ = B u(x) + τₑₓₜ(x),
+  //       ≈ clamp(-Kᵤ v + bᵤ) - Kₑ v + bₑ,
+  // TODO(vincekurtz): check model instance specific external force ports
+  if (plant().num_actuators() > 0 ||
+      plant().get_applied_generalized_force_input_port().HasValue(context) ||
+      plant().get_applied_spatial_force_input_port().HasValue(context)) {
+    // Only do the linearization if a controller is connected
+    LinearizeExternalSystem(h, &Ku, &bu, &Ke, &be);
+  } else {
+    Ku.setZero();
+    bu.setZero();
+    Ke.setZero();
+    be.setZero();
+  }
+
   // Set up the convex optimization problem minᵥ ℓ(v; q₀, v₀, h)
   PooledSapModel<T>& model = get_model();
   builder().UpdateModel(plant_context, h, &model);
+  
+  // TODO(vincekurtz): only add these constraints if the associated ports are
+  // actually connected.
+  // builder().AddActuationGains(Ku, bu, &model);
+  // builder().AddExternalGains(Ke, be, &model);
 
   // TODO(vincekurtz): pre-allocate v
   VectorX<T> v = v_guess;
@@ -407,12 +435,15 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
   //   p'(1) = α_max⋅ℓ'(α_max).
   // We can then find the analytical minimum in [0, α_max], and use that to
   // establish an initial guess for linesearch.
-  const double a = 2 * (ell0 - ell) + dell0 * alpha_max + dell * alpha_max;
-  const double b = -3 * (ell0 - ell) - 2 * dell0 * alpha_max - dell * alpha_max;
-  const double c = dell0 * alpha_max;
-  // N.B. throws if a solution cannot be found in [0, 1]
-  const double alpha_guess =
-      alpha_max * SolveQuadraticInUnitInterval(3 * a, 2 * b, c);
+  // const double a = 2 * (ell0 - ell) + dell0 * alpha_max + dell * alpha_max;
+  // const double b = -3 * (ell0 - ell) - 2 * dell0 * alpha_max - dell * alpha_max;
+  // const double c = dell0 * alpha_max;
+  // // N.B. throws if a solution cannot be found in [0, 1]
+  // const double alpha_guess =
+  //     alpha_max * SolveQuadraticInUnitInterval(3 * a, 2 * b, c);
+  const double alpha_guess = 0.5;
+  (void)ell0;
+  (void)ell;
 
   // We've exhausted all of the early exit conditions, so now we move on to the
   // Newton method with bisection fallback. To do so, we define an anonymous
@@ -537,6 +568,121 @@ bool ConvexIntegrator<T>::SparsityPatternChanged(
           previous_sparsity_pattern_->neighbors()) ||
          (model.sparsity_pattern().block_sizes() !=
           previous_sparsity_pattern_->block_sizes());
+}
+
+template <typename T>
+void ConvexIntegrator<T>::CalcExternalForces(const Context<T>& context,
+                                                    VectorX<T>* tau) {
+  MultibodyForces<T>& forces = *f_ext_;
+  forces.SetZero();
+  plant().AddAppliedExternalSpatialForces(context, &forces);
+  plant().AddAppliedExternalGeneralizedForces(context, &forces);
+  plant().CalcGeneralizedForces(context, forces, tau);
+}
+
+template <typename T>
+void ConvexIntegrator<T>::CalcActuationForces(const Context<T>& context,
+                                              VectorX<T>* tau) {
+  // TODO(vincekurtz): get rid of this allocation
+  const MatrixX<T> B = plant().MakeActuationMatrix();
+  *tau = B * plant().AssembleActuationInput(context);
+}
+
+template <typename T>
+void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, VectorX<T>* Ku,
+                                                  VectorX<T>* bu,
+                                                  VectorX<T>* Ke,
+                                                  VectorX<T>* be) {
+  using std::abs;
+
+  // Get some useful sizes
+  const Context<T>& context = this->get_context();
+  const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
+  const ContinuousState<T>& state = context.get_continuous_state();
+  const int nq = state.num_q();
+  const int nv = state.num_v();
+
+  // TODO(vincekurtz): pre-allocate these, and/or consider doing away with
+  // Ku_full entirely.
+  MatrixX<T> Ku_full(nv, nv);
+  MatrixX<T> Ke_full(nv, nv);
+  VectorX<T> gu0(nv);
+  VectorX<T> ge0(nv);
+  MatrixX<T> N = plant().MakeVelocityToQDotMap(plant_context);
+
+  // Compute some quantities that depend on the current state, before messing
+  // with the state with finite differences
+  const VectorX<T> v0 = state.get_generalized_velocity().CopyToVector();
+  CalcActuationForces(plant_context, &gu0);
+  CalcExternalForces(plant_context, &ge0);
+
+  // Allocate a perturbed state x = [q; v; z] and outputs 
+  //    gu(x) = B u(x), 
+  //    ge(x) = τₑₓₜ(x)
+  const VectorX<T> x = state.CopyToVector();
+  VectorX<T> x_prime = x;
+  VectorX<T> gu_prime = gu0;
+  VectorX<T> ge_prime = ge0;
+
+  // We'll want to perturb q and v separately, so we'll go ahead and grab these
+  // references.
+  auto q = x.head(nq);
+  auto v = x.segment(nq, nv);
+  auto q_prime = x_prime.head(nq);
+  auto v_prime = x_prime.segment(nq, nv);
+
+  // Compute τ = D(v − v₀) + g₀ with forward differences differences
+  Context<T>* mutable_context = this->get_mutable_context();
+  ContinuousState<T>& mutable_state =
+      mutable_context->get_mutable_continuous_state();
+  const double eps = std::sqrt(std::numeric_limits<double>::epsilon());
+
+  for (int i = 0; i < nv; ++i) {
+    // Choose a step size (following implicit_integrator.cc)
+    const T abs_vi = abs(v(i));
+    T dvi(abs_vi);
+    if (dvi <= 1) {
+      dvi = eps;
+    } else {
+      dvi = eps * abs_vi;
+    }
+
+    // Ensure that v' and v differ by an exactly representable number
+    v_prime(i) = v(i) + dvi;
+    dvi = v_prime(i) - v(i);
+
+    // Perturb q as well, using the fact that q' = q + h N dv
+    q_prime = q + h * N * (v_prime - v);
+
+    // Put x' in the context and mark the state as stale
+    mutable_state.SetFromVector(x_prime);
+    mutable_context->NoteContinuousStateChange();
+
+    // Compute the relevant matrix entries for actuation inputs:
+    //   Ku_full = dgu/dv
+    CalcActuationForces(plant_context, &gu_prime);
+    Ku_full.col(i) = (gu_prime - gu0) / dvi;
+
+    // Same thing, but for external systems:
+    //  Ke_full = dge/dv
+    CalcExternalForces(plant_context, &ge_prime);
+    Ke_full.col(i) = (ge_prime - ge0) / dvi;
+
+    // Reset the state for the next iteration
+    v_prime(i) = v(i);
+  }
+
+  // Reset the context back to how we found it
+  mutable_state.SetFromVector(x);
+  mutable_context->NoteContinuousStateChange();
+
+  // Use the diagonal projection for both K and b ensures that any
+  // non-convex portion of the dynamics is treated explicitly.
+  (*Ku) = (-Ku_full).diagonal().cwiseMax(0);
+  (*bu) = gu0 + (*Ku).asDiagonal() * v0;
+
+  (*Ke) = (-Ke_full).diagonal().cwiseMax(0);
+  (*be) = ge0 + (*Ke).asDiagonal() * v0;
 }
 
 }  // namespace systems

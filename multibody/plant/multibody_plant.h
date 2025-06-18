@@ -44,6 +44,15 @@
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
+
+namespace systems {
+
+// Forward declaration for giving the convex integrator private access
+template <typename>
+class ConvexIntegrator;
+
+}  // namespace systems
+
 namespace multibody {
 
 // Forward declaration for giving the pooled sap builder private access
@@ -5718,8 +5727,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   friend class internal::MultibodyPlantModelAttorney<T>;
   friend class internal::MultibodyPlantDiscreteUpdateManagerAttorney<T>;
 
-  // Pooled sap builder gets private acces
+  // Pooled sap builder and convex integrator get private acces
   friend class contact_solvers::pooled_sap::PooledSapBuilder<T>;
+  friend class systems::ConvexIntegrator<T>;
 
   // This struct stores in one single place the index of all of our inputs.
   // The order of the items matches our Doxygen system overview figure.
