@@ -52,7 +52,7 @@ DEFINE_double(
 
 // Physical parameters.
 DEFINE_double(density, 1000.0, "The density of all objects, in kg/m³.");
-DEFINE_double(static_friction, 1.0, "All bodies use this value.");
+DEFINE_double(static_friction, 0.5, "All bodies use this value.");
 DEFINE_double(dynamic_friction, 0.5, "All bodies use this value.");
 DEFINE_double(box_stiffness, 1.0e5, "Box point contact stiffness in N/m.");
 DEFINE_double(sphere_stiffness, 1.0e5,
@@ -580,16 +580,11 @@ int do_main() {
   auto simulator =
       MakeSimulatorFromGflags(*diagram, std::move(diagram_context));
 
-  // Use the convex integrator
-  // TODO(vincekurtz): set things up so the convex integrator can be selected
-  // via gflags like the others.
-  if (FLAGS_mbp_time_step == 0.0) {
-    ConvexIntegrator<double>& ci =
-        simulator->reset_integrator<ConvexIntegrator<double>>();
+  drake::systems::IntegratorBase<double>& integrator =
+      simulator->get_mutable_integrator();
+  if (FLAGS_simulator_integration_scheme == "convex") {
+    auto& ci = dynamic_cast<ConvexIntegrator<double>&>(integrator);
     ci.set_plant(&plant);
-    ci.set_maximum_step_size(FLAGS_simulator_max_time_step);
-    ci.set_fixed_step_mode(!FLAGS_simulator_use_error_control);
-    ci.set_target_accuracy(FLAGS_simulator_accuracy);
 
     ConvexIntegratorSolverParameters ci_params;
     ci_params.enable_hessian_reuse = FLAGS_enable_hessian_reuse;
@@ -601,11 +596,8 @@ int do_main() {
     ci_params.log_solver_stats = FLAGS_log_solver_stats;
     ci_params.print_solver_stats = FLAGS_print_solver_stats;
     ci.set_solver_parameters(ci_params);
-  }
 
-  drake::systems::IntegratorBase<double>& integrator =
-      simulator->get_mutable_integrator();
-  if (FLAGS_simulator_integration_scheme == "implicit_euler") {
+  } else if (FLAGS_simulator_integration_scheme == "implicit_euler") {
     auto& ie = dynamic_cast<ImplicitEulerIntegrator<double>&>(integrator);
     using JacobianComputationScheme =
         ImplicitEulerIntegrator<double>::JacobianComputationScheme;
@@ -663,6 +655,14 @@ int do_main() {
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
       "\nSimulation of a clutter of objects falling into a box container.");
+
+  // Set some reasonable defaults for the simulator options (these can be
+  // overridden from the command line).
+  FLAGS_simulator_integration_scheme = "convex";
+  FLAGS_simulator_accuracy = 0.1;
+  FLAGS_simulator_max_time_step = 0.01;
+  FLAGS_simulator_use_error_control = true;
+
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::multibody::examples::do_main();
 }
