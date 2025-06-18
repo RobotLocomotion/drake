@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <vector>
 
 #include <Eigen/Dense>
 
@@ -244,6 +245,26 @@ void AddTangentToPolytope(
     double configuration_space_margin,
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>* A,
     Eigen::VectorXd* b, int* num_constraints);
+
+// Given a pointer to a MathematicalProgram and a single particle, check whether
+// the particle satisfies the constraints. If a nullptr is given for the
+// program, return true, since the constraints are trivially-satisfied.
+bool CheckProgConstraints(const solvers::MathematicalProgram* prog_ptr,
+                          const Eigen::VectorXd& particle, const double tol);
+
+// Given a pointer to a MathematicalProgram and a list of particles (where each
+// particle is a choice of values for its decision variables), check in parallel
+// which particles satisfy all constraints, and which don't. Each entry in the
+// output vector corresponds to the corresponding particle. 1 means it satisfies
+// the constraints, 0 means it doesn't. If a nullptr is given for the program,
+// return a vector of all 1s, since all particles trivially satisfy the
+// constraints. The user can specify a slice of particles to check [0,
+// end_index). Default behavior is to check all particles -- when end_index is
+// std::nullopt, it is set to ssize(particles).
+std::vector<uint8_t> CheckProgConstraints(
+    const solvers::MathematicalProgram* prog_ptr,
+    const std::vector<Eigen::VectorXd>& particles, const int num_threads_to_use,
+    const double tol, std::optional<int> end_index = std::nullopt);
 
 }  // namespace internal
 }  // namespace planning

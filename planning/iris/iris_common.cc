@@ -1,5 +1,7 @@
 #include "drake/planning/iris/iris_common.h"
 
+#include <common_robotics_utilities/parallelism.hpp>
+
 #include "drake/geometry/optimization/hyperellipsoid.h"
 
 namespace drake {
@@ -62,6 +64,11 @@ IrisParameterizationFunction::IrisParameterizationFunction(
 }
 
 namespace internal {
+
+using common_robotics_utilities::parallelism::DegreeOfParallelism;
+using common_robotics_utilities::parallelism::DynamicParallelForIndexLoop;
+using common_robotics_utilities::parallelism::ParallelForBackend;
+
 int unadaptive_test_samples(double epsilon, double delta, double tau) {
   return static_cast<int>(-2 * std::log(delta) / (tau * tau * epsilon) + 0.5);
 }
@@ -96,6 +103,45 @@ void AddTangentToPolytope(
         "surrounding the sample point must have an interior.");
   }
   *num_constraints += 1;
+}
+
+bool CheckProgConstraints(const solvers::MathematicalProgram* prog_ptr,
+                          const Eigen::VectorXd& particle, const double tol) {
+  if (!prog_ptr) {
+    return true;
+  }
+  for (const auto& binding : prog_ptr->GetAllConstraints()) {
+    DRAKE_ASSERT(binding.evaluator() != nullptr);
+    if (!binding.evaluator()->CheckSatisfied(particle, tol)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+std::vector<uint8_t> CheckProgConstraints(
+    const solvers::MathematicalProgram* prog_ptr,
+    const std::vector<Eigen::VectorXd>& particles, const int num_threads_to_use,
+    const double tol, std::optional<int> end_index) {
+  int actual_end_index = end_index.value_or(ssize(particles));
+  DRAKE_DEMAND(actual_end_index >= 0 && actual_end_index <= ssize(particles));
+  std::vector<uint8_t> is_valid(actual_end_index, 1);
+  if (!prog_ptr) {
+    return is_valid;
+  }
+  DRAKE_DEMAND(prog_ptr->IsThreadSafe() || num_threads_to_use == 1);
+  const auto check_particle_work = [&prog_ptr, &particles, &tol, &is_valid](
+                                       const int thread_num,
+                                       const int64_t index) {
+    unused(thread_num);
+    is_valid[index] = static_cast<uint8_t>(
+        CheckProgConstraints(prog_ptr, particles[index], tol));
+  };
+
+  DynamicParallelForIndexLoop(DegreeOfParallelism(num_threads_to_use), 0,
+                              actual_end_index, check_particle_work,
+                              ParallelForBackend::BEST_AVAILABLE);
+  return is_valid;
 }
 
 }  // namespace internal
