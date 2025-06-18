@@ -34,7 +34,7 @@ vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
   for (int i = 0; i < 3; ++i) {
     const auto& row = transform.rotation().row(i);
     for (int j = 0; j < 3; ++j) {
-      vtk_mat->SetElement(i, j, row(j) * scale(j));
+      vtk_mat->SetElement(i, j, row(j) * scale(i));
     }
     vtk_mat->SetElement(i, 3, transform.translation()(i));
   }
