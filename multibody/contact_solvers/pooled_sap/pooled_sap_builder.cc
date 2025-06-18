@@ -25,6 +25,27 @@ class MultibodyPlantTester {
                                            const systems::Context<T>& context) {
     return plant.AssembleActuationInput(context);
   }
+
+  template <typename T>
+  static void AddInForcesFromInputPorts(const MultibodyPlant<T>& plant,
+                                        const systems::Context<T>& context,
+                                        MultibodyForces<T>* forces) {
+    plant.AddInForcesFromInputPorts(context, forces);
+  }
+
+  template <typename T>
+  static void AddAppliedExternalSpatialForces(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context,
+      MultibodyForces<T>* forces) {
+    plant.AddAppliedExternalSpatialForces(context, forces);
+  }
+
+  template <typename T>
+  static void AddAppliedExternalGeneralizedForces(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context,
+      MultibodyForces<T>* forces) {
+    plant.AddAppliedExternalGeneralizedForces(context, forces);
+  }
 };
 
 namespace contact_solvers {
@@ -164,12 +185,29 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   VectorX<T>& vdot = scratch_.tmp_v1;
   vdot = -v0 / dt;
   plant().CalcForceElementsContribution(context, &forces);
-  plant().AddInForcesFromInputPorts(context, &forces);
+  MultibodyPlantTester::AddInForcesFromInputPorts(plant(), context, &forces);
 
   // TODO(vincekurtz): use a CalcInverseDynamics signature that doesn't allocate
   // a return value.
   r = -dt * plant().CalcInverseDynamics(context, vdot, forces);
   r += dt * plant().EvalJointDampingCache(context).asDiagonal() * v0;
+
+  // Collect effort limits for each clique.
+  params->clique_nu.resize(num_cliques, 0);
+  params->effort_limits.resize(nv);
+  params->effort_limits.setZero();
+
+  for (JointActuatorIndex actuator_index : plant().GetJointActuatorIndices()) {
+    const JointActuator<T>& actuator =
+        plant().get_joint_actuator(actuator_index);
+    const Joint<T>& joint = actuator.joint();
+    const int dof = joint.velocity_start();
+    const TreeIndex t = topology.velocity_to_tree_index(dof);
+    const int c = tree_clique[t];
+    DRAKE_ASSERT(c >= 0);
+    ++params->clique_nu[c];
+    params->effort_limits[dof] = actuator.effort_limit();
+  }
 
   model->ResetParameters(std::move(params));
   CalcGeometryContactData(context);
@@ -186,8 +224,10 @@ void PooledSapBuilder<T>::AccumulateForceElementForces(
   MultibodyForces<T>& forces = *scratch_.forces;
   VectorX<T>& tau_g = scratch_.tmp_v1;
   plant().CalcForceElementsContribution(context, &forces);
-  plant().AddAppliedExternalSpatialForces(context, &forces);
-  plant().AddAppliedExternalGeneralizedForces(context, &forces);
+  MultibodyPlantTester::AddAppliedExternalSpatialForces(plant(), context,
+                                                        &forces);
+  MultibodyPlantTester::AddAppliedExternalGeneralizedForces(plant(), context,
+                                                            &forces);
   plant().CalcGeneralizedForces(context, forces, &tau_g);
   *r += tau_g;
 }
@@ -406,6 +446,54 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
       const T k = Ae * g;
       patches.AddPair(p_BoC_W, nhat_AB_W, fn0, k);
     }
+  }
+}
+
+template <typename T>
+void PooledSapBuilder<T>::AddActuationGains(const VectorX<T>& Ku,
+                                            const VectorX<T>& bu,
+                                            PooledSapModel<T>* model) const {
+  DRAKE_DEMAND(model != nullptr);
+  DRAKE_DEMAND(model->num_velocities() == plant().num_velocities());
+  const int nv = model->num_velocities();
+  DRAKE_DEMAND(Ku.size() == nv);
+  DRAKE_DEMAND(bu.size() == nv);
+
+  // Quick no-op exit.
+  if (plant().num_actuators() == 0) return;
+
+  auto& gain_constraints = model->gain_constraints_pool();
+
+  for (int c = 0; c < model->num_cliques(); ++c) {
+    if (model->params().clique_nu[c] == 0) continue;
+
+    const auto Ku_c = model->clique_segment(c, Ku);
+    const auto bu_c = model->clique_segment(c, bu);
+    const auto e_c = model->clique_segment(c, model->params().effort_limits);
+
+    gain_constraints.Add(c, Ku_c, bu_c, e_c);
+  }
+}
+
+template <typename T>
+void PooledSapBuilder<T>::AddExternalGains(const VectorX<T>& Ke,
+                                           const VectorX<T>& be,
+                                           PooledSapModel<T>* model) const {
+  DRAKE_DEMAND(model != nullptr);
+  const int nv = model->num_velocities();
+  DRAKE_DEMAND(Ke.size() == nv);
+  DRAKE_DEMAND(be.size() == nv);
+
+  const T& dt = model->time_step();
+  PooledSapParameters<T>& params = model->params();
+  for (int c = 0; c < model->num_cliques(); ++c) {
+    auto A_c = params.A[c];
+    const auto Ke_c = model->clique_segment(c, Ke);
+    A_c.diagonal() += dt * Ke_c;
+
+    const auto be_c = model->clique_segment(c, be);
+    auto r_c = model->clique_segment(c, &params.r);
+    r_c += dt * be_c;
   }
 }
 

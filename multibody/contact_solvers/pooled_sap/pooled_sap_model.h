@@ -30,18 +30,22 @@ struct PooledSapParameters {
   void VerifyInvariants() const {
     DRAKE_DEMAND(time_step > 0);
     const int num_bodies = ssize(body_cliques);
+    DRAKE_DEMAND(ssize(body_is_floating) == num_bodies);
     DRAKE_DEMAND(num_bodies > 0);
     DRAKE_DEMAND(body_cliques[0] < 0);  // Always for the world.
 
     int num_velocities = 0;
     const int num_cliques = A.size();
+    DRAKE_DEMAND(ssize(clique_nu) == num_cliques);
     for (int c = 0; c < num_cliques; ++c) {
       DRAKE_DEMAND(A[c].rows() == A[c].cols());
       const int clique_nv = A[c].rows();
       num_velocities += clique_nv;
+      DRAKE_DEMAND(clique_nu[c] <= clique_nv);
     }
     DRAKE_DEMAND(r.size() == num_velocities);
     DRAKE_DEMAND(v0.size() == num_velocities);
+    DRAKE_DEMAND(effort_limits.size() == num_velocities);
 
     DRAKE_DEMAND(J_WB.size() == num_bodies);
     for (int b = 0; b < num_bodies; ++b) {
@@ -70,6 +74,10 @@ struct PooledSapParameters {
   std::vector<int> body_is_floating;  // 1 if floating.
   EigenPool<Matrix6X<T>> J_WB;        // Rigid body spatial velocity Jacobians.
   VectorX<T> v0;                      // The current generalized velocities.
+
+  // Effort limits for the entire model.
+  std::vector<int> clique_nu;  // Num actuators per clique.
+  VectorX<T> effort_limits;  // of size model.num_velocities(). Zero if unused.
 };
 
 /* A model of the SAP problem.
@@ -91,6 +99,8 @@ class PooledSapModel {
 
   // Defined in separate headers.
   class PatchConstraintsPool;
+  class GainConstraintsPool;
+
   // TODO(amcastro-tri).
   // class LimitConstraintsPool;
   // class ActuationConstraintsPool;
@@ -101,6 +111,7 @@ class PooledSapModel {
   // Constructor for an empty model.
   PooledSapModel()
       : params_(std::make_unique<PooledSapParameters<T>>()),
+        gain_constraints_pool_(this),
         patch_constraints_pool_(this) {}
 
   /* Resets problem parameters.
@@ -127,6 +138,9 @@ class PooledSapModel {
       clique_start_.push_back(clique_start_.back() + clique_nv);
     }
     DRAKE_DEMAND(params_->r.size() == num_velocities_);
+    gain_constraints_pool_.Clear();
+    gain_constraints_pool_.Reset();
+
     patch_constraints_pool_.Clear();
     patch_constraints_pool_.Reset(params_->time_step, clique_start_,
                                   clique_sizes_);
@@ -144,6 +158,16 @@ class PooledSapModel {
   const PooledSapParameters<T>& params() const {
     DRAKE_ASSERT(params_ != nullptr);
     return *params_;
+  }
+
+  PooledSapParameters<T>& params() {
+    DRAKE_ASSERT(params_ != nullptr);
+    return *params_;
+  }
+
+  const T& time_step() const {
+    DRAKE_ASSERT(params_ != nullptr);
+    return params().time_step;
   }
 
   int body_clique(int body) const {
@@ -224,11 +248,14 @@ class PooledSapModel {
   }
 
   /* Total number of constraints. */
-  int num_constraints() const { return num_patch_constraints(); }
+  int num_constraints() const {
+    return num_patch_constraints() + num_gain_constraints();
+  }
 
   /* Total number of constraint equations. */
   int num_constraint_equations() const {
-    return patch_constraints_pool_.num_constraint_equations();
+    return patch_constraints_pool_.num_constraint_equations() +
+           gain_constraints_pool_.num_constraint_equations();
   }
 
   void set_stiction_tolerance(double stiction_tolerance) {
@@ -237,6 +264,10 @@ class PooledSapModel {
 
   PatchConstraintsPool& patch_constraints_pool() {
     return patch_constraints_pool_;
+  }
+
+  GainConstraintsPool& gain_constraints_pool() {
+    return gain_constraints_pool_;
   }
 
   /* Limit constraints are added on a per-clique basis. Therefore this method
@@ -252,6 +283,10 @@ class PooledSapModel {
 
   int num_patch_constraints() const {
     return patch_constraints_pool_.num_patches();
+  }
+
+  int num_gain_constraints() const {
+    return gain_constraints_pool_.num_constraints();
   }
 
   // Helpers to access the subset of elements from clique vectors (e.g.
@@ -356,6 +391,7 @@ class PooledSapModel {
   std::vector<int> clique_sizes_;  // Number of velocities per clique.
   EigenPool<Vector6<T>> V_WB0_;    // Initial spatial velocities.
 
+  GainConstraintsPool gain_constraints_pool_;
   PatchConstraintsPool patch_constraints_pool_;
 };
 
