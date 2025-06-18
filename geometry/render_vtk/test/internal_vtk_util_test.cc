@@ -69,10 +69,14 @@ GTEST_TEST(ConvertToVtkTransformTest, ConversionTest) {
 
   const Vector3<double> scale(2, 3, 4);
   auto dut_T_AB = ConvertToVtkTransform(X_AB, scale);
+
+  // The transform T_AB is the concatenation of translation, scale, and rotation
+  // (T * S * R). We get S * R by multiplying the _columns_ of R by the
+  // corresponding scale factor.
   Eigen::Matrix4d T_AB_expected = X_AB.GetAsMatrix4();
-  T_AB_expected.block<3, 1>(0, 0) *= scale.x();
-  T_AB_expected.block<3, 1>(0, 1) *= scale.y();
-  T_AB_expected.block<3, 1>(0, 2) *= scale.z();
+  T_AB_expected.block<1, 3>(0, 0) *= scale.x();
+  T_AB_expected.block<1, 3>(1, 0) *= scale.y();
+  T_AB_expected.block<1, 3>(2, 0) *= scale.z();
 
   for (int i = 0; i < 4; ++i) {
     for (int j = 0; j < 4; ++j) {
