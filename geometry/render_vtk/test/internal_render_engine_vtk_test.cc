@@ -307,6 +307,42 @@ RigidTransformd PoseCamera(const Vector3d& p_WC, const Vector3d& p_WT,
 
 // Compares the test image against a reference image.
 //
+// The bytes of `test_image` are compared with the bytes of `ref_image` to
+// within the given tolerance.
+template <typename ImageType>
+void CompareImages(const ImageType& test_image, const ImageType& ref_image,
+                   double tolerance) {
+  // Confirming image equivalence is tricky. We want to be sensitive to changes
+  // in code that might produce different images but, at the same time, write a
+  // test that will survive the vagaries of rendering in CI. To that end, we
+  // employ two thresholds:
+  //
+  //   - tolerance: allowed per-channel deviation (passed as parameter).
+  //   - conformity: the fraction of channel values that must deviate less than
+  //                 `tolerance` (hard-coded below).
+  //
+  // Tolerance is provided by each test, but the conformity is hard-coded to be
+  // a high value (99.5%). Essentially, each of the primitives added by
+  // AddShapeRows() fills about 0.5% of the final image. If we want to recognize
+  // when any of those shapes changes in some significant way, we need to fail
+  // if that number of pixels deviates.
+  using T = typename ImageType::T;
+  ASSERT_EQ(ref_image.size(), test_image.size());
+  Eigen::Map<const VectorX<T>> data_expected(ref_image.at(0, 0),
+                                             ref_image.size());
+  Eigen::Map<const VectorX<T>> data_actual(test_image.at(0, 0),
+                                           test_image.size());
+  const Eigen::ArrayXd differences = (data_expected.template cast<double>() -
+                                      data_actual.template cast<double>())
+                                         .array()
+                                         .abs();
+  const int num_acceptable = (differences <= tolerance).count();
+  const double kConformity = 0.995;
+  EXPECT_GE(num_acceptable / static_cast<float>(ref_image.size()), kConformity);
+}
+
+// Compares the test image against a reference image.
+//
 // The bytes of `test_image` are compared with the decoded bytes of the image
 // located at `ref_resource` to within the given tolerance.
 // Note: We'll call FindResource(ref_resource) to resolve the filename.
@@ -332,34 +368,7 @@ void CompareImages(const ImageType& test_image, const std::string& ref_resource,
   CompareType expected_image;
   ASSERT_TRUE(systems::sensors::LoadImage(ref_path, &expected_image));
 
-  // Confirming image equivalence is tricky. We want to be sensitive to changes
-  // in code that might produce different images but, at the same time, write a
-  // test that will survive the vagaries of rendering in CI. To that end, we
-  // employ two thresholds:
-  //
-  //   - tolerance: allowed per-channel deviation (passed as parameter).
-  //   - conformity: the fraction of channel values that must deviate less than
-  //                 `tolerance` (hard-coded below).
-  //
-  // Tolerance is provided by each test, but the conformity is hard-coded to be
-  // a high value (99.5%). Essentially, each of the primitives added by
-  // AddShapeRows() fills about 0.5% of the final image. If we want to recognize
-  // when any of those shapes changes in some significant way, we need to fail
-  // if that number of pixels deviates.
-  using T = typename CompareType::T;
-  ASSERT_EQ(expected_image.size(), compare_image.size());
-  Eigen::Map<const VectorX<T>> data_expected(expected_image.at(0, 0),
-                                             expected_image.size());
-  Eigen::Map<const VectorX<T>> data_actual(compare_image.at(0, 0),
-                                           compare_image.size());
-  const Eigen::ArrayXd differences = (data_expected.template cast<double>() -
-                                      data_actual.template cast<double>())
-                                         .array()
-                                         .abs();
-  const int num_acceptable = (differences <= tolerance).count();
-  const double kConformity = 0.995;
-  EXPECT_GE(num_acceptable / static_cast<float>(expected_image.size()),
-            kConformity);
+  CompareImages(compare_image, expected_image, tolerance);
 }
 
 // Sanitizes a test case description into a legal filename.
@@ -805,59 +814,70 @@ TEST_F(RenderEngineVtkTest, MeshTest) {
 // Confirm that non-uniform scale is correctly applied. We'll create
 // two renderings: one with a reference mesh and one with the mesh pre-scaled
 // (applying the inverse scale to the Shape). The two images should end up
-// identical.
-TEST_F(RenderEngineVtkTest, NonUniformScaleTest) {
-  RenderEngineVtk ref_engine;
-  RenderEngineVtk scale_engine;
+// identical. Obj and glTF get handled differently, so both need to be tested
+// explicitly.
+TEST_F(RenderEngineVtkTest, NonUniformScale) {
+  const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
+  const int w = camera.core().intrinsics().width();
+  const int h = camera.core().intrinsics().height();
 
   const auto convex_id = GeometryId::get_new_id();
   const auto mesh_id = GeometryId::get_new_id();
   PerceptionProperties material;
   material.AddProperty("label", "id", RenderLabel::kDontCare);
 
-  const fs::path unit_obj =
-      FindResourceOrThrow("drake/geometry/test/rotated_cube_unit_scale.obj");
-  const fs::path scale_obj =
-      FindResourceOrThrow("drake/geometry/test/rotated_cube_squished.obj");
-
-  const Vector3d unit_scale(1, 1, 1);
-  ref_engine.RegisterVisual(mesh_id, Mesh(unit_obj, unit_scale), material,
-                            RigidTransformd(Vector3d(-1.5, 0, 0)),
-                            /* needs_update =*/false);
-  ref_engine.RegisterVisual(convex_id, Convex(unit_obj, unit_scale), material,
-                            RigidTransformd(Vector3d(1.5, 0, 0)),
-                            /* needs_update =*/false);
-
-  // This should be the scale factor documented in rotated_cube_squished.obj
-  const Vector3d stretch(2, 4, 8);
-  scale_engine.RegisterVisual(mesh_id, Mesh(scale_obj, stretch), material,
-                              RigidTransformd(Vector3d(-1.5, 0, 0)),
-                              /* needs_update =*/false);
-  scale_engine.RegisterVisual(convex_id, Convex(scale_obj, stretch), material,
-                              RigidTransformd(Vector3d(1.5, 0, 0)),
-                              /* needs_update =*/false);
-
   // The camera is above the Wz = 0 plane, looking generally down and in the
   // +Wy direction.
   const RigidTransformd X_WC(RotationMatrixd::MakeXRotation(-3.2 * M_PI / 4),
                              Vector3d(0, -3, 4.4));
-  ref_engine.UpdateViewpoint(X_WC);
-  scale_engine.UpdateViewpoint(X_WC);
 
-  const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
-  const int w = camera.core().intrinsics().width();
-  const int h = camera.core().intrinsics().height();
-  ImageRgba8U ref_color(w, h);
-  ImageRgba8U scale_color(w, h);
-  EXPECT_NO_THROW(ref_engine.RenderColorImage(camera, &ref_color));
-  EXPECT_NO_THROW(scale_engine.RenderColorImage(camera, &scale_color));
+  for (const auto& extension : {"obj", "gltf"}) {
+    SCOPED_TRACE(fmt::format("Extension: .{}", extension));
+    RenderEngineVtk ref_engine;
+    RenderEngineVtk scale_engine;
 
-  const std::source_location& caller = std::source_location::current();
-  const std::string stem = fmt::format("line_{:0>4}", caller.line());
-  SaveTestOutputImage(ref_color, fmt::format("{0}_ref_color.png", stem));
-  SaveTestOutputImage(scale_color, fmt::format("{0}_scale_color.png", stem));
+    const fs::path unit_mesh = FindResourceOrThrow(fmt::format(
+        "drake/geometry/test/rotated_cube_unit_scale.{}", extension));
+    const fs::path scale_mesh = FindResourceOrThrow(
+        fmt::format("drake/geometry/test/rotated_cube_squished.{}", extension));
 
-  EXPECT_EQ(ref_color, scale_color);
+    const Vector3d unit_scale(1, 1, 1);
+    ref_engine.RegisterVisual(mesh_id, Mesh(unit_mesh, unit_scale), material,
+                              RigidTransformd(Vector3d(-1.5, 0, 0)),
+                              /* needs_update =*/false);
+    ref_engine.RegisterVisual(convex_id, Convex(unit_mesh, unit_scale),
+                              material, RigidTransformd(Vector3d(1.5, 0, 0)),
+                              /* needs_update =*/false);
+
+    // This should be the scale factor documented in rotated_cube_squished.obj
+    const Vector3d stretch(2, 4, 8);
+    scale_engine.RegisterVisual(mesh_id, Mesh(scale_mesh, stretch), material,
+                                RigidTransformd(Vector3d(-1.5, 0, 0)),
+                                /* needs_update =*/false);
+    scale_engine.RegisterVisual(convex_id, Convex(scale_mesh, stretch),
+                                material, RigidTransformd(Vector3d(1.5, 0, 0)),
+                                /* needs_update =*/false);
+
+    ref_engine.UpdateViewpoint(X_WC);
+    scale_engine.UpdateViewpoint(X_WC);
+
+    ImageRgba8U ref_color(w, h);
+    ImageRgba8U scale_color(w, h);
+    EXPECT_NO_THROW(ref_engine.RenderColorImage(camera, &ref_color));
+    EXPECT_NO_THROW(scale_engine.RenderColorImage(camera, &scale_color));
+
+    const std::source_location& caller = std::source_location::current();
+    const std::string stem =
+        fmt::format("line_{:0>4}_{}", caller.line(), extension);
+    SaveTestOutputImage(ref_color, fmt::format("{0}_ref_color.png", stem));
+    SaveTestOutputImage(scale_color, fmt::format("{0}_scale_color.png", stem));
+
+    // Note: the introduction of the scale factor in glTF can lead to _slight_
+    // rounding problems which produces imperceptibly different images (a few
+    // bytes differing by a single bit). So, we can't do a direct image
+    // comparison.
+    CompareImages(ref_color, scale_color, /* tolerance=*/1);
+  }
 }
 
 // Repeats various mesh-based tests, but this time the meshes are loaded from
