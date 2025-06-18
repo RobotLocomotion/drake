@@ -81,12 +81,6 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
         "IrisNp2 does not yet support enforcing additional containment "
         "points.");
   }
-  if (options.sampled_iris_options.prog_with_additional_constraints !=
-      nullptr) {
-    // TODO(cohnt): Support enforcing additional constraints.
-    throw std::runtime_error(
-        "IrisNp2 does not yet support specifying additional constriants.");
-  }
 
   if (!(options.parameterization.get_parameterization()(
             starting_ellipsoid.center()) == starting_ellipsoid.center())) {
@@ -218,9 +212,10 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
             .distance;
     if (distance < 0.0) {
       throw std::runtime_error(fmt::format(
-          "The center of starting_ellipsoid is in collision; geometry {} is in "
+          "Starting ellipsoid center {} is in collision; geometry {} is in "
           "collision with geometry {}",
-          inspector.GetName(geomA), inspector.GetName(geomB)));
+          fmt_eigen(E.center().transpose()), inspector.GetName(geomA),
+          inspector.GetName(geomB)));
     }
     sorted_pairs.emplace_back(geomA, geomB, distance);
   }
