@@ -53,30 +53,52 @@ std::unique_ptr<AbstractValue> SapPdControllerConstraint<T>::DoMakeData(
   constexpr double beta = 0.1;
 
   // Estimate regularization based on near-rigid regime threshold.
-  // Rigid approximation constant: Rₙ = β²/(4π²)⋅wᵢ when the contact frequency
-  // ωₙ is below the limit ωₙ⋅δt ≤ 2π. That is, the period is Tₙ = β⋅δt. See
-  // [Castro et al., 2021] for details.
+  // Rigid approximation constant: Rₙᵣ = β²/(4π²)⋅wᵢ when the contact frequency
+  // ωₙᵣ is below the limit ωₙᵣ⋅δt ≤ 2π. That is, the near-rigid period is
+  // Tₙᵣ = β⋅δt. See [Castro et al., 2021] for details.
   const double beta_factor = beta * beta / (4.0 * M_PI * M_PI);
+  const T R_nr = beta_factor * delassus_estimation[0];
 
-  // Effective gain values are clamped in the near-rigid regime.
-  T Kp_eff = parameters_.Kp();
-  T Kd_eff = parameters_.Kd();
+  // "Effective regularization" [Castro et al., 2021] for this constraint based
+  // on user specified gains.
+  const T& Kp = parameters_.Kp();
+  const T& Kd = parameters_.Kd();
+  const T R = 1.0 / (dt * (dt * Kp + Kd));
 
-  // "Effective regularization" [Castro et al., 2021] for this constraint.
-  const T R = 1.0 / (dt * (dt * Kp_eff + Kd_eff));
-
-  // "Near-rigid" regularization, [Castro et al., 2021].
-  const T& w = delassus_estimation[0];
-  const T R_near_rigid = beta_factor * w;
-
-  // In the near rigid regime we clamp Kp and Kd so that the effective
-  // regularization is Rnr.
-  if (R < R_near_rigid) {
-    // Per [Castro et al., 2021], the relaxation time tau
-    // for a critically damped constraint equals the time step, tau = dt.
-    // With Kd = tau * Kp, and R = Rₙᵣ, we obtain Rₙᵣ⁻¹ = 2δt² Kₚ.
-    Kp_eff = 1.0 / R_near_rigid / (2.0 * dt * dt);
-    Kd_eff = dt * Kp_eff;
+  // R determines numerical conditioning for this constraint. The SAP problem
+  // can become ill-conditioned for small enough values of R. To keep
+  // conditioning under control, [Castro et al., 2021] propose to use Rₙᵣ as a
+  // lower bound such that the time scales introduced by this constraint in the
+  // overall dynamics are of order Tₙᵣ = β⋅δt (i.e. under resolved for β < 1).
+  //
+  // However, we also want to respect the ratio Kd/Kp set by the user. In
+  // particular, if Kp = 0, that means the user wants velocity control only.
+  // Similarly, if Kd = 0, the user wants position control only. From the
+  // expression above for R, we observe we can write the effective
+  // regularization R in two different but equivalent ways:
+  //  1) R = 1/(δt⋅(δt +   Kd/Kp )⋅Kp),   when Kp > 0
+  //  2) R = 1/(δt⋅( 1 + δt⋅Kp/Kd)⋅Kd),   when Kd > 0
+  // Keeping the ratio Kd/Kp (or its inverse) constant, and equating R = Rₙᵣ,
+  // we can obtain expressions for the near-rigid regime gains from:
+  //  1) Rₙᵣ = 1/(δt⋅(δt +   Kd/Kp )⋅Kpₙᵣ),   when Kp > 0
+  //  2) Rₙᵣ = 1/(δt⋅( 1 + δt⋅Kp/Kd)⋅Kdₙᵣ),   when Kd > 0
+  // From where we see that:
+  //  1) δt⋅Kpₙᵣ = 1 / ( (δt +   Kd/Kp )⋅Rₙᵣ) > 1/(2⋅δt⋅Rₙᵣ), δt⋅Kp > Kd
+  //  2)    Kdₙᵣ = 1/(δt⋅( 1 + δt⋅Kp/Kd)⋅Rₙᵣ) > 1/(2⋅δt⋅Rₙᵣ), δt⋅Kp < Kd
+  // We therefore use δt⋅Kp < Kd as the criterion to use expression (1),
+  // keeping Kd/Kp constant, or (2), keeping Kp/Kd constant.
+  T Kp_eff = Kp;
+  T Kd_eff = Kd;
+  if (R < R_nr) {
+    if (dt * Kp > Kd) {
+      const T tau = Kd / Kp;
+      Kp_eff = 1.0 / (dt * (dt + tau) * R_nr);
+      Kd_eff = tau * Kp_eff;  // We keep ratio tau constant.
+    } else {
+      const T tau_inv = Kp / Kd;
+      Kd_eff = 1.0 / (dt * (dt * tau_inv + 1.0) * R_nr);
+      Kp_eff = tau_inv * Kd_eff;  // We keep ratio tau_inv constant.
+    }
   }
 
   // Make data.
