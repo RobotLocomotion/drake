@@ -436,15 +436,12 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
   //   p'(1) = α_max⋅ℓ'(α_max).
   // We can then find the analytical minimum in [0, α_max], and use that to
   // establish an initial guess for linesearch.
-  // const double a = 2 * (ell0 - ell) + dell0 * alpha_max + dell * alpha_max;
-  // const double b = -3 * (ell0 - ell) - 2 * dell0 * alpha_max - dell * alpha_max;
-  // const double c = dell0 * alpha_max;
-  // // N.B. throws if a solution cannot be found in [0, 1]
-  // const double alpha_guess =
-  //     alpha_max * SolveQuadraticInUnitInterval(3 * a, 2 * b, c);
-  const double alpha_guess = 0.5;
-  (void)ell0;
-  (void)ell;
+  const double a = 2 * (ell0 - ell) + dell0 * alpha_max + dell * alpha_max;
+  const double b = -3 * (ell0 - ell) - 2 * dell0 * alpha_max - dell * alpha_max;
+  const double c = dell0 * alpha_max;
+  // N.B. throws if a solution cannot be found in [0, 1]
+  const double alpha_guess =
+      alpha_max * SolveQuadraticInUnitInterval(3 * a, 2 * b, c);
 
   // We've exhausted all of the early exit conditions, so now we move on to the
   // Newton method with bisection fallback. To do so, we define an anonymous

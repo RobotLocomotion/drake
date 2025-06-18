@@ -84,7 +84,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   plant().CalcMassMatrix(context, &M);
 
   // Implicit damping.
-  // N.B. The mass matrix already include reflected inertia terms.
+  // N.B. The mass matrix already includes reflected inertia terms.
   M.diagonal() += plant().EvalJointDampingCache(context) * time_step;
 
   // We only add a clique for tree's with non-zero number of velocities.
@@ -152,7 +152,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   VectorX<T>& vdot = scratch_.tmp_v1;
   vdot = -v0 / dt;
   plant().CalcForceElementsContribution(context, &forces);
-  plant().AddInForcesFromInputPorts(context, &forces);
+  // plant().AddInForcesFromInputPorts(context, &forces);
 
   // TODO(vincekurtz): use a CalcInverseDynamics signature that doesn't allocate
   // a return value.

@@ -186,6 +186,14 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   }
 
   /**
+   * Get a mutable reference to the convex solver tolerances and iteration
+   * limits.
+   */
+  ConvexIntegratorSolverParameters& get_mutable_solver_parameters() {
+    return solver_parameters_;
+  }
+
+  /**
    * Get the current convex solver statistics.
    */
   const ConvexIntegratorSolverStats& get_solver_stats() const { return stats_; }

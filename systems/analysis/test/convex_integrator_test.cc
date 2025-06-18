@@ -251,6 +251,8 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
 
   ConvexIntegrator<double>& integrator =
       simulator.reset_integrator<ConvexIntegrator<double>>();
+  integrator.get_mutable_solver_parameters().enable_hessian_reuse = false;
+  integrator.get_mutable_solver_parameters().print_solver_stats = true;
   integrator.set_plant(&plant);
   integrator.set_fixed_step_mode(true);
   integrator.set_maximum_step_size(h);
