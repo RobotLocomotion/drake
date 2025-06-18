@@ -41,6 +41,8 @@ using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
+const double kEps = std::numeric_limits<double>::epsilon();
+
 namespace drake {
 namespace multibody {
 
@@ -310,6 +312,51 @@ TEST_F(TwoSpheres, MakeData) {
   }
   EXPECT_EQ(model.num_velocities(), nv);
   EXPECT_EQ(data.num_patches(), 1);
+}
+
+TEST_F(TwoSpheres, AddExternalGains) {
+  const double penetration = 0.002;
+  const double time_step = 0.01;
+  SetInContact(penetration);
+  const int nv = plant_->num_velocities();
+
+  PooledSapBuilder<double> builder(*plant_);
+  PooledSapModel<double> model;
+  builder.UpdateModel(*plant_context_, time_step, &model);
+  EXPECT_EQ(model.num_cliques(), 2);
+  EXPECT_EQ(model.num_velocities(), nv);
+  EXPECT_EQ(model.num_patch_constraints(), 1);
+  EXPECT_EQ(model.clique_sizes(), std::vector<int>({6, 6}));
+
+  // Make a copy of A and r before adding external gains.
+  const MatrixXd A0 = model.params().A[0];
+  const MatrixXd A1 = model.params().A[1];
+  const VectorXd r = model.params().r;
+
+  // Add external gains. This modeifies A and r in the model.
+  Vector6d Ke0 = Vector6d::Zero();
+  Vector6d Ke1 = Vector6d::Constant(2.5);  // Second clique.
+  VectorXd Ke = (VectorXd(12) << Ke0, Ke1).finished();
+  VectorXd be = VectorXd::LinSpaced(12, -3.0, 4.2);
+  builder.AddExternalGains(Ke, be, &model);
+
+  // Verify the added terms is what we expect.
+  const MatrixXd A0_after = model.params().A[0];
+  const MatrixXd A1_after = model.params().A[1];
+  const VectorXd r_after = model.params().r;
+
+  // No gains for clique 0.
+  EXPECT_TRUE(CompareMatrices(A0, A0_after, kEps));
+
+  // Second clique.
+  const double dt = model.time_step();
+  const MatrixXd Ke1_matrix = (A1_after - A1) / dt;
+  const MatrixXd Ke1_expected = Ke1.asDiagonal();
+  EXPECT_TRUE(CompareMatrices(Ke1_matrix, Ke1_expected, 1.5e-13));
+
+  // Bias term.
+  const VectorXd be_added = (r_after - r) / dt;
+  EXPECT_TRUE(CompareMatrices(be_added, be, 2.0e-14));
 }
 
 // Fix bug in this test, related to evaling SapProblem with a discrete plant.

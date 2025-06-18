@@ -28,6 +28,36 @@ class PooledSapBuilder {
   void UpdateModel(const systems::Context<T>& context, const T& time_step,
                    PooledSapModel<T>* model) const;
 
+  /* Updates the dynamics matrix A and the linear term r to incorporate modeling
+   of external forces according to:
+     τ = −Kₑ⋅v + bₑ
+   where Kₑ is a positive semi-definite gain matrix and bₑ a bias term. Matrix
+   Kₑ is diagonal.
+
+   More specifically, the model is updated according to:
+     A += δt⋅Kₑ
+     r += δt⋅bₑ
+
+   Kₑ and bₑ are provided for the entire model. Kₑ can have zero entries.
+
+   @pre Ke has positive (or zero) entries.
+   @pre Both Ke and be are vectors of size model->num_velocities(). */
+  void AddExternalGains(const VectorX<T>& Ke, const VectorX<T>& be,
+                        PooledSapModel<T>* model) const;
+
+  /* Adds constraints to model actuation with effort limits according to:
+     τ = clamp(−Kᵤ⋅v + bᵤ, e)
+    where Kᵤ is a positive semi-definite gain matrix,  bᵤ a bias term and e the
+    effort limit. Matrix Kᵤ is diagonal.
+
+    Kᵤ and bᵤ are provided for the entire model and Kᵤ can have zero entries.
+    The effort limits are obtained from the plant() model provided at
+    construction of `this` builder.
+    Constraints are added on a per-clique basis, and no actuation constraints
+    are added if a clique has no actuators. */
+  void AddActuationGains(const VectorX<T>& Ku, const VectorX<T>& bu,
+                         PooledSapModel<T>* model) const;
+
   const MultibodyPlant<T>& plant() const { return *plant_; }
 
  private:

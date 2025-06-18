@@ -60,13 +60,19 @@ struct DynamicSizeStorage {
   /* Resizes pool to store VectorX elements of the specified sizes. */
   void Resize(const std::vector<int>& sizes) {
     static_assert(is_dynamic_size_vector_v<EigenType>);
+    Reserve(sizes);
+    for (int sz : sizes) {
+      Add(sz, 1);
+    }
+  }
+
+  /* Reserves pool to store VectorX elements of the specified sizes. */
+  void Reserve(const std::vector<int>& sizes) {
+    static_assert(is_dynamic_size_vector_v<EigenType>);
     Clear();
     const int total_size = std::accumulate(sizes.begin(), sizes.end(), 0);
     data_.reserve(total_size);
     blocks_.reserve(ssize(sizes));
-    for (int sz : sizes) {
-      Add(sz, 1);
-    }
   }
 
   void Resize(const std::vector<int>& rows, const std::vector<int>& cols) {
@@ -250,6 +256,13 @@ class EigenPool {
     requires is_dynamic_size_vector_v<EigenType>
   {  // NOLINT(whitespace/braces)
     storage_.Resize(sizes);
+  }
+
+  /* Resize for a pool of VectorX elements of the given `sizes`. */
+  void Reserve(const std::vector<int>& sizes)
+    requires is_dynamic_size_vector_v<EigenType>
+  {  // NOLINT(whitespace/braces)
+    storage_.Reserve(sizes);
   }
 
   /* Resize for a pool of matrices with the specified `rows` and `cols`.

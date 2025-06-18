@@ -14,6 +14,7 @@
 #include "drake/math/linear_solve.h"
 #include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
+#include "drake/multibody/contact_solvers/pooled_sap/gain_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/pooled_sap/patch_constraints_data_pool.h"
 
 namespace drake {
@@ -33,7 +34,9 @@ class SapData {
 
   struct Cache {
     void Resize(int num_bodies, int num_velocities,
+                const std::vector<int>& clique_sizes,
                 const std::vector<int>& patch_sizes) {
+      (void)clique_sizes;
       const int nv = num_velocities;
       Av.resize(nv);
       gradient.resize(nv);
@@ -55,6 +58,7 @@ class SapData {
     EigenPool<Vector6<T>> spatial_velocities;
 
     // Type-specific constraint pools.
+    GainConstraintsDataPool<T> gain_constraints_data;
     PatchConstraintsDataPool<T> patch_constraints_data;
   };
 
@@ -86,15 +90,18 @@ class SapData {
   void Resize(int num_bodies, int num_velocities,
               const std::vector<int>& clique_sizes,
               const std::vector<int>& patch_sizes) {
-    (void)clique_sizes;
     v_.resize(num_velocities);
-    cache_.Resize(num_bodies, num_velocities, patch_sizes);
+    cache_.Resize(num_bodies, num_velocities, clique_sizes, patch_sizes);
   }
 
   int num_velocities() const { return v_.size(); }
 
   int num_patches() const {
     return cache_.patch_constraints_data.num_patches();
+  }
+
+  int num_gains() const {
+    return cache_.gain_constraints_data.num_constraints();
   }
 
   const VectorX<T>& v() const { return v_; }
