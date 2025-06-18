@@ -231,7 +231,20 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   double last_iteration_volume = E.Volume();
   int iteration = 0;
   VectorXd closest(nq);
-  RandomGenerator generator(options.sampled_iris_options.random_seed);
+
+  const int num_threads_for_sampling =
+      options.sampled_iris_options.sample_particles_in_parallel
+          ? options.sampled_iris_options.parallelism.num_threads()
+          : 1;
+  std::vector<RandomGenerator> generators;
+  // This strategy for seeding multiple generators is acceptable, since Drake's
+  // RandomGenerator is a Mersenne Twister, where even nearby seeds are
+  // practically independent.
+  for (int generator_index = 0; generator_index < num_threads_for_sampling;
+       ++generator_index) {
+    generators.push_back(RandomGenerator(
+        options.sampled_iris_options.random_seed + generator_index));
+  }
 
   const SolverInterface* solver;
   std::unique_ptr<SolverInterface> default_solver =
@@ -309,17 +322,14 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           options.sampled_iris_options.epsilon, delta_k,
           options.sampled_iris_options.tau);
 
+      particles.resize(N_k);  // Entries will be overwritten.
+
       // TODO(rhjiang): Implement the ray sampling strategy, and expose it as an
       // option to the user.
-      particles.resize(N_k);
-      particles.at(0) = P_candidate.UniformSample(
-          &generator, E.center(), options.sampled_iris_options.mixing_steps);
-      // Populate particles by uniform sampling.
-      for (int i = 1; i < N_k; ++i) {
-        particles.at(i) = P_candidate.UniformSample(
-            &generator, particles.at(i - 1),
-            options.sampled_iris_options.mixing_steps);
-      }
+      internal::PopulateParticlesByUniformSampling(
+          P_candidate, N_k, options.sampled_iris_options.mixing_steps,
+          &generators, &particles);
+
       // Find all particles in collision.
       std::vector<uint8_t> particle_col_free =
           checker.CheckConfigsCollisionFree(

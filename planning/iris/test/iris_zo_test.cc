@@ -155,6 +155,14 @@ TEST_F(DoublePendulum, IrisZoTest) {
   CheckRegion(region);
 
   PlotEnvironmentAndRegion(region);
+
+  // Changing the sampling options should lead to a still-correct, but
+  // slightly-different region.
+  options.sampled_iris_options.sample_particles_in_parallel = true;
+  HPolyhedron region2 =
+      IrisZo(*checker_, starting_ellipsoid_, domain_, options);
+  CheckRegion(region2);
+  EXPECT_FALSE(region.A().isApprox(region2.A(), 1e-10));
 }
 
 // Test growing a region for the double pendulum along a parameterization of the
@@ -249,6 +257,8 @@ TEST_F(BlockOnGround, IrisZoTest) {
 // Reproduced from the IrisInConfigurationSpace unit tests.
 TEST_F(ConvexConfigurationSpace, IrisZoTest) {
   IrisZoOptions options;
+
+  options.sampled_iris_options.sample_particles_in_parallel = true;
 
   // Turn on meshcat for addition debugging visualizations.
   // This example is truly adversarial for IRIS. After one iteration, the
