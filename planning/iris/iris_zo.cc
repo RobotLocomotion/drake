@@ -408,14 +408,39 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
                         options.sampled_iris_options.epsilon * N_k);
       }
 
+      bool probabilistic_test_passed = false;
       if (number_particles_in_collision_unadaptive_test <=
           (1 - options.sampled_iris_options.tau) *
               options.sampled_iris_options.epsilon * N_k) {
+        probabilistic_test_passed = true;
+      }
+
+      if (options.sampled_iris_options.verbose) {
+        if (!options.sampled_iris_options.remove_all_collisions_possible &&
+            probabilistic_test_passed) {
+          log()->info(
+              "IrisZo probabilistic test passed! Finished computing "
+              "hyperplanes.");
+          break;
+        } else if (probabilistic_test_passed) {
+          log()->info(
+              "IrisZo probabilistic test passed! Computing hyperplanes for "
+              "remaining particles, then this iteration is finished.");
+        } else {
+          log()->info(
+              "IrisZo probabilistic test failed! Continuing to compute "
+              "hyperplanes.");
+        }
+      }
+      if (!options.sampled_iris_options.remove_all_collisions_possible &&
+          probabilistic_test_passed) {
         break;
       }
 
       if (num_iterations_separating_planes ==
-          options.sampled_iris_options.max_iterations_separating_planes - 1) {
+              options.sampled_iris_options.max_iterations_separating_planes -
+                  1 &&
+          !probabilistic_test_passed) {
         log()->warn(
             "IrisZo WARNING, separating planes hit max iterations without "
             "passing the unadaptive test, this voids the probabilistic "
@@ -605,6 +630,11 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
                         "ensure point containment",
                         max_relaxation));
       }
+
+      if (probabilistic_test_passed) {
+        break;
+      }
+
       // Resampling particles in current polyhedron for next iteration.
       particles[0] = P.UniformSample(&generator,
                                      options.sampled_iris_options.mixing_steps);
