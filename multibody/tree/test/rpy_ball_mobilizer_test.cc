@@ -244,6 +244,26 @@ TEST_F(RpyBallMobilizerTest, MapAccelerationToQDDotAndViceVersa) {
   const Vector3<double> qddot_expected = Ndot * wxyz + N * vdot;
   EXPECT_TRUE(CompareMatrices(qddot, qddot_expected, kTolerance,
                               MatrixCompareType::relative));
+
+  // Compute the 3x3 N⁺(q) matrix and its time-derivative Ṅ⁺(q,q̇).
+  MatrixX<double> Nplus(3, 3), Nplusdot(3, 3);
+  mobilizer_->CalcNplusMatrix(*context_, &Nplus);
+  mobilizer_->CalcNplusDotMatrix(*context_, &Nplusdot);
+
+  // Starting with the previous q̈, use MapQDDotToAcceleration() to calculate v̇.
+  Vector3<double> wdot;
+  mobilizer_->MapQDDotToAcceleration(*context_, qddot, &wdot);
+
+  // Verify equivalence of v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈ and MapQDDotToAcceleration().
+  Vector3<double> qdot;
+  mobilizer_->MapVelocityToQDot(*context_, wxyz, &qdot);
+  const Vector3<double> vdot_expected = Nplusdot * qdot + Nplus * qddot;
+  EXPECT_TRUE(CompareMatrices(vdot_expected, vdot, 16 * kTolerance,
+                              MatrixCompareType::relative));
+
+  // Verify MapQDDotToAcceleration() is the inverse of MapAccelerationToQDDot().
+  EXPECT_TRUE(CompareMatrices(vdot, wdot, 16 * kTolerance,
+                              MatrixCompareType::relative));
 }
 
 TEST_F(RpyBallMobilizerTest, SingularityError) {
