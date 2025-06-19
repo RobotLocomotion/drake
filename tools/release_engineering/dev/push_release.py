@@ -8,7 +8,6 @@ This program is only supported on Ubuntu Jammy 22.04.
 import argparse
 import hashlib
 import json
-import mimetypes
 import os
 import re
 import shutil
@@ -18,7 +17,7 @@ import tempfile
 import textwrap
 import urllib.request
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import boto3
 
@@ -27,6 +26,7 @@ import docker
 import github3
 from github3.repos.release import Asset, Release
 from github3.repos.repo import Repository
+from github3.repos.tag import RepoTag
 
 
 _GITHUB_REPO_OWNER = 'RobotLocomotion'
@@ -126,7 +126,7 @@ class _State:
 
         self.find_artifacts = self.manifest.find_artifacts
 
-    def _begin(self, action: str, src: str, dst: str = None):
+    def _begin(self, action: str, src: str, dst: str = None) -> None:
         """
         Report the start of an action.
         """
@@ -135,21 +135,22 @@ class _State:
         else:
             print(f'{action} {src!r} ...', flush=True, end='')
 
-    def _done(self):
+    def _done(self) -> None:
         """
         Report the completion of an action.
         """
         print(' done')
 
-    def _push_asset(self, asset: Asset, bucket: str, path: str):
+    def _push_asset(self, asset: Asset, bucket: str, path: str) -> None:
         """
-        Pushes the specified asset to S3.
+        Pushes the specified 'asset' to S3 under the given 'bucket'/'path'.
 
         If --dry-run was given, rather than actually pushing files to S3,
         prints what would be done.
         """
         if self.options.dry_run:
-            print(f'push {asset.name!r} to s3://{bucket}/{path}')
+            print(f'push {asset.name!r} ({asset.content_type})'
+                  f' to s3://{bucket}/{path}')
         else:
             self._begin('downloading', asset.name)
             local_path = os.path.join(self._scratch.name, asset.name)
@@ -161,9 +162,10 @@ class _State:
             self._done()
 
     def _upload_file_s3(self, name: str, bucket: str, path: str,
-                        local_path: str):
+                        local_path: str) -> None:
         """
-        Uploads the specified file to S3.
+        Uploads the file at 'local_path' to S3 under the given
+        'bucket'/'path'/'name'.
 
         If --dry-run was given, rather than actually uploading files to S3,
         prints what would be done.
@@ -175,25 +177,39 @@ class _State:
             self._s3.upload_file(local_path, bucket, f'{path}/{name}')
             self._done()
 
-    def _upload_file_github(self, name: str, local_path: str):
+    def _upload_file_github(self, name: str, local_path: str) -> None:
         """
-        Uploads the specified file to GitHub.
+        Uploads the file at 'local_path' to GitHub under the given 'name'.
 
         If --dry-run was given, rather than actually uploading files to GitHub,
         prints what would be done.
         """
+        # Hard code the MIME types, because the mimetype package fails for
+        # both file types that we need.
+        if local_path.endswith('.tar.gz'):
+            content_type = 'application/gzip'
+        elif local_path.endswith('.sha256') or local_path.endswith('.sha512'):
+            content_type = 'text/plain'
+        else:
+            # If we got here, either something is catastrophically wrong, or
+            # the script needs to be updated to consider a new case.
+            raise RuntimeError('Cannot determine MIME type for file'
+                               f' {local_path!r} with unexpected extension'
+                               ' (should be one of: .tar.gz, .sha256,'
+                               ' .sha512).')
+
         if self.options.dry_run:
-            print(f'push {name!r} to {self.release.html_url!r}')
+            print(f'push {name!r} ({content_type})'
+                  f' to {self.release.html_url!r}')
         else:
             self._begin('pushing', name, self.release.html_url)
-            mime_type = mimetypes.guess_type(local_path)
-            assert mime_type is not None
-            self.release.upload_asset(mime_type, name, local_path)
+            with open(local_path, 'rb') as f:
+                self.release.upload_asset(content_type, name, f)
             self._done()
 
-    def _compute_hash(self, path: str, algorithm: str):
+    def _compute_hash(self, path: str, algorithm: str) -> str:
         """
-        Compute the specified hash for the specified file.
+        Compute and return the specified hash for the specified file.
         """
         with open(path, 'rb') as f:
             if hasattr(hashlib, 'file_digest'):
@@ -210,26 +226,28 @@ class _State:
                         break
                     digest.update(view[:size])
 
-                return digest
+                return digest.hexdigest()
 
     def _write_hashfile(self, name: str, algorithm: str,
-                        local_path: str, hashfile_path: str):
+                        local_path: str, hashfile_path: str) -> str:
         """
         Writes the hash of the specified file using the specified algorithm
-        to the specified path.
+        to the specified path. Returns the computed hash.
         """
         self._begin(f'computing {algorithm} for', name)
 
         digest = self._compute_hash(local_path, algorithm)
         with open(hashfile_path, 'wt') as f:
-            f.write(f'{digest.hexdigest()}  {name}\n')
+            f.write(f'{digest} {name}\n')
 
         self._done()
         return digest
 
-    def _download_file(self, name: str, archive_format: str = 'tarball'):
+    def _download_file(self, name: str,
+                       archive_format: str = 'tarball') -> str:
         """
-        Downloads the specified file from the GitHub release.
+        Downloads the specified file from the GitHub release. Returns the full
+        path to the downloaded file.
         """
         self._begin('downloading', name)
 
@@ -240,7 +258,7 @@ class _State:
         return local_path
 
     def push_artifact(self, artifact: _Artifact, bucket: str,
-                      path: str, include_hashes: bool = True):
+                      path: str, include_hashes: bool = True) -> None:
         """
         Pushes the specified artifact to S3, optionally including any
         associated hashes.
@@ -254,7 +272,7 @@ class _State:
                 self._push_asset(a, bucket, f'{path}.sha{h}')
 
     def push_archive(self, name: str, bucket: str, path: str,
-                     archive_format: str = 'tarball'):
+                     archive_format: str = 'tarball') -> None:
         """
         Pushes the release source archive to S3 and GitHub, along with computed
         hashes.
@@ -270,17 +288,15 @@ class _State:
         for algorithm in _ARCHIVE_HASHES:
             hashfile_name = f'{name}.{algorithm}'
             hashfile_path = os.path.join(self._scratch.name, hashfile_name)
-            s3_hashfile_path = f'{path}/{hashfile_name}'
 
             digest = self._write_hashfile(name, algorithm,
                                           local_path, hashfile_path)
-            print(f'{name!r} {algorithm}: {digest.hexdigest()}')
-            self._upload_file_s3(hashfile_name, bucket,
-                                 s3_hashfile_path, hashfile_path)
+            print(f'{name!r} {algorithm}: {digest}')
+            self._upload_file_s3(hashfile_name, bucket, path, hashfile_path)
             self._upload_file_github(hashfile_name, hashfile_path)
 
     def push_docker_tag(self, old_tag_name: str, new_tag_name: str,
-                        repository: str = _DOCKER_REPOSITORY_NAME):
+                        repository: str = _DOCKER_REPOSITORY_NAME) -> None:
         image = f'{repository}:{old_tag_name}'
         if self.options.dry_run:
             print(f'push {image!r} to {repository!r} as {new_tag_name!r}')
@@ -298,14 +314,14 @@ class _State:
             self._docker.remove_image(image)
 
 
-def _fatal(msg: str, result: int = 1):
+def _fatal(msg: str, result: int = 1) -> None:
     width = shutil.get_terminal_size().columns
     for line in msg.split('\n'):
         print(textwrap.fill(line, width), file=sys.stderr)
     sys.exit(result)
 
 
-def _assert_tty():
+def _assert_tty() -> None:
     try:
         subprocess.check_call(['tty', '-s'])
     except subprocess.CalledProcessError:
@@ -314,7 +330,7 @@ def _assert_tty():
         sys.exit(1)
 
 
-def _assert_command_exists(name: str, package: str):
+def _assert_command_exists(name: str, package: str) -> None:
     """
     Asserts that an executable <name> exists,
     or tells the user to install <package>.
@@ -324,7 +340,7 @@ def _assert_command_exists(name: str, package: str):
                f'Fix with `apt-get install {package}`.')
 
 
-def _test_non_empty(path):
+def _test_non_empty(path) -> bool:
     """
     Tests if the specified path exists and is a non-empty file.
     """
@@ -338,7 +354,7 @@ def _test_non_empty(path):
     return os.stat(path).st_size > 0
 
 
-def _check_version(version):
+def _check_version(version) -> bool:
     """
     Returns True iff the given version string matches PEP 440.
     """
@@ -350,7 +366,7 @@ def _check_version(version):
         version) is not None
 
 
-def _find_tag(repo: Repository, tag: str):
+def _find_tag(repo: Repository, tag: str) -> Optional[RepoTag]:
     """
     Finds the tag <tag> in the repository <repo>.
     """
@@ -360,7 +376,7 @@ def _find_tag(repo: Repository, tag: str):
     return None
 
 
-def _list_docker_tags(repository=_DOCKER_REPOSITORY_NAME):
+def _list_docker_tags(repository=_DOCKER_REPOSITORY_NAME) -> List[str]:
     tags = []
     uri = f'{_DOCKER_REGISTRY_API_URI}/{repository}/tags?page_size=1000'
 
@@ -376,7 +392,7 @@ def _list_docker_tags(repository=_DOCKER_REPOSITORY_NAME):
     return tags
 
 
-def _push_tar(state: _State):
+def _push_tar(state: _State) -> None:
     """
     Downloads binary and source .tar artifacts and pushes them to S3 with
     checksums, additionally pushing the source .tar to GitHub.
@@ -390,9 +406,9 @@ def _push_tar(state: _State):
     state.push_archive(dest_name, _AWS_BUCKET, 'drake/release')
 
 
-def _push_deb(state: _State):
+def _push_deb(state: _State) -> None:
     """
-    Downloads .deb artifacts and push them to S3.
+    Downloads .deb artifacts and pushes them to S3.
     """
     for deb in state.find_artifacts(_Manifest.RE_DEB):
         dest_path_suffix = f'{deb.version}_{deb.arch}-{deb.platform}.{deb.ext}'
@@ -400,7 +416,7 @@ def _push_deb(state: _State):
         state.push_artifact(deb, _AWS_BUCKET, dest_path)
 
 
-def _push_docker(state: _State):
+def _push_docker(state: _State) -> None:
     """
     Re-tags Docker staging images as release images.
     """
@@ -411,7 +427,7 @@ def _push_docker(state: _State):
             state.push_docker_tag(tag_name, release_tag_name)
 
 
-def main(args: List[str]):
+def main(args: List[str]) -> None:
     parser = argparse.ArgumentParser(
         prog='push_release', description=__doc__)
     parser.add_argument(
