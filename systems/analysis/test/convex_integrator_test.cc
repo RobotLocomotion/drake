@@ -327,7 +327,7 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   PooledSapModel<double>& model = integrator.get_model();
   SapData<double>& data = integrator.get_data();
   sap_builder.UpdateModel(plant_context, h, &model);
-  // sap_builder.AddExternalGains(K, b, &model);
+  //sap_builder.AddExternalGains(K, b, &model);
   sap_builder.AddActuationGains(K, b, &model);
   model.ResizeData(&data);
   model.CalcData(v, &data); 
@@ -342,19 +342,17 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   EXPECT_TRUE(
       CompareMatrices(H, H_ref, kTolerance, MatrixCompareType::relative));
   EXPECT_NEAR(l, l_ref, kTolerance);
-     
 
-  // // Simulate for a few seconds to make sure nothing breaks
-  // const int fps = 32;
-  // meshcat->StartRecording(fps);
-  // simulator.set_target_realtime_rate(0.1);
-  // simulator.AdvanceTo(1.0);
-  // meshcat->StopRecording();
-  // meshcat->PublishRecording();
-
-  // std::cout << std::endl;
-  // PrintSimulatorStatistics(simulator);
-  // std::cout << std::endl;
+  // Simulate for a few seconds to make sure nothing breaks
+  const int fps = 32;
+  meshcat->StartRecording(fps);
+  simulator.set_target_realtime_rate(0.1);
+  simulator.AdvanceTo(1.0);
+  meshcat->StopRecording();
+  meshcat->PublishRecording();
+  std::cout << std::endl;
+  PrintSimulatorStatistics(simulator);
+  std::cout << std::endl;
 }
 
 }  // namespace systems
