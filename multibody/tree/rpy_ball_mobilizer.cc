@@ -447,6 +447,101 @@ RpyBallMobilizer<T>::TemplatedDoCloneToScalar(
 }
 
 template <typename T>
+Vector3<T> RpyBallMobilizer<T>::CalcNplusDotTimesQdot(
+    const systems::Context<T>& context, const char* function_name) const {
+  using std::cos;
+  using std::sin;
+  const Vector3<T> angles = get_angles(context);
+  const T cp = cos(angles[1]);
+  const T sp = sin(angles[1]);
+  const T sy = sin(angles[2]);
+  const T cy = cos(angles[2]);
+  if (abs(cp) < 1.0e-3) {
+    ThrowSinceCosPitchIsNearZero(angles[1], function_name);
+  }
+  // The algorithm below efficiently calculates Ṅ⁺(q,q̇)⋅q̇.
+  const Vector3<T> v = get_angular_velocity(context);
+  Vector3<T> qdot;
+  DoMapVelocityToQDot(context, v, &qdot);
+  const T& rdot = qdot[0];
+  const T& pdot = qdot[1];
+  const T& ydot = qdot[2];
+  const T pdot_ydot = pdot * ydot;
+  const T rdot_pdot = rdot * pdot;
+  const T rdot_ydot = rdot * ydot;
+  const T sp_rdot_pdot = sp * rdot_pdot;
+  const T cp_rdot_ydot = cp * rdot_ydot;
+  return Vector3<T>(-cy * pdot_ydot - cy * sp_rdot_pdot - sy * cp_rdot_ydot,
+                    -sy * pdot_ydot - sy * sp_rdot_pdot + cy * cp_rdot_ydot,
+                    -cp * rdot_pdot);
+}
+
+template <typename T>
+void RpyBallMobilizer<T>::DoMapAccelerationToQDDot(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& vdot,
+    EigenPtr<VectorX<T>> qddot) const {
+  // --------------------------------------------------------------------------
+  // Seen in MapVelocityToQDot(), the time-derivatives of generalized positions
+  // q̇ = [ṙ, ṗ, ẏ]ᵀ are related to the generalized velocities v = [ωx, ωy, ωz]ᵀ
+  // as shown below, whose matrix form is q̇ = N(q)⋅v, where N is a 3x3 matrix.
+  //
+  // ⌈ ṙ ⌉   ⌈  cos(y) / cos(p)           sin(y) / cos(p)           0 ⌉ ⌈ ωx ⌉
+  // | ṗ | = | -sin(y)                    cos(y)                    0 | | ωy |
+  // ⌊ ẏ ⌋   ⌊  sin(p) * cos(y) / cos(p)  sin(p) * sin(y) / cos(p)  1 ⌋ ⌊ ωz ⌋
+  //
+  // For this mobilizer v = w_FM_F =  [ωx, ωy, ωz]ᵀ is the mobilizer M frame's
+  // angular velocity in the mobilizer F frame, expressed in frame F and
+  // q = [r, p, y]ᵀ  denote roll, pitch, yaw angles (generalized positions).
+  //
+  // There are various ways to get q̈ = [r̈, p̈, ÿ]ᵀ in terms of v̇ = [ω̇x, ω̇y, ω̇z]ᵀ.
+  // A simple calculation directly solves for q̈ as q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇.
+  // However, N⁺(q) is simpler than N(q) so Ṅ⁺(q,q̇) is much simpler than Ṅ(q,q̇).
+  // Hence, a more efficient calculation of q̈ starts as v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈
+  // and then solves as q̈ = N(q) {v̇ - Ṅ⁺(q,q̇)⋅q̇}.
+  // --------------------------------------------------------------------------
+  const Vector3<T> vdotEtc = vdot - CalcNplusDotTimesQdot(context, __func__);
+
+  // Mathematical trick: Although the function below was designed to efficiently
+  // calculate q̇ = N(q)⋅v, it can be used to calculate q̈ = N(q) {v̇ - Ṅ⁺(q,q̇)⋅q̇}.
+  DoMapVelocityToQDot(context, vdotEtc, qddot);
+}
+
+template <typename T>
+void RpyBallMobilizer<T>::DoMapQDDotToAcceleration(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& qddot,
+    EigenPtr<VectorX<T>> vdot) const {
+  // --------------------------------------------------------------------------
+  // Seen in MapQDotToVelocity(), the generalized velocities v = [ωx, ωy, ωz]ᵀ
+  // are related to q̇ = [ṙ, ṗ, ẏ]ᵀ (time-derivatives of generalized positions)
+  // as shown below, whose matrix form is v = N⁺(q)⋅q̇, where N⁺ is a 3x3 matrix.
+  //
+  // ⌈ ωx ⌉   ⌈cos(y) cos(p)  -sin(y)  0⌉ ⌈ ṙ ⌉
+  // | ωy | = |sin(y) cos(p)   cos(y)  0| | ṗ |
+  // ⌊ ωz ⌋   ⌊      -sin(p)       0   1⌋ ⌊ ẏ ⌋
+  //
+  // For this mobilizer v = w_FM_F =  [ωx, ωy, ωz]ᵀ is the mobilizer M frame's
+  // angular velocity in the mobilizer F frame, expressed in frame F and
+  // q = [r, p, y]ᵀ  denote roll, pitch, yaw angles (generalized positions).
+  //
+  // There are various ways to calculate v̇ = [ω̇x, ω̇y, ω̇z]ᵀ (the time-derivatives
+  // of the generalized velocities). A simple one is v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
+  // --------------------------------------------------------------------------
+  // Calculate Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
+  const Vector3<T> NplusDotTimesQdot = CalcNplusDotTimesQdot(context, __func__);
+
+  // Mathematical trick: Although the function below was designed to efficiently
+  // calculate v = N⁺(q)⋅q̇, it can be used to calculate N⁺(q)⋅q̈.
+  DoMapQDotToVelocity(context, qddot, vdot);
+
+  // Calculate v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
+  vdot->coeffRef(0) += NplusDotTimesQdot[0];
+  vdot->coeffRef(1) += NplusDotTimesQdot[1];
+  vdot->coeffRef(2) += NplusDotTimesQdot[2];
+}
+
+template <typename T>
 std::unique_ptr<Mobilizer<double>> RpyBallMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<double>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
