@@ -261,6 +261,10 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   void DoCalcNplusDotMatrix(const systems::Context<T>& context,
                             EigenPtr<MatrixX<T>> NplusDot) const final;
 
+  // Calculate the term Ṅ⁺(q,q̇)⋅q̇ which appears in v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
+  Vector3<T> CalcNplusDotTimesQdot(const systems::Context<T>& context,
+                                   const char* function_name) const;
+
   // Maps the generalized velocity v, which corresponds to the angular velocity
   // w_FM, to time derivatives of roll-pitch-yaw angles θ₀, θ₁, θ₂ in qdot.
   //
@@ -304,6 +308,12 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   void DoMapAccelerationToQDDot(const systems::Context<T>& context,
                                 const Eigen::Ref<const VectorX<T>>& vdot,
                                 EigenPtr<VectorX<T>> qddot) const final;
+
+  // Maps qddot to vdot, which for this mobilizer is v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
+  // For simple mobilizers v̇ = q̈. This mobilizer's N and Ṅ⁺ are more elaborate.
+  void DoMapQDDotToAcceleration(const systems::Context<T>& context,
+                                const Eigen::Ref<const VectorX<T>>& qddot,
+                                EigenPtr<VectorX<T>> vdot) const final;
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
