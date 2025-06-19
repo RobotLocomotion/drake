@@ -236,17 +236,36 @@ T PooledSapModel<T>::CalcCostAlongLine(
   *dcost_dalpha = a * alpha + b;
   *d2cost_dalpha2 = a;
 
-  // Add constraints contributions:
   T constraint_dcost, constraint_d2cost;
-  CalcBodySpatialVelocities(v_alpha, &V_WB_alpha);
-  patch_constraints_pool_.CalcData(V_WB_alpha,
-                                   &cache_alpha.patch_constraints_data);
-  patch_constraints_pool_.ProjectAlongLine(
-      cache_alpha.patch_constraints_data, search_direction.U,
-      &scratch->scratch(), &constraint_dcost, &constraint_d2cost);
-  cost += cache_alpha.patch_constraints_data.cost();
-  *dcost_dalpha += constraint_dcost;
-  *d2cost_dalpha2 += constraint_d2cost;
+
+  // Weird to resize here.
+  // TODO(amcastro-tri): Resize where appropriate.
+  scratch->scratch().v_pool.resize(num_velocities());
+
+  // Add gain constraints contributions:
+  {
+    gain_constraints_pool_.CalcData(v_alpha,
+                                    &cache_alpha.gain_constraints_data);
+    gain_constraints_pool_.ProjectAlongLine(
+        cache_alpha.gain_constraints_data, search_direction.w,
+        &scratch->scratch().v_pool, &constraint_dcost, &constraint_d2cost);
+    cost += cache_alpha.patch_constraints_data.cost();
+    *dcost_dalpha += constraint_dcost;
+    *d2cost_dalpha2 += constraint_d2cost;
+  }
+
+  // Add patch constraints contributions:
+  {
+    CalcBodySpatialVelocities(v_alpha, &V_WB_alpha);
+    patch_constraints_pool_.CalcData(V_WB_alpha,
+                                     &cache_alpha.patch_constraints_data);
+    patch_constraints_pool_.ProjectAlongLine(
+        cache_alpha.patch_constraints_data, search_direction.U,
+        &scratch->scratch(), &constraint_dcost, &constraint_d2cost);
+    cost += cache_alpha.patch_constraints_data.cost();
+    *dcost_dalpha += constraint_dcost;
+    *d2cost_dalpha2 += constraint_d2cost;
+  }
 
   return cost;
 }
