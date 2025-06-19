@@ -175,6 +175,12 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "lcm_interface_system_test",
     flaky = True,
+    tags = [
+        # Since migrating CI Jenkins jobs from Jammy to Noble, this test
+        # causes the newly converted TSAN jobs to fail.
+        # TODO(#23110) Investigate, fix or suppress, then re-enable this test.
+        "no_tsan",
+    ],
     deps = [
         ":lcm_interface_system",
         ":lcm_subscriber_system",
