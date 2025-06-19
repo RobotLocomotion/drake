@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+     draft-rfcxml-general-template-bare-00
+  
+     This templates includes the bare minimum needed for the template to successfully validate 
+     against the RFCXML schema.  While it validates, it is not a valid Internet-Draft. This 
+     template is best used with an RNC schema-aware editor to assist with inserting valid elements 
+     and attributes. 
+     
+     Documentation is at https://authors.ietf.org/en/templates-and-schemas
+-->
+<?xml-model href="rfc7991bis.rnc"?>  <!-- Required for schema validation and schema-aware editing -->
+
+<!DOCTYPE rfc [
+  <!ENTITY nbsp    "&#160;">
+  <!ENTITY zwsp   "&#8203;">
+  <!ENTITY nbhy   "&#8209;">
+  <!ENTITY wj     "&#8288;">
+]>
+<!-- If further character entities are required then they should be added to the DOCTYPE above.
+     Use of an external entity file is not recommended. -->
+
+<rfc>
+  <front>
+    <title></title>
+    <author></author>
+   </front>
+  
+  <middle>
+    <section>
+    </section>
+  </middle>
+
+  <back>
+ </back>
+</rfc>
