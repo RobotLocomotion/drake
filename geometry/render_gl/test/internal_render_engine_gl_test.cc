@@ -4,6 +4,7 @@
 #include <cstring>
 #include <filesystem>
 #include <optional>
+#include <source_location>
 #include <unordered_map>
 
 #include <gflags/gflags.h>
@@ -1253,61 +1254,69 @@ TEST_F(RenderEngineGlTest, MeshTest) {
 // two renderings: one with a reference mesh and one with the mesh pre-scaled
 // (applying the inverse scale to the Shape). The two images should end up
 // identical.
-TEST_F(RenderEngineGlTest, NonUniformScaleTest) {
-  RenderEngineGl ref_engine;
-  RenderEngineGl scale_engine;
+TEST_F(RenderEngineGlTest, NonUniformScale) {
+  const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
+  const int w = camera.core().intrinsics().width();
+  const int h = camera.core().intrinsics().height();
 
   const auto convex_id = GeometryId::get_new_id();
   const auto mesh_id = GeometryId::get_new_id();
   PerceptionProperties material;
   material.AddProperty("label", "id", RenderLabel::kDontCare);
 
-  const fs::path unit_obj =
-      FindResourceOrThrow("drake/geometry/test/rotated_cube_unit_scale.obj");
-  const fs::path scale_obj =
-      FindResourceOrThrow("drake/geometry/test/rotated_cube_squished.obj");
-
-  const Vector3d unit_scale(1, 1, 1);
-  ref_engine.RegisterVisual(mesh_id, Mesh(unit_obj, unit_scale), material,
-                            RigidTransformd(Vector3d(-1.5, 0, 0)),
-                            /* needs_update =*/false);
-  ref_engine.RegisterVisual(convex_id, Convex(unit_obj, unit_scale), material,
-                            RigidTransformd(Vector3d(1.5, 0, 0)),
-                            /* needs_update =*/false);
-
-  // This should be the scale factor documented in rotated_cube_squished.obj
-  const Vector3d stretch(2, 4, 8);
-  scale_engine.RegisterVisual(mesh_id, Mesh(scale_obj, stretch), material,
-                              RigidTransformd(Vector3d(-1.5, 0, 0)),
-                              /* needs_update =*/false);
-  scale_engine.RegisterVisual(convex_id, Convex(scale_obj, stretch), material,
-                              RigidTransformd(Vector3d(1.5, 0, 0)),
-                              /* needs_update =*/false);
-
   // The camera is above the Wz = 0 plane, looking generally down and in the
   // +Wy direction.
   const RigidTransformd X_WC(RotationMatrixd::MakeXRotation(-3.2 * M_PI / 4),
                              Vector3d(0, -3, 4.4));
-  ref_engine.UpdateViewpoint(X_WC);
-  scale_engine.UpdateViewpoint(X_WC);
 
-  const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
-  const int w = camera.core().intrinsics().width();
-  const int h = camera.core().intrinsics().height();
-  ImageRgba8U ref_color(w, h);
-  ImageRgba8U scale_color(w, h);
-  EXPECT_NO_THROW(ref_engine.RenderColorImage(camera, &ref_color));
-  EXPECT_NO_THROW(scale_engine.RenderColorImage(camera, &scale_color));
+  for (const auto& extension : {"obj", "gltf"}) {
+    SCOPED_TRACE(fmt::format("Extension: .{}", extension));
+    RenderEngineGl ref_engine;
+    RenderEngineGl scale_engine;
 
-  if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
-    const fs::path out_dir(dir);
-    const std::string file_prefix = "NonUniformScaleTest";
-    ImageIo{}.Save(ref_color,
-                   out_dir / fmt::format("{}_ref_color.png", file_prefix));
-    ImageIo{}.Save(scale_color,
-                   out_dir / fmt::format("{}_scale_color.png", file_prefix));
+    const fs::path unit_mesh = FindResourceOrThrow(fmt::format(
+        "drake/geometry/test/rotated_cube_unit_scale.{}", extension));
+    const fs::path scale_mesh = FindResourceOrThrow(
+        fmt::format("drake/geometry/test/rotated_cube_squished.{}", extension));
+
+    const Vector3d unit_scale(1, 1, 1);
+    ref_engine.RegisterVisual(mesh_id, Mesh(unit_mesh, unit_scale), material,
+                              RigidTransformd(Vector3d(-1.5, 0, 0)),
+                              /* needs_update =*/false);
+    ref_engine.RegisterVisual(convex_id, Convex(unit_mesh, unit_scale),
+                              material, RigidTransformd(Vector3d(1.5, 0, 0)),
+                              /* needs_update =*/false);
+
+    // This should be the scale factor documented in rotated_cube_squished.obj
+    const Vector3d stretch(2, 4, 8);
+    scale_engine.RegisterVisual(mesh_id, Mesh(scale_mesh, stretch), material,
+                                RigidTransformd(Vector3d(-1.5, 0, 0)),
+                                /* needs_update =*/false);
+    scale_engine.RegisterVisual(convex_id, Convex(scale_mesh, stretch),
+                                material, RigidTransformd(Vector3d(1.5, 0, 0)),
+                                /* needs_update =*/false);
+
+    ref_engine.UpdateViewpoint(X_WC);
+    scale_engine.UpdateViewpoint(X_WC);
+
+    ImageRgba8U ref_color(w, h);
+    ImageRgba8U scale_color(w, h);
+    EXPECT_NO_THROW(ref_engine.RenderColorImage(camera, &ref_color));
+    EXPECT_NO_THROW(scale_engine.RenderColorImage(camera, &scale_color));
+
+    if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
+      const std::source_location& caller = std::source_location::current();
+      const std::string stem =
+          fmt::format("line_{:0>4}_{}", caller.line(), extension);
+      const fs::path out_dir(dir);
+      ImageIo{}.Save(ref_color,
+                     out_dir / fmt::format("{}_ref_color.png", stem));
+      ImageIo{}.Save(scale_color,
+                     out_dir / fmt::format("{}_scale_color.png", stem));
+    }
+
+    EXPECT_EQ(ref_color, scale_color);
   }
-  EXPECT_EQ(ref_color, scale_color);
 }
 
 // Repeats various mesh-based tests, but this time the meshes are loaded from

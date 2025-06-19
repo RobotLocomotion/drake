@@ -35,10 +35,15 @@ vtkSmartPointer<vtkPlaneSource> CreateSquarePlane(double size);
 
 // Converts the provided `transform` to a vtkTransform. The rigid transform is
 // the concatenation of a translation operation T and rotation operation R
-// (X = T * R). We turn it into a general transform by also concatenating a
-// scale matrix: T * R * S, where where S is I * `scale` (i.e., a diagonal
-// matrix with `scale` on the diagonal). This is the standard transform matrix
-// for graphics.
+// (X = T * R).
+//
+// We turn it into a general transform by also concatenating a scale matrix:
+// T * S * R, where where S is I * `scale` (i.e., a diagonal
+// matrix with `scale` on the diagonal). This is _not_ the standard transform
+// matrix for graphics (TRS). This particular ordering is intended to
+// accommodate the transfrom from glTF to Drake where *first* we rotate the
+// mesh from y-up to z-up, then scale in a z-up frame, and, finally, translate
+// (as necessary). The scale follow rotation.
 vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
     const math::RigidTransformd& transform,
     const Vector3<double>& scale = Vector3<double>::Ones());
