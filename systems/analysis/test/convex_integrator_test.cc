@@ -300,9 +300,10 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
 
   // Compute the cost, gradient and Hessian analytically, and check that
   // these match what we get from the PooledSap model.
-  // 
-  // Cost: ℓ = 1/2 v'Mv − r v + h (1/2 v'Kv + b v)
-  // Gradient: dℓ/dv = Mv − r + h (Kv + b)
+  //
+  // Cost: ℓ = 1/2 v'Mv − r v + h/2 ∑(kᵢvᵢ−bᵢ)²/kᵢ =
+  //         = 1/2 v'Mv − r v + h (1/2 v'Kv - b v) + h/2 b'K⁻¹b
+  // Gradient: dℓ/dv = Mv − r + h (Kv - b)
   // Hessian: d²ℓ/dv² = M + h K
   const VectorXd v = v0;
   MatrixXd M(nv, nv);
@@ -312,10 +313,13 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   const VectorXd r =
       -h * plant.CalcInverseDynamics(plant_context, -v0 / h, f_ext);
 
-  const double l_ref = 0.5 * v.dot(M * v) - r.dot(v) +
-                       h * 0.5 * v.dot(K_ref.asDiagonal() * v) - h * b_ref.dot(v);
+  const VectorXd K_inv = K_ref.cwiseInverse();
+  const double l_ref =
+      0.5 * v.dot(M * v) - r.dot(v) + h * 0.5 * v.dot(K_ref.asDiagonal() * v) -
+      h * b_ref.dot(v) + 0.5 * h * b_ref.dot(K_inv.asDiagonal() * b_ref);
   const VectorXd dl_ref = M * v - r + h * K_ref.asDiagonal() * v - h * b_ref;
-  const MatrixXd H_ref = M + h * K_ref.asDiagonal() * MatrixXd::Identity(nv, nv);
+  const MatrixXd H_ref =
+      M + h * K_ref.asDiagonal() * MatrixXd::Identity(nv, nv);
 
   fmt::print("l_ref : {}\n", l_ref);
 
