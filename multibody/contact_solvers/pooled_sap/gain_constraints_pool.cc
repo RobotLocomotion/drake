@@ -76,14 +76,29 @@ void PooledSapModel<T>::GainConstraintsPool::AccumulateHessian(
 
 template <typename T>
 void PooledSapModel<T>::GainConstraintsPool::ProjectAlongLine(
-    const GainConstraintsDataPool<T>& gain_data,
-    const EigenPool<Vector6<T>>& U_WB_pool,
-    typename SapData<T>::Scratch* scratch, T* dcost, T* d2cost) const {
-  (void)gain_data;
-  (void)U_WB_pool;
-  (void)scratch;
-  (void)dcost;
-  (void)d2cost;
+    const GainConstraintsDataPool<T>& gain_data, const VectorX<T>& w,
+    VectorX<T>* v_sized_scratch, T* dcost, T* d2cost) const {
+  const int nv = model().num_velocities();
+  DRAKE_ASSERT(v_sized_scratch != nullptr);
+  DRAKE_ASSERT(v_sized_scratch->size() == nv);
+
+  using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstElementView;
+  using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstElementView;
+
+  *dcost = 0.0;
+  *d2cost = 0.0;
+  for (int k = 0; k < num_constraints(); ++k) {
+    const int c = clique_[k];
+    auto w_c = model().clique_segment(c, w);
+    ConstVectorXView gk = gain_data.gamma(k);
+    ConstMatrixXView Gk = gain_data.G(k);
+
+    auto G_times_w = model().clique_segment(c, v_sized_scratch);
+    G_times_w.noalias() = Gk.diagonal().asDiagonal() * w_c;
+
+    (*dcost) -= w_c.dot(gk);
+    (*d2cost) += w_c.dot(G_times_w);
+  }
 }
 
 }  // namespace pooled_sap

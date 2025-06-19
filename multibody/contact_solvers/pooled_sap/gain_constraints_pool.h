@@ -54,6 +54,7 @@ class PooledSapModel<T>::GainConstraintsPool {
 
   void Clear() {
     clique_.clear();
+    constraint_sizes_.clear();
     K_.Clear();
     b_.Clear();
     le_.Clear();
@@ -114,9 +115,8 @@ class PooledSapModel<T>::GainConstraintsPool {
       internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
   void ProjectAlongLine(const GainConstraintsDataPool<T>& gain_data,
-                        const EigenPool<Vector6<T>>& U_WB_pool,
-                        typename SapData<T>::Scratch* scratch, T* dcost,
-                        T* d2cost) const;
+                        const VectorX<T>& w, VectorX<T>* v_sized_scratch,
+                        T* dcost, T* d2cost) const;
 
  private:
   /* Computes yᵢ = clamp(xᵢ). */
