@@ -58,25 +58,40 @@ std::unique_ptr<AbstractValue> SapPdControllerConstraint<T>::DoMakeData(
   // [Castro et al., 2021] for details.
   const double beta_factor = beta * beta / (4.0 * M_PI * M_PI);
 
-  // Effective gain values are clamped in the near-rigid regime.
-  T Kp_eff = parameters_.Kp();
-  T Kd_eff = parameters_.Kd();
+  const T& Kp = parameters_.Kp();
+  const T& Kd = parameters_.Kd();
 
   // "Effective regularization" [Castro et al., 2021] for this constraint.
-  const T R = 1.0 / (dt * (dt * Kp_eff + Kd_eff));
+  const T R = 1.0 / (dt * (dt * Kp + Kd));
 
-  // "Near-rigid" regularization, [Castro et al., 2021].
+  // "Near-rigid" regularization Rₙᵣ, [Castro et al., 2021].
   const T& w = delassus_estimation[0];
   const T R_near_rigid = beta_factor * w;
 
-  // In the near rigid regime we clamp Kp and Kd so that the effective
-  // regularization is Rnr.
+  // Rₙᵣ determines numerical conditioning for this constraint. We want to
+  // ensure R ≥  Rₙᵣ. However, we also want to respect the ratio Kd/Kp set by
+  // the user. In particular, if Kp = 0, that means the user wants velocity
+  // control only. Similarly, if Kd = 0, the user wants position control only.
+  // We observe we can write Rₙᵣ in two different but equivalent ways:
+  //  1) Rₙᵣ = 1/(δt⋅(δt +   Kd/Kp )⋅Kp),   when Kp > 0
+  //  2) Rₙᵣ = 1/(δt⋅( 1 + δt⋅Kp/Kd)⋅Kd),   when Kd > 0
+  // From where we see that:
+  //  1) δt⋅Kpₙᵣ = 1 / ( (δt +   Kd/Kp )⋅Rₙᵣ) > 1/(2⋅δt⋅Rₙᵣ), δt⋅Kp > Kd
+  //  2)    Kdₙᵣ = 1/(δt⋅( 1 + δt⋅Kp/Kd)⋅Rₙᵣ) > 1/(2⋅δt⋅Rₙᵣ), δt⋅Kp < Kd
+  // We therefore use δt⋅Kp < Kd as the criterion to use expression (1),
+  // keeping Kd/Kp constant, or (2), keeping Kp/Kd constant.
+  T Kp_eff = Kp;
+  T Kd_eff = Kd;
   if (R < R_near_rigid) {
-    // Per [Castro et al., 2021], the relaxation time tau
-    // for a critically damped constraint equals the time step, tau = dt.
-    // With Kd = tau * Kp, and R = Rₙᵣ, we obtain Rₙᵣ⁻¹ = 2δt² Kₚ.
-    Kp_eff = 1.0 / R_near_rigid / (2.0 * dt * dt);
-    Kd_eff = dt * Kp_eff;
+    if (dt * Kp > Kd) {
+      const T tau = Kd / Kp;
+      Kp_eff = 1.0 / (dt * (dt + tau) * R_near_rigid);
+      Kd_eff = tau * Kp_eff;  // We keep ratio tau constant.
+    } else {
+      const T tau_inv = Kp / Kd;
+      Kd_eff = 1.0 / (dt * (dt * tau_inv + 1.0) * R_near_rigid);
+      Kp_eff = tau_inv * Kd_eff;  // We keep ratio tau_inv constant.
+    }
   }
 
   // Make data.
