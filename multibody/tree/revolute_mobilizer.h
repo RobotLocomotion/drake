@@ -248,6 +248,14 @@ class RevoluteMobilizerAxial final : public RevoluteMobilizer<T> {
     return X_FB;
   }
 
+  // Returns p_F = arX_FM * p_M, exploiting the known structure of the axial
+  // rotation transform arX_FM.
+  Vector3<T> apply_X_FM(const math::RigidTransform<T>& arX_FM,
+                        const Vector3<T>& p_M) const {
+    return math::RigidTransform<T>::template ApplyAxialRotation<axis>(arX_FM,
+                                                                      p_M);
+  }
+
   // Returns v_F = aR_FM * v_M, exploiting the known structure of the axial
   // rotation matrix aR_FM.
   Vector3<T> apply_R_FM(const math::RotationMatrix<T>& aR_FM,
@@ -268,6 +276,12 @@ class RevoluteMobilizerAxial final : public RevoluteMobilizer<T> {
     return SpatialVelocity<T>(w_FM, Vector3<T>::Zero());
   }
 
+  SpatialVelocity<T> calc_V_FM_M(const math::RigidTransform<T>&, const T*,
+                                 const T* v) const {
+    // Same as calc_V_FM_F since axis_F == axis_M.
+    return calc_V_FM(nullptr, v);
+  }
+
   // Here H_F₆ₓ₁=[axis_F, 0₃]ᵀ so Hdot_F = 0 and
   // A_FM_F = H_F⋅vdot + Hdot_F⋅v = [axis_F⋅vdot, 0₃]ᵀ
   SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
@@ -279,11 +293,29 @@ class RevoluteMobilizerAxial final : public RevoluteMobilizer<T> {
     return SpatialAcceleration<T>(alpha_FM, Vector3<T>::Zero());
   }
 
+  // Here H_M₆ₓ₁=[axis_M, 0₃]ᵀ so Hdot_M = 0 and
+  // A_FM_M = H_M⋅vdot + Hdot_M⋅v = [axis_M⋅vdot, 0₃]ᵀ
+  // But axis_M == axis_F.
+  SpatialAcceleration<T> calc_A_FM_M(const math::RigidTransform<T>&, const T*,
+                                     const T*, const T* vdot) const {
+    // Same as calc_A_FM_F since axis_F == axis_M.
+    return calc_A_FM(nullptr, nullptr, vdot);
+  }
+
   // Returns tau = H_FM_Fᵀ⋅F_F, where H_FM_Fᵀ = [axis_Fᵀ 0₃ᵀ].
   void calc_tau(const T*, const SpatialForce<T>& F_BMo_F, T* tau) const {
     DRAKE_ASSERT(tau != nullptr);
     const Vector3<T>& t_BMo_F = F_BMo_F.rotational();
     tau[0] = t_BMo_F[axis];
+  }
+
+  // Returns tau = H_FM_Mᵀ⋅F_M, where H_FM_Mᵀ = [axis_Mᵀ 0₃ᵀ] and
+  // axis_M == 100, 010, or 001.
+  void calc_tau_from_M(const math::RigidTransform<T>&, const T*,
+                       const Vector6<T>& F_BMo_M, T* tau) const {
+    DRAKE_ASSERT(tau != nullptr);
+    const auto t_B_M = F_BMo_M.template head<3>();  // rotational (torque)
+    tau[0] = t_B_M[axis];
   }
 
  private:
