@@ -164,6 +164,8 @@ TEST_F(ConvexConfigurationSpace, IrisNp2Test) {
   auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
   ASSERT_TRUE(sgcc_ptr != nullptr);
 
+  options.sampled_iris_options.sample_particles_in_parallel = true;
+
   // Turn on meshcat for addition debugging visualizations.
   // This example is truly adversarial for IRIS. After one iteration, the
   // maximum-volume inscribed ellipse is approximately centered in C-free. So
