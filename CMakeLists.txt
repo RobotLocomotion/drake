@@ -105,12 +105,12 @@ if(NOT Bazel_FOUND)
 endif()
 
 get_filename_component(C_COMPILER_REALPATH "${CMAKE_C_COMPILER}" REALPATH)
-get_filename_component(C_COMPILER_NAME "${C_COMPILER_REALPATH}" NAME)
+get_filename_component(C_COMPILER_REALNAME "${C_COMPILER_REALPATH}" NAME)
 
 get_filename_component(CXX_COMPILER_REALPATH "${CMAKE_CXX_COMPILER}" REALPATH)
-get_filename_component(CXX_COMPILER_NAME "${CXX_COMPILER_REALPATH}" NAME)
+get_filename_component(CXX_COMPILER_REALNAME "${CXX_COMPILER_REALPATH}" NAME)
 
-if(C_COMPILER_NAME STREQUAL ccache OR CXX_COMPILER_NAME STREQUAL ccache)
+if(C_COMPILER_REALNAME STREQUAL ccache OR CXX_COMPILER_REALNAME STREQUAL ccache)
   message(FATAL_ERROR
     "Compilation with ccache is NOT supported due to incompatibility with Bazel"
   )
@@ -288,13 +288,81 @@ if(NOT PYTHON_VERSION_MAJOR_MINOR VERSION_EQUAL SUPPORTED_PYTHON_VERSION)
   )
 endif()
 
-set(BAZEL_REPO_ENV)
+set_property(GLOBAL PROPERTY BAZEL_REPO_ENV)
 
+# Set the compiler for Bazel via --repo_env={CC|CXX}=<compiler>.
+function(set_bazel_compiler lang compiler)
+  if(lang STREQUAL "C")
+    set_property(GLOBAL APPEND_STRING PROPERTY BAZEL_REPO_ENV
+      " --repo_env=CC=${compiler}")
+    message(STATUS "Using compiler: CC=${compiler}")
+  else()
+    set_property(GLOBAL APPEND_STRING PROPERTY BAZEL_REPO_ENV
+      " --repo_env=CXX=${compiler}")
+    message(STATUS "Using compiler: CXX=${compiler}")
+  endif()
+endfunction()
+
+# Use //tools/cc_toolchain:print_compiler_config to find the appropriate
+# path to the compiler, and set it in Bazel's repo_env. If there is an error
+# at any point, fallback to CMAKE_<LANG>_COMPILER.
+function(find_compiler lang)
+  if(CMAKE_${lang}_COMPILER_ID STREQUAL GNU)
+    set(compiler "gcc")
+  elseif(CMAKE_${lang}_COMPILER_ID STREQUAL Clang)
+    set(compiler "clang")
+  else()
+    # At this point, a warning would have already been emitted earlier.
+    set_bazel_compiler("${lang}" "${CMAKE_${lang}_COMPILER}")
+    return()
+  endif()
+
+  set(COMPILER_CONFIG_ARGS
+    run --config=${compiler}
+    //tools/cc_toolchain:print_compiler_config)
+
+  execute_process(COMMAND ${Bazel_EXECUTABLE} ${COMPILER_CONFIG_ARGS}
+    WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
+    OUTPUT_VARIABLE COMPILER_CONFIG_OUTPUT
+    RESULT_VARIABLE COMPILER_CONFIG_RETURN_VALUE)
+
+  if(NOT COMPILER_CONFIG_RETURN_VALUE EQUAL 0)
+    message(WARNING "Compiler configuration could not be obtained.")
+    set_bazel_compiler("${lang}" "${CMAKE_${lang}_COMPILER}")
+    return()
+  endif()
+
+  # Extract the compiler variable for the given language.
+  STRING(REPLACE "\n" ";" COMPILER_CONFIG_OUTPUT "${COMPILER_CONFIG_OUTPUT}")
+  foreach(COMPILER_CONFIG_ENTRY IN LISTS COMPILER_CONFIG_OUTPUT)
+    # This only works for C because 'CC' ends with 'C'...
+    if("${COMPILER_CONFIG_ENTRY}" MATCHES ".*${lang}=(.*)$")
+      set(compiler_command "${CMAKE_MATCH_1}")
+    endif()
+  endforeach()
+  message("${compiler_command}")
+  set_bazel_compiler("${lang}" "${compiler_command}")
+endfunction()
+
+# On Linux, where there is more than one officially supported compiler, pass
+# the C and CXX compilers to Bazel.
 if(NOT APPLE)
-  string(APPEND BAZEL_REPO_ENV
-    " --repo_env=CC=${CMAKE_C_COMPILER}"
-    " --repo_env=CXX=${CMAKE_CXX_COMPILER}"
-  )
+  # Try to detect if 'cc' is really gcc or clang.
+  # Otherwise, default to CMAKE_<LANG>_COMPILER.
+  get_filename_component(C_COMPILER_NAME "${CMAKE_C_COMPILER}" NAME)
+  if(C_COMPILER_NAME STREQUAL "cc")
+    find_compiler("C")
+  else()
+    set_bazel_compiler("C" "${CMAKE_C_COMPILER}")
+  endif()
+
+  # Ditto the above for c++ -> g++ or clang++.
+  get_filename_component(CXX_COMPILER_NAME "${CMAKE_CXX_COMPILER}" NAME)
+  if(CXX_COMPILER_NAME STREQUAL "c++")
+    find_compiler("CXX")
+  else()
+    set_bazel_compiler("CXX" "${CMAKE_CXX_COMPILER}")
+  endif()
 endif()
 
 get_filename_component(PROJECT_BINARY_DIR_REALPATH
@@ -371,7 +439,7 @@ function(symlink_external_repository_libs NAME TARGET USE_SO_MINOR_VERSION)
   file(CREATE_LINK "${location}" "${workspace}/${NAME}/lib/${other_basename}" SYMBOLIC)
 endfunction()
 
-macro(override_module NAME)
+function(override_module NAME)
   set(local_path "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/${NAME}")
   file(GENERATE OUTPUT "${local_path}/MODULE.bazel"
     INPUT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/workspace/${NAME}/MODULE.bazel.in")
@@ -381,24 +449,24 @@ macro(override_module NAME)
     "${PROJECT_SOURCE_DIR}/cmake/external/workspace/conversion.bzl"
     "${local_path}/conversion.bzl"
     SYMBOLIC)
-  string(APPEND BAZEL_REPO_ENV
+  set_property(GLOBAL APPEND_STRING PROPERTY BAZEL_REPO_ENV
       " --override_module=${NAME}=${local_path}")
-  string(APPEND BAZEL_REPO_ENV
+  set_property(GLOBAL APPEND_STRING PROPERTY BAZEL_REPO_ENV
       " --@drake//tools/workspace/${NAME}:with_user_${NAME}=True")
-endmacro()
+endfunction()
 
-macro(override_repository NAME)
+function(override_repository NAME)
   set(local_path "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/${NAME}")
   file(MAKE_DIRECTORY "${local_path}")
   file(GENERATE OUTPUT "${local_path}/MODULE.bazel"
     INPUT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/workspace/${NAME}/MODULE.bazel.in")
   file(GENERATE OUTPUT "${local_path}/BUILD.bazel"
     INPUT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/workspace/${NAME}/BUILD.bazel.in")
-  string(APPEND BAZEL_REPO_ENV
+  set_property(GLOBAL APPEND_STRING PROPERTY BAZEL_REPO_ENV
       " --override_repository=drake++drake_dep_repositories+${NAME}=${local_path}")
-  string(APPEND BAZEL_REPO_ENV
+  set_property(GLOBAL APPEND_STRING PROPERTY BAZEL_REPO_ENV
       " --@drake//tools/workspace/${NAME}:with_user_${NAME}=True")
-endmacro()
+endfunction()
 
 if(APPLE AND DRAKE_CI_ENABLE_PACKAGING)
   # When building a macOS *.tar.gz binary release, never use Homebrew for C++
@@ -496,10 +564,10 @@ if(APPLE)
   # routine, and then remove this APPLE-specific logic. When doing so, don't
   # forget to fix our doc/_pages/from_source.md documentation at the same time.
   if(WITH_USER_ZLIB)
-    string(APPEND BAZEL_REPO_ENV
+    set_property(GLOBAL APPEND_STRING PROPERTY BAZEL_REPO_ENV
         " --@drake//tools/flags:zlib_repo=hardcoded")
   else()
-    string(APPEND BAZEL_REPO_ENV
+    set_property(GLOBAL APPEND_STRING PROPERTY BAZEL_REPO_ENV
         " --@drake//tools/flags:zlib_repo=source")
   endif()
 else()
@@ -544,7 +612,8 @@ if(WITH_GUROBI)
 
   if(NOT APPLE)
     get_filename_component(GUROBI_HOME "${Gurobi_INCLUDE_DIRS}" DIRECTORY)
-    string(APPEND BAZEL_REPO_ENV " --repo_env=GUROBI_HOME=${GUROBI_HOME}")
+    set_property(GLOBAL APPEND_STRING PROPERTY BAZEL_REPO_ENV
+      " --repo_env=GUROBI_HOME=${GUROBI_HOME}")
   endif()
 endif()
 
@@ -592,7 +661,8 @@ if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
   string(APPEND BAZEL_CONFIG " --config=snopt")
 
   if(WITH_ROBOTLOCOMOTION_SNOPT)
-    string(APPEND BAZEL_REPO_ENV " --repo_env=SNOPT_PATH=git")
+    set_property(GLOBAL APPEND_STRING PROPERTY BAZEL_REPO_ENV
+      " --repo_env=SNOPT_PATH=git")
   else()
     set(SNOPT_PATH SNOPT_PATH-NOTFOUND CACHE FILEPATH
       "Path to SNOPT source archive"
@@ -603,7 +673,8 @@ if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
       )
     endif()
     mark_as_advanced(SNOPT_PATH)
-    string(APPEND BAZEL_REPO_ENV " --repo_env=SNOPT_PATH=${SNOPT_PATH}")
+    set_property(GLOBAL APPEND_STRING PROPERTY BAZEL_REPO_ENV
+      " --repo_env=SNOPT_PATH=${SNOPT_PATH}")
   endif()
 endif()
 
@@ -669,6 +740,7 @@ endforeach()
 # name `drake_build_cwd` isn't important, it just needs to be unique. Note,
 # however, that the macOS wheel builds also need to know this path, so if it
 # ever changes, tools/wheel/macos/build-wheel.sh will also need to be updated.
+get_property(BAZEL_REPO_ENV GLOBAL PROPERTY BAZEL_REPO_ENV)
 configure_file(cmake/bazel.rc.in drake_build_cwd/.bazelrc @ONLY)
 configure_file(cmake/MODULE.bazel.in drake_build_cwd/MODULE.bazel @ONLY)
 file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazeliskrc" drake_build_cwd/.bazeliskrc SYMBOLIC)
