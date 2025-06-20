@@ -290,10 +290,14 @@ endif()
 
 set(BAZEL_REPO_ENV)
 
+# Pass the compiler to Bazel. For Apple, Drake only officially supports Clang,
+# so it will be assumed, but for Linux there is a choice.
 if(NOT APPLE)
+  # Use the full path retrieved above, since Bazel's @rules_cc//cc/compiler
+  # doesn't know what 'cc'/'c++' are under the hood.
   string(APPEND BAZEL_REPO_ENV
-    " --repo_env=CC=${CMAKE_C_COMPILER}"
-    " --repo_env=CXX=${CMAKE_CXX_COMPILER}"
+    " --repo_env=CC=${C_COMPILER_REALPATH}"
+    " --repo_env=CXX=${CXX_COMPILER_REALPATH}"
   )
 endif()
 
