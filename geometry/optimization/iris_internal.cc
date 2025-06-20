@@ -103,8 +103,43 @@ void SamePointConstraint::DoEval(
   *y = p_WA - p_WB;
 }
 
+PointsBoundedDistanceConstraint::PointsBoundedDistanceConstraint(
+    const multibody::MultibodyPlant<double>* plant,
+    const systems::Context<double>& context, const double max_distance)
+    : Constraint(1, plant->num_positions() + 6, Vector1d::Zero(),
+                 Vector1d(max_distance * max_distance)),
+      same_point_constraint_(plant, context) {
+  DRAKE_THROW_UNLESS(max_distance >= 0.0);
+}
+
+PointsBoundedDistanceConstraint::~PointsBoundedDistanceConstraint() = default;
+
+void PointsBoundedDistanceConstraint::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
+  Eigen::VectorXd displacement;
+  same_point_constraint_.Eval(x, &displacement);
+  *y = Vector1d(displacement.squaredNorm());
+}
+
+void PointsBoundedDistanceConstraint::DoEval(
+    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
+  AutoDiffVecXd displacement;
+  same_point_constraint_.Eval(x, &displacement);
+  *y = Vector1<AutoDiffXd>(displacement.squaredNorm());
+}
+
+void PointsBoundedDistanceConstraint::DoEval(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+    VectorX<symbolic::Expression>* y) const {
+  VectorX<symbolic::Expression> displacement;
+  same_point_constraint_.Eval(x, &displacement);
+  *y = Vector1<symbolic::Expression>(displacement.squaredNorm());
+}
+
 ClosestCollisionProgram::ClosestCollisionProgram(
-    std::shared_ptr<SamePointConstraint> same_point_constraint,
+    std::variant<std::shared_ptr<SamePointConstraint>,
+                 std::shared_ptr<PointsBoundedDistanceConstraint>>
+        same_point_constraint,
     const multibody::Frame<double>& frameA,
     const multibody::Frame<double>& frameB, const ConvexSet& setA,
     const ConvexSet& setB, const Hyperellipsoid& E,
@@ -131,9 +166,13 @@ ClosestCollisionProgram::ClosestCollisionProgram(
   setA.AddPointInSetConstraints(&prog_, p_AA);
   setB.AddPointInSetConstraints(&prog_, p_BB);
 
-  same_point_constraint->set_frameA(&frameA);
-  same_point_constraint->set_frameB(&frameB);
-  prog_.AddConstraint(same_point_constraint, {q_, p_AA, p_BB});
+  std::visit(
+      [&](auto& constraint_ptr) {
+        constraint_ptr->set_frameA(&frameA);
+        constraint_ptr->set_frameB(&frameB);
+        prog_.AddConstraint(constraint_ptr, {q_, p_AA, p_BB});
+      },
+      same_point_constraint);
 
   // Help nonlinear optimizers (e.g. SNOPT) avoid trivial local minima at the
   // origin.
