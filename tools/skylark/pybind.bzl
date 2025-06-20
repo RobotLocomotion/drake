@@ -5,7 +5,7 @@ load("//tools/skylark:drake_py.bzl", "drake_py_library", "drake_py_test")
 load("//tools/skylark:py.bzl", "py_library")
 
 EXTRA_PYBIND_COPTS = select({
-    "@rules_cc//cc/compiler:clang": [
+    "@drake//tools/cc_toolchain:clang": [
         # GCC and Clang don't always agree / succeed when inferring storage
         # duration (#9600). Workaround it for now.
         "-Wno-unused-lambda-capture",
