@@ -21,6 +21,31 @@ string_flag(
     ],
 )
 
+# In our developer builds and CMake installs, we use the following flags as
+# optional hints for configuring compiler warnings. It's not strictly
+# necessary to set these, but doing so will tweak the compiler flags and
+# reduce warning spam during the build.
+#
+# These are intended for internal use only, not for users to configure.
+#
+# TODO(jwnimmer-tri) Ideally, rules_cc would provide either or both of these
+# as toolchain attributes that we could query, but it doesn't seem to exist
+# there yet.
+string_flag(
+    name = "compiler",
+    build_setting_default = "",
+    values = [
+        "",
+        "gcc",
+        "clang",
+    ],
+)
+
+int_flag(
+    name = "compiler_major",
+    build_setting_default = 0,
+)
+
 config_setting(
     name = "apple",
     constraint_values = ["@platforms//os:osx"],
@@ -41,11 +66,37 @@ config_setting(
     flag_values = {":error_severity": "error"},
 )
 
+config_setting(
+    name = "compiler_clang",
+    flag_values = {":compiler": "clang"},
+)
+
+config_setting(
+    name = "compiler_gcc",
+    flag_values = {":compiler": "gcc"},
+)
+
+selects.config_setting_group(
+    name = "clang",
+    match_any = [
+        "@rules_cc//cc/compiler:clang",
+        ":compiler_clang",
+    ],
+)
+
+selects.config_setting_group(
+    name = "gcc",
+    match_any = [
+        "@rules_cc//cc/compiler:gcc",
+        ":compiler_gcc",
+    ],
+)
+
 selects.config_setting_group(
     name = "apple_clang_with_warnings",
     match_all = [
         ":apple",
-        "@rules_cc//cc/compiler:clang",
+        ":clang",
         ":error_severity_warning",
     ],
 )
@@ -54,7 +105,7 @@ selects.config_setting_group(
     name = "apple_clang_with_errors",
     match_all = [
         ":apple",
-        "@rules_cc//cc/compiler:clang",
+        ":clang",
         ":error_severity_error",
     ],
 )
@@ -62,7 +113,7 @@ selects.config_setting_group(
 selects.config_setting_group(
     name = "gcc_with_warnings",
     match_all = [
-        "@rules_cc//cc/compiler:gcc",
+        ":gcc",
         ":error_severity_warning",
     ],
 )
@@ -70,7 +121,7 @@ selects.config_setting_group(
 selects.config_setting_group(
     name = "gcc_with_errors",
     match_all = [
-        "@rules_cc//cc/compiler:gcc",
+        ":gcc",
         ":error_severity_error",
     ],
 )
@@ -79,7 +130,7 @@ selects.config_setting_group(
     name = "linux_clang_with_warnings",
     match_all = [
         ":linux",
-        "@rules_cc//cc/compiler:clang",
+        ":clang",
         ":error_severity_warning",
     ],
 )
@@ -88,7 +139,7 @@ selects.config_setting_group(
     name = "linux_clang_with_errors",
     match_all = [
         ":linux",
-        "@rules_cc//cc/compiler:clang",
+        ":clang",
         ":error_severity_error",
     ],
 )
@@ -96,19 +147,6 @@ selects.config_setting_group(
 config_setting(
     name = "debug",
     values = {"compilation_mode": "dbg"},
-)
-
-# In our developer builds and CMake installs, we use this as an optional hint
-# for configuring compiler warnings. It's not strictly necessary to set this,
-# but doing so might reduce warning spam during the build.
-#
-# This is intended for internal use only, not for users to configure.
-#
-# TODO(jwnimmer-tri) Ideally, rules_cc would provide this as a toolchain
-# attribute that we could query, but it doesn't seem to exist there yet.
-int_flag(
-    name = "compiler_major",
-    build_setting_default = 0,
 )
 
 config_setting(
@@ -119,7 +157,7 @@ config_setting(
 selects.config_setting_group(
     name = "gcc_13_with_warnings",
     match_all = [
-        "@rules_cc//cc/compiler:gcc",
+        ":gcc",
         ":compiler_major_13",
         ":error_severity_warning",
     ],
@@ -128,7 +166,7 @@ selects.config_setting_group(
 selects.config_setting_group(
     name = "gcc_13_with_errors",
     match_all = [
-        "@rules_cc//cc/compiler:gcc",
+        ":gcc",
         ":compiler_major_13",
         ":error_severity_error",
     ],
