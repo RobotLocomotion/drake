@@ -249,7 +249,7 @@ T PooledSapModel<T>::CalcCostAlongLine(
     gain_constraints_pool_.ProjectAlongLine(
         cache_alpha.gain_constraints_data, search_direction.w,
         &scratch->scratch().v_pool, &constraint_dcost, &constraint_d2cost);
-    cost += cache_alpha.patch_constraints_data.cost();
+    cost += cache_alpha.gain_constraints_data.cost();
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;
   }
