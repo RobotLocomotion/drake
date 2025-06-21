@@ -15,6 +15,7 @@
 #include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/pooled_sap/gain_constraints_data_pool.h"
+#include "drake/multibody/contact_solvers/pooled_sap/limit_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/pooled_sap/patch_constraints_data_pool.h"
 
 namespace drake {
@@ -59,6 +60,7 @@ class SapData {
 
     // Type-specific constraint pools.
     GainConstraintsDataPool<T> gain_constraints_data;
+    LimitConstraintsDataPool<T> limit_constraints_data;
     PatchConstraintsDataPool<T> patch_constraints_data;
   };
 
@@ -102,6 +104,10 @@ class SapData {
 
   int num_gains() const {
     return cache_.gain_constraints_data.num_constraints();
+  }
+
+  int num_limits() const {
+    return cache_.limit_constraints_data.num_constraints();
   }
 
   const VectorX<T>& v() const { return v_; }

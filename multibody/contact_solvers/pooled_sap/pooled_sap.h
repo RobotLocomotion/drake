@@ -11,6 +11,7 @@ reasonable. */
 // clang-format off
 #include "drake/multibody/contact_solvers/pooled_sap/pooled_sap_model.h"
 #include "drake/multibody/contact_solvers/pooled_sap/gain_constraints_pool.h"
+#include "drake/multibody/contact_solvers/pooled_sap/limit_constraints_pool.h"
 #include "drake/multibody/contact_solvers/pooled_sap/patch_constraints_pool.h"
 // clang-format on
 

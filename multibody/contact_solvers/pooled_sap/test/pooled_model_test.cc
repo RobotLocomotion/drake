@@ -541,6 +541,105 @@ GTEST_TEST(PooledSapModel, GainConstraint) {
                               MatrixCompareType::relative));
 }
 
+GTEST_TEST(PooledSapModel, LimitConstraint) {
+  PooledSapModel<AutoDiffXd> model;
+  MakeModel(&model, false /* multiple cliques */);
+  EXPECT_EQ(model.num_cliques(), 3);
+  EXPECT_EQ(model.num_velocities(), 18);
+  EXPECT_EQ(model.num_constraints(), 3);
+
+  SapData<AutoDiffXd> data;
+  model.ResizeData(&data);
+  EXPECT_EQ(data.num_velocities(), model.num_velocities());
+  EXPECT_EQ(data.num_patches(), model.num_constraints());
+  EXPECT_EQ(data.num_limits(), 0);
+
+  // At this point there should be no gain constraints.
+  EXPECT_EQ(model.num_limit_constraints(), 0);
+
+  // Add limit constraints.
+  auto& limits = model.limit_constraints_pool();
+
+  const int nv = model.num_velocities();
+  VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
+
+  // Limits on clique 0.
+  int k = limits.Add(0 /* clique */, 1 /* dof */, q0(1), -0.5, 0.5);  // Below.
+  EXPECT_EQ(k, 0);  // First constraint on clique 0.
+  k = limits.Add(0 /* clique */, 4 /* dof */, q0(2), -1.5, -1.0);  // Above.
+  EXPECT_EQ(k, 0);  // Still the same clique, same constraint.
+  k = limits.Add(0 /* clique */, 3 /* dof */, q0(3), -1.0, 1.0);  // Within.
+  EXPECT_EQ(k, 0);  // Still the same clique, same constraint.
+
+  EXPECT_EQ(model.num_limit_constraints(), 1);
+  EXPECT_EQ(model.num_constraints(), 4);
+
+  // Limits on clique 2.
+  k = limits.Add(2 /* clique */, 0 /* dof */, q0(12), 0.5, 1.5);  // Below.
+  EXPECT_EQ(k, 1);  // First constraint on clique 2.
+  k = limits.Add(2 /* clique */, 2 /* dof */, q0(14), -1.0, 0.5);  // Above.
+  EXPECT_EQ(k, 1);  // Still the same clique, same constraint.
+  k = limits.Add(2 /* clique */, 5 /* dof */, q0(17), 0.5, 1.5);  // Within.
+  EXPECT_EQ(k, 1);  // Still the same clique, same constraint.
+
+  EXPECT_EQ(model.num_limit_constraints(), 2);
+  EXPECT_EQ(model.num_constraints(), 5);
+
+  // Resize data to include limit constraints data.
+  model.ResizeData(&data);
+  EXPECT_EQ(data.num_limits(), 2);
+
+  VectorXd v_value = VectorXd::LinSpaced(nv, -10, 10.0);
+  VectorX<AutoDiffXd> v(nv);
+  math::InitializeAutoDiff(v_value, &v);
+  model.CalcData(v, &data);
+
+  const AutoDiffXd dt = model.time_step();
+  VectorX<AutoDiffXd> q = q0 + dt * v;
+  // const VectorXd q_value = math::ExtractValue(q);
+  fmt::print("q: {}\n", fmt_eigen(q.transpose()));
+
+  const LimitConstraintsDataPool<AutoDiffXd> limits_data =
+      data.cache().limit_constraints_data;
+  EXPECT_EQ(limits_data.num_constraints(), 2);
+
+  const double cost_value = limits_data.cost().value();
+  const VectorXd cost_gradient = limits_data.cost().derivatives();
+  fmt::print("cost: {}\n", cost_value);
+  fmt::print("gradient: {}\n", fmt_eigen(cost_gradient.transpose()));
+
+  // Impulses on constraint 0, clique 0.
+  const VectorX<AutoDiffXd> gamma_lower0 = limits_data.gamma_lower(0);
+  const VectorX<AutoDiffXd> gamma_upper0 = limits_data.gamma_upper(0);
+  // tau = Jᵀ⋅γ, and J = [1; -1] for limit constraints.
+  const VectorX<AutoDiffXd> tau0 = gamma_lower0 - gamma_upper0;
+  fmt::print("tau0: {}\n", fmt_eigen(tau0.transpose()));
+
+  // Impulses on constraint 1, clique 2.
+  const VectorX<AutoDiffXd> gamma_lower1 = limits_data.gamma_lower(1);
+  const VectorX<AutoDiffXd> gamma_upper1 = limits_data.gamma_upper(1);
+  // tau = Jᵀ⋅γ, and J = [1; -1] for limit constraints.
+  const VectorX<AutoDiffXd> tau1 = gamma_lower1 - gamma_upper1;
+  fmt::print("tau1: {}\n", fmt_eigen(tau1.transpose()));
+
+  // Assemble all clique contributions into tau by hand.
+  VectorX<AutoDiffXd> tau = VectorX<AutoDiffXd>::Zero(nv);
+  tau.segment<6>(0) = tau0;
+  tau.segment<6>(12) = tau1;
+
+  const VectorXd tau_value = math::ExtractValue(tau);
+  EXPECT_TRUE(CompareMatrices(cost_gradient, -tau_value, kEps,
+                              MatrixCompareType::relative));
+
+  // Verify contributions to Hessian.
+  auto hessian = model.MakeHessian(data);
+  MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
+  MatrixXd gradient_derivatives = math::ExtractGradient(data.cache().gradient);
+  fmt::print("|H-Href| = {}\n", (hessian_value - gradient_derivatives).norm());
+  EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives, 10 * kEps,
+                              MatrixCompareType::relative));
+}
+
 }  // namespace pooled_sap
 }  // namespace contact_solvers
 }  // namespace multibody

@@ -16,6 +16,7 @@ drake_cc_package_library(
     deps = [
         ":eigen_pool",
         ":gain_constraints_data_pool",
+        ":limit_constraints_data_pool",
         ":patch_constraints_data_pool",
         ":pooled_sap_builder",
         ":pooled_sap_core",
@@ -43,6 +44,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "limit_constraints_data_pool",
+    srcs = ["limit_constraints_data_pool.cc"],
+    hdrs = ["limit_constraints_data_pool.h"],
+    deps = [
+        ":eigen_pool",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "patch_constraints_data_pool",
     srcs = ["patch_constraints_data_pool.cc"],
     hdrs = ["patch_constraints_data_pool.h"],
@@ -59,6 +71,7 @@ drake_cc_library(
     deps = [
         ":eigen_pool",
         ":gain_constraints_data_pool",
+        ":limit_constraints_data_pool",
         ":patch_constraints_data_pool",
         "//common:essential",
         "//multibody/contact_solvers:block_sparse_cholesky_solver",
@@ -80,12 +93,14 @@ drake_cc_library(
     name = "pooled_sap_core",
     srcs = [
         "gain_constraints_pool.cc",
+        "limit_constraints_pool.cc",
         "patch_constraints_pool.cc",
         "pooled_sap.cc",
         "pooled_sap_model.cc",
     ],
     hdrs = [
         "gain_constraints_pool.h",
+        "limit_constraints_pool.h",
         "patch_constraints_pool.h",
         "pooled_sap.h",
         "pooled_sap_model.h",

@@ -64,6 +64,9 @@ struct PooledSapParameters {
   // Cost linear term
   VectorX<T> r;
 
+  // Maps tree index to clique index, or -1 if tree is anchored.
+  std::vector<int> tree_to_clique;
+
   // Scaling factor D = diag(M)^{-1/2} for convergence check. Scales all
   // components of the gradient to the same units, see [Castro 2021, IV.E].
   VectorX<T> D;
@@ -98,6 +101,7 @@ class PooledSapModel {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PooledSapModel);
 
   // Defined in separate headers.
+  class LimitConstraintsPool;
   class PatchConstraintsPool;
   class GainConstraintsPool;
 
@@ -112,6 +116,7 @@ class PooledSapModel {
   PooledSapModel()
       : params_(std::make_unique<PooledSapParameters<T>>()),
         gain_constraints_pool_(this),
+        limit_constraints_pool_(this),
         patch_constraints_pool_(this) {}
 
   /* Resets problem parameters.
@@ -140,6 +145,7 @@ class PooledSapModel {
     DRAKE_DEMAND(params_->r.size() == num_velocities_);
     gain_constraints_pool_.Clear();
     gain_constraints_pool_.Reset();
+    limit_constraints_pool_.Reset();
 
     patch_constraints_pool_.Clear();
     patch_constraints_pool_.Reset(params_->time_step, clique_start_,
@@ -147,6 +153,13 @@ class PooledSapModel {
 
     V_WB0_.Resize(num_bodies_);
     CalcBodySpatialVelocities(params_->v0, &V_WB0_);
+
+    // Diagonal approximation of the Delassus operator for constraints for which
+    // the Jacobian J is the identity matrix.
+    clique_delassus_.Reserve(clique_sizes_);
+    for (int c = 0; c < A.size(); ++c) {
+      clique_delassus_.PushBack(A[c].diagonal().cwiseInverse());
+    }
   }
 
   /* Releases ownership of parameters so that we can re-use previously allocated
@@ -223,6 +236,17 @@ class PooledSapModel {
     return params().A[clique];
   }
 
+  /* Returns a "diagonal" estimation for the Delassus operator per-clique. The
+   Delassus operator is W = J⋅M⁻¹⋅Jᵀ. For constraints for which vc = v, i.e. the
+   constraint Jacobian is the identity, we have W = M⁻¹. Further, we simplify
+   this estimation as W = diag(M)⁻¹. */
+  typename EigenPool<VectorX<T>>::ConstElementView get_clique_delassus(
+      int clique) const {
+    DRAKE_ASSERT(params_ != nullptr);
+    DRAKE_ASSERT(0 <= clique && clique < num_cliques());
+    return clique_delassus_[clique];
+  }
+
   const VectorX<T>& r() const { return params_->r; }
 
   int num_bodies() const {
@@ -249,13 +273,15 @@ class PooledSapModel {
 
   /* Total number of constraints. */
   int num_constraints() const {
-    return num_patch_constraints() + num_gain_constraints();
+    return num_patch_constraints() + num_gain_constraints() +
+           num_limit_constraints();
   }
 
   /* Total number of constraint equations. */
   int num_constraint_equations() const {
     return patch_constraints_pool_.num_constraint_equations() +
-           gain_constraints_pool_.num_constraint_equations();
+           gain_constraints_pool_.num_constraint_equations() +
+           limit_constraints_pool_.num_constraint_equations();
   }
 
   void set_stiction_tolerance(double stiction_tolerance) {
@@ -268,6 +294,10 @@ class PooledSapModel {
 
   GainConstraintsPool& gain_constraints_pool() {
     return gain_constraints_pool_;
+  }
+
+  LimitConstraintsPool& limit_constraints_pool() {
+    return limit_constraints_pool_;
   }
 
   /* Limit constraints are added on a per-clique basis. Therefore this method
@@ -287,6 +317,10 @@ class PooledSapModel {
 
   int num_gain_constraints() const {
     return gain_constraints_pool_.num_constraints();
+  }
+
+  int num_limit_constraints() const {
+    return limit_constraints_pool_.num_constraints();
   }
 
   // Helpers to access the subset of elements from clique vectors (e.g.
@@ -387,11 +421,13 @@ class PooledSapModel {
   // Total number of generalized velocities. = sum(clique_sizes_).
   int num_bodies_{0};
   int num_velocities_{0};
-  std::vector<int> clique_start_;  // Clique first velocity.
-  std::vector<int> clique_sizes_;  // Number of velocities per clique.
-  EigenPool<Vector6<T>> V_WB0_;    // Initial spatial velocities.
+  std::vector<int> clique_start_;          // Clique first velocity.
+  std::vector<int> clique_sizes_;          // Number of velocities per clique.
+  EigenPool<Vector6<T>> V_WB0_;            // Initial spatial velocities.
+  EigenPool<VectorX<T>> clique_delassus_;  // W = W = diag(M)⁻¹.
 
   GainConstraintsPool gain_constraints_pool_;
+  LimitConstraintsPool limit_constraints_pool_;
   PatchConstraintsPool patch_constraints_pool_;
 };
 
