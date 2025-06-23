@@ -266,6 +266,47 @@ PYBIND11_MODULE(analysis, m) {
   };
   type_visit(bind_scalar_types, CommonScalarPack{});
 
+  // Convex integrator options
+  {
+    constexpr auto& doc = pydrake_doc.drake.systems;
+    py::class_<ConvexIntegratorSolverParameters>(m,
+        "ConvexIntegratorSolverParameters",
+        doc.ConvexIntegratorSolverParameters.doc)
+        .def_readwrite("max_iterations",
+            &ConvexIntegratorSolverParameters::max_iterations,
+            doc.ConvexIntegratorSolverParameters.max_iterations.doc)
+        .def_readwrite("max_ls_iterations",
+            &ConvexIntegratorSolverParameters::max_ls_iterations,
+            doc.ConvexIntegratorSolverParameters.max_ls_iterations.doc)
+        .def_readwrite("alpha_max",
+            &ConvexIntegratorSolverParameters::alpha_max,
+            doc.ConvexIntegratorSolverParameters.alpha_max.doc)
+        .def_readwrite("tolerance",
+            &ConvexIntegratorSolverParameters::tolerance,
+            doc.ConvexIntegratorSolverParameters.tolerance.doc)
+        .def_readwrite("ls_tolerance",
+            &ConvexIntegratorSolverParameters::ls_tolerance,
+            doc.ConvexIntegratorSolverParameters.ls_tolerance.doc)
+        .def_readwrite("kappa", &ConvexIntegratorSolverParameters::kappa,
+            doc.ConvexIntegratorSolverParameters.kappa.doc)
+        .def_readwrite("enable_hessian_reuse",
+            &ConvexIntegratorSolverParameters::enable_hessian_reuse,
+            doc.ConvexIntegratorSolverParameters.enable_hessian_reuse.doc)
+        .def_readwrite("max_iterations_for_hessian_reuse",
+            &ConvexIntegratorSolverParameters::max_iterations_for_hessian_reuse,
+            doc.ConvexIntegratorSolverParameters
+                .max_iterations_for_hessian_reuse.doc)
+        .def_readwrite("print_solver_stats",
+            &ConvexIntegratorSolverParameters::print_solver_stats,
+            doc.ConvexIntegratorSolverParameters.print_solver_stats.doc)
+        .def_readwrite("log_solver_stats",
+            &ConvexIntegratorSolverParameters::log_solver_stats,
+            doc.ConvexIntegratorSolverParameters.log_solver_stats.doc)
+        .def_readwrite("use_dense_algebra",
+            &ConvexIntegratorSolverParameters::use_dense_algebra,
+            doc.ConvexIntegratorSolverParameters.use_dense_algebra.doc);
+  }
+
   auto bind_nonsymbolic_scalar_types = [&m](auto dummy) {
     constexpr auto& doc = pydrake_doc.drake.systems;
     using T = decltype(dummy);
@@ -289,9 +330,16 @@ PYBIND11_MODULE(analysis, m) {
             // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 3>(), doc.ConvexIntegrator.ctor.doc)
         .def("set_plant", &ConvexIntegrator<T>::set_plant, py::arg("plant"),
-            doc.ConvexIntegrator.set_plant.doc);
+            doc.ConvexIntegrator.set_plant.doc)
+        .def("get_solver_parameters",
+            &ConvexIntegrator<T>::get_solver_parameters,
+            doc.ConvexIntegrator.get_solver_parameters.doc)
+        .def("set_solver_parameters",
+            &ConvexIntegrator<T>::set_solver_parameters, py::arg("parameters"),
+            doc.ConvexIntegrator.set_solver_parameters.doc);
 
-    // See equivalent note about EventCallback in `framework_py_systems.cc`.
+    // See equivalent note about EventCallback in
+    // `framework_py_systems.cc`.
     using MonitorCallback =
         std::function<std::optional<EventStatus>(const Context<T>&)>;
 
@@ -347,8 +395,8 @@ a Context object among Simulators will likely lead to incorrect results.
               return self->AdvanceTo(boundary_time);
             },
             py::arg("boundary_time"), py::arg("interruptible") = true,
-            // This is a long-running function that might sleep; for both
-            // reasons, we must release the GIL.
+            // This is a long-running function that might sleep; for
+            // both reasons, we must release the GIL.
             py::call_guard<py::gil_scoped_release>(),
             // Amend the docstring with the additional parameter.
             []() {
@@ -590,7 +638,7 @@ Parameter ``interruptible``:
         py::arg("context"), py::arg("options") = RegionOfAttractionOptions(),
         doc.RegionOfAttraction.doc);
   }
-}
+}  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake
 }  // namespace drake

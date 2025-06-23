@@ -171,7 +171,7 @@ def create_scene(
 
     vis_config = VisualizationConfig()
     vis_config.publish_period = 100  # very long to avoid extra publishes
-    ApplyVisualizationConfig(vis_config, builder=builder, meshcat=meshcat)
+    # ApplyVisualizationConfig(vis_config, builder=builder, meshcat=meshcat)
 
     logger = LogVectorOutput(
         plant.get_state_output_port(),
@@ -245,7 +245,13 @@ def run_simulation(
 
     if integrator == "convex":
         # The convex integrator needs to be told which subsystem is the plant
-        simulator.get_mutable_integrator().set_plant(plant)
+        ci = simulator.get_mutable_integrator()
+        ci.set_plant(plant)
+
+        # We can also set some solver parameters for the integrator here
+        ci_params = ci.get_solver_parameters()
+        ci_params.use_dense_algebra = True
+        ci.set_solver_parameters(ci_params)
 
     simulator.Initialize()
 
