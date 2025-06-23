@@ -39,6 +39,7 @@ void ConvexIntegrator<T>::DoInitialize() {
   // second-order state (q, v) is from the MultibodyPlant.
   const int nq = this->get_context().get_continuous_state().num_q();
   const int nv = this->get_context().get_continuous_state().num_v();
+  const int nz = this->get_context().get_continuous_state().num_z();
   DRAKE_THROW_UNLESS(nq == plant().num_positions());
   DRAKE_THROW_UNLESS(nv == plant().num_velocities());
 
@@ -60,8 +61,25 @@ void ConvexIntegrator<T>::DoInitialize() {
   const T& dt = this->get_initial_step_size_target();
   builder_->UpdateModel(plant_context, dt, &model_);
   model_.ResizeData(&data_);
-  search_direction_.resize(model_.num_velocities());
-  f_ext_ = std::make_unique<MultibodyForces<T>>(plant());
+  model_.ResizeData(&scratch_data_);
+
+  // Allocate scratch variables
+  scratch_.v_guess.resize(plant().num_velocities());
+  scratch_.search_direction.resize(plant().num_velocities());
+  scratch_.v.resize(nv);
+  scratch_.q.resize(nq);
+  scratch_.z.resize(nz);
+  scratch_.f_ext = std::make_unique<MultibodyForces<T>>(plant());
+  scratch_.Ku.resize(nv);
+  scratch_.bu.resize(nv);
+  scratch_.Ke.resize(nv);
+  scratch_.be.resize(nv);
+  scratch_.gu0.resize(nv);
+  scratch_.ge0.resize(nv);
+  scratch_.gu_prime.resize(nv);
+  scratch_.ge_prime.resize(nv);
+  scratch_.x_prime.resize(nq + nv + nz);
+  scratch_.N.resize(nq, nv);
 
   // Allocate intermediate states for error control
   x_next_full_ = this->get_system().AllocateTimeDerivatives();
@@ -108,8 +126,8 @@ bool ConvexIntegrator<T>::StepWithHalfSteppingErrorEstimate(const T& h) {
 
   // Solve for the full step x_{t+h}. We'll need this regardless of whether
   // error control is enabled or not.
-  // TODO(vincekurtz): consider pre-allocating v_guess
-  VectorX<T> v_guess = plant().GetVelocities(plant_context);
+  VectorX<T>& v_guess = scratch_.v_guess;
+  v_guess = plant().GetVelocities(plant_context);
   ComputeNextContinuousState(h, v_guess, x_next_full_.get());
 
   if (this->get_fixed_step_mode()) {
@@ -160,6 +178,7 @@ bool ConvexIntegrator<T>::StepWithSDIRKErrorEstimate(const T& h) {
   const Context<T>& diagram_context = this->get_context();
   const Context<T>& plant_context =
       plant().GetMyContextFromRoot(diagram_context);
+  VectorX<T>& v_guess = scratch_.v_guess;
 
   // Single Diagonally Implicit Runge Kutta (SDIRK) coefficients from Kennedy
   // and Carpenter, "Diagonaly Implicit Runge-Kutta Method for Oridnary
@@ -178,9 +197,6 @@ bool ConvexIntegrator<T>::StepWithSDIRKErrorEstimate(const T& h) {
   // compressible flows", 2016. pp 25, Table 4.
   const double bhat2 = 2.0 - 5.0 / 4.0 * sqrt(2.0);
   const double bhat1 = 1.0 - bhat2;
-
-  // TODO(vincekurtz): consider pre-allocating this
-  VectorX<T> v_guess(plant().num_velocities());
 
   // Mutable context
   Context<T>& mutable_context = *this->get_mutable_context();
@@ -233,9 +249,7 @@ bool ConvexIntegrator<T>::StepWithImplicitTrapezoidErrorEstimate(const T& h) {
   const Context<T>& plant_context =
       plant().GetMyContextFromRoot(diagram_context);
   const T t0 = diagram_context.get_time();
-
-  // TODO(vincekurtz): consider pre-allocating these
-  VectorX<T> v_guess(plant().num_velocities());
+  VectorX<T>& v_guess = scratch_.v_guess;
 
   // Solve the for the full step x_{t+h}
   v_guess = plant().GetVelocities(plant_context);
@@ -286,12 +300,6 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
   const Context<T>& context = this->get_context();
   const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
 
-  // TODO(vincekurtz): pre-allocate these
-  VectorX<T> Ku(plant().num_velocities());
-  VectorX<T> bu(plant().num_velocities());
-  VectorX<T> Ke(plant().num_velocities());
-  VectorX<T> be(plant().num_velocities());
-
   // Set up the convex optimization problem minᵥ ℓ(v; q₀, v₀, h)
   PooledSapModel<T>& model = get_model();
   builder().UpdateModel(plant_context, h, &model);
@@ -307,6 +315,10 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
       plant().get_applied_spatial_force_input_port().HasValue(plant_context);
 
   if (has_actuators || has_external_forces) {
+    VectorX<T>& Ku = scratch_.Ku;
+    VectorX<T>& bu = scratch_.bu;
+    VectorX<T>& Ke = scratch_.Ke;
+    VectorX<T>& be = scratch_.be;
     LinearizeExternalSystem(h, &Ku, &bu, &Ke, &be);
 
     if (has_actuators) {
@@ -319,10 +331,9 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
     }
   }
 
-  // TODO(vincekurtz): pre-allocate v
-  VectorX<T> v = v_guess;
-
   // Solve the optimization problem for next-step velocities v = min ℓ(v).
+  VectorX<T>& v = scratch_.v;
+  v = v_guess;
   if (!SolveWithGuess(model, &v)) {
     throw std::runtime_error("ConvexIntegrator: optimization failed.");
   }
@@ -333,8 +344,7 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
                                           stats_.ls_iterations.end(), 0);
 
   // q = q₀ + h N(q₀) v
-  // TODO(vincekurtz): pre-allocate q
-  VectorX<T> q(plant().num_positions());
+  VectorX<T>& q = scratch_.q;
   AdvancePlantConfiguration(h, v, &q);
 
   // Set the updated plant state
@@ -347,8 +357,7 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
   // dynamics are usually pretty simple (e.g., the integral term from a PID
   // controller), so forward euler is sufficient.
   if (x_next->num_z() > 0) {
-    // TODO(vincekurtz): pre-allocate z
-    VectorX<T> z(x_next->num_z());
+    VectorX<T>& z = scratch_.z;
 
     // TODO(vincekurtz): avoid computing time derivatives for the plant
     const VectorX<T> z_dot = this->EvalTimeDerivatives(context)
@@ -405,7 +414,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     const PooledSapModel<double>& model, VectorXd* v_guess) {
   SapData<double>& data = get_data();
   VectorXd& v = *v_guess;
-  VectorXd& dv = search_direction_;
+  VectorXd& dv = scratch_.search_direction;
   model.ResizeData(&data);
   dv.resize(data.num_velocities());
   DRAKE_DEMAND(data.num_velocities() == v.size());
@@ -743,7 +752,7 @@ bool ConvexIntegrator<T>::SparsityPatternChanged(
 template <typename T>
 void ConvexIntegrator<T>::CalcExternalForces(const Context<T>& context,
                                              VectorX<T>* tau) {
-  MultibodyForces<T>& forces = *f_ext_;
+  MultibodyForces<T>& forces = *scratch_.f_ext;
   forces.SetZero();
   plant().AddAppliedExternalSpatialForces(context, &forces);
   plant().AddAppliedExternalGeneralizedForces(context, &forces);
@@ -771,25 +780,28 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, VectorX<T>* Ku,
   const int nq = state.num_q();
   const int nv = state.num_v();
 
-  // TODO(vincekurtz): pre-allocate these
-  VectorX<T> gu0(nv);
-  VectorX<T> ge0(nv);
-  MatrixX<T> N = plant().MakeVelocityToQDotMap(plant_context);
+  // Get references to pre-allocated variables
+  VectorX<T>& gu0 = scratch_.gu0;
+  VectorX<T>& ge0 = scratch_.ge0;
+  VectorX<T>& gu_prime = scratch_.gu_prime;
+  VectorX<T>& ge_prime = scratch_.ge_prime;
+  VectorX<T>& x_prime = scratch_.x_prime;
+  MatrixX<T>& N = scratch_.N;
 
   // Compute some quantities that depend on the current state, before messing
   // with the state with finite differences
+  N = plant().MakeVelocityToQDotMap(plant_context);
   const VectorX<T> v0 = state.get_generalized_velocity().CopyToVector();
   CalcActuationForces(plant_context, &gu0);
   CalcExternalForces(plant_context, &ge0);
 
-  // Allocate a perturbed state x = [q; v; z] and outputs
+  // Initialize the perturbed state x = [q; v; z] and outputs
   //    gu(x) = B u(x),
   //    ge(x) = τₑₓₜ(x)
-  // TODO(vincekurtz): consider pre-allocating these
   const VectorX<T> x = state.CopyToVector();
-  VectorX<T> x_prime = x;
-  VectorX<T> gu_prime = gu0;
-  VectorX<T> ge_prime = ge0;
+  x_prime = x;
+  gu_prime = gu0;
+  ge_prime = ge0;
 
   // We'll want to perturb q and v separately, so we'll go ahead and grab these
   // references.

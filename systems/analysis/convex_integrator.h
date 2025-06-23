@@ -345,17 +345,35 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   std::unique_ptr<BlockSparseSymmetricMatrixT<T>> hessian_;
   BlockSparseCholeskySolver<Eigen::MatrixXd> hessian_factorization_;
   Eigen::LDLT<Eigen::MatrixXd> dense_hessian_factorization_;
-  VectorX<T> search_direction_;
   SearchDirectionData<T> search_direction_data_;
-  std::unique_ptr<MultibodyForces<T>> f_ext_;
 
-  // Track previous model size for hessian reuse
-  // TODO(vincekurtz): consider separating this into a helper object.
-  int previous_num_cliques_{-1};
-  int previous_num_velocities_{-1};
-  int previous_num_bodies_{-1};
-  int previous_num_constraints_{-1};
-  int previous_num_constraint_equations_{-1};
+  // Pre-allocated scratch space for intermediate calculations.
+  struct Scratch {
+    VectorX<T> v_guess;
+    VectorX<T> search_direction;
+
+    // Next-step state
+    VectorX<T> v;
+    VectorX<T> q;
+    VectorX<T> z;
+
+    // External forces
+    std::unique_ptr<MultibodyForces<T>> f_ext;
+
+    // External system linearization
+    VectorX<T> Ku;
+    VectorX<T> bu;
+    VectorX<T> Ke;
+    VectorX<T> be;
+    VectorX<T> gu0;
+    VectorX<T> ge0;
+    VectorX<T> gu_prime;
+    VectorX<T> ge_prime;
+    VectorX<T> x_prime;
+    MatrixX<T> N;
+  } scratch_;
+
+  // Track previous sparsity pattern for hessian reuse
   std::unique_ptr<BlockSparsityPattern> previous_sparsity_pattern_;
 
   // Flag for Hessian factorization re-use (changes between iterations)
