@@ -772,10 +772,7 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, VectorX<T>* Ku,
   const int nq = state.num_q();
   const int nv = state.num_v();
 
-  // TODO(vincekurtz): pre-allocate these, and/or consider doing away with
-  // Ku_full entirely.
-  MatrixX<T> Ku_full(nv, nv);
-  MatrixX<T> Ke_full(nv, nv);
+  // TODO(vincekurtz): pre-allocate these
   VectorX<T> gu0(nv);
   VectorX<T> ge0(nv);
   MatrixX<T> N = plant().MakeVelocityToQDotMap(plant_context);
@@ -789,6 +786,7 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, VectorX<T>* Ku,
   // Allocate a perturbed state x = [q; v; z] and outputs
   //    gu(x) = B u(x),
   //    ge(x) = τₑₓₜ(x)
+  // TODO(vincekurtz): consider pre-allocating these
   const VectorX<T> x = state.CopyToVector();
   VectorX<T> x_prime = x;
   VectorX<T> gu_prime = gu0;
@@ -829,14 +827,14 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, VectorX<T>* Ku,
     mutable_context->NoteContinuousStateChange();
 
     // Compute the relevant matrix entries for actuation inputs:
-    //   Ku_full = dgu/dv
+    //   Ku = -dgu/dv
     CalcActuationForces(plant_context, &gu_prime);
-    Ku_full.col(i) = (gu_prime - gu0) / dvi;
+    (*Ku)(i) = -(gu_prime(i) - gu0(i)) / dvi;
 
     // Same thing, but for external systems:
-    //  Ke_full = dge/dv
+    //  Ke = -dge/dv
     CalcExternalForces(plant_context, &ge_prime);
-    Ke_full.col(i) = (ge_prime - ge0) / dvi;
+    (*Ke)(i) = -(ge_prime(i) - ge0(i)) / dvi;
 
     // Reset the state for the next iteration
     v_prime(i) = v(i);
@@ -848,10 +846,10 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, VectorX<T>* Ku,
 
   // Use the diagonal projection for both K and b ensures that any
   // non-convex portion of the dynamics is treated explicitly.
-  (*Ku) = (-Ku_full).diagonal().cwiseMax(0);
+  (*Ku) = (*Ku).cwiseMax(0);
   (*bu) = gu0 + (*Ku).asDiagonal() * v0;
 
-  (*Ke) = (-Ke_full).diagonal().cwiseMax(0);
+  (*Ke) = (*Ke).cwiseMax(0);
   (*be) = ge0 + (*Ke).asDiagonal() * v0;
 }
 
