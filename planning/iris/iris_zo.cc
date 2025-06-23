@@ -46,33 +46,6 @@ index_t argsort(values_t const& values) {
   return index;
 }
 
-Eigen::VectorXd ComputeFaceTangentToDistCvxh(
-    const Hyperellipsoid& E, const Eigen::Ref<const Eigen::VectorXd>& point,
-    const VPolytope& cvxh_vpoly, const SolverInterface& solver) {
-  Eigen::VectorXd a_face = E.A().transpose() * E.A() * (point - E.center());
-  double b_face = a_face.transpose() * point;
-
-  // Return standard iris face if either the face does not chop off any
-  // containment points or collision lies inside of the convex hull of the
-  // containment points.
-  if (cvxh_vpoly.PointInSet(point) ||
-      (a_face.transpose() * cvxh_vpoly.vertices()).maxCoeff() - b_face <= 0) {
-    return a_face;
-  } else {
-    MathematicalProgram prog;
-    int dim = cvxh_vpoly.ambient_dimension();
-    auto x = prog.NewContinuousVariables(dim);
-    cvxh_vpoly.AddPointInSetConstraints(&prog, x);
-    Eigen::MatrixXd identity = Eigen::MatrixXd::Identity(dim, dim);
-    prog.AddQuadraticErrorCost(identity, point, x);
-    MathematicalProgramResult result;
-    solver.Solve(prog, std::nullopt, std::nullopt, &result);
-    DRAKE_THROW_UNLESS(result.is_success());
-    a_face = point - result.GetSolution(x);
-    return a_face;
-  }
-}
-
 }  // namespace
 
 HPolyhedron IrisZo(const planning::CollisionChecker& checker,
@@ -157,55 +130,10 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
         "'options.sampled_iris_options.max_iterations_separating_planes' must "
         "be larger than zero.");
   }
-  VPolytope cvxh_vpoly;
-  if (options.sampled_iris_options.containment_points.has_value()) {
-    cvxh_vpoly =
-        VPolytope(options.sampled_iris_options.containment_points.value());
-    DRAKE_THROW_UNLESS(parameterized_dimension ==
-                       options.sampled_iris_options.containment_points->rows());
-
-    constexpr float kPointInSetTol = 1e-5;
-    if (!cvxh_vpoly.PointInSet(starting_ellipsoid.center(), kPointInSetTol)) {
-      throw std::runtime_error(
-          "The center of the starting ellipsoid lies outside of the convex "
-          "hull of the containment points.");
-    }
-
-    cvxh_vpoly = cvxh_vpoly.GetMinimalRepresentation();
-
-    std::vector<Eigen::VectorXd> cont_vec;
-    cont_vec.reserve((options.sampled_iris_options.containment_points->cols()));
-
-    for (int col = 0;
-         col < options.sampled_iris_options.containment_points->cols(); ++col) {
-      Eigen::VectorXd conf =
-          options.sampled_iris_options.containment_points->col(col);
-      cont_vec.emplace_back(
-          options.parameterization.get_parameterization()(conf));
-      DRAKE_ASSERT(cont_vec.back().size() == ambient_dimension);
-    }
-
-    std::vector<uint8_t> containment_point_col_free =
-        checker.CheckConfigsCollisionFree(
-            cont_vec, options.sampled_iris_options.parallelism);
-    for (const auto col_free : containment_point_col_free) {
-      if (!col_free) {
-        throw std::runtime_error(
-            "One or more containment points are in collision!");
-      }
-    }
-    for (int i = 0; i < options.sampled_iris_options.containment_points->cols();
-         ++i) {
-      if (!internal::CheckProgConstraints(
-              options.sampled_iris_options.prog_with_additional_constraints,
-              options.sampled_iris_options.containment_points->col(i),
-              constraints_tol)) {
-        throw std::runtime_error(
-            "One or more containment points violates a constraint in "
-            "options.sampled_iris_options.prog_with_additional_constraints!");
-      }
-    }
-  }
+  VPolytope containment_points_vpolytope =
+      internal::ParseAndCheckContainmentPoints(
+          checker, options.sampled_iris_options, options.parameterization,
+          starting_ellipsoid);
   // For debugging visualization.
   Eigen::Vector3d point_to_draw = Eigen::Vector3d::Zero();
   if (options.sampled_iris_options.meshcat && ambient_dimension <= 3) {
@@ -467,8 +395,9 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
         if (!particle_is_redundant[i]) {
           if (options.sampled_iris_options.containment_points.has_value()) {
             Eigen::VectorXd a_face;
-            a_face = ComputeFaceTangentToDistCvxh(
-                current_ellipsoid, nearest_particle, cvxh_vpoly, *solver);
+            a_face = internal::ComputeFaceTangentToDistCvxh(
+                current_ellipsoid, nearest_particle,
+                containment_points_vpolytope, *solver);
 
             a_face.normalize();
             double b_face =

@@ -179,9 +179,6 @@ class TestIrisNp2(unittest.TestCase):
         options = mut.IrisNp2Options()
         SetSampledIrisOptions(options)
 
-        # Feature still TODO.
-        options.sampled_iris_options.containment_points = None
-
         # For speed reasons -- IPOPT seems to be faster than SNOPT here.
         options.solver = IpoptSolver()
 

@@ -11,8 +11,11 @@
 #include "drake/common/parallelism.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/geometry/optimization/vpolytope.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
+#include "drake/planning/collision_checker.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace planning {
@@ -265,6 +268,19 @@ std::vector<uint8_t> CheckProgConstraints(
     const solvers::MathematicalProgram* prog_ptr,
     const std::vector<Eigen::VectorXd>& particles, const int num_threads_to_use,
     const double tol, std::optional<int> end_index = std::nullopt);
+
+geometry::optimization::VPolytope ParseAndCheckContainmentPoints(
+    const CollisionChecker& checker,
+    const CommonSampledIrisOptions& sampled_iris_options,
+    const IrisParameterizationFunction& parameterization,
+    const geometry::optimization::Hyperellipsoid& starting_ellipsoid,
+    const double constraints_tol = 1e-6);
+
+Eigen::VectorXd ComputeFaceTangentToDistCvxh(
+    const geometry::optimization::Hyperellipsoid& E,
+    const Eigen::Ref<const Eigen::VectorXd>& point,
+    const geometry::optimization::VPolytope& cvxh_vpoly,
+    const solvers::SolverInterface& solver);
 
 }  // namespace internal
 }  // namespace planning

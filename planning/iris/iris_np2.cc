@@ -75,13 +75,6 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
                             const Hyperellipsoid& starting_ellipsoid,
                             const HPolyhedron& domain,
                             const IrisNp2Options& options) {
-  if (options.sampled_iris_options.containment_points != std::nullopt) {
-    // TODO(cohnt): Support enforcing additional containment points.
-    throw std::runtime_error(
-        "IrisNp2 does not yet support enforcing additional containment "
-        "points.");
-  }
-
   if (!(options.parameterization.get_parameterization()(
             starting_ellipsoid.center()) == starting_ellipsoid.center())) {
     // TODO(cohnt): Support growing regions along a parameterized subspace.
@@ -235,6 +228,10 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
         "options.sampled_iris_options.prog_with_additional_constraints.",
         fmt_eigen(E.center().transpose())));
   }
+  geometry::optimization::VPolytope containment_points_vpolytope =
+      internal::ParseAndCheckContainmentPoints(
+          checker, options.sampled_iris_options, options.parameterization,
+          starting_ellipsoid);
 
   // On each iteration, we will build the collision-free polytope represented
   // as {x | A * x <= b}.  Here we pre-allocate matrices with a generous
@@ -332,6 +329,10 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   const std::string seed_point_msg =
       "IrisNp2: terminating iterations because the seed point is no longer in "
       "the region.";
+
+  // Track maximum relaxation of cspace margin if containment_points are
+  // requested.
+  double max_relaxation = 0;
 
   // Set up constants for statistical tests.
   double outer_delta_min =
@@ -582,10 +583,42 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
             options.sampled_iris_options.meshcat->SetTransform(
                 path, RigidTransform<double>(point_to_draw));
           }
-          internal::AddTangentToPolytope(
-              E, closest,
-              options.sampled_iris_options.configuration_space_margin, &A, &b,
-              &num_constraints);
+          if (options.sampled_iris_options.containment_points.has_value()) {
+            Eigen::VectorXd a_face;
+            a_face = internal::ComputeFaceTangentToDistCvxh(
+                E, closest, containment_points_vpolytope, *solver);
+
+            a_face.normalize();
+            double b_face =
+                a_face.transpose() * closest -
+                options.sampled_iris_options.configuration_space_margin;
+
+            // Relax cspace margin to contain points.
+            if (options.sampled_iris_options.containment_points.has_value()) {
+              Eigen::VectorXd result =
+                  a_face.transpose() *
+                  options.sampled_iris_options.containment_points.value();
+              double relaxation = result.maxCoeff() - b_face;
+              if (relaxation > 0) {
+                b_face += relaxation;
+                if (max_relaxation < relaxation) max_relaxation = relaxation;
+              }
+            }
+            A.row(num_constraints) = a_face.transpose();
+            b(num_constraints) = b_face;
+            ++num_constraints;
+
+            // Resize A matrix if we need more faces.
+            if (A.rows() <= num_constraints) {
+              A.conservativeResize(A.rows() * 2, A.cols());
+              b.conservativeResize(b.rows() * 2);
+            }
+          } else {
+            internal::AddTangentToPolytope(
+                E, closest,
+                options.sampled_iris_options.configuration_space_margin, &A, &b,
+                &num_constraints);
+          }
           P_candidate =
               HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
           if (options.sampled_iris_options.require_sample_point_is_contained) {
@@ -616,10 +649,18 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
       if (failure_rate >= kSolverFailRateWarning) {
         log()->warn(fmt::format(
             "IrisNp2 WARNING, only {} out of {} closest collision "
-            "programs solved successfully ({}% failure rate). If you are using "
+            "programs solved successfully ({}% failure rate). If you are "
+            "using "
             "SnoptSolver or NloptSolver, consider using IpoptSolver instead.",
             num_prog_successes, num_prog_successes + num_prog_failures,
             failure_rate));
+      }
+
+      if (options.sampled_iris_options.verbose && max_relaxation > 0) {
+        log()->info(
+            fmt::format("IrisNp2 Warning relaxing cspace margin by {:03} to "
+                        "ensure point containment",
+                        max_relaxation));
       }
 
       ++num_iterations_separating_planes;
