@@ -146,7 +146,7 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
   VectorX<T> bu(plant().num_velocities());
   VectorX<T> Ke(plant().num_velocities());
   VectorX<T> be(plant().num_velocities());
-  
+
   // Set up the convex optimization problem minᵥ ℓ(v; q₀, v₀, h)
   PooledSapModel<T>& model = get_model();
   builder().UpdateModel(plant_context, h, &model);
