@@ -7,7 +7,6 @@
 
 namespace drake {
 namespace geometry {
-namespace internal {
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
@@ -29,7 +28,7 @@ bool Aabb::HasOverlap(const Aabb& a_G, const Aabb& b_H,
             = X_GH * b_H.center() - a_G.center()  */
   const RigidTransformd X_AB(X_GH.rotation(),
                              X_GH * b_H.center() - a_G.center());
-  return BoxesOverlap(a_G.half_width(), b_H.half_width(), X_AB);
+  return internal::BoxesOverlap(a_G.half_width(), b_H.half_width(), X_AB);
 }
 
 bool Aabb::HasOverlap(const Aabb& aabb_G, const Obb& obb_H,
@@ -47,17 +46,17 @@ bool Aabb::HasOverlap(const Aabb& aabb_G, const Obb& obb_H,
   const RigidTransformd X_AO(
       X_GH.rotation() * obb_H.pose().rotation(),
       X_GH * obb_H.pose().translation() - aabb_G.center());
-  return BoxesOverlap(aabb_G.half_width(), obb_H.half_width(), X_AO);
+  return internal::BoxesOverlap(aabb_G.half_width(), obb_H.half_width(), X_AO);
 }
 
 template <typename MeshType>
 Aabb AabbMaker<MeshType>::Compute() const {
   auto itr = vertices_.begin();
-  Vector3d max_bounds = convert_to_double(mesh_M_.vertex(*itr));
+  Vector3d max_bounds = internal::convert_to_double(mesh_M_.vertex(*itr));
   Vector3d min_bounds = max_bounds;
   ++itr;
   for (; itr != vertices_.end(); ++itr) {
-    const Vector3d& vertex = convert_to_double(mesh_M_.vertex(*itr));
+    const Vector3d& vertex = internal::convert_to_double(mesh_M_.vertex(*itr));
     // Compare its extent along each of the 3 axes.
     min_bounds = min_bounds.cwiseMin(vertex);
     max_bounds = max_bounds.cwiseMax(vertex);
@@ -72,6 +71,5 @@ template class AabbMaker<TriangleSurfaceMesh<AutoDiffXd>>;
 template class AabbMaker<VolumeMesh<double>>;
 template class AabbMaker<VolumeMesh<AutoDiffXd>>;
 
-}  // namespace internal
 }  // namespace geometry
 }  // namespace drake
