@@ -57,6 +57,11 @@ struct ConvexIntegratorSolverParameters {
   // Logging/performance tracking flags
   bool print_solver_stats{false};  // Whether to print stats to console.
   bool log_solver_stats{false};    // Whether to log stats to a file.
+
+  // Dense algebra (LDLT) for solving for the search direction Δv = H⁻¹ g.
+  // This is primarily useful for debugging and testing: sparse algebra is
+  // generally much faster.
+  bool use_dense_algebra{false};
 };
 
 /**

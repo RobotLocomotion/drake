@@ -595,6 +595,7 @@ int do_main() {
     ci_params.tolerance = FLAGS_tolerance;
     ci_params.log_solver_stats = FLAGS_log_solver_stats;
     ci_params.print_solver_stats = FLAGS_print_solver_stats;
+    ci_params.use_dense_algebra = FLAGS_dense_algebra;
     ci.set_solver_parameters(ci_params);
 
   } else if (FLAGS_simulator_integration_scheme == "implicit_euler") {

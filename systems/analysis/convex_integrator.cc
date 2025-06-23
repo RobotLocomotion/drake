@@ -522,28 +522,37 @@ void ConvexIntegrator<double>::ComputeSearchDirection(
     VectorXd* dv, bool reuse_factorization, bool reuse_sparsity_pattern) {
   DRAKE_ASSERT(dv != nullptr);
 
-  if (!reuse_factorization) {
-    // Compute the H and set up the factorization.
-    if (reuse_sparsity_pattern) {
-      model.UpdateHessian(data, hessian_.get());
-      hessian_factorization_.UpdateMatrix(*hessian_);
-    } else {
-      hessian_ = model.MakeHessian(data);
-      hessian_factorization_.SetMatrix(*hessian_);
-    }
-
-    // Factorize H
-    if (!hessian_factorization_.Factor()) {
-      throw std::runtime_error(
-          "ConvexIntegrator: Hessian factorization failed!");
-    }
+  if (solver_parameters_.use_dense_algebra) {
+    // If dense algebra is enabled, we won't reuse the factorization or perform
+    // any such optimization, since this is primarily for debugging and testing.
+    *dv = model.MakeHessian(data)->MakeDenseMatrix().ldlt().solve(
+        -data.cache().gradient);
     total_hessian_factorizations_++;
-    reuse_hessian_factorization_ = true;
-  }
 
-  // Compute the search direction dv = -H⁻¹ g
-  *dv = -data.cache().gradient;
-  hessian_factorization_.SolveInPlace(dv);
+  } else {
+    if (!reuse_factorization) {
+      // Compute H and set up the factorization.
+      if (reuse_sparsity_pattern) {
+        model.UpdateHessian(data, hessian_.get());
+        hessian_factorization_.UpdateMatrix(*hessian_);
+      } else {
+        hessian_ = model.MakeHessian(data);
+        hessian_factorization_.SetMatrix(*hessian_);
+      }
+
+      // Factorize H
+      if (!hessian_factorization_.Factor()) {
+        throw std::runtime_error(
+            "ConvexIntegrator: Hessian factorization failed!");
+      }
+      total_hessian_factorizations_++;
+      reuse_hessian_factorization_ = true;
+    }
+
+    // Compute the search direction dv = -H⁻¹ g
+    *dv = -data.cache().gradient;
+    hessian_factorization_.SolveInPlace(dv);
+  }
 }
 
 template <typename T>
