@@ -186,9 +186,6 @@ int do_main() {
 
   plant.Finalize();
 
-  fmt::print("Num positions: {:d}\n", plant.num_positions());
-  fmt::print("Num velocities: {:d}\n", plant.num_velocities());
-
   // Set up the meshcat visualizer
   auto meshcat = std::make_shared<drake::geometry::Meshcat>();
   if (FLAGS_visualize) {

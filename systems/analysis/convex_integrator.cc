@@ -753,9 +753,8 @@ void ConvexIntegrator<T>::CalcExternalForces(const Context<T>& context,
 template <typename T>
 void ConvexIntegrator<T>::CalcActuationForces(const Context<T>& context,
                                               VectorX<T>* tau) {
-  // TODO(vincekurtz): get rid of this allocation
-  const MatrixX<T> B = plant().MakeActuationMatrix();
-  *tau = B * plant().AssembleActuationInput(context);
+  tau->setZero();
+  plant().AddJointActuationForces(context, tau);
 }
 
 template <typename T>
