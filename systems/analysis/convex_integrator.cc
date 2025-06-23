@@ -523,11 +523,13 @@ void ConvexIntegrator<double>::ComputeSearchDirection(
   DRAKE_ASSERT(dv != nullptr);
 
   if (solver_parameters_.use_dense_algebra) {
-    // If dense algebra is enabled, we won't reuse the factorization or perform
-    // any such optimization, since this is primarily for debugging and testing.
-    *dv = model.MakeHessian(data)->MakeDenseMatrix().ldlt().solve(
-        -data.cache().gradient);
-    total_hessian_factorizations_++;
+    if (!reuse_factorization) {
+      MatrixXd H = model.MakeHessian(data)->MakeDenseMatrix();
+      dense_hessian_factorization_ = H.ldlt();
+      total_hessian_factorizations_++;
+      reuse_hessian_factorization_ = true;
+    }
+    *dv = dense_hessian_factorization_.solve(-data.cache().gradient);
 
   } else {
     if (!reuse_factorization) {

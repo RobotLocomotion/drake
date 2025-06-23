@@ -330,6 +330,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   SapData<T> scratch_data_;
   std::unique_ptr<BlockSparseSymmetricMatrixT<T>> hessian_;
   BlockSparseCholeskySolver<Eigen::MatrixXd> hessian_factorization_;
+  Eigen::LDLT<Eigen::MatrixXd> dense_hessian_factorization_;
   VectorX<T> search_direction_;
   SearchDirectionData<T> search_direction_data_;
   std::unique_ptr<MultibodyForces<T>> f_ext_;
