@@ -327,8 +327,7 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
     throw std::runtime_error("ConvexIntegrator: optimization failed.");
   }
 
-  // Accumulate solver statistics, log as requested.
-  if (solver_parameters_.log_solver_stats) LogSolverStats();
+  // Accumulate solver statistics
   total_solver_iterations_ += stats_.iterations;
   total_ls_iterations_ += std::accumulate(stats_.ls_iterations.begin(),
                                           stats_.ls_iterations.end(), 0);
@@ -411,7 +410,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(
   dv.resize(data.num_velocities());
   DRAKE_DEMAND(data.num_velocities() == v.size());
 
-  // Gradient convergence tolerance is scaled by D = diag(M)^{-1/2}, so that all
+  // Convergence tolerances are scaled by D = diag(M)^{-1/2}, so that all
   // entries of g̃ = Dg and ṽ = D⁻¹v have the same units [Castro 2021, IV.E].
   //
   // Convergence is achieved when either the (normalized) gradient is small
@@ -435,10 +434,10 @@ bool ConvexIntegrator<double>::SolveWithGuess(
   int ls_iterations{0};
   double eta = 1.0;
 
-  stats_.Reset(this->get_context().get_time());
+  const double t = this->get_context().get_time();
+  stats_.Reset(t);
   if (solver_parameters_.print_solver_stats) {
-    fmt::print("ConvexIntegrator: solving at t = {:.4f}\n",
-               this->get_context().get_time());
+    fmt::print("ConvexIntegrator: solving at t = {:.4f}\n", t);
   }
 
   for (int k = 0; k < solver_parameters_.max_iterations; ++k) {
@@ -446,14 +445,22 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     model.CalcData(v, &data);
     const double grad_norm = (D.asDiagonal() * data.cache().gradient).norm();
 
-    // We'll print stats before doing any convergence checks. That ensures that
-    // we get a printout even v_guess is already good enough.
+    // We'll print and log solver stats before doing any convergence checks.
+    // That ensures that we get a printout even when v_guess is good enough that
+    // no iterations are performed.
     if (solver_parameters_.print_solver_stats) {
       const double step_size = (k == 0) ? NAN : stats_.step_size.back();
       fmt::print(
           "  k: {}, cost: {}, gradient: {:e}, step: {:e}, ls_iterations: {}, "
           "alpha: {}\n",
           k, data.cache().cost, grad_norm, step_size, ls_iterations, alpha);
+    }
+    if (solver_parameters_.log_solver_stats) {
+      DRAKE_THROW_UNLESS(log_file_.is_open());
+      const double step_size = (k == 0) ? NAN : stats_.step_size.back();
+      log_file_ << t << "," << k << "," << data.cache().cost << "," << grad_norm
+                << "," << ls_iterations << "," << alpha << "," << step_size
+                << "\n";
     }
 
     // Gradient-based convergence check. Allows for early exit if v_guess is
@@ -466,7 +473,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     // iteration has been completed, since we need ||D⁻¹ Δvₖ||
     if (k > 0) {
       // For k = 1, we have η = 1, so this is equivalent to ||D⁻¹ Δvₖ|| < tol.
-      // Otherwise we use η = θ/(1−θ) (see Hairer 1996, p.120).
+      // Otherwise we use η = θ/(1−θ) as set below (see Hairer 1996, p.120).
       if (eta * stats_.step_size.back() < eps * scale) {
         return true;
       }
@@ -529,7 +536,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(
     dv *= alpha;
     v += dv;
 
-    // Finalize solver stats that we now have after taking the step
+    // Finalize solver stats now that we've finished the iteration
     stats_.iterations++;
     stats_.cost.push_back(data.cache().cost);
     stats_.gradient_norm.push_back(data.cache().gradient.norm());
@@ -718,16 +725,6 @@ void ConvexIntegrator<double>::ComputeSearchDirection(
     // Compute the search direction dv = -H⁻¹ g
     *dv = -data.cache().gradient;
     hessian_factorization_.SolveInPlace(dv);
-  }
-}
-
-template <typename T>
-void ConvexIntegrator<T>::LogSolverStats() {
-  DRAKE_THROW_UNLESS(log_file_.is_open());
-  for (int k = 0; k < stats_.iterations; ++k) {
-    log_file_ << stats_.time << "," << k << "," << stats_.cost[k] << ","
-              << stats_.gradient_norm[k] << "," << stats_.ls_iterations[k]
-              << "," << stats_.alpha[k] << "," << stats_.step_size[k] << "\n";
   }
 }
 

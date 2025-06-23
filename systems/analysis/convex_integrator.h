@@ -306,9 +306,6 @@ class ConvexIntegrator final : public IntegratorBase<T> {
                               bool reuse_factorization = false,
                               bool reuse_sparsity_pattern = false);
 
-  // Log solver statistics to a CSV file for later analysis.
-  void LogSolverStats();
-
   // Indicate whether a change in problem structure requires a Hessian with a
   // new sparsity pattern.
   bool SparsityPatternChanged(const PooledSapModel<T>& model) const;
