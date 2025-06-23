@@ -28,10 +28,12 @@ drake_py_binary(
     ],
 )
 
-drake_py_library(
-    name = "error_control",
-    srcs = ["error_control_demo.py"],
-    data = [":models"],
+drake_py_binary(
+    name = "suction_gripper",
+    srcs = ["suction_gripper.py"],
+    data = [
+        "@drake_models",
+    ],
     deps = [
         "//bindings/pydrake",
     ],
