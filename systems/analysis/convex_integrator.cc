@@ -168,7 +168,7 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
   // Set up the convex optimization problem minᵥ ℓ(v; q₀, v₀, h)
   PooledSapModel<T>& model = get_model();
   builder().UpdateModel(plant_context, h, &model);
-  
+
   // TODO(vincekurtz): only add these constraints if the associated ports are
   // actually connected.
   builder().AddActuationGains(Ku, bu, &model);
@@ -570,7 +570,7 @@ bool ConvexIntegrator<T>::SparsityPatternChanged(
 
 template <typename T>
 void ConvexIntegrator<T>::CalcExternalForces(const Context<T>& context,
-                                                    VectorX<T>* tau) {
+                                             VectorX<T>* tau) {
   MultibodyForces<T>& forces = *f_ext_;
   forces.SetZero();
   plant().AddAppliedExternalSpatialForces(context, &forces);
@@ -614,8 +614,8 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, VectorX<T>* Ku,
   CalcActuationForces(plant_context, &gu0);
   CalcExternalForces(plant_context, &ge0);
 
-  // Allocate a perturbed state x = [q; v; z] and outputs 
-  //    gu(x) = B u(x), 
+  // Allocate a perturbed state x = [q; v; z] and outputs
+  //    gu(x) = B u(x),
   //    ge(x) = τₑₓₜ(x)
   const VectorX<T> x = state.CopyToVector();
   VectorX<T> x_prime = x;

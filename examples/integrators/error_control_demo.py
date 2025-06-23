@@ -171,7 +171,7 @@ def create_scene(
 
     vis_config = VisualizationConfig()
     vis_config.publish_period = 100  # very long to avoid extra publishes
-    #ApplyVisualizationConfig(vis_config, builder=builder, meshcat=meshcat)
+    ApplyVisualizationConfig(vis_config, builder=builder, meshcat=meshcat)
 
     logger = LogVectorOutput(
         plant.get_state_output_port(),

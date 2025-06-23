@@ -271,8 +271,8 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   const int nv = plant.num_velocities();
   VectorXd K(nv), b(nv);
   VectorXd Ke(nv), be(nv);  // unusued, for linearizing other input ports
-  ConvexIntegratorTester::LinearizeExternalSystem(&integrator, h, &K, &b,
-                                                  &Ke, &be);
+  ConvexIntegratorTester::LinearizeExternalSystem(&integrator, h, &K, &b, &Ke,
+                                                  &be);
 
   // Reference linearization via autodiff
   const Context<double>& ctrl_context =
@@ -321,22 +321,18 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   const MatrixXd H_ref =
       M + h * K_ref.asDiagonal() * MatrixXd::Identity(nv, nv);
 
-  fmt::print("l_ref : {}\n", l_ref);
-
   const PooledSapBuilder<double>& sap_builder = integrator.builder();
   PooledSapModel<double>& model = integrator.get_model();
   SapData<double>& data = integrator.get_data();
   sap_builder.UpdateModel(plant_context, h, &model);
-  //sap_builder.AddExternalGains(K, b, &model);
+  // sap_builder.AddExternalGains(K, b, &model);
   sap_builder.AddActuationGains(K, b, &model);
   model.ResizeData(&data);
-  model.CalcData(v, &data); 
+  model.CalcData(v, &data);
   const VectorXd dl = data.cache().gradient;
   const double l = data.cache().cost;
   const MatrixXd H = model.MakeHessian(data)->MakeDenseMatrix();
 
-  fmt::print("l     : {}\n", l);
-  
   EXPECT_TRUE(
       CompareMatrices(dl, dl_ref, kTolerance, MatrixCompareType::relative));
   EXPECT_TRUE(
@@ -346,8 +342,8 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   // Simulate for a few seconds to make sure nothing breaks
   const int fps = 32;
   meshcat->StartRecording(fps);
-  simulator.set_target_realtime_rate(0.1);
-  simulator.AdvanceTo(1.0);
+  simulator.set_target_realtime_rate(0.0);
+  simulator.AdvanceTo(2.0);
   meshcat->StopRecording();
   meshcat->PublishRecording();
   std::cout << std::endl;

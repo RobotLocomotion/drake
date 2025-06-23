@@ -16,8 +16,8 @@
 namespace drake {
 namespace systems {
 
-using multibody::MultibodyPlant;
 using multibody::MultibodyForces;
+using multibody::MultibodyPlant;
 using multibody::contact_solvers::internal::BlockSparseCholeskySolver;
 using multibody::contact_solvers::internal::BlockSparseSymmetricMatrixT;
 using multibody::contact_solvers::internal::BlockSparsityPattern;
@@ -37,15 +37,17 @@ struct ConvexIntegratorSolverParameters {
   // Maximum line search step size
   double alpha_max{1.0};
 
-  // Tolerance for the stricter gradient-based convergence check,
-  // ‖∇ℓ‖ ≤ ε⋅‖diag(A)‖
+  // Tolerance ε for the convergence conditions
+  //   ‖D ∇ℓ‖ ≤ ε max(1, ‖D r‖),
+  //   η ‖D⁻¹ Δv‖ ≤ ε max(1, ‖D r‖),
+  // in fixed-step mode (no error control).
   double tolerance{1e-8};
 
   // Tolerance for exact line search.
   double ls_tolerance{1e-6};
 
-  // Scaling factor for the relaxed convergence check (θ method of Hairer 1996)
-  // used to exit early under loose accuracies.
+  // Scaling factor for setting the tolerance ε = κ ⋅ accuracy in
+  // error-controlled model.
   double kappa{0.05};
 
   // Whether hessian reuse between iterations and time steps is enabled.
