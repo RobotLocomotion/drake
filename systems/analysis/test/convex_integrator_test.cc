@@ -22,6 +22,8 @@ using Eigen::VectorXd;
 using multibody::AddMultibodyPlantSceneGraph;
 using multibody::Joint;
 using multibody::JointIndex;
+using multibody::JointActuator;
+using multibody::JointActuatorIndex;
 using multibody::Parser;
 using multibody::SpatialInertia;
 using systems::ConstantVectorSource;
@@ -270,7 +272,7 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   // Linearize the non-plant system dynamics around the current state
   const int nv = plant.num_velocities();
   VectorXd K(nv), b(nv);
-  VectorXd Ke(nv), be(nv);  // unusued, for linearizing other input ports
+  VectorXd Ke(nv), be(nv);  // unused, for linearizing other input ports
   ConvexIntegratorTester::LinearizeExternalSystem(&integrator, h, &K, &b, &Ke,
                                                   &be);
 
@@ -325,7 +327,6 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   PooledSapModel<double>& model = integrator.get_model();
   SapData<double>& data = integrator.get_data();
   sap_builder.UpdateModel(plant_context, h, &model);
-  // sap_builder.AddExternalGains(K, b, &model);
   sap_builder.AddActuationGains(K, b, &model);
   model.ResizeData(&data);
   model.CalcData(v, &data);
@@ -349,6 +350,85 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   std::cout << std::endl;
   PrintSimulatorStatistics(simulator);
   std::cout << std::endl;
+}
+
+// Test implicit joint effort limits
+GTEST_TEST(ConvexIntegratorTest, EffortLimits) {
+  // Set up the a system model with effort limits
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant, &scene_graph)
+      .AddModelsFromString(actuated_pendulum_xml, "xml");
+  plant.Finalize();
+
+  // Connect a high-gain PD controller
+  VectorXd Kp(2), Kd(2), Ki(2);
+  Kp << 1e3, 1e3;
+  Kd << 0.1, 0.1;
+  Ki << 0.0, 0.0;
+  auto ctrl = builder.AddSystem<PidController>(Kp, Ki, Kd);
+
+  VectorXd x_nom(4);
+  x_nom << M_PI_2, M_PI_2, 0.0, 0.0;
+  auto target_state = builder.AddSystem<ConstantVectorSource<double>>(x_nom);
+
+  builder.Connect(target_state->get_output_port(),
+                  ctrl->get_input_port_desired_state());
+  builder.Connect(plant.get_state_output_port(),
+                  ctrl->get_input_port_estimated_state());
+  builder.Connect(ctrl->get_output_port(), plant.get_actuation_input_port());
+
+  // Compile the system diagram
+  auto diagram = builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  Context<double>& plant_context =
+      diagram->GetMutableSubsystemContext(plant, diagram_context.get());
+
+  // Get the actuator effort limits
+  VectorXd effort_limits(2);
+  for (JointActuatorIndex a : plant.GetJointActuatorIndices()) {
+    const JointActuator<double>& actuator = plant.get_joint_actuator(a);
+    const int i = actuator.input_start();
+    const int n = actuator.num_inputs();
+    effort_limits.segment(i, n) =
+        VectorXd::Constant(n, actuator.effort_limit());
+  }
+
+  // Set up the integrator
+  ConvexIntegrator<double> integrator(*diagram, diagram_context.get());
+  integrator.set_plant(&plant);
+  integrator.set_maximum_step_size(0.1);
+  integrator.set_fixed_step_mode(true);
+  integrator.Initialize();
+
+  const VectorXd q0 = plant.GetPositions(plant_context);
+  const VectorXd v0 = plant.GetVelocities(plant_context);
+
+  // Compute some dynamics terms
+  MatrixXd M(2, 2);
+  VectorXd k(2);
+  MultibodyForces<double> f_ext(plant);
+  plant.CalcMassMatrix(plant_context, &M);
+  plant.CalcForceElementsContribution(plant_context, &f_ext);
+  k = plant.CalcInverseDynamics(plant_context, VectorXd::Zero(2), f_ext);
+
+  // Simulate for a step
+  const double h = 0.01;
+  EXPECT_TRUE(integrator.IntegrateWithSingleFixedStepToTime(h));
+
+  // Compare requested and applied actuator forces
+  const VectorXd u_req = plant.get_actuation_input_port().Eval(plant_context);
+
+  EXPECT_TRUE(u_req[0] > effort_limits[0]);
+  EXPECT_TRUE(u_req[1] > effort_limits[1]);
+
+  // TODO(vincekurtz): report u_app in plant.get_net_actuation_output_port()
+  const VectorXd v = plant.GetVelocities(plant_context);
+  const VectorXd u_app = M * (v - v0) / h + k;
+
+  const double kTol = std::sqrt(std::numeric_limits<double>::epsilon());
+  EXPECT_TRUE(u_app[0] <= effort_limits[0] + kTol);
+  EXPECT_TRUE(u_app[1] <= effort_limits[1] + kTol);
 }
 
 }  // namespace systems

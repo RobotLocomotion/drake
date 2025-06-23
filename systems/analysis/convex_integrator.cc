@@ -81,12 +81,11 @@ void ConvexIntegrator<T>::DoInitialize() {
 
 template <typename T>
 bool ConvexIntegrator<T>::DoStep(const T& h) {
+  // TODO(vincekurtz): consider delaying this to encourage cache hits
   Context<T>& context = *this->get_mutable_context();
   ContinuousState<T>& x_next = context.get_mutable_continuous_state();
   const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
   const T t0 = context.get_time();
-
-  // TODO(vincekurtz): consider delaying this to encourage cache hits
 
   // Solve for the full step x_{t+h}. We'll need this regardless of whether
   // error control is enabled or not.
@@ -147,32 +146,33 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
   VectorX<T> bu(plant().num_velocities());
   VectorX<T> Ke(plant().num_velocities());
   VectorX<T> be(plant().num_velocities());
-
-  // Linearize any external systems (e.g., controllers) connected to the plant,
-  //     τ = B u(x) + τₑₓₜ(x),
-  //       ≈ clamp(-Kᵤ v + bᵤ) - Kₑ v + bₑ,
-  // TODO(vincekurtz): check model instance specific external force ports
-  if (plant().num_actuators() > 0 ||
-      plant().get_applied_generalized_force_input_port().HasValue(
-          plant_context) ||
-      plant().get_applied_spatial_force_input_port().HasValue(plant_context)) {
-    // Only do the linearization if a controller is connected
-    LinearizeExternalSystem(h, &Ku, &bu, &Ke, &be);
-  } else {
-    Ku.setZero();
-    bu.setZero();
-    Ke.setZero();
-    be.setZero();
-  }
-
+  
   // Set up the convex optimization problem minᵥ ℓ(v; q₀, v₀, h)
   PooledSapModel<T>& model = get_model();
   builder().UpdateModel(plant_context, h, &model);
 
-  // TODO(vincekurtz): only add these constraints if the associated ports are
-  // actually connected.
-  builder().AddActuationGains(Ku, bu, &model);
-  builder().AddExternalGains(Ke, be, &model);
+  // Linearize any external systems (e.g., controllers) connected to the plant,
+  //     τ = B u(x) + τₑₓₜ(x),
+  //       ≈ clamp(-Kᵤ v + bᵤ) - Kₑ v + bₑ,
+  // and add constraints accordingly.
+  bool has_actuators = plant().num_actuators() > 0;
+  bool has_external_forces =
+      plant().get_applied_generalized_force_input_port().HasValue(
+          plant_context) ||
+      plant().get_applied_spatial_force_input_port().HasValue(plant_context);
+
+  if (has_actuators || has_external_forces) {
+    LinearizeExternalSystem(h, &Ku, &bu, &Ke, &be);
+
+    if (has_actuators) {
+      // τ = clamp(-Kᵤ v + bᵤ)
+      builder().AddActuationGains(Ku, bu, &model);
+    }
+    if (has_external_forces) {
+      // τ = - Kₑ v + bₑ,
+      builder().AddExternalGains(Ke, be, &model);
+    }
+  }
 
   // TODO(vincekurtz): pre-allocate v
   VectorX<T> v = v_guess;
