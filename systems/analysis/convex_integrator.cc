@@ -193,10 +193,29 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
   VectorX<T> q(plant().num_positions());
   AdvancePlantConfiguration(h, v, &q);
 
-  // Set the updated state
-  // TODO(vincekurtz): update the non-plant states z.
+  // Set the updated plant state
   x_next->get_mutable_generalized_position().SetFromVector(q);
   x_next->get_mutable_generalized_velocity().SetFromVector(v);
+
+  // Advance the non-plant state with explicit euler,
+  //   z = z₀ + h ż.
+  // While we could use a more advanced integration scheme here, the non-plant
+  // dynamics are usually pretty simple (e.g., the integral term from a PID
+  // controller), so forward euler is sufficient.
+  if (x_next->num_z() > 0) {
+    // TODO(vincekurtz): pre-allocate z
+    VectorX<T> z(x_next->num_z());
+
+    // TODO(vincekurtz): avoid computing time derivatives for the plant
+    const VectorX<T> z_dot = this->EvalTimeDerivatives(context)
+                                 .get_misc_continuous_state()
+                                 .CopyToVector();
+    z = context.get_continuous_state()
+            .get_misc_continuous_state()
+            .CopyToVector();
+    z += h * z_dot;
+    x_next->get_mutable_misc_continuous_state().SetFromVector(z);
+  }
 }
 
 template <typename T>
