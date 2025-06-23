@@ -128,6 +128,9 @@ DEFINE_double(
     ls_tolerance, 1e-6,
     "Tolerance for the exact line search performed by the convex integrator.");
 DEFINE_double(tolerance, 1e-8, "Main solver tolerance");
+DEFINE_string(error_estimation_strategy, "half_stepping",
+              "Error estimation strategy for the convex integrator. "
+              "Options are: 'half_stepping', 'sdirk', 'implicit_trapezoid'.");
 
 using drake::geometry::CollisionFilterDeclaration;
 using drake::math::RigidTransform;
@@ -596,6 +599,7 @@ int do_main() {
     ci_params.log_solver_stats = FLAGS_log_solver_stats;
     ci_params.print_solver_stats = FLAGS_print_solver_stats;
     ci_params.use_dense_algebra = FLAGS_dense_algebra;
+    ci_params.error_estimation_strategy = FLAGS_error_estimation_strategy;
     ci.set_solver_parameters(ci_params);
 
   } else if (FLAGS_simulator_integration_scheme == "implicit_euler") {

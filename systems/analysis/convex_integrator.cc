@@ -81,6 +81,25 @@ void ConvexIntegrator<T>::DoInitialize() {
 
 template <typename T>
 bool ConvexIntegrator<T>::DoStep(const T& h) {
+  const std::string& strategy = solver_parameters_.error_estimation_strategy;
+
+  if (strategy == "half_stepping") {
+    return StepWithHalfSteppingErrorEstimate(h);
+  } else if (strategy == "sdirk") {
+    return StepWithSDIRKErrorEstimate(h);
+  } else if (strategy == "implicit_trapezoid") {
+    return StepWithImplicitTrapezoidErrorEstimate(h);
+  } else {
+    throw std::runtime_error(
+        "ConvexIntegrator: unknown error estimation strategy: " +
+        solver_parameters_.error_estimation_strategy +
+        ". Supported strategies are 'half_stepping', 'sdirk', and "
+        "'implicit_trapezoid'.");
+  }
+}
+
+template <typename T>
+bool ConvexIntegrator<T>::StepWithHalfSteppingErrorEstimate(const T& h) {
   // TODO(vincekurtz): consider delaying this to encourage cache hits
   Context<T>& context = *this->get_mutable_context();
   ContinuousState<T>& x_next = context.get_mutable_continuous_state();
@@ -128,6 +147,132 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     // two half-steps.
     ContinuousState<T>& err = *this->get_mutable_error_estimate();
     err.get_mutable_vector().SetFrom(x_next_full_->get_vector());
+    err.get_mutable_vector().PlusEqScaled(-1.0, x_next_half_2_->get_vector());
+  }
+
+  return true;  // step was successful
+}
+
+template <typename T>
+bool ConvexIntegrator<T>::StepWithSDIRKErrorEstimate(const T& h) {
+  using std::sqrt;
+  // Get references to the overall diagram context and the plant context
+  const Context<T>& diagram_context = this->get_context();
+  const Context<T>& plant_context =
+      plant().GetMyContextFromRoot(diagram_context);
+
+  // Single Diagonally Implicit Runge Kutta (SDIRK) coefficients from Kennedy
+  // and Carpenter, "Diagonaly Implicit Runge-Kutta Method for Oridnary
+  // Differential Equations", 2016. pp 72, eq (221).
+  const double gamma = 1.0 - sqrt(2.0) / 2.0;
+  const double c1 = gamma;
+  const double c2 = 1.0;
+  const double a11 = gamma;
+  const double a21 = 1.0 - gamma;
+  const double a22 = gamma;
+  const double b1 = 1.0 - gamma;
+  const double b2 = gamma;
+
+  // Error estimation coefficients from Blom et al, "A comparison of Rosenbrock
+  // and ESDIRK methods combined with iterative solvers for unsteady
+  // compressible flows", 2016. pp 25, Table 4.
+  const double bhat2 = 2.0 - 5.0 / 4.0 * sqrt(2.0);
+  const double bhat1 = 1.0 - bhat2;
+
+  // TODO(vincekurtz): consider pre-allocating this
+  VectorX<T> v_guess(plant().num_velocities());
+
+  // Mutable context
+  Context<T>& mutable_context = *this->get_mutable_context();
+  ContinuousState<T>& x = mutable_context.get_mutable_continuous_state();
+
+  // TODO(vincekurtz): consider renaming these
+  const T t0 = diagram_context.get_time();
+  const VectorX<T> x0 = diagram_context.get_continuous_state().CopyToVector();
+  ContinuousState<T>& x1 = *x_next_full_;
+  ContinuousState<T>& x2 = *x_next_half_1_;
+
+  // First phase: solve for x₁ = x₀ + h a₁₁f(t₁, x₁) using convex SAP.
+  // We'll do this by solving the SAP problem from x = x₀ with timestep h a₁₁.
+  mutable_context.SetTime(t0 + c1 * h);
+  v_guess = plant().GetVelocities(plant_context);
+  ComputeNextContinuousState(h * a11, v_guess, &x1);
+  const VectorX<T> f1 = (x1.CopyToVector() - x0) / (h * a11);
+
+  // Second phase: solve for x₂ = x₀ + h a₂₁f(t₁, x₁) + h a₂₂f(t₂, x₂).
+  // We'll do this by first setting x = x₀ + h a₂₁f(t₁, x₁), then solving for
+  // the step from x to x₂ with timestep h a₂₂.
+  x.SetFromVector(x0 + h * a21 * f1);
+  mutable_context.SetTimeAndNoteContinuousStateChange(t0 + c2 * h);
+
+  const VectorX<T> v0 = v_guess;
+  const VectorX<T> v1 = x.get_generalized_velocity().CopyToVector();
+  const VectorX<T> acc = (v1 - v0) / (h * a11);
+  v_guess = v1 + h * (1.0 - a11) * acc;
+  ComputeNextContinuousState(h * a22, v_guess, &x2);
+  const VectorX<T> f2 = (x2.CopyToVector() - x.CopyToVector()) / (h * a22);
+
+  // Advance the state as x₀ + h b₁f(t₁, x₁) + h b₂f(t₂, x₂)
+  x.SetFromVector(x0 + h * (b1 * f1 + b2 * f2));
+  mutable_context.SetTimeAndNoteContinuousStateChange(t0 + h);
+
+  // Determine the error estimate using the embedded lower-order method
+  if (!this->get_fixed_step_mode()) {
+    const VectorX<T> x_hat = x0 + h * (bhat1 * f1 + bhat2 * f2);
+    ContinuousState<T>& err = *this->get_mutable_error_estimate();
+    err.SetFromVector(x.CopyToVector() - x_hat);
+  }
+
+  return true;  // step was successful
+}
+
+template <typename T>
+bool ConvexIntegrator<T>::StepWithImplicitTrapezoidErrorEstimate(const T& h) {
+  // Get references to the overall diagram context and the plant context
+  const Context<T>& diagram_context = this->get_context();
+  const Context<T>& plant_context =
+      plant().GetMyContextFromRoot(diagram_context);
+  const T t0 = diagram_context.get_time();
+
+  // TODO(vincekurtz): consider pre-allocating these
+  VectorX<T> v_guess(plant().num_velocities());
+
+  // Solve the for the full step x_{t+h}
+  v_guess = plant().GetVelocities(plant_context);
+  ComputeNextContinuousState(h, v_guess, x_next_full_.get());
+
+  Context<T>& mutable_context = *this->get_mutable_context();
+  ContinuousState<T>& x_next = mutable_context.get_mutable_continuous_state();
+
+  if (this->get_fixed_step_mode()) {
+    // We're using fixed step mode, so we can just set the state to x_{t+h} and
+    // move on. No need for error estimation.
+    x_next.SetFrom(*x_next_full_);
+    mutable_context.SetTimeAndNoteContinuousStateChange(t0 + h);
+  } else {
+    // We're using error control, and will compare with the implicit trapezoidal
+    // rule, x = x₀ + h/2 ( f(x₀) + f(x) )
+
+    // First we'll advance the state to x₁ = x₀ + h/2 f(x₀) explicitly
+    const VectorX<T> x0 = diagram_context.get_continuous_state().CopyToVector();
+    const VectorX<T> f0 =
+        this->EvalTimeDerivatives(diagram_context).CopyToVector();
+    x_next_half_1_->SetFromVector(x0 + 0.5 * h * f0);
+
+    // Then we'll advance to x = x₁ + h/2 f(x) implicitly using SAP.
+    x_next.SetFrom(*x_next_half_1_);
+    mutable_context.SetTimeAndNoteContinuousStateChange(t0 + 0.5 * h);
+    v_guess = x_next_full_->get_generalized_velocity().CopyToVector();
+    ComputeNextContinuousState(0.5 * h, v_guess, x_next_half_2_.get());
+
+    // Set the state to the second-order implicit trapezoidal solution.
+    x_next.SetFrom(*x_next_half_2_);
+    mutable_context.SetTimeAndNoteContinuousStateChange(t0 + h);
+
+    // Estimate the error as the difference between the full step and the
+    // two half-steps.
+    ContinuousState<T>& err = *this->get_mutable_error_estimate();
+    err.SetFrom(*x_next_full_);
     err.get_mutable_vector().PlusEqScaled(-1.0, x_next_half_2_->get_vector());
   }
 
