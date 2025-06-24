@@ -118,6 +118,7 @@ void PooledSapModel<T>::CalcData(const VectorX<T>& v, SapData<T>* data) const {
   CalcMomentumTerms(*data, &cache);
   CalcBodySpatialVelocities(v, &cache.spatial_velocities);
   gain_constraints_pool_.CalcData(v, &cache.gain_constraints_data);
+  limit_constraints_pool_.CalcData(v, &cache.limit_constraints_data);
   patch_constraints_pool_.CalcData(cache.spatial_velocities,
                                    &cache.patch_constraints_data);
 
@@ -125,10 +126,12 @@ void PooledSapModel<T>::CalcData(const VectorX<T>& v, SapData<T>* data) const {
   // TODO(amcastro-tri): factor out this function into a ConstraintPool class,
   // along with clique data size and other common per-pool functionality.
   gain_constraints_pool_.AccumulateGradient(*data, &cache.gradient);
+  limit_constraints_pool_.AccumulateGradient(*data, &cache.gradient);
   patch_constraints_pool_.AccumulateGradient(*data, &cache.gradient);
 
   cache.cost = cache.momentum_cost;
   cache.cost += cache.gain_constraints_data.cost();
+  cache.cost += cache.limit_constraints_data.cost();
   cache.cost += cache.patch_constraints_data.cost();
 }
 
@@ -156,6 +159,7 @@ void PooledSapModel<T>::UpdateHessian(
 
   // Add constraints' contributions.
   gain_constraints_pool_.AccumulateHessian(data, hessian);
+  limit_constraints_pool_.AccumulateHessian(data, hessian);
   patch_constraints_pool_.AccumulateHessian(data, hessian);
 }
 
@@ -184,6 +188,7 @@ void PooledSapModel<T>::ResizeData(SapData<T>* data) const {
   data->Resize(num_bodies_, num_velocities_, clique_sizes_,
                patch_constraints_pool_.patch_sizes());
   gain_constraints_pool_.ResizeData(&data->cache().gain_constraints_data);
+  limit_constraints_pool_.ResizeData(&data->cache().limit_constraints_data);
 }
 
 template <typename T>
@@ -250,6 +255,18 @@ T PooledSapModel<T>::CalcCostAlongLine(
         cache_alpha.gain_constraints_data, search_direction.w,
         &scratch->scratch().v_pool, &constraint_dcost, &constraint_d2cost);
     cost += cache_alpha.gain_constraints_data.cost();
+    *dcost_dalpha += constraint_dcost;
+    *d2cost_dalpha2 += constraint_d2cost;
+  }
+
+  // Add limit constraints contributions:
+  {
+    limit_constraints_pool_.CalcData(v_alpha,
+                                     &cache_alpha.limit_constraints_data);
+    limit_constraints_pool_.ProjectAlongLine(
+        cache_alpha.limit_constraints_data, search_direction.w,
+        &scratch->scratch().v_pool, &constraint_dcost, &constraint_d2cost);
+    cost += cache_alpha.limit_constraints_data.cost();
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;
   }

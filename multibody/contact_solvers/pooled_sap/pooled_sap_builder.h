@@ -71,6 +71,8 @@ class PooledSapBuilder {
                                           PooledSapModel<T>* model) const;
   void AddPatchConstraintsForHydroelasticContact(
       const systems::Context<T>& context, PooledSapModel<T>* model) const;
+  void AddLimitConstraints(const systems::Context<T>& context,
+                           PooledSapModel<T>* model) const;
 
   const MultibodyPlant<T>* plant_{nullptr};
 

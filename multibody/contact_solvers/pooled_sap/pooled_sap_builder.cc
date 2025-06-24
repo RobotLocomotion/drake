@@ -89,7 +89,9 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
 
   // We only add a clique for tree's with non-zero number of velocities.
   int num_cliques = 0;
-  std::vector<int> tree_clique(topology.num_trees(), -1);
+  std::vector<int>& tree_clique = params->tree_to_clique;
+  tree_clique.resize(topology.num_trees());
+  std::fill(tree_clique.begin(), tree_clique.end(), -1);
   for (TreeIndex t(0); t < topology.num_trees(); ++t) {
     const int tree_start_in_v = topology.tree_velocities_start_in_v(t);
     const int tree_nv = topology.num_tree_velocities(t);
@@ -180,6 +182,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   CalcGeometryContactData(context);
   AddPatchConstraintsForHydroelasticContact(context, model);
   AddPatchConstraintsForPointContact(context, model);
+  AddLimitConstraints(context, model);
   model->SetSparsityPattern();
 
   model->set_stiction_tolerance(plant().stiction_tolerance());
@@ -221,6 +224,48 @@ void PooledSapBuilder<T>::CalcActuationInput(
       VectorX<T>& actuation =
           actuator.has_controller() ? *actuation_w_pd : *actuation_wo_pd;
       actuation[v_index] += u[actuator.input_start()];
+    }
+  }
+}
+
+template <typename T>
+void PooledSapBuilder<T>::AddLimitConstraints(
+    const systems::Context<T>& context, PooledSapModel<T>* model) const {
+  DRAKE_ASSERT(model != nullptr);
+
+  const MultibodyTreeTopology& topology =
+      GetInternalTree(plant()).get_topology();
+
+  typename PooledSapModel<T>::LimitConstraintsPool& limits =
+      model->limit_constraints_pool();
+
+  limits.Reset();
+
+  const std::vector<int>& tree_to_clique = model->params().tree_to_clique;
+
+  for (JointIndex joint_index : plant().GetJointIndices()) {
+    const Joint<T>& joint = plant().get_joint(joint_index);
+    fmt::print("Joint: {}\n", joint.name());
+    // We only support limits for 1 DOF joints for which we know that q̇ = v.
+    if (joint.num_positions() == 1 && joint.num_velocities() == 1) {
+      const int velocity_start = joint.velocity_start();
+      const TreeIndex tree_index =
+          topology.velocity_to_tree_index(velocity_start);
+      const int tree_nv = topology.num_tree_velocities(tree_index);
+      DRAKE_ASSERT(tree_nv >= 0);
+      const int tree_velocity_start =
+          topology.tree_velocities_start_in_v(tree_index);
+      const int tree_dof = velocity_start - tree_velocity_start;
+      const int clique = tree_to_clique[tree_index];
+
+      const double ql = joint.position_lower_limits()[0];
+      const double qu = joint.position_upper_limits()[0];
+      const T& q0 = joint.GetOnePosition(context);
+
+      fmt::print("q0: {}. ql: {}. qu: {}\n", q0, ql, qu);
+
+      // Add constraint for this dof in clique.
+      limits.Add(clique, tree_dof, q0, ql, qu);
     }
   }
 }

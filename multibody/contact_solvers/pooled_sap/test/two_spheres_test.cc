@@ -23,6 +23,7 @@
 using drake::geometry::FrameId;
 using drake::geometry::SceneGraphInspector;
 using drake::math::RigidTransformd;
+using drake::multibody::Parser;
 using drake::multibody::contact_solvers::internal::ContactConfiguration;
 using drake::multibody::contact_solvers::internal::SapConstraintJacobian;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
@@ -449,6 +450,47 @@ TEST_F(TwoSpheres, CalcData) {
   EXPECT_TRUE(CompareMatrices(data.cache().hessian, H_reference, 3.0e-13));
 }
 #endif
+
+GTEST_TEST(PooledSapBuilder, Limits) {
+  const char xml[] = R"""(
+  <?xml version="1.0"?>
+  <mujoco model="robot">
+    <worldbody>
+      <body>
+        <joint name="joint1" type="hinge" axis="0 1 0" pos="0 0 0.1"/>
+        <body>
+          <joint name="joint2" type="hinge" axis="0 1 0" pos="0 0 -0.1" range="-45.0 45.0"/>
+        </body>
+      </body>
+    </worldbody>
+  </mujoco>
+  )""";
+
+  systems::DiagramBuilder<double> diagram_builder{};
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+
+  Parser(&plant, "Pendulum1").AddModelsFromString(xml, "xml");
+  Parser(&plant, "Pendulum2").AddModelsFromString(xml, "xml");
+  plant.Finalize();
+  EXPECT_EQ(plant.num_model_instances(), 4);  // Default, world, pendulums 1&2.
+  EXPECT_EQ(plant.num_velocities(), 4);
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  auto& plant_context =
+      plant.GetMyMutableContextFromRoot(diagram_context.get());
+
+  const double time_step = 0.01;
+  PooledSapBuilder<double> builder(plant);
+  PooledSapModel<double> model;
+  builder.UpdateModel(plant_context, time_step, &model);
+  EXPECT_EQ(model.num_cliques(), 2);
+  EXPECT_EQ(model.num_velocities(), plant.num_velocities());
+  EXPECT_EQ(model.num_limit_constraints(), 2);
+}
 
 }  // namespace pooled_sap
 }  // namespace contact_solvers
