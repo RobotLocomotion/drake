@@ -10,6 +10,7 @@
 #include "drake/common/name_value.h"
 #include "drake/common/parallelism.h"
 #include "drake/geometry/meshcat.h"
+#include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
@@ -42,8 +43,10 @@ class CommonSampledIrisOptions {
     a->Visit(DRAKE_NVP(configuration_space_margin));
     a->Visit(DRAKE_NVP(termination_threshold));
     a->Visit(DRAKE_NVP(relative_termination_threshold));
+    a->Visit(DRAKE_NVP(remove_all_collisions_possible));
     a->Visit(DRAKE_NVP(random_seed));
     a->Visit(DRAKE_NVP(mixing_steps));
+    a->Visit(DRAKE_NVP(sample_particles_in_parallel));
   }
 
   CommonSampledIrisOptions() = default;
@@ -114,12 +117,29 @@ class CommonSampledIrisOptions {
   This termination condition can be disabled by setting to a negative value. */
   double relative_termination_threshold{1e-3};
 
+  /** A region may satisfy the user-requested fraction in-collision, but still
+   * have some of the samples drawn be in-collision. If this flag is true, those
+   * samples will also be used to produce hyperplanes. This produces slightly
+   * smaller regions with more faces, but the region will beat the
+   * user-requested fraction in-collision by a larger margin. */
+  bool remove_all_collisions_possible{true};
+
   /** This option sets the random seed for random sampling throughout the
    * algorithm. */
   int random_seed{1234};
 
   /** Number of mixing steps used for hit-and-run sampling. */
   int mixing_steps{50};
+
+  /** If true, the hit-and-run procedure is run in parallel to quickly draw all
+   * the samples necessary. When the statistical test requires many samples
+   * (e.g. due to constructing regions with a very low fraction in collision
+   * with very high probability), the process of drawing the samples may become
+   * a major time cost. Drawing the samples in parallel can lead to a major
+   * speedup, at the cost of a sampling from a distribution that's slightly
+   * further from a uniform distribution (due to the lower cumulative mixing
+   * time). */
+  bool sample_particles_in_parallel{false};
 
   /** Passing a meshcat instance may enable debugging visualizations when the
    * configuration space is <= 3 dimensional.*/
@@ -281,6 +301,17 @@ Eigen::VectorXd ComputeFaceTangentToDistCvxh(
     const Eigen::Ref<const Eigen::VectorXd>& point,
     const geometry::optimization::VPolytope& cvxh_vpoly,
     const solvers::SolverInterface& solver);
+
+// Populates particles with random samples, drawn across potentially multiple
+// threads. number_to_sample must be smaller than ssize(particles), and
+// ssize(generators) threads will be used to draw samples.
+// @param[out] particles is an output-only argument, which must be preallocated
+// to size at least number_to_sample. The first number_to_sample elements will
+// be overwritten, and remaining elements are undefined.
+void PopulateParticlesByUniformSampling(
+    const geometry::optimization::HPolyhedron& P, int number_to_sample,
+    int mixing_steps, std::vector<RandomGenerator>* generators,
+    std::vector<Eigen::VectorXd>* particles);
 
 }  // namespace internal
 }  // namespace planning

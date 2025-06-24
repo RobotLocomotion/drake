@@ -155,6 +155,37 @@ TEST_F(DoublePendulum, IrisZoTest) {
   CheckRegion(region);
 
   PlotEnvironmentAndRegion(region);
+
+  // Changing the sampling options should lead to a still-correct, but
+  // slightly-different region.
+  options.sampled_iris_options.sample_particles_in_parallel = true;
+  HPolyhedron region2 =
+      IrisZo(*checker_, starting_ellipsoid_, domain_, options);
+  CheckRegion(region2);
+  EXPECT_FALSE(region.A().isApprox(region2.A(), 1e-10));
+}
+
+TEST_F(DoublePendulum, PostprocessRemoveCollisions) {
+  IrisZoOptions options;
+
+  // Deliberately set parameters so the initial region will pass the
+  // probabilistic test.
+  options.sampled_iris_options.tau = 0.01;
+  options.sampled_iris_options.epsilon = 0.99;
+  options.sampled_iris_options.delta = 0.99;
+  options.sampled_iris_options.max_iterations = 1;
+  options.sampled_iris_options.verbose = true;
+  options.sampled_iris_options.remove_all_collisions_possible = false;
+
+  HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
+
+  Vector2d query_point(0.5, 0.0);
+  EXPECT_FALSE(checker_->CheckConfigCollisionFree(query_point));
+  EXPECT_TRUE(region.PointInSet(query_point));
+
+  options.sampled_iris_options.remove_all_collisions_possible = true;
+  region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
+  EXPECT_FALSE(region.PointInSet(query_point));
 }
 
 // Test growing a region for the double pendulum along a parameterization of the
@@ -249,6 +280,8 @@ TEST_F(BlockOnGround, IrisZoTest) {
 // Reproduced from the IrisInConfigurationSpace unit tests.
 TEST_F(ConvexConfigurationSpace, IrisZoTest) {
   IrisZoOptions options;
+
+  options.sampled_iris_options.sample_particles_in_parallel = true;
 
   // Turn on meshcat for addition debugging visualizations.
   // This example is truly adversarial for IRIS. After one iteration, the

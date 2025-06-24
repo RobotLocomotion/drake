@@ -18,6 +18,7 @@ from pydrake.multibody.plant import (
     MultibodyPlant, AddMultibodyPlantSceneGraph)
 from pydrake.multibody.tree import BodyIndex
 import pydrake.solvers as mp
+from pydrake.symbolic import Variable
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.planning import RobotDiagramBuilder, SceneGraphCollisionChecker
 
@@ -870,6 +871,17 @@ class TestGlobalInverseKinematics(unittest.TestCase):
                          mp.IntervalBinning.kLogarithmic)
         self.assertFalse(options.linear_constraint_only)
 
+    def test_polytope3d(self):
+        A = np.eye(3)
+        b = np.zeros(3)
+        p = ik.GlobalInverseKinematics.Polytope3D(A, b)
+        np.testing.assert_array_equal(p.A, A)
+        np.testing.assert_array_equal(p.b, b)
+        self.assertEqual(repr(p), textwrap.dedent("""
+            GlobalInverseKinematics.Polytope(A=[[1. 0. 0.]
+             [0. 1. 0.]
+             [0. 0. 1.]], b=[0. 0. 0.])""").strip())
+
     def test_api(self):
         plant = MultibodyPlant(time_step=0.01)
         model_instance, = Parser(plant).AddModels(FindResourceOrThrow(
@@ -910,9 +922,62 @@ class TestGlobalInverseKinematics(unittest.TestCase):
             q_desired=plant.GetPositions(context),
             body_position_cost=[1] * plant.num_bodies(),
             body_orientation_cost=[1] * plant.num_bodies())
+
+        regions_vertices = np.array([[
+            [-1, -1, -1],
+            [-1, -1,  1],
+            [-1,  1, -1],
+            [-1,  1,  1],
+            [1,  -1, -1],
+            [1,  -1,  1],
+            [1,   1, -1],
+            [1,   1,  1],
+        ]], dtype=float).reshape(1, 3, 8) * 10
+        vars1 = global_ik.BodyPointInOneOfRegions(
+            body_index=body_index_A,
+            p_BQ=np.zeros(3),
+            region_vertices=regions_vertices)
+        self.assertIsInstance(vars1, np.ndarray)
+        self.assertTrue(len(vars1) == 1)
+        self.assertIsInstance(vars1[0], Variable)
+
+        polytope_A = np.array([[1.0, 0.0, 0.0]])
+        polytope_b = np.array([10.0])
+        regions_polytope3d = [
+            ik.GlobalInverseKinematics.Polytope3D(A=polytope_A, b=polytope_b)
+        ]
+        np.testing.assert_array_equal(regions_polytope3d[0].A, polytope_A)
+        np.testing.assert_array_equal(regions_polytope3d[0].b, polytope_b)
+        vars2 = global_ik.BodySphereInOneOfPolytopes(
+            body_index=body_index_A,
+            p_BQ=np.zeros(3),
+            radius=0.1,
+            polytopes=regions_polytope3d)
+        self.assertIsInstance(vars2, np.ndarray)
+        self.assertTrue(len(vars2) == 1)
+        self.assertIsInstance(vars2[0], Variable)
+
         gurobi_solver = mp.GurobiSolver()
         if gurobi_solver.available():
             global_ik.SetInitialGuess(q=plant.GetPositions(context))
             result = gurobi_solver.Solve(global_ik.prog())
             self.assertTrue(result.is_success())
             global_ik.ReconstructGeneralizedPositionSolution(result=result)
+
+    def test_joint_limits(self):
+        # We need a separate test since the AddJointLimitsConstraint method
+        # is not usable with floating bodies.
+        plant = MultibodyPlant(time_step=0.01)
+        model_instance, = Parser(plant).AddModels(FindResourceOrThrow(
+            "drake/bindings/pydrake/multibody/test/double_pendulum.sdf"))
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+        options = ik.GlobalInverseKinematics.Options()
+        global_ik = ik.GlobalInverseKinematics(plant=plant, options=options)
+
+        body_index = plant.GetBodyIndices(model_instance)[1]
+        global_ik.AddJointLimitConstraint(
+            body_index=body_index,
+            joint_lower_bound=-10.0,
+            joint_upper_bound=10.0,
+            linear_constraint_approximation=False)
