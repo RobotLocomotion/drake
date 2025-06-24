@@ -637,18 +637,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
                         "ensure point containment",
                         max_relaxation));
       }
-
       if (probabilistic_test_passed) {
         break;
-      }
-
-      // Resampling particles in current polyhedron for next iteration.
-      particles[0] = P.UniformSample(&generator,
-                                     options.sampled_iris_options.mixing_steps);
-      for (int j = 1; j < options.sampled_iris_options.num_particles; ++j) {
-        particles[j] =
-            P.UniformSample(&generator, particles[j - 1],
-                            options.sampled_iris_options.mixing_steps);
       }
       ++num_iterations_separating_planes;
 
