@@ -4,6 +4,7 @@
 #include "drake/multibody/plant/contact_properties.h"
 
 using drake::multibody::CalcContactFrictionFromSurfaceProperties;
+using drake::multibody::internal::CouplerConstraintSpec;
 using drake::multibody::internal::GetCombinedDynamicCoulombFriction;
 using drake::multibody::internal::GetCombinedHuntCrossleyDissipation;
 using drake::multibody::internal::GetCombinedPointContactStiffness;
@@ -215,6 +216,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   CalcGeometryContactData(context);
   AddPatchConstraintsForHydroelasticContact(context, model);
   AddPatchConstraintsForPointContact(context, model);
+  AddCouplerConstraints(context, model);
   AddLimitConstraints(context, model);
   model->SetSparsityPattern();
 
@@ -261,6 +263,57 @@ void PooledSapBuilder<T>::CalcActuationInput(
           actuator.has_controller() ? *actuation_w_pd : *actuation_wo_pd;
       actuation[v_index] += u[actuator.input_start()];
     }
+  }
+}
+
+template <typename T>
+void PooledSapBuilder<T>::AddCouplerConstraints(
+    const systems::Context<T>& context, PooledSapModel<T>* model) const {
+  DRAKE_ASSERT(model != nullptr);
+
+  const MultibodyTreeTopology& topology =
+      GetInternalTree(plant()).get_topology();
+  const std::vector<int>& tree_to_clique = model->params().tree_to_clique;
+  const std::map<MultibodyConstraintId, CouplerConstraintSpec>& specs_map =
+      plant().get_coupler_constraint_specs();
+
+  typename PooledSapModel<T>::CouplerConstraintsPool& couplers =
+      model->coupler_constraints_pool();
+  couplers.Reset();
+
+  for (const auto& [id, spec] : specs_map) {
+    const Joint<T>& joint0 = plant().get_joint(spec.joint0_index);
+    const Joint<T>& joint1 = plant().get_joint(spec.joint1_index);
+
+    fmt::print("j0: {}\n", joint0.name());
+    fmt::print("j1: {}\n", joint1.name());
+
+    const int dof0 = joint0.velocity_start();
+    const int dof1 = joint1.velocity_start();
+    const TreeIndex tree0 = topology.velocity_to_tree_index(dof0);
+    const TreeIndex tree1 = topology.velocity_to_tree_index(dof1);
+
+    // Sanity check.
+    DRAKE_DEMAND(tree0.is_valid() && tree1.is_valid());
+
+    const int clique0 = tree_to_clique[tree0];
+    const int clique1 = tree_to_clique[tree1];
+
+    if (clique0 != clique1) {
+      throw std::logic_error(
+          "PooledSapBuilder: Couplers are only allowed within DoFs in the same "
+          "tree.");
+    }
+
+    const T q0 = joint0.GetOnePosition(context);
+    const T q1 = joint1.GetOnePosition(context);
+
+    // DOFs local to their tree.
+    const int tree_dof0 = dof0 - topology.tree_velocities_start_in_v(tree0);
+    const int tree_dof1 = dof1 - topology.tree_velocities_start_in_v(tree1);
+
+    couplers.Add(clique0, tree_dof0, tree_dof1, q0, q1, spec.gear_ratio,
+                 spec.offset);
   }
 }
 

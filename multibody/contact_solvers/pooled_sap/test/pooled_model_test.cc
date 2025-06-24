@@ -640,6 +640,128 @@ GTEST_TEST(PooledSapModel, LimitConstraint) {
                               MatrixCompareType::relative));
 }
 
+GTEST_TEST(PooledSapModel, CouplerConstraint) {
+  // using T = AutoDiffXd;
+  PooledSapModel<AutoDiffXd> model;
+  MakeModel(&model, false /* multiple cliques */);
+  EXPECT_EQ(model.num_cliques(), 3);
+  EXPECT_EQ(model.num_velocities(), 18);
+  EXPECT_EQ(model.num_constraints(), 3);
+
+  SapData<AutoDiffXd> data;
+  model.ResizeData(&data);
+  EXPECT_EQ(data.num_velocities(), model.num_velocities());
+  EXPECT_EQ(data.num_patches(), model.num_constraints());
+  EXPECT_EQ(data.num_limits(), 0);
+
+  // At this point there should be no coupler constraints.
+  EXPECT_EQ(model.num_coupler_constraints(), 0);
+
+  // Add coupler constraints.
+  auto& couplers = model.coupler_constraints_pool();
+
+  const int nv = model.num_velocities();
+  VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
+
+  // Coupler on clique 1.
+  const auto q0_c1 = model.clique_segment(1, q0);
+  const double rho1 = 2.5;
+  const double offset1 = 0.1;
+  int k = couplers.Add(1 /* clique */, 1 /* i */, 3 /* j */, q0_c1(1), q0_c1(3),
+                       rho1, offset1);
+  EXPECT_EQ(k, 0);
+  EXPECT_EQ(model.num_coupler_constraints(), 1);
+  EXPECT_EQ(model.num_constraints(), 4);
+
+  // Resize data to include limit constraints data.
+  model.ResizeData(&data);
+  EXPECT_EQ(data.num_couplers(), 1);
+
+  VectorXd v_value = VectorXd::LinSpaced(nv, -10, 10.0);
+  VectorX<AutoDiffXd> v(nv);
+  math::InitializeAutoDiff(v_value, &v);
+  model.CalcData(v, &data);
+
+  const double dt = model.time_step().value();
+  VectorX<AutoDiffXd> q = q0 + dt * v;
+  const auto q_c1 = model.clique_segment(1, q);
+  const auto v_c1 = model.clique_segment(1, v);
+  // const VectorXd q_value = math::ExtractValue(q);
+  fmt::print("q: {}\n", fmt_eigen(q.transpose()));
+
+  // Compute regularization.
+  const double beta =
+      0.1;  // Keep in sync with hard-coded value in the implementation.
+  // const double eps = beta * beta / (4 * M_PI * M_PI) * (1 + beta / M_PI);
+  const double m1 = 2.3;                     // "mass" for clique 1.
+  const double w1 = (1 + rho1 * rho1) / m1;  // Delassus for clique 1.
+  const double m1_eff = 1.0 / w1;            // "Effective" mass for clique 1.
+  // const double R0 = eps * w0;
+  const double omega_near_rigid =
+      2 * M_PI / (beta * dt);  // period_nr = beta * dt, by definition.
+  const double k1 = m1_eff * omega_near_rigid * omega_near_rigid;
+  const double tau1 = beta / M_PI * dt;
+
+  const double R1 = 1.0 / (dt * (dt + tau1) * k1);
+  fmt::print("w1: {}\n", w1);
+  fmt::print("R1: {}\n", R1);
+
+  const CouplerConstraintsDataPool<AutoDiffXd> couplers_data =
+      data.cache().coupler_constraints_data;
+  EXPECT_EQ(couplers_data.num_constraints(), 1);
+
+  const double cost_value = couplers_data.cost().value();
+  const VectorXd cost_gradient = couplers_data.cost().derivatives();
+  fmt::print("cost: {}\n", cost_value);
+  fmt::print("gradient: {}\n", fmt_eigen(cost_gradient.transpose()));
+
+  // Expected impulse.
+  const AutoDiffXd g0 = q_c1(1) - rho1 * q_c1(3) - offset1;
+  const AutoDiffXd gdot0 = v_c1(1) - rho1 * v_c1(3);
+  const AutoDiffXd gamma0 = -dt * k1 * (g0 + tau1 * gdot0);
+  fmt::print("gamma_expected: {}\n", gamma0.value());
+  VectorXd tau_expected = VectorXd::Zero(nv);
+  tau_expected(6 + 1) = gamma0.value();
+  tau_expected(6 + 3) = -rho1 * gamma0.value();
+  EXPECT_TRUE(CompareMatrices(-cost_gradient, tau_expected, kEps,
+                              MatrixCompareType::relative));
+
+  const double gamma = couplers_data.gamma(0).value();
+  EXPECT_NEAR(gamma, gamma0.value(), kEps);
+
+  // Verify contributions to Hessian.
+  auto hessian = model.MakeHessian(data);
+  MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
+  MatrixXd gradient_derivatives = math::ExtractGradient(data.cache().gradient);
+  fmt::print("|H-Href| = {}\n", (hessian_value - gradient_derivatives).norm());
+  EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives, 10 * kEps,
+                              MatrixCompareType::relative));
+
+  // CalcCostAlongLine()
+  // Allocate search direction.
+  const VectorX<AutoDiffXd> w = VectorX<AutoDiffXd>::LinSpaced(
+      nv, 0.1, -0.2);  // Arbitrary search direction.
+  SearchDirectionData<AutoDiffXd> search_data;
+  SapData<AutoDiffXd> scratch;
+  model.ResizeData(&scratch);
+
+  // Set data with constant value of v.
+  VectorX<AutoDiffXd> v_constant =
+      VectorX<AutoDiffXd>::LinSpaced(nv, -10, 10.0);
+  model.CalcData(v_constant, &data);
+  model.UpdateSearchDirection(data, w, &search_data);
+
+  const AutoDiffXd alpha = {
+      0.35 /* arbitrary value */,
+      VectorXd::Ones(1) /* This is the independent variable */};
+  AutoDiffXd dcost, d2cost;
+  const AutoDiffXd cost = model.CalcCostAlongLine(alpha, data, search_data,
+                                                  &scratch, &dcost, &d2cost);
+
+  EXPECT_NEAR(dcost.value(), cost.derivatives()[0], kEps);
+  EXPECT_NEAR(d2cost.value(), dcost.derivatives()[0], kEps * d2cost.value());
+}
+
 }  // namespace pooled_sap
 }  // namespace contact_solvers
 }  // namespace multibody

@@ -14,6 +14,7 @@ drake_cc_package_library(
     name = "pooled_sap",
     visibility = ["//visibility:public"],
     deps = [
+        ":coupler_constraints_data_pool",
         ":eigen_pool",
         ":gain_constraints_data_pool",
         ":limit_constraints_data_pool",
@@ -28,6 +29,17 @@ drake_cc_library(
     name = "eigen_pool",
     hdrs = ["eigen_pool.h"],
     deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "coupler_constraints_data_pool",
+    srcs = ["coupler_constraints_data_pool.cc"],
+    hdrs = ["coupler_constraints_data_pool.h"],
+    deps = [
+        ":eigen_pool",
+        "//common:default_scalars",
         "//common:essential",
     ],
 )
@@ -69,6 +81,7 @@ drake_cc_library(
     name = "sap_data",
     hdrs = ["sap_data.h"],
     deps = [
+        ":coupler_constraints_data_pool",
         ":eigen_pool",
         ":gain_constraints_data_pool",
         ":limit_constraints_data_pool",
@@ -92,6 +105,7 @@ drake_cc_library(
 drake_cc_library(
     name = "pooled_sap_core",
     srcs = [
+        "coupler_constraints_pool.cc",
         "gain_constraints_pool.cc",
         "limit_constraints_pool.cc",
         "patch_constraints_pool.cc",
@@ -99,6 +113,7 @@ drake_cc_library(
         "pooled_sap_model.cc",
     ],
     hdrs = [
+        "coupler_constraints_pool.h",
         "gain_constraints_pool.h",
         "limit_constraints_pool.h",
         "patch_constraints_pool.h",
