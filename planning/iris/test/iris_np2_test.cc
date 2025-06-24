@@ -92,6 +92,14 @@ TEST_F(DoublePendulum, IrisNp2Test) {
   CheckRegion(region);
 
   PlotEnvironmentAndRegion(region);
+
+  // Changing the sampling options should lead to a still-correct, but
+  // slightly-different region.
+  options.sampled_iris_options.sample_particles_in_parallel = true;
+  HPolyhedron region2 =
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+  CheckRegion(region2);
+  EXPECT_FALSE(region.A().isApprox(region2.A(), 1e-10));
 }
 
 // Check that we can filter out certain collisions.
@@ -140,6 +148,32 @@ TEST_F(DoublePendulum, SpecifySolver) {
       ".*EqualityConstrainedQPSolver is unable to solve.*");
 }
 
+TEST_F(DoublePendulum, PostprocessRemoveCollisions) {
+  IrisNp2Options options;
+  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  // Deliberately set parameters so the initial region will pass the
+  // probabilistic test.
+  options.sampled_iris_options.tau = 0.01;
+  options.sampled_iris_options.epsilon = 0.99;
+  options.sampled_iris_options.delta = 0.99;
+  options.sampled_iris_options.max_iterations = 1;
+  options.sampled_iris_options.verbose = true;
+  options.sampled_iris_options.remove_all_collisions_possible = false;
+
+  HPolyhedron region =
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+
+  Vector2d query_point(0.5, 0.0);
+  EXPECT_FALSE(sgcc_ptr->CheckConfigCollisionFree(query_point));
+  EXPECT_TRUE(region.PointInSet(query_point));
+
+  options.sampled_iris_options.remove_all_collisions_possible = true;
+  region = IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+  EXPECT_FALSE(region.PointInSet(query_point));
+}
+
 TEST_F(BlockOnGround, IrisNp2Test) {
   IrisNp2Options options;
   auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
@@ -158,6 +192,8 @@ TEST_F(ConvexConfigurationSpace, IrisNp2Test) {
   IrisNp2Options options;
   auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
   ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  options.sampled_iris_options.sample_particles_in_parallel = true;
 
   // Turn on meshcat for addition debugging visualizations.
   // This example is truly adversarial for IRIS. After one iteration, the

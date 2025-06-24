@@ -2,6 +2,7 @@
 
 #include <common_robotics_utilities/parallelism.hpp>
 
+#include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 
 namespace drake {
@@ -25,8 +26,8 @@ IrisParameterizationFunction::IrisParameterizationFunction(
 IrisParameterizationFunction::IrisParameterizationFunction(
     const Eigen::VectorX<symbolic::Expression>& expression_parameterization,
     const Eigen::VectorX<symbolic::Variable>& variables) {
-  // First, we check that the variables in expression_parameterization match the
-  // user-supplied variables.
+  // First, we check that the variables in expression_parameterization match
+  // the user-supplied variables.
   symbolic::Variables expression_variables;
   for (const auto& expression : expression_parameterization) {
     expression_variables.insert(expression.GetVariables());
@@ -68,6 +69,8 @@ namespace internal {
 using common_robotics_utilities::parallelism::DegreeOfParallelism;
 using common_robotics_utilities::parallelism::DynamicParallelForIndexLoop;
 using common_robotics_utilities::parallelism::ParallelForBackend;
+using common_robotics_utilities::parallelism::StaticParallelForRangeLoop;
+using common_robotics_utilities::parallelism::ThreadWorkRange;
 
 int unadaptive_test_samples(double epsilon, double delta, double tau) {
   return static_cast<int>(-2 * std::log(delta) / (tau * tau * epsilon) + 0.5);
@@ -99,7 +102,8 @@ void AddTangentToPolytope(
         "The current center of the IRIS region is within "
         "options.sampled_iris_options.configuration_space_margin of being "
         "infeasible.  Check your sample point and/or any additional "
-        "constraints you've passed in via the options. The configuration space "
+        "constraints you've passed in via the options. The configuration "
+        "space "
         "surrounding the sample point must have an interior.");
   }
   *num_constraints += 1;
@@ -142,6 +146,32 @@ std::vector<uint8_t> CheckProgConstraints(
                               actual_end_index, check_particle_work,
                               ParallelForBackend::BEST_AVAILABLE);
   return is_valid;
+}
+
+void PopulateParticlesByUniformSampling(
+    const geometry::optimization::HPolyhedron& P, int number_to_sample,
+    int mixing_steps, std::vector<RandomGenerator>* generators,
+    std::vector<Eigen::VectorXd>* particles) {
+  DRAKE_THROW_UNLESS(number_to_sample <= ssize(*particles));
+  const int num_threads = ssize(*generators);
+
+  const auto hit_and_run_sample_work =
+      [&P, &particles, &generators,
+       &mixing_steps](const ThreadWorkRange& work_range) {
+        const int64_t start_index = work_range.GetRangeStart();
+        const int64_t end_index = work_range.GetRangeEnd();
+        const int64_t thread_num = work_range.GetThreadNum();
+        RandomGenerator* generator = &(generators->at(thread_num));
+        (*particles)[start_index] = P.UniformSample(generator, mixing_steps);
+        for (int j = start_index + 1; j < end_index; ++j) {
+          (*particles)[j] =
+              P.UniformSample(generator, (*particles)[j - 1], mixing_steps);
+        }
+      };
+
+  StaticParallelForRangeLoop(DegreeOfParallelism(num_threads), 0,
+                             number_to_sample, hit_and_run_sample_work,
+                             ParallelForBackend::BEST_AVAILABLE);
 }
 
 }  // namespace internal

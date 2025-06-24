@@ -311,7 +311,20 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   double last_iteration_volume = E.Volume();
   int iteration = 0;
   VectorXd closest(nq);
-  RandomGenerator generator(options.sampled_iris_options.random_seed);
+
+  const int num_threads_for_sampling =
+      options.sampled_iris_options.sample_particles_in_parallel
+          ? options.sampled_iris_options.parallelism.num_threads()
+          : 1;
+  std::vector<RandomGenerator> generators;
+  // This strategy for seeding multiple generators is acceptable, since Drake's
+  // RandomGenerator is a Mersenne Twister, where even nearby seeds are
+  // practically independent.
+  for (int generator_index = 0; generator_index < num_threads_for_sampling;
+       ++generator_index) {
+    generators.push_back(RandomGenerator(
+        options.sampled_iris_options.random_seed + generator_index));
+  }
 
   const SolverInterface* solver;
   std::unique_ptr<SolverInterface> default_solver =
@@ -355,6 +368,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   }
 
   // TODO(cohnt): Do an argsort so we don't have to have two separate copies.
+  // TODO(cohnt): Switch to using a single large MatrixXd to avoid repeated
+  // VectorXd heap allocations.
   std::vector<Eigen::VectorXd> particles;
   std::vector<Eigen::VectorXd> particles_in_collision;
   particles.reserve(N_max);
@@ -380,6 +395,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
       outer_delta = options.sampled_iris_options.delta;
     }
 
+    // TODO(cohnt): Rewrite as a for loop for better readability.
     while (num_iterations_separating_planes <
            options.sampled_iris_options.max_iterations_separating_planes) {
       int k_squared = num_iterations_separating_planes + 1;
@@ -389,17 +405,14 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           options.sampled_iris_options.epsilon, delta_k,
           options.sampled_iris_options.tau);
 
+      particles.resize(N_k);  // Entries will be overwritten.
+
       // TODO(rhjiang): Implement the ray sampling strategy, and expose it as an
       // option to the user.
-      particles.resize(N_k);
-      particles.at(0) = P_candidate.UniformSample(
-          &generator, E.center(), options.sampled_iris_options.mixing_steps);
-      // Populate particles by uniform sampling.
-      for (int i = 1; i < N_k; ++i) {
-        particles.at(i) = P_candidate.UniformSample(
-            &generator, particles.at(i - 1),
-            options.sampled_iris_options.mixing_steps);
-      }
+      internal::PopulateParticlesByUniformSampling(
+          P_candidate, N_k, options.sampled_iris_options.mixing_steps,
+          &generators, &particles);
+
       // Find all particles in collision or violating additional user-specified
       // constraints.
       std::vector<uint8_t> particle_col_free =
@@ -445,15 +458,38 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
                         options.sampled_iris_options.epsilon * N_k);
       }
 
-      // Break if threshold is passed.
-      if (number_particles_in_collision <=
+      const bool probabilistic_test_passed =
+          number_particles_in_collision <=
           (1 - options.sampled_iris_options.tau) *
-              options.sampled_iris_options.epsilon * N_k) {
+              options.sampled_iris_options.epsilon * N_k;
+
+      if (options.sampled_iris_options.verbose) {
+        if (!options.sampled_iris_options.remove_all_collisions_possible &&
+            probabilistic_test_passed) {
+          log()->info(
+              "IrisNp2 probabilistic test passed! Finished computing "
+              "hyperplanes.");
+          break;
+        } else if (probabilistic_test_passed) {
+          log()->info(
+              "IrisNp2 probabilistic test passed! Computing hyperplanes for "
+              "remaining particles, then this iteration is finished.");
+        } else {
+          log()->info(
+              "IrisNp2 probabilistic test failed! Continuing to compute "
+              "hyperplanes.");
+        }
+      }
+      if (!options.sampled_iris_options.remove_all_collisions_possible &&
+          probabilistic_test_passed) {
         break;
       }
+
       // Warn user if test fails on last iteration.
-      if (num_iterations_separating_planes ==
-          options.sampled_iris_options.max_iterations_separating_planes - 1) {
+      const bool is_last_iteration =
+          (num_iterations_separating_planes + 1) >=
+          options.sampled_iris_options.max_iterations_separating_planes;
+      if (is_last_iteration && !probabilistic_test_passed) {
         log()->warn(
             "IrisNp2 WARNING, separating planes hit max iterations without "
             "passing the bernoulli test, this voids the probabilistic "
@@ -620,6 +656,10 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
             "SnoptSolver or NloptSolver, consider using IpoptSolver instead.",
             num_prog_successes, num_prog_successes + num_prog_failures,
             failure_rate));
+      }
+
+      if (probabilistic_test_passed) {
+        break;
       }
 
       ++num_iterations_separating_planes;
