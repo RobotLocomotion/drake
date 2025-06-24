@@ -21,6 +21,9 @@ mutex:__cxa_finalize
 # Issue #16494.
 race:drake_vendor::vtkNew<drake_vendor::vtkRenderWindow>::~vtkNew
 
+# The MESA rendering stack has false positives under TSan.
+called_from_lib:libgallium-
+
 # In the lcm_memq handler, while correctly holding a mutex it obtains exclusive
 # access to the next message by popping it off of the queue, but then it
 # releases the mutex before passing the message along to the user code.  TSan
