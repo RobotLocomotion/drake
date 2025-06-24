@@ -70,11 +70,33 @@ cc_import(
     visibility = ["//visibility:private"],
 )
 
+_MOSEK_SO_NAME = _MOSEK_MAJMIN_GLOB[0].split("/", 1)[1]
+
+_IMPLIB_SRCS = [
+    "{}.tramp.S".format(_MOSEK_SO_NAME),
+    "{}.init.c".format(_MOSEK_SO_NAME),
+]
+
+genrule(
+    name = "_gen_implib",
+    srcs = [_MOSEK_MAJMIN_GLOB[0]],
+    outs = _IMPLIB_SRCS,
+    cmd = "$(execpath @implib_so_internal//:gen) --outdir=$(RULEDIR) $<",
+    tools = ["@implib_so_internal//:gen"],
+)
+
+cc_library(
+    name = "implib_mosek",
+    srcs = _IMPLIB_SRCS,
+    linkstatic = True,
+)
+
 cc_library(
     name = "mosek",
     hdrs = ["h/mosek.h"],
     includes = ["h"],
-    deps = [":import_mosek"],
+    deps = [":implib_mosek"],
+    #[":import_mosek"], # FIXME select() based on if wheel build or not
     visibility = ["//visibility:public"],
 )
 
