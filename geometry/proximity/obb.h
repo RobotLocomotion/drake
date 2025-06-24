@@ -80,7 +80,8 @@ class Obb {
    @param b_H       The second oriented box.
    @param X_GH      The relative pose between hierarchy frame G and hierarchy
                     frame H.
-   @returns `true` if the boxes intersect.   */
+   @returns `true` if the boxes intersect.
+   @pydrake_mkdoc_identifier{obb_obb} */
   static bool HasOverlap(const Obb& a_G, const Obb& b_H,
                          const math::RigidTransformd& X_GH);
 
@@ -92,7 +93,8 @@ class Obb {
    @param aabb_H    The axis-aligned box.
    @param X_GH      The relative pose between the obb hierarchy frame G and the
                     aabb hierarchy frame H.
-   @returns `true` if the boxes intersect.   */
+   @returns `true` if the boxes intersect.
+   @pydrake_mkdoc_identifier{obb_aabb} */
   static bool HasOverlap(const Obb& obb_G, const Aabb& aabb_H,
                          const math::RigidTransformd& X_GH);
 
@@ -131,7 +133,8 @@ class Obb {
                     measured and expressed in C.
    @param X_CH      The relative pose between the hierarchy frame H and the
                     half space canonical frame C.
-   @returns `true` if the half space intersects the box.   */
+   @returns `true` if the half space intersects the box.
+   @pydrake_mkdoc_identifier{obb_halfspace} */
   static bool HasOverlap(const Obb& bv_H, const HalfSpace& hs_C,
                          const math::RigidTransformd& X_CH);
 
