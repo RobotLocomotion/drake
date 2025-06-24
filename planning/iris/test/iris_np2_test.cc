@@ -97,6 +97,14 @@ TEST_F(DoublePendulum, IrisNp2Test) {
   CheckRegion(region);
 
   PlotEnvironmentAndRegion(region);
+
+  // Changing the sampling options should lead to a still-correct, but
+  // slightly-different region.
+  options.sampled_iris_options.sample_particles_in_parallel = true;
+  HPolyhedron region2 =
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+  CheckRegion(region2);
+  EXPECT_FALSE(region.A().isApprox(region2.A(), 1e-10));
 }
 
 // Check that we can filter out certain collisions.
@@ -189,6 +197,8 @@ TEST_F(ConvexConfigurationSpace, IrisNp2Test) {
   IrisNp2Options options;
   auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
   ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  options.sampled_iris_options.sample_particles_in_parallel = true;
 
   // Turn on meshcat for addition debugging visualizations.
   // This example is truly adversarial for IRIS. After one iteration, the
