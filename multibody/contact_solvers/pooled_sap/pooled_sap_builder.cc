@@ -268,6 +268,7 @@ template <typename T>
 void PooledSapBuilder<T>::AddLimitConstraints(
     const systems::Context<T>& context, PooledSapModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
+  using std::isinf;
 
   const MultibodyTreeTopology& topology =
       GetInternalTree(plant()).get_topology();
@@ -281,7 +282,6 @@ void PooledSapBuilder<T>::AddLimitConstraints(
 
   for (JointIndex joint_index : plant().GetJointIndices()) {
     const Joint<T>& joint = plant().get_joint(joint_index);
-    fmt::print("Joint: {}\n", joint.name());
     // We only support limits for 1 DOF joints for which we know that q̇ = v.
     if (joint.num_positions() == 1 && joint.num_velocities() == 1) {
       const int velocity_start = joint.velocity_start();
@@ -298,10 +298,10 @@ void PooledSapBuilder<T>::AddLimitConstraints(
       const double qu = joint.position_upper_limits()[0];
       const T& q0 = joint.GetOnePosition(context);
 
-      fmt::print("q0: {}. ql: {}. qu: {}\n", q0, ql, qu);
-
-      // Add constraint for this dof in clique.
-      limits.Add(clique, tree_dof, q0, ql, qu);
+      if (!isinf(ql) || !isinf(qu)) {
+        // Add constraint for this dof in clique.
+        limits.Add(clique, tree_dof, q0, ql, qu);
+      }
     }
   }
 }
