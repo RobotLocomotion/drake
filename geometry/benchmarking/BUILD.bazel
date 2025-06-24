@@ -83,7 +83,11 @@ drake_cc_googlebench_binary(
         "--benchmark_filter=.*/1/1/320/240",
     ],
     test_display = True,
-    test_tags = vtk_test_tags(),
+    test_tags = vtk_test_tags() + [
+        # TODO(#23113) Re-enable this test once we can suppress MESA false
+        # positives in CI.
+        "no_tsan",
+    ],
     deps = [
         "//common:add_text_logging_gflags",
         "//geometry/render",

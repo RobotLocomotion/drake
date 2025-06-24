@@ -265,7 +265,11 @@ drake_cc_googletest_linux_only(
         "//geometry/render:test_models",
     ] + glob(["test/*.png"]),
     display = True,
-    tags = vtk_test_tags(),
+    tags = vtk_test_tags() + [
+        # TODO(#23113) Re-enable this test once we can suppress MESA false
+        # positives in CI.
+        "no_tsan",
+    ],
     deps = [
         ":internal_render_engine_gl",
         "//common:find_resource",
