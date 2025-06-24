@@ -653,6 +653,7 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
 template <typename T>
 T ConvexIntegrator<T>::SolveQuadraticInUnitInterval(const T& a, const T& b,
                                                     const T& c) const {
+  using std::clamp;
   using std::sqrt;
 
   // Sign function that returns 1 for positive numbers, -1 for
@@ -678,15 +679,16 @@ T ConvexIntegrator<T>::SolveQuadraticInUnitInterval(const T& a, const T& b,
     }
   }
 
-  // The solution must be in [0, 1]
-  if (s < 0.0 || s > 1.0) {
+  // The solution must be in [0, 1], modulo some numerical slop.
+  constexpr double slop = 1e-8;
+  if (s < -slop || s > 1.0 + slop) {
     fmt::print("a: {}, b: {}, c: {}\n", a, b, c);
     fmt::print("s: {}\n", s);
     throw std::runtime_error(
         "ConvexIntegrator: quadratic root falls outside [0, 1].");
   }
 
-  return s;
+  return clamp(s, T(0.0), T(1.0));  // Ensure s ∈ [0, 1].
 }
 
 template <typename T>
