@@ -53,13 +53,16 @@ void DefinePlanningCommonSampledIrisOptions(py::module m) {
       .def_readwrite("relative_termination_threshold",
           &CommonSampledIrisOptions::relative_termination_threshold,
           cls_doc.relative_termination_threshold.doc)
+      .def_readwrite("remove_all_collisions_possible",
+          &CommonSampledIrisOptions::remove_all_collisions_possible,
+          cls_doc.remove_all_collisions_possible.doc)
       .def_readwrite("random_seed", &CommonSampledIrisOptions::random_seed,
           cls_doc.random_seed.doc)
       .def_readwrite("mixing_steps", &CommonSampledIrisOptions::mixing_steps,
           cls_doc.mixing_steps.doc)
-      .def_readwrite("remove_all_collisions_possible",
-          &CommonSampledIrisOptions::remove_all_collisions_possible,
-          cls_doc.remove_all_collisions_possible.doc)
+      .def_readwrite("sample_particles_in_parallel",
+          &CommonSampledIrisOptions::sample_particles_in_parallel,
+          cls_doc.sample_particles_in_parallel.doc)
       .def("__repr__", [](const CommonSampledIrisOptions& self) {
         return py::str(
             "CommonSampledIrisOptions("
@@ -76,17 +79,19 @@ void DefinePlanningCommonSampledIrisOptions(py::module m) {
             "configuration_space_margin={}, "
             "termination_threshold={}, "
             "relative_termination_threshold={}, "
+            "remove_all_collisions_possible={}, "
             "random_seed={}, "
             "mixing_steps={}, "
-            "remove_all_collisions_possible={}, "
+            "sample_particles_in_parallel={}, "
             ")")
             .format(self.num_particles, self.tau, self.delta, self.epsilon,
                 self.max_iterations, self.max_iterations_separating_planes,
                 self.max_separating_planes_per_iteration, self.parallelism,
                 self.verbose, self.require_sample_point_is_contained,
                 self.configuration_space_margin, self.termination_threshold,
-                self.relative_termination_threshold, self.random_seed,
-                self.mixing_steps, self.remove_all_collisions_possible);
+                self.relative_termination_threshold,
+                self.remove_all_collisions_possible, self.random_seed,
+                self.mixing_steps, self.sample_particles_in_parallel);
       });
 
   DefReadWriteKeepAlive(&common_sampled_iris_options,

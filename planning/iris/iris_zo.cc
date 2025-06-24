@@ -142,7 +142,20 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
                      checker.num_allocated_contexts())
           : 1;
   log()->info("IrisZo using {} threads.", num_threads_to_use);
-  RandomGenerator generator(options.sampled_iris_options.random_seed);
+
+  const int num_threads_for_sampling =
+      options.sampled_iris_options.sample_particles_in_parallel
+          ? options.sampled_iris_options.parallelism.num_threads()
+          : 1;
+  std::vector<RandomGenerator> generators;
+  // This strategy for seeding multiple generators is acceptable, since Drake's
+  // RandomGenerator is a Mersenne Twister, where even nearby seeds are
+  // practically independent.
+  for (int generator_index = 0; generator_index < num_threads_for_sampling;
+       ++generator_index) {
+    generators.push_back(RandomGenerator(
+        options.sampled_iris_options.random_seed + generator_index));
+  }
 
   const Eigen::VectorXd starting_ellipsoid_center = starting_ellipsoid.center();
 
@@ -349,15 +362,11 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
           options.sampled_iris_options.epsilon, delta_k,
           options.sampled_iris_options.tau);
 
-      particles.at(0) =
-          P.UniformSample(&generator, current_ellipsoid_center,
-                          options.sampled_iris_options.mixing_steps);
-      // Populate particles by uniform sampling.
-      for (int i = 1; i < N_k; ++i) {
-        particles.at(i) =
-            P.UniformSample(&generator, particles.at(i - 1),
-                            options.sampled_iris_options.mixing_steps);
-      }
+      // TODO(cohnt): Switch to using a single large MatrixXd to avoid repeated
+      // VectorXd heap allocations.
+      internal::PopulateParticlesByUniformSampling(
+          P, N_k, options.sampled_iris_options.mixing_steps, &generators,
+          &particles);
 
       // Copy top slice of particles, applying thet parameterization function to
       // each one, due to collision checker only accepting vectors of
@@ -643,11 +652,14 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
       }
 
       // Resampling particles in current polyhedron for next iteration.
-      particles[0] = P.UniformSample(&generator,
+      // TODO(cohnt): This is probably a bug and can be removed in a future PR.
+      // For now, we just use generators[0], since generators will never be
+      // empty.
+      particles[0] = P.UniformSample(&generators[0],
                                      options.sampled_iris_options.mixing_steps);
       for (int j = 1; j < options.sampled_iris_options.num_particles; ++j) {
         particles[j] =
-            P.UniformSample(&generator, particles[j - 1],
+            P.UniformSample(&generators[0], particles[j - 1],
                             options.sampled_iris_options.mixing_steps);
       }
       ++num_iterations_separating_planes;
