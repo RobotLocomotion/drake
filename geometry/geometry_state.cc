@@ -868,6 +868,24 @@ const math::RigidTransform<T>& GeometryState<T>::get_pose_in_world(
 }
 
 template <typename T>
+const Aabb& GeometryState<T>::GetAabbInWorld(GeometryId geometry_id) const {
+  FindOrThrow(geometry_id, geometries_, [geometry_id]() {
+    return "No AABB available for invalid geometry id: " +
+           to_string(geometry_id);
+  });
+  const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
+  if (!geometry.has_proximity_role()) {
+    throw std::runtime_error(
+        "GetAabbInWorld: Geometry does not have a proximity role.");
+  }
+  if (!geometry.is_deformable()) {
+    throw std::runtime_error(
+        "GetAabbInWorld: not implemented for non-deformable geometries.");
+  }
+  return geometry_engine_->GetDeformableAabbInWorld(geometry_id);
+}
+
+template <typename T>
 const math::RigidTransform<T>& GeometryState<T>::get_pose_in_parent(
     FrameId frame_id) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {

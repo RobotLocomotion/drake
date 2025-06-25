@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/geometry/proximity/aabb.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/deformable_contact.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
@@ -170,6 +171,11 @@ class QueryObject {
    @throws std::exception if the geometry `geometry_id` is not valid or if it
    is deformable.  */
   const math::RigidTransform<T>& GetPoseInWorld(GeometryId geometry_id) const;
+
+  /** Reports the axis-aligned bounding box of the geometry indicated by
+   `geometry_id` in the world frame.
+   @throws std::exception if the geometry `geometry_id` is not valid.  */
+  const Aabb& GetAabbInWorld(GeometryId geometry_id) const;
 
   /** Reports the configuration of the deformable geometry indicated by
    `deformable_geometry_id` relative to the world frame.

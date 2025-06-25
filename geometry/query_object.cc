@@ -86,6 +86,14 @@ const RigidTransform<T>& QueryObject<T>::GetPoseInWorld(
 }
 
 template <typename T>
+const Aabb& QueryObject<T>::GetAabbInWorld(GeometryId geometry_id) const {
+  ThrowIfNotCallable();
+  FullPoseAndConfigurationUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.GetAabbInWorld(geometry_id);
+}
+
+template <typename T>
 const VectorX<T>& QueryObject<T>::GetConfigurationsInWorld(
     GeometryId geometry_id) const {
   ThrowIfNotCallable();
