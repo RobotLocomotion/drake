@@ -447,7 +447,7 @@ RpyBallMobilizer<T>::TemplatedDoCloneToScalar(
 }
 
 template <typename T>
-Vector3<T> RpyBallMobilizer<T>::CalcNplusDotTimesQdot(
+Vector3<T> RpyBallMobilizer<T>::CalcAccelerationBiasForQDDot(
     const systems::Context<T>& context, const char* function_name) const {
   using std::cos;
   using std::sin;
@@ -499,11 +499,12 @@ void RpyBallMobilizer<T>::DoMapAccelerationToQDDot(
   // Hence, a more efficient calculation of q̈ starts as v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈
   // and then solves as q̈ = N(q) {v̇ - Ṅ⁺(q,q̇)⋅q̇}.
   // --------------------------------------------------------------------------
-  const Vector3<T> vdotEtc = vdot - CalcNplusDotTimesQdot(context, __func__);
+  const Vector3<T> vdot_minus_NplusDotTimesQDot =
+      vdot - CalcAccelerationBiasForQDDot(context, __func__);
 
   // Note: Although the function below was designed to efficiently calculate
   // q̇ = N(q)⋅v, it can also be used to calculate q̈ = N(q) {v̇ - Ṅ⁺(q,q̇)⋅q̇}.
-  DoMapVelocityToQDot(context, vdotEtc, qddot);
+  DoMapVelocityToQDot(context, vdot_minus_NplusDotTimesQDot, qddot);
 }
 
 template <typename T>
@@ -524,9 +525,10 @@ void RpyBallMobilizer<T>::DoMapQDDotToAcceleration(
   // of the generalized velocities). The calculation below is straighforward in
   // that it simply differentiates v = N⁺(q)⋅q̇ to form v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
   // --------------------------------------------------------------------------
-  // Form the Ṅ⁺(q,q̇)⋅q̇ term of the result ath the start of this function so the
-  // pitch singularity throws an exception that refers to this function.
-  const Vector3<T> NplusDotTimesQdot = CalcNplusDotTimesQdot(context, __func__);
+  // Form the Ṅ⁺(q,q̇)⋅q̇ term of the result now (start of this function) so any
+  // singularity (if one exists) throws an exception referencing this function.
+  const Vector3<T> NplusDotTimesQdot =
+      CalcAccelerationBiasForQDDot(context, __func__);
 
   // Although the function below was designed to calculate v = N⁺(q)⋅q̇, it can
   // also be used to calculate N⁺(q)⋅q̈.
