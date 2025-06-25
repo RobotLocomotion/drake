@@ -158,7 +158,7 @@ class Aabb {
 };
 
 /** %AabbMaker implements the logic to fit an Aabb to a collection of points.
- The points are the position of a subset of verties in a mesh. The Aabb will
+ The points are the position of a subset of vertices in a mesh. The Aabb will
  be measured and expressed in the same frame as the mesh.
 
  This serves as the interface to Bvh, allowing the Bvh to fit volumes to
