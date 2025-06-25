@@ -117,6 +117,7 @@ void PooledSapModel<T>::CalcData(const VectorX<T>& v, SapData<T>* data) const {
   typename SapData<T>::Cache& cache = data->cache();
   CalcMomentumTerms(*data, &cache);
   CalcBodySpatialVelocities(v, &cache.spatial_velocities);
+  coupler_constraints_pool_.CalcData(v, &cache.coupler_constraints_data);
   gain_constraints_pool_.CalcData(v, &cache.gain_constraints_data);
   limit_constraints_pool_.CalcData(v, &cache.limit_constraints_data);
   patch_constraints_pool_.CalcData(cache.spatial_velocities,
@@ -125,11 +126,13 @@ void PooledSapModel<T>::CalcData(const VectorX<T>& v, SapData<T>* data) const {
   // Include patch constraints contributions.
   // TODO(amcastro-tri): factor out this function into a ConstraintPool class,
   // along with clique data size and other common per-pool functionality.
+  coupler_constraints_pool_.AccumulateGradient(*data, &cache.gradient);
   gain_constraints_pool_.AccumulateGradient(*data, &cache.gradient);
   limit_constraints_pool_.AccumulateGradient(*data, &cache.gradient);
   patch_constraints_pool_.AccumulateGradient(*data, &cache.gradient);
 
   cache.cost = cache.momentum_cost;
+  cache.cost += cache.coupler_constraints_data.cost();
   cache.cost += cache.gain_constraints_data.cost();
   cache.cost += cache.limit_constraints_data.cost();
   cache.cost += cache.patch_constraints_data.cost();
@@ -158,6 +161,7 @@ void PooledSapModel<T>::UpdateHessian(
   }
 
   // Add constraints' contributions.
+  coupler_constraints_pool_.AccumulateHessian(data, hessian);
   gain_constraints_pool_.AccumulateHessian(data, hessian);
   limit_constraints_pool_.AccumulateHessian(data, hessian);
   patch_constraints_pool_.AccumulateHessian(data, hessian);
@@ -187,6 +191,7 @@ template <typename T>
 void PooledSapModel<T>::ResizeData(SapData<T>* data) const {
   data->Resize(num_bodies_, num_velocities_, clique_sizes_,
                patch_constraints_pool_.patch_sizes());
+  coupler_constraints_pool_.ResizeData(&data->cache().coupler_constraints_data);
   gain_constraints_pool_.ResizeData(&data->cache().gain_constraints_data);
   limit_constraints_pool_.ResizeData(&data->cache().limit_constraints_data);
 }
@@ -246,6 +251,18 @@ T PooledSapModel<T>::CalcCostAlongLine(
   // Weird to resize here.
   // TODO(amcastro-tri): Resize where appropriate.
   scratch->scratch().v_pool.resize(num_velocities());
+
+  // Add coupler constraints contributions:
+  {
+    coupler_constraints_pool_.CalcData(v_alpha,
+                                       &cache_alpha.coupler_constraints_data);
+    coupler_constraints_pool_.ProjectAlongLine(
+        cache_alpha.coupler_constraints_data, search_direction.w,
+        &constraint_dcost, &constraint_d2cost);
+    cost += cache_alpha.coupler_constraints_data.cost();
+    *dcost_dalpha += constraint_dcost;
+    *d2cost_dalpha2 += constraint_d2cost;
+  }
 
   // Add gain constraints contributions:
   {

@@ -101,6 +101,7 @@ class PooledSapModel {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PooledSapModel);
 
   // Defined in separate headers.
+  class CouplerConstraintsPool;
   class LimitConstraintsPool;
   class PatchConstraintsPool;
   class GainConstraintsPool;
@@ -115,6 +116,7 @@ class PooledSapModel {
   // Constructor for an empty model.
   PooledSapModel()
       : params_(std::make_unique<PooledSapParameters<T>>()),
+        coupler_constraints_pool_(this),
         gain_constraints_pool_(this),
         limit_constraints_pool_(this),
         patch_constraints_pool_(this) {}
@@ -143,6 +145,7 @@ class PooledSapModel {
       clique_start_.push_back(clique_start_.back() + clique_nv);
     }
     DRAKE_DEMAND(params_->r.size() == num_velocities_);
+    coupler_constraints_pool_.Reset();
     gain_constraints_pool_.Clear();
     gain_constraints_pool_.Reset();
     limit_constraints_pool_.Reset();
@@ -274,18 +277,23 @@ class PooledSapModel {
   /* Total number of constraints. */
   int num_constraints() const {
     return num_patch_constraints() + num_gain_constraints() +
-           num_limit_constraints();
+           num_limit_constraints() + num_coupler_constraints();
   }
 
   /* Total number of constraint equations. */
   int num_constraint_equations() const {
-    return patch_constraints_pool_.num_constraint_equations() +
+    return coupler_constraints_pool_.num_constraint_equations() +
+           patch_constraints_pool_.num_constraint_equations() +
            gain_constraints_pool_.num_constraint_equations() +
            limit_constraints_pool_.num_constraint_equations();
   }
 
   void set_stiction_tolerance(double stiction_tolerance) {
     patch_constraints_pool_.set_stiction_tolerance(stiction_tolerance);
+  }
+
+  CouplerConstraintsPool& coupler_constraints_pool() {
+    return coupler_constraints_pool_;
   }
 
   PatchConstraintsPool& patch_constraints_pool() {
@@ -313,6 +321,10 @@ class PooledSapModel {
 
   int num_patch_constraints() const {
     return patch_constraints_pool_.num_patches();
+  }
+
+  int num_coupler_constraints() const {
+    return coupler_constraints_pool_.num_constraints();
   }
 
   int num_gain_constraints() const {
@@ -426,6 +438,7 @@ class PooledSapModel {
   EigenPool<Vector6<T>> V_WB0_;            // Initial spatial velocities.
   EigenPool<VectorX<T>> clique_delassus_;  // W = W = diag(M)⁻¹.
 
+  CouplerConstraintsPool coupler_constraints_pool_;
   GainConstraintsPool gain_constraints_pool_;
   LimitConstraintsPool limit_constraints_pool_;
   PatchConstraintsPool patch_constraints_pool_;

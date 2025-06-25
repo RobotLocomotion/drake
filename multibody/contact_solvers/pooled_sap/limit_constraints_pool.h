@@ -23,16 +23,7 @@ namespace multibody {
 namespace contact_solvers {
 namespace pooled_sap {
 
-/* A pool of gain constraints organized by cliques.
-
- A clique can have a gain constraint that models generalized forces on the
- clique according to:
-
-  τ = clamp(−K⋅v + b, e)
-
- where K is a positive semi-definite diagonal gain matrix, b is a bias term and
- e is an effort limit. Generalized impulses for that clique are thus γ = δt⋅τ.
- */
+/* A pool of limit constraints organized by cliques. */
 template <typename T>
 class PooledSapModel<T>::LimitConstraintsPool {
  public:
