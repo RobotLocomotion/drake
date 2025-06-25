@@ -595,6 +595,11 @@ GTEST_TEST(ConvexIntegratorTest, PendulumWithCoupler) {
   std::cout << std::endl;
   PrintSimulatorStatistics(simulator);
   std::cout << std::endl;
+
+  // Sanity check steady state verifies coupler constraint.
+  const VectorXd q = plant.GetPositions(plant_context);
+  const double g = q[0] + 2.0 * q[1];
+  EXPECT_NEAR(g, 0.0, 4e-6);
 }
 
 }  // namespace systems
