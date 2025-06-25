@@ -261,10 +261,6 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   void DoCalcNplusDotMatrix(const systems::Context<T>& context,
                             EigenPtr<MatrixX<T>> NplusDot) const final;
 
-  // Calculate the term Ṅ⁺(q,q̇)⋅q̇ which appears in v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
-  Vector3<T> CalcNplusDotTimesQdot(const systems::Context<T>& context,
-                                   const char* function_name) const;
-
   // Maps the generalized velocity v, which corresponds to the angular velocity
   // w_FM, to time derivatives of roll-pitch-yaw angles θ₀, θ₁, θ₂ in qdot.
   //
@@ -330,6 +326,10 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
                                     const char* function_name) const;
 
  private:
+  // Calculate the term Ṅ⁺(q,q̇)⋅q̇ which appears in v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
+  Vector3<T> CalcNplusDotTimesQdot(const systems::Context<T>& context,
+                                   const char* function_name) const;
+
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
