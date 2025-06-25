@@ -249,9 +249,6 @@ void PooledSapBuilder<T>::AddCouplerConstraints(
     const Joint<T>& joint0 = plant().get_joint(spec.joint0_index);
     const Joint<T>& joint1 = plant().get_joint(spec.joint1_index);
 
-    fmt::print("j0: {}\n", joint0.name());
-    fmt::print("j1: {}\n", joint1.name());
-
     const int dof0 = joint0.velocity_start();
     const int dof1 = joint1.velocity_start();
     const TreeIndex tree0 = topology.velocity_to_tree_index(dof0);
