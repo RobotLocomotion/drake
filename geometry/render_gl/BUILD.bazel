@@ -266,11 +266,7 @@ drake_cc_googletest_linux_only(
         "//geometry/render:test_models",
     ] + glob(["test/*.png"]),
     display = True,
-    tags = vtk_test_tags() + [
-        # TODO(#23113) Re-enable this test once we can suppress MESA false
-        # positives in CI.
-        "no_tsan",
-    ],
+    tags = vtk_test_tags(),
     deps = [
         ":internal_render_engine_gl",
         "//common:find_resource",
@@ -338,9 +334,6 @@ drake_cc_googletest_linux_only(
     tags = vtk_test_tags() + [
         # We launch up to 3 child tasks.
         "cpu:4",
-        # Generally, GL driver shared libraries are not tsan-clean.
-        # Instead we rely on functional testing to detect threading errors.
-        "no_tsan",
     ],
     deps = [
         ":factory",
@@ -361,9 +354,6 @@ drake_cc_googletest_linux_only(
     tags = vtk_test_tags() + [
         # We launch up to 3 child tasks.
         "cpu:4",
-        # Generally, GL driver shared libraries are not tsan-clean.
-        # Instead we rely on functional testing to detect threading errors.
-        "no_tsan",
     ],
     deps = [
         ":factory",

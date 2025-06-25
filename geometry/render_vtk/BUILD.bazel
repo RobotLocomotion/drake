@@ -162,11 +162,7 @@ drake_cc_googletest(
         "//geometry:test_obj_files",
         "//geometry/render:test_models",
     ],
-    tags = vtk_test_tags() + [
-        # TODO(#23113) Re-enable this test once we can suppress MESA false
-        # positives in CI.
-        "no_tsan",
-    ],
+    tags = vtk_test_tags(),
     deps = [
         ":internal_render_engine_vtk",
         "//common:find_resource",
@@ -211,11 +207,7 @@ drake_cc_googletest(
         ":osx": ["--gtest_filter=-*"],
         "//conditions:default": [],
     }),
-    tags = vtk_test_tags() + [
-        # TODO(#23113) Re-enable this test once we can suppress MESA false
-        # positives in CI.
-        "no_tsan",
-    ],
+    tags = vtk_test_tags(),
     deps = [
         ":factory",
         "//common/test_utilities",
