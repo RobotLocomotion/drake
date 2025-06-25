@@ -157,7 +157,7 @@ void RpyBallMobilizer<T>::DoCalcNMatrix(const systems::Context<T>& context,
   // ⌊ ẏ ⌋   ⌊ sin(p) * cos(y) / cos(p),  sin(p) * sin(y) / cos(p),  1 ⌋ ⌊ ω2 ⌋
   //
   // Note: N(q) is singular for p = π/2 + kπ, for k = ±1, ±2, ...
-  // See related code and comments in MapVelocityToQdot().
+  // See related code and comments in DoMapVelocityToQdot().
 
   using std::abs;
   using std::cos;
@@ -196,7 +196,7 @@ void RpyBallMobilizer<T>::DoCalcNplusMatrix(const systems::Context<T>& context,
   // | ω1 | = | sin(y) * cos(p),   cos(y),  0 | | ṗ |
   // ⌊ ω2 ⌋   ⌊         -sin(p),        0,  1 ⌋ ⌊ ẏ ⌋
   //
-  // See related code and comments in MapQDotToVelocity().
+  // See related code and comments in DoMapQDotToVelocity().
   const Vector3<T> angles = get_angles(context);
   const T sp = sin(angles[1]);
   const T cp = cos(angles[1]);
@@ -459,7 +459,10 @@ Vector3<T> RpyBallMobilizer<T>::CalcNplusDotTimesQdot(
   if (abs(cp) < 1.0e-3) {
     ThrowSinceCosPitchIsNearZero(angles[1], function_name);
   }
-  // The algorithm below efficiently calculates Ṅ⁺(q,q̇)⋅q̇.
+  // The algorithm below efficiently calculates Ṅ⁺(q,q̇)⋅q̇. The algorithm was
+  // verified with MotionGenesis. It can also be verified by-hand, e.g., with
+  // the documentation in DoCalcNplusDotMatrix which differentiates N⁺(q) to
+  // form Ṅ⁺(q,q̇). Thereafter, multiply by q̇ to form Ṅ⁺(q,q̇)⋅q̇ (and simplify).
   const Vector3<T> v = get_angular_velocity(context);
   Vector3<T> qdot;
   DoMapVelocityToQDot(context, v, &qdot);
@@ -482,13 +485,9 @@ void RpyBallMobilizer<T>::DoMapAccelerationToQDDot(
     const Eigen::Ref<const VectorX<T>>& vdot,
     EigenPtr<VectorX<T>> qddot) const {
   // --------------------------------------------------------------------------
-  // Seen in MapVelocityToQDot(), the time-derivatives of generalized positions
-  // q̇ = [ṙ, ṗ, ẏ]ᵀ are related to the generalized velocities v = [ωx, ωy, ωz]ᵀ
-  // as shown below, whose matrix form is q̇ = N(q)⋅v, where N is a 3x3 matrix.
-  //
-  // ⌈ ṙ ⌉   ⌈  cos(y) / cos(p)           sin(y) / cos(p)           0 ⌉ ⌈ ωx ⌉
-  // | ṗ | = | -sin(y)                    cos(y)                    0 | | ωy |
-  // ⌊ ẏ ⌋   ⌊  sin(p) * cos(y) / cos(p)  sin(p) * sin(y) / cos(p)  1 ⌋ ⌊ ωz ⌋
+  // As shown in DoMapVelocityToQDot(), the time-derivatives of generalized
+  // positions q̇ = [ṙ, ṗ, ẏ]ᵀ are related to the generalized velocities
+  // v = [ωx, ωy, ωz]ᵀ in the matrix form q̇ = N(q)⋅v, where N is a 3x3 matrix.
   //
   // For this mobilizer v = w_FM_F =  [ωx, ωy, ωz]ᵀ is the mobilizer M frame's
   // angular velocity in the mobilizer F frame, expressed in frame F and
@@ -502,8 +501,8 @@ void RpyBallMobilizer<T>::DoMapAccelerationToQDDot(
   // --------------------------------------------------------------------------
   const Vector3<T> vdotEtc = vdot - CalcNplusDotTimesQdot(context, __func__);
 
-  // Mathematical trick: Although the function below was designed to efficiently
-  // calculate q̇ = N(q)⋅v, it can be used to calculate q̈ = N(q) {v̇ - Ṅ⁺(q,q̇)⋅q̇}.
+  // Note: Although the function below was designed to efficiently calculate
+  // q̇ = N(q)⋅v, it can also be used to calculate q̈ = N(q) {v̇ - Ṅ⁺(q,q̇)⋅q̇}.
   DoMapVelocityToQDot(context, vdotEtc, qddot);
 }
 
@@ -513,32 +512,28 @@ void RpyBallMobilizer<T>::DoMapQDDotToAcceleration(
     const Eigen::Ref<const VectorX<T>>& qddot,
     EigenPtr<VectorX<T>> vdot) const {
   // --------------------------------------------------------------------------
-  // Seen in MapQDotToVelocity(), the generalized velocities v = [ωx, ωy, ωz]ᵀ
+  // As seen in DoMapQDotToVelocity(), generalized velocities v = [ωx, ωy, ωz]ᵀ
   // are related to q̇ = [ṙ, ṗ, ẏ]ᵀ (time-derivatives of generalized positions)
-  // as shown below, whose matrix form is v = N⁺(q)⋅q̇, where N⁺ is a 3x3 matrix.
-  //
-  // ⌈ ωx ⌉   ⌈cos(y) cos(p)  -sin(y)  0⌉ ⌈ ṙ ⌉
-  // | ωy | = |sin(y) cos(p)   cos(y)  0| | ṗ |
-  // ⌊ ωz ⌋   ⌊      -sin(p)       0   1⌋ ⌊ ẏ ⌋
+  // in the matrix form v = N⁺(q)⋅q̇, where N⁺ is a 3x3 matrix.
   //
   // For this mobilizer v = w_FM_F =  [ωx, ωy, ωz]ᵀ is the mobilizer M frame's
   // angular velocity in the mobilizer F frame, expressed in frame F and
   // q = [r, p, y]ᵀ  denote roll, pitch, yaw angles (generalized positions).
   //
   // There are various ways to calculate v̇ = [ω̇x, ω̇y, ω̇z]ᵀ (the time-derivatives
-  // of the generalized velocities). A simple one is v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
+  // of the generalized velocities). A straightforward one is to simply
+  // differentiate v = N⁺(q)⋅q̇ to form v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
   // --------------------------------------------------------------------------
-  // Calculate Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
+  // Form the Ṅ⁺(q,q̇)⋅q̇ term of the result ath the start of this function so the
+  // pitch singularity throws an exception that refers to this function.
   const Vector3<T> NplusDotTimesQdot = CalcNplusDotTimesQdot(context, __func__);
 
-  // Mathematical trick: Although the function below was designed to efficiently
-  // calculate v = N⁺(q)⋅q̇, it can be used to calculate N⁺(q)⋅q̈.
-  DoMapQDotToVelocity(context, qddot, vdot);
+  // Although the function below was designed to calculate v = N⁺(q)⋅q̇, it can
+  // also be used to calculate N⁺(q)⋅q̈.
+  DoMapQDotToVelocity(context, qddot, vdot);  // On return, vdot = N⁺(q)⋅q̈.
 
   // Calculate v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
-  vdot->coeffRef(0) += NplusDotTimesQdot[0];
-  vdot->coeffRef(1) += NplusDotTimesQdot[1];
-  vdot->coeffRef(2) += NplusDotTimesQdot[2];
+  *vdot += NplusDotTimesQdot;
 }
 
 template <typename T>
