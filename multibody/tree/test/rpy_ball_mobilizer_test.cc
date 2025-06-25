@@ -258,7 +258,7 @@ TEST_F(RpyBallMobilizerTest, MapAccelerationToQDDotAndViceVersa) {
   Vector3<double> qdot;
   mobilizer_->MapVelocityToQDot(*context_, wxyz, &qdot);
   const Vector3<double> vdot_expected = Nplusdot * qdot + Nplus * qddot;
-  EXPECT_TRUE(CompareMatrices(vdot_expected, vdot, 16 * kTolerance,
+  EXPECT_TRUE(CompareMatrices(vdot_expected, wdot, 16 * kTolerance,
                               MatrixCompareType::relative));
 
   // Verify MapQDDotToAcceleration() is the inverse of MapAccelerationToQDDot().
