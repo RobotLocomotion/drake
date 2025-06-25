@@ -69,6 +69,8 @@ template <typename T>
 const RigidTransform<T>& QueryObject<T>::GetPoseInWorld(
     GeometryId geometry_id) const {
   ThrowIfNotCallable();
+  FullPoseUpdate();
+
   if (inspector_.IsDeformableGeometry(geometry_id)) {
     throw std::logic_error(
         fmt::format("{} is not allowed to be called on deformable geometries. "
@@ -79,7 +81,6 @@ const RigidTransform<T>& QueryObject<T>::GetPoseInWorld(
                     __func__));
   }
 
-  FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.get_pose_in_world(geometry_id);
 }

@@ -27,6 +27,32 @@ using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 
+// We'll use SceneGraph's friend to poke at the state of its cache entries.
+class SceneGraphTester {
+ public:
+  static void InvalidateFramePositions(SceneGraph<double>* sg,
+                                       const Context<double>& context) {
+    sg->get_mutable_cache_entry(sg->pose_update_index_)
+        .get_mutable_cache_entry_value(context)
+        .mark_out_of_date();
+  }
+  static void InvalidateDeformablePositions(SceneGraph<double>* sg,
+                                            const Context<double>& context) {
+    sg->get_mutable_cache_entry(sg->configuration_update_index_)
+        .get_mutable_cache_entry_value(context)
+        .mark_out_of_date();
+  }
+  static bool FramePositionsAreUpToDate(const SceneGraph<double>& sg,
+                                        const Context<double>& context) {
+    return !sg.get_cache_entry(sg.pose_update_index_).is_out_of_date(context);
+  }
+  static bool DeformablePositionsAreUpToDate(const SceneGraph<double>& sg,
+                                             const Context<double>& context) {
+    return !sg.get_cache_entry(sg.configuration_update_index_)
+                .is_out_of_date(context);
+  }
+};
+
 // Friend class to QueryObject -- left in `drake::geometry` to match the friend
 // declaration.
 class QueryObjectTest : public ::testing::Test {
@@ -311,149 +337,117 @@ TEST_F(QueryObjectTest, BakedCopyHasFullUpdate) {
 }
 
 // This test confirms that queries on a live QueryObject update the cached
-// GeometryState. The test sets up a scene with stale configuration and pose
-// data. It calls a query and confirms that the state has been updated,
-// implying that FullPoseAndConfigurationUpdate() was called.
+// GeometryState. We use the SceneGraphTester above to directly invalidate the
+// cache entries and test their state as a result of invoking a query. Some of
+// the queries will throw (as noted below); all that matters is that the cache
+// entry updates before the throw.
+//
+// Every function must be exercised with a clear declaration of whether it
+// updates rigid poses, deformable poses, or both.
 TEST_F(QueryObjectTest, LiveQueryUpdatesState) {
-  const SourceId s_id = scene_graph_.RegisterSource("UpdateTest");
-  const FrameId frame_id =
-      scene_graph_.RegisterFrame(s_id, GeometryFrame("frame"));
+  // Dummy ids for queries that require ids as parameters.
+  const GeometryId g_id1 = GeometryId::get_new_id();
+  const GeometryId g_id2 = GeometryId::get_new_id();
+  const FrameId frame_id = FrameId::get_new_id();
 
-  // Helper function to make a geometry instance with the given name.
-  auto make_geometry = [](const std::string& name) {
-    auto geometry = make_unique<GeometryInstance>(
-        RigidTransformd::Identity(), make_unique<Sphere>(0.5), name);
-    geometry->set_proximity_properties(ProximityProperties());
-    return geometry;
-  };
+  // Masks for reporting what cache entries we expect get updated.
+  const int kPoseOnly = 1;
+  const int kDeformOnly = 2;
+  const int kFullUpdate = kPoseOnly | kDeformOnly;
 
-  // Register a couple of rigid geometries for later use.
-  const GeometryId rigid_g_id1 =
-      scene_graph_.RegisterGeometry(s_id, frame_id, make_geometry("sphere"));
-  const GeometryId rigid_g_id2 = scene_graph_.RegisterGeometry(
-      s_id, frame_id, make_geometry("another_sphere"));
-  auto deformable_geometry = make_geometry("deformable");
-  const GeometryId deformable_g_id = scene_graph_.RegisterDeformableGeometry(
-      s_id, internal::InternalFrame::world_frame_id(),
-      std::move(deformable_geometry), 10.0);
   unique_ptr<Context<double>> context = scene_graph_.CreateDefaultContext();
 
-  const auto& query_object =
+  const auto& qo =
       scene_graph_.get_query_output_port().Eval<QueryObject<double>>(*context);
-  EXPECT_TRUE(is_live(query_object));
-  const GeometryState<double>& geometry_state = get_state(query_object);
+  ASSERT_TRUE(is_live(qo));
 
-  // A function to introduce stale data into the context and confirm it is
-  // stale.
-  const RigidTransformd X_WF_stale = geometry_state.get_pose_in_world(frame_id);
-  const RigidTransformd X_WF_new{Vector3d{1, 2, 3}};
-  const VectorX<double> q_WG_stale =
-      geometry_state.get_configurations_in_world(deformable_g_id);
-  const VectorX<double> q_WG_new = 2.0 * q_WG_stale;
-
-  FramePoseVector<double> stale_poses{{frame_id, X_WF_stale}};
-  GeometryConfigurationVector<double> stale_configurations{
-      {deformable_g_id, q_WG_stale}};
-  FramePoseVector<double> new_poses{{frame_id, X_WF_new}};
-  GeometryConfigurationVector<double> new_configurations{
-      {deformable_g_id, q_WG_new}};
   auto set_and_confirm_stale = [&]() {
-    // Set the data to be the stale values and flush the update.
-    scene_graph_.get_source_pose_port(s_id).FixValue(context.get(),
-                                                     stale_poses);
-    scene_graph_.get_source_configuration_port(s_id).FixValue(
-        context.get(), stale_configurations);
-    FullPoseAndConfigurationUpdate(&query_object);
-    // Now set the data to be the new values but don't flush the update.
-    scene_graph_.get_source_pose_port(s_id).FixValue(context.get(), new_poses);
-    scene_graph_.get_source_configuration_port(s_id).FixValue(
-        context.get(), new_configurations);
-    // Confirm the data is still stale.
-    const auto& stale_pose = geometry_state.get_pose_in_world(frame_id);
-    const auto& stale_config =
-        geometry_state.get_configurations_in_world(deformable_g_id);
+    SceneGraphTester::InvalidateFramePositions(&scene_graph_, *context);
+    SceneGraphTester::InvalidateDeformablePositions(&scene_graph_, *context);
     EXPECT_FALSE(
-        CompareMatrices(stale_pose.GetAsMatrix34(), X_WF_new.GetAsMatrix34()));
-    EXPECT_FALSE(CompareMatrices(stale_config, q_WG_new));
+        SceneGraphTester::FramePositionsAreUpToDate(scene_graph_, *context));
+    EXPECT_FALSE(SceneGraphTester::DeformablePositionsAreUpToDate(scene_graph_,
+                                                                  *context));
   };
 
-  // A function to confirm the stale data has been updated.
-  auto confirm_updated = [&]() {
-    const auto& updated_pose = geometry_state.get_pose_in_world(frame_id);
-    const auto& updated_config =
-        geometry_state.get_configurations_in_world(deformable_g_id);
-    EXPECT_TRUE(CompareMatrices(updated_pose.GetAsMatrix34(),
-                                X_WF_new.GetAsMatrix34()));
-    EXPECT_TRUE(CompareMatrices(updated_config, q_WG_new));
+  auto confirm_updated = [&](int update_expectations) {
+    // Always expect rigid pose update.
+    EXPECT_EQ(
+        SceneGraphTester::FramePositionsAreUpToDate(scene_graph_, *context),
+        bool(update_expectations & kPoseOnly));
+    EXPECT_EQ(SceneGraphTester::DeformablePositionsAreUpToDate(scene_graph_,
+                                                               *context),
+              bool(update_expectations & kDeformOnly));
   };
 
-  set_and_confirm_stale();
-  query_object.ComputePointPairPenetration();
-  confirm_updated();
+#define EXPECT_UPDATES(func, expect_update) \
+  {                                            \
+    SCOPED_TRACE(#func);                       \
+    set_and_confirm_stale();                   \
+    func;                                      \
+    confirm_updated(expect_update);            \
+  }
 
-  set_and_confirm_stale();
-  query_object.FindCollisionCandidates();
-  confirm_updated();
+// For the queries that have not been properly prepped (i.e., bad arguments or
+// missing state), we allow the throw but still expect that the cache got
+// updated before the throw.
+#define EXPECT_UPDATES_WITH_THROW(func, expect_update) \
+  EXPECT_UPDATES(EXPECT_THROW(func, std::exception), expect_update);
 
-  set_and_confirm_stale();
-  query_object.HasCollisions();
-  confirm_updated();
+  // Configuration-dependent introspection.
+  EXPECT_UPDATES_WITH_THROW(qo.GetPoseInWorld(frame_id), kPoseOnly);
+  EXPECT_UPDATES_WITH_THROW(qo.GetPoseInParent(frame_id), kPoseOnly);
+  EXPECT_UPDATES_WITH_THROW(qo.GetPoseInWorld(g_id1), kPoseOnly);
+  EXPECT_UPDATES_WITH_THROW(qo.GetConfigurationsInWorld(g_id1), kDeformOnly);
+  EXPECT_UPDATES_WITH_THROW(
+      qo.GetDrivenMeshConfigurationsInWorld(g_id1, Role::kProximity),
+      kDeformOnly);
 
-  set_and_confirm_stale();
+  // Collision queries.
+  EXPECT_UPDATES(qo.ComputePointPairPenetration(), kFullUpdate);
+  EXPECT_UPDATES(
+      qo.ComputeContactSurfaces(HydroelasticContactRepresentation::kTriangle),
+      kPoseOnly);
+  std::vector<ContactSurface<double>> surfaces;
+  std::vector<PenetrationAsPointPair<double>> point_pairs;
+  EXPECT_UPDATES(qo.ComputeContactSurfacesWithFallback(
+                     HydroelasticContactRepresentation::kTriangle, &surfaces,
+                     &point_pairs),
+                 kPoseOnly);
   internal::DeformableContact<double> deformable_contact;
-  query_object.ComputeDeformableContact(&deformable_contact);
-  confirm_updated();
+  EXPECT_UPDATES(qo.ComputeDeformableContact(&deformable_contact), kFullUpdate);
+  EXPECT_UPDATES(qo.FindCollisionCandidates(), kFullUpdate);
+  EXPECT_UPDATES(qo.HasCollisions(), kFullUpdate);
 
-  set_and_confirm_stale();
-  query_object.ComputeSignedDistancePairwiseClosestPoints();
-  confirm_updated();
+  // Signed distance queries
+  EXPECT_UPDATES(qo.ComputeSignedDistancePairwiseClosestPoints(), kFullUpdate);
+  EXPECT_UPDATES_WITH_THROW(
+      qo.ComputeSignedDistancePairClosestPoints(g_id1, g_id2), kFullUpdate);
+  EXPECT_UPDATES(qo.ComputeSignedDistanceToPoint(Vector3d::Zero()),
+                 kFullUpdate);
+  EXPECT_UPDATES(
+      qo.ComputeSignedDistanceGeometryToPoint(Vector3d::Zero(), GeometrySet()),
+      kFullUpdate);
 
-  set_and_confirm_stale();
-  query_object.ComputeSignedDistancePairClosestPoints(rigid_g_id1, rigid_g_id2);
-  confirm_updated();
-
-  set_and_confirm_stale();
-  query_object.ComputeSignedDistanceToPoint(Vector3d::Zero());
-  confirm_updated();
-
-  set_and_confirm_stale();
-  GeometrySet geometry_set(rigid_g_id1);
-  query_object.ComputeSignedDistanceGeometryToPoint(Vector3d::Zero(),
-                                                    geometry_set);
-  confirm_updated();
-
-  // Render queries... Since no renderers are registered, calling the render
-  // queries will throw, but the state will be updated nonetheless.
-  const ColorRenderCamera color_camera{
-      {"n/a", {2, 2, M_PI}, {0.1, 10}, RigidTransformd{}}, false};
+  // Render queries.
   const DepthRenderCamera depth_camera{
       {"n/a", {2, 2, M_PI}, {0.1, 10}, RigidTransformd{}}, {0.2, 0.9}};
+  const ColorRenderCamera color_camera{depth_camera.core(), false};
   const RigidTransformd X_PC = RigidTransformd::Identity();
 
-  set_and_confirm_stale();
-  query_object.GetRenderEngineByName("dummy");
-  confirm_updated();
-
-  set_and_confirm_stale();
   ImageRgba8U color_image;
-  EXPECT_THROW(
-      query_object.RenderColorImage(color_camera, frame_id, X_PC, &color_image),
-      std::exception);
-  confirm_updated();
-
-  set_and_confirm_stale();
+  EXPECT_UPDATES_WITH_THROW(
+      qo.RenderColorImage(color_camera, frame_id, X_PC, &color_image),
+      kFullUpdate);
   ImageDepth32F depth_image;
-  EXPECT_THROW(
-      query_object.RenderDepthImage(depth_camera, frame_id, X_PC, &depth_image),
-      std::exception);
-  confirm_updated();
-
-  set_and_confirm_stale();
+  EXPECT_UPDATES_WITH_THROW(
+      qo.RenderDepthImage(depth_camera, frame_id, X_PC, &depth_image),
+      kFullUpdate);
   ImageLabel16I label_image;
-  EXPECT_THROW(
-      query_object.RenderLabelImage(color_camera, frame_id, X_PC, &label_image),
-      std::exception);
-  confirm_updated();
+  EXPECT_UPDATES_WITH_THROW(
+      qo.RenderLabelImage(color_camera, frame_id, X_PC, &label_image),
+      kFullUpdate);
+  EXPECT_UPDATES(qo.GetRenderEngineByName("dummy"), kFullUpdate);
 }
 
 // Ensure that I can construct a QueryObject with the default scalar types.
