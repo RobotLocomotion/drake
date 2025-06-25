@@ -527,7 +527,7 @@ void RpyBallMobilizer<T>::DoMapQDDotToAcceleration(
   // --------------------------------------------------------------------------
   // Form the Ṅ⁺(q,q̇)⋅q̇ term of the result now (start of this function) so any
   // singularity (if one exists) throws an exception referencing this function.
-  const Vector3<T> NplusDotTimesQdot =
+  const Vector3<T> NplusDot_times_Qdot =
       CalcAccelerationBiasForQDDot(context, __func__);
 
   // Although the function below was designed to calculate v = N⁺(q)⋅q̇, it can
@@ -535,7 +535,7 @@ void RpyBallMobilizer<T>::DoMapQDDotToAcceleration(
   DoMapQDotToVelocity(context, qddot, vdot);  // On return, vdot = N⁺(q)⋅q̈.
 
   // Sum the previous terms to form v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
-  *vdot += NplusDotTimesQdot;
+  *vdot += NplusDot_times_Qdot;
 }
 
 template <typename T>
