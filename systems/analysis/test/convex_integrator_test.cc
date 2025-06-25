@@ -82,6 +82,26 @@ const char limited_pendulum_xml[] = R"""(
 </mujoco>
 )""";
 
+// MJCF of a double pendulum with actuation only on joint2.
+const char joint2_actuation_pendulum_xml[] = R"""(
+<?xml version="1.0"?>
+<mujoco model="robot">
+  <worldbody>
+    <body>
+      <joint name="joint1" type="hinge" axis="0 1 0" pos="0 0 0.1"/>
+      <geom type="capsule" size="0.01 0.1"/>
+      <body>
+        <joint name="joint2" type="hinge" axis="0 1 0" pos="0 0 -0.1"/>
+        <geom type="capsule" size="0.01 0.1" pos="0 0 -0.2"/>
+      </body>
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="joint2" ctrlrange="-3 3"/>
+  </actuator>
+</mujoco>
+)""";
+
 class ConvexIntegratorTester {
  public:
   ConvexIntegratorTester() = delete;
@@ -492,6 +512,86 @@ GTEST_TEST(ConvexIntegratorTest, JointLimits) {
       plant.GetJointByName("joint1").position_lower_limits()[0];
   EXPECT_NEAR(q[0], q_min, 1e-3);
 
+  std::cout << std::endl;
+  PrintSimulatorStatistics(simulator);
+  std::cout << std::endl;
+}
+
+GTEST_TEST(ConvexIntegratorTest, PendulumWithCoupler) {
+  // Some options
+  const double h = 0.01;
+  VectorXd Kp(1), Kd(1), Ki(1);
+  Kp << 1000.0;
+  Kd << 30.0;
+  Ki << 0.0;
+  // Projection matrix to control only states on Joint 2.
+  MatrixXd Px(2, 4);
+  // clang-format off
+  Px << 0, 1, 0, 0,
+        0, 0, 0, 1;
+  // clang-format on
+
+  // Start meshcat
+  auto meshcat = std::make_shared<drake::geometry::Meshcat>();
+
+  // Set up the system diagram
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant, &scene_graph)
+      .AddModelsFromString(joint2_actuation_pendulum_xml, "xml");
+  plant.AddCouplerConstraint(plant.GetJointByName("joint1"),
+                             plant.GetJointByName("joint2"), -2);
+  plant.Finalize();
+
+  AddDefaultVisualization(&builder, meshcat);
+
+  VectorXd x_nom(2);
+  x_nom << M_PI_2, 0.0;
+  auto target_state = builder.AddSystem<ConstantVectorSource<double>>(x_nom);
+
+  // PD controller is an external system
+  auto ctrl = builder.AddSystem<PidController>(Px, Kp, Ki, Kd);
+
+  builder.Connect(target_state->get_output_port(),
+                  ctrl->get_input_port_desired_state());
+  builder.Connect(plant.get_state_output_port(),
+                  ctrl->get_input_port_estimated_state());
+  builder.Connect(ctrl->get_output_port(), plant.get_actuation_input_port());
+
+  auto diagram = builder.Build();
+
+  // Set up the simulator
+  Simulator<double> simulator(*diagram);
+  SimulatorConfig config;
+  config.target_realtime_rate = 1.0;
+  config.publish_every_time_step = true;
+  ApplySimulatorConfig(config, &simulator);
+
+  ConvexIntegrator<double>& integrator =
+      simulator.reset_integrator<ConvexIntegrator<double>>();
+  integrator.get_mutable_solver_parameters().enable_hessian_reuse = false;
+  integrator.get_mutable_solver_parameters().print_solver_stats = true;
+  integrator.set_plant(&plant);
+  integrator.set_fixed_step_mode(true);
+  integrator.set_maximum_step_size(h);
+
+  // Set an interesting initial state
+  VectorXd q0(2), v0(2);
+  q0 << 0.1, 0.2;
+  v0 << 0.3, 0.4;
+  Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+  plant.SetPositions(&plant_context, q0);
+  plant.SetVelocities(&plant_context, v0);
+  simulator.Initialize();
+
+  // Simulate for a few seconds to make sure nothing breaks
+  const int fps = 32;
+  meshcat->StartRecording(fps);
+  simulator.set_target_realtime_rate(0.5);
+  simulator.AdvanceTo(2.0);
+  meshcat->StopRecording();
+  meshcat->PublishRecording();
   std::cout << std::endl;
   PrintSimulatorStatistics(simulator);
   std::cout << std::endl;
