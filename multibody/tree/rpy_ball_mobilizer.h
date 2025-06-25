@@ -311,6 +311,10 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
                                 const Eigen::Ref<const VectorX<T>>& qddot,
                                 EigenPtr<VectorX<T>> vdot) const final;
 
+  // Calculate the term Ṅ⁺(q,q̇)⋅q̇ which appears in v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
+  Vector3<T> CalcAccelerationBiasForQDDot(const systems::Context<T>& context,
+                                          const char* function_name) const;
+
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
 
@@ -326,10 +330,6 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
                                     const char* function_name) const;
 
  private:
-  // Calculate the term Ṅ⁺(q,q̇)⋅q̇ which appears in v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
-  Vector3<T> CalcNplusDotTimesQdot(const systems::Context<T>& context,
-                                   const char* function_name) const;
-
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
