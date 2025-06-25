@@ -109,6 +109,10 @@ class QueryObjectTest : public ::testing::Test {
     return object.geometry_state();
   }
 
+  void FullPoseAndConfigurationUpdate(const QueryObject<double>* query_object) {
+    query_object->FullPoseAndConfigurationUpdate();
+  }
+
   SceneGraph<double> scene_graph_;
 };
 
@@ -304,6 +308,152 @@ TEST_F(QueryObjectTest, BakedCopyHasFullUpdate) {
   // These really are different objects.
   EXPECT_NE(&stale_pose, &baked_pose);
   EXPECT_NE(&stale_configuration, &baked_configuration);
+}
+
+// This test confirms that queries on a live QueryObject update the cached
+// GeometryState. The test sets up a scene with stale configuration and pose
+// data. It calls a query and confirms that the state has been updated,
+// implying that FullPoseAndConfigurationUpdate() was called.
+TEST_F(QueryObjectTest, LiveQueryUpdatesState) {
+  const SourceId s_id = scene_graph_.RegisterSource("UpdateTest");
+  const FrameId frame_id =
+      scene_graph_.RegisterFrame(s_id, GeometryFrame("frame"));
+
+  // Helper function to make a geometry instance with the given name.
+  auto make_geometry = [](const std::string& name) {
+    auto geometry = make_unique<GeometryInstance>(
+        RigidTransformd::Identity(), make_unique<Sphere>(0.5), name);
+    geometry->set_proximity_properties(ProximityProperties());
+    return geometry;
+  };
+
+  // Register a couple of rigid geometries for later use.
+  const GeometryId rigid_g_id1 =
+      scene_graph_.RegisterGeometry(s_id, frame_id, make_geometry("sphere"));
+  const GeometryId rigid_g_id2 = scene_graph_.RegisterGeometry(
+      s_id, frame_id, make_geometry("another_sphere"));
+  auto deformable_geometry = make_geometry("deformable");
+  const GeometryId deformable_g_id = scene_graph_.RegisterDeformableGeometry(
+      s_id, internal::InternalFrame::world_frame_id(),
+      std::move(deformable_geometry), 10.0);
+  unique_ptr<Context<double>> context = scene_graph_.CreateDefaultContext();
+
+  const auto& query_object =
+      scene_graph_.get_query_output_port().Eval<QueryObject<double>>(*context);
+  EXPECT_TRUE(is_live(query_object));
+  const GeometryState<double>& geometry_state = get_state(query_object);
+
+  // A function to introduce stale data into the context and confirm it is
+  // stale.
+  const RigidTransformd X_WF_stale = geometry_state.get_pose_in_world(frame_id);
+  const RigidTransformd X_WF_new{Vector3d{1, 2, 3}};
+  const VectorX<double> q_WG_stale =
+      geometry_state.get_configurations_in_world(deformable_g_id);
+  const VectorX<double> q_WG_new = 2.0 * q_WG_stale;
+
+  FramePoseVector<double> stale_poses{{frame_id, X_WF_stale}};
+  GeometryConfigurationVector<double> stale_configurations{
+      {deformable_g_id, q_WG_stale}};
+  FramePoseVector<double> new_poses{{frame_id, X_WF_new}};
+  GeometryConfigurationVector<double> new_configurations{
+      {deformable_g_id, q_WG_new}};
+  auto set_and_confirm_stale = [&]() {
+    // Set the data to be the stale values and flush the update.
+    scene_graph_.get_source_pose_port(s_id).FixValue(context.get(),
+                                                     stale_poses);
+    scene_graph_.get_source_configuration_port(s_id).FixValue(
+        context.get(), stale_configurations);
+    FullPoseAndConfigurationUpdate(&query_object);
+    // Now set the data to be the new values but don't flush the update.
+    scene_graph_.get_source_pose_port(s_id).FixValue(context.get(), new_poses);
+    scene_graph_.get_source_configuration_port(s_id).FixValue(
+        context.get(), new_configurations);
+    // Confirm the data is still stale.
+    const auto& stale_pose = geometry_state.get_pose_in_world(frame_id);
+    const auto& stale_config =
+        geometry_state.get_configurations_in_world(deformable_g_id);
+    EXPECT_FALSE(
+        CompareMatrices(stale_pose.GetAsMatrix34(), X_WF_new.GetAsMatrix34()));
+    EXPECT_FALSE(CompareMatrices(stale_config, q_WG_new));
+  };
+
+  // A function to confirm the stale data has been updated.
+  auto confirm_updated = [&]() {
+    const auto& updated_pose = geometry_state.get_pose_in_world(frame_id);
+    const auto& updated_config =
+        geometry_state.get_configurations_in_world(deformable_g_id);
+    EXPECT_TRUE(CompareMatrices(updated_pose.GetAsMatrix34(),
+                                X_WF_new.GetAsMatrix34()));
+    EXPECT_TRUE(CompareMatrices(updated_config, q_WG_new));
+  };
+
+  set_and_confirm_stale();
+  query_object.ComputePointPairPenetration();
+  confirm_updated();
+
+  set_and_confirm_stale();
+  query_object.FindCollisionCandidates();
+  confirm_updated();
+
+  set_and_confirm_stale();
+  query_object.HasCollisions();
+  confirm_updated();
+
+  set_and_confirm_stale();
+  internal::DeformableContact<double> deformable_contact;
+  query_object.ComputeDeformableContact(&deformable_contact);
+  confirm_updated();
+
+  set_and_confirm_stale();
+  query_object.ComputeSignedDistancePairwiseClosestPoints();
+  confirm_updated();
+
+  set_and_confirm_stale();
+  query_object.ComputeSignedDistancePairClosestPoints(rigid_g_id1, rigid_g_id2);
+  confirm_updated();
+
+  set_and_confirm_stale();
+  query_object.ComputeSignedDistanceToPoint(Vector3d::Zero());
+  confirm_updated();
+
+  set_and_confirm_stale();
+  GeometrySet geometry_set(rigid_g_id1);
+  query_object.ComputeSignedDistanceGeometryToPoint(Vector3d::Zero(),
+                                                    geometry_set);
+  confirm_updated();
+
+  // Render queries... Since no renderers are registered, calling the render
+  // queries will throw, but the state will be updated nonetheless.
+  const ColorRenderCamera color_camera{
+      {"n/a", {2, 2, M_PI}, {0.1, 10}, RigidTransformd{}}, false};
+  const DepthRenderCamera depth_camera{
+      {"n/a", {2, 2, M_PI}, {0.1, 10}, RigidTransformd{}}, {0.2, 0.9}};
+  const RigidTransformd X_PC = RigidTransformd::Identity();
+
+  set_and_confirm_stale();
+  query_object.GetRenderEngineByName("dummy");
+  confirm_updated();
+
+  set_and_confirm_stale();
+  ImageRgba8U color_image;
+  EXPECT_THROW(
+      query_object.RenderColorImage(color_camera, frame_id, X_PC, &color_image),
+      std::exception);
+  confirm_updated();
+
+  set_and_confirm_stale();
+  ImageDepth32F depth_image;
+  EXPECT_THROW(
+      query_object.RenderDepthImage(depth_camera, frame_id, X_PC, &depth_image),
+      std::exception);
+  confirm_updated();
+
+  set_and_confirm_stale();
+  ImageLabel16I label_image;
+  EXPECT_THROW(
+      query_object.RenderLabelImage(color_camera, frame_id, X_PC, &label_image),
+      std::exception);
+  confirm_updated();
 }
 
 // Ensure that I can construct a QueryObject with the default scalar types.
