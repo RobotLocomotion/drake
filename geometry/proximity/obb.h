@@ -175,8 +175,8 @@ class ObbMakerTester;
 /** %ObbMaker performs an algorithm to create an oriented bounding box that
  fits a specified set of vertices in a mesh.
 
- @tparam MeshType is either TriangleSurfaceMesh<T> or VolumeMesh<T>, where T is
-         double or AutoDiffXd.  */
+ @tparam MeshType is TriangleSurfaceMesh<T>, VolumeMesh<T>,
+         PolygonSurfaceMesh<T>, where T is double or AutoDiffXd. */
 template <class MeshType>
 class ObbMaker {
  public:

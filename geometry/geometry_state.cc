@@ -17,7 +17,10 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/proximity/calc_obb.h"
 #include "drake/geometry/proximity/make_convex_hull_mesh.h"
+#include "drake/geometry/proximity/obb.h"
+#include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/proximity_engine.h"
 #include "drake/geometry/proximity_properties.h"
@@ -265,6 +268,38 @@ bool BackfillDefaults(ProximityProperties* properties,
     result |= backfill(kMaterialGroup, kFriction, wrapped_friction);
   }
   return result;
+}
+
+// Helper data structure for computing the bounding box of a deformable geometry
+// that is fed to AabbMaker/ObbMaker.
+struct BoundingBoxInput {
+  VolumeMesh<double> mesh;
+  std::set<int> vertices;
+};
+
+// Helper function to compute the ingredients for AabbMaker and ObbMaker for
+// a deformable geometry given its current configuration q_WG.
+BoundingBoxInput GetBoundingBoxInputFromDeformableGeometry(
+    const InternalGeometry& geometry, const VectorX<double>& q_WG) {
+  // TODO(SeanCurtis-TRI): Currently, each site that requires the current,
+  //  deformed state of a deformable mesh must perform the computation by
+  //  itself. We should provide a mechanism to compute the deformed mesh once
+  //  and then provide a mechanism to query the deformed mesh.
+  const VolumeMesh<double>& reference_mesh = *geometry.reference_mesh();
+  std::vector<Vector3<double>> deformed_vertices(reference_mesh.num_vertices());
+  for (int i = 0; i < reference_mesh.num_vertices(); ++i) {
+    deformed_vertices[i] = q_WG.template segment<3>(3 * i);
+  }
+  // AabbMaker doesn't depend on tets, only vertices. So, we'll create a single
+  // dummy tet to satisfy VolumeMesh's requirements, but otherwise ignore them.
+  std::vector<VolumeElement> tets{VolumeElement(0, 1, 2, 3)};
+  const VolumeMesh<double> deformed_mesh(std::move(tets),
+                                         std::move(deformed_vertices));
+  std::set<int> vertex_indices;
+  for (int i = 0; i < deformed_mesh.num_vertices(); ++i) {
+    vertex_indices.insert(i);
+  }
+  return BoundingBoxInput{std::move(deformed_mesh), std::move(vertex_indices)};
 }
 
 }  // namespace
@@ -809,6 +844,13 @@ const PolygonSurfaceMesh<double>* GeometryState<T>::GetConvexHull(
 }
 
 template <typename T>
+const std::optional<Obb>& GeometryState<T>::GetObbInGeometryFrame(
+    GeometryId id) const {
+  const InternalGeometry& geometry = GetValueOrThrow(id, geometries_);
+  return geometry.GetObb();
+}
+
+template <typename T>
 bool GeometryState<T>::CollisionFiltered(GeometryId id1, GeometryId id2) const {
   std::string base_message =
       "Can't report collision filter status between geometries " +
@@ -865,6 +907,58 @@ const math::RigidTransform<T>& GeometryState<T>::get_pose_in_world(
         "get_configurations_in_world() instead.");
   }
   return kinematics_data_.X_WGs.at(geometry_id);
+}
+
+template <typename T>
+std::optional<Aabb> GeometryState<T>::ComputeAabbInWorld(
+    GeometryId geometry_id) const {
+  FindOrThrow(geometry_id, geometries_, [geometry_id]() {
+    return fmt::format("No AABB available for invalid geometry id: {}.",
+                       geometry_id);
+  });
+  const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
+  // For non-deformable geometries, we don't support computing the AABB (yet).
+  // TODO(SeanCurtis-TRI): Support computing AABB for shapes (#15121).
+  if (!geometry.is_deformable()) {
+    return std::nullopt;
+  }
+  // For deformable geometries with proximity role, the proximity engine
+  // already keeps track of the AABB.
+  if (geometry.has_proximity_role()) {
+    return geometry_engine_->GetDeformableAabbInWorld(geometry_id);
+  }
+  // For deformable geometries without proximity role, we need to manually
+  // deform the geometry and compute the AABB of the deformed mesh.
+  const BoundingBoxInput input = GetBoundingBoxInputFromDeformableGeometry(
+      geometry, convert_to_double(kinematics_data_.q_WGs.at(geometry_id)));
+  return AabbMaker<VolumeMesh<double>>(input.mesh, input.vertices).Compute();
+}
+
+template <typename T>
+std::optional<Obb> GeometryState<T>::ComputeObbInWorld(
+    GeometryId geometry_id) const {
+  FindOrThrow(geometry_id, geometries_, [geometry_id]() {
+    return fmt::format("No OBB available for invalid geometry id: {}.",
+                       geometry_id);
+  });
+  const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
+  // For deformable geometries, we need to recompute the deformed mesh and
+  // compute the OBB of the deformed mesh.
+  if (geometry.is_deformable()) {
+    const BoundingBoxInput input = GetBoundingBoxInputFromDeformableGeometry(
+        geometry, convert_to_double(kinematics_data_.q_WGs.at(geometry_id)));
+    return ObbMaker<VolumeMesh<double>>(input.mesh, input.vertices).Compute();
+  }
+  // For rigid geometries, we use the cached the geometry frame OBB and simply
+  // transform it to the world frame.
+  const std::optional<Obb>& obb_G = GetObbInGeometryFrame(geometry_id);
+  if (!obb_G.has_value()) {
+    return std::nullopt;
+  }
+  const math::RigidTransform<double>& X_WG =
+      convert_to_double(get_pose_in_world(geometry_id));
+  const math::RigidTransform<double>& X_GB = obb_G->pose();
+  return Obb(X_WG * X_GB, obb_G->half_width());
 }
 
 template <typename T>
