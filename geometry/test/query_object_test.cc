@@ -30,24 +30,24 @@ using systems::sensors::ImageRgba8U;
 // We'll use SceneGraph's friend to poke at the state of its cache entries.
 class SceneGraphTester {
  public:
-  static void InvalidateFramePositions(SceneGraph<double>* sg,
-                                       const Context<double>& context) {
+  static void InvalidateFramePositions(const Context<double>& context,
+                                       SceneGraph<double>* sg) {
     sg->get_mutable_cache_entry(sg->pose_update_index_)
         .get_mutable_cache_entry_value(context)
         .mark_out_of_date();
   }
-  static void InvalidateDeformablePositions(SceneGraph<double>* sg,
-                                            const Context<double>& context) {
+  static void InvalidateDeformablePositions(const Context<double>& context,
+                                            SceneGraph<double>* sg) {
     sg->get_mutable_cache_entry(sg->configuration_update_index_)
         .get_mutable_cache_entry_value(context)
         .mark_out_of_date();
   }
-  static bool FramePositionsAreUpToDate(const SceneGraph<double>& sg,
-                                        const Context<double>& context) {
+  static bool FramePositionsAreUpToDate(const Context<double>& context,
+                                        const SceneGraph<double>& sg) {
     return !sg.get_cache_entry(sg.pose_update_index_).is_out_of_date(context);
   }
-  static bool DeformablePositionsAreUpToDate(const SceneGraph<double>& sg,
-                                             const Context<double>& context) {
+  static bool DeformablePositionsAreUpToDate(const Context<double>& context,
+                                             const SceneGraph<double>& sg) {
     return !sg.get_cache_entry(sg.configuration_update_index_)
                 .is_out_of_date(context);
   }
@@ -362,30 +362,30 @@ TEST_F(QueryObjectTest, LiveQueryUpdatesState) {
   ASSERT_TRUE(is_live(qo));
 
   auto set_and_confirm_stale = [&]() {
-    SceneGraphTester::InvalidateFramePositions(&scene_graph_, *context);
-    SceneGraphTester::InvalidateDeformablePositions(&scene_graph_, *context);
+    SceneGraphTester::InvalidateFramePositions(*context, &scene_graph_);
+    SceneGraphTester::InvalidateDeformablePositions(*context, &scene_graph_);
     EXPECT_FALSE(
-        SceneGraphTester::FramePositionsAreUpToDate(scene_graph_, *context));
-    EXPECT_FALSE(SceneGraphTester::DeformablePositionsAreUpToDate(scene_graph_,
-                                                                  *context));
+        SceneGraphTester::FramePositionsAreUpToDate(*context, scene_graph_));
+    EXPECT_FALSE(SceneGraphTester::DeformablePositionsAreUpToDate(
+        *context, scene_graph_));
   };
 
   auto confirm_updated = [&](int update_expectations) {
     // Always expect rigid pose update.
     EXPECT_EQ(
-        SceneGraphTester::FramePositionsAreUpToDate(scene_graph_, *context),
-        bool(update_expectations & kPoseOnly));
-    EXPECT_EQ(SceneGraphTester::DeformablePositionsAreUpToDate(scene_graph_,
-                                                               *context),
-              bool(update_expectations & kDeformOnly));
+        SceneGraphTester::FramePositionsAreUpToDate(*context, scene_graph_),
+        static_cast<bool>(update_expectations & kPoseOnly));
+    EXPECT_EQ(SceneGraphTester::DeformablePositionsAreUpToDate(*context,
+                                                               scene_graph_),
+              static_cast<bool>(update_expectations & kDeformOnly));
   };
 
 #define EXPECT_UPDATES(func, expect_update) \
-  {                                            \
-    SCOPED_TRACE(#func);                       \
-    set_and_confirm_stale();                   \
-    func;                                      \
-    confirm_updated(expect_update);            \
+  {                                         \
+    SCOPED_TRACE(#func);                    \
+    set_and_confirm_stale();                \
+    func;                                   \
+    confirm_updated(expect_update);         \
   }
 
 // For the queries that have not been properly prepped (i.e., bad arguments or
@@ -419,7 +419,7 @@ TEST_F(QueryObjectTest, LiveQueryUpdatesState) {
   EXPECT_UPDATES(qo.FindCollisionCandidates(), kFullUpdate);
   EXPECT_UPDATES(qo.HasCollisions(), kFullUpdate);
 
-  // Signed distance queries
+  // Signed distance queries.
   EXPECT_UPDATES(qo.ComputeSignedDistancePairwiseClosestPoints(), kFullUpdate);
   EXPECT_UPDATES_WITH_THROW(
       qo.ComputeSignedDistancePairClosestPoints(g_id1, g_id2), kFullUpdate);
