@@ -415,6 +415,9 @@ class GeometryState {
   const math::RigidTransform<T>& get_pose_in_world(
       GeometryId geometry_id) const;
 
+  /** Implementation of QueryObject::GetAabbInWorld(GeometryId).  */
+  const Aabb& GetAabbInWorld(GeometryId geometry_id) const;
+
   /** Implementation of QueryObject::GetPoseInParent().  */
   const math::RigidTransform<T>& get_pose_in_parent(FrameId frame_id) const;
 

@@ -969,6 +969,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return &iter->second.tri_mesh();
   }
 
+  const Aabb& GetDeformableAabbInWorld(GeometryId id) const {
+    return geometries_for_deformable_contact_.GetDeformableAabbInWorld(id);
+  }
+
   bool IsFclConvexType(GeometryId id) const {
     auto iter = dynamic_objects_.find(id);
     if (iter == dynamic_objects_.end()) {
@@ -1537,6 +1541,11 @@ template <typename T>
 const TriangleSurfaceMesh<double>* ProximityEngine<T>::mesh_distance_boundary(
     GeometryId g_id) const {
   return impl_->mesh_distance_boundary(g_id);
+}
+
+template <typename T>
+const Aabb& ProximityEngine<T>::GetDeformableAabbInWorld(GeometryId id) const {
+  return impl_->GetDeformableAabbInWorld(id);
 }
 
 template <typename T>
