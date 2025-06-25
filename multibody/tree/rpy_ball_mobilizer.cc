@@ -14,6 +14,10 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+// The following tolerance is used to test whether the cosine of the pitch angle
+// is near zero, which occurs when the pitch angle ≈ π/2 ± n π (n=0, 1 2, …).
+// An exception is thrown if a pitch angle is within ≈ 0.057° of a singularity.
+constexpr double kToleranceCosPitchNearZero = 1.0e-3;
 
 template <typename T>
 RpyBallMobilizer<T>::~RpyBallMobilizer() = default;
@@ -164,7 +168,7 @@ void RpyBallMobilizer<T>::DoCalcNMatrix(const systems::Context<T>& context,
   using std::sin;
   const Vector3<T> angles = get_angles(context);
   const T cp = cos(angles[1]);
-  if (abs(cp) < 1.0e-3) {
+  if (abs(cp) < kToleranceCosPitchNearZero) {
     const char* function_name_less_Do = __func__ + 2;
     ThrowSinceCosPitchIsNearZero(angles[1], function_name_less_Do);
   }
@@ -239,7 +243,7 @@ void RpyBallMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>& context,
   const T sp = sin(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
-  if (abs(cp) < 1.0e-3) {
+  if (abs(cp) < kToleranceCosPitchNearZero) {
     const char* function_name_less_Do = __func__ + 2;
     ThrowSinceCosPitchIsNearZero(angles[1], function_name_less_Do);
   }
@@ -298,7 +302,7 @@ void RpyBallMobilizer<T>::DoCalcNplusDotMatrix(
 
   // Throw an exception with the proper function name if a singularity would be
   // encountered in DoMapVelocityToQDot().
-  if (abs(cp) < 1.0e-3) {
+  if (abs(cp) < kToleranceCosPitchNearZero) {
     const char* function_name_less_Do = __func__ + 2;
     ThrowSinceCosPitchIsNearZero(angles[1], function_name_less_Do);
   }
@@ -361,7 +365,7 @@ void RpyBallMobilizer<T>::DoMapVelocityToQDot(
   const T cp = cos(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
-  if (abs(cp) < 1.0e-3) {
+  if (abs(cp) < kToleranceCosPitchNearZero) {
     const char* function_name_less_Do = __func__ + 2;
     ThrowSinceCosPitchIsNearZero(angles[1], function_name_less_Do);
   }
@@ -456,13 +460,13 @@ Vector3<T> RpyBallMobilizer<T>::CalcAccelerationBiasForQDDot(
   const T sp = sin(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
-  if (abs(cp) < 1.0e-3) {
+  if (abs(cp) < kToleranceCosPitchNearZero) {
     ThrowSinceCosPitchIsNearZero(angles[1], function_name);
   }
-  // The algorithm below efficiently calculates Ṅ⁺(q,q̇)⋅q̇. The algorithm was
-  // verified with MotionGenesis. It can also be verified by-hand, e.g., with
-  // the documentation in DoCalcNplusDotMatrix which differentiates N⁺(q) to
-  // form Ṅ⁺(q,q̇). Thereafter, multiply by q̇ to form Ṅ⁺(q,q̇)⋅q̇ (and simplify).
+  // The algorithm below calculates Ṅ⁺(q,q̇)⋅q̇. The algorithm was verified with
+  // MotionGenesis. It can also be verified by-hand, e.g., with documentation
+  // in DoCalcNplusDotMatrix which directly differentiates N⁺(q) to form
+  // Ṅ⁺(q,q̇). Thereafter, multiply by q̇ to form Ṅ⁺(q,q̇)⋅q̇ (and simplify).
   const Vector3<T> v = get_angular_velocity(context);
   Vector3<T> qdot;
   DoMapVelocityToQDot(context, v, &qdot);
@@ -484,7 +488,6 @@ void RpyBallMobilizer<T>::DoMapAccelerationToQDDot(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& vdot,
     EigenPtr<VectorX<T>> qddot) const {
-  // --------------------------------------------------------------------------
   // As shown in DoMapVelocityToQDot(), the time-derivatives of generalized
   // positions q̇ = [ṙ, ṗ, ẏ]ᵀ are related to the generalized velocities
   // v = [ωx, ωy, ωz]ᵀ in the matrix form q̇ = N(q)⋅v, where N is a 3x3 matrix.
@@ -494,16 +497,16 @@ void RpyBallMobilizer<T>::DoMapAccelerationToQDDot(
   // q = [r, p, y]ᵀ  denote roll, pitch, yaw angles (generalized positions).
   //
   // There are various ways to get q̈ = [r̈, p̈, ÿ]ᵀ in terms of v̇ = [ω̇x, ω̇y, ω̇z]ᵀ.
-  // A simple calculation directly solves for q̈ as q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇.
+  // One way to is differentiate q̇ = N(q)⋅v to form q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇.
   // However, N⁺(q) is simpler than N(q) so Ṅ⁺(q,q̇) is much simpler than Ṅ(q,q̇).
-  // Hence, a more efficient calculation of q̈ starts as v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈
-  // and then solves as q̈ = N(q) {v̇ - Ṅ⁺(q,q̇)⋅q̇}.
-  // --------------------------------------------------------------------------
+  // A calculation of q̈ that leverages the simplicity of Ṅ⁺(q,q̇) over Ṅ(q,q̇)
+  // and the available function CalcAccelerationBiasForQDDot() starts with
+  // v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈ and then solves as q̈ = N(q) {v̇ - Ṅ⁺(q,q̇)⋅q̇}.
   const Vector3<T> vdot_minus_NplusDotTimesQDot =
       vdot - CalcAccelerationBiasForQDDot(context, __func__);
 
-  // Note: Although the function below was designed to efficiently calculate
-  // q̇ = N(q)⋅v, it can also be used to calculate q̈ = N(q) {v̇ - Ṅ⁺(q,q̇)⋅q̇}.
+  // Note: Although the function below was designed to calculate q̇ = N(q)⋅v,
+  // it can also be used to calculate q̈ = N(q) {v̇ - Ṅ⁺(q,q̇)⋅q̇}.
   DoMapVelocityToQDot(context, vdot_minus_NplusDotTimesQDot, qddot);
 }
 
@@ -512,7 +515,6 @@ void RpyBallMobilizer<T>::DoMapQDDotToAcceleration(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qddot,
     EigenPtr<VectorX<T>> vdot) const {
-  // --------------------------------------------------------------------------
   // As seen in DoMapQDotToVelocity(), generalized velocities v = [ωx, ωy, ωz]ᵀ
   // are related to q̇ = [ṙ, ṗ, ẏ]ᵀ (time-derivatives of generalized positions)
   // in the matrix form v = N⁺(q)⋅q̇, where N⁺ is a 3x3 matrix.
@@ -524,7 +526,7 @@ void RpyBallMobilizer<T>::DoMapQDDotToAcceleration(
   // There are various ways to calculate v̇ = [ω̇x, ω̇y, ω̇z]ᵀ (the time-derivatives
   // of the generalized velocities). The calculation below is straighforward in
   // that it simply differentiates v = N⁺(q)⋅q̇ to form v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
-  // --------------------------------------------------------------------------
+
   // Form the Ṅ⁺(q,q̇)⋅q̇ term of the result now (start of this function) so any
   // singularity (if one exists) throws an exception referencing this function.
   const Vector3<T> NplusDot_times_Qdot =
