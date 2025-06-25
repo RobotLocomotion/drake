@@ -483,16 +483,11 @@ MultibodyConstraintId MultibodyPlant<T>::AddCouplerConstraint(
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
 
-  if (!is_discrete()) {
-    throw std::runtime_error(
-        "Currently coupler constraints are only supported for discrete "
-        "MultibodyPlant models.");
-  }
-
   // TAMSI does not support tendon constraints. We've already confirmed that
   // this model is discrete. The only remaining discrete solver is SAP, so we
   // can safely proceed.
-  if (get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
+  if (is_discrete() &&
+      get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
     throw std::runtime_error(
         "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
         "does not support coupler constraints. Use "
