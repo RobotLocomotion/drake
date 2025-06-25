@@ -888,6 +888,9 @@ bool ParseMimicTag(const SDFormatDiagnostic& diagnostic,
                    MultibodyPlant<double>* plant) {
   if (!joint_spec.Element()->HasElement("drake:mimic")) return true;
 
+  // TODO(vincekurtz): enable mimic elements for convex integrator in a more
+  // principled way.
+  /*
   if (!plant->is_discrete() ||
       plant->get_discrete_contact_solver() != DiscreteContactSolver::kSap) {
     diagnostic.Warning(
@@ -899,6 +902,7 @@ bool ParseMimicTag(const SDFormatDiagnostic& diagnostic,
                     joint_spec.Name()));
     return true;
   }
+  */
 
   sdf::ElementPtr mimic_node = joint_spec.Element()->GetElement("drake:mimic");
 
