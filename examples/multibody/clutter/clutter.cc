@@ -8,6 +8,7 @@
 #include <utility>
 
 #include <gflags/gflags.h>
+#include <ittnotify.h>
 
 #include "drake/common/nice_type_name.h"
 #include "drake/common/temp_directory.h"
@@ -503,6 +504,8 @@ void SetObjectsIntoAPile(const MultibodyPlant<double>& plant,
 }
 
 int do_main() {
+  __itt_pause();  // Stop VTune collection
+
   // Build a generic multibody plant.
   systems::DiagramBuilder<double> builder;
 
@@ -538,8 +541,9 @@ int do_main() {
   fmt::print("Num velocities: {:d}\n", plant.num_velocities());
 
   // Publish contact results for visualization.
-  auto meshcat = std::make_shared<drake::geometry::Meshcat>();
+  std::shared_ptr<drake::geometry::Meshcat> meshcat{nullptr};
   if (FLAGS_visualize) {
+    meshcat = std::make_shared<drake::geometry::Meshcat>();
     VisualizationConfig vis_config;
     vis_config.publish_period = FLAGS_viz_period;
     vis_config.publish_contacts = FLAGS_visualize_forces;
@@ -627,19 +631,27 @@ int do_main() {
     // Wait for meshcat to load
     std::cout << "Press [ENTER] to continue ...\n";
     getchar();
+
+    const double recording_frames_per_second =
+        FLAGS_mbp_time_step == 0 ? 32 : 1.0 / FLAGS_mbp_time_step;
+    meshcat->StartRecording(recording_frames_per_second);
   }
 
-  const double recording_frames_per_second =
-      FLAGS_mbp_time_step == 0 ? 32 : 1.0 / FLAGS_mbp_time_step;
-  meshcat->StartRecording(recording_frames_per_second);
   clock::time_point sim_start_time = clock::now();
+
+  __itt_resume();  // Start VTune collection
   simulator->AdvanceTo(FLAGS_simulation_time);
+  __itt_pause();  // Stop collection again
+
   clock::time_point sim_end_time = clock::now();
   const double sim_time =
       std::chrono::duration<double>(sim_end_time - sim_start_time).count();
   std::cout << "AdvanceTo() time [sec]: " << sim_time << std::endl;
-  meshcat->StopRecording();
-  meshcat->PublishRecording();
+
+  if (FLAGS_visualize) {
+    meshcat->StopRecording();
+    meshcat->PublishRecording();
+  }
 
   PrintSimulatorStatistics(*simulator);
 
