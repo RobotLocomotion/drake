@@ -43,14 +43,24 @@ namespace {
 void ComputeConvexHullAsNecessary(
     std::shared_ptr<PolygonSurfaceMesh<double>>* hull_ptr,
     const MeshSource& mesh_source, const Vector3<double>& scale) {
+  // TODO(jwnimmer-tri) Once we drop support for Jammy (i.e., once we can use
+  // GCC >= 12 as our minimum), then we should respell these atomics to use the
+  // C++20 syntax and remove the warning suppressions here and below. (We need
+  // the warning supression because newer Clang complains.)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   std::shared_ptr<PolygonSurfaceMesh<double>> check =
       std::atomic_load(hull_ptr);
+#pragma GCC diagnostic pop
   if (check == nullptr) {
     // Note: This approach means that multiple threads *may* redundantly compute
     // the convex hull; but only the first one will set the hull.
     auto new_hull = std::make_shared<PolygonSurfaceMesh<double>>(
         internal::MakeConvexHull(mesh_source, scale));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     std::atomic_compare_exchange_strong(hull_ptr, &check, new_hull);
+#pragma GCC diagnostic pop
   }
 }
 

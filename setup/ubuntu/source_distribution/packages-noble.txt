@@ -2,7 +2,7 @@ default-jdk
 diffutils
 file
 gfortran
-libclang-17-dev
+libclang-19-dev
 libgl-dev
 libglib2.0-dev
 libglx-dev
