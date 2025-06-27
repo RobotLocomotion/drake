@@ -12,7 +12,6 @@
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
-#include "drake/geometry/optimization/iris_internal.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -318,46 +317,6 @@ void PopulateParticlesByUniformSampling(
     const geometry::optimization::HPolyhedron& P, int number_to_sample,
     int mixing_steps, std::vector<RandomGenerator>* generators,
     std::vector<Eigen::VectorXd>* particles);
-
-class ParameterizedSamePointConstraint : public solvers::Constraint {
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ParameterizedSamePointConstraint);
-
-  ParameterizedSamePointConstraint(
-      const multibody::MultibodyPlant<double>* plant,
-      const systems::Context<double>& context,
-      const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
-          parameterization_double,
-      const std::function<AutoDiffVecXd(const AutoDiffVecXd&)>&
-          parameterization_autodiff,
-      int parameterization_dimension);
-
-  ~ParameterizedSamePointConstraint() override;
-
-  void set_frameA(const multibody::Frame<double>* frame) {
-    same_point_constraint_.set_frameA(frame);
-  }
-
-  void set_frameB(const multibody::Frame<double>* frame) {
-    same_point_constraint_.set_frameA(frame);
-  }
-
- private:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd* y) const override;
-
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd* y) const override;
-
-  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-              VectorX<symbolic::Expression>* y) const override;
-
-  geometry::optimization::internal::SamePointConstraint same_point_constraint_;
-  const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
-      parameterization_double_;
-  const std::function<AutoDiffVecXd(const AutoDiffVecXd&)>&
-      parameterization_autodiff_;
-  int parameterization_dimension_;
-};
 
 }  // namespace internal
 }  // namespace planning

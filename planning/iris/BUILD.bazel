@@ -48,7 +48,6 @@ drake_cc_library(
         "//common:name_value",
         "//geometry:meshcat",
         "//geometry/optimization:convex_set",
-        "//geometry/optimization:iris_internal",
         "//multibody/rational:rational_forward_kinematics",
         "//solvers:mathematical_program",
     ],

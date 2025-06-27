@@ -103,6 +103,48 @@ void SamePointConstraint::DoEval(
   *y = p_WA - p_WB;
 }
 
+ParameterizedSamePointConstraint::ParameterizedSamePointConstraint(
+    const multibody::MultibodyPlant<double>* plant,
+    const systems::Context<double>& context,
+    const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+        parameterization_double,
+    const std::function<AutoDiffVecXd(const AutoDiffVecXd&)>&
+        parameterization_autodiff,
+    int parameterization_dimension)
+    : Constraint(3, parameterization_dimension + 6, Eigen::Vector3d::Zero(),
+                 Eigen::Vector3d::Zero()),
+      same_point_constraint_(plant, context),
+      parameterization_double_(parameterization_double),
+      parameterization_autodiff_(parameterization_autodiff),
+      parameterization_dimension_(parameterization_dimension) {}
+
+void ParameterizedSamePointConstraint::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
+  Eigen::VectorXd q_latent = x.head(parameterization_dimension_);
+  Eigen::VectorXd q_full = parameterization_double_(q_latent);
+  Eigen::VectorXd x_full(same_point_constraint_.num_vars());
+  x_full << q_full, x.tail(6);
+  same_point_constraint_.Eval(x_full, y);
+}
+
+void ParameterizedSamePointConstraint::DoEval(
+    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
+  AutoDiffVecXd q_latent = x.head(parameterization_dimension_);
+  AutoDiffVecXd q_full = parameterization_autodiff_(q_latent);
+  AutoDiffVecXd x_full(same_point_constraint_.num_vars());
+  x_full << q_full, x.tail(6);
+  same_point_constraint_.Eval(x_full, y);
+}
+
+void ParameterizedSamePointConstraint::DoEval(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+    VectorX<symbolic::Expression>*) const {
+  // TODO(cohnt): Consider supporting symbolic evaluation. This would require
+  // modifying IrisParameterizationFunction.
+  throw std::runtime_error(
+      "ParameterizedSamePointConstraint does not support symbolic evaluation.");
+}
+
 ClosestCollisionProgram::ClosestCollisionProgram(
     std::shared_ptr<SamePointConstraint> same_point_constraint,
     const multibody::Frame<double>& frameA,
