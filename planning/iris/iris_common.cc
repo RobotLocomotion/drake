@@ -4,6 +4,7 @@
 
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/geometry/optimization/iris_internal.h"
 
 namespace drake {
 namespace planning {
@@ -138,6 +139,57 @@ void PopulateParticlesByUniformSampling(
   StaticParallelForRangeLoop(DegreeOfParallelism(num_threads), 0,
                              number_to_sample, hit_and_run_sample_work,
                              ParallelForBackend::BEST_AVAILABLE);
+}
+
+ParameterizedSamePointConstraint::ParameterizedSamePointConstraint(
+    const multibody::MultibodyPlant<double>* plant,
+    const systems::Context<double>& context,
+    const IrisParameterizationFunction& parameterization)
+    : Constraint(3,
+                 parameterization.get_parameterization_dimension().value_or(
+                     plant->num_positions()) +
+                     6,
+                 Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero()),
+      same_point_constraint_(plant, context),
+      parameterization_(parameterization) {}
+
+void ParameterizedSamePointConstraint::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
+  // Note that same_point_constraint_.num_vars() is equal to six plus the number
+  // of positions in the underlying plant.
+  int parameterization_dimension =
+      parameterization_.get_parameterization_dimension().value_or(
+          same_point_constraint_.num_vars() - 6);
+  Eigen::VectorXd q_latent = x.head(parameterization_dimension);
+  Eigen::VectorXd q_full =
+      parameterization_.get_parameterization_double()(q_latent);
+  Eigen::VectorXd x_full(same_point_constraint_.num_vars() + 6);
+  x_full << q_full, x.tail(6);
+  same_point_constraint_.Eval(x_full, y);
+}
+
+void ParameterizedSamePointConstraint::DoEval(
+    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
+  // Note that same_point_constraint_.num_vars() is equal to six plus the number
+  // of positions in the underlying plant.
+  int parameterization_dimension =
+      parameterization_.get_parameterization_dimension().value_or(
+          same_point_constraint_.num_vars() - 6);
+  AutoDiffVecXd q_latent = x.head(parameterization_dimension);
+  AutoDiffVecXd q_full =
+      parameterization_.get_parameterization_autodiff()(q_latent);
+  AutoDiffVecXd x_full(same_point_constraint_.num_vars() + 6);
+  x_full << q_full, x.tail(6);
+  same_point_constraint_.Eval(x_full, y);
+}
+
+void ParameterizedSamePointConstraint::DoEval(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+    VectorX<symbolic::Expression>*) const {
+  // TODO(cohnt): Consider supporting symbolic evaluation. This would require
+  // modifying IrisParameterizationFunction.
+  throw std::runtime_error(
+      "ParameterizedSamePointConstraint does not support symbolic evaluation.");
 }
 
 }  // namespace internal
