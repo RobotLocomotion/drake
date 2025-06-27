@@ -34,6 +34,9 @@ using geometry::optimization::Hyperellipsoid;
 using geometry::optimization::internal::ClosestCollisionProgram;
 using geometry::optimization::internal::GeometryPairWithDistance;
 using geometry::optimization::internal::IrisConvexSetMaker;
+using geometry::optimization::internal::
+    ParameterizedPointsBoundedDistanceConstraint;
+using geometry::optimization::internal::ParameterizedSamePointConstraint;
 using geometry::optimization::internal::PointsBoundedDistanceConstraint;
 using geometry::optimization::internal::SamePointConstraint;
 using math::RigidTransform;
@@ -211,10 +214,21 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   std::set<std::pair<GeometryId, GeometryId>> pairs =
       inspector.GetCollisionCandidates();
   const int n_collision_pairs = static_cast<int>(pairs.size());
+  const int parameterization_dimension =
+      options.parameterization.get_parameterization_dimension().value_or(
+          checker.plant().num_positions());
   auto same_point_constraint =
-      std::make_shared<SamePointConstraint>(&plant, context);
+      std::make_shared<ParameterizedSamePointConstraint>(
+          &plant, context,
+          options.parameterization.get_parameterization_double(),
+          options.parameterization.get_parameterization_autodiff(),
+          parameterization_dimension);
   auto points_bounded_distance_constraint =
-      std::make_shared<PointsBoundedDistanceConstraint>(&plant, context, 0.0);
+      std::make_shared<ParameterizedPointsBoundedDistanceConstraint>(
+          &plant, context, 0.0,
+          options.parameterization.get_parameterization_double(),
+          options.parameterization.get_parameterization_autodiff(),
+          parameterization_dimension);
   std::map<std::pair<GeometryId, GeometryId>, std::vector<VectorXd>>
       counter_examples;
 
@@ -463,17 +477,26 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
         if (padding > 0) {
           points_bounded_distance_constraint->set_max_distance(padding);
         }
-        std::variant<std::shared_ptr<SamePointConstraint>,
-                     std::shared_ptr<PointsBoundedDistanceConstraint>>
+        std::variant<
+            std::shared_ptr<SamePointConstraint>,
+            std::shared_ptr<PointsBoundedDistanceConstraint>,
+            std::shared_ptr<ParameterizedSamePointConstraint>,
+            std::shared_ptr<ParameterizedPointsBoundedDistanceConstraint>>
             constraint =
                 padding > 0
                     ? std::variant<
                           std::shared_ptr<SamePointConstraint>,
-                          std::shared_ptr<PointsBoundedDistanceConstraint>>(
+                          std::shared_ptr<PointsBoundedDistanceConstraint>,
+                          std::shared_ptr<ParameterizedSamePointConstraint>,
+                          std::shared_ptr<
+                              ParameterizedPointsBoundedDistanceConstraint>>(
                           points_bounded_distance_constraint)
                     : std::variant<
                           std::shared_ptr<SamePointConstraint>,
-                          std::shared_ptr<PointsBoundedDistanceConstraint>>(
+                          std::shared_ptr<PointsBoundedDistanceConstraint>,
+                          std::shared_ptr<ParameterizedSamePointConstraint>,
+                          std::shared_ptr<
+                              ParameterizedPointsBoundedDistanceConstraint>>(
                           same_point_constraint);
         ClosestCollisionProgram prog(
             constraint, *frames.at(collision_pair.geomA),
