@@ -120,7 +120,7 @@ class ParameterizedSamePointConstraint : public solvers::Constraint {
   }
 
   void set_frameB(const multibody::Frame<double>* frame) {
-    same_point_constraint_.set_frameA(frame);
+    same_point_constraint_.set_frameB(frame);
   }
 
  private:
@@ -162,7 +162,7 @@ class ParameterizedPointsBoundedDistanceConstraint
   }
 
   void set_frameB(const multibody::Frame<double>* frame) {
-    points_bounded_distance_constraint_.set_frameA(frame);
+    points_bounded_distance_constraint_.set_frameB(frame);
   }
 
   void set_max_distance(const double max_distance) {
