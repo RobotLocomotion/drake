@@ -114,14 +114,6 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
     throw std::runtime_error(
         "IrisNp2 does not yet support specifying additional constriants.");
   }
-
-  if (!(options.parameterization.get_parameterization_double()(
-            starting_ellipsoid.center()) == starting_ellipsoid.center())) {
-    // TODO(cohnt): Support growing regions along a parameterized subspace.
-    throw std::runtime_error(
-        "IrisNp2 does not yet support growing regions on a parameterized "
-        "subspace.");
-  }
   if (!checker.GetAllAddedCollisionShapes().empty()) {
     // TODO(cohnt): Support handling additional collision shapes.
     throw std::runtime_error(
@@ -133,8 +125,31 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
         "IrisNp2 does not support collision checkers with negative padding.");
   }
 
+  if (!options.parameterization.get_parameterization_autodiff()) {
+    throw std::runtime_error(
+        "IrisNp2 requires an autodiff-compatible parameterization. Make sure "
+        "to provide the IrisParameterizationFunction with a "
+        "parameterization_double and parameterization_autodiff, or consider "
+        "using IrisZo instead.");
+  }
+
   // The input domain must be bounded.
   DRAKE_THROW_UNLESS(domain.IsBounded());
+
+  // Do a basic check of the parameterization dimension.
+  const Eigen::VectorXd starting_ellipsoid_center_ambient =
+      options.parameterization.get_parameterization_double()(
+          starting_ellipsoid.center());
+  const int computed_ambient_dimension =
+      starting_ellipsoid_center_ambient.size();
+  if (computed_ambient_dimension != checker.plant().num_positions()) {
+    throw std::runtime_error(fmt::format(
+        "The plant has {} positions, but the given parameterization "
+        "returned a point with the wrong dimension (its size was "
+        "{}) when called on {}.",
+        checker.plant().num_positions(), computed_ambient_dimension,
+        fmt_eigen(starting_ellipsoid.center().transpose())));
+  }
 }
 
 /* Check for certain conditions at the end of the separating hyperplanes step,
@@ -189,22 +204,9 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   const auto& plant = checker.plant();
   const int nq = plant.num_positions();
 
-  const Eigen::VectorXd starting_ellipsoid_center_ambient =
+  const auto& context = checker.UpdatePositions(
       options.parameterization.get_parameterization_double()(
-          starting_ellipsoid.center());
-  const int computed_ambient_dimension =
-      starting_ellipsoid_center_ambient.size();
-  if (computed_ambient_dimension != nq) {
-    throw std::runtime_error(fmt::format(
-        "The plant has {} positions, but the given parameterization "
-        "returned a point with the wrong dimension (its size was "
-        "{}) when called on {}.",
-        nq, computed_ambient_dimension,
-        fmt_eigen(starting_ellipsoid.center().transpose())));
-  }
-
-  const auto& context =
-      checker.UpdatePositions(starting_ellipsoid_center_ambient);
+          starting_ellipsoid.center()));
   plant.ValidateContext(context);
 
   const Eigen::VectorXd seed = starting_ellipsoid.center();
@@ -276,7 +278,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   // as {x | A * x <= b}.  Here we pre-allocate matrices with a generous
   // maximum size.
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A(
-      P.A().rows() + 2 * n_collision_pairs, nq);
+      P.A().rows() + 2 * n_collision_pairs, parameterization_dimension);
   VectorXd b(P.A().rows() + 2 * n_collision_pairs);
   A.topRows(P.A().rows()) = P.A();
   b.head(P.A().rows()) = P.b();
@@ -286,7 +288,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
   double last_iteration_volume = E.Volume();
   int iteration = 0;
-  VectorXd closest(nq);
+  VectorXd closest(parameterization_dimension);
 
   const int num_threads_for_sampling =
       options.sampled_iris_options.sample_particles_in_parallel

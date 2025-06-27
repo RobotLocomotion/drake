@@ -50,16 +50,6 @@ TEST_F(JointLimits1D, UnsupportedOptions) {
       ".*additional constriants.*");
   options.sampled_iris_options.prog_with_additional_constraints = nullptr;
 
-  VectorX<Variable> varable_vector(1);
-  VectorX<Expression> expression_vector(1);
-  expression_vector[0] = varable_vector[0] + 1;
-  options.parameterization =
-      IrisParameterizationFunction(expression_vector, varable_vector);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options),
-      ".*parameterized subspace.*");
-  options.parameterization = IrisParameterizationFunction();
-
   const Sphere sphere(0.1);
   const BodyShapeDescription body_shape{sphere, {}, "limits", "movable"};
   sgcc_ptr->AddCollisionShape("test", body_shape);
@@ -240,6 +230,33 @@ TEST_F(ConvexConfigurationSpace, IrisNp2Test) {
       IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
   CheckRegion(region);
   PlotEnvironmentAndRegion(region);
+}
+
+TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
+  IrisNp2Options options;
+  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  auto parameterization_double = [](const Vector1d& config) -> Vector2d {
+    return Vector2d{config[0], 2 * config[0] + 1};
+  };
+  auto parameterization_autodiff =
+      [](const Vector1<AutoDiffXd>& config) -> Vector2<AutoDiffXd> {
+    return Vector2<AutoDiffXd>{config[0], 2 * config[0] + 1};
+  };
+
+  options.parameterization = IrisParameterizationFunction(
+      parameterization_double, parameterization_autodiff,
+      /* parameterization_is_threadsafe */ true,
+      /* parameterization_dimension */ 1);
+
+  HPolyhedron region =
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+  CheckRegion(region);
+
+  meshcat_->Delete();
+  PlotEnvironmentAndRegionSubspace(
+      region, options.parameterization.get_parameterization_double());
 }
 
 }  // namespace
