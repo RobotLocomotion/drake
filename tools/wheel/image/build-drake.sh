@@ -22,6 +22,8 @@ build --repo_env=DRAKE_WHEEL=1
 build --repo_env=SNOPT_PATH=${SNOPT_PATH}
 build --config=packaging
 build --define=LCM_INSTALL_JAVA=OFF
+# Enable MOSEK lazy loading. Right now this is only done for Linux builds.
+build --@drake//solvers:mosek_lazy_load=True
 # The JDK mentioned here is not actually used, but must not be local_jdk
 # because we don't have any local JDK installed and rules_java fails fast
 # when that option is selected but no JDK can be found.
