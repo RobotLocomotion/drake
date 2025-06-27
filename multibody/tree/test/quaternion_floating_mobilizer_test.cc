@@ -209,38 +209,49 @@ TEST_F(QuaternionFloatingMobilizerTest, RandomState) {
   EXPECT_FALSE(mobilizer_->get_translational_velocity(*context_).isZero());
 }
 
-// For an arbitrary state verify that the computed Nplus(q) matrix is the
-// left pseudoinverse of N(q).
+// Verify various properties of the N(q), N⁺(q), Ṅ⁺(q,q̇), Ṅ⁺(q,q̇) matrices.
 TEST_F(QuaternionFloatingMobilizerTest, KinematicMapping) {
-  const Quaterniond Q_WB(
-      RollPitchYawd(M_PI / 3, -M_PI / 3, M_PI / 5).ToQuaternion());
-  mobilizer_->SetQuaternion(context_.get(), Q_WB);
-
-  const Vector3d p_WB(1.0, 2.0, 3.0);
-  mobilizer_->SetTranslation(context_.get(), p_WB);
-
   ASSERT_EQ(mobilizer_->num_positions(), 7);
   ASSERT_EQ(mobilizer_->num_velocities(), 6);
 
-  // Compute N.
+  // Set an arbitrary orientation and position for this mobilizer.
+  const Quaternion<double> Q_FM(
+      RollPitchYawd(M_PI / 3, -M_PI / 3, M_PI / 5).ToQuaternion());
+  mobilizer_->SetQuaternion(context_.get(), Q_FM);
+  const Vector3<double> p_FoMo_F(1.0, 2.0, 3.0);
+  mobilizer_->SetTranslation(context_.get(), p_FoMo_F);
+
+  // Calculate the N matrix that appears in q̇ = N(q,q̇)⋅v.
   MatrixX<double> N(7, 6);
   mobilizer_->CalcNMatrix(*context_, &N);
 
-  // Compute Nplus.
+  // Calculate the Nplus matrix that appears in v = N⁺(q,q̇)⋅q̇.
   MatrixX<double> Nplus(6, 7);
   mobilizer_->CalcNplusMatrix(*context_, &Nplus);
 
-  // Verify that Nplus is the left pseudoinverse of N.
+  // Ensure the Nplus matrix is the left pseudoinverse of the N matrix.
   MatrixX<double> Nplus_x_N = Nplus * N;
-
   EXPECT_TRUE(CompareMatrices(Nplus_x_N, MatrixX<double>::Identity(6, 6),
                               kTolerance, MatrixCompareType::relative));
 
-  // Until it is implemented, ensure calculating Ṅ(q,q̇) throws an exception.
+  // Set arbitrary angular and translational velocities for this mobilizer.
+  const Vector3<double> w_FM_F(1.1, 2.5, 3.2);
+  mobilizer_->SetAngularVelocity(context_.get(), w_FM_F);
+  const Vector3<double> v_FMo_F(1.0, 2.0, 3.0);
+  mobilizer_->SetTranslation(context_.get(), v_FMo_F);
+
+  // Calculate the Ndot(q) matrix that appears in q̈ = = Ṅ(q,q̇)⋅v + N⁺(q)⋅v̇.
   MatrixX<double> NDot(7, 6);
+  mobilizer_->CalcNDotMatrix(*context_, &NDot);
+  // TODO(Mitiguy) Fix test.
+  EXPECT_FALSE(CompareMatrices(NDot, MatrixX<double>::Zero(7, 6), kTolerance,
+                               MatrixCompareType::relative));
+#if 0
+  // Until it is implemented, ensure calculating Ṅ(q,q̇) throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(mobilizer_->CalcNDotMatrix(*context_, &NDot),
                               ".*The function DoCalcNDotMatrix\\(\\) has not "
                               "been implemented for this mobilizer.*");
+#endif
 
   // Until it is implemented, ensure calculating Ṅ⁺(q,q̇) throws an exception.
   MatrixX<double> NplusDot(6, 7);
