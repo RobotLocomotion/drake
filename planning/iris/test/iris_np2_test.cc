@@ -188,6 +188,42 @@ TEST_F(DoublePendulum, PostprocessRemoveCollisions) {
   EXPECT_FALSE(region.PointInSet(query_point));
 }
 
+TEST_F(DoublePendulumRationalForwardKinematics, FunctionParameterization) {
+  IrisNp2Options options;
+  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  options.sampled_iris_options.meshcat = meshcat_;
+
+  auto parameterization_double = [](const Vector2d& config) -> Vector2d {
+    return Vector2d{atan2(2 * config(0), 1 - std::pow(config(0), 2)),
+                    atan2(2 * config(1), 1 - std::pow(config(1), 2))};
+  };
+  auto parameterization_autodiff =
+      [](const Vector2<AutoDiffXd>& config) -> Vector2<AutoDiffXd> {
+    return drake::Vector2<AutoDiffXd>{
+        atan2(2 * config(0), 1 - pow(config(0), 2)),
+        atan2(2 * config(1), 1 - pow(config(1), 2))};
+  };
+
+  options.parameterization = IrisParameterizationFunction(
+      parameterization_double, parameterization_autodiff,
+      /* parameterization_is_threadsafe */ true,
+      /* parameterization_dimension */ 2);
+
+  CheckParameterization(options.parameterization.get_parameterization_double());
+
+  HPolyhedron region =
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_rational_forward_kinematics_,
+              domain_rational_forward_kinematics_, options);
+  CheckRegion(region);
+
+  CheckRegionRationalForwardKinematics(region);
+  PlotEnvironmentAndRegionRationalForwardKinematics(
+      region, options.parameterization.get_parameterization_double(),
+      region_query_point_1_);
+}
+
 TEST_F(BlockOnGround, IrisNp2Test) {
   IrisNp2Options options;
   auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
@@ -217,7 +253,6 @@ TEST_F(ConvexConfigurationSpace, IrisNp2Test) {
   // but because the objective is actually pulling the counter-example search
   // away from that corner. Open the meshcat visualization to step through the
   // details!
-  meshcat_->Delete();
   options.sampled_iris_options.meshcat = meshcat_;
   options.sampled_iris_options.verbose = true;
 
@@ -245,6 +280,14 @@ TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
     return Vector2<AutoDiffXd>{config[0], 2 * config[0] + 1};
   };
 
+  options.parameterization =
+      IrisParameterizationFunction(parameterization_double,
+                                   /* parameterization_is_threadsafe */ true,
+                                   /* parameterization_dimension */ 1);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options),
+      ".*autodiff-compatible parameterization.*");
+
   options.parameterization = IrisParameterizationFunction(
       parameterization_double, parameterization_autodiff,
       /* parameterization_is_threadsafe */ true,
@@ -258,7 +301,6 @@ TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
   PlotEnvironmentAndRegionSubspace(
       region, options.parameterization.get_parameterization_double());
 }
-
 }  // namespace
 }  // namespace planning
 }  // namespace drake
