@@ -132,7 +132,52 @@ class ParameterizedSamePointConstraint : public solvers::Constraint {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
-  geometry::optimization::internal::SamePointConstraint same_point_constraint_;
+  SamePointConstraint same_point_constraint_;
+  const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+      parameterization_double_;
+  const std::function<AutoDiffVecXd(const AutoDiffVecXd&)>&
+      parameterization_autodiff_;
+  int parameterization_dimension_;
+};
+
+class ParameterizedPointsBoundedDistanceConstraint
+    : public solvers::Constraint {
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ParameterizedPointsBoundedDistanceConstraint);
+
+  ParameterizedPointsBoundedDistanceConstraint(
+      const multibody::MultibodyPlant<double>* plant,
+      const systems::Context<double>& context, const double max_distance,
+      const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+          parameterization_double,
+      const std::function<AutoDiffVecXd(const AutoDiffVecXd&)>&
+          parameterization_autodiff,
+      int parameterization_dimension);
+
+  ~ParameterizedPointsBoundedDistanceConstraint() override;
+
+  void set_frameA(const multibody::Frame<double>* frame) {
+    points_bounded_distance_constraint_.set_frameA(frame);
+  }
+
+  void set_frameB(const multibody::Frame<double>* frame) {
+    points_bounded_distance_constraint_.set_frameA(frame);
+  }
+
+  void set_max_distance(const double max_distance) {
+    UpdateUpperBound(Vector1d(max_distance * max_distance));
+  }
+
+ private:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override;
+
+  PointsBoundedDistanceConstraint points_bounded_distance_constraint_;
   const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
       parameterization_double_;
   const std::function<AutoDiffVecXd(const AutoDiffVecXd&)>&
