@@ -135,6 +135,10 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
 
   // The input domain must be bounded.
   DRAKE_THROW_UNLESS(domain.IsBounded());
+  DRAKE_THROW_UNLESS(
+      starting_ellipsoid.center().size() ==
+      options.parameterization.get_parameterization_dimension().value_or(
+          checker.plant().num_positions()));
 
   // Do a basic check of the parameterization dimension.
   const Eigen::VectorXd starting_ellipsoid_center_ambient =
