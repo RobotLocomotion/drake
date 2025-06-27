@@ -1,18 +1,28 @@
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/multibody/inverse_kinematics_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/inverse_kinematics/differential_inverse_kinematics.h"
+#include "drake/multibody/inverse_kinematics/differential_inverse_kinematics_controller.h"
 #include "drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h"
+#include "drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h"
 
 namespace drake {
 namespace pydrake {
 namespace internal {
+namespace {
 
-void DefineIkDifferential(py::module m) {
+using Ingredient = multibody::DifferentialInverseKinematicsSystem::Ingredient;
+using multibody::DifferentialInverseKinematicsSystem;
+using planning::CollisionChecker;
+using planning::DofMask;
+using planning::JointLimits;
+using Recipe = DifferentialInverseKinematicsSystem::Recipe;
+using systems::LeafSystem;
+
+void DefineIkDifferentialLegacy(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-
-  using drake::systems::LeafSystem;
 
   constexpr auto& doc = pydrake_doc.drake.multibody;
 
@@ -234,6 +244,209 @@ void DefineIkDifferential(py::module m) {
         .def("get_mutable_parameters", &Class::get_mutable_parameters,
             py_rvp::reference_internal, cls_doc.get_mutable_parameters.doc);
   }
+}
+
+// The pybind class for the PyClassDifferentialInverseKinematicsSystem.
+using PyClassDifferentialInverseKinematicsSystem =
+    py::class_<DifferentialInverseKinematicsSystem, LeafSystem<double>>;
+
+// The pybind class for PyClassDifferentialInverseKinematicsSystem's
+// ingredients.
+template <typename Derived>
+using PyClassIngredient = py::class_<Derived, Ingredient>;
+
+// Bind the common Ingredient API for both Ingredient and its Config struct.
+// The bound class gets returned so non-common APIs can be subsequently bound.
+//
+// Note: most Ingredients construct with only a Config parameter. One requires
+// a second parameter. The second template parameter allows for that one class
+// to specialize its constructor on the returned binding after the fact.
+template <typename Derived, bool bind_config_ctor = true, typename ClassDoc>
+PyClassIngredient<Derived> BindIngredient(const char* class_name,
+    const ClassDoc& cls_doc,
+    PyClassDifferentialInverseKinematicsSystem* diff_ik_cls) {
+  using Config = typename Derived::Config;
+
+  PyClassIngredient<Derived> cls(*diff_ik_cls, class_name, cls_doc.doc);
+
+  py::class_<Config> config_cls(cls, "Config", cls_doc.Config.doc);
+  config_cls.def(ParamInit<Config>());
+  DefAttributesUsingSerialize(&config_cls, cls_doc.Config);
+  DefReprUsingSerialize(&config_cls);
+  DefCopyAndDeepCopy(&config_cls);
+
+  cls  // BR
+      .def("GetConfig", &Derived::GetConfig, py_rvp::reference_internal,
+          cls_doc.GetConfig.doc)
+      .def("SetConfig", &Derived::SetConfig, py::arg("config"),
+          cls_doc.SetConfig.doc);
+  if constexpr (bind_config_ctor) {
+    cls.def(py::init<const Config&>(), py::arg("config"), cls_doc.ctor.doc);
+  }
+
+  return cls;
+}
+
+void DefineDifferentialIkSystem(py::module m) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::multibody;
+  constexpr auto& doc = pydrake_doc.drake.multibody;
+
+  constexpr auto& cls_doc = doc.DifferentialInverseKinematicsSystem;
+
+  // Instantiate the class so we can instantiate the nested types.
+  PyClassDifferentialInverseKinematicsSystem diff_ik_sys_cls(
+      m, "DifferentialInverseKinematicsSystem", cls_doc.doc);
+
+  {
+    constexpr auto nested_cls_doc = cls_doc.Ingredient;
+    py::class_<Ingredient>(diff_ik_sys_cls, "Ingredient", nested_cls_doc.doc);
+    // We're explicitly not binding `AddToProgram` because we expect only the
+    // C++ DifferentialInverseKinematicsSystem would call it.
+  }
+
+  {
+    using NestedClass = Recipe;
+    constexpr auto nested_cls_doc = cls_doc.Recipe;
+    py::class_<NestedClass>(diff_ik_sys_cls, "Recipe", nested_cls_doc.doc)
+        .def(py::init<>(), nested_cls_doc.ctor.doc)
+        .def(
+            "AddIngredient",
+            [](NestedClass* self, py::object ingredient) {
+              self->AddIngredient(
+                  make_shared_ptr_from_py_object<Ingredient>(ingredient));
+            },
+            py::arg("ingredient"), nested_cls_doc.AddIngredient.doc);
+    // We're explicitly not binding `AddToProgram` because we expect only the
+    // C++ DifferentialInverseKinematicsSystem would call it.
+  }
+
+  // We're explicitly not binding the nested `CallbackDetails` because it is
+  // part of the `AddToProgram` API that we expect only the C++
+  // DifferentialInverseKinematicsSystem would call.
+
+  using DiffIkSysClass = DifferentialInverseKinematicsSystem;
+  diff_ik_sys_cls  // BR
+      .def(py::init([](py::object recipe, std::string_view task_frame,
+                        py::object checker, const DofMask& active_dof,
+                        double time_step, double K_VX,
+                        const multibody::SpatialVelocity<double>& Vd_TG_limit) {
+        return std::make_unique<DiffIkSysClass>(
+            make_shared_ptr_from_py_object<Recipe>(recipe), task_frame,
+            make_shared_ptr_from_py_object<CollisionChecker>(checker),
+            active_dof, time_step, K_VX, Vd_TG_limit);
+      }),
+          py::arg("recipe"), py::arg("task_frame"),
+          py::arg("collision_checker"), py::arg("active_dof"),
+          py::arg("time_step"), py::arg("K_VX"), py::arg("Vd_TG_limit"),
+          cls_doc.ctor.doc)
+      .def("plant", &DiffIkSysClass::plant, py_rvp::reference_internal,
+          cls_doc.plant.doc)
+      .def("collision_checker", &DiffIkSysClass::collision_checker,
+          py_rvp::reference_internal, cls_doc.collision_checker.doc)
+      .def("active_dof", &DiffIkSysClass::active_dof,
+          py_rvp::reference_internal, cls_doc.active_dof.doc)
+      .def("time_step", &DiffIkSysClass::time_step, cls_doc.time_step.doc)
+      .def("task_frame", &DiffIkSysClass::task_frame,
+          py_rvp::reference_internal, cls_doc.task_frame.doc)
+      .def("get_input_port_position", &DiffIkSysClass::get_input_port_position,
+          py_rvp::reference_internal, cls_doc.get_input_port_position.doc)
+      .def("get_input_port_nominal_posture",
+          &DiffIkSysClass::get_input_port_nominal_posture,
+          py_rvp::reference_internal,
+          cls_doc.get_input_port_nominal_posture.doc)
+      .def("get_input_port_desired_cartesian_poses",
+          &DiffIkSysClass::get_input_port_desired_cartesian_poses,
+          py_rvp::reference_internal,
+          cls_doc.get_input_port_desired_cartesian_poses.doc)
+      .def("get_input_port_desired_cartesian_velocities",
+          &DiffIkSysClass::get_input_port_desired_cartesian_velocities,
+          py_rvp::reference_internal,
+          cls_doc.get_input_port_desired_cartesian_velocities.doc)
+      .def("get_output_port_commanded_velocity",
+          &DiffIkSysClass::get_output_port_commanded_velocity,
+          py_rvp::reference_internal,
+          cls_doc.get_output_port_commanded_velocity.doc);
+
+  BindIngredient<DiffIkSysClass::LeastSquaresCost>(
+      "LeastSquaresCost", cls_doc.LeastSquaresCost, &diff_ik_sys_cls);
+
+  BindIngredient<DiffIkSysClass::JointCenteringCost>(
+      "JointCenteringCost", cls_doc.JointCenteringCost, &diff_ik_sys_cls);
+
+  BindIngredient<DiffIkSysClass::CartesianPositionLimitConstraint>(
+      "CartesianPositionLimitConstraint",
+      cls_doc.CartesianPositionLimitConstraint, &diff_ik_sys_cls);
+
+  BindIngredient<DiffIkSysClass::CartesianVelocityLimitConstraint>(
+      "CartesianVelocityLimitConstraint",
+      cls_doc.CartesianVelocityLimitConstraint, &diff_ik_sys_cls);
+
+  {
+    using NestedClass = DiffIkSysClass::CollisionConstraint;
+    constexpr auto& nested_cls_doc = cls_doc.CollisionConstraint;
+    PyClassIngredient<NestedClass> nested_cls = BindIngredient<NestedClass>(
+        "CollisionConstraint", nested_cls_doc, &diff_ik_sys_cls);
+    nested_cls  // BR
+        .def("SetSelectDataForCollisionConstraintFunction",
+            &NestedClass::SetSelectDataForCollisionConstraintFunction,
+            py::arg("select_data_for_collision_constraint"),
+            nested_cls_doc.SetSelectDataForCollisionConstraintFunction.doc);
+  }
+
+  {
+    using NestedClass = DiffIkSysClass::JointVelocityLimitConstraint;
+    using Config = NestedClass::Config;
+    constexpr auto& nested_cls_doc = cls_doc.JointVelocityLimitConstraint;
+    PyClassIngredient<NestedClass> nested_cls =
+        BindIngredient<NestedClass, /* bind_config_ctor= */ false>(
+            "JointVelocityLimitConstraint", nested_cls_doc, &diff_ik_sys_cls);
+    nested_cls  // BR
+        .def(py::init<const Config&, const JointLimits&>(), py::arg("config"),
+            py::arg("joint_limits"), cls_doc.ctor.doc)
+        .def("GetJointLimits", &NestedClass::GetJointLimits,
+            nested_cls_doc.GetJointLimits.doc)
+        .def("SetJointLimits", &NestedClass::SetJointLimits,
+            py::arg("joint_limits"), nested_cls_doc.SetJointLimits.doc);
+  }
+}
+
+void DefineDifferentialIkController(py::module m) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::multibody;
+  constexpr auto& doc = pydrake_doc.drake.multibody;
+
+  using Class = DifferentialInverseKinematicsController;
+  constexpr auto& cls_doc = doc.DifferentialInverseKinematicsController;
+  py::class_<Class, systems::Diagram<double>>(
+      m, "DifferentialInverseKinematicsController")
+      .def(py::init([](py::object diff_ik_sys,
+                        const std::vector<int>& indices) {
+        return std::make_unique<Class>(
+            make_shared_ptr_from_py_object<DifferentialInverseKinematicsSystem>(
+                diff_ik_sys),
+            indices);
+      }),
+          py::arg("differential_inverse_kinematics"),
+          py::arg("planar_rotation_dof_indices"), cls_doc.ctor.doc)
+      .def("set_initial_position", &Class::set_initial_position,
+          py::arg("context"), py::arg("value"),
+          cls_doc.set_initial_position.doc)
+      .def("differential_inverse_kinematics",
+          &Class::differential_inverse_kinematics, py_rvp::reference_internal,
+          cls_doc.differential_inverse_kinematics.doc)
+      .def("get_mutable_differential_inverse_kinematics",
+          &Class::get_mutable_differential_inverse_kinematics,
+          py_rvp::reference_internal,
+          cls_doc.get_mutable_differential_inverse_kinematics.doc);
+}
+
+}  // namespace
+
+void DefineIkDifferential(py::module m) {
+  DefineIkDifferentialLegacy(m);
+  DefineDifferentialIkSystem(m);
+  DefineDifferentialIkController(m);
 }
 
 }  // namespace internal
