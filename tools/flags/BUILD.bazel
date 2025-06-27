@@ -283,6 +283,11 @@ bool_flag(
 )
 
 bool_flag(
+    name = "mosek_lazy_load",
+    build_setting_default = False,
+)
+
+bool_flag(
     name = "with_snopt",
     build_setting_default = False,
 )
