@@ -151,6 +151,8 @@ ParameterizedSamePointConstraint::ParameterizedSamePointConstraint(
       parameterization_autodiff_(parameterization_autodiff),
       parameterization_dimension_(parameterization_dimension) {}
 
+ParameterizedSamePointConstraint::~ParameterizedSamePointConstraint() = default;
+
 void ParameterizedSamePointConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
   Eigen::VectorXd q_latent = x.head(parameterization_dimension_);
@@ -196,6 +198,9 @@ ParameterizedPointsBoundedDistanceConstraint::
       parameterization_double_(parameterization_double),
       parameterization_autodiff_(parameterization_autodiff),
       parameterization_dimension_(parameterization_dimension) {}
+
+ParameterizedPointsBoundedDistanceConstraint::
+    ~ParameterizedPointsBoundedDistanceConstraint() = default;
 
 void ParameterizedPointsBoundedDistanceConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
