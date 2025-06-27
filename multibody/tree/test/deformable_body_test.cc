@@ -142,6 +142,36 @@ TEST_F(DeformableBodyTest, SetGetPositions) {
   EXPECT_TRUE(CompareMatrices(body_->GetPositions(*plant_context_), q));
 }
 
+TEST_F(DeformableBodyTest, SetGetVelocities) {
+  const int n = body_->num_dofs();
+  Matrix3X<double> v(3, n / 3);
+  for (int i = 0; i < v.cols(); ++i) {
+    v.col(i) = Vector3d(0.4 * i, -0.5 * i, 0.6 * i);
+  }
+  body_->SetVelocities(plant_context_, v);
+  EXPECT_TRUE(CompareMatrices(body_->GetVelocities(*plant_context_), v));
+}
+
+TEST_F(DeformableBodyTest, SetGetPositionsAndVelocities) {
+  const int n = body_->num_dofs();
+  const int num_nodes = n / 3;
+  Matrix3X<double> q(3, num_nodes);
+  for (int i = 0; i < q.cols(); ++i) {
+    q.col(i) = Vector3d(0.1 * i, -0.2 * i, 0.3 * i);
+  }
+  Matrix3X<double> v(3, num_nodes);
+  for (int i = 0; i < v.cols(); ++i) {
+    v.col(i) = Vector3d(0.4 * i, -0.5 * i, 0.6 * i);
+  }
+  body_->SetPositionsAndVelocities(plant_context_, q, v);
+  EXPECT_TRUE(CompareMatrices(body_->GetPositions(*plant_context_), q));
+  EXPECT_TRUE(CompareMatrices(body_->GetVelocities(*plant_context_), v));
+  const Matrix3X<double> qv = body_->GetPositionsAndVelocities(*plant_context_);
+  EXPECT_EQ(qv.cols(), 2 * num_nodes);
+  EXPECT_TRUE(CompareMatrices(qv.leftCols(num_nodes), q));
+  EXPECT_TRUE(CompareMatrices(qv.rightCols(num_nodes), v));
+}
+
 TEST_F(DeformableBodyTest, Parallelism) {
   mutable_body_->set_parallelism(Parallelism(4));
   EXPECT_EQ(body_->fem_model().parallelism().num_threads(), 4);

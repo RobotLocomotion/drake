@@ -180,6 +180,38 @@ class DeformableBody final : public MultibodyElement<T> {
   void SetPositions(systems::Context<T>* context,
                     const Eigen::Ref<const Matrix3X<T>>& q) const;
 
+  /** Sets the vertex velocities of this deformable body in the provided
+   `context`.
+   @param[in, out] context The context associated with the MultibodyPlant that
+                           owns this body.
+   @param[in] v            A 3×N matrix of vertex velocities.
+
+   @throws std::exception if any of the following conditions are met:
+     1. `context` is nullptr.
+     2. `context` does not belong to the MultibodyPlant that owns this body.
+     3. The number of columns of `v` does not match the number of vertices of
+        this body.
+     4. `v` contains non-finite values. */
+  void SetVelocities(systems::Context<T>* context,
+                     const Eigen::Ref<const Matrix3X<T>>& v) const;
+
+  /** Sets the vertex positions and velocities of this deformable body in the
+   provided `context`.
+   @param[in, out] context The context associated with the MultibodyPlant that
+                           owns this body.
+   @param[in] q            A 3×N matrix of vertex positions.
+   @param[in] v            A 3×N matrix of vertex velocities.
+
+   @throws std::exception if any of the following conditions are met:
+     1. `context` is nullptr.
+     2. `context` does not belong to the MultibodyPlant that owns this body.
+     3. The number of columns of `q` or `v` does not match the number of
+        vertices of this body.
+     4. `q` or `v` contains non-finite values. */
+  void SetPositionsAndVelocities(systems::Context<T>* context,
+                                 const Eigen::Ref<const Matrix3X<T>>& q,
+                                 const Eigen::Ref<const Matrix3X<T>>& v) const;
+
   /** Copies out the matrix of vertex positions for this deformable body in the
    provided `context`.
 
@@ -190,6 +222,30 @@ class DeformableBody final : public MultibodyElement<T> {
    @throws std::exception if `context` does not belong to the MultibodyPlant
    that owns this body. */
   Matrix3X<T> GetPositions(const systems::Context<T>& context) const;
+
+  /** Copies out the matrix of vertex velocities for this deformable body in the
+   provided `context`.
+
+   @param[in] context The context associated with the MultibodyPlant that owns
+                      this body.
+   @retval v          A 3×N matrix containing the velocities of all vertices of
+                      the body.
+   @throws std::exception if `context` does not belong to the MultibodyPlant
+   that owns this body. */
+  Matrix3X<T> GetVelocities(const systems::Context<T>& context) const;
+
+  /** Copies out the matrix of vertex positions and velocities for this
+   deformable body in the provided `context`. The first N columns are the
+   positions and the next N columns are the velocities.
+
+   @param[in] context The context associated with the MultibodyPlant that owns
+                      this body.
+   @return A 3x2N matrix containing the positions and velocities of all
+           vertices of the body.
+   @throws std::exception if `context` does not belong to the MultibodyPlant
+   that owns this body. */
+  Matrix3X<T> GetPositionsAndVelocities(
+      const systems::Context<T>& context) const;
 
   /** @return true if this deformable body is enabled.
    @throw std::exception if the passed in context isn't compatible with the
