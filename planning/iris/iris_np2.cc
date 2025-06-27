@@ -2,6 +2,8 @@
 
 #include <variant>
 
+#include <common_robotics_utilities/parallelism.hpp>
+
 #include "drake/common/text_logging.h"
 #include "drake/geometry/optimization/affine_ball.h"
 #include "drake/geometry/optimization/cartesian_product.h"
@@ -19,6 +21,9 @@
 namespace drake {
 namespace planning {
 
+using common_robotics_utilities::parallelism::DegreeOfParallelism;
+using common_robotics_utilities::parallelism::ParallelForBackend;
+using common_robotics_utilities::parallelism::StaticParallelForIndexLoop;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
@@ -182,10 +187,26 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   CheckInitialConditions(checker, starting_ellipsoid, domain, options);
 
   const auto& plant = checker.plant();
-  const auto& context = checker.UpdatePositions(starting_ellipsoid.center());
+  const int nq = plant.num_positions();
+
+  const Eigen::VectorXd starting_ellipsoid_center_ambient =
+      options.parameterization.get_parameterization_double()(
+          starting_ellipsoid.center());
+  const int computed_ambient_dimension =
+      starting_ellipsoid_center_ambient.size();
+  if (computed_ambient_dimension != nq) {
+    throw std::runtime_error(fmt::format(
+        "The plant has {} positions, but the given parameterization "
+        "returned a point with the wrong dimension (its size was "
+        "{}) when called on {}.",
+        nq, computed_ambient_dimension,
+        fmt_eigen(starting_ellipsoid.center().transpose())));
+  }
+
+  const auto& context =
+      checker.UpdatePositions(starting_ellipsoid_center_ambient);
   plant.ValidateContext(context);
 
-  const int nq = plant.num_positions();
   const Eigen::VectorXd seed = starting_ellipsoid.center();
 
   HPolyhedron P(domain);
@@ -368,10 +389,39 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           P_candidate, N_k, options.sampled_iris_options.mixing_steps,
           &generators, &particles);
 
+      // Copy top slice of particles, applying thet parameterization function to
+      // each one, due to collision checker only accepting vectors of
+      // configurations.
+      // TODO(cohnt): Make ambient_particles an Eigen::MatrixXd and don't
+      // recreate it on each iteration.
+      std::vector<Eigen::VectorXd> ambient_particles(N_k);
+      const auto apply_parameterization = [&particles, &ambient_particles,
+                                           &options](const int thread_num,
+                                                     const int64_t index) {
+        unused(thread_num);
+        ambient_particles[index] =
+            options.parameterization.get_parameterization_double()(
+                particles[index]);
+      };
+
+      // TODO(cohnt): Rerwrite as a StaticParallelForRangeLoop.
+      const int num_threads_for_calling_parameterization =
+          options.parameterization.get_parameterization_is_threadsafe()
+              ? options.sampled_iris_options.parallelism.num_threads()
+              : 1;
+      StaticParallelForIndexLoop(
+          DegreeOfParallelism(num_threads_for_calling_parameterization), 0, N_k,
+          apply_parameterization, ParallelForBackend::BEST_AVAILABLE);
+
+      for (int i = 0; i < ssize(ambient_particles); ++i) {
+        // Only run this check in debug mode, because it's expensive.
+        DRAKE_ASSERT(ambient_particles[i].size() == nq);
+      }
+
       // Find all particles in collision.
       std::vector<uint8_t> particle_col_free =
           checker.CheckConfigsCollisionFree(
-              particles, options.sampled_iris_options.parallelism);
+              ambient_particles, options.sampled_iris_options.parallelism);
       int number_particles_in_collision = 0;
 
       particles_in_collision.clear();
@@ -456,9 +506,13 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
         std::pair<Eigen::VectorXd, int> closest_collision_info;
         closest_collision_info = std::make_pair(
-            particle, FindCollisionPairIndex(checker, inspector,
-                                             checker.UpdatePositions(particle),
-                                             sorted_pairs));
+            particle,
+            FindCollisionPairIndex(
+                checker, inspector,
+                checker.UpdatePositions(
+                    options.parameterization.get_parameterization_double()(
+                        particle)),
+                sorted_pairs));
 
         // Because the particle is from particles_in_collision,
         // FindCollisionPairIndex will always return an index corresponding to a
@@ -506,7 +560,9 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
         if (do_debugging_visualization) {
           ++num_points_drawn;
-          point_to_draw.head(nq) = particle;
+          Eigen::VectorXd ambient_particle =
+              options.parameterization.get_parameterization_double()(particle);
+          point_to_draw.head(nq) = ambient_particle;
           std::string path = fmt::format("iteration{:02}/{:03}/particle",
                                          iteration, num_points_drawn);
           options.sampled_iris_options.meshcat->SetObject(
@@ -520,7 +576,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
         if (solve_succeeded) {
           ++num_prog_successes;
           if (do_debugging_visualization) {
-            point_to_draw.head(nq) = closest;
+            point_to_draw.head(nq) =
+                options.parameterization.get_parameterization_double()(closest);
             std::string path = fmt::format("iteration{:02}/{:03}/found",
                                            iteration, num_points_drawn);
             options.sampled_iris_options.meshcat->SetObject(

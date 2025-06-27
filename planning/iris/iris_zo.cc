@@ -371,6 +371,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
       // Copy top slice of particles, applying thet parameterization function to
       // each one, due to collision checker only accepting vectors of
       // configurations.
+      // TODO(cohnt): Make ambient_particles an Eigen::MatrixXd and don't
+      // recreate it on each iteration.
       std::vector<Eigen::VectorXd> ambient_particles(N_k);
       const auto apply_parameterization = [&particles, &ambient_particles,
                                            &options](const int thread_num,
@@ -381,6 +383,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
                 particles[index]);
       };
 
+      // TODO(cohnt): Rerwrite as a StaticParallelForRangeLoop.
       StaticParallelForIndexLoop(DegreeOfParallelism(num_threads_to_use), 0,
                                  N_k, apply_parameterization,
                                  ParallelForBackend::BEST_AVAILABLE);
