@@ -6,8 +6,8 @@ def uritemplate_py_internal_repository(
     github_archive(
         name = name,
         repository = "python-hyper/uritemplate",
-        commit = "4.1.1",
-        sha256 = "64cae94edd83bbb0c2c49b15f2cb8192c3f8492af6bc468211d1e8b8496f5791",  # noqa
+        commit = "4.2.0",
+        sha256 = "b75ed8dcb1446d06f5b885de7629ffd1f88f26b4f3630ace21d108084938b473",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
