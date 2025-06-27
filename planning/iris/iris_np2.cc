@@ -1,5 +1,7 @@
 #include "drake/planning/iris/iris_np2.h"
 
+#include <variant>
+
 #include "drake/common/text_logging.h"
 #include "drake/geometry/optimization/affine_ball.h"
 #include "drake/geometry/optimization/cartesian_product.h"
@@ -32,6 +34,7 @@ using geometry::optimization::Hyperellipsoid;
 using geometry::optimization::internal::ClosestCollisionProgram;
 using geometry::optimization::internal::GeometryPairWithDistance;
 using geometry::optimization::internal::IrisConvexSetMaker;
+using geometry::optimization::internal::PointsBoundedDistanceConstraint;
 using geometry::optimization::internal::SamePointConstraint;
 using math::RigidTransform;
 using multibody::MultibodyPlant;
@@ -39,23 +42,43 @@ using solvers::SolverInterface;
 using systems::Context;
 
 namespace {
+
+double GetPaddingBetweenGeometries(const CollisionChecker& checker,
+                                   const SceneGraphInspector<double>& inspector,
+                                   const GeometryId geom_A,
+                                   const GeometryId geom_B) {
+  std::pair<FrameId, FrameId> frame_pair(inspector.GetFrameId(geom_A),
+                                         inspector.GetFrameId(geom_B));
+  std::pair<const multibody::RigidBody<double>*,
+            const multibody::RigidBody<double>*>
+      body_pair(checker.plant().GetBodyFromFrameId(frame_pair.first),
+                checker.plant().GetBodyFromFrameId(frame_pair.second));
+  DRAKE_THROW_UNLESS(body_pair.first != nullptr);
+  DRAKE_THROW_UNLESS(body_pair.second != nullptr);
+  return checker.GetPaddingBetween(*(body_pair.first), *(body_pair.second));
+}
+
 /* Given a context whose position represents a configuration known to be in
  * collision, find a pair of collision geometries which are in collision and
  * return the corresponding index in sorted_pairs. */
 int FindCollisionPairIndex(
-    const MultibodyPlant<double>& plant, const Context<double>& context,
+    const CollisionChecker& checker,
+    const SceneGraphInspector<double>& inspector,
+    const Context<double>& context,
     const std::vector<GeometryPairWithDistance>& sorted_pairs) {
   int pair_in_collision = -1;
   int i_pair = 0;
-  auto query_object =
-      plant.get_geometry_query_input_port().template Eval<QueryObject<double>>(
-          context);
+  auto query_object = checker.plant()
+                          .get_geometry_query_input_port()
+                          .template Eval<QueryObject<double>>(context);
   for (const auto& pair : sorted_pairs) {
     const double distance =
         query_object
             .ComputeSignedDistancePairClosestPoints(pair.geomA, pair.geomB)
             .distance;
-    if (distance < 0.0) {
+    const double padding =
+        GetPaddingBetweenGeometries(checker, inspector, pair.geomA, pair.geomB);
+    if (distance < padding) {
       pair_in_collision = i_pair;
       break;
     }
@@ -97,13 +120,9 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
         "IrisNp2 does not yet support collision checkers with added collision "
         "shapes.");
   }
-  if (checker.GetPaddingMatrix().cwiseAbs().maxCoeff() != 0.0) {
-    // A nonzero value implies nonzero padding. std::nullopt implies varying
-    // padding, so at least one such padding is nonzero.
-    // TODO(cohnt): Support nonzero padding.
+  if (checker.GetPaddingMatrix().minCoeff() < 0.0) {
     throw std::runtime_error(
-        "IrisNp2 does not yet support collision checkers with nonzero "
-        "padding.");
+        "IrisNp2 does not support collision checkers with negative padding.");
   }
 
   // The input domain must be bounded.
@@ -194,6 +213,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   const int n_collision_pairs = static_cast<int>(pairs.size());
   auto same_point_constraint =
       std::make_shared<SamePointConstraint>(&plant, context);
+  auto points_bounded_distance_constraint =
+      std::make_shared<PointsBoundedDistanceConstraint>(&plant, context, 0.0);
   std::map<std::pair<GeometryId, GeometryId>, std::vector<VectorXd>>
       counter_examples;
 
@@ -421,9 +442,9 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
         std::pair<Eigen::VectorXd, int> closest_collision_info;
         closest_collision_info = std::make_pair(
-            particle,
-            FindCollisionPairIndex(plant, checker.UpdatePositions(particle),
-                                   sorted_pairs));
+            particle, FindCollisionPairIndex(checker, inspector,
+                                             checker.UpdatePositions(particle),
+                                             sorted_pairs));
 
         // Because the particle is from particles_in_collision,
         // FindCollisionPairIndex will always return an index corresponding to a
@@ -433,12 +454,29 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
         auto pair_iterator =
             std::next(sorted_pairs.begin(), closest_collision_info.second);
+        DRAKE_THROW_UNLESS(pair_iterator != sorted_pairs.end());
         const auto collision_pair = *pair_iterator;
         std::pair<GeometryId, GeometryId> geom_pair(collision_pair.geomA,
                                                     collision_pair.geomB);
-
+        const double padding = GetPaddingBetweenGeometries(
+            checker, inspector, geom_pair.first, geom_pair.second);
+        if (padding > 0) {
+          points_bounded_distance_constraint->set_max_distance(padding);
+        }
+        std::variant<std::shared_ptr<SamePointConstraint>,
+                     std::shared_ptr<PointsBoundedDistanceConstraint>>
+            constraint =
+                padding > 0
+                    ? std::variant<
+                          std::shared_ptr<SamePointConstraint>,
+                          std::shared_ptr<PointsBoundedDistanceConstraint>>(
+                          points_bounded_distance_constraint)
+                    : std::variant<
+                          std::shared_ptr<SamePointConstraint>,
+                          std::shared_ptr<PointsBoundedDistanceConstraint>>(
+                          same_point_constraint);
         ClosestCollisionProgram prog(
-            same_point_constraint, *frames.at(collision_pair.geomA),
+            constraint, *frames.at(collision_pair.geomA),
             *frames.at(collision_pair.geomB), *sets.at(collision_pair.geomA),
             *sets.at(collision_pair.geomB), E, A.topRows(num_constraints),
             b.head(num_constraints));

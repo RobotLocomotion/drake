@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <optional>
+#include <variant>
 
 #include "drake/geometry/optimization/affine_ball.h"
 #include "drake/geometry/optimization/cartesian_product.h"
@@ -60,6 +61,45 @@ class SamePointConstraint : public solvers::Constraint {
       nullptr};
 };
 
+// Takes q, p_AA, and p_BB, and enforces that ||p_WA - p_WB||² <= d², where d is
+// a user-defined maximum distance.
+class PointsBoundedDistanceConstraint : public solvers::Constraint {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointsBoundedDistanceConstraint);
+
+  PointsBoundedDistanceConstraint(
+      const multibody::MultibodyPlant<double>* plant,
+      const systems::Context<double>& context, const double max_distance);
+
+  ~PointsBoundedDistanceConstraint() override;
+
+  void set_frameA(const multibody::Frame<double>* frame) {
+    same_point_constraint_.set_frameA(frame);
+  }
+
+  void set_frameB(const multibody::Frame<double>* frame) {
+    same_point_constraint_.set_frameB(frame);
+  }
+
+  void set_max_distance(const double max_distance) {
+    UpdateUpperBound(Vector1d(max_distance * max_distance));
+  }
+
+  void EnableSymbolic() { same_point_constraint_.EnableSymbolic(); }
+
+ private:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override;
+
+  geometry::optimization::internal::SamePointConstraint same_point_constraint_;
+};
+
 class ParameterizedSamePointConstraint : public solvers::Constraint {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ParameterizedSamePointConstraint);
 
@@ -112,7 +152,9 @@ class ParameterizedSamePointConstraint : public solvers::Constraint {
 class ClosestCollisionProgram {
  public:
   ClosestCollisionProgram(
-      std::shared_ptr<SamePointConstraint> same_point_constraint,
+      std::variant<std::shared_ptr<SamePointConstraint>,
+                   std::shared_ptr<PointsBoundedDistanceConstraint>>
+          same_point_constraint,
       const multibody::Frame<double>& frameA,
       const multibody::Frame<double>& frameB, const ConvexSet& setA,
       const ConvexSet& setB, const Hyperellipsoid& E,
