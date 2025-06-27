@@ -84,7 +84,7 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
         "IrisNp2 does not yet support specifying additional constriants.");
   }
 
-  if (!(options.parameterization.get_parameterization()(
+  if (!(options.parameterization.get_parameterization_double()(
             starting_ellipsoid.center()) == starting_ellipsoid.center())) {
     // TODO(cohnt): Support growing regions along a parameterized subspace.
     throw std::runtime_error(

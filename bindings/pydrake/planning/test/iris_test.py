@@ -124,23 +124,24 @@ class TestIrisZo(unittest.TestCase):
         self.assertEqual(
             options.parameterization.get_parameterization_dimension(), 2)
         self.assertTrue(
-            callable(options.parameterization.get_parameterization()))
+            callable(options.parameterization.get_parameterization_double()))
         s = np.array([0, 1])
-        q = options.parameterization.get_parameterization()(s)
+        q = options.parameterization.get_parameterization_double()(s)
         self.assertTrue(np.allclose(q,
                                     kin.ComputeQValue(s, q_star), atol=0))
 
         options2 = mut.IrisZoOptions()
         options2.parameterization = IrisParameterizationFunction(
-            options.parameterization.get_parameterization(),
+            options.parameterization.get_parameterization_double(),
             options.parameterization.get_parameterization_dimension())
         self.assertFalse(
             options2.parameterization.get_parameterization_is_threadsafe())
         self.assertEqual(
             options2.parameterization.get_parameterization_dimension(), 2)
         self.assertTrue(
-            callable(options2.parameterization.get_parameterization()))
-        q2 = options2.parameterization.get_parameterization()(np.array(s))
+            callable(options2.parameterization.get_parameterization_double()))
+        q2 = options2.parameterization.get_parameterization_double()(
+            np.array(s))
         self.assertTrue(np.allclose(q2,
                                     kin.ComputeQValue(s, q_star), atol=0))
 
@@ -151,8 +152,9 @@ class TestIrisZo(unittest.TestCase):
         self.assertEqual(
             options3.parameterization.get_parameterization_dimension(), 2)
         self.assertTrue(
-            callable(options3.parameterization.get_parameterization()))
-        q3 = options3.parameterization.get_parameterization()(np.array(s))
+            callable(options3.parameterization.get_parameterization_double()))
+        q3 = options3.parameterization.get_parameterization_double()(
+            np.array(s))
         self.assertTrue(np.allclose(q3,
                                     kin.ComputeQValue(s, q_star), atol=0))
 
@@ -164,7 +166,8 @@ class TestIrisZo(unittest.TestCase):
             options4.parameterization.get_parameterization_is_threadsafe())
         self.assertEqual(
             options4.parameterization.get_parameterization_dimension(), 1)
-        q3 = options4.parameterization.get_parameterization()(np.zeros(1))[0]
+        q3 = options4.parameterization.get_parameterization_double()(
+            np.zeros(1))[0]
         self.assertEqual(q3, 2 * 0 + 1)
 
 

@@ -187,7 +187,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
   const double constraints_tol = 1e-6;
 
   const Eigen::VectorXd starting_ellipsoid_center_ambient =
-      options.parameterization.get_parameterization()(
+      options.parameterization.get_parameterization_double()(
           starting_ellipsoid_center);
   const int computed_ambient_dimension =
       starting_ellipsoid_center_ambient.size();
@@ -245,7 +245,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
       Eigen::VectorXd conf =
           options.sampled_iris_options.containment_points->col(col);
       cont_vec.emplace_back(
-          options.parameterization.get_parameterization()(conf));
+          options.parameterization.get_parameterization_double()(conf));
       DRAKE_ASSERT(cont_vec.back().size() == ambient_dimension);
     }
 
@@ -277,7 +277,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
     options.sampled_iris_options.meshcat->SetObject(
         path, Sphere(0.06), geometry::Rgba(0.1, 1, 1, 1.0));
     Eigen::VectorXd conf_ambient =
-        options.parameterization.get_parameterization()(
+        options.parameterization.get_parameterization_double()(
             current_ellipsoid_center);
     DRAKE_ASSERT(conf_ambient.size() == ambient_dimension);
     point_to_draw.head(ambient_dimension) = conf_ambient;
@@ -377,7 +377,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
                                                      const int64_t index) {
         unused(thread_num);
         ambient_particles[index] =
-            options.parameterization.get_parameterization()(particles[index]);
+            options.parameterization.get_parameterization_double()(
+                particles[index]);
       };
 
       StaticParallelForIndexLoop(DegreeOfParallelism(num_threads_to_use), 0,
@@ -483,7 +484,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
 
         // Update current point using a fixed number of bisection steps.
         Eigen::VectorXd current_point_ambient =
-            options.parameterization.get_parameterization()(curr_pt_lower);
+            options.parameterization.get_parameterization_double()(
+                curr_pt_lower);
         DRAKE_ASSERT(current_point_ambient.size() ==
                      checker.plant().num_positions());
         if (!checker.CheckConfigCollisionFree(current_point_ambient,
@@ -497,7 +499,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
           for (int i = 0; i < options.bisection_steps; ++i) {
             Eigen::VectorXd query = 0.5 * (curr_pt_upper + curr_pt_lower);
             Eigen::VectorXd query_ambient =
-                options.parameterization.get_parameterization()(query);
+                options.parameterization.get_parameterization_double()(query);
             DRAKE_ASSERT(query_ambient.size() ==
                          checker.plant().num_positions());
             if (checker.CheckConfigCollisionFree(query_ambient, thread_num) &&
@@ -600,7 +602,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
               options.sampled_iris_options.meshcat->SetObject(
                   path, Sphere(0.03), geometry::Rgba(1, 1, 0.1, 1.0));
               Eigen::VectorXd ambient_particle =
-                  options.parameterization.get_parameterization()(
+                  options.parameterization.get_parameterization_double()(
                       nearest_particle);
               DRAKE_ASSERT(ambient_particle.size() == ambient_dimension);
               point_to_draw.head(ambient_dimension) = ambient_particle;
@@ -690,7 +692,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
       break;
     }
     if (!checker.CheckConfigCollisionFree(
-            options.parameterization.get_parameterization()(
+            options.parameterization.get_parameterization_double()(
                 current_ellipsoid_center)) ||
         !CheckProgConstraints(
             options.sampled_iris_options.prog_with_additional_constraints,

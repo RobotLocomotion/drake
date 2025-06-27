@@ -14,10 +14,14 @@ IrisParameterizationFunction::IrisParameterizationFunction(
   const int dimension = kin->plant().num_positions();
   DRAKE_DEMAND(dimension > 0);
 
-  parameterization_ = [kin, q_star_captured = Eigen::VectorXd(q_star_val)](
-                          const Eigen::VectorXd& s_val) {
-    return kin->ComputeQValue(s_val, q_star_captured);
-  };
+  parameterization_double_ =
+      [kin, q_star_captured =
+                Eigen::VectorXd(q_star_val)](const Eigen::VectorXd& s_val) {
+        return kin->ComputeQValue(s_val, q_star_captured);
+      };
+  // TODO(cohnt): Construct a VectorX<AutoDiffXd> parameterization when using
+  // this constructor as well.
+  parameterization_autodiff_ = nullptr;
 
   parameterization_is_threadsafe_ = true;
   parameterization_dimension_ = dimension;
@@ -43,7 +47,7 @@ IrisParameterizationFunction::IrisParameterizationFunction(
   // Note that in this lambda, we copy the shared_ptr variables, ensuring that
   // variables is kept alive without making a copy of the individual Variable
   // objects (which would break the substitution machinery).
-  parameterization_ =
+  parameterization_double_ =
       [expression_parameterization_captured =
            Eigen::VectorX<symbolic::Expression>(expression_parameterization),
        variables_captured = Eigen::VectorX<symbolic::Variable>(variables)](
@@ -59,6 +63,9 @@ IrisParameterizationFunction::IrisParameterizationFunction(
             });
         return out;
       };
+  // TODO(cohnt): Construct a VectorX<AutoDiffXd> parameterization when using
+  // this constructor as well.
+  parameterization_autodiff_ = nullptr;
 
   parameterization_is_threadsafe_ = true;
   parameterization_dimension_ = dimension;
