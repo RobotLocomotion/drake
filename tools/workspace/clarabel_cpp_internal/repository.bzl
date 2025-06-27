@@ -9,8 +9,8 @@ def clarabel_cpp_internal_repository(
         # drake/tools/workspace/new_release.py.  When practical, all members
         # of this cohort should be updated at the same time.
         repository = "oxfordcontrol/Clarabel.cpp",
-        commit = "v0.11.0",
-        sha256 = "a4a8002c4b98b96bf213e5698c9bfc63ef269c9f9a1a2c42fbb0e766f07ee3ec",  # noqa
+        commit = "v0.11.1",
+        sha256 = "efa90703958075cc59afe8f54ca164eff057f0fcf9877291bbef11cf960f80c8",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/extern_c.patch",
