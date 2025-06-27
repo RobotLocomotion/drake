@@ -144,41 +144,32 @@ void PopulateParticlesByUniformSampling(
 ParameterizedSamePointConstraint::ParameterizedSamePointConstraint(
     const multibody::MultibodyPlant<double>* plant,
     const systems::Context<double>& context,
-    const IrisParameterizationFunction& parameterization)
-    : Constraint(3,
-                 parameterization.get_parameterization_dimension().value_or(
-                     plant->num_positions()) +
-                     6,
-                 Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero()),
+    const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+        parameterization_double,
+    const std::function<AutoDiffVecXd(const AutoDiffVecXd&)>&
+        parameterization_autodiff,
+    int parameterization_dimension)
+    : Constraint(3, parameterization_dimension + 6, Eigen::Vector3d::Zero(),
+                 Eigen::Vector3d::Zero()),
       same_point_constraint_(plant, context),
-      parameterization_(parameterization) {}
+      parameterization_double_(parameterization_double),
+      parameterization_autodiff_(parameterization_autodiff),
+      parameterization_dimension_(parameterization_dimension) {}
 
 void ParameterizedSamePointConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
-  // Note that same_point_constraint_.num_vars() is equal to six plus the number
-  // of positions in the underlying plant.
-  int parameterization_dimension =
-      parameterization_.get_parameterization_dimension().value_or(
-          same_point_constraint_.num_vars() - 6);
-  Eigen::VectorXd q_latent = x.head(parameterization_dimension);
-  Eigen::VectorXd q_full =
-      parameterization_.get_parameterization_double()(q_latent);
-  Eigen::VectorXd x_full(same_point_constraint_.num_vars() + 6);
+  Eigen::VectorXd q_latent = x.head(parameterization_dimension_);
+  Eigen::VectorXd q_full = parameterization_double_(q_latent);
+  Eigen::VectorXd x_full(same_point_constraint_.num_vars());
   x_full << q_full, x.tail(6);
   same_point_constraint_.Eval(x_full, y);
 }
 
 void ParameterizedSamePointConstraint::DoEval(
     const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
-  // Note that same_point_constraint_.num_vars() is equal to six plus the number
-  // of positions in the underlying plant.
-  int parameterization_dimension =
-      parameterization_.get_parameterization_dimension().value_or(
-          same_point_constraint_.num_vars() - 6);
-  AutoDiffVecXd q_latent = x.head(parameterization_dimension);
-  AutoDiffVecXd q_full =
-      parameterization_.get_parameterization_autodiff()(q_latent);
-  AutoDiffVecXd x_full(same_point_constraint_.num_vars() + 6);
+  AutoDiffVecXd q_latent = x.head(parameterization_dimension_);
+  AutoDiffVecXd q_full = parameterization_autodiff_(q_latent);
+  AutoDiffVecXd x_full(same_point_constraint_.num_vars());
   x_full << q_full, x.tail(6);
   same_point_constraint_.Eval(x_full, y);
 }

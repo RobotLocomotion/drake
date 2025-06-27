@@ -325,7 +325,11 @@ class ParameterizedSamePointConstraint : public solvers::Constraint {
   ParameterizedSamePointConstraint(
       const multibody::MultibodyPlant<double>* plant,
       const systems::Context<double>& context,
-      const IrisParameterizationFunction& parameterization);
+      const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+          parameterization_double,
+      const std::function<AutoDiffVecXd(const AutoDiffVecXd&)>&
+          parameterization_autodiff,
+      int parameterization_dimension);
 
   ~ParameterizedSamePointConstraint() override;
 
@@ -348,7 +352,11 @@ class ParameterizedSamePointConstraint : public solvers::Constraint {
               VectorX<symbolic::Expression>* y) const override;
 
   geometry::optimization::internal::SamePointConstraint same_point_constraint_;
-  IrisParameterizationFunction parameterization_;
+  const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+      parameterization_double_;
+  const std::function<AutoDiffVecXd(const AutoDiffVecXd&)>&
+      parameterization_autodiff_;
+  int parameterization_dimension_;
 };
 
 }  // namespace internal
