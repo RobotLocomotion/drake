@@ -101,6 +101,7 @@ class PointsBoundedDistanceConstraint : public solvers::Constraint {
 };
 
 class ParameterizedSamePointConstraint : public solvers::Constraint {
+ public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ParameterizedSamePointConstraint);
 
   ParameterizedSamePointConstraint(
@@ -142,6 +143,7 @@ class ParameterizedSamePointConstraint : public solvers::Constraint {
 
 class ParameterizedPointsBoundedDistanceConstraint
     : public solvers::Constraint {
+ public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ParameterizedPointsBoundedDistanceConstraint);
 
   ParameterizedPointsBoundedDistanceConstraint(
@@ -197,8 +199,11 @@ class ParameterizedPointsBoundedDistanceConstraint
 class ClosestCollisionProgram {
  public:
   ClosestCollisionProgram(
-      std::variant<std::shared_ptr<SamePointConstraint>,
-                   std::shared_ptr<PointsBoundedDistanceConstraint>>
+      std::variant<
+          std::shared_ptr<SamePointConstraint>,
+          std::shared_ptr<PointsBoundedDistanceConstraint>,
+          std::shared_ptr<ParameterizedSamePointConstraint>,
+          std::shared_ptr<ParameterizedPointsBoundedDistanceConstraint>>
           same_point_constraint,
       const multibody::Frame<double>& frameA,
       const multibody::Frame<double>& frameB, const ConvexSet& setA,
