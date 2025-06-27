@@ -41,5 +41,8 @@ void DefineGeometryVisualizers(py::module m);
 /** Defines the mesh refinement functions. See geometry_py_refine.cc. */
 void DefineGeometryRefine(py::module m);
 
+/** Define the bounding box functions. See geometry_py_bounding_box.cc. */
+void DefineGeometryBoundingBox(py::module m);
+
 }  // namespace pydrake
 }  // namespace drake
