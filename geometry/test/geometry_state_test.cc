@@ -3190,6 +3190,19 @@ TEST_F(GeometryStateTest, ConvexHullForProximityGeometry) {
   EXPECT_EQ(geometry_state_.GetConvexHull(mesh_id), nullptr);
 }
 
+// The implementation of computing the OBB is tested in
+// shape_specification_test.cc. This test simply comfirms that the right
+// function is called.
+TEST_F(GeometryStateTest, GetObbInGeometryFrame) {
+  SetUpSingleSourceTree(Assign::kIllustration);
+  const std::optional<Obb> maybe_obb =
+      geometry_state_.GetObbInGeometryFrame(geometries_[0]);
+  EXPECT_TRUE(maybe_obb.has_value());
+  EXPECT_EQ(maybe_obb->center(), Vector3d::Zero());
+  EXPECT_TRUE(
+      CompareMatrices(maybe_obb->half_width(), Vector3d(1, 1, 1), 1e-13));
+}
+
 // Test the ability to reassign proximity properties to a geometry that already
 // has the proximity role.
 TEST_F(GeometryStateTest, ModifyProximityProperties) {
