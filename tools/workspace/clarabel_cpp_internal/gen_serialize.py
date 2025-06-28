@@ -49,7 +49,7 @@ def _settings_names():
     # Read the DefaultSettings.h header.
     manifest = runfiles.Create()
     headers_dir = "clarabel_cpp_internal/include/cpp"
-    header = manifest.Rlocation(f"{headers_dir}/DefaultSettings.h")
+    header = manifest.Rlocation(f"{headers_dir}/DefaultSettings.hpp")
     with open(header) as f:
         text = f.read()
 
