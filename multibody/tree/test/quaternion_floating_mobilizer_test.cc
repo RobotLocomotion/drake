@@ -230,6 +230,7 @@ TEST_F(QuaternionFloatingMobilizerTest, KinematicMapping) {
   mobilizer_->CalcNplusMatrix(*context_, &Nplus);
 
   // Ensure the Nplus matrix is the left pseudoinverse of the N matrix.
+  // In other works, Nplus * N = [I₆₆] (6x6 identity matrix).
   MatrixX<double> Nplus_x_N = Nplus * N;
   EXPECT_TRUE(CompareMatrices(Nplus_x_N, MatrixX<double>::Identity(6, 6),
                               kTolerance, MatrixCompareType::relative));
@@ -243,23 +244,16 @@ TEST_F(QuaternionFloatingMobilizerTest, KinematicMapping) {
   // Calculate the NDot(q) matrix that appears in q̈ = Ṅ(q,q̇)⋅v + N⁺(q)⋅v̇.
   MatrixX<double> NDot(7, 6);
   mobilizer_->CalcNDotMatrix(*context_, &NDot);
-  // TODO(Mitiguy) Fix test.
-  EXPECT_FALSE(CompareMatrices(NDot, MatrixX<double>::Zero(7, 6), kTolerance,
-                               MatrixCompareType::relative));
 
   // Calculate the NplusDot(q) matrix that appears in v̇ = Ṅ⁺(q,q̇)⋅v + N⁺(q)⋅q̈.
   MatrixX<double> NplusDot(6, 7);
   mobilizer_->CalcNplusDotMatrix(*context_, &NplusDot);
-  EXPECT_FALSE(CompareMatrices(NplusDot, MatrixX<double>::Zero(6, 7),
-                               kTolerance,  MatrixCompareType::relative));
 
-#if 0
-  // Until it is implemented, ensure calculating Ṅ⁺(q,q̇) throws an exception.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      mobilizer_->CalcNplusDotMatrix(*context_, &NplusDot),
-      ".*The function DoCalcNplusDotMatrix\\(\\) has not "
-      "been implemented for this mobilizer.*");
-#endif
+  // Since N⁺(q) * N(q) = [I₆₆] (the 6x6 identity matrix), then
+  // Ṅ⁺(q,q̇) * N(q) + N⁺(q) * Ṅ(q,q̇) = [0₆₆] (the 6x6 zero matrix).
+  MatrixX<double> zero_matrix_expected = NplusDot * N + Nplus * NDot;
+  EXPECT_FALSE(CompareMatrices(NplusDot, MatrixX<double>::Zero(6, 6),
+                               kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(QuaternionFloatingMobilizerTest, CheckExceptionMessage) {
