@@ -3,7 +3,9 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/maybe_pause_for_user.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/planning/iris/iris_common.h"
 #include "drake/planning/iris/test/iris_test_utilities.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
@@ -14,11 +16,13 @@ namespace drake {
 namespace planning {
 namespace {
 
+using common::MaybePauseForUser;
 using Eigen::Vector2d;
 using Eigen::VectorX;
 using Eigen::VectorXd;
 using geometry::Sphere;
 using geometry::optimization::HPolyhedron;
+using geometry::optimization::Hyperellipsoid;
 using symbolic::Expression;
 using symbolic::Variable;
 
@@ -36,19 +40,6 @@ TEST_F(JointLimits1D, UnsupportedOptions) {
   IrisNp2Options options;
   auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
   ASSERT_TRUE(sgcc_ptr != nullptr);
-
-  options.sampled_iris_options.containment_points = Eigen::MatrixXd::Zero(1, 3);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options),
-      ".*additional containment points.*");
-  options.sampled_iris_options.containment_points = std::nullopt;
-
-  solvers::MathematicalProgram prog;
-  options.sampled_iris_options.prog_with_additional_constraints = &prog;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options),
-      ".*additional constriants.*");
-  options.sampled_iris_options.prog_with_additional_constraints = nullptr;
 
   VectorX<Variable> varable_vector(1);
   VectorX<Expression> expression_vector(1);
@@ -221,6 +212,141 @@ TEST_F(ConvexConfigurationSpace, IrisNp2Test) {
       IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
   CheckRegion(region);
   PlotEnvironmentAndRegion(region);
+}
+
+// Verify that we throw a reasonable error when the initial point is in
+// collision, and when the initial point violates an additional constraint.
+TEST_F(ConvexConfigurationSpaceWithThreadsafeConstraint, BadInitialEllipsoid) {
+  IrisNp2Options options;
+  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  options.sampled_iris_options.prog_with_additional_constraints = &prog_;
+
+  Hyperellipsoid ellipsoid_in_collision =
+      Hyperellipsoid::MakeHypersphere(1e-2, Eigen::Vector2d(-1.0, 1.0));
+  Hyperellipsoid ellipsoid_violates_constraint =
+      Hyperellipsoid::MakeHypersphere(1e-2, Eigen::Vector2d(-0.1, 0.0));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisNp2(*sgcc_ptr, ellipsoid_in_collision, domain_, options),
+      ".*Starting ellipsoid center.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisNp2(*sgcc_ptr, ellipsoid_violates_constraint, domain_, options),
+      ".*Starting ellipsoid center.*");
+}
+
+TEST_F(ConvexConfigurationSpaceWithThreadsafeConstraint, IrisNp2Test) {
+  IrisNp2Options options;
+  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  // We use IPOPT for this test since SNOPT has a large number of solve failures
+  // in this environment.
+  solvers::IpoptSolver solver;
+  options.solver = &solver;
+
+  options.sampled_iris_options.prog_with_additional_constraints = &prog_;
+  options.sampled_iris_options.verbose = true;
+
+  meshcat_->Delete();
+  options.sampled_iris_options.meshcat = meshcat_;
+
+  HPolyhedron region =
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+  CheckRegion(region);
+  PlotEnvironmentAndRegion(region);
+}
+
+TEST_F(ConvexConfigurationSpaceWithNotThreadsafeConstraint, IrisNp2Test) {
+  IrisNp2Options options;
+  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  // We use IPOPT for this test since SNOPT has a large number of solve failures
+  // in this environment.
+  solvers::IpoptSolver solver;
+  options.solver = &solver;
+
+  options.sampled_iris_options.prog_with_additional_constraints = &prog_;
+
+  HPolyhedron region =
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+  CheckRegion(region);
+}
+
+// First, we verify that IrisZo throws when a single containment point is
+// passed. In this case, the convex hull of the containment points does not
+// containt center of the starting ellipsoid.
+TEST_F(FourCornersBoxes, SingleContainmentPoint) {
+  IrisNp2Options options;
+  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  Eigen::Matrix2Xd single_containment_point(2, 1);
+  single_containment_point << 0, 1;
+
+  options.sampled_iris_options.verbose = true;
+  options.sampled_iris_options.configuration_space_margin = 0.04;
+  options.sampled_iris_options.containment_points = single_containment_point;
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options),
+      ".*outside of the convex hull of the containment points.*");
+}
+
+// Test if we can force the containment of a two points (the ellipsoid center
+// and one other point). This test is explicitly added to ensure that the
+// procedure works when using fewer points than a simplex are given.
+TEST_F(FourCornersBoxes, TwoContainmentPoints) {
+  IrisNp2Options options;
+  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  Eigen::Matrix2Xd containment_points(2, 2);
+  // clang-format off
+  containment_points << 0, starting_ellipsoid_.center().x(),
+                        1, starting_ellipsoid_.center().y();
+  // clang-format on
+  options.sampled_iris_options.verbose = true;
+  meshcat_->Delete();
+  options.sampled_iris_options.meshcat = meshcat_;
+  options.sampled_iris_options.configuration_space_margin = 0.04;
+  options.sampled_iris_options.containment_points = containment_points;
+
+  HPolyhedron region =
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+  CheckRegionContainsPoints(region, containment_points);
+  PlotEnvironmentAndRegion(region);
+  PlotContainmentPoints(containment_points);
+  MaybePauseForUser();
+}
+
+TEST_F(FourCornersBoxes, FourContainmentPoints) {
+  IrisNp2Options options;
+  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  Eigen::Matrix2Xd containment_points(2, 4);
+  double xw, yw;
+  xw = 0.4;
+  yw = 0.28;
+  // clang-format off
+  containment_points << -xw, xw,  xw, -xw,
+                         yw, yw, -yw, -yw;
+  // clang-format on
+  options.sampled_iris_options.verbose = true;
+  meshcat_->Delete();
+  options.sampled_iris_options.meshcat = meshcat_;
+  options.sampled_iris_options.containment_points = containment_points;
+  options.sampled_iris_options.max_iterations_separating_planes = 100;
+  options.sampled_iris_options.max_iterations = -1;
+  HPolyhedron region =
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+
+  CheckRegionContainsPoints(region, containment_points);
+  PlotEnvironmentAndRegion(region);
+  PlotContainmentPoints(containment_points);
+  MaybePauseForUser();
 }
 
 }  // namespace

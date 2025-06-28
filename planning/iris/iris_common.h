@@ -12,8 +12,11 @@
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/geometry/optimization/vpolytope.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
+#include "drake/planning/collision_checker.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace planning {
@@ -265,6 +268,39 @@ void AddTangentToPolytope(
     double configuration_space_margin,
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>* A,
     Eigen::VectorXd* b, int* num_constraints);
+
+// Given a pointer to a MathematicalProgram and a single particle, check whether
+// the particle satisfies the constraints. If a nullptr is given for the
+// program, return true, since the constraints are trivially-satisfied.
+bool CheckProgConstraints(const solvers::MathematicalProgram* prog_ptr,
+                          const Eigen::VectorXd& particle, const double tol);
+
+// Given a pointer to a MathematicalProgram and a list of particles (where each
+// particle is a choice of values for its decision variables), check in parallel
+// which particles satisfy all constraints, and which don't. Each entry in the
+// output vector corresponds to the corresponding particle. 1 means it satisfies
+// the constraints, 0 means it doesn't. If a nullptr is given for the program,
+// return a vector of all 1s, since all particles trivially satisfy the
+// constraints. The user can specify a slice of particles to check [0,
+// end_index). Default behavior is to check all particles -- when end_index is
+// std::nullopt, it is set to ssize(particles).
+std::vector<uint8_t> CheckProgConstraints(
+    const solvers::MathematicalProgram* prog_ptr,
+    const std::vector<Eigen::VectorXd>& particles, const int num_threads_to_use,
+    const double tol, std::optional<int> end_index = std::nullopt);
+
+geometry::optimization::VPolytope ParseAndCheckContainmentPoints(
+    const CollisionChecker& checker,
+    const CommonSampledIrisOptions& sampled_iris_options,
+    const IrisParameterizationFunction& parameterization,
+    const geometry::optimization::Hyperellipsoid& starting_ellipsoid,
+    const double constraints_tol = 1e-6);
+
+Eigen::VectorXd ComputeFaceTangentToDistCvxh(
+    const geometry::optimization::Hyperellipsoid& E,
+    const Eigen::Ref<const Eigen::VectorXd>& point,
+    const geometry::optimization::VPolytope& cvxh_vpoly,
+    const solvers::SolverInterface& solver);
 
 // Populates particles with random samples, drawn across potentially multiple
 // threads. number_to_sample must be smaller than ssize(particles), and
