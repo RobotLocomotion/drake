@@ -1,6 +1,6 @@
 load("//tools/skylark:drake_py.bzl", "py_test_isolated")
 
-# From https://bazel.build/versions/master/docs/be/c-cpp.html#cc_library.srcs
+# From https://bazel.build/reference/be/c-cpp.html#cc_library.srcs
 _SOURCE_EXTENSIONS = [source_ext for source_ext in """
 .c
 .cc
@@ -73,10 +73,10 @@ def _add_linter_rules(
     # Google cpplint.
     py_test_isolated(
         name = name + "_cpplint",
-        srcs = ["@styleguide//:cpplint"],
+        srcs = ["@cpplint_internal//:cpplint"],
         data = cpplint_data + source_labels,
         args = _EXTENSIONS_ARGS + source_filenames,
-        main = "@styleguide//:cpplint/cpplint.py",
+        main = "@cpplint_internal//:cpplint.py",
         size = size,
         tags = ["cpplint", "lint"],
     )
