@@ -240,25 +240,26 @@ TEST_F(QuaternionFloatingMobilizerTest, KinematicMapping) {
   const Vector3<double> v_FMo_F(1.0, 2.0, 3.0);
   mobilizer_->SetTranslation(context_.get(), v_FMo_F);
 
-  // Calculate the Ndot(q) matrix that appears in q̈ = = Ṅ(q,q̇)⋅v + N⁺(q)⋅v̇.
+  // Calculate the NDot(q) matrix that appears in q̈ = Ṅ(q,q̇)⋅v + N⁺(q)⋅v̇.
   MatrixX<double> NDot(7, 6);
   mobilizer_->CalcNDotMatrix(*context_, &NDot);
   // TODO(Mitiguy) Fix test.
   EXPECT_FALSE(CompareMatrices(NDot, MatrixX<double>::Zero(7, 6), kTolerance,
                                MatrixCompareType::relative));
-#if 0
-  // Until it is implemented, ensure calculating Ṅ(q,q̇) throws an exception.
-  DRAKE_EXPECT_THROWS_MESSAGE(mobilizer_->CalcNDotMatrix(*context_, &NDot),
-                              ".*The function DoCalcNDotMatrix\\(\\) has not "
-                              "been implemented for this mobilizer.*");
-#endif
 
-  // Until it is implemented, ensure calculating Ṅ⁺(q,q̇) throws an exception.
+  // Calculate the NplusDot(q) matrix that appears in v̇ = Ṅ⁺(q,q̇)⋅v + N⁺(q)⋅q̈.
   MatrixX<double> NplusDot(6, 7);
+  mobilizer_->CalcNplusDotMatrix(*context_, &NplusDot);
+  EXPECT_FALSE(CompareMatrices(NplusDot, MatrixX<double>::Zero(6, 7),
+                               kTolerance,  MatrixCompareType::relative));
+
+#if 0
+  // Until it is implemented, ensure calculating Ṅ⁺(q,q̇) throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       mobilizer_->CalcNplusDotMatrix(*context_, &NplusDot),
       ".*The function DoCalcNplusDotMatrix\\(\\) has not "
       "been implemented for this mobilizer.*");
+#endif
 }
 
 TEST_F(QuaternionFloatingMobilizerTest, CheckExceptionMessage) {
