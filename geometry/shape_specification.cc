@@ -65,6 +65,10 @@ void ComputeConvexHullAsNecessary(
   }
 }
 
+// Computes an oriented bounding box and assigns it to the given shared pointer
+// in a thread-safe manner. Only does work if the shared_ptr is null (i.e.,
+// there is no OBB yet). Used by Mesh::GetObb() and Convex::GetObb(). Note: the
+// correctness of this function is tested in shape_specification_thread_test.cc.
 void ComputeObbAsNecessary(std::shared_ptr<Obb>* obb_ptr,
                            const MeshSource& mesh_source,
                            const Vector3<double>& scale) {
