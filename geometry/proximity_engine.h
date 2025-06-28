@@ -331,7 +331,8 @@ class ProximityEngine {
   const TriangleSurfaceMesh<double>* mesh_distance_boundary(
       GeometryId g_id) const;
 
-  /* Returns the axis-aligned bounding box of the geometry with the given id. */
+  /* Returns the axis-aligned bounding box of the geometry with the given id.
+   @throws std::exception if the geometry is not deformable. */
   const Aabb& GetDeformableAabbInWorld(GeometryId geometry_id) const;
 
  private:

@@ -53,6 +53,8 @@ drake_cc_package_library(
         ":mesh_to_vtk",
         ":mesh_traits",
         ":meshing_utilities",
+        ":obb",
+        ":obb_has_overlap",
         ":obj_to_surface_mesh",
         ":plane",
         ":polygon_surface_mesh",
@@ -93,14 +95,14 @@ drake_cc_library(
     name = "bv",
     srcs = [
         "aabb.cc",
-        "obb.cc",
     ],
     hdrs = [
         "aabb.h",
-        "obb.h",
     ],
     deps = [
         ":boxes_overlap",
+        ":obb",
+        ":obb_has_overlap",
         ":posed_half_space",
         ":triangle_surface_mesh",
         ":volume_mesh",
@@ -108,6 +110,31 @@ drake_cc_library(
         "//geometry:shape_specification",
         "//geometry:utilities",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "obb",
+    srcs = ["obb.cc"],
+    hdrs = ["obb.h"],
+    deps = [
+        ":triangle_surface_mesh",
+        ":volume_mesh",
+        "//common:essential",
+        "//geometry:utilities",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "obb_has_overlap",
+    srcs = ["obb_has_overlap.cc"],
+    hdrs = ["aabb.h"],
+    deps = [
+        ":boxes_overlap",
+        ":obb",
+        ":plane",
+        "//geometry:shape_specification",
     ],
 )
 
@@ -555,6 +582,24 @@ drake_cc_library(
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkIOGeometry",
         "@vtk_internal//:vtkRenderingCore",
+    ],
+)
+
+drake_cc_library(
+    name = "make_obb_mesh_impl",
+    srcs = ["make_obb_mesh_impl.cc"],
+    hdrs = ["make_obb_mesh_impl.h"],
+    internal = True,
+    visibility = ["//geometry:__subpackages__"],
+    deps = [
+        ":obb",
+        ":obj_to_surface_mesh",
+        ":triangle_surface_mesh",
+        ":volume_mesh",
+        ":vtk_to_volume_mesh",
+        "//common:essential",
+        "//geometry:mesh_source",
+        "@fmt",
     ],
 )
 
