@@ -76,10 +76,10 @@ TEST_F(DoublePendulum, PaddingUnsupported) {
   auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
   ASSERT_TRUE(sgcc_ptr != nullptr);
 
-  sgcc_ptr->SetPaddingAllRobotEnvironmentPairs(1.0);
+  sgcc_ptr->SetPaddingAllRobotEnvironmentPairs(-1.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options),
-      ".*nonzero padding.*");
+      ".*negative padding.*");
 }
 
 TEST_F(DoublePendulum, IrisNp2Test) {
@@ -105,6 +105,25 @@ TEST_F(DoublePendulum, IrisNp2Test) {
       IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
   CheckRegion(region2);
   EXPECT_FALSE(region.A().isApprox(region2.A(), 1e-10));
+}
+
+TEST_F(DoublePendulum, PositivePadding) {
+  IrisNp2Options options;
+  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  const double padding = 0.5;
+  sgcc_ptr->SetPaddingAllRobotEnvironmentPairs(padding);
+  sgcc_ptr->SetPaddingAllRobotRobotPairs(padding);
+  HPolyhedron region =
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+
+  EXPECT_TRUE(region.PointInSet(Vector2d{.2, 0.0}));
+  EXPECT_FALSE(region.PointInSet(Vector2d{.3, 0.0}));
+  EXPECT_TRUE(region.PointInSet(Vector2d{-.2, 0.0}));
+  EXPECT_FALSE(region.PointInSet(Vector2d{-.3, 0.0}));
+
+  PlotEnvironmentAndRegion(region);
 }
 
 // Check that we can filter out certain collisions.
