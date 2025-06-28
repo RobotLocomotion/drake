@@ -223,6 +223,49 @@ TEST_F(RpyBallMobilizerTest, MapUsesNplus) {
                               MatrixCompareType::relative));
 }
 
+TEST_F(RpyBallMobilizerTest, MapAccelerationToQDDotAndViceVersa) {
+  // Set an arbitrary non-zero state.
+  const Vector3<double> rpy(M_PI / 3, -M_PI / 4, M_PI / 5);
+  const Vector3<double> wxyz(5.4, -9.8, 3.2);
+  mobilizer_->SetAngles(context_.get(), rpy);
+  mobilizer_->SetAngularVelocity(context_.get(), wxyz);
+
+  // Set an arbitrary v̇ and use MapAccelerationToQDDot() to calculate q̈.
+  const Vector3<double> vdot(0.3, -0.2, 0.9);  // v̇ = [ẇx, ẇy, ẇz].
+  Vector3<double> qddot;
+  mobilizer_->MapAccelerationToQDDot(*context_, vdot, &qddot);
+
+  // Compute the 3x3 N(q) matrix and its time-derivative Ṅ(q,q̇).
+  MatrixX<double> N(3, 3), Ndot(3, 3);
+  mobilizer_->CalcNMatrix(*context_, &N);
+  mobilizer_->CalcNDotMatrix(*context_, &Ndot);
+
+  // Verify equivalence of q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇ and MapAccelerationToQDDot().
+  const Vector3<double> qddot_expected = Ndot * wxyz + N * vdot;
+  EXPECT_TRUE(CompareMatrices(qddot, qddot_expected, kTolerance,
+                              MatrixCompareType::relative));
+
+  // Compute the 3x3 N⁺(q) matrix and its time-derivative Ṅ⁺(q,q̇).
+  MatrixX<double> Nplus(3, 3), Nplusdot(3, 3);
+  mobilizer_->CalcNplusMatrix(*context_, &Nplus);
+  mobilizer_->CalcNplusDotMatrix(*context_, &Nplusdot);
+
+  // Starting with the previous q̈, use MapQDDotToAcceleration() to calculate v̇.
+  Vector3<double> wdot;
+  mobilizer_->MapQDDotToAcceleration(*context_, qddot, &wdot);
+
+  // Verify equivalence of v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈ and MapQDDotToAcceleration().
+  Vector3<double> qdot;
+  mobilizer_->MapVelocityToQDot(*context_, wxyz, &qdot);
+  const Vector3<double> vdot_expected = Nplusdot * qdot + Nplus * qddot;
+  EXPECT_TRUE(CompareMatrices(vdot_expected, wdot, 16 * kTolerance,
+                              MatrixCompareType::relative));
+
+  // Verify MapQDDotToAcceleration() is the inverse of MapAccelerationToQDDot().
+  EXPECT_TRUE(CompareMatrices(vdot, wdot, 16 * kTolerance,
+                              MatrixCompareType::relative));
+}
+
 TEST_F(RpyBallMobilizerTest, SingularityError) {
   // Set state in singularity
   const Vector3d rpy_value(M_PI / 3, M_PI / 2, M_PI / 5);
