@@ -512,7 +512,7 @@ void RpyBallMobilizer<T>::DoMapQDDotToAcceleration(
   // q = [r, p, y]ᵀ  denote roll, pitch, yaw angles (generalized positions).
   //
   // There are various ways to calculate v̇ = [ω̇x, ω̇y, ω̇z]ᵀ (the time-derivatives
-  // of the generalized velocities). The calculation below is straighforward in
+  // of the generalized velocities). The calculation below is straightforward in
   // that it simply differentiates v = N⁺(q)⋅q̇ to form v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
 
   // Form the Ṅ⁺(q,q̇)⋅q̇ term of the result now (start of this function) so any
