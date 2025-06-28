@@ -154,10 +154,41 @@ void DeformableModel<T>::SetPositions(
 }
 
 template <typename T>
+void DeformableModel<T>::SetVelocities(
+    systems::Context<T>* context, DeformableBodyId id,
+    const Eigen::Ref<const Matrix3X<T>>& v) const {
+  ThrowUnlessRegistered(__func__, id);
+  GetBody(id).SetVelocities(context, v);
+}
+
+template <typename T>
+void DeformableModel<T>::SetPositionsAndVelocities(
+    systems::Context<T>* context, DeformableBodyId id,
+    const Eigen::Ref<const Matrix3X<T>>& q,
+    const Eigen::Ref<const Matrix3X<T>>& v) const {
+  ThrowUnlessRegistered(__func__, id);
+  GetBody(id).SetPositionsAndVelocities(context, q, v);
+}
+
+template <typename T>
 Matrix3X<T> DeformableModel<T>::GetPositions(const systems::Context<T>& context,
                                              DeformableBodyId id) const {
   ThrowUnlessRegistered(__func__, id);
   return GetBody(id).GetPositions(context);
+}
+
+template <typename T>
+Matrix3X<T> DeformableModel<T>::GetVelocities(
+    const systems::Context<T>& context, DeformableBodyId id) const {
+  ThrowUnlessRegistered(__func__, id);
+  return GetBody(id).GetVelocities(context);
+}
+
+template <typename T>
+Matrix3X<T> DeformableModel<T>::GetPositionsAndVelocities(
+    const systems::Context<T>& context, DeformableBodyId id) const {
+  ThrowUnlessRegistered(__func__, id);
+  return GetBody(id).GetPositionsAndVelocities(context);
 }
 
 template <typename T>

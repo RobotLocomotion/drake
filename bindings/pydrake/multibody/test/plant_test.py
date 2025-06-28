@@ -3512,6 +3512,21 @@ class TestPlant(unittest.TestCase):
         q2 = dut.GetPositions(context=plant_context, id=body_id)
         numpy_compare.assert_float_equal(q_ref, q2)
 
+        # Set velocities and get them back.
+        num_nodes = num_dofs // 3
+        v = np.arange(num_dofs, dtype=float).reshape(3, num_nodes)
+        dut.SetVelocities(context=plant_context, id=body_id, v=v)
+        v_back = dut.GetVelocities(context=plant_context, id=body_id)
+        numpy_compare.assert_float_equal(v, v_back)
+
+        # Set positions and velocities and get them back.
+        dut.SetPositionsAndVelocities(context=plant_context, id=body_id,
+                                      q=2*q_ref, v=2*v)
+        q2 = dut.GetPositions(context=plant_context, id=body_id)
+        v2 = dut.GetVelocities(context=plant_context, id=body_id)
+        numpy_compare.assert_float_equal(2*q_ref, q2)
+        numpy_compare.assert_float_equal(2*v, v2)
+
         contact_results = (
             plant.get_contact_results_output_port().Eval(plant_context))
         # There is no deformable contact, but we can still try the API.
@@ -3680,6 +3695,23 @@ class TestPlant(unittest.TestCase):
             context=plant_context)
         numpy_compare.assert_float_equal(
             reference_positions_reshaped, positions_after)
+
+        # Round-trip SetVelocities / GetVelocities
+        num_dofs = body.num_dofs()
+        num_nodes = num_dofs // 3
+        v = np.arange(num_dofs, dtype=float).reshape(3, num_nodes)
+        body.SetVelocities(context=plant_context, v=v)
+        v_back = body.GetVelocities(context=plant_context)
+        numpy_compare.assert_float_equal(v, v_back)
+
+        # Round-trip SetPositionsAndVelocities / GetPositionsAndVelocities
+        q = 2*reference_positions_reshaped
+        v = 2*v
+        body.SetPositionsAndVelocities(context=plant_context, q=q, v=v)
+        q2 = body.GetPositions(context=plant_context)
+        v2 = body.GetVelocities(context=plant_context)
+        numpy_compare.assert_float_equal(q, q2)
+        numpy_compare.assert_float_equal(v, v2)
 
         # set_default_pose and get_default_pose
         X_WD = RigidTransform_[float](

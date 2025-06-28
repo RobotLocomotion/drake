@@ -663,6 +663,64 @@ TEST_F(DeformableModelTest, GetAndSetPositions) {
             q1_matrix);
 }
 
+TEST_F(DeformableModelTest, GetAndSetVelocities) {
+  auto model_id = RegisterSphere(0.5);
+
+  plant_->Finalize();
+  const int num_dofs = deformable_model_ptr_->GetFemModel(model_id).num_dofs();
+  auto diagram = builder_.Build();
+
+  auto context = diagram->CreateDefaultContext();
+  systems::Context<double>& plant_context =
+      plant_->GetMyMutableContextFromRoot(context.get());
+
+  /* Get the initial velocities v0. */
+  systems::DiscreteStateIndex state_index =
+      deformable_model_ptr_->GetDiscreteStateIndex(model_id);
+  VectorX<double> initial_discrete_state =
+      plant_context.get_discrete_state(state_index).get_value();
+  const VectorX<double> v0 = initial_discrete_state.segment(num_dofs, num_dofs);
+  const Matrix3X<double> v0_matrix =
+      Eigen::Map<const Matrix3X<double>>(v0.data(), 3, num_dofs / 3);
+
+  EXPECT_EQ(plant_->deformable_model().GetVelocities(plant_context, model_id),
+            v0_matrix);
+  const Matrix3X<double> v1_matrix = Matrix3X<double>::Ones(3, num_dofs / 3);
+  plant_->deformable_model().SetVelocities(&plant_context, model_id, v1_matrix);
+  EXPECT_EQ(plant_->deformable_model().GetVelocities(plant_context, model_id),
+            v1_matrix);
+}
+
+TEST_F(DeformableModelTest, GetAndSetPositionsAndVelocities) {
+  auto model_id = RegisterSphere(0.5);
+
+  plant_->Finalize();
+  const int num_dofs = deformable_model_ptr_->GetFemModel(model_id).num_dofs();
+  auto diagram = builder_.Build();
+
+  auto context = diagram->CreateDefaultContext();
+  systems::Context<double>& plant_context =
+      plant_->GetMyMutableContextFromRoot(context.get());
+
+  const int num_nodes = num_dofs / 3;
+  Matrix3X<double> q_matrix(3, num_nodes);
+  for (int i = 0; i < num_nodes; ++i) {
+    q_matrix.col(i) = Vector3d(0.1 * i, 0.2 * i, 0.3 * i);
+  }
+  Matrix3X<double> v_matrix(3, num_nodes);
+  for (int i = 0; i < num_nodes; ++i) {
+    v_matrix.col(i) = Vector3d(0.4 * i, 0.5 * i, 0.6 * i);
+  }
+  plant_->deformable_model().SetPositionsAndVelocities(&plant_context, model_id,
+                                                       q_matrix, v_matrix);
+  const Matrix3X<double> qv_matrix =
+      plant_->deformable_model().GetPositionsAndVelocities(plant_context,
+                                                           model_id);
+  EXPECT_EQ(qv_matrix.cols(), 2 * num_nodes);
+  EXPECT_TRUE(CompareMatrices(qv_matrix.leftCols(num_nodes), q_matrix));
+  EXPECT_TRUE(CompareMatrices(qv_matrix.rightCols(num_nodes), v_matrix));
+}
+
 /* Test the many throw conditions of GetPositions and SetPositions. */
 TEST_F(DeformableModelTest, GetAndSetPositionsThrowConditions) {
   auto model_id = RegisterSphere(0.5);

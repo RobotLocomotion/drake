@@ -1200,6 +1200,15 @@ void DefineDeformableBody(py::module m) {
           py::arg("q"), cls_doc.SetPositions.doc)
       .def("GetPositions", &Class::GetPositions, py::arg("context"),
           cls_doc.GetPositions.doc)
+      .def("SetVelocities", &Class::SetVelocities, py::arg("context"),
+          py::arg("v"), cls_doc.SetVelocities.doc)
+      .def("GetVelocities", &Class::GetVelocities, py::arg("context"),
+          cls_doc.GetVelocities.doc)
+      .def("SetPositionsAndVelocities", &Class::SetPositionsAndVelocities,
+          py::arg("context"), py::arg("q"), py::arg("v"),
+          cls_doc.SetPositionsAndVelocities.doc)
+      .def("GetPositionsAndVelocities", &Class::GetPositionsAndVelocities,
+          py::arg("context"), cls_doc.GetPositionsAndVelocities.doc)
       .def("is_enabled", &Class::is_enabled, py::arg("context"),
           cls_doc.is_enabled.doc)
       .def("Disable", &Class::Disable, py::arg("context"), cls_doc.Disable.doc)

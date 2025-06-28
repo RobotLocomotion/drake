@@ -192,6 +192,53 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   void SetPositions(systems::Context<T>* context, DeformableBodyId id,
                     const Eigen::Ref<const Matrix3X<T>>& q) const;
 
+  /** Sets the vertex velocities of the deformable body with the given `id` in
+   the provided `context`.
+
+   @param[in, out] context The context associated with the MultibodyPlant that
+                           owns this %DeformableModel.
+   @param[in] id The identifier of the deformable body whose velocities are
+                 being set.
+   @param[in] v A 3×N matrix of vertex velocities.
+
+   @throws std::exception if any of the following conditions are met:
+     1. `context` is nullptr.
+     2. `context` does not belong to the MultibodyPlant associated with this
+        %DeformableModel.
+     3. No body with the given `id` is registered.
+     4. The number of columns of `v` does not match the number of vertices of
+        the body.
+     5. `v` contains non-finite values.
+     6. `Finalize()` has not been called on the MultibodyPlant that owns this
+        deformable model. */
+  void SetVelocities(systems::Context<T>* context, DeformableBodyId id,
+                     const Eigen::Ref<const Matrix3X<T>>& v) const;
+
+  /** Sets the vertex positions and velocities of the deformable body with the
+   given `id` in the provided `context`.
+
+   @param[in, out] context The context associated with the MultibodyPlant that
+                           owns this %DeformableModel.
+   @param[in] id The identifier of the deformable body whose positions and
+                 velocities are being set.
+   @param[in] q A 3×N matrix of vertex positions.
+   @param[in] v A 3×N matrix of vertex velocities.
+
+   @throws std::exception if any of the following conditions are met:
+     1. `context` is nullptr.
+     2. `context` does not belong to the MultibodyPlant associated with this
+        %DeformableModel.
+     3. No body with the given `id` is registered.
+     4. The number of columns of `q` or `v` does not match the number of
+        vertices of the body.
+     5. `q` or `v` contains non-finite values.
+     6. `Finalize()` has not been called on the MultibodyPlant that owns this
+        deformable model. */
+  void SetPositionsAndVelocities(systems::Context<T>* context,
+                                 DeformableBodyId id,
+                                 const Eigen::Ref<const Matrix3X<T>>& q,
+                                 const Eigen::Ref<const Matrix3X<T>>& v) const;
+
   /** Returns the matrix of vertex positions for the deformable body with the
    given `id` in the provided `context`.
 
@@ -209,6 +256,45 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
         deformable model. */
   Matrix3X<T> GetPositions(const systems::Context<T>& context,
                            DeformableBodyId id) const;
+
+  /** Returns the matrix of vertex velocities for the deformable body with the
+   given `id` in the provided `context`.
+
+   @param[in] context The context associated with the MultibodyPlant that owns
+                      this %DeformableModel.
+   @param[in] id The identifier of the deformable body whose velocities are
+                 being queried.
+   @retval v A 3×N matrix containing the velocities of all vertices of the
+             body.
+
+   @throws std::exception if any of the following conditions are met:
+     1. `context` does not belong to the MultibodyPlant associated with this
+        %DeformableModel.
+     2. No body with the given `id` is registered.
+     3. `Finalize()` has not been called on the MultibodyPlant that owns this
+        deformable model. */
+  Matrix3X<T> GetVelocities(const systems::Context<T>& context,
+                            DeformableBodyId id) const;
+
+  /** Returns the matrix of vertex positions and velocities for the
+   deformable body with the given `id` in the provided `context`. The first N
+   columns are the positions and the next N columns are the velocities.
+
+   @param[in] context The context associated with the MultibodyPlant that owns
+                      this %DeformableModel.
+   @param[in] id The identifier of the deformable body whose state is being
+                 queried.
+   @return A 3x2N matrix containing the positions and velocities of all
+           vertices of the body.
+
+   @throws std::exception if any of the following conditions are met:
+     1. `context` does not belong to the MultibodyPlant associated with this
+        %DeformableModel.
+     2. No body with the given `id` is registered.
+     3. `Finalize()` has not been called on the MultibodyPlant that owns this
+        deformable model. */
+  Matrix3X<T> GetPositionsAndVelocities(const systems::Context<T>& context,
+                                        DeformableBodyId id) const;
 
   /** Registers an external force density field that applies external force to
    all deformable bodies.
