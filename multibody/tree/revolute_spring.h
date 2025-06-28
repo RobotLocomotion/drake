@@ -43,6 +43,21 @@ class RevoluteSpring final : public ForceElement<T> {
 
   double stiffness() const { return stiffness_; }
 
+//   double default_stiffness() const { return stiffness_; }
+
+//   void set_default_stiffness(double stiffness) {
+//     stiffness_ = stiffness;
+//   }
+
+  const T& GetStiffness(const systems::Context<T>& context) const {
+    return context.get_numeric_parameter(stiffness_parameter_index_).value()[0];
+  }
+
+  void SetStiffness(systems::Context<T>* context, const T& stiffness) const {
+    context->get_mutable_numeric_parameter(stiffness_parameter_index_).set_value(Vector1<T>(stiffness));
+  }
+
+
   T CalcPotentialEnergy(
       const systems::Context<T>& context,
       const internal::PositionKinematicsCache<T>& pc) const override;
@@ -76,6 +91,24 @@ class RevoluteSpring final : public ForceElement<T> {
   std::unique_ptr<ForceElement<T>> DoShallowClone() const override;
 
  private:
+  // Implementation for ForceElement::DoDeclareForceElementParameters().
+  void DoDeclareForceElementParameters(
+      internal::MultibodyTreeSystem<T>* tree_system) final {
+    stiffness_parameter_index_ =
+        this->DeclareNumericParameter(tree_system, systems::BasicVector<T>(1));
+  }
+
+  // Implementation for ForceElement::DoSetDefaultForceElementParameters().
+  void DoSetDefaultForceElementParameters(
+      systems::Parameters<T>* parameters) const final {
+    // Set the default stiffness and damping parameters.
+    systems::BasicVector<T>& stiffness_parameter =
+        parameters->get_mutable_numeric_parameter(
+            stiffness_parameter_index_);
+    stiffness_parameter.set_value(Vector1<T>(stiffness_));
+  }
+
+
   // Allow different specializations to access each other's private data for
   // scalar conversion.
   template <typename U>
@@ -92,6 +125,7 @@ class RevoluteSpring final : public ForceElement<T> {
   const JointIndex joint_index_;
   double nominal_angle_;
   double stiffness_;
+  systems::NumericParameterIndex stiffness_parameter_index_;
 };
 
 }  // namespace multibody
