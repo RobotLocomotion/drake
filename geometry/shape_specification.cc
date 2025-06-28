@@ -13,6 +13,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/common/overloaded.h"
 #include "drake/geometry/proximity/make_convex_hull_mesh_impl.h"
+#include "drake/geometry/proximity/make_obb_mesh_impl.h"
 #include "drake/geometry/proximity/meshing_utilities.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
@@ -61,6 +62,16 @@ void ComputeConvexHullAsNecessary(
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     std::atomic_compare_exchange_strong(hull_ptr, &check, new_hull);
 #pragma GCC diagnostic pop
+  }
+}
+
+void ComputeObbAsNecessary(std::shared_ptr<Obb>* obb_ptr,
+                           const MeshSource& mesh_source,
+                           const Vector3<double>& scale) {
+  std::shared_ptr<Obb> check = std::atomic_load(obb_ptr);
+  if (check == nullptr) {
+    auto new_obb = std::make_shared<Obb>(internal::MakeObb(mesh_source, scale));
+    std::atomic_compare_exchange_strong(obb_ptr, &check, new_obb);
   }
 }
 
@@ -192,6 +203,11 @@ const PolygonSurfaceMesh<double>& Convex::GetConvexHull() const {
   return *hull_;
 }
 
+const Obb& Convex::GetObb() const {
+  ComputeObbAsNecessary(&obb_, source_, scale_);
+  return *obb_;
+}
+
 std::string Convex::do_to_string() const {
   return MeshToString(type_name(), source(), scale_);
 }
@@ -301,6 +317,11 @@ double Mesh::scale() const {
 const PolygonSurfaceMesh<double>& Mesh::GetConvexHull() const {
   ComputeConvexHullAsNecessary(&hull_, source_, scale_);
   return *hull_;
+}
+
+const Obb& Mesh::GetObb() const {
+  ComputeObbAsNecessary(&obb_, source_, scale_);
+  return *obb_;
 }
 
 std::string Mesh::do_to_string() const {
@@ -430,6 +451,54 @@ double CalcVolume(const Shape& shape) {
       },
       [](const Sphere& sphere) {
         return 4.0 / 3.0 * M_PI * std::pow(sphere.radius(), 3);
+      }});
+}
+
+std::optional<Obb> CalcObb(const Shape& shape) {
+  return shape.Visit<std::optional<Obb>>(overloaded{
+      [](const Box& box) {
+        // For a box, the OBB is aligned with the geometry frame and centered at
+        // origin.
+        return Obb(math::RigidTransform<double>::Identity(), box.size() / 2);
+      },
+      [](const Capsule& capsule) {
+        // For a capsule, the OBB is aligned with the geometry frame (z-axis
+        // along capsule).
+        const double radius = capsule.radius();
+        const double half_length = capsule.length() / 2.0 + radius;
+        const Vector3<double> half_size(radius, radius, half_length);
+        return Obb(math::RigidTransform<double>::Identity(), half_size);
+      },
+      [](const Convex& convex) {
+        return convex.GetObb();
+      },
+      [](const Cylinder& cylinder) {
+        // For a cylinder, the OBB is aligned with the geometry frame (z-axis
+        // along cylinder).
+        const double radius = cylinder.radius();
+        const double half_length = cylinder.length() / 2.0;
+        const Vector3<double> half_size(radius, radius, half_length);
+        return Obb(math::RigidTransform<double>::Identity(), half_size);
+      },
+      [](const Ellipsoid& ellipsoid) {
+        const Vector3<double> half_size(ellipsoid.a(), ellipsoid.b(),
+                                        ellipsoid.c());
+        return Obb(math::RigidTransform<double>::Identity(), half_size);
+      },
+      [](const HalfSpace&) {
+        return std::nullopt;
+      },
+      [](const Mesh& mesh) {
+        return mesh.GetObb();
+      },
+      [](const MeshcatCone&) {
+        return std::nullopt;
+      },
+      [](const Sphere& sphere) {
+        // For a sphere, the OBB is a cube centered at origin.
+        const double radius = sphere.radius();
+        return Obb(math::RigidTransform<double>::Identity(),
+                   Vector3<double>(radius, radius, radius));
       }});
 }
 

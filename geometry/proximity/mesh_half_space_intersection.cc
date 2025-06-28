@@ -7,6 +7,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
+#include "drake/geometry/shape_specification.h"
 
 namespace drake {
 namespace geometry {

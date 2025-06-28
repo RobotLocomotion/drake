@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 
+#include "proximity/volume_mesh.h"
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
@@ -18,6 +19,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/proximity/make_convex_hull_mesh.h"
+#include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/proximity_engine.h"
 #include "drake/geometry/proximity_properties.h"
@@ -809,6 +811,13 @@ const PolygonSurfaceMesh<double>* GeometryState<T>::GetConvexHull(
 }
 
 template <typename T>
+std::optional<Obb> GeometryState<T>::GetObbInGeometryFrame(
+    GeometryId id) const {
+  const InternalGeometry& geometry = GetValueOrThrow(id, geometries_);
+  return CalcObb(geometry.shape());
+}
+
+template <typename T>
 bool GeometryState<T>::CollisionFiltered(GeometryId id1, GeometryId id2) const {
   std::string base_message =
       "Can't report collision filter status between geometries " +
@@ -868,21 +877,63 @@ const math::RigidTransform<T>& GeometryState<T>::get_pose_in_world(
 }
 
 template <typename T>
-const Aabb& GeometryState<T>::GetAabbInWorld(GeometryId geometry_id) const {
+Aabb GeometryState<T>::ComputeAabbInWorld(GeometryId geometry_id) const {
   FindOrThrow(geometry_id, geometries_, [geometry_id]() {
     return "No AABB available for invalid geometry id: " +
            to_string(geometry_id);
   });
   const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
-  if (!geometry.has_proximity_role()) {
-    throw std::runtime_error(
-        "GetAabbInWorld: Geometry does not have a proximity role.");
-  }
   if (!geometry.is_deformable()) {
     throw std::runtime_error(
-        "GetAabbInWorld: not implemented for non-deformable geometries.");
+        "ComputeAabbInWorld: not implemented for non-deformable geometries. "
+        "Consider using ComputeObbInWorld instead.");
   }
-  return geometry_engine_->GetDeformableAabbInWorld(geometry_id);
+  // For deformable geometries with proximity role, the proximity engine
+  // already keeps track of the AABB.
+  if (geometry.has_proximity_role()) {
+    return geometry_engine_->GetDeformableAabbInWorld(geometry_id);
+  }
+  // For deformable geometries without proximity role, we need to manually
+  // deform the geometry and compute the AABB of the deformed mesh.
+  const VolumeMesh<double>& reference_mesh = *geometry.reference_mesh();
+  std::vector<Vector3<double>> deformed_vertices(reference_mesh.num_vertices());
+  const VectorX<double>& q_WG =
+      convert_to_double(kinematics_data_.q_WGs.at(geometry_id));
+  for (int i = 0; i < reference_mesh.num_vertices(); ++i) {
+    deformed_vertices[i] = q_WG.template segment<3>(3 * i);
+  }
+  auto tets = reference_mesh.tetrahedra();
+  const VolumeMesh<double> deformed_mesh(std::move(tets),
+                                         std::move(deformed_vertices));
+  std::set<int> vertex_indices;
+  for (int i = 0; i < deformed_mesh.num_vertices(); ++i) {
+    vertex_indices.insert(i);
+  }
+  return AabbMaker<VolumeMesh<double>>(deformed_mesh, vertex_indices).Compute();
+}
+
+template <typename T>
+Obb GeometryState<T>::ComputeObbInWorld(GeometryId geometry_id) const {
+  FindOrThrow(geometry_id, geometries_, [geometry_id]() {
+    return "No OBB available for invalid geometry id: " +
+           to_string(geometry_id);
+  });
+  const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
+  if (geometry.is_deformable()) {
+    throw std::runtime_error(
+        "ComputeObbInWorld: not implemented for deformable geometries. "
+        "Consider using ComputeAabbInWorld instead.");
+  }
+  const std::optional<Obb> obb_G = GetObbInGeometryFrame(geometry_id);
+  if (!obb_G.has_value()) {
+    throw std::runtime_error(
+        "ComputeObbInWorld: OBB computation not supported for this geometry's "
+        "shape type.");
+  }
+  const math::RigidTransform<double>& X_WG =
+      convert_to_double(get_pose_in_world(geometry_id));
+  const math::RigidTransform<double>& X_GB = obb_G->pose();
+  return Obb(X_WG * X_GB, obb_G->half_width());
 }
 
 template <typename T>

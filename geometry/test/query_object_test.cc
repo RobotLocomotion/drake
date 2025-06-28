@@ -198,7 +198,8 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
       default_object.GetConfigurationsInWorld(GeometryId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object.GetDrivenMeshConfigurationsInWorld(
       GeometryId::get_new_id(), Role::kIllustration));
-  EXPECT_DEFAULT_ERROR(default_object.GetAabbInWorld(GeometryId::get_new_id()));
+  EXPECT_DEFAULT_ERROR(
+      default_object.ComputeAabbInWorld(GeometryId::get_new_id()));
 
   // Penetration queries.
   EXPECT_DEFAULT_ERROR(default_object.ComputePointPairPenetration());
