@@ -246,7 +246,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   bool is_velocity_equal_to_qdot() const override { return false; }
 
- protected:
+ private:
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
@@ -326,10 +326,17 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   // Certain roll pitch yaw calculations (e.g., calculating the N(q) matrix)
   // have a singularity (divide-by-zero error) when cos(pitch) ≈ 0.
+  // The tolerance 1.0e-3 is used to test whether the cosine of the pitch angle
+  // is near zero, which occurs when the pitch angle ≈ π/2 ± n π (n=0, 1 2, …).
+  // Throw an exception if a pitch angle is within ≈ 0.057° of a singularity.
   void ThrowSinceCosPitchIsNearZero(const T& pitch,
                                     const char* function_name) const;
+  void ThrowIfCosPitchNearZero(const T& cos_pitch, const T& pitch_angle,
+                               const char* function_name) const {
+    if (abs(cos_pitch) < 1.0e-3)
+      ThrowSinceCosPitchIsNearZero(pitch_angle, function_name);
+  }
 
- private:
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(

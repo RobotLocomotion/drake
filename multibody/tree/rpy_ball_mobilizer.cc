@@ -14,10 +14,6 @@
 namespace drake {
 namespace multibody {
 namespace internal {
-// The following tolerance is used to test whether the cosine of the pitch angle
-// is near zero, which occurs when the pitch angle ≈ π/2 ± n π (n=0, 1 2, …).
-// An exception is thrown if a pitch angle is within ≈ 0.057° of a singularity.
-constexpr double kToleranceCosPitchNearZero = 1.0e-3;
 
 template <typename T>
 RpyBallMobilizer<T>::~RpyBallMobilizer() = default;
@@ -168,10 +164,9 @@ void RpyBallMobilizer<T>::DoCalcNMatrix(const systems::Context<T>& context,
   using std::sin;
   const Vector3<T> angles = get_angles(context);
   const T cp = cos(angles[1]);
-  if (abs(cp) < kToleranceCosPitchNearZero) {
-    const char* function_name_less_Do = __func__ + 2;
-    ThrowSinceCosPitchIsNearZero(angles[1], function_name_less_Do);
-  }
+  const char* function_name_less_Do = __func__ + 2;
+  ThrowIfCosPitchNearZero(cp, angles[1], function_name_less_Do);
+
   const T sp = sin(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
@@ -243,10 +238,8 @@ void RpyBallMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>& context,
   const T sp = sin(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
-  if (abs(cp) < kToleranceCosPitchNearZero) {
-    const char* function_name_less_Do = __func__ + 2;
-    ThrowSinceCosPitchIsNearZero(angles[1], function_name_less_Do);
-  }
+  const char* function_name_less_Do = __func__ + 2;
+  ThrowIfCosPitchNearZero(cp, angles[1], function_name_less_Do);
   const T cpi = 1.0 / cp;
   const T cpiSqr = cpi * cpi;
 
@@ -302,10 +295,8 @@ void RpyBallMobilizer<T>::DoCalcNplusDotMatrix(
 
   // Throw an exception with the proper function name if a singularity would be
   // encountered in DoMapVelocityToQDot().
-  if (abs(cp) < kToleranceCosPitchNearZero) {
-    const char* function_name_less_Do = __func__ + 2;
-    ThrowSinceCosPitchIsNearZero(angles[1], function_name_less_Do);
-  }
+  const char* function_name_less_Do = __func__ + 2;
+  ThrowIfCosPitchNearZero(cp, angles[1], function_name_less_Do);
 
   // Calculate time-derivative of roll, pitch, and yaw angles.
   const Vector3<T> v = get_angular_velocity(context);
@@ -365,10 +356,8 @@ void RpyBallMobilizer<T>::DoMapVelocityToQDot(
   const T cp = cos(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
-  if (abs(cp) < kToleranceCosPitchNearZero) {
-    const char* function_name_less_Do = __func__ + 2;
-    ThrowSinceCosPitchIsNearZero(angles[1], function_name_less_Do);
-  }
+  const char* function_name_less_Do = __func__ + 2;
+  ThrowIfCosPitchNearZero(cp, angles[1], function_name_less_Do);
   const T cpi = 1.0 / cp;
 
   // Although we can calculate q̇ = N(q) * v, it is more efficient to implicitly
@@ -460,9 +449,8 @@ Vector3<T> RpyBallMobilizer<T>::CalcAccelerationBiasForQDDot(
   const T sp = sin(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
-  if (abs(cp) < kToleranceCosPitchNearZero) {
-    ThrowSinceCosPitchIsNearZero(angles[1], function_name);
-  }
+  ThrowIfCosPitchNearZero(cp, angles[1], function_name);
+
   // The algorithm below calculates Ṅ⁺(q,q̇)⋅q̇. The algorithm was verified with
   // MotionGenesis. It can also be verified by-hand, e.g., with documentation
   // in DoCalcNplusDotMatrix which directly differentiates N⁺(q) to form
