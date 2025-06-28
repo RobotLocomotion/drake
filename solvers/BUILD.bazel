@@ -1,3 +1,4 @@
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
@@ -25,6 +26,11 @@ load(
 )
 
 package(default_visibility = ["//visibility:public"])
+
+bool_flag(
+    name = "mosek_lazy_load",
+    build_setting_default = False,
+)
 
 drake_cc_package_library(
     name = "solvers",
