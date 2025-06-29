@@ -1086,7 +1086,7 @@ class TestPlant(unittest.TestCase):
         # Test RevoluteSpring accessors
         self.assertEqual(revolute_spring.joint(), revolute_joint)
         self.assertEqual(revolute_spring.nominal_angle(), 0.1)
-        self.assertEqual(revolute_spring.stiffness(), 100.)
+        self.assertEqual(revolute_spring.default_stiffness(), 100.)
 
         # Test DoorHinge accessors
         self.assertEqual(door_hinge.joint(), revolute_joint)

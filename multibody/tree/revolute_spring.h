@@ -41,19 +41,34 @@ class RevoluteSpring final : public ForceElement<T> {
 
   double nominal_angle() const { return nominal_angle_; }
 
-  double stiffness() const { return stiffness_; }
+  /// Returns the default stiffness constant in N⋅m/rad.
+  double default_stiffness() const { return stiffness_; }
 
-//   double default_stiffness() const { return stiffness_; }
+  /// Sets the default value of linear stiffness for the attached joint, in N⋅m/rad.
+  /// @throws std::exception if stiffness is negative.
+  /// @pre the MultibodyPlant must not be finalized.
+  void set_default_stiffness(double stiffness) {
+    DRAKE_THROW_UNLESS(stiffness >= 0);
+    DRAKE_DEMAND(!this->get_parent_tree().topology_is_valid());
+    stiffness_ = stiffness;
+  }
 
-//   void set_default_stiffness(double stiffness) {
-//     stiffness_ = stiffness;
-//   }
-
+  /// Returns the Context dependent stiffness coefficient stored as a parameter in
+  /// `context`. Refer to default_stiffness() for details.
+  /// @param[in] context The context storing the state and parameters for the
+  /// model to which `this` spring belongs.
   const T& GetStiffness(const systems::Context<T>& context) const {
     return context.get_numeric_parameter(stiffness_parameter_index_).value()[0];
   }
 
+  /// Sets the value of the linear stiffness coefficient for this force element, stored
+  /// as a parameter in `context`. Refer to default_stiffness() for details.
+  /// @param[out] context The context storing the state and parameters for the
+  /// model to which `this` spring belongs.
+  /// @param[in] stiffness The stiffness value.
+  /// @throws std::exception if `stiffness` is negative.
   void SetStiffness(systems::Context<T>* context, const T& stiffness) const {
+    DRAKE_THROW_UNLESS(stiffness >= 0);
     context->get_mutable_numeric_parameter(stiffness_parameter_index_).set_value(Vector1<T>(stiffness));
   }
 

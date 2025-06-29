@@ -92,8 +92,20 @@ class SpringTester : public ::testing::Test {
 
 TEST_F(SpringTester, ConstructionAndAccessors) {
   EXPECT_EQ(spring_->joint().index(), joint_->index());
-  EXPECT_EQ(spring_->stiffness(), stiffness_);
+  EXPECT_EQ(spring_->default_stiffness(), stiffness_);
   EXPECT_EQ(spring_->nominal_angle(), nominal_angle_);
+}
+
+TEST_F(SpringTester, ContextDependentAccess) {
+  const double some_stiffness_value = 5;
+  // Damping.
+  EXPECT_EQ(spring_->GetStiffness(*context_), stiffness_);
+
+  EXPECT_NO_THROW(spring_->SetStiffness(context_.get(), some_stiffness_value));
+  EXPECT_EQ(spring_->GetStiffness(*context_), some_stiffness_value);
+
+  // Expect to throw on invalid damping values.
+  EXPECT_THROW(spring_->SetStiffness(context_.get(), -1), std::exception);
 }
 
 // Verify the spring applies no forces when the separation equals the

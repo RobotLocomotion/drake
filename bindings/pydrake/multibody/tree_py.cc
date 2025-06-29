@@ -1027,7 +1027,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("joint", &Class::joint, py_rvp::reference_internal,
             cls_doc.joint.doc)
         .def("nominal_angle", &Class::nominal_angle, cls_doc.nominal_angle.doc)
-        .def("stiffness", &Class::stiffness, cls_doc.stiffness.doc);
+        .def("default_stiffness", &Class::default_stiffness,
+            cls_doc.default_stiffness.doc)
+        .def("set_default_stiffness", &Class::set_default_stiffness,
+            py::arg("stiffness"), cls_doc.set_default_stiffness.doc)
+        .def("GetStiffness", &Class::GetStiffness, py::arg("context"),
+            cls_doc.GetStiffness.doc)
+        .def("SetStiffness", &Class::SetStiffness, py::arg("context"),
+            py::arg("stiffness"), cls_doc.SetStiffness.doc);
   }
 
   {
