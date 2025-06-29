@@ -104,7 +104,7 @@ class never_destroyed {
   never_destroyed() { new (&storage_) T(); }
   T& access() { return *reinterpret_cast<T*>(&storage_); }
  private:
-  typename std::aligned_storage<sizeof(T), alignof(T)>::type storage_;
+  alignas(T) std::byte storage_[sizeof(T)];
 };
 
 class ActiveMonitor {
