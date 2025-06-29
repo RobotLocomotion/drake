@@ -42,7 +42,7 @@ void RevoluteSpring<T>::DoCalcAndAddForceContribution(
     const internal::VelocityKinematicsCache<T>&,
     MultibodyForces<T>* forces) const {
   const T delta = nominal_angle_ - joint().get_angle(context);
-  const T torque = stiffness_ * delta;
+  const T torque = this->GetStiffness(context) * delta;
   joint().AddInTorque(context, torque, forces);
 }
 
@@ -52,7 +52,7 @@ T RevoluteSpring<T>::CalcPotentialEnergy(
     const internal::PositionKinematicsCache<T>&) const {
   const T delta = nominal_angle_ - joint().get_angle(context);
 
-  return 0.5 * stiffness_ * delta * delta;
+  return 0.5 * this->GetStiffness(context) * delta * delta;
 }
 
 template <typename T>
@@ -67,7 +67,7 @@ T RevoluteSpring<T>::CalcConservativePower(
   // being positive when the potential energy decreases.
   const T delta = nominal_angle_ - joint().get_angle(context);
   const T theta_dot = joint().get_angular_rate(context);
-  return stiffness_ * delta * theta_dot;
+  return this->GetStiffness(context) * delta * theta_dot;
 }
 
 template <typename T>
@@ -89,7 +89,7 @@ RevoluteSpring<T>::TemplatedDoCloneToScalar(
   // reference, which might not be available during cloning.
   std::unique_ptr<RevoluteSpring<ToScalar>> spring_clone(
       new RevoluteSpring<ToScalar>(this->model_instance(), joint_index_,
-                                   nominal_angle(), stiffness()));
+                                   nominal_angle(), default_stiffness()));
   return spring_clone;
 }
 
@@ -115,8 +115,9 @@ RevoluteSpring<T>::DoCloneToScalar(
 template <typename T>
 std::unique_ptr<ForceElement<T>> RevoluteSpring<T>::DoShallowClone() const {
   // N.B. We use the private constructor since joint() requires a MbT pointer.
-  return std::unique_ptr<ForceElement<T>>(new RevoluteSpring<T>(
-      this->model_instance(), joint_index_, nominal_angle(), stiffness()));
+  return std::unique_ptr<ForceElement<T>>(
+      new RevoluteSpring<T>(this->model_instance(), joint_index_,
+                            nominal_angle(), default_stiffness()));
 }
 
 }  // namespace multibody
