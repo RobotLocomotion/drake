@@ -400,8 +400,7 @@ class EigenPtr {
     RefType& raw_value() { return reinterpret_cast<RefType&>(storage_); }
 
     bool has_value_{};
-    typename std::aligned_storage<sizeof(RefType), alignof(RefType)>::type
-        storage_;
+    alignas(RefType) std::byte storage_[sizeof(RefType)];
   };
 
   // Use mutable, reassignable ref to permit pointer-like semantics (with
