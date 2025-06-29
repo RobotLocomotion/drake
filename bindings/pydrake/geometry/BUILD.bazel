@@ -50,6 +50,7 @@ drake_pybind_library(
     cc_srcs = [
         "geometry_py.cc",
         "geometry_py.h",
+        "geometry_py_bounding_box.cc",
         "geometry_py_common.cc",
         "geometry_py_hydro.cc",
         "geometry_py_meshes.cc",
@@ -85,6 +86,14 @@ drake_py_unittest(
     name = "frame_id_test",
     deps = [
         ":geometry",
+    ],
+)
+
+drake_py_unittest(
+    name = "bounding_box_test",
+    deps = [
+        ":geometry",
+        "//bindings/pydrake/common/test_utilities:pickle_compare_py",
     ],
 )
 

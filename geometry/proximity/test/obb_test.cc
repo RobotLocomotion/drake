@@ -14,7 +14,6 @@
 
 namespace drake {
 namespace geometry {
-namespace internal {
 
 using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
@@ -232,7 +231,7 @@ class ObbMakerTestRectangularBox : public ::testing::Test {
       : ::testing::Test(),
         // Resolution hint 10 guarantees that the box mesh will be the
         // coarsest possible mesh with only 8 vertices and 12 triangles.
-        mesh_M_(MakeBoxSurfaceMesh<double>(Box(2, 4, 6), 10)) {}
+        mesh_M_(internal::MakeBoxSurfaceMesh<double>(Box(2, 4, 6), 10)) {}
 
   void SetUp() override {
     ASSERT_EQ(mesh_M_.num_vertices(), 8);
@@ -474,7 +473,7 @@ GTEST_TEST(ObbMakerTest, TestOptimizeObbVolume) {
   // The first line calls it mesh_M even though it's actually mesh_E. The
   // second line correctly makes it mesh_M.
   TriangleSurfaceMesh<double> mesh_M =
-      MakeEllipsoidSurfaceMesh<double>(Ellipsoid(1., 2., 3.), 6);
+      internal::MakeEllipsoidSurfaceMesh<double>(Ellipsoid(1., 2., 3.), 6);
   mesh_M.TransformVertices(X_ME);
   // Confirm that it is an octahedron.
   ASSERT_EQ(8, mesh_M.num_triangles());
@@ -504,7 +503,8 @@ GTEST_TEST(ObbMakerTest, TestOptimizeObbVolume) {
 
   // The whole mesh is much smaller than 1mm -- that should be sufficient.
   TriangleSurfaceMesh<double> mesh2_M =
-      MakeEllipsoidSurfaceMesh<double>(Ellipsoid(1e-5, 2e-5, 3e-5), 6);
+      internal::MakeEllipsoidSurfaceMesh<double>(Ellipsoid(1e-5, 2e-5, 3e-5),
+                                                 6);
   mesh2_M.TransformVertices(X_ME);
   const Obb initial_obb2_M(X_ME, Vector3d(1e-5, 2e-5, 3e-5));
   const Obb optimized_obb2_M =
@@ -536,7 +536,7 @@ class ObbMakerTestOctahedron : public ::testing::Test {
   ObbMakerTestOctahedron()
       : ::testing::Test(),
         // Use a coarse sphere, i.e. an octahedron, as the underlying mesh.
-        mesh_M_(MakeSphereSurfaceMesh<double>(Sphere(1.5), 3)),
+        mesh_M_(internal::MakeSphereSurfaceMesh<double>(Sphere(1.5), 3)),
         test_vertices_{0, 1, 2, 3, 4, 5} {}
 
   void SetUp() override { ASSERT_EQ(mesh_M_.num_vertices(), 6); }
@@ -656,7 +656,7 @@ TEST_F(ObbMakerTestOctahedron, ObbMakerCompute) {
 GTEST_TEST(ObbMakerTest, TestTruncatedBox) {
   // Resolution hint 10 is larger than the largest box dimension 6, so we
   // should get the coarsest mesh: 8 vertices, 12 triangles.
-  auto surface_mesh = MakeBoxSurfaceMesh<double>(Box(6, 4, 2), 10);
+  auto surface_mesh = internal::MakeBoxSurfaceMesh<double>(Box(6, 4, 2), 10);
   ASSERT_EQ(surface_mesh.num_vertices(), 8);
   ASSERT_EQ(surface_mesh.num_triangles(), 12);
   std::set<int> test_vertices;
@@ -691,8 +691,10 @@ GTEST_TEST(ObbMakerTest, TestTruncatedBox) {
 // Smoke test that it works with VolumeMesh<double>.
 GTEST_TEST(ObbMakerTest, TestVolumeMesh) {
   // Use a very coarse mesh.
-  const VolumeMesh<double> volume_mesh = MakeEllipsoidVolumeMesh<double>(
-      Ellipsoid(1., 2., 3.), 6, TessellationStrategy::kSingleInteriorVertex);
+  const VolumeMesh<double> volume_mesh =
+      internal::MakeEllipsoidVolumeMesh<double>(
+          Ellipsoid(1., 2., 3.), 6,
+          internal::TessellationStrategy::kSingleInteriorVertex);
   std::set<int> test_vertices;
   for (int i = 0; i < volume_mesh.num_vertices(); ++i) {
     test_vertices.insert(i);
@@ -907,7 +909,7 @@ GTEST_TEST(ObbTest, PlaneOverlap) {
     for (const auto& X_QP : X_QPs) {
       // Define the plane in the query frame Q.
       const Vector3d& Pz_Q = X_QP.rotation().col(2);
-      Plane<double> plane_Q{Pz_Q, X_QP.translation()};
+      internal::Plane<double> plane_Q{Pz_Q, X_QP.translation()};
 
       // We position Ho such that Cmin lies on the z = 0 plane in Frame P. Given
       // we know p_HoCmin_P, we know its current z-value. To put it at zero, we
@@ -1073,6 +1075,5 @@ GTEST_TEST(ObbTest, TestEqual) {
 }
 
 }  // namespace
-}  // namespace internal
 }  // namespace geometry
 }  // namespace drake

@@ -25,6 +25,7 @@ PYBIND11_MODULE(geometry, m) {
    of bindings executed prior to it. */
   DefineGeometryMeshes(m);
   DefineGeometryCommon(m);
+  DefineGeometryBoundingBox(m);
   DefineGeometryRefine(m);
   DefineGeometryHydro(m);
   DefineGeometryRender(m);
