@@ -1,4 +1,4 @@
-#include "drake/geometry/proximity/make_obb_mesh_impl.h"
+#include "drake/geometry/proximity/make_obb_from_mesh.h"
 
 #include <set>
 #include <string>
@@ -48,15 +48,19 @@ Obb MakeObb(const MeshSource& mesh_source, const Vector3d& scale) {
     ObbMaker<VolumeMesh<double>> obb_maker(volume_mesh, all_vertices);
     return obb_maker.Compute();
   } else if (mesh_source.extension() == ".gltf") {
-    // For glTF files, we don't currently have a direct mesh creation method
-    // that works with ObbMaker, so we throw an exception.
-    throw std::runtime_error(
-        fmt::format("MakeObb does not currently support glTF files. "
-                    "Unsupported extension '{}' for geometry data: {}.",
-                    mesh_source.extension(), mesh_source.description()));
+    // For glTF files, we create the convex hull of the mesh and then compute
+    // the OBB of the convex hull.
+    const Mesh mesh(mesh_source, scale);
+    const PolygonSurfaceMesh<double> polygon_mesh = MakeConvexHull(mesh);
+    std::set<int> all_vertices;
+    for (int i = 0; i < polygon_mesh.num_vertices(); ++i) {
+      all_vertices.insert(i);
+    }
+    ObbMaker<PolygonSurfaceMesh<double>> obb_maker(polygon_mesh, all_vertices);
+    return obb_maker.Compute();
   } else {
     throw std::runtime_error(
-        fmt::format("MakeObb only applies to .obj and .vtk meshes; "
+        fmt::format("MakeObb only applies to .obj, .vtk, and .gltf meshes; "
                     "unsupported extension '{}' for geometry data: {}.",
                     mesh_source.extension(), mesh_source.description()));
   }
