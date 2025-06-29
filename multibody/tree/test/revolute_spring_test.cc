@@ -98,7 +98,6 @@ TEST_F(SpringTester, ConstructionAndAccessors) {
 
 TEST_F(SpringTester, ContextDependentAccess) {
   const double some_stiffness_value = 5;
-  // Damping.
   EXPECT_EQ(spring_->GetStiffness(*context_), stiffness_);
 
   EXPECT_NO_THROW(spring_->SetStiffness(context_.get(), some_stiffness_value));
