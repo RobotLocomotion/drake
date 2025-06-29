@@ -42,31 +42,33 @@ class RevoluteSpring final : public ForceElement<T> {
 
   double nominal_angle() const { return nominal_angle_; }
 
-  DRAKE_DEPRECATED("2025-09-01", "Use the 'default_stiffness()' method instead.")
+  DRAKE_DEPRECATED("2025-09-01",
+                   "Use the 'default_stiffness()' method instead.")
   double stiffness() const { return stiffness_; }
 
   /// Returns the default stiffness constant in N⋅m/rad.
   double default_stiffness() const { return stiffness_; }
 
-  /// Returns the Context dependent stiffness coefficient stored as a parameter in
-  /// `context`. Refer to default_stiffness() for details.
+  /// Returns the Context dependent stiffness coefficient stored as a parameter
+  /// in `context`. Refer to default_stiffness() for details.
   /// @param[in] context The context storing the state and parameters for the
   /// model to which `this` spring belongs.
   const T& GetStiffness(const systems::Context<T>& context) const {
     return context.get_numeric_parameter(stiffness_parameter_index_).value()[0];
   }
 
-  /// Sets the value of the linear stiffness coefficient for this force element, stored
-  /// as a parameter in `context`. Refer to default_stiffness() for details.
+  /// Sets the value of the linear stiffness coefficient for this force element,
+  /// stored as a parameter in `context`. Refer to default_stiffness() for
+  /// details.
   /// @param[out] context The context storing the state and parameters for the
   /// model to which `this` spring belongs.
   /// @param[in] stiffness The stiffness value.
   /// @throws std::exception if `stiffness` is negative.
   void SetStiffness(systems::Context<T>* context, const T& stiffness) const {
     DRAKE_THROW_UNLESS(stiffness >= 0);
-    context->get_mutable_numeric_parameter(stiffness_parameter_index_).set_value(Vector1<T>(stiffness));
+    context->get_mutable_numeric_parameter(stiffness_parameter_index_)
+        .set_value(Vector1<T>(stiffness));
   }
-
 
   T CalcPotentialEnergy(
       const systems::Context<T>& context,
@@ -113,11 +115,9 @@ class RevoluteSpring final : public ForceElement<T> {
       systems::Parameters<T>* parameters) const final {
     // Set the default stiffness and damping parameters.
     systems::BasicVector<T>& stiffness_parameter =
-        parameters->get_mutable_numeric_parameter(
-            stiffness_parameter_index_);
+        parameters->get_mutable_numeric_parameter(stiffness_parameter_index_);
     stiffness_parameter.set_value(Vector1<T>(stiffness_));
   }
-
 
   // Allow different specializations to access each other's private data for
   // scalar conversion.
