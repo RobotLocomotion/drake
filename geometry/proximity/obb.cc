@@ -4,6 +4,7 @@
 #include <limits>
 
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/utilities.h"
 
@@ -261,6 +262,7 @@ Obb ObbMaker<MeshType>::Compute() const {
 
 template class ObbMaker<TriangleSurfaceMesh<double>>;
 template class ObbMaker<VolumeMesh<double>>;
+template class ObbMaker<PolygonSurfaceMesh<double>>;
 
 // TODO(SeanCurtis-TRI): Remove support for building a Bvh on an AutoDiff-valued
 //  mesh after we've cleaned up the scalar types in hydroelastics. Specifically,

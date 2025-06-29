@@ -118,6 +118,7 @@ drake_cc_library(
     srcs = ["obb.cc"],
     hdrs = ["obb.h"],
     deps = [
+        ":polygon_surface_mesh",
         ":triangle_surface_mesh",
         ":volume_mesh",
         "//common:essential",
@@ -586,9 +587,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "make_obb_mesh_impl",
-    srcs = ["make_obb_mesh_impl.cc"],
-    hdrs = ["make_obb_mesh_impl.h"],
+    name = "make_obb_from_mesh",
+    srcs = ["make_obb_from_mesh.cc"],
+    hdrs = ["make_obb_from_mesh.h"],
     internal = True,
     visibility = ["//geometry:__subpackages__"],
     deps = [
@@ -1672,9 +1673,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "obb_test",
+    data = [
+        "//geometry:test_obj_files",
+    ],
     deps = [
         ":bv",
         ":make_box_mesh",
+        ":make_convex_hull_mesh",
         ":make_ellipsoid_mesh",
         ":make_sphere_mesh",
         ":triangle_surface_mesh",
