@@ -5,6 +5,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/revolute_joint.h"
 
@@ -41,17 +42,11 @@ class RevoluteSpring final : public ForceElement<T> {
 
   double nominal_angle() const { return nominal_angle_; }
 
+  DRAKE_DEPRECATED("2025-09-01", "Use the 'default_stiffness()' method instead.")
+  double stiffness() const { return stiffness_; }
+
   /// Returns the default stiffness constant in N⋅m/rad.
   double default_stiffness() const { return stiffness_; }
-
-  /// Sets the default value of linear stiffness for the attached joint, in N⋅m/rad.
-  /// @throws std::exception if stiffness is negative.
-  /// @pre the MultibodyPlant must not be finalized.
-  void set_default_stiffness(double stiffness) {
-    DRAKE_THROW_UNLESS(stiffness >= 0);
-    DRAKE_DEMAND(!this->get_parent_tree().topology_is_valid());
-    stiffness_ = stiffness;
-  }
 
   /// Returns the Context dependent stiffness coefficient stored as a parameter in
   /// `context`. Refer to default_stiffness() for details.
