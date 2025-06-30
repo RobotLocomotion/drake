@@ -20,9 +20,9 @@ namespace multibody {
 /// where θ₀ is the nominal joint position. Note that joint damping exists
 /// within the RevoluteJoint itself, and so is not included here.
 ///
-/// The k and θ₀ specified in the constructor are kept as default values. These
-/// parameters are stored within the context parameters as a single vector
-/// [k, θ₀] and can be modified after the plant is finalized.
+/// The k (stiffness) and θ₀ (nominal angle) specified in the constructor
+/// are kept as default values. These parameters are stored within the context
+/// and can be accessed and set by context dependent getters/setters.
 ///
 /// @tparam_default_scalar
 template <typename T>
@@ -59,8 +59,7 @@ class RevoluteSpring final : public ForceElement<T> {
   double default_stiffness() const { return stiffness_; }
 
   /// Returns the Context dependent nominal angle θ₀ stored as a
-  /// parameter in `context`. This method returns the default_stiffness() for
-  /// the default context.
+  /// parameter in `context`.
   /// @param[in] context The context storing the state and parameters for the
   /// model to which `this` spring belongs.
   /// @retval returns the nominal angle θ₀ in radians.
@@ -81,8 +80,7 @@ class RevoluteSpring final : public ForceElement<T> {
   }
 
   /// Returns the Context dependent stiffness coefficient k stored as a
-  /// parameter in `context`. This method returns the default_stiffness() for
-  /// the default context.
+  /// parameter in `context`.
   /// @param[in] context The context storing the state and parameters for the
   /// model to which `this` spring belongs.
   /// @retval returns the stiffness k in N⋅m/rad stored within the context.
@@ -145,10 +143,10 @@ class RevoluteSpring final : public ForceElement<T> {
   // Implementation for ForceElement::DoSetDefaultForceElementParameters().
   void DoSetDefaultForceElementParameters(
       systems::Parameters<T>* parameters) const final {
-    // Set the default stiffness and damping parameters.
-    systems::BasicVector<T>& stiffness_parameter =
+    // Set the default stiffness and nominal angle parameters.
+    systems::BasicVector<T>& spring_parameter =
         parameters->get_mutable_numeric_parameter(spring_parameter_index_);
-    stiffness_parameter.set_value(Vector2<T>(stiffness_, nominal_angle_));
+    spring_parameter.set_value(Vector2<T>(stiffness_, nominal_angle_));
   }
 
   // Allow different specializations to access each other's private data for

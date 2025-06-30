@@ -87,7 +87,7 @@ class SpringTester : public ::testing::Test {
 
   // Parameters of the case.
   const double nominal_angle_ = 1.0;  // [rad]
-  const double stiffness_ = 2.0;      // [N/m]
+  const double stiffness_ = 2.0;      // [N⋅m/rad]
 };
 
 TEST_F(SpringTester, ConstructionAndAccessors) {
@@ -99,23 +99,18 @@ TEST_F(SpringTester, ConstructionAndAccessors) {
 TEST_F(SpringTester, ContextDependentAccess) {
   const double some_value = 5;
   EXPECT_EQ(spring_->GetStiffness(*context_), stiffness_);
-
   EXPECT_NO_THROW(spring_->SetStiffness(context_.get(), some_value));
   EXPECT_EQ(spring_->GetStiffness(*context_), some_value);
   // Expect to throw on invalid damping values.
   EXPECT_THROW(spring_->SetStiffness(context_.get(), -1), std::exception);
 
-  // Check if default value is reset correctly
-  context_ = system_->CreateDefaultContext();
-  EXPECT_EQ(spring_->GetStiffness(*context_), stiffness_);
-
   EXPECT_EQ(spring_->GetNominalAngle(*context_), nominal_angle_);
-
   EXPECT_NO_THROW(spring_->SetNominalAngle(context_.get(), some_value));
   EXPECT_EQ(spring_->GetNominalAngle(*context_), some_value);
 
   // Check if default value is reset correctly
   context_ = system_->CreateDefaultContext();
+  EXPECT_EQ(spring_->GetStiffness(*context_), stiffness_);
   EXPECT_EQ(spring_->GetNominalAngle(*context_), nominal_angle_);
 }
 
