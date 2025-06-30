@@ -1,7 +1,5 @@
 #include "drake/planning/iris/iris_np2.h"
 
-#include <variant>
-
 #include <common_robotics_utilities/parallelism.hpp>
 
 #include "drake/common/text_logging.h"
@@ -535,27 +533,11 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
         if (padding > 0) {
           points_bounded_distance_constraint->set_max_distance(padding);
         }
-        std::variant<
-            std::shared_ptr<SamePointConstraint>,
-            std::shared_ptr<PointsBoundedDistanceConstraint>,
-            std::shared_ptr<ParameterizedSamePointConstraint>,
-            std::shared_ptr<ParameterizedPointsBoundedDistanceConstraint>>
-            constraint =
-                padding > 0
-                    ? std::variant<
-                          std::shared_ptr<SamePointConstraint>,
-                          std::shared_ptr<PointsBoundedDistanceConstraint>,
-                          std::shared_ptr<ParameterizedSamePointConstraint>,
-                          std::shared_ptr<
-                              ParameterizedPointsBoundedDistanceConstraint>>(
-                          points_bounded_distance_constraint)
-                    : std::variant<
-                          std::shared_ptr<SamePointConstraint>,
-                          std::shared_ptr<PointsBoundedDistanceConstraint>,
-                          std::shared_ptr<ParameterizedSamePointConstraint>,
-                          std::shared_ptr<
-                              ParameterizedPointsBoundedDistanceConstraint>>(
-                          same_point_constraint);
+        ClosestCollisionProgram::AcceptableConstraint constraint =
+            padding > 0 ? ClosestCollisionProgram::AcceptableConstraint(
+                              points_bounded_distance_constraint)
+                        : ClosestCollisionProgram::AcceptableConstraint(
+                              same_point_constraint);
         ClosestCollisionProgram prog(
             constraint, *frames.at(collision_pair.geomA),
             *frames.at(collision_pair.geomB), *sets.at(collision_pair.geomA),

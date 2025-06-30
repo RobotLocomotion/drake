@@ -231,11 +231,7 @@ void ParameterizedPointsBoundedDistanceConstraint::DoEval(
 }
 
 ClosestCollisionProgram::ClosestCollisionProgram(
-    std::variant<std::shared_ptr<SamePointConstraint>,
-                 std::shared_ptr<PointsBoundedDistanceConstraint>,
-                 std::shared_ptr<ParameterizedSamePointConstraint>,
-                 std::shared_ptr<ParameterizedPointsBoundedDistanceConstraint>>
-        same_point_constraint,
+    AcceptableConstraint same_point_constraint,
     const multibody::Frame<double>& frameA,
     const multibody::Frame<double>& frameB, const ConvexSet& setA,
     const ConvexSet& setB, const Hyperellipsoid& E,

@@ -198,18 +198,20 @@ class ParameterizedPointsBoundedDistanceConstraint
  */
 class ClosestCollisionProgram {
  public:
-  ClosestCollisionProgram(
-      std::variant<
-          std::shared_ptr<SamePointConstraint>,
-          std::shared_ptr<PointsBoundedDistanceConstraint>,
-          std::shared_ptr<ParameterizedSamePointConstraint>,
-          std::shared_ptr<ParameterizedPointsBoundedDistanceConstraint>>
-          same_point_constraint,
-      const multibody::Frame<double>& frameA,
-      const multibody::Frame<double>& frameB, const ConvexSet& setA,
-      const ConvexSet& setB, const Hyperellipsoid& E,
-      const Eigen::Ref<const Eigen::MatrixXd>& A,
-      const Eigen::Ref<const Eigen::VectorXd>& b);
+  typedef std::variant<
+      std::shared_ptr<SamePointConstraint>,
+      std::shared_ptr<PointsBoundedDistanceConstraint>,
+      std::shared_ptr<ParameterizedSamePointConstraint>,
+      std::shared_ptr<ParameterizedPointsBoundedDistanceConstraint>>
+      AcceptableConstraint;
+
+  ClosestCollisionProgram(AcceptableConstraint same_point_constraint,
+                          const multibody::Frame<double>& frameA,
+                          const multibody::Frame<double>& frameB,
+                          const ConvexSet& setA, const ConvexSet& setB,
+                          const Hyperellipsoid& E,
+                          const Eigen::Ref<const Eigen::MatrixXd>& A,
+                          const Eigen::Ref<const Eigen::VectorXd>& b);
 
   ~ClosestCollisionProgram();
 
