@@ -1,13 +1,14 @@
 #include "drake/geometry/proximity/make_obb_from_mesh.h"
 
 #include <set>
-#include <string>
 
 #include <fmt/format.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/proximity/make_convex_hull_mesh_impl.h"
 #include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
+#include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/vtk_to_volume_mesh.h"
@@ -23,35 +24,29 @@ Obb MakeObb(const MeshSource& mesh_source, const Vector3d& scale) {
     // For OBJ files, create a TriangleSurfaceMesh and use ObbMaker.
     TriangleSurfaceMesh<double> surface_mesh =
         ReadObjToTriangleSurfaceMesh(mesh_source, scale);
-
-    // Create a set containing all vertex indices
+    // Create a set containing all vertex indices.
     std::set<int> all_vertices;
     for (int i = 0; i < surface_mesh.num_vertices(); ++i) {
       all_vertices.insert(i);
     }
-
-    // Use ObbMaker to compute the OBB
     ObbMaker<TriangleSurfaceMesh<double>> obb_maker(surface_mesh, all_vertices);
     return obb_maker.Compute();
   } else if (mesh_source.extension() == ".vtk") {
     // For VTK files, create a VolumeMesh and use ObbMaker.
     const VolumeMesh<double> volume_mesh =
         ReadVtkToVolumeMesh(mesh_source, scale);
-
-    // Create a set containing all vertex indices
+    // Create a set containing all vertex indices.
     std::set<int> all_vertices;
     for (int i = 0; i < volume_mesh.num_vertices(); ++i) {
       all_vertices.insert(i);
     }
-
-    // Use ObbMaker to compute the OBB
     ObbMaker<VolumeMesh<double>> obb_maker(volume_mesh, all_vertices);
     return obb_maker.Compute();
   } else if (mesh_source.extension() == ".gltf") {
     // For glTF files, we create the convex hull of the mesh and then compute
-    // the OBB of the convex hull.
-    const Mesh mesh(mesh_source, scale);
-    const PolygonSurfaceMesh<double> polygon_mesh = MakeConvexHull(mesh);
+    // the OBB of the convex hull so that we can reuse existing functions.
+    const PolygonSurfaceMesh<double> polygon_mesh =
+        MakeConvexHull(mesh_source, scale);
     std::set<int> all_vertices;
     for (int i = 0; i < polygon_mesh.num_vertices(); ++i) {
       all_vertices.insert(i);

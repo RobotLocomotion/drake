@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <limits>
 
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/utilities.h"
 
@@ -134,7 +134,6 @@ Obb ObbMaker<MeshType>::CalcOrientedBox(const RotationMatrixd& R_MB) const {
   //           Fo=Mo → → → → → → → Mx
   //
   const RotationMatrixd& R_MF = R_MB;
-
   // We will find the upper and lower bounding points U and L of the box as
   // measured and expressed in frame F: p_FU, p_FL. We cannot do it in frame
   // B because we do not know the origin Bo of frame B yet. It is not true in
