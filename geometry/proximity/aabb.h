@@ -49,7 +49,7 @@ class Aabb {
 
   /** Constructs an axis-aligned bounding box measured and expressed in frame H.
 
-   @param p_HoBo_H      The position vector from the hierarchy frame's origin to
+   @param p_HoBo        The position vector from the hierarchy frame's origin to
                         the box's canonical origin, expressed in frame H. The
                         box is centered on Bo and aligned with Bx, By, and Bz.
    @param half_width    The _half_ measures of the box in each of the Bx, By,
