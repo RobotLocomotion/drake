@@ -86,6 +86,22 @@ const RigidTransform<T>& QueryObject<T>::GetPoseInWorld(
 }
 
 template <typename T>
+Aabb QueryObject<T>::ComputeAabbInWorld(GeometryId geometry_id) const {
+  ThrowIfNotCallable();
+  FullConfigurationUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.ComputeAabbInWorld(geometry_id);
+}
+
+template <typename T>
+Obb QueryObject<T>::ComputeObbInWorld(GeometryId geometry_id) const {
+  ThrowIfNotCallable();
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.ComputeObbInWorld(geometry_id);
+}
+
+template <typename T>
 const VectorX<T>& QueryObject<T>::GetConfigurationsInWorld(
     GeometryId geometry_id) const {
   ThrowIfNotCallable();
