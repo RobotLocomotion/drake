@@ -333,6 +333,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
                                     const char* function_name) const;
   void ThrowIfCosPitchNearZero(const T& cos_pitch, const T& pitch_angle,
                                const char* function_name) const {
+    using std::abs;
     if (abs(cos_pitch) < 1.0e-3)
       ThrowSinceCosPitchIsNearZero(pitch_angle, function_name);
   }
