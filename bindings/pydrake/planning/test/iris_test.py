@@ -71,7 +71,7 @@ def SetSampledIrisOptions(options):
     options.sampled_iris_options.epsilon = 1e-2
     options.sampled_iris_options.\
         containment_points = np.array([[0, 0], [1, 0]])
-    options.sampled_iris_options.max_iterations = 3
+    options.sampled_iris_options.max_iterations = 1
     options.sampled_iris_options.max_iterations_separating_planes = 20
     options.sampled_iris_options.max_separating_planes_per_iteration = 10
     options.sampled_iris_options.parallelism = Parallelism(True)
