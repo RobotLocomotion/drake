@@ -24,58 +24,62 @@ using symbolic::Variable;
 
 TEST_F(JointLimits1D, JointLimitsBasic) {
   IrisNp2Options options;
-  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
-  ASSERT_TRUE(sgcc_ptr != nullptr);
+  auto scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
   HPolyhedron region =
-      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
   CheckRegion(region);
 }
 
 // Check unsupported features.
 TEST_F(JointLimits1D, UnsupportedOptions) {
   IrisNp2Options options;
-  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
-  ASSERT_TRUE(sgcc_ptr != nullptr);
+  auto scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
 
   options.sampled_iris_options.containment_points = Eigen::MatrixXd::Zero(1, 3);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options),
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
       ".*additional containment points.*");
   options.sampled_iris_options.containment_points = std::nullopt;
 
   solvers::MathematicalProgram prog;
   options.sampled_iris_options.prog_with_additional_constraints = &prog;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options),
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
       ".*additional constriants.*");
   options.sampled_iris_options.prog_with_additional_constraints = nullptr;
 
   const Sphere sphere(0.1);
   const BodyShapeDescription body_shape{sphere, {}, "limits", "movable"};
-  sgcc_ptr->AddCollisionShape("test", body_shape);
+  scene_graph_checker->AddCollisionShape("test", body_shape);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options),
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
       ".*added collision shapes.*");
-  sgcc_ptr->RemoveAllAddedCollisionShapes();
+  scene_graph_checker->RemoveAllAddedCollisionShapes();
 }
 
 // Check padding as an unsupported feature. (We have to use a test environment
 // with multiple collision geometries.)
 TEST_F(DoublePendulum, PaddingUnsupported) {
   IrisNp2Options options;
-  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
-  ASSERT_TRUE(sgcc_ptr != nullptr);
+  auto scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
 
-  sgcc_ptr->SetPaddingAllRobotEnvironmentPairs(-1.0);
+  scene_graph_checker->SetPaddingAllRobotEnvironmentPairs(-1.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options),
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
       ".*negative padding.*");
 }
 
 TEST_F(DoublePendulum, IrisNp2Test) {
   IrisNp2Options options;
-  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
-  ASSERT_TRUE(sgcc_ptr != nullptr);
+  auto scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
 
   options.sampled_iris_options.verbose = true;
 
@@ -83,7 +87,7 @@ TEST_F(DoublePendulum, IrisNp2Test) {
   options.sampled_iris_options.meshcat = meshcat_;
 
   HPolyhedron region =
-      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
   CheckRegion(region);
 
   PlotEnvironmentAndRegion(region);
@@ -92,21 +96,22 @@ TEST_F(DoublePendulum, IrisNp2Test) {
   // slightly-different region.
   options.sampled_iris_options.sample_particles_in_parallel = true;
   HPolyhedron region2 =
-      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
   CheckRegion(region2);
   EXPECT_FALSE(region.A().isApprox(region2.A(), 1e-10));
 }
 
 TEST_F(DoublePendulum, PositivePadding) {
   IrisNp2Options options;
-  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
-  ASSERT_TRUE(sgcc_ptr != nullptr);
+  auto scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
 
   const double padding = 0.5;
-  sgcc_ptr->SetPaddingAllRobotEnvironmentPairs(padding);
-  sgcc_ptr->SetPaddingAllRobotRobotPairs(padding);
+  scene_graph_checker->SetPaddingAllRobotEnvironmentPairs(padding);
+  scene_graph_checker->SetPaddingAllRobotRobotPairs(padding);
   HPolyhedron region =
-      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
 
   EXPECT_TRUE(region.PointInSet(Vector2d{.2, 0.0}));
   EXPECT_FALSE(region.PointInSet(Vector2d{.3, 0.0}));
@@ -119,23 +124,24 @@ TEST_F(DoublePendulum, PositivePadding) {
 // Check that we can filter out certain collisions.
 TEST_F(DoublePendulum, FilterCollisions) {
   IrisNp2Options options;
-  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
-  ASSERT_TRUE(sgcc_ptr != nullptr);
+  auto scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
 
   options.sampled_iris_options.verbose = true;
-  const auto& body_A = sgcc_ptr->plant().GetBodyByName("fixed");
-  const auto& body_B = sgcc_ptr->plant().GetBodyByName("link2");
-  sgcc_ptr->SetCollisionFilteredBetween(body_A, body_B, true);
+  const auto& body_A = scene_graph_checker->plant().GetBodyByName("fixed");
+  const auto& body_B = scene_graph_checker->plant().GetBodyByName("link2");
+  scene_graph_checker->SetCollisionFilteredBetween(body_A, body_B, true);
 
   meshcat_->Delete();
   options.sampled_iris_options.meshcat = meshcat_;
 
   HPolyhedron region =
-      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
 
   // Check the four corners for the joint limits.
-  VectorXd upper_limits = sgcc_ptr->plant().GetPositionUpperLimits();
-  VectorXd lower_limits = sgcc_ptr->plant().GetPositionLowerLimits();
+  VectorXd upper_limits = scene_graph_checker->plant().GetPositionUpperLimits();
+  VectorXd lower_limits = scene_graph_checker->plant().GetPositionLowerLimits();
   EXPECT_EQ(upper_limits.size(), 2);
   EXPECT_EQ(lower_limits.size(), 2);
   EXPECT_TRUE(region.PointInSet(upper_limits));
@@ -151,21 +157,23 @@ TEST_F(DoublePendulum, FilterCollisions) {
 // catch the error message.
 TEST_F(DoublePendulum, SpecifySolver) {
   IrisNp2Options options;
-  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
-  ASSERT_TRUE(sgcc_ptr != nullptr);
+  auto scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
 
   solvers::EqualityConstrainedQPSolver invalid_solver;
   options.solver = &invalid_solver;
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options),
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
       ".*EqualityConstrainedQPSolver is unable to solve.*");
 }
 
 TEST_F(DoublePendulum, PostprocessRemoveCollisions) {
   IrisNp2Options options;
-  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
-  ASSERT_TRUE(sgcc_ptr != nullptr);
+  auto scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
 
   // Deliberately set parameters so the initial region will pass the
   // probabilistic test.
@@ -177,21 +185,22 @@ TEST_F(DoublePendulum, PostprocessRemoveCollisions) {
   options.sampled_iris_options.remove_all_collisions_possible = false;
 
   HPolyhedron region =
-      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
 
   Vector2d query_point(0.5, 0.0);
-  EXPECT_FALSE(sgcc_ptr->CheckConfigCollisionFree(query_point));
+  EXPECT_FALSE(scene_graph_checker->CheckConfigCollisionFree(query_point));
   EXPECT_TRUE(region.PointInSet(query_point));
 
   options.sampled_iris_options.remove_all_collisions_possible = true;
-  region = IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+  region = IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
   EXPECT_FALSE(region.PointInSet(query_point));
 }
 
 TEST_F(DoublePendulumRationalForwardKinematics, FunctionParameterization) {
   IrisNp2Options options;
-  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
-  ASSERT_TRUE(sgcc_ptr != nullptr);
+  auto scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
 
   options.sampled_iris_options.meshcat = meshcat_;
 
@@ -213,9 +222,9 @@ TEST_F(DoublePendulumRationalForwardKinematics, FunctionParameterization) {
 
   CheckParameterization(options.parameterization.get_parameterization_double());
 
-  HPolyhedron region =
-      IrisNp2(*sgcc_ptr, starting_ellipsoid_rational_forward_kinematics_,
-              domain_rational_forward_kinematics_, options);
+  HPolyhedron region = IrisNp2(*scene_graph_checker,
+                               starting_ellipsoid_rational_forward_kinematics_,
+                               domain_rational_forward_kinematics_, options);
 
   CheckRegionRationalForwardKinematics(region);
   PlotEnvironmentAndRegionRationalForwardKinematics(
@@ -225,22 +234,24 @@ TEST_F(DoublePendulumRationalForwardKinematics, FunctionParameterization) {
 
 TEST_F(BlockOnGround, IrisNp2Test) {
   IrisNp2Options options;
-  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
-  ASSERT_TRUE(sgcc_ptr != nullptr);
+  auto scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
 
   meshcat_->Delete();
   options.sampled_iris_options.meshcat = meshcat_;
 
   HPolyhedron region =
-      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
   CheckRegion(region);
   PlotEnvironmentAndRegion(region);
 }
 
 TEST_F(ConvexConfigurationSpace, IrisNp2Test) {
   IrisNp2Options options;
-  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
-  ASSERT_TRUE(sgcc_ptr != nullptr);
+  auto scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
 
   options.sampled_iris_options.sample_particles_in_parallel = true;
 
@@ -261,15 +272,16 @@ TEST_F(ConvexConfigurationSpace, IrisNp2Test) {
   options.solver = &solver;
 
   HPolyhedron region =
-      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
   CheckRegion(region);
   PlotEnvironmentAndRegion(region);
 }
 
 TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
   IrisNp2Options options;
-  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
-  ASSERT_TRUE(sgcc_ptr != nullptr);
+  auto scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
 
   auto parameterization_double = [](const Vector1d& config) -> Vector2d {
     return Vector2d{config[0], 2 * config[0] + 1};
@@ -284,7 +296,7 @@ TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
                                    /* parameterization_is_threadsafe */ true,
                                    /* parameterization_dimension */ 1);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options),
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
       ".*autodiff-compatible parameterization.*");
 
   options.parameterization = IrisParameterizationFunction(
@@ -293,7 +305,7 @@ TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
       /* parameterization_dimension */ 1);
 
   HPolyhedron region =
-      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
   CheckRegion(region);
 
   meshcat_->Delete();
