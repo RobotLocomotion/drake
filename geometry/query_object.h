@@ -172,18 +172,6 @@ class QueryObject {
    is deformable.  */
   const math::RigidTransform<T>& GetPoseInWorld(GeometryId geometry_id) const;
 
-  /** Reports the axis-aligned bounding box of the geometry indicated by
-   `geometry_id` in the world frame.
-   @throws std::exception if the geometry `geometry_id` is not valid.
-   @throws std::exception if the geometry is not deformable.  */
-  Aabb ComputeAabbInWorld(GeometryId geometry_id) const;
-
-  /** Reports the oriented bounding box of the geometry indicated by
-   `geometry_id` in the world frame.
-   @throws std::exception if the geometry `geometry_id` is not valid.
-   @throws std::exception if the geometry is deformable.  */
-  Obb ComputeObbInWorld(GeometryId geometry_id) const;
-
   /** Reports the configuration of the deformable geometry indicated by
    `deformable_geometry_id` relative to the world frame.
    @sa GetPoseInWorld().
@@ -204,6 +192,19 @@ class QueryObject {
    @experimental */
   std::vector<VectorX<T>> GetDrivenMeshConfigurationsInWorld(
       GeometryId deformable_geometry_id, Role role) const;
+
+  /** Reports the axis-aligned bounding box of the geometry indicated by
+   `geometry_id` in the world frame.
+   @throws std::exception if the geometry `geometry_id` is not valid.
+   @throws std::exception if the geometry is not deformable.  */
+  Aabb ComputeAabbInWorld(GeometryId geometry_id) const;
+
+  /** Reports the oriented bounding box of the geometry indicated by
+   `geometry_id` in the world frame.
+   @throws std::exception if the geometry `geometry_id` is not valid.
+   @throws std::exception if the geometry is deformable.  */
+  Obb ComputeObbInWorld(GeometryId geometry_id) const;
+
   //@}
 
   /**
