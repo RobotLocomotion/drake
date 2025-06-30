@@ -72,7 +72,8 @@ class RevoluteSpring final : public ForceElement<T> {
   /// element, stored as a parameter in `context`.
   /// @param[out] context The context storing the state and parameters for the
   /// model to which `this` spring belongs.
-  /// @param[in] nominal_angle The nominal angle θ₀ in radians.
+  /// @param[in] nominal_angle The nominal angle θ₀ in radians stored within the
+  /// context.
   void SetNominalAngle(systems::Context<T>* context,
                        const T& nominal_angle) const {
     context->get_mutable_numeric_parameter(spring_parameter_index_)
@@ -84,6 +85,7 @@ class RevoluteSpring final : public ForceElement<T> {
   /// the default context.
   /// @param[in] context The context storing the state and parameters for the
   /// model to which `this` spring belongs.
+  /// @retval returns the stiffness k in N⋅m/rad stored within the context.
   const T& GetStiffness(const systems::Context<T>& context) const {
     return context.get_numeric_parameter(spring_parameter_index_).value()[0];
   }
