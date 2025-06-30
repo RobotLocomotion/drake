@@ -103,11 +103,11 @@ rust_library(
     }),
     version = "0.2.100",
     deps = [
-        "@crate__bumpalo-3.18.1//:bumpalo",
+        "@crate__bumpalo-3.19.0//:bumpalo",
         "@crate__log-0.4.27//:log",
         "@crate__proc-macro2-1.0.95//:proc_macro2",
         "@crate__quote-1.0.40//:quote",
-        "@crate__syn-2.0.101//:syn",
+        "@crate__syn-2.0.104//:syn",
         "@crate__wasm-bindgen-shared-0.2.100//:wasm_bindgen_shared",
     ],
 )

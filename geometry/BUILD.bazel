@@ -821,6 +821,10 @@ filegroup(
     srcs = [
         "test/cube_with_hole.bin",
         "test/cube_with_hole.gltf",
+        "test/rotated_cube_squished.bin",
+        "test/rotated_cube_squished.gltf",
+        "test/rotated_cube_unit_scale.bin",
+        "test/rotated_cube_unit_scale.gltf",
     ],
 )
 
