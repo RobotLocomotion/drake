@@ -49,7 +49,7 @@ struct ConvexIntegratorSolverParameters {
 
   // Scaling factor for setting the tolerance ε = κ ⋅ accuracy in
   // error-controlled model.
-  double kappa{0.05};
+  double kappa{0.001};
 
   // Whether hessian reuse between iterations and time steps is enabled.
   bool enable_hessian_reuse{true};
