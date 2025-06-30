@@ -45,7 +45,7 @@ struct ConvexIntegratorSolverParameters {
   double tolerance{1e-8};
 
   // Tolerance for exact line search.
-  double ls_tolerance{1e-6};
+  double ls_tolerance{1e-8};
 
   // Scaling factor for setting the tolerance ε = κ ⋅ accuracy in
   // error-controlled model.
