@@ -44,6 +44,7 @@ drake_cc_package_library(
         ":make_ellipsoid_mesh",
         ":make_mesh_field",
         ":make_mesh_from_vtk",
+        ":make_obb_from_mesh",
         ":make_sphere_field",
         ":make_sphere_mesh",
         ":mesh_field",
@@ -590,17 +591,18 @@ drake_cc_library(
     name = "make_obb_from_mesh",
     srcs = ["make_obb_from_mesh.cc"],
     hdrs = ["make_obb_from_mesh.h"],
-    internal = True,
-    visibility = ["//geometry:__subpackages__"],
     deps = [
         ":obb",
         ":obj_to_surface_mesh",
+        ":polygon_surface_mesh",
         ":triangle_surface_mesh",
         ":volume_mesh",
         ":vtk_to_volume_mesh",
         "//common:essential",
         "//geometry:mesh_source",
-        "@fmt",
+    ],
+    implementation_deps = [
+        ":make_convex_hull_mesh_impl",
     ],
 )
 
@@ -1487,6 +1489,22 @@ drake_cc_googletest(
         ":proximity_utilities",
         ":volume_to_surface_mesh",
         "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_obb_from_mesh_test",
+    data = [
+        "//geometry:test_gltf_files",
+        "//geometry:test_obj_files",
+        "//geometry:test_vtk_files",
+    ],
+    deps = [
+        ":make_obb_from_mesh",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:mesh_source",
     ],
 )
 
