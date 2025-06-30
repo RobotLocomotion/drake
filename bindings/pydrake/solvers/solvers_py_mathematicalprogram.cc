@@ -634,6 +634,12 @@ void BindMathematicalProgram(py::module m) {
           // N.B. There is no corresponding C++ method, so the docstring here
           // is a literal, not a reference to documentation_pybind.h
           "Adds a cost function.")
+      .def(
+          "AddCost",
+          [](MathematicalProgram* self, const Binding<Cost>& binding) {
+            return self->AddCost(binding);
+          },
+          py::arg("binding"), doc.MathematicalProgram.AddCost.doc_1args_binding)
       .def("AddCost",
           static_cast<Binding<Cost> (MathematicalProgram::*)(
               const Expression&)>(&MathematicalProgram::AddCost),
