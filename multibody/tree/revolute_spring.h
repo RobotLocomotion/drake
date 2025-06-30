@@ -22,7 +22,7 @@ namespace multibody {
 ///
 /// The k and θ₀ specified in the constructor are kept as default values. These
 /// parameters are stored within the context parameters as a single vector
-/// [k,θ₀] and can be modified after the plant is finalized.
+/// [k, θ₀] and can be modified after the plant is finalized.
 ///
 /// @tparam_default_scalar
 template <typename T>
