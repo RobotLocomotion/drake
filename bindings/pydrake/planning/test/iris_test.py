@@ -1,6 +1,7 @@
 import unittest
 
 import pydrake.planning as mut
+from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomGenerator, Parallelism
 from pydrake.geometry.optimization import Hyperellipsoid, HPolyhedron
 from pydrake.multibody.inverse_kinematics import InverseKinematics
@@ -200,3 +201,31 @@ class TestIrisNp2(unittest.TestCase):
                              options=options)
         test_point = np.array([0.0, 0.5])
         self.assertTrue(region.PointInSet(test_point))
+
+        def parameterization_function(q):
+            return 2.0 * q + 1.0
+        double_input = np.zeros(2)
+        autodiff_input = np.array(2 * [AutoDiffXd(0.0)])
+        double_output = parameterization_function(double_input)
+        autodiff_output = parameterization_function(autodiff_input)
+        self.assertTrue(isinstance(double_output[0], float))
+        self.assertTrue(isinstance(autodiff_output[0], AutoDiffXd))
+
+        options.parameterization = IrisParameterizationFunction(
+            parameterization=parameterization_function, dimension=2)
+
+        def inverse_parameterization(q):
+            return (q - 1.0) / 2.0
+
+        # The domain in the original coordinates is from -2 to 2 in each
+        # dimension, so in the new coordinates, it's from -1.5 to 0.5 in each
+        # dimension.
+        domain_shifted = HPolyhedron.MakeBox([-1.5, -1.5], [0.5, 0.5])
+        starting_ellipsoid_shifted = Hyperellipsoid.MakeHypersphere(
+            0.01, inverse_parameterization(starting_ellipsoid.center()))
+        region = mut.IrisNp2(checker=checker,
+                             starting_ellipsoid=starting_ellipsoid_shifted,
+                             domain=domain_shifted,
+                             options=options)
+        test_point_shifted = inverse_parameterization(test_point)
+        self.assertTrue(region.PointInSet(test_point_shifted))
