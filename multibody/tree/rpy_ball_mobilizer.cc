@@ -159,13 +159,11 @@ void RpyBallMobilizer<T>::DoCalcNMatrix(const systems::Context<T>& context,
   // Note: N(q) is singular for p = π/2 + kπ, for k = ±1, ±2, ...
   // See related code and comments in DoMapVelocityToQdot().
 
-  using std::abs;
   using std::cos;
   using std::sin;
   const Vector3<T> angles = get_angles(context);
   const T cp = cos(angles[1]);
-  const char* function_name_less_Do = __func__ + 2;
-  ThrowIfCosPitchNearZero(cp, angles[1], function_name_less_Do);
+  ThrowIfCosPitchNearZero(cp, angles[1], "CalcNMatrix");
 
   const T sp = sin(angles[1]);
   const T sy = sin(angles[2]);
@@ -238,8 +236,7 @@ void RpyBallMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>& context,
   const T sp = sin(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
-  const char* function_name_less_Do = __func__ + 2;
-  ThrowIfCosPitchNearZero(cp, angles[1], function_name_less_Do);
+  ThrowIfCosPitchNearZero(cp, angles[1], "CalcNDotMatrix");
   const T cpi = 1.0 / cp;
   const T cpiSqr = cpi * cpi;
 
@@ -295,8 +292,7 @@ void RpyBallMobilizer<T>::DoCalcNplusDotMatrix(
 
   // Throw an exception with the proper function name if a singularity would be
   // encountered in DoMapVelocityToQDot().
-  const char* function_name_less_Do = __func__ + 2;
-  ThrowIfCosPitchNearZero(cp, angles[1], function_name_less_Do);
+  ThrowIfCosPitchNearZero(cp, angles[1], "CalcNplusDotMatrix");
 
   // Calculate time-derivative of roll, pitch, and yaw angles.
   const Vector3<T> v = get_angular_velocity(context);
@@ -348,7 +344,6 @@ void RpyBallMobilizer<T>::DoMapVelocityToQDot(
   // [Mitiguy August 2019] Mitiguy, P., 2019. Advanced Dynamics & Motion
   //                       Simulation.
 
-  using std::abs;
   using std::cos;
   using std::sin;
   const Vector3<T> angles = get_angles(context);
@@ -356,8 +351,7 @@ void RpyBallMobilizer<T>::DoMapVelocityToQDot(
   const T cp = cos(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
-  const char* function_name_less_Do = __func__ + 2;
-  ThrowIfCosPitchNearZero(cp, angles[1], function_name_less_Do);
+  ThrowIfCosPitchNearZero(cp, angles[1], "MapVelocityToQDot");
   const T cpi = 1.0 / cp;
 
   // Although we can calculate q̇ = N(q) * v, it is more efficient to implicitly
