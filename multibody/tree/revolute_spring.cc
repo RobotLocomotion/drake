@@ -41,7 +41,7 @@ void RevoluteSpring<T>::DoCalcAndAddForceContribution(
     const internal::PositionKinematicsCache<T>&,
     const internal::VelocityKinematicsCache<T>&,
     MultibodyForces<T>* forces) const {
-  const T delta = nominal_angle_ - joint().get_angle(context);
+  const T delta = this->GetNominalAngle(context) - joint().get_angle(context);
   const T torque = this->GetStiffness(context) * delta;
   joint().AddInTorque(context, torque, forces);
 }
@@ -50,7 +50,7 @@ template <typename T>
 T RevoluteSpring<T>::CalcPotentialEnergy(
     const systems::Context<T>& context,
     const internal::PositionKinematicsCache<T>&) const {
-  const T delta = nominal_angle_ - joint().get_angle(context);
+  const T delta = this->GetNominalAngle(context) - joint().get_angle(context);
 
   return 0.5 * this->GetStiffness(context) * delta * delta;
 }
@@ -65,7 +65,7 @@ T RevoluteSpring<T>::CalcConservativePower(
   // The conservative power is defined as:
   //  Pc = -d(V)/dt = -[k⋅(θ₀-θ)⋅-dθ/dt] = k⋅(θ₀-θ)⋅dθ/dt
   // being positive when the potential energy decreases.
-  const T delta = nominal_angle_ - joint().get_angle(context);
+  const T delta = this->GetNominalAngle(context) - joint().get_angle(context);
   const T theta_dot = joint().get_angular_rate(context);
   return this->GetStiffness(context) * delta * theta_dot;
 }
@@ -89,7 +89,8 @@ RevoluteSpring<T>::TemplatedDoCloneToScalar(
   // reference, which might not be available during cloning.
   std::unique_ptr<RevoluteSpring<ToScalar>> spring_clone(
       new RevoluteSpring<ToScalar>(this->model_instance(), joint_index_,
-                                   nominal_angle(), default_stiffness()));
+                                   default_nominal_angle(),
+                                   default_stiffness()));
   return spring_clone;
 }
 
@@ -117,7 +118,7 @@ std::unique_ptr<ForceElement<T>> RevoluteSpring<T>::DoShallowClone() const {
   // N.B. We use the private constructor since joint() requires a MbT pointer.
   return std::unique_ptr<ForceElement<T>>(
       new RevoluteSpring<T>(this->model_instance(), joint_index_,
-                            nominal_angle(), default_stiffness()));
+                            default_nominal_angle(), default_stiffness()));
 }
 
 }  // namespace multibody
