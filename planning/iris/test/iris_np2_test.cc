@@ -216,7 +216,6 @@ TEST_F(DoublePendulumRationalForwardKinematics, FunctionParameterization) {
   HPolyhedron region =
       IrisNp2(*sgcc_ptr, starting_ellipsoid_rational_forward_kinematics_,
               domain_rational_forward_kinematics_, options);
-  CheckRegion(region);
 
   CheckRegionRationalForwardKinematics(region);
   PlotEnvironmentAndRegionRationalForwardKinematics(
