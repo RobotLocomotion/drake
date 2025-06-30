@@ -1,7 +1,6 @@
 #pragma once
 
-#include <new>
-#include <type_traits>
+#include <cstddef>
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
@@ -97,7 +96,7 @@ class never_destroyed {
   const T& access() const { return *reinterpret_cast<const T*>(&storage_); }
 
  private:
-  typename std::aligned_storage<sizeof(T), alignof(T)>::type storage_;
+  alignas(T) std::byte storage_[sizeof(T)];
 };
 
 }  // namespace drake
