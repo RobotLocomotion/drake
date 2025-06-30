@@ -55,15 +55,15 @@ double GetPaddingBetweenGeometries(const CollisionChecker& checker,
                                    const SceneGraphInspector<double>& inspector,
                                    const GeometryId geom_A,
                                    const GeometryId geom_B) {
-  std::pair<FrameId, FrameId> frame_pair(inspector.GetFrameId(geom_A),
-                                         inspector.GetFrameId(geom_B));
-  std::pair<const multibody::RigidBody<double>*,
-            const multibody::RigidBody<double>*>
-      body_pair(checker.plant().GetBodyFromFrameId(frame_pair.first),
-                checker.plant().GetBodyFromFrameId(frame_pair.second));
-  DRAKE_THROW_UNLESS(body_pair.first != nullptr);
-  DRAKE_THROW_UNLESS(body_pair.second != nullptr);
-  return checker.GetPaddingBetween(*(body_pair.first), *(body_pair.second));
+  const FrameId frame_A = inspector.GetFrameId(geom_A);
+  const FrameId frame_B = inspector.GetFrameId(geom_B);
+  const multibody::RigidBody<double>* body_A =
+      checker.plant().GetBodyFromFrameId(frame_A);
+  const multibody::RigidBody<double>* body_B =
+      checker.plant().GetBodyFromFrameId(frame_B);
+  DRAKE_THROW_UNLESS(body_A != nullptr);
+  DRAKE_THROW_UNLESS(body_B != nullptr);
+  return checker.GetPaddingBetween(*body_A, *body_B);
 }
 
 /* Given a context whose position represents a configuration known to be in
@@ -530,10 +530,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
             std::next(sorted_pairs.begin(), closest_collision_info.second);
         DRAKE_THROW_UNLESS(pair_iterator != sorted_pairs.end());
         const auto collision_pair = *pair_iterator;
-        std::pair<GeometryId, GeometryId> geom_pair(collision_pair.geomA,
-                                                    collision_pair.geomB);
         const double padding = GetPaddingBetweenGeometries(
-            checker, inspector, geom_pair.first, geom_pair.second);
+            checker, inspector, collision_pair.geomA, collision_pair.geomB);
         if (padding > 0) {
           points_bounded_distance_constraint->set_max_distance(padding);
         }
