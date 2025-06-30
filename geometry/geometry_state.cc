@@ -926,9 +926,10 @@ Obb GeometryState<T>::ComputeObbInWorld(GeometryId geometry_id) const {
   }
   const std::optional<Obb> obb_G = GetObbInGeometryFrame(geometry_id);
   if (!obb_G.has_value()) {
-    throw std::runtime_error(
+    throw std::runtime_error(fmt::format(
         "ComputeObbInWorld: OBB computation not supported for this geometry's "
-        "shape type.");
+        "shape type: {}.",
+        geometry.shape().type_name()));
   }
   const math::RigidTransform<double>& X_WG =
       convert_to_double(get_pose_in_world(geometry_id));
