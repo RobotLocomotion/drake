@@ -55,7 +55,7 @@ class RevoluteSpring final : public ForceElement<T> {
   /// Returns the default spring reference angle θ₀ in radians.
   double default_nominal_angle() const { return nominal_angle_; }
 
-  /// Returns the default stiffness constant in N⋅m/rad.
+  /// Returns the default stiffness constant k in N⋅m/rad.
   double default_stiffness() const { return stiffness_; }
 
   /// Returns the Context dependent nominal angle θ₀ stored as a
