@@ -59,7 +59,7 @@ TEST_F(JointLimits1D, UnsupportedOptions) {
       IrisParameterizationFunction(expression_vector, varable_vector);
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
-      ".*parameterized subspace.*");
+      ".*autodiff-compatible parameterization.*");
   options.parameterization = IrisParameterizationFunction();
 
   const Sphere sphere(0.1);
@@ -83,6 +83,22 @@ TEST_F(DoublePendulum, PaddingUnsupported) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
       ".*negative padding.*");
+}
+
+// Check the error message for a parameterization from rational kinematics.
+TEST_F(DoublePendulumRationalForwardKinematics,
+       ParameterizationMissingAutodiff) {
+  IrisNp2Options options;
+  auto scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
+
+  options.parameterization =
+      IrisParameterizationFunction(&rational_kinematics_,
+                                   /* q_star_val */ Vector2d::Zero());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
+      ".*autodiff-compatible parameterization.*");
 }
 
 TEST_F(DoublePendulum, IrisNp2Test) {
