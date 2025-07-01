@@ -973,6 +973,25 @@ MathematicalProgram::AddLinearEqualityConstraint(const Formula& f) {
 
 Binding<LinearEqualityConstraint>
 MathematicalProgram::AddLinearEqualityConstraint(
+    const Eigen::Ref<const Eigen::Array<Formula, Eigen::Dynamic,
+                                        Eigen::Dynamic>>& formulas) {
+  std::set<Formula> formula_set;
+  for (int i = 0; i < formulas.rows(); ++i) {
+    for (int j = 0; j < formulas.cols(); ++j) {
+      if (is_conjunction(formulas(i, j))) {
+        for (const Formula& operand : get_operands(formulas(i, j))) {
+          formula_set.insert(operand);
+        }
+      } else {
+        formula_set.insert(formulas(i, j));
+      }
+    }
+  }
+  return AddConstraint(internal::ParseLinearEqualityConstraint(formula_set));
+}
+
+Binding<LinearEqualityConstraint>
+MathematicalProgram::AddLinearEqualityConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
     const Eigen::Ref<const Eigen::VectorXd>& beq,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {

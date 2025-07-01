@@ -850,6 +850,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertFalse(sparse2.evaluator().is_dense_A_constructed())
         prog.AddLinearEqualityConstraint(a=[1, 1], beq=0, vars=x)
         prog.AddLinearEqualityConstraint(f=x[0] == 1)
+        prog.AddLinearEqualityConstraint(formulas=[x[0] == 1, x[0] == 1])
         prog.AddLinearEqualityConstraint(e=x[0] + x[1], b=1)
         prog.AddLinearEqualityConstraint(
             v=2 * x[:2] + np.array([0, 1]), b=np.array([3, 2]))
