@@ -56,12 +56,10 @@ For example:
 * ``@drake-jenkins-bot mac-arm-sonoma-clang-bazel-experimental-release please``
 * ``@drake-jenkins-bot linux-noble-clang-bazel-experimental-valgrind-memcheck please``
 
-A list of Jenkins bot commands that cover the full set of continuous and nightly
-production jobs are available for
-[provisioned](https://github.com/RobotLocomotion/drake/blob/jenkins-jobs-experimental/request-jobs-provisioned.txt)
-and
-[unprovisioned](https://github.com/RobotLocomotion/drake/blob/jenkins-jobs-experimental/request-jobs-unprovisioned.txt)
-builds.
+A list of Jenkins bot commands for experimental builds that cover the full
+set of continuous and nightly production jobs is available
+[here](https://github.com/RobotLocomotion/drake/blob/jenkins-jobs-experimental/request-jobs-experimental.txt).
+Both provisioned and unprovisioned jobs are listed.
 
 ## Scheduling Builds via the Jenkins User Interface
 
