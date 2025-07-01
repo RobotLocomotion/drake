@@ -2526,6 +2526,72 @@ GTEST_TEST(TestMathematicalProgram, AddSymbolicLinearEqualityConstraint6) {
       expected_exprs.data(), expected_exprs.data() + 3, ExprEqual));
 }
 
+// Tests `AddLinearEqualityConstraint(const Eigen::Ref<const
+// Eigen::Array<symbolic::Formula, Eigen::Dynamic, Eigen::Dynamic>>& formulas)`
+// method with a case where `f` is a vector of linear-equality formulas, a
+// vector of conjunctions of linear-equality formulas, or a mix of the two.
+GTEST_TEST(TestMathematicalProgram, AddSymbolicLinearEqualityConstraint7) {
+  // Test problem: Ax = b where
+  //
+  // A = |-3.0  0.0  2.0|  x = |x0|  b = | 9.0|
+  //     | 0.0  7.0 -3.0|      |x1|      | 3.0|
+  //     | 2.0  5.0  0.0|      |x2|      |-5.0|
+  Eigen::Matrix3d A;
+  Vector3d b;
+  // clang-format off
+  A << -3.0, 0.0,  2.0,
+        0.0, 7.0, -3.0,
+        2.0, 5.0,  0.0;
+  b << 9.0,
+       3.0,
+      -5.0;
+  // clang-format on
+
+  std::vector<Binding<LinearEqualityConstraint>> bindings;
+
+  VectorX<Variable> x(3);
+
+  // Test 1: each formula is its own entry.
+  Eigen::Vector3<Formula> f1;
+  for (int i = 0; i < 3; ++i) {
+    f1[i] = A.row(i).dot(x) == b[i];
+  }
+
+  // Test 2: combine the first two formulas in a conjunction of equalities,
+  // while leaving the third as an equality.
+  Eigen::Vector2<Formula> f2;
+  f2[0] = f1[0] && f1[1];
+  f2[1] = f1[2];
+
+  // Test 3: combine all three formulas in a conjunction of equalities.
+  Vector1<Formula> f3;
+  f3[0] = f1[0] && f1[1] && f1[2];
+
+  std::vector<VectorX<Formula>> formulas{f1, f2, f3};
+
+  for (const auto& f : formulas) {
+    MathematicalProgram prog;
+    prog.AddDecisionVariables(x);
+    Binding<LinearEqualityConstraint> binding =
+        prog.AddLinearEqualityConstraint(f);
+
+    EXPECT_EQ(prog.linear_equality_constraints().size(), 1u);
+
+    // Checks if AddLinearEqualityConstraint added the constraint correctly.
+    const Eigen::Matrix<Expression, 3, 1> exprs_in_added_constraint{
+        binding.evaluator()->GetDenseA() * binding.variables() -
+        binding.evaluator()->lower_bound()};
+    const Eigen::Matrix<Expression, 3, 1> expected_exprs{A * x - b};
+
+    // Since a conjunctive symbolic formula uses `std::set` as an internal
+    // representation, we need to check if `exprs_in_added_constraint` is a
+    // permutation of `expected_exprs`.
+    EXPECT_TRUE(is_permutation(
+        exprs_in_added_constraint.data(), exprs_in_added_constraint.data() + 3,
+        expected_exprs.data(), expected_exprs.data() + 3, ExprEqual));
+  }
+}
+
 // Checks if `AddLinearEqualityConstraint(f)` throws std::runtime_error if `f`
 // is a non-linear equality formula.
 GTEST_TEST(TestMathematicalProgram,
