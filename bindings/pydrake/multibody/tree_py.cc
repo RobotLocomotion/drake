@@ -1026,8 +1026,28 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.ctor.doc)
         .def("joint", &Class::joint, py_rvp::reference_internal,
             cls_doc.joint.doc)
-        .def("nominal_angle", &Class::nominal_angle, cls_doc.nominal_angle.doc)
-        .def("stiffness", &Class::stiffness, cls_doc.stiffness.doc);
+        .def("default_stiffness", &Class::default_stiffness,
+            cls_doc.default_stiffness.doc)
+        .def("GetStiffness", &Class::GetStiffness, py::arg("context"),
+            cls_doc.GetStiffness.doc)
+        .def("SetStiffness", &Class::SetStiffness, py::arg("context"),
+            py::arg("stiffness"), cls_doc.SetStiffness.doc)
+        .def("default_nominal_angle", &Class::default_nominal_angle,
+            cls_doc.default_nominal_angle.doc)
+        .def("GetNominalAngle", &Class::GetNominalAngle, py::arg("context"),
+            cls_doc.GetNominalAngle.doc)
+        .def("SetNominalAngle", &Class::SetNominalAngle, py::arg("context"),
+            py::arg("nominal_angle"), cls_doc.SetNominalAngle.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("stiffness",
+           WrapDeprecated(cls_doc.stiffness.doc_deprecated, &Class::stiffness),
+           cls_doc.stiffness.doc_deprecated)
+        .def("nominal_angle",
+            WrapDeprecated(
+                cls_doc.nominal_angle.doc_deprecated, &Class::nominal_angle),
+            cls_doc.nominal_angle.doc_deprecated);
+#pragma GCC diagnostic pop
   }
 
   {

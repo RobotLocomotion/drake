@@ -5,6 +5,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/revolute_joint.h"
 
@@ -18,6 +19,10 @@ namespace multibody {
 /// </pre>
 /// where θ₀ is the nominal joint position. Note that joint damping exists
 /// within the RevoluteJoint itself, and so is not included here.
+///
+/// The k (stiffness) and θ₀ (nominal angle) specified in the constructor
+/// are kept as default values. These parameters are stored within the context
+/// and can be accessed and set by context dependent getters/setters.
 ///
 /// @tparam_default_scalar
 template <typename T>
@@ -39,9 +44,61 @@ class RevoluteSpring final : public ForceElement<T> {
 
   const RevoluteJoint<T>& joint() const;
 
+  DRAKE_DEPRECATED("2025-09-01",
+                   "Use the 'default_nominal_angle()' method instead.")
   double nominal_angle() const { return nominal_angle_; }
 
+  DRAKE_DEPRECATED("2025-09-01",
+                   "Use the 'default_stiffness()' method instead.")
   double stiffness() const { return stiffness_; }
+
+  /// Returns the default spring reference angle θ₀ in radians.
+  double default_nominal_angle() const { return nominal_angle_; }
+
+  /// Returns the default stiffness constant k in N⋅m/rad.
+  double default_stiffness() const { return stiffness_; }
+
+  /// Returns the Context dependent nominal angle θ₀ stored as a
+  /// parameter in `context`.
+  /// @param[in] context The context storing the state and parameters for the
+  /// model to which `this` spring belongs.
+  /// @retval returns the nominal angle θ₀ in radians.
+  const T& GetNominalAngle(const systems::Context<T>& context) const {
+    return context.get_numeric_parameter(spring_parameter_index_).value()[1];
+  }
+
+  /// Sets the value of the nominal angle θ₀ for this force
+  /// element, stored as a parameter in `context`.
+  /// @param[out] context The context storing the state and parameters for the
+  /// model to which `this` spring belongs.
+  /// @param[in] nominal_angle The nominal angle θ₀ in radians stored within the
+  /// context.
+  void SetNominalAngle(systems::Context<T>* context,
+                       const T& nominal_angle) const {
+    context->get_mutable_numeric_parameter(spring_parameter_index_)
+        .SetAtIndex(1, nominal_angle);
+  }
+
+  /// Returns the Context dependent stiffness coefficient k stored as a
+  /// parameter in `context`.
+  /// @param[in] context The context storing the state and parameters for the
+  /// model to which `this` spring belongs.
+  /// @retval returns the stiffness k in N⋅m/rad stored within the context.
+  const T& GetStiffness(const systems::Context<T>& context) const {
+    return context.get_numeric_parameter(spring_parameter_index_).value()[0];
+  }
+
+  /// Sets the value of the linear stiffness coefficient k for this force
+  /// element, stored as a parameter in `context`.
+  /// @param[out] context The context storing the state and parameters for the
+  /// model to which `this` spring belongs.
+  /// @param[in] stiffness The stiffness value k with units N⋅m/rad.
+  /// @throws std::exception if `stiffness` is negative.
+  void SetStiffness(systems::Context<T>* context, const T& stiffness) const {
+    DRAKE_THROW_UNLESS(stiffness >= 0);
+    context->get_mutable_numeric_parameter(spring_parameter_index_)
+        .SetAtIndex(0, stiffness);
+  }
 
   T CalcPotentialEnergy(
       const systems::Context<T>& context,
@@ -76,6 +133,22 @@ class RevoluteSpring final : public ForceElement<T> {
   std::unique_ptr<ForceElement<T>> DoShallowClone() const override;
 
  private:
+  // Implementation for ForceElement::DoDeclareForceElementParameters().
+  void DoDeclareForceElementParameters(
+      internal::MultibodyTreeSystem<T>* tree_system) final {
+    spring_parameter_index_ =
+        this->DeclareNumericParameter(tree_system, systems::BasicVector<T>(2));
+  }
+
+  // Implementation for ForceElement::DoSetDefaultForceElementParameters().
+  void DoSetDefaultForceElementParameters(
+      systems::Parameters<T>* parameters) const final {
+    // Set the default stiffness and nominal angle parameters.
+    systems::BasicVector<T>& spring_parameter =
+        parameters->get_mutable_numeric_parameter(spring_parameter_index_);
+    spring_parameter.set_value(Vector2<T>(stiffness_, nominal_angle_));
+  }
+
   // Allow different specializations to access each other's private data for
   // scalar conversion.
   template <typename U>
@@ -90,8 +163,9 @@ class RevoluteSpring final : public ForceElement<T> {
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
 
   const JointIndex joint_index_;
-  double nominal_angle_;
-  double stiffness_;
+  double nominal_angle_{};
+  double stiffness_{};
+  systems::NumericParameterIndex spring_parameter_index_;
 };
 
 }  // namespace multibody
