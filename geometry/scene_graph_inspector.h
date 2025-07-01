@@ -430,11 +430,11 @@ class SceneGraphInspector {
    Convex::GetConvexHull(), respectively. */
   const PolygonSurfaceMesh<double>* GetConvexHull(GeometryId geometry_id) const;
 
-  /** Returns the oriented bounding box associated with the given `geometry_id`
-   in the geometry's frame. The OBB is defined in the geometry's canonical frame
-   such that it tightly bounds the geometry. For primitive shapes, the OBB is
-   computed analytically. For mesh-based shapes (Mesh and Convex), the OBB is
-   computed using the mesh vertices.
+  /** Returns the oriented bounding box (OBB) associated with the given
+   `geometry_id` in the geometry's frame, G. The OBB is defined in the
+   geometry's canonical frame such that it tightly bounds the geometry. For
+   primitive shapes, the OBB is computed analytically. For mesh-based shapes
+   (Mesh and Convex), the OBB is computed using the mesh vertices.
    @param geometry_id   The identifier for the queried geometry.
    @return The oriented bounding box (or `std::nullopt` if the
            geometry type doesn't support OBB computation).

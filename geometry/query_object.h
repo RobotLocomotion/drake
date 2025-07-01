@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -194,16 +195,16 @@ class QueryObject {
       GeometryId deformable_geometry_id, Role role) const;
 
   /** Reports the axis-aligned bounding box of the geometry indicated by
-   `geometry_id` in the world frame.
-   @throws std::exception if the geometry `geometry_id` is not valid.
-   @throws std::exception if the geometry is not deformable.  */
-  Aabb ComputeAabbInWorld(GeometryId geometry_id) const;
+   `geometry_id` in the world frame. Returns std::nullopt if the geometry is
+   not supported for this query.
+   @throws std::exception if the geometry `geometry_id` is not valid. */
+  std::optional<Aabb> ComputeAabbInWorld(GeometryId geometry_id) const;
 
   /** Reports the oriented bounding box of the geometry indicated by
-   `geometry_id` in the world frame.
-   @throws std::exception if the geometry `geometry_id` is not valid.
-   @throws std::exception if the geometry is deformable.  */
-  Obb ComputeObbInWorld(GeometryId geometry_id) const;
+   `geometry_id` in the world frame. Returns std::nullopt if the geometry is
+   not supported for this query.
+   @throws std::exception if the geometry `geometry_id` is not valid. */
+  std::optional<Obb> ComputeObbInWorld(GeometryId geometry_id) const;
 
   //@}
 
