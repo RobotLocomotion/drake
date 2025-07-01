@@ -916,7 +916,7 @@ class MathematicalProgram {
   /**
    * Adds a generic cost to the optimization program.
    *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
+   * @pydrake_mkdoc_identifier{1args_binding_cost}
    */
   Binding<Cost> AddCost(const Binding<Cost>& binding);
 
