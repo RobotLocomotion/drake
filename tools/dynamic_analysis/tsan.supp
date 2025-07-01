@@ -34,3 +34,4 @@ race:drake_vendor::vtkNew<drake_vendor::vtkRenderWindow>::~vtkNew
 # a TODO in our dynamic_analysis/bazel.rc.  Once our toolchain supports
 # a blacklist, we should use it instead of this.
 race:^lcm_memq_handle$
+race:^lcm_handle_timeout$

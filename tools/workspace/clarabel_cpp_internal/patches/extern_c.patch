@@ -7,8 +7,8 @@ one by one.
 Reasoning for not upstreaming this patch: it would be more vaulable to
 improve vendor_cxx to handle the original file, instead.
 
---- include/cpp/DefaultSettings.h
-+++ include/cpp/DefaultSettings.h
+--- include/cpp/DefaultSettings.hpp
++++ include/cpp/DefaultSettings.hpp
 @@ -300,11 +300,11 @@ class DefaultSettingsBuilder
      }
  };
@@ -23,8 +23,8 @@ improve vendor_cxx to handle the original file, instead.
  template<>
  inline DefaultSettings<double> DefaultSettings<double>::default_settings()
 
---- include/cpp/DefaultSolver.h
-+++ include/cpp/DefaultSolver.h
+--- include/cpp/DefaultSolver.hpp
++++ include/cpp/DefaultSolver.hpp
 @@ -202,7 +202,7 @@
      }
  };

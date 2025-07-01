@@ -94,7 +94,7 @@ supported.
 
 @throws if you set `options.sampled_iris_options.containment_points` or
 `options.parameterization`.
-@throws if any collision pairs in `checker` have nonzero padding.
+@throws if any collision pairs in `checker` have negative padding.
 @throws if any collision geometries have been been added in `checker`.
 */
 
