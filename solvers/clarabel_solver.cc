@@ -6,8 +6,8 @@
 #include <utility>
 #include <vector>
 
-#include <Clarabel>
 #include <Eigen/Eigen>
+#include <clarabel.hpp>
 #include <fmt/ranges.h>
 
 #include "drake/common/fmt_eigen.h"

@@ -13,7 +13,6 @@
 
 namespace drake {
 namespace geometry {
-namespace internal {
 
 using Eigen::AngleAxisd;
 using Eigen::Vector3d;
@@ -21,6 +20,8 @@ using math::RigidTransformd;
 using math::RotationMatrixd;
 using std::set;
 using std::vector;
+
+namespace internal {
 
 // Local implementation of BvhUpdater to exercise Aabb::set_bounds().
 template <typename T>
@@ -31,6 +32,8 @@ class BvhUpdater {
     aabb->set_bounds(lower, upper);
   }
 };
+
+}  // namespace internal
 
 namespace {
 
@@ -69,7 +72,8 @@ GTEST_TEST(AabbTest, UpdateBounds) {
 
   const Vector3d p_HB2 = p_HB + Vector3d{-1, 0.25, 1};
   const Vector3d half_size2 = 2 * half_size;
-  BvhUpdater<double>::SetBounds(&aabb, p_HB2 - half_size2, p_HB2 + half_size2);
+  internal::BvhUpdater<double>::SetBounds(&aabb, p_HB2 - half_size2,
+                                          p_HB2 + half_size2);
   EXPECT_TRUE(CompareMatrices(aabb.center(), p_HB2));
   EXPECT_TRUE(CompareMatrices(aabb.half_width(), half_size2));
   EXPECT_EQ(aabb.CalcVolume(), expected_volume * 8);
@@ -255,6 +259,5 @@ GTEST_TEST(AabbMakerTest, Compute) {
 }
 
 }  // namespace
-}  // namespace internal
 }  // namespace geometry
 }  // namespace drake

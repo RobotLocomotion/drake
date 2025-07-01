@@ -1753,6 +1753,15 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(len(results), len(progs))
         self.assertTrue(all([r.is_success() for r in results]))
 
+    def test_cost_binding(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2)
+        bound_cost = prog.AddCost(x[0] + x[1])
+        # Ensure that bound_cost is of type mp.Binding[mp.Cost].
+        self.assertTrue(isinstance(bound_cost, mp.Binding[mp.Cost]))
+        self.assertFalse(isinstance(bound_cost, mp.Binding[mp.LinearCost]))
+        prog.AddCost(binding=bound_cost)
+
 
 class DummySolverInterface(SolverInterface):
 

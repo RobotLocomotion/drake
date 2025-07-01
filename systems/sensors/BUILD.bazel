@@ -591,11 +591,7 @@ drake_cc_googletest_linux_only(
     display = True,
     # TODO(#21420) This test is currently broken on Ubuntu 24.04 ("Noble").
     enable_condition = "//tools:ubuntu_jammy",
-    tags = vtk_test_tags() + [
-        # Similar to #7520, the GL vendor's libraries are not sufficiently
-        # instrumented for compatibility with TSan.
-        "no_tsan",
-    ],
+    tags = vtk_test_tags(),
     deps = [
         ":image_writer",
         ":rgbd_sensor",
