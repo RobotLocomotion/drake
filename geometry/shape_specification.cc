@@ -34,6 +34,9 @@ std::string PointsToObjString(const Eigen::Matrix3X<double>& points) {
 
 namespace drake {
 namespace geometry {
+
+using math::RigidTransform;
+
 namespace {
 
 // Computes a convex hull and assigns it to the given shared pointer in a
@@ -72,10 +75,22 @@ void ComputeConvexHullAsNecessary(
 void ComputeObbAsNecessary(std::shared_ptr<Obb>* obb_ptr,
                            const MeshSource& mesh_source,
                            const Vector3<double>& scale) {
+  // TODO(jwnimmer-tri) Once we drop support for Jammy (i.e., once we can use
+  // GCC >= 12 as our minimum), then we should respell these atomics to use the
+  // C++20 syntax and remove the warning suppressions here and below. (We need
+  // the warning supression because newer Clang complains.)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   std::shared_ptr<Obb> check = std::atomic_load(obb_ptr);
+#pragma GCC diagnostic pop
   if (check == nullptr) {
+    // Note: This approach means that multiple threads *may* redundantly compute
+    // the OBB; but only the first one will set the OBB.
     auto new_obb = std::make_shared<Obb>(internal::MakeObb(mesh_source, scale));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     std::atomic_compare_exchange_strong(obb_ptr, &check, new_obb);
+#pragma GCC diagnostic pop
   }
 }
 
@@ -104,8 +119,6 @@ void ThrowForBadScale(const Vector3<double>& scale, std::string_view source) {
 }
 
 }  // namespace
-
-using math::RigidTransform;
 
 Shape::Shape() = default;
 
@@ -463,15 +476,15 @@ std::optional<Obb> CalcObb(const Shape& shape) {
       [](const Box& box) {
         // For a box, the OBB is aligned with the geometry frame and centered at
         // origin.
-        return Obb(math::RigidTransform<double>::Identity(), box.size() / 2);
+        return Obb(RigidTransform<double>::Identity(), box.size() / 2);
       },
       [](const Capsule& capsule) {
         // For a capsule, the OBB is aligned with the geometry frame (z-axis
         // along capsule).
         const double radius = capsule.radius();
-        const double half_length = capsule.length() / 2.0 + radius;
-        const Vector3<double> half_size(radius, radius, half_length);
-        return Obb(math::RigidTransform<double>::Identity(), half_size);
+        const double half_length = capsule.length() / 2.0;
+        const Vector3<double> half_size(radius, radius, half_length + radius);
+        return Obb(RigidTransform<double>::Identity(), half_size);
       },
       [](const Convex& convex) {
         return convex.GetObb();
@@ -482,12 +495,12 @@ std::optional<Obb> CalcObb(const Shape& shape) {
         const double radius = cylinder.radius();
         const double half_length = cylinder.length() / 2.0;
         const Vector3<double> half_size(radius, radius, half_length);
-        return Obb(math::RigidTransform<double>::Identity(), half_size);
+        return Obb(RigidTransform<double>::Identity(), half_size);
       },
       [](const Ellipsoid& ellipsoid) {
         const Vector3<double> half_size(ellipsoid.a(), ellipsoid.b(),
                                         ellipsoid.c());
-        return Obb(math::RigidTransform<double>::Identity(), half_size);
+        return Obb(RigidTransform<double>::Identity(), half_size);
       },
       [](const HalfSpace&) {
         return std::nullopt;
@@ -501,7 +514,7 @@ std::optional<Obb> CalcObb(const Shape& shape) {
       [](const Sphere& sphere) {
         // For a sphere, the OBB is a cube centered at origin.
         const double radius = sphere.radius();
-        return Obb(math::RigidTransform<double>::Identity(),
+        return Obb(RigidTransform<double>::Identity(),
                    Vector3<double>(radius, radius, radius));
       }});
 }

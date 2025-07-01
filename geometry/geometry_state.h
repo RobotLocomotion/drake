@@ -419,10 +419,10 @@ class GeometryState {
       GeometryId geometry_id) const;
 
   /** Implementation of QueryObject::ComputeAabbInWorld(GeometryId).  */
-  Aabb ComputeAabbInWorld(GeometryId geometry_id) const;
+  std::optional<Aabb> ComputeAabbInWorld(GeometryId geometry_id) const;
 
   /** Implementation of QueryObject::ComputeObbInWorld(GeometryId).  */
-  Obb ComputeObbInWorld(GeometryId geometry_id) const;
+  std::optional<Obb> ComputeObbInWorld(GeometryId geometry_id) const;
 
   /** Implementation of QueryObject::GetPoseInParent().  */
   const math::RigidTransform<T>& get_pose_in_parent(FrameId frame_id) const;

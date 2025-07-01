@@ -877,16 +877,16 @@ const math::RigidTransform<T>& GeometryState<T>::get_pose_in_world(
 }
 
 template <typename T>
-Aabb GeometryState<T>::ComputeAabbInWorld(GeometryId geometry_id) const {
+std::optional<Aabb> GeometryState<T>::ComputeAabbInWorld(
+    GeometryId geometry_id) const {
   FindOrThrow(geometry_id, geometries_, [geometry_id]() {
     return "No AABB available for invalid geometry id: " +
            to_string(geometry_id);
   });
   const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
+  // For non-deformable geometries, we don't support computing the AABB (yet).
   if (!geometry.is_deformable()) {
-    throw std::runtime_error(
-        "ComputeAabbInWorld: not implemented for non-deformable geometries. "
-        "Consider using ComputeObbInWorld instead.");
+    return std::nullopt;
   }
   // For deformable geometries with proximity role, the proximity engine
   // already keeps track of the AABB.
@@ -913,23 +913,20 @@ Aabb GeometryState<T>::ComputeAabbInWorld(GeometryId geometry_id) const {
 }
 
 template <typename T>
-Obb GeometryState<T>::ComputeObbInWorld(GeometryId geometry_id) const {
+std::optional<Obb> GeometryState<T>::ComputeObbInWorld(
+    GeometryId geometry_id) const {
   FindOrThrow(geometry_id, geometries_, [geometry_id]() {
     return "No OBB available for invalid geometry id: " +
            to_string(geometry_id);
   });
   const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
+  // For deformable geometries, we don't support computing the OBB (yet).
   if (geometry.is_deformable()) {
-    throw std::runtime_error(
-        "ComputeObbInWorld: not implemented for deformable geometries. "
-        "Consider using ComputeAabbInWorld instead.");
+    return std::nullopt;
   }
   const std::optional<Obb> obb_G = GetObbInGeometryFrame(geometry_id);
   if (!obb_G.has_value()) {
-    throw std::runtime_error(fmt::format(
-        "ComputeObbInWorld: OBB computation not supported for this geometry's "
-        "shape type: {}.",
-        geometry.shape().type_name()));
+    return std::nullopt;
   }
   const math::RigidTransform<double>& X_WG =
       convert_to_double(get_pose_in_world(geometry_id));

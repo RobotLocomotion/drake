@@ -356,11 +356,11 @@ class Convex final : public Shape {
            degenerate. */
   const PolygonSurfaceMesh<double>& GetConvexHull() const;
 
-  /** Returns the oriented bounding box associated with this convex shape in the
-   shape's canonical frame.
+  /** Returns the oriented bounding box (OBB) associated with this convex shape
+   in the shape's canonical frame.
 
-   Note: the convex hull is computed on demand on the first invocation. All
-   subsequent invocations should have an O(1) cost.
+   Note: the OBB is computed on demand on the first invocation. All subsequent
+   invocations should have an O(1) cost.
 
    @throws if the referenced mesh data cannot be read. */
   const Obb& GetObb() const;
@@ -623,11 +623,11 @@ class Mesh final : public Shape {
            degenerate. */
   const PolygonSurfaceMesh<double>& GetConvexHull() const;
 
-  /** Returns the oriented bounding box associated with this mesh in the mesh's
-   canonical frame.
+  /** Returns the oriented bounding box (OBB) associated with this mesh in the
+   mesh's canonical frame.
 
-   Note: the convex hull is computed on demand on the first invocation. All
-   subsequent invocations should have an O(1) cost.
+   Note: the OBB is computed on demand on the first invocation. All subsequent
+   invocations should have an O(1) cost.
 
    @throws if the referenced mesh data cannot be read. */
   const Obb& GetObb() const;

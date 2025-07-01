@@ -5036,9 +5036,10 @@ TEST_F(GeometryStateTest, ComputeAabbInWorld) {
                                const Vector3d& expected_half_width,
                                const Vector3d& expected_center,
                                double tol = 1e-13) {
-    const Aabb aabb = geometry_state_.ComputeAabbInWorld(id);
-    EXPECT_TRUE(CompareMatrices(aabb.half_width(), expected_half_width, tol));
-    EXPECT_TRUE(CompareMatrices(aabb.center(), expected_center, tol));
+    const std::optional<Aabb> aabb = geometry_state_.ComputeAabbInWorld(id);
+    EXPECT_TRUE(aabb.has_value());
+    EXPECT_TRUE(CompareMatrices(aabb->half_width(), expected_half_width, tol));
+    EXPECT_TRUE(CompareMatrices(aabb->center(), expected_center, tol));
   };
 
   const Sphere sphere(1.0);
@@ -5059,9 +5060,7 @@ TEST_F(GeometryStateTest, ComputeAabbInWorld) {
   SetUpSingleSourceTree(Assign::kProximity);
   const GeometryId rigid_geom_id = geometries_[0];
   EXPECT_FALSE(geometry_state_.IsDeformableGeometry(rigid_geom_id));
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.ComputeAabbInWorld(rigid_geom_id),
-      "ComputeAabbInWorld: not implemented for non-deformable geometries.*");
+  EXPECT_EQ(geometry_state_.ComputeAabbInWorld(rigid_geom_id), std::nullopt);
 
   // Test with deformable geometry with proximity role.
   const GeometryId deformable_id = register_deformable("deformable", true);
@@ -5114,15 +5113,16 @@ TEST_F(GeometryStateTest, ComputeObbInWorld) {
   // Helper to check the OBB against expected results.
   constexpr double kTol = 1e-13;
   auto expect_obb = [&](GeometryId id, const RigidTransformd& X_WG_expected) {
-    const Obb obb = geometry_state_.ComputeObbInWorld(id);
-    EXPECT_TRUE(CompareMatrices(obb.half_width(), Vector3d::Ones(), kTol));
+    const std::optional<Obb> obb = geometry_state_.ComputeObbInWorld(id);
+    EXPECT_TRUE(obb.has_value());
+    EXPECT_TRUE(CompareMatrices(obb->half_width(), Vector3d::Ones(), kTol));
     // We only check translations here because the OBB's orientation is
     // dependent on the PCA and we have already tested that in obb tests.
-    EXPECT_TRUE(CompareMatrices(obb.pose().translation(),
+    EXPECT_TRUE(CompareMatrices(obb->pose().translation(),
                                 X_WG_expected.translation(), kTol));
   };
 
-  // Deformable geometry should throw.
+  // Deformable geometry should return std::nullopt.
   const Sphere sphere(1.0);
   auto deformable_instance = make_unique<GeometryInstance>(
       RigidTransformd::Identity(), make_unique<Sphere>(sphere), "deformable");
@@ -5130,9 +5130,7 @@ TEST_F(GeometryStateTest, ComputeObbInWorld) {
       source_id_, InternalFrame::world_frame_id(),
       std::move(deformable_instance), 1.0);
   EXPECT_TRUE(geometry_state_.IsDeformableGeometry(deformable_id));
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.ComputeObbInWorld(deformable_id),
-      "ComputeObbInWorld: not implemented for deformable geometries.*");
+  EXPECT_EQ(geometry_state_.ComputeObbInWorld(deformable_id), std::nullopt);
 
   // Rigid geometry (Sphere) that supports OBBs.
   const GeometryId sphere_id = geometries_[0];
@@ -5159,8 +5157,7 @@ TEST_F(GeometryStateTest, ComputeObbInWorld) {
       source_id_, frames_[0],
       make_unique<GeometryInstance>(X_WG, make_unique<HalfSpace>(),
                                     "half_space"));
-  DRAKE_EXPECT_THROWS_MESSAGE(geometry_state_.ComputeObbInWorld(half_space_id),
-                              "ComputeObbInWorld:.*not supported.*HalfSpace.*");
+  EXPECT_EQ(geometry_state_.ComputeObbInWorld(half_space_id), std::nullopt);
 }
 
 // GeometryState has three responsibilities when it comes to rendering:
