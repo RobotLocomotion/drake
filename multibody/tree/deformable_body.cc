@@ -138,6 +138,50 @@ void DeformableBody<T>::SetPositions(
 }
 
 template <typename T>
+void DeformableBody<T>::SetVelocities(
+    systems::Context<T>* context,
+    const Eigen::Ref<const Matrix3X<T>>& v) const {
+  DRAKE_THROW_UNLESS(context != nullptr);
+  this->GetParentTreeSystem().ValidateContext(*context);
+  const int num_nodes = fem_model_->num_nodes();
+  DRAKE_THROW_UNLESS(v.cols() == num_nodes);
+  auto all_finite = [](const Matrix3X<T>& velocities) {
+    return velocities.array().isFinite().all();
+  };
+  DRAKE_THROW_UNLESS(all_finite(v));
+
+  const int num_dofs = num_nodes * 3;
+  context->get_mutable_discrete_state(discrete_state_index_)
+      .get_mutable_value()
+      .segment(num_dofs, num_dofs) =
+      Eigen::Map<const VectorX<T>>(v.data(), v.size());
+}
+
+template <typename T>
+void DeformableBody<T>::SetPositionsAndVelocities(
+    systems::Context<T>* context, const Eigen::Ref<const Matrix3X<T>>& q,
+    const Eigen::Ref<const Matrix3X<T>>& v) const {
+  DRAKE_THROW_UNLESS(context != nullptr);
+  this->GetParentTreeSystem().ValidateContext(*context);
+  const int num_nodes = fem_model_->num_nodes();
+  DRAKE_THROW_UNLESS(q.cols() == num_nodes);
+  DRAKE_THROW_UNLESS(v.cols() == num_nodes);
+  auto all_finite = [](const auto& mat) {
+    return mat.array().isFinite().all();
+  };
+  DRAKE_THROW_UNLESS(all_finite(q));
+  DRAKE_THROW_UNLESS(all_finite(v));
+
+  const int num_dofs = num_nodes * 3;
+  Eigen::VectorBlock<VectorX<T>> state_value =
+      context->get_mutable_discrete_state(discrete_state_index_)
+          .get_mutable_value();
+  state_value.head(num_dofs) = Eigen::Map<const VectorX<T>>(q.data(), q.size());
+  state_value.segment(num_dofs, num_dofs) =
+      Eigen::Map<const VectorX<T>>(v.data(), v.size());
+}
+
+template <typename T>
 Matrix3X<T> DeformableBody<T>::GetPositions(
     const systems::Context<T>& context) const {
   this->GetParentTreeSystem().ValidateContext(context);
@@ -147,6 +191,37 @@ Matrix3X<T> DeformableBody<T>::GetPositions(
                             .get_value()
                             .head(num_nodes * 3);
   return Eigen::Map<const Matrix3X<T>>(q.data(), 3, num_nodes);
+}
+
+template <typename T>
+Matrix3X<T> DeformableBody<T>::GetVelocities(
+    const systems::Context<T>& context) const {
+  this->GetParentTreeSystem().ValidateContext(context);
+
+  const int num_nodes = fem_model_->num_nodes();
+  const int num_dofs = num_nodes * 3;
+  const VectorX<T>& v = context.get_discrete_state(discrete_state_index_)
+                            .get_value()
+                            .segment(num_dofs, num_dofs);
+  return Eigen::Map<const Matrix3X<T>>(v.data(), 3, num_nodes);
+}
+
+template <typename T>
+Matrix3X<T> DeformableBody<T>::GetPositionsAndVelocities(
+    const systems::Context<T>& context) const {
+  this->GetParentTreeSystem().ValidateContext(context);
+  const int num_nodes = fem_model_->num_nodes();
+  const int num_dofs = num_nodes * 3;
+  const VectorX<T>& state_value =
+      context.get_discrete_state(discrete_state_index_).get_value();
+  const auto& q = state_value.head(num_dofs);
+  const auto& v = state_value.segment(num_dofs, num_dofs);
+  Matrix3X<T> qv(3, 2 * num_nodes);
+  qv.leftCols(num_nodes) =
+      Eigen::Map<const Matrix3X<T>>(q.data(), 3, num_nodes);
+  qv.rightCols(num_nodes) =
+      Eigen::Map<const Matrix3X<T>>(v.data(), 3, num_nodes);
+  return qv;
 }
 
 template <typename T>
