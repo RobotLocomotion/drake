@@ -225,7 +225,7 @@ JointActuatorIndex MultibodyTreeTopology::add_joint_actuator(int num_dofs) {
 void MultibodyTreeTopology::RemoveJointActuator(
     JointActuatorIndex actuator_index) {
   DRAKE_DEMAND(actuator_index < ssize(joint_actuators_));
-  DRAKE_THROW_UNLESS(!is_valid());
+  DRAKE_THROW_IF(is_valid());
   DRAKE_THROW_UNLESS(joint_actuators_[actuator_index].has_value());
 
   // Reduce the total number of actuated dofs.

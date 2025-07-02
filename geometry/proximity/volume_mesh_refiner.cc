@@ -181,7 +181,7 @@ void VolumeMeshRefiner::CutTetrahedron(const int tetrahedron,
 
 std::vector<int> VolumeMeshRefiner::GetTetrahedraOnTriangle(int v0, int v1,
                                                             int v2) const {
-  DRAKE_THROW_UNLESS(v0 != v1 && v1 != v2 && v2 != v0);
+  DRAKE_THROW_IF(v0== v1 || v1 == v2 || v2 != v0);
   std::vector<int> incident_tetrahedra;
   const std::vector<int>& tetrahedra0 = vertex_to_tetrahedra_[v0];
   const std::vector<int>& tetrahedra1 = vertex_to_tetrahedra_[v1];
