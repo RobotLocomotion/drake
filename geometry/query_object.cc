@@ -105,6 +105,24 @@ std::vector<VectorX<T>> QueryObject<T>::GetDrivenMeshConfigurationsInWorld(
 }
 
 template <typename T>
+std::optional<Aabb> QueryObject<T>::ComputeAabbInWorld(
+    GeometryId geometry_id) const {
+  ThrowIfNotCallable();
+  FullConfigurationUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.ComputeAabbInWorld(geometry_id);
+}
+
+template <typename T>
+std::optional<Obb> QueryObject<T>::ComputeObbInWorld(
+    GeometryId geometry_id) const {
+  ThrowIfNotCallable();
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.ComputeObbInWorld(geometry_id);
+}
+
+template <typename T>
 std::vector<PenetrationAsPointPair<T>>
 QueryObject<T>::ComputePointPairPenetration() const {
   ThrowIfNotCallable();

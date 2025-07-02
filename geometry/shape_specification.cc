@@ -13,6 +13,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/common/overloaded.h"
 #include "drake/geometry/proximity/make_convex_hull_mesh_impl.h"
+#include "drake/geometry/proximity/make_obb_from_mesh.h"
 #include "drake/geometry/proximity/meshing_utilities.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
@@ -33,6 +34,9 @@ std::string PointsToObjString(const Eigen::Matrix3X<double>& points) {
 
 namespace drake {
 namespace geometry {
+
+using math::RigidTransform;
+
 namespace {
 
 // Computes a convex hull and assigns it to the given shared pointer in a
@@ -64,6 +68,32 @@ void ComputeConvexHullAsNecessary(
   }
 }
 
+// Computes an oriented bounding box and assigns it to the given shared pointer
+// in a thread-safe manner. Only does work if the shared_ptr is null (i.e.,
+// there is no OBB yet). Used by Mesh::GetObb() and Convex::GetObb(). Note: the
+// correctness of this function is tested in shape_specification_thread_test.cc.
+void ComputeObbAsNecessary(std::shared_ptr<Obb>* obb_ptr,
+                           const MeshSource& mesh_source,
+                           const Vector3<double>& scale) {
+  // TODO(jwnimmer-tri) Once we drop support for Jammy (i.e., once we can use
+  // GCC >= 12 as our minimum), then we should respell these atomics to use the
+  // C++20 syntax and remove the warning suppressions here and below. (We need
+  // the warning supression because newer Clang complains.)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  std::shared_ptr<Obb> check = std::atomic_load(obb_ptr);
+#pragma GCC diagnostic pop
+  if (check == nullptr) {
+    // Note: This approach means that multiple threads *may* redundantly compute
+    // the OBB; but only the first one will set the OBB.
+    auto new_obb = std::make_shared<Obb>(internal::MakeObb(mesh_source, scale));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    std::atomic_compare_exchange_strong(obb_ptr, &check, new_obb);
+#pragma GCC diagnostic pop
+  }
+}
+
 // Support for Mesh and Convex do_to_string(). It does the hard work of
 // converting the MeshSource into the appropriate parameter name and value
 // representation and then packages it into the full Mesh string representation.
@@ -89,8 +119,6 @@ void ThrowForBadScale(const Vector3<double>& scale, std::string_view source) {
 }
 
 }  // namespace
-
-using math::RigidTransform;
 
 Shape::Shape() = default;
 
@@ -190,6 +218,11 @@ double Convex::scale() const {
 const PolygonSurfaceMesh<double>& Convex::GetConvexHull() const {
   ComputeConvexHullAsNecessary(&hull_, source_, scale_);
   return *hull_;
+}
+
+const Obb& Convex::GetObb() const {
+  ComputeObbAsNecessary(&obb_, source_, scale_);
+  return *obb_;
 }
 
 std::string Convex::do_to_string() const {
@@ -301,6 +334,11 @@ double Mesh::scale() const {
 const PolygonSurfaceMesh<double>& Mesh::GetConvexHull() const {
   ComputeConvexHullAsNecessary(&hull_, source_, scale_);
   return *hull_;
+}
+
+const Obb& Mesh::GetObb() const {
+  ComputeObbAsNecessary(&obb_, source_, scale_);
+  return *obb_;
 }
 
 std::string Mesh::do_to_string() const {
@@ -430,6 +468,54 @@ double CalcVolume(const Shape& shape) {
       },
       [](const Sphere& sphere) {
         return 4.0 / 3.0 * M_PI * std::pow(sphere.radius(), 3);
+      }});
+}
+
+std::optional<Obb> CalcObb(const Shape& shape) {
+  return shape.Visit<std::optional<Obb>>(overloaded{
+      [](const Box& box) {
+        // For a box, the OBB is aligned with the geometry frame and centered at
+        // origin.
+        return Obb(RigidTransform<double>::Identity(), box.size() / 2);
+      },
+      [](const Capsule& capsule) {
+        // For a capsule, the OBB is aligned with the geometry frame (z-axis
+        // along capsule).
+        const double radius = capsule.radius();
+        const double half_length = capsule.length() / 2.0;
+        const Vector3<double> half_size(radius, radius, half_length + radius);
+        return Obb(RigidTransform<double>::Identity(), half_size);
+      },
+      [](const Convex& convex) {
+        return convex.GetObb();
+      },
+      [](const Cylinder& cylinder) {
+        // For a cylinder, the OBB is aligned with the geometry frame (z-axis
+        // along cylinder).
+        const double radius = cylinder.radius();
+        const double half_length = cylinder.length() / 2.0;
+        const Vector3<double> half_size(radius, radius, half_length);
+        return Obb(RigidTransform<double>::Identity(), half_size);
+      },
+      [](const Ellipsoid& ellipsoid) {
+        const Vector3<double> half_size(ellipsoid.a(), ellipsoid.b(),
+                                        ellipsoid.c());
+        return Obb(RigidTransform<double>::Identity(), half_size);
+      },
+      [](const HalfSpace&) {
+        return std::nullopt;
+      },
+      [](const Mesh& mesh) {
+        return mesh.GetObb();
+      },
+      [](const MeshcatCone&) {
+        return std::nullopt;
+      },
+      [](const Sphere& sphere) {
+        // For a sphere, the OBB is a cube centered at origin.
+        const double radius = sphere.radius();
+        return Obb(RigidTransform<double>::Identity(),
+                   Vector3<double>(radius, radius, radius));
       }});
 }
 

@@ -44,6 +44,7 @@ drake_cc_package_library(
         ":make_ellipsoid_mesh",
         ":make_mesh_field",
         ":make_mesh_from_vtk",
+        ":make_obb_from_mesh",
         ":make_sphere_field",
         ":make_sphere_mesh",
         ":mesh_field",
@@ -53,6 +54,8 @@ drake_cc_package_library(
         ":mesh_to_vtk",
         ":mesh_traits",
         ":meshing_utilities",
+        ":obb",
+        ":obb_has_overlap",
         ":obj_to_surface_mesh",
         ":plane",
         ":polygon_surface_mesh",
@@ -93,14 +96,14 @@ drake_cc_library(
     name = "bv",
     srcs = [
         "aabb.cc",
-        "obb.cc",
     ],
     hdrs = [
         "aabb.h",
-        "obb.h",
     ],
     deps = [
         ":boxes_overlap",
+        ":obb",
+        ":obb_has_overlap",
         ":posed_half_space",
         ":triangle_surface_mesh",
         ":volume_mesh",
@@ -108,6 +111,32 @@ drake_cc_library(
         "//geometry:shape_specification",
         "//geometry:utilities",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "obb",
+    srcs = ["obb.cc"],
+    hdrs = ["obb.h"],
+    deps = [
+        ":polygon_surface_mesh",
+        ":triangle_surface_mesh",
+        ":volume_mesh",
+        "//common:essential",
+        "//geometry:utilities",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "obb_has_overlap",
+    srcs = ["obb_has_overlap.cc"],
+    hdrs = ["aabb.h"],
+    deps = [
+        ":boxes_overlap",
+        ":obb",
+        ":plane",
+        "//geometry:shape_specification",
     ],
 )
 
@@ -555,6 +584,25 @@ drake_cc_library(
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkIOGeometry",
         "@vtk_internal//:vtkRenderingCore",
+    ],
+)
+
+drake_cc_library(
+    name = "make_obb_from_mesh",
+    srcs = ["make_obb_from_mesh.cc"],
+    hdrs = ["make_obb_from_mesh.h"],
+    deps = [
+        ":obb",
+        ":obj_to_surface_mesh",
+        ":polygon_surface_mesh",
+        ":triangle_surface_mesh",
+        ":volume_mesh",
+        ":vtk_to_volume_mesh",
+        "//common:essential",
+        "//geometry:mesh_source",
+    ],
+    implementation_deps = [
+        ":make_convex_hull_mesh_impl",
     ],
 )
 
@@ -1445,6 +1493,22 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "make_obb_from_mesh_test",
+    data = [
+        "//geometry:test_gltf_files",
+        "//geometry:test_obj_files",
+        "//geometry:test_vtk_files",
+    ],
+    deps = [
+        ":make_obb_from_mesh",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:mesh_source",
+    ],
+)
+
+drake_cc_googletest(
     name = "make_cylinder_field_test",
     deps = [
         ":make_cylinder_field",
@@ -1627,9 +1691,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "obb_test",
+    data = [
+        "//geometry:test_obj_files",
+    ],
     deps = [
         ":bv",
         ":make_box_mesh",
+        ":make_convex_hull_mesh",
         ":make_ellipsoid_mesh",
         ":make_sphere_mesh",
         ":triangle_surface_mesh",
