@@ -124,8 +124,8 @@ def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
         return BASE_COPTS
     test_gcc_copts = GCC_CC_TEST_FLAGS if cc_test else []
     return BASE_COPTS + rule_copts + select({
-        "@rules_cc//cc/compiler:gcc": rule_gcc_copts + test_gcc_copts,
-        "@rules_cc//cc/compiler:clang": rule_clang_copts,
+        "//tools/cc_toolchain:gcc": rule_gcc_copts + test_gcc_copts,
+        "//tools/cc_toolchain:clang": rule_clang_copts,
         "//conditions:default": [],
     })
 
