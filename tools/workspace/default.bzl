@@ -35,6 +35,7 @@ load("//tools/workspace/gymnasium_py:repository.bzl", "gymnasium_py_repository")
 load("//tools/workspace/gz_math_internal:repository.bzl", "gz_math_internal_repository")  # noqa
 load("//tools/workspace/gz_utils_internal:repository.bzl", "gz_utils_internal_repository")  # noqa
 load("//tools/workspace/highway_internal:repository.bzl", "highway_internal_repository")  # noqa
+load("//tools/workspace/implib_so_internal:repository.bzl", "implib_so_internal_repository")  # noqa
 load("//tools/workspace/ipopt_internal:repository.bzl", "ipopt_internal_repository")  # noqa
 load("//tools/workspace/lapack:repository.bzl", "lapack_repository")
 load("//tools/workspace/lapack_internal:repository.bzl", "lapack_internal_repository")  # noqa
@@ -201,6 +202,8 @@ def add_default_repositories(
         gymnasium_py_repository(name = "gymnasium_py", mirrors = mirrors, _is_drake_self_call = True)  # noqa
     if "highway_internal" not in excludes:
         highway_internal_repository(name = "highway_internal", mirrors = mirrors)  # noqa
+    if "implib_so_internal" not in excludes:
+        implib_so_internal_repository(name = "implib_so_internal", mirrors = mirrors)  # noqa
     if "ipopt_internal" not in excludes:
         ipopt_internal_repository(name = "ipopt_internal", mirrors = mirrors)  # noqa
     if "lapack" not in excludes:

@@ -183,6 +183,7 @@ use_repo(
     "gz_math_internal",
     "gz_utils_internal",
     "highway_internal",
+    "implib_so_internal",
     "ipopt_internal",
     "lapack_internal",
     "libjpeg_turbo_internal",
