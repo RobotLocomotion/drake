@@ -34,7 +34,8 @@ namespace internal {
 #define DRAKE_THROW_UNLESS(condition)                                         \
   do {                                                                        \
     typedef ::drake::assert::ConditionTraits<                                 \
-        typename std::remove_cv_t<decltype(condition)>> Trait;                \
+        typename std::remove_cv_t<decltype(condition)>>                       \
+        Trait;                                                                \
     static_assert(Trait::is_valid, "Condition should be bool-convertible.");  \
     static_assert(                                                            \
         !std::is_pointer_v<decltype(condition)>,                              \
@@ -45,3 +46,7 @@ namespace internal {
       ::drake::internal::Throw(#condition, __func__, __FILE__, __LINE__);     \
     }                                                                         \
   } while (0)
+
+/// Provides the same behavior as DRAKE_THROW_UNLESS, except that it throws an
+/// exception iff the value is true.
+#define DRAKE_THROW_IF(condition) DRAKE_THROW_UNLESS(!condition)
