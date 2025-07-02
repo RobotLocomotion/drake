@@ -183,7 +183,8 @@ GTEST_TEST(SapPdControllerConstraint, MakeDataNearRigidRegime) {
 
   const double dt = 0.015;
   const double large_Kp = 1e8;
-  const double large_Kd = 1e7;
+  const double tau = 0.13;
+  const double large_Kd = tau * large_Kp;
   const double effort_limit = 0.3;
   const Parameters p{large_Kp, large_Kd, effort_limit};
   // The configuration is irrelevant for this test.
@@ -193,16 +194,82 @@ GTEST_TEST(SapPdControllerConstraint, MakeDataNearRigidRegime) {
   const VectorXd w = Vector1d::Constant(1.6);
 
   const double Rnr = kBeta * kBeta / (4.0 * M_PI * M_PI) * w(0);
-  // Expected near-rigid parameters.
-  const double Kp_nr = 1.0 / Rnr / (2.0 * dt * dt);
-  const double Kd_nr = dt * Kp_nr;
+  // Expected near-rigid parameters. Time scale tau is kept constant.
+  const double Kp_nr = 1.0 / Rnr / (dt * (dt + tau));
+  const double Kd_nr = tau * Kp_nr;
+
+  // Verify that gains were clamped to be in the near-rigid regime.
+  auto abstract_data = c.MakeData(dt, w);
+  const auto& data =
+      abstract_data->get_value<SapPdControllerConstraintData<double>>();
+  EXPECT_NEAR(data.Kp_eff(), Kp_nr, kEps * large_Kp);
+  EXPECT_NEAR(data.Kd_eff(), Kd_nr, kEps * large_Kd);
+  EXPECT_EQ(data.time_step(), dt);  // not affected.
+}
+
+// Verify the effective gains within the near-rigid regime when the user sets
+// the position gain Kp to zero. In particular, the effective position gain
+// should remain zero to respect the user's desire to do velocity control only.
+GTEST_TEST(SapPdControllerConstraint, MakeDataNearRigidRegimeWithZeroKp) {
+  // This value of near-rigid parameter is the one internally used by
+  // SapPdControllerConstraint and they must remain in sync.
+  constexpr double kBeta = 0.1;
+
+  const double dt = 0.015;
+  const double Kp = 0.0;
+  const double large_Kd = 1.0e8;
+  const double effort_limit = 0.3;
+  const Parameters p{Kp, large_Kd, effort_limit};
+  // The configuration is irrelevant for this test.
+  const Configuration k = MakeArbitraryConfiguration();
+  const SapPdControllerConstraint<double> c(k, p);
+  // Arbitrary value for the Delassus operator.
+  const VectorXd w = Vector1d::Constant(1.6);
+
+  const double Rnr = kBeta * kBeta / (4.0 * M_PI * M_PI) * w(0);
+  // Expected near-rigid parameters. The user wants velocity control, and we
+  // should respect that.
+  const double Kd_nr = 1.0 / (dt * Rnr);
+
+  // Verify that gains were clamped to be in the near-rigid regime.
+  auto abstract_data = c.MakeData(dt, w);
+  const auto& data =
+      abstract_data->get_value<SapPdControllerConstraintData<double>>();
+  EXPECT_EQ(data.Kp_eff(), 0.0);
+  EXPECT_NEAR(data.Kd_eff(), Kd_nr, kEps);
+  EXPECT_EQ(data.time_step(), dt);  // not affected.
+}
+
+// Verify the effective gains within the near-rigid regime when the user sets
+// the derivative gain Kd to zero. In particular, the effective derivate gain
+// should remain zero to respect the user's desire to do position control only.
+GTEST_TEST(SapPdControllerConstraint, MakeDataNearRigidRegimeWithZeroKd) {
+  // This value of near-rigid parameter is the one internally used by
+  // SapPdControllerConstraint and they must remain in sync.
+  constexpr double kBeta = 0.1;
+
+  const double dt = 0.015;
+  const double large_Kp = 1e8;
+  const double Kd = 0.0;
+  const double effort_limit = 0.3;
+  const Parameters p{large_Kp, Kd, effort_limit};
+  // The configuration is irrelevant for this test.
+  const Configuration k = MakeArbitraryConfiguration();
+  const SapPdControllerConstraint<double> c(k, p);
+  // Arbitrary value for the Delassus operator.
+  const VectorXd w = Vector1d::Constant(1.6);
+
+  const double Rnr = kBeta * kBeta / (4.0 * M_PI * M_PI) * w(0);
+  // Expected near-rigid parameters. The user wants position control, and we
+  // should respect that.
+  const double Kp_nr = 1.0 / (dt * dt * Rnr);
 
   // Verify that gains were clamped to be in the near-rigid regime.
   auto abstract_data = c.MakeData(dt, w);
   const auto& data =
       abstract_data->get_value<SapPdControllerConstraintData<double>>();
   EXPECT_NEAR(data.Kp_eff(), Kp_nr, kEps);
-  EXPECT_NEAR(data.Kd_eff(), Kd_nr, kEps);
+  EXPECT_EQ(data.Kd_eff(), 0.0);
   EXPECT_EQ(data.time_step(), dt);  // not affected.
 }
 
