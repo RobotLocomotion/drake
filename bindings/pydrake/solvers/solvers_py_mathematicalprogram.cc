@@ -908,6 +908,14 @@ void BindMathematicalProgram(py::module m) {
               &MathematicalProgram::AddLinearEqualityConstraint),
           py::arg("f"),
           doc.MathematicalProgram.AddLinearEqualityConstraint.doc_1args_f)
+      .def("AddLinearEqualityConstraint",
+          static_cast<Binding<LinearEqualityConstraint> (
+              MathematicalProgram::*)(const Eigen::Ref<const Eigen::Array<
+                  symbolic::Formula, Eigen::Dynamic, Eigen::Dynamic>>&)>(
+              &MathematicalProgram::AddLinearEqualityConstraint),
+          py::arg("formulas"),
+          doc.MathematicalProgram.AddLinearEqualityConstraint
+              .doc_1args_formulas)
       .def(
           "AddLinearEqualityConstraint",
           [](MathematicalProgram* self,
