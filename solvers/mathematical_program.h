@@ -2050,7 +2050,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/10.1/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
@@ -2062,7 +2062,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/10.1/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    @param vars x in the documentation above.
    @param hessian_type Whether the Hessian is positive semidefinite, negative
@@ -2084,7 +2084,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/10.1/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    @param vars x in the documentation above.
    @param hessian_type Whether the Hessian is positive semidefinite, negative
@@ -2106,7 +2106,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/10.1/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    */
   Binding<QuadraticConstraint> AddQuadraticConstraint(
