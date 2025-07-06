@@ -23,8 +23,7 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 namespace internal {
-/* Takes q, p_AA, and p_BB and enforces that p_WA == p_WB.
- */
+// Takes q, p_AA, and p_BB and enforces that p_WA(q) == p_WB(q).
 class SamePointConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SamePointConstraint);
@@ -61,8 +60,8 @@ class SamePointConstraint : public solvers::Constraint {
       nullptr};
 };
 
-// Takes q, p_AA, and p_BB, and enforces that ||p_WA - p_WB||² <= d², where d is
-// a user-defined maximum distance.
+// Takes q, p_AA, and p_BB, and enforces that ||p_WA(q) - p_WB(q)||² <= d²,
+// where d is a user-defined maximum distance.
 class PointsBoundedDistanceConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointsBoundedDistanceConstraint);
@@ -100,6 +99,8 @@ class PointsBoundedDistanceConstraint : public solvers::Constraint {
   geometry::optimization::internal::SamePointConstraint same_point_constraint_;
 };
 
+// Takes q, p_AA, and p_BB and enforces that p_WA(f(q)) == p_WB(f(q)), where f
+// is a user-defined parameterization function.
 class ParameterizedSamePointConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ParameterizedSamePointConstraint);
@@ -124,6 +125,11 @@ class ParameterizedSamePointConstraint : public solvers::Constraint {
   }
 
  private:
+  template <typename T>
+  void DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y,
+                     const std::function<VectorX<T>(const VectorX<T>&)>&
+                         parameterization) const;
+
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
 
@@ -141,6 +147,9 @@ class ParameterizedSamePointConstraint : public solvers::Constraint {
   int parameterization_dimension_;
 };
 
+// Takes q, p_AA, and p_BB, and enforces that ||p_WA(f(q)) - p_WB(f(q))||² <=
+// d², where d is a user-defined maximum distance and f is a user-defined
+// parameterization function.
 class ParameterizedPointsBoundedDistanceConstraint
     : public solvers::Constraint {
  public:
@@ -170,6 +179,11 @@ class ParameterizedPointsBoundedDistanceConstraint
   }
 
  private:
+  template <typename T>
+  void DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y,
+                     const std::function<VectorX<T>(const VectorX<T>&)>&
+                         parameterization) const;
+
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
 

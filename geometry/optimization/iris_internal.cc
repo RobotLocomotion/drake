@@ -153,22 +153,26 @@ ParameterizedSamePointConstraint::ParameterizedSamePointConstraint(
 
 ParameterizedSamePointConstraint::~ParameterizedSamePointConstraint() = default;
 
-void ParameterizedSamePointConstraint::DoEval(
-    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
-  Eigen::VectorXd q_latent = x.head(parameterization_dimension_);
-  Eigen::VectorXd q_full = parameterization_double_(q_latent);
-  Eigen::VectorXd x_full(same_point_constraint_.num_vars());
+template <typename T>
+void ParameterizedSamePointConstraint::DoEvalGeneric(
+    const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y,
+    const std::function<VectorX<T>(const VectorX<T>&)>& parameterization)
+    const {
+  const VectorX<T> q_latent = x.head(parameterization_dimension_);
+  const VectorX<T> q_full = parameterization(q_latent);
+  VectorX<T> x_full(same_point_constraint_.num_vars());
   x_full << q_full, x.tail(6);
   same_point_constraint_.Eval(x_full, y);
 }
 
 void ParameterizedSamePointConstraint::DoEval(
+    const Eigen::Ref<const VectorXd>& x, VectorXd* y) const {
+  DoEvalGeneric<double>(x, y, parameterization_double_);
+}
+
+void ParameterizedSamePointConstraint::DoEval(
     const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
-  AutoDiffVecXd q_latent = x.head(parameterization_dimension_);
-  AutoDiffVecXd q_full = parameterization_autodiff_(q_latent);
-  AutoDiffVecXd x_full(same_point_constraint_.num_vars());
-  x_full << q_full, x.tail(6);
-  same_point_constraint_.Eval(x_full, y);
+  DoEvalGeneric<AutoDiffXd>(x, y, parameterization_autodiff_);
 }
 
 void ParameterizedSamePointConstraint::DoEval(
@@ -202,22 +206,26 @@ ParameterizedPointsBoundedDistanceConstraint::
 ParameterizedPointsBoundedDistanceConstraint::
     ~ParameterizedPointsBoundedDistanceConstraint() = default;
 
-void ParameterizedPointsBoundedDistanceConstraint::DoEval(
-    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
-  Eigen::VectorXd q_latent = x.head(parameterization_dimension_);
-  Eigen::VectorXd q_full = parameterization_double_(q_latent);
-  Eigen::VectorXd x_full(points_bounded_distance_constraint_.num_vars());
+template <typename T>
+void ParameterizedPointsBoundedDistanceConstraint::DoEvalGeneric(
+    const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y,
+    const std::function<VectorX<T>(const VectorX<T>&)>& parameterization)
+    const {
+  const VectorX<T> q_latent = x.head(parameterization_dimension_);
+  const VectorX<T> q_full = parameterization(q_latent);
+  VectorX<T> x_full(points_bounded_distance_constraint_.num_vars());
   x_full << q_full, x.tail(6);
   points_bounded_distance_constraint_.Eval(x_full, y);
 }
 
 void ParameterizedPointsBoundedDistanceConstraint::DoEval(
+    const Eigen::Ref<const VectorXd>& x, VectorXd* y) const {
+  DoEvalGeneric<double>(x, y, parameterization_double_);
+}
+
+void ParameterizedPointsBoundedDistanceConstraint::DoEval(
     const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
-  AutoDiffVecXd q_latent = x.head(parameterization_dimension_);
-  AutoDiffVecXd q_full = parameterization_autodiff_(q_latent);
-  AutoDiffVecXd x_full(points_bounded_distance_constraint_.num_vars());
-  x_full << q_full, x.tail(6);
-  points_bounded_distance_constraint_.Eval(x_full, y);
+  DoEvalGeneric<AutoDiffXd>(x, y, parameterization_autodiff_);
 }
 
 void ParameterizedPointsBoundedDistanceConstraint::DoEval(
