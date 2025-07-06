@@ -209,7 +209,7 @@ bool ClosestCollisionProgram::Solve(
   return false;
 }
 
-void CounterExampleConstraint::set(
+void CounterexampleConstraint::set(
     const Binding<Constraint>* binding_with_constraint_to_be_falsified,
     int index, bool falsify_lower_bound) {
   DRAKE_DEMAND(binding_with_constraint_to_be_falsified != nullptr);
@@ -221,7 +221,7 @@ void CounterExampleConstraint::set(
   falsify_lower_bound_ = falsify_lower_bound;
 }
 
-void CounterExampleConstraint::DoEval(const Eigen::Ref<const VectorXd>& x,
+void CounterexampleConstraint::DoEval(const Eigen::Ref<const VectorXd>& x,
                                       VectorXd* y) const {
   DRAKE_DEMAND(binding_ != nullptr);
   const double val = prog_->EvalBinding(*binding_, x)[index_];
@@ -234,7 +234,7 @@ void CounterExampleConstraint::DoEval(const Eigen::Ref<const VectorXd>& x,
   }
 }
 
-void CounterExampleConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+void CounterexampleConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                                       AutoDiffVecXd* y) const {
   DRAKE_DEMAND(binding_ != nullptr);
   const AutoDiffXd val = prog_->EvalBinding(*binding_, x)[index_];
@@ -247,8 +247,8 @@ void CounterExampleConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
   }
 }
 
-CounterExampleProgram::CounterExampleProgram(
-    std::shared_ptr<CounterExampleConstraint> counter_example_constraint,
+CounterexampleProgram::CounterexampleProgram(
+    std::shared_ptr<CounterexampleConstraint> counter_example_constraint,
     const Hyperellipsoid& E, const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& b) {
   q_ = prog_.NewContinuousVariables(A.cols(), "q");
@@ -267,7 +267,7 @@ CounterExampleProgram::CounterExampleProgram(
   prog_.AddConstraint(counter_example_constraint, q_);
 }
 
-void CounterExampleProgram::UpdatePolytope(
+void CounterexampleProgram::UpdatePolytope(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& b) {
   P_constraint_->evaluator()->UpdateCoefficients(
@@ -275,7 +275,7 @@ void CounterExampleProgram::UpdatePolytope(
       b);
 }
 
-bool CounterExampleProgram::Solve(
+bool CounterexampleProgram::Solve(
     const solvers::SolverInterface& solver,
     const Eigen::Ref<const Eigen::VectorXd>& q_guess,
     const std::optional<solvers::SolverOptions>& solver_options,

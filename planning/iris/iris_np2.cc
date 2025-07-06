@@ -32,8 +32,8 @@ using geometry::optimization::ConvexSet;
 using geometry::optimization::HPolyhedron;
 using geometry::optimization::Hyperellipsoid;
 using geometry::optimization::internal::ClosestCollisionProgram;
-using geometry::optimization::internal::CounterExampleConstraint;
-using geometry::optimization::internal::CounterExampleProgram;
+using geometry::optimization::internal::CounterexampleConstraint;
+using geometry::optimization::internal::CounterexampleProgram;
 using geometry::optimization::internal::GeometryPairWithDistance;
 using geometry::optimization::internal::IrisConvexSetMaker;
 using geometry::optimization::internal::PointsBoundedDistanceConstraint;
@@ -265,11 +265,11 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   int num_initial_constraints = P.A().rows();
 
   // Make the additional constraint counterexample programs (if applicable).
-  std::shared_ptr<CounterExampleConstraint> counter_example_constraint{};
-  std::unique_ptr<CounterExampleProgram> counter_example_prog{};
+  std::shared_ptr<CounterexampleConstraint> counter_example_constraint{};
+  std::unique_ptr<CounterexampleProgram> counter_example_prog{};
   std::vector<Binding<Constraint>> additional_constraint_bindings{};
   if (options.sampled_iris_options.prog_with_additional_constraints) {
-    counter_example_constraint = std::make_shared<CounterExampleConstraint>(
+    counter_example_constraint = std::make_shared<CounterexampleConstraint>(
         options.sampled_iris_options.prog_with_additional_constraints);
     additional_constraint_bindings =
         options.sampled_iris_options.prog_with_additional_constraints
@@ -316,7 +316,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
     HandleLinearConstraints(
         options.sampled_iris_options.prog_with_additional_constraints
             ->linear_constraints());
-    counter_example_prog = std::make_unique<CounterExampleProgram>(
+    counter_example_prog = std::make_unique<CounterexampleProgram>(
         counter_example_constraint, E, A.topRows(num_initial_constraints),
         b.head(num_initial_constraints));
 
@@ -443,7 +443,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
       int number_particles_in_collision = 0;
 
       std::vector<uint8_t> particle_satisfies_additional_constraints =
-          internal::CheckProgConstraints(
+          internal::CheckProgConstraintsParallel(
               options.sampled_iris_options.prog_with_additional_constraints,
               particles,
               additional_constraints_threadsafe
