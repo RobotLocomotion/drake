@@ -123,7 +123,7 @@ bool CheckProgConstraints(const solvers::MathematicalProgram* prog_ptr,
   return true;
 }
 
-std::vector<uint8_t> CheckProgConstraints(
+std::vector<uint8_t> CheckProgConstraintsParallel(
     const solvers::MathematicalProgram* prog_ptr,
     const std::vector<Eigen::VectorXd>& particles, const int num_threads_to_use,
     const double tol, std::optional<int> end_index) {

@@ -142,11 +142,11 @@ class ClosestCollisionProgram {
 
 // Takes a constraint bound to another mathematical program and defines a new
 // constraint that is the negation of one index and one (lower/upper) bound.
-class CounterExampleConstraint : public solvers::Constraint {
+class CounterexampleConstraint : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CounterExampleConstraint);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CounterexampleConstraint);
 
-  explicit CounterExampleConstraint(const solvers::MathematicalProgram* prog)
+  explicit CounterexampleConstraint(const solvers::MathematicalProgram* prog)
       : solvers::Constraint(
             1, prog->num_vars(),
             Vector1d(-std::numeric_limits<double>::infinity()),
@@ -155,7 +155,7 @@ class CounterExampleConstraint : public solvers::Constraint {
     DRAKE_DEMAND(prog != nullptr);
   }
 
-  ~CounterExampleConstraint() = default;
+  ~CounterexampleConstraint() = default;
 
   // Sets the actual constraint to be falsified, overwriting any previously set
   // constraints. The Binding<Constraint> must remain valid for the lifetime of
@@ -176,7 +176,7 @@ class CounterExampleConstraint : public solvers::Constraint {
     // MathematicalProgram::EvalBinding doesn't support symbolic, and we
     // shouldn't get here.
     throw std::logic_error(
-        "CounterExampleConstraint doesn't support DoEval for symbolic.");
+        "CounterexampleConstraint doesn't support DoEval for symbolic.");
   }
 
   const solvers::MathematicalProgram* prog_{};
@@ -184,7 +184,7 @@ class CounterExampleConstraint : public solvers::Constraint {
   int index_{0};
   bool falsify_lower_bound_{true};
 
-  // To find a counter-example for a constraints,
+  // To find a counterexample for a constraints,
   //  g(x) ≤ ub,
   // we need to ask the solver to find
   //  g(x) + kSolverConstraintTolerance > ub,
@@ -199,23 +199,23 @@ class CounterExampleConstraint : public solvers::Constraint {
 
 // Defines a MathematicalProgram to solve the problem
 // min_q (q-d)*CᵀC(q-d)
-// s.t. counter-example-constraint
+// s.t. counterexample-constraint
 //      Aq ≤ b.
 // where C, d are the matrix and center from the hyperellipsoid E.
 //
 // The class design supports repeated solutions of the (nearly) identical
 // problem from different initial guesses.
-class CounterExampleProgram {
+class CounterexampleProgram {
  public:
-  CounterExampleProgram(
-      std::shared_ptr<CounterExampleConstraint> counter_example_constraint,
+  CounterexampleProgram(
+      std::shared_ptr<CounterexampleConstraint> counter_example_constraint,
       const Hyperellipsoid& E, const Eigen::Ref<const Eigen::MatrixXd>& A,
       const Eigen::Ref<const Eigen::VectorXd>& b);
 
   void UpdatePolytope(const Eigen::Ref<const Eigen::MatrixXd>& A,
                       const Eigen::Ref<const Eigen::VectorXd>& b);
 
-  // Returns true iff a counter-example is found.
+  // Returns true iff a counterexample is found.
   // Sets `closest` to an optimizing solution q*, if a solution is found.
   bool Solve(const solvers::SolverInterface& solver,
              const Eigen::Ref<const Eigen::VectorXd>& q_guess,

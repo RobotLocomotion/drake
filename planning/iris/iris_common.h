@@ -281,7 +281,7 @@ bool CheckProgConstraints(const solvers::MathematicalProgram* prog_ptr,
 // constraints. The user can specify a slice of particles to check [0,
 // end_index). Default behavior is to check all particles -- when end_index is
 // std::nullopt, it is set to ssize(particles).
-std::vector<uint8_t> CheckProgConstraints(
+std::vector<uint8_t> CheckProgConstraintsParallel(
     const solvers::MathematicalProgram* prog_ptr,
     const std::vector<Eigen::VectorXd>& particles, const int num_threads_to_use,
     const double tol, std::optional<int> end_index = std::nullopt);

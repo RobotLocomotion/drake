@@ -36,8 +36,8 @@ using Eigen::MatrixXd;
 using Eigen::Ref;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
-using internal::CounterExampleConstraint;
-using internal::CounterExampleProgram;
+using internal::CounterexampleConstraint;
+using internal::CounterexampleProgram;
 using internal::IrisConvexSetMaker;
 using math::RigidTransform;
 using multibody::Frame;
@@ -441,11 +441,11 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   b.head(P.A().rows()) = P.b();
   int num_initial_constraints = P.A().rows();
 
-  std::shared_ptr<CounterExampleConstraint> counter_example_constraint{};
-  std::unique_ptr<CounterExampleProgram> counter_example_prog{};
+  std::shared_ptr<CounterexampleConstraint> counter_example_constraint{};
+  std::unique_ptr<CounterexampleProgram> counter_example_prog{};
   std::vector<Binding<Constraint>> additional_constraint_bindings{};
   if (options.prog_with_additional_constraints) {
-    counter_example_constraint = std::make_shared<CounterExampleConstraint>(
+    counter_example_constraint = std::make_shared<CounterexampleConstraint>(
         options.prog_with_additional_constraints);
     additional_constraint_bindings =
         options.prog_with_additional_constraints->GetAllConstraints();
@@ -496,7 +496,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
         options.prog_with_additional_constraints->bounding_box_constraints());
     HandleLinearConstraints(
         options.prog_with_additional_constraints->linear_constraints());
-    counter_example_prog = std::make_unique<CounterExampleProgram>(
+    counter_example_prog = std::make_unique<CounterexampleProgram>(
         counter_example_constraint, E, A.topRows(num_initial_constraints),
         b.head(num_initial_constraints));
 
