@@ -14,10 +14,8 @@ def rules_cc_repository(
     github_archive(
         name = name,
         repository = "bazelbuild/rules_cc",  # License: Apache-2.0,
-        commit = "0.0.17",
-        # When using WORKSPACE, the >= 0.1.x series of rules_cc causes trouble.
-        commit_pin = True,
-        sha256 = "abc605dd850f813bb37004b77db20106a19311a96b2da1c92b789da529d28fe1",  # noqa
+        commit = "0.1.1",
+        sha256 = "712d77868b3152dd618c4d64faaddefcc5965f90f5de6e6dd1d5ddcd0be82d42",  # noqa
         patches = [
             ":patches/rm_protobuf.patch",
         ],
