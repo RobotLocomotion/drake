@@ -3195,7 +3195,7 @@ TEST_F(GeometryStateTest, ConvexHullForProximityGeometry) {
 // function is called.
 TEST_F(GeometryStateTest, GetObbInGeometryFrame) {
   SetUpSingleSourceTree(Assign::kIllustration);
-  const std::optional<Obb> maybe_obb =
+  const std::optional<Obb>& maybe_obb =
       geometry_state_.GetObbInGeometryFrame(geometries_[0]);
   EXPECT_TRUE(maybe_obb.has_value());
   EXPECT_EQ(maybe_obb->center(), Vector3d::Zero());

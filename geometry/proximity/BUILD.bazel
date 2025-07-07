@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":bv",
         ":bvh",
         ":bvh_updater",
+        ":calc_obb_from_shape",
         ":collision_filter",
         ":contact_surface_utility",
         ":deformable_contact_geometries",
@@ -54,8 +55,6 @@ drake_cc_package_library(
         ":mesh_to_vtk",
         ":mesh_traits",
         ":meshing_utilities",
-        ":obb",
-        ":obb_has_overlap",
         ":obj_to_surface_mesh",
         ":plane",
         ":polygon_surface_mesh",
@@ -96,14 +95,14 @@ drake_cc_library(
     name = "bv",
     srcs = [
         "aabb.cc",
+        "obb.cc",
     ],
     hdrs = [
         "aabb.h",
+        "obb.h",
     ],
     deps = [
         ":boxes_overlap",
-        ":obb",
-        ":obb_has_overlap",
         ":posed_half_space",
         ":triangle_surface_mesh",
         ":volume_mesh",
@@ -111,32 +110,6 @@ drake_cc_library(
         "//geometry:shape_specification",
         "//geometry:utilities",
         "//math:geometric_transform",
-    ],
-)
-
-drake_cc_library(
-    name = "obb",
-    srcs = ["obb.cc"],
-    hdrs = ["obb.h"],
-    deps = [
-        ":polygon_surface_mesh",
-        ":triangle_surface_mesh",
-        ":volume_mesh",
-        "//common:essential",
-        "//geometry:utilities",
-        "//math:geometric_transform",
-    ],
-)
-
-drake_cc_library(
-    name = "obb_has_overlap",
-    srcs = ["obb_has_overlap.cc"],
-    hdrs = ["aabb.h"],
-    deps = [
-        ":boxes_overlap",
-        ":obb",
-        ":plane",
-        "//geometry:shape_specification",
     ],
 )
 
@@ -181,6 +154,17 @@ drake_cc_library(
     implementation_deps = [
         ":distance_to_point_callback",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "calc_obb_from_shape",
+    srcs = ["calc_obb_from_shape.cc"],
+    hdrs = ["calc_obb_from_shape.h"],
+    deps = [
+        ":bv",
+        ":make_obb_from_mesh",
+        "//geometry:shape_specification",
     ],
 )
 
@@ -592,7 +576,7 @@ drake_cc_library(
     srcs = ["make_obb_from_mesh.cc"],
     hdrs = ["make_obb_from_mesh.h"],
     deps = [
-        ":obb",
+        ":bv",
         ":obj_to_surface_mesh",
         ":polygon_surface_mesh",
         ":triangle_surface_mesh",
@@ -1149,6 +1133,17 @@ drake_cc_googletest(
     deps = [
         ":calc_distance_to_surface_mesh",
         ":make_box_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "calc_obb_from_shape_test",
+    data = [
+        "//geometry:test_obj_files",
+    ],
+    deps = [
+        ":calc_obb_from_shape",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

@@ -295,7 +295,7 @@ const PolygonSurfaceMesh<double>* SceneGraphInspector<T>::GetConvexHull(
 }
 
 template <typename T>
-std::optional<Obb> SceneGraphInspector<T>::GetObbInGeometryFrame(
+const std::optional<Obb>& SceneGraphInspector<T>::GetObbInGeometryFrame(
     GeometryId geometry_id) const {
   DRAKE_DEMAND(state_ != nullptr);
   return state_->GetObbInGeometryFrame(geometry_id);

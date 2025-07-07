@@ -2,7 +2,6 @@
 
 #include <filesystem>
 #include <memory>
-#include <optional>
 #include <string>
 #include <variant>
 
@@ -10,7 +9,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/geometry/mesh_source.h"
-#include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/math/rigid_transform.h"
 
@@ -356,15 +354,6 @@ class Convex final : public Shape {
            degenerate. */
   const PolygonSurfaceMesh<double>& GetConvexHull() const;
 
-  /** Returns the oriented bounding box (OBB) associated with this convex shape
-   in the shape's canonical frame.
-
-   Note: the OBB is computed on demand on the first invocation. All subsequent
-   invocations should have an O(1) cost.
-
-   @throws if the referenced mesh data cannot be read. */
-  const Obb& GetObb() const;
-
  private:
   void DoReify(ShapeReifier*, void*) const final;
   std::unique_ptr<Shape> DoClone() const final;
@@ -376,8 +365,6 @@ class Convex final : public Shape {
   Vector3<double> scale_;
   // Allows the deferred computation of the hull on an otherwise const Convex.
   mutable std::shared_ptr<PolygonSurfaceMesh<double>> hull_{nullptr};
-  // Allows the deferred computation of the OBB on an otherwise const Convex.
-  mutable std::shared_ptr<Obb> obb_{nullptr};
 };
 
 /** Definition of a cylinder. It is centered in its canonical frame with the
@@ -623,15 +610,6 @@ class Mesh final : public Shape {
            degenerate. */
   const PolygonSurfaceMesh<double>& GetConvexHull() const;
 
-  /** Returns the oriented bounding box (OBB) associated with this mesh in the
-   mesh's canonical frame.
-
-   Note: the OBB is computed on demand on the first invocation. All subsequent
-   invocations should have an O(1) cost.
-
-   @throws if the referenced mesh data cannot be read. */
-  const Obb& GetObb() const;
-
  private:
   void DoReify(ShapeReifier*, void*) const final;
   std::unique_ptr<Shape> DoClone() const final;
@@ -644,8 +622,6 @@ class Mesh final : public Shape {
   Vector3<double> scale_;
   // Allows the deferred computation of the hull on an otherwise const Mesh.
   mutable std::shared_ptr<PolygonSurfaceMesh<double>> hull_{nullptr};
-  // Allows the deferred computation of the OBB on an otherwise const Mesh.
-  mutable std::shared_ptr<Obb> obb_{nullptr};
 };
 
 // TODO(russt): Rename this to `Cone` if/when it is supported by more of the
@@ -807,13 +783,6 @@ class ShapeReifier {
   cannot be opened.
 */
 double CalcVolume(const Shape& shape);
-
-/** Calculates the oriented bounding box (OBB) for the Shape. If a shape does
- not support OBB computation, this function returns `std::nullopt`.
-
- @throws std::exception if a referenced file cannot be opened.
-*/
-std::optional<Obb> CalcObb(const Shape& shape);
 
 }  // namespace geometry
 }  // namespace drake

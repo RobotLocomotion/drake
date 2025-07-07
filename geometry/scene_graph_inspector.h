@@ -440,7 +440,7 @@ class SceneGraphInspector {
            geometry type doesn't support OBB computation).
    @throws std::exception if `geometry_id` does not map to a registered
            geometry.  */
-  std::optional<Obb> GetObbInGeometryFrame(GeometryId geometry_id) const;
+  const std::optional<Obb>& GetObbInGeometryFrame(GeometryId geometry_id) const;
 
   /** Reports true if the two geometries with given ids `geometry_id1` and
    `geometry_id2`, define a collision pair that has been filtered out.

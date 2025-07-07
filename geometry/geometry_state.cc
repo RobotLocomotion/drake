@@ -7,7 +7,6 @@
 #include <string>
 #include <utility>
 
-#include "proximity/volume_mesh.h"
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
@@ -18,8 +17,10 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/proximity/calc_obb_from_shape.h"
 #include "drake/geometry/proximity/make_convex_hull_mesh.h"
 #include "drake/geometry/proximity/obb.h"
+#include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/proximity_engine.h"
 #include "drake/geometry/proximity_properties.h"
@@ -811,10 +812,10 @@ const PolygonSurfaceMesh<double>* GeometryState<T>::GetConvexHull(
 }
 
 template <typename T>
-std::optional<Obb> GeometryState<T>::GetObbInGeometryFrame(
+const std::optional<Obb>& GeometryState<T>::GetObbInGeometryFrame(
     GeometryId id) const {
   const InternalGeometry& geometry = GetValueOrThrow(id, geometries_);
-  return CalcObb(geometry.shape());
+  return geometry.GetObb();
 }
 
 template <typename T>
@@ -924,7 +925,7 @@ std::optional<Obb> GeometryState<T>::ComputeObbInWorld(
   if (geometry.is_deformable()) {
     return std::nullopt;
   }
-  const std::optional<Obb> obb_G = GetObbInGeometryFrame(geometry_id);
+  const std::optional<Obb>& obb_G = GetObbInGeometryFrame(geometry_id);
   if (!obb_G.has_value()) {
     return std::nullopt;
   }

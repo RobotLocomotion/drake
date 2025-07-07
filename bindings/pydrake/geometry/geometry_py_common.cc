@@ -277,7 +277,7 @@ void DefineGeometrySet(py::module m) {
         .def(
             "Add",
             [](Class* self, std::vector<GeometryId> geometry_ids,
-                std::vector<FrameId> frame_ids) {
+                std::obvector<FrameId> frame_ids) {
               self->Add(geometry_ids, frame_ids);
             },
             py::arg("geometry_ids"), py::arg("frame_ids"), extra_ctor_doc);

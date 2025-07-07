@@ -397,7 +397,7 @@ class GeometryState {
   const PolygonSurfaceMesh<double>* GetConvexHull(GeometryId id) const;
 
   /** Implementation of SceneGraphInspector::GetObbInGeometryFrame(). */
-  std::optional<Obb> GetObbInGeometryFrame(GeometryId id) const;
+  const std::optional<Obb>& GetObbInGeometryFrame(GeometryId id) const;
 
   /** Implementation of SceneGraphInspector::CollisionFiltered().  */
   bool CollisionFiltered(GeometryId id1, GeometryId id2) const;
