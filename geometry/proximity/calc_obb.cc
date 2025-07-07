@@ -71,7 +71,8 @@ std::optional<Obb> CalcObb(const Shape& shape) {
 
 namespace internal {
 
-Obb MakeObb(const MeshSource& mesh_source, const Vector3d& scale) {
+std::optional<Obb> MakeObb(const MeshSource& mesh_source,
+                           const Vector3d& scale) {
   if (mesh_source.extension() == ".obj") {
     // For OBJ files, create a TriangleSurfaceMesh and use ObbMaker.
     TriangleSurfaceMesh<double> surface_mesh =
@@ -106,10 +107,8 @@ Obb MakeObb(const MeshSource& mesh_source, const Vector3d& scale) {
     ObbMaker<PolygonSurfaceMesh<double>> obb_maker(polygon_mesh, all_vertices);
     return obb_maker.Compute();
   } else {
-    throw std::runtime_error(
-        fmt::format("MakeObb only applies to .obj, .vtk, and .gltf meshes; "
-                    "unsupported extension '{}' for geometry data: {}.",
-                    mesh_source.extension(), mesh_source.description()));
+    // Unsupported mesh format.
+    return std::nullopt;
   }
 }
 

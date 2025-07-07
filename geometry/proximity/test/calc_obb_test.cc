@@ -163,40 +163,45 @@ class MakeObbFromMeshTest : public ::testing::Test {
 
 TEST_F(MakeObbFromMeshTest, Obj) {
   const Eigen::Vector3d scale = Eigen::Vector3d::Ones();
-  const Obb obj_obb = MakeObb(MeshSource(obj_path_), scale);
-  ValidateObb(obj_obb, scale);
+  const std::optional<Obb> obj_obb = MakeObb(MeshSource(obj_path_), scale);
+  ASSERT_TRUE(obj_obb.has_value());
+  ValidateObb(*obj_obb, scale);
 }
 
 TEST_F(MakeObbFromMeshTest, Vtk) {
   const Eigen::Vector3d scale = Eigen::Vector3d::Ones();
-  const Obb vtk_obb = MakeObb(MeshSource(vtk_path_), scale);
-  ValidateObb(vtk_obb, scale);
+  const std::optional<Obb> vtk_obb = MakeObb(MeshSource(vtk_path_), scale);
+  ASSERT_TRUE(vtk_obb.has_value());
+  ValidateObb(*vtk_obb, scale);
 }
 
 // The OBB for the gltf cube suffers from #14067. We just check that the
 // half-widths are positive.
 TEST_F(MakeObbFromMeshTest, Gltf) {
   const Eigen::Vector3d scale = Eigen::Vector3d::Ones();
-  const Obb gltf_obb = MakeObb(MeshSource(gltf_path_), scale);
-  EXPECT_GT(gltf_obb.half_width().x(), 0.0);
-  EXPECT_GT(gltf_obb.half_width().y(), 0.0);
-  EXPECT_GT(gltf_obb.half_width().z(), 0.0);
+  const std::optional<Obb> gltf_obb = MakeObb(MeshSource(gltf_path_), scale);
+  ASSERT_TRUE(gltf_obb.has_value());
+  EXPECT_GT(gltf_obb->half_width().x(), 0.0);
+  EXPECT_GT(gltf_obb->half_width().y(), 0.0);
+  EXPECT_GT(gltf_obb->half_width().z(), 0.0);
 }
 
 // Test scaling effects.
 TEST_F(MakeObbFromMeshTest, ScalingEffect) {
   const MeshSource mesh_source(obj_path_);
   const Eigen::Vector3d double_scale = Eigen::Vector3d(2.0, 2.0, 2.0);
-  const Obb scaled_obb = MakeObb(mesh_source, double_scale);
-  ValidateObb(scaled_obb, double_scale);
+  const std::optional<Obb> scaled_obb = MakeObb(mesh_source, double_scale);
+  ASSERT_TRUE(scaled_obb.has_value());
+  ValidateObb(*scaled_obb, double_scale);
 }
 
 // Test non-uniform scaling.
 TEST_F(MakeObbFromMeshTest, NonUniformScaling) {
   const MeshSource mesh_source(vtk_path_);
   const Eigen::Vector3d scale(2.0, 3.0, 4.0);
-  const Obb obb = MakeObb(mesh_source, scale);
-  ValidateObb(obb, scale);
+  const std::optional<Obb> obb = MakeObb(mesh_source, scale);
+  ASSERT_TRUE(obb.has_value());
+  ValidateObb(*obb, scale);
 }
 
 // Test unsupported file extension.
@@ -204,19 +209,17 @@ TEST_F(MakeObbFromMeshTest, UnsupportedExtension) {
   // Create a mesh source with an unsupported extension.
   const MeshSource mesh_source("fake_file.stl");
   const Eigen::Vector3d scale = Eigen::Vector3d::Ones();
-
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeObb(mesh_source, scale),
-      "MakeObb only applies to .obj, .vtk, and .gltf meshes; "
-      "unsupported extension '.stl' for geometry data: .*");
+  const std::optional<Obb> obb = MakeObb(mesh_source, scale);
+  EXPECT_FALSE(obb.has_value());
 }
 
 // Test with zero scale (should still work but produce degenerate OBB).
 TEST_F(MakeObbFromMeshTest, ZeroScale) {
   const MeshSource mesh_source(obj_path_);
   const Eigen::Vector3d zero_scale = Eigen::Vector3d::Zero();
-  const Obb obb = MakeObb(mesh_source, zero_scale);
-  ValidateObb(obb, zero_scale);
+  const std::optional<Obb> obb = MakeObb(mesh_source, zero_scale);
+  ASSERT_TRUE(obb.has_value());
+  ValidateObb(*obb, zero_scale);
 }
 
 }  // namespace

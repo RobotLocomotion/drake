@@ -18,8 +18,8 @@ std::optional<Obb> CalcObb(const Shape& shape);
 namespace internal {
 
 /* Creates an oriented bounding box (OBB) for the provided mesh data. The mesh
- data can come from on-disk files or in-memory files -- but the content must be
- that of a supported Drake mesh type.
+ data can come from on-disk files or in-memory files. Returns `std::nullopt`
+ if the mesh data is in an unsupported format.
 
  The vertex positions can be scaled uniformly around the origin of the mesh
  data's canonical frame.
@@ -29,9 +29,9 @@ namespace internal {
                      position vectors are scaled relative to the mesh data's
                      canonical frame's origin.
 
- @throws std::exception if the mesh data is in an unsupported format.
  @throws std::exception if the mesh data is ill formed. */
-Obb MakeObb(const MeshSource& mesh_source, const Vector3<double>& scale);
+std::optional<Obb> MakeObb(const MeshSource& mesh_source,
+                           const Vector3<double>& scale);
 
 }  // namespace internal
 
