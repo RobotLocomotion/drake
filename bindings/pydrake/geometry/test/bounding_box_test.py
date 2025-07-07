@@ -261,8 +261,8 @@ class TestGeometryBoundingBox(unittest.TestCase):
 
     def test_compute_bounding_boxes_for_shape(self):
         box = mut.Box([1.0, 2.0, 3.0])
-        obb = mut.ComputeObbForShape(box)
+        obb = mut.CalcObb(box)
         self.assertIsInstance(obb, mut.Obb)
 
         half_space = mut.HalfSpace()
-        self.assertIsNone(mut.ComputeObbForShape(half_space))
+        self.assertIsNone(mut.CalcObb(half_space))

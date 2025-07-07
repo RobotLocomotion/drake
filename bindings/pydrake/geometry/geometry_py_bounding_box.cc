@@ -140,10 +140,7 @@ void DefineGeometryBoundingBox(py::module m) {
       "Computes an oriented bounding box for the specified vertices of a "
       "VolumeMesh.");
 
-  m.def(
-      "ComputeObbForShape", [](const Shape& shape) { return CalcObb(shape); },
-      py::arg("shape"),
-      "Computes an oriented bounding box for the specified shape.");
+  m.def("CalcObb", &CalcObb, py::arg("shape"), doc.CalcObb.doc);
 }
 
 }  // namespace pydrake
