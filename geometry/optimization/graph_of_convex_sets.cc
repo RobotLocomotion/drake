@@ -634,23 +634,20 @@ Edge* GraphOfConvexSets::GetMutableEdgeByName(const std::string& name) {
   return nullptr;
 }
 
-void GraphOfConvexSets::RemoveVertex(Vertex* vertex) {
-  DRAKE_THROW_UNLESS(vertex != nullptr);
-  VertexId vertex_id = vertex->id();
-  DRAKE_THROW_UNLESS(vertices_.contains(vertex_id));
-  for (auto it = edges_.begin(); it != edges_.end();) {
-    if (it->second->u().id() == vertex_id) {
-      it->second->v().RemoveIncomingEdge(it->second.get());
-      it = edges_.erase(it);
-    } else if (it->second->v().id() == vertex_id) {
-      it->second->u().RemoveOutgoingEdge(it->second.get());
-      it = edges_.erase(it);
-    } else {
-      ++it;
+void GraphOfConvexSets::RemoveVertex(Vertex* v) {
+    DRAKE_THROW_UNLESS(v != nullptr);
+    VertexId vertex_id = v->id();
+    DRAKE_THROW_UNLESS(vertices_.contains(vertex_id));
+    for (const auto uv : v->incoming_edges_) {
+      uv->u().RemoveOutgoingEdge(uv);
+      edges_.erase(uv->id());
     }
+    for (const auto vw : v->outgoing_edges_) {
+      vw->v().RemoveIncomingEdge(vw);
+      edges_.erase(vw->id());
+    }
+    vertices_.erase(vertex_id);
   }
-  vertices_.erase(vertex_id);
-}
 
 void GraphOfConvexSets::RemoveEdge(Edge* edge) {
   DRAKE_THROW_UNLESS(edge != nullptr);
