@@ -329,14 +329,8 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   // The tolerance 1.0e-3 is used to test whether the cosine of the pitch angle
   // is near zero, which occurs when the pitch angle ≈ π/2 ± n π (n=0, 1 2, …).
   // Throw an exception if a pitch angle is within ≈ 0.057° of a singularity.
-  void ThrowSinceCosPitchIsNearZero(const T& pitch,
-                                    const char* function_name) const;
   void ThrowIfCosPitchNearZero(const T& cos_pitch, const T& pitch_angle,
-                               const char* function_name) const {
-    using std::abs;
-    if (abs(cos_pitch) < 1.0e-3)
-      ThrowSinceCosPitchIsNearZero(pitch_angle, function_name);
-  }
+                               const char* function_name) const;
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>

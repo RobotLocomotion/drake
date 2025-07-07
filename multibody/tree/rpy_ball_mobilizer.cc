@@ -132,17 +132,20 @@ void RpyBallMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
-void RpyBallMobilizer<T>::ThrowSinceCosPitchIsNearZero(
-    const T& pitch, const char* function_name) const {
-  throw std::runtime_error(fmt::format(
-      "{}(): The RpyBallMobilizer (implementing a BallRpyJoint) between "
-      "body {} and body {} has reached a singularity. This occurs when the "
-      "pitch angle takes values near π/2 + kπ, ∀ k ∈ ℤ. At the current "
-      "configuration, we have pitch = {} radians. Drake does not yet support "
-      "a comparable joint using quaternions, but the feature request is "
-      "tracked in https://github.com/RobotLocomotion/drake/issues/12404.",
-      function_name, this->inboard_body().name(), this->outboard_body().name(),
-      pitch));
+void RpyBallMobilizer<T>::ThrowIfCosPitchNearZero(
+    const T& cos_pitch, const T& pitch_angle, const char* function_name) const {
+  using std::abs;
+  if (abs(cos_pitch) < 1.0e-3) {
+    throw std::runtime_error(fmt::format(
+        "{}(): The RpyBallMobilizer (implementing a BallRpyJoint) between "
+        "body {} and body {} has reached a singularity. This occurs when the "
+        "pitch angle takes values near π/2 + kπ, ∀ k ∈ ℤ. At the current "
+        "configuration, we have pitch = {} radians. Drake does not yet support "
+        "a comparable joint using quaternions, but the feature request is "
+        "tracked in https://github.com/RobotLocomotion/drake/issues/12404.",
+        function_name, this->inboard_body().name(),
+        this->outboard_body().name(), pitch_angle));
+  }
 }
 
 template <typename T>
