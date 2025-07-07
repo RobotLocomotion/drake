@@ -5,7 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/geometry/make_mesh_for_deformable.h"
-#include "drake/geometry/proximity/calc_obb_from_shape.h"
+#include "drake/geometry/proximity/calc_obb.h"
 
 namespace drake {
 namespace geometry {

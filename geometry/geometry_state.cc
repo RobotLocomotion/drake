@@ -17,7 +17,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/proximity/calc_obb_from_shape.h"
+#include "drake/geometry/proximity/calc_obb.h"
 #include "drake/geometry/proximity/make_convex_hull_mesh.h"
 #include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/volume_mesh.h"

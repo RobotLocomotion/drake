@@ -21,7 +21,7 @@ drake_cc_package_library(
         ":bv",
         ":bvh",
         ":bvh_updater",
-        ":calc_obb_from_shape",
+        ":calc_obb",
         ":collision_filter",
         ":contact_surface_utility",
         ":deformable_contact_geometries",
@@ -45,7 +45,6 @@ drake_cc_package_library(
         ":make_ellipsoid_mesh",
         ":make_mesh_field",
         ":make_mesh_from_vtk",
-        ":make_obb_from_mesh",
         ":make_sphere_field",
         ":make_sphere_mesh",
         ":mesh_field",
@@ -158,13 +157,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "calc_obb_from_shape",
-    srcs = ["calc_obb_from_shape.cc"],
-    hdrs = ["calc_obb_from_shape.h"],
+    name = "calc_obb",
+    srcs = ["calc_obb.cc"],
+    hdrs = ["calc_obb.h"],
     deps = [
         ":bv",
-        ":make_obb_from_mesh",
+        ":obj_to_surface_mesh",
+        ":polygon_surface_mesh",
+        ":triangle_surface_mesh",
+        ":volume_mesh",
+        ":vtk_to_volume_mesh",
+        "//common:essential",
+        "//geometry:mesh_source",
         "//geometry:shape_specification",
+    ],
+    implementation_deps = [
+        ":make_convex_hull_mesh_impl",
     ],
 )
 
@@ -568,25 +576,6 @@ drake_cc_library(
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkIOGeometry",
         "@vtk_internal//:vtkRenderingCore",
-    ],
-)
-
-drake_cc_library(
-    name = "make_obb_from_mesh",
-    srcs = ["make_obb_from_mesh.cc"],
-    hdrs = ["make_obb_from_mesh.h"],
-    deps = [
-        ":bv",
-        ":obj_to_surface_mesh",
-        ":polygon_surface_mesh",
-        ":triangle_surface_mesh",
-        ":volume_mesh",
-        ":vtk_to_volume_mesh",
-        "//common:essential",
-        "//geometry:mesh_source",
-    ],
-    implementation_deps = [
-        ":make_convex_hull_mesh_impl",
     ],
 )
 
@@ -1137,13 +1126,18 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "calc_obb_from_shape_test",
+    name = "calc_obb_test",
     data = [
+        "//geometry:test_gltf_files",
         "//geometry:test_obj_files",
+        "//geometry:test_vtk_files",
     ],
     deps = [
-        ":calc_obb_from_shape",
+        ":calc_obb",
+        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:mesh_source",
     ],
 )
 
@@ -1484,22 +1478,6 @@ drake_cc_googletest(
         ":proximity_utilities",
         ":volume_to_surface_mesh",
         "//common:find_resource",
-    ],
-)
-
-drake_cc_googletest(
-    name = "make_obb_from_mesh_test",
-    data = [
-        "//geometry:test_gltf_files",
-        "//geometry:test_obj_files",
-        "//geometry:test_vtk_files",
-    ],
-    deps = [
-        ":make_obb_from_mesh",
-        "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-        "//geometry:mesh_source",
     ],
 )
 

@@ -1,10 +1,20 @@
 #pragma once
 
-#include "drake/geometry/mesh_source.h"
+#include <optional>
+
 #include "drake/geometry/proximity/obb.h"
+#include "drake/geometry/shape_specification.h"
 
 namespace drake {
 namespace geometry {
+
+/** Calculates the oriented bounding box (OBB) for the Shape. If a shape does
+ not support OBB computation, this function returns `std::nullopt`.
+
+ @throws std::exception if a referenced file cannot be opened.
+*/
+std::optional<Obb> CalcObb(const Shape& shape);
+
 namespace internal {
 
 /* Creates an oriented bounding box (OBB) for the provided mesh data. The mesh
@@ -24,5 +34,6 @@ namespace internal {
 Obb MakeObb(const MeshSource& mesh_source, const Vector3<double>& scale);
 
 }  // namespace internal
+
 }  // namespace geometry
 }  // namespace drake
