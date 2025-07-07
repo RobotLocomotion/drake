@@ -22,8 +22,18 @@ node(getNodeLabel()) {
   // multiple repositories with a particular directory layout.
   skipDefaultCheckout()
 
+  // Load utils.groovy for common utilities.
+  // If no such file exists on this branch, load it from master.
   fetchUtils()
-  def utils = load 'jenkins-utils/.jenkins/utils/utils.groovy'
+  def jenkinsUtilsPath = 'jenkins-utils/.jenkins/utils/utils.groovy'
+  if (!fileExists(jenkinsUtilsPath)) {
+    fetchUtils('master')
+  }
+  def utils = load jenkinsUtilsPath
+  if (!utils) {
+    currentBuild.result = 'ABORTED'
+    error('Failed to load Drake Jenkins utilities.')
+  }
 
   stage('test') {
     timeout(600) {
@@ -35,7 +45,7 @@ node(getNodeLabel()) {
             echo "Checking the cache server:"
             try {
               sh "${env.WORKSPACE}/ci/cache_server/health_check.bash"
-            } catch(Exception e) {
+            } catch (Exception e) {
               currentBuild.result = 'FAILURE'
             }
           } finally {
@@ -68,16 +78,18 @@ def getNodeLabel() {
 }
 
 // Loads utils by performing a sparse checkout to WORKSPACE/jenkins-utils.
-def fetchUtils() {
-  def thisBranch = null
-  if (!env.CHANGE_ID?.trim()) {
-    thisBranch = scm.branches[0].name
-  }
-  else {
-    thisBranch = "pr/${env.CHANGE_ID}/head"
+// If no 'branch' is given, tries to find the current branch or pull request.
+def fetchUtils(String branch = null) {
+  if (!branch) {
+    if (!env.CHANGE_ID?.trim()) {
+      branch = scm.branches[0].name
+    }
+    else {
+      branch = "pr/${env.CHANGE_ID}/head"
+    }
   }
   checkout([$class: 'GitSCM',
-    branches: [[name: thisBranch]],
+    branches: [[name: branch]],
     extensions: [
       [$class: 'RelativeTargetDirectory', relativeTargetDir: 'jenkins-utils'],
       [$class: 'CloneOption', honorRefspec: true, noTags: true],
