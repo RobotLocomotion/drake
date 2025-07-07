@@ -234,11 +234,11 @@ This is especially pertinent for pull requests which affect the build infrastruc
 To test the examples which use Jenkins for CI with a PR branch of Drake,
 comment on an open pull request using the following command:
 
-* ``@drake-jenkins-bot linux-jammy-unprovisioned-external-examples please``
+* ``@drake-jenkins-bot linux-noble-unprovisioned-external-examples please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
 to schedule a build of the
-[external examples job](https://drake-jenkins.csail.mit.edu/view/Linux%20Jammy%20Unprovisioned/job/linux-jammy-unprovisioned-external-examples/).
+[external examples job](https://drake-jenkins.csail.mit.edu/view/External%20Examples/job/linux-noble-unprovisioned-external-examples/).
 Note that instead of providing a parameter for the branch of
 ``RobotLocomotion/drake-ci``, this job instead provides one for
 drake-external-examples, which should be used if you need to test your Drake
