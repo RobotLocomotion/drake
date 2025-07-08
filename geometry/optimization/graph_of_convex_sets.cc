@@ -796,7 +796,8 @@ std::string GraphOfConvexSets::GetGraphvizString(
     for (const auto& e : *active_path) {
       graphviz << "v" << e->u().id() << " -> v" << e->v().id();
       graphviz << " [label=\"" << e->name() << " = active\"";
-      graphviz << ", color=" << "\"#ff0000\"";
+      graphviz << ", color=" 
+               << "\"#ff0000\"";
       graphviz << ", style=\"dashed\"";
       graphviz << "];\n";
     }
