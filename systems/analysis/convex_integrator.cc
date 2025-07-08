@@ -57,7 +57,7 @@ void ConvexIntegrator<T>::DoInitialize() {
   this->set_accuracy_in_use(working_accuracy);
 
   // Allocate and initialize SAP problem objects
-  builder_ = std::make_unique<PooledSapBuilder<T>>(plant());
+  builder_ = std::make_unique<PooledSapBuilder<T>>(plant(), plant_context);
   const T& dt = this->get_initial_step_size_target();
   builder_->UpdateModel(plant_context, dt, &model_);
   model_.ResizeData(&data_);

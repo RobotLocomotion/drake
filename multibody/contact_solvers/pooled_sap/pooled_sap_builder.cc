@@ -7,6 +7,7 @@ using drake::multibody::CalcContactFrictionFromSurfaceProperties;
 using drake::multibody::internal::CouplerConstraintSpec;
 using drake::multibody::internal::GetCombinedDynamicCoulombFriction;
 using drake::multibody::internal::GetCombinedHuntCrossleyDissipation;
+using drake::multibody::internal::GetHuntCrossleyDissipation;
 using drake::multibody::internal::GetCombinedPointContactStiffness;
 using drake::multibody::internal::GetCoulombFriction;
 using drake::multibody::internal::GetInternalTree;
@@ -18,6 +19,22 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace pooled_sap {
+
+template <typename T>
+T CombineHuntCrossleyDissipation(const T& stiffness_A, const T& stiffness_B,
+                                 const T& dA, const T& dB) {
+  const double kInf = std::numeric_limits<double>::infinity();
+  if (stiffness_A == kInf) return dB;
+  if (stiffness_B == kInf) return dA;
+
+  // Return zero dissipation if both stiffness values are zero.
+  const T denom = stiffness_A + stiffness_B;
+  if (denom == 0.0) return 0.0;
+
+  // At this point we know both geometries are compliant and at least one of
+  // them has non-zero stiffness (denom != 0).
+  return (stiffness_B / denom) * dA + (stiffness_A / denom) * dB;
+}
 
 template <typename T>
 void PooledSapBuilder<T>::CalcGeometryContactData(
@@ -48,6 +65,30 @@ void PooledSapBuilder<T>::CalcGeometryContactData(
           &point_pairs);
       break;
     }
+  }
+}
+
+template <typename T>
+PooledSapBuilder<T>::PooledSapBuilder(const MultibodyPlant<T>& plant,
+                                      const systems::Context<T>& context)
+    : PooledSapBuilder(plant) {
+  // Retrieve constant model parameters.
+  // TODO(amcastro-tri): This should be retrieved from the default contact
+  // properties.
+  const double kDefaultDissipation = 50.0;
+  const double kDefaultStiffness = 1.0e6;
+
+  const geometry::SceneGraphInspector<T>& inspector =
+      plant.EvalSceneGraphInspector(context);
+
+  const std::vector<geometry::GeometryId> geometries =
+      inspector.GetAllGeometryIds(geometry::Role::kProximity);
+
+  for (geometry::GeometryId id : geometries) {
+    stiffness_[id] = GetPointContactStiffness(id, kDefaultStiffness, inspector);
+    friction_[id] = GetCoulombFriction(id, inspector);
+    dissipation_[id] =
+        GetHuntCrossleyDissipation(id, kDefaultDissipation, inspector);
   }
 }
 
@@ -333,11 +374,6 @@ void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
   const geometry::SceneGraphInspector<T>& inspector =
       plant().EvalSceneGraphInspector(context);
 
-  // TODO(amcastro-tri): This should be retrieved from the default contact
-  // properties.
-  const double kDefaultDissipation = 50.0;
-  const double kDefaultStiffness = 1.0e6;
-
   typename PooledSapModel<T>::PatchConstraintsPool& patches =
       model->patch_constraints_pool();
   patches.Clear();
@@ -374,16 +410,17 @@ void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
     const Vector3<T> p_AB_W = p_WBo - p_WAo;
 
     // Material properties.
-    const T kM = GetPointContactStiffness(Mid, kDefaultStiffness, inspector);
-    const T kN = GetPointContactStiffness(Nid, kDefaultStiffness, inspector);
-    const T k = GetCombinedPointContactStiffness(Mid, Nid, kDefaultStiffness,
-                                                 inspector);
-    const T d = GetCombinedHuntCrossleyDissipation(
-        Mid, Nid, kM, kN, kDefaultDissipation, inspector);
+    const T& kM = stiffness_.at(Mid);
+    const T& kN = stiffness_.at(Nid);
+    const T k = GetCombinedPointContactStiffness(kM, kN);
+
+    const T& dM = dissipation_.at(Mid);
+    const T& dN = dissipation_.at(Nid);
+    const T d = CombineHuntCrossleyDissipation(kM, kN, dM, dN);
 
     // Friction properties
-    const auto& mu_A = GetCoulombFriction(Mid, inspector);
-    const auto& mu_B = GetCoulombFriction(Nid, inspector);
+    const auto& mu_A = friction_.at(Mid);
+    const auto& mu_B = friction_.at(Nid);
     CoulombFriction<double> mu =
         CalcContactFrictionFromSurfaceProperties(mu_A, mu_B);
 

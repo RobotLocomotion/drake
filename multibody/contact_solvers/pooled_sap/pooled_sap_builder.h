@@ -25,6 +25,9 @@ class PooledSapBuilder {
 
   explicit PooledSapBuilder(const MultibodyPlant<T>& plant);
 
+  PooledSapBuilder(const MultibodyPlant<T>& plant,
+                   const systems::Context<T>& context);
+
   void UpdateModel(const systems::Context<T>& context, const T& time_step,
                    PooledSapModel<T>* model) const;
 
@@ -77,6 +80,11 @@ class PooledSapBuilder {
                            PooledSapModel<T>* model) const;
 
   const MultibodyPlant<T>* plant_{nullptr};
+
+  /* Model properties that do not change unless the system changes. */
+  std::map<geometry::GeometryId, CoulombFriction<double>> friction_;
+  std::map<geometry::GeometryId, T> stiffness_;    // point contact.
+  std::map<geometry::GeometryId, T> dissipation_;  // H&C dissipation.
 
   /* Scratch workspace data to build the model.  */
   struct Scratch {
