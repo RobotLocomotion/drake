@@ -155,3 +155,15 @@ class TestRobotDiagram(unittest.TestCase):
         del controller
         gc.collect()
         self.assertFalse(spy.alive)
+
+    def test_issue_23161(self):
+        # Check that RobotDiagramBuilder resists cross-generational memory
+        # leaks facilitated by pybind11 address aliasing hazards.
+        for i in range(10):
+            builder = mut.RobotDiagramBuilder(time_step=0.05)
+            # If we have any bookkeeping at this point, it's leaked
+            # from a prior iteration by pybind11 cast aliasing.
+            self.assertFalse(hasattr(builder.builder(),
+                                     "_pydrake_internal_ref_cycle_peers"))
+            diagram = builder.Build()
+            gc.collect()

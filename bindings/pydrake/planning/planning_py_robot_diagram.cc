@@ -58,8 +58,20 @@ void DefinePlanningRobotDiagram(py::module m) {
       auto cls = DefineTemplateClassWithDefault<Class>(
           m, "RobotDiagramBuilder", GetPyParam<T>(), cls_doc.doc);
       cls  // BR
-          .def(py::init<double>(), py::arg("time_step") = 0.001,
-              cls_doc.ctor.doc)
+          .def(py::init([](double time_step) {
+            auto self = std::make_unique<RobotDiagramBuilder<T>>(time_step);
+            systems::DiagramBuilder<T>& cpp_builder = self->builder();
+            py::object py_builder = py::cast(&cpp_builder, py_rvp::reference);
+            // Avoid weird address-aliasing hazard by hard-resetting the
+            // internal builder's ref cycle bookkeeping; see #23161.
+            static const char* refcycle_peers =
+                "_pydrake_internal_ref_cycle_peers";
+            if (hasattr(py_builder, refcycle_peers)) {
+              delattr(py_builder, refcycle_peers);
+            }
+            return self;
+          }),
+              py::arg("time_step") = 0.001, cls_doc.ctor.doc)
           .def("builder",
               overload_cast_explicit<systems::DiagramBuilder<T>&>(
                   &Class::builder),
