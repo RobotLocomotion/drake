@@ -161,7 +161,7 @@ void ParameterizedSamePointConstraint::DoEvalGeneric(
   const VectorX<T> q_latent = x.head(parameterization_dimension_);
   const VectorX<T> q_full = parameterization(q_latent);
   VectorX<T> x_full(same_point_constraint_.num_vars());
-  x_full << q_full, x.tail(6);
+  x_full << q_full, x.template tail<6>();
   same_point_constraint_.Eval(x_full, y);
 }
 
@@ -214,7 +214,7 @@ void ParameterizedPointsBoundedDistanceConstraint::DoEvalGeneric(
   const VectorX<T> q_latent = x.head(parameterization_dimension_);
   const VectorX<T> q_full = parameterization(q_latent);
   VectorX<T> x_full(points_bounded_distance_constraint_.num_vars());
-  x_full << q_full, x.tail(6);
+  x_full << q_full, x.template tail<6>();
   points_bounded_distance_constraint_.Eval(x_full, y);
 }
 

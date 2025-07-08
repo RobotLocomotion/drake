@@ -256,6 +256,24 @@ TEST_F(DoublePendulumRationalForwardKinematics, FunctionParameterization) {
   PlotEnvironmentAndRegionRationalForwardKinematics(
       region, options.parameterization.get_parameterization_double(),
       region_query_point_1_);
+
+  // Check that this still works with padding.
+  const double padding = 0.5;
+  scene_graph_checker->SetPaddingAllRobotEnvironmentPairs(padding);
+  scene_graph_checker->SetPaddingAllRobotRobotPairs(padding);
+
+  region = IrisNp2(*scene_graph_checker,
+                   starting_ellipsoid_rational_forward_kinematics_,
+                   domain_rational_forward_kinematics_, options);
+
+  EXPECT_TRUE(region.PointInSet(Vector2d{.1, 0.0}));
+  EXPECT_FALSE(region.PointInSet(Vector2d{.2, 0.0}));
+  EXPECT_TRUE(region.PointInSet(Vector2d{-.1, 0.0}));
+  EXPECT_FALSE(region.PointInSet(Vector2d{-.2, 0.0}));
+
+  PlotEnvironmentAndRegionRationalForwardKinematics(
+      region, options.parameterization.get_parameterization_double(),
+      region_query_point_1_);
 }
 
 TEST_F(BlockOnGround, IrisNp2Test) {
