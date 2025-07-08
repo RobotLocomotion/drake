@@ -1,4 +1,4 @@
-#include "operational_space_control/differential_inverse_kinematics_controller.h"
+#include "drake/planning/differential_inverse_kinematics_controller.h"
 
 #include <limits>
 #include <memory>
@@ -10,23 +10,21 @@
 #include "drake/systems/primitives/selector.h"
 #include "drake/systems/primitives/wrap_to_system.h"
 
-namespace anzu {
-namespace operational_space_control {
+namespace drake {
+namespace planning {
 namespace {
 
-using drake::multibody::MultibodyPlant;
-using drake::planning::CollisionChecker;
-using drake::planning::DofMask;
-using drake::systems::Context;
-using drake::systems::DiagramBuilder;
-using drake::systems::DiscreteTimeIntegrator;
-using drake::systems::Selector;
-using drake::systems::SelectorParams;
-using drake::systems::State;
-using drake::systems::WrapToSystem;
 using Eigen::VectorXd;
+using multibody::MultibodyPlant;
+using systems::Context;
+using systems::DiagramBuilder;
+using systems::DiscreteTimeIntegrator;
+using systems::Selector;
+using systems::SelectorParams;
+using systems::State;
+using systems::WrapToSystem;
 
-using Base = drake::systems::Diagram<double>;
+using Base = systems::Diagram<double>;
 
 // Map active and passive degrees of freedom from input to output for the
 // position mixer.
@@ -126,16 +124,14 @@ void DifferentialInverseKinematicsController::set_initial_position(
 // NaN because we want this diagram to fail fast if the user did not explicitly
 // initialize the values.
 void DifferentialInverseKinematicsController::SetDefaultState(
-    const Context<double>& context,
-    drake::systems::State<double>* state) const {
+    const Context<double>& context, systems::State<double>* state) const {
   Base::SetDefaultState(context, state);
   set_state_to_nan(context, state);
 }
 
 void DifferentialInverseKinematicsController::SetRandomState(
-    const drake::systems::Context<double>& context,
-    drake::systems::State<double>* state,
-    drake::RandomGenerator* generator) const {
+    const systems::Context<double>& context, systems::State<double>* state,
+    RandomGenerator* generator) const {
   Base::SetRandomState(context, state, generator);
   // This is a state that effectively depends on connected ports; we should not
   // randomly initialize this, and instead still require explicit initialization
@@ -144,8 +140,7 @@ void DifferentialInverseKinematicsController::SetRandomState(
 }
 
 void DifferentialInverseKinematicsController::set_state_to_nan(
-    const drake::systems::Context<double>& context,
-    drake::systems::State<double>* state) const {
+    const systems::Context<double>&, systems::State<double>* state) const {
   Eigen::VectorXd integrator_value(
       GetMutableSubsystemState(*discrete_time_integrator_, state)
           .get_discrete_state()
@@ -156,5 +151,5 @@ void DifferentialInverseKinematicsController::set_state_to_nan(
       .SetFromVector(integrator_value);
 }
 
-}  // namespace operational_space_control
-}  // namespace anzu
+}  // namespace planning
+}  // namespace drake

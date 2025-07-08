@@ -17,6 +17,8 @@ drake_cc_package_library(
         ":collision_checker",
         ":collision_checker_context",
         ":collision_checker_params",
+        ":differential_inverse_kinematics_controller",
+        ":differential_inverse_kinematics_system",
         ":distance_and_interpolation_provider",
         ":dof_mask",
         ":joint_limits",
@@ -95,6 +97,36 @@ drake_cc_library(
         ":robot_diagram",
         "//common:parallelism",
         "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "differential_inverse_kinematics_controller",
+    srcs = ["differential_inverse_kinematics_controller.cc"],
+    hdrs = ["differential_inverse_kinematics_controller.h"],
+    deps = [
+        ":differential_inverse_kinematics_system",
+        "//systems/framework",
+        "//systems/primitives:discrete_time_integrator",
+        "//systems/primitives:selector",
+        "//systems/primitives:shared_pointer_system",
+        "//systems/primitives:wrap_to_system",
+    ],
+)
+
+drake_cc_library(
+    name = "differential_inverse_kinematics_system",
+    srcs = ["differential_inverse_kinematics_system.cc"],
+    hdrs = ["differential_inverse_kinematics_system.h"],
+    deps = [
+        ":collision_checker",
+        ":dof_mask",
+        ":joint_limits",
+        "//common",
+        "//multibody/inverse_kinematics:differential_inverse_kinematics",
+        "//multibody/parsing:scoped_names",
+        "//solvers:osqp_solver",
+        "//systems/framework:bus_value",
     ],
 )
 
@@ -276,6 +308,34 @@ drake_cc_googletest(
     deps = [
         ":collision_checker_context",
         ":robot_diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "differential_inverse_kinematics_controller_test",
+    data = [
+        "@drake_models//:iiwa_description",
+    ],
+    deps = [
+        ":differential_inverse_kinematics_controller",
+        ":robot_diagram_builder",
+        ":scene_graph_collision_checker",
+        "//common/test_utilities",
+        "//multibody/parsing:parser",
+        "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "differential_inverse_kinematics_system_test",
+    deps = [
+        ":differential_inverse_kinematics_system",
+        ":robot_diagram_builder",
+        ":scene_graph_collision_checker",
+        "//common/test_utilities",
+        "//common/yaml:yaml_io",
+        "//multibody/plant",
+        "//systems/framework",
     ],
 )
 

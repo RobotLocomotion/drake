@@ -1,4 +1,4 @@
-#include "operational_space_control/differential_inverse_kinematics_system.h"
+#include "planning/differential_inverse_kinematics_system.h"
 
 #include <memory>
 #include <optional>
@@ -16,37 +16,26 @@
 #include "drake/planning/scene_graph_collision_checker.h"
 #include "drake/systems/framework/bus_value.h"
 
-namespace anzu {
-namespace operational_space_control {
+namespace drake {
+namespace planning {
 namespace {
 
-using drake::CompareMatrices;
-using drake::Value;
-using drake::Vector6d;
-using drake::geometry::Sphere;
-using drake::math::RigidTransformd;
-using drake::multibody::CoulombFriction;
-using drake::multibody::FixedOffsetFrame;
-using drake::multibody::ModelInstanceIndex;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::PrismaticJoint;
-using drake::multibody::RigidBody;
-using drake::multibody::SpatialInertia;
-using drake::multibody::SpatialVelocity;
-using drake::planning::CollisionChecker;
-using drake::planning::CollisionCheckerParams;
-using drake::planning::DofMask;
-using drake::planning::JointLimits;
-using drake::planning::RobotClearance;
-using drake::planning::RobotDiagram;
-using drake::planning::RobotDiagramBuilder;
-using drake::planning::SceneGraphCollisionChecker;
-using drake::solvers::Binding;
-using drake::solvers::EvaluatorBase;
-using drake::systems::BusValue;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using geometry::Sphere;
+using math::RigidTransformd;
+using multibody::CoulombFriction;
+using multibody::FixedOffsetFrame;
+using multibody::ModelInstanceIndex;
+using multibody::MultibodyPlant;
+using multibody::PrismaticJoint;
+using multibody::RigidBody;
+using multibody::SpatialInertia;
+using multibody::SpatialVelocity;
+using solvers::Binding;
+using solvers::EvaluatorBase;
+using systems::BusValue;
 
 using DiffIk = DifferentialInverseKinematicsSystem;
 using CallbackDetails = DiffIk::CallbackDetails;
@@ -119,7 +108,7 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
 
   /* Convenience function for adding the least-squares cost. */
   static void AddLeastSquaresCost(
-      Recipe* recipe, const drake::string_unordered_map<Vector6d>& masks = {}) {
+      Recipe* recipe, const string_unordered_map<Vector6d>& masks = {}) {
     auto ingredient = std::make_shared<DiffIk::LeastSquaresCost>(
         DiffIk::LeastSquaresCost::Config{.cartesian_axis_masks = masks});
     recipe->AddIngredient(std::move(ingredient));
@@ -328,8 +317,8 @@ class TestIngredient final : public Ingredient {
  public:
   TestIngredient() = default;
   ~TestIngredient() final = default;
-  std::vector<drake::solvers::Binding<drake::solvers::EvaluatorBase>>
-  AddToProgram(CallbackDetails* details) const final {
+  std::vector<Binding<EvaluatorBase>> AddToProgram(
+      CallbackDetails* details) const final {
     DRAKE_DEMAND(details != nullptr);
     if (details->v_next.size() != dut_->active_dof().count()) {
       throw std::runtime_error("Detail has wrong number of decision variables");
@@ -343,11 +332,11 @@ class TestIngredient final : public Ingredient {
     if (details->time_step != dut_->time_step()) {
       throw std::runtime_error("Detail time step doesn't match system");
     }
-    // TODO(sean.curtis): Extend the test to confirm the details that arise from
-    // the context: plant_context, nominal_posture, X_TGlist, VdTGlist, JvTGs,
-    // and mathematical_program. For the program, we'll check: that it has no
-    // constraints or costs and that details->v_next are its (only) decision
-    // variables.
+    // TODO(SeanCurtis-TRI): Extend the test to confirm the details that arise
+    // from the context: plant_context, nominal_posture, X_TGlist, VdTGlist,
+    // JvTGs, and mathematical_program. For the program, we'll check: that it
+    // has no constraints or costs and that details->v_next are its (only)
+    // decision variables.
     return {};
   }
 
@@ -396,7 +385,7 @@ region. */
 TEST_F(DifferentialInverseKinematicsTest, LeastSquaresAxisMask) {
   // Mask out everything except for vx, vy and the answer shouldn't change.
   // The "masked" rows were already zero.
-  const drake::string_unordered_map<Vector6d> identity_masks{
+  const string_unordered_map<Vector6d> identity_masks{
       {"robot::ball", Vector6d(0, 0, 0, 1, 1, 0)}};
 
   auto recipe = std::make_shared<Recipe>();
@@ -410,7 +399,7 @@ TEST_F(DifferentialInverseKinematicsTest, LeastSquaresAxisMask) {
                          .v_WB_expected = Vector3d{1, -2, 0}}});
 
   /* Now run it again, with vy masked out; the solution ignores vd_y. */
-  const drake::string_unordered_map<Vector6d> vy_masked{
+  const string_unordered_map<Vector6d> vy_masked{
       {"robot::ball", Vector6d(0, 0, 0, 1, 0, 0)}};
   ingredient->SetConfig(
       DiffIk::LeastSquaresCost::Config{.cartesian_axis_masks = vy_masked});
@@ -601,7 +590,7 @@ TEST_F(DifferentialInverseKinematicsTest, JointCenteringCostAxisMask) {
   const Vector3d q(-0.5, 0, 1 / std::sqrt(2));
 
   // Masking out vy.
-  const drake::string_unordered_map<Vector6d> masks{
+  const string_unordered_map<Vector6d> masks{
       {"robot::ball", Vector6d(0, 0, 0, 1, 0, 0)}};
   const Vector3d vd_WB_masked(1.5, 0, 0);
 
@@ -979,9 +968,9 @@ TEST_F(DifferentialInverseKinematicsTest, JointVelocityLimitConstraint) {
 /* This tests all of the config structs getters and serialization
 implementations. */
 TEST_F(DifferentialInverseKinematicsTest, ConfigCommonOperations) {
-  using drake::yaml::SaveYamlString;
+  using yaml::SaveYamlString;
 
-  const drake::string_unordered_map<Vector6d> masks{
+  const string_unordered_map<Vector6d> masks{
       {"dummy", Vector6d(1, 0, 1, 0, 1, 0)}};
 
   {
@@ -1043,5 +1032,5 @@ TEST_F(DifferentialInverseKinematicsTest, ConfigCommonOperations) {
 }
 
 }  // namespace
-}  // namespace operational_space_control
-}  // namespace anzu
+}  // namespace planning
+}  // namespace drake

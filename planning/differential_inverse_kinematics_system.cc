@@ -1,4 +1,4 @@
-#include "operational_space_control/differential_inverse_kinematics_system.h"
+#include "drake/planning/differential_inverse_kinematics_system.h"
 
 #include <limits>
 #include <optional>
@@ -14,36 +14,30 @@
 #include "drake/solvers/osqp_solver.h"
 #include "drake/systems/framework/bus_value.h"
 
-namespace anzu {
-namespace operational_space_control {
+namespace drake {
+namespace planning {
 namespace {
 
-using drake::Value;
-using drake::Vector6d;
-using drake::math::RigidTransformd;
-using drake::multibody::ComputePoseDiffInCommonFrame;
-using drake::multibody::Frame;
-using drake::multibody::JacobianWrtVariable;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::SpatialVelocity;
-using drake::multibody::parsing::GetScopedFrameByName;
-using drake::planning::CollisionChecker;
-using drake::planning::DofMask;
-using drake::planning::JointLimits;
-using drake::planning::RobotClearance;
-using drake::solvers::Binding;
-using drake::solvers::EvaluatorBase;
-using drake::solvers::MathematicalProgram;
-using drake::solvers::MathematicalProgramResult;
-using drake::solvers::OsqpSolver;
-using drake::solvers::SolverOptions;
-using drake::solvers::VectorXDecisionVariable;
-using drake::systems::BasicVector;
-using drake::systems::BusValue;
-using drake::systems::Context;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using math::RigidTransformd;
+using multibody::ComputePoseDiffInCommonFrame;
+using multibody::Frame;
+using multibody::JacobianWrtVariable;
+using multibody::MultibodyPlant;
+using multibody::SpatialVelocity;
+using multibody::parsing::GetScopedFrameByName;
+using solvers::Binding;
+using solvers::EvaluatorBase;
+using solvers::MathematicalProgram;
+using solvers::MathematicalProgramResult;
+using solvers::OsqpSolver;
+using solvers::SolverOptions;
+using solvers::VectorXDecisionVariable;
+using systems::BasicVector;
+using systems::BusValue;
+using systems::Context;
 
 using CallbackDetails = DifferentialInverseKinematicsSystem::CallbackDetails;
 using DiagonalMatrixXd = Eigen::DiagonalMatrix<double, Eigen::Dynamic>;
@@ -62,7 +56,7 @@ DifferentialInverseKinematicsSystem::Ingredient::~Ingredient() = default;
 DiagonalMatrixXd
 DifferentialInverseKinematicsSystem::Ingredient::BuildBlockDiagonalAxisSelector(
     const std::vector<const Frame<double>*>& frame_list,
-    const drake::string_unordered_map<Vector6d>& cartesian_axis_masks) {
+    const string_unordered_map<Vector6d>& cartesian_axis_masks) {
   const int N = ssize(frame_list);
   DiagonalMatrixXd selector(6 * N);
   selector.setIdentity();
@@ -431,7 +425,7 @@ DifferentialInverseKinematicsSystem::JointCenteringCost::AddToProgram(
   const int ndof = Jv_TGs.cols();
   if (lu_Jv.rank() < ndof) {
     const auto& robot_position = plant.GetPositions(plant_context);
-    // TODO(jeremy.nimmer) This formulation has been working well in practice,
+    // TODO(jwnimmer-tri) This formulation has been working well in practice,
     // but if you look carefully you'll notice that the _scale_ of the basis
     // vectors in `P` might not be well-balanced. (Eigen doesn't promise
     // anything about their scale.) If the kernel isn't consistently scaled,
@@ -464,13 +458,13 @@ void LogConstraintViolations(const MathematicalProgram& prog,
   if (infeasible_constraint_names.empty()) {
     infeasible_constraint_names.emplace_back("none");
   }
-  drake::log()->warn(
+  log()->warn(
       "QP failed to solve, returning zero velocity; the violated constraints "
       "were {}",
       fmt::join(infeasible_constraint_names, ", "));
 
   // Debugging information for all constraints.
-  if (drake::log()->should_log(spdlog::level::debug)) {
+  if (log()->should_log(spdlog::level::debug)) {
     for (const auto& binding : prog.GetAllConstraints()) {
       const auto& constraint = binding.evaluator();
 
@@ -479,9 +473,9 @@ void LogConstraintViolations(const MathematicalProgram& prog,
       VectorXd upper_bound = constraint->upper_bound();
 
       for (int i = 0; i < value.size(); ++i) {
-        drake::log()->debug("{}, index {}, value = {}, bounds = [{}, {}]",
-                            constraint->get_description(), i, value[i],
-                            lower_bound[i], upper_bound[i]);
+        log()->debug("{}, index {}, value = {}, bounds = [{}, {}]",
+                     constraint->get_description(), i, value[i], lower_bound[i],
+                     upper_bound[i]);
       }
     }
   }
@@ -523,8 +517,8 @@ struct DifferentialInverseKinematicsSystem::CartesianDesires {
 DifferentialInverseKinematicsSystem::DifferentialInverseKinematicsSystem(
     std::shared_ptr<const Recipe> recipe, const std::string_view task_frame,
     std::shared_ptr<const CollisionChecker> collision_checker,
-    const drake::planning::DofMask& active_dof, const double time_step,
-    const double K_VX, const SpatialVelocity<double>& Vd_TG_limit)
+    const DofMask& active_dof, const double time_step, const double K_VX,
+    const SpatialVelocity<double>& Vd_TG_limit)
     : recipe_(std::move(recipe)),
       collision_checker_(std::move(collision_checker)),
       active_dof_(active_dof),
@@ -635,7 +629,7 @@ void DifferentialInverseKinematicsSystem::PrepareCartesianDesires(
     SpatialVelocity<double> Vd_TGi;
     if (has_cartesian_velocities_input) {
       Vd_TGi = abstract_value.template get_value<SpatialVelocity<double>>();
-      // TODO(jeremy.nimmer): Per #lbm-platform slack thread, velocity limit
+      // TODO(jwnimmer-tri): Per #lbm-platform slack thread, velocity limit
       // clamping should also happen for desired velocities; move the limit
       // code from the `else` block below to run outside (after) the if-else.
     } else {
@@ -711,5 +705,5 @@ void DifferentialInverseKinematicsSystem::CalcCommandedVelocity(
   output->set_value(commanded_velocity);
 }
 
-}  // namespace operational_space_control
-}  // namespace anzu
+}  // namespace planning
+}  // namespace drake

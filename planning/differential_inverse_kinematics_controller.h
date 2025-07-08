@@ -5,12 +5,12 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/planning/differential_inverse_kinematics_system.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/primitives/discrete_time_integrator.h"
-#include "operational_space_control/differential_inverse_kinematics_system.h"
 
-namespace anzu {
-namespace operational_space_control {
+namespace drake {
+namespace planning {
 
 /** Differential Inverse Kinematics controller that tracks desired poses /
 velocities for multiple operational points. The controller tracks a nominal
@@ -23,7 +23,7 @@ TODO(Aditya.Bhat): Add port switch to switch between open and closed loop
 control.
 
 @pre The initial position must be set using the
-`set_initial_position(drake::systems::Context<double>* context, const
+`set_initial_position(systems::Context<double>* context, const
 Eigen::Ref<const Eigen::VectorXd>& value)` so that the open loop controller can
 start from the correct robot state.
 
@@ -41,7 +41,7 @@ output_ports:
 @tparam_default_scalar
 @ingroup control_systems */
 class DifferentialInverseKinematicsController final
-    : public drake::systems::Diagram<double> {
+    : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DifferentialInverseKinematicsController);
 
@@ -66,17 +66,17 @@ class DifferentialInverseKinematicsController final
   ignored. This in effect sets the initial position that is fed to the
   DifferentialInverseKinematicsSystem leaf system. */
   void set_initial_position(
-      drake::systems::Context<double>* context,
+      systems::Context<double>* context,
       const Eigen::Ref<const Eigen::VectorXd>& value) const;
 
   /** Sets the default state of the controller. */
-  void SetDefaultState(const drake::systems::Context<double>& context,
-                       drake::systems::State<double>* state) const final;
+  void SetDefaultState(const systems::Context<double>& context,
+                       systems::State<double>* state) const final;
 
   /** Sets the random state of the controller. */
-  void SetRandomState(const drake::systems::Context<double>& context,
-                      drake::systems::State<double>* state,
-                      drake::RandomGenerator* generator) const final;
+  void SetRandomState(const systems::Context<double>& context,
+                      systems::State<double>* state,
+                      RandomGenerator* generator) const final;
 
   const DifferentialInverseKinematicsSystem& differential_inverse_kinematics() {
     return *differential_inverse_kinematics_;
@@ -88,14 +88,13 @@ class DifferentialInverseKinematicsController final
   }
 
  private:
-  void set_state_to_nan(const drake::systems::Context<double>& context,
-                        drake::systems::State<double>* state) const;
+  void set_state_to_nan(const systems::Context<double>& context,
+                        systems::State<double>* state) const;
 
   DifferentialInverseKinematicsSystem* differential_inverse_kinematics_{
       nullptr};
-  drake::systems::DiscreteTimeIntegrator<double>* discrete_time_integrator_{
-      nullptr};
+  systems::DiscreteTimeIntegrator<double>* discrete_time_integrator_{nullptr};
 };
 
-}  // namespace operational_space_control
-}  // namespace anzu
+}  // namespace planning
+}  // namespace drake
