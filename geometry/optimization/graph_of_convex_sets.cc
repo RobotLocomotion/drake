@@ -634,15 +634,15 @@ Edge* GraphOfConvexSets::GetMutableEdgeByName(const std::string& name) {
   return nullptr;
 }
 
-void GraphOfConvexSets::RemoveVertex(Vertex* v) {
+void GraphOfConvexSets::RemoveVertex(Vertex* vertex) {
   DRAKE_THROW_UNLESS(v != nullptr);
-  VertexId vertex_id = v->id();
+  VertexId vertex_id = vertex->id();
   DRAKE_THROW_UNLESS(vertices_.contains(vertex_id));
-  for (const auto uv : v->incoming_edges_) {
+  for (const auto uv : vertex->incoming_edges_) {
     uv->u().RemoveOutgoingEdge(uv);
     edges_.erase(uv->id());
   }
-  for (const auto vw : v->outgoing_edges_) {
+  for (const auto vw : vertex->outgoing_edges_) {
     vw->v().RemoveIncomingEdge(vw);
     edges_.erase(vw->id());
   }
@@ -785,8 +785,8 @@ std::string GraphOfConvexSets::GetGraphvizString(
         graphviz << "\"";
         // Note: This must be last, because it also sets the color parameter
         // of the edge (and hence must close the name within quote-marks)
-        graphviz << ", color="
-                 << "\"#000000" << floatToHex(result->GetSolution(e->phi()));
+        graphviz << ", color=" << "\"#000000"
+                 << floatToHex(result->GetSolution(e->phi()));
       }
     }
     graphviz << "\"];\n";
@@ -796,8 +796,7 @@ std::string GraphOfConvexSets::GetGraphvizString(
     for (const auto& e : *active_path) {
       graphviz << "v" << e->u().id() << " -> v" << e->v().id();
       graphviz << " [label=\"" << e->name() << " = active\"";
-      graphviz << ", color="
-               << "\"#ff0000\"";
+      graphviz << ", color=" << "\"#ff0000\"";
       graphviz << ", style=\"dashed\"";
       graphviz << "];\n";
     }
@@ -1114,11 +1113,11 @@ void GraphOfConvexSets::AddPerspectiveCost(
     // |Ax + b|∞ becomes ℓ ≥ |Aᵢx+bᵢϕ| ∀ i.
     int A_rows = linfc->A().rows();
     MatrixXd A_linear(2 * A_rows, vars.size());
-    A_linear.block(0, 0, A_rows, 1) = linfc->b();                        // bϕ.
-    A_linear.block(0, 1, A_rows, 1) = -VectorXd::Ones(A_rows);           // -ℓ.
-    A_linear.block(0, 2, A_rows, linfc->A().cols()) = linfc->A();        // Ax.
-    A_linear.block(A_rows, 0, A_rows, 1) = -linfc->b();                  // -bϕ.
-    A_linear.block(A_rows, 1, A_rows, 1) = -VectorXd::Ones(A_rows);      // -ℓ.
+    A_linear.block(0, 0, A_rows, 1) = linfc->b();                    // bϕ.
+    A_linear.block(0, 1, A_rows, 1) = -VectorXd::Ones(A_rows);       // -ℓ.
+    A_linear.block(0, 2, A_rows, linfc->A().cols()) = linfc->A();    // Ax.
+    A_linear.block(A_rows, 0, A_rows, 1) = -linfc->b();              // -bϕ.
+    A_linear.block(A_rows, 1, A_rows, 1) = -VectorXd::Ones(A_rows);  // -ℓ.
     A_linear.block(A_rows, 2, A_rows, linfc->A().cols()) = -linfc->A();  // -Ax.
     prog->AddLinearConstraint(A_linear,
                               VectorXd::Constant(A_linear.rows(), -inf),
