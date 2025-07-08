@@ -127,15 +127,15 @@ bool CheckProgConstraints(const solvers::MathematicalProgram* prog_ptr,
 
 std::vector<uint8_t> CheckProgConstraintsParallel(
     const solvers::MathematicalProgram* prog_ptr,
-    const std::vector<Eigen::VectorXd>& particles, const int num_threads_to_use,
-    const double tol, std::optional<int> end_index) {
+    const std::vector<Eigen::VectorXd>& particles,
+    const Parallelism& parallelism, const double tol,
+    std::optional<int> end_index) {
   int actual_end_index = end_index.value_or(ssize(particles));
   DRAKE_DEMAND(actual_end_index >= 0 && actual_end_index <= ssize(particles));
   std::vector<uint8_t> is_valid(actual_end_index, 1);
   if (!prog_ptr) {
     return is_valid;
   }
-  DRAKE_DEMAND(prog_ptr->IsThreadSafe() || num_threads_to_use == 1);
   const auto check_particle_work = [&prog_ptr, &particles, &tol, &is_valid](
                                        const int thread_num,
                                        const int64_t index) {
@@ -144,7 +144,7 @@ std::vector<uint8_t> CheckProgConstraintsParallel(
         CheckProgConstraints(prog_ptr, particles[index], tol));
   };
 
-  DynamicParallelForIndexLoop(DegreeOfParallelism(num_threads_to_use), 0,
+  DynamicParallelForIndexLoop(DegreeOfParallelism(parallelism.num_threads()), 0,
                               actual_end_index, check_particle_work,
                               ParallelForBackend::BEST_AVAILABLE);
   return is_valid;

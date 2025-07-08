@@ -273,7 +273,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
       std::vector<uint8_t> particle_satisfies_additional_constraints =
           internal::CheckProgConstraintsParallel(
               options.sampled_iris_options.prog_with_additional_constraints,
-              particles, num_threads_to_use, constraints_tol, N_k);
+              particles, Parallelism(num_threads_to_use), constraints_tol, N_k);
       DRAKE_ASSERT(particle_col_free.size() ==
                    particle_satisfies_additional_constraints.size());
 

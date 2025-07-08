@@ -286,8 +286,9 @@ bool CheckProgConstraints(const solvers::MathematicalProgram* prog_ptr,
 // std::nullopt, it is set to ssize(particles).
 std::vector<uint8_t> CheckProgConstraintsParallel(
     const solvers::MathematicalProgram* prog_ptr,
-    const std::vector<Eigen::VectorXd>& particles, const int num_threads_to_use,
-    const double tol, std::optional<int> end_index = std::nullopt);
+    const std::vector<Eigen::VectorXd>& particles,
+    const Parallelism& parallelism, const double tol,
+    std::optional<int> end_index = std::nullopt);
 
 geometry::optimization::VPolytope ParseAndCheckContainmentPoints(
     const CollisionChecker& checker,
