@@ -446,8 +446,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
               options.sampled_iris_options.prog_with_additional_constraints,
               particles,
               additional_constraints_threadsafe
-                  ? options.sampled_iris_options.parallelism.num_threads()
-                  : 1,
+                  ? options.sampled_iris_options.parallelism
+                  : Parallelism::None(),
               constraints_tol, N_k);
 
       particles_in_collision.clear();
