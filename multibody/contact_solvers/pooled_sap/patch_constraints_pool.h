@@ -56,6 +56,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
     // for two Jacobian matrices of size 6 x nv, with nv the number of
     // velocities of a clique. Conservatively, request memory for all clique
     // sizes, noting that cliques might be repeated.
+    MatrixX_pool_.Clear();
     for (int c = 0; c < model().num_cliques(); ++c) {
       const int nv = model().clique_size(c);
       MatrixX_pool_.Add(6, nv);
