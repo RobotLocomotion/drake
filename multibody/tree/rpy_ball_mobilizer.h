@@ -338,10 +338,6 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   void ThrowIfCosPitchNearZero(const T& cos_pitch, const T& pitch_angle,
                                const char* function_name) const;
 
-  // Calculates and returns sin(pitch), cos(pitch), sin(yaw), cos(yaw).
-  std::tuple<T, T, T, T> SinCosPitchYaw(
-      const systems::Context<T>& context) const;
-
   // Calculates sin(pitch), cos(pitch), sin(yaw), cos(yaw), 1/cos(pitch).
   // Throw an exception if pitch angle is within ≈ 0.057° of a singularity.
   std::tuple<T, T, T, T, T> SinCosPitchYawCpi(
