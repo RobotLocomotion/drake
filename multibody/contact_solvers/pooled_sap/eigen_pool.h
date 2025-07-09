@@ -192,9 +192,9 @@ struct FixedSizeStorage {
   void PushBack(const EigenType& data) { data_.push_back(data); }
 
   void SetZero() {
-    for (auto& e : data_) {
-      e.setZero();
-    }
+    Eigen::Map<VectorX<Scalar>>(data_.data()->data(),
+                                data_.size() * EigenType::SizeAtCompileTime)
+        .setZero();
   }
 
   int size() const { return data_.size(); }

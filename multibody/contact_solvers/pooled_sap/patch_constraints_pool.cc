@@ -340,15 +340,16 @@ void PooledSapModel<T>::PatchConstraintsPool::CalcPatchQuantities(
   EigenPool<Vector6<T>>& Gamma_Bo_W_pool = *spatial_impulses_pool;
   EigenPool<Matrix6<T>>& G_Bp_pool = *patch_hessians_pool;
 
+  Gamma_Bo_W_pool.SetZero();
+  G_Bp_pool.SetZero();
+
   for (int p = 0; p < num_patches(); ++p) {
     const int num_pairs = num_pairs_[p];
 
     // Accumulate impulses on the patch for the first clique only. This is
     // always body B.
     Vector6<T>& Gamma_Bo_W = Gamma_Bo_W_pool[p];
-    Gamma_Bo_W.setZero();
     Matrix6<T>& G_Bp = G_Bp_pool[p];
-    G_Bp.setZero();
 
     cost_pool->at(p) = 0.0;
     for (int k = 0; k < num_pairs; ++k) {
