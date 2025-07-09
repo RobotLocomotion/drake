@@ -31,6 +31,7 @@ struct PooledSapParameters {
     DRAKE_DEMAND(time_step > 0);
     const int num_bodies = ssize(body_cliques);
     DRAKE_DEMAND(ssize(body_is_floating) == num_bodies);
+    DRAKE_DEMAND(ssize(body_mass) == num_bodies);
     DRAKE_DEMAND(num_bodies > 0);
     DRAKE_DEMAND(body_cliques[0] < 0);  // Always for the world.
 
@@ -75,6 +76,7 @@ struct PooledSapParameters {
   // body_cliques[0]  < 0 must correspond to the world.
   std::vector<int> body_cliques;
   std::vector<int> body_is_floating;  // 1 if floating.
+  std::vector<T> body_mass;           // mass of each body.
   EigenPool<Matrix6X<T>> J_WB;        // Rigid body spatial velocity Jacobians.
   VectorX<T> v0;                      // The current generalized velocities.
 
@@ -204,6 +206,12 @@ class PooledSapModel {
   bool is_floating(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return params().body_is_floating[body] == 1;
+  }
+
+  /* Returns the mass for `body`. */
+  const T& body_mass(int body) const {
+    DRAKE_ASSERT(0 <= body && body < num_bodies());
+    return params().body_mass[body];
   }
 
   /* Returns the number of velocities for `clique` or zero if clique < 0

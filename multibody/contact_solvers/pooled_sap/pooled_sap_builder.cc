@@ -151,12 +151,15 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   params->D = M.diagonal().cwiseSqrt().cwiseInverse();
   params->body_cliques.clear();
   params->body_cliques.reserve(plant().num_bodies());
+  params->body_mass.clear();
+  params->body_mass.reserve(plant().num_bodies());
   params->body_is_floating.clear();
   params->body_is_floating.reserve(plant().num_bodies());
   for (int b = 0; b < plant().num_bodies(); ++b) {
     const auto& body = plant().get_body(BodyIndex(b));
 
     params->body_is_floating.push_back(body.is_floating() ? 1 : 0);
+    params->body_mass.push_back(body.default_mass());
 
     if (plant().IsAnchored(body)) {
       params->body_cliques.push_back(-1);  // mark as anchored.

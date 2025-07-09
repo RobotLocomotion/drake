@@ -209,7 +209,21 @@ class PooledSapModel<T>::PatchConstraintsPool {
     const T mu = calc_friction_coefficient();
     net_friction_.push_back(mu);
 
-    const T Rt = CalcRegularizationOfFriction(p, p_BoC_W);
+    // Compute per-patch regularization of friction. We use a "spherical body
+    // approximation" for the estimation of the Delassus operator. A sphere has
+    // gyration radius of g = 5/2 R (with R the radius). A contact will happen
+    // at distance R from the CoM.
+    // Thus the Delassus operator will be:
+    //   W = 1/m⋅[I₃   0
+    //           [ 0   R²/g²]
+    // It's RMS norm will be w = sqrt(7)/m ≈ 2.65/m.
+    T w = 2.65 / model().body_mass(bodies_[p].first);
+    if (num_cliques == 2) {
+      w += 2.65 / model().body_mass(bodies_[p].second);
+    }
+    const T Rt = sigma_ * w;  // SAP's regularization.
+
+    // Regularized Lagged model.
     const T sap_stiction_tolerance = mu * Rt * n0;
     const T eps = max(stiction_tolerance_, sap_stiction_tolerance);
     epsilon_soft_.push_back(eps);
