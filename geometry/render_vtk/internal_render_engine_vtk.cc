@@ -34,6 +34,7 @@
 #include <vtkShadowMapBakerPass.h>       // vtkRenderingOpenGL2
 #include <vtkShadowMapPass.h>            // vtkRenderingOpenGL2
 #include <vtkSkybox.h>                   // vtkRenderingCore
+#include <vtkSSAOPass.h>                 // vtkRenderingOpenGL2
 #include <vtkTexture.h>                  // vtkRenderingCore
 #include <vtkTexturedSphereSource.h>     // vtkFiltersSources
 #include <vtkToneMappingPass.h>          // vtkRenderingCore
@@ -962,7 +963,27 @@ void RenderEngineVtk::InitializePipelines() {
   vtkNew<vtkSequencePass> full_seq;
   vtkNew<vtkRenderPassCollection> full_passes;
   full_passes->AddItem(vtkNew<vtkLightsPass>());
-  full_passes->AddItem(vtkNew<vtkOpaquePass>());
+  if (parameters_.enable_ssao) {
+    vtkNew<vtkCameraPass> ssao_camera_pass;
+    vtkNew<vtkOpaquePass> opaque_pass;
+    ssao_camera_pass->SetDelegatePass(opaque_pass);
+    
+    vtkNew<vtkSSAOPass> ssao_pass;
+    DRAKE_DEMAND(parameters_.ssao_params.has_value());
+    const auto& ssao_parameter = parameters_.ssao_params.value();
+    ssao_pass->SetDelegatePass(ssao_camera_pass);
+    ssao_pass->SetRadius(ssao_parameter.radius); // comparison radius
+    ssao_pass->SetBias(ssao_parameter.bias); // comparison bias
+    ssao_pass->SetKernelSize(ssao_parameter.kernel_size); // number of samples used
+    ssao_pass->SetIntensityScale(ssao_parameter.intensity_scale);
+    ssao_pass->SetIntensityShift(ssao_parameter.intensity_shift);
+    if (!ssao_parameter.blur) {
+        ssao_pass->BlurOff(); // do not blur occlusion
+    }
+    full_passes->AddItem(ssao_pass);
+  } else { 
+    full_passes->AddItem(vtkNew<vtkOpaquePass>());
+  }
   full_passes->AddItem(vtkNew<vtkTranslucentPass>());
   full_seq->SetPasses(full_passes);
 

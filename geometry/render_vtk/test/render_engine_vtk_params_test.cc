@@ -32,6 +32,7 @@ environment_map:
   texture: !EquirectangularMap
     path: /path/to/environment_image.hdr
 exposure: 1.0
+enable_ssao: false
 cast_shadows: true
 shadow_map_size: 512
 force_to_pbr: true
