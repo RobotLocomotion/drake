@@ -149,19 +149,6 @@ void RpyBallMobilizer<T>::ThrowIfCosPitchNearZero(
 }
 
 template <typename T>
-std::tuple<T, T, T, T> RpyBallMobilizer<T>::SinCosPitchYaw(
-    const systems::Context<T>& context) const {
-  using std::cos;
-  using std::sin;
-  const Vector3<T> angles = get_angles(context);
-  const T sp = sin(angles[1]);
-  const T cp = cos(angles[1]);
-  const T sy = sin(angles[2]);
-  const T cy = cos(angles[2]);
-  return std::make_tuple(sp, cp, sy, cy);
-}
-
-template <typename T>
 std::tuple<T, T, T, T, T> RpyBallMobilizer<T>::SinCosPitchYawCpi(
     const systems::Context<T>& context, const char* function_name) const {
   using std::cos;
@@ -215,7 +202,13 @@ void RpyBallMobilizer<T>::DoCalcNplusMatrix(const systems::Context<T>& context,
   // ⌊ ω2 ⌋   ⌊         -sin(p),        0,  1 ⌋ ⌊ ẏ ⌋
   //
   // See related code and comments in DoMapQDotToVelocity().
-  auto [sp, cp, sy, cy] = SinCosPitchYaw(context);
+  using std::cos;
+  using std::sin;
+  const Vector3<T> angles = get_angles(context);
+  const T sp = sin(angles[1]);
+  const T cp = cos(angles[1]);
+  const T sy = sin(angles[2]);
+  const T cy = cos(angles[2]);
   *Nplus << cy * cp, -sy, 0.0, sy * cp, cy, 0.0, -sp, 0.0, 1.0;
 }
 
@@ -395,7 +388,14 @@ void RpyBallMobilizer<T>::DoMapQDotToVelocity(
   // [Mitiguy August 2019] Mitiguy, P., 2019. Advanced Dynamics & Motion
   //                       Simulation.
 
-  auto [sp, cp, sy, cy] = SinCosPitchYaw(context);
+  using std::cos;
+  using std::sin;
+  const Vector3<T> angles = get_angles(context);
+  const T sp = sin(angles[1]);
+  const T cp = cos(angles[1]);
+  const T sy = sin(angles[2]);
+  const T cy = cos(angles[2]);
+
   const T& rdot = qdot[0];
   const T& pdot = qdot[1];
   const T& ydot = qdot[2];
