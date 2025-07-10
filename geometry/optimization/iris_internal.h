@@ -157,7 +157,8 @@ class ParameterizedPointsBoundedDistanceConstraint
 
   ParameterizedPointsBoundedDistanceConstraint(
       const multibody::MultibodyPlant<double>* plant,
-      const systems::Context<double>& context, const double max_distance,
+      const systems::Context<double>& context,
+      const double max_distance,
       const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
           parameterization_double,
       const std::function<AutoDiffVecXd(const AutoDiffVecXd&)>&
