@@ -1,4 +1,4 @@
-#include "drake/planning/differential_inverse_kinematics_system.h"
+#include "drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h"
 
 #include <memory>
 #include <optional>
@@ -17,7 +17,7 @@
 #include "drake/systems/framework/bus_value.h"
 
 namespace drake {
-namespace planning {
+namespace multibody {
 namespace {
 
 using Eigen::Vector2d;
@@ -25,14 +25,14 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 using geometry::Sphere;
 using math::RigidTransformd;
-using multibody::CoulombFriction;
-using multibody::FixedOffsetFrame;
-using multibody::ModelInstanceIndex;
-using multibody::MultibodyPlant;
-using multibody::PrismaticJoint;
-using multibody::RigidBody;
-using multibody::SpatialInertia;
-using multibody::SpatialVelocity;
+using planning::CollisionChecker;
+using planning::CollisionCheckerParams;
+using planning::DofMask;
+using planning::JointLimits;
+using planning::RobotClearance;
+using planning::RobotDiagram;
+using planning::RobotDiagramBuilder;
+using planning::SceneGraphCollisionChecker;
 using solvers::Binding;
 using solvers::EvaluatorBase;
 using systems::BusValue;
@@ -1031,5 +1031,5 @@ TEST_F(DifferentialInverseKinematicsTest, ConfigCommonOperations) {
 }
 
 }  // namespace
-}  // namespace planning
+}  // namespace multibody
 }  // namespace drake

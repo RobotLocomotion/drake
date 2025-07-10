@@ -1,4 +1,4 @@
-#include "drake/planning/differential_inverse_kinematics_controller.h"
+#include "drake/multibody/inverse_kinematics/differential_inverse_kinematics_controller.h"
 
 #include <memory>
 
@@ -13,15 +13,15 @@
 #include "drake/systems/framework/bus_value.h"
 
 namespace drake {
-namespace planning {
+namespace multibody {
 namespace {
 
 using Eigen::VectorXd;
 using math::RigidTransformd;
-using multibody::ModelInstanceIndex;
-using multibody::MultibodyPlant;
-using multibody::Parser;
-using multibody::SpatialVelocity;
+using planning::CollisionCheckerParams;
+using planning::DofMask;
+using planning::RobotDiagramBuilder;
+using planning::SceneGraphCollisionChecker;
 using systems::BusValue;
 using systems::Context;
 using systems::InputPortIndex;
@@ -168,5 +168,5 @@ TEST_F(DifferentialInverseKinematicsControllerTest, Random) {
 // TODO(rpoyner-tri): add a test for position feedback.
 
 }  // namespace
-}  // namespace planning
+}  // namespace multibody
 }  // namespace drake

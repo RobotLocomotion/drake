@@ -18,7 +18,9 @@ drake_cc_package_library(
         ":add_multibody_plant_constraints",
         ":constraint_relaxing_ik",
         ":differential_inverse_kinematics",
+        ":differential_inverse_kinematics_controller",
         ":differential_inverse_kinematics_integrator",
+        ":differential_inverse_kinematics_system",
         ":global_inverse_kinematics",
         ":inverse_kinematics_core",
         ":kinematic_evaluators",
@@ -62,12 +64,43 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "differential_inverse_kinematics_controller",
+    srcs = ["differential_inverse_kinematics_controller.cc"],
+    hdrs = ["differential_inverse_kinematics_controller.h"],
+    deps = [
+        ":differential_inverse_kinematics_system",
+        "//systems/framework",
+        "//systems/primitives:discrete_time_integrator",
+        "//systems/primitives:selector",
+        "//systems/primitives:wrap_to_system",
+    ],
+)
+
+drake_cc_library(
     name = "differential_inverse_kinematics_integrator",
     srcs = ["differential_inverse_kinematics_integrator.cc"],
     hdrs = ["differential_inverse_kinematics_integrator.h"],
     deps = [
         ":differential_inverse_kinematics",
         "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "differential_inverse_kinematics_system",
+    srcs = ["differential_inverse_kinematics_system.cc"],
+    hdrs = ["differential_inverse_kinematics_system.h"],
+    deps = [
+        ":differential_inverse_kinematics",
+        "//common:essential",
+        "//common:name_value",
+        "//common:string_container",
+        "//multibody/parsing:scoped_names",
+        "//planning:collision_checker",
+        "//planning:dof_mask",
+        "//planning:joint_limits",
+        "//solvers:osqp_solver",
+        "//systems/framework:bus_value",
     ],
 )
 
@@ -202,6 +235,21 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "differential_inverse_kinematics_controller_test",
+    data = [
+        "@drake_models//:iiwa_description",
+    ],
+    deps = [
+        ":differential_inverse_kinematics_controller",
+        "//common/test_utilities",
+        "//multibody/parsing:parser",
+        "//planning:robot_diagram_builder",
+        "//planning:scene_graph_collision_checker",
+        "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
     name = "differential_inverse_kinematics_integrator_test",
     data = [
         "@drake_models//:iiwa_description",
@@ -212,6 +260,19 @@ drake_cc_googletest(
         "//manipulation/kuka_iiwa:iiwa_constants",
         "//multibody/parsing",
         "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "differential_inverse_kinematics_system_test",
+    deps = [
+        ":differential_inverse_kinematics_system",
+        "//common/test_utilities",
+        "//common/yaml:yaml_io",
+        "//multibody/plant",
+        "//planning:robot_diagram_builder",
+        "//planning:scene_graph_collision_checker",
+        "//systems/framework",
     ],
 )
 

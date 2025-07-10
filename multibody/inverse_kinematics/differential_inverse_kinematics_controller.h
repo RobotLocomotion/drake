@@ -5,12 +5,12 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/planning/differential_inverse_kinematics_system.h"
+#include "drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/primitives/discrete_time_integrator.h"
 
 namespace drake {
-namespace planning {
+namespace multibody {
 
 /** Differential Inverse Kinematics controller that tracks desired poses /
 velocities for multiple operational points. The controller tracks a nominal
@@ -96,5 +96,5 @@ class DifferentialInverseKinematicsController final
   systems::DiscreteTimeIntegrator<double>* discrete_time_integrator_{nullptr};
 };
 
-}  // namespace planning
+}  // namespace multibody
 }  // namespace drake

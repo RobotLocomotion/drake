@@ -1,4 +1,4 @@
-#include "drake/planning/differential_inverse_kinematics_system.h"
+#include "drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h"
 
 #include <limits>
 #include <optional>
@@ -15,19 +15,18 @@
 #include "drake/systems/framework/bus_value.h"
 
 namespace drake {
-namespace planning {
+namespace multibody {
 namespace {
 
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using math::RigidTransformd;
-using multibody::ComputePoseDiffInCommonFrame;
-using multibody::Frame;
-using multibody::JacobianWrtVariable;
-using multibody::MultibodyPlant;
-using multibody::SpatialVelocity;
-using multibody::parsing::GetScopedFrameByName;
+using parsing::GetScopedFrameByName;
+using planning::CollisionChecker;
+using planning::DofMask;
+using planning::JointLimits;
+using planning::RobotClearance;
 using solvers::Binding;
 using solvers::EvaluatorBase;
 using solvers::MathematicalProgram;
@@ -705,5 +704,5 @@ void DifferentialInverseKinematicsSystem::CalcCommandedVelocity(
   output->set_value(commanded_velocity);
 }
 
-}  // namespace planning
+}  // namespace multibody
 }  // namespace drake

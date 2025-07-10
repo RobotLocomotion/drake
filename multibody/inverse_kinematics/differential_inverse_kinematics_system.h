@@ -17,7 +17,7 @@
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
-namespace planning {
+namespace multibody {
 
 /** The %DifferentialInverseKinematicsSystem takes as input desired cartesian
 poses (or cartesian velocities) for an arbitrary number of "goal" frames on the
@@ -68,8 +68,8 @@ not just the active dofs).
 
 Port `desired_cartesian_velocities` accepts desired cartesian velocities, typed
 as systems::BusValue where key is the name of the frame to track and the value
-is the multibody::SpatialVelocity<double> w.r.t the task frame. Frame names
-should be provided as fully-scoped names (`model_instance::frame`).
+is the SpatialVelocity<double> w.r.t the task frame. Frame names should be
+provided as fully-scoped names (`model_instance::frame`).
 
 Port `desired_cartesian_poses` accepts desired cartesian poses, typed as
 systems::BusValue where key is the name of the frame to track and the
@@ -171,30 +171,30 @@ class DifferentialInverseKinematicsSystem final
     should be the same as that ingredient's V_next_TG_limit. */
   DifferentialInverseKinematicsSystem(
       std::shared_ptr<const Recipe> recipe, std::string_view task_frame,
-      std::shared_ptr<const CollisionChecker> collision_checker,
-      const DofMask& active_dof, double time_step, double K_VX,
-      const multibody::SpatialVelocity<double>& Vd_TG_limit);
+      std::shared_ptr<const planning::CollisionChecker> collision_checker,
+      const planning::DofMask& active_dof, double time_step, double K_VX,
+      const SpatialVelocity<double>& Vd_TG_limit);
 
   ~DifferentialInverseKinematicsSystem() final;
 
   /** Gets the plant used by the controller. */
-  const multibody::MultibodyPlant<double>& plant() const {
+  const MultibodyPlant<double>& plant() const {
     return collision_checker_->plant();
   }
 
   /** Gets the collision checker used by the controller. */
-  const CollisionChecker& collision_checker() const {
+  const planning::CollisionChecker& collision_checker() const {
     return *collision_checker_;
   }
 
   /** Gets the mask of active DOFs in plant() that are being controlled. */
-  const DofMask& active_dof() const { return active_dof_; }
+  const planning::DofMask& active_dof() const { return active_dof_; }
 
   /** Gets the time step used by the controller. */
   double time_step() const { return time_step_; }
 
   /** Gets the frame assumed on the desired_cartesian_poses input port. */
-  const multibody::Frame<double>& task_frame() const { return *task_frame_; }
+  const Frame<double>& task_frame() const { return *task_frame_; }
 
   /** Returns the input port for the joint positions. */
   const systems::InputPort<double>& get_input_port_position() const {
@@ -216,7 +216,7 @@ class DifferentialInverseKinematicsSystem final
   }
 
   /** Returns the input port for the desired cartesian velocities (of type
-  systems::BusValue containing multibody::SpatialVelocity). */
+  systems::BusValue containing SpatialVelocity). */
   const systems::InputPort<double>&
   get_input_port_desired_cartesian_velocities() const {
     return this->get_input_port(input_port_index_desired_cartesian_velocities_);
@@ -242,14 +242,14 @@ class DifferentialInverseKinematicsSystem final
 
   // Constructor arguments.
   const std::shared_ptr<const Recipe> recipe_;
-  const std::shared_ptr<const CollisionChecker> collision_checker_;
-  const DofMask active_dof_;
+  const std::shared_ptr<const planning::CollisionChecker> collision_checker_;
+  const planning::DofMask active_dof_;
   const double time_step_;
   const double K_VX_;
-  const multibody::SpatialVelocity<double> Vd_TG_limit_;
+  const SpatialVelocity<double> Vd_TG_limit_;
 
   // Derived from constructor arguments.
-  const multibody::Frame<double>* const task_frame_;
+  const Frame<double>* const task_frame_;
 
   // LeafSystem plumbing, set once during the constructor and then never changed
   // again.
@@ -282,10 +282,10 @@ struct DifferentialInverseKinematicsSystem::CallbackDetails {
   /** The collision checker for the robot being controlled.
   Note that its robot_model_instances() accessor also partitions which parts of
   the `plant` are the robot model vs its environment. */
-  const CollisionChecker& collision_checker;
+  const planning::CollisionChecker& collision_checker;
 
   /** The active degrees of freedom in `collision_checker.plant()`. */
-  const DofMask& active_dof;
+  const planning::DofMask& active_dof;
 
   /** The control rate for DifferentialInverseKinematicsSystem (the pace at
   which velocity commands are expected to be applied). */
@@ -296,13 +296,13 @@ struct DifferentialInverseKinematicsSystem::CallbackDetails {
   const Eigen::VectorXd& nominal_posture;
 
   /** The list of frames being controlled. */
-  std::vector<const multibody::Frame<double>*> frame_list;
+  std::vector<const Frame<double>*> frame_list;
 
   /** The current poses of the goal frames. */
   const std::vector<math::RigidTransformd>& X_TGlist;
 
   /** The desired velocities of the goal frames. */
-  const std::vector<multibody::SpatialVelocity<double>> Vd_TGlist;
+  const std::vector<SpatialVelocity<double>> Vd_TGlist;
 
   /** The jacobian relating spatial velocities to generalized velocities, i.e.,
   V_TGs (rows) with respect to v_active (cols). */
@@ -365,7 +365,7 @@ class DifferentialInverseKinematicsSystem::Ingredient {
   @return 6N × 6N block-diagonal matrix applying the per-frame axis mask. */
   static Eigen::DiagonalMatrix<double, Eigen::Dynamic>
   BuildBlockDiagonalAxisSelector(
-      const std::vector<const multibody::Frame<double>*>& frame_list,
+      const std::vector<const Frame<double>*>& frame_list,
       const string_unordered_map<Vector6d>& cartesian_axis_masks);
 };
 
@@ -643,8 +643,9 @@ certain limbs of a robot, but the collision checker contains the whole robot.)
   also be zero size when dist_out is zero size).
   Guaranteed to be non-null on entry. */
 using SelectDataForCollisionConstraintFunction = std::function<void(
-    const DofMask& active_dof, const RobotClearance& robot_clearance,
-    Eigen::VectorXd* dist_out, Eigen::MatrixXd* ddist_dq_out)>;
+    const planning::DofMask& active_dof,
+    const planning::RobotClearance& robot_clearance, Eigen::VectorXd* dist_out,
+    Eigen::MatrixXd* ddist_dq_out)>;
 
 /** Constrains the collision clearance around the robot to remain above the
 safety distance:
@@ -773,7 +774,7 @@ class DifferentialInverseKinematicsSystem::JointVelocityLimitConstraint final
   };
 
   JointVelocityLimitConstraint(const Config& config,
-                               const JointLimits& joint_limits);
+                               const planning::JointLimits& joint_limits);
   ~JointVelocityLimitConstraint() final;
 
   /** Returns the current config. */
@@ -783,18 +784,18 @@ class DifferentialInverseKinematicsSystem::JointVelocityLimitConstraint final
   void SetConfig(const Config& config);
 
   /** Returns the current joint limits. */
-  const JointLimits& GetJointLimits() const { return joint_limits_; }
+  const planning::JointLimits& GetJointLimits() const { return joint_limits_; }
 
   /** Replaces the limits set in the constructor. */
-  void SetJointLimits(const JointLimits& joint_limits);
+  void SetJointLimits(const planning::JointLimits& joint_limits);
 
   std::vector<solvers::Binding<solvers::EvaluatorBase>> AddToProgram(
       CallbackDetails* details) const final;
 
  private:
   Config config_;
-  JointLimits joint_limits_;
+  planning::JointLimits joint_limits_;
 };
 
-}  // namespace planning
+}  // namespace multibody
 }  // namespace drake

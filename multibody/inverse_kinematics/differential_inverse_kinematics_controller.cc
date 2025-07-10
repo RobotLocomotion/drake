@@ -1,4 +1,4 @@
-#include "drake/planning/differential_inverse_kinematics_controller.h"
+#include "drake/multibody/inverse_kinematics/differential_inverse_kinematics_controller.h"
 
 #include <limits>
 #include <memory>
@@ -11,11 +11,11 @@
 #include "drake/systems/primitives/wrap_to_system.h"
 
 namespace drake {
-namespace planning {
+namespace multibody {
 namespace {
 
 using Eigen::VectorXd;
-using multibody::MultibodyPlant;
+using planning::DofMask;
 using systems::Context;
 using systems::DiagramBuilder;
 using systems::DiscreteTimeIntegrator;
@@ -151,5 +151,5 @@ void DifferentialInverseKinematicsController::set_state_to_nan(
       .SetFromVector(integrator_value);
 }
 
-}  // namespace planning
+}  // namespace multibody
 }  // namespace drake
