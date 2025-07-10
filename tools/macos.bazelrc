@@ -21,6 +21,10 @@ build --notrim_test_configuration
 # https://github.com/RobotLocomotion/drake/issues/22204
 build --copt=-fno-assume-unique-vtables
 
+# Use C++23 on macOS.
+build --cxxopt=-std=c++23
+build --host_cxxopt=-std=c++23
+
 # Options for explicitly using Clang.
 common:clang --repo_env=CC=clang
 common:clang --repo_env=CXX=clang++
