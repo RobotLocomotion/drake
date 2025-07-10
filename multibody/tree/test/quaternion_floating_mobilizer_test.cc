@@ -230,7 +230,7 @@ TEST_F(QuaternionFloatingMobilizerTest, KinematicMapping) {
   mobilizer_->CalcNplusMatrix(*context_, &Nplus);
 
   // Ensure the Nplus matrix is the left pseudoinverse of the N matrix.
-  // In other works, Nplus * N = [I₆₆] (6x6 identity matrix).
+  // In other words, Nplus * N = [I₆₆] (6x6 identity matrix).
   MatrixX<double> Nplus_x_N = Nplus * N;
   EXPECT_TRUE(CompareMatrices(Nplus_x_N, MatrixX<double>::Identity(6, 6),
                               kTolerance, MatrixCompareType::relative));
