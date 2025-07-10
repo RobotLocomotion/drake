@@ -39,13 +39,13 @@ std::unique_ptr<RobotDiagram<T>> RobotDiagramBuilder<T>::Build() {
   if (ShouldExportDefaultPorts()) {
     ExportDefaultPorts();
   }
-  return std::unique_ptr<RobotDiagram<T>>(
-      new RobotDiagram<T>(std::move(builder_)));
+  is_built_ = true;
+  return std::unique_ptr<RobotDiagram<T>>(new RobotDiagram<T>(builder_.get()));
 }
 
 template <typename T>
 bool RobotDiagramBuilder<T>::IsDiagramBuilt() const {
-  if (builder_ == nullptr) {
+  if (is_built_) {
     return true;
   }
   if (builder_->already_built()) {
