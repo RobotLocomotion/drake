@@ -1,4 +1,4 @@
-#include "operational_space_control/differential_inverse_kinematics_controller.h"
+#include "drake/multibody/inverse_kinematics/differential_inverse_kinematics_controller.h"
 
 #include <memory>
 
@@ -12,30 +12,21 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/bus_value.h"
 
-namespace anzu {
-namespace operational_space_control {
+namespace drake {
+namespace multibody {
 namespace {
 
-using drake::RandomGenerator;
-using drake::static_pointer_cast;
-using drake::string_map;
-using drake::Value;
-using drake::math::RigidTransformd;
-using drake::multibody::ModelInstanceIndex;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::Parser;
-using drake::multibody::SpatialVelocity;
-using drake::planning::CollisionCheckerParams;
-using drake::planning::DofMask;
-using drake::planning::JointLimits;
-using drake::planning::RobotDiagramBuilder;
-using drake::planning::SceneGraphCollisionChecker;
-using drake::systems::BusValue;
-using drake::systems::Context;
-using drake::systems::InputPortIndex;
-using drake::systems::OutputPortIndex;
-using drake::systems::Simulator;
 using Eigen::VectorXd;
+using math::RigidTransformd;
+using planning::CollisionCheckerParams;
+using planning::DofMask;
+using planning::RobotDiagramBuilder;
+using planning::SceneGraphCollisionChecker;
+using systems::BusValue;
+using systems::Context;
+using systems::InputPortIndex;
+using systems::OutputPortIndex;
+using systems::Simulator;
 
 class DifferentialInverseKinematicsControllerTest : public ::testing::Test {
  protected:
@@ -177,5 +168,5 @@ TEST_F(DifferentialInverseKinematicsControllerTest, Random) {
 // TODO(rpoyner-tri): add a test for position feedback.
 
 }  // namespace
-}  // namespace operational_space_control
-}  // namespace anzu
+}  // namespace multibody
+}  // namespace drake
