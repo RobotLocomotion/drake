@@ -22,9 +22,9 @@ namespace internal {
 // relative to a "fixed" frame F (frame F has 6 degrees of freedom in frame M).
 //
 // The rotational part of this mobilizer is characterized by generalized
-// positions q_FM = qᵣ = [qw, qx, qy, qz]ᵀ (the quaternion for the orientation
-// relating frame F and frame M) and generalized velocities w_FM_F = vᵣ =
-// [ωx, ωy, ωz]ᵀ (frame M's angular velocity in frame f, expressed in frame F).
+// positions q_FM = qᵣ = [qw, qx, qy, qz]ᵀ (the quaternion relating frame F and
+// frame M) and generalized velocities w_FM_F = vᵣ = [ωx, ωy, ωz]ᵀ
+// (frame M's angular velocity in frame F, expressed in frame F).
 //
 // The translational part of this mobilizer is characterized by generalized
 // positions p_FM_F = qₜ = [x, y, z]ᵀ (the position from frame F's origin Fo
