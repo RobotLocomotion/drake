@@ -196,13 +196,15 @@ class QueryObject {
 
   /** Reports the axis-aligned bounding box of the geometry indicated by
    `geometry_id` in the world frame. Returns std::nullopt if the geometry is
-   not supported for this query.
+   not supported for this query. Currently, only deformable geometries are
+   supported.
    @throws std::exception if the `geometry_id` is not valid. */
   std::optional<Aabb> ComputeAabbInWorld(GeometryId geometry_id) const;
 
   /** Reports the oriented bounding box of the geometry indicated by
    `geometry_id` in the world frame. Returns std::nullopt if the geometry is
-   not supported for this query.
+   not supported for this query. Currently, deformable geometries and HalfSpace
+   are _not_ supported.
    @throws std::exception if the `geometry_id` is not valid. */
   std::optional<Obb> ComputeObbInWorld(GeometryId geometry_id) const;
 

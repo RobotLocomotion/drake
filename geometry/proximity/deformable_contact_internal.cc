@@ -164,11 +164,8 @@ DeformableContact<double> Geometries::ComputeDeformableContact(
 }
 
 const Aabb& Geometries::GetDeformableAabbInWorld(GeometryId geometry_id) const {
-  if (is_deformable(geometry_id)) {
-    return deformable_geometries_.at(geometry_id).aabb_in_world();
-  }
-  throw std::runtime_error(
-      "GetDeformableAabbInWorld: Geometry is not deformable.");
+  DRAKE_DEMAND(is_deformable(geometry_id));
+  return deformable_geometries_.at(geometry_id).aabb_in_world();
 }
 
 void Geometries::ImplementGeometry(const Box& box, void* user_data) {

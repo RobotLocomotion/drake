@@ -452,6 +452,10 @@ TEST_F(QueryObjectTest, LiveQueryUpdatesState) {
       qo.RenderLabelImage(color_camera, frame_id, X_PC, &label_image),
       kFullUpdate);
   EXPECT_UPDATES(qo.GetRenderEngineByName("dummy"), kFullUpdate);
+
+  // Bounding box queries.
+  EXPECT_UPDATES_WITH_THROW(qo.ComputeAabbInWorld(g_id1), kDeformOnly);
+  EXPECT_UPDATES_WITH_THROW(qo.ComputeObbInWorld(g_id1), kPoseOnly);
 }
 
 // Ensure that I can construct a QueryObject with the default scalar types.

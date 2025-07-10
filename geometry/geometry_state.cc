@@ -881,11 +881,12 @@ template <typename T>
 std::optional<Aabb> GeometryState<T>::ComputeAabbInWorld(
     GeometryId geometry_id) const {
   FindOrThrow(geometry_id, geometries_, [geometry_id]() {
-    return "No AABB available for invalid geometry id: " +
-           to_string(geometry_id);
+    return fmt::format("No AABB available for invalid geometry id: {}.",
+                       geometry_id);
   });
   const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
   // For non-deformable geometries, we don't support computing the AABB (yet).
+  // TODO(SeanCurtis-TRI): Support computing AABB for shapes (#15121).
   if (!geometry.is_deformable()) {
     return std::nullopt;
   }
@@ -896,6 +897,10 @@ std::optional<Aabb> GeometryState<T>::ComputeAabbInWorld(
   }
   // For deformable geometries without proximity role, we need to manually
   // deform the geometry and compute the AABB of the deformed mesh.
+  // TODO(SeanCurtis-TRI): Currently, each site that requires the current,
+  //  deformed state of a deformable mesh must perform the computation by
+  //  itself. We should provide a mechanism to compute the deformed mesh once
+  //  and then provide a mechanism to query the deformed mesh.
   const VolumeMesh<double>& reference_mesh = *geometry.reference_mesh();
   std::vector<Vector3<double>> deformed_vertices(reference_mesh.num_vertices());
   const VectorX<double>& q_WG =
@@ -903,13 +908,18 @@ std::optional<Aabb> GeometryState<T>::ComputeAabbInWorld(
   for (int i = 0; i < reference_mesh.num_vertices(); ++i) {
     deformed_vertices[i] = q_WG.template segment<3>(3 * i);
   }
-  auto tets = reference_mesh.tetrahedra();
+  // AabbMaker doesn't depend on tets, only vertices. So, we'll create a single
+  // dummy tet to satisfy VolumeMesh's requirements, but otherwise ignore them.
+  std::vector<VolumeElement> tets{VolumeElement(0, 1, 2, 3)};
   const VolumeMesh<double> deformed_mesh(std::move(tets),
                                          std::move(deformed_vertices));
   std::set<int> vertex_indices;
   for (int i = 0; i < deformed_mesh.num_vertices(); ++i) {
     vertex_indices.insert(i);
   }
+  // TODO(SeanCurtis-TRI): It's a shame that we have to create a set of vertices
+  // to satisfy AabbMaker's requirements. It would be better to have a
+  // mechanism to compute the AABB (and OBB) of the entire mesh.
   return AabbMaker<VolumeMesh<double>>(deformed_mesh, vertex_indices).Compute();
 }
 
@@ -917,8 +927,8 @@ template <typename T>
 std::optional<Obb> GeometryState<T>::ComputeObbInWorld(
     GeometryId geometry_id) const {
   FindOrThrow(geometry_id, geometries_, [geometry_id]() {
-    return "No OBB available for invalid geometry id: " +
-           to_string(geometry_id);
+    return fmt::format("No OBB available for invalid geometry id: {}.",
+                       geometry_id);
   });
   const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
   // For deformable geometries, we don't support computing the OBB (yet).

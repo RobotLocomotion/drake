@@ -33,9 +33,6 @@ std::string PointsToObjString(const Eigen::Matrix3X<double>& points) {
 
 namespace drake {
 namespace geometry {
-
-using math::RigidTransform;
-
 namespace {
 
 // Computes a convex hull and assigns it to the given shared pointer in a
@@ -92,6 +89,8 @@ void ThrowForBadScale(const Vector3<double>& scale, std::string_view source) {
 }
 
 }  // namespace
+
+using math::RigidTransform;
 
 Shape::Shape() = default;
 
