@@ -383,7 +383,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
                 particles[index]);
       };
 
-      // TODO(cohnt): Rerwrite as a StaticParallelForRangeLoop.
+      // TODO(cohnt): Rewrite as a StaticParallelForRangeLoop.
       StaticParallelForIndexLoop(DegreeOfParallelism(num_threads_to_use), 0,
                                  N_k, apply_parameterization,
                                  ParallelForBackend::BEST_AVAILABLE);

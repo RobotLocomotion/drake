@@ -103,6 +103,7 @@ void DefinePlanningCommonSampledIrisOptions(py::module m) {
 }
 
 // Largely based on code from solvers_py_mathematicalprogram.cc.
+// TODO(cohnt): Refactor for better code reuse.
 enum class ArrayShapeType { Scalar, Vector };
 
 // Checks array shape, provides user-friendly message if it fails.
