@@ -1,0 +1,18 @@
+[vtk] Include <exception> in Rendering/Core header
+
+<exception> is needed for `std::terminate`. This didn't show up until Drake
+started using -std=c++23. Ideally, the upstream fix should remove the call to
+call to `std::terminate` and throw an exception instead, then update the
+included system headers as needed.
+
+--- Rendering/Core/vtkCompositePolyDataMapperDelegator.cxx
++++ Rendering/Core/vtkCompositePolyDataMapperDelegator.cxx
+@@ -5,6 +5,8 @@
+ #include "vtkCompositePolyDataMapper.h"
+ #include "vtkObjectFactory.h"
+
++#include <exception>
++
+ VTK_ABI_NAMESPACE_BEGIN
+ //------------------------------------------------------------------------------
+ vtkAbstractObjectFactoryNewMacro(vtkCompositePolyDataMapperDelegator);
