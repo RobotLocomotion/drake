@@ -24,8 +24,8 @@ DEFAULT_MIRRORS = {
         "https://s3.amazonaws.com/drake-mirror/crates.io/{archive}",
     ],
     "doxygen": [
-        "https://drake-packages.csail.mit.edu/doxygen/{archive}",
-        "https://s3.amazonaws.com/drake-packages/doxygen/{archive}",
+        "https://drake-mirror.csail.mit.edu/other/doxygen/{archive}",
+        "https://s3.amazonaws.com/drake-mirror/other/doxygen/{archive}",
     ],
     "github": [
         # For github.com, we choose a pattern based on the kind of commit.
