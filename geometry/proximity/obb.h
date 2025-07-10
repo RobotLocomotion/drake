@@ -176,7 +176,7 @@ class ObbMakerTester;
  fits a specified set of vertices in a mesh.
 
  @tparam MeshType is TriangleSurfaceMesh<T>, VolumeMesh<T>,
- PolygonSurfaceMesh<double>, where T is double or AutoDiffXd.  */
+         PolygonSurfaceMesh<T>, where T is double or AutoDiffXd. */
 template <class MeshType>
 class ObbMaker {
  public:

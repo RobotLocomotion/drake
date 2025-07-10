@@ -25,6 +25,8 @@ using math::RigidTransformd;
 using math::RollPitchYawd;
 using math::RotationMatrixd;
 
+// TODO(SeanCurtis-TRI): Add test coverage for obb makers for AutoDiffXd typed
+// meshes.
 // Friend class for accessing Obb's private functionality.
 class ObbTester : public ::testing::Test {
  public:

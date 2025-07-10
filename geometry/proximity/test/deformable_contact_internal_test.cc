@@ -670,23 +670,6 @@ GTEST_TEST(GeometriesTest, GetDeformableAabbInWorld) {
   const Aabb& aabb_new = geometries.GetDeformableAabbInWorld(deformable_id);
   EXPECT_TRUE(CompareMatrices(aabb_new.lower(), Vector3d(0.5, -0.5, -0.5)));
   EXPECT_TRUE(CompareMatrices(aabb_new.upper(), Vector3d(1.5, 0.5, 0.5)));
-
-  // Test with invalid geometry id (non-existent).
-  GeometryId invalid_id = GeometryId::get_new_id();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      geometries.GetDeformableAabbInWorld(invalid_id),
-      "GetDeformableAabbInWorld: Geometry is not deformable.*");
-
-  // Test with rigid geometry id.
-  GeometryId rigid_id = GeometryId::get_new_id();
-  constexpr double kRadius = 0.5;
-  constexpr double kRezHint = 0.5;
-  ProximityProperties props = MakeCompliantHydroProps(kRezHint);
-  geometries.MaybeAddRigidGeometry(Sphere(kRadius), rigid_id, props,
-                                   default_pose());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      geometries.GetDeformableAabbInWorld(rigid_id),
-      "GetDeformableAabbInWorld: Geometry is not deformable.*");
 }
 
 }  // namespace

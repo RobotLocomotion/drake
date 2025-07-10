@@ -3191,7 +3191,7 @@ TEST_F(GeometryStateTest, ConvexHullForProximityGeometry) {
 }
 
 // The implementation of computing the OBB is tested in
-// shape_specification_test.cc. This test simply comfirms that the right
+// shape_specification_test.cc. This test simply confirms that the right
 // function is called.
 TEST_F(GeometryStateTest, GetObbInGeometryFrame) {
   SetUpSingleSourceTree(Assign::kIllustration);
@@ -5030,14 +5030,14 @@ TEST_F(GeometryStateTest, ComputeAabbInWorld) {
   // Test invalid geometry id.
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.ComputeAabbInWorld(GeometryId::get_new_id()),
-      "No AABB available for invalid geometry id: \\d+");
+      "No AABB available for invalid geometry id.*");
 
   const auto expect_aabb = [&](GeometryId id,
                                const Vector3d& expected_half_width,
                                const Vector3d& expected_center,
                                double tol = 1e-13) {
     const std::optional<Aabb> aabb = geometry_state_.ComputeAabbInWorld(id);
-    EXPECT_TRUE(aabb.has_value());
+    ASSERT_TRUE(aabb.has_value());
     EXPECT_TRUE(CompareMatrices(aabb->half_width(), expected_half_width, tol));
     EXPECT_TRUE(CompareMatrices(aabb->center(), expected_center, tol));
   };
@@ -5049,8 +5049,6 @@ TEST_F(GeometryStateTest, ComputeAabbInWorld) {
         RigidTransformd::Identity(), make_unique<Sphere>(sphere), name);
     if (add_proximity_role) {
       instance->set_proximity_properties(ProximityProperties());
-    } else {
-      instance->set_illustration_properties(IllustrationProperties());
     }
     return geometry_state_.RegisterDeformableGeometry(
         source_id_, InternalFrame::world_frame_id(), std::move(instance), 1.0);
@@ -5064,7 +5062,6 @@ TEST_F(GeometryStateTest, ComputeAabbInWorld) {
 
   // Test with deformable geometry with proximity role.
   const GeometryId deformable_id = register_deformable("deformable", true);
-  EXPECT_TRUE(geometry_state_.IsDeformableGeometry(deformable_id));
   expect_aabb(deformable_id, Vector3d::Ones(), Vector3d::Zero());
 
   // Test with deformable geometry without proximity role.
@@ -5093,13 +5090,15 @@ TEST_F(GeometryStateTest, ComputeAabbInWorld) {
   gs_tester_.FinalizeConfigurationUpdate();
 
   expect_aabb(deformable_id, Vector3d(0.5, 0.5, 0.5), Vector3d(0.5, 0.5, 0.5));
+  expect_aabb(deformable_no_prox_id, Vector3d(0.5, 0.5, 0.5),
+              Vector3d(0.5, 0.5, 0.5));
 }
 
 TEST_F(GeometryStateTest, ComputeObbInWorld) {
   // Test invalid geometry id.
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.ComputeObbInWorld(GeometryId::get_new_id()),
-      "No OBB available for invalid geometry id: \\d+");
+      "No OBB available for invalid geometry id.*");
 
   SetUpSingleSourceTree();
 
@@ -5112,29 +5111,34 @@ TEST_F(GeometryStateTest, ComputeObbInWorld) {
 
   // Helper to check the OBB against expected results.
   constexpr double kTol = 1e-13;
-  auto expect_obb = [&](GeometryId id, const RigidTransformd& X_WG_expected) {
+  auto expect_obb = [&](GeometryId id, const RigidTransformd& X_WG) {
     const std::optional<Obb> obb = geometry_state_.ComputeObbInWorld(id);
     EXPECT_TRUE(obb.has_value());
     EXPECT_TRUE(CompareMatrices(obb->half_width(), Vector3d::Ones(), kTol));
-    // We only check translations here because the OBB's orientation is
-    // dependent on the PCA and we have already tested that in obb tests.
-    EXPECT_TRUE(CompareMatrices(obb->pose().translation(),
-                                X_WG_expected.translation(), kTol));
+    EXPECT_TRUE(
+        CompareMatrices(obb->pose().translation(), X_WG.translation(), kTol));
+    const RigidTransformd& X_GB =
+        geometry_state_.GetObbInGeometryFrame(id)->pose();
+    const RigidTransformd X_WB = X_WG * X_GB;
+    EXPECT_TRUE(CompareMatrices(obb->pose().rotation().matrix(),
+                                X_WB.rotation().matrix(), kTol));
   };
 
-  // Deformable geometry should return std::nullopt.
   const Sphere sphere(1.0);
   auto deformable_instance = make_unique<GeometryInstance>(
       RigidTransformd::Identity(), make_unique<Sphere>(sphere), "deformable");
   const GeometryId deformable_id = geometry_state_.RegisterDeformableGeometry(
       source_id_, InternalFrame::world_frame_id(),
       std::move(deformable_instance), 1.0);
-  EXPECT_TRUE(geometry_state_.IsDeformableGeometry(deformable_id));
-  EXPECT_EQ(geometry_state_.ComputeObbInWorld(deformable_id), std::nullopt);
+  // The computation of OBB for deformable meshes involves a PCA and is hard to
+  // write down, and the code paths is covered by other tests, so here we just
+  // verify some OBB is produced.
+  std::optional<Obb> obb = geometry_state_.ComputeObbInWorld(deformable_id);
+  ASSERT_TRUE(obb.has_value());
 
   // Rigid geometry (Sphere) that supports OBBs.
   const GeometryId sphere_id = geometries_[0];
-  EXPECT_FALSE(geometry_state_.IsDeformableGeometry(sphere_id));
+  ASSERT_FALSE(geometry_state_.IsDeformableGeometry(sphere_id));
 
   // Default frame poses.
   FramePoseVector<double> poses;

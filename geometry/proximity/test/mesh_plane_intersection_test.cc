@@ -15,7 +15,6 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
-#include "drake/geometry/shape_specification.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
