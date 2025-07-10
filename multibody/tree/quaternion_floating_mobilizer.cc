@@ -412,7 +412,8 @@ void QuaternionFloatingMobilizer<T>::DoCalcNDotMatrix(
                                 0.5 * qdot.z());
 
   // Leveraging comments and code in AngularVelocityToQuaternionRateMatrix()
-  // and noting that Nᵣ(qᵣ) = L(q_FM/2), so Ṅᵣ(qᵣ,q̇ᵣ) = L(q̇_FM/2).
+  // and noting that Nᵣ(qᵣ) = L(q_FM/2), where the elements of the matrix L are
+  // linear in q_FM = [qw, qx, qy, qz]ᵀ, so Ṅᵣ(qᵣ,q̇ᵣ) = L(q̇_FM/2).
   const Eigen::Matrix<T, 4, 3> NrDotMatrix = CalcLMatrix(half_qdot);
 
   // Generally, q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇. For this mobilizer, Ṅ is not simple.
@@ -449,7 +450,8 @@ void QuaternionFloatingMobilizer<T>::DoCalcNplusDotMatrix(
                                  2.0 * qdot.z());
 
   // Leveraging comments and code in QuaternionRateToAngularVelocityMatrix()
-  // and noting that N⁺ᵣ(qᵣ) = L(2 * q_FM)ᵀ, so Ṅ⁺ᵣ(qᵣ,q̇ᵣ) = L(2 * q̇_FM)ᵀ.
+  // and noting that N⁺ᵣ(qᵣ) = L(2 * q_FM)ᵀ, where the elements of the matrix L
+  // are linear in q_FM = [qw, qx, qy, qz]ᵀ, so Ṅ⁺ᵣ(qᵣ,q̇ᵣ) = L(2 * q̇_FM)ᵀ.
   const Eigen::Matrix<T, 3, 4> NrPlusDot = CalcLMatrix(twice_qdot).transpose();
 
   // Generally, v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈. For this mobilizer, Ṅ⁺ is not simple.
