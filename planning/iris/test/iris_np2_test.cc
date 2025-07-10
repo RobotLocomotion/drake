@@ -321,6 +321,8 @@ TEST_F(ConvexConfigurationSpace, IrisNp2Test) {
   PlotEnvironmentAndRegion(region);
 }
 
+// Test that we can grow regions along a parameterized subspace that is not
+// full-dimensional.
 TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
   IrisNp2Options options;
   auto scene_graph_checker =
