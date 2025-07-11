@@ -73,57 +73,6 @@ Eigen::VectorXd ComputeFaceTangentToDistCvxh(
   }
 }
 
-// Given a pointer to a MathematicalProgram and a single particle, check whether
-// the particle satisfies the constraints. If a nullptr is given for the
-// program, return true, since the constraints are trivially-satisfied.
-bool CheckProgConstraints(const MathematicalProgram* prog_ptr,
-                          const Eigen::VectorXd& particle, const double tol) {
-  if (!prog_ptr) {
-    return true;
-  }
-  for (const auto& binding : prog_ptr->GetAllConstraints()) {
-    DRAKE_ASSERT(binding.evaluator() != nullptr);
-    if (!binding.evaluator()->CheckSatisfied(particle, tol)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-// Given a pointer to a MathematicalProgram and a list of particles (where each
-// particle is a choice of values for its decision variables), check in parallel
-// which particles satisfy all constraints, and which don't. Each entry in the
-// output vector corresponds to the corresponding particle. 1 means it satisfies
-// the constraints, 0 means it doesn't. If a nullptr is given for the program,
-// return a vector of all 1s, since all particles trivially satisfy the
-// constraints. The user can specify a slice of particles to check [0,
-// end_index). Default behavior is to check all particles -- when end_index is
-// std::nullopt, it is set to ssize(particles).
-std::vector<uint8_t> CheckProgConstraints(
-    const MathematicalProgram* prog_ptr,
-    const std::vector<Eigen::VectorXd>& particles, const int num_threads_to_use,
-    const double tol, std::optional<int> end_index = std::nullopt) {
-  int actual_end_index = end_index.value_or(ssize(particles));
-  DRAKE_DEMAND(actual_end_index >= 0 && actual_end_index <= ssize(particles));
-  std::vector<uint8_t> is_valid(actual_end_index, 1);
-  if (!prog_ptr) {
-    return is_valid;
-  }
-  DRAKE_DEMAND(prog_ptr->IsThreadSafe() || num_threads_to_use == 1);
-  const auto check_particle_work = [&prog_ptr, &particles, &tol, &is_valid](
-                                       const int thread_num,
-                                       const int64_t index) {
-    unused(thread_num);
-    is_valid[index] = static_cast<uint8_t>(
-        CheckProgConstraints(prog_ptr, particles[index], tol));
-  };
-
-  DynamicParallelForIndexLoop(DegreeOfParallelism(num_threads_to_use), 0,
-                              actual_end_index, check_particle_work,
-                              ParallelForBackend::BEST_AVAILABLE);
-  return is_valid;
-}
-
 }  // namespace
 
 HPolyhedron IrisZo(const planning::CollisionChecker& checker,
@@ -202,7 +151,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
 
   bool starting_ellipsoid_center_valid =
       checker.CheckConfigCollisionFree(starting_ellipsoid_center_ambient) &&
-      CheckProgConstraints(
+      internal::CheckProgConstraints(
           options.sampled_iris_options.prog_with_additional_constraints,
           starting_ellipsoid_center, constraints_tol);
   if (!starting_ellipsoid_center_valid) {
@@ -260,7 +209,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
     }
     for (int i = 0; i < options.sampled_iris_options.containment_points->cols();
          ++i) {
-      if (!CheckProgConstraints(
+      if (!internal::CheckProgConstraints(
               options.sampled_iris_options.prog_with_additional_constraints,
               options.sampled_iris_options.containment_points->col(i),
               constraints_tol)) {
@@ -394,9 +343,9 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
           checker.CheckConfigsCollisionFree(
               ambient_particles, options.sampled_iris_options.parallelism);
       std::vector<uint8_t> particle_satisfies_additional_constraints =
-          CheckProgConstraints(
+          internal::CheckProgConstraintsParallel(
               options.sampled_iris_options.prog_with_additional_constraints,
-              particles, num_threads_to_use, constraints_tol, N_k);
+              particles, Parallelism(num_threads_to_use), constraints_tol, N_k);
       DRAKE_ASSERT(particle_col_free.size() ==
                    particle_satisfies_additional_constraints.size());
 
@@ -488,7 +437,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
                      checker.plant().num_positions());
         if (!checker.CheckConfigCollisionFree(current_point_ambient,
                                               thread_num) ||
-            !CheckProgConstraints(
+            !internal::CheckProgConstraints(
                 options.sampled_iris_options.prog_with_additional_constraints,
                 curr_pt_lower, constraints_tol)) {
           current_point = curr_pt_lower;
@@ -501,9 +450,10 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
             DRAKE_ASSERT(query_ambient.size() ==
                          checker.plant().num_positions());
             if (checker.CheckConfigCollisionFree(query_ambient, thread_num) &&
-                CheckProgConstraints(options.sampled_iris_options
-                                         .prog_with_additional_constraints,
-                                     query, constraints_tol)) {
+                internal::CheckProgConstraints(
+                    options.sampled_iris_options
+                        .prog_with_additional_constraints,
+                    query, constraints_tol)) {
               // The query point is collision free and satisfies the
               // constraints.
               curr_pt_lower = query;
@@ -692,7 +642,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
     if (!checker.CheckConfigCollisionFree(
             options.parameterization.get_parameterization()(
                 current_ellipsoid_center)) ||
-        !CheckProgConstraints(
+        !internal::CheckProgConstraints(
             options.sampled_iris_options.prog_with_additional_constraints,
             current_ellipsoid_center, constraints_tol)) {
       log()->info(fmt::format(
