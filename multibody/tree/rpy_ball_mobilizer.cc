@@ -423,10 +423,9 @@ RpyBallMobilizer<T>::TemplatedDoCloneToScalar(
 }
 
 template <typename T>
-Vector3<T> RpyBallMobilizer<T>::CalcAccelerationBiasForQDDot(
-    const systems::Context<T>& context, const char* function_name) const {
-  auto [sp, cp, sy, cy, cpi] = SinCosPitchYawCpi(context, function_name);
-
+Vector3<T> RpyBallMobilizer<T>::CalcAccelerationBiasForQDDotImpl(
+    const systems::Context<T>& context, const T& sp, const T& cp, const T& sy,
+    const T& cy, const T& cpi) const {
   // The algorithm below calculates Ṅ⁺(q,q̇)⋅q̇. The algorithm was verified with
   // MotionGenesis. It can also be verified by-hand, e.g., with documentation
   // in DoCalcNplusDotMatrix which directly differentiates N⁺(q) to form
@@ -448,6 +447,13 @@ Vector3<T> RpyBallMobilizer<T>::CalcAccelerationBiasForQDDot(
 }
 
 template <typename T>
+Vector3<T> RpyBallMobilizer<T>::CalcAccelerationBiasForQDDot(
+    const systems::Context<T>& context, const char* function_name) const {
+  auto [sp, cp, sy, cy, cpi] = SinCosPitchYawCpi(context, function_name);
+  return CalcAccelerationBiasForQDDotImpl(context, sp, cp, sy, cy, cpi);
+}
+
+template <typename T>
 void RpyBallMobilizer<T>::DoMapAccelerationToQDDot(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& vdot,
@@ -466,12 +472,13 @@ void RpyBallMobilizer<T>::DoMapAccelerationToQDDot(
   // A calculation of q̈ that leverages the simplicity of Ṅ⁺(q,q̇) over Ṅ(q,q̇)
   // and the available function CalcAccelerationBiasForQDDot() starts with
   // v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈ and then solves as q̈ = N(q) {v̇ - Ṅ⁺(q,q̇)⋅q̇}.
+  auto [sp, cp, sy, cy, cpi] = SinCosPitchYawCpi(context, __func__);
   const Vector3<T> vdot_minus_NplusDotTimesQDot =
-      vdot - CalcAccelerationBiasForQDDot(context, __func__);
+      vdot - CalcAccelerationBiasForQDDotImpl(context, sp, cp, sy, cy, cpi);
 
   // Note: Although the function below was designed to calculate q̇ = N(q)⋅v,
   // it can also be used to calculate q̈ = N(q) {v̇ - Ṅ⁺(q,q̇)⋅q̇}.
-  DoMapVelocityToQDot(context, vdot_minus_NplusDotTimesQDot, qddot);
+  DoMapVelocityToQDotImpl(sp, sy, cy, cpi, vdot_minus_NplusDotTimesQDot, qddot);
 }
 
 template <typename T>
@@ -497,8 +504,8 @@ void RpyBallMobilizer<T>::DoMapQDDotToAcceleration(
       CalcAccelerationBiasForQDDot(context, __func__);
 
   // Although the function below was designed to calculate v = N⁺(q)⋅q̇, it can
-  // also be used to calculate N⁺(q)⋅q̈.
-  DoMapQDotToVelocity(context, qddot, vdot);  // On return, vdot = N⁺(q)⋅q̈.
+  // also be used to calculate N⁺(q)⋅q̈.  On return, vdot = N⁺(q)⋅q̈.
+  DoMapQDotToVelocity(context, qddot, vdot);
 
   // Sum the previous terms to form v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
   *vdot += NplusDot_times_Qdot;

@@ -320,6 +320,9 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   // Calculate the term Ṅ⁺(q,q̇)⋅q̇ which appears in v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
   Vector3<T> CalcAccelerationBiasForQDDot(const systems::Context<T>& context,
                                           const char* function_name) const;
+  Vector3<T> CalcAccelerationBiasForQDDotImpl(
+      const systems::Context<T>& context, const T& sp, const T& cp, const T& sy,
+      const T& cy, const T& cpi) const;
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
