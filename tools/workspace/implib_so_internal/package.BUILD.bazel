@@ -1,0 +1,13 @@
+# -*- bazel -*-
+
+load("@drake//tools/skylark:py.bzl", "py_binary")
+
+py_binary(
+    name = "gen",
+    srcs = ["implib-gen.py"],
+    data = glob(["arch/**"], allow_empty = False),
+    main = "implib-gen.py",
+    python_version = "PY3",
+    srcs_version = "PY3",
+    visibility = ["//visibility:public"],
+)
