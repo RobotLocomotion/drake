@@ -32,12 +32,16 @@ using geometry::optimization::ConvexSet;
 using geometry::optimization::HPolyhedron;
 using geometry::optimization::Hyperellipsoid;
 using geometry::optimization::internal::ClosestCollisionProgram;
+using geometry::optimization::internal::CounterexampleConstraint;
+using geometry::optimization::internal::CounterexampleProgram;
 using geometry::optimization::internal::GeometryPairWithDistance;
 using geometry::optimization::internal::IrisConvexSetMaker;
 using geometry::optimization::internal::PointsBoundedDistanceConstraint;
 using geometry::optimization::internal::SamePointConstraint;
 using math::RigidTransform;
 using multibody::MultibodyPlant;
+using solvers::Binding;
+using solvers::Constraint;
 using solvers::SolverInterface;
 using systems::Context;
 
@@ -94,19 +98,6 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
                             const Hyperellipsoid& starting_ellipsoid,
                             const HPolyhedron& domain,
                             const IrisNp2Options& options) {
-  if (options.sampled_iris_options.containment_points != std::nullopt) {
-    // TODO(cohnt): Support enforcing additional containment points.
-    throw std::runtime_error(
-        "IrisNp2 does not yet support enforcing additional containment "
-        "points.");
-  }
-  if (options.sampled_iris_options.prog_with_additional_constraints !=
-      nullptr) {
-    // TODO(cohnt): Support enforcing additional constraints.
-    throw std::runtime_error(
-        "IrisNp2 does not yet support specifying additional constriants.");
-  }
-
   if (!(options.parameterization.get_parameterization()(
             starting_ellipsoid.center()) == starting_ellipsoid.center())) {
     // TODO(cohnt): Support growing regions along a parameterized subspace.
@@ -176,6 +167,12 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
                     const HPolyhedron& domain, const IrisNp2Options& options) {
   auto start = std::chrono::high_resolution_clock::now();
 
+  const bool additional_constraints_threadsafe =
+      options.sampled_iris_options.prog_with_additional_constraints
+          ? options.sampled_iris_options.prog_with_additional_constraints
+                ->IsThreadSafe()
+          : true;
+
   CheckInitialConditions(checker, starting_ellipsoid, domain, options);
 
   const auto& plant = checker.plant();
@@ -229,13 +226,33 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
             .distance;
     if (distance < 0.0) {
       throw std::runtime_error(fmt::format(
-          "The center of starting_ellipsoid is in collision; geometry {} is in "
+          "Starting ellipsoid center {} is in collision; geometry {} is in "
           "collision with geometry {}",
-          inspector.GetName(geomA), inspector.GetName(geomB)));
+          fmt_eigen(E.center().transpose()), inspector.GetName(geomA),
+          inspector.GetName(geomB)));
     }
     sorted_pairs.emplace_back(geomA, geomB, distance);
   }
   std::sort(sorted_pairs.begin(), sorted_pairs.end());
+
+  if (options.sampled_iris_options.prog_with_additional_constraints) {
+    DRAKE_THROW_UNLESS(options.sampled_iris_options
+                           .prog_with_additional_constraints->num_vars() == nq);
+  }
+  // TODO(cohnt): Allow users to set this parameter if it ever becomes needed.
+  const double constraints_tol = 1e-6;
+  if (!internal::CheckProgConstraints(
+          options.sampled_iris_options.prog_with_additional_constraints,
+          E.center(), constraints_tol)) {
+    throw std::runtime_error(fmt::format(
+        "Starting ellipsoid center {} violates a constraint in "
+        "options.sampled_iris_options.prog_with_additional_constraints.",
+        fmt_eigen(E.center().transpose())));
+  }
+  geometry::optimization::VPolytope containment_points_vpolytope =
+      internal::ParseAndCheckContainmentPoints(
+          checker, options.sampled_iris_options, options.parameterization,
+          starting_ellipsoid);
 
   // On each iteration, we will build the collision-free polytope represented
   // as {x | A * x <= b}.  Here we pre-allocate matrices with a generous
@@ -246,6 +263,66 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   A.topRows(P.A().rows()) = P.A();
   b.head(P.A().rows()) = P.b();
   int num_initial_constraints = P.A().rows();
+
+  // Make the additional constraint counterexample programs (if applicable).
+  std::shared_ptr<CounterexampleConstraint> counter_example_constraint{};
+  std::unique_ptr<CounterexampleProgram> counter_example_prog{};
+  std::vector<Binding<Constraint>> additional_constraint_bindings{};
+  if (options.sampled_iris_options.prog_with_additional_constraints) {
+    counter_example_constraint = std::make_shared<CounterexampleConstraint>(
+        options.sampled_iris_options.prog_with_additional_constraints);
+    additional_constraint_bindings =
+        options.sampled_iris_options.prog_with_additional_constraints
+            ->GetAllConstraints();
+
+    // Handle bounding box and linear constraints as a special case
+    // (extracting them from the additional_constraint_bindings).
+    auto AddConstraint = [&](const Eigen::MatrixXd& new_A,
+                             const Eigen::VectorXd& new_b,
+                             const solvers::VectorXDecisionVariable& vars) {
+      while (num_initial_constraints + new_A.rows() >= A.rows()) {
+        // Increase pre-allocated polytope size.
+        A.conservativeResize(A.rows() * 2, A.cols());
+        b.conservativeResize(b.rows() * 2);
+      }
+      for (int i = 0; i < new_b.rows(); ++i) {
+        if (!std::isinf(new_b[i])) {
+          A.row(num_initial_constraints).setZero();
+          for (int j = 0; j < vars.rows(); ++j) {
+            const int index =
+                options.sampled_iris_options.prog_with_additional_constraints
+                    ->FindDecisionVariableIndex(vars[j]);
+            A(num_initial_constraints, index) = new_A(i, j);
+          }
+          b[num_initial_constraints++] = new_b[i];
+        }
+      }
+    };
+    auto HandleLinearConstraints = [&](const auto& bindings) {
+      for (const auto& binding : bindings) {
+        AddConstraint(binding.evaluator()->get_sparse_A(),
+                      binding.evaluator()->upper_bound(), binding.variables());
+        AddConstraint(-binding.evaluator()->get_sparse_A(),
+                      -binding.evaluator()->lower_bound(), binding.variables());
+        auto pos = std::find(additional_constraint_bindings.begin(),
+                             additional_constraint_bindings.end(), binding);
+        DRAKE_ASSERT(pos != additional_constraint_bindings.end());
+        additional_constraint_bindings.erase(pos);
+      }
+    };
+    HandleLinearConstraints(
+        options.sampled_iris_options.prog_with_additional_constraints
+            ->bounding_box_constraints());
+    HandleLinearConstraints(
+        options.sampled_iris_options.prog_with_additional_constraints
+            ->linear_constraints());
+    counter_example_prog = std::make_unique<CounterexampleProgram>(
+        counter_example_constraint, E, A.topRows(num_initial_constraints),
+        b.head(num_initial_constraints));
+
+    P = HPolyhedron(A.topRows(num_initial_constraints),
+                    b.head(num_initial_constraints));
+  }
 
   DRAKE_THROW_UNLESS(P.PointInSet(seed, 1e-12));
 
@@ -286,6 +363,10 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   const std::string seed_point_msg =
       "IrisNp2: terminating iterations because the seed point is no longer in "
       "the region.";
+
+  // Track maximum relaxation of cspace margin if containment_points are
+  // requested.
+  double max_relaxation = 0;
 
   // Set up constants for statistical tests.
   double outer_delta_min =
@@ -354,15 +435,26 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           P_candidate, N_k, options.sampled_iris_options.mixing_steps,
           &generators, &particles);
 
-      // Find all particles in collision.
+      // Find all particles in collision or violating additional user-specified
+      // constraints.
       std::vector<uint8_t> particle_col_free =
           checker.CheckConfigsCollisionFree(
               particles, options.sampled_iris_options.parallelism);
       int number_particles_in_collision = 0;
 
+      std::vector<uint8_t> particle_satisfies_additional_constraints =
+          internal::CheckProgConstraintsParallel(
+              options.sampled_iris_options.prog_with_additional_constraints,
+              particles,
+              additional_constraints_threadsafe
+                  ? options.sampled_iris_options.parallelism
+                  : Parallelism::None(),
+              constraints_tol, N_k);
+
       particles_in_collision.clear();
       for (size_t i = 0; i < particle_col_free.size(); ++i) {
-        if (particle_col_free.at(i) == 0) {
+        if (particle_col_free.at(i) == 0 ||
+            particle_satisfies_additional_constraints[i] == 0) {
           particles_in_collision.push_back(particles.at(i));
           ++number_particles_in_collision;
         }
@@ -446,52 +538,113 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
                                              checker.UpdatePositions(particle),
                                              sorted_pairs));
 
-        // Because the particle is from particles_in_collision,
-        // FindCollisionPairIndex will always return an index corresponding to a
-        // collision pair in sorted_pairs.
-        DRAKE_ASSERT(closest_collision_info.second >= 0);
-        DRAKE_ASSERT(closest_collision_info.second < ssize(sorted_pairs));
+        bool solve_succeeded;
+        if (closest_collision_info.second >= 0) {
+          // We have found a collision pair corresponding to this particle, so
+          // the particle is in collision. Thus, we solve the corresponding
+          // collision counterexample search program.
+          DRAKE_ASSERT(closest_collision_info.second < ssize(sorted_pairs));
 
-        auto pair_iterator =
-            std::next(sorted_pairs.begin(), closest_collision_info.second);
-        DRAKE_THROW_UNLESS(pair_iterator != sorted_pairs.end());
-        const auto collision_pair = *pair_iterator;
-        const double padding = GetPaddingBetweenGeometries(
-            checker, inspector, collision_pair.geomA, collision_pair.geomB);
-        if (padding > 0) {
-          points_bounded_distance_constraint->set_max_distance(padding);
+          auto pair_iterator =
+              std::next(sorted_pairs.begin(), closest_collision_info.second);
+          DRAKE_THROW_UNLESS(pair_iterator != sorted_pairs.end());
+          const auto collision_pair = *pair_iterator;
+          const double padding = GetPaddingBetweenGeometries(
+              checker, inspector, collision_pair.geomA, collision_pair.geomB);
+          if (padding > 0) {
+            points_bounded_distance_constraint->set_max_distance(padding);
+          }
+          std::variant<std::shared_ptr<SamePointConstraint>,
+                       std::shared_ptr<PointsBoundedDistanceConstraint>>
+              constraint =
+                  padding > 0
+                      ? std::variant<
+                            std::shared_ptr<SamePointConstraint>,
+                            std::shared_ptr<PointsBoundedDistanceConstraint>>(
+                            points_bounded_distance_constraint)
+                      : std::variant<
+                            std::shared_ptr<SamePointConstraint>,
+                            std::shared_ptr<PointsBoundedDistanceConstraint>>(
+                            same_point_constraint);
+
+          ClosestCollisionProgram prog(
+              constraint, *frames.at(collision_pair.geomA),
+              *frames.at(collision_pair.geomB), *sets.at(collision_pair.geomA),
+              *sets.at(collision_pair.geomB), E, A.topRows(num_constraints),
+              b.head(num_constraints));
+
+          if (do_debugging_visualization) {
+            ++num_points_drawn;
+            point_to_draw.head(nq) = particle;
+            std::string path = fmt::format("iteration{:02}/{:03}/particle",
+                                           iteration, num_points_drawn);
+            options.sampled_iris_options.meshcat->SetObject(
+                path, Sphere(0.01), geometry::Rgba(0.1, 0.1, 0.1, 1.0));
+            options.sampled_iris_options.meshcat->SetTransform(
+                path, RigidTransform<double>(point_to_draw));
+          }
+
+          // TODO(cohnt): Allow the user to specify the solver options used
+          // here.
+          solve_succeeded = prog.Solve(*solver, particle, {}, &closest);
+
+          if (solve_succeeded) {
+            prog.UpdatePolytope(A.topRows(num_constraints),
+                                b.head(num_constraints));
+          }
+        } else {
+          // We did not find a collision pair corresponding to this particle, so
+          // the particle must be violating one of the constraints from
+          // options.sampled_iris_options.prog_with_additional_constraints.
+          DRAKE_THROW_UNLESS(
+              options.sampled_iris_options.prog_with_additional_constraints !=
+              nullptr);
+
+          // Find the constraint in prog_with_additional_constraints that is
+          // violated.
+          bool found_violated_constraint = false;
+          for (const auto& binding : additional_constraint_bindings) {
+            VectorXd value;
+            binding.evaluator()->Eval(particle, &value);
+            for (int index = 0; index < binding.evaluator()->num_constraints();
+                 ++index) {
+              if (value[index] >
+                  binding.evaluator()->upper_bound()[index] + constraints_tol) {
+                found_violated_constraint = true;
+                counter_example_constraint->set(
+                    &binding, index,
+                    /* falsify_lower_bound */ false);
+              } else if (value[index] <
+                         binding.evaluator()->lower_bound()[index] -
+                             constraints_tol) {
+                found_violated_constraint = true;
+                counter_example_constraint->set(&binding, index,
+                                                /* falsify_lower_bound */ true);
+              }
+
+              if (found_violated_constraint) {
+                break;
+              }
+            }
+            if (found_violated_constraint) {
+              break;
+            }
+          }
+
+          // We must have found a violated constraint.
+          DRAKE_THROW_UNLESS(found_violated_constraint);
+
+          // TODO(cohnt): Allow the user to specify the solver options used
+          // here.
+          solve_succeeded =
+              counter_example_prog->Solve(*solver, particle, {}, &closest);
+
+          if (solve_succeeded) {
+            counter_example_prog->UpdatePolytope(A.topRows(num_constraints),
+                                                 b.head(num_constraints));
+          }
         }
-        std::variant<std::shared_ptr<SamePointConstraint>,
-                     std::shared_ptr<PointsBoundedDistanceConstraint>>
-            constraint =
-                padding > 0
-                    ? std::variant<
-                          std::shared_ptr<SamePointConstraint>,
-                          std::shared_ptr<PointsBoundedDistanceConstraint>>(
-                          points_bounded_distance_constraint)
-                    : std::variant<
-                          std::shared_ptr<SamePointConstraint>,
-                          std::shared_ptr<PointsBoundedDistanceConstraint>>(
-                          same_point_constraint);
-        ClosestCollisionProgram prog(
-            constraint, *frames.at(collision_pair.geomA),
-            *frames.at(collision_pair.geomB), *sets.at(collision_pair.geomA),
-            *sets.at(collision_pair.geomB), E, A.topRows(num_constraints),
-            b.head(num_constraints));
 
-        if (do_debugging_visualization) {
-          ++num_points_drawn;
-          point_to_draw.head(nq) = particle;
-          std::string path = fmt::format("iteration{:02}/{:03}/particle",
-                                         iteration, num_points_drawn);
-          options.sampled_iris_options.meshcat->SetObject(
-              path, Sphere(0.01), geometry::Rgba(0.1, 0.1, 0.1, 1.0));
-          options.sampled_iris_options.meshcat->SetTransform(
-              path, RigidTransform<double>(point_to_draw));
-        }
-
-        // TODO(cohnt): Allow the user to specify the solver options used here.
-        bool solve_succeeded = prog.Solve(*solver, particle, {}, &closest);
         if (solve_succeeded) {
           ++num_prog_successes;
           if (do_debugging_visualization) {
@@ -503,10 +656,42 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
             options.sampled_iris_options.meshcat->SetTransform(
                 path, RigidTransform<double>(point_to_draw));
           }
-          internal::AddTangentToPolytope(
-              E, closest,
-              options.sampled_iris_options.configuration_space_margin, &A, &b,
-              &num_constraints);
+          if (options.sampled_iris_options.containment_points.has_value()) {
+            Eigen::VectorXd a_face;
+            a_face = internal::ComputeFaceTangentToDistCvxh(
+                E, closest, containment_points_vpolytope, *solver);
+
+            a_face.normalize();
+            double b_face =
+                a_face.transpose() * closest -
+                options.sampled_iris_options.configuration_space_margin;
+
+            // Relax cspace margin to contain points.
+            if (options.sampled_iris_options.containment_points.has_value()) {
+              Eigen::VectorXd result =
+                  a_face.transpose() *
+                  options.sampled_iris_options.containment_points.value();
+              double relaxation = result.maxCoeff() - b_face;
+              if (relaxation > 0) {
+                b_face += relaxation;
+                if (max_relaxation < relaxation) max_relaxation = relaxation;
+              }
+            }
+            A.row(num_constraints) = a_face.transpose();
+            b(num_constraints) = b_face;
+            ++num_constraints;
+
+            // Resize A matrix if we need more faces.
+            if (A.rows() <= num_constraints) {
+              A.conservativeResize(A.rows() * 2, A.cols());
+              b.conservativeResize(b.rows() * 2);
+            }
+          } else {
+            internal::AddTangentToPolytope(
+                E, closest,
+                options.sampled_iris_options.configuration_space_margin, &A, &b,
+                &num_constraints);
+          }
           P_candidate =
               HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
           if (options.sampled_iris_options.require_sample_point_is_contained) {
@@ -517,8 +702,6 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
               return P;
             }
           }
-          prog.UpdatePolytope(A.topRows(num_constraints),
-                              b.head(num_constraints));
         } else {
           ++num_prog_failures;
           if (do_debugging_visualization) {
@@ -539,10 +722,18 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
       if (failure_rate >= kSolverFailRateWarning) {
         log()->warn(fmt::format(
             "IrisNp2 WARNING, only {} out of {} closest collision "
-            "programs solved successfully ({}% failure rate). If you are using "
+            "programs solved successfully ({}% failure rate). If you are "
+            "using "
             "SnoptSolver or NloptSolver, consider using IpoptSolver instead.",
             num_prog_successes, num_prog_successes + num_prog_failures,
             failure_rate));
+      }
+
+      if (options.sampled_iris_options.verbose && max_relaxation > 0) {
+        log()->info(
+            fmt::format("IrisNp2 Warning relaxing cspace margin by {:03} to "
+                        "ensure point containment",
+                        max_relaxation));
       }
 
       if (probabilistic_test_passed) {
