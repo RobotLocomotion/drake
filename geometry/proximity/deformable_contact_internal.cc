@@ -163,6 +163,11 @@ DeformableContact<double> Geometries::ComputeDeformableContact(
   return result;
 }
 
+const Aabb& Geometries::GetDeformableAabbInWorld(GeometryId geometry_id) const {
+  DRAKE_DEMAND(is_deformable(geometry_id));
+  return deformable_geometries_.at(geometry_id).aabb_in_world();
+}
+
 void Geometries::ImplementGeometry(const Box& box, void* user_data) {
   AddRigidGeometry(box, *static_cast<ReifyData*>(user_data));
 }

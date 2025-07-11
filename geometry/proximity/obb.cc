@@ -390,6 +390,7 @@ Obb ObbMaker<MeshType>::Compute() const {
   return OptimizeObbVolume(box);
 }
 
+template class ObbMaker<PolygonSurfaceMesh<double>>;
 template class ObbMaker<TriangleSurfaceMesh<double>>;
 template class ObbMaker<VolumeMesh<double>>;
 
@@ -397,6 +398,7 @@ template class ObbMaker<VolumeMesh<double>>;
 //  mesh after we've cleaned up the scalar types in hydroelastics. Specifically,
 //  this is here to support the unit tests in mesh_intersection_test.cc. Also
 //  the calls to internal::convert_to_double should be removed.
+template class ObbMaker<PolygonSurfaceMesh<drake::AutoDiffXd>>;
 template class ObbMaker<TriangleSurfaceMesh<drake::AutoDiffXd>>;
 template class ObbMaker<VolumeMesh<drake::AutoDiffXd>>;
 

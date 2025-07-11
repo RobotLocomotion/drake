@@ -12,6 +12,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/internal_frame.h"
+#include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
@@ -238,6 +239,13 @@ class InternalGeometry {
     return reference_mesh_.get();
   }
 
+  /* Returns the geometry's oriented bounding box (OBB). If the geometry's
+   shape does not support OBB computation, this function returns std::nullopt.
+
+   The OBB is computed on demand on the first invocation. All subsequent
+   invocations should have an O(1) cost. */
+  const std::optional<Obb>& GetObb() const;
+
  private:
   // The specification for this instance's shape.
   copyable_unique_ptr<Shape> shape_spec_;
@@ -273,9 +281,9 @@ class InternalGeometry {
   // frame, G. It's a nullptr if the geometry is rigid.
   copyable_unique_ptr<VolumeMesh<double>> reference_mesh_;
 
-  // An optional representation of the convex hull associated with this
-  // geometry.
-  copyable_unique_ptr<PolygonSurfaceMesh<double>> convex_hull_;
+  // Allows the deferred computation of the OBB on an otherwise const
+  // InternalGeometry.
+  mutable std::shared_ptr<std::optional<Obb>> obb_{nullptr};
 };
 
 }  // namespace internal

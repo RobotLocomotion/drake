@@ -106,6 +106,12 @@ class DeformableGeometry {
    instead of kept around. */
   const VolumeMeshFieldLinear<double, double>& CalcSignedDistanceField() const;
 
+  /* Returns the axis-aligned bounding box of the geometry in the world frame.
+   */
+  const Aabb& aabb_in_world() const {
+    return deformable_volume_->bvh().root_node().bv();
+  }
+
  private:
   std::unique_ptr<DeformableVolumeMeshWithBvh<double>> deformable_volume_;
   std::unique_ptr<DeformableSurfaceMeshWithBvh<double>> deformable_surface_;

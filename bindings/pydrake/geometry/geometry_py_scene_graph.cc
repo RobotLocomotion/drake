@@ -184,6 +184,8 @@ void DefineSceneGraphInspector(py::module m, T) {
             cls_doc.GetAllDeformableGeometryIds.doc)
         .def("GetConvexHull", &Class::GetConvexHull, py_rvp::reference_internal,
             py::arg("geometry_id"), cls_doc.GetConvexHull.doc)
+        .def("GetObbInGeometryFrame", &Class::GetObbInGeometryFrame,
+            py::arg("geometry_id"), cls_doc.GetObbInGeometryFrame.doc)
         .def("CollisionFiltered", &Class::CollisionFiltered,
             py::arg("geometry_id1"), py::arg("geometry_id2"),
             cls_doc.CollisionFiltered.doc)
@@ -566,9 +568,6 @@ void DefineQueryObject(py::module m, T) {
                 &Class::GetPoseInWorld),
             py::arg("frame_id"), py_rvp::reference_internal,
             cls_doc.GetPoseInWorld.doc_1args_frame_id)
-        .def("GetConfigurationsInWorld", &Class::GetConfigurationsInWorld,
-            py::arg("deformable_geometry_id"), py_rvp::copy,
-            cls_doc.GetConfigurationsInWorld.doc)
         .def("GetPoseInParent", &Class::GetPoseInParent, py::arg("frame_id"),
             py_rvp::reference_internal, cls_doc.GetPoseInParent.doc)
         .def("GetPoseInWorld",
@@ -576,6 +575,13 @@ void DefineQueryObject(py::module m, T) {
                 &Class::GetPoseInWorld),
             py::arg("geometry_id"), py_rvp::reference_internal,
             cls_doc.GetPoseInWorld.doc_1args_geometry_id)
+        .def("GetConfigurationsInWorld", &Class::GetConfigurationsInWorld,
+            py::arg("deformable_geometry_id"), py_rvp::copy,
+            cls_doc.GetConfigurationsInWorld.doc)
+        .def("ComputeAabbInWorld", &Class::ComputeAabbInWorld,
+            py::arg("geometry_id"), cls_doc.ComputeAabbInWorld.doc)
+        .def("ComputeObbInWorld", &Class::ComputeObbInWorld,
+            py::arg("geometry_id"), cls_doc.ComputeObbInWorld.doc)
         .def("ComputeSignedDistancePairwiseClosestPoints",
             &QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints,
             py::arg("max_distance") = std::numeric_limits<double>::infinity(),

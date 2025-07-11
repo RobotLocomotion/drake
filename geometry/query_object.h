@@ -2,9 +2,11 @@
 
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
+#include "drake/geometry/proximity/aabb.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/deformable_contact.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
@@ -191,6 +193,21 @@ class QueryObject {
    @experimental */
   std::vector<VectorX<T>> GetDrivenMeshConfigurationsInWorld(
       GeometryId deformable_geometry_id, Role role) const;
+
+  /** Reports the axis-aligned bounding box of the geometry indicated by
+   `geometry_id` in the world frame. Returns std::nullopt if the geometry is
+   not supported for this query. Currently, only deformable geometries are
+   supported.
+   @throws std::exception if the `geometry_id` is not valid. */
+  std::optional<Aabb> ComputeAabbInWorld(GeometryId geometry_id) const;
+
+  /** Reports the oriented bounding box of the geometry indicated by
+   `geometry_id` in the world frame. Returns std::nullopt if the geometry is
+   not supported for this query. See CalcObb() for the list of unsupported
+   geometry types.
+   @throws std::exception if the `geometry_id` is not valid. */
+  std::optional<Obb> ComputeObbInWorld(GeometryId geometry_id) const;
+
   //@}
 
   /**

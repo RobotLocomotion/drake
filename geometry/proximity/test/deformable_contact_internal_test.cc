@@ -637,6 +637,41 @@ TEST_F(DeformableDeformableContactTest, RespectCollisionFilter) {
   EXPECT_EQ(contact_data.contact_surfaces().size(), 0);
 }
 
+GTEST_TEST(GeometriesTest, GetDeformableAabbInWorld) {
+  Geometries geometries;
+
+  // Create a deformable sphere with radius 0.5.
+  const GeometryId deformable_id = GeometryId::get_new_id();
+  const VolumeMesh<double> mesh = MakeVolumeMesh();
+  const TriangleSurfaceMesh<double> surface_mesh =
+      ConvertVolumeToSurfaceMeshWithBoundaryVertices(mesh);
+  const int num_vertices = mesh.num_vertices();
+  const int num_surface_vertices = surface_mesh.num_vertices();
+  AddDeformableGeometry(deformable_id, mesh, &geometries);
+
+  // The AABB should be a unit box centered at the origin.
+  const Aabb& aabb = geometries.GetDeformableAabbInWorld(deformable_id);
+  EXPECT_TRUE(CompareMatrices(aabb.lower(), Vector3d(-0.5, -0.5, -0.5)));
+  EXPECT_TRUE(CompareMatrices(aabb.upper(), Vector3d(0.5, 0.5, 0.5)));
+
+  // Update the vertex positions so that the sphere is shifted to the right.
+  const Vector3d p_B0B1_W = Vector3d(1.0, 0.0, 0.0);
+  VectorXd q = VectorXd::Zero(3 * num_vertices);
+  VectorXd q_surface = VectorXd::Zero(3 * num_surface_vertices);
+  for (int i = 0; i < num_vertices; ++i) {
+    q.segment<3>(3 * i) = mesh.vertex(i) + p_B0B1_W;
+  }
+  for (int i = 0; i < num_surface_vertices; ++i) {
+    q_surface.segment<3>(3 * i) = surface_mesh.vertex(i) + p_B0B1_W;
+  }
+  geometries.UpdateDeformableVertexPositions(deformable_id, q, q_surface);
+
+  // The AABB should be a unit box centered at (1, 0, 0).
+  const Aabb& aabb_new = geometries.GetDeformableAabbInWorld(deformable_id);
+  EXPECT_TRUE(CompareMatrices(aabb_new.lower(), Vector3d(0.5, -0.5, -0.5)));
+  EXPECT_TRUE(CompareMatrices(aabb_new.upper(), Vector3d(1.5, 0.5, 0.5)));
+}
+
 }  // namespace
 }  // namespace deformable
 }  // namespace internal
