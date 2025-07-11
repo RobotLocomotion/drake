@@ -88,6 +88,9 @@ drake_cc_library(
         "//planning:scene_graph_collision_checker",
         "//solvers",
     ],
+    implementation_deps = [
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
 )
 
 drake_cc_googletest(
