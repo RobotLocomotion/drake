@@ -14,6 +14,18 @@
 namespace drake {
 namespace planning {
 
+namespace internal {
+
+// Support for transferring ownership of the internal diagram builder. This
+// mechanism is necessary for the Python FFI to maintain a consistent memory
+// model.
+template <typename T>
+struct BuilderTransfer {
+  std::unique_ptr<systems::DiagramBuilder<T>> builder;
+};
+
+}  // namespace internal
+
 /** Storage for a combined diagram builder, plant, and scene graph.
 When T == double, a parser (and package map) is also available.
 
@@ -44,6 +56,16 @@ class RobotDiagramBuilder {
   systems::DiagramBuilder<T>& builder() {
     ThrowIfAlreadyBuiltOrCorrupted();
     return *builder_;
+  }
+
+  /** (Internal use only.) Transfer ownership of the internal diagram builder
+  to the caller, only after Build() has been called.
+  @pre IsDiagramBuilt() == true. */
+  internal::BuilderTransfer<T> TransferBuilder() {
+    DRAKE_DEMAND(IsDiagramBuilt());
+    internal::BuilderTransfer<T> result;
+    result.builder = std::move(builder_);
+    return result;
   }
 
   /** Gets the contained DiagramBuilder (readonly).
@@ -117,6 +139,7 @@ class RobotDiagramBuilder {
   // Storage for the diagram and its plant and scene graph.
   // After Build(), the `builder_` is set to nullptr.
   std::unique_ptr<systems::DiagramBuilder<T>> builder_;
+  bool is_built_{false};
   multibody::AddMultibodyPlantSceneGraphResult<T> pair_;
   multibody::MultibodyPlant<T>& plant_;
   geometry::SceneGraph<T>& scene_graph_;

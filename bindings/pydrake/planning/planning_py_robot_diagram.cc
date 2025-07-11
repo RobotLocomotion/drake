@@ -104,6 +104,15 @@ void DefinePlanningRobotDiagram(py::module m) {
                 // Transfer ownership of the diagram to a py::object.
                 py::object py_diagram =
                     py::cast(cpp_diagram.release(), py_rvp::take_ownership);
+                // Transfer ownership of the builder to a respun
+                // py::object. Pydrake diagram/builder ref-cycle memory
+                // management requires the internal builder to outlive the (now
+                // irrelevant) RobotDiagramBuilder. In order to avoid
+                // documented UB hazards of `py_rvp::reference` used above, the
+                // *exact* C++ instance must also be owned by the cycle. See
+                // also issue #23161.
+                py_builder = py::cast(self->TransferBuilder().builder.release(),
+                    py_rvp::take_ownership);
                 // Make the ref_cycle.
                 internal::make_arbitrary_ref_cycle(
                     py_builder, py_diagram, "RobotDiagramBuilder::Build");

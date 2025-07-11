@@ -38,13 +38,12 @@ ChildSystem<T>& DowncastSubsystem(DiagramOrDiagramBuilder<T>* diagram,
 }
 
 template <typename T>
-RobotDiagram<T>::RobotDiagram(
-    std::unique_ptr<DiagramBuilder<T>> diagram_builder)
+RobotDiagram<T>::RobotDiagram(DiagramBuilder<T>* diagram_builder)
     : Diagram<T>(SystemTypeTag<RobotDiagram>{}),
-      plant_(DowncastSubsystem<T, MultibodyPlant>(diagram_builder.get(),
-                                                  kPlantIndex)),
-      scene_graph_(DowncastSubsystem<T, SceneGraph>(diagram_builder.get(),
-                                                    kSceneGraphIndex)) {
+      plant_(
+          DowncastSubsystem<T, MultibodyPlant>(diagram_builder, kPlantIndex)),
+      scene_graph_(
+          DowncastSubsystem<T, SceneGraph>(diagram_builder, kSceneGraphIndex)) {
   diagram_builder->BuildInto(this);
 }
 

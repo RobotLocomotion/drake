@@ -111,6 +111,7 @@ drake_py_unittest(
     ],
     deps = [
         ":planning",
+        "//bindings/pydrake/common/test_utilities:memory_test_util_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/systems:controllers_py",
     ],
