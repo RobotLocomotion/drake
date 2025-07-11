@@ -62,7 +62,7 @@ DifferentialInverseKinematicsSystem::Ingredient::BuildBlockDiagonalAxisSelector(
   DiagonalMatrixXd selector(6 * N);
   selector.setIdentity();
   for (int i = 0; i < N; ++i) {
-    const auto& frame_name = frame_list[i]->scoped_name().get_full();
+    const std::string frame_name = frame_list[i]->scoped_name().to_string();
     if (auto iter = cartesian_axis_masks.find(frame_name);
         iter != cartesian_axis_masks.end()) {
       const Vector6d& mask = iter->second;
