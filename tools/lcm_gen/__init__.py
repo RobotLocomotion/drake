@@ -348,6 +348,7 @@ _CPP_TEMPLATE = """\
 #include <cstring>
 #include <string>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
