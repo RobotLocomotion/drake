@@ -727,7 +727,8 @@ class GraphOfConvexSets {
   Edge* GetMutableEdgeByName(const std::string& name);
 
   /** Removes vertex @p vertex from the graph as well as any edges from or to
-  the vertex. Runtime is O(nₑ) where nₑ is the number of edges in the graph.
+  the vertex. Runtime is O(nₑ) where nₑ is the number of edges connected to @p
+  vertex
   @pre The vertex must be part of the graph.
   */
   void RemoveVertex(Vertex* vertex);
