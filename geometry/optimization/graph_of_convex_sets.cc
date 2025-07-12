@@ -635,7 +635,7 @@ Edge* GraphOfConvexSets::GetMutableEdgeByName(const std::string& name) {
 }
 
 void GraphOfConvexSets::RemoveVertex(Vertex* vertex) {
-  DRAKE_THROW_UNLESS(v != nullptr);
+  DRAKE_THROW_UNLESS(vertex != nullptr);
   VertexId vertex_id = vertex->id();
   DRAKE_THROW_UNLESS(vertices_.contains(vertex_id));
   for (const auto uv : vertex->incoming_edges_) {
@@ -796,7 +796,7 @@ std::string GraphOfConvexSets::GetGraphvizString(
     for (const auto& e : *active_path) {
       graphviz << "v" << e->u().id() << " -> v" << e->v().id();
       graphviz << " [label=\"" << e->name() << " = active\"";
-      graphviz << ", color=" 
+      graphviz << ", color="
                << "\"#ff0000\"";
       graphviz << ", style=\"dashed\"";
       graphviz << "];\n";
@@ -1114,11 +1114,11 @@ void GraphOfConvexSets::AddPerspectiveCost(
     // |Ax + b|∞ becomes ℓ ≥ |Aᵢx+bᵢϕ| ∀ i.
     int A_rows = linfc->A().rows();
     MatrixXd A_linear(2 * A_rows, vars.size());
-    A_linear.block(0, 0, A_rows, 1) = linfc->b();                    // bϕ.
-    A_linear.block(0, 1, A_rows, 1) = -VectorXd::Ones(A_rows);       // -ℓ.
-    A_linear.block(0, 2, A_rows, linfc->A().cols()) = linfc->A();    // Ax.
-    A_linear.block(A_rows, 0, A_rows, 1) = -linfc->b();              // -bϕ.
-    A_linear.block(A_rows, 1, A_rows, 1) = -VectorXd::Ones(A_rows);  // -ℓ.
+    A_linear.block(0, 0, A_rows, 1) = linfc->b();                        // bϕ.
+    A_linear.block(0, 1, A_rows, 1) = -VectorXd::Ones(A_rows);           // -ℓ.
+    A_linear.block(0, 2, A_rows, linfc->A().cols()) = linfc->A();        // Ax.
+    A_linear.block(A_rows, 0, A_rows, 1) = -linfc->b();                  // -bϕ.
+    A_linear.block(A_rows, 1, A_rows, 1) = -VectorXd::Ones(A_rows);      // -ℓ.
     A_linear.block(A_rows, 2, A_rows, linfc->A().cols()) = -linfc->A();  // -Ax.
     prog->AddLinearConstraint(A_linear,
                               VectorXd::Constant(A_linear.rows(), -inf),
