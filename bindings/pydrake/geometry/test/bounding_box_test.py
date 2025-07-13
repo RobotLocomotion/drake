@@ -259,7 +259,7 @@ class TestGeometryBoundingBox(unittest.TestCase):
             all(half_width >= 0 for half_width in obb.half_width())
         )
 
-    def test_compute_bounding_boxes_for_shape(self):
+    def test_calc_obb(self):
         box = mut.Box([1.0, 2.0, 3.0])
         obb = mut.CalcObb(box)
         self.assertIsInstance(obb, mut.Obb)
