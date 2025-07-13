@@ -3190,9 +3190,8 @@ TEST_F(GeometryStateTest, ConvexHullForProximityGeometry) {
   EXPECT_EQ(geometry_state_.GetConvexHull(mesh_id), nullptr);
 }
 
-// The implementation of computing the OBB is tested in
-// shape_specification_test.cc. This test simply confirms that the right
-// function is called.
+// The implementation of computing the OBB is tested in calc_obb_test.cc. This
+// test simply confirms that the right function is called.
 TEST_F(GeometryStateTest, GetObbInGeometryFrame) {
   SetUpSingleSourceTree(Assign::kIllustration);
   const std::optional<Obb>& maybe_obb =

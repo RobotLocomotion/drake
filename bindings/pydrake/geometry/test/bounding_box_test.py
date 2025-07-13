@@ -146,7 +146,7 @@ class TestGeometryBoundingBox(unittest.TestCase):
         self.assertTrue(mut.Aabb.HasOverlap(aabb, obb, identity_transform))
         self.assertTrue(mut.Obb.HasOverlap(obb, aabb, identity_transform))
 
-    def test_compute_bounding_boxes_for_triangle_mesh(self):
+    def test_calc_obb(self):
         # Create a mesh out of two triangles forming a quad.
         #
         #     0______1

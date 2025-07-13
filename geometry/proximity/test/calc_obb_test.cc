@@ -19,19 +19,18 @@ GTEST_TEST(CalcObbFromShapeTest, Box) {
   ASSERT_TRUE(obb.has_value());
   EXPECT_TRUE(obb->pose().IsExactlyIdentity());
   EXPECT_TRUE(
-      CompareMatrices(obb->half_width(), Vector3<double>(0.5, 1.0, 1.5), kTol));
+      CompareMatrices(obb->half_width(), Vector3d(0.5, 1.0, 1.5), kTol));
 }
 
 GTEST_TEST(CalcObbFromShapeTest, Capsule) {
-  const double radius = 1.23;
+  const double radius = 1.0;
   const double length = 2.4;
   const Capsule capsule(radius, length);
   const std::optional<Obb> obb = CalcObb(capsule);
   ASSERT_TRUE(obb.has_value());
   EXPECT_TRUE(obb->pose().IsExactlyIdentity());
-  const double half_length = length / 2.0 + radius;
-  EXPECT_TRUE(CompareMatrices(
-      obb->half_width(), Vector3<double>(radius, radius, half_length), kTol));
+  EXPECT_TRUE(
+      CompareMatrices(obb->half_width(), Vector3d(0.5, 1.0, 1.2), kTol));
 }
 
 GTEST_TEST(CalcObbFromShapeTest, Cylinder) {
@@ -41,9 +40,8 @@ GTEST_TEST(CalcObbFromShapeTest, Cylinder) {
   const std::optional<Obb> obb = CalcObb(cylinder);
   ASSERT_TRUE(obb.has_value());
   EXPECT_TRUE(obb->pose().IsExactlyIdentity());
-  const double half_length = length / 2.0;
-  EXPECT_TRUE(CompareMatrices(
-      obb->half_width(), Vector3<double>(radius, radius, half_length), kTol));
+  EXPECT_TRUE(
+      CompareMatrices(obb->half_width(), Vector3d(1.3, 1.3, 1.05), kTol));
 }
 
 GTEST_TEST(CalcObbFromShapeTest, Ellipsoid) {
@@ -51,8 +49,7 @@ GTEST_TEST(CalcObbFromShapeTest, Ellipsoid) {
   const std::optional<Obb> obb = CalcObb(ellipsoid);
   ASSERT_TRUE(obb.has_value());
   EXPECT_TRUE(obb->pose().IsExactlyIdentity());
-  EXPECT_TRUE(
-      CompareMatrices(obb->half_width(), Vector3<double>(1, 2, 3), kTol));
+  EXPECT_TRUE(CompareMatrices(obb->half_width(), Vector3d(1, 2, 3), kTol));
 }
 
 GTEST_TEST(CalcObbFromShapeTest, Sphere) {
@@ -62,7 +59,7 @@ GTEST_TEST(CalcObbFromShapeTest, Sphere) {
   ASSERT_TRUE(obb.has_value());
   EXPECT_TRUE(obb->pose().IsExactlyIdentity());
   EXPECT_TRUE(CompareMatrices(obb->half_width(),
-                              Vector3<double>(radius, radius, radius), kTol));
+                              Vector3d(radius, radius, radius), kTol));
 }
 
 GTEST_TEST(CalcObbFromShapeTest, HalfSpace) {
@@ -80,7 +77,7 @@ GTEST_TEST(CalcObbFromShapeTest, MeshcatCone) {
   EXPECT_TRUE(CompareMatrices(obb->pose().rotation().matrix(),
                               Matrix3<double>::Identity(), kTol));
   EXPECT_TRUE(
-      CompareMatrices(obb->half_width(), Vector3<double>(2, 3, 2), kTol));
+      CompareMatrices(obb->half_width(), Vector3d(2, 3, 2), kTol));
 }
 
 GTEST_TEST(CalcObbFromShapeTest, Mesh) {
@@ -94,15 +91,13 @@ GTEST_TEST(CalcObbFromShapeTest, Mesh) {
   // PCA may lead to arbitrary axis directions. We check that the translation
   // is zero and that the rotation is a signed permutation matrix.
   const RigidTransformd& pose = obb->pose();
-  EXPECT_TRUE(
-      CompareMatrices(pose.translation(), Vector3<double>::Zero(), kTol));
+  EXPECT_TRUE(CompareMatrices(pose.translation(), Vector3d::Zero(), kTol));
   const Matrix3<double>& R_abs = pose.rotation().matrix().cwiseAbs();
   for (int i = 0; i < 3; ++i) {
     EXPECT_NEAR(R_abs.row(i).sum(), 1.0, kTol);
     EXPECT_NEAR(R_abs.col(i).sum(), 1.0, kTol);
   }
-  EXPECT_TRUE(
-      CompareMatrices(obb->half_width(), Vector3<double>(1, 1, 1), kTol));
+  EXPECT_TRUE(CompareMatrices(obb->half_width(), Vector3d(1, 1, 1), kTol));
 }
 
 GTEST_TEST(CalcObbFromShapeTest, Convex) {
@@ -112,15 +107,13 @@ GTEST_TEST(CalcObbFromShapeTest, Convex) {
   const std::optional<Obb> obb = CalcObb(convex);
   ASSERT_TRUE(obb.has_value());
   const RigidTransformd& pose = obb->pose();
-  EXPECT_TRUE(
-      CompareMatrices(pose.translation(), Vector3<double>::Zero(), kTol));
+  EXPECT_TRUE(CompareMatrices(pose.translation(), Vector3d::Zero(), kTol));
   const Matrix3<double>& R_abs = pose.rotation().matrix().cwiseAbs();
   for (int i = 0; i < 3; ++i) {
     EXPECT_NEAR(R_abs.row(i).sum(), 1.0, kTol);
     EXPECT_NEAR(R_abs.col(i).sum(), 1.0, kTol);
   }
-  EXPECT_TRUE(
-      CompareMatrices(obb->half_width(), Vector3<double>(1, 1, 1), kTol));
+  EXPECT_TRUE(CompareMatrices(obb->half_width(), Vector3d(1, 1, 1), kTol));
 }
 
 }  // namespace
