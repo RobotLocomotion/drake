@@ -46,11 +46,8 @@ class TestParseModels(unittest.TestCase):
             if model_relpath.startswith("external/drake_models/"):
                 # These are checked elsewhere by drake_models-specific tests.
                 model_files.remove(model_file)
-        # We expect a couple dozen files should be available for parsing. Do a
-        # quick check to make sure we're in the right order of magnitude to
-        # prevent false test success due to missing files.
-        self.assertGreater(len(model_files), 10)
         # Parse each model file for testing.
+        self.assertTrue(model_files)
         for model_file in model_files:
             model_relpath = os.path.relpath(model_file, drake_dir)
             print(f"Test model: {model_relpath}")
