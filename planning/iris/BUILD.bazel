@@ -131,6 +131,8 @@ drake_cc_googletest(
     tags = [
         "no_asan",
         "no_lsan",
+        # TODO(#22978) Re-enable this if possible.
+        "no_memcheck",
     ],
     deps = [
         ":iris_test_utilities",
