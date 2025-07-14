@@ -18,7 +18,7 @@ def platforms_repository(
         When updating, you must also manually propagate to the new version
         number into the MODULE.bazel file (at the top level of Drake).
         """,
-        commit = "0.0.10",
-        sha256 = "3df33228654e56b09f17613613767b052581b822d57cb9cfd5e7b19a8e617b42",  # noqa
+        commit = "0.0.11",
+        sha256 = "ace459f5d033c86e6578df817f739b21101c0ebcd409a97badc2979c22ce9fdc",  # noqa
         mirrors = mirrors,
     )

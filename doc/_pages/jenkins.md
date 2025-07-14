@@ -63,17 +63,22 @@ Both provisioned and unprovisioned jobs are listed.
 
 ## Scheduling Builds via the Jenkins User Interface
 
-Alternatively, to schedule a build of an open pull request or arbitrary commit
-in the ``RobotLocomotion/drake`` repository:
+Alternatively, to schedule a build of an open pull request in the
+``RobotLocomotion/drake`` repository:
 
-1. **Log in** to [Jenkins](https://drake-jenkins.csail.mit.edu/) using GitHub OAuth.
-   (Make sure that you see your name the upper-right corner, *not* the words "Log in".)
-2. Go to the list of [experimental builds](https://drake-jenkins.csail.mit.edu/view/Experimental/).
+1. **Log in** to [Jenkins](https://drake-jenkins.csail.mit.edu/) using GitHub
+   OAuth. (Make sure that you see your name the upper-right corner, *not* the
+   words "Log in".)
+2. Go to the list of
+   [experimental builds](https://drake-jenkins.csail.mit.edu/view/Experimental/).
 3. Click on the specific build you want to schedule.
-4. Click on "Build with Parameters" in the left menu.
-5. Enter ``pr/XYZ/head`` (HEAD of pull request), ``pr/XYZ/merge`` (pull request
-   merged with master), or the desired commit SHA in the ``sha1`` field.
-6. Click ``Build``.
+4. Click on "Pull Requests" towards the top, and select your pull request.
+5. Click on "Build with Parameters" in the left menu.
+6. (Optional) If you need to test your changes alongside a pull request or
+   branch of the ``RobotLocomotion/drake-ci`` repository, enter ``pr/XYZ/head``
+   (HEAD of pull request), ``pr/XYZ/merge`` (pull request merged with master)
+   for ``ciSha``. Otherwise, leave it set to "main."
+7. Click ``Build``.
 
 The list of experimental builds includes builds that automatically run on opened
 and updated pull requests, as well as numerous other builds for on-demand use.
@@ -229,13 +234,15 @@ This is especially pertinent for pull requests which affect the build infrastruc
 To test the examples which use Jenkins for CI with a PR branch of Drake,
 comment on an open pull request using the following command:
 
-* ``@drake-jenkins-bot linux-jammy-unprovisioned-external-examples please``
+* ``@drake-jenkins-bot linux-noble-unprovisioned-external-examples please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
 to schedule a build of the
-[external examples job](https://drake-jenkins.csail.mit.edu/view/Linux%20Jammy%20Unprovisioned/job/linux-jammy-unprovisioned-external-examples/).
-Note that this job provides parameters for branches of
-drake and drake-external-examples.
+[external examples job](https://drake-jenkins.csail.mit.edu/view/External%20Examples/job/linux-noble-unprovisioned-external-examples/).
+Note that instead of providing a parameter for the branch of
+``RobotLocomotion/drake-ci``, this job instead provides one for
+drake-external-examples, which should be used if you need to test your Drake
+changes alongside changes downstream.
 
 ## GitHub Actions
 

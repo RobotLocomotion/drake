@@ -147,6 +147,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
       internal::ParseAndCheckContainmentPoints(
           checker, options.sampled_iris_options, options.parameterization,
           starting_ellipsoid);
+
   // For debugging visualization.
   Eigen::Vector3d point_to_draw = Eigen::Vector3d::Zero();
   if (options.sampled_iris_options.meshcat && ambient_dimension <= 3) {

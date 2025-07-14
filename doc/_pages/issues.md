@@ -98,7 +98,7 @@ systems/rendering
 <tr>
 <td><code>geometry proximity</code></td>
 <td>Contact, distance, signed distance queries and related properties.</td>
-<td>DamrongGuoy</td>
+<td>SeanCurtis-TRI</td>
 <td><small>
 (portions of) geometry<br>
 geometry/proximity
@@ -185,7 +185,7 @@ systems/trajectory_optimization
 <tr>
 <td><code>pydrake</code></td>
 <td>Python API and its supporting Starlark macros.</td>
-<td>EricCousineau-TRI</td>
+<td>rpoyner-tri</td>
 <td><small>
 bindings/pydrake<br>
 RobotLocomotion/pybind11
