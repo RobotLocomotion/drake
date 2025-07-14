@@ -26,8 +26,8 @@ IrisParameterizationFunction::IrisParameterizationFunction(
 IrisParameterizationFunction::IrisParameterizationFunction(
     const Eigen::VectorX<symbolic::Expression>& expression_parameterization,
     const Eigen::VectorX<symbolic::Variable>& variables) {
-  // First, we check that the variables in expression_parameterization match the
-  // user-supplied variables.
+  // First, we check that the variables in expression_parameterization match
+  // the user-supplied variables.
   symbolic::Variables expression_variables;
   for (const auto& expression : expression_parameterization) {
     expression_variables.insert(expression.GetVariables());
@@ -67,6 +67,7 @@ IrisParameterizationFunction::IrisParameterizationFunction(
 namespace internal {
 
 using common_robotics_utilities::parallelism::DegreeOfParallelism;
+using common_robotics_utilities::parallelism::DynamicParallelForIndexLoop;
 using common_robotics_utilities::parallelism::ParallelForBackend;
 using common_robotics_utilities::parallelism::StaticParallelForRangeLoop;
 using common_robotics_utilities::parallelism::ThreadWorkRange;
@@ -101,10 +102,49 @@ void AddTangentToPolytope(
         "The current center of the IRIS region is within "
         "options.sampled_iris_options.configuration_space_margin of being "
         "infeasible.  Check your sample point and/or any additional "
-        "constraints you've passed in via the options. The configuration space "
-        "surrounding the sample point must have an interior.");
+        "constraints you've passed in via the options. The configuration "
+        "space surrounding the sample point must have an interior.");
   }
   *num_constraints += 1;
+}
+
+bool CheckProgConstraints(const solvers::MathematicalProgram* prog_ptr,
+                          const Eigen::VectorXd& particle, const double tol) {
+  if (!prog_ptr) {
+    return true;
+  }
+  for (const auto& binding : prog_ptr->GetAllConstraints()) {
+    DRAKE_ASSERT(binding.evaluator() != nullptr);
+    if (!binding.evaluator()->CheckSatisfied(particle, tol)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+std::vector<uint8_t> CheckProgConstraintsParallel(
+    const solvers::MathematicalProgram* prog_ptr,
+    const std::vector<Eigen::VectorXd>& particles,
+    const Parallelism& parallelism, const double tol,
+    std::optional<int> end_index) {
+  const int actual_end_index = end_index.value_or(ssize(particles));
+  DRAKE_DEMAND(actual_end_index >= 0 && actual_end_index <= ssize(particles));
+  std::vector<uint8_t> is_valid(actual_end_index, 1);
+  if (!prog_ptr) {
+    return is_valid;
+  }
+  const auto check_particle_work = [&prog_ptr, &particles, &tol, &is_valid](
+                                       const int thread_num,
+                                       const int64_t index) {
+    unused(thread_num);
+    is_valid[index] = static_cast<uint8_t>(
+        CheckProgConstraints(prog_ptr, particles[index], tol));
+  };
+
+  DynamicParallelForIndexLoop(DegreeOfParallelism(parallelism.num_threads()), 0,
+                              actual_end_index, check_particle_work,
+                              ParallelForBackend::BEST_AVAILABLE);
+  return is_valid;
 }
 
 void PopulateParticlesByUniformSampling(
