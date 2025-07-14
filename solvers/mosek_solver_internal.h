@@ -20,10 +20,10 @@ namespace drake {
 namespace solvers {
 namespace internal {
 // Mosek treats psd matrix variables in a special manner.
-// Check https://docs.mosek.com/10.1/capi/tutorial-sdo-shared.html for more
+// Check https://docs.mosek.com/11.0/capi/tutorial-sdo-shared.html for more
 // details. To summarize, Mosek stores a positive semidefinite (psd) matrix
 // variable as a "bar var" (as called in Mosek's API, for example
-// https://docs.mosek.com/10.1/capi/tutorial-sdo-shared.html). Inside Mosek, it
+// https://docs.mosek.com/11.0/capi/tutorial-sdo-shared.html). Inside Mosek, it
 // accesses each of the psd matrix variable with a unique ID. Moreover, the
 // Mosek user cannot access the entries of the psd matrix variable individually;
 // instead, the user can only access the matrix X̅ as a whole. To impose
@@ -79,7 +79,7 @@ class MatrixVariableEntry {
 
 // Mosek stores dual variable in different categories, called slc, suc, slx, sux
 // and snx. Refer to
-// https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getsolution
+// https://docs.mosek.com/11.0/capi/alphabetic-functionalities.html#mosek.task.getsolution
 // for more information.
 enum class DualVarType {
   kLinearConstraint,  ///< Corresponds to Mosek's slc and suc.
@@ -177,9 +177,9 @@ class MosekSolverProgram {
   // expression format
   // ∑ⱼ fᵢⱼ xⱼ + ∑ⱼ<F̅ᵢⱼ, X̅ⱼ>
   // Please refer to
-  // https://docs.mosek.com/latest/capi/tutorial-acc-optimizer.html for an
+  // https://docs.mosek.com/11.0/capi/tutorial-acc-optimizer.html for an
   // introduction on Mosek affine expression, and
-  // https://docs.mosek.com/latest/capi/tutorial-sdo-shared.html for the affine
+  // https://docs.mosek.com/11.0/capi/tutorial-sdo-shared.html for the affine
   // expression with matrix variables.
   // F̅ᵢⱼ is a weighted sum of the symmetric matrix E stored inside Mosek.
   // bar_F[i][j] stores the indices of E and the weights of E.
@@ -538,13 +538,13 @@ MSKrescodee MosekSolverProgram::AddConeConstraints(
 }
 
 // @param slx Mosek dual variables for variable lower bound. See
-// https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getslx
+// https://docs.mosek.com/11.0/capi/alphabetic-functionalities.html#mosek.task.getslx
 // @param sux Mosek dual variables for variable upper bound. See
-// https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getsux
+// https://docs.mosek.com/11.0/capi/alphabetic-functionalities.html#mosek.task.getsux
 // @param slc Mosek dual variables for linear constraint lower bound. See
-// https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getslc
+// https://docs.mosek.com/11.0/capi/alphabetic-functionalities.html#mosek.task.getslc
 // @param suc Mosek dual variables for linear constraint upper bound. See
-// https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getsuc
+// https://docs.mosek.com/11.0/capi/alphabetic-functionalities.html#mosek.task.getsuc
 void SetVariableBoundsDualSolution(
     const std::vector<Binding<BoundingBoxConstraint>>& bb_constraints,
     const std::vector<Binding<PositiveSemidefiniteConstraint>>& psd_constraints,
@@ -589,10 +589,10 @@ void SetLinearConstraintDualSolution(
 
 // @param slc Mosek dual variables for linear and quadratic constraint lower
 // bound. See
-// https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getslc
+// https://docs.mosek.com/11.0/capi/alphabetic-functionalities.html#mosek.task.getslc
 // @param suc Mosek dual variables for linear and quadratic constraint upper
 // bound. See
-// https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getsuc
+// https://docs.mosek.com/11.0/capi/alphabetic-functionalities.html#mosek.task.getsuc
 void SetQuadraticConstraintDualSolution(
     const std::vector<Binding<QuadraticConstraint>>& constraints,
     const std::vector<MSKrealt>& slc, const std::vector<MSKrealt>& suc,
@@ -605,7 +605,7 @@ void SetQuadraticConstraintDualSolution(
  * @param bindings The constraint for which the dual solution will be set.
  * @param task The Mosek task.
  * @param whichsol The solution type. See
- * https://docs.mosek.com/latest/capi/constants.html#mosek.soltype
+ * https://docs.mosek.com/11.0/capi/constants.html#mosek.soltype
  * @param acc_indices Maps each constraint to the affine cone constraint
  * indices.
  * @param[out] result The dual solution in `result` will be set.
