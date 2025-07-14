@@ -13,7 +13,11 @@ cc_library(
     name = "ittapi",
     hdrs = ["sdk/include/ittnotify.h"],
     includes = ["sdk/include"],
-    linkopts = ["-L/opt/intel/oneapi/vtune/latest/lib64", "-littnotify"],
+    linkopts = [
+        "-L/opt/intel/oneapi/vtune/latest/lib64",
+        "-littnotify",
+    ],
+    tags = ["nolint"],
     visibility = ["//visibility:public"],
 )
 

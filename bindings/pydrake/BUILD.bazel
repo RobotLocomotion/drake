@@ -62,7 +62,7 @@ generate_pybind_documentation_header(
         "drake/multibody/contact_solvers/pooled_sap/patch_constraints_pool.h",
         "drake/multibody/contact_solvers/pooled_sap/gain_constraints_pool.h",
         "drake/multibody/contact_solvers/pooled_sap/limit_constraints_pool.h",
-        "drake/multibody/contact_solvers/pooled_sap/coupler_constraints_pool.h",
+        "drake/multibody/contact_solvers/pooled_sap/coupler_constraints_pool.h",  # noqa: E501
     ],
     root_name = "pydrake_doc",
     targets = [

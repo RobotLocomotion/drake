@@ -7,9 +7,9 @@
 #include <string>
 #include <utility>
 
-#include <valgrind/callgrind.h>
 #include <gflags/gflags.h>
 #include <ittnotify.h>
+#include <valgrind/callgrind.h>
 
 #include "drake/common/nice_type_name.h"
 #include "drake/common/temp_directory.h"
@@ -642,9 +642,9 @@ int do_main() {
 
   __itt_resume();  // Start VTune collection
   CALLGRIND_START_INSTRUMENTATION;
-  //CALLGRIND_TOGGLE_COLLECT;  // Start collection  
+  // CALLGRIND_TOGGLE_COLLECT;  // Start collection
   simulator->AdvanceTo(FLAGS_simulation_time);
-  //CALLGRIND_TOGGLE_COLLECT;  // Stop collection
+  // CALLGRIND_TOGGLE_COLLECT;  // Stop collection
   CALLGRIND_STOP_INSTRUMENTATION;
   __itt_pause();  // Stop collection again
 
