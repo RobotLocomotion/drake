@@ -144,7 +144,7 @@ bool ConvexIntegrator<T>::StepWithHalfSteppingErrorEstimate(const T& h) {
     // initial guess
     v_guess += x_next_full_->get_generalized_velocity().CopyToVector();
     v_guess /= 2.0;
-    ComputeNextContinuousState(0.5 * h, v_guess, x_next_half_1_.get());
+    ComputeNextContinuousState(0.5 * h, v_guess, x_next_half_1_.get(), true);
 
     // For the second half-step to (t + h), we need to start from (t + h/2). So
     // we'll first set the system state to the result of the first half-step.
@@ -154,7 +154,7 @@ bool ConvexIntegrator<T>::StepWithHalfSteppingErrorEstimate(const T& h) {
     // Now we can take the second half-step. We'll use the solution of the full
     // step as our initial guess here.
     v_guess = x_next_full_->get_generalized_velocity().CopyToVector();
-    ComputeNextContinuousState(0.5 * h, v_guess, x_next_half_2_.get());
+    ComputeNextContinuousState(0.5 * h, v_guess, x_next_half_2_.get(), true);
 
     // Set the state to the result of the second half-step (since this is more
     // accurate than the full step, and we have it anyway).
@@ -294,8 +294,10 @@ bool ConvexIntegrator<T>::StepWithImplicitTrapezoidErrorEstimate(const T& h) {
 }
 
 template <typename T>
-void ConvexIntegrator<T>::ComputeNextContinuousState(
-    const T& h, const VectorX<T>& v_guess, ContinuousState<T>* x_next) {
+void ConvexIntegrator<T>::ComputeNextContinuousState(const T& h,
+                                                     const VectorX<T>& v_guess,
+                                                     ContinuousState<T>* x_next,
+                                                     bool partial_update) {
   // Get plant context storing initial state [q₀, v₀].
   const Context<T>& context = this->get_context();
   const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
@@ -304,10 +306,10 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
   PooledSapModel<T>& model = get_model();
   builder().UpdateModel(plant_context, h, &model);
 
-  // Linearize any external systems (e.g., controllers) connected to the plant,
+  // Linearize any external systems (e.g., controllers),
   //     τ = B u(x) + τₑₓₜ(x),
   //       ≈ clamp(-Kᵤ v + bᵤ) - Kₑ v + bₑ,
-  // and add constraints accordingly.
+  // TODO(vincekurtz): consider moving this to PooledSapBuilder.
   bool has_actuators = plant().num_actuators() > 0;
   bool has_external_forces =
       plant().get_applied_generalized_force_input_port().HasValue(
@@ -319,8 +321,12 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
     VectorX<T>& bu = scratch_.bu;
     VectorX<T>& Ke = scratch_.Ke;
     VectorX<T>& be = scratch_.be;
-    LinearizeExternalSystem(h, &Ku, &bu, &Ke, &be);
 
+    if (!partial_update) {
+      // If we're doing a partial update, we'll reuse the linearization from the
+      // previous solve.
+      LinearizeExternalSystem(h, &Ku, &bu, &Ke, &be);
+    }
     if (has_actuators) {
       // τ = clamp(-Kᵤ v + bᵤ)
       builder().AddActuationGains(Ku, bu, &model);
