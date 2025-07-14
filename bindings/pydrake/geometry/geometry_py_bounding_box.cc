@@ -3,6 +3,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/geometry/proximity/aabb.h"
+#include "drake/geometry/proximity/calc_obb.h"
 #include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
@@ -138,6 +139,8 @@ void DefineGeometryBoundingBox(py::module m) {
       py::arg("mesh_M"), py::arg("vertices"),
       "Computes an oriented bounding box for the specified vertices of a "
       "VolumeMesh.");
+
+  m.def("CalcObb", &CalcObb, py::arg("shape"), doc.CalcObb.doc);
 }
 
 }  // namespace pydrake
