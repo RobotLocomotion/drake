@@ -916,7 +916,7 @@ class MathematicalProgram {
   /**
    * Adds a generic cost to the optimization program.
    *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
+   * @pydrake_mkdoc_identifier{1args_binding_cost}
    */
   Binding<Cost> AddCost(const Binding<Cost>& binding);
 
@@ -1712,6 +1712,29 @@ class MathematicalProgram {
    */
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const symbolic::Formula& f);
+
+  /**
+   * Adds a linear equality constraint represented by an
+   * Eigen::Array<symbolic::Formula> to the program. A common use-case of this
+   * function is to add a linear constraint with the element-wise comparison
+   * between two Eigen matrices, using `A.array() == B.array()`. See the
+   * following example.
+   *
+   * @code
+   *   MathematicalProgram prog;
+   *   Eigen::Matrix<double, 2, 2> A;
+   *   auto x = prog.NewContinuousVariables(2, "x");
+   *   Eigen::Vector2d b;
+   *   ... // set up A and b
+   *   prog.AddLinearConstraint((A * x).array() == b.array());
+   * @endcode
+   *
+   * It throws an exception if AddLinearConstraint(const symbolic::Formula& f)
+   * throws an exception for f ∈ `formulas`.
+   * @tparam Derived An Eigen Array type of Formula. */
+  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const Eigen::Ref<const Eigen::Array<symbolic::Formula, Eigen::Dynamic,
+                                          Eigen::Dynamic>>& formulas);
 
   /**
    * Adds linear equality constraints \f$ v = b \f$, where \p v(i) is a symbolic

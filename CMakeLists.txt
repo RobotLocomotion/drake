@@ -295,6 +295,19 @@ if(NOT APPLE)
     " --repo_env=CC=${CMAKE_C_COMPILER}"
     " --repo_env=CXX=${CMAKE_CXX_COMPILER}"
   )
+  # Pass a Bazel flag which enforces the underlying compiler so that
+  # compiler- and version-specific logic (e.g., warnings) is enforced in the
+  # build, since rules_cc's support for compiler identification is not as
+  # robust as using CMake's CMAKE_<LANG>_COMPILER_ID.
+  if(CMAKE_C_COMPILER_ID STREQUAL Clang)
+    string(APPEND BAZEL_REPO_ENV
+      " --@drake//tools/cc_toolchain:compiler=clang"
+    )
+  elseif(CMAKE_C_COMPILER_ID STREQUAL GNU)
+    string(APPEND BAZEL_REPO_ENV
+      " --@drake//tools/cc_toolchain:compiler=gcc"
+    )
+  endif()
 endif()
 
 get_filename_component(PROJECT_BINARY_DIR_REALPATH

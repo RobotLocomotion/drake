@@ -1,3 +1,7 @@
+# Use C++23 on Noble.
+build --cxxopt=-std=c++23
+build --host_cxxopt=-std=c++23
+
 # Options for explicitly using Clang.
 # Keep this in sync with doc/_pages/from_source.md.
 common:clang --repo_env=CC=clang-19
