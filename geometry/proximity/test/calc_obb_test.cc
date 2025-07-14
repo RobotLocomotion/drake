@@ -30,7 +30,7 @@ GTEST_TEST(CalcObbFromShapeTest, Capsule) {
   ASSERT_TRUE(obb.has_value());
   EXPECT_TRUE(obb->pose().IsExactlyIdentity());
   EXPECT_TRUE(
-      CompareMatrices(obb->half_width(), Vector3d(0.5, 1.0, 1.2), kTol));
+      CompareMatrices(obb->half_width(), Vector3d(1.0, 1.0, 2.2), kTol));
 }
 
 GTEST_TEST(CalcObbFromShapeTest, Cylinder) {
@@ -76,8 +76,7 @@ GTEST_TEST(CalcObbFromShapeTest, MeshcatCone) {
       CompareMatrices(obb->pose().translation(), Vector3d(0, 0, 2.0), kTol));
   EXPECT_TRUE(CompareMatrices(obb->pose().rotation().matrix(),
                               Matrix3<double>::Identity(), kTol));
-  EXPECT_TRUE(
-      CompareMatrices(obb->half_width(), Vector3d(2, 3, 2), kTol));
+  EXPECT_TRUE(CompareMatrices(obb->half_width(), Vector3d(2, 3, 2), kTol));
 }
 
 GTEST_TEST(CalcObbFromShapeTest, Mesh) {

@@ -9,8 +9,8 @@ namespace drake {
 namespace geometry {
 
 /** Calculates the oriented bounding box (OBB) for the Shape in its canonical
- frame. If a shape does not support OBB computation, this function returns
- `std::nullopt`. Currently, the only unsupported geometry type is HalfSpace.
+ frame. Returns `std::nullopt` if the Shape is HalfSpace which doesn't have a
+ bounding box.
 
  @throws std::exception if a referenced file cannot be opened. */
 std::optional<Obb> CalcObb(const Shape& shape);

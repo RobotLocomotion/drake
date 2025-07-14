@@ -434,12 +434,13 @@ class SceneGraphInspector {
    `geometry_id` in the geometry's frame, G. The OBB is defined in the
    geometry's canonical frame such that it tightly bounds the geometry. For
    primitive shapes, the OBB is computed analytically. For mesh-based shapes
-   (Mesh and Convex), the OBB is computed using the mesh vertices. For
-   deformable geometries, the OBB is computed using the reference mesh.
+   (Mesh and Convex), the OBB is computed using the mesh vertices.
    @param geometry_id   The identifier for the queried geometry.
-   @return The oriented bounding box (or `std::nullopt` if the
-           geometry type doesn't support OBB computation). See
-           CalcObb() for the list of unsupported geometries.
+   @note If geometry_id refers to a deformable geometry, the OBB is computed
+         using the reference mesh. See QueryObject::ComputeObbInWorld() for
+         computing the OBB of the deformed mesh in the world frame.
+   @return The oriented bounding box (or `std::nullopt` if the geometry is an
+           HalfSpace and doesn't have a bounding box).
    @throws std::exception if `geometry_id` does not map to a registered
            geometry.  */
   const std::optional<Obb>& GetObbInGeometryFrame(GeometryId geometry_id) const;

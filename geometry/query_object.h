@@ -203,8 +203,11 @@ class QueryObject {
 
   /** Reports the oriented bounding box of the geometry indicated by
    `geometry_id` in the world frame. Returns std::nullopt if the geometry is
-   not supported for this query. See CalcObb() for the list of unsupported
-   geometry types.
+   an HalfSpace (and doesn't have a bounding box).
+   @note If geometry_id refers to a deformable geometry, the OBB is computed
+   using the deformed mesh in the world frame. See
+   SceneGraphInspector::GetObbInGeometryFrame() for computing the OBB of the
+   reference mesh in its geometry frame.
    @throws std::exception if the `geometry_id` is not valid. */
   std::optional<Obb> ComputeObbInWorld(GeometryId geometry_id) const;
 
