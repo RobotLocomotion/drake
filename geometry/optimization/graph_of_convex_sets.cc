@@ -638,16 +638,13 @@ void GraphOfConvexSets::RemoveVertex(Vertex* vertex) {
   DRAKE_THROW_UNLESS(vertex != nullptr);
   VertexId vertex_id = vertex->id();
   DRAKE_THROW_UNLESS(vertices_.contains(vertex_id));
-  for (auto it = edges_.begin(); it != edges_.end();) {
-    if (it->second->u().id() == vertex_id) {
-      it->second->v().RemoveIncomingEdge(it->second.get());
-      it = edges_.erase(it);
-    } else if (it->second->v().id() == vertex_id) {
-      it->second->u().RemoveOutgoingEdge(it->second.get());
-      it = edges_.erase(it);
-    } else {
-      ++it;
-    }
+  for (const auto uv : vertex->incoming_edges_) {
+    uv->u().RemoveOutgoingEdge(uv);
+    edges_.erase(uv->id());
+  }
+  for (const auto vw : vertex->outgoing_edges_) {
+    vw->v().RemoveIncomingEdge(vw);
+    edges_.erase(vw->id());
   }
   vertices_.erase(vertex_id);
 }
@@ -788,8 +785,8 @@ std::string GraphOfConvexSets::GetGraphvizString(
         graphviz << "\"";
         // Note: This must be last, because it also sets the color parameter
         // of the edge (and hence must close the name within quote-marks)
-        graphviz << ", color="
-                 << "\"#000000" << floatToHex(result->GetSolution(e->phi()));
+        graphviz << ", color=" << "\"#000000"
+                 << floatToHex(result->GetSolution(e->phi()));
       }
     }
     graphviz << "\"];\n";
