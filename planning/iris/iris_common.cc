@@ -105,8 +105,7 @@ void AddTangentToPolytope(
         "sampled_iris_options.configuration_space_margin of being "
         "infeasible.  Check your sample point and/or any additional "
         "constraints you've passed in via the options. The configuration "
-        "space "
-        "surrounding the sample point must have an interior.");
+        "space surrounding the sample point must have an interior.");
   }
   *num_constraints += 1;
 }
@@ -130,7 +129,7 @@ std::vector<uint8_t> CheckProgConstraintsParallel(
     const std::vector<Eigen::VectorXd>& particles,
     const Parallelism& parallelism, const double tol,
     std::optional<int> end_index) {
-  int actual_end_index = end_index.value_or(ssize(particles));
+  const int actual_end_index = end_index.value_or(ssize(particles));
   DRAKE_DEMAND(actual_end_index >= 0 && actual_end_index <= ssize(particles));
   std::vector<uint8_t> is_valid(actual_end_index, 1);
   if (!prog_ptr) {
