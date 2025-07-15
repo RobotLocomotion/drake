@@ -666,8 +666,16 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
               options.sampled_iris_options.prog_with_additional_constraints !=
               nullptr);
 
-          // Find the constraint in prog_with_additional_constraints that is
-          // violated.
+          // Find a constraint in prog_with_additional_constraints that is
+          // violated. If more than one constraint is violated, we still only
+          // pick one to find counterexamples for. (If we required the
+          // counterexample to violate multiple constraints, it might be further
+          // from the center, requiring us to solve more programs.)
+
+          // TODO(cohnt): Consider allowing other strategies for picking which
+          // violated constraint we find counterexamples for if multiple
+          // constraints are violated. (For example, choose randomly, or pick
+          // whichever constraint has the highest magnitude violation.)
           bool found_violated_constraint = false;
           for (const auto& binding : additional_constraint_bindings) {
             VectorXd value;
