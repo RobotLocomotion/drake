@@ -224,14 +224,20 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   }
 
   model->ResetParameters(std::move(params));
+  model->set_stiction_tolerance(plant().stiction_tolerance());
+
+  // Add contact constraints. We'll need to clear the patch constraints pool
+  // here to avoid conflicting hydro and point contact constraints.
+  model->patch_constraints_pool().Clear();
   CalcGeometryContactData(context);
   AddPatchConstraintsForHydroelasticContact(context, model);
   AddPatchConstraintsForPointContact(context, model);
+
+  // Add other constraints to the problem
   AddCouplerConstraints(context, model);
   AddLimitConstraints(context, model);
-  model->SetSparsityPattern();
 
-  model->set_stiction_tolerance(plant().stiction_tolerance());
+  model->SetSparsityPattern();
 }
 
 template <typename T>
@@ -379,7 +385,6 @@ void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
 
   typename PooledSapModel<T>::PatchConstraintsPool& patches =
       model->patch_constraints_pool();
-  patches.Clear();
 
   // Fill in the point contact pairs.
   for (int point_pair_index = 0; point_pair_index < num_point_contacts;
@@ -470,7 +475,6 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
 
   typename PooledSapModel<T>::PatchConstraintsPool& patches =
       model->patch_constraints_pool();
-  patches.Clear();
 
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
     const auto& s = surfaces[surface_index];
