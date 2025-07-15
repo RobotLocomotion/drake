@@ -28,13 +28,14 @@ namespace schunk_wsg {
 /// Describes the row indices of a SchunkWsgTrajectoryGeneratorStateVector.
 struct SchunkWsgTrajectoryGeneratorStateVectorIndices {
   /// The total number of rows (coordinates).
-  static const int kNumCoordinates = 4;
+  static const int kNumCoordinates = 5;
 
   // The index of each individual coordinate.
   static const int kLastTargetPosition = 0;
   static const int kTrajectoryStartTime = 1;
   static const int kLastPosition = 2;
   static const int kMaxForce = 3;
+  static const int kForcedUpdateTraj= 4;
 
   /// Returns a vector containing the names of each coordinate within this
   /// class. The indices within the returned vector matches that of this class.
@@ -57,12 +58,14 @@ class SchunkWsgTrajectoryGeneratorStateVector final
   /// @arg @c trajectory_start_time defaults to 0.0 with unknown units.
   /// @arg @c last_position defaults to 0.0 with unknown units.
   /// @arg @c max_force defaults to 0.0 with unknown units.
+  /// @arg @c forced_update_traj defaults to 1.0
   SchunkWsgTrajectoryGeneratorStateVector()
       : drake::systems::BasicVector<T>(K::kNumCoordinates) {
     this->set_last_target_position(0.0);
     this->set_trajectory_start_time(0.0);
-    this->set_last_position(0.0);
+    this->set_last_position(0);
     this->set_max_force(0.0);
+    this->set_forced_update_traj(1.0);
   }
 
   // Note: It's safe to implement copy and move because this class is final.
@@ -99,6 +102,7 @@ class SchunkWsgTrajectoryGeneratorStateVector final
         symbolic::Variable("trajectory_start_time"));
     this->set_last_position(symbolic::Variable("last_position"));
     this->set_max_force(symbolic::Variable("max_force"));
+    this->set_forced_update_traj(symbolic::Variable("update_traj"));
   }
 
   [[nodiscard]] SchunkWsgTrajectoryGeneratorStateVector<T>* DoClone()
@@ -180,6 +184,24 @@ class SchunkWsgTrajectoryGeneratorStateVector final
     result.set_max_force(max_force);
     return result;
   }
+  /// forced_update_traj
+  const T& forced_update_traj() const {
+    ThrowIfEmpty();
+    return this->GetAtIndex(K::kForcedUpdateTraj);
+  }
+  /// Setter that matches forced_update_traj().
+  void set_forced_update_traj(const T& forced_update_traj) {
+    ThrowIfEmpty();
+    this->SetAtIndex(K::kForcedUpdateTraj, forced_update_traj);
+  }
+  /// Fluent setter that matches forced_update_traj().
+  /// Returns a copy of `this` with forced_update_traj set to a new value.
+  [[nodiscard]] SchunkWsgTrajectoryGeneratorStateVector<T> with_forced_update_traj(
+      const T& forced_update_traj) const {
+    SchunkWsgTrajectoryGeneratorStateVector<T> result(*this);
+    result.set_forced_update_traj(forced_update_traj);
+    return result;
+  }
   //@}
 
   /// Visit each field of this named vector, passing them (in order) to the
@@ -197,6 +219,8 @@ class SchunkWsgTrajectoryGeneratorStateVector final
     a->Visit(drake::MakeNameValue("last_position", &last_position_ref));
     T& max_force_ref = this->GetAtIndex(K::kMaxForce);
     a->Visit(drake::MakeNameValue("max_force", &max_force_ref));
+    T& forced_update_traj_ref = this->GetAtIndex(K::kForcedUpdateTraj);
+    a->Visit(drake::MakeNameValue("forced_update_traj", &forced_update_traj_ref));
   }
 
   /// See SchunkWsgTrajectoryGeneratorStateVectorIndices::GetCoordinateNames().
@@ -212,6 +236,7 @@ class SchunkWsgTrajectoryGeneratorStateVector final
     result = result && !isnan(trajectory_start_time());
     result = result && !isnan(last_position());
     result = result && !isnan(max_force());
+    result = result && !isnan(forced_update_traj());
     return result;
   }
 
