@@ -588,7 +588,9 @@ std::optional<ProximityProperties> MakeProximityPropertiesForCollision(
         "drake:relaxation_time",
         "drake:point_contact_stiffness",
         "drake:mu_dynamic",
-        "drake:mu_static"};
+        "drake:mu_static",
+        "drake:surface_speed",
+        "drake:surface_speed_direction"};
     // clang-format on
     CheckSupportedElements(diagnostic, drake_element,
                            supported_proximity_elements);

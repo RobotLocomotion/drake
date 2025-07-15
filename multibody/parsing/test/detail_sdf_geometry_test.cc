@@ -1480,6 +1480,7 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     <drake:relaxation_time>3.1</drake:relaxation_time>
     <drake:mu_dynamic>4.25</drake:mu_dynamic>
     <drake:mu_static>4.75</drake:mu_static>
+    <drake:surface_speed>1.0</drake:surface_speed>
   </drake:proximity_properties>)""");
     std::optional<ProximityProperties> properties =
         MakeProximityPropertiesForCollision(sdf_diagnostic_, *sdf_collision);
