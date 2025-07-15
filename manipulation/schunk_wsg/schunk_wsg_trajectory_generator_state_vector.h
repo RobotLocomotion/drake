@@ -59,9 +59,10 @@ class SchunkWsgTrajectoryGeneratorStateVector final
   /// @arg @c max_force defaults to 0.0 with unknown units.
   SchunkWsgTrajectoryGeneratorStateVector()
       : drake::systems::BasicVector<T>(K::kNumCoordinates) {
+    const double kInf = std::numeric_limits<double>::infinity();
     this->set_last_target_position(0.0);
     this->set_trajectory_start_time(0.0);
-    this->set_last_position(0.0);
+    this->set_last_position(kInf);
     this->set_max_force(0.0);
   }
 
@@ -212,6 +213,17 @@ class SchunkWsgTrajectoryGeneratorStateVector final
     result = result && !isnan(trajectory_start_time());
     result = result && !isnan(last_position());
     result = result && !isnan(max_force());
+    return result;
+  }
+
+  /// Returns true if this basic vector holds the dame value as a freshly
+  /// constructed object.
+  bool SameAsInitialized() const {
+    bool result = true;
+    result = result && this->last_target_position() == 0.0;
+    result = result && this->trajectory_start_time() == 0.0;
+    result = result && std::isinf(this->last_position());
+    result = result && this->max_force() == 0;
     return result;
   }
 
