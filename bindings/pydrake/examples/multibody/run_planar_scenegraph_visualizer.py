@@ -8,7 +8,6 @@ import argparse
 import numpy as np
 
 from pydrake.common import temp_directory
-from pydrake.examples import ManipulationStation
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.analysis import Simulator
@@ -52,52 +51,6 @@ def run_pendulum_example(args):
         ani = visualizer.get_recording_as_animation()
         # Playback the recording and save the output.
         ani.save("{}/pend_playback.mp4".format(temp_directory()), fps=30)
-
-
-def run_manipulation_example(args):
-    builder = DiagramBuilder()
-    station = builder.AddSystem(ManipulationStation(time_step=0.005))
-    station.SetupManipulationClassStation()
-    station.Finalize()
-
-    plant = station.get_multibody_plant()
-    scene_graph = station.get_scene_graph()
-    query_object_output_port = station.GetOutputPort("geometry_query")
-
-    # Side-on view of the station.
-    T_VW = np.array([[1., 0., 0., 0.],
-                     [0., 0., 1., 0.],
-                     [0., 0., 0., 1.]])
-    visualizer = ConnectPlanarSceneGraphVisualizer(
-        builder, scene_graph, query_object_output_port, T_VW=T_VW,
-        xlim=[-0.5, 1.0], ylim=[-1.2, 1.2], draw_period=0.1)
-
-    if args.playback:
-        visualizer.start_recording()
-
-    diagram = builder.Build()
-    simulator = Simulator(diagram)
-    simulator.Initialize()
-    simulator.set_target_realtime_rate(1.0)
-
-    # Fix the control inputs to zero.
-    station_context = diagram.GetMutableSubsystemContext(
-        station, simulator.get_mutable_context())
-    station.GetInputPort("iiwa_position").FixValue(
-        station_context, station.GetIiwaPosition(station_context))
-    station.GetInputPort("iiwa_feedforward_torque").FixValue(
-        station_context, np.zeros(7))
-    station.GetInputPort("wsg_position").FixValue(
-        station_context, np.zeros(1))
-    station.GetInputPort("wsg_force_limit").FixValue(
-        station_context, [40.0])
-    simulator.AdvanceTo(args.duration)
-
-    if args.playback:
-        visualizer.stop_recording()
-        ani = visualizer.get_recording_as_animation()
-        # Playback the recording and save the output.
-        ani.save("{}/manip_playback.mp4".format(temp_directory()), fps=30)
 
 
 def main():

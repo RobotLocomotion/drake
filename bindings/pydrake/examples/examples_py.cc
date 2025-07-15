@@ -20,14 +20,10 @@ Python examples.
   // These are in alphabetical order; the modules do not depend on each other.
   internal::DefineExamplesAcrobot(m);
   internal::DefineExamplesCompassGait(m);
-  internal::DefineExamplesManipulationStation(m);
   internal::DefineExamplesPendulum(m);
   internal::DefineExamplesQuadrotor(m);
   internal::DefineExamplesRimlessWheel(m);
   internal::DefineExamplesVanDerPol(m);
-
-  const bool use_subdir = true;
-  ExecuteExtraPythonCode(m, use_subdir);
 }
 
 }  // namespace pydrake

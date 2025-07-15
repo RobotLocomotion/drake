@@ -496,6 +496,7 @@ drake_py_unittest(
     timeout = "moderate",
     data = [
         ":models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":benchmarks_py",
