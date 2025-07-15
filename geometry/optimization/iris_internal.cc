@@ -138,10 +138,110 @@ void PointsBoundedDistanceConstraint::DoEval(
   *y = Vector1<symbolic::Expression>(displacement.squaredNorm());
 }
 
+ParameterizedSamePointConstraint::ParameterizedSamePointConstraint(
+    const multibody::MultibodyPlant<double>* plant,
+    const systems::Context<double>& context,
+    const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+        parameterization_double,
+    const std::function<AutoDiffVecXd(const AutoDiffVecXd&)>&
+        parameterization_autodiff,
+    int parameterization_dimension)
+    : Constraint(3, parameterization_dimension + 6, Eigen::Vector3d::Zero(),
+                 Eigen::Vector3d::Zero()),
+      same_point_constraint_(plant, context),
+      parameterization_double_(parameterization_double),
+      parameterization_autodiff_(parameterization_autodiff),
+      parameterization_dimension_(parameterization_dimension) {}
+
+ParameterizedSamePointConstraint::~ParameterizedSamePointConstraint() = default;
+
+template <typename T>
+void ParameterizedSamePointConstraint::DoEvalGeneric(
+    const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y,
+    const std::function<VectorX<T>(const VectorX<T>&)>& parameterization)
+    const {
+  const VectorX<T> q_latent = x.head(parameterization_dimension_);
+  const VectorX<T> q_full = parameterization(q_latent);
+  VectorX<T> x_full(same_point_constraint_.num_vars());
+  x_full << q_full, x.template tail<6>();
+  same_point_constraint_.Eval(x_full, y);
+}
+
+void ParameterizedSamePointConstraint::DoEval(
+    const Eigen::Ref<const VectorXd>& x, VectorXd* y) const {
+  DoEvalGeneric<double>(x, y, parameterization_double_);
+}
+
+void ParameterizedSamePointConstraint::DoEval(
+    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
+  DoEvalGeneric<AutoDiffXd>(x, y, parameterization_autodiff_);
+}
+
+void ParameterizedSamePointConstraint::DoEval(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+    VectorX<symbolic::Expression>*) const {
+  // TODO(cohnt): Consider supporting symbolic evaluation. This would require
+  // modifying IrisParameterizationFunction.
+  throw std::runtime_error(
+      "ParameterizedSamePointConstraint does not support symbolic evaluation.");
+}
+
+ParameterizedPointsBoundedDistanceConstraint::
+    ParameterizedPointsBoundedDistanceConstraint(
+        const multibody::MultibodyPlant<double>* plant,
+        const systems::Context<double>& context, const double max_distance,
+        const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+            parameterization_double,
+        const std::function<AutoDiffVecXd(const AutoDiffVecXd&)>&
+            parameterization_autodiff,
+        int parameterization_dimension)
+    : Constraint(1, parameterization_dimension + 6, Vector1d::Zero(),
+                 Vector1d(max_distance)),
+      // Note that the bound we set for the member
+      // points_bounded_distance_constraint_ doesn't matter, since we only ever
+      // evaluate the constraint -- not its bounds.
+      points_bounded_distance_constraint_(plant, context, 0),
+      parameterization_double_(parameterization_double),
+      parameterization_autodiff_(parameterization_autodiff),
+      parameterization_dimension_(parameterization_dimension) {}
+
+ParameterizedPointsBoundedDistanceConstraint::
+    ~ParameterizedPointsBoundedDistanceConstraint() = default;
+
+template <typename T>
+void ParameterizedPointsBoundedDistanceConstraint::DoEvalGeneric(
+    const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y,
+    const std::function<VectorX<T>(const VectorX<T>&)>& parameterization)
+    const {
+  const VectorX<T> q_latent = x.head(parameterization_dimension_);
+  const VectorX<T> q_full = parameterization(q_latent);
+  VectorX<T> x_full(points_bounded_distance_constraint_.num_vars());
+  x_full << q_full, x.template tail<6>();
+  points_bounded_distance_constraint_.Eval(x_full, y);
+}
+
+void ParameterizedPointsBoundedDistanceConstraint::DoEval(
+    const Eigen::Ref<const VectorXd>& x, VectorXd* y) const {
+  DoEvalGeneric<double>(x, y, parameterization_double_);
+}
+
+void ParameterizedPointsBoundedDistanceConstraint::DoEval(
+    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
+  DoEvalGeneric<AutoDiffXd>(x, y, parameterization_autodiff_);
+}
+
+void ParameterizedPointsBoundedDistanceConstraint::DoEval(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+    VectorX<symbolic::Expression>*) const {
+  // TODO(cohnt): Consider supporting symbolic evaluation. This would require
+  // modifying IrisParameterizationFunction.
+  throw std::runtime_error(
+      "ParameterizedPointsBoundedDistanceConstraint does not support symbolic "
+      "evaluation.");
+}
+
 ClosestCollisionProgram::ClosestCollisionProgram(
-    std::variant<std::shared_ptr<SamePointConstraint>,
-                 std::shared_ptr<PointsBoundedDistanceConstraint>>
-        same_point_constraint,
+    AcceptableConstraint same_point_constraint,
     const multibody::Frame<double>& frameA,
     const multibody::Frame<double>& frameB, const ConvexSet& setA,
     const ConvexSet& setB, const Hyperellipsoid& E,

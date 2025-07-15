@@ -24,8 +24,7 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 namespace internal {
-/* Takes q, p_AA, and p_BB and enforces that p_WA == p_WB.
- */
+// Takes q, p_AA, and p_BB and enforces that p_WA(q) == p_WB(q).
 class SamePointConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SamePointConstraint);
@@ -62,8 +61,8 @@ class SamePointConstraint : public solvers::Constraint {
       nullptr};
 };
 
-// Takes q, p_AA, and p_BB, and enforces that ||p_WA - p_WB||² <= d², where d is
-// a user-defined maximum distance.
+// Takes q, p_AA, and p_BB, and enforces that ||p_WA(q) - p_WB(q)||² <= d²,
+// where d is a user-defined maximum distance.
 class PointsBoundedDistanceConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointsBoundedDistanceConstraint);
@@ -101,6 +100,108 @@ class PointsBoundedDistanceConstraint : public solvers::Constraint {
   geometry::optimization::internal::SamePointConstraint same_point_constraint_;
 };
 
+// Takes q, p_AA, and p_BB and enforces that p_WA(f(q)) == p_WB(f(q)), where f
+// is a user-defined parameterization function.
+class ParameterizedSamePointConstraint : public solvers::Constraint {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ParameterizedSamePointConstraint);
+
+  ParameterizedSamePointConstraint(
+      const multibody::MultibodyPlant<double>* plant,
+      const systems::Context<double>& context,
+      const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+          parameterization_double,
+      const std::function<AutoDiffVecXd(const AutoDiffVecXd&)>&
+          parameterization_autodiff,
+      int parameterization_dimension);
+
+  ~ParameterizedSamePointConstraint() override;
+
+  void set_frameA(const multibody::Frame<double>* frame) {
+    same_point_constraint_.set_frameA(frame);
+  }
+
+  void set_frameB(const multibody::Frame<double>* frame) {
+    same_point_constraint_.set_frameB(frame);
+  }
+
+ private:
+  template <typename T>
+  void DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y,
+                     const std::function<VectorX<T>(const VectorX<T>&)>&
+                         parameterization) const;
+
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override;
+
+  SamePointConstraint same_point_constraint_;
+  const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+      parameterization_double_;
+  const std::function<AutoDiffVecXd(const AutoDiffVecXd&)>&
+      parameterization_autodiff_;
+  int parameterization_dimension_;
+};
+
+// Takes q, p_AA, and p_BB, and enforces that ||p_WA(f(q)) - p_WB(f(q))||² <=
+// d², where d is a user-defined maximum distance and f is a user-defined
+// parameterization function.
+class ParameterizedPointsBoundedDistanceConstraint
+    : public solvers::Constraint {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ParameterizedPointsBoundedDistanceConstraint);
+
+  ParameterizedPointsBoundedDistanceConstraint(
+      const multibody::MultibodyPlant<double>* plant,
+      const systems::Context<double>& context, const double max_distance,
+      const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+          parameterization_double,
+      const std::function<AutoDiffVecXd(const AutoDiffVecXd&)>&
+          parameterization_autodiff,
+      int parameterization_dimension);
+
+  ~ParameterizedPointsBoundedDistanceConstraint() override;
+
+  void set_frameA(const multibody::Frame<double>* frame) {
+    points_bounded_distance_constraint_.set_frameA(frame);
+  }
+
+  void set_frameB(const multibody::Frame<double>* frame) {
+    points_bounded_distance_constraint_.set_frameB(frame);
+  }
+
+  void set_max_distance(const double max_distance) {
+    UpdateUpperBound(Vector1d(max_distance * max_distance));
+  }
+
+ private:
+  template <typename T>
+  void DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y,
+                     const std::function<VectorX<T>(const VectorX<T>&)>&
+                         parameterization) const;
+
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override;
+
+  PointsBoundedDistanceConstraint points_bounded_distance_constraint_;
+  const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+      parameterization_double_;
+  const std::function<AutoDiffVecXd(const AutoDiffVecXd&)>&
+      parameterization_autodiff_;
+  int parameterization_dimension_;
+};
+
 /* Defines a MathematicalProgram to solve the problem
  min_q (q-d) CᵀC (q-d)
  s.t. setA in frameA and setB in frameB are in collision in q.
@@ -112,15 +213,20 @@ class PointsBoundedDistanceConstraint : public solvers::Constraint {
  */
 class ClosestCollisionProgram {
  public:
-  ClosestCollisionProgram(
-      std::variant<std::shared_ptr<SamePointConstraint>,
-                   std::shared_ptr<PointsBoundedDistanceConstraint>>
-          same_point_constraint,
-      const multibody::Frame<double>& frameA,
-      const multibody::Frame<double>& frameB, const ConvexSet& setA,
-      const ConvexSet& setB, const Hyperellipsoid& E,
-      const Eigen::Ref<const Eigen::MatrixXd>& A,
-      const Eigen::Ref<const Eigen::VectorXd>& b);
+  typedef std::variant<
+      std::shared_ptr<SamePointConstraint>,
+      std::shared_ptr<PointsBoundedDistanceConstraint>,
+      std::shared_ptr<ParameterizedSamePointConstraint>,
+      std::shared_ptr<ParameterizedPointsBoundedDistanceConstraint>>
+      AcceptableConstraint;
+
+  ClosestCollisionProgram(AcceptableConstraint same_point_constraint,
+                          const multibody::Frame<double>& frameA,
+                          const multibody::Frame<double>& frameB,
+                          const ConvexSet& setA, const ConvexSet& setB,
+                          const Hyperellipsoid& E,
+                          const Eigen::Ref<const Eigen::MatrixXd>& A,
+                          const Eigen::Ref<const Eigen::VectorXd>& b);
 
   ~ClosestCollisionProgram();
 

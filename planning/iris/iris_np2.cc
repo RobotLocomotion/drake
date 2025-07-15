@@ -1,6 +1,6 @@
 #include "drake/planning/iris/iris_np2.h"
 
-#include <variant>
+#include <common_robotics_utilities/parallelism.hpp>
 
 #include "drake/common/text_logging.h"
 #include "drake/geometry/optimization/affine_ball.h"
@@ -19,6 +19,9 @@
 namespace drake {
 namespace planning {
 
+using common_robotics_utilities::parallelism::DegreeOfParallelism;
+using common_robotics_utilities::parallelism::ParallelForBackend;
+using common_robotics_utilities::parallelism::StaticParallelForIndexLoop;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
@@ -36,6 +39,9 @@ using geometry::optimization::internal::CounterexampleConstraint;
 using geometry::optimization::internal::CounterexampleProgram;
 using geometry::optimization::internal::GeometryPairWithDistance;
 using geometry::optimization::internal::IrisConvexSetMaker;
+using geometry::optimization::internal::
+    ParameterizedPointsBoundedDistanceConstraint;
+using geometry::optimization::internal::ParameterizedSamePointConstraint;
 using geometry::optimization::internal::PointsBoundedDistanceConstraint;
 using geometry::optimization::internal::SamePointConstraint;
 using math::RigidTransform;
@@ -104,14 +110,6 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
         "IrisNp2 does not yet support enforcing additional containment "
         "points.");
   }
-
-  if (!(options.parameterization.get_parameterization()(
-            starting_ellipsoid.center()) == starting_ellipsoid.center())) {
-    // TODO(cohnt): Support growing regions along a parameterized subspace.
-    throw std::runtime_error(
-        "IrisNp2 does not yet support growing regions on a parameterized "
-        "subspace.");
-  }
   if (!checker.GetAllAddedCollisionShapes().empty()) {
     // TODO(cohnt): Support handling additional collision shapes.
     throw std::runtime_error(
@@ -123,8 +121,35 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
         "IrisNp2 does not support collision checkers with negative padding.");
   }
 
+  if (!options.parameterization.get_parameterization_autodiff()) {
+    throw std::runtime_error(
+        "IrisNp2 requires an autodiff-compatible parameterization. Make sure "
+        "to provide the IrisParameterizationFunction with a "
+        "parameterization_double and parameterization_autodiff, or consider "
+        "using IrisZo instead.");
+  }
+
   // The input domain must be bounded.
   DRAKE_THROW_UNLESS(domain.IsBounded());
+  DRAKE_THROW_UNLESS(
+      starting_ellipsoid.center().size() ==
+      options.parameterization.get_parameterization_dimension().value_or(
+          checker.plant().num_positions()));
+
+  // Do a basic check of the parameterization dimension.
+  const Eigen::VectorXd starting_ellipsoid_center_ambient =
+      options.parameterization.get_parameterization_double()(
+          starting_ellipsoid.center());
+  const int computed_ambient_dimension =
+      starting_ellipsoid_center_ambient.size();
+  if (computed_ambient_dimension != checker.plant().num_positions()) {
+    throw std::runtime_error(fmt::format(
+        "The plant has {} positions, but the given parameterization "
+        "returned a point with the wrong dimension (its size was "
+        "{}) when called on {}.",
+        checker.plant().num_positions(), computed_ambient_dimension,
+        fmt_eigen(starting_ellipsoid.center().transpose())));
+  }
 }
 
 /* Check for certain conditions at the end of the separating hyperplanes step,
@@ -183,10 +208,13 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   CheckInitialConditions(checker, starting_ellipsoid, domain, options);
 
   const auto& plant = checker.plant();
-  const auto& context = checker.UpdatePositions(starting_ellipsoid.center());
+  const int nq = plant.num_positions();
+
+  const auto& context = checker.UpdatePositions(
+      options.parameterization.get_parameterization_double()(
+          starting_ellipsoid.center()));
   plant.ValidateContext(context);
 
-  const int nq = plant.num_positions();
   const Eigen::VectorXd seed = starting_ellipsoid.center();
 
   HPolyhedron P(domain);
@@ -215,10 +243,21 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   std::set<std::pair<GeometryId, GeometryId>> pairs =
       inspector.GetCollisionCandidates();
   const int n_collision_pairs = static_cast<int>(pairs.size());
+  const int parameterization_dimension =
+      options.parameterization.get_parameterization_dimension().value_or(
+          checker.plant().num_positions());
   auto same_point_constraint =
-      std::make_shared<SamePointConstraint>(&plant, context);
+      std::make_shared<ParameterizedSamePointConstraint>(
+          &plant, context,
+          options.parameterization.get_parameterization_double(),
+          options.parameterization.get_parameterization_autodiff(),
+          parameterization_dimension);
   auto points_bounded_distance_constraint =
-      std::make_shared<PointsBoundedDistanceConstraint>(&plant, context, 0.0);
+      std::make_shared<ParameterizedPointsBoundedDistanceConstraint>(
+          &plant, context, 0.0,
+          options.parameterization.get_parameterization_double(),
+          options.parameterization.get_parameterization_autodiff(),
+          parameterization_dimension);
   std::map<std::pair<GeometryId, GeometryId>, std::vector<VectorXd>>
       counter_examples;
 
@@ -261,7 +300,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   // as {x | A * x <= b}.  Here we pre-allocate matrices with a generous
   // maximum size.
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A(
-      P.A().rows() + 2 * n_collision_pairs, nq);
+      P.A().rows() + 2 * n_collision_pairs, parameterization_dimension);
   VectorXd b(P.A().rows() + 2 * n_collision_pairs);
   A.topRows(P.A().rows()) = P.A();
   b.head(P.A().rows()) = P.b();
@@ -331,7 +370,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
   double last_iteration_volume = E.Volume();
   int iteration = 0;
-  VectorXd closest(nq);
+  VectorXd closest(parameterization_dimension);
 
   const int num_threads_for_sampling =
       options.sampled_iris_options.sample_particles_in_parallel
@@ -434,11 +473,40 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           P_candidate, N_k, options.sampled_iris_options.mixing_steps,
           &generators, &particles);
 
+      // Copy top slice of particles, applying thet parameterization function to
+      // each one, due to collision checker only accepting vectors of
+      // configurations.
+      // TODO(cohnt): Make ambient_particles an Eigen::MatrixXd and don't
+      // recreate it on each iteration.
+      std::vector<Eigen::VectorXd> ambient_particles(N_k);
+      const auto apply_parameterization = [&particles, &ambient_particles,
+                                           &options](const int thread_num,
+                                                     const int64_t index) {
+        unused(thread_num);
+        ambient_particles[index] =
+            options.parameterization.get_parameterization_double()(
+                particles[index]);
+      };
+
+      // TODO(cohnt): Rerwrite as a StaticParallelForRangeLoop.
+      const int num_threads_for_calling_parameterization =
+          options.parameterization.get_parameterization_is_threadsafe()
+              ? options.sampled_iris_options.parallelism.num_threads()
+              : 1;
+      StaticParallelForIndexLoop(
+          DegreeOfParallelism(num_threads_for_calling_parameterization), 0, N_k,
+          apply_parameterization, ParallelForBackend::BEST_AVAILABLE);
+
+      for (int i = 0; i < ssize(ambient_particles); ++i) {
+        // Only run this check in debug mode, because it's expensive.
+        DRAKE_ASSERT(ambient_particles[i].size() == nq);
+      }
+
       // Find all particles in collision or violating additional user-specified
       // constraints.
       std::vector<uint8_t> particle_col_free =
           checker.CheckConfigsCollisionFree(
-              particles, options.sampled_iris_options.parallelism);
+              ambient_particles, options.sampled_iris_options.parallelism);
       int number_particles_in_collision = 0;
 
       std::vector<uint8_t> particle_satisfies_additional_constraints =
@@ -533,9 +601,13 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
         std::pair<Eigen::VectorXd, int> closest_collision_info;
         closest_collision_info = std::make_pair(
-            particle, FindCollisionPairIndex(checker, inspector,
-                                             checker.UpdatePositions(particle),
-                                             sorted_pairs));
+            particle,
+            FindCollisionPairIndex(
+                checker, inspector,
+                checker.UpdatePositions(
+                    options.parameterization.get_parameterization_double()(
+                        particle)),
+                sorted_pairs));
 
         bool solve_succeeded;
         if (closest_collision_info.second >= 0) {
@@ -553,19 +625,11 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           if (padding > 0) {
             points_bounded_distance_constraint->set_max_distance(padding);
           }
-          std::variant<std::shared_ptr<SamePointConstraint>,
-                       std::shared_ptr<PointsBoundedDistanceConstraint>>
-              constraint =
-                  padding > 0
-                      ? std::variant<
-                            std::shared_ptr<SamePointConstraint>,
-                            std::shared_ptr<PointsBoundedDistanceConstraint>>(
-                            points_bounded_distance_constraint)
-                      : std::variant<
-                            std::shared_ptr<SamePointConstraint>,
-                            std::shared_ptr<PointsBoundedDistanceConstraint>>(
-                            same_point_constraint);
-
+          ClosestCollisionProgram::AcceptableConstraint constraint =
+              padding > 0 ? ClosestCollisionProgram::AcceptableConstraint(
+                                points_bounded_distance_constraint)
+                          : ClosestCollisionProgram::AcceptableConstraint(
+                                same_point_constraint);
           ClosestCollisionProgram prog(
               constraint, *frames.at(collision_pair.geomA),
               *frames.at(collision_pair.geomB), *sets.at(collision_pair.geomA),
@@ -574,7 +638,10 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
           if (do_debugging_visualization) {
             ++num_points_drawn;
-            point_to_draw.head(nq) = particle;
+            Eigen::VectorXd ambient_particle =
+                options.parameterization.get_parameterization_double()(
+                    particle);
+            point_to_draw.head(nq) = ambient_particle;
             std::string path = fmt::format("iteration{:02}/{:03}/particle",
                                            iteration, num_points_drawn);
             options.sampled_iris_options.meshcat->SetObject(
@@ -599,8 +666,16 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
               options.sampled_iris_options.prog_with_additional_constraints !=
               nullptr);
 
-          // Find the constraint in prog_with_additional_constraints that is
-          // violated.
+          // Find a constraint in prog_with_additional_constraints that is
+          // violated. If more than one constraint is violated, we still only
+          // pick one to find counterexamples for. (If we required the
+          // counterexample to violate multiple constraints, it might be further
+          // from the center, requiring us to solve more programs.)
+
+          // TODO(cohnt): Consider allowing other strategies for picking which
+          // violated constraint we find counterexamples for if multiple
+          // constraints are violated. (For example, choose randomly, or pick
+          // whichever constraint has the highest magnitude violation.)
           bool found_violated_constraint = false;
           for (const auto& binding : additional_constraint_bindings) {
             VectorXd value;
@@ -647,7 +722,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
         if (solve_succeeded) {
           ++num_prog_successes;
           if (do_debugging_visualization) {
-            point_to_draw.head(nq) = closest;
+            point_to_draw.head(nq) =
+                options.parameterization.get_parameterization_double()(closest);
             std::string path = fmt::format("iteration{:02}/{:03}/found",
                                            iteration, num_points_drawn);
             options.sampled_iris_options.meshcat->SetObject(
