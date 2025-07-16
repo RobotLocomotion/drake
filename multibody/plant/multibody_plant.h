@@ -5849,6 +5849,11 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
       geometry::GeometryId id,
       const geometry::SceneGraphInspector<T>& inspector) const;
 
+  // Helper to acquire per-geometry surface speed value from SceneGraph.
+  const std::optional<double> GetSurfaceSpeed(
+      geometry::GeometryId id,
+      const geometry::SceneGraphInspector<T>& inspector) const;
+
   // Helper method to apply default collision filters. By default, we don't
   // consider collisions:
   // * between rigid geometries affixed to bodies connected by a joint

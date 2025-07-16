@@ -7,7 +7,6 @@ drake_cc_binary(
     name = "conveyor_belt",
     srcs = ["conveyor_belt.cc"],
     data = [
-        "//multibody/parsing:test_models",
         "conveyor_belt.sdf",
     ],
     deps = [
