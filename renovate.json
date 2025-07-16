@@ -1,0 +1,14 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "automerge": false,
+  "timezone": "America/New_York",
+  "schedule": [
+    "at 6am on the first day of the month"
+  ],
+  "enabledManagers": [
+    "bazelisk"
+  ]
+}
