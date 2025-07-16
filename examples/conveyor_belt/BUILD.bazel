@@ -1,0 +1,25 @@
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+)
+
+drake_cc_binary(
+    name = "conveyor_belt",
+    srcs = ["conveyor_belt.cc"],
+    data = [
+        "//multibody/parsing:test_models",
+        "conveyor_belt.sdf",
+    ],
+    deps = [
+        "//geometry:meshcat_visualizer",
+        "//geometry:scene_graph",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/framework:leaf_system",
+        "@gflags",
+    ]
+
+
+)

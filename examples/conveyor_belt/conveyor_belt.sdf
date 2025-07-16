@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<sdf xmlns:drake="http://drake.mit.edu" version="1.7">
+  <model name="two_objects_model">
+    <!-- Generated using ChatGPT-4o with the following prompt: Write 
+    an sdf file with two objects: one large flat cuboid object lying 
+    on the floor and fixed to it, that has both visual and collision 
+    geometries: The visual geometry should be color red and the 
+    collision geometry should include drake:proximity_properties. 
+    The second object is a cube with visual geometry color blue and 
+    collision geometry including drake:proximity_properties. 
+    The second blue cube should be on top of the first large flat 
+    cuboid at a heigh of 0.5m from the large flat cuboid. -->
+    <!-- Large flat cuboid object lying on the floor -->
+    <link name="large_flat_cuboid">
+      <visual name="large_flat_cuboid_visual">
+        <geometry>
+          <box>
+            <size>4.0 1.0 0.1</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>1.0 0.0 0.0 1.0</ambient> <!-- Red color -->
+          <diffuse>1.0 0.0 0.0 1.0</diffuse>
+        </material>
+      </visual>
+      <collision name="large_flat_cuboid_collision">
+        <geometry>
+          <box>
+            <size>4.0 1.0 0.1</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mesh_resolution_hint>0.1</drake:mesh_resolution_hint>
+          <drake:hydroelastic_modulus>1.0</drake:hydroelastic_modulus>
+          <drake:hydroelastic_margin>0.01</drake:hydroelastic_margin>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+    <joint name="fixed_large_flat_cuboid" type="fixed">
+      <parent>world</parent>
+      <child>large_flat_cuboid</child>
+    </joint>
+
+    <!-- Blue cube on top of the large flat cuboid -->
+    <link name="blue_cube">
+      <pose>0 0 5.55 0 0 0</pose> <!-- Positioned 0.5m above the cuboid -->
+      <visual name="blue_cube_visual">
+        <geometry>
+          <box>
+            <size>0.4 0.4 0.4</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.0 0.0 1.0 1.0</ambient> <!-- Blue color -->
+          <diffuse>0.0 0.0 1.0 1.0</diffuse>
+        </material>
+      </visual>
+      <collision name="blue_cube_collision">
+        <geometry>
+          <box>
+            <size>0.4 0.4 0.4</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mesh_resolution_hint>0.05</drake:mesh_resolution_hint>
+          <drake:hydroelastic_modulus>2.0</drake:hydroelastic_modulus>
+          <drake:hydroelastic_margin>0.01</drake:hydroelastic_margin>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
