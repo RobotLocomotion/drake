@@ -30,9 +30,10 @@
           </box>
         </geometry>
         <drake:proximity_properties>
-          <drake:mesh_resolution_hint>0.1</drake:mesh_resolution_hint>
-          <drake:hydroelastic_modulus>1.0</drake:hydroelastic_modulus>
-          <drake:hydroelastic_margin>0.01</drake:hydroelastic_margin>
+          <drake:mu_dynamic>0.8</drake:mu_dynamic>
+          <drake:mu_static>1.0</drake:mu_static>
+          <drake:surface_speed>1.0</drake:surface_speed>
+          <drake:surface_velocity_normal>1.0 0 0</drake:surface_velocity_normal>
         </drake:proximity_properties>
       </collision>
     </link>
@@ -62,9 +63,8 @@
           </box>
         </geometry>
         <drake:proximity_properties>
-          <drake:mesh_resolution_hint>0.05</drake:mesh_resolution_hint>
-          <drake:hydroelastic_modulus>2.0</drake:hydroelastic_modulus>
-          <drake:hydroelastic_margin>0.01</drake:hydroelastic_margin>
+          <drake:mu_dynamic>0.7</drake:mu_dynamic>
+          <drake:mu_static>0.7</drake:mu_static>
         </drake:proximity_properties>
       </collision>
     </link>
