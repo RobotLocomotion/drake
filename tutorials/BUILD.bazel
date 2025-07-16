@@ -14,6 +14,11 @@ drake_jupyter_py_binary(
 drake_jupyter_py_binary(
     name = "authoring_multibody_simulation",
     add_test_rule = 1,
+    data = [
+        "@drake_models//:iiwa_description",
+        "@drake_models//:wsg_50_description",
+        "@drake_models//:ycb",
+    ],
     deps = [
         "//bindings/pydrake",
     ],
@@ -23,7 +28,9 @@ drake_jupyter_py_binary(
     name = "configuring_rendering_lighting",
     add_test_rule = 1,
     data = [
+        "@drake_models//:iiwa_description",
         "@drake_models//:tutorials",
+        "@drake_models//:wsg_50_description",
     ],
     test_timeout = "moderate",
     deps = [
@@ -119,6 +126,9 @@ drake_jupyter_py_binary(
 drake_jupyter_py_binary(
     name = "mathematical_program_multibody_plant",
     add_test_rule = 1,
+    data = [
+        "@drake_models//:iiwa_description",
+    ],
     deps = [
         "//bindings/pydrake",
     ],
@@ -159,6 +169,10 @@ drake_jupyter_py_binary(
 drake_jupyter_py_binary(
     name = "rendering_multibody_plant",
     add_test_rule = 1,
+    data = [
+        "@drake_models//:iiwa_description",
+        "@drake_models//:ycb",
+    ],
     deps = [
         "//bindings/pydrake",
     ],

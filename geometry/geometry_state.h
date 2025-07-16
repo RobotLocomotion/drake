@@ -396,6 +396,9 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetConvexHull(). */
   const PolygonSurfaceMesh<double>* GetConvexHull(GeometryId id) const;
 
+  /** Implementation of SceneGraphInspector::GetObbInGeometryFrame(). */
+  const std::optional<Obb>& GetObbInGeometryFrame(GeometryId id) const;
+
   /** Implementation of SceneGraphInspector::CollisionFiltered().  */
   bool CollisionFiltered(GeometryId id1, GeometryId id2) const;
 
@@ -414,6 +417,12 @@ class GeometryState {
   /** Implementation of QueryObject::GetPoseInWorld(GeometryId).  */
   const math::RigidTransform<T>& get_pose_in_world(
       GeometryId geometry_id) const;
+
+  /** Implementation of QueryObject::ComputeAabbInWorld(GeometryId).  */
+  std::optional<Aabb> ComputeAabbInWorld(GeometryId geometry_id) const;
+
+  /** Implementation of QueryObject::ComputeObbInWorld(GeometryId).  */
+  std::optional<Obb> ComputeObbInWorld(GeometryId geometry_id) const;
 
   /** Implementation of QueryObject::GetPoseInParent().  */
   const math::RigidTransform<T>& get_pose_in_parent(FrameId frame_id) const;

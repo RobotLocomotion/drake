@@ -4,6 +4,7 @@
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/planning/iris/iris_common.h"
 #include "drake/planning/iris/test/iris_test_utilities.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
@@ -19,6 +20,7 @@ using Eigen::VectorX;
 using Eigen::VectorXd;
 using geometry::Sphere;
 using geometry::optimization::HPolyhedron;
+using geometry::optimization::Hyperellipsoid;
 using symbolic::Expression;
 using symbolic::Variable;
 
@@ -45,13 +47,6 @@ TEST_F(JointLimits1D, UnsupportedOptions) {
       ".*additional containment points.*");
   options.sampled_iris_options.containment_points = std::nullopt;
 
-  solvers::MathematicalProgram prog;
-  options.sampled_iris_options.prog_with_additional_constraints = &prog;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
-      ".*additional constriants.*");
-  options.sampled_iris_options.prog_with_additional_constraints = nullptr;
-
   VectorX<Variable> varable_vector(1);
   VectorX<Expression> expression_vector(1);
   expression_vector[0] = varable_vector[0] + 1;
@@ -59,7 +54,7 @@ TEST_F(JointLimits1D, UnsupportedOptions) {
       IrisParameterizationFunction(expression_vector, varable_vector);
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
-      ".*parameterized subspace.*");
+      ".*autodiff-compatible parameterization.*");
   options.parameterization = IrisParameterizationFunction();
 
   const Sphere sphere(0.1);
@@ -83,6 +78,22 @@ TEST_F(DoublePendulum, PaddingUnsupported) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
       ".*negative padding.*");
+}
+
+// Check the error message for a parameterization from rational kinematics.
+TEST_F(DoublePendulumRationalForwardKinematics,
+       ParameterizationMissingAutodiff) {
+  IrisNp2Options options;
+  auto scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
+
+  options.parameterization =
+      IrisParameterizationFunction(&rational_kinematics_,
+                                   /* q_star_val */ Vector2d::Zero());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
+      ".*autodiff-compatible parameterization.*");
 }
 
 TEST_F(DoublePendulum, IrisNp2Test) {
@@ -206,6 +217,60 @@ TEST_F(DoublePendulum, PostprocessRemoveCollisions) {
   EXPECT_FALSE(region.PointInSet(query_point));
 }
 
+TEST_F(DoublePendulumRationalForwardKinematics, FunctionParameterization) {
+  IrisNp2Options options;
+  auto scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
+
+  options.sampled_iris_options.meshcat = meshcat_;
+
+  auto parameterization_double = [](const Vector2d& config) -> Vector2d {
+    return Vector2d{atan2(2 * config(0), 1 - std::pow(config(0), 2)),
+                    atan2(2 * config(1), 1 - std::pow(config(1), 2))};
+  };
+  auto parameterization_autodiff =
+      [](const Vector2<AutoDiffXd>& config) -> Vector2<AutoDiffXd> {
+    return drake::Vector2<AutoDiffXd>{
+        atan2(2 * config(0), 1 - pow(config(0), 2)),
+        atan2(2 * config(1), 1 - pow(config(1), 2))};
+  };
+
+  options.parameterization = IrisParameterizationFunction(
+      parameterization_double, parameterization_autodiff,
+      /* parameterization_is_threadsafe */ true,
+      /* parameterization_dimension */ 2);
+
+  CheckParameterization(options.parameterization.get_parameterization_double());
+
+  HPolyhedron region = IrisNp2(*scene_graph_checker,
+                               starting_ellipsoid_rational_forward_kinematics_,
+                               domain_rational_forward_kinematics_, options);
+
+  CheckRegionRationalForwardKinematics(region);
+  PlotEnvironmentAndRegionRationalForwardKinematics(
+      region, options.parameterization.get_parameterization_double(),
+      region_query_point_1_);
+
+  // Check that this still works with padding.
+  const double padding = 0.5;
+  scene_graph_checker->SetPaddingAllRobotEnvironmentPairs(padding);
+  scene_graph_checker->SetPaddingAllRobotRobotPairs(padding);
+
+  region = IrisNp2(*scene_graph_checker,
+                   starting_ellipsoid_rational_forward_kinematics_,
+                   domain_rational_forward_kinematics_, options);
+
+  EXPECT_TRUE(region.PointInSet(Vector2d{.1, 0.0}));
+  EXPECT_FALSE(region.PointInSet(Vector2d{.2, 0.0}));
+  EXPECT_TRUE(region.PointInSet(Vector2d{-.1, 0.0}));
+  EXPECT_FALSE(region.PointInSet(Vector2d{-.2, 0.0}));
+
+  PlotEnvironmentAndRegionRationalForwardKinematics(
+      region, options.parameterization.get_parameterization_double(),
+      region_query_point_1_);
+}
+
 TEST_F(BlockOnGround, IrisNp2Test) {
   IrisNp2Options options;
   auto scene_graph_checker =
@@ -237,7 +302,6 @@ TEST_F(ConvexConfigurationSpace, IrisNp2Test) {
   // but because the objective is actually pulling the counter-example search
   // away from that corner. Open the meshcat visualization to step through the
   // details!
-  meshcat_->Delete();
   options.sampled_iris_options.meshcat = meshcat_;
   options.sampled_iris_options.verbose = true;
 
@@ -250,6 +314,104 @@ TEST_F(ConvexConfigurationSpace, IrisNp2Test) {
       IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
   CheckRegion(region);
   PlotEnvironmentAndRegion(region);
+}
+
+// Test that we can grow regions along a parameterized subspace that is not
+// full-dimensional.
+TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
+  IrisNp2Options options;
+  auto scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
+
+  auto parameterization_double = [](const Vector1d& config) -> Vector2d {
+    return Vector2d{config[0], 2 * config[0] + 1};
+  };
+  auto parameterization_autodiff =
+      [](const Vector1<AutoDiffXd>& config) -> Vector2<AutoDiffXd> {
+    return Vector2<AutoDiffXd>{config[0], 2 * config[0] + 1};
+  };
+
+  options.parameterization =
+      IrisParameterizationFunction(parameterization_double,
+                                   /* parameterization_is_threadsafe */ true,
+                                   /* parameterization_dimension */ 1);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
+      ".*autodiff-compatible parameterization.*");
+
+  options.parameterization = IrisParameterizationFunction(
+      parameterization_double, parameterization_autodiff,
+      /* parameterization_is_threadsafe */ true,
+      /* parameterization_dimension */ 1);
+
+  HPolyhedron region =
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
+  CheckRegion(region);
+
+  meshcat_->Delete();
+  PlotEnvironmentAndRegionSubspace(
+      region, options.parameterization.get_parameterization_double());
+}
+
+// Verify that we throw a reasonable error when the initial point is in
+// collision, and when the initial point violates an additional constraint.
+TEST_F(ConvexConfigurationSpaceWithThreadsafeConstraint, BadInitialEllipsoid) {
+  IrisNp2Options options;
+  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  options.sampled_iris_options.prog_with_additional_constraints = &prog_;
+
+  Hyperellipsoid ellipsoid_in_collision =
+      Hyperellipsoid::MakeHypersphere(1e-2, Eigen::Vector2d(-1.0, 1.0));
+  Hyperellipsoid ellipsoid_violates_constraint =
+      Hyperellipsoid::MakeHypersphere(1e-2, Eigen::Vector2d(-0.1, 0.0));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisNp2(*sgcc_ptr, ellipsoid_in_collision, domain_, options),
+      ".*Starting ellipsoid center.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisNp2(*sgcc_ptr, ellipsoid_violates_constraint, domain_, options),
+      ".*Starting ellipsoid center.*");
+}
+
+TEST_F(ConvexConfigurationSpaceWithThreadsafeConstraint, IrisNp2Test) {
+  IrisNp2Options options;
+  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  // We use IPOPT for this test since SNOPT has a large number of solve failures
+  // in this environment.
+  solvers::IpoptSolver solver;
+  options.solver = &solver;
+
+  options.sampled_iris_options.prog_with_additional_constraints = &prog_;
+  options.sampled_iris_options.verbose = true;
+
+  meshcat_->Delete();
+  options.sampled_iris_options.meshcat = meshcat_;
+
+  HPolyhedron region =
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+  CheckRegion(region);
+  PlotEnvironmentAndRegion(region);
+}
+
+TEST_F(ConvexConfigurationSpaceWithNotThreadsafeConstraint, IrisNp2Test) {
+  IrisNp2Options options;
+  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  // We use IPOPT for this test since SNOPT has a large number of solve failures
+  // in this environment.
+  solvers::IpoptSolver solver;
+  options.solver = &solver;
+
+  options.sampled_iris_options.prog_with_additional_constraints = &prog_;
+
+  HPolyhedron region =
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+  CheckRegion(region);
 }
 
 }  // namespace

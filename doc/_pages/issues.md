@@ -88,7 +88,7 @@ multibody/meshcat
 <td><code>geometry perception</code></td>
 <td>How geometry appears in color, depth, and label images (via the
   RenderEngine API).</td>
-<td>zachfang</td>
+<td>SeanCurtis-TRI</td>
 <td><small>
 geometry/render<br>
 systems/rendering

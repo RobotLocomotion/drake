@@ -279,6 +279,17 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertTrue(inspector.IsDeformableGeometry(geometry_id=sphere_4))
         self.assertEqual(inspector.GetAllDeformableGeometryIds(), [sphere_4])
         self.assertIsNone(inspector.GetConvexHull(geometry_id=sphere_3))
+        # Test GetObbInGeometryFrame for a geometry that supports it.
+        self.assertIsInstance(
+            inspector.GetObbInGeometryFrame(geometry_id=sphere_3), mut.Obb)
+        # Test GetObbInGeometryFrame for a geometry that does not support it.
+        half_space = scene_graph.RegisterAnchoredGeometry(
+            source_id=global_source,
+            geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
+                                          shape=mut.HalfSpace(),
+                                          name="half_space"))
+        self.assertIsNone(
+            inspector.GetObbInGeometryFrame(geometry_id=half_space))
         self.assertIsInstance(inspector.geometry_version(),
                               mut.GeometryVersion)
 
@@ -678,6 +689,13 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertIsInstance(
             query_object.GetPoseInWorld(geometry_id=geometry_id),
             RigidTransform_[T])
+        self.assertIsInstance(
+            query_object.ComputeAabbInWorld(
+                geometry_id=deformable_geometry_id),
+            mut.Aabb)
+        self.assertIsInstance(
+            query_object.ComputeObbInWorld(geometry_id=geometry_id),
+            mut.Obb)
 
         # Proximity queries -- all of these will produce empty results.
         results = query_object.ComputeSignedDistancePairwiseClosestPoints()

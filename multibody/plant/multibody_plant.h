@@ -2631,11 +2631,11 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 #endif
 
   /// Returns the DeformableModel owned by this plant.
-  /// @throw std::exception if this plant doesn't own a %DeformableModel.
   /// @experimental
   const DeformableModel<T>& deformable_model() const {
     const DeformableModel<T>* model = physical_models_->deformable_model();
-    DRAKE_THROW_UNLESS(model != nullptr);
+    // A DeformableModel is always added to the plant at construction time.
+    DRAKE_DEMAND(model != nullptr);
     return *model;
   }
 
