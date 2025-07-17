@@ -457,8 +457,10 @@ GTEST_TEST(PooledSapBuilder, Limits) {
   <mujoco model="robot">
     <worldbody>
       <body>
+        <inertial mass="0.1" diaginertia="0.1 0.1 0.1"/>
         <joint name="joint1" type="hinge" axis="0 1 0" pos="0 0 0.1"/>
         <body>
+          <inertial mass="0.1" diaginertia="0.1 0.1 0.1"/>
           <joint name="joint2" type="hinge" axis="0 1 0" pos="0 0 -0.1" range="-45.0 45.0"/>
         </body>
       </body>
