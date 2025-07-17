@@ -622,6 +622,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "convex_integrator_test",
+    data = [
+        "@drake_models//:franka_description",
+    ],
     deps = [
         ":convex_integrator",
         ":simulator",
