@@ -2,6 +2,7 @@
 
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/multibody/plant/contact_properties.h"
+#include "drake/multibody/topology/graph.h"
 
 using drake::multibody::CalcContactFrictionFromSurfaceProperties;
 using drake::multibody::internal::CouplerConstraintSpec;
@@ -12,7 +13,9 @@ using drake::multibody::internal::GetCoulombFriction;
 using drake::multibody::internal::GetHuntCrossleyDissipation;
 using drake::multibody::internal::GetInternalTree;
 using drake::multibody::internal::GetPointContactStiffness;
+using drake::multibody::internal::LinkJointGraph;
 using drake::multibody::internal::MultibodyTreeTopology;
+using drake::multibody::internal::SpanningForest;
 using drake::multibody::internal::TreeIndex;
 
 namespace drake {
@@ -110,6 +113,10 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
                                       PooledSapModel<T>* model) const {
   const MultibodyTreeTopology& topology =
       GetInternalTree(plant()).get_topology();
+  const LinkJointGraph& graph = GetInternalTree(plant()).graph();
+  DRAKE_DEMAND(graph.forest_is_valid());
+  const SpanningForest& forest = graph.forest();
+  (void)forest;
 
   const int nv = plant().num_velocities();
   MatrixX<T>& M = scratch_.M;
@@ -159,7 +166,26 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
     const auto& body = plant().get_body(BodyIndex(b));
 
     params->body_is_floating.push_back(body.is_floating() ? 1 : 0);
-    params->body_mass.push_back(body.default_mass());
+
+    // TODO(amcastro-tri): consider using forest.link_composites() in
+    // combination with LinkJointGraph::Link::composite() to precompute
+    // composite's masses.
+
+    // If the body has zero mass, we assign it the mass of its composite.
+    if (body.default_mass() == 0.0) {
+      const auto composite = graph.GetLinksWeldedTo(body.index());
+      T composite_mass = 0.0;
+      for (BodyIndex c : composite) {
+        composite_mass += plant().get_body(c).default_mass();
+      }
+      if (composite_mass == 0.0) {
+        throw std::logic_error(
+            fmt::format("Composite for body '{}' has zero mass.", body.name()));
+      }
+      params->body_mass.push_back(composite_mass);
+    } else {
+      params->body_mass.push_back(body.default_mass());
+    }
 
     if (plant().IsAnchored(body)) {
       params->body_cliques.push_back(-1);  // mark as anchored.
