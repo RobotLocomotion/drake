@@ -76,9 +76,10 @@ struct PooledSapParameters {
   // body_cliques[0]  < 0 must correspond to the world.
   std::vector<int> body_cliques;
   std::vector<int> body_is_floating;  // 1 if floating.
-  std::vector<T> body_mass;           // mass of each body.
-  EigenPool<Matrix6X<T>> J_WB;        // Rigid body spatial velocity Jacobians.
-  VectorX<T> v0;                      // The current generalized velocities.
+  std::vector<T>
+      body_mass;  // mass of each body. Composite mass for zero massless bodies.
+  EigenPool<Matrix6X<T>> J_WB;  // Rigid body spatial velocity Jacobians.
+  VectorX<T> v0;                // The current generalized velocities.
 
   // Effort limits for the entire model.
   std::vector<int> clique_nu;  // Num actuators per clique.

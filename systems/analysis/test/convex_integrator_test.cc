@@ -602,5 +602,47 @@ GTEST_TEST(ConvexIntegratorTest, PendulumWithCoupler) {
   EXPECT_NEAR(g, 0.0, 4e-6);
 }
 
+// Smoke test for letting a franka arm just flop down freely under gravity.
+GTEST_TEST(ConvexIntegratorTest, FrankaFreeFall) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  const std::string panda_url =
+      "package://drake_models/franka_description/urdf/panda_arm.urdf";
+  Parser(&plant).AddModelsFromUrl(panda_url);
+  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("panda_link0"));
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  SimulatorConfig config;
+  config.target_realtime_rate = 1.0;
+  config.publish_every_time_step = true;
+  ApplySimulatorConfig(config, &simulator);
+
+  ConvexIntegrator<double>& integrator =
+      simulator.reset_integrator<ConvexIntegrator<double>>();
+  integrator.get_mutable_solver_parameters().enable_hessian_reuse = true;
+  integrator.get_mutable_solver_parameters().print_solver_stats = true;
+  integrator.set_plant(&plant);
+  integrator.set_fixed_step_mode(true);
+  integrator.set_maximum_step_size(0.01);
+
+  VectorXd q0 = VectorXd::Zero(plant.num_positions());
+  q0(1) = -M_PI_4;
+  q0(3) = -M_PI_2;
+  q0(5) = M_PI_4;
+  q0(6) = -M_PI_4;
+  Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+  plant.SetPositions(&plant_context, q0);
+  simulator.Initialize();
+  simulator.set_target_realtime_rate(0.0);
+
+  simulator.AdvanceTo(1.0);
+  std::cout << std::endl;
+  PrintSimulatorStatistics(simulator);
+  std::cout << std::endl;
+}
+
 }  // namespace systems
 }  // namespace drake
