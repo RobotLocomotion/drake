@@ -12,6 +12,9 @@ build --@@spdlog+//:header_only=False
 # implicit loads built-in to Bazel itself to take effect.
 common --incompatible_autoload_externally=
 
+# Allow using the experimental cc_static_library.
+common --experimental_cc_static_library
+
 # Default to an optimized build.
 build -c opt
 build --features=prefer_pic_for_opt_binaries
