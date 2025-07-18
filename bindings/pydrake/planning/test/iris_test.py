@@ -185,9 +185,6 @@ class TestIrisNp2(unittest.TestCase):
         options = mut.IrisNp2Options()
         SetSampledIrisOptions(options)
 
-        # Feature still TODO.
-        options.sampled_iris_options.containment_points = None
-
         # For speed reasons -- IPOPT seems to be faster than SNOPT here.
         options.solver = IpoptSolver()
 
@@ -223,6 +220,15 @@ class TestIrisNp2(unittest.TestCase):
         domain_shifted = HPolyhedron.MakeBox([-1.5, -1.5], [0.5, 0.5])
         starting_ellipsoid_shifted = Hyperellipsoid.MakeHypersphere(
             0.01, inverse_parameterization(starting_ellipsoid.center()))
+
+        # We also need to shift the containment points.
+        new_containment_points = options.sampled_iris_options.\
+            containment_points.copy()
+        for i in range(new_containment_points.shape[1]):
+            new_containment_points[:, i] = inverse_parameterization(
+                new_containment_points[:, i])
+        options.sampled_iris_options.\
+            containment_points = new_containment_points
         region = mut.IrisNp2(checker=checker,
                              starting_ellipsoid=starting_ellipsoid_shifted,
                              domain=domain_shifted,
