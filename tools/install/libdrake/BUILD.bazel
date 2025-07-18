@@ -96,6 +96,18 @@ generate_file(
     }),
 )
 
+generate_file(
+    name = "drake_shared_lib.cmake",
+    content = select({
+        "//tools/install/libdrake:static_lib": (
+            "set(DRAKE_SHARED_LIB OFF)"
+        ),
+        "//conditions:default": (
+            "set(DRAKE_SHARED_LIB ON)"
+        ),
+    }),
+)
+
 cc_defines(
     name = "bazel_eigen_defines.cmake",
     var = "BAZEL_EIGEN_DEFINES",
@@ -123,6 +135,7 @@ cmake_configure_file(
         ":bazel_eigen_defines.cmake",
         ":bazel_fmt_defines.cmake",
         ":bazel_spdlog_defines.cmake",
+        ":drake_shared_lib.cmake",
         ":python_version.cmake",
         ":stamp_version.cmake",
         ":with_user_eigen.cmake",
@@ -143,10 +156,23 @@ cc_check_allowed_headers(
 )
 
 # Annotate all of the LIBDRAKE_COMPONENTS as `alwayslink = True`, so that we
-# use the --whole-archive linker flag on them when creating libdrake.so
+# use the --whole-archive linker flag on them when creating libdrake.
 cc_whole_archive_library(
     name = "libdrake_components_whole_archive",
     deps = LIBDRAKE_COMPONENTS,
+)
+
+config_setting(
+    name = "static_lib",
+    flag_values = {"//tools/flags:static_lib": "True"},
+)
+
+config_setting(
+    name = "install_pydrake",
+    flag_values = {
+        "//tools/flags:static_lib": "False",
+        "//tools/flags:install_pydrake": "True",
+    },
 )
 
 # The Drake binary package libdrake.so contains all the symbols from all the
@@ -167,14 +193,28 @@ cc_binary(
     ],
 )
 
-# Gather all of libdrake.so's dependent headers.
+cc_library(
+    name = "drake",
+    deps = [
+        ":libdrake_components_whole_archive",
+        ":libdrake_runtime_so_deps",
+    ],
+)
+
+alias(
+    name = "libdrake.a",
+    actual = "drake",
+)
+
+# Gather all of libdrake's dependent headers.
 drake_transitive_installed_hdrs_filegroup(
     name = "libdrake_headers",
     never_startswith = [
         # Drake's lcmtypes are installed via the //lcmtypes:install rule,
         # because they part of a different CMake component than Drake main C++
-        # library.  They should not be part of libdrake.so's installed headers.
-        # (For CMake details, refer to //tools/install/libdrake:drake.cps.in.)
+        # library.  They should not be part of libdrake's installed headers.
+        # (For CMake details, refer to
+        # //tools/install/libdrake:drake-config.cmake.in.)
         "lcmtypes/",
     ],
     visibility = ["//bindings/pydrake:__pkg__"],
@@ -197,7 +237,7 @@ cc_library(
     ],
 )
 
-# Install libdrake.so along with all transitive headers in the same workspace
+# Install libdrake along with all transitive headers in the same workspace
 # (i.e. in Drake itself; not externals).
 install(
     name = "install",
@@ -207,7 +247,10 @@ install(
         "test/snopt_visibility_install_test.py",
         "test/rpath_install_test.py",
     ],
-    targets = ["libdrake.so"],
+    targets = select({
+        ":static_lib": ["libdrake.a"],
+        "//conditions:default": ["libdrake.so"],
+    }),
     hdrs = [":libdrake_headers"],
     hdr_dest = "include/drake",
     allowed_externals = ["//:LICENSE.TXT"],  # Root for our #include paths.
@@ -249,7 +292,7 @@ cc_library(
 # Provide a cc_library target that provides libdrake.so, its headers, its
 # header-only dependencies, and its required *.so's.  This is aliased by
 # `//:drake_shared_library`, which is what downstream users will consume if
-# they wish to link to `libdrake.so`.
+# they wish to link to `libdrake` dynamically.
 cc_library(
     name = "drake_shared_library",
     srcs = [":libdrake.so"],
@@ -257,6 +300,25 @@ cc_library(
     # N.B. To pull in transitive `data` dependencies, we must list
     # `libdrake.so` as a data target.
     data = [":libdrake.so"],
+    include_prefix = "drake",
+    strip_include_prefix = "/",
+    visibility = ["//:__pkg__"],
+    deps = [
+        ":drake_headers",
+    ],
+)
+
+# Provide a cc_library target that provides libdrake.a, its headers, its
+# header-only dependencies, and its required *.so's.  This is aliased by
+# `//:drake_static_library`, which is what downstream users will consume if
+# they wish to link to `libdrake` statically.
+cc_library(
+    name = "drake_static_library",
+    srcs = [":libdrake.a"],
+    hdrs = [":libdrake_headers"],
+    # N.B. To pull in transitive `data` dependencies, we must list
+    # `libdrake.a` as a data target.
+    data = [":libdrake.a"],
     include_prefix = "drake",
     strip_include_prefix = "/",
     visibility = ["//:__pkg__"],

@@ -96,15 +96,24 @@ install_files(
 
 install(
     name = "install",
-    targets = [":pybind11"],
+    targets = select({
+       "@drake//tools/install/libdrake:install_pydrake": [":pybind11"],
+       "//conditions:default": [],
+    }),
     hdr_dest = "include/pybind11",
     hdr_strip_prefix = ["include"],
     guess_hdrs = "PACKAGE",
-    docs = ["LICENSE"],
-    deps = [
-        ":install_cmake_config",
-        ":install_extra_cmake",
-    ],
+    docs = select({
+        "@drake//tools/install/libdrake:install_pydrake": ["LICENSE"],
+        "//conditions:default": [],
+    }),
+    deps = select({
+        "@drake//tools/install/libdrake:install_pydrake": [
+            ":install_cmake_config",
+            ":install_extra_cmake",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 python_lint()
