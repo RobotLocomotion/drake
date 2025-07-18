@@ -343,14 +343,11 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, NoParameterizationAllowed) {
 
   IrisFromCliqueCoverOptions options;
   auto parameterization_double = [](const Vector2d& config) -> Vector2d {
-    return Vector2d{atan2(2 * config(0), 1 - std::pow(config(0), 2)),
-                    atan2(2 * config(1), 1 - std::pow(config(1), 2))};
+    return Vector2d::Constant(1);
   };
   auto parameterization_autodiff =
       [](const Vector2<AutoDiffXd>& config) -> Vector2<AutoDiffXd> {
-    return drake::Vector2<AutoDiffXd>{
-        atan2(2 * config(0), 1 - pow(config(0), 2)),
-        atan2(2 * config(1), 1 - pow(config(1), 2))};
+    return drake::Vector2<AutoDiffXd>{Vector2d::Constant(1)};
   };
   auto parameterization_function = IrisParameterizationFunction(
       parameterization_double, parameterization_autodiff,
@@ -364,16 +361,17 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, NoParameterizationAllowed) {
   iris_zo_options.parameterization = parameterization_function;
 
   options.iris_options = iris_np2_options;
+  std::string expected_error_message_substring = ".*parameterized subspace.*";
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
                                               &sets, nullptr),
-      ".*.parameterization.*");
+      expected_error_message_substring);
 
   options.iris_options = iris_zo_options;
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
                                               &sets, nullptr),
-      ".*.parameterization.*");
+      expected_error_message_substring);
 }
 
 GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
@@ -395,6 +393,8 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   IrisFromCliqueCoverOptions options;
   drake::solvers::MathematicalProgram prog_with_additional_constraints;
 
+  std::string expected_error_message_substring =
+      ".*iris_options.*.*prog_with_additional_constraints.*";
   IrisOptions iris_options;
   iris_options.prog_with_additional_constraints =
       &prog_with_additional_constraints;
@@ -402,7 +402,7 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
                                               &sets, nullptr),
-      ".*.prog_with_additional_constraints.*");
+      expected_error_message_substring);
 
   IrisNp2Options iris_np2_options;
   iris_np2_options.sampled_iris_options.prog_with_additional_constraints =
@@ -411,7 +411,7 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
                                               &sets, nullptr),
-      ".*.prog_with_additional_constraints.*");
+      expected_error_message_substring);
 
   IrisZoOptions iris_zo_options;
   iris_zo_options.sampled_iris_options.prog_with_additional_constraints =
@@ -420,7 +420,7 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
                                               &sets, nullptr),
-      ".*.prog_with_additional_constraints.*");
+      expected_error_message_substring);
 }
 
 /* A movable sphere with fixed boxes in all corners.

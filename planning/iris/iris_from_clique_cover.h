@@ -22,8 +22,8 @@ namespace planning {
 
 struct IrisFromCliqueCoverOptions {
   IrisFromCliqueCoverOptions()
-      : iris_options(
-            geometry::optimization::IrisOptions{/*iteration_limit=*/1}) {}
+      : iris_options(geometry::optimization::IrisOptions{
+            /*iteration_limit=*/.iteration_limit = 1}) {}
 
   // TODO(cohnt): Support user-specified parameterizations contained in
   // IrisZoOptions and IrisNp2Options. Note from Alexandre.Amice: the reason we

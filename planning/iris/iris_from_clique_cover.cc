@@ -374,20 +374,6 @@ void CheckIrisInConfigurationSpaceFromCliqueCoverPreconditions(
   std::visit(
       overloaded{
           [&checker](const geometry::optimization::IrisOptions& iris_options) {
-            // Note: Even though the iris_options.bounding_region may be
-            // provided,
-            // IrisInConfigurationSpace (currently) requires finite joint
-            // limits.
-            DRAKE_THROW_UNLESS(checker.plant()
-                                   .GetPositionLowerLimits()
-                                   .array()
-                                   .isFinite()
-                                   .all());
-            DRAKE_THROW_UNLESS(checker.plant()
-                                   .GetPositionUpperLimits()
-                                   .array()
-                                   .isFinite()
-                                   .all());
             DRAKE_THROW_UNLESS(iris_options.prog_with_additional_constraints ==
                                nullptr);
             return;
@@ -427,15 +413,29 @@ void CheckIrisInConfigurationSpaceFromCliqueCoverPreconditions(
           ? parameterization->get_parameterization_dimension().value_or(
                 checker.plant().num_positions())
           : checker.plant().num_positions();
+  if (parameterization.has_value()) {
+    drake::log()->info(
+        "Parameterization eval = {}",
+        fmt_eigen(parameterization->get_parameterization_double()(
+            Eigen::VectorXd::Zero(ndim))));
+  }
 
   if (parameterization.has_value() &&
-      parameterization
-          ->get_parameterization_double()(Eigen::VectorXd::Zero(ndim))
-          .isZero()) {
+      !parameterization
+           ->get_parameterization_double()(Eigen::VectorXd::Zero(ndim))
+           .isZero()) {
     throw std::runtime_error(
         "IrisFromCliqueCover does not yet support growing regions on "
         "a parameterized subspace ");
   }
+
+  // Note: Even though the iris_options.bounding_region may be
+  // provided, IrisInConfigurationSpace (currently) requires finite
+  // joint limits.
+  DRAKE_THROW_UNLESS(
+      checker.plant().GetPositionLowerLimits().array().isFinite().all());
+  DRAKE_THROW_UNLESS(
+      checker.plant().GetPositionUpperLimits().array().isFinite().all());
 }
 
 }  // namespace
@@ -545,9 +545,10 @@ void IrisInConfigurationSpaceFromCliqueCover(
     // The computed cliques from the max clique solver. These will get pulled
     // off the queue by the set builder workers to build the sets.
     AsyncQueue<VectorX<bool>> computed_cliques;
-    if (options.parallelism.num_threads() == 1 ||
-        std::holds_alternative<IrisNp2Options>(options.iris_options) ||
-        std::holds_alternative<IrisZoOptions>(options.iris_options)) {
+
+    // If we are using IrisNp2 or IrisZo, then we only launch one worker thread
+    // for building sets. Otherwise
+    if (options.parallelism.num_threads() == 1) {
       ComputeGreedyTruncatedCliqueCover(minimum_clique_size, *max_clique_solver,
                                         &visibility_graph, &computed_cliques);
       std::queue<HPolyhedron> new_set_queue =
@@ -565,10 +566,17 @@ void IrisInConfigurationSpaceFromCliqueCover(
                      minimum_clique_size, std::ref(*max_clique_solver),
                      &visibility_graph, &computed_cliques)};
 
-      // We will use one thread to build cliques and the remaining threads to
-      // build IRIS regions. If this number is 0, then this function will end
-      // up single threaded.
-      const int num_builder_threads = options.parallelism.num_threads() - 1;
+      // We will use one thread to build cliques. If we are building sets using
+      // IrisNp2 or IrisZo, we use only one worker thread to produce sets as
+      // these methods use parallelism internally in the collision checker. If
+      // we use IrisInConfigurationSpace to build sets, we use all the remaining
+      // threads of parallelism to build sets.If this number is 0, then this
+      // function will end up single threaded.
+      const int num_builder_threads =
+          std::holds_alternative<IrisNp2Options>(options.iris_options) ||
+                  std::holds_alternative<IrisZoOptions>(options.iris_options)
+              ? 1
+              : options.parallelism.num_threads() - 1;
       std::vector<std::future<std::queue<HPolyhedron>>> build_sets_future;
       build_sets_future.reserve(num_builder_threads);
       // Build convex sets.
