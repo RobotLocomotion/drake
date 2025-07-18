@@ -373,7 +373,7 @@ void CheckIrisInConfigurationSpaceFromCliqueCoverPreconditions(
   // iris option specific checks
   std::visit(
       overloaded{
-          [&checker](const geometry::optimization::IrisOptions& iris_options) {
+          [](const geometry::optimization::IrisOptions& iris_options) {
             DRAKE_THROW_UNLESS(iris_options.prog_with_additional_constraints ==
                                nullptr);
             return;
