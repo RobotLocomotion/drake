@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <tuple>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -283,6 +284,13 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
                            const Eigen::Ref<const VectorX<T>>& v,
                            EigenPtr<VectorX<T>> qdot) const final;
 
+  // Implements DoMapVelocityToQDot() with pre-computed values of
+  // sin(pitch), sin(yaw), cos(yaw), 1/cos(pitch).
+  void DoMapVelocityToQDotImpl(const T& sp, const T& sy, const T& cy,
+                               const T& cpi,
+                               const Eigen::Ref<const VectorX<T>>& v,
+                               EigenPtr<VectorX<T>> qdot) const;
+
   // Maps time derivatives of the roll-pitch-yaw angles θ₀, θ₁, θ₂ in qdot to
   // the generalized velocity v, which corresponds to the angular velocity
   // w_FM.
@@ -314,6 +322,9 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   // Calculate the term Ṅ⁺(q,q̇)⋅q̇ which appears in v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
   Vector3<T> CalcAccelerationBiasForQDDot(const systems::Context<T>& context,
                                           const char* function_name) const;
+  Vector3<T> CalcAccelerationBiasForQDDotImpl(
+      const systems::Context<T>& context, const T& sp, const T& cp, const T& sy,
+      const T& cy, const T& cpi) const;
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
@@ -331,6 +342,11 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   // Throw an exception if a pitch angle is within ≈ 0.057° of a singularity.
   void ThrowIfCosPitchNearZero(const T& cos_pitch, const T& pitch_angle,
                                const char* function_name) const;
+
+  // Calculates sin(pitch), cos(pitch), sin(yaw), cos(yaw), 1/cos(pitch).
+  // Throw an exception if pitch angle is within ≈ 0.057° of a singularity.
+  std::tuple<T, T, T, T, T> SinCosPitchYawCpi(
+      const systems::Context<T>& context, const char* function_name) const;
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
