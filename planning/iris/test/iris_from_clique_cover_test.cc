@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/overloaded.h"
 #include "drake/common/ssize.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/maybe_pause_for_user.h"
@@ -325,6 +326,103 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, NoJointLimits) {
       ".*.GetPositionLowerLimits.*isFinite.* failed.");
 }
 
+GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, NoParameterizationAllowed) {
+  CollisionCheckerParams params;
+
+  RobotDiagramBuilder<double> builder(0.0);
+  params.robot_model_instances = builder.parser().AddModelsFromUrl(
+      "package://drake/examples/pendulum/Pendulum.urdf");
+  params.edge_step_size = 0.01;
+
+  params.model = builder.Build();
+  auto checker =
+      std::make_unique<SceneGraphCollisionChecker>(std::move(params));
+
+  std::vector<HPolyhedron> sets;
+  RandomGenerator generator(0);
+
+  IrisFromCliqueCoverOptions options;
+  auto parameterization_double = [](const Vector2d& config) -> Vector2d {
+    return Vector2d{atan2(2 * config(0), 1 - std::pow(config(0), 2)),
+                    atan2(2 * config(1), 1 - std::pow(config(1), 2))};
+  };
+  auto parameterization_autodiff =
+      [](const Vector2<AutoDiffXd>& config) -> Vector2<AutoDiffXd> {
+    return drake::Vector2<AutoDiffXd>{
+        atan2(2 * config(0), 1 - pow(config(0), 2)),
+        atan2(2 * config(1), 1 - pow(config(1), 2))};
+  };
+  auto parameterization_function = IrisParameterizationFunction(
+      parameterization_double, parameterization_autodiff,
+      /* parameterization_is_threadsafe */ true,
+      /* parameterization_dimension */ 2);
+
+  IrisNp2Options iris_np2_options;
+  iris_np2_options.parameterization = parameterization_function;
+
+  IrisZoOptions iris_zo_options;
+  iris_zo_options.parameterization = parameterization_function;
+
+  options.iris_options = iris_np2_options;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
+                                              &sets, nullptr),
+      ".*.parameterization.*");
+
+  options.iris_options = iris_zo_options;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
+                                              &sets, nullptr),
+      ".*.parameterization.*");
+}
+
+GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
+           NoProgWithAdditionalConstraintsAllowed) {
+  CollisionCheckerParams params;
+
+  RobotDiagramBuilder<double> builder(0.0);
+  params.robot_model_instances = builder.parser().AddModelsFromUrl(
+      "package://drake/examples/pendulum/Pendulum.urdf");
+  params.edge_step_size = 0.01;
+
+  params.model = builder.Build();
+  auto checker =
+      std::make_unique<SceneGraphCollisionChecker>(std::move(params));
+
+  std::vector<HPolyhedron> sets;
+  RandomGenerator generator(0);
+
+  IrisFromCliqueCoverOptions options;
+  drake::solvers::MathematicalProgram prog_with_additional_constraints;
+
+  IrisOptions iris_options;
+  iris_options.prog_with_additional_constraints =
+      &prog_with_additional_constraints;
+  options.iris_options = iris_options;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
+                                              &sets, nullptr),
+      ".*.prog_with_additional_constraints.*");
+
+  IrisNp2Options iris_np2_options;
+  iris_np2_options.sampled_iris_options.prog_with_additional_constraints =
+      &prog_with_additional_constraints;
+  options.iris_options = iris_np2_options;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
+                                              &sets, nullptr),
+      ".*.prog_with_additional_constraints.*");
+
+  IrisZoOptions iris_zo_options;
+  iris_zo_options.sampled_iris_options.prog_with_additional_constraints =
+      &prog_with_additional_constraints;
+  options.iris_options = iris_zo_options;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
+                                              &sets, nullptr),
+      ".*.prog_with_additional_constraints.*");
+}
+
 /* A movable sphere with fixed boxes in all corners.
 ┌───────────────┐
 │┌────┐   ┌────┐│
@@ -429,12 +527,13 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
 
     params.model = builder.Build();
     checker = std::make_unique<SceneGraphCollisionChecker>(std::move(params));
+    CommonSampledIrisOptions sampled_options;
+
     if constexpr (std::is_same_v<IrisOptionsVariantType,
                                  geometry::optimization::IrisOptions>) {
       options.iris_options = geometry::optimization::IrisOptions{
           .iteration_limit = 1, .meshcat = meshcat};
     } else {
-      CommonSampledIrisOptions sampled_options;
       sampled_options.max_iterations = 1;
       sampled_options.meshcat = meshcat;
       if constexpr (std::is_same_v<IrisOptionsVariantType, IrisNp2Options>) {

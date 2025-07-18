@@ -13,6 +13,7 @@
 
 #include <common_robotics_utilities/parallelism.hpp>
 
+#include "drake/common/overloaded.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/optimization/iris.h"
@@ -132,6 +133,22 @@ void MakeFalseRowsAndColumns(const VectorX<bool>& mask,
   *mat = mat->pruned();
 }
 
+Meshcat* GetMeshcatFromOptions(
+    const std::variant<geometry::optimization::IrisOptions, IrisNp2Options,
+                       IrisZoOptions>& iris_options) {
+  return std::visit(
+      overloaded{[](const geometry::optimization::IrisOptions& options) {
+                   return options.meshcat.get();
+                 },
+                 [](const IrisNp2Options& options) {
+                   return options.sampled_iris_options.meshcat.get();
+                 },
+                 [](const IrisZoOptions& options) {
+                   return options.sampled_iris_options.meshcat.get();
+                 }},
+      iris_options);
+}
+
 // Computes the largest clique in the graph represented by @p adjacency_matrix
 // and adds this largest clique to @p computed_cliques. This clique is then
 // removed from the adjacency matrix, and a new maximal clique is computed.
@@ -194,17 +211,16 @@ std::queue<HPolyhedron> IrisWorker(
   // Disable the IRIS meshcat option in this worker since we cannot write to
   // meshcat from a different thread.
   if (disable_meshcat) {
-    std::visit(
-        [](auto&& arg) {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T,
-                                       geometry::optimization::IrisOptions>) {
-            arg.meshcat = nullptr;
-          } else {
-            arg.sampled_iris_options.meshcat = nullptr;
-          }
-        },
-        iris_options);
+    std::visit(overloaded{[](geometry::optimization::IrisOptions& arg) {
+                            arg.meshcat = nullptr;
+                          },
+                          [](IrisNp2Options& arg) {
+                            arg.sampled_iris_options.meshcat = nullptr;
+                          },
+                          [](IrisZoOptions& arg) {
+                            arg.sampled_iris_options.meshcat = nullptr;
+                          }},
+               iris_options);
   }
 
   std::queue<HPolyhedron> ret{};
@@ -244,23 +260,23 @@ std::queue<HPolyhedron> IrisWorker(
     checker.UpdatePositions(clique_ellipse.center(), builder_id);
     log()->debug("Iris builder thread {} is constructing a set.", builder_id);
     std::visit(
-        [&](auto&& arg) {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T,
-                                       geometry::optimization::IrisOptions>) {
-            arg.starting_ellipse = clique_ellipse;
-            ret.emplace(IrisInConfigurationSpace(
-                checker.plant(), checker.plant_context(builder_id), arg));
-          } else if constexpr (std::is_same_v<T, IrisNp2Options>) {
-            ret.emplace(IrisNp2(
-                *static_cast<const SceneGraphCollisionChecker*>(&checker),
-                clique_ellipse, domain, arg));
-          } else if constexpr (std::is_same_v<T, IrisZoOptions>) {
-            ret.emplace(IrisZo(checker, clique_ellipse, domain, arg));
-          }
-        },
+        overloaded{
+            [&](geometry::optimization::IrisOptions& arg) {
+              arg.starting_ellipse = clique_ellipse;
+              ret.emplace(IrisInConfigurationSpace(
+                  checker.plant(), checker.plant_context(builder_id), arg));
+            },
+            [&](IrisNp2Options& arg) {
+              arg.sampled_iris_options.parallelism = options.parallelism;
+              ret.emplace(IrisNp2(
+                  *static_cast<const SceneGraphCollisionChecker*>(&checker),
+                  clique_ellipse, domain, arg));
+            },
+            [&](IrisZoOptions& arg) {
+              arg.sampled_iris_options.parallelism = options.parallelism;
+              ret.emplace(IrisZo(checker, clique_ellipse, domain, arg));
+            }},
         iris_options);
-    log()->debug("Iris builder thread {} has constructed a set.", builder_id);
 
     current_clique = computed_cliques->pop();
   }
@@ -285,15 +301,15 @@ int ComputeMaxNumberOfCliquesInGreedyCliqueCover(
                           (s * (s + 1)) / 2);
 }
 
-// Approximately compute the fraction of `domain` covered by `sets` by sampling
-// points uniformly at random in `domain` and checking whether the point lies in
-// one of the sets in `sets`.
+// Approximately compute the fraction of `domain` covered by `sets` by
+// sampling points uniformly at random in `domain` and checking whether the
+// point lies in one of the sets in `sets`.
 //
 // The `generator` is used as the source of randomness for drawing points from
 // domain.
 //
-// The sampled points are checked for inclusion in `sets` in parallel, with the
-// degree of parallelism determined by `parallelism`.
+// The sampled points are checked for inclusion in `sets` in parallel, with
+// the degree of parallelism determined by `parallelism`.
 //
 // The value of `last_polytope_sample` is used to initialize the distribution
 // over the domain. The value of the final sample is written to this vector so
@@ -346,6 +362,82 @@ MakeDefaultMaxCliqueSolver() {
       new planning::graph_algorithms::MaxCliqueSolverViaGreedy());
 }
 
+// Checks all the preconditions for running
+// IrisInConfigurationSpaceFromCliqueCover.
+void CheckIrisInConfigurationSpaceFromCliqueCoverPreconditions(
+    const CollisionChecker& checker,
+    const IrisFromCliqueCoverOptions& options) {
+  DRAKE_THROW_UNLESS(options.coverage_termination_threshold > 0);
+  DRAKE_THROW_UNLESS(options.iteration_limit > 0);
+
+  // iris option specific checks
+  std::visit(
+      overloaded{
+          [&checker](const geometry::optimization::IrisOptions& iris_options) {
+            // Note: Even though the iris_options.bounding_region may be
+            // provided,
+            // IrisInConfigurationSpace (currently) requires finite joint
+            // limits.
+            DRAKE_THROW_UNLESS(checker.plant()
+                                   .GetPositionLowerLimits()
+                                   .array()
+                                   .isFinite()
+                                   .all());
+            DRAKE_THROW_UNLESS(checker.plant()
+                                   .GetPositionUpperLimits()
+                                   .array()
+                                   .isFinite()
+                                   .all());
+            DRAKE_THROW_UNLESS(iris_options.prog_with_additional_constraints ==
+                               nullptr);
+            return;
+          },
+          [&checker](const IrisNp2Options& iris_options) {
+            DRAKE_THROW_UNLESS(iris_options.sampled_iris_options
+                                   .prog_with_additional_constraints ==
+                               nullptr);
+            DRAKE_THROW_UNLESS(dynamic_cast<const SceneGraphCollisionChecker*>(
+                                   &checker) != nullptr);
+          },
+          [](const IrisZoOptions& iris_options) {
+            DRAKE_THROW_UNLESS(iris_options.sampled_iris_options
+                                   .prog_with_additional_constraints ==
+                               nullptr);
+          }},
+      options.iris_options);
+
+  // Throw if a parameterization is used.
+  const std::optional<IrisParameterizationFunction> parameterization =
+      std::visit(
+          overloaded{[](const IrisOptions& iris_options) {
+                       unused(iris_options);
+                       return std::optional<IrisParameterizationFunction>{};
+                     },
+                     [](const IrisNp2Options& iris_options) {
+                       return std::optional<IrisParameterizationFunction>{
+                           iris_options.parameterization};
+                     },
+                     [](const IrisZoOptions& iris_options) {
+                       return std::optional<IrisParameterizationFunction>{
+                           iris_options.parameterization};
+                     }},
+          options.iris_options);
+  const int ndim =
+      parameterization.has_value()
+          ? parameterization->get_parameterization_dimension().value_or(
+                checker.plant().num_positions())
+          : checker.plant().num_positions();
+
+  if (parameterization.has_value() &&
+      parameterization
+          ->get_parameterization_double()(Eigen::VectorXd::Zero(ndim))
+          .isZero()) {
+    throw std::runtime_error(
+        "IrisFromCliqueCover does not yet support growing regions on "
+        "a parameterized subspace ");
+  }
+}
+
 }  // namespace
 
 void IrisInConfigurationSpaceFromCliqueCover(
@@ -353,20 +445,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
     RandomGenerator* generator, std::vector<HPolyhedron>* sets,
     const planning::graph_algorithms::MaxCliqueSolverBase*
         max_clique_solver_ptr) {
-  DRAKE_THROW_UNLESS(options.coverage_termination_threshold > 0);
-  DRAKE_THROW_UNLESS(options.iteration_limit > 0);
-  if (std::holds_alternative<IrisNp2Options>(options.iris_options)) {
-    // IrisNp2Options only supports SceneGraphCollisionChecker.
-    DRAKE_THROW_UNLESS(
-        dynamic_cast<const SceneGraphCollisionChecker*>(&checker) != nullptr);
-  }
-
-  // Note: Even though the iris_options.bounding_region may be provided,
-  // IrisInConfigurationSpace (currently) requires finite joint limits.
-  DRAKE_THROW_UNLESS(
-      checker.plant().GetPositionLowerLimits().array().isFinite().all());
-  DRAKE_THROW_UNLESS(
-      checker.plant().GetPositionUpperLimits().array().isFinite().all());
+  CheckIrisInConfigurationSpaceFromCliqueCoverPreconditions(checker, options);
 
   const HPolyhedron default_domain =
       HPolyhedron::MakeBox(checker.plant().GetPositionLowerLimits(),
@@ -437,18 +516,8 @@ void IrisInConfigurationSpaceFromCliqueCover(
       points.col(i) = last_polytope_sample;
     }
 
-    // Show the samples used in build cliques. Debugging visualization.
-    auto meshcat_ptr = std::visit(
-        [](auto&& arg) -> std::shared_ptr<geometry::Meshcat> {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T,
-                                       geometry::optimization::IrisOptions>) {
-            return arg.meshcat;
-          } else {
-            return arg.sampled_iris_options.meshcat;
-          }
-        },
-        options.iris_options);
+    Meshcat* meshcat_ptr = GetMeshcatFromOptions(options.iris_options);
+
     if (meshcat_ptr && domain.ambient_dimension() <= 3) {
       Eigen::Vector3d point_to_draw = Eigen::Vector3d::Zero();
       for (int pt_to_draw = 0; pt_to_draw < points.cols(); ++pt_to_draw) {
@@ -476,7 +545,9 @@ void IrisInConfigurationSpaceFromCliqueCover(
     // The computed cliques from the max clique solver. These will get pulled
     // off the queue by the set builder workers to build the sets.
     AsyncQueue<VectorX<bool>> computed_cliques;
-    if (options.parallelism.num_threads() == 1) {
+    if (options.parallelism.num_threads() == 1 ||
+        std::holds_alternative<IrisNp2Options>(options.iris_options) ||
+        std::holds_alternative<IrisZoOptions>(options.iris_options)) {
       ComputeGreedyTruncatedCliqueCover(minimum_clique_size, *max_clique_solver,
                                         &visibility_graph, &computed_cliques);
       std::queue<HPolyhedron> new_set_queue =
@@ -495,8 +566,8 @@ void IrisInConfigurationSpaceFromCliqueCover(
                      &visibility_graph, &computed_cliques)};
 
       // We will use one thread to build cliques and the remaining threads to
-      // build IRIS regions. If this number is 0, then this function will end up
-      // single threaded.
+      // build IRIS regions. If this number is 0, then this function will end
+      // up single threaded.
       const int num_builder_threads = options.parallelism.num_threads() - 1;
       std::vector<std::future<std::queue<HPolyhedron>>> build_sets_future;
       build_sets_future.reserve(num_builder_threads);
@@ -508,8 +579,9 @@ void IrisInConfigurationSpaceFromCliqueCover(
                        // NOLINTNEXTLINE
                        true /* Disable meshcat since IRIS runs outside the main thread */));
       }
-      // The clique cover and the convex sets are computed asynchronously. Wait
-      // for all the threads to join and then add the new sets to built sets.
+      // The clique cover and the convex sets are computed asynchronously.
+      // Wait for all the threads to join and then add the new sets to built
+      // sets.
       clique_future.get();
       for (auto& new_set_queue_future : build_sets_future) {
         std::queue<HPolyhedron> new_set_queue{new_set_queue_future.get()};
@@ -521,7 +593,8 @@ void IrisInConfigurationSpaceFromCliqueCover(
       }
     }
     log()->info(
-        "{} new sets added in IrisFromCliqueCover at iteration {}. Total sets "
+        "{} new sets added in IrisFromCliqueCover at iteration {}. Total "
+        "sets "
         "= {}",
         num_new_sets, num_iterations, ssize(*sets));
 
