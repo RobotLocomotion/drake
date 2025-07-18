@@ -132,7 +132,7 @@ cc_whole_archive_library = rule(
     fragments = ["cpp"],
     toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
 )
-"""Creates an cc_library with `alwayslink = True` added to all of its deps, to
+"""Creates a cc_library with `alwayslink = True` added to all of its deps, to
 work around https://github.com/bazelbuild/bazel/issues/7362 not providing any
 useful way to create shared libraries from multiple cc_library targets unless
 you want even statically-linked programs to keep all of their symbols.
