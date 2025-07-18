@@ -1,4 +1,4 @@
-# This file governs the contents of libdrake.so.
+# This file governs the contents of libdrake.
 
 # Do not update this list by hand; instead, from the drake workspace run
 #

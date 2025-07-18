@@ -633,25 +633,26 @@ drake_cc_binary(
     ],
 )
 
-install(
-    name = "install_drake_marker",
-    targets = [":libdrake_marker.so"],
+config_setting(
+    name = "install_libdrake_static",
+    flag_values = {"//tools/flags:install_libdrake": "static"},
 )
 
 install(
     name = "install",
     install_tests = [":test/resource_tool_installed_test.py"],
     targets = [
-        ":libdrake_marker.so",
+        # TODO(tyler-yankee): As written, these tools rely on dynamic loading,
+        # so they're incompatible with //tools/flags:install_libdrake=static.
+        # We should determine alternatives to make this work, so that users
+        # linking libdrake statically can distribute a single archive file.
         ":resource_tool",
+        ":libdrake_marker.so",
     ],
     runtime_dest = "share/drake/common",
     data_dest = "share/drake",
     guess_data = "WORKSPACE",
     allowed_externals = [DRAKE_RESOURCE_SENTINEL],
-    deps = [
-        ":install_drake_marker",
-    ],
 )
 
 # === test/ ===
