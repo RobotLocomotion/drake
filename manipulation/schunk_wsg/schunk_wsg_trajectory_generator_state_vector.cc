@@ -9,6 +9,7 @@ const int SchunkWsgTrajectoryGeneratorStateVectorIndices::kLastTargetPosition;
 const int SchunkWsgTrajectoryGeneratorStateVectorIndices::kTrajectoryStartTime;
 const int SchunkWsgTrajectoryGeneratorStateVectorIndices::kLastPosition;
 const int SchunkWsgTrajectoryGeneratorStateVectorIndices::kMaxForce;
+const int SchunkWsgTrajectoryGeneratorStateVectorIndices::kForcedUpdateTraj;
 
 const std::vector<std::string>&
 SchunkWsgTrajectoryGeneratorStateVectorIndices::GetCoordinateNames() {
@@ -18,6 +19,7 @@ SchunkWsgTrajectoryGeneratorStateVectorIndices::GetCoordinateNames() {
           "trajectory_start_time",
           "last_position",
           "max_force",
+          "forced_update_traj",
       });
   return coordinates.access();
 }

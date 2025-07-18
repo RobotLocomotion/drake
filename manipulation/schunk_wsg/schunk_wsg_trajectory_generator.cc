@@ -104,11 +104,14 @@ EventStatus SchunkWsgTrajectoryGenerator::CalcDiscreteUpdate(
           : std::numeric_limits<double>::quiet_NaN();
   new_traj_state->set_max_force(max_force);
 
-  if (!trajectory_ || std::abs(last_traj_state->last_target_position() -
-                               target_position) > kTargetEpsilon) {
+  if (!trajectory_ ||
+      std::abs(last_traj_state->last_target_position() - target_position) >
+          kTargetEpsilon ||
+      (last_traj_state->forced_update_traj())) {
     UpdateTrajectory(cur_position, target_position);
     new_traj_state->set_last_target_position(target_position);
     new_traj_state->set_trajectory_start_time(context.get_time());
+    new_traj_state->set_forced_update_traj(0);
   } else {
     new_traj_state->set_last_target_position(
         last_traj_state->last_target_position());
