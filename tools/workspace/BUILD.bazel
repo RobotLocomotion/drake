@@ -127,7 +127,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "org_apache_xmlgraphics_commons",
     "picosha2_internal",
     "poisson_disk_sampling_internal",
-    "pybind11",
     "qhull_internal",
     "sdformat_internal",
     "spral_internal",
@@ -153,6 +152,9 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "spdlog",
     "zlib",
 ]] + select({
+    "//tools/install/libdrake:install_pydrake": [],
+    "//conditions:default": ["@pybind11//:install"], 
+}) + select({
     "//tools/workspace/csdp_internal:enabled": ["@csdp_internal//:install"],
     "//conditions:default": [],
 }) + select({

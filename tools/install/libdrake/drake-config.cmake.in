@@ -75,15 +75,27 @@ if(APPLE)
   set(_apple_soname_prologue "@rpath/")
 endif()
 
-add_library(drake::drake SHARED IMPORTED)
+if(@DRAKE_SHARED_LIB@)
+  set(_drake_library_type SHARED)
+  set(_drake_library_name libdrake.so)
+else()
+  set(_drake_library_type STATIC)
+  set(_drake_library_name libdrake.a)
+endif()
+
+add_library(drake::drake "${_drake_library_type}" IMPORTED)
 set_target_properties(drake::drake PROPERTIES
-  IMPORTED_LOCATION "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/libdrake.so"
-  IMPORTED_SONAME "${_apple_soname_prologue}libdrake.so"
+  IMPORTED_LOCATION "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/${_drake_library_name}"
   INTERFACE_INCLUDE_DIRECTORIES "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/include"
   INTERFACE_LINK_LIBRARIES "${_drake_interface_libraries}"
   INTERFACE_COMPILE_FEATURES "cxx_std_20"
   INTERFACE_COMPILE_DEFINITIONS "${_drake_interface_compile_definitions}"
 )
+if(@DRAKE_SHARED_LIB@)
+  set_target_properties(drake::drake PROPERTIES
+    IMPORTED_SONAME "${_apple_soname_prologue}${_drake_library_name}"
+  )
+endif()
 
 add_library(drake::drake-lcmtypes-cpp INTERFACE IMPORTED)
 set_target_properties(drake::drake-lcmtypes-cpp PROPERTIES
