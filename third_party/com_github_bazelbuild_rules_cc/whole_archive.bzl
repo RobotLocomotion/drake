@@ -13,43 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load(
+    "//third_party:com_github_bazelbuild_rules_cc/find_cc_toolchain.bzl",
+    "find_cc_toolchain",
+)
 load("//tools/skylark:cc.bzl", "CcInfo")
-
-# This function is forked and modified from bazelbuild/rules_cc as of:
-# https://github.com/bazelbuild/rules_cc/blob/262ebec/cc/find_cc_toolchain.bzl
-def _find_cc_toolchain(ctx):
-    # Check the incompatible flag for toolchain resolution.
-    if hasattr(cc_common, "is_cc_toolchain_resolution_enabled_do_not_use") and cc_common.is_cc_toolchain_resolution_enabled_do_not_use(ctx = ctx):  # noqa
-        valid_names = [
-            # The name for Bazel 6 and earlier.
-            "//cc:toolchain_type",
-            # The name for Bazel 7 and after.
-            "@@bazel_tools//tools/cpp:toolchain_type",
-        ]
-        for possible_name in valid_names:
-            if possible_name in ctx.toolchains:
-                info = ctx.toolchains[possible_name]
-                if all([
-                    hasattr(info, x)
-                    for x in ["cc_provider_in_toolchain", "cc"]
-                ]):
-                    # This logic is cherry-picked from upstream d5d830b.
-                    return info.cc
-                return info
-        fail("In order to use find_cc_toolchain, your rule has to depend on C++ toolchain. See find_cc_toolchain.bzl docs for details.")  # noqa
-
-    # Fall back to the legacy implicit attribute lookup.
-    if hasattr(ctx.attr, "_cc_toolchain"):
-        return ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]
-
-    # We didn't find anything.
-    fail("In order to use find_cc_toolchain, your rule has to depend on C++ toolchain. See find_cc_toolchain.bzl docs for details.")  # noqa
 
 # This function was inspired by bazelbuild/rules_cc as of:
 # https://github.com/bazelbuild/rules_cc/blob/262ebec3c2296296526740db4aefce68c80de7fa/examples/my_c_archive/my_c_archive.bzl
 def _cc_whole_archive_library_impl(ctx):
     # Find the C++ toolchain.
-    cc_toolchain = _find_cc_toolchain(ctx)
+    cc_toolchain = find_cc_toolchain(ctx)
     feature_configuration = cc_common.configure_features(
         ctx = ctx,
         cc_toolchain = cc_toolchain,
@@ -132,7 +106,7 @@ cc_whole_archive_library = rule(
     fragments = ["cpp"],
     toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
 )
-"""Creates an cc_library with `alwayslink = True` added to all of its deps, to
+"""Creates a cc_library with `alwayslink = True` added to all of its deps, to
 work around https://github.com/bazelbuild/bazel/issues/7362 not providing any
 useful way to create shared libraries from multiple cc_library targets unless
 you want even statically-linked programs to keep all of their symbols.

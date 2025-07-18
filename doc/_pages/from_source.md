@@ -118,6 +118,13 @@ for further details.
 Drake also defines a number of CMake options to control different facets of
 the build.
 
+Adjusting installation:
+
+* `BUILD_SHARED_LIBS` (default `ON`). When `OFF`, installs a static `libdrake.a`
+  (as opposed to a shared `libdrake.so`).
+* `DRAKE_INSTALL_PYTHON` (default `ON`). When `OFF`, does not install
+  Python-based tools (`pydrake`, `pybind11` headers, tutorials, lcmtypes).
+
 Adjusting open-source dependencies:
 
 * `WITH_USER_EIGEN` (default `ON`). When `ON`, uses `find_package(Eigen3)`
@@ -204,8 +211,9 @@ prior tree (within the `install` sub-directory) before running `make`.
 
 ## Running the Python Bindings after a CMake Install
 
-To run the installed copy of `pydrake`, you will also need to have your
-``PYTHONPATH`` configured correctly.
+To run the installed copy of `pydrake` (assuming you've installed Drake as a
+shared library), you will also need to have your ``PYTHONPATH``
+configured correctly.
 
 *Ubuntu 22.04 (Jammy):*
 
