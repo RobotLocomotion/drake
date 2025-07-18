@@ -408,8 +408,8 @@ void QuaternionFloatingMobilizer<T>::DoCalcNDotMatrix(
   const Quaternion<T> q_FM = get_quaternion(context);
   const Vector3<T> w_FM_F = get_angular_velocity(context);
   const Vector4<T> qdot = AngularVelocityToQuaternionRateMatrix(q_FM) * w_FM_F;
-  const Quaternion<T> half_qdot(0.5 * qdot.w(), 0.5 * qdot.x(), 0.5 * qdot.y(),
-                                0.5 * qdot.z());
+  const Quaternion<T> half_qdot(0.5 * qdot[0], 0.5 * qdot[1], 0.5 * qdot[2],
+                                0.5 * qdot[3]);
 
   // Leveraging comments and code in AngularVelocityToQuaternionRateMatrix()
   // and noting that Nᵣ(qᵣ) = L(q_FM/2), where the elements of the matrix L are
@@ -446,10 +446,10 @@ void QuaternionFloatingMobilizer<T>::DoCalcNplusDotMatrix(
   const Quaternion<T> q_FM = get_quaternion(context);
   const Vector3<T> w_FM_F = get_angular_velocity(context);
   const Vector4<T> qdot = AngularVelocityToQuaternionRateMatrix(q_FM) * w_FM_F;
-  const Quaternion<T> twice_qdot(2.0 * qdot.w(), 2.0 * qdot.x(), 2.0 * qdot.y(),
-                                 2.0 * qdot.z());
+  const Quaternion<T> twice_qdot(2.0 * qdot[0], 2.0 * qdot[1], 2.0 * qdot[2],
+                                 2.0 * qdot[3]);
 
-  // Leveraging comments and code in QuaternionRateToAngularVelocityMatrix()
+  // Leveraging comments and code in AngularVelocityToQuaternionRateMatrix(()
   // and noting that N⁺ᵣ(qᵣ) = L(2 * q_FM)ᵀ, where the elements of the matrix L
   // are linear in q_FM = [qw, qx, qy, qz]ᵀ, so Ṅ⁺ᵣ(qᵣ,q̇ᵣ) = L(2 * q̇_FM)ᵀ.
   const Eigen::Matrix<T, 3, 4> NrPlusDot = CalcLMatrix(twice_qdot).transpose();
