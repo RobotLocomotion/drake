@@ -19,11 +19,12 @@ namespace multibody {
 namespace internal {
 
 // This Mobilizer allows a "mobilized" frame M to freely rotate and translate
-// relative to a "fixed" frame F (frame F has 6 degrees of freedom in frame M).
+// relative to a "fixed" frame F (frame M has 6 degrees of freedom in frame F).
 //
 // The rotational part of this mobilizer is characterized by generalized
 // positions q_FM = qᵣ = [qw, qx, qy, qz]ᵀ (the quaternion relating frame F and
-// frame M) and generalized velocities w_FM_F = vᵣ = [ωx, ωy, ωz]ᵀ
+// frame M, with qw the scalar part and (qx, qy, qz) the vector part of the
+// quaternion) and generalized velocities w_FM_F = vᵣ = [ωx, ωy, ωz]ᵀ
 // (frame M's angular velocity in frame F, expressed in frame F).
 //
 // The translational part of this mobilizer is characterized by generalized

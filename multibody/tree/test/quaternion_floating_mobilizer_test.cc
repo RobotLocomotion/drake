@@ -235,6 +235,15 @@ TEST_F(QuaternionFloatingMobilizerTest, KinematicMapping) {
   EXPECT_TRUE(CompareMatrices(Nplus_x_N, MatrixX<double>::Identity(6, 6),
                               kTolerance, MatrixCompareType::relative));
 
+  // Ensure the rotation (upper-left block) part of the N matrix is 0.25 times
+  // the transpose of the rotation part of the N matrix.
+  MatrixX<double> N_rotational(4, 3);
+  MatrixX<double> Nplus_rotational(3, 4);
+  N_rotational = N.block<4, 3>(0, 0);
+  Nplus_rotational = Nplus.block<3, 4>(0, 0);
+  EXPECT_TRUE(CompareMatrices(N_rotational.transpose(), 0.25 * Nplus_rotational,
+                              kTolerance, MatrixCompareType::relative));
+
   // Set arbitrary angular and translational velocities for this mobilizer.
   const Vector3<double> w_FM_F(1.1, 2.5, 3.2);
   mobilizer_->SetAngularVelocity(context_.get(), w_FM_F);
@@ -245,15 +254,53 @@ TEST_F(QuaternionFloatingMobilizerTest, KinematicMapping) {
   MatrixX<double> NDot(7, 6);
   mobilizer_->CalcNDotMatrix(*context_, &NDot);
 
-  // Calculate the NplusDot(q) matrix that appears in v̇ = Ṅ⁺(q,q̇)⋅v + N⁺(q)⋅q̈.
+  // Use the given data to calculated the expected values in the NDot matrix.
+  // Get the quaternion's scalar portion (eo) and vector portion (evec).
+  const double e0 = Q_FM.w();  // Scalar portion of the quaternion.
+  const Vector3<double> evec(Q_FM.x(), Q_FM.y(), Q_FM.z());  // Vector portion.
+
+  // Use Eq. 5 in §9.3 of Mitiguy, Advanced Dynamics & Motion Simulation, 2019,
+  // to calculate ė₀, the time-derivative of evec in frame F, and NDot(q,q̇).
+  const double e0dot = -0.5 * evec.dot(w_FM_F);
+  const Vector3<double> evec_dtA = 0.5 * (e0 * w_FM_F - evec.cross(w_FM_F));
+  const double e1dot = evec_dtA.x();
+  const double e2dot = evec_dtA.y();
+  const double e3dot = evec_dtA.z();
+  MatrixX<double> NDot_rotation_expected(4, 3);
+  // clang-format off
+  NDot_rotation_expected = 0.5 * (Eigen::Matrix<double, 4, 3>()
+      << -e1dot, -e2dot, -e3dot,
+          e0dot,  e3dot, -e2dot,
+         -e3dot,  e0dot,  e1dot,
+          e2dot, -e1dot,  e0dot).finished();
+  // clang-format on
+
+  // Ensure the calculation of the rotational part of the Ndot matrix matches
+  // the by-hand calculations above.
+  MatrixX<double> NDot_rotation(4, 3);
+  NDot_rotation = NDot.block<4, 3>(0, 0);
+  EXPECT_TRUE(CompareMatrices(NDot_rotation, NDot_rotation_expected, kTolerance,
+                              MatrixCompareType::relative));
+
+  MatrixX<double> NDot_expected(7, 6);
+  NDot_expected.template block<4, 3>(0, 0) = NDot_rotation;  // Upper-left.
+  NDot_expected.template block<4, 3>(0, 3).setZero();        // Upper-right.
+  NDot_expected.template block<3, 3>(4, 0).setZero();        // Lower-left.
+  NDot_expected.template block<3, 3>(4, 3).setZero();        // Lower-right.
+
+  // Ensure the Drake calculation of Ndot matches the by-hand calculations.
+  EXPECT_TRUE(CompareMatrices(NDot, NDot_expected, kTolerance,
+                              MatrixCompareType::relative));
+
+  // Calculate the NplusDot(q,q̇) matrix that appears in v̇ = Ṅ⁺(q,q̇)⋅v + N⁺(q)⋅q̈.
   MatrixX<double> NplusDot(6, 7);
   mobilizer_->CalcNplusDotMatrix(*context_, &NplusDot);
 
   // Since N⁺(q) * N(q) = [I₆₆] (the 6x6 identity matrix), then
   // Ṅ⁺(q,q̇) * N(q) + N⁺(q) * Ṅ(q,q̇) = [0₆₆] (the 6x6 zero matrix).
   MatrixX<double> zero_matrix_expected = NplusDot * N + Nplus * NDot;
-  EXPECT_FALSE(CompareMatrices(NplusDot, MatrixX<double>::Zero(6, 6),
-                               kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(zero_matrix_expected, MatrixX<double>::Zero(6, 6),
+                              kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(QuaternionFloatingMobilizerTest, CheckExceptionMessage) {
