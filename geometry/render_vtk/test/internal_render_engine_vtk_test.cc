@@ -994,6 +994,122 @@ TEST_F(RenderEngineVtkTest, GltfTextureSupport) {
   EXPECT_GE(num_acceptable / static_cast<float>(expected_image.size()), 0.8);
 }
 
+// A simple regression test to make sure that we are supporting alpha channels
+// in glTF's BaseColorFactor definition. To that end, we have a special glTF
+// file that we'll render and test the resulting image against a reference
+// image.
+//
+// Changes to the camera pose, the glTF file being tested, or render camera
+// intrinsics will require the reference image to be re-rendered. Simply save
+// the image that is rendered by this test as the new reference (subject to
+// visual inspection).
+TEST_F(RenderEngineVtkTest, GltfBaseColorFactorAlphaSupport) {
+  const RotationMatrixd R_WC(math::RollPitchYawd(-M_PI / 2.5, 0, M_PI / 4));
+  const RigidTransformd X_WC(R_WC,
+                             R_WC * Vector3d(0, 0, -6) + Vector3d(0, 0, -0.15));
+  Init(X_WC);
+
+  PerceptionProperties materialBehind;
+  materialBehind.AddProperty("label", "id", RenderLabel(1));
+  const GeometryId idBehind = GeometryId::get_new_id();
+  const std::string filenameBehind = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf");
+  renderer_->RegisterVisual(idBehind, Mesh(filenameBehind), materialBehind,
+                            RigidTransformd(Vector3d(-2, 2, 0.5)),
+                            false /* needs update */);
+
+  PerceptionProperties materialFront;
+  materialFront.AddProperty("label", "id", RenderLabel(1));
+  const GeometryId idFront = GeometryId::get_new_id();
+  const std::string filenameFront = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/simple_transparent_cube.gltf");
+  renderer_->RegisterVisual(idFront, Mesh(filenameFront), materialFront,
+                            RigidTransformd::Identity(),
+                            false /* needs update */);
+  int resolution = 256;
+  ImageRgba8U image(resolution, resolution);
+  const ColorRenderCamera camera(
+      {"unused", {resolution, resolution, kFovY}, {0.01, 10}, {}},
+      FLAGS_show_window);
+  renderer_->RenderColorImage(camera, &image);
+  SaveTestOutputImage(image, "GltfBaseColorFactorAlphaSupport.png");
+
+  ImageRgba8U expected_image;
+  const std::string ref_filename = FindResourceOrThrow(
+      "drake/geometry/render_vtk/test/GltfBaseColorFactorAlphaSupport.png");
+  ASSERT_TRUE(systems::sensors::LoadImage(ref_filename, &expected_image));
+  // We're testing to see if the images are *coarsely* equal. This accounts for
+  // the differences in CI's rendering technology from a local GPU. The images
+  // are deemed equivalent if 80% of the channel values are within 20 of the
+  // reference color.
+  ASSERT_EQ(expected_image.size(), image.size());
+  Eigen::Map<VectorX<uint8_t>> data_expected(expected_image.at(0, 0),
+                                             expected_image.size());
+  Eigen::Map<VectorX<uint8_t>> data2(image.at(0, 0), image.size());
+  const auto differences =
+      (data_expected.cast<float>() - data2.cast<float>()).array().abs();
+  const int num_acceptable = (differences <= 20).count();
+  EXPECT_GE(num_acceptable / static_cast<float>(expected_image.size()), 0.8);
+}
+
+// A simple regression test to make sure that we are supporting transparent
+// textures textures in glTF's baseColorTexture definition. To that end, we have
+// a special glTF file that we'll render and test the resulting image against a
+// reference image.
+//
+// Changes to the camera pose, the glTF file being tested, or render camera
+// intrinsics will require the reference image to be re-rendered. Simply save
+// the image that is rendered by this test as the new reference (subject to
+// visual inspection).
+TEST_F(RenderEngineVtkTest, GltfTransparentTextureSupport) {
+  const RotationMatrixd R_WC(math::RollPitchYawd(-M_PI / 2.5, 0, M_PI / 4));
+  const RigidTransformd X_WC(R_WC,
+                             R_WC * Vector3d(0, 0, -6) + Vector3d(0, 0, -0.15));
+  Init(X_WC);
+
+  PerceptionProperties materialBehind;
+  materialBehind.AddProperty("label", "id", RenderLabel(1));
+  const GeometryId idBehind = GeometryId::get_new_id();
+  const std::string filenameBehind = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/textured_transparent_cube.gltf");
+  renderer_->RegisterVisual(idBehind, Mesh(filenameBehind), materialBehind,
+                            RigidTransformd(Vector3d(-1, 1, -0.5)),
+                            false /* needs update */);
+
+  PerceptionProperties materialFront;
+  materialFront.AddProperty("label", "id", RenderLabel(1));
+  const GeometryId idFront = GeometryId::get_new_id();
+  const std::string filenameFront = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/textured_transparent_cube.gltf");
+  renderer_->RegisterVisual(idFront, Mesh(filenameFront), materialFront,
+                            RigidTransformd::Identity(),
+                            false /* needs update */);
+  int resolution = 256;
+  ImageRgba8U image(resolution, resolution);
+  const ColorRenderCamera camera(
+      {"unused", {resolution, resolution, kFovY}, {0.01, 10}, {}},
+      FLAGS_show_window);
+  renderer_->RenderColorImage(camera, &image);
+  SaveTestOutputImage(image, "GltfTransparentTextureSupport.png");
+
+  ImageRgba8U expected_image;
+  const std::string ref_filename = FindResourceOrThrow(
+      "drake/geometry/render_vtk/test/GltfTransparentTextureSupport.png");
+  ASSERT_TRUE(systems::sensors::LoadImage(ref_filename, &expected_image));
+  // We're testing to see if the images are *coarsely* equal. This accounts for
+  // the differences in CI's rendering technology from a local GPU. The images
+  // are deemed equivalent if 80% of the channel values are within 20 of the
+  // reference color.
+  ASSERT_EQ(expected_image.size(), image.size());
+  Eigen::Map<VectorX<uint8_t>> data_expected(expected_image.at(0, 0),
+                                             expected_image.size());
+  Eigen::Map<VectorX<uint8_t>> data2(image.at(0, 0), image.size());
+  const auto differences =
+      (data_expected.cast<float>() - data2.cast<float>()).array().abs();
+  const int num_acceptable = (differences <= 20).count();
+  EXPECT_GE(num_acceptable / static_cast<float>(expected_image.size()), 0.8);
+}
+
 // A glTF file can either embed its assets as data URIs, or can use relative
 // pathnames for the URI. It can use buffer views into a single asset buffer,
 // or have assets in different files. We'll render a simple cube loaded from

@@ -876,6 +876,7 @@ void RenderEngineVtk::InitializePipelines() {
     // TODO(fbudin69500) If lack of anti-aliasing in production code is
     // problematic, change this to only disable anti-aliasing in unit
     // tests. Alternatively, find other way to resolve the driver bug.
+    pipeline->window->SetAlphaBitPlanes(1);
     pipeline->window->SetMultiSamples(0);
 
     auto* camera = pipeline->renderer->GetActiveCamera();
