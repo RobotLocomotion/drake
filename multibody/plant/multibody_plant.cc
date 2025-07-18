@@ -1699,6 +1699,22 @@ const CoulombFriction<double>& MultibodyPlant<T>::GetCoulombFriction(
 }
 
 template <typename T>
+const std::optional<double> MultibodyPlant<T>::GetSurfaceSpeed(
+    geometry::GeometryId id, const SceneGraphInspector<T>& inspector) const {
+  const geometry::ProximityProperties* prop =
+      inspector.GetProximityProperties(id);
+  DRAKE_DEMAND(prop != nullptr);
+  if (prop->HasProperty(geometry::internal::kSurfaceVelocityGroup,
+                        geometry::internal::kSurfaceSpeed)) {
+    return prop->GetProperty<double>(geometry::internal::kSurfaceVelocityGroup,
+                                     geometry::internal::kSurfaceSpeed);
+
+  } else {
+    return std::nullopt;
+  }
+}
+
+template <typename T>
 void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
   DRAKE_DEMAND(geometry_source_is_registered());
   if (adjacent_bodies_collision_filters_) {
@@ -2354,18 +2370,27 @@ void MultibodyPlant<T>::CalcContactResultsPointPairContinuous(
     const auto [k, d] = internal::CombinePointContactParameters(kA, kB, dA, dB);
     const T fn_AC = k * x * (1.0 + d * vn);
 
-    // Acquire friction coefficients and combine them.
-    const CoulombFriction<double>& geometryA_friction =
-        GetCoulombFriction(geometryA_id, inspector);
-    const CoulombFriction<double>& geometryB_friction =
-        GetCoulombFriction(geometryB_id, inspector);
-    const CoulombFriction<double> combined_friction =
-        CalcContactFrictionFromSurfaceProperties(geometryA_friction,
-                                                 geometryB_friction);
-
     if (fn_AC > 0) {
+      // Acquire friction coefficients and combine them.
+      const CoulombFriction<double>& geometryA_friction =
+          GetCoulombFriction(geometryA_id, inspector);
+      const CoulombFriction<double>& geometryB_friction =
+          GetCoulombFriction(geometryB_id, inspector);
+      const CoulombFriction<double> combined_friction =
+          CalcContactFrictionFromSurfaceProperties(geometryA_friction,
+                                                   geometryB_friction);
+
+      std::optional<double> geometryA_ss =
+          GetSurfaceSpeed(geometryA_id, inspector);
+      std::optional<double> geometryB_ss =
+          GetSurfaceSpeed(geometryB_id, inspector);
+
+      DRAKE_THROW_UNLESS((geometryA_ss.has_value() || geometryB_ss.has_value()));
+
       // Normal force on body A, at C, expressed in W.
       const Vector3<T> fn_AC_W = fn_AC * nhat_BA_W;
+
+      // Check if surface speed properties were defined
 
       // Compute tangential velocity, that is, v_AcBc projected onto the tangent
       // plane with normal nhat_BA:

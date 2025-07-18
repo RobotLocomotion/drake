@@ -41,7 +41,10 @@ extern const char* const kRelaxationTime;  ///< Linear dissipation
                                            ///< property name.
 extern const char* const kPointStiffness;  ///< Point stiffness property
                                            ///< name.
-
+extern const char* const kSurfaceVelocityGroup; ///< Surface velocity group name.
+extern const char* const kSurfaceSpeed;        ///< Surface speed property name.
+extern const char* const kSurfaceVelocityNormal;  ///< Surface velocity normal
+                                            ///< property name.
 //@}
 
 /* @name  Declaring geometry for hydroelastic contact.
