@@ -289,4 +289,22 @@ bool_flag(
 
 # -----------------------------------------------------------------------------
 
+# The :static_lib flag configures whether to link libdrake as a static library
+# (i.e., output libdrake.a). When off (the default), libdrake is linked as a
+# shared library, outputting libdrake.so.
+bool_flag(
+    name = "static_lib",
+    build_setting_default = False,
+)
+
+# The :install_pydrake controls whether to install pydrake. If :static_lib is
+# True, the value of this flag will be ignored, and pydrake will not be
+# installed.
+bool_flag(
+    name = "install_pydrake",
+    build_setting_default = False,
+)
+
+# -----------------------------------------------------------------------------
+
 add_lint_tests()
