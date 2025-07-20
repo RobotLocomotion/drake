@@ -635,9 +635,10 @@ std::optional<ProximityProperties> MakeProximityPropertiesForCollision(
           GetChildElementValue<gz::math::Vector3d>(
               diagnostic, drake_element, "drake:surface_velocity_normal");
       if (velocity_normal.has_value()) {
+        Vector3d velocity_normal_vec = ToVector3(velocity_normal.value());
         properties.AddProperty(geometry::internal::kSurfaceVelocityGroup,
                                geometry::internal::kSurfaceVelocityNormal,
-                               velocity_normal.value().Normalized());
+                               velocity_normal_vec.normalized());
       }
     }
   }

@@ -1507,12 +1507,10 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     ASSERT_TRUE(properties.value().HasProperty(
         geometry::internal::kSurfaceVelocityGroup,
         geometry::internal::kSurfaceVelocityNormal));
-    const gz::math::Vector3d& velocity_normal =
-        properties.value().GetProperty<gz::math::Vector3d>(
-            geometry::internal::kSurfaceVelocityGroup,
-            geometry::internal::kSurfaceVelocityNormal);
-    EXPECT_LT(velocity_normal.Distance(gz::math::Vector3d(1.0, 0.0, 0.0)),
-              1e-5);
+    const Vector3d& velocity_normal = properties.value().GetProperty<Vector3d>(
+        geometry::internal::kSurfaceVelocityGroup,
+        geometry::internal::kSurfaceVelocityNormal);
+    EXPECT_LT((velocity_normal - Vector3d(1.0, 0.0, 0.0)).norm(), 1e-5);
   }
 
   // Case: specifies rigid hydroelastic.
