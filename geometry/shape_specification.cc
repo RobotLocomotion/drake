@@ -433,6 +433,62 @@ double CalcVolume(const Shape& shape) {
       }});
 }
 
+template <typename T>
+std::optional<Eigen::Vector3<T>> GetNormalAtPointForBox(
+    const Box& box, const Eigen::Vector3<T>& p) {
+  (void)box;
+  return std::optional<Eigen::Vector3<T>>(p);
+}
+
+template std::optional<Eigen::Vector3<double>> GetNormalAtPointForBox(
+    const Box& box, const Eigen::Vector3<double>& p);
+
+template <typename T>
+std::optional<Eigen::Vector3<T>> GetNormalAtPoint(const Shape& shape,
+                                                  const Eigen::Vector3<T>& p) {
+  return shape.Visit<std::optional<Eigen::Vector3<T>>>(
+      overloaded{[&](const Box& box) {
+                   (void)box;
+                   return GetNormalAtPointForBox<T>(box, p);
+                 },
+                 [&](const Capsule& capsule) {
+                   (void)capsule;
+                   return std::optional<Eigen::Vector3<T>>(p);
+                 },
+                 [&](const Convex& convex) {
+                   (void)convex;
+                   return std::optional<Eigen::Vector3<T>>(p);
+                 },
+                 [&](const Cylinder& cylinder) {
+                   (void)cylinder;
+                   return std::optional<Eigen::Vector3<T>>(p);
+                 },
+                 [&](const Ellipsoid& ellipsoid) {
+                   (void)ellipsoid;
+                   return std::optional<Eigen::Vector3<T>>(p);
+                 },
+                 [&](const HalfSpace&) {
+                   return std::optional<Eigen::Vector3<T>>(p);
+                 },
+                 [&](const Mesh& mesh) {
+                   (void)mesh;
+                   return std::optional<Eigen::Vector3<T>>(p);
+                 },
+                 [&](const MeshcatCone& cone) {
+                   (void)cone;
+                   return std::optional<Eigen::Vector3<T>>(p);
+                 },
+                 [&](const Sphere& sphere) {
+                   (void)sphere;
+                   return std::optional<Eigen::Vector3<T>>(p);
+                 }});
+}
+
+template std::optional<Eigen::Vector3<double>> GetNormalAtPoint(
+    const Shape& shape, const Eigen::Vector3<double>& p);
+template std::optional<Eigen::Vector3<float>> GetNormalAtPoint(
+    const Shape& shape, const Eigen::Vector3<float>& p);
+
 // The NVI function definitions are enough boilerplate to merit a macro to
 // implement them, and we might as well toss in the dtor for good measure.
 
