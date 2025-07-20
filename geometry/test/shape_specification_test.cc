@@ -1,6 +1,7 @@
 #include "drake/geometry/shape_specification.h"
 
 #include <filesystem>
+#include <iostream>
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -1043,9 +1044,22 @@ GTEST_TEST(ShapeTest, MoveConstructor) {
 }
 
 GTEST_TEST(ShapeTest, NormalAtPoint) {
-  Eigen::Vector3d p(1.0, 1.0, 1.0);
   const double tol = 1e-5;
-  EXPECT_LT((GetNormalAtPoint<double>(Box(1.0, 1.0, 1.0), p).value() - p).norm(), tol);
+
+  const double w = 1.0;
+  const double d = 1.0;
+  const double h = 1.0;
+  const Box box(w, d, h);
+
+  const std::vector<Eigen::Vector3d> points = {
+      {w / 2, 0.0, 0.0},  {0.0, h / 2, 0.0},  {0.0, 0.0, d / 2},
+      {-w / 2, 0.0, 0.0}, {0.0, -h / 2, 0.0}, {0.0, 0.0, -d / 2}};
+
+  for (const Eigen::Vector3d& p : points) {
+    std::optional<Eigen::Vector3d> n = GetNormalAtPoint<double>(box, p);
+    ASSERT_TRUE(n.has_value());
+    EXPECT_LT((n.value() - p.normalized()).norm(), tol);
+  }
 }
 
 }  // namespace
