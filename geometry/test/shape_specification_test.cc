@@ -1042,6 +1042,12 @@ GTEST_TEST(ShapeTest, MoveConstructor) {
   EXPECT_TRUE(orig.source().in_memory().mesh_file.contents().empty());
 }
 
+GTEST_TEST(ShapeTest, NormalAtPoint) {
+  Eigen::Vector3d p(1.0, 1.0, 1.0);
+  const double tol = 1e-5;
+  EXPECT_LT((GetNormalAtPoint<double>(Box(1.0, 1.0, 1.0), p).value() - p).norm(), tol);
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake
