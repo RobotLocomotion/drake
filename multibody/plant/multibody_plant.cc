@@ -1715,6 +1715,55 @@ const std::optional<double> MultibodyPlant<T>::GetSurfaceSpeed(
 }
 
 template <typename T>
+const std::optional<Eigen::Vector3<T>>
+MultibodyPlant<T>::GetSurfaceVelocityNormal(
+    geometry::GeometryId id, const SceneGraphInspector<T>& inspector) const {
+  const geometry::ProximityProperties* prop =
+      inspector.GetProximityProperties(id);
+  DRAKE_DEMAND(prop != nullptr);
+  if (prop->HasProperty(geometry::internal::kSurfaceVelocityGroup,
+                        geometry::internal::kSurfaceVelocityNormal)) {
+    return prop->GetProperty<Eigen::Vector3<T>>(
+        geometry::internal::kSurfaceVelocityGroup,
+        geometry::internal::kSurfaceVelocityNormal);
+  } else {
+    return std::nullopt;
+  }
+}
+
+template <typename T>
+Vector3<T> MultibodyPlant<T>::GetSurfaceVelocity(
+    geometry::GeometryId id, const geometry::SceneGraphInspector<T>& inspector,
+    const RigidTransform<T>& X_W, const Vector3<T>& p_WC) const {
+  Vector3<T> surface_velocity = Vector3<T>::Zero();
+
+  // Get surface speed for this geometry
+  std::optional<double> surface_speed = GetSurfaceSpeed(id, inspector);
+  if (!surface_speed.has_value()) {
+    return surface_velocity;
+  }
+  // Get surface velocity normal for this geometry
+  std::optional<Eigen::Vector3<T>> velocity_normal =
+      GetSurfaceVelocityNormal(id, inspector);
+  if (!velocity_normal.has_value()) {
+    return surface_velocity;
+  }
+
+  const geometry::VolumeMesh<double>* volume_mesh =
+      inspector.GetReferenceMesh(id);
+  (void)volume_mesh;
+  (void)X_W;
+  (void)p_WC;
+  // Get the mesh of the collision geometry by reifying its shape
+  // const geometry::Shape& shape = inspector.getShape(id);
+  // const geometry::ShapeReifier reifier;
+  // shape.Reify(&reifier);
+  // const geometry::TriangleSurfaceMesh<double>* mesh = shape.
+
+  return surface_velocity;
+}
+
+template <typename T>
 void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
   DRAKE_DEMAND(geometry_source_is_registered());
   if (adjacent_bodies_collision_filters_) {
@@ -2354,11 +2403,20 @@ void MultibodyPlant<T>::CalcContactResultsPointPairContinuous(
     const Vector3<T>& p_WBo = pc.get_X_WB(bodyB_mobod_index).translation();
     const Vector3<T>& p_CoBo_W = p_WBo - p_WC;
 
+    // Get surface velocity for A
+    const Vector3<T> v_WAc_ss = GetSurfaceVelocity(
+        geometryA_id, inspector, pc.get_X_WB(bodyA_mobod_index), p_WCa);
+    // Get surface velocity for B
+    const Vector3<T> V_WBc_ss = GetSurfaceVelocity(
+        geometryB_id, inspector, pc.get_X_WB(bodyB_mobod_index), p_WCb);
+
     // Separation velocity, > 0  if objects separate.
     const Vector3<T> v_WAc =
-        vc.get_V_WB(bodyA_mobod_index).Shift(-p_CoAo_W).translational();
+        vc.get_V_WB(bodyA_mobod_index).Shift(-p_CoAo_W).translational() +
+        v_WAc_ss;
     const Vector3<T> v_WBc =
-        vc.get_V_WB(bodyB_mobod_index).Shift(-p_CoBo_W).translational();
+        vc.get_V_WB(bodyB_mobod_index).Shift(-p_CoBo_W).translational() +
+        V_WBc_ss;
     const Vector3<T> v_AcBc_W = v_WBc - v_WAc;
 
     // if xdot = vn > 0 ==> they are getting closer.
@@ -2379,13 +2437,6 @@ void MultibodyPlant<T>::CalcContactResultsPointPairContinuous(
       const CoulombFriction<double> combined_friction =
           CalcContactFrictionFromSurfaceProperties(geometryA_friction,
                                                    geometryB_friction);
-
-      std::optional<double> geometryA_ss =
-          GetSurfaceSpeed(geometryA_id, inspector);
-      std::optional<double> geometryB_ss =
-          GetSurfaceSpeed(geometryB_id, inspector);
-
-      DRAKE_THROW_UNLESS((geometryA_ss.has_value() || geometryB_ss.has_value()));
 
       // Normal force on body A, at C, expressed in W.
       const Vector3<T> fn_AC_W = fn_AC * nhat_BA_W;
