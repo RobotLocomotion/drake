@@ -5852,6 +5852,16 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
       geometry::GeometryId id,
       const geometry::SceneGraphInspector<T>& inspector) const;
 
+  const std::optional<Vector3<T>> GetSurfaceVelocityNormal(
+      geometry::GeometryId id,
+      const geometry::SceneGraphInspector<T>& inspector) const;
+
+  Vector3<T> GetSurfaceVelocity(
+      geometry::GeometryId id,
+      const geometry::SceneGraphInspector<T>& inspector,
+      const math::RigidTransform<T>& X_W,
+      const Vector3<T>& p_WC) const;
+
   // Helper method to apply default collision filters. By default, we don't
   // consider collisions:
   // * between rigid geometries affixed to bodies connected by a joint
