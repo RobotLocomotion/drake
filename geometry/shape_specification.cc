@@ -436,12 +436,32 @@ double CalcVolume(const Shape& shape) {
 template <typename T>
 std::optional<Eigen::Vector3<T>> GetNormalAtPointForBox(
     const Box& box, const Eigen::Vector3<T>& p) {
-  (void)box;
-  return std::optional<Eigen::Vector3<T>>(p);
+    
+  const T tol = 1e-5;
+
+  Eigen::Matrix<T, 4, 6> box_planes = Eigen::Matrix<T, 4, 6>::Zero();
+  const double h_w = box.width() / 2;  // half_width
+  const double h_d = box.depth() / 2;  // half_depth
+  const double h_h = box.height() / 2; // half_height
+  Eigen::Vector4<T> p_h(p.x(), p.y(), p.z(), 1.0);
+  box_planes << 1.0, -1.0, 0.0,  0.0, 0.0, 0.0,
+                0.0,  0.0, 1.0, -1.0, 0.0, 0.0,
+                0.0,  0.0, 0.0,  0.0, 1.0, -1.0,
+                -h_w, -h_w, -h_d, -h_d, -h_h, -h_h;
+  
+  for (Eigen::Index c = 0; c < box_planes.cols(); ++c) {
+    if (std::abs(box_planes.col(c).dot(p_h)) < tol) {
+      return box_planes.block(0, c, 3, 1);
+    }
+  }
+
+  return std::nullopt;
 }
 
 template std::optional<Eigen::Vector3<double>> GetNormalAtPointForBox(
     const Box& box, const Eigen::Vector3<double>& p);
+template std::optional<Eigen::Vector3<float>> GetNormalAtPointForBox(
+    const Box& box, const Eigen::Vector3<float>& p);
 
 template <typename T>
 std::optional<Eigen::Vector3<T>> GetNormalAtPoint(const Shape& shape,
@@ -453,34 +473,34 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPoint(const Shape& shape,
                  },
                  [&](const Capsule& capsule) {
                    (void)capsule;
-                   return std::optional<Eigen::Vector3<T>>(p);
+                   return Eigen::Vector3<T>(p);
                  },
                  [&](const Convex& convex) {
                    (void)convex;
-                   return std::optional<Eigen::Vector3<T>>(p);
+                   return Eigen::Vector3<T>(p);
                  },
                  [&](const Cylinder& cylinder) {
                    (void)cylinder;
-                   return std::optional<Eigen::Vector3<T>>(p);
+                   return Eigen::Vector3<T>(p);
                  },
                  [&](const Ellipsoid& ellipsoid) {
                    (void)ellipsoid;
-                   return std::optional<Eigen::Vector3<T>>(p);
+                   return Eigen::Vector3<T>(p);
                  },
                  [&](const HalfSpace&) {
-                   return std::optional<Eigen::Vector3<T>>(p);
+                   return Eigen::Vector3<T>(p);
                  },
                  [&](const Mesh& mesh) {
                    (void)mesh;
-                   return std::optional<Eigen::Vector3<T>>(p);
+                   return Eigen::Vector3<T>(p);
                  },
                  [&](const MeshcatCone& cone) {
                    (void)cone;
-                   return std::optional<Eigen::Vector3<T>>(p);
+                   return Eigen::Vector3<T>(p);
                  },
                  [&](const Sphere& sphere) {
                    (void)sphere;
-                   return std::optional<Eigen::Vector3<T>>(p);
+                   return Eigen::Vector3<T>(p);
                  }});
 }
 
