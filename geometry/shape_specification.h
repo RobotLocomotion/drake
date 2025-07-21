@@ -795,6 +795,12 @@ extern template std::optional<Eigen::Vector3<double>> GetNormalAtPoint(
     const Shape& shape, const Eigen::Vector3<double>& p);
 extern template std::optional<Eigen::Vector3<float>> GetNormalAtPoint(
     const Shape& shape, const Eigen::Vector3<float>& p);
+extern template std::optional<Eigen::Vector3<::drake::AutoDiffXd>>
+GetNormalAtPoint(const Shape& shape,
+                 const Eigen::Vector3<::drake::AutoDiffXd>& p);
+extern template std::optional<Eigen::Vector3<::drake::symbolic::Expression>>
+GetNormalAtPoint(const Shape& shape,
+                 const Eigen::Vector3<::drake::symbolic::Expression>& p);
 
 }  // namespace geometry
 }  // namespace drake
