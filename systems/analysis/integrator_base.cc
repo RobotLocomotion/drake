@@ -149,7 +149,8 @@ T IntegratorBase<T>::CalcStateChangeNorm(
   // Given the weights Wv, Wz and time scale are all ones, the computations
   // below are expensive and overkill.
   // We thus simplify to an infinity norm.
-  const T x_norm = dx_state.CopyToVector().template lpNorm<Eigen::Infinity>();
+  const VectorBase<T>& dgq = dx_state.get_generalized_position();
+  const T x_norm = dgq.CopyToVector().template lpNorm<Eigen::Infinity>();
   using std::isnan;
   if (isnan(x_norm)) return std::numeric_limits<T>::quiet_NaN();
   return x_norm;
