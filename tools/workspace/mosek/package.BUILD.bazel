@@ -126,10 +126,14 @@ install_files(
 
 install(
     name = "install_licenses",
-    docs = [
-        "mosek-eula.pdf",
+    docs = select({
+        ":lazy_load": [],
+        "//conditions:default": [
+            "mosek-eula.pdf",
+            "@drake//tools/workspace/mosek:LICENSE.third_party",
+        ],
+    }) + [
         "@drake//tools/workspace/mosek:drake_mosek_redistribution.txt",
-        "@drake//tools/workspace/mosek:LICENSE.third_party",
     ],
     doc_strip_prefix = ["tools/workspace/mosek"],
     allowed_externals = ["@drake//:.bazelproject"],
