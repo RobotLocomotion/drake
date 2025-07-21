@@ -137,6 +137,7 @@ def create_scene(
     time_step: float,
     meshcat: Meshcat,
     hydroelastic: bool = False,
+    visualize: bool = True,
 ):
     """
     Set up a drake system dyagram
@@ -146,6 +147,7 @@ def create_scene(
         time_step: dt for MultibodyPlant.
         hydroelastic: whether to use hydroelastic contact.
         meshcat: meshcat instance for visualization.
+        visualize: whether to show the visualization
 
     Returns:
         The system diagram, the MbP within that diagram, and the logger used to
@@ -169,9 +171,10 @@ def create_scene(
         sg_config.default_proximity_properties.compliance_type = "compliant"
         scene_graph.set_config(sg_config)
 
-    vis_config = VisualizationConfig()
-    vis_config.publish_period = 100  # very long to avoid extra publishes
-    ApplyVisualizationConfig(vis_config, builder=builder, meshcat=meshcat)
+    if visualize:
+        vis_config = VisualizationConfig()
+        vis_config.publish_period = np.inf
+        ApplyVisualizationConfig(vis_config, builder=builder, meshcat=meshcat)
 
     logger = LogVectorOutput(
         plant.get_state_output_port(),
@@ -191,7 +194,7 @@ def run_simulation(
     accuracy: float,
     max_step_size: float,
     meshcat: Meshcat,
-    wait_for_meshcat: bool = True,
+    visualize: bool = True,
 ):
     """
     Run a short simulation, and report the time-steps used throughout.
@@ -203,7 +206,7 @@ def run_simulation(
         accuracy: the desired accuracy (ignored for "discrete").
         max_step_size: the maximum (and initial) timestep dt.
         meshcat: meshcat instance for visualization.
-        wait_for_meshcat: whether to wait for meshcat load.
+        visualize: whether to show stuff on meshcat (slow).
 
     Returns:
         Timesteps (dt) throughout the simulation, and the wall-clock time.
@@ -233,7 +236,7 @@ def run_simulation(
     else:
         time_step = 0.0
     diagram, plant, logger = create_scene(
-        url, time_step, meshcat, use_hydroelastic
+        url, time_step, meshcat, use_hydroelastic, visualize
     )
     context = diagram.CreateDefaultContext()
     plant_context = diagram.GetMutableSubsystemContext(plant, context)
@@ -256,7 +259,7 @@ def run_simulation(
     simulator.Initialize()
 
     print(f"Running the {example.name} example with {integrator} integrator.")
-    if wait_for_meshcat:
+    if visualize:
         input("Waiting for meshcat... [ENTER] to continue")
 
     # Simulate
@@ -349,7 +352,7 @@ if __name__ == "__main__":
         args.accuracy,
         max_step_size=args.max_step_size,
         meshcat=meshcat,
-        wait_for_meshcat=True
+        visualize=False
     )
 
     if args.plot:
