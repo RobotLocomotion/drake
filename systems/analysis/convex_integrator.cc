@@ -49,7 +49,7 @@ void ConvexIntegrator<T>::DoInitialize() {
       throw std::logic_error(
           "Neither initial step size target nor maximum "
           "step size has been set!");
-    this->request_initial_step_size_target(this->get_maximum_step_size());
+    this->request_initial_step_size_target(0.1 * this->get_maximum_step_size());
   }
 
   double working_accuracy = this->get_target_accuracy();
