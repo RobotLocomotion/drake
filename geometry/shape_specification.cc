@@ -462,7 +462,7 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPointForBox(
   // plane that contains the point.
   Eigen::Vector4<T> p_h(p.x(), p.y(), p.z(), 1.0);
   for (Eigen::Index c = 0; c < box_planes.cols(); ++c) {
-    if (std::abs(box_planes.col(c).dot(p_h)) < tol) {
+    if ((box_planes.col(c).dot(p_h) * box_planes.col(c).dot(p_h)) < tol) {
       return box_planes.block(0, c, 3, 1);
     }
   }
@@ -474,6 +474,12 @@ template std::optional<Eigen::Vector3<double>> GetNormalAtPointForBox(
     const Box& box, const Eigen::Vector3<double>& p);
 template std::optional<Eigen::Vector3<float>> GetNormalAtPointForBox(
     const Box& box, const Eigen::Vector3<float>& p);
+template std::optional<Eigen::Vector3<::drake::AutoDiffXd>>
+GetNormalAtPointForBox(const Box& box,
+                       const Eigen::Vector3<::drake::AutoDiffXd>& p);
+template std::optional<Eigen::Vector3<::drake::symbolic::Expression>>
+GetNormalAtPointForBox(const Box& box,
+                       const Eigen::Vector3<::drake::symbolic::Expression>& p);
 
 template <typename T>
 std::optional<Eigen::Vector3<T>> GetNormalAtPoint(const Shape& shape,
@@ -520,6 +526,11 @@ template std::optional<Eigen::Vector3<double>> GetNormalAtPoint(
     const Shape& shape, const Eigen::Vector3<double>& p);
 template std::optional<Eigen::Vector3<float>> GetNormalAtPoint(
     const Shape& shape, const Eigen::Vector3<float>& p);
+template std::optional<Eigen::Vector3<::drake::AutoDiffXd>> GetNormalAtPoint(
+    const Shape& shape, const Eigen::Vector3<::drake::AutoDiffXd>& p);
+template std::optional<Eigen::Vector3<::drake::symbolic::Expression>>
+GetNormalAtPoint(const Shape& shape,
+                 const Eigen::Vector3<::drake::symbolic::Expression>& p);
 
 // The NVI function definitions are enough boilerplate to merit a macro to
 // implement them, and we might as well toss in the dtor for good measure.
