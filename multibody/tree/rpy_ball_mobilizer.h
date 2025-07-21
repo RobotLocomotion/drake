@@ -253,11 +253,13 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   void DoCalcNplusMatrix(const systems::Context<T>& context,
                          EigenPtr<MatrixX<T>> Nplus) const final;
 
-  // Generally, q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇. For this mobilizer, Ṅ is not simple.
+  // Generally, q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇. Detailed information for calculating
+  // this mobilizer's Ṅ(q,q̇) matrix is in this function's implementation.
   void DoCalcNDotMatrix(const systems::Context<T>& context,
                         EigenPtr<MatrixX<T>> Ndot) const final;
 
-  // Generally, v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈. For this mobilizer, Ṅ⁺ is not simple.
+  // Generally, v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈. Detailed information for calculating
+  // this mobilizer's Ṅ⁺(q,q̇) matrix is in this function's implementation.
   void DoCalcNplusDotMatrix(const systems::Context<T>& context,
                             EigenPtr<MatrixX<T>> NplusDot) const final;
 

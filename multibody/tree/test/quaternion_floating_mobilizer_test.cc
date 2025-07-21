@@ -221,40 +221,40 @@ TEST_F(QuaternionFloatingMobilizerTest, KinematicMapping) {
   const Vector3<double> p_FoMo_F(1.0, 2.0, 3.0);
   mobilizer_->SetTranslation(context_.get(), p_FoMo_F);
 
-  // Calculate the N matrix that appears in q̇ = N(q,q̇)⋅v.
+  // Calculate the N matrix that appears in q̇ = N(q)⋅v.
   MatrixX<double> N(7, 6);
   mobilizer_->CalcNMatrix(*context_, &N);
 
-  // Calculate the Nplus matrix that appears in v = N⁺(q,q̇)⋅q̇.
+  // Calculate the Nplus matrix that appears in v = N⁺(q)⋅q̇.
   MatrixX<double> Nplus(6, 7);
   mobilizer_->CalcNplusMatrix(*context_, &Nplus);
 
-  // Ensure the Nplus matrix is the left pseudoinverse of the N matrix.
-  // In other words, Nplus * N = [I₆₆] (6x6 identity matrix).
+  // Ensure the N⁺(q) matrix is the left pseudoinverse of the N(q) matrix.
+  // In other words, ensure Nplus * N = [I₆₆] (6x6 identity matrix).
   MatrixX<double> Nplus_x_N = Nplus * N;
   EXPECT_TRUE(CompareMatrices(Nplus_x_N, MatrixX<double>::Identity(6, 6),
                               kTolerance, MatrixCompareType::relative));
 
-  // Ensure the rotation (upper-left block) part of the N matrix is 0.25 times
-  // the transpose of the rotation part of the N matrix.
-  MatrixX<double> N_rotational(4, 3);
-  MatrixX<double> Nplus_rotational(3, 4);
-  N_rotational = N.block<4, 3>(0, 0);
-  Nplus_rotational = Nplus.block<3, 4>(0, 0);
+  // Ensure the rotation (upper-left block) part of the N(q) matrix is
+  // 0.25 times the transpose of the rotation part of the N⁺(q) matrix.
+  MatrixX<double> N_rotational = N.block<4, 3>(0, 0);
+  MatrixX<double> Nplus_rotational = Nplus.block<3, 4>(0, 0);
   EXPECT_TRUE(CompareMatrices(N_rotational.transpose(), 0.25 * Nplus_rotational,
                               kTolerance, MatrixCompareType::relative));
 
-  // Set arbitrary angular and translational velocities for this mobilizer.
+  // An arbitrary orientation and position (q) for this mobilizer was set above.
+  // Set an arbitrary angular and translational velocity (v) for this mobilizer
+  // to enable testing of Ṅ(q,q̇) and Ṅ⁺(q,q̇).
   const Vector3<double> w_FM_F(1.1, 2.5, 3.2);
   mobilizer_->SetAngularVelocity(context_.get(), w_FM_F);
   const Vector3<double> v_FMo_F(1.0, 2.0, 3.0);
   mobilizer_->SetTranslation(context_.get(), v_FMo_F);
 
-  // Calculate the NDot(q) matrix that appears in q̈ = Ṅ(q,q̇)⋅v + N⁺(q)⋅v̇.
+  // Calculate the NDot(q,q̇) matrix that appears in q̈ = Ṅ(q,q̇)⋅v + N⁺(q)⋅v̇.
   MatrixX<double> NDot(7, 6);
   mobilizer_->CalcNDotMatrix(*context_, &NDot);
 
-  // Use the given data to calculated the expected values in the NDot matrix.
+  // Use the given data to calculate the expected values in the Ṅ(q,q̇) matrix.
   // Get the quaternion's scalar portion (eo) and vector portion (evec).
   const double e0 = Q_FM.w();  // Scalar portion of the quaternion.
   const Vector3<double> evec(Q_FM.x(), Q_FM.y(), Q_FM.z());  // Vector portion.
@@ -266,27 +266,25 @@ TEST_F(QuaternionFloatingMobilizerTest, KinematicMapping) {
   const double e1dot = evec_dtA.x();
   const double e2dot = evec_dtA.y();
   const double e3dot = evec_dtA.z();
-  MatrixX<double> NDot_rotation_expected(4, 3);
   // clang-format off
-  NDot_rotation_expected = 0.5 * (Eigen::Matrix<double, 4, 3>()
+  MatrixX<double> NDot_rotation_expected = 0.5 * (Eigen::Matrix<double, 4, 3>()
       << -e1dot, -e2dot, -e3dot,
           e0dot,  e3dot, -e2dot,
          -e3dot,  e0dot,  e1dot,
           e2dot, -e1dot,  e0dot).finished();
   // clang-format on
 
-  // Ensure the calculation of the rotational part of the Ndot matrix matches
-  // the by-hand calculations above.
-  MatrixX<double> NDot_rotation(4, 3);
-  NDot_rotation = NDot.block<4, 3>(0, 0);
+  // Ensure the calculation of the rotational part of the Ṅ(q,q̇) matrix
+  // matches the by-hand calculations above.
+  MatrixX<double> NDot_rotation = NDot.block<4, 3>(0, 0);
   EXPECT_TRUE(CompareMatrices(NDot_rotation, NDot_rotation_expected, kTolerance,
                               MatrixCompareType::relative));
 
+  // Create the full (rotational and translational) expected Ṅ(q,q̇) matrix.
+  // Note: All its elements are zero except some associated with rotation.
   MatrixX<double> NDot_expected(7, 6);
+  NDot_expected.setZero();
   NDot_expected.template block<4, 3>(0, 0) = NDot_rotation;  // Upper-left.
-  NDot_expected.template block<4, 3>(0, 3).setZero();        // Upper-right.
-  NDot_expected.template block<3, 3>(4, 0).setZero();        // Lower-left.
-  NDot_expected.template block<3, 3>(4, 3).setZero();        // Lower-right.
 
   // Ensure the Drake calculation of Ndot matches the by-hand calculations.
   EXPECT_TRUE(CompareMatrices(NDot, NDot_expected, kTolerance,
