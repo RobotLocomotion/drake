@@ -2408,28 +2408,33 @@ void MultibodyPlant<T>::CalcContactResultsPointPairContinuous(
     // Contact point C.
     const Vector3<T> p_WC = 0.5 * (p_WCa + p_WCb);
 
+    // Get RigidBodyTransforms for bodies in contact.
+    const RigidTransform<T>& X_WA = pc.get_X_WB(bodyA_mobod_index);
+    const RigidTransform<T>& X_WB = pc.get_X_WB(bodyB_mobod_index);
+
     // Contact point position on body A.
-    const Vector3<T>& p_WAo = pc.get_X_WB(bodyA_mobod_index).translation();
+    const Vector3<T>& p_WAo = X_WA.translation();
     const Vector3<T>& p_CoAo_W = p_WAo - p_WC;
 
     // Contact point position on body B.
-    const Vector3<T>& p_WBo = pc.get_X_WB(bodyB_mobod_index).translation();
+    const Vector3<T>& p_WBo = X_WB.translation();
     const Vector3<T>& p_CoBo_W = p_WBo - p_WC;
 
-    // Get surface velocity for A
-    const Vector3<T> v_WAc_ss = GetSurfaceVelocity(
-        geometryA_id, inspector, pc.get_X_WB(bodyA_mobod_index), p_WCa);
-    // Get surface velocity for B
-    const Vector3<T> V_WBc_ss = GetSurfaceVelocity(
-        geometryB_id, inspector, pc.get_X_WB(bodyB_mobod_index), p_WCb);
+    // Get surface velocity at Ca relative to A in coordinates of A
+    const Vector3<T> v_ACa_ss =
+        GetSurfaceVelocity(geometryA_id, inspector, X_WA, p_WCa);
+    // Get surface velocity at Cb relative to B in coordinates of B
+    const Vector3<T> V_BCb_ss =
+        GetSurfaceVelocity(geometryB_id, inspector, X_WB, p_WCb);
 
     // Separation velocity, > 0  if objects separate.
+    // Account for any surface velocities.
     const Vector3<T> v_WAc =
         vc.get_V_WB(bodyA_mobod_index).Shift(-p_CoAo_W).translational() +
-        v_WAc_ss;
+        X_WA * v_ACa_ss;
     const Vector3<T> v_WBc =
         vc.get_V_WB(bodyB_mobod_index).Shift(-p_CoBo_W).translational() +
-        V_WBc_ss;
+        X_WB * V_BCb_ss;
     const Vector3<T> v_AcBc_W = v_WBc - v_WAc;
 
     // if xdot = vn > 0 ==> they are getting closer.
