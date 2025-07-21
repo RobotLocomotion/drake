@@ -1749,9 +1749,6 @@ Vector3<T> MultibodyPlant<T>::GetSurfaceVelocity(
     return surface_velocity;
   }
 
-  // const geometry::VolumeMesh<double>* volume_mesh =
-  //     inspector.GetReferenceMesh(id);
-
   // Transform contact point from world frame to the local geometry frame.
   const Vector3<T> p_GC = X_W.inverse() * p_WC;
 
