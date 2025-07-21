@@ -416,7 +416,7 @@ void QuaternionFloatingMobilizer<T>::DoCalcNDotMatrix(
   // linear in q_FM = [qw, qx, qy, qz]ᵀ, so Ṅᵣ(qᵣ,q̇ᵣ) = L(q̇_FM/2).
   const Eigen::Matrix<T, 4, 3> NrDotMatrix = CalcLMatrix(half_qdot);
 
-  // Generally, q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇. For this mobilizer, Ṅ is not simple.
+  // Form the Ṅ(q,q̇) matrix associated with q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇.
   Ndot->template block<4, 3>(0, 0) = NrDotMatrix;  // Upper-left block.
   Ndot->template block<4, 3>(0, 3).setZero();      // Upper-right block.
   Ndot->template block<3, 3>(4, 0).setZero();      // Lower-left block.
@@ -454,7 +454,7 @@ void QuaternionFloatingMobilizer<T>::DoCalcNplusDotMatrix(
   // are linear in q_FM = [qw, qx, qy, qz]ᵀ, so Ṅ⁺ᵣ(qᵣ,q̇ᵣ) = L(2 * q̇_FM)ᵀ.
   const Eigen::Matrix<T, 3, 4> NrPlusDot = CalcLMatrix(twice_qdot).transpose();
 
-  // Generally, v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈. For this mobilizer, Ṅ⁺ is not simple.
+  // Form the Ṅ⁺(q,q̇) matrix associated with v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
   NplusDot->template block<3, 4>(0, 0) = NrPlusDot;  // Upper-left block.
   NplusDot->template block<3, 3>(0, 4).setZero();    // Upper-right block.
   NplusDot->template block<3, 4>(3, 0).setZero();    // Lower-left block.
