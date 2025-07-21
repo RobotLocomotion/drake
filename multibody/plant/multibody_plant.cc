@@ -1766,7 +1766,7 @@ Vector3<T> MultibodyPlant<T>::GetSurfaceVelocity(
   // get the normal vector to the surface at that point
   const geometry::Shape& shape = inspector.GetShape(id);
   std::optional<Vector3<T>> normal_at_p_GC =
-      geometry::GetNormalAtPoint<double>(shape, p_GC);
+      geometry::GetNormalAtPoint<T>(shape, p_GC);
   if (!normal_at_p_GC.has_value()) {
     return surface_velocity;
   }
