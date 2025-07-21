@@ -12,7 +12,7 @@ namespace drake {
 namespace multibody {
 namespace {
 
-GTEST_TEST(SurfaceVelocityTest, CheckParameterRegistration) {
+GTEST_TEST(SurfaceVelocityTest, BoxSurfaceVelocity) {
   constexpr double tol = 1e-5;
 
   systems::DiagramBuilder<double> builder;
