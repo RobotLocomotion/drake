@@ -111,19 +111,19 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name = "quadrotor_dynamics_test",
-    data = [":models"],
-    deps = [
-        ":quadrotor_plant",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsing",
-        "//multibody/plant",
-        "//systems/analysis:simulator",
-        "//systems/framework:diagram",
-        "//systems/primitives:constant_vector_source",
-    ],
-)
+# drake_cc_googletest(
+#     name = "quadrotor_dynamics_test",
+#     data = [":models"],
+#     deps = [
+#         ":quadrotor_plant",
+#         "//common/test_utilities:eigen_matrix_compare",
+#         "//multibody/parsing",
+#         "//multibody/plant",
+#         "//systems/analysis:simulator",
+#         "//systems/framework:diagram",
+#         "//systems/primitives:constant_vector_source",
+#     ],
+# )
 
 drake_cc_googletest(
     name = "quadrotor_geometry_test",

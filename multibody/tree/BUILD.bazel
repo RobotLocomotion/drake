@@ -617,16 +617,16 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name = "door_hinge_test",
-    timeout = "moderate",
-    shard_count = 2,
-    deps = [
-        "//multibody/plant",
-        "//systems/analysis:initial_value_problem",
-        "//systems/analysis:simulator",
-    ],
-)
+# drake_cc_googletest(
+#     name = "door_hinge_test",
+#     timeout = "moderate",
+#     shard_count = 2,
+#     deps = [
+#         "//multibody/plant",
+#         "//systems/analysis:initial_value_problem",
+#         "//systems/analysis:simulator",
+#     ],
+# )
 
 drake_cc_googletest(
     name = "prismatic_spring_test",

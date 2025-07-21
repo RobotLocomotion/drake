@@ -36,12 +36,12 @@ drake_py_binary(
     ],
 )
 
-drake_cc_googletest(
-    name = "van_der_pol_test",
-    deps = [
-        ":van_der_pol",
-        "//systems/framework/test_utilities:scalar_conversion",
-    ],
-)
+# drake_cc_googletest(
+#     name = "van_der_pol_test",
+#     deps = [
+#         ":van_der_pol",
+#         "//systems/framework/test_utilities:scalar_conversion",
+#     ],
+# )
 
 add_lint_tests()

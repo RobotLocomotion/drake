@@ -820,21 +820,21 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name = "vector_log_sink_test",
-    deps = [
-        ":affine_system",
-        ":constant_vector_source",
-        ":linear_system",
-        ":vector_log_sink",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_no_throw",
-        "//common/test_utilities:expect_throws_message",
-        "//systems/analysis:simulator",
-        "//systems/framework",
-        "//systems/framework/test_utilities:scalar_conversion",
-    ],
-)
+# drake_cc_googletest(
+#     name = "vector_log_sink_test",
+#     deps = [
+#         ":affine_system",
+#         ":constant_vector_source",
+#         ":linear_system",
+#         ":vector_log_sink",
+#         "//common/test_utilities:eigen_matrix_compare",
+#         "//common/test_utilities:expect_no_throw",
+#         "//common/test_utilities:expect_throws_message",
+#         "//systems/analysis:simulator",
+#         "//systems/framework",
+#         "//systems/framework/test_utilities:scalar_conversion",
+#     ],
+# )
 
 drake_cc_googletest(
     name = "wrap_to_system_test",

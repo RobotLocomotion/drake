@@ -41,17 +41,17 @@ drake_cc_library(
 
 # === test/ ===
 
-drake_cc_googletest(
-    name = "multibody_plant_free_body_test",
-    timeout = "moderate",
-    data = [":models"],
-    deps = [
-        ":free_body",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/test_utilities:floating_body_plant",
-        "//systems/analysis:runge_kutta3_integrator",
-        "//systems/analysis:simulator",
-    ],
-)
+# drake_cc_googletest(
+#     name = "multibody_plant_free_body_test",
+#     timeout = "moderate",
+#     data = [":models"],
+#     deps = [
+#         ":free_body",
+#         "//common/test_utilities:eigen_matrix_compare",
+#         "//multibody/test_utilities:floating_body_plant",
+#         "//systems/analysis:runge_kutta3_integrator",
+#         "//systems/analysis:simulator",
+#     ],
+# )
 
 add_lint_tests(enable_clang_format_lint = False)

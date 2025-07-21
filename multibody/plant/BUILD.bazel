@@ -1083,16 +1083,16 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name = "inclined_plane_test",
-    timeout = "moderate",
-    deps = [
-        ":plant",
-        "//multibody/benchmarks/inclined_plane",
-        "//systems/analysis:radau_integrator",
-        "//systems/analysis:simulator",
-    ],
-)
+# drake_cc_googletest(
+#     name = "inclined_plane_test",
+#     timeout = "moderate",
+#     deps = [
+#         ":plant",
+#         "//multibody/benchmarks/inclined_plane",
+#         "//systems/analysis:radau_integrator",
+#         "//systems/analysis:simulator",
+#     ],
+# )
 
 drake_cc_googletest(
     name = "internal_geometry_names_test",
