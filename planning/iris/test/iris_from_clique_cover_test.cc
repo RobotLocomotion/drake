@@ -302,45 +302,37 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   MaybePauseForUser();
 }
 
+class PendulumTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    CollisionCheckerParams params;
+
+    RobotDiagramBuilder<double> builder(0.0);
+    params.robot_model_instances = builder.parser().AddModelsFromUrl(
+        "package://drake/examples/pendulum/Pendulum.urdf");
+    params.edge_step_size = 0.01;
+
+    params.model = builder.Build();
+    checker_ = std::make_unique<SceneGraphCollisionChecker>(std::move(params));
+  }
+
+  std::unique_ptr<SceneGraphCollisionChecker> checker_;
+};
+
 // Plants that don't have joint limits get a reasonable error message.
-GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, NoJointLimits) {
-  CollisionCheckerParams params;
-
-  RobotDiagramBuilder<double> builder(0.0);
-  params.robot_model_instances = builder.parser().AddModelsFromUrl(
-      "package://drake/examples/pendulum/Pendulum.urdf");
-  params.edge_step_size = 0.01;
-
-  params.model = builder.Build();
-  auto checker =
-      std::make_unique<SceneGraphCollisionChecker>(std::move(params));
-
+TEST_F(PendulumTest, NoJointLimits) {
   IrisFromCliqueCoverOptions options;
   std::vector<HPolyhedron> sets;
 
   RandomGenerator generator(0);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
+      IrisInConfigurationSpaceFromCliqueCover(*checker_, options, &generator,
                                               &sets, nullptr),
       ".*.GetPositionLowerLimits.*isFinite.* failed.");
 }
 
-GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, NoParameterizationAllowed) {
-  CollisionCheckerParams params;
-
-  RobotDiagramBuilder<double> builder(0.0);
-  params.robot_model_instances = builder.parser().AddModelsFromUrl(
-      "package://drake/examples/pendulum/Pendulum.urdf");
-  params.edge_step_size = 0.01;
-
-  params.model = builder.Build();
-  auto checker =
-      std::make_unique<SceneGraphCollisionChecker>(std::move(params));
-
-  std::vector<HPolyhedron> sets;
-  RandomGenerator generator(0);
-
+TEST_F(PendulumTest, NoParameterizationAllowed) {
   IrisFromCliqueCoverOptions options;
   auto parameterization_double = [](const Vector2d& config) -> Vector2d {
     return Vector2d::Constant(1);
@@ -362,31 +354,22 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, NoParameterizationAllowed) {
 
   options.iris_options = iris_np2_options;
   std::string expected_error_message_substring = ".*parameterized subspace.*";
+
+  std::vector<HPolyhedron> sets;
+  RandomGenerator generator(0);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
+      IrisInConfigurationSpaceFromCliqueCover(*checker_, options, &generator,
                                               &sets, nullptr),
       expected_error_message_substring);
 
   options.iris_options = iris_zo_options;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
+      IrisInConfigurationSpaceFromCliqueCover(*checker_, options, &generator,
                                               &sets, nullptr),
       expected_error_message_substring);
 }
 
-GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
-           NoProgWithAdditionalConstraintsAllowed) {
-  CollisionCheckerParams params;
-
-  RobotDiagramBuilder<double> builder(0.0);
-  params.robot_model_instances = builder.parser().AddModelsFromUrl(
-      "package://drake/examples/pendulum/Pendulum.urdf");
-  params.edge_step_size = 0.01;
-
-  params.model = builder.Build();
-  auto checker =
-      std::make_unique<SceneGraphCollisionChecker>(std::move(params));
-
+TEST_F(PendulumTest, NoProgWithAdditionalConstraintsAllowed) {
   std::vector<HPolyhedron> sets;
   RandomGenerator generator(0);
 
@@ -400,7 +383,7 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
       &prog_with_additional_constraints;
   options.iris_options = iris_options;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
+      IrisInConfigurationSpaceFromCliqueCover(*checker_, options, &generator,
                                               &sets, nullptr),
       expected_error_message_substring);
 
@@ -409,7 +392,7 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
       &prog_with_additional_constraints;
   options.iris_options = iris_np2_options;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
+      IrisInConfigurationSpaceFromCliqueCover(*checker_, options, &generator,
                                               &sets, nullptr),
       expected_error_message_substring);
 
@@ -418,7 +401,7 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
       &prog_with_additional_constraints;
   options.iris_options = iris_zo_options;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
+      IrisInConfigurationSpaceFromCliqueCover(*checker_, options, &generator,
                                               &sets, nullptr),
       expected_error_message_substring);
 }

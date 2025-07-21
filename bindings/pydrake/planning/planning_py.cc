@@ -33,8 +33,7 @@ and/or trajectories of dynamical systems.
   internal::DefinePlanningIrisCommon(m);
   internal::DefinePlanningIrisNp2(m);
   internal::DefinePlanningIrisZo(m);
-  internal::DefinePlanningIrisFromCliqueCover(
-      m); /* IrisZo and IrisNp2 must be declared before these bindings. */
+  internal::DefinePlanningIrisFromCliqueCover(m);
   internal::DefinePlanningZmpPlanner(m);
 }
 

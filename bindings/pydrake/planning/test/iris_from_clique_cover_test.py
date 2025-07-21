@@ -19,15 +19,11 @@ import scipy
 
 
 def _snopt_and_mip_solver_available():
-    mip_solver_available = (
-        MosekSolver().available()
-        and MosekSolver().enabled()
-        or (GurobiSolver().available() and GurobiSolver().enabled())
-    )
-    snopt_solver_available = (
-        SnoptSolver().available() and SnoptSolver().enabled()
-    )
-    return mip_solver_available and snopt_solver_available
+    has_mosek = MosekSolver().available() and MosekSolver().enabled()
+    has_gurobi = GurobiSolver().available() and GurobiSolver().enabled()
+    has_snopt = SnoptSolver().available() and SnoptSolver().enabled()
+    has_mip_solver = has_mosek or has_gurobi
+    return has_mip_solver and has_snopt
 
 
 class TestIrisFromCliqueCover(unittest.TestCase):

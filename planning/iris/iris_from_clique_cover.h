@@ -21,10 +21,6 @@ namespace drake {
 namespace planning {
 
 struct IrisFromCliqueCoverOptions {
-  IrisFromCliqueCoverOptions()
-      : iris_options(geometry::optimization::IrisOptions{
-            /*iteration_limit=*/.iteration_limit = 1}) {}
-
   // TODO(cohnt): Support user-specified parameterizations contained in
   // IrisZoOptions and IrisNp2Options. Note from Alexandre.Amice: the reason we
   // don't support subspaces is due to the fact that the current code does not
@@ -45,12 +41,12 @@ struct IrisFromCliqueCoverOptions {
    * from outside the main thread.
    * @note some of these variants specify a parallelism parameter. In
    * IrisInConfigurationSpaceFromCliqueCover, the iris_options.parallelism is
-   * ignored and the value of parallelism specified by @p this.parallelism will
+   * ignored and the value of parallelism specified by `this.parallelism` will
    * be used instead.
    */
   std::variant<geometry::optimization::IrisOptions, IrisNp2Options,
                IrisZoOptions>
-      iris_options;
+      iris_options{geometry::optimization::IrisOptions{.iteration_limit = 1}};
 
   /**
    * The fraction of the domain that must be covered before we terminate the
@@ -146,14 +142,15 @@ struct IrisFromCliqueCoverOptions {
  * problem.
  * @note If IrisNp2Options is used, then the collision checker must be a
  * SceneGraphCollisionChecker.
- * @throw Parameterizations are not currently supported for `IrisZo` and
- * `IrisNp2` when running `IrisFromCliqueCover`. This method will throw if
- * options.iris_options is of type `IrisZoOptions` or `IrisNp2Options` and
- * specifies a parametrization function. See the documentation of
+ * @throw std::exception Parameterizations are not currently supported for
+ * `IrisZo` and `IrisNp2` when running `IrisFromCliqueCover`. This method will
+ * throw if options.iris_options is of type `IrisZoOptions` or `IrisNp2Options`
+ * and specifies a parametrization function. See the documentation of
  * `IrisZoOptions` and `IrisNp2Options` for more information about subspace
  * parametrization.
- * @throw If the options.iris_options.prog_with_additional_constraints is not
- * nullptr i.e. if a prog with additional constraints is provided.
+ * @throw std::exception If the
+ * options.iris_options.prog_with_additional_constraints is not nullptr i.e. if
+ * a prog with additional constraints is provided.
  */
 void IrisInConfigurationSpaceFromCliqueCover(
     const CollisionChecker& checker, const IrisFromCliqueCoverOptions& options,
