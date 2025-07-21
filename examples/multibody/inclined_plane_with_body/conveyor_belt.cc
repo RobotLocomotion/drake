@@ -26,7 +26,7 @@ namespace {
 // frame) by applying a sinusoidal horizontal force to the block.
 
 DEFINE_double(mbp_time_step, 0.0, "Time step for plant (0 => continuous).");
-DEFINE_double(integrator_time_step, 1e-3, "Time step for the integrator.");
+DEFINE_double(integrator_time_step, 0.1, "Time step for the integrator.");
 DEFINE_double(simulation_time, 4.0, "Simulation duration in seconds");
 DEFINE_double(static_friction, 1.0, "Coefficient of static friction.");
 DEFINE_double(dynamic_friction, 0.25, "Coefficient of dynamic friciton.");
@@ -36,7 +36,7 @@ DEFINE_double(stiction_tolerance, 1e-4, "Stiction velocity (m/s).");
 DEFINE_bool(use_hydro, false, "Whether to use hydroelastic contact.");
 DEFINE_bool(use_error_control, true,
             "Whether to use error control in the integrator.");
-DEFINE_double(accuracy, 1e-1, "Target accuracy for error control.");
+DEFINE_double(accuracy, 1e-5, "Target accuracy for error control.");
 DEFINE_bool(hessian_reuse, false,
             "Whether to reuse Hessian in the convex integrator.");
 

@@ -86,18 +86,18 @@ DEFINE_bool(print_solver_stats, false,
             "Whether to print convex integrator statistics to the console.");
 
 // Convex integrator parameters.
-DEFINE_bool(enable_hessian_reuse, true,
+DEFINE_bool(enable_hessian_reuse, false,
             "Whether to reuse the Hessian factorization between iterations.");
 DEFINE_int32(k_max, 10,
              "Maximum number of iterations before re-computing the Hessian.");
-DEFINE_double(kappa, 0.05,
+DEFINE_double(kappa, 0.001,
               "Scaling factor for the relaxed convergence check (θ method of "
               "Hairer 1996) used to exit early under loose accuracies.");
 DEFINE_double(
     alpha_max, 1.0,
     "Maximum line search step size for the convex integrator (α_max).");
 DEFINE_double(
-    ls_tolerance, 1e-6,
+    ls_tolerance, 1e-8,
     "Tolerance for the exact line search performed by the convex integrator.");
 DEFINE_double(tolerance, 1e-8, "Main solver tolerance");
 
@@ -400,8 +400,8 @@ int main(int argc, char* argv[]) {
   // Set some reasonable defaults for the simulator options (these can be
   // overridden from the command line).
   FLAGS_simulator_integration_scheme = "convex";
-  FLAGS_simulator_accuracy = 0.1;
-  FLAGS_simulator_max_time_step = 0.01;
+  FLAGS_simulator_accuracy = 1e-3;
+  FLAGS_simulator_max_time_step = 0.1;
   FLAGS_simulator_use_error_control = true;
 
   gflags::ParseCommandLineFlags(&argc, &argv, true);

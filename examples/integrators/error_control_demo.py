@@ -171,7 +171,7 @@ def create_scene(
 
     vis_config = VisualizationConfig()
     vis_config.publish_period = 100  # very long to avoid extra publishes
-    # ApplyVisualizationConfig(vis_config, builder=builder, meshcat=meshcat)
+    ApplyVisualizationConfig(vis_config, builder=builder, meshcat=meshcat)
 
     logger = LogVectorOutput(
         plant.get_state_output_port(),
@@ -301,16 +301,16 @@ if __name__ == "__main__":
     parser.add_argument(
         "--accuracy",
         type=float,
-        default=0.1,
-        help="Integrator accuracy (ignored for discrete). Default: 0.1.",
+        default=1e-3,
+        help="Integrator accuracy (ignored for discrete).",
     )
     parser.add_argument(
         "--max_step_size",
         type=float,
-        default=0.01,
+        default=0.1,
         help=(
             "Maximum time step size (or fixed step size for discrete "
-            "integrator). Default: 0.01."
+            "integrator)."
         ),
     )
     parser.add_argument(
@@ -349,7 +349,7 @@ if __name__ == "__main__":
         args.accuracy,
         max_step_size=args.max_step_size,
         meshcat=meshcat,
-        wait_for_meshcat=False
+        wait_for_meshcat=True
     )
 
     if args.plot:
