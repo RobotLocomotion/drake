@@ -13,6 +13,8 @@ namespace multibody {
 namespace {
 
 GTEST_TEST(SurfaceVelocityTest, CheckParameterRegistration) {
+  constexpr double tol = 1e-5;
+
   systems::DiagramBuilder<double> builder;
   auto [plant, scene_graph] =
       multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
@@ -79,17 +81,19 @@ GTEST_TEST(SurfaceVelocityTest, CheckParameterRegistration) {
 
   for (const Eigen::Vector3d& c_G : contacts_G) {
     const Eigen::Vector3d c_W = pose * c_G;
-    std::cout << "c_w " << c_W.x() << ", " << c_W.y() << ", " << c_W.z()
-              << std::endl;
     Eigen::Vector3d surface_v = plant.GetSurfaceVelocity(
         belt_geom_id, scene_graph.model_inspector(), pose, c_W);
     // Verify the direction of surface velocity is equal to cross product
     // between the surface normal at each contact point and the velocity
     // normal vector
-    EXPECT_LT(
-        (surface_v.normalized() - (velocity_n.cross(c_G.normalized()))).norm(),
-        1e-5);
-    EXPECT_EQ(surface_v.norm(), surface_speed);
+    Eigen::Vector3d reference_v = velocity_n.cross(c_G.normalized());
+    EXPECT_LT((surface_v.normalized() - (reference_v)).norm(), tol);
+    // When the velocity normal and the surface normal vectors are parallel,
+    // their cross product is 0 meaning the surface velocity should be also
+    // very close to 0. This occurs in this case for a contact at the +x and -x
+    // faces because they are parallel to the velocity normal.
+    EXPECT_NEAR(surface_v.norm(), reference_v.norm() > 0.5 ? surface_speed : 0.,
+                tol);
   }
 
   (void)ground_id;
