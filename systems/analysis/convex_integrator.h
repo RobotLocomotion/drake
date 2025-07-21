@@ -52,7 +52,7 @@ struct ConvexIntegratorSolverParameters {
   double kappa{0.001};
 
   // Whether hessian reuse between iterations and time steps is enabled.
-  bool enable_hessian_reuse{true};
+  bool enable_hessian_reuse{false};
   int max_iterations_for_hessian_reuse{10};  // k_max from [Hairer, 1996]
 
   // Logging/performance tracking flags
