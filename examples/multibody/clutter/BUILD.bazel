@@ -9,25 +9,12 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-cc_library(
-    name = "ittapi",
-    hdrs = ["sdk/include/ittnotify.h"],
-    includes = ["sdk/include"],
-    linkopts = [
-        "-L/opt/intel/oneapi/vtune/latest/lib64",
-        "-littnotify",
-    ],
-    tags = ["nolint"],
-    visibility = ["//visibility:public"],
-)
-
 drake_cc_binary(
     name = "clutter",
     srcs = [
         "clutter.cc",
     ],
     deps = [
-        ":ittapi",
         "//common:add_text_logging_gflags",
         "//geometry:drake_visualizer",
         "//geometry:meshcat_visualizer",

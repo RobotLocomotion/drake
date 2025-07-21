@@ -8,7 +8,6 @@
 #include <utility>
 
 #include <gflags/gflags.h>
-#include <ittnotify.h>
 #include <valgrind/callgrind.h>
 
 #include "drake/common/nice_type_name.h"
@@ -505,8 +504,6 @@ void SetObjectsIntoAPile(const MultibodyPlant<double>& plant,
 }
 
 int do_main() {
-  __itt_pause();  // Stop VTune collection
-
   // Build a generic multibody plant.
   systems::DiagramBuilder<double> builder;
 
@@ -640,13 +637,11 @@ int do_main() {
 
   clock::time_point sim_start_time = clock::now();
 
-  __itt_resume();  // Start VTune collection
   CALLGRIND_START_INSTRUMENTATION;
   // CALLGRIND_TOGGLE_COLLECT;  // Start collection
   simulator->AdvanceTo(FLAGS_simulation_time);
   // CALLGRIND_TOGGLE_COLLECT;  // Stop collection
   CALLGRIND_STOP_INSTRUMENTATION;
-  __itt_pause();  // Stop collection again
 
   clock::time_point sim_end_time = clock::now();
   const double sim_time =
