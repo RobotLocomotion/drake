@@ -248,7 +248,7 @@ TEST_F(QuaternionFloatingMobilizerTest, KinematicMapping) {
   const Vector3<double> w_FM_F(1.1, 2.5, 3.2);
   mobilizer_->SetAngularVelocity(context_.get(), w_FM_F);
   const Vector3<double> v_FMo_F(1.0, 2.0, 3.0);
-  mobilizer_->SetTranslation(context_.get(), v_FMo_F);
+  mobilizer_->SetTranslationalVelocity(context_.get(), v_FMo_F);
 
   // Calculate the NDot(q,q̇) matrix that appears in q̈ = Ṅ(q,q̇)⋅v + N⁺(q)⋅v̇.
   MatrixX<double> NDot(7, 6);
