@@ -300,15 +300,15 @@ int ComputeMaxNumberOfCliquesInGreedyCliqueCover(
                           (s * (s + 1)) / 2);
 }
 
-// Approximately compute the fraction of `domain` covered by `sets` by
-// sampling points uniformly at random in `domain` and checking whether the
-// point lies in one of the sets in `sets`.
+// Approximately compute the fraction of `domain` covered by `sets` by sampling
+// points uniformly at random in `domain` and checking whether the point lies in
+// one of the sets in `sets`.
 //
 // The `generator` is used as the source of randomness for drawing points from
 // domain.
 //
-// The sampled points are checked for inclusion in `sets` in parallel, with
-// the degree of parallelism determined by `parallelism`.
+// The sampled points are checked for inclusion in `sets` in parallel, with the
+// degree of parallelism determined by `parallelism`.
 //
 // The value of `last_polytope_sample` is used to initialize the distribution
 // over the domain. The value of the final sample is written to this vector so
@@ -516,7 +516,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
     }
 
     Meshcat* meshcat = GetMeshcatFromOptions(options.iris_options);
-
+    // Show the samples used in build cliques. Debugging visualization.
     if (meshcat != nullptr && domain.ambient_dimension() <= 3) {
       Eigen::Vector3d point_to_draw = Eigen::Vector3d::Zero();
       for (int pt_to_draw = 0; pt_to_draw < points.cols(); ++pt_to_draw) {
