@@ -70,7 +70,7 @@ node(getNodeLabel()) {
  * @return the node label
  */
 def getNodeLabel() {
-  def pattern = ~/^((linux|mac-arm)-[a-z]+(?:-unprovisioned)?)/
+  def pattern = ~/^((linux(-arm)?|mac-arm)-[A-Za-z]+(-unprovisioned)?).*/
   def match = env.JOB_NAME =~ pattern
 
   if (match.find()) {
