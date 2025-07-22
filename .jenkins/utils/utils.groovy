@@ -1,14 +1,18 @@
-// Performs the checkout step for drake and drake-ci.
-// * drake: Clones into WORKSPACE/'src' and checks out the branch
-//   specified from the build.
-// * drake-ci: Clones into WORKSPACE/'ci' and performs a custom
-//   checkout of either 'main' or the given parameter.
+/**
+ * Performs the checkout step for drake (cloning into WORKSPACE/'src') and
+ * drake-ci (cloning into WORKSPACE/'ci').
+ * 
+ * @param ciSha the commit SHA or branch name to use for drake-ci
+ * @param drakeSha the commit SHA or branch name to use for drake; if none is
+ *                 given, uses the current branch or pull request
+ * @return the scmVars object from the drake checkout
+ */
 def checkout(String ciSha = 'main', String drakeSha = null) {
   def scmVars = null
   retry(4) {
     if (drakeSha) {
       scmVars = checkout([$class: 'GitSCM',
-        branches: [[name: "${drakeSha}"]],
+        branches: [[name: drakeSha]],
         extensions: [[$class: 'AuthorInChangelog'],
           [$class: 'CloneOption', honorRefspec: true, noTags: true],
           [$class: 'RelativeTargetDirectory', relativeTargetDir: 'src'],
@@ -28,7 +32,7 @@ def checkout(String ciSha = 'main', String drakeSha = null) {
   }
   retry(4) {
     checkout([$class: 'GitSCM',
-      branches: [[name: "${ciSha}"]],
+      branches: [[name: ciSha]],
       extensions: [[$class: 'AuthorInChangelog'],
         [$class: 'CloneOption', honorRefspec: true, noTags: true],
         [$class: 'RelativeTargetDirectory', relativeTargetDir: 'ci'],
@@ -43,8 +47,14 @@ def checkout(String ciSha = 'main', String drakeSha = null) {
   return scmVars
 }
 
-// Performs the main build step by calling into the drake-ci driver script
-// with the necessary credentials and environment variables.
+/**
+ * Performs the main build step by calling into the drake-ci driver script
+ * with the necessary credentials and environment variables.
+ *
+ * @param scmVars the scmVars object from drake (obtained via checkout)
+ * @param stagingReleaseVersion for staging jobs, the value of the environment
+ *                              variable DRAKE_VERSION used by drake-ci
+ */
 def doMainBuild(Map scmVars, String stagingReleaseVersion = null) {
   withCredentials([
     sshUserPrivateKey(credentialsId: 'ad794d10-9bc8-4a7a-a2f3-998af802cab0',
@@ -64,7 +74,9 @@ def doMainBuild(Map scmVars, String stagingReleaseVersion = null) {
   }
 }
 
-// Sends an email to Drake developers when a build fails or is unstable.
+/**
+ * Sends an email to Drake developers when a build fails or is unstable.
+ */
 def emailFailureResults() {
   if (fileExists('RESULT')) {
     currentBuild.result = readFile 'RESULT'
@@ -84,9 +96,11 @@ def emailFailureResults() {
   }
 }
 
-// Deletes the workspace and tmp directories, for use at the end of a build.
+/**
+ * Deletes the workspace and tmp directories, for use at the end of a build.
+ */
 def cleanWorkspace() {
-  dir("${env.WORKSPACE}") {
+  dir(env.WORKSPACE) {
     deleteDir()
   }
   dir("${env.WORKSPACE}@tmp") {
@@ -94,7 +108,9 @@ def cleanWorkspace() {
   }
 }
 
-// Provides links to CDash to view the results of the build.
+/**
+ * Provides links to CDash to view the results of the build.
+ */
 def addCDashBadge() {
   if (fileExists('CDASH')) {
     def cDashUrl = readFile 'CDASH'
@@ -105,4 +121,6 @@ def addCDashBadge() {
   }
 }
 
+// This must be present in order for this script to be consumed by
+// Jenkinsfiles when using 'load'.
 return this

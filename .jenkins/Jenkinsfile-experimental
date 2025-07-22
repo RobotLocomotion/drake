@@ -55,10 +55,14 @@ node(getNodeLabel()) {
   }
 }
 
-// Returns the node label from the job name.
+/**
+ * Extracts the node label from the job name.
+ *
+ * @return the node label
+ */
 def getNodeLabel() {
   def pattern = ~/^((linux|mac-arm)-[a-z]+(?:-unprovisioned)?)/
-  def match = "${env.JOB_NAME}" =~ pattern
+  def match = env.JOB_NAME =~ pattern
 
   if (match.find()) {
     return match.group(1)
@@ -68,8 +72,12 @@ def getNodeLabel() {
   }
 }
 
-// Loads utils by performing a sparse checkout to WORKSPACE/jenkins-utils.
-// If no 'branch' is given, tries to find the current branch or pull request.
+/**
+ * Loads utils by performing a sparse checkout to WORKSPACE/jenkins-utils.
+ *
+ * @param branch the branch from which to load utils; if none is given, tries
+ *               to find the current branch or pull request
+ */
 def fetchUtils(String branch = null) {
   if (!branch) {
     if (!env.CHANGE_ID?.trim()) {
