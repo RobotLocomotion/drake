@@ -451,7 +451,6 @@ GTEST_TEST(ConvexIntegratorTest, EffortLimits) {
 
   // Compare requested and applied actuator forces
   const VectorXd u_req = plant.get_actuation_input_port().Eval(plant_context);
-
   EXPECT_TRUE(u_req[0] > effort_limits[0]);
   EXPECT_TRUE(u_req[1] > effort_limits[1]);
 

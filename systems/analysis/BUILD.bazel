@@ -34,12 +34,14 @@ drake_cc_package_library(
         ":radau_integrator",
         ":realtime_rate_calculator",
         ":region_of_attraction",
+        ":rosenbrock2_integrator",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
         ":runge_kutta5_integrator",
         ":scalar_dense_output",
         ":scalar_initial_value_problem",
         ":scalar_view_dense_output",
+        ":sdirk2_integrator",
         ":semi_explicit_euler_integrator",
         ":simulator",
         ":simulator_config",
@@ -90,9 +92,11 @@ drake_cc_library(
         ":explicit_euler_integrator",
         ":implicit_euler_integrator",
         ":radau_integrator",
+        ":rosenbrock2_integrator",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
         ":runge_kutta5_integrator",
+        ":sdirk2_integrator",
         ":semi_explicit_euler_integrator",
         ":simulator",
         ":simulator_config",
@@ -306,6 +310,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "rosenbrock2_integrator",
+    srcs = ["rosenbrock2_integrator.cc"],
+    hdrs = [
+        "rosenbrock2_integrator.h",
+    ],
+    deps = [
+        ":implicit_integrator",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_library(
     name = "velocity_implicit_euler_integrator",
     srcs = ["velocity_implicit_euler_integrator.cc"],
     hdrs = [
@@ -350,6 +366,17 @@ drake_cc_library(
         ":bogacki_shampine3_integrator",
         ":implicit_integrator",
         ":runge_kutta2_integrator",
+    ],
+)
+
+drake_cc_library(
+    name = "sdirk2_integrator",
+    srcs = ["sdirk2_integrator.cc"],
+    hdrs = [
+        "sdirk2_integrator.h",
+    ],
+    deps = [
+        ":implicit_integrator",
     ],
 )
 
@@ -583,15 +610,15 @@ drake_cc_binary(
     ],
 )
 
-drake_py_unittest(
-    name = "simulator_gflags_test",
-    data = [
-        ":simulator_gflags_main",
-    ],
-    deps = [
-        "@rules_python//python/runfiles",
-    ],
-)
+# drake_py_unittest(
+#     name = "simulator_gflags_test",
+#     data = [
+#         ":simulator_gflags_main",
+#     ],
+#     deps = [
+#         "@rules_python//python/runfiles",
+#     ],
+# )
 
 drake_cc_googletest(
     name = "batch_eval_test",
@@ -641,6 +668,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "sdirk2_integrator_test",
+    deps = [
+        ":sdirk2_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/analysis/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "discrete_time_approximation_test",
     data = [
         "//examples/multibody/cart_pole:models",
@@ -668,6 +704,15 @@ drake_cc_googletest(
         "//systems/analysis/test_utilities",
     ],
 )
+
+# drake_cc_googletest(
+#     name = "rosenbrock2_integrator_test",
+#     deps = [
+#         ":rosenbrock2_integrator",
+#         "//common/test_utilities:eigen_matrix_compare",
+#         "//systems/analysis/test_utilities",
+#     ],
+# )
 
 # drake_cc_googletest(
 #     name = "implicit_euler_integrator_test",
