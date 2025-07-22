@@ -18,18 +18,23 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// This Mobilizer allows two frames to move freely relatively to one another.
-// To fully specify this mobilizer a user must provide an inboard frame F and
-// an outboard frame M. This mobilizer introduces six degrees of freedom which
-// allow frame M to freely move with respect to frame F.  This mobilizer
-// introduces four generalized positions to describe the orientation R_FM of
-// frame M in F with a quaternion q_FM, and three generalized positions to
-// describe the translation of frame M's origin in F with a position vector
-// p_FM. The seven entries of the configuration vector q are ordered
-// (q_FM, p_FM) with the quaternion, ordered wxyz (scalar then vector),
-// preceding the translation vector. As generalized velocities, this mobilizer
-// introduces the angular velocity w_FM of frame M in F and the linear
-// velocity v_FM of frame M's origin in frame F, ordered (w_FM, v_FM).
+// This Mobilizer allows a "mobilized" frame M to freely rotate and translate
+// relative to a "fixed" frame F (frame M has 6 degrees of freedom in frame F).
+//
+// The rotational part of this mobilizer is characterized by generalized
+// positions q_FM = qᵣ = [qw, qx, qy, qz]ᵀ (the quaternion relating frame F and
+// frame M, with qw the scalar part and (qx, qy, qz) the vector part of the
+// quaternion) and generalized velocities w_FM_F = vᵣ = [ωx, ωy, ωz]ᵀ
+// (frame M's angular velocity in frame F, expressed in frame F).
+//
+// The translational part of this mobilizer is characterized by generalized
+// positions p_FM_F = qₜ = [x, y, z]ᵀ (the position from frame F's origin Fo
+// to frame M's origin Mo, expresed in frame F) and generalized velocities
+// v_FM_F = vₜ = [vx, vy, vz]ᵀ (the velocity of frame M's origin Mo, measured
+// and expressed in frame F).
+//
+// The 7 generalized positions are ordered [q_FM, p_FM_F].
+// The 6 generalized velocities are ordered [w_FM_F, v_FM_F].
 //
 //   H_FM_F₆ₓ₆ = I₆ₓ₆     Hdot_FM_F₆ₓ₆ = 0₆ₓ₆
 //
@@ -293,6 +298,12 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
 
   void DoCalcNplusMatrix(const systems::Context<T>& context,
                          EigenPtr<MatrixX<T>> Nplus) const final;
+
+  void DoCalcNDotMatrix(const systems::Context<T>& context,
+                        EigenPtr<MatrixX<T>> Ndot) const final;
+
+  void DoCalcNplusDotMatrix(const systems::Context<T>& context,
+                            EigenPtr<MatrixX<T>> NplusDot) const final;
 
   void DoMapVelocityToQDot(const systems::Context<T>& context,
                            const Eigen::Ref<const VectorX<T>>& v,
