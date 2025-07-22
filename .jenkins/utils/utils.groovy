@@ -48,7 +48,7 @@ def checkout(String ciSha = 'main', String drakeSha = null) {
 }
 
 /**
- * Performs the main build step by calling into the drake-ci driver script
+ * Performs the main build step by calling into a drake-ci driver script
  * with the necessary credentials and environment variables.
  *
  * @param scmVars the scmVars object from drake (obtained via checkout)
@@ -56,20 +56,26 @@ def checkout(String ciSha = 'main', String drakeSha = null) {
  *                              variable DRAKE_VERSION used by drake-ci
  */
 def doMainBuild(Map scmVars, String stagingReleaseVersion = null) {
-  withCredentials([
-    sshUserPrivateKey(credentialsId: 'ad794d10-9bc8-4a7a-a2f3-998af802cab0',
-      keyFileVariable: 'SSH_PRIVATE_KEY_FILE'),
-    string(credentialsId: 'e21b9517-8aa7-419e-8f25-19cd42e10f68',
-      variable: 'DOCKER_USERNAME'),
-    file(credentialsId: '912dd413-d419-4760-b7ab-c132ab9e7c5e',
-      variable: 'DOCKER_PASSWORD_FILE')
-  ]) {
-    def environment = ["GIT_COMMIT=${scmVars.GIT_COMMIT}"]
-    if (stagingReleaseVersion) {
-      environment += "DRAKE_VERSION=${stagingReleaseVersion}"
-    }
-    withEnv(environment) {
-      sh "${env.WORKSPACE}/ci/ctest_driver_script_wrapper.bash"
+  if (env.JOB_NAME.contains("cache-server-health-check")) {
+    echo "Checking the cache server:"
+    sh "${env.WORKSPACE}/ci/cache_server/health_check.bash"
+  }
+  else {
+    withCredentials([
+      sshUserPrivateKey(credentialsId: 'ad794d10-9bc8-4a7a-a2f3-998af802cab0',
+        keyFileVariable: 'SSH_PRIVATE_KEY_FILE'),
+      string(credentialsId: 'e21b9517-8aa7-419e-8f25-19cd42e10f68',
+        variable: 'DOCKER_USERNAME'),
+      file(credentialsId: '912dd413-d419-4760-b7ab-c132ab9e7c5e',
+        variable: 'DOCKER_PASSWORD_FILE')
+    ]) {
+      def environment = ["GIT_COMMIT=${scmVars.GIT_COMMIT}"]
+      if (stagingReleaseVersion) {
+        environment += "DRAKE_VERSION=${stagingReleaseVersion}"
+      }
+      withEnv(environment) {
+        sh "${env.WORKSPACE}/ci/ctest_driver_script_wrapper.bash"
+      }
     }
   }
 }
