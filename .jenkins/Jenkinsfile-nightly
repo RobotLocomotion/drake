@@ -6,7 +6,14 @@ properties([
       daysToKeepStr: '90',
       artifactDaysToKeepStr: '90'
     )
-  )
+  ),
+  triggers(
+    // There are a limited number of wheel and packaging jobs; start them all
+    // at 1am. For most jobs, start between 2-4am (ET).
+    cron(env.JOB_NAME.contains("wheel") ||
+      env.JOB_NAME.contains("packaging") :
+      '0 1 * * *' : 'H(2-4) * * *')
+  ),
 ])
 
 node(getNodeLabel()) {
@@ -14,13 +21,14 @@ node(getNodeLabel()) {
   // multiple repositories with a particular directory layout.
   skipDefaultCheckout()
 
-  // Load utils.groovy for common utilities.
-  // If no such file exists on this branch, load it from master.
-  fetchUtils()
-  def jenkinsUtilsPath = 'jenkins-utils/.jenkins/utils/utils.groovy'
-  if (!fileExists(jenkinsUtilsPath)) {
-    fetchUtils('master')
+  if (!env.BRANCH_NAME.equals('master')) {
+    currentBuild.result = 'ABORTED'
+    error('Continuous jobs should only run on master.')
   }
+
+  // Load utils.groovy for common utilities.
+  fetchUtils('master')
+  def jenkinsUtilsPath = 'jenkins-utils/.jenkins/utils/utils.groovy'
   def utils = load jenkinsUtilsPath
   if (!utils) {
     currentBuild.result = 'ABORTED'
