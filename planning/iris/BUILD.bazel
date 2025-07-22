@@ -32,6 +32,8 @@ drake_cc_library(
         "//planning:visibility_graph",
         "//planning/graph_algorithms:max_clique_solver_base",
         "//planning/graph_algorithms:max_clique_solver_via_greedy",
+        "//planning/iris:iris_np2",
+        "//planning/iris:iris_zo",
         "//solvers:gurobi_solver",
         "//solvers:mosek_solver",
     ],

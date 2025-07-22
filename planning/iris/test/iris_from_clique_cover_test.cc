@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/overloaded.h"
 #include "drake/common/ssize.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/maybe_pause_for_user.h"
@@ -48,12 +49,14 @@ void Draw2dVPolytope(const VPolytope& polytope, const std::string& meshcat_name,
 }
 
 GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
-           TestIrisFromCliqueCoverOptions) {
+           TestIrisFromCliqueCoverDefaultOptions) {
   IrisFromCliqueCoverOptions options;
+  EXPECT_TRUE(std::holds_alternative<IrisOptions>(options.iris_options));
+  IrisOptions iris_options = std::get<IrisOptions>(options.iris_options);
 
-  EXPECT_EQ(options.iris_options.iteration_limit, 1);
-  options.iris_options.iteration_limit = 100;
-  EXPECT_EQ(options.iris_options.iteration_limit, 100);
+  EXPECT_EQ(iris_options.iteration_limit, 1);
+  iris_options.iteration_limit = 100;
+  EXPECT_EQ(iris_options.iteration_limit, 100);
 
   EXPECT_EQ(options.coverage_termination_threshold, 0.7);
   options.coverage_termination_threshold = 0.1;
@@ -142,7 +145,7 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, BoxConfigurationSpaceTest) {
   options.iteration_limit = 1;
   // Set a large bounding region to test the path where this is set in the
   // IrisOptions.
-  options.iris_options.bounding_region =
+  std::get<IrisOptions>(options.iris_options).bounding_region =
       HPolyhedron::MakeBox(Eigen::Vector2d{-2, -2}, Eigen::Vector2d{2, 2});
   // Run this test without parallelism to test that no bugs occur in the
   // non-parallel version.
@@ -262,18 +265,19 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   EXPECT_TRUE(checker->CheckConfigCollisionFree(config));
 
   IrisFromCliqueCoverOptions options;
+  IrisOptions& iris_options = std::get<IrisOptions>(options.iris_options);
 
   options.num_points_per_coverage_check = 100;
   options.num_points_per_visibility_round = 20;
   options.iteration_limit = 1;
   // Set a large bounding region to test the path where this is set in the
   // IrisOptions.
-  options.iris_options.bounding_region =
+  iris_options.bounding_region =
       HPolyhedron::MakeBox(Eigen::Vector2d{-2, -2}, Eigen::Vector2d{2, 2});
   // Run this test without parallelism to test that no bugs occur in the
   // non-parallel version.
   options.parallelism = Parallelism{1};
-  options.iris_options.meshcat = meshcat;
+  iris_options.meshcat = meshcat;
   std::vector<HPolyhedron> sets;
 
   RandomGenerator generator(0);
@@ -298,28 +302,108 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   MaybePauseForUser();
 }
 
+class PendulumTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    CollisionCheckerParams params;
+
+    RobotDiagramBuilder<double> builder(0.0);
+    params.robot_model_instances = builder.parser().AddModelsFromUrl(
+        "package://drake/examples/pendulum/Pendulum.urdf");
+    params.edge_step_size = 0.01;
+
+    params.model = builder.Build();
+    checker_ = std::make_unique<SceneGraphCollisionChecker>(std::move(params));
+  }
+
+  std::unique_ptr<SceneGraphCollisionChecker> checker_;
+};
+
 // Plants that don't have joint limits get a reasonable error message.
-GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, NoJointLimits) {
-  CollisionCheckerParams params;
-
-  RobotDiagramBuilder<double> builder(0.0);
-  params.robot_model_instances = builder.parser().AddModelsFromUrl(
-      "package://drake/examples/pendulum/Pendulum.urdf");
-  params.edge_step_size = 0.01;
-
-  params.model = builder.Build();
-  auto checker =
-      std::make_unique<SceneGraphCollisionChecker>(std::move(params));
-
+TEST_F(PendulumTest, NoJointLimits) {
   IrisFromCliqueCoverOptions options;
   std::vector<HPolyhedron> sets;
 
   RandomGenerator generator(0);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
+      IrisInConfigurationSpaceFromCliqueCover(*checker_, options, &generator,
                                               &sets, nullptr),
       ".*.GetPositionLowerLimits.*isFinite.* failed.");
+}
+
+TEST_F(PendulumTest, NoParameterizationAllowed) {
+  IrisFromCliqueCoverOptions options;
+  auto parameterization_double = [](const Vector2d& config) -> Vector2d {
+    return Vector2d::Constant(1);
+  };
+  auto parameterization_autodiff =
+      [](const Vector2<AutoDiffXd>& config) -> Vector2<AutoDiffXd> {
+    return drake::Vector2<AutoDiffXd>{Vector2d::Constant(1)};
+  };
+  auto parameterization_function = IrisParameterizationFunction(
+      parameterization_double, parameterization_autodiff,
+      /* parameterization_is_threadsafe */ true,
+      /* parameterization_dimension */ 2);
+
+  IrisNp2Options iris_np2_options;
+  iris_np2_options.parameterization = parameterization_function;
+
+  IrisZoOptions iris_zo_options;
+  iris_zo_options.parameterization = parameterization_function;
+
+  options.iris_options = iris_np2_options;
+  std::string expected_error_message_substring = ".*parameterized subspace.*";
+
+  std::vector<HPolyhedron> sets;
+  RandomGenerator generator(0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisInConfigurationSpaceFromCliqueCover(*checker_, options, &generator,
+                                              &sets, nullptr),
+      expected_error_message_substring);
+
+  options.iris_options = iris_zo_options;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisInConfigurationSpaceFromCliqueCover(*checker_, options, &generator,
+                                              &sets, nullptr),
+      expected_error_message_substring);
+}
+
+TEST_F(PendulumTest, NoProgWithAdditionalConstraintsAllowed) {
+  std::vector<HPolyhedron> sets;
+  RandomGenerator generator(0);
+
+  IrisFromCliqueCoverOptions options;
+  drake::solvers::MathematicalProgram prog_with_additional_constraints;
+
+  std::string expected_error_message_substring =
+      ".*iris_options.*.*prog_with_additional_constraints.*";
+  IrisOptions iris_options;
+  iris_options.prog_with_additional_constraints =
+      &prog_with_additional_constraints;
+  options.iris_options = iris_options;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisInConfigurationSpaceFromCliqueCover(*checker_, options, &generator,
+                                              &sets, nullptr),
+      expected_error_message_substring);
+
+  IrisNp2Options iris_np2_options;
+  iris_np2_options.sampled_iris_options.prog_with_additional_constraints =
+      &prog_with_additional_constraints;
+  options.iris_options = iris_np2_options;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisInConfigurationSpaceFromCliqueCover(*checker_, options, &generator,
+                                              &sets, nullptr),
+      expected_error_message_substring);
+
+  IrisZoOptions iris_zo_options;
+  iris_zo_options.sampled_iris_options.prog_with_additional_constraints =
+      &prog_with_additional_constraints;
+  options.iris_options = iris_zo_options;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisInConfigurationSpaceFromCliqueCover(*checker_, options, &generator,
+                                              &sets, nullptr),
+      expected_error_message_substring);
 }
 
 /* A movable sphere with fixed boxes in all corners.
@@ -377,6 +461,7 @@ const char boxes_in_corners[] = R"""(
 </robot>
 )""";
 
+template <typename IrisOptionsVariantType>
 class IrisInConfigurationSpaceFromCliqueCoverTestFixture
     : public ::testing::Test {
  protected:
@@ -425,7 +510,27 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
 
     params.model = builder.Build();
     checker = std::make_unique<SceneGraphCollisionChecker>(std::move(params));
-    options.iris_options.meshcat = meshcat;
+    CommonSampledIrisOptions sampled_options;
+
+    if constexpr (std::is_same_v<IrisOptionsVariantType,
+                                 geometry::optimization::IrisOptions>) {
+      options.iris_options = geometry::optimization::IrisOptions{
+          .iteration_limit = 1, .meshcat = meshcat};
+    } else {
+      sampled_options.max_iterations = 1;
+      sampled_options.meshcat = meshcat;
+      if constexpr (std::is_same_v<IrisOptionsVariantType, IrisNp2Options>) {
+        IrisNp2Options np2_options;
+        np2_options.sampled_iris_options = sampled_options;
+        options.iris_options = np2_options;
+      } else {
+        if constexpr (std::is_same_v<IrisOptionsVariantType, IrisZoOptions>) {
+          IrisZoOptions iris_options;
+          iris_options.sampled_iris_options = sampled_options;
+          options.iris_options = iris_options;
+        }
+      }
+    }
 
     options.num_points_per_coverage_check = 1000;
     options.num_points_per_visibility_round = 140;
@@ -475,8 +580,14 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
   Eigen::VectorXd color;
 };
 
-TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
-       BoxWithCornerObstaclesTestMip) {
+using IrisOptionsVariantTypes =
+    ::testing::Types<geometry::optimization::IrisOptions, IrisNp2Options,
+                     IrisZoOptions>;
+TYPED_TEST_SUITE(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
+                 IrisOptionsVariantTypes);
+
+TYPED_TEST(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
+           BoxWithCornerObstaclesTestMip) {
   // Only run this test if a MIP solver is available.
   if ((solvers::MosekSolver::is_available() &&
        solvers::MosekSolver::is_enabled()) ||
@@ -503,29 +614,30 @@ TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
     planning::graph_algorithms::MaxCliqueSolverViaMip solver{std::nullopt,
                                                              solver_options};
 
-    IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator,
-                                            &sets, &solver);
-    EXPECT_EQ(ssize(sets), 6);
+    IrisInConfigurationSpaceFromCliqueCover(
+        *this->checker, this->options, &this->generator, &this->sets, &solver);
+    EXPECT_EQ(ssize(this->sets), 6);
     // Show the IrisFromCliqueCoverDecomposition
-    for (int i = 0; i < ssize(sets); ++i) {
+    for (int i = 0; i < ssize(this->sets); ++i) {
       // Choose a random color.
-      for (int j = 0; j < color.size(); ++j) {
-        color[j] = abs(gaussian(generator));
+      for (int j = 0; j < this->color.size(); ++j) {
+        this->color[j] = abs(this->gaussian(this->generator));
       }
-      color.normalize();
-      VPolytope vregion = VPolytope(sets.at(i)).GetMinimalRepresentation();
+      this->color.normalize();
+      VPolytope vregion =
+          VPolytope(this->sets.at(i)).GetMinimalRepresentation();
       Draw2dVPolytope(vregion, fmt::format("iris_from_clique_cover_mip{}", i),
-                      color, meshcat);
+                      this->color, this->meshcat);
     }
 
     // Now check the coverage by drawing points from the manual decomposition
     // and checking if they are inside the IrisFromCliqueCover decomposition.
     int num_samples_per_set = 1000;
     int num_in_automatic_decomposition = 0;
-    for (const auto& manual_set : manual_decomposition) {
+    for (const auto& manual_set : this->manual_decomposition) {
       for (int i = 0; i < num_samples_per_set; ++i) {
-        Eigen::Vector2d sample = manual_set.UniformSample(&generator);
-        for (const auto& set : sets) {
+        Eigen::Vector2d sample = manual_set.UniformSample(&this->generator);
+        for (const auto& set : this->sets) {
           if (set.PointInSet(sample)) {
             ++num_in_automatic_decomposition;
             break;
@@ -535,7 +647,8 @@ TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
     }
     double coverage_estimate =
         static_cast<double>(num_in_automatic_decomposition) /
-        static_cast<double>(num_samples_per_set * ssize(manual_decomposition));
+        static_cast<double>(num_samples_per_set *
+                            ssize(this->manual_decomposition));
     // We set the termination threshold to be at 0.9 with 1000 points for a
     // coverage check. This number is low enough that the test passes regardless
     // of the random seed. (The probability of success is larger than 1-1e-9).
@@ -545,34 +658,34 @@ TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
   }
 }
 
-TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
-       BoxWithCornerObstaclesTestGreedy) {
+TYPED_TEST(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
+           BoxWithCornerObstaclesTestGreedy) {
   // use default solver MaxCliqueSovlerViaGreedy
-  IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
-                                          nullptr);
+  IrisInConfigurationSpaceFromCliqueCover(
+      *this->checker, this->options, &this->generator, &this->sets, nullptr);
 
-  EXPECT_EQ(ssize(sets), 6);
+  EXPECT_EQ(ssize(this->sets), 6);
 
   // Show the IrisFromCliqueCoverDecomposition
-  for (int i = 0; i < ssize(sets); ++i) {
+  for (int i = 0; i < ssize(this->sets); ++i) {
     // Choose a random color.
-    for (int j = 0; j < color.size(); ++j) {
-      color[j] = abs(gaussian(generator));
+    for (int j = 0; j < this->color.size(); ++j) {
+      this->color[j] = abs(this->gaussian(this->generator));
     }
-    color.normalize();
-    VPolytope vregion = VPolytope(sets.at(i)).GetMinimalRepresentation();
+    this->color.normalize();
+    VPolytope vregion = VPolytope(this->sets.at(i)).GetMinimalRepresentation();
     Draw2dVPolytope(vregion, fmt::format("iris_from_clique_cover_greedy{}", i),
-                    color, meshcat);
+                    this->color, this->meshcat);
   }
 
   // Now check the coverage by drawing points from the manual decomposition and
   // checking if they are inside the IrisFromCliqueCover decomposition.
   int num_samples_per_set = 1000;
   int num_in_automatic_decomposition = 0;
-  for (const auto& manual_set : manual_decomposition) {
+  for (const auto& manual_set : this->manual_decomposition) {
     for (int i = 0; i < num_samples_per_set; ++i) {
-      Eigen::Vector2d sample = manual_set.UniformSample(&generator);
-      for (const auto& set : sets) {
+      Eigen::Vector2d sample = manual_set.UniformSample(&this->generator);
+      for (const auto& set : this->sets) {
         if (set.PointInSet(sample)) {
           ++num_in_automatic_decomposition;
           break;
@@ -582,7 +695,8 @@ TEST_F(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
   }
   double coverage_estimate =
       static_cast<double>(num_in_automatic_decomposition) /
-      static_cast<double>(num_samples_per_set * ssize(manual_decomposition));
+      static_cast<double>(num_samples_per_set *
+                          ssize(this->manual_decomposition));
   // We set the termination threshold to be at 0.9 with 1000 points for a
   // coverage check. This number is low enough that the test passes regardless
   // of the random seed. (The probability of success is larger than 1-1e-9).
