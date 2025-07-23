@@ -33,7 +33,7 @@
           <drake:mu_dynamic>0.8</drake:mu_dynamic>
           <drake:mu_static>1.0</drake:mu_static>
           <drake:surface_speed>1.0</drake:surface_speed>
-          <drake:surface_velocity_normal>1.0 0 0</drake:surface_velocity_normal>
+          <drake:surface_velocity_normal>0.0 1.0 0</drake:surface_velocity_normal>
         </drake:proximity_properties>
       </collision>
     </link>
@@ -44,7 +44,7 @@
 
     <!-- Blue cube on top of the large flat cuboid -->
     <link name="blue_cube">
-      <pose>0 0 5.55 0 0 0</pose> <!-- Positioned 0.5m above the cuboid -->
+      <pose>0 0 5.5 0 0 0</pose> <!-- Positioned 5.5m above the cuboid -->
       <visual name="blue_cube_visual">
         <geometry>
           <box>

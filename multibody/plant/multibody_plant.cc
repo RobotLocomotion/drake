@@ -2431,10 +2431,10 @@ void MultibodyPlant<T>::CalcContactResultsPointPairContinuous(
     // Account for any surface velocities.
     const Vector3<T> v_WAc =
         vc.get_V_WB(bodyA_mobod_index).Shift(-p_CoAo_W).translational() +
-        X_WA * v_ACa_ss;
+        X_WA.inverse() * v_ACa_ss;
     const Vector3<T> v_WBc =
         vc.get_V_WB(bodyB_mobod_index).Shift(-p_CoBo_W).translational() +
-        X_WB * V_BCb_ss;
+        X_WB.inverse() * V_BCb_ss;
     const Vector3<T> v_AcBc_W = v_WBc - v_WAc;
 
     // if xdot = vn > 0 ==> they are getting closer.
