@@ -9,7 +9,8 @@ properties([
   ),
   pipelineTriggers([
     [$class: 'GitHubPushTrigger'], pollSCM('H/15 * * * *')
-  ])
+  ]),
+  githubProjectProperty('https://github.com/RobotLocomotion/drake')
 ])
 
 node(getNodeLabel()) {
