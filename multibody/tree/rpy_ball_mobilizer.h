@@ -346,7 +346,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
       ThrowSinceCosPitchNearZero(context, function_name);
   }
 
-  // Portion of function ThrowIfCosPitchNearZero() that should not be inlined.
+  // Portion of ThrowIfCosPitchNearZero() that can be slow (not inlined).
   [[noreturn]] void ThrowSinceCosPitchNearZero(
       const systems::Context<T>& context, const char* function_name) const;
 
