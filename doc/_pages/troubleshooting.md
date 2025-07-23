@@ -259,6 +259,21 @@ Note that the concurrency level passed to `make` (e.g., `make -j 2`) does not
 propagate through to affect the concurrency of most of Drake's build steps; you
 need to configure the dotfile in order to control the build concurrency.
 
+# Pydrake out of memory {#pydrake-oom}
+
+Pydrake programs often control C++ objects that use a lot of memory, so that
+the default behaviors for running garbage collection don't effectively control
+memory growth.
+
+The standard Python [gc](https://docs.python.org/3/library/gc.html) module
+offers ways to customize the garbage collector's behavior. The easiest way is
+to explicitly call ``gc.collect()`` at intervals in your program. This will
+perform a full garbage collection. A more sophisticated method is to use
+``gc.set_threshold()`` to set custom object count thresholds for your program,
+and thus cause automatic collections to run more often.
+
+See also: [Memory management with the Python Bindings](https://drake.mit.edu/python_bindings.html#memory-management-with-the-python-bindings)
+
 # Network Configuration
 
 ## LCM on macOS {#lcm-macos}
