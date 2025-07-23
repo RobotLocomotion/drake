@@ -12,7 +12,8 @@ properties([
       daysToKeepStr: '90',
       artifactDaysToKeepStr: '90'
     )
-  )
+  ),
+  githubProjectProperty('https://github.com/RobotLocomotion/drake')
 ])
 
 def scmVars = null
