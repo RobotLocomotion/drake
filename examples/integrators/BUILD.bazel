@@ -39,4 +39,15 @@ drake_py_binary(
     ],
 )
 
+drake_py_binary(
+    name = "ball_drop_velocity_error",
+    srcs = ["ball_drop_velocity_error.py"],
+    data = [
+        ":models",
+    ],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
 add_lint_tests()
