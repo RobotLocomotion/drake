@@ -168,8 +168,9 @@ void RpyBallMobilizer<T>::DoCalcNMatrix(const systems::Context<T>& context,
   //
   // Note: N(q) is singular for p = π/2 + kπ, for k = ±1, ±2, ...
   // See related code and comments in DoMapVelocityToQdot().
-  const SinCosPitchYaw sin_cos_pitch_yaw = CalcSinCosPitchYaw(context);
-  auto& [sp, cp, sy, cy] = sin_cos_pitch_yaw;
+  // const SinCosPitchYaw sin_cos_pitch_yaw = CalcSinCosPitchYaw(context);
+  // auto& [sp, cp, sy, cy] = sin_cos_pitch_yaw;
+  const auto& [sp, cp, sy, cy] = CalcSinCosPitchYaw(context);
   ThrowIfCosPitchNearZero(context, cp, "CalcNMatrix");
   const T cpi = 1.0 / cp;
 
@@ -198,8 +199,7 @@ void RpyBallMobilizer<T>::DoCalcNplusMatrix(const systems::Context<T>& context,
   // ⌊ ω2 ⌋   ⌊         -sin(p),        0,  1 ⌋ ⌊ ẏ ⌋
   //
   // See related code and comments in DoMapQDotToVelocity().
-  const SinCosPitchYaw sin_cos_pitch_yaw = CalcSinCosPitchYaw(context);
-  auto& [sp, cp, sy, cy] = sin_cos_pitch_yaw;
+  const auto& [sp, cp, sy, cy] = CalcSinCosPitchYaw(context);
   *Nplus << cy * cp, -sy, 0.0, sy * cp, cy, 0.0, -sp, 0.0, 1.0;
 }
 
@@ -228,8 +228,7 @@ void RpyBallMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>& context,
   //         =            cy/cp² ṗ - sp sy/cp ẏ.
   // Ṅ[2, 1] = sy ṗ + sp² sy/cp² ṗ + sp cy/cp ẏ
   //         =            sy/cp² ṗ + sp cy/cp ẏ.
-  const SinCosPitchYaw sin_cos_pitch_yaw = CalcSinCosPitchYaw(context);
-  auto& [sp, cp, sy, cy] = sin_cos_pitch_yaw;
+  const auto& [sp, cp, sy, cy] = CalcSinCosPitchYaw(context);
   ThrowIfCosPitchNearZero(context, cp, "CalcNDotMatrix");
   const T cpi = 1.0 / cp;
   const T cpiSqr = cpi * cpi;
@@ -277,8 +276,7 @@ void RpyBallMobilizer<T>::DoCalcNplusDotMatrix(
   //
   // where cp = cos(p), sp = sin(p), cy = cos(y), sy = sin(y).
 
-  const SinCosPitchYaw sin_cos_pitch_yaw = CalcSinCosPitchYaw(context);
-  auto& [sp, cp, sy, cy] = sin_cos_pitch_yaw;
+  const auto& [sp, cp, sy, cy] = CalcSinCosPitchYaw(context);
   ThrowIfCosPitchNearZero(context, cp, "CalcNplusDotMatrix");
   const T cpi = 1.0 / cp;
 
@@ -355,8 +353,7 @@ template <typename T>
 void RpyBallMobilizer<T>::DoMapVelocityToQDot(
     const systems::Context<T>& context, const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
-  const SinCosPitchYaw sin_cos_pitch_yaw = CalcSinCosPitchYaw(context);
-  auto& [sp, cp, sy, cy] = sin_cos_pitch_yaw;
+  const auto& [sp, cp, sy, cy] = CalcSinCosPitchYaw(context);
   ThrowIfCosPitchNearZero(context, cp, "MapVelocityToQDot");
   const T cpi = 1.0 / cp;
 
@@ -450,11 +447,9 @@ Vector3<T> RpyBallMobilizer<T>::CalcAccelerationBiasForQDDotImpl(
 template <typename T>
 Vector3<T> RpyBallMobilizer<T>::CalcAccelerationBiasForQDDot(
     const systems::Context<T>& context, const char* function_name) const {
-  const SinCosPitchYaw sin_cos_pitch_yaw = CalcSinCosPitchYaw(context);
-  auto& [sp, cp, sy, cy] = sin_cos_pitch_yaw;
+  const auto& [sp, cp, sy, cy] = CalcSinCosPitchYaw(context);
   ThrowIfCosPitchNearZero(context, cp, function_name);
   const T cpi = 1.0 / cp;
-
   return CalcAccelerationBiasForQDDotImpl(context, sp, cp, sy, cy, cpi);
 }
 
@@ -477,8 +472,7 @@ void RpyBallMobilizer<T>::DoMapAccelerationToQDDot(
   // A calculation of q̈ that leverages the simplicity of Ṅ⁺(q,q̇) over Ṅ(q,q̇)
   // and the available function CalcAccelerationBiasForQDDot() starts with
   // v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈ and then solves as q̈ = N(q) {v̇ - Ṅ⁺(q,q̇)⋅q̇}.
-  const SinCosPitchYaw sin_cos_pitch_yaw = CalcSinCosPitchYaw(context);
-  auto& [sp, cp, sy, cy] = sin_cos_pitch_yaw;
+  const auto& [sp, cp, sy, cy] = CalcSinCosPitchYaw(context);
   ThrowIfCosPitchNearZero(context, cp, __func__);
   const T cpi = 1.0 / cp;
 
