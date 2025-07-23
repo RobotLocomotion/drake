@@ -41,6 +41,9 @@ using ForceElementIndex = TypeSafeIndex<class ForceElementTag>;
 /// Type used to identify joints by index within a multibody plant.
 using JointIndex = TypeSafeIndex<class JointElementTag>;
 
+/// Type used to identify joints by ordinal within a multibody plant.
+using JointOrdinal = TypeSafeIndex<class JointOrdinalTag>;
+
 /// Type used to identify actuators by index within a multibody plant.
 using JointActuatorIndex = TypeSafeIndex<class JointActuatorElementTag>;
 

@@ -120,9 +120,10 @@ class MultibodyElement {
   }
 
   /// Returns this element's unique ordinal.
-  int ordinal_impl() const {
+  template <typename ElementOrdinalType>
+  ElementOrdinalType ordinal_impl() const {
     DRAKE_ASSERT(ordinal_ >= 0);
-    return ordinal_;
+    return ElementOrdinalType{ordinal_};
   }
 
   /// Returns a constant reference to the parent MultibodyTree that
@@ -216,7 +217,7 @@ class MultibodyElement {
     parent_tree_ = tree;
   }
 
-  void set_ordinal(int ordinal) { ordinal_ = ordinal; }
+  void set_ordinal(int64_t ordinal) { ordinal_ = ordinal; }
 
   void set_model_instance(ModelInstanceIndex model_instance) {
     model_instance_ = model_instance;
@@ -247,7 +248,7 @@ class MultibodyElement {
   // if MultibodyPlant does not expose any port that has an entry per concrete
   // MultibodyElement type.) This must be set to a valid ordinal value before
   // the element is released to the wild.
-  int ordinal_{-1};
+  int64_t ordinal_{-1};
 
   // The default model instance id is *invalid*. This must be set to a
   // valid index value before the element is released to the wild.
