@@ -259,6 +259,31 @@ InputPort_[T].Eval(context)
 GeometryProperties.AddProperty(group_name, name, value)
 ```
 
+## Memory management with the Python Bindings
+
+Recent versions (since v1.37.0 or so) of ``pydrake`` have improved memory
+correctness. There should be no use of freed objects (seg-faults, weird
+assertions, etc.), and ever fewer memory leaks.
+
+The price of the new memory regime is increased reliance on the Python garbage
+collector. For many programs, the default behavior of the garbage collector
+will be adequate. However, for some programs, the garbage collection behavior
+may need to be adjusted.
+
+The garbage collector uses the number of tracked heap objects as a cheap metric
+of when to run garbage collection. For pure Python, this mostly works well. For
+``pydrake`` programs, it often true that there are a few Python objects that
+own c++ objects that consume a great deal of memory that is thus not directly
+visible to Python. This can cause garbage collection to not run often enough to
+head off memory trouble.
+
+The standard Python [gc](https://docs.python.org/3/library/gc.html) module
+offers ways to customize the garbage collector's behavior. The easiest way is
+to explicitly call ``gc.collect()`` at intervals in your program. This will
+perform a full garbage collection. A more sophisticated method is to use
+``gc.set_threshold()`` to set custom object count thresholds for your program,
+and thus cause automatic collections to run more often.
+
 ## Debugging with the Python Bindings
 
 You may encounter issues with the Python Bindings that may arise from the
