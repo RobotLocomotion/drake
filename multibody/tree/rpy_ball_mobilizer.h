@@ -338,13 +338,25 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   // The tolerance 1.0e-3 is used to test whether the cosine of the pitch angle
   // is near zero, which occurs when the pitch angle ≈ π/2 ± n π (n=0, 1 2, …).
   // Throw an exception if a pitch angle is within ≈ 0.057° of a singularity.
-  void ThrowIfCosPitchNearZero(const T& cos_pitch, const T& pitch_angle,
-                               const char* function_name) const;
+  void ThrowIfCosPitchNearZero(const systems::Context<T>& context,
+                               const T& cos_pitch,
+                               const char* function_name) const {
+    using std::abs;
+    if (abs(cos_pitch) < 1.0e-3)
+      ThrowSinceCosPitchNearZero(context, function_name);
+  }
 
-  // Calculates sin(pitch), cos(pitch), sin(yaw), cos(yaw), 1/cos(pitch).
-  // Throw an exception if pitch angle is within ≈ 0.057° of a singularity.
-  std::tuple<T, T, T, T, T> SinCosPitchYawCpi(
+  // Portion of function ThrowIfCosPitchNearZero() that should not be inlined.
+  [[noreturn]] void ThrowSinceCosPitchNearZero(
       const systems::Context<T>& context, const char* function_name) const;
+
+  // Helper to efficiently pass and return sine and cosine calculations.
+  struct SinCosPitchYaw {
+    T sin_pitch, cos_pitch, sin_yaw, cos_yaw;
+  };
+
+  // Calculates and returns sin(pitch), cos(pitch), sin(yaw), cos(yaw).
+  SinCosPitchYaw CalcSinCosPitchYaw(const systems::Context<T>& context) const;
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
