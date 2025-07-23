@@ -2424,7 +2424,7 @@ void MultibodyPlant<T>::CalcContactResultsPointPairContinuous(
     const Vector3<T> v_ACa_ss =
         GetSurfaceVelocity(geometryA_id, inspector, X_WA, p_WCa);
     // Get surface velocity at Cb relative to B in coordinates of B
-    const Vector3<T> V_BCb_ss =
+    const Vector3<T> v_BCb_ss =
         GetSurfaceVelocity(geometryB_id, inspector, X_WB, p_WCb);
 
     // Separation velocity, > 0  if objects separate.
@@ -2434,7 +2434,7 @@ void MultibodyPlant<T>::CalcContactResultsPointPairContinuous(
         X_WA.inverse() * v_ACa_ss;
     const Vector3<T> v_WBc =
         vc.get_V_WB(bodyB_mobod_index).Shift(-p_CoBo_W).translational() +
-        X_WB.inverse() * V_BCb_ss;
+        X_WB.inverse() * v_BCb_ss;
     const Vector3<T> v_AcBc_W = v_WBc - v_WAc;
 
     // if xdot = vn > 0 ==> they are getting closer.
