@@ -346,17 +346,18 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
       ThrowSinceCosPitchNearZero(context, function_name);
   }
 
-  // Portion of ThrowIfCosPitchNearZero() that can be slow (not inlined).
+  // Ideally, ThrowIfCosPitchNearZero() is inlined by separating this function.
   [[noreturn]] void ThrowSinceCosPitchNearZero(
       const systems::Context<T>& context, const char* function_name) const;
 
-  // Helper to efficiently pass and return sine and cosine calculations.
+  // Struct that helps efficiently group sine and cosine calculations.
   struct SinCosPitchYaw {
     T sin_pitch, cos_pitch, sin_yaw, cos_yaw;
   };
 
-  // Calculates and returns sin(pitch), cos(pitch), sin(yaw), cos(yaw).
-  SinCosPitchYaw CalcSinCosPitchYaw(const systems::Context<T>& context) const;
+  // Return a struct with calculated sin(pitch), cos(pitch), sin(yaw), cos(yaw).
+  SinCosPitchYaw CalcSinPitchCosPitchSinYawCosYaw(
+      const systems::Context<T>& context) const;
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
