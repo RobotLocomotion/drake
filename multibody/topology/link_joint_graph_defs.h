@@ -18,7 +18,6 @@ using LinkIndex = BodyIndex;
 class SpanningForest;
 
 using LinkOrdinal = TypeSafeIndex<class LinkOrdinalTag>;
-using JointOrdinal = TypeSafeIndex<class JointOrdinalTag>;
 
 using JointTraitsIndex = TypeSafeIndex<class JointTraitsTag>;
 using LinkCompositeIndex = TypeSafeIndex<class LinkCompositeTag>;

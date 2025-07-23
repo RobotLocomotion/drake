@@ -197,7 +197,9 @@ class Joint : public MultibodyElement<T> {
   /// thus a set of joints sorted by ordinal has the same ordering as if it were
   /// sorted by JointIndex. If joints have been removed from the plant, do *not*
   /// use index() to access contiguous containers with entries per Joint.
-  int ordinal() const { return this->ordinal_impl(); }
+  JointOrdinal ordinal() const {
+    return this->template ordinal_impl<JointOrdinal>();
+  }
 
   /// Returns the name of this joint.
   const std::string& name() const { return name_; }
