@@ -12,6 +12,7 @@ drake_cc_binary(
     deps = [
         "//geometry:meshcat_visualizer",
         "//geometry:scene_graph",
+        "//multibody/meshcat:contact_visualizer",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",
