@@ -168,8 +168,7 @@ void RpyBallMobilizer<T>::DoCalcNMatrix(const systems::Context<T>& context,
   //
   // Note: N(q) is singular for p = π/2 + kπ, for k = ±1, ±2, ...
   // See related code and comments in DoMapVelocityToQdot().
-  // const SinCosPitchYaw sin_cos_pitch_yaw = CalcSinCosPitchYaw(context);
-  // auto& [sp, cp, sy, cy] = sin_cos_pitch_yaw;
+
   const auto& [sp, cp, sy, cy] = CalcSinCosPitchYaw(context);
   ThrowIfCosPitchNearZero(context, cp, "CalcNMatrix");
   const T cpi = 1.0 / cp;
