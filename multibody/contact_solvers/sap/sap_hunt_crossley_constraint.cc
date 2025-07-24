@@ -168,7 +168,7 @@ void SapHuntCrossleyConstraint<T>::DoCalcData(
   // Computations dependent on vc.
   data.vc = vc;
   data.vn = vc[2];
-  data.vt = vc.template head<2>();
+  data.vt = vc.template head<2>() + configuration_.vt_b;
   data.vt_soft = SoftNorm(data.vt, epsilon_soft);
   data.t_soft = data.vt / (data.vt_soft + epsilon_soft);
   switch (parameters_.model) {
