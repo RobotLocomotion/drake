@@ -30,7 +30,8 @@ struct ContactConfiguration {
         .vn = ExtractDoubleOrThrow(vn),
         .fe = ExtractDoubleOrThrow(fe),
         .R_WC =
-            math::RotationMatrix<double>(math::DiscardGradient(R_WC.matrix()))};
+            math::RotationMatrix<double>(math::DiscardGradient(R_WC.matrix())),
+        .vt_b = math::DiscardGradient(vt_b)};
   }
 
   bool operator==(const ContactConfiguration& other) const {
@@ -40,6 +41,7 @@ struct ContactConfiguration {
     if (p_BqC_W != other.p_BqC_W) return false;
     if (phi != other.phi) return false;
     if (vn != other.vn) return false;
+    if (vt_b != other.vt_b) return false;
     if (fe != other.fe) return false;
     if (!R_WC.IsExactlyEqualTo(other.R_WC)) return false;
     return true;
@@ -77,6 +79,12 @@ struct ContactConfiguration {
   // Orientation of contact frame C in the world frame W.
   // Rz_WC = R_WC.col(2) corresponds to the normal from object A into object B.
   math::RotationMatrix<T> R_WC;
+
+  // Bias term to the tangential velocity. This is used to model a velocity
+  // at the point of contact. If there was a bias term to the normal velocity,
+  // it should be already added to vn on construction of this
+  // ContactConfiguration.
+  Vector2<T> vt_b;
 };
 
 // Extracts a ContactConfiguration from the given DiscreteContactPair.
@@ -90,7 +98,8 @@ ContactConfiguration<T> MakeContactConfiguration(
                                  .phi = input.phi0,
                                  .vn = input.vn0,
                                  .fe = input.fn0,
-                                 .R_WC = input.R_WC};
+                                 .R_WC = input.R_WC,
+                                 .vt_b = input.vt_b};
 }
 
 }  // namespace internal
