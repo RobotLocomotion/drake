@@ -19,7 +19,7 @@ DEFINE_double(max_time_step, 1e-3, "Simulation time step used for integrator.");
 int do_main_continous_plant() {
   systems::DiagramBuilder<double> builder;
   auto [plant, scene_graph] =
-      multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
+      multibody::AddMultibodyPlantSceneGraph(&builder, FLAGS_max_time_step);
   std::string conveyor_belt_url =
       "package://drake/examples/conveyor_belt/conveyor_belt.sdf";
   multibody::Parser(&builder).AddModelsFromUrl(conveyor_belt_url);
