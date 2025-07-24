@@ -148,9 +148,8 @@ template <typename T>
 }
 
 template <typename T>
-RpyBallMobilizer<T>::SinCosPitchYaw
-RpyBallMobilizer<T>::CalcSinPitchCosPitchSinYawCosYaw(
-    const systems::Context<T>& context) const {
+auto RpyBallMobilizer<T>::CalcSinPitchCosPitchSinYawCosYaw(
+    const systems::Context<T>& context) const -> SinCosPitchYaw {
   using std::cos, std::sin;
   const Vector3<T> angles = get_angles(context);
   return {sin(angles[1]), cos(angles[1]), sin(angles[2]), cos(angles[2])};
