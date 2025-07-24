@@ -18,11 +18,6 @@ node(getNodeLabel()) {
   // multiple repositories with a particular directory layout.
   skipDefaultCheckout()
 
-  if (!env.BRANCH_NAME.equals('master')) {
-    currentBuild.result = 'ABORTED'
-    error('Continuous jobs should only run on master.')
-  }
-
   // Load utils.groovy for common utilities.
   fetchUtils('master')
   def jenkinsUtilsPath = 'jenkins-utils/.jenkins/utils/utils.groovy'
@@ -37,7 +32,7 @@ node(getNodeLabel()) {
       ansiColor('xterm') {
         timestamps {
           try {
-            // Always use the main branch of CI for production builds.
+            // Always use drake-ci/main (the default) for production builds.
             def scmVars = utils.checkout()
             utils.doMainBuild(scmVars)
           } finally {
