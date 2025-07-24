@@ -1,18 +1,9 @@
 <?xml version="1.0"?>
 <sdf xmlns:drake="http://drake.mit.edu" version="1.7">
   <model name="two_objects_model">
-    <!-- Generated using ChatGPT-4o with the following prompt: Write 
-    an sdf file with two objects: one large flat cuboid object lying 
-    on the floor and fixed to it, that has both visual and collision 
-    geometries: The visual geometry should be color red and the 
-    collision geometry should include drake:proximity_properties. 
-    The second object is a cube with visual geometry color blue and 
-    collision geometry including drake:proximity_properties. 
-    The second blue cube should be on top of the first large flat 
-    cuboid at a heigh of 0.5m from the large flat cuboid. -->
-    <!-- Large flat cuboid object lying on the floor -->
-    <link name="large_flat_cuboid">
-      <visual name="large_flat_cuboid_visual">
+    <!-- Conveyor belt lying on the floor -->
+    <link name="conveyor_belt">
+      <visual name="conveyor_belt_visual">
         <geometry>
           <box>
             <size>4.0 1.0 0.1</size>
@@ -23,7 +14,7 @@
           <diffuse>1.0 0.0 0.0 1.0</diffuse>
         </material>
       </visual>
-      <collision name="large_flat_cuboid_collision">
+      <collision name="conveyor_belt_collision">
         <geometry>
           <box>
             <size>4.0 1.0 0.1</size>
@@ -37,15 +28,15 @@
         </drake:proximity_properties>
       </collision>
     </link>
-    <joint name="fixed_large_flat_cuboid" type="fixed">
+    <joint name="fixed_conveyor_belt" type="fixed">
       <parent>world</parent>
-      <child>large_flat_cuboid</child>
+      <child>conveyor_belt</child>
     </joint>
 
-    <!-- Blue cube on top of the large flat cuboid -->
-    <link name="blue_cube">
-      <pose>0 0 5.5 0 0 0</pose> <!-- Positioned 5.5m above the cuboid -->
-      <visual name="blue_cube_visual">
+    <!-- Blue cube on top of the conveyor belt -->
+    <link name="box">
+      <pose>0 0 0.22 0 0 0.0</pose> <!-- Positionet sightly above the belt -->
+      <visual name="box_visual">
         <geometry>
           <box>
             <size>0.4 0.4 0.4</size>
@@ -56,7 +47,7 @@
           <diffuse>0.0 0.0 1.0 1.0</diffuse>
         </material>
       </visual>
-      <collision name="blue_cube_collision">
+      <collision name="box_collision">
         <geometry>
           <box>
             <size>0.4 0.4 0.4</size>
