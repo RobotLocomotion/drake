@@ -1,34 +1,37 @@
 #!/usr/bin/env groovy
 
 properties([
-  parameters([
-    string(name: 'ciSha', defaultValue: 'main',
-      description: 'Commit SHA or branch name. ' +
-        'Enter branch name <code>pr/1234/head</code> ' +
-        'or <code>pr/1234/merge</code> for pull request #1234. ' +
-        'Defaults to <code>main</code>.'),
-  ]),
   buildDiscarder(
     logRotator(
       daysToKeepStr: '90',
       artifactDaysToKeepStr: '90'
     )
-  )
+  ),
+  pipelineTriggers([
+    // There are a limited number of wheel and packaging jobs; start them all
+    // at 1am. For most jobs, start between 2-4am (ET).
+    // TODO(#23209): Schedule more consistently and use priorities to
+    // differentiate between job types.
+    cron(env.JOB_NAME.contains("wheel") ||
+      env.JOB_NAME.contains("packaging") :
+      '0 1 * * *' : 'H(2-4) * * *')
+  ]),
+  githubProjectProperty('https://github.com/RobotLocomotion/drake')
 ])
 
-// Define the main pipeline.
 node(getNodeLabel()) {
   // Use a custom checkout step below, since there are
   // multiple repositories with a particular directory layout.
   skipDefaultCheckout()
 
-  // Load utils.groovy for common utilities.
-  // If no such file exists on this branch, load it from master.
-  fetchUtils()
-  def jenkinsUtilsPath = 'jenkins-utils/.jenkins/utils/utils.groovy'
-  if (!fileExists(jenkinsUtilsPath)) {
-    fetchUtils('master')
+  if (!env.BRANCH_NAME.equals('master')) {
+    currentBuild.result = 'ABORTED'
+    error('Nightly jobs should only run on master.')
   }
+
+  // Load utils.groovy for common utilities.
+  fetchUtils('master')
+  def jenkinsUtilsPath = 'jenkins-utils/.jenkins/utils/utils.groovy'
   def utils = load jenkinsUtilsPath
   if (!utils) {
     currentBuild.result = 'ABORTED'
@@ -40,20 +43,12 @@ node(getNodeLabel()) {
       ansiColor('xterm') {
         timestamps {
           try {
-            // Use the CI branch parameter for checkout (defaults to main).
-            utils.checkout(params.ciSha)
-            echo "Checking the cache server:"
-            try {
-              sh "${env.WORKSPACE}/ci/cache_server/health_check.bash"
-            } catch (Exception e) {
-              currentBuild.result = 'FAILURE'
-            }
+            // Always use the main branch of CI for production builds.
+            def scmVars = utils.checkout()
+            utils.doMainBuild(scmVars)
           } finally {
             try {
-              // Only send failure emails for production builds.
-              if (!"${env.JOB_NAME}".contains("experimental")) {
-                utils.emailFailureResults()
-              }
+              utils.addCDashBadge()
             } finally {
               utils.cleanWorkspace()
             }
@@ -64,10 +59,14 @@ node(getNodeLabel()) {
   }
 }
 
-// Returns the node label from the job name.
+/**
+ * Extracts the node label from the job name.
+ *
+ * @return the node label
+ */
 def getNodeLabel() {
-  def pattern = ~/^((linux|mac-arm)-[a-z]+(?:-unprovisioned)?)/
-  def match = "${env.JOB_NAME}" =~ pattern
+  def pattern = ~/^((linux(-arm)?|mac-arm)-[A-Za-z]+(-unprovisioned)?).*/
+  def match = env.JOB_NAME =~ pattern
 
   if (match.find()) {
     return match.group(1)
@@ -77,8 +76,12 @@ def getNodeLabel() {
   }
 }
 
-// Loads utils by performing a sparse checkout to WORKSPACE/jenkins-utils.
-// If no 'branch' is given, tries to find the current branch or pull request.
+/**
+ * Loads utils by performing a sparse checkout to WORKSPACE/jenkins-utils.
+ *
+ * @param branch the branch from which to load utils; if none is given, tries
+ *               to find the current branch or pull request
+ */
 def fetchUtils(String branch = null) {
   if (!branch) {
     if (!env.CHANGE_ID?.trim()) {

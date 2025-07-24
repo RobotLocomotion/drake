@@ -12,7 +12,8 @@ properties([
       daysToKeepStr: '90',
       artifactDaysToKeepStr: '90'
     )
-  )
+  ),
+  githubProjectProperty('https://github.com/RobotLocomotion/drake')
 ])
 
 def scmVars = null
@@ -35,10 +36,14 @@ build(
   ]
 )
 
-// Returns the node label from the job name.
+/**
+ * Extracts the node label from the job name.
+ *
+ * @return the node label
+ */
 def getNodeLabel() {
-  def pattern = ~/^((linux|mac-arm)-[a-z]+(?:-unprovisioned)?)/
-  def match = "${env.JOB_NAME}" =~ pattern
+  def pattern = ~/^((linux(-arm)?|mac-arm)-[A-Za-z]+(-unprovisioned)?).*/
+  def match = env.JOB_NAME =~ pattern
 
   if (match.find()) {
     return match.group(1)
