@@ -14,7 +14,7 @@ properties([
     // differentiate between job types.
     cron((env.JOB_NAME.contains("wheel") ||
       env.JOB_NAME.contains("packaging")) ?
-      '0 1 * * *' : 'H(2-4) * * *')
+      '0 1 * * *' : 'H H(2-4) * * *')
   ]),
   githubProjectProperty('https://github.com/RobotLocomotion/drake')
 ])
