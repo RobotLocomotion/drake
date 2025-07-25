@@ -20,7 +20,7 @@ import shutil
 import stat
 import sys
 
-from subprocess import check_output, check_call
+from subprocess import check_output, check_call, run
 
 from tools.install import otool
 
@@ -225,7 +225,12 @@ class Installer:
                 # error:
                 #   'Not enough room for program headers, try linking with -N'
                 if self.strip:
-                    check_call([self.strip_tool, dst_full])
+                    run_result = run(
+                        [self.strip_tool, dst_full],
+                        capture_output=True)
+                    if run_result.returncode != 0:
+                        raise RuntimeError(
+                            f"{run_result=} {shutil.disk_usage('.')}")
                 self._linux_fix_rpaths(dst_full)
 
     def _macos_fix_rpaths(self, basename, dst_full):
