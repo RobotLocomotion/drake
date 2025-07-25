@@ -95,9 +95,7 @@ class FixedOffsetFrame final : public Frame<T> {
   }
 
   /// @returns The parent frame to which this frame is attached.
-  const Frame<T>& parent_frame() const {
-    return parent_frame_;
-  }
+  const Frame<T>& parent_frame() const { return parent_frame_; }
 
  protected:
   /// @pre The parent frame to this frame already has a clone in `tree_clone`.
