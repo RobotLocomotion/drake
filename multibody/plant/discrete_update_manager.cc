@@ -708,12 +708,12 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
     // Get surface velocity at Ca relative to A in coordinates of A and
     // transform to world frame W.
     const Vector3<T> v_ACa_W_ss =
-        X_WA.inverse() *
+        X_WA.rotation() *
         plant().GetSurfaceVelocity(pair.id_A, inspector, X_WA, pair.p_WCa);
     // Get surface velocity at Cb relative to B in coordinates of B and
     // transform to world frame W.
     const Vector3<T> v_BCb_W_ss =
-        X_WB.inverse() *
+        X_WB.rotation() *
         plant().GetSurfaceVelocity(pair.id_B, inspector, X_WB, pair.p_WCb);
     // Relative separation velocity due to surface velocity in contact frame C.
     const Vector3<T> v_AcBc_C_ss = R_WC.transpose() * (v_BCb_W_ss - v_ACa_W_ss);
