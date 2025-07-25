@@ -3,6 +3,7 @@
   <model name="two_objects_model">
     <!-- Conveyor belt lying on the floor -->
     <link name="conveyor_belt">
+      <pose> 0 0 0 0 0.0 0.78</pose>
       <visual name="conveyor_belt_visual">
         <geometry>
           <box>
@@ -35,7 +36,7 @@
 
     <!-- Blue cube on top of the conveyor belt -->
     <link name="box">
-      <pose> -3.0 0 0.27 0 0.0 0.0</pose> <!-- Positionet sightly above the belt -->
+      <pose> -2 -2 0.27 0 0.0 0.0</pose> <!-- Positionet sightly above the belt -->
       <visual name="box_visual">
         <geometry>
           <box>

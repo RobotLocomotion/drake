@@ -63,7 +63,8 @@ GTEST_TEST(SurfaceVelocityTest, BoxSurfaceVelocity) {
 
   // Set pose of body (and read it again just to make sure this
   // is doing what it is supposed to do).
-  math::RigidTransformd body_pose(math::RollPitchYaw(0., 0., 0.),
+  const double yaw = 0.78;
+  math::RigidTransformd body_pose(math::RollPitchYaw(0., 0., yaw),
                                   Eigen::Vector3d(0., 0., 1.));
   plant.SetFreeBodyPoseInWorldFrame(&(*context), belt, body_pose);
   math::RigidTransformd pose = plant.GetFreeBodyPose(*context, belt);
@@ -83,17 +84,21 @@ GTEST_TEST(SurfaceVelocityTest, BoxSurfaceVelocity) {
     const Eigen::Vector3d c_W = pose * c_G;
     Eigen::Vector3d surface_v = plant.GetSurfaceVelocity(
         belt_geom_id, scene_graph.model_inspector(), pose, c_W);
+
     // Verify the direction of surface velocity is equal to cross product
     // between the surface normal at each contact point and the velocity
     // normal vector
-    Eigen::Vector3d reference_v = velocity_n.cross(c_G.normalized());
-    EXPECT_LT((surface_v.normalized() - (reference_v)).norm(), tol);
+    Eigen::Vector3d v_ref_W =
+        surface_speed *
+        (body_pose.rotation() * velocity_n.cross(c_G.normalized()));
+    Eigen::Vector3d v_ss_W = pose.rotation() * surface_v;
+    EXPECT_LT((v_ss_W - v_ref_W).norm(), tol);
+
     // When the velocity normal and the surface normal vectors are parallel,
     // their cross product is 0 meaning the surface velocity should be also
     // very close to 0. This occurs in this case for a contact at the +x and -x
     // faces because they are parallel to the velocity normal.
-    EXPECT_NEAR(surface_v.norm(), reference_v.norm() > 0.5 ? surface_speed : 0.,
-                tol);
+    EXPECT_NEAR(v_ss_W.norm(), v_ref_W.norm() > 1e-3 ? surface_speed : 0., tol);
   }
 
   (void)ground_id;
