@@ -41,9 +41,9 @@ struct ContactConfiguration {
     if (p_BqC_W != other.p_BqC_W) return false;
     if (phi != other.phi) return false;
     if (vn != other.vn) return false;
-    if (vt_b != other.vt_b) return false;
     if (fe != other.fe) return false;
     if (!R_WC.IsExactlyEqualTo(other.R_WC)) return false;
+    if (vt_b != other.vt_b) return false;
     return true;
   }
 
@@ -84,7 +84,7 @@ struct ContactConfiguration {
   // at the point of contact. If there was a bias term to the normal velocity,
   // it should be already added to vn on construction of this
   // ContactConfiguration.
-  Vector2<T> vt_b;
+  Vector3<T> vt_b{0., 0., 0.};
 };
 
 // Extracts a ContactConfiguration from the given DiscreteContactPair.
