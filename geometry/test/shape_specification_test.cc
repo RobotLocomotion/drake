@@ -1135,16 +1135,18 @@ PointCloud SampleBoxSurface(const Box& box, const math::RigidTransformd& T,
 GTEST_TEST(ShapeTest, NormalAtBoxPoint) {
   const double tol = 1e-5;
 
-  const double w = 1.0;
+  const double w = 4.0;
   const double d = 1.0;
-  const double h = 1.0;
+  const double h = 0.1;
   const Box box(w, d, h);
 
   const std::vector<Eigen::Vector3d> points = {
-      {w / 2, 0.0, 0.0},  {0.0, h / 2, 0.0},  {0.0, 0.0, d / 2},
-      {-w / 2, 0.0, 0.0}, {0.0, -h / 2, 0.0}, {0.0, 0.0, -d / 2}};
+      {w / 2, 0.0, 0.0},  {0.0, d / 2, 0.0},  {0.0, 0.0, h / 2},
+      {-w / 2, 0.0, 0.0}, {0.0, -d / 2, 0.0}, {0.0, 0.0, -h / 2}};
 
   for (const Eigen::Vector3d& p : points) {
+    std::cout << "P:  " << p.x() << ", " << p.y() << ", "
+              << p.z() << std::endl;
     std::optional<Eigen::Vector3d> n = GetNormalAtPoint<double>(box, p);
     ASSERT_TRUE(n.has_value());
     EXPECT_LT((n.value() - p.normalized()).norm(), tol);
