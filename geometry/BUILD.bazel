@@ -1170,6 +1170,7 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common:overloaded",
         "//common/test_utilities",
+        "//common/schema:stochastic",
     ],
 )
 
