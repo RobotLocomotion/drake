@@ -706,18 +706,20 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
         plant().EvalBodyPoseInWorld(context, body_B);
 
     // Get surface velocity at Ca relative to A in coordinates of A and
-    // transform to world frame W
+    // transform to world frame W.
     const Vector3<T> v_ACa_W_ss =
         X_WA.inverse() *
         plant().GetSurfaceVelocity(pair.id_A, inspector, X_WA, pair.p_WCa);
     // Get surface velocity at Cb relative to B in coordinates of B and
-    // transform to world frame W
+    // transform to world frame W.
     const Vector3<T> v_BCb_W_ss =
         X_WB.inverse() *
         plant().GetSurfaceVelocity(pair.id_B, inspector, X_WB, pair.p_WCb);
+    // Relative separation velocity due to surface velocity in contact frame C.
+    const Vector3<T> v_AcBc_C_ss = R_WC.transpose() * (v_BCb_W_ss - v_ACa_W_ss);
 
     // Contact velocity stored in the current context (previous time step).
-    const Vector3<T> v_AcBc_W = Jv_AcBc_W * v + (v_BCb_W_ss - v_ACa_W_ss);
+    const Vector3<T> v_AcBc_W = Jv_AcBc_W * v;
     const Vector3<T> v_AcBc_C = (R_WC.transpose() * v_AcBc_W);
     const T vn0 = v_AcBc_C(2);
 
@@ -787,7 +789,7 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
                                         .nhat_BA_W = pair.nhat_BA_W,
                                         .phi0 = phi0,
                                         .vn0 = vn0,
-                                        .vt_b = v_AcBc_C.template head<2>(),
+                                        .vt_b = v_AcBc_C_ss,
                                         .fn0 = fn0,
                                         .stiffness = k,
                                         .damping = d,

@@ -6,7 +6,7 @@
       <visual name="conveyor_belt_visual">
         <geometry>
           <box>
-            <size>4.0 1.0 0.1</size>
+            <size>10.0 1.0 0.1</size>
           </box>
         </geometry>
         <material>
@@ -17,13 +17,13 @@
       <collision name="conveyor_belt_collision">
         <geometry>
           <box>
-            <size>4.0 1.0 0.1</size>
+            <size>10.0 1.0 0.1</size>
           </box>
         </geometry>
         <drake:proximity_properties>
           <drake:mu_dynamic>0.8</drake:mu_dynamic>
           <drake:mu_static>1.0</drake:mu_static>
-          <drake:surface_speed>1.0</drake:surface_speed>
+          <drake:surface_speed>0.25</drake:surface_speed>
           <drake:surface_velocity_normal>0.0 1.0 0</drake:surface_velocity_normal>
         </drake:proximity_properties>
       </collision>
@@ -35,7 +35,7 @@
 
     <!-- Blue cube on top of the conveyor belt -->
     <link name="box">
-      <pose>0 0 0.22 0 0 0.0</pose> <!-- Positionet sightly above the belt -->
+      <pose> -3.0 0 0.27 0 0.0 0.0</pose> <!-- Positionet sightly above the belt -->
       <visual name="box_visual">
         <geometry>
           <box>
