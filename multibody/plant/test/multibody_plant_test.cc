@@ -5543,6 +5543,8 @@ GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
   RigidTransformd X_BP_check2 = frame_P.CalcPoseInBodyFrame(*context);
   EXPECT_TRUE(X_BP_check1.IsNearlyEqualTo(X_BP, kTolerance));
   EXPECT_TRUE(X_BP_check2.IsNearlyEqualTo(X_BP, kTolerance));
+  // Verify parent frame is body_B's frame
+  EXPECT_EQ(frame_P.parent_frame().index(), body_B.body_frame().index());
 
   // Verify frame P's pose in world W.
   RigidTransformd X_WP = X_WWp * X_WpP;
