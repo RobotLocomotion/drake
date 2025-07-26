@@ -285,23 +285,5 @@ bool IsStabilizable(const LinearSystem<double>& sys,
 bool IsDetectable(const LinearSystem<double>& sys,
                   std::optional<double> threshold = std::nullopt);
 
-#ifndef DRAKE_DOXYGEN_CXX
-// The declaration in drake/systems/primitives/linear_system.h is deprecated
-// and will be removed on or after 2025-08-01. Insted, use the declaration in
-// drake/systems/analysis/discrete_time_approximation.h.
-template <typename T>
-std::unique_ptr<LinearSystem<T>> DiscreteTimeApproximation(
-    const LinearSystem<T>& system, double time_period);
-#endif
-
-#ifndef DRAKE_DOXYGEN_CXX
-// The declaration in drake/systems/primitives/linear_system.h is deprecated
-// and will be removed on or after 2025-08-01. Insted, use the declaration in
-// drake/systems/analysis/discrete_time_approximation.h.
-template <typename T>
-std::unique_ptr<AffineSystem<T>> DiscreteTimeApproximation(
-    const AffineSystem<T>& system, double time_period);
-#endif
-
 }  // namespace systems
 }  // namespace drake
