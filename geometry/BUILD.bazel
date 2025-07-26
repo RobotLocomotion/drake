@@ -1163,6 +1163,11 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name  = "shape_to_point_cloud",
+    hdrs = ["test/shape_to_point_cloud.h"]
+)
+
 drake_cc_googletest(
     name = "shape_specification_test",
     data = [
@@ -1171,6 +1176,7 @@ drake_cc_googletest(
         ":test_vtk_files",
     ],
     deps = [
+        ":shape_to_point_cloud",
         ":shape_specification",
         "//common:find_resource",
         "//common:overloaded",
