@@ -1069,6 +1069,22 @@ TEST_F(UrdfGeometryTest, SurfaceSpeed) {
   EXPECT_EQ(ss, 1.5);
 }
 
+TEST_F(UrdfGeometryTest, SurfaceVelocityNormal) {
+  // Case: specifies compliant hydroelastic.
+  const ProximityProperties& properties = ParseCollisionDocGood(R"""(
+  <drake:proximity_properties>
+    <drake:surface_velocity_normal normal="0.0 1.0 0.0"/>
+  </drake:proximity_properties>)""");
+  ASSERT_TRUE(
+      properties.HasProperty(geometry::internal::kSurfaceVelocityGroup,
+                             geometry::internal::kSurfaceVelocityNormal));
+  Eigen::Vector3d velocity_normal = properties.GetProperty<Eigen::Vector3d>(
+      geometry::internal::kSurfaceVelocityGroup,
+      geometry::internal::kSurfaceVelocityNormal);
+  constexpr double tol = 1e-5;
+  EXPECT_LT((velocity_normal - Eigen::Vector3d(0.0, 1.0, 0.0)).norm(), tol);
+}
+
 TEST_F(UrdfGeometryTest, LegacySoftHydroelastic) {
   // TODO(16229): Remove this ad-hoc input sanitization when we resolve
   //  issue 16229 "Diagnostics for unsupported SDFormat and URDF stanzas."
