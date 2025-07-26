@@ -16,15 +16,14 @@ class TrajectoryTester : public Trajectory<T> {
   explicit TrajectoryTester(bool has_derivative)
       : has_derivative_(has_derivative) {}
 
-  MatrixX<T> value(const T& t) const override { return MatrixX<T>(0, 0); }
-  std::unique_ptr<Trajectory<T>> Clone() const override { return nullptr; }
-  Eigen::Index rows() const override { return 0; }
-  Eigen::Index cols() const override { return 0; }
-  T start_time() const override { return 0; }
-  T end_time() const override { return 1; }
-
  private:
+  std::unique_ptr<Trajectory<T>> DoClone() const override { return nullptr; }
+  MatrixX<T> do_value(const T& t) const override { return MatrixX<T>(0, 0); }
   bool do_has_derivative() const override { return has_derivative_; }
+  Eigen::Index do_rows() const override { return 0; }
+  Eigen::Index do_cols() const override { return 0; }
+  T do_start_time() const override { return 0; }
+  T do_end_time() const override { return 1; }
 
   bool has_derivative_;
 };
