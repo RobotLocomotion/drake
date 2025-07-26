@@ -29,7 +29,6 @@ using std::numeric_limits;
 using test::IsMemcpyMovable;
 
 namespace symbolic {
-namespace kcov339_avoidance_magic {
 namespace {
 
 using std::map;
@@ -1432,6 +1431,5 @@ TEST_F(SymbolicFormulaTest, EvaluateFormulasIncludingRandomVariables) {
 }
 
 }  // namespace
-}  // namespace kcov339_avoidance_magic
 }  // namespace symbolic
 }  // namespace drake
