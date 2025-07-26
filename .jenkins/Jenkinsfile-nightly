@@ -1,28 +1,26 @@
 #!/usr/bin/env groovy
 
-properties([
-  buildDiscarder(
-    logRotator(
-      daysToKeepStr: '90',
-      artifactDaysToKeepStr: '90'
-    )
-  ),
-  pipelineTriggers([
-    // There are a limited number of wheel and packaging jobs; start them all
-    // at 1am. For most jobs, start between 2-4am (ET).
-    // TODO(#23209): Schedule more consistently and use priorities to
-    // differentiate between job types.
-    cron((env.JOB_NAME.contains("wheel") ||
-      env.JOB_NAME.contains("packaging")) ?
-      '0 1 * * *' : 'H H(2-4) * * *')
-  ]),
-  githubProjectProperty('https://github.com/RobotLocomotion/drake')
-])
-
 node(getNodeLabel()) {
-  // Use a custom checkout step below, since there are
-  // multiple repositories with a particular directory layout.
-  skipDefaultCheckout()
+  // Define job properties.
+  properties([
+    buildDiscarder(
+      logRotator(
+        daysToKeepStr: '90',
+        artifactDaysToKeepStr: '90'
+      )
+    ),
+    pipelineTriggers([
+      // There are a limited number of wheel and packaging jobs; start them all
+      // at 1am. For most jobs, start between 2-4am (ET).
+      // TODO(#23209): Schedule more consistently and use priorities to
+      // differentiate between job types.
+      cron((env.JOB_NAME.contains("wheel") ||
+        env.JOB_NAME.contains("packaging")) ?
+        '0 1 * * *' : 'H H(2-4) * * *')
+    ]),
+    githubProjectProperty('https://github.com/RobotLocomotion/drake'),
+    disableConcurrentBuilds()
+  ])
 
   // Load utils.groovy for common utilities.
   fetchUtils('master')

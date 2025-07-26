@@ -1,25 +1,27 @@
 #!/usr/bin/env groovy
 
-properties([
-  parameters([
-    string(name: 'ciSha', defaultValue: 'main',
-      description: 'Commit SHA or branch name. ' +
-        'For pull requests, enter branch name <code>pr/1234/head</code> ' +
-        'or <code>pr/1234/merge</code> for pull request #1234. ' +
-        'Defaults to <code>main</code>.'),
-    ]),
-  buildDiscarder(
-    logRotator(
-      daysToKeepStr: '90',
-      artifactDaysToKeepStr: '90'
-    )
-  )
-])
-
 node(getNodeLabel()) {
-  // Use a custom checkout step below, since there are
-  // multiple repositories with a particular directory layout.
-  skipDefaultCheckout()
+  // Define job properties.
+  def props = [
+    parameters([
+      string(name: 'ciSha', defaultValue: 'main',
+        description: 'Commit SHA or branch name. ' +
+          'For pull requests, enter branch name <code>pr/1234/head</code> ' +
+          'or <code>pr/1234/merge</code> for pull request #1234. ' +
+          'Defaults to <code>main</code>.'),
+      ]
+    ),
+    buildDiscarder(
+      logRotator(
+        daysToKeepStr: '90',
+        artifactDaysToKeepStr: '90'
+      )
+    )
+  ]
+  if (env.JOB_NAME.contains("cache-server-health-check")) {
+    props << disableConcurrentBuilds()
+  }
+  properties(props)
 
   // Load utils.groovy for common utilities.
   // If no such file exists on this branch, load it from master.

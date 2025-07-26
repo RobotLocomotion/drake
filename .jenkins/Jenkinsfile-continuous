@@ -1,22 +1,24 @@
 #!/usr/bin/env groovy
 
-properties([
-  buildDiscarder(
-    logRotator(
-      daysToKeepStr: '90',
-      artifactDaysToKeepStr: '90'
-    )
-  ),
-  pipelineTriggers([
-    [$class: 'GitHubPushTrigger']
-  ]),
-  githubProjectProperty('https://github.com/RobotLocomotion/drake')
-])
-
 node(getNodeLabel()) {
-  // Use a custom checkout step below, since there are
-  // multiple repositories with a particular directory layout.
-  skipDefaultCheckout()
+  // Define job properties.
+  def props = [
+    buildDiscarder(
+      logRotator(
+        daysToKeepStr: '90',
+        artifactDaysToKeepStr: '90'
+      )
+    ),
+    pipelineTriggers([
+      [$class: 'GitHubPushTrigger']
+    ]),
+    githubProjectProperty('https://github.com/RobotLocomotion/drake')
+  ]
+  if (env.JOB_NAME.contains("mirror-to-s3") ||
+      env.JOB_NAME.contains("cache-server-health-check")) {
+    props << disableConcurrentBuilds()
+  }
+  properties(props)
 
   // Load utils.groovy for common utilities.
   fetchUtils('master')
