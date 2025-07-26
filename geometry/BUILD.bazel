@@ -454,8 +454,13 @@ drake_cc_library(
 
 drake_cc_library(
     name = "shape_specification",
-    srcs = ["shape_specification.cc"],
-    hdrs = ["shape_specification.h"],
+    srcs = [
+        "shape_specification.cc",
+        "shape_specification_helpers.cc",
+        ],
+    hdrs = [
+        "shape_specification.h",
+        ],
     deps = [
         ":mesh_source",
         "//common:essential",
