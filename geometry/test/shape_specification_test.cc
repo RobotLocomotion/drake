@@ -16,6 +16,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/common/unused.h"
+#include "drake/math/random_rotation.h"
 
 namespace drake {
 namespace geometry {
@@ -1145,8 +1146,6 @@ GTEST_TEST(ShapeTest, NormalAtBoxPoint) {
       {-w / 2, 0.0, 0.0}, {0.0, -d / 2, 0.0}, {0.0, 0.0, -h / 2}};
 
   for (const Eigen::Vector3d& p : points) {
-    std::cout << "P:  " << p.x() << ", " << p.y() << ", "
-              << p.z() << std::endl;
     std::optional<Eigen::Vector3d> n = GetNormalAtPoint<double>(box, p);
     ASSERT_TRUE(n.has_value());
     EXPECT_LT((n.value() - p.normalized()).norm(), tol);
@@ -1160,12 +1159,62 @@ GTEST_TEST(ShapeTest, NormalAtBoxPoint) {
   for (int i = 0; i < static_cast<int>(box_pc.points.size()); ++i) {
     std::optional<Eigen::Vector3d> n =
         GetNormalAtPoint<double>(box, box_pc.points.at(i));
-    std::cout << "PC normal: " << box_pc.normals.at(i).x() << ", "
-              << box_pc.normals.at(i).y() << ", " << box_pc.normals.at(i).z()
-              << ", ";
-    std::cout << "  vs  " << n.value().x() << ", " << n.value().y() << ", "
-              << n.value().z() << std::endl;
     EXPECT_LT((box_pc.normals.at(i) - n.value()).norm(), tol);
+  }
+}
+
+PointCloud SampleSphereSurface(const Sphere& sphere, const RigidTransformd& T,
+                               int n) {
+  PointCloud cloud;
+  cloud.points.reserve(n);
+  cloud.normals.reserve(n);
+
+  drake::RandomGenerator rgn(0);
+  const double r = sphere.radius();
+  for (int i = 0; i < n; ++i) {
+    Eigen::Matrix3d m =
+        math::UniformlyRandomRotationMatrix<double>(&rgn).matrix();
+    cloud.points.emplace_back(r * m.col(0));
+    cloud.normals.emplace_back(m.col(0));
+  }
+  return cloud;
+}
+
+GTEST_TEST(ShapeTest, NormalAtSpherePoint) {
+  constexpr double tol = 1e-5;
+  (void)tol;
+
+  const double r = 1.3;
+
+  const int n = 50;
+  math::RigidTransformd T;
+  T.SetIdentity();
+
+  // Create an sphere and sample random points on its surface along
+  // with its normal vector which will be used as reference.
+  const Sphere sphere(r);
+  PointCloud sphere_cloud = SampleSphereSurface(sphere, T, n);
+
+  // For each point sampled on the sphere, recover its normal vector
+  // and verify it agrees with the reference normal.
+  for (int i = 0; i < n; ++i) {
+    const Eigen::Vector3d& p = sphere_cloud.points.at(i);
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(sphere, p);
+    ASSERT_TRUE(normal.has_value());
+    ASSERT_LT((normal.value() - sphere_cloud.normals.at(i)).norm(), tol);
+  }
+
+  // Create some points that are definitely not close to the surface of
+  // the sphere.
+  std::vector<Eigen::Vector3d> outliers = {
+      {r + 0.1, 0., 0.},  {r - 0.5, 0., 0.}, {0., r + 0.01, 0.},
+      {0., r - 0.03, 0.}, {0., 0., r + 1.0}, {0., 0., r - 2.5},
+  };
+
+  // Verify the return value is empty.
+  for (const Eigen::Vector3d& p : outliers) {
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(sphere, p);
+    ASSERT_FALSE(normal.has_value());
   }
 }
 

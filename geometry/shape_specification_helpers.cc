@@ -41,18 +41,33 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPointForBox(
   return std::nullopt;
 }
 
-#define DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(func)        \
-  template std::optional<Eigen::Vector3<double>> func(                        \
-      const Box&, const Eigen::Vector3<double>&);                             \
-  template std::optional<Eigen::Vector3<float>> func(                         \
-      const Box&, const Eigen::Vector3<float>&);                              \
-  template std::optional<Eigen::Vector3<::drake::AutoDiffXd>> func(           \
-      const Box&, const Eigen::Vector3<::drake::AutoDiffXd>&);                \
-  template std::optional<Eigen::Vector3<::drake::symbolic::Expression>> func( \
-      const Box&, const Eigen::Vector3<::drake::symbolic::Expression>&);
+template <typename T>
+std::optional<Eigen::Vector3<T>> GetNormalAtPointForSphere(
+    const Sphere& sphere, const Eigen::Vector3<T>& p) {
+  const T tol = 1e-5;
+  // Check that the point is close enough to the surface of the sphere.
+  // If yes, the normal direction is in the same as the point.
+  const T diff = p.norm() - sphere.radius();
+  if ((diff * diff) < tol) {
+    return p.normalized();
+  }
+  return std::nullopt;
+}
 
+#define DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(func, shape) \
+  template std::optional<Eigen::Vector3<double>> func(                        \
+      const shape&, const Eigen::Vector3<double>&);                           \
+  template std::optional<Eigen::Vector3<float>> func(                         \
+      const shape&, const Eigen::Vector3<float>&);                            \
+  template std::optional<Eigen::Vector3<::drake::AutoDiffXd>> func(           \
+      const shape&, const Eigen::Vector3<::drake::AutoDiffXd>&);              \
+  template std::optional<Eigen::Vector3<::drake::symbolic::Expression>> func( \
+      const shape&, const Eigen::Vector3<::drake::symbolic::Expression>&);
+
+DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(GetNormalAtPointForBox,
+                                                         Box);
 DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(
-    GetNormalAtPointForBox);
+    GetNormalAtPointForSphere, Sphere);
 
 template <typename T>
 std::optional<Eigen::Vector3<T>> GetNormalAtPoint(const Shape& shape,
@@ -90,8 +105,7 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPoint(const Shape& shape,
                    return Eigen::Vector3<T>(p);
                  },
                  [&](const Sphere& sphere) {
-                   (void)sphere;
-                   return Eigen::Vector3<T>(p);
+                   return GetNormalAtPointForSphere(sphere, p);
                  }});
 }
 
