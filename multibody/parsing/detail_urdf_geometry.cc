@@ -692,6 +692,26 @@ std::optional<geometry::GeometryInstance> ParseCollision(
     props = ParseProximityProperties(
         diagnostic.MakePolicyForNode(drake_element), read_double,
         rigid_element != nullptr, compliant_element != nullptr);
+
+    // Read the surface velocity normal.
+    std::optional<Vector3d> velocity_normal = std::nullopt;
+    const XMLElement* velocity_normal_node =
+        drake_element->FirstChildElement("drake:surface_velocity_normal");
+    if (velocity_normal_node != nullptr) {
+      Vector3d vn_value;
+      if (!ParseVectorAttribute(velocity_normal_node, "normal", &vn_value)) {
+        diagnostic.Error(
+            *velocity_normal_node,
+            "Failed to parse 'normal' tag of <drake:surface_velocity_normal>}");
+      } else {
+        velocity_normal = vn_value;
+      }
+    }
+    if (velocity_normal.has_value()) {
+      props.AddProperty(geometry::internal::kSurfaceVelocityGroup,
+                        geometry::internal::kSurfaceVelocityNormal,
+                        velocity_normal.value().normalized());
+    }
   }
 
   // TODO(SeanCurtis-TRI): Remove all of this legacy parsing code based on
