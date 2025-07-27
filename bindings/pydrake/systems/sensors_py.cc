@@ -14,6 +14,8 @@ PYBIND11_MODULE(sensors, m) {
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.lcm");
 
+  internal::DefineSensorsAccelerometer(m);
+  internal::DefineSensorsGyroscope(m);
   internal::DefineSensorsImage(m);
   internal::DefineSensorsImageIo(m);
   internal::DefineSensorsRgbd(m);

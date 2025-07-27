@@ -185,7 +185,9 @@ drake_pybind_library(
     cc_srcs = [
         "sensors_py.h",
         "sensors_py.cc",
+        "sensors_py_accelerometer.cc",
         "sensors_py_camera_config.cc",
+        "sensors_py_gyroscope.cc",
         "sensors_py_image.cc",
         "sensors_py_image_io.cc",
         "sensors_py_lcm.cc",
