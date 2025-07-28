@@ -281,7 +281,7 @@ use_repo(
     "crate__serde-1.0.219",
     "crate__serde-big-array-0.5.1",
     "crate__serde_derive-1.0.219",
-    "crate__serde_json-1.0.140",
+    "crate__serde_json-1.0.141",
     "crate__strsim-0.10.0",
     "crate__syn-1.0.109",
     "crate__syn-2.0.104",
