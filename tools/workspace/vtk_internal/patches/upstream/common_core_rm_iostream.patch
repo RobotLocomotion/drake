@@ -107,21 +107,6 @@ it's actually used.
  VTK_ABI_NAMESPACE_BEGIN
  vtkAMRBox::vtkAMRBox()
 
---- Common/DataModel/vtkAMRInformation.cxx
-+++ Common/DataModel/vtkAMRInformation.cxx
-@@ -4,10 +4,11 @@
- // VTK_DEPRECATED_IN_9_6_0
- #define VTK_DEPRECATION_LEVEL 0
-
- #include "vtkAMRInformation.h"
-
- #include "vtkObjectFactory.h"
-+#include <iostream>
-
- VTK_ABI_NAMESPACE_BEGIN
- vtkStandardNewMacro(vtkAMRInformation);
- VTK_ABI_NAMESPACE_END
-
 --- Common/DataModel/vtkBSPCuts.cxx
 +++ Common/DataModel/vtkBSPCuts.cxx
 @@ -6,6 +6,10 @@
