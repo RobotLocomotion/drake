@@ -1,0 +1,96 @@
+#!/usr/bin/env groovy
+
+properties([
+  buildDiscarder(
+    logRotator(
+      daysToKeepStr: '90',
+      artifactDaysToKeepStr: '90'
+    )
+  ),
+  pipelineTriggers([
+    [$class: 'GitHubPushTrigger']
+  ]),
+  githubProjectProperty('https://github.com/RobotLocomotion/drake')
+])
+
+node(getNodeLabel()) {
+  // Use a custom checkout step below, since there are
+  // multiple repositories with a particular directory layout.
+  skipDefaultCheckout()
+
+  // Load utils.groovy for common utilities.
+  fetchUtils('master')
+  def jenkinsUtilsPath = 'jenkins-utils/.jenkins/utils/utils.groovy'
+  def utils = load jenkinsUtilsPath
+  if (!utils) {
+    currentBuild.result = 'ABORTED'
+    error('Failed to load Drake Jenkins utilities.')
+  }
+
+  stage('test') {
+    timeout(600) {
+      ansiColor('xterm') {
+        timestamps {
+          try {
+            // Always use drake-ci/main (the default) for production builds.
+            def scmVars = utils.checkout()
+            utils.doMainBuild(scmVars)
+          } finally {
+            try {
+              utils.addCDashBadge()
+            } finally {
+              utils.cleanWorkspace()
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Extracts the node label from the job name.
+ *
+ * @return the node label
+ */
+def getNodeLabel() {
+  def pattern = ~/^((linux(-arm)?|mac-arm)-[A-Za-z]+(-unprovisioned)?).*/
+  def match = env.JOB_NAME =~ pattern
+
+  if (match.find()) {
+    return match.group(1)
+  }
+  else {
+    return null
+  }
+}
+
+/**
+ * Loads utils by performing a sparse checkout to WORKSPACE/jenkins-utils.
+ *
+ * @param branch the branch from which to load utils; if none is given, tries
+ *               to find the current branch or pull request
+ */
+def fetchUtils(String branch = null) {
+  if (!branch) {
+    if (!env.CHANGE_ID?.trim()) {
+      branch = scm.branches[0].name
+    }
+    else {
+      branch = "pr/${env.CHANGE_ID}/head"
+    }
+  }
+  checkout([$class: 'GitSCM',
+    branches: [[name: branch]],
+    extensions: [
+      [$class: 'RelativeTargetDirectory', relativeTargetDir: 'jenkins-utils'],
+      [$class: 'CloneOption', honorRefspec: true, noTags: true],
+      [$class: 'SparseCheckoutPaths',
+        sparseCheckoutPaths: [[path: '.jenkins/utils/utils.groovy']]]],
+    userRemoteConfigs: [[
+      credentialsId: 'ad794d10-9bc8-4a7a-a2f3-998af802cab0',
+      name: 'origin',
+      refspec: '+refs/heads/*:refs/remotes/origin/* ' +
+        '+refs/pull/*:refs/remotes/origin/pr/*',
+      url: 'git@github.com:RobotLocomotion/drake.git']]])
+}

@@ -83,6 +83,7 @@ all of their maintainers, whose work is essential to Drake's success:
   * [gflags](https://github.com/gflags/gflags)
   * [gtest](https://github.com/google/googletest)
   * [highway](https://github.com/google/highway)
+  * [implib.so](https://github.com/yugr/Implib.so)
   * [numpy](https://numpy.org/)
   * [onetbb](https://github.com/oneapi-src/oneTBB)
   * [pybind11](https://pybind11.readthedocs.io/)

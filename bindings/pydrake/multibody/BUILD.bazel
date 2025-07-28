@@ -189,6 +189,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:ref_cycle_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:sorted_pair_pybind",
     ],
     cc_srcs = [
@@ -495,6 +496,7 @@ drake_py_unittest(
     timeout = "moderate",
     data = [
         ":models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":benchmarks_py",

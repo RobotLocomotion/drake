@@ -850,6 +850,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertFalse(sparse2.evaluator().is_dense_A_constructed())
         prog.AddLinearEqualityConstraint(a=[1, 1], beq=0, vars=x)
         prog.AddLinearEqualityConstraint(f=x[0] == 1)
+        prog.AddLinearEqualityConstraint(formulas=[x[0] == 1, x[0] == 1])
         prog.AddLinearEqualityConstraint(e=x[0] + x[1], b=1)
         prog.AddLinearEqualityConstraint(
             v=2 * x[:2] + np.array([0, 1]), b=np.array([3, 2]))
@@ -1752,6 +1753,15 @@ class TestMathematicalProgram(unittest.TestCase):
         results = mp.SolveInParallel(progs=progs)
         self.assertEqual(len(results), len(progs))
         self.assertTrue(all([r.is_success() for r in results]))
+
+    def test_cost_binding(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2)
+        bound_cost = prog.AddCost(x[0] + x[1])
+        # Ensure that bound_cost is of type mp.Binding[mp.Cost].
+        self.assertTrue(isinstance(bound_cost, mp.Binding[mp.Cost]))
+        self.assertFalse(isinstance(bound_cost, mp.Binding[mp.LinearCost]))
+        prog.AddCost(binding=bound_cost)
 
 
 class DummySolverInterface(SolverInterface):

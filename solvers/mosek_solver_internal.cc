@@ -52,7 +52,7 @@ MosekSolverProgram::MosekSolverProgram(const MathematicalProgram& prog,
     : map_decision_var_to_mosek_var_{prog} {
   // Create the optimization task.
   // task is initialized as a null pointer, same as in Mosek's documentation
-  // https://docs.mosek.com/10.1/capi/design.html#hello-world-in-mosek
+  // https://docs.mosek.com/11.0/capi/design.html#hello-world-in-mosek
   task_ = nullptr;
   MSK_maketask(env, 0,
                map_decision_var_to_mosek_var_
@@ -734,7 +734,7 @@ MSKrescodee MosekSolverProgram::AddQuadraticConstraints(
     }
 
     // Pre-allocate the size for the Q matrix according to
-    // https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.putqcon
+    // https://docs.mosek.com/11.0/capi/alphabetic-functionalities.html#mosek.task.putqcon
     rescode = MSK_putmaxnumqnz(task_, qcsubi.size());
     if (rescode != MSK_RES_OK) {
       return rescode;
@@ -952,7 +952,7 @@ MSKrescodee MosekSolverProgram::AddLinearMatrixInequalityConstraint(
     std::unordered_map<Binding<LinearMatrixInequalityConstraint>, MSKint64t>*
         acc_indices) {
   // Use Mosek's "affine cone constraint". See
-  // https://docs.mosek.com/latest/capi/tutorial-sdo-shared.html#example-sdo-lmi-linear-matrix-inequalities-and-the-vectorized-semidefinite-domain
+  // https://docs.mosek.com/11.0/capi/tutorial-sdo-shared.html#example-sdo-lmi-linear-matrix-inequalities-and-the-vectorized-semidefinite-domain
   // for more details.
   DRAKE_ASSERT(acc_indices != nullptr);
   MSKrescodee rescode = MSK_RES_OK;
@@ -1631,8 +1631,8 @@ void ThrowForInvalidOption(MSKrescodee rescode, const std::string& option,
 
 // This function is used to print information for each iteration to the console,
 // it will show PRSTATUS, PFEAS, DFEAS, etc. For more information, check out
-// https://docs.mosek.com/10.1/capi/solver-io.html. This printstr is copied
-// directly from https://docs.mosek.com/10.1/capi/solver-io.html#stream-logging.
+// https://docs.mosek.com/11.0/capi/solver-io.html. This printstr is copied
+// directly from https://docs.mosek.com/11.0/capi/solver-io.html#stream-logging.
 void MSKAPI printstr(void*, const char str[]) {
   printf("%s", str);
 }
@@ -1648,7 +1648,7 @@ void MosekSolverProgram::UpdateOptions(
   // Copy all remaining options into our `task_`.
   options->Respell([&](const auto& common, auto* respelled) {
     // This is a convenient place to configure printing (i.e., logging); see
-    // https://docs.mosek.com/10.1/capi/solver-io.html#stream-logging.
+    // https://docs.mosek.com/11.0/capi/solver-io.html#stream-logging.
     // Printing to console vs file are mutually exclusive; if the user has
     // requested both, then we must throw an error BEFORE we create the log
     // file; otherwise we might create it but never close it.
@@ -1733,7 +1733,7 @@ MSKrescodee MosekSolverProgram::SetDualSolution(
   if (which_sol == MSK_SOL_ITG) {
     // Mosek cannot return dual solution if the solution type is MSK_SOL_ITG
     // (which stands for mixed integer optimizer), see
-    // https://docs.mosek.com/10.1/capi/accessing-solution.html#available-solutions
+    // https://docs.mosek.com/11.0/capi/accessing-solution.html#available-solutions
     return rescode;
   }
   int num_mosek_vars{0};
@@ -1743,7 +1743,7 @@ MSKrescodee MosekSolverProgram::SetDualSolution(
   }
   // Mosek dual variables for variable lower bounds (slx) and upper bounds
   // (sux). Refer to
-  // https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getsolution
+  // https://docs.mosek.com/11.0/capi/alphabetic-functionalities.html#mosek.task.getsolution
   // for more explanation.
   std::vector<MSKrealt> slx(num_mosek_vars);
   std::vector<MSKrealt> sux(num_mosek_vars);
@@ -1762,7 +1762,7 @@ MSKrescodee MosekSolverProgram::SetDualSolution(
   }
   // Mosek dual variables for linear constraints lower bounds (slc) and upper
   // bounds (suc). Refer to
-  // https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getsolution
+  // https://docs.mosek.com/11.0/capi/alphabetic-functionalities.html#mosek.task.getsolution
   // for more explanation.
   std::vector<MSKrealt> slc(num_linear_constraints);
   std::vector<MSKrealt> suc(num_linear_constraints);

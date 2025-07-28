@@ -295,6 +295,13 @@ const PolygonSurfaceMesh<double>* SceneGraphInspector<T>::GetConvexHull(
 }
 
 template <typename T>
+const std::optional<Obb>& SceneGraphInspector<T>::GetObbInGeometryFrame(
+    GeometryId geometry_id) const {
+  DRAKE_DEMAND(state_ != nullptr);
+  return state_->GetObbInGeometryFrame(geometry_id);
+}
+
+template <typename T>
 bool SceneGraphInspector<T>::CollisionFiltered(GeometryId geometry_id1,
                                                GeometryId geometry_id2) const {
   DRAKE_DEMAND(state_ != nullptr);

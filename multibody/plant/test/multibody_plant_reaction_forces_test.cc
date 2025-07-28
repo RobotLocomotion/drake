@@ -967,7 +967,8 @@ TEST_P(WeldedAndFloatingTest, ReactionForcesOrdinalIndexing) {
                                                    weld3_};
     const std::vector<JointIndex> expected_indices{
         JointIndex(4), JointIndex(5), JointIndex(2), JointIndex(3)};
-    const std::vector<int> expected_ordinals{2, 3, 0, 1};
+    const std::vector<JointOrdinal> expected_ordinals{
+        JointOrdinal(2), JointOrdinal(3), JointOrdinal(0), JointOrdinal(1)};
     for (int i = 0; i < 4; ++i) {
       EXPECT_EQ(joints[i]->index(), expected_indices[i]);
       EXPECT_EQ(joints[i]->ordinal(), expected_ordinals[i]);
@@ -991,7 +992,8 @@ TEST_P(WeldedAndFloatingTest, ReactionForcesOrdinalIndexing) {
                                                    weld2_, weld3_};
     const std::vector<JointIndex> expected_indices{
         JointIndex(0), JointIndex(1), JointIndex(2), JointIndex(3)};
-    const std::vector<int> expected_ordinals{0, 1, 2, 3};
+    const std::vector<JointOrdinal> expected_ordinals{
+        JointOrdinal(0), JointOrdinal(1), JointOrdinal(2), JointOrdinal(3)};
     for (int i = 0; i < 4; ++i) {
       EXPECT_EQ(joints[i]->index(), expected_indices[i]);
       EXPECT_EQ(joints[i]->ordinal(), expected_ordinals[i]);

@@ -136,6 +136,10 @@ drake_py_unittest(
         "//examples/hydroelastic/spatula_slip_control:models",
         "//multibody/benchmarks/acrobot:models",
         "//multibody/meshcat:models",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:manipulation_station",
+        "@drake_models//:wsg_50_description",
+        "@drake_models//:ycb",
     ],
     deps = [
         ":visualization",
@@ -207,6 +211,10 @@ drake_py_unittest(
 drake_py_unittest(
     name = "video_test",
     size = "medium",
+    data = [
+        "@drake_models//:iiwa_description",
+        "@drake_models//:wsg_50_description",
+    ],
     deps = [
         ":visualization",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
@@ -228,6 +236,9 @@ drake_py_unittest(
     data = [
         "test/multicam_scenario.yaml",
         "//examples/hardware_sim:hardware_sim_py",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:manipulation_station",
+        "@drake_models//:wsg_50_description",
     ],
 )
 

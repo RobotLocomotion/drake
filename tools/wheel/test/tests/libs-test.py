@@ -9,24 +9,33 @@ from zipfile import ZipFile
 # Everything here must have its license installed as part of the wheel build.
 # This list must be kept in sync with the calls to copy_ubuntu_license in
 # drake/tools/wheel/image/build-wheel.sh.
-_ALLOWED_LIBS = {
+_ALLOWED_LIBS = frozenset({
     "libgfortran",
     "libgomp",
     "libquadmath",
-    # These are installed by a Drake's repository rule, so don't need copyright
-    # installed in build-wheel.sh.
+})
+
+# These are installed by a Drake repository rule, so don't need copyright
+# installed in build-wheel.sh.
+_ALLOWED_LIBS_MACOS = frozenset({
     "libmosek64",
     "libtbb",
-}
+})
 
 # TODO(jwnimmer-tri) Install the license texts for these (or stop using the
 # library entirely).
-_EXTRA_MACOS_LIBS = {
+_EXTRA_LIBS_MACOS = frozenset({
     "libgcc_s",
     "libglib",
     "libintl",
     "libpcre2",
-}
+})
+
+if sys.platform == "darwin":
+    _ALLOWED_LIBS_ALL = frozenset(
+        _ALLOWED_LIBS | _ALLOWED_LIBS_MACOS | _EXTRA_LIBS_MACOS)
+else:
+    _ALLOWED_LIBS_ALL = _ALLOWED_LIBS
 
 def get_all_files_in_wheel(wheel_path: Path):
     """Returns and iterator over all (relative) paths the wheel."""
@@ -52,7 +61,7 @@ def is_good_file(path):
             str(path).startswith("drake/.dylibs/")]):
         stem = path.name.split(".")[0]  # Remove filename extension(s).
         stem = stem.split("-")[0]       # Remove anything after the '-'.
-        return stem in _ALLOWED_LIBS | _EXTRA_MACOS_LIBS
+        return stem in _ALLOWED_LIBS_ALL
 
     # Branch on the top-level directory name.
     top_dir = str(path.parents[-2])

@@ -916,7 +916,7 @@ class MathematicalProgram {
   /**
    * Adds a generic cost to the optimization program.
    *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
+   * @pydrake_mkdoc_identifier{1args_binding_cost}
    */
   Binding<Cost> AddCost(const Binding<Cost>& binding);
 
@@ -1714,6 +1714,29 @@ class MathematicalProgram {
       const symbolic::Formula& f);
 
   /**
+   * Adds a linear equality constraint represented by an
+   * Eigen::Array<symbolic::Formula> to the program. A common use-case of this
+   * function is to add a linear constraint with the element-wise comparison
+   * between two Eigen matrices, using `A.array() == B.array()`. See the
+   * following example.
+   *
+   * @code
+   *   MathematicalProgram prog;
+   *   Eigen::Matrix<double, 2, 2> A;
+   *   auto x = prog.NewContinuousVariables(2, "x");
+   *   Eigen::Vector2d b;
+   *   ... // set up A and b
+   *   prog.AddLinearConstraint((A * x).array() == b.array());
+   * @endcode
+   *
+   * It throws an exception if AddLinearConstraint(const symbolic::Formula& f)
+   * throws an exception for f ∈ `formulas`.
+   * @tparam Derived An Eigen Array type of Formula. */
+  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const Eigen::Ref<const Eigen::Array<symbolic::Formula, Eigen::Dynamic,
+                                          Eigen::Dynamic>>& formulas);
+
+  /**
    * Adds linear equality constraints \f$ v = b \f$, where \p v(i) is a symbolic
    * linear expression.
    * @throws std::exception if
@@ -2027,7 +2050,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/10.1/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
@@ -2039,7 +2062,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/10.1/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    @param vars x in the documentation above.
    @param hessian_type Whether the Hessian is positive semidefinite, negative
@@ -2061,7 +2084,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/10.1/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    @param vars x in the documentation above.
    @param hessian_type Whether the Hessian is positive semidefinite, negative
@@ -2083,7 +2106,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/10.1/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    */
   Binding<QuadraticConstraint> AddQuadraticConstraint(
@@ -2510,7 +2533,7 @@ class MathematicalProgram {
    * cone. When solving the optimization problem using conic solvers (like
    * Mosek, Gurobi, SCS, etc), it is numerically preferable to impose the
    * convex quadratic constraint as rotated Lorentz cone constraint. See
-   * https://docs.mosek.com/latest/capi/prob-def-quadratic.html#a-recommendation
+   * https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation
    * @throw exception if this quadratic constraint is not convex (Q is not
    * positive semidefinite)
    * @param Q The Hessian of the quadratic constraint. Should be positive

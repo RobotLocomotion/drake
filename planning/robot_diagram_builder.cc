@@ -30,6 +30,14 @@ RobotDiagramBuilder<T>::~RobotDiagramBuilder() = default;
 
 template <typename T>
 std::unique_ptr<RobotDiagram<T>> RobotDiagramBuilder<T>::Build() {
+  internal::BuildResultForPython<T> result = BuildForPython();
+  // Return the diagram only, allowing the result struct holding the builder to
+  // delete the builder as it goes out of scope.
+  return std::move(result.diagram);
+}
+
+template <typename T>
+internal::BuildResultForPython<T> RobotDiagramBuilder<T>::BuildForPython() {
   ThrowIfAlreadyBuiltOrCorrupted();
   if (!plant().is_finalized()) {
     plant().Finalize();
@@ -39,8 +47,11 @@ std::unique_ptr<RobotDiagram<T>> RobotDiagramBuilder<T>::Build() {
   if (ShouldExportDefaultPorts()) {
     ExportDefaultPorts();
   }
-  return std::unique_ptr<RobotDiagram<T>>(
-      new RobotDiagram<T>(std::move(builder_)));
+  internal::BuildResultForPython<T> result;
+  result.diagram =
+      std::unique_ptr<RobotDiagram<T>>(new RobotDiagram<T>(builder_.get()));
+  result.builder = std::move(builder_);
+  return result;
 }
 
 template <typename T>

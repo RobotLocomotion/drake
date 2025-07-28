@@ -54,6 +54,7 @@ drake_py_unittest(
     data = [
         "//manipulation/util:test_directives",
         "@drake_models//:iiwa_description",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":manipulation",
@@ -68,6 +69,8 @@ drake_py_unittest(
     name = "schunk_wsg_test",
     data = [
         "//manipulation/util:test_directives",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":manipulation",
@@ -81,6 +84,8 @@ drake_py_unittest(
     data = [
         "//manipulation/util:test_directives",
         "//multibody/benchmarks/acrobot:models",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":manipulation",

@@ -1,0 +1,54 @@
+#!/usr/bin/env groovy
+
+properties([
+  parameters([
+    string(name: 'deePR', defaultValue: 'main',
+      description: 'Pull request name. ' +
+        'For pull requests, enter project name <code>PR-1234</code> ' +
+        'for pull request #1234. Defaults to <code>main</code>.'),
+  ]),
+  buildDiscarder(
+    logRotator(
+      daysToKeepStr: '90',
+      artifactDaysToKeepStr: '90'
+    )
+  ),
+  githubProjectProperty('https://github.com/RobotLocomotion/drake')
+])
+
+def scmVars = null
+node(getNodeLabel()) {
+  stage('drake-checkout') {
+    timeout(600) {
+      ansiColor('xterm') {
+        timestamps {
+          scmVars = checkout scm
+        }
+      }
+    }
+  }
+}
+
+build(
+  job: "RobotLocomotion/drake-external-examples/${params.deePR}",
+  parameters: [
+    string(name: 'drakeSha', value: scmVars.GIT_COMMIT)
+  ]
+)
+
+/**
+ * Extracts the node label from the job name.
+ *
+ * @return the node label
+ */
+def getNodeLabel() {
+  def pattern = ~/^((linux(-arm)?|mac-arm)-[A-Za-z]+(-unprovisioned)?).*/
+  def match = env.JOB_NAME =~ pattern
+
+  if (match.find()) {
+    return match.group(1)
+  }
+  else {
+    return null
+  }
+}

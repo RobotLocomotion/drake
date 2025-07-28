@@ -196,8 +196,11 @@ def vtk_internal_repository(
             #   edited (e.g., patching IO/Image is named io_image_{foo}.patch).
             # - Use alphabetical order within a directory when listing patches.
             ":patches/upstream/common_core_rm_iostream.patch",
+            ":patches/upstream/common_datamodel_vtkdatasetattributes_iterator.patch",  # noqa
+            ":patches/upstream/common_executionmodel_vtkalgorithm_ternary.patch",  # noqa
             ":patches/upstream/io_geometry_gltf_default_scene.patch",
             ":patches/upstream/io_import_errors.patch",
+            ":patches/upstream/rendering_core_vtkcomposite_exception.patch",
             ":patches/upstream/rendering_opengl2_scaled_albedo_for_ibl.patch",
             ":patches/upstream/vtkpugixml_global_ctor.patch",
             ":patches/common_core_nobacktrace.patch",

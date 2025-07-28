@@ -32,6 +32,8 @@ drake_cc_library(
         "//planning:visibility_graph",
         "//planning/graph_algorithms:max_clique_solver_base",
         "//planning/graph_algorithms:max_clique_solver_via_greedy",
+        "//planning/iris:iris_np2",
+        "//planning/iris:iris_zo",
         "//solvers:gurobi_solver",
         "//solvers:mosek_solver",
     ],
@@ -88,6 +90,9 @@ drake_cc_library(
         "//planning:scene_graph_collision_checker",
         "//solvers",
     ],
+    implementation_deps = [
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
 )
 
 drake_cc_googletest(
@@ -131,6 +136,8 @@ drake_cc_googletest(
     tags = [
         "no_asan",
         "no_lsan",
+        # TODO(#22978) Re-enable this if possible.
+        "no_memcheck",
     ],
     deps = [
         ":iris_test_utilities",

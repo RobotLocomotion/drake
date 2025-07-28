@@ -10,7 +10,6 @@
 
 namespace drake {
 namespace geometry {
-namespace internal {
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
@@ -33,7 +32,7 @@ bool Obb::HasOverlap(const Obb& a, const Obb& b, const RigidTransformd& X_GH) {
   const RigidTransformd& X_GA = a.pose();
   const RigidTransformd& X_HB = b.pose();
   const RigidTransformd X_AB = X_GA.InvertAndCompose(X_GH * X_HB);
-  return BoxesOverlap(a.half_width(), b.half_width(), X_AB);
+  return internal::BoxesOverlap(a.half_width(), b.half_width(), X_AB);
 }
 
 bool Obb::HasOverlap(const Obb& obb_G, const Aabb& aabb_H,
@@ -51,10 +50,10 @@ bool Obb::HasOverlap(const Obb& obb_G, const Aabb& aabb_H,
   const RigidTransformd X_HG = X_GH.inverse();
   const RotationMatrixd R_AO = X_HG.rotation() * obb_G.pose().rotation();
   const RigidTransformd X_AO(R_AO, X_HG * obb_G.center() - aabb_H.center());
-  return BoxesOverlap(aabb_H.half_width(), obb_G.half_width(), X_AO);
+  return internal::BoxesOverlap(aabb_H.half_width(), obb_G.half_width(), X_AO);
 }
 
-bool Obb::HasOverlap(const Obb& bv, const Plane<double>& plane_P,
+bool Obb::HasOverlap(const Obb& bv, const internal::Plane<double>& plane_P,
                      const math::RigidTransformd& X_PH) {
   // We want the two corners of the box that lie at the most extreme extents in
   // the plane's normal direction. Then we can determine their heights
@@ -176,13 +175,13 @@ RotationMatrixd ObbMaker<MeshType>::CalcOrientationByPca() const {
   // C is for centroid.
   Vector3d p_MC = Vector3d::Zero();
   for (int v : vertices_) {
-    p_MC += convert_to_double(mesh_M_.vertex(v));
+    p_MC += internal::convert_to_double(mesh_M_.vertex(v));
   }
   p_MC *= one_over_n;
 
   Matrix3d covariance_M = Matrix3d::Zero();
   for (int v : vertices_) {
-    const Vector3d& p_MV = convert_to_double(mesh_M_.vertex(v));
+    const Vector3d& p_MV = internal::convert_to_double(mesh_M_.vertex(v));
     const Vector3d p_CV_M = p_MV - p_MC;
     // covariance_M is a symmetric matrix because it's a sum of the
     // 3x3 symmetric matrices V*Vᵀ of column vectors V.
@@ -276,7 +275,7 @@ Obb ObbMaker<MeshType>::CalcOrientedBox(const RotationMatrixd& R_MB) const {
   for (int v : vertices_) {
     // Since frame F is a rotation of frame M with the same origin, we can use
     // the rotation R_FM for the transform X_FM.
-    const Vector3d p_FV = R_FM * convert_to_double(mesh_M_.vertex(v));
+    const Vector3d p_FV = R_FM * internal::convert_to_double(mesh_M_.vertex(v));
     p_FL = p_FL.cwiseMin(p_FV);
     p_FU = p_FU.cwiseMax(p_FV);
   }
@@ -391,16 +390,17 @@ Obb ObbMaker<MeshType>::Compute() const {
   return OptimizeObbVolume(box);
 }
 
+template class ObbMaker<PolygonSurfaceMesh<double>>;
 template class ObbMaker<TriangleSurfaceMesh<double>>;
 template class ObbMaker<VolumeMesh<double>>;
 
 // TODO(SeanCurtis-TRI): Remove support for building a Bvh on an AutoDiff-valued
 //  mesh after we've cleaned up the scalar types in hydroelastics. Specifically,
 //  this is here to support the unit tests in mesh_intersection_test.cc. Also
-//  the calls to convert_to_double should be removed.
+//  the calls to internal::convert_to_double should be removed.
+template class ObbMaker<PolygonSurfaceMesh<drake::AutoDiffXd>>;
 template class ObbMaker<TriangleSurfaceMesh<drake::AutoDiffXd>>;
 template class ObbMaker<VolumeMesh<drake::AutoDiffXd>>;
 
-}  // namespace internal
 }  // namespace geometry
 }  // namespace drake
