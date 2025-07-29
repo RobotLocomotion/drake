@@ -1,7 +1,10 @@
 #!/usr/bin/env groovy
 
 node(getNodeLabel()) {
-  // Define job properties.
+  // Define job properties. Other Jenkinsfiles which do not correspond to
+  // multibranch pipelines (i.e., for non-experimental jobs) should inherit
+  // properties from the original job definitions rather than calling
+  // properties() here.
   def props = [
     parameters([
       string(name: 'ciSha', defaultValue: 'main',
