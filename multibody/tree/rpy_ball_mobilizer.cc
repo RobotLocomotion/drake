@@ -150,7 +150,7 @@ template <typename T>
 template <typename T>
 auto RpyBallMobilizer<T>::CalcSinPitchCosPitchSinYawCosYaw(
     const systems::Context<T>& context) const -> SinCosPitchYaw {
-  using std::cos, std::sin;
+  using std::sin, std::cos;
   const Vector3<T> angles = get_angles(context);
   return {sin(angles[1]), cos(angles[1]), sin(angles[2]), cos(angles[2])};
 }
@@ -345,7 +345,6 @@ void RpyBallMobilizer<T>::DoMapVelocityToQDotImpl(
   // ṙ = (cos(y) * w0 + sin(y) * w1) / cos(p)
   // ṗ = -sin(y) * w0 + cos(y) * w1
   // ẏ = sin(p) * ṙ + w2
-  // const T& sp, const T& sy, const T& cy
   const auto& [sp, cp, sy, cy] = sinCosPitchYaw;
   const T& w0 = v[0];
   const T& w1 = v[1];
@@ -392,14 +391,7 @@ void RpyBallMobilizer<T>::DoMapQDotToVelocity(
   // [Mitiguy August 2019] Mitiguy, P., 2019. Advanced Dynamics & Motion
   //                       Simulation.
 
-  using std::cos;
-  using std::sin;
-  const Vector3<T> angles = get_angles(context);
-  const T sp = sin(angles[1]);
-  const T cp = cos(angles[1]);
-  const T sy = sin(angles[2]);
-  const T cy = cos(angles[2]);
-
+  const auto& [sp, cp, sy, cy] = CalcSinPitchCosPitchSinYawCosYaw(context);
   const T& rdot = qdot[0];
   const T& pdot = qdot[1];
   const T& ydot = qdot[2];
