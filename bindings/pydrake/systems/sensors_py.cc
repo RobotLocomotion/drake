@@ -11,6 +11,7 @@ PYBIND11_MODULE(sensors, m) {
   py::module::import("pydrake.common.eigen_geometry");
   py::module::import("pydrake.common.schema");
   py::module::import("pydrake.geometry");
+  py::module::import("pydrake.multibody.plant");
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.lcm");
 

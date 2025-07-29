@@ -200,6 +200,7 @@ drake_pybind_library(
         ":lcm_py",
         ":module_py",
         "//bindings/pydrake/geometry",
+        "//bindings/pydrake/multibody:parsing_py",
     ],
 )
 
@@ -596,6 +597,9 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "sensors_test",
+    data = [
+        "//multibody:models",
+    ],
     tags = vtk_test_tags(),
     deps = [
         ":sensors_py",
