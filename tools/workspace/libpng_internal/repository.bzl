@@ -6,8 +6,8 @@ def libpng_internal_repository(
     github_archive(
         name = name,
         repository = "glennrp/libpng",
-        commit = "v1.6.49",
-        sha256 = "e425762fdfb9bb30a5d2da29c0067570e96b5d41d79c659cf0dad861e9df738e",  # noqa
+        commit = "v1.6.50",
+        sha256 = "71158e53cfdf2877bc99bcab33641d78df3f48e6e0daad030afe9cb8c031aa46",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
