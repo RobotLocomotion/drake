@@ -9,9 +9,9 @@ package(default_visibility = ["//visibility:private"])
 
 cc_library(
     name = "gklib",
-    srcs = glob(["*.c"], allow_empty = False),
-    hdrs = glob(["*.h"], allow_empty = False),
-    includes = ["."],
+    srcs = glob(["src/*.c"], allow_empty = False),
+    hdrs = glob(["include/*.h"], allow_empty = False),
+    includes = ["include"],
     copts = [
         # We don't allow Drake externals to use OpenMP until we wire up "max
         # parallelism" governance to a drake::Parallellism public API option.
