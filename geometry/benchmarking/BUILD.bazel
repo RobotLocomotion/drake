@@ -55,7 +55,7 @@ drake_cc_googlebench_binary(
     name = "compliant_mesh_intersection_benchmark",
     srcs = ["compliant_mesh_intersection_benchmark.cc"],
     add_test_rule = True,
-    test_timeout = "moderate",
+    test_timeout = "long",
     deps = [
         "//common:essential",
         "//geometry/proximity:hydroelastic_calculator",

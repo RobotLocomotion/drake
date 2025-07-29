@@ -11,7 +11,7 @@ drake_cc_googlebench_binary(
     name = "benchmark_mathematical_program",
     srcs = ["benchmark_mathematical_program.cc"],
     add_test_rule = True,
-    test_timeout = "moderate",
+    test_timeout = "long",
     deps = [
         "//common:add_text_logging_gflags",
         "//solvers:mathematical_program",
