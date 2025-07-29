@@ -131,7 +131,10 @@ def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
 
 # The BASE_LINKOPTS are used for all drake_cc_{binary,library,test} rules.
 BASE_LINKOPTS = select({
-    "@drake//tools/cc_toolchain:use_mold_linker": ["-fuse-ld=mold"],
+    "@drake//tools/cc_toolchain:use_mold_linker": [
+        "-fuse-ld=mold",
+        "-Wl,--compress-debug-sections=zlib",
+    ],
     "//conditions:default": [],
 })
 
