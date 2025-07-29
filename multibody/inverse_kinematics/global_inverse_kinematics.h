@@ -361,6 +361,16 @@ class GlobalInverseKinematics {
                                bool linear_constraint_approximation = false);
 
   /**
+   * Adds a cost pushing the value of a joint to equal its nominal value.
+   * @note Cf. AddPostureCost, which penalizes deviations in body poses from
+   * those that are achieved from the goal configuration.
+   * @param body_index The joint connecting the parent link to this body will have a cost applied.
+   * @param nominal_value The cost is minimized when the joint is equal to this value.
+   * @param weight The weight applied to this cost.
+   * */
+  void AddJointCenteringCost(BodyIndex body_index, double nominal_value, double weight = 1.0);
+
+  /**
    * Sets an initial guess for all variables (including the binary variables)
    * by evaluating the kinematics of the plant at `q`.  Currently, this is
    * accomplished by solving the global IK problem subject to constraints that

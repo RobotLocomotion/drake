@@ -851,6 +851,105 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
   }
 }
 
+void GlobalInverseKinematics::AddJointCenteringCost(BodyIndex body_index, double nominal_value, double weight) {
+  if (plant_.get_body(body_index).is_floating()) {
+    throw std::runtime_error(
+        "The body is floating, do not use AddJointCenteringCost(). Use AddPostureCost() instead.");
+  }
+  const Joint<double>* joint{nullptr};
+  for (JointIndex joint_index : plant_.GetJointIndices()) {
+    if (plant_.get_joint(joint_index).child_body().index() == body_index) {
+      joint = &(plant_.get_joint(joint_index));
+      break;
+    }
+  }
+  if (joint == nullptr) {
+    throw std::runtime_error(
+        fmt::format("The body {} is not the child of any joint in the plant.",
+                    plant_.get_body(body_index).name()));
+  }
+  const RigidBody<double>& parent = joint->parent_body();
+  const int parent_idx = parent.index();
+  const RigidTransformd X_PJp =
+      joint->frame_on_parent().GetFixedPoseInBodyFrame();
+  const RigidTransformd X_CJc =
+      joint->frame_on_child().GetFixedPoseInBodyFrame();
+
+  switch (joint->num_velocities()) {
+    case 0: {
+      // Fixed to the parent body.
+      throw std::runtime_error("Cannot impose joint limits for a fixed joint.");
+    }
+    case 1: {
+      // Should NOT do this evil dynamic cast here, but currently we do
+      // not have a method to tell if a joint is revolute or not.
+      if (dynamic_cast<const RevoluteJoint<double>*>(joint) != nullptr) {
+        const auto* revolute_joint =
+            dynamic_cast<const RevoluteJoint<double>*>(joint);
+        // axis_F is the vector of the rotation axis in the joint
+        // inboard/outboard frame.
+        const Vector3d axis_F = revolute_joint->revolute_axis();
+
+        // First generate a vector v_C that is perpendicular to rotation
+        // axis, in child frame.
+        Vector3d v_C = axis_F.cross(Vector3d(1, 0, 0));
+        double v_C_norm = v_C.norm();
+        if (v_C_norm < sqrt(2) / 2) {
+          // axis_F is almost parallel to [1; 0; 0]. Try another axis
+          // [0, 1, 0]
+          v_C = axis_F.cross(Vector3d(0, 1, 0));
+          v_C_norm = v_C.norm();
+        }
+        // Normalizes the revolute vector.
+        v_C /= v_C_norm;
+
+        // The constraint would be tighter, if we choose many unit
+        // length vector `v`, perpendicular to the joint axis, in the
+        // joint frame. Here to balance between the size of the
+        // optimization problem, and the tightness of the convex
+        // relaxation, we just use four vectors in `v`. Notice that
+        // v_basis contains the orthonormal basis of the null space
+        // null(axis_F).
+        std::array<Eigen::Vector3d, 2> v_basis = {{v_C, axis_F.cross(v_C)}};
+        v_basis[1] /= v_basis[1].norm();
+
+        std::array<Eigen::Vector3d, 4> v_samples;
+        v_samples[0] = v_basis[0];
+        v_samples[1] = v_basis[1];
+        v_samples[2] = v_basis[0] + v_basis[1];
+        v_samples[2] /= v_samples[2].norm();
+        v_samples[3] = v_basis[0] - v_basis[1];
+        v_samples[3] /= v_samples[3].norm();
+
+        // rotmat_joint_offset is R(k, nominal) explained above.
+        const Matrix3d rotmat_joint_offset =
+            Eigen::AngleAxisd(nominal_value,
+                              axis_F)
+                .toRotationMatrix();
+
+        for (const auto& v: v_samples) {
+          Eigen::Matrix<Expression, 3, 1> unit_vector_difference = 
+                  R_WB_[body_index] * X_CJc.rotation().matrix() * v -
+                  R_WB_[parent_idx] * X_PJp.rotation().matrix() *
+                      rotmat_joint_offset * v;
+          for (int i = 0; i < 3; ++i) {
+            auto s = prog_.NewContinuousVariables<1>("s")[0];
+            prog_.AddLinearConstraint(s >= unit_vector_difference[i]);
+            prog_.AddLinearConstraint(s >= -unit_vector_difference[i]);
+            prog_.AddLinearCost(weight * s);
+          }
+        }
+      } else {
+        // TODO(hongkai.dai): add prismatic and helical joint.
+        throw std::runtime_error("Unsupported joint type.");
+      }
+      break;
+    }
+    default:
+      throw std::runtime_error("Unsupported joint type.");
+  }
+}
+
 // TODO(russt): This method is currently calling Solve in order to compute the
 // integer variables (given the poses). This is an easy, but relatively
 // expensive way; we could instead compute them in closed form based on the
