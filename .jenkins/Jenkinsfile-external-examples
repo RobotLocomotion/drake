@@ -3,7 +3,10 @@
 def scmVars = null
 
 node(getNodeLabel()) {
-  // Define job properties.
+  // Define job properties. Other Jenkinsfiles which do not correspond to
+  // multibranch pipelines (i.e., for non-experimental jobs) should inherit
+  // properties from the original job definitions rather than calling
+  // properties() here.
   properties([
     parameters([
       string(name: 'deePR', defaultValue: 'main',
