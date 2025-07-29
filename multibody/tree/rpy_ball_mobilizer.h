@@ -260,6 +260,15 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   void DoCalcNplusDotMatrix(const systems::Context<T>& context,
                             EigenPtr<MatrixX<T>> NplusDot) const final;
 
+  // Struct that helps efficiently group sine and cosine calculations.
+  struct SinCosPitchYaw {
+    T sin_pitch, cos_pitch, sin_yaw, cos_yaw;
+  };
+
+  // Return a struct with calculated sin(pitch), cos(pitch), sin(yaw), cos(yaw).
+  SinCosPitchYaw CalcSinPitchCosPitchSinYawCosYaw(
+      const systems::Context<T>& context) const;
+
   // Maps the generalized velocity v, which corresponds to the angular velocity
   // w_FM, to time derivatives of roll-pitch-yaw angles θ₀, θ₁, θ₂ in qdot.
   //
@@ -284,7 +293,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   // Implements DoMapVelocityToQDot() with pre-computed values of
   // sin(pitch), sin(yaw), cos(yaw), 1/cos(pitch).
-  void DoMapVelocityToQDotImpl(const T& sp, const T& sy, const T& cy,
+  void DoMapVelocityToQDotImpl(const SinCosPitchYaw& sinCosPitchYaw,
                                const T& cpi,
                                const Eigen::Ref<const VectorX<T>>& v,
                                EigenPtr<VectorX<T>> qdot) const;
@@ -321,8 +330,8 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   Vector3<T> CalcAccelerationBiasForQDDot(const systems::Context<T>& context,
                                           const char* function_name) const;
   Vector3<T> CalcAccelerationBiasForQDDotImpl(
-      const systems::Context<T>& context, const T& sp, const T& cp, const T& sy,
-      const T& cy, const T& cpi) const;
+      const systems::Context<T>& context, const SinCosPitchYaw& sinCosPitchYaw,
+      const T& cpi) const;
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
@@ -349,15 +358,6 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   // Ideally, ThrowIfCosPitchNearZero() is inlined by separating this function.
   [[noreturn]] void ThrowSinceCosPitchNearZero(
       const systems::Context<T>& context, const char* function_name) const;
-
-  // Struct that helps efficiently group sine and cosine calculations.
-  struct SinCosPitchYaw {
-    T sin_pitch, cos_pitch, sin_yaw, cos_yaw;
-  };
-
-  // Return a struct with calculated sin(pitch), cos(pitch), sin(yaw), cos(yaw).
-  SinCosPitchYaw CalcSinPitchCosPitchSinYawCosYaw(
-      const systems::Context<T>& context) const;
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
