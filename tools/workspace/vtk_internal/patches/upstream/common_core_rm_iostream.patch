@@ -107,27 +107,6 @@ it's actually used.
  VTK_ABI_NAMESPACE_BEGIN
  vtkAMRBox::vtkAMRBox()
 
---- Common/DataModel/vtkAMRMetaData.cxx
-+++ Common/DataModel/vtkAMRMetaData.cxx
-@@ -3,6 +3,8 @@
- 
- #include "vtkAMRMetaData.h"
- 
-+#include <iostream>
-+
- #include "vtkStructuredData.h"
- #include "vtkUnsignedIntArray.h"
- 
-@@ -67,7 +69,7 @@
- {
-   if (level >= this->GetNumberOfLevels())
-   {
--    cerr << "WARNING: No data set at this level" << endl;
-+    std::cerr << "WARNING: No data set at this level" << endl;
-     return 0;
-   }
-   return this->NumBlocks[level + 1] - this->NumBlocks[level];
-
 --- Common/DataModel/vtkBSPCuts.cxx
 +++ Common/DataModel/vtkBSPCuts.cxx
 @@ -6,6 +6,10 @@
