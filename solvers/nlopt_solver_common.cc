@@ -54,6 +54,10 @@ std::string NloptSolver::MaxEvalName() {
   return "max_eval";
 }
 
+std::string NloptSolver::MaxTimeName() {
+  return "max_time";
+}
+
 std::string NloptSolver::AlgorithmName() {
   return "algorithm";
 }
