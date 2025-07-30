@@ -742,6 +742,10 @@ void BindMathematicalProgram(py::module m) {
           &MathematicalProgram::AddL2NormCostUsingConicConstraint, py::arg("A"),
           py::arg("b"), py::arg("vars"),
           doc.MathematicalProgram.AddL2NormCostUsingConicConstraint.doc)
+      .def("AddL1NormCostUsingSlackVariables",
+          &MathematicalProgram::AddL1NormCostUsingSlackVariables, py::arg("A"),
+          py::arg("b"), py::arg("vars"),
+          doc.MathematicalProgram.AddL1NormCostUsingSlackVariables.doc)
       .def("AddMaximizeLogDeterminantCost",
           static_cast<std::tuple<Binding<LinearCost>,
               VectorX<symbolic::Variable>, MatrixX<symbolic::Expression>> (

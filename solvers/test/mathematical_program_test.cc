@@ -3521,6 +3521,71 @@ GTEST_TEST(TestMathematicalProgram, AddL2NormCostUsingConicConstraint) {
             lorentz_eval_expected);
 }
 
+GTEST_TEST(TestMathematicalProgram, AddL1NormCostUsingSlackVariables) {
+  MathematicalProgram prog{};
+  auto x = prog.NewContinuousVariables<2>("x");
+  Eigen::Matrix2d A;
+  A << 1, 2, 3, 4;
+  const Eigen::Vector2d b(2, 3);
+  const auto ret = prog.AddL1NormCostUsingSlackVariables(A, b, x);
+  const auto& s = std::get<0>(ret);
+  const auto& linear_cost = std::get<1>(ret);
+  const auto& linear_constraint = std::get<2>(ret);
+
+  // Check that s was added as new decision variables.
+  EXPECT_EQ(s.rows(), 2);
+  for (int i = 0; i < s.size(); ++i) {
+    EXPECT_GE(prog.FindDecisionVariableIndex(s(i)), 0);
+  }
+
+  // Check that the linear cost is Σᵢsᵢ.
+  EXPECT_TRUE(linear_cost.evaluator());
+  EXPECT_EQ(linear_cost.variables(), s);
+  EXPECT_TRUE((linear_cost.evaluator()->a().array() == 1.0).all());
+  EXPECT_EQ(linear_cost.evaluator()->b(), 0.0);
+  EXPECT_EQ(prog.linear_costs().size(), 1);
+
+  // Check that the constraint s >= Ax + b and s >= -(Ax + b) is encoded
+  // correctly.
+  EXPECT_TRUE(linear_constraint.evaluator());
+  EXPECT_EQ(prog.linear_constraints().size(), 1);
+  EXPECT_EQ(linear_constraint.evaluator()->GetDenseA().rows(), 4);
+  EXPECT_EQ(linear_constraint.evaluator()->GetDenseA().cols(), 4);
+
+  // Check constraint variable ordering: [s0, s1, x0, x1].
+  const auto& constraint_vars = linear_constraint.variables();
+  EXPECT_EQ(constraint_vars.size(), 4);
+  EXPECT_EQ(constraint_vars.segment(0, 2), s);
+  EXPECT_EQ(constraint_vars.segment(2, 2), x);
+
+  // Check constraint matrix and RHS: A * x + b, -A * x - b.
+  const Eigen::MatrixXd& A_constraint =
+      linear_constraint.evaluator()->GetDenseA();
+  const Eigen::VectorXd& lb_constraint =
+      linear_constraint.evaluator()->lower_bound();
+  const Eigen::VectorXd& ub_constraint =
+      linear_constraint.evaluator()->upper_bound();
+
+  // Expected A matrix [ -I  A]
+  //                   [ -I -A].
+  Eigen::MatrixXd A_expected(4, 4);
+  A_expected.setZero();
+  A_expected.block<2, 2>(0, 0) = -Eigen::Matrix2d::Identity();
+  A_expected.block<2, 2>(0, 2) = A;
+  A_expected.block<2, 2>(2, 0) = -Eigen::Matrix2d::Identity();
+  A_expected.block<2, 2>(2, 2) = -A;
+
+  // Expected lower bound is -∞, expected upper bound is [-b; b].
+  Eigen::Vector4d lb_expected =
+      Vector4d::Constant(-std::numeric_limits<double>::infinity());
+  Eigen::Vector4d ub_expected;
+  ub_expected << -b(0), -b(1), b(0), b(1);
+
+  EXPECT_TRUE(CompareMatrices(A_constraint, A_expected));
+  EXPECT_TRUE(CompareMatrices(lb_constraint, lb_expected));
+  EXPECT_TRUE(CompareMatrices(ub_constraint, ub_expected));
+}
+
 // Helper function for ArePolynomialIsomorphic.
 //
 // Transforms a monomial into an isomorphic one up to a given map (Variable::Id

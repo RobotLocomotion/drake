@@ -1233,6 +1233,21 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
+   * Adds an L1 norm cost min |Ax+b|₁ as a linear cost min Σᵢsᵢ on the slack
+   * variables sᵢ, together with the constraint s ≥ |Ax+b|, which itself is
+   * written s ≥ Ax+b and s ≥ -(Ax+b).
+   * @return (s, linear_cost, linear_constraint). `s` is the vector of slack
+   * variables, `linear_cost` is the cost on `s`, and `linear_constraint` is the
+   * constraint encoding s ≥ Ax+b and s ≥ -(Ax+b).
+   */
+  std::tuple<VectorX<symbolic::Variable>, Binding<LinearCost>,
+             Binding<LinearConstraint>>
+  AddL1NormCostUsingSlackVariables(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b,
+      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
    * Adds a cost term in the polynomial form.
    * @param e A symbolic expression in the polynomial form.
    * @return The newly created cost and the bound variables.
