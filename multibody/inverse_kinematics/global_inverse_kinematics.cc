@@ -7,6 +7,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/scope_exit.h"
+#include "drake/common/symbolic/decompose.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -929,15 +930,38 @@ void GlobalInverseKinematics::AddJointCenteringCost(BodyIndex body_index, double
 
         for (const auto& v: v_samples) {
           Eigen::Matrix<Expression, 3, 1> unit_vector_difference = 
-                  R_WB_[body_index] * X_CJc.rotation().matrix() * v -
-                  R_WB_[parent_idx] * X_PJp.rotation().matrix() *
-                      rotmat_joint_offset * v;
-          for (int i = 0; i < 3; ++i) {
-            auto s = prog_.NewContinuousVariables<1>("s")[0];
-            prog_.AddLinearConstraint(s >= unit_vector_difference[i]);
-            prog_.AddLinearConstraint(s >= -unit_vector_difference[i]);
-            prog_.AddLinearCost(weight * s);
+                  weight * (R_WB_[body_index] * X_CJc.rotation().matrix() * v -
+                                    R_WB_[parent_idx] * X_PJp.rotation().matrix() *
+                                        rotmat_joint_offset * v);
+
+          // for (int i = 0; i < 3; ++i) {
+          //   auto s = prog_.NewContinuousVariables<1>("s")[0];
+          //   prog_.AddLinearConstraint(s >= unit_vector_difference[i]);
+          //   prog_.AddLinearConstraint(s >= -unit_vector_difference[i]);
+          //   prog_.AddLinearCost(weight * s);
+          // }
+
+          // Get the union of all variables in all expressions
+          symbolic::Variables var_set;
+          for (int i = 0; i < unit_vector_difference.size(); ++i) {
+              var_set += unit_vector_difference[i].GetVariables();
           }
+          solvers::VectorXDecisionVariable vars(var_set.size());
+          int count = 0;
+          for (const auto& var : var_set) {
+              vars[count++] = var;
+          }
+
+          // Decompose unit_vector_difference as an affine expression Ax+b.
+          Eigen::MatrixXd A(3, vars.size());
+          Eigen::VectorXd b(3);
+          symbolic::DecomposeAffineExpressions(unit_vector_difference, vars, &A, &b);
+          // Sign flip is necessary since this method adds a cost on Ax-b.
+          // prog_.Add2NormSquaredCost(A, -b, vars);
+
+          // prog_.AddL2NormCost(A, b, vars);
+
+          prog_.AddL2NormCostUsingConicContraint(A, b, vars);
         }
       } else {
         // TODO(hongkai.dai): add prismatic and helical joint.
