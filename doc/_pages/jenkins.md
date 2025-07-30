@@ -10,7 +10,6 @@ builds.
 To allow the pull request to be tested, a member of the RobotLocomotion
 organization may comment:
 
-* ``@drake-jenkins-bot ok to test`` to accept this pull request for testing.
 * ``@drake-jenkins-bot test this please`` for a one time test run.
 
 If the build fails for other various reasons you can rebuild:
