@@ -2,38 +2,6 @@
 title: Continuous Integration with GitHub Pull Requests
 ---
 
-When a new pull request is opened in the project and the author of the pull
-request is not a member of the RobotLocomotion GitHub organization, the Jenkins
-GitHub Pull Request Builder @drake-jenkins-bot will not automatically schedule
-builds.
-
-To allow the pull request to be tested, a member of the RobotLocomotion
-organization may comment:
-
-* ``@drake-jenkins-bot ok to test`` to accept this pull request for testing.
-* ``@drake-jenkins-bot test this please`` for a one time test run.
-
-If the build fails for other various reasons you can rebuild:
-
-* ``@drake-jenkins-bot retest this please`` to start a new build.
-
-You can also view the [Jenkins UI](https://drake-jenkins.csail.mit.edu/)
-directly.
-
-# Rebuilding via Reviewable
-
-When posting a ``@drake-jenkins-bot ... please`` comment in Reviewable,
-never use the large green "Publish" button in the upper right corner.
-
-Instead, write the bot comment in the "Review discussion" box immediately below
-the "File Matrix" widget **and** use the "single message send" button to post
-it, in the lower-right corner of the "Review discussion" box.
-
-![Jenkins Bot Reviewable Comment](/images/jenkins_bot_reviewable_comment.png)
-
-(For details, see
-[Reviewable#576](https://github.com/Reviewable/Reviewable/issues/576).)
-
 # Scheduling an On-Demand Build
 
 There are a number of Jenkins builds that do not normally run pre-merge, but do
@@ -61,10 +29,29 @@ set of continuous and nightly production jobs is available
 [here](https://github.com/RobotLocomotion/drake/blob/jenkins-jobs-experimental/request-jobs-experimental.txt).
 Both provisioned and unprovisioned jobs are listed.
 
+To rerun all regular builds on an open pull request (if the previous build(s)
+failed for various reasons), comment:
+
+* ``@drake-jenkins-bot retest this please``
+
+## Rebuilding via Reviewable
+
+When posting a ``@drake-jenkins-bot ... please`` comment in Reviewable,
+never use the large green "Publish" button in the upper right corner.
+
+Instead, write the bot comment in the "Review discussion" box immediately below
+the "File Matrix" widget **and** use the "single message send" button to post
+it, in the lower-right corner of the "Review discussion" box.
+
+![Jenkins Bot Reviewable Comment](/images/jenkins_bot_reviewable_comment.png)
+
+(For details, see
+[Reviewable#576](https://github.com/Reviewable/Reviewable/issues/576).)
+
 ## Scheduling Builds via the Jenkins User Interface
 
-Alternatively, to schedule a build of an open pull request in the
-``RobotLocomotion/drake`` repository:
+To schedule a build of an open pull request in the ``RobotLocomotion/drake``
+repository from the [Jenkins UI](https://drake-jenkins.csail.mit.edu/),
 
 1. **Sign in** to [Jenkins](https://drake-jenkins.csail.mit.edu/) using GitHub
    OAuth. (Make sure that you see a profile picture in the upper-right corner,
@@ -86,6 +73,20 @@ To help identify the on-demand build you want to run, you can consult the lists
 of [continuous](https://drake-jenkins.csail.mit.edu/view/Continuous/), and
 [nightly](https://drake-jenkins.csail.mit.edu/view/Nightly/)
 but you should not schedule continuous or nightly builds directly.
+
+## Testing Pull Requests from External Contributors
+
+When a new pull request is opened in the project and the author of the pull
+request is not a member of the RobotLocomotion GitHub organization, Jenkins
+will not automatically schedule builds. To test the pull request, a member
+of the RobotLocomotion organization should comment:
+
+* ``@drake-jenkins-bot test this please`` for a one time test run.
+* ``@drake-jenkins-bot retest this please`` to start a new build, if the
+previous build fails for various reasons.
+
+You can also view the [Jenkins UI](https://drake-jenkins.csail.mit.edu/)
+directly.
 
 ## Updating Installation Prerequisites
 
