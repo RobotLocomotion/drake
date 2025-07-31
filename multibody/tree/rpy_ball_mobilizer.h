@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <string>
-#include <tuple>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -260,12 +259,18 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   void DoCalcNplusDotMatrix(const systems::Context<T>& context,
                             EigenPtr<MatrixX<T>> NplusDot) const final;
 
-  // Struct that helps efficiently group sine and cosine calculations.
+  // Struct that consolidates sine and cosine calculations to facilitate their
+  // reuse in other functions. This struct speeds computation by significantly
+  // reducing the need to inefficiently recalculate the same sines and cosines.
+  // Note: This struct is exempted from the styleguide's prohibition of related
+  // members in a struct by virtue of it being strictly internal (the invariants
+  // are maintained internally like private members of the class).
   struct SinCosPitchYaw {
     T sin_pitch, cos_pitch, sin_yaw, cos_yaw;
   };
 
-  // Return a struct with calculated sin(pitch), cos(pitch), sin(yaw), cos(yaw).
+  // Returns a struct with calculated sin(pitch), cos(pitch), sin(yaw),
+  // cos(yaw).
   SinCosPitchYaw CalcSinPitchCosPitchSinYawCosYaw(
       const systems::Context<T>& context) const;
 
@@ -293,7 +298,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   // Implements DoMapVelocityToQDot() with pre-computed values of
   // sin(pitch), sin(yaw), cos(yaw), 1/cos(pitch).
-  void DoMapVelocityToQDotImpl(const SinCosPitchYaw& sinCosPitchYaw,
+  void DoMapVelocityToQDotImpl(const SinCosPitchYaw& sin_cos_pitch_yaw,
                                const T& cpi,
                                const Eigen::Ref<const VectorX<T>>& v,
                                EigenPtr<VectorX<T>> qdot) const;
@@ -329,9 +334,12 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   // Calculate the term Ṅ⁺(q,q̇)⋅q̇ which appears in v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
   Vector3<T> CalcAccelerationBiasForQDDot(const systems::Context<T>& context,
                                           const char* function_name) const;
+
+  // Implements CalcAccelerationBiasForQDDot() with pre-computed values of
+  // sin(pitch), cos(pitch), sin(yaw), cos(yaw), 1/cos(pitch).
   Vector3<T> CalcAccelerationBiasForQDDotImpl(
-      const systems::Context<T>& context, const SinCosPitchYaw& sinCosPitchYaw,
-      const T& cpi) const;
+      const systems::Context<T>& context,
+      const SinCosPitchYaw& sin_cos_pitch_yaw, const T& cpi) const;
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
