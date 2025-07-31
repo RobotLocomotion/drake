@@ -261,7 +261,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   // Struct that consolidates sine and cosine calculations to facilitate their
   // reuse in other functions. This struct speeds computation by significantly
-  // reducing the need to inefficiently recalculate the same sines and cosines.
+  // reducing the recalculation of the same sines and cosines.
   // Note: This struct is exempted from the styleguide's prohibition of related
   // members in a struct by virtue of it being strictly internal (the invariants
   // are maintained internally like private members of the class).
