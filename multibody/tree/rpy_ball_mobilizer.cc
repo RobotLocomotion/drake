@@ -132,22 +132,6 @@ void RpyBallMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
-[[noreturn]] void RpyBallMobilizer<T>::ThrowSinceCosPitchNearZero(
-    const systems::Context<T>& context, const char* function_name) const {
-  const Vector3<T> angles = get_angles(context);
-  const T& pitch_angle = angles[1];
-  throw std::runtime_error(fmt::format(
-      "{}(): The RpyBallMobilizer (implementing a BallRpyJoint) between "
-      "body {} and body {} has reached a singularity. This occurs when the "
-      "pitch angle takes values near π/2 + kπ, ∀ k ∈ ℤ. At the current "
-      "configuration, we have pitch = {} radians. Drake does not yet support "
-      "a comparable joint using quaternions, but the feature request is "
-      "tracked in https://github.com/RobotLocomotion/drake/issues/12404.",
-      function_name, this->inboard_body().name(), this->outboard_body().name(),
-      pitch_angle));
-}
-
-template <typename T>
 auto RpyBallMobilizer<T>::CalcSinPitchCosPitchSinYawCosYaw(
     const systems::Context<T>& context) const -> SinCosPitchYaw {
   using std::sin, std::cos;
@@ -309,6 +293,17 @@ void RpyBallMobilizer<T>::DoCalcNplusDotMatrix(
 }
 
 template <typename T>
+void RpyBallMobilizer<T>::DoMapVelocityToQDot(
+    const systems::Context<T>& context, const Eigen::Ref<const VectorX<T>>& v,
+    EigenPtr<VectorX<T>> qdot) const {
+  const SinCosPitchYaw sin_cos_pitch_yaw =
+      CalcSinPitchCosPitchSinYawCosYaw(context);
+  const T& cos_pitch = sin_cos_pitch_yaw.cos_pitch;
+  ThrowIfCosPitchNearZero(context, cos_pitch, "MapVelocityToQDot");
+  DoMapVelocityToQDotImpl(sin_cos_pitch_yaw, 1.0 / cos_pitch, v, qdot);
+}
+
+template <typename T>
 void RpyBallMobilizer<T>::DoMapVelocityToQDotImpl(
     const SinCosPitchYaw& sin_cos_pitch_yaw, const T& cpi,
     const Eigen::Ref<const VectorX<T>>& v, EigenPtr<VectorX<T>> qdot) const {
@@ -354,17 +349,6 @@ void RpyBallMobilizer<T>::DoMapVelocityToQDotImpl(
   const T& w2 = v[2];
   const T rdot = (cy * w0 + sy * w1) * cpi;
   *qdot = Vector3<T>(rdot, -sy * w0 + cy * w1, sp * rdot + w2);
-}
-
-template <typename T>
-void RpyBallMobilizer<T>::DoMapVelocityToQDot(
-    const systems::Context<T>& context, const Eigen::Ref<const VectorX<T>>& v,
-    EigenPtr<VectorX<T>> qdot) const {
-  const SinCosPitchYaw sin_cos_pitch_yaw =
-      CalcSinPitchCosPitchSinYawCosYaw(context);
-  const T& cos_pitch = sin_cos_pitch_yaw.cos_pitch;
-  ThrowIfCosPitchNearZero(context, cos_pitch, "MapVelocityToQDot");
-  DoMapVelocityToQDotImpl(sin_cos_pitch_yaw, 1.0 / cos_pitch, v, qdot);
 }
 
 template <typename T>
@@ -421,6 +405,17 @@ RpyBallMobilizer<T>::TemplatedDoCloneToScalar(
 }
 
 template <typename T>
+Vector3<T> RpyBallMobilizer<T>::CalcAccelerationBiasForQDDot(
+    const systems::Context<T>& context, const char* function_name) const {
+  const SinCosPitchYaw sin_cos_pitch_yaw =
+      CalcSinPitchCosPitchSinYawCosYaw(context);
+  const T& cos_pitch = sin_cos_pitch_yaw.cos_pitch;
+  ThrowIfCosPitchNearZero(context, cos_pitch, function_name);
+  return CalcAccelerationBiasForQDDotImpl(context, sin_cos_pitch_yaw,
+                                          1.0 / cos_pitch);
+}
+
+template <typename T>
 Vector3<T> RpyBallMobilizer<T>::CalcAccelerationBiasForQDDotImpl(
     const systems::Context<T>& context, const SinCosPitchYaw& sin_cos_pitch_yaw,
     const T& cpi) const {
@@ -443,17 +438,6 @@ Vector3<T> RpyBallMobilizer<T>::CalcAccelerationBiasForQDDotImpl(
   return Vector3<T>(-cy * pdot_ydot - cy * sp_rdot_pdot - sy * cp_rdot_ydot,
                     -sy * pdot_ydot - sy * sp_rdot_pdot + cy * cp_rdot_ydot,
                     -cp * rdot_pdot);
-}
-
-template <typename T>
-Vector3<T> RpyBallMobilizer<T>::CalcAccelerationBiasForQDDot(
-    const systems::Context<T>& context, const char* function_name) const {
-  const SinCosPitchYaw sin_cos_pitch_yaw =
-      CalcSinPitchCosPitchSinYawCosYaw(context);
-  const T& cos_pitch = sin_cos_pitch_yaw.cos_pitch;
-  ThrowIfCosPitchNearZero(context, cos_pitch, function_name);
-  return CalcAccelerationBiasForQDDotImpl(context, sin_cos_pitch_yaw,
-                                          1.0 / cos_pitch);
 }
 
 template <typename T>
@@ -519,6 +503,22 @@ void RpyBallMobilizer<T>::DoMapQDDotToAcceleration(
 
   // Sum the previous terms to form v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
   *vdot += NplusDot_times_Qdot;
+}
+
+template <typename T>
+[[noreturn]] void RpyBallMobilizer<T>::ThrowSinceCosPitchNearZero(
+    const systems::Context<T>& context, const char* function_name) const {
+  const Vector3<T> angles = get_angles(context);
+  const T& pitch_angle = angles[1];
+  throw std::runtime_error(fmt::format(
+      "{}(): The RpyBallMobilizer (implementing a BallRpyJoint) between "
+      "body {} and body {} has reached a singularity. This occurs when the "
+      "pitch angle takes values near π/2 + kπ, ∀ k ∈ ℤ. At the current "
+      "configuration, we have pitch = {} radians. Drake does not yet support "
+      "a comparable joint using quaternions, but the feature request is "
+      "tracked in https://github.com/RobotLocomotion/drake/issues/12404.",
+      function_name, this->inboard_body().name(), this->outboard_body().name(),
+      pitch_angle));
 }
 
 template <typename T>
