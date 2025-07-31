@@ -247,18 +247,6 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   bool is_velocity_equal_to_qdot() const override { return false; }
 
  private:
-  void DoCalcNMatrix(const systems::Context<T>& context,
-                     EigenPtr<MatrixX<T>> N) const final;
-
-  void DoCalcNplusMatrix(const systems::Context<T>& context,
-                         EigenPtr<MatrixX<T>> Nplus) const final;
-
-  void DoCalcNDotMatrix(const systems::Context<T>& context,
-                        EigenPtr<MatrixX<T>> Ndot) const final;
-
-  void DoCalcNplusDotMatrix(const systems::Context<T>& context,
-                            EigenPtr<MatrixX<T>> NplusDot) const final;
-
   // Struct that consolidates sine and cosine calculations to facilitate their
   // reuse in other functions. This struct speeds computation by significantly
   // reducing the recalculation of the same sines and cosines.
@@ -273,6 +261,18 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   // cos(yaw).
   SinCosPitchYaw CalcSinPitchCosPitchSinYawCosYaw(
       const systems::Context<T>& context) const;
+
+  void DoCalcNMatrix(const systems::Context<T>& context,
+                     EigenPtr<MatrixX<T>> N) const final;
+
+  void DoCalcNplusMatrix(const systems::Context<T>& context,
+                         EigenPtr<MatrixX<T>> Nplus) const final;
+
+  void DoCalcNDotMatrix(const systems::Context<T>& context,
+                        EigenPtr<MatrixX<T>> Ndot) const final;
+
+  void DoCalcNplusDotMatrix(const systems::Context<T>& context,
+                            EigenPtr<MatrixX<T>> NplusDot) const final;
 
   // Maps the generalized velocity v, which corresponds to the angular velocity
   // w_FM, to time derivatives of roll-pitch-yaw angles θ₀, θ₁, θ₂ in qdot.
@@ -341,15 +341,6 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
       const systems::Context<T>& context,
       const SinCosPitchYaw& sin_cos_pitch_yaw, const T& cpi) const;
 
-  std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const override;
-
-  std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const override;
-
-  std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
-      const MultibodyTree<symbolic::Expression>& tree_clone) const override;
-
   // Certain roll pitch yaw calculations (e.g., calculating the N(q) matrix)
   // have a singularity (divide-by-zero error) when cos(pitch) ≈ 0.
   // The tolerance 1.0e-3 is used to test whether the cosine of the pitch angle
@@ -366,6 +357,15 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   // Ideally, ThrowIfCosPitchNearZero() is inlined by separating this function.
   [[noreturn]] void ThrowSinceCosPitchNearZero(
       const systems::Context<T>& context, const char* function_name) const;
+
+  std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
+      const MultibodyTree<double>& tree_clone) const override;
+
+  std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
+      const MultibodyTree<AutoDiffXd>& tree_clone) const override;
+
+  std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
+      const MultibodyTree<symbolic::Expression>& tree_clone) const override;
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
