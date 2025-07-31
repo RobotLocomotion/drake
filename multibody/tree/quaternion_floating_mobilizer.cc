@@ -322,16 +322,6 @@ Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcLMatrix(
 }
 
 template <typename T>
-Eigen::Matrix<T, 4, 3>
-QuaternionFloatingMobilizer<T>::AngularVelocityToQuaternionRateMatrix(
-    const Quaternion<T>& q_FM) {
-  // With L given by CalcLMatrix we have:
-  // N(q) = L(q_FM/2)
-  return CalcLMatrix(
-      {q_FM.w() / 2.0, q_FM.x() / 2.0, q_FM.y() / 2.0, q_FM.z() / 2.0});
-}
-
-template <typename T>
 Eigen::Matrix<T, 3, 4>
 QuaternionFloatingMobilizer<T>::QuaternionRateToAngularVelocityMatrix(
     const Quaternion<T>& q_FM) {
@@ -483,6 +473,31 @@ void QuaternionFloatingMobilizer<T>::DoMapQDotToVelocity(
       QuaternionRateToAngularVelocityMatrix(q_FM) * qdot.template head<4>();
   // Translational component, v_WB = ṗ_WB:
   v->template tail<3>() = qdot.template tail<3>();
+}
+
+template <typename T>
+void QuaternionFloatingMobilizer<T>::DoMapAccelerationToQDDot(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& vdot,
+    EigenPtr<VectorX<T>> qddot) const {
+  // This function maps vdot to qddot by calculating q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇.
+  // It first calculates the rotational parts, then the translational part.
+  //
+  // Calculate the 2nd-derivative of the quaternion q_FM = [qw, qx, qy, qz]ᵀ.
+  // q̈_FM = Nᵣ(q) [ẇx, ẇy, ẇz]ᵀ - 0.25 ω² q_FM, where ω² = |w_FM|².
+  // Formulas and proofs in Section 9.3 of [Mitiguy, August 2019].
+  // [Mitiguy, August 2019] Mitiguy, P. Advanced Dynamics & Motion Simulation.
+  //                        Available at www.MotionGenesis.com
+  const Quaternion<T> q_FM = get_quaternion(context);
+  const Vector3<T> w_FM_F = get_angular_velocity(context);
+  const T w_squared_over_four = 0.25 * w_FM_F.squaredNorm();
+  qddot->template head<4>() =
+      AngularVelocityToQuaternionRateMatrix(q_FM) * vdot.template head<3>() -
+      w_squared_over_four * Vector4<T>(q_FM.w(), q_FM.x(), q_FM.y(), q_FM.z());
+
+  // Calculate the 2nd-derivtive of the position vector p_FoMo_F = [x, y, z]ᵀ.
+  // [ẍ, ÿ, z̈]ᵀ = [v̇x, v̇y, v̇z]ᵀ.
+  qddot->template tail<3>() = vdot.template tail<3>();
 }
 
 template <typename T>
