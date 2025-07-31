@@ -107,26 +107,6 @@ it's actually used.
  VTK_ABI_NAMESPACE_BEGIN
  vtkAMRBox::vtkAMRBox()
 
---- Common/DataModel/vtkAMRInformation.cxx
-+++ Common/DataModel/vtkAMRInformation.cxx
-@@ -10,6 +10,7 @@
- #include "vtkStructuredGrid.h"
- #include "vtkUnsignedIntArray.h"
- #include <cassert>
-+#include <iostream>
- #include <set>
- 
- VTK_ABI_NAMESPACE_BEGIN
-@@ -293,7 +294,7 @@ unsigned int vtkAMRInformation::GetNumberOfDataSets(unsigned int level) const
- {
-   if (level >= this->GetNumberOfLevels())
-   {
--    cerr << "WARNING: No data set at this level" << endl;
-+    std::cerr << "WARNING: No data set at this level" << endl;
-     return 0;
-   }
-   return this->NumBlocks[level + 1] - this->NumBlocks[level];
-
 --- Common/DataModel/vtkBSPCuts.cxx
 +++ Common/DataModel/vtkBSPCuts.cxx
 @@ -6,6 +6,10 @@
@@ -232,6 +212,17 @@ it's actually used.
  // Dumps insertion cavity when the cavity is invalid.
  // #define DEBUG_vtkOrderedTriangulator
  
+
+--- Common/DataModel/vtkOverlappingAMRMetaData.cxx
++++ Common/DataModel/vtkOverlappingAMRMetaData.cxx
+@@ -8,6 +8,7 @@
+ #include "vtkObjectFactory.h"
+ #include "vtkStructuredData.h"
+ 
++#include <iostream>
+ #include <set>
+ 
+ VTK_ABI_NAMESPACE_BEGIN
 
 --- Common/DataModel/vtkPixelExtent.h
 +++ Common/DataModel/vtkPixelExtent.h

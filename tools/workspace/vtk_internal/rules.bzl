@@ -511,26 +511,32 @@ def generate_common_core_array_instantiations():
         "float",
         "double",
     ):
+        snake = ctype.replace(" ", "_")
+        bulk_srcs = []
         for stem in (
-            "vtkAffineArrayInstantiate",
             "vtkAffineImplicitBackendInstantiate",
-            "vtkCompositeArrayInstantiate",
             "vtkCompositeImplicitBackendInstantiate",
-            "vtkConstantArrayInstantiate",
             "vtkConstantImplicitBackendInstantiate",
-            "vtkIndexedArrayInstantiate",
             "vtkIndexedImplicitBackendInstantiate",
+            "vtkStructuredPointBackendInstantiate",
+            "vtkAffineArrayInstantiate",
+            "vtkCompositeArrayInstantiate",
+            "vtkConstantArrayInstantiate",
+            "vtkIndexedArrayInstantiate",
             "vtkSOADataArrayTemplateInstantiate",
             "vtkStdFunctionArrayInstantiate",
-            "vtkStructuredPointBackendInstantiate",
             "vtkStructuredPointArrayInstantiate",
             "vtkTypedDataArrayInstantiate",
+            "vtkTypeArrayInstantiate",
+            # This one is only instantiated iff "long" is part of the ctype.
             "vtkGenericDataArrayValueRangeInstantiate",
         ):
             if "Generic" in stem and "long" not in ctype:
                 continue
-            snake = ctype.replace(" ", "_")
-            out = "Common/Core/{stem}_{snake}.cxx".format(
+
+            # The CMakeLists.txt generates `*.cxx` files, but we don't want
+            # Bazel to compile them so we use `*.inc` here.
+            out = "Common/Core/{stem}_{snake}.inc".format(
                 stem = stem,
                 snake = snake,
             )
@@ -543,7 +549,22 @@ def generate_common_core_array_instantiations():
                 ],
                 strict = True,
             )
+            bulk_srcs.append(out)
             result.append(out)
+        out = "Common/Core/vtkArrayBulkInstantiate_" + snake + ".cxx"
+        cmake_configure_files(
+            name = "_genrule_bulk_srcs_" + snake,
+            srcs = ["Common/Core/vtkArrayBulkInstantiate.cxx.in"],
+            outs = [out],
+            defines = [
+                "BULK_INSTANTIATION_SOURCES=" + "\n".join([
+                    "#include \"{}\"".format(x)
+                    for x in bulk_srcs
+                ]),
+            ],
+            strict = True,
+        )
+        result.append(out)
     native.filegroup(
         name = name,
         srcs = result,
