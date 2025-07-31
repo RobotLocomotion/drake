@@ -312,6 +312,16 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
                            const Eigen::Ref<const VectorX<T>>& qdot,
                            EigenPtr<VectorX<T>> v) const final;
 
+  void DoMapAccelerationToQDDot(const systems::Context<T>& context,
+                                const Eigen::Ref<const VectorX<T>>& vdot,
+                                EigenPtr<VectorX<T>> qddot) const final;
+#if 0
+  // Maps qddot to vdot by calculating v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
+  void DoMapQDDotToAcceleration(const systems::Context<T>& context,
+                                const Eigen::Ref<const VectorX<T>>& qddot,
+                                EigenPtr<VectorX<T>> vdot) const final;
+#endif
+
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const final;
 
@@ -324,12 +334,23 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
  private:
   // Helper to compute the kinematic map N(q). L ∈ ℝ⁴ˣ³.
   static Eigen::Matrix<T, 4, 3> CalcLMatrix(const Quaternion<T>& q);
-  // Helper to compute the kinematic map N(q) from angular velocity to
-  // quaternion time derivative for which q̇_WB = N(q)⋅w_WB.
-  // With L given by CalcLMatrix we have:
-  // N(q) = L(q_FM/2)
+
+  // Returns the 4x3 Nᵣ(q) matrix that relates q̇_FM = Nᵣ(q) * w_FM_F, where
+  // q̇_FM = [q̇w, q̇x, q̇y, q̇z]ᵀ (time-derivative of quaternion for frames F and M)
+  // w_FM_F = [ωx, ωy, ωz]ᵀ (frame M's angular velocity in F, expressed in F).
+  //
+  // ⌈ q̇w ⌉       ⌈ -qx   -qy   -qz ⌉ ⌈ ωx ⌉
+  // | q̇x | = 0.5 |  qw    qz   -qy | | ωy |
+  // | q̇y |       | -qz    qw    qx | ⌊ ωz ⌋
+  // ⌊ q̇z ⌋       ⌊  qy   -qx    qw ⌋
+  //
+  // Herein L(q_FM) is the 4x3 matrix shown above, so Nᵣ(q) = 0.5 * L(q_FM).
+  // Due to the linear nature of L(q_FM), 0.5 * L(q_FM) = L(0.5 * q_FM).
   static Eigen::Matrix<T, 4, 3> AngularVelocityToQuaternionRateMatrix(
-      const Quaternion<T>& q);
+      const Quaternion<T>& q_FM) {
+    return CalcLMatrix(
+        {0.5 * q_FM.w(), 0.5 * q_FM.x(), 0.5 * q_FM.y(), 0.5 * q_FM.z()});
+  }
 
   // Helper to compute the kinematic map N⁺(q) from quaternion time derivative
   // to angular velocity for which w_WB = N⁺(q)⋅q̇_WB.
