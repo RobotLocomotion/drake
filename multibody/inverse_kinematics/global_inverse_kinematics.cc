@@ -165,8 +165,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
               static_cast<const WeldJoint<double>*>(joint);
 
           const RigidTransformd X_JpJc = weld_joint->X_FM();
-          const RigidTransformd X_PC =
-              X_PJp * X_JpJc * X_CJc.inverse();
+          const RigidTransformd X_PC = X_PJp * X_JpJc * X_CJc.inverse();
           // Fixed to the parent body.
 
           // The position can be computed from the parent body pose.
@@ -405,10 +404,9 @@ GlobalInverseKinematics::AddWorldPositionConstraint(
 
 solvers::Binding<solvers::LinearConstraint>
 GlobalInverseKinematics::AddWorldRelativePositionConstraint(
-    BodyIndex body_idx_B, const Eigen::Vector3d& p_BQ,
-    BodyIndex body_idx_A, const Eigen::Vector3d& p_AP,
-    const Eigen::Vector3d& box_lb_F, const Eigen::Vector3d& box_ub_F,
-    const RigidTransformd& X_WF) {
+    BodyIndex body_idx_B, const Eigen::Vector3d& p_BQ, BodyIndex body_idx_A,
+    const Eigen::Vector3d& p_AP, const Eigen::Vector3d& box_lb_F,
+    const Eigen::Vector3d& box_ub_F, const RigidTransformd& X_WF) {
   if (body_idx_B >= plant_.num_bodies() || body_idx_B <= 0) {
     throw std::runtime_error("body index out of range.");
   }
@@ -852,10 +850,14 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
   }
 }
 
-void GlobalInverseKinematics::AddJointCenteringCost(BodyIndex body_index, double nominal_value, double weight) {
+void GlobalInverseKinematics::AddJointCenteringCost(BodyIndex body_index,
+                                                    double nominal_value,
+                                                    double weight, int norm,
+                                                    bool squared) {
   if (plant_.get_body(body_index).is_floating()) {
     throw std::runtime_error(
-        "The body is floating, do not use AddJointCenteringCost(). Use AddPostureCost() instead.");
+        "The body is floating, do not use AddJointCenteringCost(). Use "
+        "AddPostureCost() instead.");
   }
   const Joint<double>* joint{nullptr};
   for (JointIndex joint_index : plant_.GetJointIndices()) {
@@ -924,44 +926,49 @@ void GlobalInverseKinematics::AddJointCenteringCost(BodyIndex body_index, double
 
         // rotmat_joint_offset is R(k, nominal) explained above.
         const Matrix3d rotmat_joint_offset =
-            Eigen::AngleAxisd(nominal_value,
-                              axis_F)
-                .toRotationMatrix();
+            Eigen::AngleAxisd(nominal_value, axis_F).toRotationMatrix();
 
-        for (const auto& v: v_samples) {
-          Eigen::Matrix<Expression, 3, 1> unit_vector_difference = 
-                  weight * (R_WB_[body_index] * X_CJc.rotation().matrix() * v -
-                                    R_WB_[parent_idx] * X_PJp.rotation().matrix() *
-                                        rotmat_joint_offset * v);
+        for (const auto& v : v_samples) {
+          Eigen::Matrix<Expression, 3, 1> unit_vector_difference =
+              weight * (R_WB_[body_index] * X_CJc.rotation().matrix() * v -
+                        R_WB_[parent_idx] * X_PJp.rotation().matrix() *
+                            rotmat_joint_offset * v);
 
-          // for (int i = 0; i < 3; ++i) {
-          //   auto s = prog_.NewContinuousVariables<1>("s")[0];
-          //   prog_.AddLinearConstraint(s >= unit_vector_difference[i]);
-          //   prog_.AddLinearConstraint(s >= -unit_vector_difference[i]);
-          //   prog_.AddLinearCost(weight * s);
-          // }
-
-          // Get the union of all variables in all expressions
-          symbolic::Variables var_set;
-          for (int i = 0; i < unit_vector_difference.size(); ++i) {
+          if (norm == 1) {
+            for (int i = 0; i < 3; ++i) {
+              auto s = prog_.NewContinuousVariables<1>("s")[0];
+              prog_.AddLinearConstraint(s >= unit_vector_difference[i]);
+              prog_.AddLinearConstraint(s >= -unit_vector_difference[i]);
+              prog_.AddLinearCost(weight * s);
+            }
+          } else if (norm == 2) {
+            // Get the union of all variables in all expressions
+            symbolic::Variables var_set;
+            for (int i = 0; i < unit_vector_difference.size(); ++i) {
               var_set += unit_vector_difference[i].GetVariables();
-          }
-          solvers::VectorXDecisionVariable vars(var_set.size());
-          int count = 0;
-          for (const auto& var : var_set) {
+            }
+            solvers::VectorXDecisionVariable vars(var_set.size());
+            int count = 0;
+            for (const auto& var : var_set) {
               vars[count++] = var;
+            }
+
+            // Decompose unit_vector_difference as an affine expression Ax+b.
+            Eigen::MatrixXd A(3, vars.size());
+            Eigen::VectorXd b(3);
+            symbolic::DecomposeAffineExpressions(unit_vector_difference, vars,
+                                                 &A, &b);
+
+            if (squared) {
+              // Sign flip is necessary since this method adds a cost on Ax-b.
+              prog_.Add2NormSquaredCost(A, -b, vars);
+            } else {
+              // prog_.AddL2NormCost(A, b, vars);
+              prog_.AddL2NormCostUsingConicConstraint(A, b, vars);
+            }
+          } else {
+            throw std::runtime_error("Unsupported norm! Must be 1 or 2.");
           }
-
-          // Decompose unit_vector_difference as an affine expression Ax+b.
-          Eigen::MatrixXd A(3, vars.size());
-          Eigen::VectorXd b(3);
-          symbolic::DecomposeAffineExpressions(unit_vector_difference, vars, &A, &b);
-          // Sign flip is necessary since this method adds a cost on Ax-b.
-          // prog_.Add2NormSquaredCost(A, -b, vars);
-
-          // prog_.AddL2NormCost(A, b, vars);
-
-          prog_.AddL2NormCostUsingConicContraint(A, b, vars);
         }
       } else {
         // TODO(hongkai.dai): add prismatic and helical joint.
