@@ -51,7 +51,9 @@ drake_cc_library(
         "//geometry:meshcat",
         "//geometry/optimization:convex_set",
         "//multibody/rational:rational_forward_kinematics",
+        "//planning:collision_checker",
         "//solvers:mathematical_program",
+        "//solvers:solve",
     ],
     implementation_deps = [
         "@common_robotics_utilities_internal//:common_robotics_utilities",
