@@ -119,23 +119,32 @@ TEST_F(DoublePendulum, IrisNp2Test) {
 }
 
 TEST_F(DoublePendulum, PositivePadding) {
-  IrisNp2Options options;
-  auto scene_graph_checker =
-      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
-  ASSERT_TRUE(scene_graph_checker != nullptr);
+  std::vector<IrisNp2Options> options_to_try(3);
+  options_to_try[0].sampling_strategy = IrisNp2SamplingStrategy::kGreedySampler;
+  options_to_try[1].sampling_strategy = IrisNp2SamplingStrategy::kRaySampler;
+  options_to_try[2].sampling_strategy = IrisNp2SamplingStrategy::kRaySampler;
+  options_to_try[2].ray_sampler_options.only_walk_toward_collisions = true;
+  for (int i = 0; i < ssize(options_to_try); ++i) {
+    meshcat_->Delete();
+    auto& options = options_to_try[i];
+    options.sampled_iris_options.meshcat = meshcat_;
+    auto scene_graph_checker =
+        dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+    ASSERT_TRUE(scene_graph_checker != nullptr);
 
-  const double padding = 0.5;
-  scene_graph_checker->SetPaddingAllRobotEnvironmentPairs(padding);
-  scene_graph_checker->SetPaddingAllRobotRobotPairs(padding);
-  HPolyhedron region =
-      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
+    const double padding = 0.5;
+    scene_graph_checker->SetPaddingAllRobotEnvironmentPairs(padding);
+    scene_graph_checker->SetPaddingAllRobotRobotPairs(padding);
+    HPolyhedron region =
+        IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
 
-  EXPECT_TRUE(region.PointInSet(Vector2d{.2, 0.0}));
-  EXPECT_FALSE(region.PointInSet(Vector2d{.3, 0.0}));
-  EXPECT_TRUE(region.PointInSet(Vector2d{-.2, 0.0}));
-  EXPECT_FALSE(region.PointInSet(Vector2d{-.3, 0.0}));
+    EXPECT_TRUE(region.PointInSet(Vector2d{.2, 0.0}));
+    EXPECT_FALSE(region.PointInSet(Vector2d{.3, 0.0}));
+    EXPECT_TRUE(region.PointInSet(Vector2d{-.2, 0.0}));
+    EXPECT_FALSE(region.PointInSet(Vector2d{-.3, 0.0}));
 
-  PlotEnvironmentAndRegion(region);
+    PlotEnvironmentAndRegion(region);
+  }
 }
 
 // Check that we can filter out certain collisions.
@@ -283,71 +292,90 @@ TEST_F(BlockOnGround, IrisNp2Test) {
 }
 
 TEST_F(ConvexConfigurationSpace, IrisNp2Test) {
-  IrisNp2Options options;
-  auto scene_graph_checker =
-      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
-  ASSERT_TRUE(scene_graph_checker != nullptr);
+  std::vector<IrisNp2Options> options_to_try(3);
+  options_to_try[0].sampling_strategy = IrisNp2SamplingStrategy::kGreedySampler;
+  options_to_try[1].sampling_strategy = IrisNp2SamplingStrategy::kRaySampler;
+  options_to_try[2].sampling_strategy = IrisNp2SamplingStrategy::kRaySampler;
+  options_to_try[2].ray_sampler_options.only_walk_toward_collisions = true;
+  for (int i = 0; i < ssize(options_to_try); ++i) {
+    meshcat_->Delete();
+    auto& options = options_to_try[i];
+    auto scene_graph_checker =
+        dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+    ASSERT_TRUE(scene_graph_checker != nullptr);
 
-  options.sampled_iris_options.sample_particles_in_parallel = true;
+    options.sampled_iris_options.sample_particles_in_parallel = true;
 
-  // Turn on meshcat for addition debugging visualizations.
-  // This example is truly adversarial for IRIS. After one iteration, the
-  // maximum-volume inscribed ellipse is approximately centered in C-free. So
-  // finding a counter-example in the bottom corner (near the test point) is
-  // not only difficult because we need to sample in a corner of the polytope,
-  // but because the objective is actually pulling the counter-example search
-  // away from that corner. Open the meshcat visualization to step through the
-  // details!
-  options.sampled_iris_options.meshcat = meshcat_;
-  options.sampled_iris_options.verbose = true;
+    // Turn on meshcat for addition debugging visualizations.
+    // This example is truly adversarial for IRIS. After one iteration, the
+    // maximum-volume inscribed ellipse is approximately centered in C-free. So
+    // finding a counter-example in the bottom corner (near the test point) is
+    // not only difficult because we need to sample in a corner of the polytope,
+    // but because the objective is actually pulling the counter-example search
+    // away from that corner. Open the meshcat visualization to step through the
+    // details!
+    options.sampled_iris_options.meshcat = meshcat_;
+    options.sampled_iris_options.verbose = true;
 
-  // We use IPOPT for this test since SNOPT has a large number of solve failures
-  // in this environment.
-  solvers::IpoptSolver solver;
-  options.solver = &solver;
+    // We use IPOPT for this test since SNOPT has a large number of solve
+    // failures in this environment.
+    solvers::IpoptSolver solver;
+    options.solver = &solver;
 
-  HPolyhedron region =
-      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
-  CheckRegion(region);
-  PlotEnvironmentAndRegion(region);
+    HPolyhedron region =
+        IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
+    CheckRegion(region);
+    if (i == 0) {
+      PlotEnvironmentAndRegion(region);
+    }
+  }
 }
 
 // Test that we can grow regions along a parameterized subspace that is not
 // full-dimensional.
 TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
-  IrisNp2Options options;
-  auto scene_graph_checker =
-      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
-  ASSERT_TRUE(scene_graph_checker != nullptr);
+  std::vector<IrisNp2Options> options_to_try(3);
+  options_to_try[0].sampling_strategy = IrisNp2SamplingStrategy::kGreedySampler;
+  options_to_try[1].sampling_strategy = IrisNp2SamplingStrategy::kRaySampler;
+  options_to_try[2].sampling_strategy = IrisNp2SamplingStrategy::kRaySampler;
+  options_to_try[2].ray_sampler_options.only_walk_toward_collisions = true;
+  for (int i = 0; i < ssize(options_to_try); ++i) {
+    meshcat_->Delete();
+    auto& options = options_to_try[i];
+    auto scene_graph_checker =
+        dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+    ASSERT_TRUE(scene_graph_checker != nullptr);
 
-  auto parameterization_double = [](const Vector1d& config) -> Vector2d {
-    return Vector2d{config[0], 2 * config[0] + 1};
-  };
-  auto parameterization_autodiff =
-      [](const Vector1<AutoDiffXd>& config) -> Vector2<AutoDiffXd> {
-    return Vector2<AutoDiffXd>{config[0], 2 * config[0] + 1};
-  };
+    auto parameterization_double = [](const Vector1d& config) -> Vector2d {
+      return Vector2d{config[0], 2 * config[0] + 1};
+    };
+    auto parameterization_autodiff =
+        [](const Vector1<AutoDiffXd>& config) -> Vector2<AutoDiffXd> {
+      return Vector2<AutoDiffXd>{config[0], 2 * config[0] + 1};
+    };
 
-  options.parameterization =
-      IrisParameterizationFunction(parameterization_double,
-                                   /* parameterization_is_threadsafe */ true,
-                                   /* parameterization_dimension */ 1);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
-      ".*autodiff-compatible parameterization.*");
+    options.parameterization =
+        IrisParameterizationFunction(parameterization_double,
+                                     /* parameterization_is_threadsafe */ true,
+                                     /* parameterization_dimension */ 1);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
+        ".*autodiff-compatible parameterization.*");
 
-  options.parameterization = IrisParameterizationFunction(
-      parameterization_double, parameterization_autodiff,
-      /* parameterization_is_threadsafe */ true,
-      /* parameterization_dimension */ 1);
+    options.parameterization = IrisParameterizationFunction(
+        parameterization_double, parameterization_autodiff,
+        /* parameterization_is_threadsafe */ true,
+        /* parameterization_dimension */ 1);
 
-  HPolyhedron region =
-      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
-  CheckRegion(region);
+    HPolyhedron region =
+        IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
+    CheckRegion(region);
 
-  meshcat_->Delete();
-  PlotEnvironmentAndRegionSubspace(
-      region, options.parameterization.get_parameterization_double());
+    if (i == 0) {
+      PlotEnvironmentAndRegionSubspace(
+          region, options.parameterization.get_parameterization_double());
+    }
+  }
 }
 
 // Verify that we throw a reasonable error when the initial point is in

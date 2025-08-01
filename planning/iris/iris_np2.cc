@@ -186,6 +186,83 @@ bool CheckTerminationConditions(int iteration_num, double delta_volume,
   }
   return terminate;
 }
+
+/* This takes a particle (which may or may not be in collision) and performs
+ * ray stepping procedure, starting at the center of the ellipsoid, and stepping
+ * toward the particle until a collision (or constraint violation) is found, or
+ * the boundary of the polytope is reached. `particle` is an output argument
+ * used to store the resulting particle which is in collision. */
+bool RaySamplerProcess(const SceneGraphCollisionChecker& checker,
+                       const VectorXd& ellipsoid_center,
+                       const HPolyhedron& current_polytope,
+                       const IrisNp2Options& options, int constraints_tol,
+                       VectorXd* particle) {
+  DRAKE_THROW_UNLESS(particle != nullptr);
+
+  int chunk_size = options.sampled_iris_options.parallelism.num_threads();
+  if (options.sampled_iris_options.prog_with_additional_constraints &&
+      !options.sampled_iris_options.prog_with_additional_constraints
+           ->IsThreadSafe()) {
+    chunk_size = 1;
+  }
+
+  std::vector<VectorXd> candidate_particles;
+  candidate_particles.reserve(chunk_size);
+
+  double particle_distance = (*particle - ellipsoid_center).norm();
+  double step_size =
+      particle_distance / options.ray_sampler_options.ray_search_num_steps;
+  VectorXd particle_step =
+      (*particle - ellipsoid_center) * step_size / particle_distance;
+
+  Eigen::VectorXd chunk_start_configuration = ellipsoid_center;
+  while (
+      current_polytope.PointInSet(chunk_start_configuration + particle_step)) {
+    candidate_particles.clear();
+    candidate_particles.push_back(chunk_start_configuration + particle_step);
+    for (int i = 1; i < chunk_size; ++i) {
+      if (!current_polytope.PointInSet(candidate_particles[i - 1] +
+                                       particle_step)) {
+        break;
+      } else {
+        candidate_particles.push_back(candidate_particles[i - 1] +
+                                      particle_step);
+      }
+    }
+    chunk_start_configuration =
+        candidate_particles[ssize(candidate_particles) - 1];
+
+    // Transform via the parameterization.
+    std::vector<Eigen::VectorXd> ambient_particles;
+    for (const auto& candidate_particle : candidate_particles) {
+      ambient_particles.push_back(
+          options.parameterization.get_parameterization_double()(
+              candidate_particle));
+    }
+
+    // Check for collisions.
+    std::vector<uint8_t> particle_collision_free =
+        checker.CheckConfigsCollisionFree(
+            ambient_particles, options.sampled_iris_options.parallelism);
+
+    // Check for additional constraint violations.
+    std::vector<uint8_t> particle_satisfies_additional_constraints =
+        internal::CheckProgConstraintsParallel(
+            options.sampled_iris_options.prog_with_additional_constraints,
+            ambient_particles, chunk_size, constraints_tol);
+
+    for (int i = 0; i < ssize(ambient_particles); ++i) {
+      if (!particle_collision_free[i] ||
+          !particle_satisfies_additional_constraints[i]) {
+        *particle = candidate_particles[i];
+        return true;
+      }
+    }
+  }
+  // We never found a collision or constraint violation.
+  return false;
+}
+
 }  // namespace
 
 HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
@@ -529,18 +606,21 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
         }
       }
 
-      // Sort collision order.
-      auto my_comparator = [](const VectorXd& t1, const VectorXd& t2,
-                              const Hyperellipsoid& E_comparator) {
-        return (t1 - E_comparator.center()).squaredNorm() <
-               (t2 - E_comparator.center()).squaredNorm();
-        // TODO(cohnt): Support a custom comparator function?
-      };
-      std::sort(
-          std::begin(particles_in_collision),
-          std::begin(particles_in_collision) + number_particles_in_collision,
-          std::bind(my_comparator, std::placeholders::_1, std::placeholders::_2,
-                    E));
+      // Sort collision order. Only used for kGreedySampler.
+      if (options.sampling_strategy ==
+          IrisNp2SamplingStrategy::kGreedySampler) {
+        auto my_comparator = [](const VectorXd& t1, const VectorXd& t2,
+                                const Hyperellipsoid& E_comparator) {
+          return (t1 - E_comparator.center()).squaredNorm() <
+                 (t2 - E_comparator.center()).squaredNorm();
+          // TODO(cohnt): Support a custom comparator function?
+        };
+        std::sort(
+            std::begin(particles_in_collision),
+            std::begin(particles_in_collision) + number_particles_in_collision,
+            std::bind(my_comparator, std::placeholders::_1,
+                      std::placeholders::_2, E));
+      }
 
       if (options.sampled_iris_options.verbose) {
         log()->info("IrisNp2 N_k {}, N_col {}, thresh {}", N_k,
@@ -592,13 +672,37 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
       int num_prog_successes = 0;
       constexpr double kSolverFailRateWarning = 0.1;
 
-      for (const auto& particle : particles_in_collision) {
+      // TODO(cohnt): Comment on why there's two possible sets of particles to
+      // work on.
+      bool process_collisions_only =
+          options.sampling_strategy ==
+              IrisNp2SamplingStrategy::kGreedySampler ||
+          options.ray_sampler_options.only_walk_toward_collisions;
+      int num_particles_to_walk_toward =
+          process_collisions_only
+              ? ssize(particles_in_collision)
+              : options.ray_sampler_options.num_particles_to_walk_towards;
+      std::vector<VectorXd>& particles_to_work_on =
+          process_collisions_only ? particles_in_collision : particles;
+
+      for (int particle_index = 0;
+           particle_index < num_particles_to_walk_toward; ++particle_index) {
+        auto& particle = particles_to_work_on[particle_index];
         if (num_hyperplanes_added >
             options.sampled_iris_options.max_separating_planes_per_iteration) {
           break;
         }
         if (!P_candidate.PointInSet(particle)) {
           continue;
+        }
+
+        if (options.sampling_strategy == IrisNp2SamplingStrategy::kRaySampler) {
+          bool ray_sampler_found_collision =
+              RaySamplerProcess(checker, E.center(), P_candidate, options,
+                                constraints_tol, &particle);
+          if (!ray_sampler_found_collision) {
+            continue;
+          }
         }
 
         std::pair<Eigen::VectorXd, int> closest_collision_info;
@@ -817,7 +921,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   }
 
   return P;
-}
+}  // NOLINT(readability/fn_size)
 
 }  // namespace planning
 }  // namespace drake
