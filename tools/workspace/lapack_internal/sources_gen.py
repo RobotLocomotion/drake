@@ -11,12 +11,17 @@ from python import runfiles
 
 # These are the Makefile variables we need to extract (in order).
 _WANTED = (
-    "DBLAS1",
     "ALLBLAS",
+    "DBLAS1",
     "DBLAS2",
     "DBLAS3",
+    "SBLAS1",
+    "SBLAS2",
+    "SBLAS3",
     "ALLAUX",
+    "SCLAUX",
     "DZLAUX",
+    "SLASRC",
     "DSLASRC",
     "DLASRC",
 )
