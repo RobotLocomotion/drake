@@ -211,6 +211,7 @@ use_repo(
     "poisson_disk_sampling_internal",
     "qdldl_internal",
     "qhull_internal",
+    "rnv_internal",
     "ros_xacro_internal",
     "rules_python_drake_constants",  # TODO(jwnimmer-tri) Remove 2025-09-01.
     "scs_internal",
