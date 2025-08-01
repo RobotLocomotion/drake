@@ -1,6 +1,8 @@
 # -*- mode: cmake -*-
 # vi: set ft=cmake :
 
+# foo
+
 # The minimum required CMake version should match the minimum listed in
 # doc/_pages/from_source.md, which is also the minimum installed by
 # setup/install_prereqs across all platforms.
