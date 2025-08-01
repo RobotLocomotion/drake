@@ -236,12 +236,12 @@ the email address associated with your github account.
       with your github account; otherwise, the file is read-only).
       1. For reference, the typical content is thus:
          ```
-         FROM robotlocomotion/drake:jammy-20250115
+         FROM robotlocomotion/drake:noble-20250612
 
          RUN apt-get -q update && apt-get -q install -y --no-install-recommends curl nginx-light python3-venv && apt-get remove -y python3-notebook && apt-get autoremove -y && apt-get -q clean
 
          ENV PATH="/opt/drake/bin:${PATH}" \
-           PYTHONPATH="/opt/drake/lib/python3.10/site-packages:${PYTHONPATH}"
+           PYTHONPATH="/opt/drake/lib/python3.12/site-packages:${PYTHONPATH}"
          ```
       2. If the current content differs by more than just the date from the
          above template, ask for help on slack in the ``#releases`` channel.
@@ -254,14 +254,14 @@ the email address associated with your github account.
    [requirements.txt](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/requirements.txt)
    file should have the following content:
    ```
-   ipywidgets==7.7.0
+   ipywidgets==8.1.7
 
    # We need to repeat drake's wheel dependencies here so that they end up in
    # Deepnote's venv. Deepnote no longer sees the Ubuntu packages in /usr/lib.
-   matplotlib==3.5.1
-   numpy==1.23
-   pydot==1.4.2
-   PyYAML==5.3.1
+   matplotlib==3.10.3
+   numpy==1.26.4
+   pydot==4.0.1
+   PyYAML==6.0.2
    ```
 4. Check the initialization notebook at
    [init.ipynb](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/Init%20notebook-5fcfe3fc0bd0403899baab3b6cf37a18).

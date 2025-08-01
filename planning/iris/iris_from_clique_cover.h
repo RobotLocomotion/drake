@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <memory>
 #include <optional>
+#include <variant>
 #include <vector>
 
 #include "drake/common/parallelism.h"
@@ -12,16 +13,24 @@
 #include "drake/geometry/optimization/iris.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_base.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_via_greedy.h"
+#include "drake/planning/iris/iris_np2.h"
+#include "drake/planning/iris/iris_zo.h"
 #include "drake/planning/scene_graph_collision_checker.h"
 
 namespace drake {
 namespace planning {
 
 struct IrisFromCliqueCoverOptions {
+  // TODO(cohnt): Support user-specified parameterizations contained in
+  // IrisZoOptions and IrisNp2Options. Note from Alexandre.Amice: the reason we
+  // don't support subspaces is due to the fact that the current code does not
+  // know how to draw samples from the subspace. You will need to add this
+  // feature if you want to be able to implement CliqueCovers on the subspaces.
   /**
-   * The options used on internal calls to Iris.  Currently, it is recommended
-   * to only run Iris for one iteration when building from a clique so as to
-   * avoid discarding the information gained from the clique.
+   * The options used on internal calls to Iris. The type of this option
+   * determines which variant of Iris is called. Currently, it is recommended to
+   * only run Iris for one iteration when building from a clique so as to avoid
+   * discarding the information gained from the clique.
    *
    * Note that `IrisOptions` can optionally include a meshcat instance to
    * provide debugging visualization. If this is provided `IrisFromCliqueCover`
@@ -30,8 +39,14 @@ struct IrisFromCliqueCoverOptions {
    * allow more than 1 thread, then the debug visualizations of internal Iris
    * calls will be disabled. This is due to a limitation of drawing to meshcat
    * from outside the main thread.
+   * @note some of these variants specify a parallelism parameter. In
+   * IrisInConfigurationSpaceFromCliqueCover, the iris_options.parallelism is
+   * ignored and the value of parallelism specified by `this.parallelism` will
+   * be used instead.
    */
-  geometry::optimization::IrisOptions iris_options{.iteration_limit = 1};
+  std::variant<geometry::optimization::IrisOptions, IrisNp2Options,
+               IrisZoOptions>
+      iris_options{geometry::optimization::IrisOptions{.iteration_limit = 1}};
 
   /**
    * The fraction of the domain that must be covered before we terminate the
@@ -119,12 +134,23 @@ struct IrisFromCliqueCoverOptions {
  * the regions are generated as if the padding is set to 0. This behavior may be
  * adjusted in the future at the resolution of #18830.
  *
- * Note that MaxCliqueSolverViaMip requires the availability of a
+ * @note that MaxCliqueSolverViaMip requires the availability of a
  * Mixed-Integer Linear Programming solver (e.g. Gurobi and/or Mosek). We
  * recommend enabling those solvers if possible because they produce higher
  * quality cliques (https://drake.mit.edu/bazel.html#proprietary_solvers). The
  * method will throw if @p max_clique_solver cannot solve the max clique
  * problem.
+ * @note If IrisNp2Options is used, then the collision checker must be a
+ * SceneGraphCollisionChecker.
+ * @throw std::exception Parameterizations are not currently supported for
+ * `IrisZo` and `IrisNp2` when running `IrisFromCliqueCover`. This method will
+ * throw if options.iris_options is of type `IrisZoOptions` or `IrisNp2Options`
+ * and specifies a parametrization function. See the documentation of
+ * `IrisZoOptions` and `IrisNp2Options` for more information about subspace
+ * parametrization.
+ * @throw std::exception If the
+ * options.iris_options.prog_with_additional_constraints is not nullptr i.e. if
+ * a prog with additional constraints is provided.
  */
 void IrisInConfigurationSpaceFromCliqueCover(
     const CollisionChecker& checker, const IrisFromCliqueCoverOptions& options,

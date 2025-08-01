@@ -1,3 +1,4 @@
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
@@ -25,6 +26,17 @@ load(
 )
 
 package(default_visibility = ["//visibility:public"])
+
+# When this is set to True, rather than linking to MOSEK directly, Drake will
+# create (using implib.so) and link to a trampoline library that allows the
+# real library to be loaded on demand. This is intended for internal use only,
+# and more specifically, is only intended to be used when building wheels.
+#
+# See tools/workspace/mosek/package.BUILD.bazel for usage.
+bool_flag(
+    name = "mosek_lazy_load",
+    build_setting_default = False,
+)
 
 drake_cc_package_library(
     name = "solvers",

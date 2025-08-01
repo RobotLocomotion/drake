@@ -184,8 +184,8 @@ def vtk_internal_repository(
         # TODO(jwnimmer-tri) Once there's a tagged release with support for
         # VTK_ABI_NAMESPACE, we should switch to an official version number
         # here. That probably means waiting for the VTK 10 release.
-        commit = "1d67dcfb29517a1533680a74736fa6786e5029d0",
-        sha256 = "82d86920dbba79d169183baacdf092e5b6f3acef12fea6bb90cd620632a1d567",  # noqa
+        commit = "d23197840b53fcb6f444a3358d4d22aa4c0b38b3",
+        sha256 = "39db6868c44bf96879db5010e7bca6d3aba62bd60d4c67ed2f360082c7e4f3c4",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             # Drake's conventions for VTK patches are:
@@ -211,6 +211,7 @@ def vtk_internal_repository(
             ":patches/io_image_formats.patch",
             ":patches/rendering_opengl2_nobacktrace.patch",
             ":patches/rendering_opengl2_no_factory.patch",
+            ":patches/rendering_opengl2_no_global_display_counter.patch",
             ":patches/rendering_opengl2_preserve_direct_light_specular_reflections.patch",  # noqa
             ":patches/vtkdoubleconversion_hidden.patch",
             ":patches/vtkfast_float_hidden.patch",

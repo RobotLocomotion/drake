@@ -124,7 +124,7 @@ rust_library(
         "@crate__num-traits-0.2.19//:num_traits",
         "@crate__serde-1.0.219//:serde",
         "@crate__serde-big-array-0.5.1//:serde_big_array",
-        "@crate__serde_json-1.0.140//:serde_json",
+        "@crate__serde_json-1.0.141//:serde_json",
         "@crate__thiserror-1.0.69//:thiserror",
     ] + select({
         "@rules_rust//rust/platform:wasm32-unknown-unknown": [

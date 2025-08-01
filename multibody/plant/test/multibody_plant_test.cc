@@ -3644,8 +3644,8 @@ TEST_F(MultibodyPlantRemodeling, RemoveJoint) {
   // Validate that ordinals are assigned and updated contiguously.
   const Joint<double>& joint0 = plant_->get_joint(JointIndex(0));
   const Joint<double>& joint2 = plant_->get_joint(JointIndex(2));
-  EXPECT_EQ(joint0.ordinal(), 0);
-  EXPECT_EQ(joint2.ordinal(), 1);
+  EXPECT_EQ(joint0.ordinal(), JointOrdinal(0));
+  EXPECT_EQ(joint2.ordinal(), JointOrdinal(1));
 
   FinalizeAndBuild();
 
@@ -3668,9 +3668,9 @@ TEST_F(MultibodyPlantRemodeling, RemoveJoint) {
       plant_->GetJointByName<QuaternionFloatingJoint>("body1");
   EXPECT_EQ(body1_floating_joint.index(), JointIndex(3));
 
-  EXPECT_EQ(joint0.ordinal(), 0);
-  EXPECT_EQ(joint2.ordinal(), 1);
-  EXPECT_EQ(body1_floating_joint.ordinal(), 2);
+  EXPECT_EQ(joint0.ordinal(), JointOrdinal(0));
+  EXPECT_EQ(joint2.ordinal(), JointOrdinal(1));
+  EXPECT_EQ(body1_floating_joint.ordinal(), JointOrdinal(2));
 
   // Confirm that removed joint logic is preserved after cloning.
   std::unique_ptr<MultibodyPlant<double>> clone =
@@ -3687,9 +3687,9 @@ TEST_F(MultibodyPlantRemodeling, RemoveJoint) {
   EXPECT_THAT(
       clone->GetJointIndices(),
       testing::ElementsAre(JointIndex(0), JointIndex(2), JointIndex(3)));
-  EXPECT_EQ(clone->get_joint(JointIndex(0)).ordinal(), 0);
-  EXPECT_EQ(clone->get_joint(JointIndex(2)).ordinal(), 1);
-  EXPECT_EQ(clone->get_joint(JointIndex(3)).ordinal(), 2);
+  EXPECT_EQ(clone->get_joint(JointIndex(0)).ordinal(), JointOrdinal(0));
+  EXPECT_EQ(clone->get_joint(JointIndex(2)).ordinal(), JointOrdinal(1));
+  EXPECT_EQ(clone->get_joint(JointIndex(3)).ordinal(), JointOrdinal(2));
 }
 
 TEST_F(MultibodyPlantRemodeling, RemoveAndReplaceJoint) {
@@ -3703,7 +3703,7 @@ TEST_F(MultibodyPlantRemodeling, RemoveAndReplaceJoint) {
         "joint1", plant_->GetBodyByName("body0"), {},
         plant_->GetBodyByName("body1"), {}, Vector3d::UnitZ());
     EXPECT_EQ(joint1.index(), JointIndex(2 + i));
-    EXPECT_EQ(joint1.ordinal(), 2);
+    EXPECT_EQ(joint1.ordinal(), JointOrdinal(2));
     plant_->RemoveJoint(joint1);
   }
 
@@ -3727,9 +3727,9 @@ TEST_F(MultibodyPlantRemodeling, RemoveAndReplaceJoint) {
   // Validate that ordinals are assigned and updated contiguously.
   const Joint<double>& joint0 = plant_->get_joint(JointIndex(0));
   const Joint<double>& joint2 = plant_->get_joint(JointIndex(2));
-  EXPECT_EQ(joint0.ordinal(), 0);
-  EXPECT_EQ(joint2.ordinal(), 1);
-  EXPECT_EQ(joint1.ordinal(), 2);
+  EXPECT_EQ(joint0.ordinal(), JointOrdinal(0));
+  EXPECT_EQ(joint2.ordinal(), JointOrdinal(1));
+  EXPECT_EQ(joint1.ordinal(), JointOrdinal(2));
 
   FinalizeAndBuild();
 
@@ -3744,9 +3744,9 @@ TEST_F(MultibodyPlantRemodeling, RemoveAndReplaceJoint) {
   EXPECT_THAT(plant_->GetJointIndices(),
               testing::ElementsAre(JointIndex(0), JointIndex(2),
                                    JointIndex(2 + num_replacements)));
-  EXPECT_EQ(joint0.ordinal(), 0);
-  EXPECT_EQ(joint2.ordinal(), 1);
-  EXPECT_EQ(joint1.ordinal(), 2);
+  EXPECT_EQ(joint0.ordinal(), JointOrdinal(0));
+  EXPECT_EQ(joint2.ordinal(), JointOrdinal(1));
+  EXPECT_EQ(joint1.ordinal(), JointOrdinal(2));
 }
 
 TEST_F(MultibodyPlantRemodeling, RemoveJointWithActuator) {
@@ -3837,10 +3837,9 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
     context_ = plant_->CreateDefaultContext();
   }
 
-  // Helper to set the multibody state x to x[i] = i for each i-th entry in the
-  // state vector.
-  // We use RevoluteJoint's methods to set the state in order to independently
-  // unit test the proper workings of
+  // Helper to set the multibody state x to x[i] = xc[i] for each i-th entry in
+  // the state vector. We use RevoluteJoint's methods to set the state in order
+  // to independently unit test the proper workings of
   // MultibodyTree::get_multibody_state_vector() and its mutable counterpart.
   void SetState(const VectorX<double>& xc) {
     const int nq = plant_->num_positions();
@@ -5544,6 +5543,8 @@ GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
   RigidTransformd X_BP_check2 = frame_P.CalcPoseInBodyFrame(*context);
   EXPECT_TRUE(X_BP_check1.IsNearlyEqualTo(X_BP, kTolerance));
   EXPECT_TRUE(X_BP_check2.IsNearlyEqualTo(X_BP, kTolerance));
+  // Verify parent frame is body_B's frame
+  EXPECT_EQ(frame_P.parent_frame().index(), body_B.body_frame().index());
 
   // Verify frame P's pose in world W.
   RigidTransformd X_WP = X_WWp * X_WpP;

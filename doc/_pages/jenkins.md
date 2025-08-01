@@ -66,9 +66,9 @@ Both provisioned and unprovisioned jobs are listed.
 Alternatively, to schedule a build of an open pull request in the
 ``RobotLocomotion/drake`` repository:
 
-1. **Log in** to [Jenkins](https://drake-jenkins.csail.mit.edu/) using GitHub
-   OAuth. (Make sure that you see your name the upper-right corner, *not* the
-   words "Log in".)
+1. **Sign in** to [Jenkins](https://drake-jenkins.csail.mit.edu/) using GitHub
+   OAuth. (Make sure that you see a profile picture in the upper-right corner,
+   *not* the words "Sign in".)
 2. Go to the list of
    [experimental builds](https://drake-jenkins.csail.mit.edu/view/Experimental/).
 3. Click on the specific build you want to schedule.
