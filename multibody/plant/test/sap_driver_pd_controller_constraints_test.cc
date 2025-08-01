@@ -43,7 +43,6 @@ class SapDriverTest {
   }
 };
 
-namespace kcov339_avoidance_magic {
 
 // Test fixture that sets up a model of an IIWA arm with PD controlled gripper.
 // Its purpose is to verify that the SAP driver defines constraints
@@ -276,7 +275,6 @@ TEST_F(ActuatedIiwaArmTest, ZeroPTerm) {
       SapDriverTest::EvalContactProblemCache(sap_driver(), *context_));
 }
 
-}  // namespace kcov339_avoidance_magic
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

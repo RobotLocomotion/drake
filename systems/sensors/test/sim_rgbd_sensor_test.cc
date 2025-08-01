@@ -20,7 +20,6 @@ namespace drake {
 namespace systems {
 namespace sensors {
 namespace internal {
-namespace kcov339_avoidance_magic {
 namespace {
 
 // We need drake:: because there's also a systems::lcm namespace.
@@ -310,7 +309,6 @@ TEST_F(SimRgbdSensorTest, AddPublisherTestProperties) {
 }
 
 }  // namespace
-}  // namespace kcov339_avoidance_magic
 }  // namespace internal
 }  // namespace sensors
 }  // namespace systems
