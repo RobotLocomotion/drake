@@ -1,6 +1,5 @@
 # Common options for Ubuntu, no matter the version.
 
-build --force_pic
 build --fission=dbg
 build --features=per_object_debug_info
 
