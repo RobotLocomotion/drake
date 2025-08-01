@@ -62,7 +62,10 @@ void CollisionFilterGroupResolver::AddGroup(
     const ScopedName scoped_body_name =
         ScopedName::Parse(FullyQualify(body_name, model_instance));
 
+    // The body name may refer to a rigid body or a deformable body. Duplicate
+    // body names are already disallowed, so it will not refer to both.
     const RigidBody<double>* body{};
+    const DeformableBody<double>* deformable_body{};
     if (plant_->HasModelInstanceNamed(scoped_body_name.get_namespace())) {
       ModelInstanceIndex body_model =
           plant_->GetModelInstanceByName(scoped_body_name.get_namespace());
@@ -73,14 +76,21 @@ void CollisionFilterGroupResolver::AddGroup(
         continue;
       }
       body = FindBody(scoped_body_name.get_element(), body_model);
+      deformable_body =
+          FindDeformableBody(scoped_body_name.get_element(), body_model);
     }
-    if (!body) {
+    if (!body && !deformable_body) {
       diagnostic.Error(
           fmt::format("body with name '{}' not found", scoped_body_name));
       continue;
     }
+
     full_names.insert(std::string(scoped_body_name.get_full()));
-    geometry_set.Add(plant_->GetBodyFrameIdOrThrow(body->index()));
+    if (body) {
+      geometry_set.Add(plant_->GetBodyFrameIdOrThrow(body->index()));
+    } else if (deformable_body) {
+      geometry_set.Add(deformable_body->geometry_id());
+    }
   }
   groups_.insert({full_group_name, {full_names, geometry_set}});
 
@@ -273,6 +283,17 @@ const RigidBody<double>* CollisionFilterGroupResolver::FindBody(
     std::string_view name, ModelInstanceIndex model_instance) const {
   if (plant_->HasBodyNamed(name, model_instance)) {
     return &plant_->GetBodyByName(name, model_instance);
+  }
+  return {};
+}
+
+const DeformableBody<double>* CollisionFilterGroupResolver::FindDeformableBody(
+    std::string_view name, ModelInstanceIndex model_instance) const {
+  const auto& deformable_model = plant_->deformable_model();
+
+  const std::string owned_name(name);
+  if (deformable_model.HasBodyNamed(owned_name, model_instance)) {
+    return &deformable_model.GetBodyByName(owned_name, model_instance);
   }
   return {};
 }

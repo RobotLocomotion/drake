@@ -947,8 +947,12 @@ call to Finalize() must be performed. This call will:
 - declare collision filters to ignore collisions among rigid bodies:
   - between rigid bodies connected by a joint,
   - within subgraphs of welded rigid bodies.
-Note that MultibodyPlant will *not* introduce *any* collision filters
-on deformable bodies.
+
+Note that MultibodyPlant will *not* introduce any automatic collision filters on
+deformable bodies, because they are all considered adjacent bodies as children
+of the world body. Collision filters for deformable bodies can be explicitly
+applied via ExcludeCollisionGeometriesWithCollisionFilterGroupPair() or during
+parsing.
 
 <!-- TODO(amcastro-tri): Consider making the actual geometry registration
      with GS AFTER Finalize() so that we can tell if there are any bodies
