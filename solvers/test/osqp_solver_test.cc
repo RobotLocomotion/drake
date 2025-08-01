@@ -441,19 +441,25 @@ GTEST_TEST(OsqpSolverTest, TimeLimitTest) {
     // Status codes listed in
     // https://osqp.org/docs/interfaces/status_values.html
     const int OSQP_SOLVED = 1;
-    const int OSQP_TIME_LIMIT_REACHED = -6;
+    const int OSQP_TIME_LIMIT_REACHED = 8;
+    EXPECT_TRUE(result.is_success());
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
     EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
     // OSQP is not very accurate, use a loose tolerance.
     EXPECT_TRUE(CompareMatrices(result.GetSolution(x), -b, 1E-5));
 
     // Now only allow one hundredth of the solve time in the OSQP solver. The
     // solver should not be able to solve the problem in time.
-    const double one_hundredth_solve_time =
-        result.get_solver_details<OsqpSolver>().solve_time / 100.0;
+    const double original_solve_time =
+        result.get_solver_details<OsqpSolver>().solve_time;
+    ASSERT_GT(original_solve_time, 0.0);
+    const double one_hundredth_solve_time = original_solve_time / 100.0;
     SolverOptions solver_options;
     solver_options.SetOption(osqp_solver.solver_id(), "time_limit",
                              one_hundredth_solve_time);
     osqp_solver.Solve(prog, {}, solver_options, &result);
+    EXPECT_EQ(result.get_solution_result(),
+              SolutionResult::kSolverSpecificError);
     EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val,
               OSQP_TIME_LIMIT_REACHED);
 
@@ -461,6 +467,8 @@ GTEST_TEST(OsqpSolverTest, TimeLimitTest) {
     prog.SetSolverOption(osqp_solver.solver_id(), "time_limit",
                          one_hundredth_solve_time);
     osqp_solver.Solve(prog, {}, {}, &result);
+    EXPECT_EQ(result.get_solution_result(),
+              SolutionResult::kSolverSpecificError);
     EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val,
               OSQP_TIME_LIMIT_REACHED);
   }
