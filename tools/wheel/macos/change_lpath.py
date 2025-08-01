@@ -1,14 +1,52 @@
 """
 Given an input artifact (binary or library), apply a specified change to the
-path prefix of all libraries to which the artifact is linked.
+path prefix of all libraries to which the artifact is linked. The input can
+also be an artifact inside a wheel.
 """
 
 import argparse
+import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
+import zipfile
 
 from tools.install import otool
+
+
+def _extract(wheel, path):
+    """
+    Extracts a file from a wheel (zipfile) and returns it as a TemporaryFile.
+    """
+    with zipfile.ZipFile(wheel, 'r') as zip_file:
+        tmp_file = tempfile.NamedTemporaryFile()
+        shutil.copyfileobj(zip_file.open(path, 'r'), tmp_file)
+        tmp_file.flush()
+
+        return tmp_file
+
+
+def _replace(wheel, path, content):
+    """
+    Replaces a file in a wheel (zipfile) with the contents of a file-like
+    object.
+    """
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = os.path.join(td.name, 'wheel')
+
+        with zipfile.ZipFile(tmp_path, 'w', zipfile.ZIP_DEFLATED) as zip_new:
+            with zipfile.ZipFile(wheel, 'r') as zip_old:
+                for item in zip_old.infolist():
+                    if item.filename == path:
+                        content.seek(0)
+                        zip_new.writestr(path, content.read())
+                    else:
+                        zip_new.writestr(item, zip_old.read(item.filename))
+
+        os.replace(wheel, tmp_path)
+        tmp_dir.cleanup()
 
 
 def _chlpath(path, libs, old, new):
@@ -41,6 +79,9 @@ def main(args):
         '--new', required=True,
         help='Replacement prefix')
     parser.add_argument(
+        '--wheel',
+        help='Modify a file inside the specified wheel.')
+    parser.add_argument(
         'library', nargs='+',
         help='Dynamic library to modify')
 
@@ -49,8 +90,19 @@ def main(args):
 
     # Get list of dependent libraries and modify their prefixes.
     for path in options.library:
-        libs = otool.linked_libraries(path)
-        _chlpath(path, libs=libs, old=options.old, new=options.new)
+        lib_file = None
+        lib_path = path
+
+        if options.wheel:
+            lib_file = _extract(options.wheel, path)
+            lib_path = lib_file.name
+
+        libs = otool.linked_libraries(lib_path)
+        _chlpath(lib_path, libs=libs, old=options.old, new=options.new)
+
+        if options.wheel:
+            _replace(options.wheel, path, lib_file)
+            lib_file.close()
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
