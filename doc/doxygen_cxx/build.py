@@ -215,7 +215,7 @@ def _build(*, out_dir, temp_dir, modules, quick):
     assert os.path.exists(join(drake_workspace, "WORKSPACE")), drake_workspace
 
     # Find doxygen.
-    doxygen = manifest.Rlocation("doxygen/doxygen")
+    doxygen = manifest.Rlocation("doxygen_internal/doxygen")
     assert os.path.exists(doxygen), doxygen
 
     # Find dot.

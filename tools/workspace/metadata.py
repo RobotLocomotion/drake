@@ -36,9 +36,9 @@ _REPOSITORIES_WITH_NO_METADATA = [
     "libblas",
     "liblapack",
     "nasm",
-    "net_sf_jchart2d",
+    "net_sf_jchart2d_internal",
     "opencl",
-    "org_apache_xmlgraphics_commons",
+    "org_apache_xmlgraphics_commons_internal",
     "x11",
     "zlib",
     # Vendored.
@@ -84,9 +84,6 @@ def read_repository_metadata(repositories=None):
         # requires some load-time dependencies such as starlark libraries,
         # compilers, etc.  Here, we add by hand those we want to be archived
         # and upgraded.
-        #
-        # NOTE: At this time, we are skipping the rust_toolchain repositories;
-        # see TODO in tools/workspace/rust_toolchain/repository.bzl.
         repositories.add("bazel_skylib")
         repositories.add("com_github_nelhage_rules_boost_internal")
 
