@@ -59,7 +59,6 @@ load("//tools/workspace/nlohmann_internal:repository.bzl", "nlohmann_internal_re
 load("//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
 load("//tools/workspace/onetbb_internal:repository.bzl", "onetbb_internal_repository")  # noqa
 load("//tools/workspace/opencl:repository.bzl", "opencl_repository")
-load("//tools/workspace/openusd_internal:repository.bzl", "openusd_internal_repository")  # noqa
 load("//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apache_xmlgraphics_commons_repository")  # noqa
 load("//tools/workspace/osqp_internal:repository.bzl", "osqp_internal_repository")  # noqa
 load("//tools/workspace/pathspec_internal:repository.bzl", "pathspec_internal_repository")  # noqa
@@ -254,8 +253,6 @@ def add_default_repositories(
         onetbb_internal_repository(name = "onetbb_internal", mirrors = mirrors)
     if "opencl" not in excludes:
         opencl_repository(name = "opencl")
-    if "openusd_internal" not in excludes:
-        openusd_internal_repository(name = "openusd_internal", mirrors = mirrors)  # noqa
     if "org_apache_xmlgraphics_commons" not in excludes:
         org_apache_xmlgraphics_commons_repository(name = "org_apache_xmlgraphics_commons", mirrors = mirrors, _is_drake_self_call = True)  # noqa
     if "osqp_internal" not in excludes:

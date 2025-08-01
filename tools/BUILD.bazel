@@ -54,15 +54,6 @@ config_setting(
     values = {"define": "USING_MEMCHECK=ON"},
 )
 
-# We are exploring adding USD support to Drake. For the moment, it is opt-in.
-# See https://github.com/PixarAnimationStudios/OpenUSD for details.
-# Use `--define=WITH_USD=ON` on the bazel command line to enable it.
-# (In CI, --config=everything also enables it on Ubuntu.)
-config_setting(
-    name = "with_usd",
-    values = {"define": "WITH_USD=ON"},
-)
-
 config_setting(
     name = "ubuntu_jammy",
     values = {"define": "UBUNTU_VERSION=22.04"},

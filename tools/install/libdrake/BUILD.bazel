@@ -235,17 +235,6 @@ cc_library(
     }),
 )
 
-# Depend on TBB shared library iff USD is enabled.
-cc_library(
-    name = "usd_deps",
-    deps = select({
-        "//tools:with_usd": [
-            "@mosek//:tbb",
-        ],
-        "//conditions:default": [],
-    }),
-)
-
 # Depend on X11 iff on Ubuntu and not MacOS.
 cc_library(
     name = "x11_deps",
@@ -287,7 +276,6 @@ cc_library(
     deps = [
         ":gurobi_deps",
         ":mosek_deps",
-        ":usd_deps",
         ":x11_deps",
         "//common:drake_marker_shared_library",
         "//tools/workspace/fmt:shared_library_maybe",
