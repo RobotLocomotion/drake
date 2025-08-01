@@ -15,13 +15,6 @@ _ALLOWED_LIBS = frozenset({
     "libquadmath",
 })
 
-# These are installed by a Drake repository rule, so don't need copyright
-# installed in build-wheel.sh.
-_ALLOWED_LIBS_MACOS = frozenset({
-    "libmosek64",
-    "libtbb",
-})
-
 # TODO(jwnimmer-tri) Install the license texts for these (or stop using the
 # library entirely).
 _EXTRA_LIBS_MACOS = frozenset({
@@ -32,8 +25,7 @@ _EXTRA_LIBS_MACOS = frozenset({
 })
 
 if sys.platform == "darwin":
-    _ALLOWED_LIBS_ALL = frozenset(
-        _ALLOWED_LIBS | _ALLOWED_LIBS_MACOS | _EXTRA_LIBS_MACOS)
+    _ALLOWED_LIBS_ALL = frozenset(_ALLOWED_LIBS | _EXTRA_LIBS_MACOS)
 else:
     _ALLOWED_LIBS_ALL = _ALLOWED_LIBS
 

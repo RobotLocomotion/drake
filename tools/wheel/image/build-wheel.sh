@@ -129,6 +129,20 @@ python setup.py bdist_wheel
 
 if [[ "$(uname)" == "Darwin" ]]; then
     delocate-wheel -w wheelhouse -v dist/drake*.whl
+
+    # Remove libmosek from wheels.
+    for w in wheelhouse/drake*.whl; do
+        zip --delete "$w" \
+            'pydrake/lib/libmosek*' \
+            'pydrake/lib/libtbb*' \
+            'pydrake/doc/mosek/mosek-eula.pdf' \
+            'pydrake/doc/mosek/LICENSE.third_party'
+        change_lpath \
+            --wheel="$w" \
+            --old='@loader_path/libmosek' \
+            --new='@loader_path/../../mosek/libmosek' \
+            pydrake/lib/libdrake.so
+    done
 else
     GLIBC_VERSION=$(ldd --version | sed -n '1{s/.* //;s/[.]/_/p}')
 
