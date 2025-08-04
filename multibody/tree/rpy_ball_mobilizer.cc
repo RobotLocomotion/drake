@@ -391,42 +391,6 @@ void RpyBallMobilizer<T>::DoMapQDotToVelocity(
 }
 
 template <typename T>
-Vector3<T> RpyBallMobilizer<T>::CalcAccelerationBiasForQDDot(
-    const systems::Context<T>& context, const char* function_name) const {
-  const SinCosPitchYaw sin_cos_pitch_yaw =
-      CalcSinPitchCosPitchSinYawCosYaw(context);
-  const T& cos_pitch = sin_cos_pitch_yaw.cos_pitch;
-  ThrowIfCosPitchNearZero(context, cos_pitch, function_name);
-  return CalcAccelerationBiasForQDDotImpl(context, sin_cos_pitch_yaw,
-                                          1.0 / cos_pitch);
-}
-
-template <typename T>
-Vector3<T> RpyBallMobilizer<T>::CalcAccelerationBiasForQDDotImpl(
-    const systems::Context<T>& context, const SinCosPitchYaw& sin_cos_pitch_yaw,
-    const T& cpi) const {
-  // The algorithm below calculates Ṅ⁺(q,q̇)⋅q̇. The algorithm was verified with
-  // MotionGenesis. It can also be verified by-hand, e.g., with documentation
-  // in DoCalcNplusDotMatrix which directly differentiates N⁺(q) to form
-  // Ṅ⁺(q,q̇). Thereafter, multiply by q̇ to form Ṅ⁺(q,q̇)⋅q̇ (and simplify).
-  const Vector3<T> v = get_angular_velocity(context);
-  Vector3<T> qdot;
-  DoMapVelocityToQDotImpl(sin_cos_pitch_yaw, cpi, v, &qdot);
-  const auto& [sp, cp, sy, cy] = sin_cos_pitch_yaw;
-  const T& rdot = qdot[0];
-  const T& pdot = qdot[1];
-  const T& ydot = qdot[2];
-  const T pdot_ydot = pdot * ydot;
-  const T rdot_pdot = rdot * pdot;
-  const T rdot_ydot = rdot * ydot;
-  const T sp_rdot_pdot = sp * rdot_pdot;
-  const T cp_rdot_ydot = cp * rdot_ydot;
-  return Vector3<T>(-cy * pdot_ydot - cy * sp_rdot_pdot - sy * cp_rdot_ydot,
-                    -sy * pdot_ydot - sy * sp_rdot_pdot + cy * cp_rdot_ydot,
-                    -cp * rdot_pdot);
-}
-
-template <typename T>
 void RpyBallMobilizer<T>::DoMapAccelerationToQDDot(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& vdot,
@@ -489,6 +453,42 @@ void RpyBallMobilizer<T>::DoMapQDDotToAcceleration(
 
   // Sum the previous terms to form v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
   *vdot += NplusDot_times_Qdot;
+}
+
+template <typename T>
+Vector3<T> RpyBallMobilizer<T>::CalcAccelerationBiasForQDDot(
+    const systems::Context<T>& context, const char* function_name) const {
+  const SinCosPitchYaw sin_cos_pitch_yaw =
+      CalcSinPitchCosPitchSinYawCosYaw(context);
+  const T& cos_pitch = sin_cos_pitch_yaw.cos_pitch;
+  ThrowIfCosPitchNearZero(context, cos_pitch, function_name);
+  return CalcAccelerationBiasForQDDotImpl(context, sin_cos_pitch_yaw,
+                                          1.0 / cos_pitch);
+}
+
+template <typename T>
+Vector3<T> RpyBallMobilizer<T>::CalcAccelerationBiasForQDDotImpl(
+    const systems::Context<T>& context, const SinCosPitchYaw& sin_cos_pitch_yaw,
+    const T& cpi) const {
+  // The algorithm below calculates Ṅ⁺(q,q̇)⋅q̇. The algorithm was verified with
+  // MotionGenesis. It can also be verified by-hand, e.g., with documentation
+  // in DoCalcNplusDotMatrix which directly differentiates N⁺(q) to form
+  // Ṅ⁺(q,q̇). Thereafter, multiply by q̇ to form Ṅ⁺(q,q̇)⋅q̇ (and simplify).
+  const Vector3<T> v = get_angular_velocity(context);
+  Vector3<T> qdot;
+  DoMapVelocityToQDotImpl(sin_cos_pitch_yaw, cpi, v, &qdot);
+  const auto& [sp, cp, sy, cy] = sin_cos_pitch_yaw;
+  const T& rdot = qdot[0];
+  const T& pdot = qdot[1];
+  const T& ydot = qdot[2];
+  const T pdot_ydot = pdot * ydot;
+  const T rdot_pdot = rdot * pdot;
+  const T rdot_ydot = rdot * ydot;
+  const T sp_rdot_pdot = sp * rdot_pdot;
+  const T cp_rdot_ydot = cp * rdot_ydot;
+  return Vector3<T>(-cy * pdot_ydot - cy * sp_rdot_pdot - sy * cp_rdot_ydot,
+                    -sy * pdot_ydot - sy * sp_rdot_pdot + cy * cp_rdot_ydot,
+                    -cp * rdot_pdot);
 }
 
 template <typename T>
