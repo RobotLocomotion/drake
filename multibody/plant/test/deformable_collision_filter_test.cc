@@ -1,5 +1,7 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/sorted_pair.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/deformable_model.h"
@@ -124,7 +126,10 @@ TEST_F(DeformableCollisionFilterTest, DefaultMbPFilterIgnoresDeformable) {
    other rigid and deformable bodies. */
   DeformableModel<double>& deformable_model =
       plant_->mutable_deformable_model();
-  RegisterDeformableOctahedron(&deformable_model, "other_deformable");
+  DeformableBodyId other_deformable_body_id =
+      RegisterDeformableOctahedron(&deformable_model, "other_deformable");
+  GeometryId other_deformable_geometry_id =
+      deformable_model.GetGeometryId(other_deformable_body_id);
 
   /* Contact detection not allowed pre-Finalize. */
   plant_->Finalize();
@@ -139,8 +144,24 @@ TEST_F(DeformableCollisionFilterTest, DefaultMbPFilterIgnoresDeformable) {
   geometry::internal::DeformableContact<double> deformable_contact;
   query_object.ComputeDeformableContact(&deformable_contact);
   /* No contacts are filtered, so each deformable contacts the other and both of
-   the rigid bodies. */
+   the rigid bodies. The rigid bodies do not contact each other due to their
+   placement. */
   EXPECT_EQ(deformable_contact.contact_surfaces().size(), 5);
+
+  std::unordered_set<SortedPair<GeometryId>> expected_pairs = {
+      {deformable_geometry_id_, welded_geometry_id_},
+      {deformable_geometry_id_, free_geometry_id_},
+      {deformable_geometry_id_, other_deformable_geometry_id},
+      {other_deformable_geometry_id, welded_geometry_id_},
+      {other_deformable_geometry_id, free_geometry_id_},
+  };
+
+  std::unordered_set<SortedPair<GeometryId>> actual_pairs = {};
+  for (const auto& contact_surface : deformable_contact.contact_surfaces()) {
+    actual_pairs.insert({contact_surface.id_A(), contact_surface.id_B()});
+  }
+
+  EXPECT_THAT(expected_pairs, ::testing::ContainerEq(actual_pairs));
 }
 
 /* Tests that applying collision filters directly to the MbP via the

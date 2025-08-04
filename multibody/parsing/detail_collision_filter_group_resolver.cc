@@ -62,8 +62,9 @@ void CollisionFilterGroupResolver::AddGroup(
     const ScopedName scoped_body_name =
         ScopedName::Parse(FullyQualify(body_name, model_instance));
 
-    // The body name may refer to a rigid body or a deformable body. Duplicate
-    // body names are already disallowed, so it will not refer to both.
+    // The body name may refer to a rigid body or a deformable body. If the same
+    // scoped name exists as rigid and deformable in the model, then this code
+    // simply selects the rigid body.
     const RigidBody<double>* body{};
     const DeformableBody<double>* deformable_body{};
     if (plant_->HasModelInstanceNamed(scoped_body_name.get_namespace())) {
@@ -76,8 +77,8 @@ void CollisionFilterGroupResolver::AddGroup(
         continue;
       }
       body = FindBody(scoped_body_name.get_element(), body_model);
-      deformable_body =
-          FindDeformableBody(scoped_body_name.get_element(), body_model);
+      deformable_body = FindDeformableBody(
+          std::string(scoped_body_name.get_element()), body_model);
     }
     if (!body && !deformable_body) {
       diagnostic.Error(
@@ -288,12 +289,11 @@ const RigidBody<double>* CollisionFilterGroupResolver::FindBody(
 }
 
 const DeformableBody<double>* CollisionFilterGroupResolver::FindDeformableBody(
-    std::string_view name, ModelInstanceIndex model_instance) const {
+    std::string name, ModelInstanceIndex model_instance) const {
   const auto& deformable_model = plant_->deformable_model();
 
-  const std::string owned_name(name);
-  if (deformable_model.HasBodyNamed(owned_name, model_instance)) {
-    return &deformable_model.GetBodyByName(owned_name, model_instance);
+  if (deformable_model.HasBodyNamed(name, model_instance)) {
+    return &deformable_model.GetBodyByName(name, model_instance);
   }
   return {};
 }

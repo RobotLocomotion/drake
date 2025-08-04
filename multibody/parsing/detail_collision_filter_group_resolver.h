@@ -135,7 +135,7 @@ class CollisionFilterGroupResolver {
   const RigidBody<double>* FindBody(std::string_view name,
                                     ModelInstanceIndex model_instance) const;
   const DeformableBody<double>* FindDeformableBody(
-      std::string_view name, ModelInstanceIndex model_instance) const;
+      std::string name, ModelInstanceIndex model_instance) const;
 
   MultibodyPlant<double>* const plant_;
 

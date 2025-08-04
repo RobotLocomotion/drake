@@ -547,7 +547,7 @@ drake_cc_googletest(
 filegroup(
     name = "process_model_directives_test_models",
     testonly = True,
-    data = glob(["test/process_model_directives_test/**"]),
+    data = glob(["test/process_model_directives_test/**"]) + [":test_models"],
     visibility = ["//bindings/pydrake/multibody:__pkg__"],
 )
 

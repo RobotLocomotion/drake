@@ -949,8 +949,7 @@ call to Finalize() must be performed. This call will:
   - within subgraphs of welded rigid bodies.
 
 Note that MultibodyPlant will *not* introduce any automatic collision filters on
-deformable bodies, because they are all considered adjacent bodies as children
-of the world body. Collision filters for deformable bodies can be explicitly
+deformable bodies. Collision filters for deformable bodies can be explicitly
 applied via ExcludeCollisionGeometriesWithCollisionFilterGroupPair() or during
 parsing.
 
@@ -2406,9 +2405,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   const std::vector<geometry::GeometryId>& GetCollisionGeometriesForBody(
       const RigidBody<T>& body) const;
 
-  /// Excludes the rigid collision geometries between two given collision filter
-  /// groups. Note that collisions involving deformable geometries are not
-  /// filtered by this function.
+  /// Excludes the collision geometries between two given collision filter
+  /// groups.
   /// @pre RegisterAsSourceForSceneGraph() has been called.
   /// @pre Finalize() has *not* been called.
   void ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
