@@ -248,13 +248,12 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
 
  private:
   // Struct that consolidates sine and cosine calculations to facilitate their
-  // reuse in other functions. This struct speeds computation by significantly
-  // reducing the recalculation of the same sines and cosines.
+  // reuse in other functions.
   // Note: This struct is exempted from the styleguide's prohibition of related
   // members in a struct by virtue of it being strictly internal (the invariants
   // are maintained internally like private members of the class).
   struct SinCosPitchYaw {
-    T sin_pitch, cos_pitch, sin_yaw, cos_yaw;
+    T sin_pitch{NAN}, cos_pitch{NAN}, sin_yaw{NAN}, cos_yaw{NAN};
   };
 
   // Returns a struct with calculated sin(pitch), cos(pitch), sin(yaw),
@@ -358,6 +357,11 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   [[noreturn]] void ThrowSinceCosPitchNearZero(
       const systems::Context<T>& context, const char* function_name) const;
 
+  // Helper method to make a clone templated on ToScalar.
+  template <typename ToScalar>
+  std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
+      const MultibodyTree<ToScalar>& tree_clone) const;
+
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
 
@@ -366,11 +370,6 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
       const MultibodyTree<symbolic::Expression>& tree_clone) const override;
-
-  // Helper method to make a clone templated on ToScalar.
-  template <typename ToScalar>
-  std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
-      const MultibodyTree<ToScalar>& tree_clone) const;
 };
 
 }  // namespace internal

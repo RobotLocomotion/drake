@@ -391,20 +391,6 @@ void RpyBallMobilizer<T>::DoMapQDotToVelocity(
 }
 
 template <typename T>
-template <typename ToScalar>
-std::unique_ptr<Mobilizer<ToScalar>>
-RpyBallMobilizer<T>::TemplatedDoCloneToScalar(
-    const MultibodyTree<ToScalar>& tree_clone) const {
-  const Frame<ToScalar>& inboard_frame_clone =
-      tree_clone.get_variant(this->inboard_frame());
-  const Frame<ToScalar>& outboard_frame_clone =
-      tree_clone.get_variant(this->outboard_frame());
-  return std::make_unique<RpyBallMobilizer<ToScalar>>(
-      tree_clone.get_mobod(this->mobod().index()), inboard_frame_clone,
-      outboard_frame_clone);
-}
-
-template <typename T>
 Vector3<T> RpyBallMobilizer<T>::CalcAccelerationBiasForQDDot(
     const systems::Context<T>& context, const char* function_name) const {
   const SinCosPitchYaw sin_cos_pitch_yaw =
@@ -519,6 +505,20 @@ template <typename T>
       "tracked in https://github.com/RobotLocomotion/drake/issues/12404.",
       function_name, this->inboard_body().name(), this->outboard_body().name(),
       pitch_angle));
+}
+
+template <typename T>
+template <typename ToScalar>
+std::unique_ptr<Mobilizer<ToScalar>>
+RpyBallMobilizer<T>::TemplatedDoCloneToScalar(
+    const MultibodyTree<ToScalar>& tree_clone) const {
+  const Frame<ToScalar>& inboard_frame_clone =
+      tree_clone.get_variant(this->inboard_frame());
+  const Frame<ToScalar>& outboard_frame_clone =
+      tree_clone.get_variant(this->outboard_frame());
+  return std::make_unique<RpyBallMobilizer<ToScalar>>(
+      tree_clone.get_mobod(this->mobod().index()), inboard_frame_clone,
+      outboard_frame_clone);
 }
 
 template <typename T>
