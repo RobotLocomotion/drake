@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <string>
 
@@ -253,7 +254,10 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   // members in a struct by virtue of it being strictly internal (the invariants
   // are maintained internally like private members of the class).
   struct SinCosPitchYaw {
-    T sin_pitch{NAN}, cos_pitch{NAN}, sin_yaw{NAN}, cos_yaw{NAN};
+    T sin_pitch{std::numeric_limits<T>::quiet_NaN()};
+    T cos_pitch{std::numeric_limits<T>::quiet_NaN()};
+    T sin_yaw{std::numeric_limits<T>::quiet_NaN()};
+    T cos_yaw{std::numeric_limits<T>::quiet_NaN()};
   };
 
   // Returns a struct with calculated sin(pitch), cos(pitch), sin(yaw),
