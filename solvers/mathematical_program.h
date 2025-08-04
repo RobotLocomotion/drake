@@ -1181,7 +1181,7 @@ class MathematicalProgram {
    * Adds an L2 norm cost |Ax+b|₂ (notice this cost is not quadratic since we
    * don't take the square of the L2 norm).
    * @note Currently kL2NormCost is supported by SnoptSolver, IpoptSolver,
-   * GurobiSolver, MosekSolver, ClarabelSolver, and SCSSolver.
+   * NloptSolver, GurobiSolver, MosekSolver, ClarabelSolver, and SCSSolver.
    * @pydrake_mkdoc_identifier{3args_A_b_vars}
    */
   Binding<L2NormCost> AddL2NormCost(
