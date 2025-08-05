@@ -15,7 +15,8 @@ from pydrake.symbolic import Expression, Variable
 from pydrake.lcm import DrakeLcm
 from pydrake.math import RigidTransform
 from pydrake.multibody.fem import (
-    DeformableBodyConfig_
+    DeformableBodyConfig_,
+    ForceDensityType,
 )
 from pydrake.multibody.tree import (
     BallRpyJoint_,
@@ -26,10 +27,12 @@ from pydrake.multibody.tree import (
     DoorHinge_,
     DoorHingeConfig,
     FixedOffsetFrame_,
+    ForceDensityField_,
     ForceElement_,
     ForceElementIndex,
     Frame_,
     FrameIndex,
+    GravityForceField_,
     JacobianWrtVariable,
     Joint_,
     JointActuator_,
@@ -3540,6 +3543,26 @@ class TestPlant(unittest.TestCase):
                                     '.*i < num_deformable_contacts().*'):
             contact_results.deformable_contact_info(0)
 
+    def test_deformable_model_external_force(self):
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
+        dut = plant.mutable_deformable_model()
+
+        # Register one body
+        config = DeformableBodyConfig_[float]()
+        geometry = GeometryInstance(RigidTransform(), Sphere(1.0), "sphere")
+        body_id = dut.RegisterDeformableBody(
+            geometry_instance=geometry, config=config, resolution_hint=1.0)
+
+        dut.AddExternalForce(GravityForceField_[float](
+            gravity_vector=[0, 0, 1], mass_density=1.23))
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+
+        external_forces = dut.GetExternalForces(body_id)
+        numpy_compare.assert_float_equal(
+            external_forces[-1].EvaluateAt(context, [0, 0, 0]), [0, 0, 1.23])
+
     def test_deformable_model_disable_enable(self):
         builder = DiagramBuilder_[float]()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1.0e-3)
@@ -3605,6 +3628,11 @@ class TestPlant(unittest.TestCase):
         reference_positions = body.reference_positions()
         self.assertIsInstance(reference_positions, np.ndarray)
         self.assertEqual(num_dofs, reference_positions.size)
+
+        # external_forces
+        external_forces = body.external_forces()
+        for external_force in external_forces:
+            self.assertIsInstance(external_force, ForceDensityField_[float])
 
         # discrete_state_index()
         state_index = body.discrete_state_index()
@@ -3740,3 +3768,55 @@ class TestPlant(unittest.TestCase):
             context=plant_context)
         self.assertIsInstance(w_WScm, np.ndarray)
         self.assertEqual(w_WScm.size, 3)
+
+    @numpy_compare.check_all_types
+    def test_gravity_force_field(self, T):
+        plant = MultibodyPlant_[T](time_step=0.0)
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+
+        dut = GravityForceField_[T](
+            gravity_vector=[0, 0, 1], mass_density=1.23)
+
+        self.assertEqual(dut.density_type(),
+                         ForceDensityType.kPerReferenceVolume)
+        self.assertFalse(dut.has_parent_system())
+
+        numpy_compare.assert_float_equal(
+            dut.EvaluateAt(context, [0, 0, 0]), [0, 0, 1.23])
+
+        dut.Clone()
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    @numpy_compare.check_all_types
+    def test_force_density_field(self, T):
+        class DummyField(ForceDensityField_[T]):
+            def __init__(self, scale):
+                super().__init__()
+                self._scale = scale
+
+            def DoEvaluateAt(self, context, p_WQ):
+                return p_WQ * self._scale
+
+            def DoClone(self):
+                return DummyField(self._scale)
+
+        plant = MultibodyPlant_[T](time_step=0.0)
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+
+        dut = DummyField(2.0)
+        self.assertEqual(dut.density_type(),
+                         ForceDensityType.kPerCurrentVolume)
+        self.assertFalse(dut.has_parent_system())
+
+        p_WQ = [1.0, 2.0, 3.0]
+        value = [2.0, 4.0, 6.0]
+        numpy_compare.assert_float_equal(dut.EvaluateAt(context, p_WQ), value)
+        numpy_compare.assert_float_equal(
+            dut.Clone().EvaluateAt(context, p_WQ), value)
+        numpy_compare.assert_float_equal(
+            copy.copy(dut).EvaluateAt(context, p_WQ), value)
+        numpy_compare.assert_float_equal(
+            copy.deepcopy(dut).EvaluateAt(context, p_WQ), value)
