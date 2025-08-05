@@ -28,7 +28,7 @@ GTEST_TEST(DiscreteStepMemoryTest, Lifecycle) {
   EXPECT_EQ(dut.template get<double>(), nullptr);
 
   // Allocation matches get().
-  const auto& data = dut.template Allocate<double>(tree.get_topology());
+  const auto& data = dut.template Allocate<double>(tree.forest());
   EXPECT_EQ(dut.template get<double>(), &data);
 
   // Access the wrong type yields empty.

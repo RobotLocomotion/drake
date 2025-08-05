@@ -680,7 +680,7 @@ class BodyNode : public MultibodyElement<T> {
   // TODO(sherm1) Get rid of this.
   void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {
     DRAKE_DEMAND(mobilizer_ != nullptr);  // Should have been set already.
-    topology_ = tree_topology.get_body_node(mobod_index());
+    topology_ = tree_topology.get_body_node_topology(mobod_index());
   }
 
   BodyNodeTopology topology_;

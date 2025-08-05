@@ -224,11 +224,12 @@ class PendulumTests : public ::testing::Test {
   static const RigidTransform<T> get_body_pose_in_world(
       const MultibodyTree<T>& tree, const PositionKinematicsCache<T>& pc,
       const RigidBody<T>& body) {
-    const MultibodyTreeTopology& topology = tree.get_topology();
-    // Cache entries are accessed by MobodIndex for fast traversals.
+    const SpanningForest& forest = tree.forest();
+    // Since there are no welds in this model, we know each body is the active
+    // link of its own mobilizer.
     const MobodIndex mobod_index =
-        topology.get_rigid_body(body.index()).mobod_index;
-    return RigidTransform<T>(pc.get_X_WB(mobod_index));
+        forest.link_by_index(body.index()).mobod_index();
+    return pc.get_X_WB(mobod_index);
   }
 
   // Helper method to extract spatial velocity from the velocity kinematics
@@ -237,9 +238,12 @@ class PendulumTests : public ::testing::Test {
       const MultibodyTree<double>& tree,
       const VelocityKinematicsCache<double>& vc,
       const RigidBody<double>& body) {
-    const MultibodyTreeTopology& topology = tree.get_topology();
-    // Cache entries are accessed by MobodIndex for fast traversals.
-    return vc.get_V_WB(topology.get_rigid_body(body.index()).mobod_index);
+    const SpanningForest& forest = tree.forest();
+    // Since there are no welds in this model, we know each body is the active
+    // link of its own mobilizer.
+    const MobodIndex mobod_index =
+        forest.link_by_index(body.index()).mobod_index();
+    return vc.get_V_WB(mobod_index);
   }
 
   // Helper method to extract spatial acceleration from the acceleration
@@ -249,9 +253,12 @@ class PendulumTests : public ::testing::Test {
       const MultibodyTree<double>& tree,
       const AccelerationKinematicsCache<double>& ac,
       const RigidBody<double>& body) {
-    const MultibodyTreeTopology& topology = tree.get_topology();
-    // Cache entries are accessed by MobodIndex for fast traversals.
-    return ac.get_A_WB(topology.get_rigid_body(body.index()).mobod_index);
+    const SpanningForest& forest = tree.forest();
+    // Since there are no welds in this model, we know each body is the active
+    // link of its own mobilizer.
+    const MobodIndex mobod_index =
+        forest.link_by_index(body.index()).mobod_index();
+    return ac.get_A_WB(mobod_index);
   }
 
  protected:
@@ -480,7 +487,7 @@ TEST_F(PendulumTests, CreateContext) {
   // arbitrary value that we can use for unit testing. In practice the poses in
   // the position kinematics will be the result of a position kinematics update
   // and will live in the context as a cache entry.
-  PositionKinematicsCache<double> pc(tree.get_topology());
+  PositionKinematicsCache<double> pc(tree.forest());
   SetPendulumPoses(&pc);
 
   // Retrieve body poses from position kinematics cache.
@@ -614,8 +621,8 @@ class PendulumKinematicTests : public PendulumTests {
     const double shoulder_angle = q(0);
     const double elbow_angle = q(1);
 
-    PositionKinematicsCache<double> pc(tree().get_topology());
-    VelocityKinematicsCache<double> vc(tree().get_topology());
+    PositionKinematicsCache<double> pc(tree().forest());
+    VelocityKinematicsCache<double> vc(tree().forest());
     // Even though tau_g(q) only depends on positions, other velocity dependent
     // forces (for instance damping) could depend on velocities. Therefore we
     // set the velocity kinematics cache entries to zero so that only tau_g(q)
@@ -764,8 +771,8 @@ class PendulumKinematicTests : public PendulumTests {
     const double shoulder_angle_rate = v(0);
     const double elbow_angle_rate = v(1);
 
-    PositionKinematicsCache<double> pc(tree().get_topology());
-    VelocityKinematicsCache<double> vc(tree().get_topology());
+    PositionKinematicsCache<double> pc(tree().forest());
+    VelocityKinematicsCache<double> vc(tree().forest());
 
     // ======================================================================
     // Compute position kinematics.
@@ -789,7 +796,7 @@ class PendulumKinematicTests : public PendulumTests {
 
     // ======================================================================
     // Compute acceleration kinematics.
-    AccelerationKinematicsCache<double> ac(tree().get_topology());
+    AccelerationKinematicsCache<double> ac(tree().forest());
     tree().CalcAccelerationKinematicsCache(*context_, pc, vc, vdot, &ac);
 
     // From acceleration kinematics.
@@ -838,7 +845,7 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
   shoulder_mobilizer_->SetZeroState(*context_, &context_->get_mutable_state());
   EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), 0.0);
 
-  PositionKinematicsCache<double> pc(tree().get_topology());
+  PositionKinematicsCache<double> pc(tree().forest());
 
   const int num_angles = 50;
   const double kDeltaAngle = 2 * M_PI / (num_angles - 1.0);
@@ -913,9 +920,9 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
   const int kEpsilonFactor = 30;
   const double kTolerance = kEpsilonFactor * kEpsilon;
 
-  PositionKinematicsCache<double> pc(tree().get_topology());
-  VelocityKinematicsCache<double> vc(tree().get_topology());
-  AccelerationKinematicsCache<double> ac(tree().get_topology());
+  PositionKinematicsCache<double> pc(tree().forest());
+  VelocityKinematicsCache<double> vc(tree().forest());
+  AccelerationKinematicsCache<double> ac(tree().forest());
 
   const int num_angles = 50;
   const double kDeltaAngle = 2 * M_PI / (num_angles - 1.0);
@@ -1136,7 +1143,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
   std::unique_ptr<Context<AutoDiffXd>> context_autodiff =
       tree_system_autodiff.CreateDefaultContext();
 
-  PositionKinematicsCache<AutoDiffXd> pc(tree_autodiff.get_topology());
+  PositionKinematicsCache<AutoDiffXd> pc(tree_autodiff.forest());
 
   const int num_angles = 50;
   const double kDeltaAngle = 2 * M_PI / (num_angles - 1.0);
