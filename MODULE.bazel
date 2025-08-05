@@ -7,7 +7,7 @@
 module(
     name = "drake",
     # This version number should match MINIMUM_BAZEL_VERSION in CMakeLists.txt.
-    bazel_compatibility = [">=7.4.1"],
+    bazel_compatibility = [">=8.0.1"],
 )
 
 # Add starlark rules.
@@ -94,6 +94,7 @@ bazel_dep(name = "zlib", version = "1.3.1.bcr.5", repo_name = "module_zlib")
 
 # Add additional modules we use as tools (not runtime dependencies).
 
+bazel_dep(name = "nasm", version = "2.16.03.bcr.1")
 bazel_dep(name = "toolchains_llvm", version = "1.4.0")
 
 llvm = use_repo_rule("@toolchains_llvm//toolchain:rules.bzl", "llvm")
@@ -143,16 +144,24 @@ use_repo(
     "zlib",
 )
 
+# Load developer module dependencies.
+
+bazel_dep(
+    name = "google_benchmark",
+    version = "1.9.4",
+    dev_dependency = True,
+)
+single_version_override(
+    module_name = "google_benchmark",
+    patches = [
+        "//tools/workspace/google_benchmark:patches/console_allocs.patch",
+        "//tools/workspace/google_benchmark:patches/remove_overloaded_fixture_set_up.patch",  # noqa
+        "//tools/workspace/google_benchmark:patches/string_precision.patch",
+    ],
+)
+
 # Load dependencies which are "private", i.e., not available for use by
 # downstream projects. These are all "internal use only".
-#
-# TODO(jwnimmer-tri) By historical accident, not all of the repository names
-# here end with "internal". We should work on improving the consistency, either
-# by switching them to use BCR modules instead (e.g., nasm) or renaming them
-# to internal (e.g., statsjs). Specifics are listed inline below. For renaming,
-# we'll wait until after the WORKSPACE deprecation is done (2025-09-01) so that
-# users can naturally stop using them during their bzlmod porting process and
-# we won't need to provide any additional temporary infrastructure.
 
 internal_repositories = use_extension(
     "@drake//tools/workspace:default.bzl",
@@ -161,25 +170,24 @@ internal_repositories = use_extension(
 use_repo(
     internal_repositories,
     "abseil_cpp_internal",
-    "bazelisk",  # TODO(jwnimmer-tri) Mark as internal.
+    "bazelisk_internal",
     "ccd_internal",
     "clang_cindex_python3_internal",
     "clarabel_cpp_internal",
     "clp_internal",
     "coinutils_internal",
-    "com_jidesoft_jide_oss",  # TODO(jwnimmer-tri) Mark as internal.
+    "com_jidesoft_jide_oss_internal",
     "common_robotics_utilities_internal",
-    "commons_io",  # TODO(jwnimmer-tri) Mark as internal.
+    "commons_io_internal",
     "csdp_internal",
     "curl_internal",
     "dm_control_internal",
-    "doxygen",  # TODO(jwnimmer-tri) Mark as internal.
+    "doxygen_internal",
     "fcl_internal",
-    "gfortran",  # TODO(jwnimmer-tri) Mark as internal.
+    "gfortran_internal",
     "github3_py_internal",
     "gklib_internal",
-    "googlebenchmark",  # TODO(jwnimmer-tri) Switch to module.
-    "gymnasium_py",  # TODO(jwnimmer-tri) Mark as internal.
+    "gymnasium_py_internal",
     "gz_math_internal",
     "gz_utils_internal",
     "highway_internal",
@@ -196,13 +204,12 @@ use_repo(
     "mypy_extensions_internal",
     "mypy_internal",
     "nanoflann_internal",
-    "nasm",  # TODO(jwnimmer-tri) Switch to module.
-    "net_sf_jchart2d",  # TODO(jwnimmer-tri) Mark as internal.
+    "net_sf_jchart2d_internal",
     "nlohmann_internal",
     "nlopt_internal",
     "onetbb_internal",
     "openusd_internal",
-    "org_apache_xmlgraphics_commons",  # TODO(jwnimmer-tri) Mark as internal.
+    "org_apache_xmlgraphics_commons_internal",
     "osqp_internal",
     "pathspec_internal",
     "picosha2_internal",
@@ -212,13 +219,12 @@ use_repo(
     "qdldl_internal",
     "qhull_internal",
     "ros_xacro_internal",
-    "rules_python_drake_constants",  # TODO(jwnimmer-tri) Remove 2025-09-01.
     "scs_internal",
     "sdformat_internal",
     "spgrid_internal",
     "spral_internal",
     "stable_baselines3_internal",
-    "statsjs",  # TODO(jwnimmer-tri) Mark as internal.
+    "statsjs_internal",
     "stduuid_internal",
     "suitesparse_internal",
     "sympy_py_internal",
@@ -232,7 +238,7 @@ use_repo(
     "uwebsockets_internal",
     "voxelized_geometry_tools_internal",
     "vtk_internal",
-    "xmlrunner_py",  # TODO(jwnimmer-tri) Mark as internal.
+    "xmlrunner_py_internal",
     "yaml_cpp_internal",
 )
 
