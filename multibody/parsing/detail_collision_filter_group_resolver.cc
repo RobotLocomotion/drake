@@ -80,7 +80,14 @@ void CollisionFilterGroupResolver::AddGroup(
       deformable_body = FindDeformableBody(
           std::string(scoped_body_name.get_element()), body_model);
     }
-    if (!body && !deformable_body) {
+
+    if (body && deformable_body) {
+      diagnostic.Error(
+          fmt::format("body name '{}' is ambiguous, refers to both a rigid and "
+                      "deformable body",
+                      scoped_body_name));
+      continue;
+    } else if (!body && !deformable_body) {
       diagnostic.Error(
           fmt::format("body with name '{}' not found", scoped_body_name));
       continue;
