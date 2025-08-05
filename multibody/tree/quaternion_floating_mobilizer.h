@@ -315,12 +315,10 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   void DoMapAccelerationToQDDot(const systems::Context<T>& context,
                                 const Eigen::Ref<const VectorX<T>>& vdot,
                                 EigenPtr<VectorX<T>> qddot) const final;
-#if 0
-  // Maps qddot to vdot by calculating v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
+
   void DoMapQDDotToAcceleration(const systems::Context<T>& context,
                                 const Eigen::Ref<const VectorX<T>>& qddot,
                                 EigenPtr<VectorX<T>> vdot) const final;
-#endif
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const final;
