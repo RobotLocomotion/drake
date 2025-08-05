@@ -29,8 +29,8 @@ class ArticulatedBodyForceCache {
 
   // Constructs an %ArticulatedBodyForceCache object properly sized to
   // store the force bias terms for a model with the given `topology`.
-  explicit ArticulatedBodyForceCache(const MultibodyTreeTopology& topology)
-      : num_mobods_(topology.num_mobods()) {
+  explicit ArticulatedBodyForceCache(const internal::SpanningForest& forest)
+      : num_mobods_(forest.num_mobods()) {
     Allocate();
   }
 

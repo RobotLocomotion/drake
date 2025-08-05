@@ -19,6 +19,10 @@ inline auto SpanningForest::mobods(MobodIndex mobod_index) const
   return mobods()[mobod_index];
 }
 
+inline int SpanningForest::num_mobods() const {
+  return std::ssize(mobods());
+}
+
 inline LinkOrdinal SpanningForest::mobod_to_link_ordinal(
     MobodIndex mobod_index) const {
   return mobods(mobod_index).link_ordinal();
@@ -27,6 +31,14 @@ inline LinkOrdinal SpanningForest::mobod_to_link_ordinal(
 inline const std::vector<LinkOrdinal>& SpanningForest::mobod_to_link_ordinals(
     MobodIndex mobod_index) const {
   return mobods(mobod_index).follower_link_ordinals();
+}
+
+inline TreeIndex SpanningForest::link_to_tree(LinkOrdinal link_ordinal) const {
+  return mobods(links(link_ordinal).mobod_index()).tree();
+}
+
+inline TreeIndex SpanningForest::link_to_tree(LinkIndex link_index) const {
+  return mobods(link_by_index(link_index).mobod_index()).tree();
 }
 
 inline TreeIndex SpanningForest::q_to_tree(int q_index) const {
@@ -42,6 +54,10 @@ inline TreeIndex SpanningForest::v_to_tree(int v_index) const {
 inline auto SpanningForest::trees(TreeIndex tree_index) const -> const Tree& {
   DRAKE_ASSERT(tree_index.is_valid() && tree_index < ssize(trees()));
   return trees()[tree_index];
+}
+
+inline int SpanningForest::num_trees() const {
+  return std::ssize(trees());
 }
 
 // SpanningForest definitions deferred until LoopConstraint defined.

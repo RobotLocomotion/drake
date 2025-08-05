@@ -165,7 +165,7 @@ void MultibodyTree<T>::RemoveJointActuator(const JointActuator<T>& actuator) {
   actuator.HasThisParentTreeOrThrow(this);
   JointActuatorIndex actuator_index = actuator.index();
   actuators_.Remove(actuator_index);
-  topology_.RemoveJointActuator(actuator_index);
+  topology_.RemoveJointActuatorTopology(actuator_index);
 }
 
 template <typename T>
@@ -557,13 +557,9 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBodyImpl(
 
   DRAKE_DEMAND(body->model_instance().is_valid());
 
-  BodyIndex body_index(0);
-  FrameIndex body_frame_index(0);
-  std::tie(body_index, body_frame_index) = topology_.add_rigid_body();
-  // These tests MUST be performed BEFORE `rigid_bodies_` and `frames_` are
-  // changed, below. Do not move them around!
-  DRAKE_DEMAND(body_index == num_bodies());
-  DRAKE_DEMAND(body_frame_index == num_frames());
+  const BodyIndex body_index(num_bodies());
+  const FrameIndex body_frame_index(num_frames());
+  topology_.add_rigid_body_topology(body_index, body_frame_index);
 
   if (body_index == 0) {
     // We're adding the first RigidBody -- must be World!
@@ -763,7 +759,8 @@ void MultibodyTree<T>::CreateJointImplementations() {
     if (mobod.is_world()) {
       // No associated Joint but we do want a stub "weld" Mobilizer so that
       // Mobods, BodyNodes, and Mobilizers have identical numbering.
-      topology_.add_world_mobilizer(mobod, world_body().body_frame().index());
+      topology_.add_world_mobilizer_topology(mobod,
+                                             world_body().body_frame().index());
       auto dummy_weld = std::make_unique<internal::WeldMobilizer<T>>(
           mobod, world_frame(), world_frame());
       dummy_weld->set_model_instance(world_model_instance());
@@ -806,7 +803,7 @@ const Mobilizer<T>& MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   DRAKE_DEMAND(body.index() != world_index());
   const RigidBodyTopology& rigid_body_topology =
-      get_topology().get_rigid_body(body.index());
+      get_topology().get_rigid_body_topology(body.index());
   const Mobilizer<T>& mobilizer =
       get_mobilizer(rigid_body_topology.inboard_mobilizer);
   if (!mobilizer.has_six_dofs()) {
@@ -843,7 +840,7 @@ void MultibodyTree<T>::FinalizeTopology() {
   // Before performing any setup that depends on the scalar type <T>, compile
   // all the type-T independent topological information.
   DRAKE_DEMAND(graph().forest_is_valid());
-  topology_.Finalize(graph());
+  topology_.FinalizeTopology(graph());
 }
 
 template <typename T>
@@ -880,7 +877,7 @@ void MultibodyTree<T>::FinalizeInternals() {
   for (MobodIndex mobod_index(1); mobod_index < topology_.num_mobods();
        ++mobod_index) {
     const BodyNodeTopology& node_topology =
-        topology_.get_body_node(mobod_index);
+        topology_.get_body_node_topology(mobod_index);
     body_node_levels_[node_topology.level].push_back(mobod_index);
   }
 
@@ -946,8 +943,7 @@ void MultibodyTree<T>::Finalize() {
   "ephemeral" elements. */
 
   /* Add the ephemeral Joints. */
-  for (JointOrdinal i(graph.num_user_joints()); i < ssize(graph.joints());
-       ++i) {
+  for (JointOrdinal i(graph.num_user_joints()); i < graph.num_joints(); ++i) {
     const LinkJointGraph::Joint& added_joint = graph.joints(i);
     DRAKE_DEMAND(added_joint.parent_link_index() == BodyIndex(0));
 
@@ -994,7 +990,8 @@ void MultibodyTree<T>::Finalize() {
 
 template <typename T>
 void MultibodyTree<T>::CreateBodyNode(MobodIndex mobod_index) {
-  const BodyNodeTopology& node_topology = topology_.get_body_node(mobod_index);
+  const BodyNodeTopology& node_topology =
+      topology_.get_body_node_topology(mobod_index);
   const BodyIndex body_index = node_topology.rigid_body;
 
   const RigidBody<T>& body =
@@ -4253,7 +4250,7 @@ std::optional<BodyIndex> MultibodyTree<T>::MaybeGetUniqueBaseBodyIndex(
   std::optional<BodyIndex> base_body_index{};
   for (const RigidBody<T>* body : rigid_bodies_.elements()) {
     if (body->model_instance() == model_instance &&
-        (topology_.get_rigid_body(body->index()).parent_body ==
+        (topology_.get_rigid_body_topology(body->index()).parent_body ==
          world_index())) {
       if (base_body_index.has_value()) {
         // More than one base body associated with this model.

@@ -551,7 +551,7 @@ class MultibodyTree {
   // Returns the number of generalized positions of the model.
   int num_positions() const {
     DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-    return topology_.num_positions();
+    return forest().num_positions();
   }
 
   // Returns the number of generalized positions in a specific model instance.
@@ -563,7 +563,7 @@ class MultibodyTree {
   // Returns the number of generalized velocities of the model.
   int num_velocities() const {
     DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-    return topology_.num_velocities();
+    return forest().num_velocities();
   }
 
   // Returns the number of generalized velocities in a specific model instance.
@@ -575,7 +575,7 @@ class MultibodyTree {
   // Returns the total size of the state vector in the model.
   int num_states() const {
     DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-    return topology_.num_states();
+    return num_positions() + num_velocities();
   }
 
   // Returns the total size of the state vector in a specific model instance.
