@@ -15,6 +15,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/door_hinge.h"
+#include "drake/multibody/tree/force_density_field.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/joint.h"
@@ -1188,6 +1189,173 @@ void DefineMultibodyForces(py::module m, T) {
   }
 }
 
+template <typename T>
+class ForceDensityFieldPublic : public ForceDensityField<T> {
+ public:
+  // Expose protected methods for binding, take MultibodyPlant instead of
+  // MultibodyTreeSystem as argument so these methods can be bound in Python.
+  static systems::CacheEntry& DeclareCacheEntry(MultibodyPlant<T>* plant,
+      std::string description, systems::ValueProducer value_producer,
+      std::set<systems::DependencyTicket> prerequisites_of_calc) {
+    return ForceDensityField<T>::DeclareCacheEntry(
+        plant, description, value_producer, prerequisites_of_calc);
+  }
+
+  static systems::InputPort<T>& DeclareAbstractInputPort(
+      MultibodyPlant<T>* plant, std::string name,
+      const AbstractValue& model_value) {
+    return ForceDensityField<T>::DeclareAbstractInputPort(
+        plant, name, model_value);
+  }
+
+  static systems::InputPort<T>& DeclareVectorInputPort(MultibodyPlant<T>* plant,
+      std::string name, const systems::BasicVector<T>& model_vector) {
+    return ForceDensityField<T>::DeclareVectorInputPort(
+        plant, name, model_vector);
+  }
+
+ protected:
+  explicit ForceDensityFieldPublic(ForceDensityType density_type)
+      : ForceDensityField<T>(density_type) {}
+};
+
+template <typename T>
+class DelegatedForceDensityField final : public ForceDensityField<T> {
+ public:
+  explicit DelegatedForceDensityField(
+      std::shared_ptr<ForceDensityField<T>> impl)
+      : ForceDensityField<T>(impl->density_type()), impl_(std::move(impl)) {
+    DRAKE_THROW_UNLESS(impl_ != nullptr);
+  }
+
+ private:
+  Vector3<T> DoEvaluateAt(
+      const systems::Context<T>& context, const Vector3<T>& p_WQ) const final {
+    return impl_->EvaluateAt(context, p_WQ);
+  }
+
+  std::unique_ptr<ForceDensityFieldBase<T>> DoClone() const final {
+    return impl_->Clone();
+  }
+
+  std::shared_ptr<ForceDensityField<T>> impl_;
+};
+
+template <typename T>
+class PyForceDensityField : public ForceDensityFieldPublic<T> {
+ public:
+  explicit PyForceDensityField(ForceDensityType density_type)
+      : ForceDensityFieldPublic<T>(density_type) {}
+
+  Vector3<T> DoEvaluateAt(const systems::Context<T>& context,
+      const Vector3<T>& p_WQ) const override {
+    py::gil_scoped_acquire gil;
+    py::function override = py::get_override(
+        static_cast<const ForceDensityField<T>*>(this), "DoEvaluateAt");
+    if (!override) {
+      throw std::logic_error(
+          "Python class derived from ForceDensityField<T> must implement "
+          "DoEvaluateAt().");
+    }
+    // Call Python-side DoEvaluateAt.
+    py::object result_obj =
+        override(py::cast(context, py_rvp::reference), py::cast(p_WQ));
+    try {
+      return result_obj.cast<Vector3<T>>();
+    } catch (const py::cast_error& e) {
+      throw std::logic_error(
+          "DoEvaluateAt() must return a 3-element list or NumPy array that can "
+          "be converted to Vector3<T>. Got " +
+          py::str(result_obj).cast<std::string>() + ".");
+    }
+  }
+
+  std::unique_ptr<ForceDensityFieldBase<T>> DoClone() const override {
+    py::gil_scoped_acquire gil;
+    py::function override = py::get_override(
+        static_cast<const ForceDensityField<T>*>(this), "DoClone");
+    if (!override) {
+      throw std::logic_error(
+          "Python class derived from ForceDensityField<T> must implement "
+          "DoClone().");
+    }
+    // Call Python-side DoClone.
+    py::object result_obj = override();
+    std::shared_ptr<ForceDensityField<T>> cloned;
+    try {
+      cloned = result_obj.cast<std::shared_ptr<ForceDensityField<T>>>();
+    } catch (const py::cast_error& e) {
+      throw std::logic_error(
+          "DoClone() must return a `ForceDensityField<T>`. Got " +
+          py::str(result_obj.get_type()).cast<std::string>() +
+          " Make sure your DoClone() returns a new instance of the same "
+          "Python class, e.g., `return MyForceDensityField(...)`.");
+    }
+    if (cloned.get() == nullptr) {
+      throw std::logic_error(
+          "DoClone() must not return None. Did you forget to return a new "
+          "instance of your class, e.g., `return MyForceDensityField(...)`.");
+    } else if (cloned.get() == this) {
+      throw std::logic_error(
+          "DoClone() must return a clone, not itself. Return a new instance of "
+          "your class, e.g., `return MyForceDensityField(...)`.");
+    }
+    return std::make_unique<DelegatedForceDensityField<T>>(std::move(cloned));
+  }
+
+  void DoDeclareCacheEntries(MultibodyPlant<T>* plant) override {
+    PYBIND11_OVERRIDE(void, ForceDensityField<T>, DoDeclareCacheEntries, plant);
+  }
+
+  void DoDeclareInputPorts(MultibodyPlant<T>* plant) override {
+    PYBIND11_OVERRIDE(void, ForceDensityField<T>, DoDeclareInputPorts, plant);
+  }
+};
+
+template <typename T>
+void DefineForceDensityField(py::module m, T) {
+  py::tuple param = GetPyParam<T>();
+  {
+    constexpr auto& cls_doc = doc.ForceDensityField;
+    auto cls = DefineTemplateClassWithDefault<ForceDensityField<T>,
+        PyForceDensityField<T>, ForceDensityFieldBase<T>,
+        std::shared_ptr<ForceDensityField<T>>>(
+        m, "ForceDensityField", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<ForceDensityType>(),
+            py::arg("density_type") = ForceDensityType::kPerCurrentVolume,
+            cls_doc.ctor.doc)
+        .def("has_parent_system", &ForceDensityField<T>::has_parent_system,
+            cls_doc.has_parent_system.doc)
+        .def("parent_system_or_throw",
+            &ForceDensityField<T>::parent_system_or_throw,
+            py_rvp::reference_internal, cls_doc.parent_system_or_throw.doc)
+        .def_static("DeclareCacheEntry",
+            &ForceDensityFieldPublic<T>::DeclareCacheEntry, py::arg("plant"),
+            py::arg("description"), py::arg("value_producer"),
+            py::arg("prerequisites_of_calc"), py_rvp::reference_internal,
+            cls_doc.DeclareCacheEntry.doc)
+        .def_static("DeclareAbstractInputPort",
+            &ForceDensityFieldPublic<T>::DeclareAbstractInputPort,
+            py::arg("plant"), py::arg("name"), py::arg("model_value"),
+            py_rvp::reference_internal, cls_doc.DeclareAbstractInputPort.doc)
+        .def_static("DeclareVectorInputPort",
+            &ForceDensityFieldPublic<T>::DeclareVectorInputPort,
+            py::arg("plant"), py::arg("name"), py::arg("model_vector"),
+            py_rvp::reference_internal, cls_doc.DeclareVectorInputPort.doc);
+  }
+
+  {
+    constexpr auto& cls_doc = doc.GravityForceField;
+    auto cls = DefineTemplateClassWithDefault<GravityForceField<T>,
+        ForceDensityField<T>, std::shared_ptr<GravityForceField<T>>>(
+        m, "GravityForceField", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<const Vector3<T>&, const T&>(), py::arg("gravity_vector"),
+            py::arg("mass_density"), cls_doc.ctor.doc);
+  }
+}
+
 void DefineDeformableBody(py::module m) {
   using Class = DeformableBody<double>;
   constexpr auto& cls_doc = doc.DeformableBody;
@@ -1204,7 +1372,8 @@ void DefineDeformableBody(py::module m) {
       .def("reference_positions", &Class::reference_positions,
           py_rvp::reference_internal, cls_doc.reference_positions.doc)
       // TODO(xuchenhan-tri): Bind fem_model() or make it internal.
-      // TODO(xuchenhan-tri): Bind external_forces().
+      .def("external_forces", &Class::external_forces,
+          py_rvp::reference_internal, cls_doc.external_forces.doc)
       .def("discrete_state_index", &Class::discrete_state_index,
           cls_doc.discrete_state_index.doc)
       .def("is_enabled_parameter_index", &Class::is_enabled_parameter_index,
@@ -1267,6 +1436,7 @@ PYBIND11_MODULE(tree, m) {
   type_visit(
       [m](auto dummy) {
         DefineMultibodyForces(m, dummy);
+        DefineForceDensityField(m, dummy);
         DoScalarDependentDefinitions(m, dummy);
       },
       CommonScalarPack{});
