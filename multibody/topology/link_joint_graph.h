@@ -419,11 +419,11 @@ class LinkJointGraph {
   forest-building). See the class comment for more information. */
   [[nodiscard]] int num_user_joints() const { return data_.num_user_joints; }
 
-  /* After the SpanningForest has been built, returns the mobilized body
-  (Mobod) followed by this Link. If the Link is part of a merged composite, this
-  will be the mobilized body for the whole composite. If the Link was split into
-  a primary and shadows, this is the mobilized body followed by the primary. If
-  there is no valid Forest, the returned index will be invalid. */
+  /* After the SpanningForest has been built, returns the index of the mobilized
+  body (Mobod) followed by this Link. If the Link is part of a merged composite,
+  this will be the mobilized body for the whole composite. If the Link was split
+  into a primary and shadows, this is the mobilized body followed by the
+  primary. If there is no valid Forest, the returned index will be invalid. */
   [[nodiscard]] MobodIndex link_to_mobod(LinkIndex index) const;
 
   /* After the SpanningForest has been built, returns groups of Links that are

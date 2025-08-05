@@ -331,21 +331,21 @@ class TreeTopologyTests : public ::testing::Test {
   // body indexed by `body`.
   static void TestBodyNode(const MultibodyTreeTopology& topology,
                            BodyIndex body) {
-    const MobodIndex node = topology.get_rigid_body(body).mobod_index;
+    const MobodIndex node = topology.get_rigid_body_topology(body).mobod_index;
 
     // Verify that the corresponding RigidBody and BodyNode reference each other
     // correctly.
-    EXPECT_EQ(topology.get_rigid_body(body).mobod_index,
-              topology.get_body_node(node).index);
-    EXPECT_EQ(topology.get_body_node(node).rigid_body,
-              topology.get_rigid_body(body).index);
+    EXPECT_EQ(topology.get_rigid_body_topology(body).mobod_index,
+              topology.get_body_node_topology(node).index);
+    EXPECT_EQ(topology.get_body_node_topology(node).rigid_body,
+              topology.get_rigid_body_topology(body).index);
 
     // They should belong to the same level.
-    EXPECT_EQ(topology.get_rigid_body(body).level,
-              topology.get_body_node(node).level);
+    EXPECT_EQ(topology.get_rigid_body_topology(body).level,
+              topology.get_body_node_topology(node).level);
 
     const MobodIndex parent_node =
-        topology.get_body_node(node).parent_body_node;
+        topology.get_body_node_topology(node).parent_body_node;
     // Either (and thus the exclusive or):
     // 1. `body` is the world, and thus `parent_node` is invalid, XOR
     // 2. `body` is not the world, and thus we have a valid `parent_node`.
@@ -354,21 +354,24 @@ class TreeTopologyTests : public ::testing::Test {
     if (body != world_index()) {
       // Verifies BodyNode has the parent node to the correct body.
       const BodyIndex parent_body =
-          topology.get_body_node(parent_node).rigid_body;
+          topology.get_body_node_topology(parent_node).rigid_body;
       EXPECT_TRUE(parent_body.is_valid());
-      EXPECT_EQ(parent_body, topology.get_rigid_body(body).parent_body);
-      EXPECT_EQ(topology.get_body_node(parent_node).index,
-                topology.get_rigid_body(parent_body).mobod_index);
+      EXPECT_EQ(parent_body,
+                topology.get_rigid_body_topology(body).parent_body);
+      EXPECT_EQ(topology.get_body_node_topology(parent_node).index,
+                topology.get_rigid_body_topology(parent_body).mobod_index);
 
       // Verifies that BodyNode and Mobilizer indexes match.
-      const MobodIndex mobilizer = topology.get_body_node(node).index;
-      EXPECT_EQ(mobilizer, topology.get_rigid_body(body).inboard_mobilizer);
-      EXPECT_EQ(topology.get_mobilizer(mobilizer).index, node);
+      const MobodIndex mobilizer = topology.get_body_node_topology(node).index;
+      EXPECT_EQ(mobilizer,
+                topology.get_rigid_body_topology(body).inboard_mobilizer);
+      EXPECT_EQ(topology.get_mobilizer_topology(mobilizer).index, node);
 
       // Helper lambda to check if this "node" effectively is a child of
       // "parent_node".
       auto is_child_of_parent = [&]() {
-        const auto& children = topology.get_body_node(parent_node).child_nodes;
+        const auto& children =
+            topology.get_body_node_topology(parent_node).child_nodes;
         return std::find(children.begin(), children.end(), node) !=
                children.end();
       };
@@ -378,8 +381,8 @@ class TreeTopologyTests : public ::testing::Test {
 
   static const BodyNodeTopology& node_topology_from_body_index(
       const MultibodyTreeTopology& topology, int body_index) {
-    return topology.get_body_node(
-        topology.get_rigid_body(BodyIndex(body_index)).mobod_index);
+    return topology.get_body_node_topology(
+        topology.get_rigid_body_topology(BodyIndex(body_index)).mobod_index);
   }
 
   static void VerifyTopology(const MultibodyTreeTopology& topology) {
@@ -403,7 +406,7 @@ class TreeTopologyTests : public ::testing::Test {
     std::vector<std::set<BodyIndex>> levels(topology.num_rigid_bodies());
     for (BodyIndex index(0); index < topology.num_rigid_bodies(); ++index) {
       const RigidBodyTopology& rigid_body_topology =
-          topology.get_rigid_body(index);
+          topology.get_rigid_body_topology(index);
       levels[rigid_body_topology.level].insert(index);
     }
 
@@ -435,16 +438,16 @@ class TreeTopologyTests : public ::testing::Test {
     // Joints are added. Refer to schematic in the documentation of this
     // test fixture.
     EXPECT_EQ(world_mobod_index(), MobodIndex(0));
-    EXPECT_EQ(topology.get_body_node(MobodIndex(0)).rigid_body, 0);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(1)).rigid_body, 7);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(2)).rigid_body, 5);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(3)).rigid_body, 3);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(4)).rigid_body, 9);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(5)).rigid_body, 8);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(6)).rigid_body, 4);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(7)).rigid_body, 2);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(8)).rigid_body, 1);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(9)).rigid_body, 6);
+    EXPECT_EQ(topology.get_body_node_topology(MobodIndex(0)).rigid_body, 0);
+    EXPECT_EQ(topology.get_body_node_topology(MobodIndex(1)).rigid_body, 7);
+    EXPECT_EQ(topology.get_body_node_topology(MobodIndex(2)).rigid_body, 5);
+    EXPECT_EQ(topology.get_body_node_topology(MobodIndex(3)).rigid_body, 3);
+    EXPECT_EQ(topology.get_body_node_topology(MobodIndex(4)).rigid_body, 9);
+    EXPECT_EQ(topology.get_body_node_topology(MobodIndex(5)).rigid_body, 8);
+    EXPECT_EQ(topology.get_body_node_topology(MobodIndex(6)).rigid_body, 4);
+    EXPECT_EQ(topology.get_body_node_topology(MobodIndex(7)).rigid_body, 2);
+    EXPECT_EQ(topology.get_body_node_topology(MobodIndex(8)).rigid_body, 1);
+    EXPECT_EQ(topology.get_body_node_topology(MobodIndex(9)).rigid_body, 6);
 
     // Verify the expected "forest" of trees.
     EXPECT_EQ(topology.num_trees(), 4);
@@ -528,12 +531,12 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
   int velocities_index = 0;
   for (MobodIndex mobod_index(1); /* Skips the world mobilized body. */
        mobod_index < topology.num_mobods(); ++mobod_index) {
-    const BodyNodeTopology& node = topology.get_body_node(mobod_index);
+    const BodyNodeTopology& node = topology.get_body_node_topology(mobod_index);
     const BodyIndex body_index = node.rigid_body;
     const MobodIndex mobilizer_index = node.index;
 
     const MobilizerTopology& mobilizer_topology =
-        topology.get_mobilizer(mobilizer_index);
+        topology.get_mobilizer_topology(mobilizer_index);
 
     EXPECT_EQ(body_index, bodies_[body_index]->index());
 

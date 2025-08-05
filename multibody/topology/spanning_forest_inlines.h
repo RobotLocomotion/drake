@@ -29,6 +29,14 @@ inline const std::vector<LinkOrdinal>& SpanningForest::mobod_to_link_ordinals(
   return mobods(mobod_index).follower_link_ordinals();
 }
 
+inline TreeIndex SpanningForest::link_to_tree(LinkOrdinal link_ordinal) const {
+  return mobods(links(link_ordinal).mobod_index()).tree();
+}
+
+inline TreeIndex SpanningForest::link_to_tree(LinkIndex link_index) const {
+  return mobods(link_by_index(link_index).mobod_index()).tree();
+}
+
 inline TreeIndex SpanningForest::q_to_tree(int q_index) const {
   return mobods(q_to_mobod(q_index)).tree();
 }

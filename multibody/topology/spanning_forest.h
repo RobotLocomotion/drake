@@ -378,6 +378,15 @@ class SpanningForest {
     return data_.v_to_mobod[v_index];
   }
 
+  /* Returns the index of the Tree to which this Link's Mobod belongs. If this
+  Link was split due to a loop, the returned index is for the Tree to which
+  the Primary Link's Mobod belongs. An invalid index is returned if the Link's
+  Mobod is World. O(1), very fast. */
+  inline TreeIndex link_to_tree(LinkOrdinal link_ordinal) const;
+
+  /* Convenience signature that takes a LinkIndex rather than a LinkOrdinal. */
+  inline TreeIndex link_to_tree(LinkIndex link_index) const;
+
   /* Returns the Tree to which a given position coordinate q belongs.
   O(1), very fast.
   @pre q_index is in range [0, num_positions) */

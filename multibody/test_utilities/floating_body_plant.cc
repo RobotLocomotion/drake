@@ -77,7 +77,7 @@ Vector3<T> AxiallySymmetricFreeBodyPlant<T>::get_translational_velocity(
 template<typename T>
 math::RigidTransform<T> AxiallySymmetricFreeBodyPlant<T>::CalcPoseInWorldFrame(
     const systems::Context<T>& context) const {
-  internal::PositionKinematicsCache<T> pc(this->tree().get_topology());
+  internal::PositionKinematicsCache<T> pc(this->tree().forest());
   this->tree().CalcPositionKinematicsCache(context, &pc);
   return math::RigidTransform<T>(pc.get_X_WB(body_->mobod_index()));
 }
@@ -86,9 +86,9 @@ template<typename T>
 SpatialVelocity<T>
 AxiallySymmetricFreeBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
     const systems::Context<T>& context) const {
-  internal::PositionKinematicsCache<T> pc(this->tree().get_topology());
+  internal::PositionKinematicsCache<T> pc(this->tree().forest());
   this->tree().CalcPositionKinematicsCache(context, &pc);
-  internal::VelocityKinematicsCache<T> vc(this->tree().get_topology());
+  internal::VelocityKinematicsCache<T> vc(this->tree().forest());
   this->tree().CalcVelocityKinematicsCache(context, pc, &vc);
   return vc.get_V_WB(body_->mobod_index());
 }
