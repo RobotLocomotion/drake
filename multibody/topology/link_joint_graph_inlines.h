@@ -19,6 +19,10 @@ inline const LinkJointGraph::Link& LinkJointGraph::links(
   return data_.links[link_ordinal];
 }
 
+inline int LinkJointGraph::num_links() const {
+  return std::ssize(links());
+}
+
 inline const LinkJointGraph::Link& LinkJointGraph::link_by_index(
     LinkIndex link_index) const {
   const std::optional<LinkOrdinal>& ordinal =
@@ -63,6 +67,10 @@ inline const LinkJointGraph::Joint& LinkJointGraph::joints(
     JointOrdinal joint_ordinal) const {
   DRAKE_ASSERT(joint_ordinal < ssize(joints()));
   return data_.joints[joint_ordinal];
+}
+
+inline int LinkJointGraph::num_joints() const {
+  return std::ssize(joints());
 }
 
 inline const LinkJointGraph::Joint& LinkJointGraph::joint_by_index(
