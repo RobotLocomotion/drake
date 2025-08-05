@@ -636,7 +636,7 @@ class Frame : public MultibodyElement<T> {
   // Implementation for MultibodyElement::DoSetTopology().
   void DoSetTopology(
       const internal::MultibodyTreeTopology& tree_topology) final {
-    topology_ = tree_topology.get_frame(this->index());
+    topology_ = tree_topology.get_frame_topology(this->index());
     DRAKE_ASSERT(topology_.index == this->index());
   }
 
