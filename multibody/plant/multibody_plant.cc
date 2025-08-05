@@ -1325,7 +1325,8 @@ void MultibodyPlant<T>::CalcSpatialAccelerationsFromVdot(
       internal_tree().get_topology();
   for (internal::MobodIndex mobod_index(1); mobod_index < topology.num_mobods();
        ++mobod_index) {
-    const BodyIndex body_index = topology.get_body_node(mobod_index).rigid_body;
+    const BodyIndex body_index =
+        topology.get_body_node_topology(mobod_index).rigid_body;
     (*A_WB_array)[body_index] = A_WB_array_mobod[mobod_index];
   }
 }
@@ -1577,7 +1578,7 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   SetUpJointLimitsParameters();
   if (use_sampled_output_ports_) {
     auto cache = std::make_unique<AccelerationKinematicsCache<T>>(
-        internal_tree().get_topology());
+        internal_tree().forest());
     for (SpatialAcceleration<T>& A_WB : cache->get_mutable_A_WB_pool()) {
       A_WB.SetZero();
     }
@@ -3276,7 +3277,7 @@ systems::EventStatus MultibodyPlant<T>::CalcStepUnrestricted(
       next_state->get_mutable_discrete_state();
   DiscreteStepMemory::Data<T>& next_memory =
       next_state->template get_mutable_abstract_state<DiscreteStepMemory>(0)
-          .template Allocate<T>(internal_tree().get_topology());
+          .template Allocate<T>(internal_tree().forest());
   discrete_update_manager_->CalcDiscreteValues(context0, &next_discrete_state,
                                                &next_memory);
   next_memory.reaction_forces.resize(num_joints());
