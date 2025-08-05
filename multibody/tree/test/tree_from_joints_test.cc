@@ -312,8 +312,8 @@ class PendulumTests : public ::testing::Test {
     pendulum_.shoulder().set_angular_rate(context_.get(), theta1dot);
     pendulum_.elbow().set_angular_rate(context_.get(), theta2dot);
 
-    internal::PositionKinematicsCache<double> pc(tree().get_topology());
-    internal::VelocityKinematicsCache<double> vc(tree().get_topology());
+    internal::PositionKinematicsCache<double> pc(tree().forest());
+    internal::VelocityKinematicsCache<double> vc(tree().forest());
     tree().CalcPositionKinematicsCache(*context_, &pc);
     tree().CalcVelocityKinematicsCache(*context_, pc, &vc);
 
