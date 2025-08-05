@@ -9,9 +9,17 @@ if [ ! -f "${WORKSPACE}/WORKSPACE" ]; then
   exit 1
 fi
 
+kcov_version () {
+    echo $(kcov --version|sed 's#.* \([0-9]*\).*#\1#g')
+}
+
 # ELF binaries with 'sh' in their first 80 bytes are mishandled by kcov,
 # leading to segfault. See https://github.com/SimonKagstrom/kcov/issues/339
 is_kcov_339_vulnerable () {
+    if [ $(kcov_version) -ge 40 ] ; then
+        # Bug is fixed in kcov.
+        return 1
+    fi
     file -b -L "$1" | grep -q ELF \
         && dd bs=80 count=1 if="$1" 2>/dev/null | grep -q sh
 }
