@@ -105,7 +105,6 @@ all of their maintainers, whose work is essential to Drake's success:
   * [libpng](https://github.com/glennrp/libpng)
   * [libtiff](https://github.com/libsdl-org/libtiff)
   * [nlohmann/json](https://github.com/nlohmann/json)
-  * [openusd](https://github.com/PixarAnimationStudios/OpenUSD)
   * [pyyaml](https://pyyaml.org/)
   * [tinygltf](https://github.com/syoyo/tinygltf)
   * [tinyjson](https://github.com/rhysd/tinyjson)

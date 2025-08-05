@@ -13,7 +13,7 @@ problems.
 
 ## Parsing {#mbp-parsing}
 
-If you have a model file (e.g., .urdf, .sdf, .xml, .usd, etc.) that you are loading into a `MultibodyPlant` using the `Parser` class, and the model is not loading properly, then there are a few useful resources you might consider.
+If you have a model file (e.g., .urdf, .sdf, .xml, etc.) that you are loading into a `MultibodyPlant` using the `Parser` class, and the model is not loading properly, then there are a few useful resources you might consider.
 
 Documentation for the specific XML elements and attributes supported by the parser can be found [here](https://drake.mit.edu/doxygen_cxx/group__multibody__parsing.html).
 
