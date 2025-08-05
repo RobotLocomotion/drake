@@ -481,13 +481,22 @@ void QuaternionFloatingMobilizer<T>::DoMapAccelerationToQDDot(
     const Eigen::Ref<const VectorX<T>>& vdot,
     EigenPtr<VectorX<T>> qddot) const {
   // This function maps vdot to qddot by calculating q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇.
-  // It first calculates the rotational parts, then the translational part.
+  // It first calculates the rotational part, then the translational part.
   //
-  // Calculate the 2nd-derivative of the quaternion q_FM = [qw, qx, qy, qz]ᵀ.
-  // q̈_FM = Nᵣ(q) [ẇx, ẇy, ẇz]ᵀ - 0.25 ω² q_FM, where ω² = |w_FM|².
-  // Formulas and proofs in Section 9.3 of [Mitiguy, August 2019].
-  // [Mitiguy, August 2019] Mitiguy, P. Advanced Dynamics & Motion Simulation.
-  //                        Available at www.MotionGenesis.com
+  // For the rotational part of this mobilizer, the 2nd-derivatives of the
+  // generalized positions q̈_FM = q̈ᵣ = [q̈w, q̈x, q̈y, q̈z]ᵀ are related to the
+  // 1st-derivatives of the generalized velocities ẇ_FM_F = v̇ᵣ = [ẇx, ẇy, ẇz]ᵀ
+  // as q̈_FM = Ṅᵣ(q,q̇)⋅v + Nᵣ(q)⋅v̇, where Nᵣ(q) is the 3x4 matrix below and
+  // Ṅᵣ(q,q̇)⋅v = -0.25 ω² q_FM, where ω² = |w_FM_F|² and w_FM_F = [wx, wy, wz]ᵀ.
+  //
+  // ⌈ q̈w ⌉       ⌈ -qx   -qy   -qz ⌉ ⌈ ẇx ⌉           ⌈ qw ⌉
+  // | q̈x | = 0.5 |  qw    qz   -qy | | ẇy | - 0.25 ω² | qx |
+  // | q̈y |       |  qw   qw    qx  | ⌊ ẇz ⌋           | qy |
+  // ⌊ q̈z ⌋       ⌊  qy   -qx    qw ⌋                  ⌊ qz ⌋
+  //
+  // Formulas and proofs in Sections 9.3 and 9.6 of [Mitiguy, August 2025].
+  // [Mitiguy, August 2025] Mitiguy, P. Advanced Dynamics & Motion Simulation.
+  // Textbook available at www.MotionGenesis.com
   const Quaternion<T> q_FM = get_quaternion(context);
   const Vector3<T> w_FM_F = get_angular_velocity(context);
   const T w_squared_over_four = 0.25 * w_FM_F.squaredNorm();
@@ -495,9 +504,46 @@ void QuaternionFloatingMobilizer<T>::DoMapAccelerationToQDDot(
       AngularVelocityToQuaternionRateMatrix(q_FM) * vdot.template head<3>() -
       w_squared_over_four * Vector4<T>(q_FM.w(), q_FM.x(), q_FM.y(), q_FM.z());
 
-  // Calculate the 2nd-derivtive of the position vector p_FoMo_F = [x, y, z]ᵀ.
+  // Calculate the 2nd-derivative of the position vector p_FoMo_F = [x, y, z]ᵀ
+  // in terms of 1st-derivative of the velocity v_FoM_F = [vx, vy, vz]ᵀ as
   // [ẍ, ÿ, z̈]ᵀ = [v̇x, v̇y, v̇z]ᵀ.
   qddot->template tail<3>() = vdot.template tail<3>();
+}
+
+template <typename T>
+void DoMapQDDotToAcceleration(const systems::Context<T>& context,
+                              const Eigen::Ref<const VectorX<T>>& qddot,
+                              EigenPtr<VectorX<T>> vdot) {
+  // This function maps qddot to vdot by calculating v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
+  // It first calculates the rotational part, then the translational part.
+  //
+  // For the rotational part of this mobilizer, the 1st-derivatives of the
+  // generalized velocities ẇ_FM_F = v̇ᵣ = [ẇx, ẇy, ẇz]ᵀ are related to the
+  // 2nd-derivatives of the generalized positions q̈̇_FM = q̇ᵣ = [q̈w, q̈x, q̈y, q̈z]ᵀ
+  // as v̇ᵣ = N⁺ᵣ(q)⋅q̈_FM, where N⁺ᵣ(q) is the 3x4 matrix below.
+  // Note: Perhaps surprisingly, Ṅ⁺ᵣ(q,q̇)⋅q̇ = [0, 0, 0]ᵀ.
+  //
+  // ⌈ ẇx ⌉       ⌈ -qx    qw   -qz  -qy ⌉ ⌈ q̈w ⌉
+  // | ẇy | = 2.0 | -qy    qz    qw  -qx | | q̈x |
+  // ⌊ ẇz ⌋       | -qz   -qy    qx   qw | | q̈y |
+  //                                       ⌊ q̈z ⌋
+  //
+  // Formulas and proofs in Sections 9.3 and 9.6 of [Mitiguy, August 2025].
+  // [Mitiguy, August 2025] Mitiguy, P. Advanced Dynamics & Motion Simulation.
+  // Textbook available at www.MotionGenesis.com
+
+  // Since QuaternionRateToAngularVelocityMatrix() calculates N⁺ᵣ(qᵣ), we use
+  // this function to calculate v̇ᵣ = N⁺ᵣ(q)⋅q̈_FM.
+  const Quaternion<T> q_FM = get_quaternion(context);
+  vdot->template head<3>() =
+      QuaternionRateToAngularVelocityMatrix(q_FM) * qddot.template head<4>();
+
+  // For the translational part of this mobilizer, the 1st-derivatives of the
+  // translational generalized velocities v̇_FM_F = v̇ₜ = [v̇x, v̇y, v̇z]ᵀ are
+  // related to the 2nd-derivatives of the generalized positions q̈ₜ = [ẍ, ÿ, z̈]ᵀ
+  // as v̇ₜ = N⁺ₜ(q)⋅q̈ₜ, where Nₜ(q) = [I₃₃] (3x3 identity matrix), i.e., as
+  // [v̇x, v̇y, v̇z]ᵀ = [ẍ, ÿ, z̈]ᵀ.
+  vdot->template tail<3>() = qddot.template tail<3>();
 }
 
 template <typename T>
