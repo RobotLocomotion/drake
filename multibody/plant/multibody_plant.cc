@@ -1313,20 +1313,27 @@ void MultibodyPlant<T>::CalcSpatialAccelerationsFromVdot(
   this->ValidateContext(context);
   DRAKE_THROW_UNLESS(A_WB_array != nullptr);
   DRAKE_THROW_UNLESS(ssize(*A_WB_array) == num_bodies());
-  internal_tree().CalcSpatialAccelerationsFromVdot(
-      context, internal_tree().EvalPositionKinematics(context),
-      internal_tree().EvalVelocityKinematics(context), known_vdot, A_WB_array);
-  // Permute MobodIndex -> BodyIndex.
+  const internal::MultibodyTree<T>& multibody_tree = internal_tree();
+  const internal::SpanningForest& forest = multibody_tree.forest();
+
   // TODO(eric.cousineau): Remove dynamic allocations. Making this in-place
   //  still required dynamic allocation for recording permutation indices.
   //  Can change implementation once MultibodyTree becomes fully internal.
-  std::vector<SpatialAcceleration<T>> A_WB_array_mobod = *A_WB_array;
-  const internal::MultibodyTreeTopology& topology =
-      internal_tree().get_topology();
-  for (internal::MobodIndex mobod_index(1); mobod_index < topology.num_mobods();
-       ++mobod_index) {
-    const BodyIndex body_index = topology.get_body_node(mobod_index).rigid_body;
-    (*A_WB_array)[body_index] = A_WB_array_mobod[mobod_index];
+  std::vector<SpatialAcceleration<T>> A_WB_array_mobod(forest.num_mobods());
+  multibody_tree.CalcSpatialAccelerationsFromVdot(
+      context, multibody_tree.EvalPositionKinematics(context),
+      multibody_tree.EvalVelocityKinematics(context), known_vdot,
+      &A_WB_array_mobod);
+
+  // Permute MobodIndex -> BodyIndex.
+  for (const auto& mobod : forest.mobods()) {
+    // TODO(sherm1) Need to calculate accelerations (optionally?) for the
+    //  inactive links on a link composite following this mobod.
+    // Make sure there aren't any inactives for now.
+    DRAKE_DEMAND(ssize(mobod.follower_link_ordinals()) == 1);
+    const BodyIndex active_link_index =
+        forest.links(mobod.link_ordinal()).index();
+    (*A_WB_array)[active_link_index] = A_WB_array_mobod[mobod.index()];
   }
 }
 
@@ -1577,7 +1584,7 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   SetUpJointLimitsParameters();
   if (use_sampled_output_ports_) {
     auto cache = std::make_unique<AccelerationKinematicsCache<T>>(
-        internal_tree().get_topology());
+        internal_tree().forest());
     for (SpatialAcceleration<T>& A_WB : cache->get_mutable_A_WB_pool()) {
       A_WB.SetZero();
     }
@@ -3276,7 +3283,7 @@ systems::EventStatus MultibodyPlant<T>::CalcStepUnrestricted(
       next_state->get_mutable_discrete_state();
   DiscreteStepMemory::Data<T>& next_memory =
       next_state->template get_mutable_abstract_state<DiscreteStepMemory>(0)
-          .template Allocate<T>(internal_tree().get_topology());
+          .template Allocate<T>(internal_tree().forest());
   discrete_update_manager_->CalcDiscreteValues(context0, &next_discrete_state,
                                                &next_memory);
   next_memory.reaction_forces.resize(num_joints());
