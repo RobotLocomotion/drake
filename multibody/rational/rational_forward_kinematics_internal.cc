@@ -40,19 +40,20 @@ std::vector<BodyIndex> FindPath(const MultibodyPlant<double>& plant,
     if (current == end) {
       break;
     }
-    const RigidBodyTopology& current_node = topology.get_rigid_body(current);
+    const RigidBodyTopology& current_node_topology =
+        topology.get_rigid_body_topology(current);
     if (current != world_index()) {
-      const BodyIndex parent = current_node.parent_body;
+      const BodyIndex parent = current_node_topology.parent_body;
       visit_edge(current, parent);
     }
-    for (BodyIndex child : current_node.child_bodies) {
+    for (BodyIndex child : current_node_topology.child_bodies) {
       visit_edge(current, child);
     }
   }
 
   // Retrieve the path in reverse order.
   std::vector<BodyIndex> path;
-  for (BodyIndex current = end; ; current = ancestors.at(current)) {
+  for (BodyIndex current = end;; current = ancestors.at(current)) {
     path.push_back(current);
     if (current == start) {
       break;
@@ -72,7 +73,7 @@ std::vector<MobodIndex> FindMobilizersOnPath(
   const MultibodyTree<double>& tree = GetInternalTree(plant);
   for (int i = 0; i < static_cast<int>(path.size()) - 1; ++i) {
     const RigidBodyTopology& rigid_body_topology =
-        tree.get_topology().get_rigid_body(path[i]);
+        tree.get_topology().get_rigid_body_topology(path[i]);
     if (path[i] != world_index() &&
         rigid_body_topology.parent_body == path[i + 1]) {
       // path[i] is the child of path[i+1] in MultibodyTreeTopology, they are
@@ -81,8 +82,9 @@ std::vector<MobodIndex> FindMobilizersOnPath(
     } else {
       // path[i] is the parent of path[i+1] in MultibodyTreeTopology, they are
       // connected by path[i+1]'s inboard mobilizer.
-      mobilizers_on_path.push_back(
-          tree.get_topology().get_rigid_body(path[i + 1]).inboard_mobilizer);
+      mobilizers_on_path.push_back(tree.get_topology()
+                                       .get_rigid_body_topology(path[i + 1])
+                                       .inboard_mobilizer);
     }
   }
   return mobilizers_on_path;

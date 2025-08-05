@@ -19,21 +19,12 @@
 ///   MultibodyTree::Finalize() stage) of its topology which serves as a
 ///   key into the Context for that element's state.
 
-#include <algorithm>
 #include <optional>
-#include <set>
-#include <stack>
-#include <string>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
-#include <fmt/format.h>
-
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_throw.h"
-#include "drake/common/ssize.h"
 #include "drake/multibody/topology/forest.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
@@ -200,11 +191,12 @@ struct JointActuatorTopology {
 
   // Unique index in the MultibodyTree.
   JointActuatorIndex index{0};
-  // For an actuator in a MultibodyTree model, this index corresponds to the
-  // first entry in the global array u containing all actuation values for the
-  // entire model. Actuator indexes are assigned in the order actuators are
-  // added to the model, that is, in the order of JointActuatorIndex.
-  int actuator_index_start{-1};
+  // For an actuator in a MultibodyTree model, this dof start index corresponds
+  // to the first entry in the global array u containing all actuation values
+  // for the entire model. Actuator dof start indexes are assigned in the order
+  // actuators are added to the model, that is, in the order of
+  // JointActuatorIndex.
+  int actuator_dof_start{-1};
   // The number of dofs actuated by this actuator.
   int num_dofs{-1};
 };
@@ -299,63 +291,63 @@ class MultibodyTreeTopology {
   // Returns the number of RigidBody elements in the MultibodyPlant. This
   // includes the World RigidBody and therefore the minimum number of rigid
   // bodies after MultibodyTree::Finalize() will always be one, not zero.
-  int num_rigid_bodies() const { return ssize(rigid_bodies_); }
+  int num_rigid_bodies() const { return ssize(rigid_body_topology_); }
 
   // Returns the number of physical frames in the multibody tree.
-  int num_frames() const { return ssize(frames_); }
+  int num_frames() const { return ssize(frame_topology_); }
 
   // Returns the number of Mobilizers. This is always the same as the number
   // of BodyNodes and the number of mobilized bodies in the SpanningForest.
-  int num_mobilizers() const { return ssize(mobilizers_); }
+  int num_mobilizers() const { return ssize(mobilizer_topology_); }
 
   // Returns the number of BodyNodes. These are generated 1:1 from the
   // MobilizedBodies in the SpanningForest. If we combined welded Links,
   // there will be more RigidBodies than BodyNodes.
-  int num_mobods() const { return ssize(body_nodes_); }
+  int num_mobods() const { return ssize(body_node_topology_); }
 
   // Returns the number of joint actuators in the topology.
-  int num_joint_actuators() const { return ssize(joint_actuators_); }
+  int num_joint_actuators() const { return ssize(joint_actuator_topology_); }
 
   // Returns the number of levels in the forest topology.
   int forest_height() const { return forest_height_; }
 
   // Returns a constant reference to the corresponding FrameTopology given the
   // FrameIndex.
-  const FrameTopology& get_frame(FrameIndex index) const {
+  const FrameTopology& get_frame_topology(FrameIndex index) const {
     DRAKE_ASSERT(index < num_frames());
-    return frames_[index];
+    return frame_topology_[index];
   }
 
   // Returns a constant reference to the corresponding RigidBodyTopology given a
   // BodyIndex.
-  const RigidBodyTopology& get_rigid_body(BodyIndex index) const {
+  const RigidBodyTopology& get_rigid_body_topology(BodyIndex index) const {
     DRAKE_ASSERT(index < num_rigid_bodies());
-    return rigid_bodies_[index];
+    return rigid_body_topology_[index];
   }
 
   // Mutable version of get_rigid_body().
-  RigidBodyTopology& get_mutable_rigid_body(BodyIndex index) {
+  RigidBodyTopology& get_mutable_rigid_body_topology(BodyIndex index) {
     DRAKE_ASSERT(index < num_rigid_bodies());
-    return rigid_bodies_[index];
+    return rigid_body_topology_[index];
   }
 
   // Returns a constant reference to the corresponding MobilizerTopology given a
   // MobodIndex.
-  const MobilizerTopology& get_mobilizer(MobodIndex index) const {
+  const MobilizerTopology& get_mobilizer_topology(MobodIndex index) const {
     DRAKE_ASSERT(index < num_mobilizers());
-    return mobilizers_[index];
+    return mobilizer_topology_[index];
   }
 
   // Returns a constant reference to the corresponding JointActuatorTopology
   // given a JointActuatorIndex.
-  const JointActuatorTopology& get_joint_actuator(
+  const JointActuatorTopology& get_joint_actuator_topology(
       JointActuatorIndex index) const;
 
   // Returns a constant reference to the corresponding BodyNodeTopology given
   // a MobodIndex.
-  const BodyNodeTopology& get_body_node(MobodIndex index) const {
+  const BodyNodeTopology& get_body_node_topology(MobodIndex index) const {
     DRAKE_ASSERT(index < num_mobods());
-    return body_nodes_[index];
+    return body_node_topology_[index];
   }
 
   // Returns the number of trees in the "forest" topology of the entire system.
@@ -413,21 +405,21 @@ class MultibodyTreeTopology {
   // RigidBodyTopology will be assigned a new, unique BodyIndex and FrameIndex
   // values.
   //
-  // @throws std::exception if Finalize() was already called on `this`
+  // @throws std::exception if FinalizeTopology() was already called on `this`
   // topology.
   //
   // @returns a std::pair<BodyIndex, FrameIndex> containing the indexes
   // assigned to the new RigidBodyTopology.
-  std::pair<BodyIndex, FrameIndex> add_rigid_body();
+  void add_rigid_body_topology(BodyIndex, FrameIndex);
 
   // Creates and adds a new FrameTopology, associated with the given
   // body_index, to this MultibodyTreeTopology.
   //
-  // @throws std::exception if Finalize() was already called on `this`
+  // @throws std::exception if FinalizeTopology() was already called on `this`
   // topology.
   //
   // @returns The FrameIndex assigned to the new FrameTopology.
-  FrameIndex add_frame(BodyIndex body_index);
+  void add_frame_topology(FrameIndex, BodyIndex);
 
   // Creates and adds a new MobilizerTopology connecting the inboard and
   // outboard multibody frames identified by indexes `in_frame` and
@@ -440,33 +432,29 @@ class MultibodyTreeTopology {
   // @throws std::exception if `in_frame` and `out_frame` already are
   // connected by another mobilizer. More than one mobilizer between two frames
   // is not allowed.
-  // @throws std::exception if Finalize() was already called on `this`
+  // @throws std::exception if FinalizeTopology() was already called on `this`
   // topology.
-  //
-  // @returns The MobodIndex assigned to the new MobilizerTopology.
-  MobodIndex add_mobilizer(const SpanningForest::Mobod& mobod,
-                           FrameIndex in_frame, FrameIndex out_frame);
+  void add_mobilizer_topology(const SpanningForest::Mobod& mobod,
+                              FrameIndex in_frame, FrameIndex out_frame);
 
-  void add_world_mobilizer(const SpanningForest::Mobod& world_mobod,
-                           FrameIndex world_body_frame);
+  void add_world_mobilizer_topology(const SpanningForest::Mobod& world_mobod,
+                                    FrameIndex world_body_frame);
 
   // Creates and adds a new JointActuatorTopology for a joint with `num_dofs`
   // degrees of freedom.
   // @param[in] num_dofs
   //   The number of joint dofs actuated by this actuator.
   //
-  // @throws std::exception if Finalize() was already called on `this`
+  // @throws std::exception if FinalizeTopology() was already called on `this`
   // topology.
-  //
-  // @returns The JointActuatorIndex assigned to the new JointActuatorTopology.
-  JointActuatorIndex add_joint_actuator(int num_dofs);
+  void add_joint_actuator_topology(JointActuatorIndex, int num_dofs);
 
   // Removes `actuator_index` from the list of joint actuators. The
-  // `actuator_index_start` will be modified if necessary for other actuators.
+  // `actuator_dof_start` will be modified if necessary for other actuators.
   // @throws std::exception if called post-Finalize.
   // @throws std::exception if the actuator with the index `actuator_index` has
   // already been removed.
-  void RemoveJointActuator(JointActuatorIndex actuator_index);
+  void RemoveJointActuatorTopology(JointActuatorIndex actuator_index);
 
   // This method must be called by MultibodyTree::Finalize() after all
   // topological elements in the plant (rigid bodies, joints, constraints) were
@@ -484,11 +472,14 @@ class MultibodyTreeTopology {
   // @throws std::exception If users attempt to call this method on an
   //         already finalized topology.
   // @see is_valid()
-  void Finalize(const LinkJointGraph& graph);
+  void FinalizeTopology(const LinkJointGraph& graph);
 
-  // Returns `true` if Finalize() was already called on `this` topology.
-  // @see Finalize()
+  // Returns `true` if FinalizeTopology() was already called on `this` topology.
+  // @see FinalizeTopology()
   bool is_valid() const { return is_valid_; }
+
+  // Returns the total number of actuated joint dofs in the model.
+  int num_actuated_dofs() const { return num_actuated_dofs_; }
 
   // Returns the total number of generalized positions in the model.
   int num_positions() const { return num_positions_; }
@@ -498,9 +489,6 @@ class MultibodyTreeTopology {
 
   // Returns the total size of the state vector in the model.
   int num_states() const { return num_states_; }
-
-  // Returns the total number of actuated joint dofs in the model.
-  int num_actuated_dofs() const { return num_actuated_dofs_; }
 
  private:
   // Returns `true` if there is _any_ mobilizer in the multibody tree
@@ -513,22 +501,23 @@ class MultibodyTreeTopology {
   bool IsThereAMobilizerBetweenRigidBodies(BodyIndex body1,
                                            BodyIndex body2) const;
 
-  // Helper method to be used within Finalize() to obtain the topological
-  // information that describes the multibody system as a "forest" of trees.
+  // Helper method to be used within FinalizeTopology() to obtain the
+  // topological information that describes the multibody system as a "forest"
+  // of trees.
   void ExtractForestInfo(const LinkJointGraph& graph);
 
-  // is_valid is set to `true` after a successful Finalize().
+  // is_valid is set to `true` after a successful FinalizeTopology().
   bool is_valid_{false};
-  // Number of levels in the full Forest topology. After Finalize()
+  // Number of levels in the full Forest topology. After FinalizeTopology()
   // there will be at least one level (level = 0) with the world body.
   int forest_height_{-1};
 
   // Topological elements:
-  std::vector<FrameTopology> frames_;
-  std::vector<RigidBodyTopology> rigid_bodies_;
-  std::vector<MobilizerTopology> mobilizers_;
-  std::vector<std::optional<JointActuatorTopology>> joint_actuators_;
-  std::vector<BodyNodeTopology> body_nodes_;
+  std::vector<FrameTopology> frame_topology_;
+  std::vector<RigidBodyTopology> rigid_body_topology_;
+  std::vector<MobilizerTopology> mobilizer_topology_;
+  std::vector<std::optional<JointActuatorTopology>> joint_actuator_topology_;
+  std::vector<BodyNodeTopology> body_node_topology_;
 
   // Total number of generalized positions and velocities in the MultibodyTree
   // model.
