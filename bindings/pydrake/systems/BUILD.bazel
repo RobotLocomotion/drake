@@ -200,7 +200,6 @@ drake_pybind_library(
         ":lcm_py",
         ":module_py",
         "//bindings/pydrake/geometry",
-        "//bindings/pydrake/multibody:parsing_py",
     ],
 )
 
@@ -605,6 +604,7 @@ drake_py_unittest(
         ":sensors_py",
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/geometry",
+        "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
     ],
 )

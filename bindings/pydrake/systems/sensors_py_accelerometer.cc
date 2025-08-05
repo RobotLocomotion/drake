@@ -39,8 +39,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("body_index", &Class::body_index, cls_doc.body_index.doc)
         .def("gravity_vector", &Class::gravity_vector, cls_doc.gravity_vector.doc)
         .def("pose", &Class::pose, cls_doc.pose.doc);
-        // TODO(wf34) to add static method "AddToDiagram", as per discussion in
-        // [#23222](https://github.com/RobotLocomotion/drake/issues/23222)
+        // TODO(#23222) Add static method `AddToDiagram`.
   }
 }
 

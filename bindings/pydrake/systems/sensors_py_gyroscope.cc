@@ -34,15 +34,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
              py_rvp::reference_internal, cls_doc.get_measurement_output_port.doc)
         .def("body_index", &Class::body_index, cls_doc.body_index.doc)
         .def("pose", &Class::pose, cls_doc.pose.doc);
-        // TODO(wf34) to add static method "AddToDiagram", as per discussion in
-        // [#23222](https://github.com/RobotLocomotion/drake/issues/23222)
+        // TODO(#23222) Add static method `AddToDiagram`.
   }
 }
 
 }  // namespace
 
 void DefineSensorsGyroscope(py::module m) {
-  // Do templated instantiations of system types.
   auto bind_common_scalar_types = [m](auto dummy) {
     using T = decltype(dummy);
     DoScalarDependentDefinitions<T>(m, dummy);
