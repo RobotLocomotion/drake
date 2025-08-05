@@ -219,6 +219,11 @@ class SpanningForest {
   and accessed by LinkOrdinal. */
   const std::vector<Link>& links() const { return graph().links(); }
 
+  /* Returns the number of Links currently in the graph, including World and
+  ephemeral Links. This is the same as `ssize(links())`. Links that have been
+  removed are not counted. */
+  [[nodiscard]] int num_links() const { return graph().num_links(); }
+
   /* Provides convenient access to one of the owning graph's links. Requires
   a LinkOrdinal, not a plain integer.
   @pre link_ordinal is in range */
@@ -234,6 +239,11 @@ class SpanningForest {
   /* Provides convenient access to the owning graph's joints, contiguous
   and accessed by JointOrdinal. */
   const std::vector<Joint>& joints() const { return graph().joints(); }
+
+  /* Returns the number of Joints currently in the graph, including ephemeral
+  joints. This is the same as `ssize(joints())`. Joints that have been removed
+  are not counted. */
+  [[nodiscard]] int num_joints() const { return graph().num_joints(); }
 
   /* Provides convenient access to one of the owning graph's joints. Requires
   a JointOrdinal, not a plain integer.
@@ -251,6 +261,10 @@ class SpanningForest {
   then every Mobod in tree 0, then every Mobod in tree 1, etc. Free bodies
   that weren't explicitly connected to World by a Joint come last. */
   const std::vector<Mobod>& mobods() const { return data_.mobods; }
+
+  /* Returns the number of Mobods in the Forest, including World.  This is the
+  same as `ssize(mobods())`. */
+  [[nodiscard]] inline int num_mobods() const;
 
   /* Provides convenient access to a particular Mobod. Requires a MobodIndex,
   not a plain integer.
@@ -277,6 +291,10 @@ class SpanningForest {
   Mobod (which may represent a LinkComposite). World is not considered to
   be part of any Tree; it is the root of the Forest. */
   const std::vector<Tree>& trees() const { return data_.trees; }
+
+  /* Returns the number of Trees in the Forest.  This is the same as
+  `ssize(trees())`. */
+  [[nodiscard]] inline int num_trees() const;
 
   /* Provides convenient access to a particular Tree. Requires a TreeIndex,
   not a plain integer.
@@ -377,6 +395,17 @@ class SpanningForest {
     DRAKE_ASSERT(0 <= v_index && v_index < num_velocities());
     return data_.v_to_mobod[v_index];
   }
+
+  /* Returns the index of the Tree to which this Link's Mobod belongs. If this
+  is the ordinal of a Link that was split due to a loop, the returned index is
+  for the Tree to which the Primary (original) Link's Mobod belongs. An invalid
+  tree index is returned if the Link's Mobod is World. O(1), very fast.
+  @pre link_ordinal is in range [0, num_links) */
+  inline TreeIndex link_to_tree(LinkOrdinal link_ordinal) const;
+
+  /* Convenience signature that takes a LinkIndex rather than a LinkOrdinal.
+  @pre the index refers to a link that exists and hasn't been removed. */
+  inline TreeIndex link_to_tree(LinkIndex link_index) const;
 
   /* Returns the Tree to which a given position coordinate q belongs.
   O(1), very fast.
