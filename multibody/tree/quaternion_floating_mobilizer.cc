@@ -511,9 +511,10 @@ void QuaternionFloatingMobilizer<T>::DoMapAccelerationToQDDot(
 }
 
 template <typename T>
-void DoMapQDDotToAcceleration(const systems::Context<T>& context,
-                              const Eigen::Ref<const VectorX<T>>& qddot,
-                              EigenPtr<VectorX<T>> vdot) {
+void QuaternionFloatingMobilizer<T>::DoMapQDDotToAcceleration(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& qddot,
+    EigenPtr<VectorX<T>> vdot) const {
   // This function maps qddot to vdot by calculating v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
   // It first calculates the rotational part, then the translational part.
   //
