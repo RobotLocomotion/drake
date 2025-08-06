@@ -21,7 +21,7 @@ node(getNodeLabel()) {
           try {
             // Use the drake and ci branch parameters for checkout (defaults
             // to master & main).
-            def scmVars = utils.checkout(params.ciSha, params.drakeSha)
+            def scmVars = utils.checkout(params.ci_sha1, params.sha1)
             utils.doMainBuild(scmVars, params.release_version)
           } finally {
             try {
