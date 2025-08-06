@@ -19,9 +19,9 @@ node(getNodeLabel()) {
       ansiColor('xterm') {
         timestamps {
           try {
-            // Use the drake and ci branch parameters for checkout (defaults
-            // to master & main).
-            def scmVars = utils.checkout(params.ciSha, params.drakeSha)
+            // Always use drake-ci/main for staging builds, but use the
+            // drake SHA parameter for the drake checkout.
+            def scmVars = utils.checkout('main', params.sha1)
             utils.doMainBuild(scmVars, params.release_version)
           } finally {
             try {
