@@ -1181,7 +1181,7 @@ class MathematicalProgram {
    * Adds an L2 norm cost |Ax+b|₂ (notice this cost is not quadratic since we
    * don't take the square of the L2 norm).
    * @note Currently kL2NormCost is supported by SnoptSolver, IpoptSolver,
-   * GurobiSolver, MosekSolver, ClarabelSolver, and SCSSolver.
+   * NloptSolver, GurobiSolver, MosekSolver, ClarabelSolver, and SCSSolver.
    * @pydrake_mkdoc_identifier{3args_A_b_vars}
    */
   Binding<L2NormCost> AddL2NormCost(
@@ -1228,6 +1228,21 @@ class MathematicalProgram {
   std::tuple<symbolic::Variable, Binding<LinearCost>,
              Binding<LorentzConeConstraint>>
   AddL2NormCostUsingConicConstraint(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b,
+      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
+   * Adds an L1 norm cost min |Ax+b|₁ as a linear cost min Σᵢsᵢ on the slack
+   * variables sᵢ, together with the constraints (for each i) sᵢ ≥ (|Ax+b|)ᵢ,
+   * which itself is written sᵢ ≥ (Ax+b)ᵢ and sᵢ ≥ -(Ax+b)ᵢ.
+   * @return (s, linear_cost, linear_constraint). `s` is the vector of slack
+   * variables, `linear_cost` is the cost on `s`, and `linear_constraint` is the
+   * constraint encoding s ≥ Ax+b and s ≥ -(Ax+b).
+   */
+  std::tuple<VectorX<symbolic::Variable>, Binding<LinearCost>,
+             Binding<LinearConstraint>>
+  AddL1NormCostInEpigraphForm(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
       const Eigen::Ref<const Eigen::VectorXd>& b,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);

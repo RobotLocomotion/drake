@@ -184,7 +184,9 @@ drake_pybind_library(
     cc_srcs = [
         "sensors_py.h",
         "sensors_py.cc",
+        "sensors_py_accelerometer.cc",
         "sensors_py_camera_config.cc",
+        "sensors_py_gyroscope.cc",
         "sensors_py_image.cc",
         "sensors_py_image_io.cc",
         "sensors_py_lcm.cc",
@@ -197,6 +199,7 @@ drake_pybind_library(
         ":lcm_py",
         ":module_py",
         "//bindings/pydrake/geometry",
+        "//bindings/pydrake/multibody:plant_py",
     ],
 )
 
@@ -593,11 +596,15 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "sensors_test",
+    data = [
+        "//multibody:models",
+    ],
     tags = vtk_test_tags(),
     deps = [
         ":sensors_py",
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/geometry",
+        "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
     ],
 )

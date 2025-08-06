@@ -81,6 +81,11 @@ TEST_F(QuadraticEqualityConstrainedProgram1, Test) {
                   false /* check dual */);
   }
 }
+
+GTEST_TEST(NloptSolverTest, TestL2NormCost) {
+  NloptSolver solver;
+  TestL2NormCost(solver, 1e-6);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

@@ -20,6 +20,8 @@ node(getNodeLabel()) {
             utils.doMainBuild(scmVars)
           } finally {
             try {
+              utils.checkBuildResult()
+              utils.emailFailureResults()
               utils.addCDashBadge()
             } finally {
               utils.cleanWorkspace()

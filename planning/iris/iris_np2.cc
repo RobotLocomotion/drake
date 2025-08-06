@@ -775,10 +775,10 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
         log()->warn(fmt::format(
             "IrisNp2 WARNING, only {} out of {} closest collision "
             "programs solved successfully ({}% failure rate). If you are "
-            "using "
-            "SnoptSolver or NloptSolver, consider using IpoptSolver instead.",
+            "using SnoptSolver or NloptSolver, consider using IpoptSolver "
+            "instead.",
             num_prog_successes, num_prog_successes + num_prog_failures,
-            failure_rate));
+            100 * failure_rate));  // Multiply by 100 to make it a percentage.
       }
 
       if (options.sampled_iris_options.verbose && max_relaxation > 0) {

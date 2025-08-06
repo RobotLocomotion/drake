@@ -3521,6 +3521,76 @@ GTEST_TEST(TestMathematicalProgram, AddL2NormCostUsingConicConstraint) {
             lorentz_eval_expected);
 }
 
+GTEST_TEST(TestMathematicalProgram, AddL1NormCostInEpigraphForm_Rectangular) {
+  MathematicalProgram prog{};
+  auto x = prog.NewContinuousVariables<2>("x");
+
+  // Rectangular A: 3 rows, 2 columns.
+  Eigen::Matrix<double, 3, 2> A;
+  A << 1, 0, 0, 1, 1, 1;
+  const Eigen::Vector3d b(1, -2, -1);  // So that A * [1, -2] + b = 0.
+
+  const auto [s, linear_cost, linear_constraint] =
+      prog.AddL1NormCostInEpigraphForm(A, b, x);
+
+  // Check that s was added as new decision variables.
+  EXPECT_EQ(s.rows(), 3);
+  for (int i = 0; i < s.size(); ++i) {
+    ASSERT_NO_THROW(void(prog.FindDecisionVariableIndex(s(i))));
+  }
+
+  // Check that the linear cost is Σᵢsᵢ.
+  EXPECT_TRUE(linear_cost.evaluator());
+  EXPECT_EQ(linear_cost.variables(), s);
+  EXPECT_TRUE((linear_cost.evaluator()->a().array() == 1.0).all());
+  EXPECT_EQ(linear_cost.evaluator()->b(), 0.0);
+  EXPECT_EQ(prog.linear_costs().size(), 1);
+
+  // Check that the constraint s >= Ax + b and s >= -(Ax + b) is encoded
+  // correctly.
+  EXPECT_TRUE(linear_constraint.evaluator() != nullptr);
+  EXPECT_EQ(prog.linear_constraints().size(), 1);
+  EXPECT_EQ(linear_constraint.evaluator()->GetDenseA().rows(),
+            6);  // 2 * A.rows().
+  EXPECT_EQ(linear_constraint.evaluator()->GetDenseA().cols(),
+            5);  // s.size() + x.size().
+
+  // Check constraint variable ordering: [s0, s1, s2, x0, x1].
+  const auto& constraint_vars = linear_constraint.variables();
+  EXPECT_EQ(constraint_vars.size(), 5);
+  EXPECT_EQ(constraint_vars.segment(0, 3), s);
+  EXPECT_EQ(constraint_vars.segment(3, 2), x);
+
+  // s should satisfy:
+  // s ≥  A * x + b
+  // s ≥ -A * x - b.
+  const Eigen::Vector2d x_value(-1.0, 2.0);
+  const Eigen::Vector3d s_value = Eigen::Vector3d::Zero();
+
+  // Form the full variable vector [s; x].
+  Eigen::Matrix<double, 5, 1> vars;
+  vars << s_value, x_value;
+
+  const double kTol = 1e-15;
+  EXPECT_TRUE(linear_constraint.evaluator()->CheckSatisfied(vars, kTol));
+
+  // Verify it still works if s is larger.
+  vars[0] += 1.0;
+  EXPECT_TRUE(linear_constraint.evaluator()->CheckSatisfied(vars, kTol));
+  vars[0] -= 1.0;
+
+  // Check cost
+  const double expected_cost = 0.0;
+  Eigen::VectorXd actual_cost(1);
+  linear_cost.evaluator()->Eval(s_value, &actual_cost);
+  ASSERT_EQ(actual_cost.size(), 1);
+  EXPECT_EQ(actual_cost[0], expected_cost);
+
+  // Check failure case.
+  vars[0] -= 2 * kTol;  // Decrease s[0].
+  EXPECT_FALSE(linear_constraint.evaluator()->CheckSatisfied(vars, kTol));
+}
+
 // Helper function for ArePolynomialIsomorphic.
 //
 // Transforms a monomial into an isomorphic one up to a given map (Variable::Id

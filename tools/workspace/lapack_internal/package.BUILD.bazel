@@ -17,6 +17,11 @@ load(
     "DLASRC",
     "DSLASRC",
     "DZLAUX",
+    "SBLAS1",
+    "SBLAS2",
+    "SBLAS3",
+    "SCLAUX",
+    "SLASRC",
 )
 load("@rules_license//rules:license.bzl", "license")
 
@@ -34,9 +39,16 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-# Based on this line from the Makefile:
+# -----------------------------------------------------------------------------
+# Bazel re-implemenation of lapack/BLAS/SRC/Makefile.
+
+# Mimic these lines from the Makefile:
+#  single: $(SBLAS1) $(ALLBLAS) $(SBLAS2) $(SBLAS3)
 #  double: $(DBLAS1) $(ALLBLAS) $(DBLAS2) $(DBLAS3)
-BLAS_SRCS = depset(DBLAS1 + ALLBLAS + DBLAS2 + DBLAS3).to_list()
+BLAS_SRCS = depset(
+    SBLAS1 + ALLBLAS + SBLAS2 + SBLAS3 +
+    DBLAS1 + ALLBLAS + DBLAS2 + DBLAS3,
+).to_list()
 
 fortran_library(
     name = "blas_objects",
@@ -47,10 +59,28 @@ fortran_library(
     linkstatic = True,
 )
 
-# Based on these lines from the Makefile:
+cc_library(
+    name = "blas",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":blas_objects",
+    ],
+)
+
+# -----------------------------------------------------------------------------
+# Bazel re-implemenation of lapack/SRC/Makefile.
+
+# Mimic these lines from the Makefile:
+#  SINGLE_DEPS := $(SLASRC) $(DSLASRC)
+#  SINGLE_DEPS += $(SCLAUX) $(ALLAUX)
 #  DOUBLE_DEPS := $(DLASRC) $(DSLASRC)
 #  DOUBLE_DEPS += $(DZLAUX) $(ALLAUX)
-LAPACK_ALL_SRCS = depset(DLASRC + DSLASRC + DZLAUX + ALLAUX).to_list()
+LAPACK_ALL_SRCS = depset(
+    SLASRC + DSLASRC +
+    SCLAUX + ALLAUX +
+    DLASRC + DSLASRC +
+    DZLAUX + ALLAUX,
+).to_list()
 
 # The next two need special attention since they are actual Fortran modules.
 
@@ -78,7 +108,7 @@ LAPACK_MOST_SRCS = [
 ]
 
 fortran_library(
-    name = "fortran_objects",
+    name = "lapack_objects",
     srcs = [
         x[3:] if x.startswith("../") else "SRC/" + x
         for x in LAPACK_MOST_SRCS
@@ -95,18 +125,10 @@ fortran_library(
 )
 
 cc_library(
-    name = "blas",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":blas_objects",
-    ],
-)
-
-cc_library(
     name = "lapack",
     visibility = ["//visibility:public"],
     deps = [
-        ":fortran_objects",
+        ":lapack_objects",
         # N.B. This is the workspace blas, not the :blas we just built, in case
         # the user want to mix their own blas with our lapack.
         "@blas",

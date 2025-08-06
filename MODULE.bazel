@@ -201,7 +201,6 @@ use_repo(
     "nlohmann_internal",
     "nlopt_internal",
     "onetbb_internal",
-    "openusd_internal",
     "org_apache_xmlgraphics_commons",  # TODO(jwnimmer-tri) Mark as internal.
     "osqp_internal",
     "pathspec_internal",
