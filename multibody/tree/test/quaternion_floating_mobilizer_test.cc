@@ -369,6 +369,68 @@ TEST_F(QuaternionFloatingMobilizerTest, MapUsesNplus) {
                               MatrixCompareType::relative));
 }
 
+TEST_F(QuaternionFloatingMobilizerTest, MapAccelerationToQDDotAndViceVersa) {
+  // Set an arbitrary non-zero state.
+  const math::RollPitchYaw<double> rpy(M_PI / 3, -M_PI / 4, M_PI / 5);
+  const Quaternion<double> q_FM = rpy.ToQuaternion();
+  const Vector3<double> wxyz(5.4, -9.8, 3.2);
+  const Vector3<double> vxyz(0.2, 0.5, -0.87);
+  const Vector6<double> v(wxyz[0], wxyz[1], wxyz[2], vxyz[0], vxyz[1], vxyz[2]);
+  mobilizer_->SetQuaternion(context_.get(), q_FM);
+  mobilizer_->SetAngularVelocity(context_.get(), wxyz);
+  mobilizer_->SetTranslationalVelocity(context_.get(), vxyz);
+
+  // Set an arbitrary v̇ and use MapAccelerationToQDDot() to calculate q̈.
+  // Reminder: v̇ = [ẇx, ẇy, ẇz, v̇x, v̇y, v̇z]ᵀ
+  const Vector6<double> vdot(0.3, -0.2, 0.9, -1.2, 3.1, -2.3);
+  Eigen::Matrix<double, 7, 1> qddot;
+  mobilizer_->MapAccelerationToQDDot(*context_, vdot, &qddot);
+
+  // Starting with the previous q̈, use MapQDDotToAcceleration() to calculate v̇.
+  // Verify MapQDDotToAcceleration() is the inverse of MapAccelerationToQDDot().
+  Vector6<double> vdot_redo;
+  mobilizer_->MapQDDotToAcceleration(*context_, qddot, &vdot_redo);
+  EXPECT_TRUE(CompareMatrices(vdot_redo, vdot, 16 * kTolerance,
+                              MatrixCompareType::relative));
+
+  // Compute the 7x6 N(q) matrix and its time-derivative Ṅ(q,q̇) that appear in
+  // q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇
+  MatrixX<double> N(7, 6), Ndot(7, 6);
+  mobilizer_->CalcNMatrix(*context_, &N);
+  mobilizer_->CalcNDotMatrix(*context_, &Ndot);
+
+  // Verify equivalence of q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇ and MapAccelerationToQDDot().
+  const Eigen::Matrix<double, 7, 1> qddot_expected = Ndot * v + N * vdot;
+  EXPECT_TRUE(CompareMatrices(qddot, qddot_expected, kTolerance,
+                              MatrixCompareType::relative));
+
+  // Compute the 6x7 N⁺(q) matrix and its time-derivative Ṅ⁺(q,q̇) that appear in
+  // v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈
+  MatrixX<double> Nplus(6, 7), Nplusdot(6, 7);
+  mobilizer_->CalcNplusMatrix(*context_, &Nplus);
+  mobilizer_->CalcNplusDotMatrix(*context_, &Nplusdot);
+
+  // Verify equivalence of v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈ and MapQDDotToAcceleration().
+  Eigen::Matrix<double, 7, 1> qdot;
+  mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
+  const Vector6<double> vdot_expected = Nplusdot * qdot + Nplus * qddot;
+  EXPECT_TRUE(CompareMatrices(vdot_expected, vdot, 16 * kTolerance,
+                              MatrixCompareType::relative));
+
+  // Ensure the N⁺(q) matrix is the left pseudoinverse of the N(q) matrix.
+  // In other words, ensure Nplus * N = [I₆₆] (6x6 identity matrix).
+  MatrixX<double> Nplus_x_N = Nplus * N;
+  EXPECT_TRUE(CompareMatrices(Nplus_x_N, MatrixX<double>::Identity(6, 6),
+                              kTolerance, MatrixCompareType::relative));
+
+  // Ensure the rotation (upper-left block) part of the N(q) matrix is
+  // 0.25 times the transpose of the rotation part of the N⁺(q) matrix.
+  MatrixX<double> N_rotational = N.block<4, 3>(0, 0);
+  MatrixX<double> Nplus_rotational = Nplus.block<3, 4>(0, 0);
+  EXPECT_TRUE(CompareMatrices(N_rotational.transpose(), 0.25 * Nplus_rotational,
+                              kTolerance, MatrixCompareType::relative));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
