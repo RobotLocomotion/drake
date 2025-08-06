@@ -84,9 +84,9 @@ def doMainBuild(Map scmVars, String stagingReleaseVersion = null) {
  * Sets the build result from the file written out by drake-ci.
  */
 def checkBuildResult() {
-  if (fileExists('RESULT')) {{
+  if (fileExists('RESULT')) {
     currentBuild.result = readFile 'RESULT'
-  }}
+  }
 }
 
 /**
