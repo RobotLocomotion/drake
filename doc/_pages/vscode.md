@@ -30,3 +30,36 @@ on code formatting work well. Take note of "Format Document",
 In the VS Code Options configuration, check that the option for
 ``C_Cpp: Clang_format_path`` is set to Drake's preferred value
 ``/path/to/drake/bazel-bin/tools/lint/clang-format``.
+
+## C++ code semantic analysis / autocompletion
+VScode relies on the language server `clangd` and the json file [compile_commands.json](https://clang.llvm.org/docs/JSONCompilationDatabase.html) for code semantic analysis / autocompletion. To enable this feature, take the following steps
+1. Install `clangd` on your system. 
+On Ubuntu, do
+   ```
+   $ sudo apt install clangd
+   ```
+   On mac, do
+   ```
+   brew install llvm
+   ```
+2. In VSCode, add `clangd` extension. If you have IntelliSense, disable it through
+   ```
+   // .vscode/settings.json
+   {
+     "C_Cpp.intelliSenseEngine": "disabled"
+   }
+   ```
+3. To generate `compile_commands.json` file, take the following steps
+   - Checkout this [branch](https://github.com/hongkai-dai/bazel-compile-commands-extractor/tree/enable_drake) of `bazel-compile-commands-extractor` (the upstream version doesn't work with Drake), 
+   - Then add this to your `drake/user.bazelrc`
+      ```
+      common --inject_repository=hedron_compile_commands=PATH_TO_BAZEL_COMPILE_COMMANDS_EXTRACTOR
+      ```
+      where `PATH_TO_BAZEL_COMILE_COMMANDS_EXTRACTOR` is the directory where you checked out `bazel-compile-commands-extractor`.
+   - In `drake` folder, run 
+      ```
+      $ bazel run @hedron_compile_commands//:refresh_all
+      ```
+      You should see a `compile_commands.json` file in your `drake` folder.
+4. In VSCode, you should see that you can go to the definition of any C++ object, and the autocompletion is semantic-based.
+5. Everytime you change your `BUILD.bazel` file inside Drake, you will need to rerun `bazel run @hedron_compile_commands//:refresh_all` to update the `compilation_commands.json` file.
