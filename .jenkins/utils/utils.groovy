@@ -58,7 +58,12 @@ def checkout(String ciSha = 'main', String drakeSha = null) {
 def doMainBuild(Map scmVars, String stagingReleaseVersion = null) {
   if (env.JOB_NAME.contains("cache-server-health-check")) {
     echo "Checking the cache server:"
-    sh "${env.WORKSPACE}/ci/cache_server/health_check.bash"
+    try {
+      sh "${env.WORKSPACE}/ci/cache_server/health_check.bash"
+    }
+    catch(exc) {
+      currentBuild.result = 'FAILURE'
+    }
   }
   else {
     withCredentials([
