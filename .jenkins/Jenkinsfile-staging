@@ -25,6 +25,7 @@ node(getNodeLabel()) {
             utils.doMainBuild(scmVars, params.release_version)
           } finally {
             try {
+              utils.checkBuildResult()
               utils.addCDashBadge()
             } finally {
               utils.cleanWorkspace()
