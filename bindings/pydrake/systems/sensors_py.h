@@ -14,8 +14,14 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
+/* Defines bindings per sensors_py_accelerometer.cc. */
+void DefineSensorsAccelerometer(py::module m);
+
 /* Defines bindings per sensors_py_camera_config.cc. */
 void DefineSensorsCameraConfig(py::module m);
+
+/* Defines bindings per sensors_py_gyroscope.cc. */
+void DefineSensorsGyroscope(py::module m);
 
 /* Defines bindings per sensors_py_image.cc. */
 void DefineSensorsImage(py::module m);
