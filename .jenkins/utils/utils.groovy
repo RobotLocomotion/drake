@@ -81,24 +81,30 @@ def doMainBuild(Map scmVars, String stagingReleaseVersion = null) {
 }
 
 /**
+ * Sets the build result from the file written out by drake-ci.
+ */
+def checkBuildResult() {
+  if (fileExists('RESULT')) {
+    currentBuild.result = readFile 'RESULT'
+  }
+}
+
+/**
  * Sends an email to Drake developers when a build fails or is unstable.
  */
 def emailFailureResults() {
-  if (fileExists('RESULT')) {
-    currentBuild.result = readFile 'RESULT'
-    if (currentBuild.result == 'FAILURE' ||
-        currentBuild.result == 'UNSTABLE') {
-      def subject = 'Build failed in Jenkins'
-      if (currentBuild.result == 'UNSTABLE') {
-        subject = 'Jenkins build is unstable'
-      }
-      emailext (
-        subject: "${subject}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-        body: "See <${env.BUILD_URL}display/redirect?page=changes> " +
-          "and <${env.BUILD_URL}changes>",
-        to: '$DEFAULT_RECIPIENTS',
-      )
+  if (currentBuild.result == 'FAILURE' ||
+      currentBuild.result == 'UNSTABLE') {
+    def subject = 'Build failed in Jenkins'
+    if (currentBuild.result == 'UNSTABLE') {
+      subject = 'Jenkins build is unstable'
     }
+    emailext (
+      subject: "${subject}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+      body: "See <${env.BUILD_URL}display/redirect?page=changes> " +
+        "and <${env.BUILD_URL}changes>",
+      to: '$DEFAULT_RECIPIENTS',
+    )
   }
 }
 

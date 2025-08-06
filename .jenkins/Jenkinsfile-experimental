@@ -49,6 +49,7 @@ node(getNodeLabel()) {
             utils.doMainBuild(scmVars)
           } finally {
             try {
+              utils.checkBuildResult()
               utils.addCDashBadge()
             } finally {
               utils.cleanWorkspace()
