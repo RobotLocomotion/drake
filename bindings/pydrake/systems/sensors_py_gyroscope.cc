@@ -23,18 +23,19 @@ void DoScalarDependentDefinitions(py::module m, T) {
     constexpr auto& cls_doc = doc.Gyroscope;
     DefineTemplateClassWithDefault<Gyroscope<T>, systems::LeafSystem<T>>(
         m, "Gyroscope", param, cls_doc.doc)
-        .def(py::init<const multibody::RigidBody<T>&, const math::RigidTransform<double>&>(),
-             py::arg("body"), py::arg("X_BS"),
-             cls_doc.ctor.doc)
+        .def(py::init<const multibody::RigidBody<T>&,
+                 const math::RigidTransform<double>&>(),
+            py::arg("body"), py::arg("X_BS"), cls_doc.ctor.doc)
         .def("get_body_poses_input_port", &Class::get_body_poses_input_port,
-             py_rvp::reference_internal, cls_doc.get_body_poses_input_port.doc)
-        .def("get_body_velocities_input_port", &Class::get_body_velocities_input_port,
-             py_rvp::reference_internal, cls_doc.get_body_velocities_input_port.doc)
+            py_rvp::reference_internal, cls_doc.get_body_poses_input_port.doc)
+        .def("get_body_velocities_input_port",
+            &Class::get_body_velocities_input_port, py_rvp::reference_internal,
+            cls_doc.get_body_velocities_input_port.doc)
         .def("get_measurement_output_port", &Class::get_measurement_output_port,
-             py_rvp::reference_internal, cls_doc.get_measurement_output_port.doc)
+            py_rvp::reference_internal, cls_doc.get_measurement_output_port.doc)
         .def("body_index", &Class::body_index, cls_doc.body_index.doc)
         .def("pose", &Class::pose, cls_doc.pose.doc);
-        // TODO(#23222) Add static method `AddToDiagram`.
+    // TODO(#23222) Add static method `AddToDiagram`.
   }
 }
 

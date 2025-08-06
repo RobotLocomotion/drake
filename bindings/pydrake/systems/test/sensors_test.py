@@ -114,15 +114,18 @@ class TestSensors(unittest.TestCase):
         diagram = builder.Build()
 
         context = diagram.CreateDefaultContext()
-        accelerometer_context = diagram.GetMutableSubsystemContext(accelerometer, context)
-        evaluated_acceleration = accelerometer.get_measurement_output_port().Eval(accelerometer_context)
-        self.assertTrue(np.all(evaluated_acceleration == 0.))
-        self.assertTrue(np.all(accelerometer.gravity_vector() == 0.))
+        accelerometer_context = diagram.GetMutableSubsystemContext(
+            accelerometer, context)
+        evaluated_acceleration = (
+            accelerometer.get_measurement_output_port().Eval(
+                accelerometer_context))
+        self.assertTrue(np.all(evaluated_acceleration == 0.0))
+        self.assertTrue(np.all(accelerometer.gravity_vector() == 0.0))
         self.assertEqual(accelerometer.body_index(), box_body.index())
         self.assertTrue(accelerometer.pose().IsExactlyIdentity())
 
     def test_gyroscope(self):
-        plant, builder  = self._make_single_body_scene()
+        plant, builder = self._make_single_body_scene()
         box_body = plant.GetBodyByName("box")
         gyroscope = builder.AddSystem(mut.Gyroscope(
             body=box_body,
@@ -143,9 +146,11 @@ class TestSensors(unittest.TestCase):
         diagram = builder.Build()
 
         context = diagram.CreateDefaultContext()
-        gyroscope_context = diagram.GetMutableSubsystemContext(gyroscope, context)
-        evaluated_angular_velocity = gyroscope.get_measurement_output_port().Eval(gyroscope_context)
-        self.assertTrue(np.all(evaluated_angular_velocity == 0.))
+        gyroscope_context = diagram.GetMutableSubsystemContext(
+            gyroscope, context)
+        evaluated_angular_velocity = (
+            gyroscope.get_measurement_output_port().Eval(gyroscope_context))
+        self.assertTrue(np.all(evaluated_angular_velocity == 0.0))
         self.assertEqual(gyroscope.body_index(), box_body.index())
         self.assertTrue(gyroscope.pose().IsExactlyIdentity())
 

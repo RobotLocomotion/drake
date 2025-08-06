@@ -24,22 +24,26 @@ void DoScalarDependentDefinitions(py::module m, T) {
     DefineTemplateClassWithDefault<Accelerometer<T>, systems::LeafSystem<T>>(
         m, "Accelerometer", param, cls_doc.doc)
         .def(py::init<const multibody::RigidBody<T>&,
-                      const math::RigidTransform<double>&, const Eigen::Vector3d&>(),
-             py::arg("body"), py::arg("X_BS"),
-             py::arg("gravity_vector") = Eigen::Vector3d::Zero(),
-             doc.Accelerometer.ctor.doc)
+                 const math::RigidTransform<double>&, const Eigen::Vector3d&>(),
+            py::arg("body"), py::arg("X_BS"),
+            py::arg("gravity_vector") = Eigen::Vector3d::Zero(),
+            doc.Accelerometer.ctor.doc)
         .def("get_body_poses_input_port", &Class::get_body_poses_input_port,
-             py_rvp::reference_internal, cls_doc.get_body_poses_input_port.doc)
-        .def("get_body_velocities_input_port", &Class::get_body_velocities_input_port,
-             py_rvp::reference_internal, cls_doc.get_body_velocities_input_port.doc)
-        .def("get_body_accelerations_input_port", &Class::get_body_accelerations_input_port,
-             py_rvp::reference_internal, cls_doc.get_body_accelerations_input_port.doc)
+            py_rvp::reference_internal, cls_doc.get_body_poses_input_port.doc)
+        .def("get_body_velocities_input_port",
+            &Class::get_body_velocities_input_port, py_rvp::reference_internal,
+            cls_doc.get_body_velocities_input_port.doc)
+        .def("get_body_accelerations_input_port",
+            &Class::get_body_accelerations_input_port,
+            py_rvp::reference_internal,
+            cls_doc.get_body_accelerations_input_port.doc)
         .def("get_measurement_output_port", &Class::get_measurement_output_port,
-             py_rvp::reference_internal, cls_doc.get_measurement_output_port.doc)
+            py_rvp::reference_internal, cls_doc.get_measurement_output_port.doc)
         .def("body_index", &Class::body_index, cls_doc.body_index.doc)
-        .def("gravity_vector", &Class::gravity_vector, cls_doc.gravity_vector.doc)
+        .def("gravity_vector", &Class::gravity_vector,
+            cls_doc.gravity_vector.doc)
         .def("pose", &Class::pose, cls_doc.pose.doc);
-        // TODO(#23222) Add static method `AddToDiagram`.
+    // TODO(#23222) Add static method `AddToDiagram`.
   }
 }
 

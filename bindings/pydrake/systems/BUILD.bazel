@@ -199,6 +199,7 @@ drake_pybind_library(
         ":lcm_py",
         ":module_py",
         "//bindings/pydrake/geometry",
+        "//bindings/pydrake/multibody:plant_py",
     ],
 )
 
