@@ -102,6 +102,25 @@ const char joint2_actuation_pendulum_xml[] = R"""(
 </mujoco>
 )""";
 
+// MJCF of a double pendulum with a quaternion floating base. Used to test 
+// non-SPD Hessian issues.
+const char floating_double_pendulum_xml[] = R"""(
+<?xml version="1.0"?>
+<mujoco model="robot">
+  <worldbody>
+    <geom name="floor" type="plane" pos="0 0 0" size="5 5 0.1" rgba="0.8 0.9 0.8 1"/>
+    <body name="link1" pos="0 0 1.0">
+      <joint name="joint1" type="free"/>
+      <geom name="geom1" type="capsule" size="0.1 0.5" pos="0 0 0" rgba="0.9 0.1 0.1 1"/>
+      <body name="link2" pos="0 0 0.5">
+        <joint name="joint2" type="hinge" axis="1 0 0" range="-90 90" damping="1"/>
+        <geom name="geom2" type="capsule" size="0.1 0.5" pos="0 0.0 0.5" rgba="0.1 0.1 0.9 1"/>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>
+)""";
+
 class ConvexIntegratorTester {
  public:
   ConvexIntegratorTester() = delete;
@@ -637,6 +656,34 @@ GTEST_TEST(ConvexIntegratorTest, FrankaFreeFall) {
   simulator.Initialize();
   simulator.set_target_realtime_rate(0.0);
 
+  simulator.AdvanceTo(1.0);
+  std::cout << std::endl;
+  PrintSimulatorStatistics(simulator);
+  std::cout << std::endl;
+}
+
+// Smoke test for a floating double pendulum, to test non-SPD Hessian issues.
+GTEST_TEST(ConvexIntegratorTest, FloatingDoublePendulum) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant).AddModelsFromString(floating_double_pendulum_xml, "xml");
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  SimulatorConfig config;
+  config.target_realtime_rate = 0.0;
+  config.publish_every_time_step = true;
+  ApplySimulatorConfig(config, &simulator);
+
+  ConvexIntegrator<double>& integrator =
+      simulator.reset_integrator<ConvexIntegrator<double>>();
+  integrator.get_mutable_solver_parameters().print_solver_stats = true;
+  integrator.set_plant(&plant);
+  integrator.set_fixed_step_mode(true);
+  integrator.set_maximum_step_size(0.01);
+
+  simulator.Initialize();
   simulator.AdvanceTo(1.0);
   std::cout << std::endl;
   PrintSimulatorStatistics(simulator);
