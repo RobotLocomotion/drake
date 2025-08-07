@@ -14,6 +14,7 @@ using drake::multibody::internal::GetHuntCrossleyDissipation;
 using drake::multibody::internal::GetInternalTree;
 using drake::multibody::internal::GetPointContactStiffness;
 using drake::multibody::internal::LinkJointGraph;
+using drake::multibody::internal::MobodIndex;
 using drake::multibody::internal::MultibodyTreeTopology;
 using drake::multibody::internal::SpanningForest;
 using drake::multibody::internal::TreeIndex;
@@ -165,7 +166,12 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   for (int b = 0; b < plant().num_bodies(); ++b) {
     const auto& body = plant().get_body(BodyIndex(b));
 
-    params->body_is_floating.push_back(body.is_floating() ? 1 : 0);
+    // Distinguish between "free floating body" and "free floating base". The
+    // former has an identity Jacobian, the latter does not.
+    const auto& link = forest.link_by_index(BodyIndex(b));
+    const auto& mobod = forest.mobods(link.mobod_index());
+    const bool is_free_floating = body.is_floating() && mobod.is_leaf_mobod();
+    params->body_is_floating.push_back(is_free_floating ? 1 : 0);
 
     // TODO(amcastro-tri): consider using forest.link_composites() in
     // combination with LinkJointGraph::Link::composite() to precompute
