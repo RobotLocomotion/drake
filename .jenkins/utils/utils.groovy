@@ -73,14 +73,18 @@ def doMainBuild(Map scmVars, String stagingReleaseVersion = null) {
     }
   }
   else {
-    withCredentials([
+    def credentials = [
       sshUserPrivateKey(credentialsId: 'ad794d10-9bc8-4a7a-a2f3-998af802cab0',
-        keyFileVariable: 'SSH_PRIVATE_KEY_FILE'),
-      string(credentialsId: 'e21b9517-8aa7-419e-8f25-19cd42e10f68',
-        variable: 'DOCKER_USERNAME'),
-      file(credentialsId: '912dd413-d419-4760-b7ab-c132ab9e7c5e',
+        keyFileVariable: 'SSH_PRIVATE_KEY_FILE')
+    ]
+    if (!env.JOB_NAME.contains("experimental")) {
+      // Use Docker credentials for production jobs only.
+      credentials += string(credentialsId: 'e21b9517-8aa7-419e-8f25-19cd42e10f68',
+        variable: 'DOCKER_USERNAME')
+      credentials += file(credentialsId: '912dd413-d419-4760-b7ab-c132ab9e7c5e',
         variable: 'DOCKER_PASSWORD_FILE')
-    ]) {
+    }
+    withCredentials(credentials) {
       def environment = ["GIT_COMMIT=${scmVars.GIT_COMMIT}"]
       if (stagingReleaseVersion) {
         environment += "DRAKE_VERSION=${stagingReleaseVersion}"
