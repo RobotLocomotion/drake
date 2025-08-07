@@ -1,7 +1,7 @@
 /**
  * Performs the checkout step for drake (cloning into WORKSPACE/'src') and
  * drake-ci (cloning into WORKSPACE/'ci').
- * 
+ *
  * @param ciSha the commit SHA or branch name to use for drake-ci
  * @param drakeSha the commit SHA or branch name to use for drake; if none is
  *                 given, uses the current branch or pull request
@@ -10,6 +10,13 @@
 def checkout(String ciSha = 'main', String drakeSha = null) {
   def scmVars = null
   retry(4) {
+    // N.B. The userRemoteConfigs in the first case are crucially used for
+    // production builds in order to allow pushing to additional remote
+    // branches (e.g., nightly_release) beyond the one being cloned (master).
+    // The second case below (`checkout scm`) does not specify such an option,
+    // however, it is useful for checkout of the specific merge commit created
+    // by Jenkins for pull requests as they build after a merge with master
+    // (for this call, we have no access to that commit SHA).
     if (drakeSha) {
       scmVars = checkout([$class: 'GitSCM',
         branches: [[name: drakeSha]],

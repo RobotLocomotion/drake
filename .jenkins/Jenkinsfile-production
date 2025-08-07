@@ -15,8 +15,8 @@ node(getNodeLabel()) {
       ansiColor('xterm') {
         timestamps {
           try {
-            // Always use drake-ci/main (the default) for production builds.
-            def scmVars = utils.checkout()
+            // Always use drake-ci/main and drake/master for production builds.
+            def scmVars = utils.checkout('main', 'master')
             utils.doMainBuild(scmVars)
           } finally {
             try {
