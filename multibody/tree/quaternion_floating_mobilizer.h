@@ -338,29 +338,29 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   //           | -qz    qw    qx |
   //           ⌊  qy   -qx    qw ⌋
   //
-  // The matrix L(q_FM) is an intermediary for various quaternion-related
+  // Note: The matrix L(q_FM) is an intermediary for various quaternion-related
   // calculations. For example, denoting w_FM_F = [ωx, ωy, ωz]ᵀ as frame M's
-  // angular velocity in frame F, expressed in F, the following involve L(q_FM):
+  // angular velocity in frame F, expressed in F, the rotational part of the N
+  // and N⁺ matrices are 0.5 * L(q_FM) and 2 * L(q_FM)ᵀ, respectively. Others:
   //
   // q̇_FM = 0.5 * L(q_FM) * w_FM_F
   // q̈_FM = 0.5 * L(q_FM) * ẇ_FM_F - 0.25 ω² q_FM    Note: ω² = |w_FM_F|²
   // w_FM_F = 2 * L(q_FM)ᵀ * q̇_FM
   // ẇ_FM_F = 2 * L(q_FM)ᵀ * q̇_FM
-  // Nᵣ(q_FM) = 0.5 * L(q_FM)  Nᵣ is the rotational part of the N matrix.
-  // N⁺ᵣ(q_FM) = 2 * L(q_FM)ᵀ  N⁺ᵣ is the rotational part of the Nplus matrix.
+  //
+  // Note: Since L(q_FM) depends linearly on q_FM, s * L(q_FM) = L(s * q_FM),
+  // where s is a scalar (e.g., 0.5 or 2).
   static Eigen::Matrix<T, 4, 3> CalcLMatrix(const Quaternion<T>& q);
 
   // Returns the 4x3 matrix 0.5 * L(q_FM), where q_FM = [qw, qx, qy, qz] is the
-  // quaternion relating frames F and M. As documented in CalcLMatrix(),
-  // L(q_FM) depends linearly on q_FM, so 0.5 * L(q_FM) = L(0.5 * q_FM).
+  // quaternion relating frames F and M.  See documentation in CalcLMatrix(),
   static Eigen::Matrix<T, 4, 3> CalcLMatrixOverTwo(const Quaternion<T>& q_FM) {
     return CalcLMatrix(
         {0.5 * q_FM.w(), 0.5 * q_FM.x(), 0.5 * q_FM.y(), 0.5 * q_FM.z()});
   }
 
   // Returns the 3x4 matrix 2 * L(q_FM)ᵀ, where q_FM = [qw, qx, qy, qz] is the
-  // quaternion relating frames F and M. As documented in CalcLMatrix(),
-  // L(q_FM) depends linearly on q_FM, so 2 * L(q_FM)ᵀ = L(2 * q_FM)ᵀ.
+  // quaternion relating frames F and M. See documentation in CalcLMatrix().
   static Eigen::Matrix<T, 3, 4> CalcTwoTimesLMatrixTranspose(
       const Quaternion<T>& q_FM) {
     return CalcLMatrix({2 * q_FM.w(), 2 * q_FM.x(), 2 * q_FM.y(), 2 * q_FM.z()})
