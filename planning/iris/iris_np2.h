@@ -9,6 +9,33 @@
 
 namespace drake {
 namespace planning {
+/** Sampling strategies for the IRIS algorithm. */
+enum class IrisNp2SamplingStrategy {
+  kGreedySampler,
+  kRaySampler,
+};
+
+/** RaySamplerOptions contains settings specific to the kRaySampler strategy for
+ * drawing the initial samples. */
+struct RaySamplerOptions {
+  /** If true, the ray stepping strategy is only applied to samples which are
+   * initially in collision. If false, it is applied to all samples. */
+  bool only_walk_toward_collisions{false};
+
+  /** The step size for the ray search is defined per-particle, as the distance
+   * between the current ellipsoid center and the particle, divided by this
+   * option. A larger number requires more time for computing samples, but will
+   * lead to the samples in-collision being closer to the ellipsoid center, and
+   * higher quality hyperplanes. We choose a default value to roughly match the
+   * results in [Werner et al., 2024]. Must be at least 1. */
+  int ray_search_num_steps{10};
+
+  /** The number of particles to step towards. Ignored if
+   * only_walk_toward_collisions is true, because we walk toward all collisions
+   * in that case. Must be at least 1. */
+  int num_particles_to_walk_towards{200};
+};
+
 /**
  * IrisNp2Options collects all parameters for the IRIS-NP2 algorithm.
  *
@@ -25,6 +52,7 @@ class IrisNp2Options {
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(sampled_iris_options));
+    a->Visit(DRAKE_NVP(sampling_strategy));
   }
 
   IrisNp2Options() = default;
@@ -41,6 +69,17 @@ class IrisNp2Options {
    * is the identity parameterization, corresponding to growing regions in the
    * ordinary configuration space. */
   IrisParameterizationFunction parameterization{};
+
+  /** Which sampling strategy to use when growing the region. The kRaySmpler
+   * finds collisions closer to the ellipsoid center in order to achieve more
+   * efficient hyperplane placement, yielding fewer hyperplanes in the resulting
+   * region, but may take more runtime than kGreedySampler.
+   * @note See §5.3 of [Werner et al., 2024] for further details. */
+  IrisNp2SamplingStrategy sampling_strategy{
+      IrisNp2SamplingStrategy::kGreedySampler};
+
+  /** Additional options for kRaySampler. Ignored if kGreedySampler is used. */
+  RaySamplerOptions ray_sampler_options;
 };
 
 /** The IRIS-NP2 (Iterative Regional Inflation by Semidefinite and Nonlinear
@@ -92,7 +131,6 @@ IrisNp2 is still in development, so certain features of
 SceneGraphCollisionChecker and parts of [Werner et al., 2024] are not yet
 supported.
 
-@throws if you set `options.parameterization`.
 @throws if any collision pairs in `checker` have negative padding.
 @throws if any collision geometries have been been added in `checker`.
 */
