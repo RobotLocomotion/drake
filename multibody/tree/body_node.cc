@@ -51,6 +51,49 @@ void BodyNode<T>::CalcCompositeBodyInertiaInWorld_TipToBase(
   }
 }
 
+// Notation used below
+//
+// `this` is mobilized body B. It's mobilizer's inboard frame (the "M" frame) is
+// denoted Mb. We're given B's spatial inertia M_BMb_Mb (taken about Mb's origin
+// Mbo and expressed in Mb). Our goal is to calculate B's composite body inertia
+// I_BMb_Mb, taken about Mbo but including all the bodies outboard of B as
+// though they were welded in their current configuration.
+//
+// Below we're going to treat B as the "parent" and work with its immediately
+// outboard bodies as "children" C. Because this is an inward sweep, we
+// already know K_CMc_Mc, each child's composite body inertia, taken about
+// the child's inboard frame Mc's origin Mco, and expressed in Mc. We need to
+// shift those to Mbo and re-express in Mb before summing them up.
+template <typename T>
+void BodyNode<T>::CalcCompositeBodyInertiaInM_TipToBase(
+    const FrameBodyPoseCache<T>& frame_body_pose_cache,  // for M_BMb_Mb
+    const PositionKinematicsCacheInM<T>& pcm,            // for X_MbMc(q)
+    std::vector<SpatialInertia<T>>* K_BMb_Mb_all) const {
+  const MobodIndex index = mobod_index();
+  DRAKE_ASSERT(index != world_mobod_index());
+  DRAKE_ASSERT(K_BMb_Mb_all != nullptr);
+
+  // This mobod's spatial inertia (given).
+  const SpatialInertia<T>& M_BMb_Mb = frame_body_pose_cache.get_M_BMo_M(index);
+  // This mobod's composite body inertia (to be calculated).
+  SpatialInertia<T>& K_BMb_Mb = (*K_BMb_Mb_all)[index];
+
+  K_BMb_Mb = M_BMb_Mb;  // Start with B's spatial inertia.
+  // Then add in each child's composite body inertia, 148 flops per.
+  for (const BodyNode<T>* child : child_nodes()) {
+    const MobodIndex child_node_index = child->mobod_index();
+    const SpatialInertia<T>& K_CMc_Mc =  // Child's composite body inertia.
+        (*K_BMb_Mb_all)[child_node_index];
+    // Body B is the parent here.
+    const math::RigidTransform<T>& X_MbMc = pcm.get_X_MpM(child_node_index);
+    const math::RotationMatrix<T>& R_MbMc = X_MbMc.rotation();
+    const Vector3<T>& p_MbMc_Mb = X_MbMc.translation();
+    const SpatialInertia<T> K_CMc_Mb = K_CMc_Mc.ReExpress(R_MbMc);  // 72 flops
+    const SpatialInertia<T> K_CMb_Mb = K_CMc_Mb.Shift(-p_MbMc_Mb);  // 40 flops
+    K_BMb_Mb += K_CMb_Mb;                                           // 36 flops
+  }
+}
+
 template <typename T>
 void BodyNode<T>::CalcArticulatedBodyHingeInertiaMatrixFactorization(
     const MatrixUpTo6<T>& D_B,
