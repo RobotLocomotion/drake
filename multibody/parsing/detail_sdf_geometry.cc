@@ -588,7 +588,9 @@ std::optional<ProximityProperties> MakeProximityPropertiesForCollision(
         "drake:relaxation_time",
         "drake:point_contact_stiffness",
         "drake:mu_dynamic",
-        "drake:mu_static"};
+        "drake:mu_static",
+        "drake:surface_speed",
+        "drake:surface_velocity_normal"};
     // clang-format on
     CheckSupportedElements(diagnostic, drake_element,
                            supported_proximity_elements);
@@ -626,6 +628,19 @@ std::optional<ProximityProperties> MakeProximityPropertiesForCollision(
     properties =
         ParseProximityProperties(diagnostic.MakePolicyForNode(*drake_element),
                                  read_double, is_rigid, is_compliant);
+
+    // Read the surface velocity normal.
+    if (drake_element->HasElement("drake:surface_velocity_normal")) {
+      std::optional<gz::math::Vector3d> velocity_normal =
+          GetChildElementValue<gz::math::Vector3d>(
+              diagnostic, drake_element, "drake:surface_velocity_normal");
+      if (velocity_normal.has_value()) {
+        Vector3d velocity_normal_vec = ToVector3(velocity_normal.value());
+        properties.AddProperty(geometry::internal::kSurfaceVelocityGroup,
+                               geometry::internal::kSurfaceVelocityNormal,
+                               velocity_normal_vec.normalized());
+      }
+    }
   }
 
   // TODO(SeanCurtis-TRI): Remove all of this legacy parsing code based on

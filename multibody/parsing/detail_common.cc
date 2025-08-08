@@ -71,6 +71,8 @@ geometry::ProximityProperties ParseProximityProperties(
   using geometry::internal::kMaterialGroup;
   using geometry::internal::kRelaxationTime;
   using geometry::internal::kRezHint;
+  using geometry::internal::kSurfaceVelocityGroup;
+  using geometry::internal::kSurfaceSpeed;
 
   // Both being true is disallowed -- so assert is_rigid NAND is_compliant.
   DRAKE_DEMAND(!(is_rigid && is_compliant));
@@ -150,6 +152,14 @@ geometry::ProximityProperties ParseProximityProperties(
       } else {
         properties.AddProperty(kHydroGroup, kMargin, *margin);
       }
+    }
+  }
+
+  {
+    std::optional<double> surface_speed = read_double("drake:surface_speed");
+    if (surface_speed.has_value()) {
+      properties.AddProperty(kSurfaceVelocityGroup, kSurfaceSpeed,
+                             *surface_speed);
     }
   }
 

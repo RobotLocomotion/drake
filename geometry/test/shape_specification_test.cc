@@ -1,6 +1,8 @@
 #include "drake/geometry/shape_specification.h"
+#include "shape_to_point_cloud.h"
 
 #include <filesystem>
+#include <iostream>
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -1040,6 +1042,74 @@ GTEST_TEST(ShapeTest, MoveConstructor) {
   // The moved-from mesh has its source revert to an empty in-memory mesh.
   ASSERT_TRUE(orig.source().is_in_memory());
   EXPECT_TRUE(orig.source().in_memory().mesh_file.contents().empty());
+}
+
+GTEST_TEST(ShapeTest, NormalAtBoxPoint) {
+  const double tol = 1e-5;
+
+  const double w = 4.0;
+  const double d = 1.0;
+  const double h = 0.1;
+  const Box box(w, d, h);
+
+  const std::vector<Eigen::Vector3d> points = {
+      {w / 2, 0.0, 0.0},  {0.0, d / 2, 0.0},  {0.0, 0.0, h / 2},
+      {-w / 2, 0.0, 0.0}, {0.0, -d / 2, 0.0}, {0.0, 0.0, -h / 2}};
+
+  for (const Eigen::Vector3d& p : points) {
+    std::optional<Eigen::Vector3d> n = GetNormalAtPoint<double>(box, p);
+    ASSERT_TRUE(n.has_value());
+    EXPECT_LT((n.value() - p.normalized()).norm(), tol);
+  }
+
+  // Write down
+  math::RigidTransformd T;
+  T.SetIdentity();
+  PointCloud box_pc = SampleBoxSurface(box, T, 30);
+
+  for (int i = 0; i < static_cast<int>(box_pc.points.size()); ++i) {
+    std::optional<Eigen::Vector3d> n =
+        GetNormalAtPoint<double>(box, box_pc.points.at(i));
+    EXPECT_LT((box_pc.normals.at(i) - n.value()).norm(), tol);
+  }
+}
+
+GTEST_TEST(ShapeTest, NormalAtSpherePoint) {
+  constexpr double tol = 1e-5;
+  (void)tol;
+
+  const double r = 1.3;
+
+  const int n = 50;
+  math::RigidTransformd T;
+  T.SetIdentity();
+
+  // Create an sphere and sample random points on its surface along
+  // with its normal vector which will be used as reference.
+  const Sphere sphere(r);
+  PointCloud sphere_cloud = SampleSphereSurface(sphere, T, n);
+
+  // For each point sampled on the sphere, recover its normal vector
+  // and verify it agrees with the reference normal.
+  for (int i = 0; i < n; ++i) {
+    const Eigen::Vector3d& p = sphere_cloud.points.at(i);
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(sphere, p);
+    ASSERT_TRUE(normal.has_value());
+    ASSERT_LT((normal.value() - sphere_cloud.normals.at(i)).norm(), tol);
+  }
+
+  // Create some points that are definitely not close to the surface of
+  // the sphere.
+  std::vector<Eigen::Vector3d> outliers = {
+      {r + 0.1, 0., 0.},  {r - 0.5, 0., 0.}, {0., r + 0.01, 0.},
+      {0., r - 0.03, 0.}, {0., 0., r + 1.0}, {0., 0., r - 2.5},
+  };
+
+  // Verify the return value is empty.
+  for (const Eigen::Vector3d& p : outliers) {
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(sphere, p);
+    ASSERT_FALSE(normal.has_value());
+  }
 }
 
 }  // namespace
