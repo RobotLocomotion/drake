@@ -143,8 +143,8 @@ class DrakeKukaIIwaRobot {
 
     // For each body, set the pose and spatial velocity in the position,
     // velocity, and acceleration caches with specified values for testing.
-    multibody::internal::PositionKinematicsCache<T> pc(tree().get_topology());
-    multibody::internal::VelocityKinematicsCache<T> vc(tree().get_topology());
+    multibody::internal::PositionKinematicsCache<T> pc(tree().forest());
+    multibody::internal::VelocityKinematicsCache<T> vc(tree().forest());
 
     // Retrieve end-effector pose from position kinematics cache.
     tree().CalcPositionKinematicsCache(*context_, &pc);
@@ -190,10 +190,10 @@ class DrakeKukaIIwaRobot {
     SetJointAnglesAnd1stDerivatives(q.data(), qDt.data());
 
     // Get the position, velocity, and acceleration cache from the context.
-    multibody::internal::PositionKinematicsCache<T> pc(tree().get_topology());
-    multibody::internal::VelocityKinematicsCache<T> vc(tree().get_topology());
+    multibody::internal::PositionKinematicsCache<T> pc(tree().forest());
+    multibody::internal::VelocityKinematicsCache<T> vc(tree().forest());
     multibody::internal::AccelerationKinematicsCache<T> ac(
-        tree().get_topology());
+        tree().forest());
     tree().CalcPositionKinematicsCache(*context_, &pc);
     tree().CalcVelocityKinematicsCache(*context_, pc, &vc);
     tree().CalcAccelerationKinematicsCache(*context_, pc, vc, qDDt, &ac);

@@ -37,7 +37,7 @@ struct AccelerationsDueNonConstraintForcesCache {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(
       AccelerationsDueNonConstraintForcesCache);
   explicit AccelerationsDueNonConstraintForcesCache(
-      const MultibodyTreeTopology& topology);
+      const internal::SpanningForest& forest);
   MultibodyForces<T> forces;  // The external forces causing accelerations.
   ArticulatedBodyInertiaCache<T> abic;   // Articulated body inertia cache.
   std::vector<SpatialForce<T>> Zb_Bo_W;  // Articulated body biases cache.

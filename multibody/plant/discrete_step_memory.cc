@@ -5,16 +5,16 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
-DiscreteStepMemory::Data<T>::Data(const MultibodyTreeTopology& topology)
-    : acceleration_kinematics_cache(topology) {}
+DiscreteStepMemory::Data<T>::Data(const internal::SpanningForest& forest)
+    : acceleration_kinematics_cache(forest) {}
 
 template <typename T>
 DiscreteStepMemory::Data<T>::~Data() = default;
 
 template <typename T>
 DiscreteStepMemory::Data<T>& DiscreteStepMemory::Allocate(
-    const MultibodyTreeTopology& topology) {
-  auto new_data = std::make_shared<Data<T>>(topology);
+    const internal::SpanningForest& forest) {
+  auto new_data = std::make_shared<Data<T>>(forest);
   Data<T>* result = new_data.get();
   data = std::move(new_data);
   return *result;

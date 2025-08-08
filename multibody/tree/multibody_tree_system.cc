@@ -246,7 +246,7 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.position_kinematics =
       this->DeclareCacheEntry(
               std::string("position kinematics"),
-              PositionKinematicsCache<T>(internal_tree().get_topology()),
+              PositionKinematicsCache<T>(internal_tree().forest()),
               &MultibodyTreeSystem<T>::CalcPositionKinematicsCache,
               {position_ticket, this->all_parameters_ticket()})
           .cache_index();
@@ -286,7 +286,7 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.velocity_kinematics =
       this->DeclareCacheEntry(
               std::string("velocity kinematics"),
-              VelocityKinematicsCache<T>(internal_tree().get_topology()),
+              VelocityKinematicsCache<T>(internal_tree().forest()),
               &MultibodyTreeSystem<T>::CalcVelocityKinematicsCache,
               {position_ticket, velocity_ticket, this->all_parameters_ticket()})
           .cache_index();
@@ -322,7 +322,7 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.abi_cache_index =
       this->DeclareCacheEntry(
               std::string("Articulated Body Inertia"),
-              ArticulatedBodyInertiaCache<T>(internal_tree().get_topology()),
+              ArticulatedBodyInertiaCache<T>(internal_tree().forest()),
               &MultibodyTreeSystem<T>::CalcArticulatedBodyInertiaCache,
               {position_ticket, this->all_parameters_ticket()})
           .cache_index();
@@ -362,7 +362,7 @@ void MultibodyTreeSystem<T>::Finalize() {
   // Articulated Body Algorithm (ABA) force cache.
   const auto& articulated_body_forces_cache_entry = this->DeclareCacheEntry(
       std::string("ABA force cache"),
-      ArticulatedBodyForceCache<T>(internal_tree().get_topology()),
+      ArticulatedBodyForceCache<T>(internal_tree().forest()),
       &MultibodyTreeSystem<T>::CalcArticulatedBodyForceCache,
       force_and_acceleration_prereqs);
   cache_indexes_.articulated_body_forces =
@@ -374,7 +374,7 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.acceleration_kinematics =
       this->DeclareCacheEntry(
               std::string("Accelerations"),
-              AccelerationKinematicsCache<T>(internal_tree().get_topology()),
+              AccelerationKinematicsCache<T>(internal_tree().forest()),
               &MultibodyTreeSystem<T>::CalcForwardDynamics,
               force_and_acceleration_prereqs)
           .cache_index();
