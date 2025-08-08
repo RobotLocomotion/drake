@@ -313,6 +313,14 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
                            const Eigen::Ref<const VectorX<T>>& qdot,
                            EigenPtr<VectorX<T>> v) const final;
 
+  void DoMapAccelerationToQDDot(const systems::Context<T>& context,
+                                const Eigen::Ref<const VectorX<T>>& vdot,
+                                EigenPtr<VectorX<T>> qddot) const final;
+
+  void DoMapQDDotToAcceleration(const systems::Context<T>& context,
+                                const Eigen::Ref<const VectorX<T>>& qddot,
+                                EigenPtr<VectorX<T>> vdot) const final;
+
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const final;
 
@@ -323,14 +331,42 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       const MultibodyTree<symbolic::Expression>& tree_clone) const final;
 
  private:
-  // Helper to compute the kinematic map N(q). L ∈ ℝ⁴ˣ³.
+  // Returns the 4x3 matrix L(q_FM) where q_FM = [qw, qx, qy, qz]ᵀ is the
+  // quaternion relating frames F and M.
+  //
+  //           ⌈ -qx   -qy   -qz ⌉
+  // L(q_FM) = |  qw    qz   -qy |
+  //           | -qz    qw    qx |
+  //           ⌊  qy   -qx    qw ⌋
+  //
+  // Note: The matrix L(q_FM) is an intermediary for various quaternion-related
+  // calculations. For example, denoting w_FM_F = [ωx, ωy, ωz]ᵀ as frame M's
+  // angular velocity in frame F, expressed in F, the rotational part of the N
+  // and N⁺ matrices are 0.5 * L(q_FM) and 2 * L(q_FM)ᵀ, respectively. Others:
+  //
+  // q̇_FM = 0.5 * L(q_FM) * w_FM_F
+  // q̈_FM = 0.5 * L(q_FM) * ẇ_FM_F - 0.25 ω² q_FM    Note: ω² = |w_FM_F|²
+  // w_FM_F = 2 * L(q_FM)ᵀ * q̇_FM
+  // ẇ_FM_F = 2 * L(q_FM)ᵀ * q̇_FM
+  //
+  // Note: Since L(q_FM) depends linearly on q_FM, s * L(q_FM) = L(s * q_FM),
+  // where s is a scalar (e.g., 0.5 or 2).
   static Eigen::Matrix<T, 4, 3> CalcLMatrix(const Quaternion<T>& q);
-  // Helper to compute the kinematic map N(q) from angular velocity to
-  // quaternion time derivative for which q̇_WB = N(q)⋅w_WB.
-  // With L given by CalcLMatrix we have:
-  // N(q) = L(q_FM/2)
-  static Eigen::Matrix<T, 4, 3> AngularVelocityToQuaternionRateMatrix(
-      const Quaternion<T>& q);
+
+  // Returns the 4x3 matrix 0.5 * L(q_FM), where q_FM = [qw, qx, qy, qz] is the
+  // quaternion relating frames F and M.  See documentation in CalcLMatrix(),
+  static Eigen::Matrix<T, 4, 3> CalcLMatrixOverTwo(const Quaternion<T>& q_FM) {
+    return CalcLMatrix(
+        {0.5 * q_FM.w(), 0.5 * q_FM.x(), 0.5 * q_FM.y(), 0.5 * q_FM.z()});
+  }
+
+  // Returns the 3x4 matrix 2 * L(q_FM)ᵀ, where q_FM = [qw, qx, qy, qz] is the
+  // quaternion relating frames F and M. See documentation in CalcLMatrix().
+  static Eigen::Matrix<T, 3, 4> CalcTwoTimesLMatrixTranspose(
+      const Quaternion<T>& q_FM) {
+    return CalcLMatrix({2 * q_FM.w(), 2 * q_FM.x(), 2 * q_FM.y(), 2 * q_FM.z()})
+        .transpose();
+  }
 
   // Helper to compute the kinematic map N⁺(q) from quaternion time derivative
   // to angular velocity for which w_WB = N⁺(q)⋅q̇_WB.
