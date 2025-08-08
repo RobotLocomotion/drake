@@ -24,6 +24,7 @@ def cc_import(**kwargs):
     _cc_import(**kwargs)
 
 def cc_library(**kwargs):
+    fail("Disable CI")
     _cc_library(**kwargs)
 
 def cc_shared_library(**kwargs):
