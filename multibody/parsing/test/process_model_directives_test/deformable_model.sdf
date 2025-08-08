@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<sdf xmlns:drake="http://drake.mit.edu" version="1.7">
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh>
+            <uri>package://drake/multibody/parsing/test/single_tet.vtk</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties></drake:deformable_properties>
+    </link>
+  </model>
+</sdf>

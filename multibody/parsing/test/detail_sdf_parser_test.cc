@@ -4329,6 +4329,50 @@ TEST_F(SdfParserTest, MultipleDeformableBodies) {
   EXPECT_EQ(plant_.deformable_model().num_bodies(), 2);
 }
 
+// Deformable bodies can be included in collision filter groups.
+TEST_F(SdfParserTest, DeformableBodiesWithFilteredCollision) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+    </link>
+    <link name='body2'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+    </link>
+    <drake:collision_filter_group name="group_a">
+      <drake:member>body</drake:member>
+      <drake:member>body2</drake:member>
+      <drake:ignored_collision_filter_group>group_a</drake:ignored_collision_filter_group>
+    </drake:collision_filter_group>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 0);
+  plant_.Finalize();
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), 2);
+
+  // Test that collisions are filtered between the deformable bodies.
+  const auto& inspector = scene_graph_.model_inspector();
+  std::vector<GeometryId> ids = inspector.GetAllGeometryIds();
+  ASSERT_EQ(ids.size(), 2);
+
+  std::set<CollisionPair> expected_filters = {
+      {"deformable::body", "deformable::body2"},
+  };
+  VerifyCollisionFilters(ids, expected_filters);
+}
+
 // Specifying both deformable and rigid bodies in the same model is fine.
 TEST_F(SdfParserTest, MixingModelAndDeformableModel) {
   AddSceneGraph();
