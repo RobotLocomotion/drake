@@ -93,7 +93,7 @@ struct DiscreteContactPair {
    implies bodies are moving away from each other. */
   T vn0{0.0};
   /* Tangential velocity bias term, used to model a velocity at the surface*/
-  Vector3<T> vt_b;
+  Vector3<T> v_b;
   /* The (undamped) normal contact force at the current configuration before
    a discrete update is made. With "undamped" we mean this force only contains
    the compliant component of the model, without the Hunt & Crossley term. */

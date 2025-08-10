@@ -585,7 +585,7 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
           .nhat_BA_W = nhat_BA_W,
           .phi0 = phi0,
           .vn0 = v_AcBc_Cz,
-          .vt_b = {},
+          .v_b = {},
           .fn0 = fn0,
           .stiffness = k,
           .damping = d,
