@@ -202,6 +202,60 @@ std::optional<MultibodyConstraintId> ParseBallConstraint(
   return plant->AddBallConstraint(*body_A, p_AP, *body_B, p_BQ);
 }
 
+std::optional<MultibodyConstraintId> ParseTendonConstraint(
+    const DiagnosticPolicy& diagnostic, ModelInstanceIndex model_instance,
+    const ElementNode& constraint_node,
+    const std::function<std::optional<double>(const char*)>& read_double,
+    const std::function<ElementNode(const ElementNode&, const char*)>&
+        next_child_element,
+    const std::function<ElementNode(const ElementNode&, const char*)>&
+        next_sibling_element,
+    const std::function<std::string(const ElementNode&, const char*)>&
+        read_string_attribute,
+    const std::function<double(const ElementNode&, const char*)>&
+        read_double_attribute,
+    MultibodyPlant<double>* plant) {
+  std::vector<JointIndex> joints = {};
+  std::vector<double> a = {};
+  for (auto joint_node =
+           next_child_element(constraint_node, "drake:tendon_constraint_joint");
+       std::holds_alternative<sdf::ElementPtr>(joint_node)
+           ? std::get<sdf::ElementPtr>(joint_node) != nullptr
+           : std::get<tinyxml2::XMLElement*>(joint_node) != nullptr;
+       joint_node =
+           next_sibling_element(joint_node, "drake:tendon_constraint_joint")) {
+    const std::string joint_name = read_string_attribute(joint_node, "name");
+    if (!plant->HasJointNamed(joint_name, model_instance)) {
+      diagnostic.Error(fmt::format(
+          "<drake:tendon_constraint>: Joint '{}' specified for "
+          "<drake:tendon_constraint_joint> does not exist in the model.",
+          joint_name));
+      return {};
+    }
+
+    const JointIndex joint_index =
+        plant->GetJointByName(joint_name, model_instance).index();
+    joints.push_back(joint_index);
+
+    const double joint_a = read_double_attribute(joint_node, "a");
+    a.push_back(joint_a);
+  }
+
+  const std::optional<double> offset =
+      read_double("drake:tendon_constraint_offset");
+  const std::optional<double> lower_limit =
+      read_double("drake:tendon_constraint_lower_limit");
+  const std::optional<double> upper_limit =
+      read_double("drake:tendon_constraint_upper_limit");
+  const std::optional<double> stiffness =
+      read_double("drake:tendon_constraint_stiffness");
+  const std::optional<double> damping =
+      read_double("drake:tendon_constraint_damping");
+
+  return plant->AddTendonConstraint(joints, a, offset, lower_limit, upper_limit,
+                                    stiffness, damping);
+}
+
 namespace {
 // See ParseCollisionFilterGroupCommon at header for documentation
 void CollectCollisionFilterGroup(

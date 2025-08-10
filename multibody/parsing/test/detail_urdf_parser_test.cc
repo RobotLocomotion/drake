@@ -1998,6 +1998,166 @@ TEST_F(BallConstraintTest, InvalidBody) {
       " exist in the model.");
 }
 
+class TendonConstraintTest : public UrdfParserTest {
+ public:
+  void VerifyParameters(
+      const std::vector<std::pair<std::string, double>>& joints,
+      const double offset, const double lower_limit, const double upper_limit,
+      const double stiffness, const double damping) {
+    std::string joint_text = "";
+    for (const auto& [joint_name, joint_a] : joints) {
+      joint_text +=
+          fmt::format("<drake:tendon_constraint_joint name=\"{0}\" a=\"{1}\"/>",
+                      joint_name, joint_a);
+    }
+
+    std::string text = fmt::format(
+        kTestString, joint_text,
+        fmt::format("<drake:tendon_constraint_offset value=\"{}\"/>", offset),
+        fmt::format("<drake:tendon_constraint_lower_limit value=\"{}\"/>",
+                    lower_limit),
+        fmt::format("<drake:tendon_constraint_upper_limit value=\"{}\"/>",
+                    upper_limit),
+        fmt::format("<drake:tendon_constraint_stiffness value=\"{}\"/>",
+                    stiffness),
+        fmt::format("<drake:tendon_constraint_damping value=\"{}\"/>",
+                    damping));
+    EXPECT_NE(AddModelFromUrdfString(text, ""), std::nullopt);
+
+    const std::map<MultibodyConstraintId, TendonConstraintSpec>&
+        tendon_constraints = plant_.get_tendon_constraint_specs();
+    ASSERT_EQ(ssize(tendon_constraints), 1);
+
+    const MultibodyConstraintId tendon_id = tendon_constraints.begin()->first;
+    const TendonConstraintSpec& tendon_spec =
+        tendon_constraints.begin()->second;
+
+    EXPECT_EQ(tendon_id, tendon_spec.id);
+    EXPECT_EQ(tendon_spec.offset, offset);
+    EXPECT_EQ(tendon_spec.lower_limit, lower_limit);
+    EXPECT_EQ(tendon_spec.upper_limit, upper_limit);
+    EXPECT_EQ(tendon_spec.stiffness, stiffness);
+    EXPECT_EQ(tendon_spec.damping, damping);
+  }
+
+  void ProvokeError(const std::vector<std::pair<std::string, double>>& joints,
+                    const std::optional<double> offset,
+                    const std::optional<double> lower_limit,
+                    const std::optional<double> upper_limit,
+                    const std::optional<double> stiffness,
+                    const std::optional<double> damping,
+                    const std::string& error_pattern) {
+    std::string joint_text = "";
+    for (const auto& [joint_name, joint_a] : joints) {
+      joint_text +=
+          fmt::format("<drake:tendon_constraint_joint name=\"{0}\" a=\"{1}\"/>",
+                      joint_name, joint_a);
+    }
+
+    std::string text = fmt::format(
+        kTestString, joint_text,
+        offset.has_value()
+            ? fmt::format("<drake:tendon_constraint_offset value=\"{}\"/>",
+                          offset.value())
+            : "",
+        lower_limit.has_value()
+            ? fmt::format("<drake:tendon_constraint_lower_limit value=\"{}\"/>",
+                          lower_limit.value())
+            : "",
+        upper_limit.has_value()
+            ? fmt::format("<drake:tendon_constraint_upper_limit value=\"{}\"/>",
+                          upper_limit.value())
+            : "",
+        stiffness.has_value()
+            ? fmt::format("<drake:tendon_constraint_stiffness value=\"{}\"/>",
+                          stiffness.value())
+            : "",
+        damping.has_value()
+            ? fmt::format("<drake:tendon_constraint_damping value=\"{}\"/>",
+                          damping.value())
+            : "");
+
+    EXPECT_NE(AddModelFromUrdfString(text, ""), std::nullopt);
+    EXPECT_THAT(TakeError(), MatchesRegex(error_pattern));
+  }
+
+ protected:
+  // Common URDF string with format options for the tendon constraint.
+  static constexpr const char* kTestString = R"""(
+    <robot name='tendon_constraint_test'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='revolute_AB' type='revolute'>
+        <axis xyz='0 0 1'/>
+        <parent link='A'/>
+        <child link='B'/>
+        <origin rpy='0 0 0' xyz='0 0 0'/>
+        <limit effort='100' lower='-1' upper='2' velocity='100'/>
+        <dynamics damping='0.1'/>
+      </joint>
+      <joint name='prismatic_BC' type='prismatic'>
+        <axis xyz='0 0 1'/>
+        <parent link='B'/>
+        <child link='C'/>
+        <origin rpy='0 0 0' xyz='0 0 0'/>
+        <limit effort='100' lower='-1' upper='2' velocity='100'/>
+        <dynamics damping='0.1'/>
+      </joint>
+      <drake:tendon_constraint>
+        {0}
+        {1}
+        {2}
+        {3}
+        {4}
+        {5}
+      </drake:tendon_constraint>
+    </robot>)""";
+};
+
+TEST_F(TendonConstraintTest, AllParameters) {
+  // Test successful parsing of all parameters.
+  VerifyParameters({{"revolute_AB", 0.0}, {"prismatic_BC", 0.0}}, 1.0, -2.0,
+                   2.0, 5.0, 0.1);
+}
+
+TEST_F(TendonConstraintTest, MissingOffset) {
+  ProvokeError({{"revolute_AB", 0.0}, {"prismatic_BC", 0.0}}, {}, -2.0, 2.0,
+               5.0, 0.1,
+               ".*Unable to find the <drake:tendon_constraint_offset> tag");
+}
+
+TEST_F(TendonConstraintTest, MissingLowerLimit) {
+  ProvokeError(
+      {{"revolute_AB", 0.0}, {"prismatic_BC", 0.0}}, 1.0, {}, 2.0, 5.0, 0.1,
+      ".*Unable to find the <drake:tendon_constraint_lower_limit> tag");
+}
+
+TEST_F(TendonConstraintTest, MissingUpperLimit) {
+  ProvokeError(
+      {{"revolute_AB", 0.0}, {"prismatic_BC", 0.0}}, 1.0, -2.0, {}, 5.0, 0.1,
+      ".*Unable to find the <drake:tendon_constraint_upper_limit> tag");
+}
+
+TEST_F(TendonConstraintTest, MissingStiffness) {
+  ProvokeError({{"revolute_AB", 0.0}, {"prismatic_BC", 0.0}}, 1.0, -2.0, 2.0,
+               {}, 0.1,
+               ".*Unable to find the <drake:tendon_constraint_stiffness> tag");
+}
+
+TEST_F(TendonConstraintTest, MissingDamping) {
+  ProvokeError({{"revolute_AB", 0.0}, {"prismatic_BC", 0.0}}, 1.0, -2.0, 2.0,
+               5.0, {},
+               ".*Unable to find the <drake:tendon_constraint_damping> tag");
+}
+
+TEST_F(TendonConstraintTest, InvalidJoint) {
+  ProvokeError({{"not_a_joint", 0.0}, {"prismatic_BC", 0.0}}, 1.0, -2.0, 2.0,
+               5.0, 0.1,
+               ".*Joint 'not_a_joint' specified for "
+               "<drake:tendon_constraint_joint> does not exist in the model.");
+}
+
 class ReflectedInertiaTest : public UrdfParserTest {
  public:
   void VerifyParameters(const std::string& rotor_inertia_text,

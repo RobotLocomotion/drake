@@ -1860,6 +1860,78 @@ std::optional<MultibodyConstraintId> AddBallConstraintFromSpecification(
   return ParseBallConstraint(read_vector, read_body, plant);
 }
 
+std::optional<MultibodyConstraintId> AddTendonConstraintFromSpecification(
+    const SDFormatDiagnostic& diagnostic, const sdf::ElementPtr node,
+    ModelInstanceIndex model_instance, MultibodyPlant<double>* plant) {
+  const std::set<std::string> supported_tendon_constraint_elements{
+      "drake:tendon_constraint_joint",
+      "drake:tendon_constraint_offset",
+      "drake:tendon_constraint_lower_limit",
+      "drake:tendon_constraint_upper_limit",
+      "drake:tendon_constraint_stiffness",
+      "drake:tendon_constraint_damping",
+  };
+  CheckSupportedElements(diagnostic, node,
+                         supported_tendon_constraint_elements);
+
+  // Functor to read a scalar valued child tag with tag name: `element_name`
+  // e.g. <element_name>0</element_name>
+  // Throws an error if the tag does not exist.
+  auto read_double = [&diagnostic,
+                      node](const char* element_name) -> std::optional<double> {
+    return ParseDouble(diagnostic, node, element_name);
+  };
+
+  auto next_child_element = [](const ElementNode& data_element,
+                               const char* element_name) {
+    return std::get<sdf::ElementPtr>(data_element)
+        ->GetElementImpl(std::string(element_name));
+  };
+  auto next_sibling_element = [](const ElementNode& data_element,
+                                 const char* element_name) {
+    return std::get<sdf::ElementPtr>(data_element)
+        ->GetNextElement(std::string(element_name));
+  };
+  // Functor to read a string valued attribute with attribute name:
+  // `attribute_name` e.g. <element attribute_name="string"/> Throws an error if
+  // the attribute does not exist.
+  auto get_string_attribute = [&diagnostic](
+                                  const ElementNode& data_element,
+                                  const char* attribute_name) -> std::string {
+    auto element = std::get<sdf::ElementPtr>(data_element);
+    if (!element->HasAttribute(attribute_name)) {
+      std::string message =
+          fmt::format("The tag <{}> is missing the required attribute \"{}\"",
+                      element->GetName(), attribute_name);
+      diagnostic.Error(element, std::move(message));
+      return {};
+    }
+    return std::get<sdf::ElementPtr>(data_element)
+        ->Get<std::string>(attribute_name);
+  };
+  // Functor to read a double valued attribute with attribute name:
+  // `attribute_name` e.g. <element attribute_name="0.0"/> Throws an error if
+  // the attribute does not exist or is not a valid number.
+  auto get_double_attribute = [&diagnostic](
+                                  const ElementNode& data_element,
+                                  const char* attribute_name) -> double {
+    auto element = std::get<sdf::ElementPtr>(data_element);
+    if (!element->HasAttribute(attribute_name)) {
+      std::string message =
+          fmt::format("The tag <{}> is missing the required attribute \"{}\"",
+                      element->GetName(), attribute_name);
+      diagnostic.Error(element, std::move(message));
+      return {};
+    }
+    return std::get<sdf::ElementPtr>(data_element)->Get<double>(attribute_name);
+  };
+
+  return ParseTendonConstraint(
+      diagnostic.MakePolicyForNode(*node), model_instance, node, read_double,
+      next_child_element, next_sibling_element, get_string_attribute,
+      get_double_attribute, plant);
+}
+
 // Helper to determine if two links are welded together.
 bool AreWelded(const MultibodyPlant<double>& plant, const RigidBody<double>& a,
                const RigidBody<double>& b) {
@@ -2062,6 +2134,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
       "drake:joint",
       "drake:linear_bushing_rpy",
       "drake:ball_constraint",
+      "drake:tendon_constraint",
       "drake:collision_filter_group",
       "frame",
       "include",
@@ -2217,6 +2290,17 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
                               "drake:ball_constraint")) {
       AddBallConstraintFromSpecification(diagnostic, constraint_node,
                                          model_instance, plant);
+    }
+  }
+
+  drake::log()->trace("sdf_parser: Add TendonConstraint");
+  if (model.Element()->HasElement("drake:tendon_constraint")) {
+    for (sdf::ElementPtr constraint_node =
+             model.Element()->GetElement("drake:tendon_constraint");
+         constraint_node; constraint_node = constraint_node->GetNextElement(
+                              "drake:tendon_constraint")) {
+      AddTendonConstraintFromSpecification(diagnostic, constraint_node,
+                                           model_instance, plant);
     }
   }
 
