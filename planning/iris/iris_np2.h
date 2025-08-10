@@ -92,9 +92,7 @@ IrisNp2 is still in development, so certain features of
 SceneGraphCollisionChecker and parts of [Werner et al., 2024] are not yet
 supported.
 
-@throws if you set `options.sampled_iris_options.containment_points`,
-`options.sampled_iris_options.prog_with_additional_constraints`, or
-`options.parameterization`.
+@throws if you set `options.parameterization`.
 @throws if any collision pairs in `checker` have negative padding.
 @throws if any collision geometries have been been added in `checker`.
 */

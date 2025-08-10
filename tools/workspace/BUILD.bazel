@@ -179,9 +179,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
 }) + select({
     "//tools/workspace/scs_internal:enabled": ["@scs_internal//:install"],
     "//conditions:default": [],
-}) + select({
-    "//tools:with_usd": ["@onetbb_internal//:install"],
-    "//conditions:default": [],
 })
 
 install(

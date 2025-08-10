@@ -135,6 +135,10 @@ class Geometries final : public ShapeReifier {
   DeformableContact<double> ComputeDeformableContact(
       const CollisionFilter& collision_filter) const;
 
+  /* Returns the axis-aligned bounding box of the geometry with the given id.
+   @pre The geometry with the given id must have a deformable representation. */
+  const Aabb& GetDeformableAabbInWorld(GeometryId geometry_id) const;
+
  private:
   friend class GeometriesTester;
 

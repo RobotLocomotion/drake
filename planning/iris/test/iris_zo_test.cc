@@ -95,7 +95,7 @@ TEST_F(JointLimits1D, JointLimitsWithParameterization) {
     EXPECT_EQ(options.parameterization.get_parameterization_dimension().value(),
               1);
     const Vector1d output =
-        options.parameterization.get_parameterization()(Vector1d(3.0));
+        options.parameterization.get_parameterization_double()(Vector1d(3.0));
     EXPECT_NEAR(output[0], 3.0, 1e-15);
 
     HPolyhedron region =
@@ -209,7 +209,7 @@ TEST_F(DoublePendulumRationalForwardKinematics,
   EXPECT_EQ(options.parameterization.get_parameterization_dimension().value(),
             2);
 
-  CheckParameterization(options.parameterization.get_parameterization());
+  CheckParameterization(options.parameterization.get_parameterization_double());
 
   HPolyhedron region =
       IrisZo(*checker_, starting_ellipsoid_rational_forward_kinematics_,
@@ -217,7 +217,7 @@ TEST_F(DoublePendulumRationalForwardKinematics,
 
   CheckRegionRationalForwardKinematics(region);
   PlotEnvironmentAndRegionRationalForwardKinematics(
-      region, options.parameterization.get_parameterization(),
+      region, options.parameterization.get_parameterization_double(),
       region_query_point_1_);
 }
 
@@ -241,7 +241,7 @@ TEST_F(DoublePendulumRationalForwardKinematics,
   EXPECT_TRUE(options.parameterization.get_parameterization_is_threadsafe());
   EXPECT_EQ(options.parameterization.get_parameterization_dimension(), 2);
 
-  CheckParameterization(options.parameterization.get_parameterization());
+  CheckParameterization(options.parameterization.get_parameterization_double());
 
   HPolyhedron region =
       IrisZo(*checker_, starting_ellipsoid_rational_forward_kinematics_,
@@ -396,7 +396,7 @@ TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
 
   meshcat_->Delete();
   PlotEnvironmentAndRegionSubspace(
-      region, options.parameterization.get_parameterization());
+      region, options.parameterization.get_parameterization_double());
 }
 
 TEST_F(ConvexConfigurationSubspace, ExpressionParameterization) {

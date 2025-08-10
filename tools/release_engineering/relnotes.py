@@ -165,8 +165,10 @@ def _format_commit(gh, drake, commit):
     nice_summary = pr_summary.strip().rstrip(".").strip()
 
     # If there is a commit message body, turn it into some end-of-line text
-    # that we'll have to editorialize by hand.
-    detail = " ".join([x.strip() for x in lines[1:] if x])
+    # that we'll have to editorialize by hand. Also ignore "Co-Authored-By:
+    # ..." (inserted by GitHub) as it's irrelevant.
+    detail = " ".join([x.strip() for x in lines[1:] if x
+                       and "co-authored-by:" not in x.lower()])
     # When squashing, reviewable repeats the subject in the body.
     redundant_detail = f"* {pr_summary}"
     if detail.startswith(redundant_detail):

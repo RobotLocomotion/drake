@@ -41,7 +41,6 @@ kind("cc_library", visible("//tools/install/libdrake:libdrake.so", "//..."))
       "//examples/..." except(set(
         "//examples/acrobot/..."
         "//examples/compass_gait/..."
-        "//examples/manipulation_station/..."
         "//examples/pendulum/..."
         "//examples/quadrotor/..."
         "//examples/rimless_wheel/..."

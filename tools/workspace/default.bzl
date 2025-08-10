@@ -35,6 +35,7 @@ load("//tools/workspace/gymnasium_py:repository.bzl", "gymnasium_py_repository")
 load("//tools/workspace/gz_math_internal:repository.bzl", "gz_math_internal_repository")  # noqa
 load("//tools/workspace/gz_utils_internal:repository.bzl", "gz_utils_internal_repository")  # noqa
 load("//tools/workspace/highway_internal:repository.bzl", "highway_internal_repository")  # noqa
+load("//tools/workspace/implib_so_internal:repository.bzl", "implib_so_internal_repository")  # noqa
 load("//tools/workspace/ipopt_internal:repository.bzl", "ipopt_internal_repository")  # noqa
 load("//tools/workspace/lapack:repository.bzl", "lapack_repository")
 load("//tools/workspace/lapack_internal:repository.bzl", "lapack_internal_repository")  # noqa
@@ -58,7 +59,6 @@ load("//tools/workspace/nlohmann_internal:repository.bzl", "nlohmann_internal_re
 load("//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
 load("//tools/workspace/onetbb_internal:repository.bzl", "onetbb_internal_repository")  # noqa
 load("//tools/workspace/opencl:repository.bzl", "opencl_repository")
-load("//tools/workspace/openusd_internal:repository.bzl", "openusd_internal_repository")  # noqa
 load("//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apache_xmlgraphics_commons_repository")  # noqa
 load("//tools/workspace/osqp_internal:repository.bzl", "osqp_internal_repository")  # noqa
 load("//tools/workspace/pathspec_internal:repository.bzl", "pathspec_internal_repository")  # noqa
@@ -201,6 +201,8 @@ def add_default_repositories(
         gymnasium_py_repository(name = "gymnasium_py", mirrors = mirrors, _is_drake_self_call = True)  # noqa
     if "highway_internal" not in excludes:
         highway_internal_repository(name = "highway_internal", mirrors = mirrors)  # noqa
+    if "implib_so_internal" not in excludes:
+        implib_so_internal_repository(name = "implib_so_internal", mirrors = mirrors)  # noqa
     if "ipopt_internal" not in excludes:
         ipopt_internal_repository(name = "ipopt_internal", mirrors = mirrors)  # noqa
     if "lapack" not in excludes:
@@ -251,8 +253,6 @@ def add_default_repositories(
         onetbb_internal_repository(name = "onetbb_internal", mirrors = mirrors)
     if "opencl" not in excludes:
         opencl_repository(name = "opencl")
-    if "openusd_internal" not in excludes:
-        openusd_internal_repository(name = "openusd_internal", mirrors = mirrors)  # noqa
     if "org_apache_xmlgraphics_commons" not in excludes:
         org_apache_xmlgraphics_commons_repository(name = "org_apache_xmlgraphics_commons", mirrors = mirrors, _is_drake_self_call = True)  # noqa
     if "osqp_internal" not in excludes:

@@ -1,46 +1,9 @@
 #!/usr/bin/env groovy
 
-properties([
-  parameters([
-    string(name: 'drakeSha', defaultValue: 'master',
-      description: 'Commit SHA or branch name. ' +
-        'For pull requests, enter branch name <code>pr/1234/head</code> ' +
-        'or <code>pr/1234/merge</code> for pull request #1234. ' +
-        'Defaults to <code>master</code>.')
-    string(name: 'ciSha', defaultValue: 'main',
-      description: 'Commit SHA or branch name. ' +
-        'For pull requests, enter branch name <code>pr/1234/head</code> ' +
-        'or <code>pr/1234/merge</code> for pull request #1234. ' +
-        'Defaults to <code>main</code>.'),
-    string(name: 'release_version', defaultValue: 'unset',
-      description: 'Version to apply to the resulting release candidate ' +
-        'artifact(s). If the RC artifact(s) include wheel(s), the ' +
-        'version must follow <a href=' +
-        '"https://www.python.org/dev/peps/pep-0440/">PEP 440</a>.' +
-        'To test staging <tt>1.13.0</tt>, for example, a ' +
-        'version number such as <tt>1.13.0rc1</tt> could be used. ' +
-        'The version number must start with a number (<tt>v1.13.0</tt> ' +
-        'will be rejected). If in doubt, run <tt>bazel run ' +
-        '//tools/wheel:builder -- --pep440 [desired version number]' +
-        '</tt> to confirm whether your desired version number is ' +
-        'PEP 440 compliant.')
-    ])
-  buildDiscarder(
-    logRotator(
-      daysToKeepStr: '90',
-      artifactDaysToKeepStr: '90'
-    )
-  )
-])
-
 node(getNodeLabel()) {
-  // Use a custom checkout step below, since there are
-  // multiple repositories with a particular directory layout.
-  skipDefaultCheckout()
-
   // Load utils.groovy for common utilities.
   // If no such file exists on this branch, load it from master.
-  fetchUtils()
+  fetchUtils(params.sha1)
   def jenkinsUtilsPath = 'jenkins-utils/.jenkins/utils/utils.groovy'
   if (!fileExists(jenkinsUtilsPath)) {
     fetchUtils('master')
@@ -56,12 +19,13 @@ node(getNodeLabel()) {
       ansiColor('xterm') {
         timestamps {
           try {
-            // Use the drake and ci branch parameters for checkout (defaults
-            // to master & main).
-            def scmVars = utils.checkout(params.ciSha, params.drakeSha)
+            // Always use drake-ci/main for staging builds, but use the
+            // drake SHA parameter for the drake checkout.
+            def scmVars = utils.checkout('main', params.sha1)
             utils.doMainBuild(scmVars, params.release_version)
           } finally {
             try {
+              utils.checkBuildResult()
               utils.addCDashBadge()
             } finally {
               utils.cleanWorkspace()
@@ -73,10 +37,14 @@ node(getNodeLabel()) {
   }
 }
 
-// Returns the node label from the job name.
+/**
+ * Extracts the node label from the job name.
+ *
+ * @return the node label
+ */
 def getNodeLabel() {
-  def pattern = ~/^((linux|mac-arm)-[a-z]+(?:-unprovisioned)?)/
-  def match = "${env.JOB_NAME}" =~ pattern
+  def pattern = ~/^((linux(-arm)?|mac-arm)-[A-Za-z]+(-unprovisioned)?).*/
+  def match = env.JOB_NAME =~ pattern
 
   if (match.find()) {
     return match.group(1)
@@ -86,8 +54,12 @@ def getNodeLabel() {
   }
 }
 
-// Loads utils by performing a sparse checkout to WORKSPACE/jenkins-utils.
-// If no 'branch' is given, tries to find the current branch or pull request.
+/**
+ * Loads utils by performing a sparse checkout to WORKSPACE/jenkins-utils.
+ *
+ * @param branch the branch from which to load utils; if none is given, tries
+ *               to find the current branch or pull request
+ */
 def fetchUtils(String branch = null) {
   if (!branch) {
     if (!env.CHANGE_ID?.trim()) {

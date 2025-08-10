@@ -316,12 +316,12 @@ ARCHIVES = [
         build_file = Label("//tools/workspace/crate_universe/lock/details:BUILD.serde_derive-1.0.219.bazel"),
     ),
     dict(
-        name = "crate__serde_json-1.0.140",
-        sha256 = "20068b6e96dc6c9bd23e01df8827e6c7e1f2fddd43c21810382803c136b99373",
+        name = "crate__serde_json-1.0.141",
+        sha256 = "30b9eff21ebe718216c6ec64e1d9ac57087aad11efc64e32002bce4a0d4c03d3",
         type = "tar.gz",
-        urls = ["https://static.crates.io/crates/serde_json/1.0.140/download"],
-        strip_prefix = "serde_json-1.0.140",
-        build_file = Label("//tools/workspace/crate_universe/lock/details:BUILD.serde_json-1.0.140.bazel"),
+        urls = ["https://static.crates.io/crates/serde_json/1.0.141/download"],
+        strip_prefix = "serde_json-1.0.141",
+        build_file = Label("//tools/workspace/crate_universe/lock/details:BUILD.serde_json-1.0.141.bazel"),
     ),
     dict(
         name = "crate__strsim-0.10.0",

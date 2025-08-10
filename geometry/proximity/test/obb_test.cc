@@ -3,11 +3,14 @@
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity/aabb.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
+#include "drake/geometry/proximity/make_convex_hull_mesh.h"
 #include "drake/geometry/proximity/make_ellipsoid_mesh.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
+#include "drake/geometry/proximity/plane.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
@@ -22,6 +25,8 @@ using math::RigidTransformd;
 using math::RollPitchYawd;
 using math::RotationMatrixd;
 
+// TODO(SeanCurtis-TRI): Add test coverage for obb makers for AutoDiffXd typed
+// meshes.
 // Friend class for accessing Obb's private functionality.
 class ObbTester : public ::testing::Test {
  public:
@@ -706,6 +711,21 @@ GTEST_TEST(ObbMakerTest, TestVolumeMesh) {
   // that fits the ellipsoid. We put a check that the future code will not
   // create a bigger bounding box.
   EXPECT_LT(obb.CalcVolume(), 41.317);
+}
+
+// Smoke test that it works with PolygonSurfaceMesh.
+GTEST_TEST(ObbMakerTest, TestPolygonSurfaceMesh) {
+  const std::string file =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  const Mesh mesh(file);
+  const PolygonSurfaceMesh<double> polygon_mesh =
+      internal::MakeConvexHull(mesh);
+  std::set<int> test_vertices;
+  for (int i = 0; i < polygon_mesh.num_vertices(); ++i) {
+    test_vertices.insert(i);
+  }
+  Obb obb = ObbMaker(polygon_mesh, test_vertices).Compute();
+  EXPECT_TRUE(Contain(obb, polygon_mesh, test_vertices));
 }
 
 // Tests API of ObbMaker that it respects the input vertex indices.

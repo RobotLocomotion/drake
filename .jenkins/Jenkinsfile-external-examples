@@ -1,22 +1,28 @@
 #!/usr/bin/env groovy
 
-properties([
-  parameters([
-    string(name: 'deePR', defaultValue: 'main',
-      description: 'Pull request name. ' +
-        'For pull requests, enter project name <code>PR-1234</code> ' +
-        'for pull request #1234. Defaults to <code>main</code>.'),
-  ]),
-  buildDiscarder(
-    logRotator(
-      daysToKeepStr: '90',
-      artifactDaysToKeepStr: '90'
-    )
-  )
-])
-
 def scmVars = null
+
 node(getNodeLabel()) {
+  // Define job properties. Other Jenkinsfiles which do not correspond to
+  // multibranch pipelines (i.e., for non-experimental jobs) should inherit
+  // properties from the original job definitions rather than calling
+  // properties() here.
+  properties([
+    parameters([
+      string(name: 'deePR', defaultValue: 'main',
+        description: 'Pull request name. ' +
+          'For pull requests, enter project name <code>PR-1234</code> ' +
+          'for pull request #1234. Defaults to <code>main</code>.'),
+    ]),
+    buildDiscarder(
+      logRotator(
+        daysToKeepStr: '90',
+        artifactDaysToKeepStr: '90'
+      )
+    ),
+    githubProjectProperty('https://github.com/RobotLocomotion/drake')
+  ])
+
   stage('drake-checkout') {
     timeout(600) {
       ansiColor('xterm') {
@@ -35,10 +41,14 @@ build(
   ]
 )
 
-// Returns the node label from the job name.
+/**
+ * Extracts the node label from the job name.
+ *
+ * @return the node label
+ */
 def getNodeLabel() {
-  def pattern = ~/^((linux|mac-arm)-[a-z]+(?:-unprovisioned)?)/
-  def match = "${env.JOB_NAME}" =~ pattern
+  def pattern = ~/^((linux(-arm)?|mac-arm)-[A-Za-z]+(-unprovisioned)?).*/
+  def match = env.JOB_NAME =~ pattern
 
   if (match.find()) {
     return match.group(1)

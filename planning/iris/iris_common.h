@@ -12,8 +12,11 @@
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/geometry/optimization/vpolytope.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
+#include "drake/planning/collision_checker.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace planning {
@@ -160,28 +163,53 @@ class CommonSampledIrisOptions {
   const solvers::MathematicalProgram* prog_with_additional_constraints{};
 };
 
+/** Ordinarily, IRIS algorithms grow collision free regions in the robot's
+ * configuration space C. This allows the user to specify a function f:Q→C , and
+ * grow the region in Q instead. The function should be a map R^m to R^n, where
+ * n is the dimension of the plant configuration space and m is the input
+ * dimension, if specified. If the user provides a version of the function for
+ * Eigen::VectorX<double>, then the parameterization can be used with IrisZo.
+ * IrisNp2 requires that the user also provies a version of the function for
+ * Eigen::VectorX<AutoDiffXd>. If not specified, the input dimension is assumed
+ * to be equal to the output dimension. The user must also specify whether or
+ * not the parameterization function can be called in parallel. */
 class IrisParameterizationFunction {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IrisParameterizationFunction);
 
   typedef std::function<Eigen::VectorXd(const Eigen::VectorXd&)>
-      ParameterizationFunction;
+      ParameterizationFunctionDouble;
+  typedef std::function<Eigen::VectorX<AutoDiffXd>(
+      const Eigen::VectorX<AutoDiffXd>&)>
+      ParameterizationFunctionAutodiff;
 
-  /** Ordinarily, IRIS algorithms grow collision free regions in the robot's
-   * configuration space C. This allows the user to specify a function f:Q→C ,
-   * and grow the region in Q instead. The function should be a map R^m to
-   * R^n, where n is the dimension of the plant configuration space, determined
-   * via `checker.plant().num_positions()` and m is `parameterization_dimension`
-   * if specified. The user must provide `parameterization`, which is the
-   * function f, `parameterization_is_threadsafe`, which is whether or not
-   * `parameterization` can be called concurrently, and
-   * `parameterization_dimension`, the dimension of the input space Q. */
-  IrisParameterizationFunction(const ParameterizationFunction& parameterization,
-                               bool parameterization_is_threadsafe,
-                               int parameterization_dimension)
+  /** Constructor for when the user only provides a version of the
+   * parameterization function for Eigen::VectorX<double>.
+   * `parameterization_double` is the function itself,
+   * `parameterization_is_threadsafe` specifies whether or not its threadsafe,
+   * and `parameterization_dimension` is the input dimension. */
+  IrisParameterizationFunction(
+      const ParameterizationFunctionDouble& parameterization_double,
+      bool parameterization_is_threadsafe, int parameterization_dimension)
       : parameterization_is_threadsafe_(parameterization_is_threadsafe),
         parameterization_dimension_(parameterization_dimension),
-        parameterization_(parameterization) {}
+        parameterization_double_(parameterization_double),
+        parameterization_autodiff_() {}
+
+  /** Constructor for when the user only provides both versions of the
+   * parameterization function.
+   * `parameterization_double` is the version for Eigen::VectorX<double>,
+   * `parameterization_autodiff_` is the version for Eigen::VectorX<AutoDiffXd>,
+   * `parameterization_is_threadsafe` specifies whether or not its threadsafe,
+   * and `parameterization_dimension` is the input dimension. */
+  IrisParameterizationFunction(
+      const ParameterizationFunctionDouble& parameterization_double,
+      const ParameterizationFunctionAutodiff& parameterization_autodiff,
+      bool parameterization_is_threadsafe, int parameterization_dimension)
+      : parameterization_is_threadsafe_(parameterization_is_threadsafe),
+        parameterization_dimension_(parameterization_dimension),
+        parameterization_double_(parameterization_double),
+        parameterization_autodiff_(parameterization_autodiff) {}
 
   /** Default constructor -- returns the identity mapping, which is threadsafe
    * and compatible with any dimension configuration space. */
@@ -193,6 +221,7 @@ class IrisParameterizationFunction {
    * the order that they should be evaluated. Each `Variable` in `variables`
    * must be used, each `Variable` used in `expression_parameterization` must
    * appear in `variables`, and there must be no duplicates in `variables`.
+   * @note This currently only populates the VectorX<double> parameterization.
    * @note Expression parameterizations are always threadsafe.
    * @throws if the number of variables used across
    * `expression_parameterization` does not match `ssize(variables)`.
@@ -208,6 +237,7 @@ class IrisParameterizationFunction {
    * rational kinematic parameterization. Regions are grown in the `s`
    * variables, so as to minimize collisions in the `q` variables. See
    * RationalForwardKinematics for details.
+   * @note This currently only populates the VectorX<double> parameterization.
    * @note The user is responsible for ensuring `kin` (and the underlying
    * MultibodyPlant it is built on) is kept alive. If that object is deleted,
    * then the parameterization can no longer be used. */
@@ -215,18 +245,30 @@ class IrisParameterizationFunction {
       const multibody::RationalForwardKinematics* kin,
       const Eigen::Ref<const Eigen::VectorXd>& q_star_val);
 
-  /** Get the parameterization function.
+  /** Get the Eigen::VectorX<double> parameterization function.
    * @note If the user has not specified this with `set_parameterization()`,
-   * then the default value of `parameterization_` is the identity function,
-   * indicating that the regions should be grown in the full configuration space
-   * (in the standard coordinate system). */
-  const ParameterizationFunction& get_parameterization() const {
-    return parameterization_;
+   * then the default value of `parameterization_double_` is the identity
+   * function, indicating that the regions should be grown in the full
+   * configuration space (in the standard coordinate system). */
+  const ParameterizationFunctionDouble& get_parameterization_double() const {
+    return parameterization_double_;
+  }
+
+  /** Get the Eigen::VectorX<AutoDiffXd> parameterization function.
+   * @note If the user has not specified this with `set_parameterization()`,
+   * then the default value of `parameterization_double_` is the identity
+   * function, indicating that the regions should be grown in the full
+   * configuration space (in the standard coordinate system).
+   * @throws If the user has specified the VectorX<double> parameterization but
+   * not the VectorX<AutoDiffXd> parameterization. */
+  const ParameterizationFunctionAutodiff& get_parameterization_autodiff()
+      const {
+    return parameterization_autodiff_;
   }
 
   /** Returns whether or not the user has specified the parameterization to be
    * threadsafe.
-   * @note The default `parameterization_` is the identity function, which is
+   * @note The default parameterization is the identity function, which is
    * threadsafe. */
   bool get_parameterization_is_threadsafe() const {
     return parameterization_is_threadsafe_;
@@ -234,20 +276,22 @@ class IrisParameterizationFunction {
 
   /** Returns what the user has specified as the input dimension for the
    * parameterization function, or std::nullopt if it has not been set. A
-   * std::nullopt value indicates that
-   * IrisZo should use the ambient configuration space dimension as the input
-   * dimension to the parameterization. */
+   * std::nullopt value indicates that the chosen IRIS algorithm should use the
+   * ambient configuration space dimension as the input dimension to the
+   * parameterization. */
   std::optional<int> get_parameterization_dimension() const {
     return parameterization_dimension_;
   }
 
  private:
   bool parameterization_is_threadsafe_{true};
-
   std::optional<int> parameterization_dimension_{std::nullopt};
-
-  std::function<Eigen::VectorXd(const Eigen::VectorXd&)> parameterization_{
+  ParameterizationFunctionDouble parameterization_double_{
       [](const Eigen::VectorXd& q) -> Eigen::VectorXd {
+        return q;
+      }};
+  ParameterizationFunctionAutodiff parameterization_autodiff_{
+      [](const Eigen::VectorX<AutoDiffXd>& q) -> Eigen::VectorX<AutoDiffXd> {
         return q;
       }};
 };
@@ -265,6 +309,48 @@ void AddTangentToPolytope(
     double configuration_space_margin,
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>* A,
     Eigen::VectorXd* b, int* num_constraints);
+
+void AddTangentToPolytope(
+    const geometry::optimization::Hyperellipsoid& E,
+    const Eigen::Ref<const Eigen::VectorXd>& point,
+    const geometry::optimization::VPolytope& cvxh_vpoly,
+    const solvers::SolverInterface& solver, double configuration_space_margin,
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>* A,
+    Eigen::VectorXd* b, int* num_constraints, double* max_relaxation);
+
+// Given a pointer to a MathematicalProgram and a single particle, check
+// whether the particle satisfies the constraints. If a nullptr is given for
+// the program, return true, since the constraints are trivially-satisfied.
+bool CheckProgConstraints(const solvers::MathematicalProgram* prog_ptr,
+                          const Eigen::VectorXd& particle, const double tol);
+
+// Given a pointer to a MathematicalProgram and a list of particles (where each
+// particle is a choice of values for its decision variables), check in parallel
+// which particles satisfy all constraints, and which don't. Each entry in the
+// output vector corresponds to the corresponding particle. 1 means it satisfies
+// the constraints, 0 means it doesn't. If a nullptr is given for the program,
+// return a vector of all 1s, since all particles trivially satisfy the
+// constraints. The user can specify a slice of particles to check [0,
+// end_index). Default behavior is to check all particles -- when end_index is
+// std::nullopt, it is set to ssize(particles).
+std::vector<uint8_t> CheckProgConstraintsParallel(
+    const solvers::MathematicalProgram* prog_ptr,
+    const std::vector<Eigen::VectorXd>& particles,
+    const Parallelism& parallelism, const double tol,
+    std::optional<int> end_index = std::nullopt);
+
+geometry::optimization::VPolytope ParseAndCheckContainmentPoints(
+    const CollisionChecker& checker,
+    const CommonSampledIrisOptions& sampled_iris_options,
+    const IrisParameterizationFunction& parameterization,
+    const geometry::optimization::Hyperellipsoid& starting_ellipsoid,
+    const double constraints_tol = 1e-6);
+
+Eigen::VectorXd ComputeFaceTangentToDistCvxh(
+    const geometry::optimization::Hyperellipsoid& E,
+    const Eigen::Ref<const Eigen::VectorXd>& point,
+    const geometry::optimization::VPolytope& cvxh_vpoly,
+    const solvers::SolverInterface& solver);
 
 // Populates particles with random samples, drawn across potentially multiple
 // threads. number_to_sample must be smaller than ssize(particles), and

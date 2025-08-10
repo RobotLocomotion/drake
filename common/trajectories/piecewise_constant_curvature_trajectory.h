@@ -168,7 +168,7 @@ class PiecewiseConstantCurvatureTrajectory final
 
    @param s The query arclength in meters.
    @returns position vector r(s). */
-  MatrixX<T> value(const T& s) const final {
+  MatrixX<T> value(const T& s) const {
     // We shadowed the base class to add documentation, not to change logic.
     return PiecewiseTrajectory<T>::value(s);
   }

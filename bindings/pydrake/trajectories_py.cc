@@ -5,7 +5,6 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/polynomial_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/common/nice_type_name.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/trajectories/bezier_curve.h"
@@ -177,16 +176,6 @@ struct Impl {
     using Base = TrajectoryPublic;
     using Base::Base;
 
-    void WarnDeprecatedOverride(std::string_view func_name) const {
-      WarnDeprecated(
-          fmt::format(
-              "Support for overriding {}.{} as a virtual function is "
-              "deprecated. Subclasses should override the do_{} virtual "
-              "function, instead.",
-              NiceTypeName::Get(*this), func_name, func_name),
-          "2025-08-01");
-    }
-
     // Utility function that takes a Python object which is-a Trajectory and
     // wraps it in a unique_ptr that manages object lifetime when returned back
     // to C++.
@@ -214,100 +203,51 @@ struct Impl {
     std::unique_ptr<Trajectory<T>> DoClone() const final {
       py::gil_scoped_acquire guard;
       // Trajectory subclasses in Python must implement cloning by defining
-      // either a __deepcopy__ (preferred) or Clone (legacy) method. We'll try
-      // Clone first so it has priority, but if it doesn't exist we'll fall back
-      // to __deepcopy__ and just let the "no such method deepcopy" error
-      // message propagate if both were missing. Because the
-      // PYBIND11_OVERLOAD_INT macro embeds a conditional `return ...;`
-      // statement, we must wrap it in lambda so that we can post-process the
-      // return value in case it does return.
-      bool used_legacy_clone = true;
-      auto make_python_deepcopy = [&]() -> py::object {
-        PYBIND11_OVERLOAD_INT(py::object, Trajectory<T>, "Clone");
-        used_legacy_clone = false;
-        auto deepcopy = py::module_::import("copy").attr("deepcopy");
-        return deepcopy(this);
-      };
-      py::object copied = make_python_deepcopy();
-      if (used_legacy_clone) {
-        WarnDeprecated(
-            fmt::format(
-                "Support for overriding {}.Clone as a virtual function is "
-                "deprecated. Subclasses should implement __deepcopy__, "
-                "instead.",
-                NiceTypeName::Get(*this)),
-            "2025-08-01");
-      }
-      return WrapPyTrajectory(std::move(copied));
+      // a __deepcopy__ method.
+      auto deepcopy = py::module_::import("copy").attr("deepcopy");
+      return WrapPyTrajectory(deepcopy(this));
     }
 
     MatrixX<T> do_value(const T& t) const final {
-      PYBIND11_OVERLOAD_INT(MatrixX<T>, Trajectory<T>, "do_value", t);
-      WarnDeprecatedOverride("value");
-      PYBIND11_OVERLOAD_INT(MatrixX<T>, Trajectory<T>, "value", t);
-      // If the macro did not return, use default functionality.
-      return Base::do_value(t);
+      PYBIND11_OVERRIDE_PURE(MatrixX<T>, Trajectory<T>, do_value, t);
     }
 
     bool do_has_derivative() const final {
-      PYBIND11_OVERLOAD_INT(bool, Trajectory<T>, "do_has_derivative");
-      // If the macro did not return, use default functionality.
-      return Base::do_has_derivative();
+      PYBIND11_OVERRIDE_PURE(bool, Trajectory<T>, do_has_derivative);
     }
 
     MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const final {
-      PYBIND11_OVERLOAD_INT(
-          MatrixX<T>, Trajectory<T>, "DoEvalDerivative", t, derivative_order);
-      // If the macro did not return, use default functionality.
-      return Base::DoEvalDerivative(t, derivative_order);
+      PYBIND11_OVERRIDE_PURE(
+          MatrixX<T>, Trajectory<T>, DoEvalDerivative, t, derivative_order);
     }
 
     std::unique_ptr<Trajectory<T>> DoMakeDerivative(
         int derivative_order) const final {
       py::gil_scoped_acquire guard;
-      // Because the PYBIND11_OVERLOAD_INT macro embeds a `return ...;`
+      // Because the PYBIND11_OVERRIDE_PURE macro embeds a `return ...;`
       // statement, we must wrap it in lambda so that we can post-process the
       // return value.
       auto make_python_derivative = [&]() -> py::object {
-        PYBIND11_OVERLOAD_INT(
-            py::object, Trajectory<T>, "DoMakeDerivative", derivative_order);
-        // If the macro did not return, use the base class error message.
-        Base::DoMakeDerivative(derivative_order);
-        DRAKE_UNREACHABLE();
+        PYBIND11_OVERRIDE_PURE(
+            py::object, Trajectory<T>, DoMakeDerivative, derivative_order);
       };
       return WrapPyTrajectory(make_python_derivative());
     }
 
     T do_start_time() const final {
-      PYBIND11_OVERLOAD_INT(T, Trajectory<T>, "do_start_time");
-      WarnDeprecatedOverride("start_time");
-      PYBIND11_OVERLOAD_INT(T, Trajectory<T>, "start_time");
-      // If the macro did not return, use default functionality.
-      return Base::do_start_time();
+      PYBIND11_OVERRIDE_PURE(T, Trajectory<T>, do_start_time);
     }
 
     T do_end_time() const final {
-      PYBIND11_OVERLOAD_INT(T, Trajectory<T>, "do_end_time");
-      WarnDeprecatedOverride("end_time");
-      PYBIND11_OVERLOAD_INT(T, Trajectory<T>, "end_time");
-      // If the macro did not return, use default functionality.
-      return Base::do_end_time();
+      PYBIND11_OVERRIDE_PURE(T, Trajectory<T>, do_end_time);
     }
 
     Eigen::Index do_rows() const final {
-      PYBIND11_OVERLOAD_INT(Eigen::Index, Trajectory<T>, "do_rows");
-      WarnDeprecatedOverride("rows");
-      PYBIND11_OVERLOAD_INT(Eigen::Index, Trajectory<T>, "rows");
-      // If the macro did not return, use default functionality.
-      return Base::do_rows();
+      PYBIND11_OVERRIDE_PURE(Eigen::Index, Trajectory<T>, do_rows);
     }
 
     Eigen::Index do_cols() const final {
-      PYBIND11_OVERLOAD_INT(Eigen::Index, Trajectory<T>, "do_cols");
-      WarnDeprecatedOverride("cols");
-      PYBIND11_OVERLOAD_INT(Eigen::Index, Trajectory<T>, "cols");
-      // If the macro did not return, use default functionality.
-      return Base::do_cols();
+      PYBIND11_OVERRIDE_PURE(Eigen::Index, Trajectory<T>, do_cols);
     }
   };
 

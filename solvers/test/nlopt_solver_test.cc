@@ -20,12 +20,22 @@ TEST_F(UnboundedLinearProgramTest0, TestNlopt) {
     EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_optimal_cost(),
               -std::numeric_limits<double>::infinity());
-    SolverOptions solver_options;
-    solver_options.SetOption(solver.solver_id(), NloptSolver::MaxEvalName(), 1);
-    solver.Solve(*prog_, {}, solver_options, &result);
+
     const int NLOPT_MAXEVAL_REACHED = 5;
+    SolverOptions solver_options1;
+    solver_options1.SetOption(solver.solver_id(), NloptSolver::MaxEvalName(),
+                              1);
+    solver.Solve(*prog_, {}, solver_options1, &result);
     EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
               NLOPT_MAXEVAL_REACHED);
+
+    const int NLOPT_MAXTIME_REACHED = 6;
+    SolverOptions solver_options2;
+    solver_options2.SetOption(solver.solver_id(), NloptSolver::MaxTimeName(),
+                              1e-10);
+    solver.Solve(*prog_, {}, solver_options2, &result);
+    EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
+              NLOPT_MAXTIME_REACHED);
   }
 }
 
@@ -70,6 +80,11 @@ TEST_F(QuadraticEqualityConstrainedProgram1, Test) {
     CheckSolution(solver, Eigen::Vector2d(0.5, 0.8), std::nullopt, 1E-4,
                   false /* check dual */);
   }
+}
+
+GTEST_TEST(NloptSolverTest, TestL2NormCost) {
+  NloptSolver solver;
+  TestL2NormCost(solver, 1e-6);
 }
 }  // namespace test
 }  // namespace solvers

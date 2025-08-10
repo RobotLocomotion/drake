@@ -25,8 +25,6 @@ LIBDRAKE_COMPONENTS = [
     "//examples/compass_gait:compass_gait",  # unpackaged
     "//examples/compass_gait:compass_gait_geometry",  # unpackaged
     "//examples/compass_gait:compass_gait_vector_types",  # unpackaged
-    "//examples/manipulation_station:manipulation_station",  # unpackaged
-    "//examples/manipulation_station:manipulation_station_hardware_interface",  # unpackaged  # noqa
     "//examples/pendulum:pendulum_geometry",  # unpackaged
     "//examples/pendulum:pendulum_plant",  # unpackaged
     "//examples/pendulum:pendulum_vector_types",  # unpackaged
