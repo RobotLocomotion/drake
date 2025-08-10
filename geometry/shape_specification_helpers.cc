@@ -54,21 +54,6 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPointForSphere(
   return std::nullopt;
 }
 
-#define DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(func, shape) \
-  template std::optional<Eigen::Vector3<double>> func(                        \
-      const shape&, const Eigen::Vector3<double>&);                           \
-  template std::optional<Eigen::Vector3<float>> func(                         \
-      const shape&, const Eigen::Vector3<float>&);                            \
-  template std::optional<Eigen::Vector3<::drake::AutoDiffXd>> func(           \
-      const shape&, const Eigen::Vector3<::drake::AutoDiffXd>&);              \
-  template std::optional<Eigen::Vector3<::drake::symbolic::Expression>> func( \
-      const shape&, const Eigen::Vector3<::drake::symbolic::Expression>&);
-
-DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(GetNormalAtPointForBox,
-                                                         Box);
-DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(
-    GetNormalAtPointForSphere, Sphere);
-
 template <typename T>
 std::optional<Eigen::Vector3<T>> GetNormalAtPoint(const Shape& shape,
                                                   const Eigen::Vector3<T>& p) {
@@ -109,15 +94,22 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPoint(const Shape& shape,
                  }});
 }
 
-template std::optional<Eigen::Vector3<double>> GetNormalAtPoint(
-    const Shape& shape, const Eigen::Vector3<double>& p);
-template std::optional<Eigen::Vector3<float>> GetNormalAtPoint(
-    const Shape& shape, const Eigen::Vector3<float>& p);
-template std::optional<Eigen::Vector3<::drake::AutoDiffXd>> GetNormalAtPoint(
-    const Shape& shape, const Eigen::Vector3<::drake::AutoDiffXd>& p);
-template std::optional<Eigen::Vector3<::drake::symbolic::Expression>>
-GetNormalAtPoint(const Shape& shape,
-                 const Eigen::Vector3<::drake::symbolic::Expression>& p);
+#define DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(func, shape) \
+  template std::optional<Eigen::Vector3<double>> func(                        \
+      const shape&, const Eigen::Vector3<double>&);                           \
+  template std::optional<Eigen::Vector3<float>> func(                         \
+      const shape&, const Eigen::Vector3<float>&);                            \
+  template std::optional<Eigen::Vector3<::drake::AutoDiffXd>> func(           \
+      const shape&, const Eigen::Vector3<::drake::AutoDiffXd>&);              \
+  template std::optional<Eigen::Vector3<::drake::symbolic::Expression>> func( \
+      const shape&, const Eigen::Vector3<::drake::symbolic::Expression>&);
+
+DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(GetNormalAtPointForBox,
+                                                         Box);
+DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(
+    GetNormalAtPointForSphere, Sphere);
+DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(GetNormalAtPoint,
+                                                         Shape);
 
 }  // namespace geometry
 }  // namespace drake
