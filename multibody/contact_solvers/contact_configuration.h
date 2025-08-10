@@ -31,7 +31,7 @@ struct ContactConfiguration {
         .fe = ExtractDoubleOrThrow(fe),
         .R_WC =
             math::RotationMatrix<double>(math::DiscardGradient(R_WC.matrix())),
-        .vt_b = math::DiscardGradient(vt_b)};
+        .v_b = math::DiscardGradient(v_b)};
   }
 
   bool operator==(const ContactConfiguration& other) const {
@@ -43,7 +43,7 @@ struct ContactConfiguration {
     if (vn != other.vn) return false;
     if (fe != other.fe) return false;
     if (!R_WC.IsExactlyEqualTo(other.R_WC)) return false;
-    if (vt_b != other.vt_b) return false;
+    if (v_b != other.v_b) return false;
     return true;
   }
 
@@ -80,11 +80,12 @@ struct ContactConfiguration {
   // Rz_WC = R_WC.col(2) corresponds to the normal from object A into object B.
   math::RotationMatrix<T> R_WC;
 
-  // Bias term to the tangential velocity. This is used to model a velocity
-  // at the point of contact. If there was a bias term to the normal velocity,
-  // it should be already added to vn on construction of this
-  // ContactConfiguration.
-  Vector3<T> vt_b{0., 0., 0.};
+  // Mathematically, this is a bias term to the contact velocity: vc = Jv + v_b,
+  // where vc is the contact velocity, J the contact jacobian and v the vector
+  // of generalized velocities. In practice, is used to model a velocity at the
+  // contact point, such as when an imaginery conveyor belt is wrapped around
+  // any or both of the objects in contact.
+  Vector3<T> v_b{0., 0., 0.};
 };
 
 // Extracts a ContactConfiguration from the given DiscreteContactPair.
@@ -99,7 +100,7 @@ ContactConfiguration<T> MakeContactConfiguration(
                                  .vn = input.vn0,
                                  .fe = input.fn0,
                                  .R_WC = input.R_WC,
-                                 .vt_b = input.vt_b};
+                                 .v_b = input.v_b};
 }
 
 }  // namespace internal
