@@ -130,10 +130,10 @@ the main body of the document:
       - [Jammy Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-cmake-staging-packaging/)
       - [Noble Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-cmake-staging-packaging/)
       - [macOS arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sonoma-clang-cmake-staging-packaging/)
-   2. In the upper right, click "log in" (unless you're already logged in). This
+   2. In the upper right, click "sign in" (unless you're already signed in). This
       will use your GitHub credentials.
    3. Click "Build with Parameters".
-   4. Change "sha1" (not "ci_sha1") to the full **git sha** corresponding to
+   4. Change "sha1" to the full **git sha** corresponding to
       ``v1.N.0`` and "release_version" to ``1.N.0`` (no "v").
       - If you mistakenly provide the "v" in "release_version", your build will
         appear to work, but actually fail 5-6 minutes later.
