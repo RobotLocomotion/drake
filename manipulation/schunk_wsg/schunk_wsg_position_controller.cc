@@ -95,25 +95,27 @@ SchunkWsgPositionController::SchunkWsgPositionController(
     double time_step, double kp_command, double kd_command,
     double kp_constraint, double kd_constraint, double default_force_limit) {
   systems::DiagramBuilder<double> builder;
-  auto pd_controller = builder.AddSystem<SchunkWsgPdController>(
+  schunk_wsg_pd_controller_ = builder.AddSystem<SchunkWsgPdController>(
       kp_command, kd_command, kp_constraint, kd_constraint,
       default_force_limit);
+  DRAKE_ASSERT(schunk_wsg_pd_controller_ != nullptr);
   state_interpolator_ =
       builder.AddSystem<systems::StateInterpolatorWithDiscreteDerivative>(
           1, time_step, true /* suppress_initial_transient */);
 
   builder.Connect(state_interpolator_->get_output_port(),
-                  pd_controller->get_desired_state_input_port());
+                  schunk_wsg_pd_controller_->get_desired_state_input_port());
   desired_position_input_port_ = builder.ExportInput(
       state_interpolator_->get_input_port(), "desired_position");
   force_limit_input_port_ = builder.ExportInput(
-      pd_controller->get_force_limit_input_port(), "force_limit");
-  state_input_port_ =
-      builder.ExportInput(pd_controller->get_state_input_port(), "state");
+      schunk_wsg_pd_controller_->get_force_limit_input_port(), "force_limit");
+  state_input_port_ = builder.ExportInput(
+      schunk_wsg_pd_controller_->get_state_input_port(), "state");
   generalized_force_output_port_ = builder.ExportOutput(
-      pd_controller->get_generalized_force_output_port(), "generalized_force");
+      schunk_wsg_pd_controller_->get_generalized_force_output_port(),
+      "generalized_force");
   grip_force_output_port_ = builder.ExportOutput(
-      pd_controller->get_grip_force_output_port(), "grip_force");
+      schunk_wsg_pd_controller_->get_grip_force_output_port(), "grip_force");
 
   builder.BuildInto(this);
 }

@@ -43,7 +43,27 @@ void DefineManipulationSchunkWsg(py::module m) {
             py_rvp::reference_internal,
             cls_doc.get_generalized_force_output_port.doc)
         .def("get_grip_force_output_port", &Class::get_grip_force_output_port,
-            py_rvp::reference_internal, cls_doc.get_grip_force_output_port.doc);
+            py_rvp::reference_internal, cls_doc.get_grip_force_output_port.doc)
+        .def("set_kp_command", &Class::set_kp_command, py::arg("kp_command"),
+            cls_doc.set_kp_command.doc)
+        .def("set_kd_command", &Class::set_kd_command, py::arg("kd_command"),
+            cls_doc.set_kd_command.doc)
+        .def("set_kp_constraint", &Class::set_kp_constraint,
+            py::arg("kp_constraint"), cls_doc.set_kp_constraint.doc)
+        .def("set_kd_constraint", &Class::set_kd_constraint,
+            py::arg("kd_constraint"), cls_doc.set_kd_constraint.doc)
+        .def("set_default_force_limit", &Class::set_default_force_limit,
+            py::arg("default_force_limit"), cls_doc.set_default_force_limit.doc)
+        .def("get_kp_command", &Class::get_kp_command,
+            cls_doc.get_kp_command.doc)
+        .def("get_kd_command", &Class::get_kd_command,
+            cls_doc.get_kd_command.doc)
+        .def("get_kp_constraint", &Class::get_kp_constraint,
+            cls_doc.get_kp_constraint.doc)
+        .def("get_kd_constraint", &Class::get_kd_constraint,
+            cls_doc.get_kd_constraint.doc)
+        .def("get_default_force_limit", &Class::get_default_force_limit,
+            cls_doc.get_default_force_limit.doc);
   }
 
   {

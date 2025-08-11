@@ -43,6 +43,18 @@ class TestSchunkWsg(unittest.TestCase):
         self.assertIsInstance(
             controller.get_grip_force_output_port(), OutputPort)
 
+        controller.set_kp_command(kp_command=100.0)
+        controller.set_kd_command(kd_command=10.0)
+        controller.set_kp_constraint(kp_constraint=4000.0)
+        controller.set_kd_constraint(kd_constraint=10.0)
+        controller.set_default_force_limit(default_force_limit=80.0)
+
+        self.assertIsInstance(controller.get_kp_command(), float)
+        self.assertIsInstance(controller.get_kd_command(), float)
+        self.assertIsInstance(controller.get_kp_constraint(), float)
+        self.assertIsInstance(controller.get_kd_constraint(), float)
+        self.assertIsInstance(controller.get_default_force_limit(), float)
+
         controller = mut.SchunkWsgController(kp=100., ki=2., kd=1.)
         self.assertIsInstance(
             controller.GetInputPort("command_message"), InputPort)

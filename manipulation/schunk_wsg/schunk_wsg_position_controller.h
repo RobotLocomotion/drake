@@ -94,6 +94,24 @@ class SchunkWsgPdController : public systems::LeafSystem<double> {
     return get_output_port(grip_force_output_port_);
   }
 
+  void set_kp_command(double kp_command) { kp_command_ = kp_command; }
+  void set_kd_command(double kd_command) { kd_command_ = kd_command; }
+  void set_kp_constraint(double kp_constraint) {
+    kp_constraint_ = kp_constraint;
+  }
+  void set_kd_constraint(double kd_constraint) {
+    kd_constraint_ = kd_constraint;
+  }
+  void set_default_force_limit(double default_force_limit) {
+    default_force_limit_ = default_force_limit;
+  }
+
+  double get_kp_command() const { return kp_command_; }
+  double get_kd_command() const { return kd_command_; }
+  double get_kp_constraint() const { return kp_constraint_; }
+  double get_kd_constraint() const { return kd_constraint_; }
+  double get_default_force_limit() const { return default_force_limit_; }
+
  private:
   Eigen::Vector2d CalcGeneralizedForce(
       const systems::Context<double>& context) const;
@@ -105,11 +123,11 @@ class SchunkWsgPdController : public systems::LeafSystem<double> {
   void CalcGripForceOutput(const systems::Context<double>& context,
                            systems::BasicVector<double>* output_vector) const;
 
-  const double kp_command_;
-  const double kd_command_;
-  const double kp_constraint_;
-  const double kd_constraint_;
-  const double default_force_limit_;
+  double kp_command_;
+  double kd_command_;
+  double kp_constraint_;
+  double kd_constraint_;
+  double default_force_limit_;
 
   systems::InputPortIndex desired_state_input_port_{};
   systems::InputPortIndex force_limit_input_port_{};
@@ -174,8 +192,51 @@ class SchunkWsgPositionController : public systems::Diagram<double> {
     return get_output_port(grip_force_output_port_);
   }
 
+  void set_kp_command(double kp_command) {
+    DRAKE_ASSERT(schunk_wsg_pd_controller_ != nullptr);
+    schunk_wsg_pd_controller_->set_kp_command(kp_command);
+  }
+  void set_kd_command(double kd_command) {
+    DRAKE_ASSERT(schunk_wsg_pd_controller_ != nullptr);
+    schunk_wsg_pd_controller_->set_kd_command(kd_command);
+  }
+  void set_kp_constraint(double kp_constraint) {
+    DRAKE_ASSERT(schunk_wsg_pd_controller_ != nullptr);
+    schunk_wsg_pd_controller_->set_kp_constraint(kp_constraint);
+  }
+  void set_kd_constraint(double kd_constraint) {
+    DRAKE_ASSERT(schunk_wsg_pd_controller_ != nullptr);
+    schunk_wsg_pd_controller_->set_kd_constraint(kd_constraint);
+  }
+  void set_default_force_limit(double default_force_limit) {
+    DRAKE_ASSERT(schunk_wsg_pd_controller_ != nullptr);
+    schunk_wsg_pd_controller_->set_default_force_limit(default_force_limit);
+  }
+
+  double get_kp_command() const {
+    DRAKE_ASSERT(schunk_wsg_pd_controller_ != nullptr);
+    return schunk_wsg_pd_controller_->get_kp_command();
+  }
+  double get_kd_command() const {
+    DRAKE_ASSERT(schunk_wsg_pd_controller_ != nullptr);
+    return schunk_wsg_pd_controller_->get_kd_command();
+  }
+  double get_kp_constraint() const {
+    DRAKE_ASSERT(schunk_wsg_pd_controller_ != nullptr);
+    return schunk_wsg_pd_controller_->get_kp_constraint();
+  }
+  double get_kd_constraint() const {
+    DRAKE_ASSERT(schunk_wsg_pd_controller_ != nullptr);
+    return schunk_wsg_pd_controller_->get_kd_constraint();
+  }
+  double get_default_force_limit() const {
+    DRAKE_ASSERT(schunk_wsg_pd_controller_ != nullptr);
+    return schunk_wsg_pd_controller_->get_default_force_limit();
+  }
+
  private:
   systems::StateInterpolatorWithDiscreteDerivative<double>* state_interpolator_;
+  SchunkWsgPdController* schunk_wsg_pd_controller_;
 
   systems::InputPortIndex desired_position_input_port_{};
   systems::InputPortIndex force_limit_input_port_{};

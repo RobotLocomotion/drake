@@ -159,6 +159,48 @@ GTEST_TEST(SchunkWsgPositionControllerTest, SimTest) {
       0.0);
 }
 
+GTEST_TEST(SchunkWsgPdControllerTest, ChangeParametersTest) {
+  SchunkWsgPdController pd_controller;
+  SchunkWsgPositionController position_controller;
+
+  using ControllerVariant =
+      std::variant<SchunkWsgPdController*, SchunkWsgPositionController*>;
+  for (ControllerVariant controller_variant :
+       {ControllerVariant(&pd_controller),
+        ControllerVariant(&position_controller)}) {
+    std::visit(
+        [](auto* controller) {
+          // Values chosen to be twice the defaults.
+          double new_kp_command = 100.0;
+          double new_kd_command = 10.0;
+          double new_kp_constraint = 4000.0;
+          double new_kd_constraint = 10.0;
+          double new_default_force_limit = 80.0;
+
+          EXPECT_NE(new_kp_command, controller->get_kp_command());
+          EXPECT_NE(new_kd_command, controller->get_kd_command());
+          EXPECT_NE(new_kp_constraint, controller->get_kp_constraint());
+          EXPECT_NE(new_kd_constraint, controller->get_kd_constraint());
+          EXPECT_NE(new_default_force_limit,
+                    controller->get_default_force_limit());
+
+          controller->set_kp_command(new_kp_command);
+          controller->set_kd_command(new_kd_command);
+          controller->set_kp_constraint(new_kp_constraint);
+          controller->set_kd_constraint(new_kd_constraint);
+          controller->set_default_force_limit(new_default_force_limit);
+
+          EXPECT_EQ(new_kp_command, controller->get_kp_command());
+          EXPECT_EQ(new_kd_command, controller->get_kd_command());
+          EXPECT_EQ(new_kp_constraint, controller->get_kp_constraint());
+          EXPECT_EQ(new_kd_constraint, controller->get_kd_constraint());
+          EXPECT_EQ(new_default_force_limit,
+                    controller->get_default_force_limit());
+        },
+        controller_variant);
+  }
+}
+
 }  // namespace
 }  // namespace schunk_wsg
 }  // namespace manipulation
