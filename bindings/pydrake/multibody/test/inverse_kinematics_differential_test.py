@@ -420,6 +420,15 @@ class TestDiffIkSystems(unittest.TestCase):
         self.assertEqual(dut.active_dof().count(), 2)
         self.assertEqual(dut.time_step(), 0.1)
         self.assertEqual(dut.task_frame().name(), "world")
+        self.assertEqual(dut.K_VX(), 2)
+        np.testing.assert_array_equal(dut.Vd_TG_limit().get_coeffs(),
+                                      [0, 0, 0, np.inf, np.inf, 0])
+        self.assertIsInstance(dut.recipe(),
+                              mut.DifferentialInverseKinematicsSystem.Recipe)
+        self.assertEqual(dut.recipe().num_ingredients(), 1)
+        self.assertIsInstance(dut.recipe().ingredient(i=0),
+                              mut.DifferentialInverseKinematicsSystem
+                              .LeastSquaresCost)
 
         # Note: setting poses in addition to velocities would cause an
         # evaluation error. We'll start with a fresh context (because we can't
