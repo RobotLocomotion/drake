@@ -316,7 +316,11 @@ void DefineDifferentialIkSystem(py::module m) {
               self->AddIngredient(
                   make_shared_ptr_from_py_object<Ingredient>(ingredient));
             },
-            py::arg("ingredient"), nested_cls_doc.AddIngredient.doc);
+            py::arg("ingredient"), nested_cls_doc.AddIngredient.doc)
+        .def("num_ingredients", &NestedClass::num_ingredients,
+            nested_cls_doc.num_ingredients.doc)
+        .def("ingredient", &NestedClass::ingredient, py::arg("i"),
+            nested_cls_doc.ingredient.doc);
     // We're explicitly not binding `AddToProgram` because we expect only the
     // C++ DifferentialInverseKinematicsSystem would call it.
   }
@@ -349,6 +353,11 @@ void DefineDifferentialIkSystem(py::module m) {
       .def("time_step", &Class::time_step, cls_doc.time_step.doc)
       .def("task_frame", &Class::task_frame, py_rvp::reference_internal,
           cls_doc.task_frame.doc)
+      .def("K_VX", &Class::K_VX, cls_doc.K_VX.doc)
+      .def("Vd_TG_limit", &Class::Vd_TG_limit, py_rvp::reference_internal,
+          cls_doc.Vd_TG_limit.doc)
+      .def("recipe", &Class::recipe, py_rvp::reference_internal,
+          cls_doc.recipe.doc)
       .def("get_input_port_position", &Class::get_input_port_position,
           py_rvp::reference_internal, cls_doc.get_input_port_position.doc)
       .def("get_input_port_nominal_posture",
