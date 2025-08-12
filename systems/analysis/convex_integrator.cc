@@ -85,6 +85,7 @@ void ConvexIntegrator<T>::DoInitialize() {
   x_next_full_ = this->get_system().AllocateTimeDerivatives();
   x_next_half_1_ = this->get_system().AllocateTimeDerivatives();
   x_next_half_2_ = this->get_system().AllocateTimeDerivatives();
+  z_dot_ = this->get_system().AllocateTimeDerivatives();
 
   // Allocate memory for the solver statistics.
   stats_.Reserve(solver_parameters_.max_iterations);
@@ -365,10 +366,9 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(const T& h,
   if (x_next->num_z() > 0) {
     VectorX<T>& z = scratch_.z;
 
-    // TODO(vincekurtz): avoid computing time derivatives for the plant
-    const VectorX<T> z_dot = this->EvalTimeDerivatives(context)
-                                 .get_misc_continuous_state()
-                                 .CopyToVector();
+    this->get_system().CalcMiscStateTimeDerivatives(context, z_dot_.get());
+    VectorX<T> z_dot = z_dot_->get_misc_continuous_state().CopyToVector();
+
     z = context.get_continuous_state()
             .get_misc_continuous_state()
             .CopyToVector();

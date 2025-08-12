@@ -397,6 +397,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   std::unique_ptr<ContinuousState<T>> x_next_full_;    // x_{t+h}
   std::unique_ptr<ContinuousState<T>> x_next_half_1_;  // x_{t+h/2}
   std::unique_ptr<ContinuousState<T>> x_next_half_2_;  // x_{t+h/2+h/2}
+  std::unique_ptr<ContinuousState<T>> z_dot_;          // Misc state derivs.
 };
 
 // Forward-declare specializations to double, prior to DRAKE_DECLARE... below.

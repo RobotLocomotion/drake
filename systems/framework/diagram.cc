@@ -318,6 +318,34 @@ void Diagram<T>::DoCalcTimeDerivatives(const Context<T>& context,
 }
 
 template <typename T>
+void Diagram<T>::DoCalcMiscStateTimeDerivatives(
+    const Context<T>& context, ContinuousState<T>* derivatives) const {
+  auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+  DRAKE_DEMAND(diagram_context != nullptr);
+  auto diagram_derivatives =
+      dynamic_cast<DiagramContinuousState<T>*>(derivatives);
+  DRAKE_DEMAND(diagram_derivatives != nullptr);
+  const int n = diagram_derivatives->num_substates();
+  DRAKE_DEMAND(num_subsystems() == n);
+
+  // TODO(amcastro-tri): Avoid the computation of xdot for systems that have
+  // both continuous tate and misc state.
+  // While correct, the implementation below also computes xdot if it exists.
+
+  // Evaluate the derivatives of each constituent system, with misc state only.
+  for (SubsystemIndex i(0); i < n; ++i) {
+    const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
+    const int num_z = subcontext.get_continuous_state().num_z();
+
+    if (num_z > 0) {
+      ContinuousState<T>& subderivatives =
+          diagram_derivatives->get_mutable_substate(i);
+      registered_systems_[i]->CalcTimeDerivatives(subcontext, &subderivatives);
+    }
+  }
+}
+
+template <typename T>
 void Diagram<T>::DoCalcImplicitTimeDerivativesResidual(
     const Context<T>& context, const ContinuousState<T>& proposed_derivatives,
     EigenPtr<VectorX<T>> residual) const {

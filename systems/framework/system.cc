@@ -278,6 +278,14 @@ void System<T>::CalcTimeDerivatives(const Context<T>& context,
 }
 
 template <typename T>
+void System<T>::CalcMiscStateTimeDerivatives(
+    const Context<T>& context, ContinuousState<T>* derivatives) const {
+  DRAKE_DEMAND(derivatives != nullptr);
+  ValidateContext(context);
+  DoCalcMiscStateTimeDerivatives(context, derivatives);
+}
+
+template <typename T>
 void System<T>::CalcImplicitTimeDerivativesResidual(
     const Context<T>& context, const ContinuousState<T>& proposed_derivatives,
     EigenPtr<VectorX<T>> residual) const {
@@ -1211,6 +1219,15 @@ void System<T>::DoCalcTimeDerivatives(const Context<T>& context,
   // state. Other Systems must override this method!
   unused(context);
   DRAKE_DEMAND(derivatives->size() == 0);
+}
+
+template <typename T>
+void System<T>::DoCalcMiscStateTimeDerivatives(
+    const Context<T>& context, ContinuousState<T>* derivatives) const {
+  // This default implementation is only valid for Systems with no misc
+  // state. Other Systems must override this method!
+  unused(context);
+  DRAKE_DEMAND(derivatives->num_z() == 0);
 }
 
 template <typename T>
