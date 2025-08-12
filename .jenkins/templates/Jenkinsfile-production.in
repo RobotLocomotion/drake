@@ -1,0 +1,28 @@
+#!/usr/bin/env groovy
+
+// Load utils.
+@UTILS_CONTENT@
+
+node(getNodeLabel()) {
+  stage('test') {
+    timeout(600) {
+      ansiColor('xterm') {
+        timestamps {
+          try {
+            // Always use drake-ci/main and drake/master for production builds.
+            def scmVars = utils.checkout('main', 'master')
+            utils.doMainBuild(scmVars)
+          } finally {
+            try {
+              utils.checkBuildResult()
+              utils.emailFailureResults()
+              utils.addCDashBadge()
+            } finally {
+              utils.cleanWorkspace()
+            }
+          }
+        }
+      }
+    }
+  }
+}
