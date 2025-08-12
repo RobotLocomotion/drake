@@ -102,7 +102,7 @@ const char joint2_actuation_pendulum_xml[] = R"""(
 </mujoco>
 )""";
 
-// MJCF of a double pendulum with a quaternion floating base. Used to test 
+// MJCF of a double pendulum with a quaternion floating base. Used to test
 // non-SPD Hessian issues.
 const char floating_double_pendulum_xml[] = R"""(
 <?xml version="1.0"?>
@@ -306,7 +306,7 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   ConvexIntegrator<double>& integrator =
       simulator.reset_integrator<ConvexIntegrator<double>>();
   integrator.get_mutable_solver_parameters().enable_hessian_reuse = false;
-  integrator.get_mutable_solver_parameters().print_solver_stats = true;
+  integrator.get_mutable_solver_parameters().print_solver_stats = false;
   integrator.set_plant(&plant);
   integrator.set_fixed_step_mode(true);
   integrator.set_maximum_step_size(h);
@@ -588,7 +588,7 @@ GTEST_TEST(ConvexIntegratorTest, PendulumWithCoupler) {
   ConvexIntegrator<double>& integrator =
       simulator.reset_integrator<ConvexIntegrator<double>>();
   integrator.get_mutable_solver_parameters().enable_hessian_reuse = false;
-  integrator.get_mutable_solver_parameters().print_solver_stats = true;
+  integrator.get_mutable_solver_parameters().print_solver_stats = false;
   integrator.set_plant(&plant);
   integrator.set_fixed_step_mode(true);
   integrator.set_maximum_step_size(h);
@@ -640,7 +640,7 @@ GTEST_TEST(ConvexIntegratorTest, FrankaFreeFall) {
   ConvexIntegrator<double>& integrator =
       simulator.reset_integrator<ConvexIntegrator<double>>();
   integrator.get_mutable_solver_parameters().enable_hessian_reuse = true;
-  integrator.get_mutable_solver_parameters().print_solver_stats = true;
+  integrator.get_mutable_solver_parameters().print_solver_stats = false;
   integrator.set_plant(&plant);
   integrator.set_fixed_step_mode(true);
   integrator.set_maximum_step_size(0.01);
@@ -678,7 +678,7 @@ GTEST_TEST(ConvexIntegratorTest, FloatingDoublePendulum) {
 
   ConvexIntegrator<double>& integrator =
       simulator.reset_integrator<ConvexIntegrator<double>>();
-  integrator.get_mutable_solver_parameters().print_solver_stats = true;
+  integrator.get_mutable_solver_parameters().print_solver_stats = false;
   integrator.set_plant(&plant);
   integrator.set_fixed_step_mode(true);
   integrator.set_maximum_step_size(0.01);
