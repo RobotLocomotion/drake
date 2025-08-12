@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -287,8 +288,21 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
 };
 
 TEST_F(DifferentialInverseKinematicsTest, Structure) {
-  // No costs or constraints; we're just checking structure.
-  DiffIk dut = MakeDiffIk(std::make_shared<Recipe>());
+  // Add a few arbitrary ingredients (in arbitrary order), just so we can see
+  // them in the owned recipe. These are the ingredients that can easily be
+  // constructed.
+  auto recipe = std::make_shared<Recipe>();
+  recipe->AddIngredient(std::make_unique<DiffIk::LeastSquaresCost>(
+      DiffIk::LeastSquaresCost::Config{}));
+  recipe->AddIngredient(std::make_unique<DiffIk::CollisionConstraint>(
+      DiffIk::CollisionConstraint::Config{}));
+  recipe->AddIngredient(std::make_unique<DiffIk::JointCenteringCost>(
+      DiffIk::JointCenteringCost::Config{}));
+  recipe->AddIngredient(
+      std::make_unique<DiffIk::CartesianVelocityLimitConstraint>(
+          DiffIk::CartesianVelocityLimitConstraint::Config{
+            .V_next_TG_limit = Vector6d::Zero()}));
+  DiffIk dut = MakeDiffIk(std::move(recipe));
 
   // Port check.
   EXPECT_EQ(&dut.GetInputPort("position"), &dut.get_input_port_position());
@@ -310,6 +324,19 @@ TEST_F(DifferentialInverseKinematicsTest, Structure) {
                                    std::string(kRobotName)));
   EXPECT_EQ(dut.time_step(), kTimeStep);
   EXPECT_EQ(dut.task_frame().name(), kTaskFrame);
+  EXPECT_EQ(dut.K_VX(), kK_VX);
+  EXPECT_TRUE(CompareMatrices(dut.Vd_TG_limit().get_coeffs(),
+                              MakeSpatialLimits().get_coeffs()));
+  const Recipe& dut_recipe = dut.recipe();
+  EXPECT_EQ(dut_recipe.num_ingredients(), 4);
+  EXPECT_EQ(NiceTypeName::Get(dut_recipe.ingredient(0)),
+            NiceTypeName::Get<DiffIk::LeastSquaresCost>());
+  EXPECT_EQ(NiceTypeName::Get(dut_recipe.ingredient(1)),
+            NiceTypeName::Get<DiffIk::CollisionConstraint>());
+  EXPECT_EQ(NiceTypeName::Get(dut_recipe.ingredient(2)),
+            NiceTypeName::Get<DiffIk::JointCenteringCost>());
+  EXPECT_EQ(NiceTypeName::Get(dut_recipe.ingredient(3)),
+            NiceTypeName::Get<DiffIk::CartesianVelocityLimitConstraint>());
 }
 
 /* A simple ingredient whose sole purpose is to examine the contents of details
