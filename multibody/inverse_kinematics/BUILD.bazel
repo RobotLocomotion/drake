@@ -267,6 +267,7 @@ drake_cc_googletest(
     name = "differential_inverse_kinematics_system_test",
     deps = [
         ":differential_inverse_kinematics_system",
+        "//common:nice_type_name",
         "//common/test_utilities",
         "//common/yaml:yaml_io",
         "//multibody/plant",
