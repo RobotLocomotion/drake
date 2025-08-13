@@ -307,6 +307,13 @@ Here is the full list of custom elements:
 - @ref tag_drake_rotor_inertia
 - @ref tag_drake_screw_thread_pitch
 - @ref tag_drake_stiffness_damping
+- @ref tag_drake_tendon_constraint
+- @ref tag_drake_tendon_constraint_joint
+- @ref tag_drake_tendon_constraint_offset
+- @ref tag_drake_tendon_constraint_lower_limit
+- @ref tag_drake_tendon_constraint_upper_limit
+- @ref tag_drake_tendon_constraint_stiffness
+- @ref tag_drake_tendon_constraint_damping
 - @ref tag_drake_visual
 - @ref tag_drake_youngs_modulus
 
@@ -431,6 +438,119 @@ the `p_BQ` parameter.
 
 @see @ref tag_drake_ball_constraint,
 drake::multibody::MultibodyPlant::AddBallConstraint()
+
+@subsection tag_drake_tendon_constraint drake:tendon_constraint
+
+- SDFormat path: `//model/drake:tendon_constraint`
+- URDF path: `/robot/drake:tendon_constraint`
+- Syntax: Nested elements @ref tag_drake_tendon_constraint_joint,
+  @ref tag_drake_tendon_constraint_offset,
+  @ref tag_drake_tendon_constraint_lower_limit,
+  @ref tag_drake_tendon_constraint_upper_limit,
+  @ref tag_drake_tendon_constraint_stiffness,
+  and @ref tag_drake_tendon_constraint_damping
+
+@subsection tag_drake_tendon_constraint_semantics Semantics
+
+The element adds a tendon constraint to the model via
+drake::multibody::MultibodyPlant::AddTendonConstraint().
+
+@subsection tag_drake_tendon_constraint_joint drake:tendon_constraint_joint
+
+- SDFormat path: `//model/drake:tendon_constraint/drake:tendon_constraint_joint`
+- URDF path: `/robot/drake:tendon_constraint/drake:tendon_constraint_joint`
+- Syntax: Two attributes `name` containing a string value and `a` containing a
+          floating point value.
+
+@subsection tag_drake_tendon_constraint_joint_semantics Semantics
+
+The string names a joint (expected to already be defined by this model and be
+single-dof) and the float specifies a coefficient to be applied to the joint
+configuration to determine the tendon length. These will be passed to
+drake::multibody::MultibodyPlant::AddTendonConstraint() as the `joints` and `a`
+parameters, respectively. The tag can be repeated to specify multiple joints.
+
+@see @ref tag_drake_tendon_constraint,
+drake::multibody::MultibodyPlant::AddTendonConstraint()
+
+@subsection tag_drake_tendon_constraint_offset drake:tendon_constraint_offset
+
+- SDFormat path: `//model/drake:tendon_constraint/drake:tendon_constraint_offset`
+- URDF path: `/robot/drake:tendon_constraint/drake:tendon_constraint_offset/@value`
+- Syntax: Floating point value.
+
+@subsection tag_drake_tendon_constraint_offset_semantics Semantics
+
+A floating point value specifying the length offset in either [m] or [rad] that
+will be passed to drake::multibody::MultibodyPlant::AddTendonConstraint() as the
+`offset` parameter.
+
+@see @ref tag_drake_tendon_constraint,
+drake::multibody::MultibodyPlant::AddTendonConstraint()
+
+@subsection tag_drake_tendon_constraint_lower_limit drake:tendon_constraint_lower_limit
+
+- SDFormat path: `//model/drake:tendon_constraint/drake:tendon_constraint_lower_limit`
+- URDF path: `/robot/drake:tendon_constraint/drake:tendon_constraint_lower_limit/@value`
+- Syntax: Floating point value.
+
+@subsection tag_drake_tendon_constraint_lower_limit_semantics Semantics
+
+A floating point value specifying the lower bound on the constraint in either
+[m] or [rad] that will be passed to
+drake::multibody::MultibodyPlant::AddTendonConstraint() as the `lower_bound`
+parameter.
+
+@see @ref tag_drake_tendon_constraint,
+drake::multibody::MultibodyPlant::AddTendonConstraint()
+
+@subsection tag_drake_tendon_constraint_upper_limit drake:tendon_constraint_upper_limit
+
+- SDFormat path: `//model/drake:tendon_constraint/drake:tendon_constraint_upper_limit`
+- URDF path: `/robot/drake:tendon_constraint/drake:tendon_constraint_upper_limit/@value`
+- Syntax: Floating point value.
+
+@subsection tag_drake_tendon_constraint_upper_limit_semantics Semantics
+
+A floating point value specifying the upper bound on the constraint in either
+[m] or [rad] that will be passed to
+drake::multibody::MultibodyPlant::AddTendonConstraint() as the `upper_bound`
+parameter.
+
+@see @ref tag_drake_tendon_constraint,
+drake::multibody::MultibodyPlant::AddTendonConstraint()
+
+@subsection tag_drake_tendon_constraint_stiffness drake:tendon_constraint_stiffness
+
+- SDFormat path: `//model/drake:tendon_constraint/drake:tendon_constraint_stiffness`
+- URDF path: `/robot/drake:tendon_constraint/drake:tendon_constraint_stiffness/@value`
+- Syntax: Floating point value.
+
+@subsection tag_drake_tendon_constraint_stiffness_semantics Semantics
+
+A floating point value specifying the constraint stiffness in either [N/m] or
+[N⋅m/rad] that will be passed to
+drake::multibody::MultibodyPlant::AddTendonConstraint() as the `stiffness`
+parameter.
+
+@see @ref tag_drake_tendon_constraint,
+drake::multibody::MultibodyPlant::AddTendonConstraint()
+
+@subsection tag_drake_tendon_constraint_damping drake:tendon_constraint_damping
+
+- SDFormat path: `//model/drake:tendon_constraint/drake:tendon_constraint_damping`
+- URDF path: `/robot/drake:tendon_constraint/drake:tendon_constraint_damping/@value`
+- Syntax: Floating point value.
+
+@subsection tag_drake_tendon_constraint_damping_semantics Semantics
+
+A floating point value specifying the constraint damping in either [N⋅s/m] or
+[N⋅m⋅rad/s] that will be passed to
+drake::multibody::MultibodyPlant::AddTendonConstraint() as the `damping`
+parameter.
+
+@see @ref tag_drake_tendon_constraint,
+drake::multibody::MultibodyPlant::AddTendonConstraint()
 
 @subsection tag_drake_bushing_force_damping drake:bushing_force_damping
 
