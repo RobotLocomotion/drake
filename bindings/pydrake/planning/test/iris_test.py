@@ -184,6 +184,10 @@ class TestIrisNp2(unittest.TestCase):
         checker = SceneGraphCollisionChecker(**params)
         options = mut.IrisNp2Options()
         SetSampledIrisOptions(options)
+        options.sampling_strategy = "greedy"
+        options.ray_sampler_options.only_walk_toward_collisions = True
+        options.ray_sampler_options.ray_search_num_steps = 10
+        options.ray_sampler_options.num_particles_to_walk_towards = 200
 
         # For speed reasons -- IPOPT seems to be faster than SNOPT here.
         options.solver = IpoptSolver()
