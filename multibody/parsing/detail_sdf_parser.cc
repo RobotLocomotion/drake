@@ -1811,7 +1811,7 @@ const LinearBushingRollPitchYaw<double>* AddBushingFromSpecification(
 
   // Functor to read a vector valued child tag with tag name: `element_name`
   // e.g. <element_name>0 0 0</element_name>
-  // Throws an error if the tag does not exist.
+  // Reports an error if the tag does not exist.
   auto read_vector = [&diagnostic,
                       node](const char* element_name) -> Eigen::Vector3d {
     return ParseVector3(diagnostic, node, element_name);
@@ -1819,7 +1819,7 @@ const LinearBushingRollPitchYaw<double>* AddBushingFromSpecification(
 
   // Functor to read a child tag with tag name: `element_name` that specifies a
   // frame name, e.g. <element_name>frame_name</element_name>
-  // Throws an error if the tag does not exist or if the frame does not exist in
+  // Reports an error if the tag does not exist or if the frame does not exist in
   // the plant.
   auto read_frame = [&diagnostic, node, model_instance,
                      plant](const char* element_name) -> const Frame<double>* {
@@ -1842,7 +1842,7 @@ std::optional<MultibodyConstraintId> AddBallConstraintFromSpecification(
 
   // Functor to read a vector valued child tag with tag name: `element_name`
   // e.g. <element_name>0 0 0</element_name>
-  // Throws an error if the tag does not exist.
+  // Reports an error if the tag does not exist.
   auto read_vector = [&diagnostic,
                       node](const char* element_name) -> Eigen::Vector3d {
     return ParseVector3(diagnostic, node, element_name);
@@ -1850,7 +1850,7 @@ std::optional<MultibodyConstraintId> AddBallConstraintFromSpecification(
 
   // Functor to read a child tag with tag name: `element_name` that specifies a
   // body name, e.g. <element_name>body_name</element_name>
-  // Throws an error if the tag does not exist or if the body does not exist in
+  // Reports an error if the tag does not exist or if the body does not exist in
   // the plant.
   auto read_body = [&diagnostic, node, model_instance, plant](
                        const char* element_name) -> const RigidBody<double>* {
@@ -1876,7 +1876,7 @@ std::optional<MultibodyConstraintId> AddTendonConstraintFromSpecification(
 
   // Functor to read a scalar valued child tag with tag name: `element_name`
   // e.g. <element_name>0</element_name>
-  // Throws an error if the tag does not exist.
+  // Reports an error if the tag does not exist.
   auto read_double = [&diagnostic,
                       node](const char* element_name) -> std::optional<double> {
     return ParseDouble(diagnostic, node, element_name);
@@ -1893,8 +1893,8 @@ std::optional<MultibodyConstraintId> AddTendonConstraintFromSpecification(
         ->GetNextElement(std::string(element_name));
   };
   // Functor to read a string valued attribute with attribute name:
-  // `attribute_name` e.g. <element attribute_name="string"/> Throws an error if
-  // the attribute does not exist.
+  // `attribute_name` e.g. <element attribute_name="string"/>
+  // Reports an error if the attribute does not exist.
   auto get_string_attribute = [&diagnostic](
                                   const ElementNode& data_element,
                                   const char* attribute_name) -> std::string {
@@ -1910,8 +1910,8 @@ std::optional<MultibodyConstraintId> AddTendonConstraintFromSpecification(
         ->Get<std::string>(attribute_name);
   };
   // Functor to read a double valued attribute with attribute name:
-  // `attribute_name` e.g. <element attribute_name="0.0"/> Throws an error if
-  // the attribute does not exist or is not a valid number.
+  // `attribute_name` e.g. <element attribute_name="0.0"/>
+  // Reports an error if the attribute does not exist or is not a valid number.
   auto get_double_attribute = [&diagnostic](
                                   const ElementNode& data_element,
                                   const char* attribute_name) -> double {

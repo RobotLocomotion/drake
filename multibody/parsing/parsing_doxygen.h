@@ -307,6 +307,7 @@ Here is the full list of custom elements:
 - @ref tag_drake_rotor_inertia
 - @ref tag_drake_screw_thread_pitch
 - @ref tag_drake_stiffness_damping
+- @ref tag_drake_tendon_constraint
 - @ref tag_drake_tendon_constraint_joint
 - @ref tag_drake_tendon_constraint_offset
 - @ref tag_drake_tendon_constraint_lower_limit
@@ -442,12 +443,12 @@ drake::multibody::MultibodyPlant::AddBallConstraint()
 
 - SDFormat path: `//model/drake:tendon_constraint`
 - URDF path: `/robot/drake:tendon_constraint`
-- Syntax: Nested elements @ref tag_drake_tendon_constraint_joint, @ref
-tag_drake_tendon_constraint_offset, @ref
-tag_drake_tendon_constraint_lower_limit, @ref
-tag_drake_tendon_constraint_upper_limit, @ref
-tag_drake_tendon_constraint_stiffness, and @ref
-tag_drake_tendon_constraint_damping
+- Syntax: Nested elements @ref tag_drake_tendon_constraint_joint,
+  @ref tag_drake_tendon_constraint_offset,
+  @ref tag_drake_tendon_constraint_lower_limit,
+  @ref tag_drake_tendon_constraint_upper_limit,
+  @ref tag_drake_tendon_constraint_stiffness,
+  and @ref tag_drake_tendon_constraint_damping
 
 @subsection tag_drake_tendon_constraint_semantics Semantics
 
@@ -463,8 +464,9 @@ drake::multibody::MultibodyPlant::AddTendonConstraint().
 
 @subsection tag_drake_tendon_constraint_joint_semantics Semantics
 
-The string names a joint (expected to already be defined by this model) and the
-float specifies a joint configuration that will be passed to
+The string names a joint (expected to already be defined by this model and be
+single-dof) and the float specifies a coefficient to be applied to the joint
+configuration to determine the tendon length. These will be passed to
 drake::multibody::MultibodyPlant::AddTendonConstraint() as the `joints` and `a`
 parameters, respectively. The tag can be repeated to specify multiple joints.
 
