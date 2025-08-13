@@ -19,6 +19,7 @@ namespace optimization {
 /** Configuration options for the IRIS algorithm.
 
 @ingroup geometry_optimization
+@ingroup planning_iris
 */
 struct IrisOptions {
   /** Passes this object to an Archive.
@@ -213,6 +214,7 @@ The @p obstacles, @p sample, and the @p domain must describe elements in the
 same ambient dimension (but that dimension can be any positive integer).
 
 @ingroup geometry_optimization
+@ingroup planning_iris
 */
 HPolyhedron Iris(const ConvexSets& obstacles,
                  const Eigen::Ref<const Eigen::VectorXd>& sample,
@@ -231,6 +233,7 @@ method will prioritize the representation that we expect is most performant
 for the current implementation of the IRIS algorithm.
 
 @ingroup geometry_optimization
+@ingroup planning_iris
 */
 ConvexSets MakeIrisObstacles(
     const QueryObject<double>& query_object,
@@ -262,7 +265,9 @@ run-time of the algorithm. The same goes for
 @throws std::exception if the sample configuration in @p context is infeasible.
 @throws std::exception if termination_func is invalid on the domain. See
 IrisOptions.termination_func for more details.
+
 @ingroup geometry_optimization
+@ingroup planning_iris
 */
 HPolyhedron IrisInConfigurationSpace(
     const multibody::MultibodyPlant<double>& plant,
@@ -279,7 +284,9 @@ is no longer contained in the IRIS region with tolerance tol.
 @throws std::exception if x_1.size() != x_2.size().
 @throws std::exception if epsilon <= 0. This is due to the fact that the
 hyperellipsoid for @p iris_options.starting_ellipse must have non-zero volume.
+
 @ingroup geometry_optimization
+@ingroup planning_iris
 */
 void SetEdgeContainmentTerminationCondition(
     IrisOptions* iris_options, const Eigen::Ref<const Eigen::VectorXd>& x_1,
@@ -287,7 +294,9 @@ void SetEdgeContainmentTerminationCondition(
     const double tol = 1e-6);
 
 /** Defines a standardized representation for (named) IrisRegions, which can be
-serialized in both C++ and Python. */
+serialized in both C++ and Python.
+
+@ingroup planning_iris */
 typedef std::map<std::string, HPolyhedron> IrisRegions;
 
 }  // namespace optimization

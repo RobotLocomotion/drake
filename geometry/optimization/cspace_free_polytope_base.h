@@ -27,6 +27,7 @@ namespace optimization {
  This virtual class is the base of CspaceFreePolytope and CspaceFreeBox. We take
  the common functionality between these concrete derived class to this shared
  parent class.
+ @ingroup planning_iris
  */
 class CspaceFreePolytopeBase {
  public:
