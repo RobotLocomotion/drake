@@ -1753,11 +1753,11 @@ void MultibodyPlant<T>::ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
 
   if (collision_filter_group_a.first == collision_filter_group_b.first) {
     scene_graph_->collision_filter_manager().Apply(
-        CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
+        CollisionFilterDeclaration(CollisionFilterScope::kAll)
             .ExcludeWithin(collision_filter_group_a.second));
   } else {
     scene_graph_->collision_filter_manager().Apply(
-        CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
+        CollisionFilterDeclaration(CollisionFilterScope::kAll)
             .ExcludeBetween(collision_filter_group_a.second,
                             collision_filter_group_b.second));
   }

@@ -16,8 +16,8 @@ def bazelisk_repository(
 
         $ bazel build @bazelisk//:*
         $ cp -t third_party/com_github_bazelbuild_bazelisk/ \\
-            bazel-drake/external/bazelisk/LICENSE \\
-            bazel-drake/external/bazelisk/bazelisk.py
+            bazel-drake/external/+internal_repositories+bazelisk/LICENSE \\
+            bazel-drake/external/+internal_repositories+bazelisk/bazelisk.py
 
         Additionally, you must manually update the version number in
           setup/ubuntu/source_distribution/install_bazelisk.sh
@@ -30,8 +30,8 @@ def bazelisk_repository(
         To fully test, a Linux uprovisioned job must be launched from the
         pull request.
         """,
-        commit = "v1.26.0",
-        sha256 = "d55ea90acb6da4cacdfad0eeecf55e58da9d3fd4b88d58502ddd34e48bb28f70",  # noqa
+        commit = "v1.27.0",
+        sha256 = "d4abfac1a39876ec1e6c6fa04ec0b62cc4bef174f11d19848bc80dc15ee05261",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

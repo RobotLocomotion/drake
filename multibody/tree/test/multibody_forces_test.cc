@@ -15,7 +15,6 @@
 
 namespace drake {
 namespace multibody {
-namespace kcov339_avoidance_magic {
 namespace {
 
 using Eigen::Vector2d;
@@ -123,6 +122,5 @@ TEST_F(MultibodyForcesTests, NonZeroForces) {
 }
 
 }  // namespace
-}  // namespace kcov339_avoidance_magic
 }  // namespace multibody
 }  // namespace drake

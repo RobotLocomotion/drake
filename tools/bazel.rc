@@ -14,6 +14,7 @@ common --incompatible_autoload_externally=
 
 # Default to an optimized build.
 build -c opt
+build --features=prefer_pic_for_opt_binaries
 
 # Default build options.
 build --strip=never

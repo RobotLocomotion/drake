@@ -14,8 +14,8 @@ To update Drake's vendored copy of bazelisk:
 $ cd drake
 $ bazel build @bazelisk//:*
 $ cp -t third_party/com_github_bazelbuild_bazelisk/ \\
-    bazel-drake/external/bazelisk/LICENSE \\
-    bazel-drake/external/bazelisk/bazelisk.py
+    bazel-drake/external/+internal_repositories+bazelisk/LICENSE \\
+    bazel-drake/external/+internal_repositories+bazelisk/bazelisk.py
 ************************************************************************
 """
 

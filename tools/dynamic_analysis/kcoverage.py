@@ -30,13 +30,6 @@ def exec_with_kcov(exe, exe_args):
     """
     kcov_command = os.environ['DRAKE_KCOV_COMMAND']
 
-    # Various pieces of drake machinery need the full Bazel symlink path in
-    # order to find other assets, but kcov is confused by symlinks (see
-    # kcov#368). Work around kcov#368 by exporting the original exe path in
-    # DRAKE_KCOV_LINK_PATH and handing the real path to kcov.
-    os.environ["DRAKE_KCOV_LINK_PATH"] = exe
-    exe = os.path.realpath(exe)
-
     command = (
         [x.replace('"', '') for x in kcov_command.split()]
         + [exe] + exe_args)
