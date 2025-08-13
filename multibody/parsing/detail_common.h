@@ -198,7 +198,8 @@ std::optional<MultibodyConstraintId> ParseBallConstraint(
     MultibodyPlant<double>* plant);
 
 // Adds a tendon constraint to `plant` from a reading interface in a URDF/SDF
-// agnostic manner. This function does no semantic parsing and leaves the
+// agnostic manner. This function validates that the specified joints exist in
+// the model, but otherwise does no semantic parsing and leaves the
 // responsibility of handling errors or missing values to the individual
 // parsers. All values are expected to exist and be well formed. Through this,
 // the API to specify the tendon_constraint tag in both SDF and URDF can be
@@ -228,9 +229,9 @@ std::optional<MultibodyConstraintId> ParseBallConstraint(
 //   <drake:tendon_constraint_damping value="0.01"/>
 // </drake:tendon_constraint>
 //
-// The various @p read_* functors may (at its option) throw std::exception, or
-// return nullptr when body parsing fails. Similarly, ParseTendonConstraint()
-// may return nullopt at its option.
+// The various @p read_* functors may (at its option) emit diagnostic errors or
+// warnings but should not throw. ParseTendonConstraint() may return nullopt at
+// its option.
 std::optional<MultibodyConstraintId> ParseTendonConstraint(
     const drake::internal::DiagnosticPolicy& diagnostic,
     ModelInstanceIndex model_instance, const ElementNode& constraint_node,

@@ -1204,15 +1204,15 @@ void UrdfParser::ParseTendonConstraint(XMLElement* node) {
   };
   auto get_double_attribute = [this](const ElementNode& data_element,
                                      const char* attribute_name) {
-    std::string attribute_value;
+    double attribute_value;
     XMLElement* anode = std::get<XMLElement*>(data_element);
-    if (!ParseStringAttribute(anode, attribute_name, &attribute_value)) {
-      Error(*anode, fmt::format("The tag <{}> does not specify the required"
-                                " attribute \"{}\".",
-                                anode->Value(), attribute_name));
+    if (!ParseScalarAttribute(anode, attribute_name, &attribute_value)) {
+      Error(*anode,
+            fmt::format("Unable to read the '{}' attribute for the <{}> tag",
+                        attribute_name, anode->Value()));
       return 0.0;
     }
-    return std::stod(attribute_value);
+    return attribute_value;
   };
 
   internal::ParseTendonConstraint(

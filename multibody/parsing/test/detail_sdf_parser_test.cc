@@ -2634,7 +2634,6 @@ TEST_F(SdfParserTest, TendonConstraintNonExistentJoint) {
       <model name='Model'>
         <link name='A'/>
         <link name='B'/>
-        <link name='C'/>
         <joint name='revolute_AB' type='revolute'>
           <child>A</child>
           <parent>B</parent>
@@ -2659,6 +2658,87 @@ TEST_F(SdfParserTest, TendonConstraintNonExistentJoint) {
       MatchesRegex(
           ".*<drake:tendon_constraint>: Joint 'does_not_exist' specified for "
           "<drake:tendon_constraint_joint> does not exist in the model."));
+}
+
+TEST_F(SdfParserTest, TendonConstraintMissingJointName) {
+  AddSceneGraph();
+
+  ParseTestString(R"""(
+    <world name='World'>
+      <model name='Model'>
+        <link name='A'/>
+        <link name='B'/>
+        <joint name='revolute_AB' type='revolute'>
+          <child>A</child>
+          <parent>B</parent>
+          <axis>
+            <xyz>0 0 1</xyz>
+          </axis>
+        </joint>
+        <drake:tendon_constraint>
+          <!-- no "name" attribute -->
+          <drake:tendon_constraint_joint a='10'/>
+          <drake:tendon_constraint_joint name='revolute_AB' a='20'/>
+          <drake:tendon_constraint_offset>0.5</drake:tendon_constraint_offset>
+          <drake:tendon_constraint_lower_limit>-1.0</drake:tendon_constraint_lower_limit>
+          <drake:tendon_constraint_upper_limit>1.0</drake:tendon_constraint_upper_limit>
+          <drake:tendon_constraint_stiffness>0.1</drake:tendon_constraint_stiffness>
+          <drake:tendon_constraint_damping>0.01</drake:tendon_constraint_damping>
+        </drake:tendon_constraint>
+      </model>
+    </world>)""");
+
+  // Two errors are produced because 1) the name attribute fails to parse and
+  // defaults to empty-string, and 2) the empty-string joint does not exist in
+  // the model.
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*The tag <drake:tendon_constraint_joint> is "
+                           "missing the required attribute \"name\""));
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(
+          ".*<drake:tendon_constraint>: Joint '' specified for "
+          "<drake:tendon_constraint_joint> does not exist in the model."));
+}
+
+TEST_F(SdfParserTest, TendonConstraintMissingJointCoeff) {
+  AddSceneGraph();
+
+  ParseTestString(R"""(
+    <world name='World'>
+      <model name='Model'>
+        <link name='A'/>
+        <link name='B'/>
+        <link name='C'/>
+        <joint name='revolute_AB' type='revolute'>
+          <child>A</child>
+          <parent>B</parent>
+          <axis>
+            <xyz>0 0 1</xyz>
+          </axis>
+        </joint>
+        <joint name='prismatic_BC' type='prismatic'>
+          <child>B</child>
+          <parent>C</parent>
+          <axis>
+            <xyz>0 0 1</xyz>
+          </axis>
+        </joint>
+        <drake:tendon_constraint>
+          <!-- no "a" attribute -->
+          <drake:tendon_constraint_joint name='revolute_AB'/>
+          <drake:tendon_constraint_joint name='prismatic_BC' a='20'/>
+          <drake:tendon_constraint_offset>0.5</drake:tendon_constraint_offset>
+          <drake:tendon_constraint_lower_limit>-1.0</drake:tendon_constraint_lower_limit>
+          <drake:tendon_constraint_upper_limit>1.0</drake:tendon_constraint_upper_limit>
+          <drake:tendon_constraint_stiffness>0.1</drake:tendon_constraint_stiffness>
+          <drake:tendon_constraint_damping>0.01</drake:tendon_constraint_damping>
+        </drake:tendon_constraint>
+      </model>
+    </world>)""");
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*The tag <drake:tendon_constraint_joint> is "
+                           "missing the required attribute \"a\""));
 }
 
 TEST_F(SdfParserTest, BushingParsingGood) {
