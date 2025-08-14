@@ -10,7 +10,7 @@ from pydrake.planning import (
     IrisZoOptions,
 )
 from pydrake.solvers import MosekSolver, GurobiSolver, SnoptSolver
-from pydrake.geometry.optimization import IrisOptions
+from pydrake.geometry.optimization import IrisNpOptions
 
 import textwrap
 import numpy as np
@@ -95,7 +95,7 @@ class TestIrisFromCliqueCover(unittest.TestCase):
         options.point_in_set_tol = 1e-5
         self.assertEqual(options.point_in_set_tol, 1e-5)
 
-        self.assertIsInstance(options.iris_options, IrisOptions)
+        self.assertIsInstance(options.iris_options, IrisNpOptions)
 
         options.iris_options = IrisZoOptions()
         self.assertIsInstance(options.iris_options, IrisZoOptions)

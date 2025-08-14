@@ -46,9 +46,9 @@ struct IrisFromCliqueCoverOptions {
    *
    * @ingroup planning_iris
    */
-  std::variant<geometry::optimization::IrisOptions, IrisNp2Options,
+  std::variant<geometry::optimization::IrisNpOptions, IrisNp2Options,
                IrisZoOptions>
-      iris_options{geometry::optimization::IrisOptions{.iteration_limit = 1}};
+      iris_options{geometry::optimization::IrisNpOptions{.iteration_limit = 1}};
 
   /**
    * The fraction of the domain that must be covered before we terminate the

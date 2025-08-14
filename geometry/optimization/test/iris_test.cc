@@ -79,11 +79,20 @@ GTEST_TEST(IrisTest, SmallBox) {
   EXPECT_FALSE(region.PointInSet(sample));
 
   // Setting the option keeps the sample in the set (but misses above the box).
-  IrisOptions options;
+  IrisNpOptions options;
   options.require_sample_point_is_contained = true;
   region = Iris(obstacles, sample, domain, options);
   EXPECT_FALSE(region.PointInSet(Vector2d(0.3, 0)));  // above the box
   EXPECT_TRUE(region.PointInSet(sample));
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  IrisOptions options_deprecated;
+  options_deprecated.require_sample_point_is_contained = true;
+  region = Iris(obstacles, sample, domain, options_deprecated);
+  EXPECT_FALSE(region.PointInSet(Vector2d(0.3, 0)));  // above the box
+  EXPECT_TRUE(region.PointInSet(sample));
+#pragma GCC diagnostic pop
 }
 
 /* Unit ball inside the unit box; IRIS finds a region in the top corner. */
@@ -148,7 +157,7 @@ GTEST_TEST(IrisTest, StartingEllipse) {
   const HPolyhedron domain = HPolyhedron::MakeUnitBox(2);
 
   const Vector2d sample{0, 0};  // center of the bounding box.
-  IrisOptions options;
+  IrisNpOptions options;
   // Use narrow ellipse that stretches along y-axis.
   Eigen::Matrix2d A;
   A << 0.1, 0, 0, 0.01;
@@ -180,7 +189,7 @@ GTEST_TEST(IrisTest, BoundingRegion) {
   const HPolyhedron domain = HPolyhedron::MakeUnitBox(2);
 
   const Vector2d sample{0, 0};  // center of the bounding box.
-  IrisOptions options;
+  IrisNpOptions options;
 
   const HPolyhedron region = Iris(obstacles, sample, domain, options);
 
@@ -227,7 +236,7 @@ GTEST_TEST(IrisTest, BoundingRegion2) {
   bounding_A << 0, 1, 0, -1;
   bounding_b << 1, 1;
 
-  IrisOptions options;
+  IrisNpOptions options;
   options.bounding_region = HPolyhedron{bounding_A, bounding_b};
 
   // Check both with and without the options.verify_domain_boundedness flag.
@@ -256,7 +265,7 @@ GTEST_TEST(IrisTest, TerminationConditions) {
   const HPolyhedron domain = HPolyhedron::MakeUnitBox(2);
 
   const Vector2d sample{0, 0};  // center of the bounding box.
-  IrisOptions options;
+  IrisNpOptions options;
   options.iteration_limit = 1;
   // Negative thresholds disable the termination condition.
   options.termination_threshold = -1;
@@ -295,7 +304,7 @@ GTEST_TEST(IrisTest, TerminationFunc) {
   const Vector2d sample{0, 0};  // center of the bounding box.
   const Vector2d q1{0.15, -0.45};
   const Vector2d q2{-0.05, 0.75};
-  IrisOptions options;
+  IrisNpOptions options;
   options.iteration_limit = 100;
   options.termination_threshold = -1;
   SetEdgeContainmentTerminationCondition(&options, q1, q2, 1e-3);
@@ -361,7 +370,7 @@ GTEST_TEST(IrisTest, ClosestPointFailure) {
   const HPolyhedron domain =
       HPolyhedron::MakeBox(Vector2d::Constant(-10.), Vector2d::Constant(10.));
 
-  IrisOptions options;
+  IrisNpOptions options;
   options.require_sample_point_is_contained = true;
 
   const Vector2d sample(-4.00, 0.25);
@@ -372,8 +381,8 @@ GTEST_TEST(IrisTest, ClosestPointFailure) {
   }
 }
 
-GTEST_TEST(IrisOptionsTest, Serialize) {
-  IrisOptions options;
+GTEST_TEST(IrisNpOptionsTest, Serialize) {
+  IrisNpOptions options;
   options.require_sample_point_is_contained = false;
   options.iteration_limit = 25;
   options.termination_threshold = 1e-3;
@@ -383,7 +392,7 @@ GTEST_TEST(IrisOptionsTest, Serialize) {
   options.num_additional_constraint_infeasible_samples = 3;
   options.random_seed = 789;
   const std::string yaml = yaml::SaveYamlString(options);
-  const auto options2 = yaml::LoadYamlString<IrisOptions>(yaml);
+  const auto options2 = yaml::LoadYamlString<IrisNpOptions>(yaml);
   EXPECT_EQ(options.require_sample_point_is_contained,
             options2.require_sample_point_is_contained);
   EXPECT_EQ(options.iteration_limit, options2.iteration_limit);
@@ -399,8 +408,8 @@ GTEST_TEST(IrisOptionsTest, Serialize) {
   EXPECT_EQ(options.random_seed, options2.random_seed);
 }
 
-GTEST_TEST(IrisOptionsTest, SetEdgeContainmentTerminationCondition) {
-  IrisOptions options;
+GTEST_TEST(IrisNpOptionsTest, SetEdgeContainmentTerminationCondition) {
+  IrisNpOptions options;
   const Vector2d x_1{0.0, 1.0};
   const Vector2d x_2{1.0, 3.0};
   const double epsilon = 1e-3;

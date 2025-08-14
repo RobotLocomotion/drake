@@ -35,8 +35,8 @@ using geometry::Rgba;
 using geometry::Sphere;
 using geometry::optimization::HPolyhedron;
 using geometry::optimization::Hyperellipsoid;
-using geometry::optimization::IrisInConfigurationSpace;
-using geometry::optimization::IrisOptions;
+using geometry::optimization::IrisNp;
+using geometry::optimization::IrisNpOptions;
 using graph_algorithms::MaxCliqueSolverBase;
 using math::RigidTransform;
 
@@ -134,10 +134,10 @@ void MakeFalseRowsAndColumns(const VectorX<bool>& mask,
 }
 
 Meshcat* GetMeshcatFromOptions(
-    const std::variant<IrisOptions, IrisNp2Options, IrisZoOptions>&
+    const std::variant<IrisNpOptions, IrisNp2Options, IrisZoOptions>&
         iris_options) {
   return std::visit(
-      overloaded{[](const IrisOptions& options) {
+      overloaded{[](const IrisNpOptions& options) {
                    return options.meshcat.get();
                  },
                  [](const IrisNp2Options& options) {
@@ -193,7 +193,7 @@ void ComputeGreedyTruncatedCliqueCover(
 }
 
 // Pulls cliques from @p computed_cliques and constructs IRIS regions using the
-// provided IrisOptions, but seeding IRIS with the minimum circumscribed
+// provided IrisNpOptions, but seeding IRIS with the minimum circumscribed
 // ellipse of the clique. As this method may run in a separate thread, we
 // provide an option to forcefully disable meshcat in IRIS. This must happen as
 // meshcat cannot be written to outside the main thread.
@@ -202,15 +202,15 @@ std::queue<HPolyhedron> IrisWorker(
     const Eigen::Ref<const Eigen::MatrixXd>& points, const int builder_id,
     const IrisFromCliqueCoverOptions& options, const HPolyhedron& domain,
     AsyncQueue<VectorX<bool>>* computed_cliques, bool disable_meshcat = true) {
-  // Copy the IrisOptions as we will change the value of the starting ellipse
+  // Copy the IrisNpOptions as we will change the value of the starting ellipse
   // in this worker.
-  std::variant<IrisOptions, IrisNp2Options, IrisZoOptions> iris_options =
+  std::variant<IrisNpOptions, IrisNp2Options, IrisZoOptions> iris_options =
       options.iris_options;
 
   // Disable the IRIS meshcat option in this worker since we cannot write to
   // meshcat from a different thread.
   if (disable_meshcat) {
-    std::visit(overloaded{[](IrisOptions& arg) {
+    std::visit(overloaded{[](IrisNpOptions& arg) {
                             arg.meshcat = nullptr;
                           },
                           [](IrisNp2Options& arg) {
@@ -260,10 +260,10 @@ std::queue<HPolyhedron> IrisWorker(
     log()->debug("Iris builder thread {} is constructing a set.", builder_id);
     std::visit(
         overloaded{
-            [&](IrisOptions& arg) {
+            [&](IrisNpOptions& arg) {
               arg.starting_ellipse = clique_ellipse;
-              ret.emplace(IrisInConfigurationSpace(
-                  checker.plant(), checker.plant_context(builder_id), arg));
+              ret.emplace(IrisNp(checker.plant(),
+                                 checker.plant_context(builder_id), arg));
             },
             [&](IrisNp2Options& arg) {
               arg.sampled_iris_options.parallelism = options.parallelism;
@@ -372,7 +372,7 @@ void CheckIrisInConfigurationSpaceFromCliqueCoverPreconditions(
   // iris option specific checks
   std::visit(
       overloaded{
-          [](const IrisOptions& iris_options) {
+          [](const IrisNpOptions& iris_options) {
             DRAKE_THROW_UNLESS(iris_options.prog_with_additional_constraints ==
                                nullptr);
           },
@@ -393,7 +393,7 @@ void CheckIrisInConfigurationSpaceFromCliqueCoverPreconditions(
   // Throw if a parameterization is used.
   const std::optional<IrisParameterizationFunction> parameterization =
       std::visit(
-          overloaded{[](const IrisOptions& iris_options) {
+          overloaded{[](const IrisNpOptions& iris_options) {
                        unused(iris_options);
                        return std::optional<IrisParameterizationFunction>{};
                      },
@@ -424,8 +424,7 @@ void CheckIrisInConfigurationSpaceFromCliqueCoverPreconditions(
   }
 
   // Note: Even though the iris_options.bounding_region may be
-  // provided, IrisInConfigurationSpace (currently) requires finite
-  // joint limits.
+  // provided, IrisNp (currently) requires finite joint limits.
   DRAKE_THROW_UNLESS(
       checker.plant().GetPositionLowerLimits().array().isFinite().all());
   DRAKE_THROW_UNLESS(
@@ -445,7 +444,7 @@ void IrisInConfigurationSpaceFromCliqueCover(
       HPolyhedron::MakeBox(checker.plant().GetPositionLowerLimits(),
                            checker.plant().GetPositionUpperLimits());
   const HPolyhedron domain = std::visit(
-      overloaded{[&default_domain](const IrisOptions& iris_options) {
+      overloaded{[&default_domain](const IrisNpOptions& iris_options) {
                    return iris_options.bounding_region.value_or(default_domain);
                  },
                  [&default_domain](const IrisNp2Options&) {
@@ -566,11 +565,11 @@ void IrisInConfigurationSpaceFromCliqueCover(
       // We will use one thread to build cliques. If we are building sets using
       // IrisNp2 or IrisZo, we use only one worker thread to produce sets as
       // these methods use parallelism internally in the collision checker. If
-      // we use IrisInConfigurationSpace to build sets, we use all the remaining
-      // threads of parallelism to build sets. If this number is 0, then this
-      // function will end up single threaded.
+      // we use IrisNp to build sets, we use all the remaining threads of
+      // parallelism to build sets. If this number is 0, then this function will
+      // end up single threaded.
       const int num_builder_threads =
-          std::visit(overloaded{[&options](const IrisOptions&) {
+          std::visit(overloaded{[&options](const IrisNpOptions&) {
                                   return options.parallelism.num_threads() - 1;
                                 },
                                 [](const IrisNp2Options&) {
