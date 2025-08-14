@@ -84,6 +84,7 @@ class UrdfParser {
   std::pair<std::optional<ModelInstanceIndex>, std::string> Parse();
   void ParseBushing(XMLElement* node);
   void ParseBallConstraint(XMLElement* node);
+  void ParseTendonConstraint(XMLElement* node);
   void ParseFrame(XMLElement* node);
   void ParseTransmission(const JointEffortLimits& joint_effort_limits,
                          XMLElement* node);
@@ -1159,6 +1160,67 @@ void UrdfParser::ParseBallConstraint(XMLElement* node) {
   internal::ParseBallConstraint(read_vector, read_body, w_.plant);
 }
 
+void UrdfParser::ParseTendonConstraint(XMLElement* node) {
+  auto read_double = [node,
+                      this](const char* element_name) -> std::optional<double> {
+    const XMLElement* value_node = node->FirstChildElement(element_name);
+    if (value_node != nullptr) {
+      double value;
+      if (ParseScalarAttribute(value_node, "value", &value)) {
+        return value;
+      } else {
+        Error(
+            *node,
+            fmt::format("Unable to read the 'value' attribute for the <{}> tag",
+                        element_name));
+        return {};
+      }
+    } else {
+      Error(*node, fmt::format("Unable to find the <{}> tag", element_name));
+      return {};
+    }
+  };
+  auto next_child_element = [](const ElementNode& data_element,
+                               const char* element_name) {
+    return std::get<XMLElement*>(data_element)->FirstChildElement(element_name);
+  };
+  auto next_sibling_element = [](const ElementNode& data_element,
+                                 const char* element_name) {
+    return std::get<XMLElement*>(data_element)
+        ->NextSiblingElement(element_name);
+  };
+  auto get_string_attribute = [this](const ElementNode& data_element,
+                                     const char* attribute_name) {
+    std::string attribute_value;
+    XMLElement* anode = std::get<XMLElement*>(data_element);
+    if (!ParseStringAttribute(anode, attribute_name, &attribute_value)) {
+      Error(*anode,
+            fmt::format(
+                "The tag <{}> does not specify the required attribute \"{}\".",
+                anode->Value(), attribute_name));
+      // Fall through to return empty string.
+    }
+    return attribute_value;
+  };
+  auto get_double_attribute = [this](const ElementNode& data_element,
+                                     const char* attribute_name) {
+    double attribute_value;
+    XMLElement* anode = std::get<XMLElement*>(data_element);
+    if (!ParseScalarAttribute(anode, attribute_name, &attribute_value)) {
+      Error(*anode,
+            fmt::format("Unable to read the '{}' attribute for the <{}> tag",
+                        attribute_name, anode->Value()));
+      return 0.0;
+    }
+    return attribute_value;
+  };
+
+  internal::ParseTendonConstraint(
+      diagnostic_.MakePolicyForNode(node), model_instance_, node, read_double,
+      next_child_element, next_sibling_element, get_string_attribute,
+      get_double_attribute, w_.plant);
+}
+
 std::pair<std::optional<ModelInstanceIndex>, std::string> UrdfParser::Parse() {
   XMLElement* node = xml_doc_->FirstChildElement("robot");
   if (!node) {
@@ -1267,6 +1329,15 @@ std::pair<std::optional<ModelInstanceIndex>, std::string> UrdfParser::Parse() {
        ball_constraint_node =
            ball_constraint_node->NextSiblingElement("drake:ball_constraint")) {
     ParseBallConstraint(ball_constraint_node);
+  }
+
+  // Parses the model's custom Drake tendon constraint tags.
+  for (XMLElement* tendon_constraint_node =
+           node->FirstChildElement("drake:tendon_constraint");
+       tendon_constraint_node;
+       tendon_constraint_node = tendon_constraint_node->NextSiblingElement(
+           "drake:tendon_constraint")) {
+    ParseTendonConstraint(tendon_constraint_node);
   }
 
   return std::make_pair(model_instance_, model_name);

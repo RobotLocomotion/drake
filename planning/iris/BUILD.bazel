@@ -147,6 +147,7 @@ drake_cc_googletest(
         "//common/symbolic:expression",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:maybe_pause_for_user",
+        "//common/yaml",
         "//geometry:meshcat",
         "//geometry/test_utilities:meshcat_environment",
         "//multibody/inverse_kinematics",
@@ -172,6 +173,7 @@ drake_cc_googletest(
         ":iris_test_utilities",
         "//common/symbolic:expression",
         "//common/test_utilities:expect_throws_message",
+        "//common/yaml",
         "//solvers",
     ],
 )
