@@ -4663,6 +4663,89 @@ TEST_F(SdfParserTest, DisabledPerceptionWithVisualMesh) {
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*non-empty.*geometry.*ignored.*"));
 }
 
+TEST_F(SdfParserTest, DeformableWallBoundaryConditions) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable_with_wall_bc'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+      <drake:wall_boundary_condition>
+        <drake:point_on_plane>1.0 2.0 3.0</drake:point_on_plane>
+        <drake:outward_normal>0.0 0.0 1.0</drake:outward_normal>
+      </drake:wall_boundary_condition>
+      <drake:wall_boundary_condition>
+        <drake:point_on_plane>4.0 5.0 6.0</drake:point_on_plane>
+        <drake:outward_normal>1.0 0.0 0.0</drake:outward_normal>
+      </drake:wall_boundary_condition>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 0);
+  EXPECT_THAT(NumWarnings(), 0);
+  plant_.Finalize();
+
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
+
+  // Verify that the deformable body was created
+  const DeformableBodyId body_id =
+      plant_.deformable_model().GetBodyByName("body").body_id();
+  EXPECT_TRUE(body_id.is_valid());
+}
+
+TEST_F(SdfParserTest, DeformableWallBoundaryConditionMissingChildTag) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable_bad_wall_bc'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+      <drake:wall_boundary_condition>
+        <drake:point_on_plane>1.0 2.0 3.0</drake:point_on_plane>
+        <!-- Missing drake:outward_normal -->
+      </drake:wall_boundary_condition>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 2);
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*Unable to find the <drake:outward_normal> child tag.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Outward normal vector cannot be zero.*"));
+}
+
+TEST_F(SdfParserTest, WallBoundaryConditionOnRigidLink) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='rigid_with_wall_bc'>
+    <link name='body'>
+      <drake:wall_boundary_condition>
+        <drake:point_on_plane>0.0 0.0 0.0</drake:point_on_plane>
+        <drake:outward_normal>0.0 0.0 1.0</drake:outward_normal>
+      </drake:wall_boundary_condition>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  // Wall boundary conditions on rigid links should produce an error
+  EXPECT_THAT(NumErrors(), 1);
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*Wall boundary "
+                   "conditions.*require.*drake:deformable_properties.*"));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
