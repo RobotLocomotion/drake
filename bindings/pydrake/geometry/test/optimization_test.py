@@ -747,7 +747,7 @@ class TestGeometryOptimization(unittest.TestCase):
         options.prog_with_additional_constraints = ik.prog()
         options.num_additional_constraint_infeasible_samples = 2
         plant.SetPositions(plant.GetMyMutableContextFromRoot(context), [0])
-        region = mut.IrisInConfigurationSpace(
+        region = mut.IrisNp(
             plant=plant, context=plant.GetMyContextFromRoot(context),
             options=options)
         self.assertIsInstance(region, mut.ConvexSet)
@@ -759,7 +759,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(point.x(), [-0.5])
         point2, = options.configuration_obstacles
         self.assertIs(point2, point)
-        region = mut.IrisInConfigurationSpace(
+        region = mut.IrisNp(
             plant=plant, context=plant.GetMyContextFromRoot(context),
             options=options)
         self.assertIsInstance(region, mut.ConvexSet)

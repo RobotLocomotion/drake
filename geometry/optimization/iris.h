@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/name_value.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/convex_set.h"
@@ -213,6 +214,11 @@ box (e.g. from HPolyhedron::MakeBox).
 The @p obstacles, @p sample, and the @p domain must describe elements in the
 same ambient dimension (but that dimension can be any positive integer).
 
+@note Some members of `options` are only applicable to IrisNp. The members
+relevant for this function are starting_ellipse, termination_func,
+bounding_region, verify_domain_boundedness, require_sample_point_is_contained,
+iteration_limit, termination_threshold, relative_termination_threshold
+
 @ingroup geometry_optimization
 @ingroup planning_iris
 */
@@ -269,6 +275,11 @@ IrisOptions.termination_func for more details.
 @ingroup geometry_optimization
 @ingroup planning_iris
 */
+HPolyhedron IrisNp(const multibody::MultibodyPlant<double>& plant,
+                   const systems::Context<double>& context,
+                   const IrisOptions& options = IrisOptions());
+
+DRAKE_DEPRECATED("2025-09-01", "Use IrisNp instead.")
 HPolyhedron IrisInConfigurationSpace(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,

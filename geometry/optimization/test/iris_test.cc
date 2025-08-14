@@ -84,6 +84,15 @@ GTEST_TEST(IrisTest, SmallBox) {
   region = Iris(obstacles, sample, domain, options);
   EXPECT_FALSE(region.PointInSet(Vector2d(0.3, 0)));  // above the box
   EXPECT_TRUE(region.PointInSet(sample));
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  IrisOptions options_deprecated;
+  options_deprecated.require_sample_point_is_contained = true;
+  region = Iris(obstacles, sample, domain, options_deprecated);
+  EXPECT_FALSE(region.PointInSet(Vector2d(0.3, 0)));  // above the box
+  EXPECT_TRUE(region.PointInSet(sample));
+#pragma GCC diagnostic pop
 }
 
 /* Unit ball inside the unit box; IRIS finds a region in the top corner. */
