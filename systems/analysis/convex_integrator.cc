@@ -108,12 +108,14 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     return StepWithSDIRKErrorEstimate(h);
   } else if (strategy == "implicit_trapezoid") {
     return StepWithImplicitTrapezoidErrorEstimate(h);
+  } else if (strategy == "richardson") {
+    return StepWithRichardsonExtrapolation(h);
   } else {
     throw std::runtime_error(
         "ConvexIntegrator: unknown error estimation strategy: " +
         solver_parameters_.error_estimation_strategy +
-        ". Supported strategies are 'half_stepping', 'sdirk', and "
-        "'implicit_trapezoid'.");
+        ". Supported strategies are 'half_stepping', 'sdirk', "
+        "'implicit_trapezoid', and 'richardson'.");
   }
 }
 
@@ -289,6 +291,32 @@ bool ConvexIntegrator<T>::StepWithImplicitTrapezoidErrorEstimate(const T& h) {
     ContinuousState<T>& err = *this->get_mutable_error_estimate();
     err.SetFrom(*x_next_full_);
     err.get_mutable_vector().PlusEqScaled(-1.0, x_next_half_2_->get_vector());
+  }
+
+  return true;  // step was successful
+}
+
+template <typename T>
+bool ConvexIntegrator<T>::StepWithRichardsonExtrapolation(const T& h) {
+  // Do the main step with half-stepping. This will store the results of the
+  // full step and the two half-steps, and compute the error estimate.
+  StepWithHalfSteppingErrorEstimate(h);
+
+  if (!this->get_fixed_step_mode()) {
+    Context<T>& context = *this->get_mutable_context();
+    ContinuousState<T>& x_next = context.get_mutable_continuous_state();
+    const T t0 = context.get_time();
+
+    // Do Richardson extrapolation to obtain a second-order estimate
+    // This is from Hairer, Sec. II.4, with p=2.
+    x_next_half_2_->get_mutable_vector().PlusEqScaled(
+        0.5, x_next_half_2_->get_vector());
+    x_next_half_2_->get_mutable_vector().PlusEqScaled(
+        -0.5, x_next_full_->get_vector());
+
+    // Set the state to the second-order solution
+    x_next.get_mutable_vector().SetFrom(x_next_half_2_->get_vector());
+    context.SetTimeAndNoteContinuousStateChange(t0 + h);
   }
 
   return true;  // step was successful
