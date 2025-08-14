@@ -1381,7 +1381,7 @@ std::optional<LinkInfo> AddRigidLinkFromSpecification(
 
   const std::set<std::string> supported_link_elements{
       "drake:visual", "collision", "gravity", "inertial",
-      "kinematic",    "pose",      "visual",  "drake:wall_boundary_condition"};
+      "kinematic",    "pose",      "visual"};
 
   sdf::ElementPtr link_element = link.Element();
 
@@ -2154,21 +2154,6 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
   // Add all the links
   for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
     const sdf::Link& link = *model.LinkByIndex(link_index);
-
-    // Check for wall boundary conditions without deformable properties
-    bool has_wall_bc =
-        link.Element()->HasElement("drake:wall_boundary_condition");
-    bool has_deformable_props = IsDeformableLink(link);
-
-    if (has_wall_bc && !has_deformable_props) {
-      diagnostic.Error(
-          link.Element(),
-          "Wall boundary conditions (drake:wall_boundary_condition) "
-          "require the link to have drake:deformable_properties. "
-          "Add <drake:deformable_properties> to declare this as a deformable "
-          "body.");
-      return {};
-    }
 
     if (IsDeformableLink(link)) {
       if (!AddDeformableLinkFromSpecification(diagnostic, model_instance, link,

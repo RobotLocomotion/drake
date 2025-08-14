@@ -4742,8 +4742,8 @@ TEST_F(SdfParserTest, WallBoundaryConditionOnRigidLink) {
   EXPECT_THAT(NumErrors(), 1);
   EXPECT_THAT(
       TakeError(),
-      MatchesRegex(".*Wall boundary "
-                   "conditions.*require.*drake:deformable_properties.*"));
+      MatchesRegex(".*Unsupported SDFormat element in link: "
+                   "drake:wall_boundary_condition.*"));
 }
 
 }  // namespace
