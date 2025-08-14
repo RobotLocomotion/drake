@@ -55,6 +55,47 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPointForSphere(
 }
 
 template <typename T>
+std::optional<Eigen::Vector3<T>> GetNormalAtPointForCapsule(
+    const Capsule& capsule, const Eigen::Vector3<T>& p) {
+  const T tol = 1e-5;
+
+  const T h_l = capsule.length() / 2.0;  // half length
+  const T r = capsule.radius();
+
+  // Point is not on surface if is z coordinate is larger than
+  // the total height of the cylinder (half length + radius)
+  const T z_diff = p.z() - (h_l + r);
+  if ((z_diff * z_diff) > tol) {
+    return std::nullopt;
+  }
+
+  // Also is not on surface if the norm of the (x,y) vector is larger
+  // than the radius
+  const T r_diff = p.head(2).norm() - r;
+  if ((r * r) > tol) {
+    return std::nullopt;
+  }
+
+  // If the point is on the cylindrical section of the capsule, its z
+  // coordinate must be such that -half_length < z < half_length.
+  // Then the normal vector is defined by the x and y coordinates of the
+  // point and constrained to the x-y plane, i.e : (x, y, 0)
+  if (p.z().abs() < h_l) {
+    const T diff = p.head(2).norm() - r;
+    if ((diff * diff) < tol) {
+      Eigen::Vector3<T> n(p.x(), p.y(), 0);
+      return n.normalized();
+    }
+  }
+
+  // Check if the point is in any of the semispherical sections
+  Eigen::Vector3<T> https
+      :  // chatgpt.com/share/689df8f1-eca0-8006-be9d-445702bea040
+
+         return std::nullopt;
+}
+
+template <typename T>
 std::optional<Eigen::Vector3<T>> GetNormalAtPoint(const Shape& shape,
                                                   const Eigen::Vector3<T>& p) {
   return shape.Visit<std::optional<Eigen::Vector3<T>>>(
