@@ -149,6 +149,19 @@ def addCDashBadge() {
   }
 }
 
-// This must be present in order for this script to be consumed by
-// Jenkinsfiles when using 'load'.
-return this
+/**
+ * Extracts the node label from the job name.
+ *
+ * @return the node label
+ */
+def getNodeLabel() {
+  def pattern = ~/^((linux(-arm)?|mac-arm)-[A-Za-z]+(-unprovisioned)?).*/
+  def match = env.JOB_NAME =~ pattern
+
+  if (match.find()) {
+    return match.group(1)
+  }
+  else {
+    return null
+  }
+}
