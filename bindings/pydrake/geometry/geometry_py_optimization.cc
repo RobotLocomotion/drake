@@ -4,6 +4,7 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
@@ -548,29 +549,29 @@ void DefineConvexSetBaseClassAndSubclasses(py::module m) {
 
 void DefineIris(py::module m) {
   {
-    const auto& cls_doc = doc.IrisOptions;
-    py::class_<IrisOptions> iris_options(m, "IrisOptions", cls_doc.doc);
-    iris_options.def(ParamInit<IrisOptions>())
+    const auto& cls_doc = doc.IrisNpOptions;
+    py::class_<IrisNpOptions> iris_np_options(m, "IrisNpOptions", cls_doc.doc);
+    iris_np_options.def(ParamInit<IrisNpOptions>())
         .def_readwrite("require_sample_point_is_contained",
-            &IrisOptions::require_sample_point_is_contained,
+            &IrisNpOptions::require_sample_point_is_contained,
             cls_doc.require_sample_point_is_contained.doc)
-        .def_readwrite("iteration_limit", &IrisOptions::iteration_limit,
+        .def_readwrite("iteration_limit", &IrisNpOptions::iteration_limit,
             cls_doc.iteration_limit.doc)
         .def_readwrite("termination_threshold",
-            &IrisOptions::termination_threshold,
+            &IrisNpOptions::termination_threshold,
             cls_doc.termination_threshold.doc)
         .def_readwrite("relative_termination_threshold",
-            &IrisOptions::relative_termination_threshold,
+            &IrisNpOptions::relative_termination_threshold,
             cls_doc.relative_termination_threshold.doc)
         .def_readwrite("configuration_space_margin",
-            &IrisOptions::configuration_space_margin,
+            &IrisNpOptions::configuration_space_margin,
             cls_doc.configuration_space_margin.doc)
         .def_readwrite("num_collision_infeasible_samples",
-            &IrisOptions::num_collision_infeasible_samples,
+            &IrisNpOptions::num_collision_infeasible_samples,
             cls_doc.num_collision_infeasible_samples.doc)
         .def_property(
             "configuration_obstacles",
-            [](const IrisOptions& self) {
+            [](const IrisNpOptions& self) {
               std::vector<const ConvexSet*> convex_sets;
               for (const copyable_unique_ptr<ConvexSet>& convex_set :
                   self.configuration_obstacles) {
@@ -581,29 +582,29 @@ void DefineIris(py::module m) {
               // alive.
               return py::cast(convex_sets, py_rvp::reference_internal, self_py);
             },
-            [](IrisOptions& self, const std::vector<ConvexSet*>& sets) {
+            [](IrisNpOptions& self, const std::vector<ConvexSet*>& sets) {
               self.configuration_obstacles = CloneConvexSets(sets);
             },
             cls_doc.configuration_obstacles.doc)
-        .def_readwrite("starting_ellipse", &IrisOptions::starting_ellipse,
+        .def_readwrite("starting_ellipse", &IrisNpOptions::starting_ellipse,
             cls_doc.starting_ellipse.doc)
-        .def_readwrite("bounding_region", &IrisOptions::bounding_region,
+        .def_readwrite("bounding_region", &IrisNpOptions::bounding_region,
             cls_doc.bounding_region.doc)
         .def_readwrite("verify_domain_boundedness",
-            &IrisOptions::verify_domain_boundedness,
+            &IrisNpOptions::verify_domain_boundedness,
             cls_doc.verify_domain_boundedness.doc)
         .def_readwrite("num_additional_constraint_infeasible_samples",
-            &IrisOptions::num_additional_constraint_infeasible_samples,
+            &IrisNpOptions::num_additional_constraint_infeasible_samples,
             cls_doc.num_additional_constraint_infeasible_samples.doc)
         .def_readwrite(
-            "random_seed", &IrisOptions::random_seed, cls_doc.random_seed.doc)
-        .def_readwrite("mixing_steps", &IrisOptions::mixing_steps,
+            "random_seed", &IrisNpOptions::random_seed, cls_doc.random_seed.doc)
+        .def_readwrite("mixing_steps", &IrisNpOptions::mixing_steps,
             cls_doc.mixing_steps.doc)
-        .def_readwrite("solver_options", &IrisOptions::solver_options,
+        .def_readwrite("solver_options", &IrisNpOptions::solver_options,
             cls_doc.solver_options.doc)
-        .def("__repr__", [](const IrisOptions& self) {
+        .def("__repr__", [](const IrisNpOptions& self) {
           return py::str(
-              "IrisOptions("
+              "IrisNpOptions("
               "require_sample_point_is_contained={}, "
               "iteration_limit={}, "
               "termination_threshold={}, "
@@ -628,8 +629,11 @@ void DefineIris(py::module m) {
                   self.random_seed, self.mixing_steps);
         });
 
-    DefReadWriteKeepAlive(&iris_options, "prog_with_additional_constraints",
-        &IrisOptions::prog_with_additional_constraints,
+    // TODO(cohnt): Remove this alias once IrisOptions has been removed in C++.
+    m.attr("IrisOptions") = m.attr("IrisNpOptions");
+
+    DefReadWriteKeepAlive(&iris_np_options, "prog_with_additional_constraints",
+        &IrisNpOptions::prog_with_additional_constraints,
         cls_doc.prog_with_additional_constraints.doc);
   }
 
@@ -637,11 +641,11 @@ void DefineIris(py::module m) {
       "Iris",
       [](const std::vector<ConvexSet*>& obstacles,
           const Eigen::Ref<const Eigen::VectorXd>& sample,
-          const HPolyhedron& domain, const IrisOptions& options) {
+          const HPolyhedron& domain, const IrisNpOptions& options) {
         return Iris(CloneConvexSets(obstacles), sample, domain, options);
       },
       py::arg("obstacles"), py::arg("sample"), py::arg("domain"),
-      py::arg("options") = IrisOptions(), doc.Iris.doc);
+      py::arg("options") = IrisNpOptions(), doc.Iris.doc);
 
   m.def(
       "MakeIrisObstacles",
@@ -657,12 +661,24 @@ void DefineIris(py::module m) {
       py::arg("query_object"), py::arg("reference_frame") = std::nullopt,
       doc.MakeIrisObstacles.doc);
 
-  m.def("IrisInConfigurationSpace",
+  m.def("IrisNp",
       py::overload_cast<const multibody::MultibodyPlant<double>&,
-          const systems::Context<double>&, const IrisOptions&>(
-          &IrisInConfigurationSpace),
-      py::arg("plant"), py::arg("context"), py::arg("options") = IrisOptions(),
-      doc.IrisInConfigurationSpace.doc);
+          const systems::Context<double>&, const IrisNpOptions&>(&IrisNp),
+      py::arg("plant"), py::arg("context"),
+      py::arg("options") = IrisNpOptions(), doc.IrisNp.doc);
+
+// Depreacted 2025-09-01
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  m.def("IrisInConfigurationSpace",
+      WrapDeprecated(doc.IrisInConfigurationSpace.doc_deprecated,
+          py::overload_cast<const multibody::MultibodyPlant<double>&,
+              const systems::Context<double>&, const IrisNpOptions&>(
+              &IrisInConfigurationSpace)),
+      py::arg("plant"), py::arg("context"),
+      py::arg("options") = IrisNpOptions(),
+      doc.IrisInConfigurationSpace.doc_deprecated);
+#pragma GCC diagnostic pop
 
   // TODO(#19597) Deprecate and remove these functions once Python
   // can natively handle the file I/O.

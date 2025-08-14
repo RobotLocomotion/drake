@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/name_value.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/convex_set.h"
@@ -21,7 +22,7 @@ namespace optimization {
 @ingroup geometry_optimization
 @ingroup planning_iris
 */
-struct IrisOptions {
+struct IrisNpOptions {
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background.
   Note: This only serializes options that are YAML built-in types. */
@@ -185,6 +186,9 @@ struct IrisOptions {
   double convexity_radius_stepback{1e-3};
 };
 
+using IrisOptions DRAKE_DEPRECATED("2025-09-01", "Use IrisNpOptions instead.") =
+    IrisNpOptions;
+
 /** The IRIS (Iterative Region Inflation by Semidefinite programming) algorithm,
 as described in
 
@@ -213,13 +217,18 @@ box (e.g. from HPolyhedron::MakeBox).
 The @p obstacles, @p sample, and the @p domain must describe elements in the
 same ambient dimension (but that dimension can be any positive integer).
 
+@note Some members of `options` are only applicable to IrisNp. The members
+relevant for this function are starting_ellipse, termination_func,
+bounding_region, verify_domain_boundedness, require_sample_point_is_contained,
+iteration_limit, termination_threshold, relative_termination_threshold
+
 @ingroup geometry_optimization
 @ingroup planning_iris
 */
 HPolyhedron Iris(const ConvexSets& obstacles,
                  const Eigen::Ref<const Eigen::VectorXd>& sample,
                  const HPolyhedron& domain,
-                 const IrisOptions& options = IrisOptions());
+                 const IrisNpOptions& options = IrisNpOptions());
 
 /** Constructs ConvexSet representations of obstacles for IRIS in 3D using the
 geometry from a SceneGraph QueryObject. All geometry in the scene with a
@@ -264,15 +273,20 @@ run-time of the algorithm. The same goes for
 
 @throws std::exception if the sample configuration in @p context is infeasible.
 @throws std::exception if termination_func is invalid on the domain. See
-IrisOptions.termination_func for more details.
+IrisNpOptions.termination_func for more details.
 
 @ingroup geometry_optimization
 @ingroup planning_iris
 */
+HPolyhedron IrisNp(const multibody::MultibodyPlant<double>& plant,
+                   const systems::Context<double>& context,
+                   const IrisNpOptions& options = IrisNpOptions());
+
+DRAKE_DEPRECATED("2025-09-01", "Use IrisNp instead.")
 HPolyhedron IrisInConfigurationSpace(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
-    const IrisOptions& options = IrisOptions());
+    const IrisNpOptions& options = IrisNpOptions());
 
 /** Modifies the @p iris_options to facilitate finding a region that contains
 the edge between x_1 and x_2. It sets @p iris_options.starting_ellipse to be a
@@ -289,7 +303,7 @@ hyperellipsoid for @p iris_options.starting_ellipse must have non-zero volume.
 @ingroup planning_iris
 */
 void SetEdgeContainmentTerminationCondition(
-    IrisOptions* iris_options, const Eigen::Ref<const Eigen::VectorXd>& x_1,
+    IrisNpOptions* iris_options, const Eigen::Ref<const Eigen::VectorXd>& x_1,
     const Eigen::Ref<const Eigen::VectorXd>& x_2, const double epsilon = 1e-3,
     const double tol = 1e-6);
 
