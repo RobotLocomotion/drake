@@ -352,7 +352,7 @@ if __name__ == "__main__":
         args.accuracy,
         max_step_size=args.max_step_size,
         meshcat=meshcat,
-        visualize=False
+        visualize=True
     )
 
     if args.plot:

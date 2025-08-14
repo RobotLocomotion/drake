@@ -111,6 +111,7 @@ PooledSapBuilder<T>::PooledSapBuilder(const MultibodyPlant<T>& plant)
 template <typename T>
 void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
                                       const T& time_step,
+                                      bool reuse_geometry_data,
                                       PooledSapModel<T>* model) const {
   const MultibodyTreeTopology& topology =
       GetInternalTree(plant()).get_topology();
@@ -128,7 +129,6 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   params->v0 = plant().GetVelocities(context);
   const auto& v0 = params->v0;
   params->A.Clear();
-  params->J_WB.Clear();
 
   // Dense linearized dynamics from MbP.
   plant().CalcMassMatrix(context, &M);
@@ -157,68 +157,74 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   // Update rigid body cliques and body Jacobians.
   const auto& world_frame = plant().world_frame();
   params->D = M.diagonal().cwiseSqrt().cwiseInverse();
-  params->body_cliques.clear();
-  params->body_cliques.reserve(plant().num_bodies());
-  params->body_mass.clear();
-  params->body_mass.reserve(plant().num_bodies());
-  params->body_is_floating.clear();
-  params->body_is_floating.reserve(plant().num_bodies());
-  for (int b = 0; b < plant().num_bodies(); ++b) {
-    const auto& body = plant().get_body(BodyIndex(b));
 
-    // Distinguish between "free floating body" and "free floating base". The
-    // former has an identity Jacobian, the latter does not.
-    const auto& link = forest.link_by_index(BodyIndex(b));
-    const auto& mobod = forest.mobods(link.mobod_index());
-    const bool is_free_floating = body.is_floating() && mobod.is_leaf_mobod();
-    params->body_is_floating.push_back(is_free_floating ? 1 : 0);
+  // TODO(vincekurtz): consider reusing mass matrix as well. Note that
+  // A = M + hD includes the time step, so M would need to be stored separately.
+  if (!reuse_geometry_data) {
+    params->J_WB.Clear();
+    params->body_cliques.clear();
+    params->body_cliques.reserve(plant().num_bodies());
+    params->body_mass.clear();
+    params->body_mass.reserve(plant().num_bodies());
+    params->body_is_floating.clear();
+    params->body_is_floating.reserve(plant().num_bodies());
+    for (int b = 0; b < plant().num_bodies(); ++b) {
+      const auto& body = plant().get_body(BodyIndex(b));
 
-    // TODO(amcastro-tri): consider using forest.link_composites() in
-    // combination with LinkJointGraph::Link::composite() to precompute
-    // composite's masses.
+      // Distinguish between "free floating body" and "free floating base". The
+      // former has an identity Jacobian, the latter does not.
+      const auto& link = forest.link_by_index(BodyIndex(b));
+      const auto& mobod = forest.mobods(link.mobod_index());
+      const bool is_free_floating = body.is_floating() && mobod.is_leaf_mobod();
+      params->body_is_floating.push_back(is_free_floating ? 1 : 0);
 
-    // If the body has zero mass, we assign it the mass of its composite.
-    if (body.default_mass() == 0.0) {
-      const auto composite = graph.GetLinksWeldedTo(body.index());
-      T composite_mass = 0.0;
-      for (BodyIndex c : composite) {
-        composite_mass += plant().get_body(c).default_mass();
-      }
-      if (composite_mass == 0.0) {
-        throw std::logic_error(
-            fmt::format("Composite for body '{}' has zero mass.", body.name()));
-      }
-      params->body_mass.push_back(composite_mass);
-    } else {
-      params->body_mass.push_back(body.default_mass());
-    }
+      // TODO(amcastro-tri): consider using forest.link_composites() in
+      // combination with LinkJointGraph::Link::composite() to precompute
+      // composite's masses.
 
-    if (plant().IsAnchored(body)) {
-      params->body_cliques.push_back(-1);  // mark as anchored.
-      // Empty Jacobian.
-      // N.B. Eigen does not like 0-sized matrices. Thus we push a dummy
-      // one-column Jacobian.
-      params->J_WB.Add(6, 1);
-    } else {
-      const TreeIndex t = topology.body_to_tree_index(BodyIndex(b));
-      const int clique = tree_clique[t];
-      DRAKE_ASSERT(clique >= 0);
-      const bool tree_has_dofs = topology.tree_has_dofs(t);
-      DRAKE_ASSERT(tree_has_dofs);
-
-      const int vt_start = topology.tree_velocities_start_in_v(t);
-      const int nt = topology.num_tree_velocities(t);
-
-      params->body_cliques.push_back(clique);
-      typename EigenPool<Matrix6X<T>>::ElementView Jv_WBc_W =
-          params->J_WB.Add(6, nt);
-      if (body.is_floating()) {
-        Jv_WBc_W.setIdentity();
+      // If the body has zero mass, we assign it the mass of its composite.
+      if (body.default_mass() == 0.0) {
+        const auto composite = graph.GetLinksWeldedTo(body.index());
+        T composite_mass = 0.0;
+        for (BodyIndex c : composite) {
+          composite_mass += plant().get_body(c).default_mass();
+        }
+        if (composite_mass == 0.0) {
+          throw std::logic_error(fmt::format(
+              "Composite for body '{}' has zero mass.", body.name()));
+        }
+        params->body_mass.push_back(composite_mass);
       } else {
-        plant().CalcJacobianSpatialVelocity(
-            context, JacobianWrtVariable::kV, body.body_frame(),
-            Vector3<T>::Zero(), world_frame, world_frame, &J_V_WB);
-        Jv_WBc_W = J_V_WB.middleCols(vt_start, nt);
+        params->body_mass.push_back(body.default_mass());
+      }
+
+      if (plant().IsAnchored(body)) {
+        params->body_cliques.push_back(-1);  // mark as anchored.
+        // Empty Jacobian.
+        // N.B. Eigen does not like 0-sized matrices. Thus we push a dummy
+        // one-column Jacobian.
+        params->J_WB.Add(6, 1);
+      } else {
+        const TreeIndex t = topology.body_to_tree_index(BodyIndex(b));
+        const int clique = tree_clique[t];
+        DRAKE_ASSERT(clique >= 0);
+        const bool tree_has_dofs = topology.tree_has_dofs(t);
+        DRAKE_ASSERT(tree_has_dofs);
+
+        const int vt_start = topology.tree_velocities_start_in_v(t);
+        const int nt = topology.num_tree_velocities(t);
+
+        params->body_cliques.push_back(clique);
+        typename EigenPool<Matrix6X<T>>::ElementView Jv_WBc_W =
+            params->J_WB.Add(6, nt);
+        if (body.is_floating()) {
+          Jv_WBc_W.setIdentity();
+        } else {
+          plant().CalcJacobianSpatialVelocity(
+              context, JacobianWrtVariable::kV, body.body_frame(),
+              Vector3<T>::Zero(), world_frame, world_frame, &J_V_WB);
+          Jv_WBc_W = J_V_WB.middleCols(vt_start, nt);
+        }
       }
     }
   }
@@ -231,7 +237,6 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   VectorX<T>& vdot = scratch_.tmp_v1;
   vdot = -v0 / dt;
   plant().CalcForceElementsContribution(context, &forces);
-  // plant().AddInForcesFromInputPorts(context, &forces);
 
   // TODO(vincekurtz): use a CalcInverseDynamics signature that doesn't allocate
   // a return value.
@@ -261,7 +266,9 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   // Add contact constraints. We'll need to clear the patch constraints pool
   // here to avoid conflicting hydro and point contact constraints.
   model->patch_constraints_pool().Clear();
-  CalcGeometryContactData(context);
+  if (!reuse_geometry_data) {
+    CalcGeometryContactData(context);
+  }
   AddPatchConstraintsForHydroelasticContact(context, model);
   AddPatchConstraintsForPointContact(context, model);
 

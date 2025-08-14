@@ -59,7 +59,7 @@ void ConvexIntegrator<T>::DoInitialize() {
   // Allocate and initialize SAP problem objects
   builder_ = std::make_unique<PooledSapBuilder<T>>(plant(), plant_context);
   const T& dt = this->get_initial_step_size_target();
-  builder_->UpdateModel(plant_context, dt, &model_);
+  builder_->UpdateModel(plant_context, dt, false, &model_);
   model_.ResizeData(&data_);
   model_.ResizeData(&scratch_data_);
 
@@ -147,7 +147,9 @@ bool ConvexIntegrator<T>::StepWithHalfSteppingErrorEstimate(const T& h) {
     // initial guess
     v_guess += x_next_full_->get_generalized_velocity().CopyToVector();
     v_guess /= 2.0;
-    ComputeNextContinuousState(0.5 * h, v_guess, x_next_half_1_.get(), true);
+    ComputeNextContinuousState(0.5 * h, v_guess, x_next_half_1_.get(),
+                               /* reuse_geometry_data = */ true,
+                               /* reuse_linearization = */ true);
 
     // For the second half-step to (t + h), we need to start from (t + h/2). So
     // we'll first set the system state to the result of the first half-step.
@@ -157,7 +159,9 @@ bool ConvexIntegrator<T>::StepWithHalfSteppingErrorEstimate(const T& h) {
     // Now we can take the second half-step. We'll use the solution of the full
     // step as our initial guess here.
     v_guess = x_next_full_->get_generalized_velocity().CopyToVector();
-    ComputeNextContinuousState(0.5 * h, v_guess, x_next_half_2_.get(), true);
+    ComputeNextContinuousState(0.5 * h, v_guess, x_next_half_2_.get(),
+                               /* reuse_geometry_data = */ false,
+                               /* reuse_linearization = */ true);
 
     // Set the state to the result of the second half-step (since this is more
     // accurate than the full step, and we have it anyway).
@@ -326,14 +330,15 @@ template <typename T>
 void ConvexIntegrator<T>::ComputeNextContinuousState(const T& h,
                                                      const VectorX<T>& v_guess,
                                                      ContinuousState<T>* x_next,
-                                                     bool partial_update) {
+                                                     bool reuse_geometry_data,
+                                                     bool reuse_linearization) {
   // Get plant context storing initial state [q₀, v₀].
   const Context<T>& context = this->get_context();
   const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
 
   // Set up the convex optimization problem minᵥ ℓ(v; q₀, v₀, h)
   PooledSapModel<T>& model = get_model();
-  builder().UpdateModel(plant_context, h, &model);
+  builder().UpdateModel(plant_context, h, reuse_geometry_data, &model);
 
   // Linearize any external systems (e.g., controllers),
   //     τ = B u(x) + τₑₓₜ(x),
@@ -351,9 +356,7 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(const T& h,
     VectorX<T>& Ke = scratch_.Ke;
     VectorX<T>& be = scratch_.be;
 
-    if (!partial_update) {
-      // If we're doing a partial update, we'll reuse the linearization from the
-      // previous solve.
+    if (!reuse_linearization) {
       LinearizeExternalSystem(h, &Ku, &bu, &Ke, &be);
     }
     if (has_actuators) {

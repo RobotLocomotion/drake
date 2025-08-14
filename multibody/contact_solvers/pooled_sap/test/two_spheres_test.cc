@@ -258,7 +258,7 @@ TEST_F(TwoSpheres, GetContact) {
 
   PooledSapBuilder<double> builder(*plant_);
   PooledSapModel<double> model;
-  builder.UpdateModel(*plant_context_, time_step, &model);
+  builder.UpdateModel(*plant_context_, time_step, false, &model);
   EXPECT_EQ(model.num_cliques(), 2);
   EXPECT_EQ(model.num_velocities(), plant_->num_velocities());
   EXPECT_EQ(model.num_patch_constraints(), 1);
@@ -275,7 +275,7 @@ TEST_F(TwoSpheres, MakeData) {
 
   PooledSapBuilder<double> builder(*plant_);
   PooledSapModel<double> model;
-  builder.UpdateModel(*plant_context_, time_step, &model);
+  builder.UpdateModel(*plant_context_, time_step, false, &model);
   EXPECT_EQ(model.num_cliques(), 2);
   EXPECT_EQ(model.num_velocities(), nv);
   EXPECT_EQ(model.num_patch_constraints(), 1);
@@ -306,7 +306,7 @@ TEST_F(TwoSpheres, MakeData) {
   // Update problem. There should be no allocations for the same problem size.
   // TODO(amcastro-tri): Move this function within the guard. You'll need a
   // pre-allocated workspace for this function.
-  builder.UpdateModel(*plant_context_, time_step, &model);
+  builder.UpdateModel(*plant_context_, time_step, false, &model);
   {
     drake::test::LimitMalloc guard;
     model.ResizeData(&data);
@@ -323,7 +323,7 @@ TEST_F(TwoSpheres, AddExternalGains) {
 
   PooledSapBuilder<double> builder(*plant_);
   PooledSapModel<double> model;
-  builder.UpdateModel(*plant_context_, time_step, &model);
+  builder.UpdateModel(*plant_context_, time_step, false, &model);
   EXPECT_EQ(model.num_cliques(), 2);
   EXPECT_EQ(model.num_velocities(), nv);
   EXPECT_EQ(model.num_patch_constraints(), 1);
@@ -375,7 +375,7 @@ TEST_F(TwoSpheres, CalcData) {
 
   PooledSapBuilder<double> builder(*plant_);
   PooledSapModel<double> model;
-  builder.UpdateModel(*plant_context_, time_step, &model);
+  builder.UpdateModel(*plant_context_, time_step, false, &model);
   EXPECT_EQ(model.num_cliques(), 1);
   EXPECT_EQ(model.num_velocities(), nv);
   // EXPECT_EQ(model.num_patch_constraints(), 1);
@@ -488,7 +488,7 @@ GTEST_TEST(PooledSapBuilder, Limits) {
   const double time_step = 0.01;
   PooledSapBuilder<double> builder(plant);
   PooledSapModel<double> model;
-  builder.UpdateModel(plant_context, time_step, &model);
+  builder.UpdateModel(plant_context, time_step, false, &model);
   EXPECT_EQ(model.num_cliques(), 2);
   EXPECT_EQ(model.num_velocities(), plant.num_velocities());
   EXPECT_EQ(model.num_limit_constraints(), 2);

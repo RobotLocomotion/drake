@@ -276,11 +276,14 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // @param v_guess the initial guess for the MbP plant velocities.
   // @param x_next the output continuous state, includes state for both the
   //               plant and any external systems.
-  // @param partial_update if true, reuse the external system linearization
-  //                       from the previous solve.
+  // @param reuse_geometry_data use previously computed geometry data, e.g., in
+  //                            the first half-step.
+  // @param reuse_linearization use previously computed external system
+  // linearization, e.g., in the half-steps.
   void ComputeNextContinuousState(const T& h, const VectorX<T>& v_guess,
                                   ContinuousState<T>* x_next,
-                                  bool partial_update = false);
+                                  bool reuse_geometry_data = false,
+                                  bool reuse_linearization = false);
 
   // Advance the plant's generalized positions, q = q₀ + h N(q₀) v, taking care
   // to handle quaternion DoFs properly.
