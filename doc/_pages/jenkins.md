@@ -210,6 +210,16 @@ env/bin/pip install <url-of-experimental-wheel>
 source env/bin/activate
 ```
 
+# Disabling Builds on Pull Requests
+
+For draft pull requests that may have frequent updates to the remote branch,
+it can be useful to disable the builds that run automatically. This can be done
+by adding the label ``status: defer ci``. Jobs will automatically be reported
+back to the pull request as failures, but won't run the actual build. Since
+these jobs are required to merge, this label will eventually need to be removed.
+Comment ``@drake-jenkins-bot retest this please`` after removing the label to
+trigger a re-run.
+
 # Testing via External Examples
 
 The examples within Drake's
