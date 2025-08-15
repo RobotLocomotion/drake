@@ -1081,7 +1081,7 @@ Eigen::Vector3d ParseVector3(const SDFormatDiagnostic& diagnostic,
         fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
                     element_name);
     diagnostic.Error(node, message);
-    return {};
+    return Eigen::Vector3d::Zero();
   }
 
   auto value = node->Get<gz::math::Vector3d>(element_name);
