@@ -155,6 +155,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "direct_transcription_test",
+    timeout = "moderate",
     data = ["//examples/pendulum:models"],
     # This test has two duplicated long cases; run them in parallel.
     shard_count = 4,
