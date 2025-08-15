@@ -1801,7 +1801,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
     for (MobodIndex mobod_index : body_node_levels_[level]) {
       const BodyNode<T>& node = *body_nodes_[mobod_index];
 
-      DRAKE_ASSERT(node.get_topology().level == level);
+      DRAKE_ASSERT(node.mobod().level() == level);
       DRAKE_ASSERT(node.mobod_index() == mobod_index);
 
       // Compute F_BMo_W for the body associated with this node and project it
@@ -3176,12 +3176,11 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
   for (size_t level = 1; level < path_to_world.size(); ++level) {
     const MobodIndex mobod_index = path_to_world[level];
     const BodyNode<T>& node = *body_nodes_[mobod_index];
-    const BodyNodeTopology& node_topology = node.get_topology();
-    const Mobilizer<T>& mobilizer = node.get_mobilizer();
-    const int start_index_in_v = node_topology.mobilizer_velocities_start_in_v;
-    const int start_index_in_q = node_topology.mobilizer_positions_start;
-    const int mobilizer_num_velocities = node_topology.num_mobilizer_velocities;
-    const int mobilizer_num_positions = node_topology.num_mobilizer_positions;
+    const SpanningForest::Mobod& mobod = node.mobod();
+    const int start_index_in_v = mobod.v_start();
+    const int start_index_in_q = mobod.q_start();
+    const int mobilizer_num_velocities = mobod.nv();
+    const int mobilizer_num_positions = mobod.nq();
 
     const int start_index = is_wrt_qdot ? start_index_in_q : start_index_in_v;
     const int mobilizer_jacobian_ncols =
@@ -3208,7 +3207,7 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
       //  right becomes a bottleneck.
       // Nplus is stack allocated above so this isn't a memory allocation.
       Nplus.resize(mobilizer_num_velocities, mobilizer_num_positions);
-      mobilizer.CalcNplusMatrix(context, &Nplus);
+      node.get_mobilizer().CalcNplusMatrix(context, &Nplus);
     }
 
     // The Jacobian angular velocity term is the same for all points Fpi since
