@@ -1112,7 +1112,7 @@ void ParseWallBoundaryConditions(
         ParseVector3(diagnostic, wall_bc_element, "drake:outward_normal");
 
     // Validate normal vector is not zero
-    if (n_W_raw.norm() < 1e-12) {
+    if (n_W_raw.norm() <= 1e-10) {
       diagnostic.Error(
           wall_bc_element,
           "Outward normal vector cannot be zero in <drake:outward_normal>");
