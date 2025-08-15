@@ -4740,10 +4740,9 @@ TEST_F(SdfParserTest, WallBoundaryConditionOnRigidLink) {
   ParseTestString(sdf);
   // Wall boundary conditions on rigid links should produce an error
   EXPECT_THAT(NumErrors(), 1);
-  EXPECT_THAT(
-      TakeError(),
-      MatchesRegex(".*Unsupported SDFormat element in link: "
-                   "drake:wall_boundary_condition.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Unsupported SDFormat element in link: "
+                           "drake:wall_boundary_condition.*"));
 }
 
 }  // namespace
