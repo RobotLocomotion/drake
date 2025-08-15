@@ -170,6 +170,20 @@ def getNodeLabel() {
 }
 
 
+// Check if CI should be deferred for this pull request based on the label.
+// CHANGE_ID should always be defined in this file, as it corresponds to
+// pull requests, but we should check anyways.
+if(env.CHANGE_ID) {
+  if (pullRequest.labels.contains('status: do not merge')) {
+    currentBuild.result == 'ABORTED'
+    throw new Exception(
+      "This pull request is labeled 'defer ci'. " +
+      "This label will need to be removed in order for CI to pass " +
+      "before merging."
+    )
+  }
+}
+
 node(getNodeLabel()) {
   // Define job properties. Other Jenkinsfiles which do not correspond to
   // multibranch pipelines (i.e., for non-experimental jobs) should inherit
