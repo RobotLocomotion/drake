@@ -21,6 +21,7 @@ from pydrake.solvers import (
     MathematicalProgramResult,
     OsqpSolver,
     PyFunctionConstraint,
+    PyFunctionCost,
     ScsSolver,
     SnoptSolver,
     SolverId,
@@ -858,33 +859,40 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_constraint_set_bounds(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
+        description = "PyFunctionConstraint"
 
         def constraint(x):
             return x[1] ** 2
-        binding = prog.AddConstraint(constraint, [0], [1], vars=x)
-        self.assertIsInstance(binding.evaluator(), PyFunctionConstraint)
-        np.testing.assert_array_equal(
-            binding.evaluator().lower_bound(), np.array([0.]))
-        np.testing.assert_array_equal(
-            binding.evaluator().upper_bound(), np.array([1.]))
-        # Test UpdateLowerBound()
-        binding.evaluator().UpdateLowerBound(new_lb=[-1.])
-        np.testing.assert_array_equal(
-            binding.evaluator().lower_bound(), np.array([-1.]))
-        np.testing.assert_array_equal(
-            binding.evaluator().upper_bound(), np.array([1.]))
-        # Test UpdateLowerBound()
-        binding.evaluator().UpdateUpperBound(new_ub=[2.])
-        np.testing.assert_array_equal(
-            binding.evaluator().lower_bound(), np.array([-1.]))
-        np.testing.assert_array_equal(
-            binding.evaluator().upper_bound(), np.array([2.]))
-        # Test set_bounds()
-        binding.evaluator().set_bounds(lower_bound=[-3.], upper_bound=[4.])
-        np.testing.assert_array_equal(
-            binding.evaluator().lower_bound(), np.array([-3.]))
-        np.testing.assert_array_equal(
-            binding.evaluator().upper_bound(), np.array([4.]))
+        binding = prog.AddConstraint(
+            constraint, [0], [1], vars=x, description=description)
+        py_constraint = PyFunctionConstraint(
+            num_vars=2, func=constraint, lb=[0], ub=[1],
+            description=description)
+        for evaluator in [binding.evaluator(), py_constraint]:
+            self.assertEqual(evaluator.get_description(), description)
+            self.assertIsInstance(binding.evaluator(), PyFunctionConstraint)
+            np.testing.assert_array_equal(
+                evaluator.lower_bound(), np.array([0.]))
+            np.testing.assert_array_equal(
+                evaluator.upper_bound(), np.array([1.]))
+            # Test UpdateLowerBound()
+            evaluator.UpdateLowerBound(new_lb=[-1.])
+            np.testing.assert_array_equal(
+                evaluator.lower_bound(), np.array([-1.]))
+            np.testing.assert_array_equal(
+                evaluator.upper_bound(), np.array([1.]))
+            # Test UpdateLowerBound()
+            evaluator.UpdateUpperBound(new_ub=[2.])
+            np.testing.assert_array_equal(
+                evaluator.lower_bound(), np.array([-1.]))
+            np.testing.assert_array_equal(
+                evaluator.upper_bound(), np.array([2.]))
+            # Test set_bounds()
+            evaluator.set_bounds(lower_bound=[-3.], upper_bound=[4.])
+            np.testing.assert_array_equal(
+                evaluator.lower_bound(), np.array([-3.]))
+            np.testing.assert_array_equal(
+                evaluator.upper_bound(), np.array([4.]))
 
     def test_constraint_gradient_sparsity(self):
         prog = mp.MathematicalProgram()
@@ -971,6 +979,20 @@ class TestMathematicalProgram(unittest.TestCase):
         U = SCALAR_TYPES[next_index % len(SCALAR_TYPES)]
         self.assertNotEqual(U, T)
         return U
+
+    def test_pycost_simple(self):
+        num_vars = 2
+        description = "PyFunctionCost"
+
+        def cost(x):
+            # L2-norm squared cost.
+            return np.sum(x.dot(x))
+
+        cost = PyFunctionCost(
+            num_vars=num_vars, func=cost, description=description)
+        self.assertEqual(cost.get_description(), description)
+        self.assertEqual(cost.num_vars(), num_vars)
+        self.assertEqual(cost.Eval([1.0, 1.0]), 2.0)
 
     def test_pycost_wrap_error(self):
         """Tests for checks using PyFunctionCost::Wrap."""
