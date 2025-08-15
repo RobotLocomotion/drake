@@ -22,31 +22,28 @@ push_release, etc.) are supported only on Ubuntu (not macOS).
 1. Choose the next version number.
 2. Create a local Drake branch named ``release_notes-v1.N.0`` (so that others
    can easily find and push to it after the PR is opened).
-3. As the first commit on the branch, mimic the commit
-   [`drake@cb6f616ced`](https://github.com/RobotLocomotion/drake/commit/cb6f616ced5496ea7863db46d86551930c9d61f7)
-   in order to disable CI.  A quick way to do this might be:
-   ```
-   git fetch upstream cb6f616ced5496ea7863db46d86551930c9d61f7
-   git cherry-pick FETCH_HEAD
-   ```
+3. Bootstrap the release notes file using the
+   ``tools/release_engineering/relnotes`` tooling, with ``--action=create``
+   for the first run. Instructions can be found atop its source code:
+   [``relnotes.py``](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/relnotes.py).
+      * The output is draft release notes in ``doc/_release-notes/v1.N.0.md``.
+      * The version numbers in ``doc/_pages/from_binary.md`` should also have
+      been automatically upgraded.
+   Commit the results.
 4. Push that branch and then open a new pull request titled:
    ```
    [doc] Add release notes v1.N.0
    ```
    Make sure that "Allow edits by maintainers" on the GitHub PR page is
-   enabled (the checkbox is checked). Set label `release notes: none`.
-5. For release notes, on an ongoing basis, add recent commit messages to the
-   release notes draft using the ``tools/release_engineering/relnotes`` tooling.
-   (Instructions can be found atop its source code: [``relnotes.py``](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/relnotes.py))
-    1. On the first run, use ``--action=create`` to bootstrap the file.
-       * The output is draft release notes in ``doc/_release-notes/v1.N.0.md``.
-       * The version numbers in ``doc/_pages/from_binary.md`` should also have
-         been automatically upgraded.
-    2. On the subsequent runs, use ``--action=update`` to refresh the file.
-       * Try to avoid updating the release notes to refer to changes newer than
-       the likely release, i.e., if you run ``--update`` on the morning you're
-       actually doing the release, be sure to pass the ``--target_commit=``
-       argument to avoid including commits that will not be part of the tag.
+   enabled (the checkbox is checked). Set the labels ``release notes: none``
+   and ``status: defer ci`` to disable CI while notes-only updates are ongoing.
+5. Make gradual updates to the release notes using
+  ``tools/release_engineering/relnotes``, with ``--action=update`` to
+  refresh the file.
+   * Try to avoid updating the release notes to refer to changes newer than
+     the likely release, i.e., if you run ``--update`` on the morning you're
+     actually doing the release, be sure to pass the ``--target_commit=``
+     argument to avoid including commits that will not be part of the tag.
 6. For release notes, on an ongoing basis, clean up and relocate the commit
    notes to properly organized and wordsmithed bullet points. See [Polishing
    the release notes](#polishing-the-release-notes).
@@ -57,9 +54,9 @@ push_release, etc.) are supported only on Ubuntu (not macOS).
 8. As the release is nearly ready, post a call for action for feature teams to
    look at the draft document and provide suggestions (in reviewable) or fixes
    (as pushes).
-    1. To help ensure that the "newly deprecated APIs" section is accurate, grep
-       the code for ``YYYY-MM-01`` deprecation notations, for the ``MM`` values
-       that would have been associated with our +3 months typical period.
+   * To help ensure that the "newly deprecated APIs" section is accurate, grep
+     the code for ``YYYY-MM-01`` deprecation notations, for the ``MM`` values
+     that would have been associated with our +3 months typical period.
 
 ## Polishing the release notes
 
@@ -145,7 +142,8 @@ the main body of the document:
    1. There is a dummy date 2099-12-31 nearby that should likewise be changed.
    2. Make sure that the nightly build git sha from the prior steps matches the
       ``newest_commit`` whose changes are enumerated in the notes.
-4. Re-enable CI by reverting the commit you added way up above in step 3 of **Prior to release**.
+4. Re-enable CI by removing the label ``status: defer ci`` and commenting
+   ``@drake-jenkins-bot retest this please`` to trigger a re-run.
 5. Wait for the wheel builds to complete, and then download release artifacts:
    1. Use the
       ``tools/release_engineering/download_release_candidate`` tool with the
