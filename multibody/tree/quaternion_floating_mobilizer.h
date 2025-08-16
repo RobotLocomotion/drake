@@ -313,6 +313,14 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
                            const Eigen::Ref<const VectorX<T>>& qdot,
                            EigenPtr<VectorX<T>> v) const final;
 
+  void DoMapAccelerationToQDDot(const systems::Context<T>& context,
+                                const Eigen::Ref<const VectorX<T>>& vdot,
+                                EigenPtr<VectorX<T>> qddot) const final;
+
+  void DoMapQDDotToAcceleration(const systems::Context<T>& context,
+                                const Eigen::Ref<const VectorX<T>>& qddot,
+                                EigenPtr<VectorX<T>> vdot) const final;
+
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const final;
 
@@ -323,21 +331,58 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       const MultibodyTree<symbolic::Expression>& tree_clone) const final;
 
  private:
-  // Helper to compute the kinematic map N(q). L ∈ ℝ⁴ˣ³.
-  static Eigen::Matrix<T, 4, 3> CalcLMatrix(const Quaternion<T>& q);
-  // Helper to compute the kinematic map N(q) from angular velocity to
-  // quaternion time derivative for which q̇_WB = N(q)⋅w_WB.
-  // With L given by CalcLMatrix we have:
-  // N(q) = L(q_FM/2)
-  static Eigen::Matrix<T, 4, 3> AngularVelocityToQuaternionRateMatrix(
-      const Quaternion<T>& q);
+  // Forms a 4x3 matrix whose elements depend linearly on the 4 elements of
+  // the quaternion q = [qw, qx, qy, qz] as shown below.
+  // @param[in] q a generic quaternion which is not necessarily a unit
+  // quaternion or a quaternion associated with a rotation matrix.
+  // @returns  ⌈ -qx   -qy   -qz ⌉
+  //           |  qw    qz   -qy |
+  //           | -qz    qw    qx |
+  //           ⌊  qy   -qx    qw ⌋
+  //
+  // @note Herein, we denote the function that forms this matrix as Q(q).
+  // When q is the quaternion q_FM that relates the orientation of frames F
+  // F and M, we define the matrix Q_FM ≜ Q(q_FM).
+  // Many uses of Q_FM are associated with an angular velocity expressed in
+  // a particular frame. The examples below show Q_FM used in conjunction
+  // with w_FM_F (frame M's angular velocity in frame F, expressed in F).
+  //
+  // q̇_FM = 0.5 * Q_FM * w_FM_F
+  // q̈_FM = 0.5 * Q_FM * ẇ_FM_F - 0.25 ω² q_FM    Note: ω² = |w_FM_F|²
+  // w_FM_F = 2 * (Q_FM)ᵀ * q̇_FM
+  // ẇ_FM_F = 2 * (Q_FM)ᵀ * q̈_FM
+  //
+  // @note Since the elements of the matrix returned by Q(q) depend linearly on
+  // qw, qx, qy, qz, s * Q(q) = Q(s * q), where s is a scalar (e.g., 0.5 or 2).
+  //
+  // Formulas, uses, and proofs are in Sections 9.3 and 9.6 of [Mitiguy].
+  // [Mitiguy, August 2025] Mitiguy, P. Advanced Dynamics & Motion Simulation.
+  // Textbook available at www.MotionGenesis.com
+  static Eigen::Matrix<T, 4, 3> CalcQMatrix(const Quaternion<T>& q);
+
+  // Efficiently calculates the 4x3 matrix 0.5 * CalcQMatrix(q).
+  // @param[in] q a generic quaternion which is not necessarily a unit
+  // quaternion or a quaternion associated with a rotation matrix.
+  // @see QuaternionFloatingMobilizer::CalcQMatrix().
+  static Eigen::Matrix<T, 4, 3> CalcQMatrixOverTwo(const Quaternion<T>& q) {
+    return CalcQMatrix({0.5 * q.w(), 0.5 * q.x(), 0.5 * q.y(), 0.5 * q.z()});
+  }
+
+  // Efficiently calculates the 3x4 matrix [2 * CalcQMatrix(q)]ᵀ.
+  // @param[in] q a generic quaternion which is not necessarily a unit
+  // quaternion or a quaternion associated with a rotation matrix.
+  // @see QuaternionFloatingMobilizer::CalcQMatrix().
+  static Eigen::Matrix<T, 3, 4> CalcTwoTimesQMatrixTranspose(
+      const Quaternion<T>& q) {
+    return CalcQMatrix({2 * q.w(), 2 * q.x(), 2 * q.y(), 2 * q.z()})
+        .transpose();
+  }
 
   // Helper to compute the kinematic map N⁺(q) from quaternion time derivative
-  // to angular velocity for which w_WB = N⁺(q)⋅q̇_WB.
+  // to angular velocity for which w_FM_F = N⁺(q)⋅q̇_FM.
   // This method can take a non unity quaternion q_tilde such that
-  // w_WB = N⁺(q_tilde)⋅q̇_tilde_WB also holds true.
-  // With L given by CalcLMatrix we have:
-  // N⁺(q) = L(2 q_FM)ᵀ
+  // w_FM_F = N⁺(q_tilde)⋅q̇_tilde_FM also holds true.
+  // @returns N⁺(q_tilde)
   static Eigen::Matrix<T, 3, 4> QuaternionRateToAngularVelocityMatrix(
       const Quaternion<T>& q);
 
