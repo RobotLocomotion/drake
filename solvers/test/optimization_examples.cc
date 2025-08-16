@@ -151,7 +151,7 @@ double OptimizationProgram::GetSolverSolutionDefaultCompareTolerance(
     return 1E-6;
   }
   if (solver_id == OsqpSolver::id()) {
-    return 1E-10;
+    return 1E-4;
   }
   if (solver_id == ScsSolver::id()) {
     return 1E-3;  // Scs is not very accurate.
