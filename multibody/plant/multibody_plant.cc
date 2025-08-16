@@ -779,7 +779,7 @@ MultibodyConstraintId MultibodyPlant<T>::AddTendonConstraint(
     upper_limit = kInf;
   }
 
-  DRAKE_THROW_UNLESS(*lower_limit != -kInf || *upper_limit != kInf);
+  DRAKE_THROW_IF(*lower_limit == -kInf && *upper_limit == kInf);
   DRAKE_THROW_UNLESS(*lower_limit <= *upper_limit);
 
   if (stiffness.has_value()) {

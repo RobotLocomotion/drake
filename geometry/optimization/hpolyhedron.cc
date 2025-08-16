@@ -919,7 +919,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   const HPolyhedron circumbody = this->ReduceInequalities(0);
   MatrixXd circumbody_A = circumbody.A();
   VectorXd circumbody_b = circumbody.b();
-  DRAKE_THROW_UNLESS(!circumbody.IsEmpty());
+  DRAKE_THROW_IF(circumbody.IsEmpty());
   DRAKE_THROW_UNLESS(circumbody.IsBounded());
 
   for (int i = 0; i < points_to_contain.cols(); ++i) {

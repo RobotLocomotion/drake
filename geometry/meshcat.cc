@@ -769,8 +769,8 @@ class Meshcat::Impl {
         main_thread_id_(std::this_thread::get_id()),
         params_(params),
         rate_calculator_(params_.realtime_rate_period) {
-    DRAKE_THROW_UNLESS(!params.port.has_value() || *params.port == 0 ||
-                       *params.port >= 1024);
+    DRAKE_THROW_IF(params.port.has_value() && *params.port == 0 &&
+                   *params.port >= 1024);
     if (!drake::internal::IsNetworkingAllowed("meshcat")) {
       throw std::runtime_error(
           "Meshcat has been disabled via the DRAKE_ALLOW_NETWORK environment "
