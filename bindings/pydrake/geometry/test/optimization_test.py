@@ -690,7 +690,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertGreater(len(obstacles), 0)
         for obstacle in obstacles:
             self.assertIsInstance(obstacle, mut.ConvexSet)
-        options = mut.IrisOptions()
+        options = mut.IrisNpOptions()
         options.require_sample_point_is_contained = True
         options.iteration_limit = 1
         options.termination_threshold = 0.1
@@ -741,13 +741,13 @@ class TestGeometryOptimization(unittest.TestCase):
         plant.Finalize()
         diagram = builder.Build()
         context = diagram.CreateDefaultContext()
-        options = mut.IrisOptions()
+        options = mut.IrisNpOptions()
         options.num_collision_infeasible_samples = 3
         ik = InverseKinematics(plant)
         options.prog_with_additional_constraints = ik.prog()
         options.num_additional_constraint_infeasible_samples = 2
         plant.SetPositions(plant.GetMyMutableContextFromRoot(context), [0])
-        region = mut.IrisInConfigurationSpace(
+        region = mut.IrisNp(
             plant=plant, context=plant.GetMyContextFromRoot(context),
             options=options)
         self.assertIsInstance(region, mut.ConvexSet)
@@ -759,7 +759,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(point.x(), [-0.5])
         point2, = options.configuration_obstacles
         self.assertIs(point2, point)
-        region = mut.IrisInConfigurationSpace(
+        region = mut.IrisNp(
             plant=plant, context=plant.GetMyContextFromRoot(context),
             options=options)
         self.assertIsInstance(region, mut.ConvexSet)

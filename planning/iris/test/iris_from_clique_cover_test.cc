@@ -30,7 +30,7 @@ using geometry::Rgba;
 using geometry::optimization::ConvexSets;
 using geometry::optimization::HPolyhedron;
 using geometry::optimization::Hyperrectangle;
-using geometry::optimization::IrisOptions;
+using geometry::optimization::IrisNpOptions;
 using geometry::optimization::VPolytope;
 
 // Draw a two dimensional polytope in meshcat.
@@ -51,8 +51,8 @@ void Draw2dVPolytope(const VPolytope& polytope, const std::string& meshcat_name,
 GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
            TestIrisFromCliqueCoverDefaultOptions) {
   IrisFromCliqueCoverOptions options;
-  EXPECT_TRUE(std::holds_alternative<IrisOptions>(options.iris_options));
-  IrisOptions iris_options = std::get<IrisOptions>(options.iris_options);
+  EXPECT_TRUE(std::holds_alternative<IrisNpOptions>(options.iris_options));
+  IrisNpOptions iris_options = std::get<IrisNpOptions>(options.iris_options);
 
   EXPECT_EQ(iris_options.iteration_limit, 1);
   iris_options.iteration_limit = 100;
@@ -144,8 +144,8 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, BoxConfigurationSpaceTest) {
   options.num_points_per_visibility_round = 20;
   options.iteration_limit = 1;
   // Set a large bounding region to test the path where this is set in the
-  // IrisOptions.
-  std::get<IrisOptions>(options.iris_options).bounding_region =
+  // IrisNpOptions.
+  std::get<IrisNpOptions>(options.iris_options).bounding_region =
       HPolyhedron::MakeBox(Eigen::Vector2d{-2, -2}, Eigen::Vector2d{2, 2});
   // Run this test without parallelism to test that no bugs occur in the
   // non-parallel version.
@@ -265,13 +265,13 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   EXPECT_TRUE(checker->CheckConfigCollisionFree(config));
 
   IrisFromCliqueCoverOptions options;
-  IrisOptions& iris_options = std::get<IrisOptions>(options.iris_options);
+  IrisNpOptions& iris_options = std::get<IrisNpOptions>(options.iris_options);
 
   options.num_points_per_coverage_check = 100;
   options.num_points_per_visibility_round = 20;
   options.iteration_limit = 1;
   // Set a large bounding region to test the path where this is set in the
-  // IrisOptions.
+  // IrisNpOptions.
   iris_options.bounding_region =
       HPolyhedron::MakeBox(Eigen::Vector2d{-2, -2}, Eigen::Vector2d{2, 2});
   // Run this test without parallelism to test that no bugs occur in the
@@ -378,7 +378,7 @@ TEST_F(PendulumTest, NoProgWithAdditionalConstraintsAllowed) {
 
   std::string expected_error_message_substring =
       ".*iris_options.*.*prog_with_additional_constraints.*";
-  IrisOptions iris_options;
+  IrisNpOptions iris_options;
   iris_options.prog_with_additional_constraints =
       &prog_with_additional_constraints;
   options.iris_options = iris_options;
@@ -513,8 +513,8 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
     CommonSampledIrisOptions sampled_options;
 
     if constexpr (std::is_same_v<IrisOptionsVariantType,
-                                 geometry::optimization::IrisOptions>) {
-      options.iris_options = geometry::optimization::IrisOptions{
+                                 geometry::optimization::IrisNpOptions>) {
+      options.iris_options = geometry::optimization::IrisNpOptions{
           .iteration_limit = 1, .meshcat = meshcat};
     } else {
       sampled_options.max_iterations = 1;
@@ -581,7 +581,7 @@ class IrisInConfigurationSpaceFromCliqueCoverTestFixture
 };
 
 using IrisOptionsVariantTypes =
-    ::testing::Types<geometry::optimization::IrisOptions, IrisNp2Options,
+    ::testing::Types<geometry::optimization::IrisNpOptions, IrisNp2Options,
                      IrisZoOptions>;
 TYPED_TEST_SUITE(IrisInConfigurationSpaceFromCliqueCoverTestFixture,
                  IrisOptionsVariantTypes);

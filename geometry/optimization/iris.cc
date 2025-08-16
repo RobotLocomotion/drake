@@ -51,7 +51,7 @@ using symbolic::Expression;
 using systems::Context;
 
 HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
-                 const HPolyhedron& domain, const IrisOptions& options) {
+                 const HPolyhedron& domain, const IrisNpOptions& options) {
   const int dim = sample.size();
   const int N = obstacles.size();
   DRAKE_DEMAND(domain.ambient_dimension() == dim);
@@ -228,7 +228,7 @@ void MakeGuessFeasible(const HPolyhedron& P, Eigen::VectorXd* guess) {
   }
 }
 
-bool CheckTerminate(const IrisOptions& options, const HPolyhedron& P,
+bool CheckTerminate(const IrisNpOptions& options, const HPolyhedron& P,
                     const std::string& error_msg, const std::string& info_msg,
                     const bool is_initial_region) {
   if (options.termination_func && options.termination_func(P)) {
@@ -289,9 +289,9 @@ std::vector<int> revolute_joint_indices(const multibody::Joint<double>& joint) {
 
 }  // namespace
 
-HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
-                                     const Context<double>& context,
-                                     const IrisOptions& options) {
+HPolyhedron IrisNp(const MultibodyPlant<double>& plant,
+                   const Context<double>& context,
+                   const IrisNpOptions& options) {
   // Check the inputs.
   plant.ValidateContext(context);
   const int nq = plant.num_positions();
@@ -311,7 +311,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
     const multibody::Joint<double>& joint = plant.get_joint(index);
     if (joint.type_name() == QuaternionFloatingJoint<double>::kTypeName) {
       throw std::runtime_error(
-          "IrisInConfigurationSpace does not support QuaternionFloatingJoint. "
+          "IrisNp does not support QuaternionFloatingJoint. "
           "Consider using RpyFloatingJoint instead.");
     }
     const std::vector<int> continuous_revolute_indices =
@@ -374,7 +374,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
 
   if (boundedness_error) {
     throw std::runtime_error(
-        "IrisInConfigurationSpace requires that the initial domain be bounded. "
+        "IrisNp requires that the initial domain be bounded. "
         "Make sure all joints have position limits (unless that joint is a "
         "RevoluteJoint or the revolute component of a PlanarJoint or "
         "RpyFloatingJoint), or ensure that the intersection of the joint "
@@ -506,7 +506,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
 
   if (options.termination_func && options.termination_func(P)) {
     throw std::runtime_error(
-        "IrisInConfigurationSpace: The options.termination_func() returned "
+        "IrisNp: The options.termination_func() returned "
         "true for the initial region (defined by the linear constraints in "
         "prog_with_additional_constraints and bounding_region arguments).  "
         "Please check the implementation of your termination_func.");
@@ -532,22 +532,22 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   bool do_debugging_visualization = options.meshcat && nq <= 3;
 
   const std::string seed_point_error_msg =
-      "IrisInConfigurationSpace: require_sample_point_is_contained is true but "
+      "IrisNp: require_sample_point_is_contained is true but "
       "the seed point exited the initial region. Does the provided "
       "options.starting_ellipse not contain the seed point?";
   const std::string seed_point_msg =
-      "IrisInConfigurationSpace: terminating iterations because the seed point "
+      "IrisNp: terminating iterations because the seed point "
       "is no longer in the region.";
   const std::string termination_error_msg =
-      "IrisInConfigurationSpace: the termination function returned false on "
+      "IrisNp: the termination function returned false on "
       "the computation of the initial region. Are the provided "
       "options.starting_ellipse and options.termination_func compatible?";
   const std::string termination_msg =
-      "IrisInConfigurationSpace: terminating iterations because "
+      "IrisNp: terminating iterations because "
       "options.termination_func returned false.";
 
   while (true) {
-    log()->info("IrisInConfigurationSpace iteration {}", iteration);
+    log()->info("IrisNp iteration {}", iteration);
     int num_constraints = num_initial_constraints;
     HPolyhedron P_candidate = HPolyhedron(A.topRows(num_initial_constraints),
                                           b.head(num_initial_constraints));
@@ -779,7 +779,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
     iteration++;
     if (iteration >= options.iteration_limit) {
       log()->info(
-          "IrisInConfigurationSpace: Terminating because the iteration limit "
+          "IrisNp: Terminating because the iteration limit "
           "{} has been reached.",
           options.iteration_limit);
       break;
@@ -790,14 +790,14 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
     const double delta_volume = volume - best_volume;
     if (delta_volume <= options.termination_threshold) {
       log()->info(
-          "IrisInConfigurationSpace: Terminating because the hyperellipsoid "
+          "IrisNp: Terminating because the hyperellipsoid "
           "volume change {} is below the threshold {}.",
           delta_volume, options.termination_threshold);
       break;
     } else if (delta_volume / best_volume <=
                options.relative_termination_threshold) {
       log()->info(
-          "IrisInConfigurationSpace: Terminating because the hyperellipsoid "
+          "IrisNp: Terminating because the hyperellipsoid "
           "relative volume change {} is below the threshold {}.",
           delta_volume / best_volume, options.relative_termination_threshold);
       break;
@@ -807,8 +807,14 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   return P;
 }
 
+HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
+                                     const Context<double>& context,
+                                     const IrisNpOptions& options) {
+  return IrisNp(plant, context, options);
+}
+
 void SetEdgeContainmentTerminationCondition(
-    IrisOptions* options, const Eigen::Ref<const Eigen::VectorXd>& x_1,
+    IrisNpOptions* options, const Eigen::Ref<const Eigen::VectorXd>& x_1,
     const Eigen::Ref<const Eigen::VectorXd>& x_2, const double epsilon,
     const double tol) {
   const auto ab = AffineBall::MakeAffineBallFromLineSegment(x_1, x_2, epsilon);
