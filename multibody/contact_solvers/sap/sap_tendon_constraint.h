@@ -38,8 +38,8 @@ struct SapTendonConstraintData {
  https://mujoco.readthedocs.io/en/stable/XMLreference.html#tendon-fixed
 
  Though inspired to provide the same capability its MuJoCo counterpart does,
- here we implement it in terms of the theory develped in [Castro et al. 2024],
- with a true phyiscal parameterization of compliance parameters. See dicussion
+ here we implement it in terms of the theory developed in [Castro et al. 2024],
+ with a true physical parameterization of compliance parameters. See discussion
  in Drake's issue #22664 for further information on artifacts introduced by
  MuJoCo, which we solve here.
 
@@ -50,7 +50,7 @@ struct SapTendonConstraintData {
  Where it is assumed that the components of `a` have units such that l(q) has
  units of either meters (m) or radians (rad).
 
- This class imposes a set of two uni-lateral constraints such that this length
+ This class imposes a set of two unilateral constraints such that this length
  stays within lower and upper limits, lₗ and lᵤ respectively:
 
    lₗ ≤ l(q) ≤ lᵤ

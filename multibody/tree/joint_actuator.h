@@ -110,7 +110,7 @@ class JointActuator final : public MultibodyElement<T> {
   const Eigen::Ref<const VectorX<T>> get_actuation_vector(
       const VectorX<T>& u) const {
     DRAKE_DEMAND(u.size() == this->get_parent_tree().num_actuated_dofs());
-    return u.segment(topology_.actuator_index_start, joint().num_velocities());
+    return u.segment(topology_.actuator_dof_start, joint().num_velocities());
   }
 
   /// Given the actuation values `u_actuator` for `this` actuator, updates the

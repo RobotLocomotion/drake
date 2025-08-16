@@ -22,6 +22,12 @@ class CompliantContactManagerTester {
   }
 
   template <typename T>
+  static const internal::SpanningForest& forest(
+      const CompliantContactManager<T>& manager) {
+    return manager.forest();
+  }
+
+  template <typename T>
   static BodyIndex FindBodyByGeometryId(
       const CompliantContactManager<T>& manager, geometry::GeometryId id) {
     return manager.FindBodyByGeometryId(id);

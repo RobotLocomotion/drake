@@ -39,7 +39,7 @@ struct DiscreteStepMemory {
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Data);
 
     /* The constructor requires the topology to pre-size things. */
-    explicit Data(const MultibodyTreeTopology& topology);
+    explicit Data(const internal::SpanningForest& forest);
 
     ~Data();
 
@@ -62,7 +62,7 @@ struct DiscreteStepMemory {
   Returns a mutable reference to the new data.
   @tparam_default_scalar */
   template <typename T>
-  Data<T>& Allocate(const MultibodyTreeTopology& topology);
+  Data<T>& Allocate(const internal::SpanningForest& forest);
 
   /* If this memory holds data for scalar type T, then returns a const pointer
   to the data. Otherwise, returns nullptr. */

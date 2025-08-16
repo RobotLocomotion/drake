@@ -49,9 +49,9 @@ VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
   const internal::MultibodyTree<T>& model = this->get_parent_tree();
 
   // TODO(amcastro-tri): Get these from the cache.
-  internal::PositionKinematicsCache<T> pc(model.get_topology());
+  internal::PositionKinematicsCache<T> pc(model.forest());
   model.CalcPositionKinematicsCache(context, &pc);
-  internal::VelocityKinematicsCache<T> vc(model.get_topology());
+  internal::VelocityKinematicsCache<T> vc(model.forest());
   vc.InitializeToZero();
 
   // Create a multibody forces initialized by default to zero forces.

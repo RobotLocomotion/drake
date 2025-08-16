@@ -38,9 +38,9 @@ class PositionKinematicsCache {
   using RigidTransform = drake::math::RigidTransform<U>;
 
   // Constructs a position kinematics cache entry for the given
-  // MultibodyTreeTopology.
-  explicit PositionKinematicsCache(const MultibodyTreeTopology& topology)
-      : num_mobods_(topology.num_mobods()) {
+  // SpanningForest.
+  explicit PositionKinematicsCache(const SpanningForest& forest)
+      : num_mobods_(forest.num_mobods()) {
     Allocate();
   }
 

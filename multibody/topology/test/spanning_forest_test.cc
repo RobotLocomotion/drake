@@ -69,6 +69,9 @@ GTEST_TEST(SpanningForest, WorldOnlyTest) {
             std::vector{world_link_index});
   EXPECT_FALSE(graph.link_composites(LinkCompositeIndex(0)).is_massless);
 
+  EXPECT_FALSE(forest.link_to_tree(LinkOrdinal(0)).is_valid());
+  EXPECT_FALSE(forest.link_to_tree(LinkIndex(0)).is_valid());
+
   // Check that the World-only forest makes sense.
   EXPECT_EQ(ssize(forest.mobods()), 1);
   EXPECT_TRUE(forest.mobods(world_mobod_index).has_massful_follower_link());
@@ -155,15 +158,25 @@ GTEST_TEST(SpanningForest, TreeAndLoopConstraintAPIs) {
   EXPECT_TRUE(graph.BuildForest());
 
   // Here's the forest we're expecting:
-  //            -> mobod1 -> mobod2
+  //            -> mobod1 -> mobod2                             tree0
   //     World                 ^
-  //            -> mobod3 =====+  loop weld constraint
+  //            -> mobod3 =====+  loop weld constraint          tree1
   //
   // We had to cut link2. Mobod2 is for the shadow link.
 
   EXPECT_EQ(ssize(forest.trees()), 2);
   EXPECT_EQ(ssize(forest.mobods()), 4);
   EXPECT_EQ(ssize(forest.loop_constraints()), 1);
+
+  EXPECT_FALSE(forest.link_to_tree(LinkIndex(0)).is_valid());
+  EXPECT_EQ(forest.link_to_tree(LinkIndex(1)), TreeIndex(0));
+  // Link2's primary follows mobod3, which is in tree1.
+  EXPECT_EQ(forest.link_to_tree(LinkIndex(2)), TreeIndex(1));
+
+  // The index and ordinal values are the same here.
+  EXPECT_FALSE(forest.link_to_tree(LinkOrdinal(0)).is_valid());
+  EXPECT_EQ(forest.link_to_tree(LinkOrdinal(1)), TreeIndex(0));
+  EXPECT_EQ(forest.link_to_tree(LinkOrdinal(2)), TreeIndex(1));
 
   // Not much to check for the loop constraint.
   const auto& loop_constraint = forest.loop_constraints(LoopConstraintIndex(0));
