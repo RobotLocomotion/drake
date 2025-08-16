@@ -320,6 +320,7 @@ Quantity                     |Symbol|     Typeset              | Monogram   | Me
 -----------------------------|:----:|:------------------------:|:----------:|----------------------------
 Generic vector v             |  v   |@f$[v]_E@f$               |`v_E`       |Vector v expressed in frame E.
 Rotation matrix              |  R   |@f$^BR^C@f$               |`R_BC`      |Frame C's orientation in frame B
+Rotation quaternion          |  q   |@f$^Bq^C@f$               |`q_BC`      |Frame C's orientation in frame B
 Position vector              |  p   |@f$^Bp^C@f$               |`p_BC`      |Position vector from Bo (frame B's origin) to Co (frame C's origin), expressed in frame B (implied).
 Position vector              |  p   |@f$[^Pp^Q]_E@f$           |`p_PQ_E`    |Position vector from point P to point Q, expressed in frame E.
 Transform/pose               |  X   |@f$^BX^C@f$               |`X_BC`      |Frame C's *rigid* transform (pose) in frame B
