@@ -1076,7 +1076,6 @@ GTEST_TEST(ShapeTest, NormalAtBoxPoint) {
 
 GTEST_TEST(ShapeTest, NormalAtSpherePoint) {
   constexpr double tol = 1e-5;
-  (void)tol;
 
   const double r = 1.3;
 
@@ -1109,6 +1108,50 @@ GTEST_TEST(ShapeTest, NormalAtSpherePoint) {
   for (const Eigen::Vector3d& p : outliers) {
     std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(sphere, p);
     ASSERT_FALSE(normal.has_value());
+  }
+}
+
+GTEST_TEST(ShapeTest, NormalAtCapsulePoint) {
+  constexpr double tol = 1e-5;
+
+  const double l = 0.5;
+  const double r = 0.3;
+
+  const Capsule capsule(r, l);
+
+  // Create some points that are on the surface of the capsule.
+  std::vector<Eigen::Vector3d> points = {
+      {r, 0., 0.},  {-r, 0., 0.},          {0., r, 0.},
+      {0., -r, 0.}, {0., 0., r + l / 2.0}, {0., 0., -r - l / 2.0},
+  };
+
+  // Verify the return value is empty.
+  for (const Eigen::Vector3d& p : points) {
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(capsule, p);
+    ASSERT_TRUE(normal.has_value());
+    const Eigen::Vector3d n = normal.value();
+    ASSERT_LT((n - p.normalized()).norm(), tol);
+  }
+
+  // Perturn some of the points and verify no value is returned.
+  for (Eigen::Vector3d& p : points) {
+    Eigen::Vector3d p_n = p;
+    p_n.y() += 0.1;
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(capsule, p_n);
+    ASSERT_FALSE(normal.has_value());
+  }
+
+  // Create a point cloud of the surface of the capsule and verify the
+  // normals coincide.
+  const int n = 50;
+  math::RigidTransformd T;
+  T.SetIdentity();
+  PointCloud capsule_cloud = SampleCapsuleSurface(capsule, T, n);
+  for (int i = 0; i < n; ++i) {
+    const Eigen::Vector3d& p = capsule_cloud.points.at(i);
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(capsule, p);
+    ASSERT_TRUE(normal.has_value());
+    ASSERT_LT((normal.value() - capsule_cloud.normals.at(i)).norm(), tol);
   }
 }
 

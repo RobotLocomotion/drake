@@ -111,6 +111,45 @@ PointCloud SampleSphereSurface(const Sphere& sphere,
   return cloud;
 }
 
+PointCloud SampleCapsuleSurface(const Capsule& capsule,
+                                const math::RigidTransformd& T, int n) {
+  PointCloud cloud;
+  cloud.points.reserve(n);
+  cloud.normals.reserve(n);
+
+  const double r = capsule.radius();
+  const double h_l = capsule.length() / 2;
+  drake::RandomGenerator rgn(0);
+
+  // Sample points in a sphere. Add half length to move each point to the
+  // correct position
+  const int n_sphere = n / 2;
+  for (int i = 0; i < n_sphere; ++i) {
+    Eigen::Matrix3d m =
+        math::UniformlyRandomRotationMatrix<double>(&rgn).matrix();
+    Eigen::Vector3d p = r * m.col(0);
+    p.z() += p.z() > 0 ? h_l : -h_l;
+    cloud.points.emplace_back(p);
+    cloud.normals.emplace_back(m.col(0));
+  }
+
+  // Now sample over the cylinder
+  drake::schema::Uniform uniform_generator(-h_l, +h_l);
+  drake::schema::Uniform angle_generator(0.0, 1.0);
+  const int n_cyl = n - n_sphere;
+  for (int i = 0; i < n_cyl; ++i) {
+    const double theta = 2.0 * M_PI * angle_generator.Sample(&rgn);
+    const double z = uniform_generator.Sample(&rgn);
+    const double c = std::cos(theta), s = std::sin(theta);
+    const Eigen::Vector3d normal(c, s, 0.0);
+    const Eigen::Vector3d p = Eigen::Vector3d(r * c, r * s, z);
+    cloud.points.emplace_back(p);
+    cloud.normals.emplace_back(normal);
+  }
+
+  return cloud;
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake

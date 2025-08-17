@@ -54,6 +54,22 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPointForSphere(
   return std::nullopt;
 }
 
+namespace util {
+// Generic scalar abs that uses ADL to find the right overload.
+template <typename T>
+inline T Abs(const T& x) {
+  using std::abs;
+  return abs(x);
+}
+
+template <typename T>
+inline T Max(const T& a, const T& b) {
+  using std::max;
+  return max(a, b);
+}
+
+}  // namespace util
+
 template <typename T>
 std::optional<Eigen::Vector3<T>> GetNormalAtPointForCapsule(
     const Capsule& capsule, const Eigen::Vector3<T>& p) {
@@ -62,37 +78,32 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPointForCapsule(
   const T h_l = capsule.length() / 2.0;  // half length
   const T r = capsule.radius();
 
-  // Point is not on surface if is z coordinate is larger than
-  // the total height of the cylinder (half length + radius)
-  const T z_diff = p.z() - (h_l + r);
-  if ((z_diff * z_diff) > tol) {
-    return std::nullopt;
+  // If a point (x,y,z) is on the surface of the capsule, there are two
+  // possibilities:
+  //   A. it is on the surface of the cylindrical section
+  //   B. it is on either of the semispherical sections
+  //
+  // In case A, we only need to check the length of subvector (x,y) is equal to
+  // the radius r, and ignore coordinate z (make it 0). In case B, we subtract
+  // half length from the z coordinate, and check the norm of the resulting
+  // vector (x,y,z-h_l) is  equal to radius r. We can combine both conditions
+  // into a "test point" as follows
+  //
+  //       |(x,y, max(z-h_l,0))| = r
+  //
+  // to verify p is in the surface. The normal vector at point p is in the same
+  // direction as the test point.
+  T zero = 0.0;
+  T z_delta = util::Abs<T>(p.z()) - h_l;
+  T d_z = util::Max<T>(z_delta, zero);
+  Eigen::Vector3<T> test_p(p.x(), p.y(), d_z);
+  const T diff = test_p.norm() - r;
+  if ((diff * diff) < tol) {
+    test_p.z() *= p.z() > 0 ? 1 : -1;
+    return test_p.normalized();
   }
 
-  // Also is not on surface if the norm of the (x,y) vector is larger
-  // than the radius
-  const T r_diff = p.head(2).norm() - r;
-  if ((r * r) > tol) {
-    return std::nullopt;
-  }
-
-  // If the point is on the cylindrical section of the capsule, its z
-  // coordinate must be such that -half_length < z < half_length.
-  // Then the normal vector is defined by the x and y coordinates of the
-  // point and constrained to the x-y plane, i.e : (x, y, 0)
-  if (p.z().abs() < h_l) {
-    const T diff = p.head(2).norm() - r;
-    if ((diff * diff) < tol) {
-      Eigen::Vector3<T> n(p.x(), p.y(), 0);
-      return n.normalized();
-    }
-  }
-
-  // Check if the point is in any of the semispherical sections
-  Eigen::Vector3<T> https
-      :  // chatgpt.com/share/689df8f1-eca0-8006-be9d-445702bea040
-
-         return std::nullopt;
+  return std::nullopt;
 }
 
 template <typename T>
@@ -104,8 +115,7 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPoint(const Shape& shape,
                    return GetNormalAtPointForBox<T>(box, p);
                  },
                  [&](const Capsule& capsule) {
-                   (void)capsule;
-                   return Eigen::Vector3<T>(p);
+                   return GetNormalAtPointForCapsule<T>(capsule, p);
                  },
                  [&](const Convex& convex) {
                    (void)convex;
