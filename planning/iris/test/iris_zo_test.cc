@@ -88,7 +88,7 @@ GTEST_TEST(IrisZoOptionsTest, Serialize) {
             nullptr);
 }
 
-// Reproduced from the IrisInConfigurationSpace unit tests.
+// Reproduced from the IrisNp unit tests.
 TEST_F(JointLimits1D, JointLimitsBasic) {
   IrisZoOptions options;
   HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
@@ -194,7 +194,7 @@ TEST_F(JointLimits1D, ParameterizationExpressionErrorChecks) {
                std::exception);
 }
 
-// Reproduced from the IrisInConfigurationSpace unit tests.
+// Reproduced from the IrisNp unit tests.
 TEST_F(DoublePendulum, IrisZoTest) {
   IrisZoOptions options;
   options.sampled_iris_options.verbose = true;
@@ -316,7 +316,7 @@ TEST_F(DoublePendulumRationalForwardKinematics, BadParameterization) {
       ".*wrong dimension.*");
 }
 
-// Reproduced from the IrisInConfigurationSpace unit tests.
+// Reproduced from the IrisNp unit tests.
 TEST_F(BlockOnGround, IrisZoTest) {
   IrisZoOptions options;
   options.sampled_iris_options.verbose = true;
@@ -328,7 +328,7 @@ TEST_F(BlockOnGround, IrisZoTest) {
   PlotEnvironmentAndRegion(region);
 }
 
-// Reproduced from the IrisInConfigurationSpace unit tests.
+// Reproduced from the IrisNp unit tests.
 TEST_F(ConvexConfigurationSpace, IrisZoTest) {
   IrisZoOptions options;
 

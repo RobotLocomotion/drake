@@ -15,6 +15,8 @@ namespace optimization {
  This class tries to find large axis-aligned bounding boxes in the configuration
  space, such that all configurations in the boxes are collision free.
  Note that we don't guarantee to find the largest box.
+
+ @ingroup planning_iris
  */
 // CspaceFreeBox "is a" CspaceFreePolytopeBase because it can do anything inside
 // CspaceFreePolytopeBase. We factor out the common code in CspaceFreeBox and

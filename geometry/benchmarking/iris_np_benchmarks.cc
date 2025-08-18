@@ -13,8 +13,8 @@
 #include "drake/tools/performance/fixture_common.h"
 
 /* These scenarios should capture the most important/representative use cases
-for IrisInConfigurationSpace. They will be used to guide performance
-optimizations of the core algorithm. */
+for IrisNp. They will be used to guide performance optimizations of the core
+algorithm. */
 
 namespace drake {
 namespace geometry {
@@ -207,8 +207,7 @@ directives:
     for (const auto& [name, q0] : seeds_) {
       log()->info("Computing region for seed: {}", name);
       plant_->SetPositions(&plant_context, q0);
-      HPolyhedron hpoly =
-          IrisInConfigurationSpace(*plant_, plant_context, iris_options_);
+      HPolyhedron hpoly = IrisNp(*plant_, plant_context, iris_options_);
       iris_options_.configuration_obstacles.emplace_back(hpoly.Scale(0.95));
     }
   }
