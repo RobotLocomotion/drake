@@ -105,8 +105,8 @@ PointCloud SampleSphereSurface(const Sphere& sphere,
   for (int i = 0; i < n; ++i) {
     Eigen::Matrix3d m =
         math::UniformlyRandomRotationMatrix<double>(&rgn).matrix();
-    cloud.points.emplace_back(r * m.col(0));
-    cloud.normals.emplace_back(m.col(0));
+    cloud.points.emplace_back(r * (T * m.col(0)));
+    cloud.normals.emplace_back(T.rotation() * m.col(0));
   }
   return cloud;
 }
@@ -129,8 +129,8 @@ PointCloud SampleCapsuleSurface(const Capsule& capsule,
         math::UniformlyRandomRotationMatrix<double>(&rgn).matrix();
     Eigen::Vector3d p = r * m.col(0);
     p.z() += p.z() > 0 ? h_l : -h_l;
-    cloud.points.emplace_back(p);
-    cloud.normals.emplace_back(m.col(0));
+    cloud.points.emplace_back(T * p);
+    cloud.normals.emplace_back(T.rotation() * m.col(0));
   }
 
   // Now sample over the cylinder
@@ -143,8 +143,8 @@ PointCloud SampleCapsuleSurface(const Capsule& capsule,
     const double c = std::cos(theta), s = std::sin(theta);
     const Eigen::Vector3d normal(c, s, 0.0);
     const Eigen::Vector3d p = Eigen::Vector3d(r * c, r * s, z);
-    cloud.points.emplace_back(p);
-    cloud.normals.emplace_back(normal);
+    cloud.points.emplace_back(T * p);
+    cloud.normals.emplace_back(T.rotation() * normal);
   }
 
   return cloud;
@@ -172,8 +172,8 @@ PointCloud SampleCylinderSurface(const Cylinder& cylinder,
     const Eigen::Vector3d normal(0, 0, top_bottom ? 1.0 : -1.0);
     const double l = angle_generator.Sample(&rgn);
     const Eigen::Vector3d p(l * r * c, l * r * s, top_bottom ? h_l : -h_l);
-    cloud.points.emplace_back(p);
-    cloud.normals.emplace_back(normal);
+    cloud.points.emplace_back(T * p);
+    cloud.normals.emplace_back(T.rotation() * normal);
   }
 
   // Now sample over the cylinder
@@ -184,10 +184,32 @@ PointCloud SampleCylinderSurface(const Cylinder& cylinder,
     const double c = std::cos(theta), s = std::sin(theta);
     const Eigen::Vector3d normal(c, s, 0.0);
     const Eigen::Vector3d p(r * c, r * s, z);
-    cloud.points.emplace_back(p);
-    cloud.normals.emplace_back(normal);
+    cloud.points.emplace_back(T * p);
+    cloud.normals.emplace_back(T.rotation() * normal);
   }
 
+  return cloud;
+}
+
+PointCloud SampleEllipsoidSurface(const Ellipsoid& ellipsoid,
+                                  const math::RigidTransformd& T, int n) {
+  PointCloud cloud;
+  cloud.points.reserve(n);
+  cloud.normals.reserve(n);
+  const double a = ellipsoid.a();
+  const double b = ellipsoid.b();
+  const double c = ellipsoid.c();
+  drake::RandomGenerator rgn(0);
+  for (int i = 0; i < n; ++i) {
+    Eigen::Matrix3d m =
+        math::UniformlyRandomRotationMatrix<double>(&rgn).matrix();
+    const Eigen::Vector3d dir = m.col(0);
+    Eigen::Vector3d p(a * dir.x(), b * dir.y(), c * dir.z());
+    Eigen::Vector3d normal(2 * p.x() / (a * a), 2 * p.y() / (b * b),
+                           2 * p.z() / (c * c));
+    cloud.points.emplace_back(T * p);
+    cloud.normals.emplace_back(T.rotation() * normal.normalized());
+  }
   return cloud;
 }
 

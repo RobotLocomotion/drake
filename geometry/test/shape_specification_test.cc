@@ -1177,7 +1177,7 @@ GTEST_TEST(ShapeTest, NormalAtCylinderPoint) {
     ASSERT_LT((n - p.normalized()).norm(), tol);
   }
 
-  // Perturn some of the points and verify no value is returned.
+  // Perturb some of the points and verify no value is returned.
   for (Eigen::Vector3d& p : points) {
     Eigen::Vector3d p_n = p;
     p_n.y() += 0.5;
@@ -1196,6 +1196,41 @@ GTEST_TEST(ShapeTest, NormalAtCylinderPoint) {
     std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(cylinder, p);
     ASSERT_TRUE(normal.has_value());
     ASSERT_LT((normal.value() - cylinder_cloud.normals.at(i)).norm(), tol);
+  }
+}
+
+GTEST_TEST(ShapeTest, NormalAtEllipsoidPoint) {
+  constexpr double tol = 1e-5;
+  const double a = 0.4, b = 0.6, c = 0.8;
+  const Ellipsoid ellipsoid(a, b, c);
+
+  std::vector<Eigen::Vector3d> points = {{a, 0., 0.}, {-a, 0., 0.},
+                                         {0., b, 0.}, {0., -b, 0.},
+                                         {0., 0., c}, {0., 0., -c}};
+
+  for (const Eigen::Vector3d& p : points) {
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(ellipsoid, p);
+    ASSERT_TRUE(normal.has_value());
+    ASSERT_LT((normal.value() - p.normalized()).norm(), tol);
+  }
+
+  // Perturb some of the points and verify no value is returned.
+  for (const Eigen::Vector3d& p : points) {
+    Eigen::Vector3d q = p;
+    q.x() += 0.1;
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(ellipsoid, q);
+    ASSERT_FALSE(normal.has_value());
+  }
+
+  const int n = 50;
+  math::RigidTransformd T;
+  T.SetIdentity();
+  PointCloud cloud = SampleEllipsoidSurface(ellipsoid, T, n);
+  for (int i = 0; i < n; ++i) {
+    const Eigen::Vector3d& p = cloud.points.at(i);
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(ellipsoid, p);
+    ASSERT_TRUE(normal.has_value());
+    ASSERT_LT((normal.value() - cloud.normals.at(i)).norm(), tol);
   }
 }
 

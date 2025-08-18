@@ -140,6 +140,27 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPointForCylinder(
 }
 
 template <typename T>
+std::optional<Eigen::Vector3<T>> GetNormalAtPointForEllipsoid(
+    const Ellipsoid& ellipsoid, const Eigen::Vector3<T>& p) {
+  const T tol = 1e-5;
+  const double a = ellipsoid.a();
+  const double b = ellipsoid.b();
+  const double c = ellipsoid.c();
+  // If a point p = (x, y, z) is on the surface of the ellipsoid, it
+  // satisfies the function f(x, y, z):
+  //       f(x, y, z) = x²/a² + y²/b² + z²/c² - 1 = 0,
+  // And the normal vector is given by the gradient of
+  const T eq = (p.x() * p.x() / (a * a)) + (p.y() * p.y() / (b * b)) +
+               (p.z() * p.z() / (c * c)) - 1.0;
+  if (util::Abs(eq) < tol) {
+    Eigen::Vector3<T> n(2 * p.x() / (a * a), 2 * p.y() / (b * b),
+                        2 * p.z() / (c * c));
+    return n.normalized();
+  }
+  return std::nullopt;
+}
+
+template <typename T>
 std::optional<Eigen::Vector3<T>> GetNormalAtPoint(const Shape& shape,
                                                   const Eigen::Vector3<T>& p) {
   return shape.Visit<std::optional<Eigen::Vector3<T>>>(
@@ -157,8 +178,7 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPoint(const Shape& shape,
                    return GetNormalAtPointForCylinder(cylinder, p);
                  },
                  [&](const Ellipsoid& ellipsoid) {
-                   (void)ellipsoid;
-                   return Eigen::Vector3<T>(p);
+                   return GetNormalAtPointForEllipsoid(ellipsoid, p);
                  },
                  [&](const HalfSpace&) {
                    return Eigen::Vector3<T>(p);
@@ -194,6 +214,8 @@ DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(
     GetNormalAtPointForCapsule, Capsule);
 DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(
     GetNormalAtPointForCylinder, Cylinder);
+DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(
+    GetNormalAtPointForEllipsoid, Ellipsoid);
 DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(GetNormalAtPoint,
                                                          Shape);
 
