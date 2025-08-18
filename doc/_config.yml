@@ -56,7 +56,7 @@ custom:
         - page: 'Getting Help'
           url: /getting_help.html
         - page: 'Tutorials'
-          url: 'https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2Findex.ipynb'
+          url: 'https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/index-753e3c9d261247ba9f0eb1d7868c18c8'
         - page: 'Troubleshooting'
           url: /troubleshooting.html
         - page: 'Python Bindings'
