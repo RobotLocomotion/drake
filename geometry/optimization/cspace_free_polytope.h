@@ -39,6 +39,8 @@ namespace optimization {
  Finding and Optimizing Certified, Collision-Free Regions in Configuration Space
  for Robot Manipulators
  by Alexandre Amice*, Hongkai Dai*, Peter Werner, Annan Zhang and Russ Tedrake.
+
+ @ingroup planning_iris
  */
 class CspaceFreePolytope : public CspaceFreePolytopeBase {
  public:

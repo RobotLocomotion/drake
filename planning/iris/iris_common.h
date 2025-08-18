@@ -21,6 +21,10 @@
 namespace drake {
 namespace planning {
 
+/** Various options which are common to the sampling-based algorithms IrisNp2
+ * and IrisZo for generating collision free polytopes in configuration space.
+ *
+ * @ingroup planning_iris */
 class CommonSampledIrisOptions {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CommonSampledIrisOptions);
@@ -172,7 +176,9 @@ class CommonSampledIrisOptions {
  * IrisNp2 requires that the user also provies a version of the function for
  * Eigen::VectorX<AutoDiffXd>. If not specified, the input dimension is assumed
  * to be equal to the output dimension. The user must also specify whether or
- * not the parameterization function can be called in parallel. */
+ * not the parameterization function can be called in parallel.
+ *
+ * @ingroup planning_iris */
 class IrisParameterizationFunction {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IrisParameterizationFunction);

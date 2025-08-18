@@ -30,7 +30,9 @@ IrisNp2SamplingStrategy iris_np2_sampling_strategy_from_string(
 }  // namespace internal
 
 /** RaySamplerOptions contains settings specific to the kRaySampler strategy for
- * drawing the initial samples. */
+ * drawing the initial samples.
+ *
+ * @ingroup planning_iris */
 struct RaySamplerOptions {
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background.
@@ -65,7 +67,8 @@ struct RaySamplerOptions {
  *
  * @experimental
  * @see IrisNp2 for more details.
- **/
+ *
+ * @ingroup planning_iris */
 class IrisNp2Options {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IrisNp2Options);
@@ -158,7 +161,8 @@ supported.
 
 @throws if any collision pairs in `checker` have negative padding.
 @throws if any collision geometries have been been added in `checker`.
-*/
+
+@ingroup planning_iris */
 
 geometry::optimization::HPolyhedron IrisNp2(
     const SceneGraphCollisionChecker& checker,
