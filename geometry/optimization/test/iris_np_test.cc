@@ -31,10 +31,13 @@ using symbolic::Variable;
 
 const double kInf = std::numeric_limits<double>::infinity();
 
-// Helper method for testing IrisInConfigurationSpace from a urdf string.
+// Helper method for testing IrisNp from a urdf string.
+// TODO(cohnt): Remove the test_deprecated flag after the deprecated code is
+// removed on 2025-12-01.
 HPolyhedron IrisFromUrdf(const std::string urdf,
                          const Eigen::Ref<const Eigen::VectorXd>& sample,
-                         const IrisOptions& options) {
+                         const IrisOptions& options,
+                         bool test_deprecated = false) {
   systems::DiagramBuilder<double> builder;
   multibody::MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
@@ -47,12 +50,19 @@ HPolyhedron IrisFromUrdf(const std::string urdf,
 
   auto context = diagram->CreateDefaultContext();
   plant.SetPositions(&plant.GetMyMutableContextFromRoot(context.get()), sample);
-  return IrisInConfigurationSpace(plant, plant.GetMyContextFromRoot(*context),
-                                  options);
+  if (test_deprecated) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    return IrisInConfigurationSpace(plant, plant.GetMyContextFromRoot(*context),
+                                    options);
+#pragma GCC diagnostic pop
+  } else {
+    return IrisNp(plant, plant.GetMyContextFromRoot(*context), options);
+  }
 }
 
 // One prismatic link with joint limits.  Iris should return the joint limits.
-GTEST_TEST(IrisInConfigurationSpaceTest, JointLimits) {
+GTEST_TEST(IrisNpTest, JointLimits) {
   const std::string limits_urdf = R"(
 <robot name="limits">
   <link name="movable">
@@ -87,7 +97,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, JointLimits) {
 // second of which is without limits. Iris should return the box
 // [-1.0, 1.0] x [θ - π/2 + c, θ + π/2 - c], where c is the convexity radius
 // stepback.
-GTEST_TEST(IrisInConfigurationSpaceTest, ContinuousRevoluteJoint) {
+GTEST_TEST(IrisNpTest, ContinuousRevoluteJoint) {
   const std::string continuous_urdf = R"(
 <robot name="limits">
   <link name="movable1">
@@ -157,7 +167,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ContinuousRevoluteJoint) {
 
 // Check that IRIS correctly handles the continuous revolute component of a
 // planar joint.
-GTEST_TEST(IrisInConfigurationSpaceTest, PlanarJoint) {
+GTEST_TEST(IrisNpTest, PlanarJoint) {
   const std::string planar_urdf = R"(
 <robot name="limits">
   <link name="movable">
@@ -192,8 +202,8 @@ GTEST_TEST(IrisInConfigurationSpaceTest, PlanarJoint) {
   auto context = diagram->CreateDefaultContext();
   plant.SetPositions(&plant.GetMyMutableContextFromRoot(context.get()), sample);
   IrisOptions options;
-  HPolyhedron region = IrisInConfigurationSpace(
-      plant, plant.GetMyContextFromRoot(*context), options);
+  HPolyhedron region =
+      IrisNp(plant, plant.GetMyContextFromRoot(*context), options);
 
   EXPECT_EQ(region.ambient_dimension(), 3);
   EXPECT_EQ(region.A().rows(), 6);
@@ -243,7 +253,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, PlanarJoint) {
 
 // Check that IRIS correctly handles the continuous revolute component(s) of a
 // roll-pitch-yaw floating joint.
-GTEST_TEST(IrisInConfigurationSpaceTest, RpyFloatingJoint) {
+GTEST_TEST(IrisNpTest, RpyFloatingJoint) {
   systems::DiagramBuilder<double> builder;
   multibody::MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
@@ -262,8 +272,8 @@ GTEST_TEST(IrisInConfigurationSpaceTest, RpyFloatingJoint) {
   auto context = diagram->CreateDefaultContext();
   plant.SetPositions(&plant.GetMyMutableContextFromRoot(context.get()), sample);
   IrisOptions options;
-  HPolyhedron region = IrisInConfigurationSpace(
-      plant, plant.GetMyContextFromRoot(*context), options);
+  HPolyhedron region =
+      IrisNp(plant, plant.GetMyContextFromRoot(*context), options);
 
   EXPECT_EQ(region.ambient_dimension(), 6);
   EXPECT_EQ(region.A().rows(), 12);
@@ -297,14 +307,13 @@ GTEST_TEST(IrisInConfigurationSpaceTest, RpyFloatingJoint) {
   // the prismatic components of the planar joint are unbounded.
   auto context2 = diagram2->CreateDefaultContext();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisInConfigurationSpace(plant2, plant2.GetMyContextFromRoot(*context2),
-                               options),
+      IrisNp(plant2, plant2.GetMyContextFromRoot(*context2), options),
       ".*position limits.*");
 }
 
 // Check that IRIS throws an intuitive error message if the user supplies a
 // plant with a QuaternionFloatingJoint.
-GTEST_TEST(IrisInConfigurationSpaceTest, QuaternionFloatingJoint) {
+GTEST_TEST(IrisNpTest, QuaternionFloatingJoint) {
   systems::DiagramBuilder<double> builder;
   multibody::MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
@@ -317,8 +326,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, QuaternionFloatingJoint) {
   auto context = diagram->CreateDefaultContext();
   IrisOptions options;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisInConfigurationSpace(plant, plant.GetMyContextFromRoot(*context),
-                               options),
+      IrisNp(plant, plant.GetMyContextFromRoot(*context), options),
       ".*not support QuaternionFloatingJoint.*");
 }
 
@@ -354,7 +362,7 @@ const char boxes_urdf[] = R"""(
 
 // Three boxes.  Two on the outside are fixed.  One in the middle on a prismatic
 // joint.  The configuration space is a (convex) line segment q ∈ (−1,1).
-GTEST_TEST(IrisInConfigurationSpaceTest, BoxesPrismatic) {
+GTEST_TEST(IrisNpTest, BoxesPrismatic) {
   const Vector1d sample = Vector1d::Zero();
   IrisOptions options;
   HPolyhedron region = IrisFromUrdf(boxes_urdf, sample, options);
@@ -375,7 +383,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BoxesPrismatic) {
 
 // Three boxes again, but the configuration-space margin is larger than 1/2 the
 // gap.
-GTEST_TEST(IrisInConfigurationSpaceTest, ConfigurationSpaceMargin) {
+GTEST_TEST(IrisNpTest, ConfigurationSpaceMargin) {
   const Vector1d sample = Vector1d::Zero();
   IrisOptions options;
   options.configuration_space_margin = 1.5;
@@ -426,7 +434,7 @@ const char boxes_with_mesh_urdf[] = R"""(
 // Three boxes.  Two on the outside are fixed.  One in the middle on a prismatic
 // joint.  The configuration space is a (convex) line segment q ∈ (−1,1).
 // This also tests mesh geometry (both Convex and Mesh).
-GTEST_TEST(IrisInConfigurationSpaceTest, BoxesWithMeshPrismatic) {
+GTEST_TEST(IrisNpTest, BoxesWithMeshPrismatic) {
   const Vector1d sample = Vector1d::Zero();
   IrisOptions options;
   HPolyhedron region = IrisFromUrdf(boxes_with_mesh_urdf, sample, options);
@@ -445,7 +453,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BoxesWithMeshPrismatic) {
                               "The seed point is in collision.*");
 }
 
-GTEST_TEST(IrisInConfigurationSpaceTest, ConfigurationObstacles) {
+GTEST_TEST(IrisNpTest, ConfigurationObstacles) {
   const double kTol = 1e-3;  // due to ibex's rel_eps_f.
   const Vector1d sample = Vector1d::Zero();
   IrisOptions options;
@@ -564,7 +572,7 @@ const char boxes_in_2d_urdf[] = R"""(
 </robot>
 )""";
 
-GTEST_TEST(IrisInConfigurationSpaceTest, ConfigurationObstaclesMultipleBoxes) {
+GTEST_TEST(IrisNpTest, ConfigurationObstaclesMultipleBoxes) {
   IrisOptions options;
   ConvexSets obstacles;
   obstacles.emplace_back(VPolytope::MakeBox(Vector2d(.1, .5), Vector2d(1, 1)));
@@ -589,7 +597,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConfigurationObstaclesMultipleBoxes) {
 /* Test if the starting ellipse is far away from the seed point, and the seed
 point exits the polytope before the computations are over, then an error will be
 thrown. */
-GTEST_TEST(IrisInConfigurationSpaceTest, BadEllipseAndSample) {
+GTEST_TEST(IrisNpTest, BadEllipseAndSample) {
   IrisOptions options;
   ConvexSets obstacles;
   obstacles.emplace_back(VPolytope::MakeBox(Vector2d(0, 0), Vector2d(1, 1)));
@@ -633,7 +641,7 @@ const char boxes_in_2d_urdf_no_collisions[] = R"""(
 /* Make termination function such that the region will contain q1, q2.
 This is meant to generate Iris regions from edges.
 */
-GTEST_TEST(IrisInConfigurationSpaceTest, TerminationFunc) {
+GTEST_TEST(IrisNpTest, TerminationFunc) {
   ConvexSets obstacles;
   obstacles.emplace_back(VPolytope::MakeBox(Vector2d(.1, .5), Vector2d(1, 1)));
   obstacles.emplace_back(
@@ -706,7 +714,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, TerminationFunc) {
 We use only a single configuration obstacle, and verify the the computed
 halfspace changes.
 */
-GTEST_TEST(IrisInConfigurationSpaceTest, StartingEllipse) {
+GTEST_TEST(IrisNpTest, StartingEllipse) {
   const Vector2d sample{0.0, 0.0};
   IrisOptions options;
   options.iteration_limit = 1;
@@ -733,7 +741,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, StartingEllipse) {
               1e-6);
 }
 
-GTEST_TEST(IrisInConfigurationSpaceTest, BoundingRegion) {
+GTEST_TEST(IrisNpTest, BoundingRegion) {
   const Vector2d sample{0.0, 0.0};
   IrisOptions options;
   options.iteration_limit = 1;
@@ -771,7 +779,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BoundingRegion) {
 // Three spheres.  Two on the outside are fixed.  One in the middle on a
 // prismatic joint.  The configuration space is a (convex) line segment q ∈
 // (−1,1).
-GTEST_TEST(IrisInConfigurationSpaceTest, SpheresPrismatic) {
+GTEST_TEST(IrisNpTest, SpheresPrismatic) {
   const std::string spheres_urdf = R"(
 <robot name="spheres">
   <link name="fixed">
@@ -820,7 +828,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, SpheresPrismatic) {
 // A simple pendulum of length `l` with a sphere at the tip of radius `r`
 // between two (fixed) walls at `w` from the origin.  The configuration space
 // is a (convex) line segment q ∈ (sin⁻¹((-w+r)/l), sin((w-r)/l)).
-GTEST_TEST(IrisInConfigurationSpaceTest, SinglePendulum) {
+GTEST_TEST(IrisNpTest, SinglePendulum) {
   const double l = 2.0;
   const double r = .5;
   const double w = 1.0;
@@ -878,7 +886,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, SinglePendulum) {
 // tip of radius `r` between two (fixed) walls at `w` from the origin.  The
 // true configuration space is - w + r ≤ l₁s₁ + l₂s₁₊₂ ≤ w - r.  These regions
 // are visualized at https://www.desmos.com/calculator/ff0hbnkqhm.
-GTEST_TEST(IrisInConfigurationSpaceTest, DoublePendulum) {
+GTEST_TEST(IrisNpTest, DoublePendulum) {
   const double l1 = 2.0;
   const double l2 = 1.0;
   const double r = .5;
@@ -1015,7 +1023,7 @@ const char block_urdf[] = R"(
 // space is min(q₀ ± .5w sin(q₁) ± .5h cos(q₁)) ≥ 0, where the min is over the
 // ±. This region is also visualized at
 // https://www.desmos.com/calculator/ok5ckpa1kp.
-GTEST_TEST(IrisInConfigurationSpaceTest, BlockOnGround) {
+GTEST_TEST(IrisNpTest, BlockOnGround) {
   const Vector2d sample{1.0, 0.0};
   IrisOptions options;
   HPolyhedron region = IrisFromUrdf(block_urdf, sample, options);
@@ -1069,7 +1077,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BlockOnGround) {
 // convex space, this was originally a test for which Ibex found
 // counter-examples that Snopt missed; now Snopt succeeds due to having
 // options.num_collision_infeasible_samples > 1.
-GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
+GTEST_TEST(IrisNpTest, ConvexConfigurationSpace) {
   const double l = 1.5;
   const double r = 0.1;
 
@@ -1192,7 +1200,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
 //    sin(q) >= -1/sqrt(2)
 // The (constrained) configuration space is a (convex) line segment
 // q ∈ (−pi/4, .5).
-GTEST_TEST(IrisInConfigurationSpaceTest, BoxesPrismaticPlusConstraints) {
+GTEST_TEST(IrisNpTest, BoxesPrismaticPlusConstraints) {
   const Vector1d sample = Vector1d::Zero();
   IrisOptions options;
 
@@ -1235,7 +1243,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BoxesPrismaticPlusConstraints) {
 // Note that the zero lower and upper bounds in the y positions are included to
 // test that equality constraints that still result in a configuration space
 // region with an interior are supported.
-GTEST_TEST(IrisInConfigurationSpaceTest, DoublePendulumEndEffectorConstraints) {
+GTEST_TEST(IrisNpTest, DoublePendulumEndEffectorConstraints) {
   const std::string double_pendulum_urdf = R"(
 <robot name="double_pendulum">
   <link name="base"/>
@@ -1290,8 +1298,8 @@ GTEST_TEST(IrisInConfigurationSpaceTest, DoublePendulumEndEffectorConstraints) {
   // We required > 10 samples to pass the test on mac CI with ipopt.
   options.num_additional_constraint_infeasible_samples = 15;
 
-  HPolyhedron region = IrisInConfigurationSpace(
-      plant, plant.GetMyContextFromRoot(*context), options);
+  HPolyhedron region =
+      IrisNp(plant, plant.GetMyContextFromRoot(*context), options);
 
   EXPECT_EQ(region.ambient_dimension(), 2);
 

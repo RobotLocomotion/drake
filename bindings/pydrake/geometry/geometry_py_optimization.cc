@@ -4,6 +4,7 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
@@ -657,12 +658,23 @@ void DefineIris(py::module m) {
       py::arg("query_object"), py::arg("reference_frame") = std::nullopt,
       doc.MakeIrisObstacles.doc);
 
-  m.def("IrisInConfigurationSpace",
+  m.def("IrisNp",
       py::overload_cast<const multibody::MultibodyPlant<double>&,
-          const systems::Context<double>&, const IrisOptions&>(
-          &IrisInConfigurationSpace),
+          const systems::Context<double>&, const IrisOptions&>(&IrisNp),
       py::arg("plant"), py::arg("context"), py::arg("options") = IrisOptions(),
-      doc.IrisInConfigurationSpace.doc);
+      doc.IrisNp.doc);
+
+// Deprecated 2025-12-01
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  m.def("IrisInConfigurationSpace",
+      WrapDeprecated(doc.IrisInConfigurationSpace.doc_deprecated,
+          py::overload_cast<const multibody::MultibodyPlant<double>&,
+              const systems::Context<double>&, const IrisOptions&>(
+              &IrisInConfigurationSpace)),
+      py::arg("plant"), py::arg("context"), py::arg("options") = IrisOptions(),
+      doc.IrisInConfigurationSpace.doc_deprecated);
+#pragma GCC diagnostic pop
 
   // TODO(#19597) Deprecate and remove these functions once Python
   // can natively handle the file I/O.
