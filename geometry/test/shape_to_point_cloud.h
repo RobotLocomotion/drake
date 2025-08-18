@@ -150,6 +150,47 @@ PointCloud SampleCapsuleSurface(const Capsule& capsule,
   return cloud;
 }
 
+PointCloud SampleCylinderSurface(const Cylinder& cylinder,
+                                 const math::RigidTransformd& T, int n) {
+  PointCloud cloud;
+  cloud.points.reserve(n);
+  cloud.normals.reserve(n);
+
+  const double r = cylinder.radius();
+  const double h_l = cylinder.length() / 2;
+  drake::RandomGenerator rgn(0);
+  drake::schema::Uniform uniform_generator(-h_l, +h_l);
+  drake::schema::Uniform angle_generator(0.0, 1.0);
+
+  // Sample points on top and bottom of the cylinder
+  const int n_top_bottom = n / 2;
+  for (int i = 0; i < n_top_bottom; ++i) {
+    const double theta = 2.0 * M_PI * angle_generator.Sample(&rgn);
+    const double z = uniform_generator.Sample(&rgn);
+    const double c = std::cos(theta), s = std::sin(theta);
+    const bool top_bottom = z > 0;
+    const Eigen::Vector3d normal(0, 0, top_bottom ? 1.0 : -1.0);
+    const double l = angle_generator.Sample(&rgn);
+    const Eigen::Vector3d p(l * r * c, l * r * s, top_bottom ? h_l : -h_l);
+    cloud.points.emplace_back(p);
+    cloud.normals.emplace_back(normal);
+  }
+
+  // Now sample over the cylinder
+  const int n_cyl = n - n_top_bottom;
+  for (int i = 0; i < n_cyl; ++i) {
+    const double theta = 2.0 * M_PI * angle_generator.Sample(&rgn);
+    const double z = uniform_generator.Sample(&rgn);
+    const double c = std::cos(theta), s = std::sin(theta);
+    const Eigen::Vector3d normal(c, s, 0.0);
+    const Eigen::Vector3d p(r * c, r * s, z);
+    cloud.points.emplace_back(p);
+    cloud.normals.emplace_back(normal);
+  }
+
+  return cloud;
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake

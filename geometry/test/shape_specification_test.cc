@@ -1155,6 +1155,50 @@ GTEST_TEST(ShapeTest, NormalAtCapsulePoint) {
   }
 }
 
+GTEST_TEST(ShapeTest, NormalAtCylinderPoint) {
+  constexpr double tol = 1e-5;
+
+  const double l = 0.5;
+  const double r = 0.3;
+
+  const Cylinder cylinder(r, l);
+
+  // Create some points that are on the surface of the capsule.
+  std::vector<Eigen::Vector3d> points = {
+      {r, 0., 0.},  {-r, 0., 0.},      {0., r, 0.},
+      {0., -r, 0.}, {0., 0., l / 2.0}, {0., 0., -l / 2.0},
+  };
+
+  // Verify the return value is empty.
+  for (const Eigen::Vector3d& p : points) {
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(cylinder, p);
+    ASSERT_TRUE(normal.has_value());
+    const Eigen::Vector3d n = normal.value();
+    ASSERT_LT((n - p.normalized()).norm(), tol);
+  }
+
+  // Perturn some of the points and verify no value is returned.
+  for (Eigen::Vector3d& p : points) {
+    Eigen::Vector3d p_n = p;
+    p_n.y() += 0.5;
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(cylinder, p_n);
+    ASSERT_FALSE(normal.has_value());
+  }
+
+  // Create a point cloud of the surface of the capsule and verify the
+  // normals coincide.
+  const int n = 50;
+  math::RigidTransformd T;
+  T.SetIdentity();
+  PointCloud cylinder_cloud = SampleCylinderSurface(cylinder, T, n);
+  for (int i = 0; i < n; ++i) {
+    const Eigen::Vector3d& p = cylinder_cloud.points.at(i);
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(cylinder, p);
+    ASSERT_TRUE(normal.has_value());
+    ASSERT_LT((normal.value() - cylinder_cloud.normals.at(i)).norm(), tol);
+  }
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake

@@ -4,10 +4,26 @@
 namespace drake {
 namespace geometry {
 
+namespace util {
+// Generic scalar abs that uses ADL to find the right overload.
+template <typename T>
+inline T Abs(const T& x) {
+  using std::abs;
+  return abs(x);
+}
+
+template <typename T>
+inline T Max(const T& a, const T& b) {
+  using std::max;
+  return max(a, b);
+}
+
+}  // namespace util
+
 template <typename T>
 std::optional<Eigen::Vector3<T>> GetNormalAtPointForBox(
     const Box& box, const Eigen::Vector3<T>& p) {
-  const T tol = 1e-5;
+  static const T tol = 1e-5;
 
   // Extract box half dimensions
   const double h_w = box.width() / 2;   // half_width
@@ -44,7 +60,7 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPointForBox(
 template <typename T>
 std::optional<Eigen::Vector3<T>> GetNormalAtPointForSphere(
     const Sphere& sphere, const Eigen::Vector3<T>& p) {
-  const T tol = 1e-5;
+  static const T tol = 1e-5;
   // Check that the point is close enough to the surface of the sphere.
   // If yes, the normal direction is in the same as the point.
   const T diff = p.norm() - sphere.radius();
@@ -54,26 +70,10 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPointForSphere(
   return std::nullopt;
 }
 
-namespace util {
-// Generic scalar abs that uses ADL to find the right overload.
-template <typename T>
-inline T Abs(const T& x) {
-  using std::abs;
-  return abs(x);
-}
-
-template <typename T>
-inline T Max(const T& a, const T& b) {
-  using std::max;
-  return max(a, b);
-}
-
-}  // namespace util
-
 template <typename T>
 std::optional<Eigen::Vector3<T>> GetNormalAtPointForCapsule(
     const Capsule& capsule, const Eigen::Vector3<T>& p) {
-  const T tol = 1e-5;
+  static const T tol = 1e-5;
 
   const T h_l = capsule.length() / 2.0;  // half length
   const T r = capsule.radius();
@@ -107,11 +107,43 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPointForCapsule(
 }
 
 template <typename T>
+std::optional<Eigen::Vector3<T>> GetNormalAtPointForCylinder(
+    const Cylinder& cylinder, const Eigen::Vector3<T>& p) {
+  static const T tol = 1e-5;
+
+  const T h_l = cylinder.length() / 2.0;
+  const T r = cylinder.radius();
+
+  // Check point is within bounds of cylinder
+  const T p_z_abs = util::Abs(p.z());
+  if (p_z_abs > (h_l + tol)) {
+    return std::nullopt;
+  }
+  const T p_r = p.head(2).norm();
+  if (p_r > (r + tol)) {
+    return std::nullopt;
+  }
+
+  // If point is on the curved surface of the cylinder, normal is (x, y, 0)
+  if ((r - p_r) <= tol) {
+    Eigen::Vector3<T> normal(p.x(), p.y(), 0);
+    return normal.normalized();
+  } else {
+    // Check if point is either on top or bottom
+    if (util::Abs(h_l - p_z_abs) <= tol) {
+      Eigen::Vector3<T> normal(0.0, 0.0, p.z() > 0 ? 1.0 : -1.0);
+      return normal;
+    }
+  }
+
+  return std::nullopt;
+}
+
+template <typename T>
 std::optional<Eigen::Vector3<T>> GetNormalAtPoint(const Shape& shape,
                                                   const Eigen::Vector3<T>& p) {
   return shape.Visit<std::optional<Eigen::Vector3<T>>>(
       overloaded{[&](const Box& box) {
-                   (void)box;
                    return GetNormalAtPointForBox<T>(box, p);
                  },
                  [&](const Capsule& capsule) {
@@ -122,8 +154,7 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPoint(const Shape& shape,
                    return Eigen::Vector3<T>(p);
                  },
                  [&](const Cylinder& cylinder) {
-                   (void)cylinder;
-                   return Eigen::Vector3<T>(p);
+                   return GetNormalAtPointForCylinder(cylinder, p);
                  },
                  [&](const Ellipsoid& ellipsoid) {
                    (void)ellipsoid;
@@ -159,6 +190,10 @@ DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(GetNormalAtPointForBox,
                                                          Box);
 DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(
     GetNormalAtPointForSphere, Sphere);
+DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(
+    GetNormalAtPointForCapsule, Capsule);
+DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(
+    GetNormalAtPointForCylinder, Cylinder);
 DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(GetNormalAtPoint,
                                                          Shape);
 
