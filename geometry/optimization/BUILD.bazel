@@ -576,7 +576,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "iris_in_configuration_space_test",
+    name = "iris_np_test",
     timeout = "moderate",
     data = ["//multibody/parsing:test_models"],
     shard_count = 8,

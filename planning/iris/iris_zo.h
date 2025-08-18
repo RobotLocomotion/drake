@@ -17,7 +17,8 @@ namespace planning {
  *
  * @experimental
  * @see IrisZo for more details.
- **/
+ *
+ * @ingroup planning_iris */
 class IrisZoOptions {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IrisZoOptions);
@@ -89,7 +90,8 @@ of the user-specified constraints in `options.prog_with_additional_constraints`.
 @note This can be a long running function that needs to solve many QPs. If you
 have a solver which requires a license, consider acquiring the license before
 solving this function. See AcquireLicense for more details.
-*/
+
+@ingroup planning_iris */
 
 geometry::optimization::HPolyhedron IrisZo(
     const CollisionChecker& checker,

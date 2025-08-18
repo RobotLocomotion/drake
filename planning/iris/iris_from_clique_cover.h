@@ -43,6 +43,8 @@ struct IrisFromCliqueCoverOptions {
    * IrisInConfigurationSpaceFromCliqueCover, the iris_options.parallelism is
    * ignored and the value of parallelism specified by `this.parallelism` will
    * be used instead.
+   *
+   * @ingroup planning_iris
    */
   std::variant<geometry::optimization::IrisOptions, IrisNp2Options,
                IrisZoOptions>
@@ -151,6 +153,8 @@ struct IrisFromCliqueCoverOptions {
  * @throw std::exception If the
  * options.iris_options.prog_with_additional_constraints is not nullptr i.e. if
  * a prog with additional constraints is provided.
+ *
+ * @ingroup planning_iris
  */
 void IrisInConfigurationSpaceFromCliqueCover(
     const CollisionChecker& checker, const IrisFromCliqueCoverOptions& options,

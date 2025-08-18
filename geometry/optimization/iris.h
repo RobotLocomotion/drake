@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/name_value.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/convex_set.h"
@@ -19,6 +20,7 @@ namespace optimization {
 /** Configuration options for the IRIS algorithm.
 
 @ingroup geometry_optimization
+@ingroup planning_iris
 */
 struct IrisOptions {
   /** Passes this object to an Archive.
@@ -62,9 +64,9 @@ struct IrisOptions {
 
   // TODO(russt): Improve the implementation so that we can clearly document the
   // units for this margin.
-  /** For IRIS in configuration space, we retreat by this margin from each
-  C-space obstacle in order to avoid the possibility of requiring an infinite
-  number of faces to approximate a curved boundary.
+  /** For IrisNp, we retreat by this margin from each C-space obstacle in order
+  to avoid the possibility of requiring an infinite number of faces to
+  approximate a curved boundary.
   */
   double configuration_space_margin{1e-2};
 
@@ -76,10 +78,10 @@ struct IrisOptions {
   counter-example requested before moving on to the next constraint. */
   int num_collision_infeasible_samples{5};
 
-  /** For IRIS in configuration space, it can be beneficial to not only specify
-  task-space obstacles (passed in through the plant) but also obstacles that are
-  defined by convex sets in the configuration space. This option can be used to
-  pass in such configuration space obstacles. */
+  /** For IrisNp, it can be beneficial to not only specify task-space obstacles
+  (passed in through the plant) but also obstacles that are defined by convex
+  sets in the configuration space. This option can be used to pass in such
+  configuration space obstacles. */
   ConvexSets configuration_obstacles{};
 
   /** The initial hyperellipsoid that IRIS will use for calculating hyperplanes
@@ -90,23 +92,23 @@ struct IrisOptions {
   /** Optionally allows the caller to restrict the space within which IRIS
   regions are allowed to grow. By default, IRIS regions are bounded by the
   `domain` argument in the case of `Iris` or the joint limits of the input
-  `plant` in the case of `IrisInConfigurationSpace`. If this option is
-  specified, IRIS regions will be confined to the intersection between the
-  domain and `bounding_region` */
+  `plant` in the case of `IrisNp`. If this option is specified, IRIS regions
+  will be confined to the intersection between the domain and `bounding_region`.
+  */
   std::optional<HPolyhedron> bounding_region{};
 
   /** If the user knows the intersection of bounding_region and the domain (for
-  IRIS) or plant joint limits (for IrisInConfigurationSpace) is bounded,
-  setting this flag to `false` will skip the boundedness check that IRIS and
-  IrisInConfigurationSpace perform (leading to a small speedup, as checking
-  boundedness requires solving optimization problems). If the intersection turns
-  out to be unbounded, this will lead to undefined behavior. */
+  IRIS) or plant joint limits (for IrisNp) is bounded, setting this flag to
+  `false` will skip the boundedness check that IRIS and IrisNp perform (leading
+  to a small speedup, as checking boundedness requires solving optimization
+  problems). If the intersection turns out to be unbounded, this will lead to
+  undefined behavior. */
   bool verify_domain_boundedness{true};
 
-  /** By default, IRIS in configuration space certifies regions for collision
-  avoidance constraints and joint limits. This option can be used to pass
-  additional constraints that should be satisfied by the IRIS region. We accept
-  these in the form of a MathematicalProgram:
+  /** By default, IrisNp certifies regions for collision avoidance constraints
+  and joint limits. This option can be used to pass additional constraints that
+  should be satisfied by the IRIS region. We accept these in the form of a
+  MathematicalProgram:
 
     find q subject to g(q) ≤ 0.
 
@@ -130,13 +132,13 @@ struct IrisOptions {
   int num_additional_constraint_infeasible_samples{5};
 
   /** The only randomization in IRIS is the random sampling done to find
-  counter-examples for the additional constraints using in
-  IrisInConfigurationSpace. Use this option to set the initial seed. */
+  counter-examples for the additional constraints using in IrisNp. Use this
+  option to set the initial seed. */
   int random_seed{1234};
 
   /** Passing a meshcat instance may enable debugging visualizations; this
-  currently only happens in IrisInConfigurationSpace and when the
-  configuration space is <= 3 dimensional.*/
+  currently only happens in IrisNp and when the configuration space is <= 3
+  dimensional.*/
   std::shared_ptr<Meshcat> meshcat{};
 
   /** A user-defined termination function to
@@ -179,8 +181,7 @@ struct IrisOptions {
   Setting this to a negative number allows growing larger regions, but those
   regions must then be partitioned to be used with GcsTrajectoryOptimization.
   See @ref geometry_optimization_geodesic_convexity for more details.
-  IrisInConfigurationSpace throws if this value is not smaller
-  than π/2. */
+  IrisNp throws if this value is not smaller than π/2. */
   double convexity_radius_stepback{1e-3};
 };
 
@@ -212,7 +213,13 @@ box (e.g. from HPolyhedron::MakeBox).
 The @p obstacles, @p sample, and the @p domain must describe elements in the
 same ambient dimension (but that dimension can be any positive integer).
 
+@note Some members of `options` are only applicable to IrisNp. The members
+relevant for this function are starting_ellipse, termination_func,
+bounding_region, verify_domain_boundedness, require_sample_point_is_contained,
+iteration_limit, termination_threshold, relative_termination_threshold.
+
 @ingroup geometry_optimization
+@ingroup planning_iris
 */
 HPolyhedron Iris(const ConvexSets& obstacles,
                  const Eigen::Ref<const Eigen::VectorXd>& sample,
@@ -231,6 +238,7 @@ method will prioritize the representation that we expect is most performant
 for the current implementation of the IRIS algorithm.
 
 @ingroup geometry_optimization
+@ingroup planning_iris
 */
 ConvexSets MakeIrisObstacles(
     const QueryObject<double>& query_object,
@@ -262,8 +270,15 @@ run-time of the algorithm. The same goes for
 @throws std::exception if the sample configuration in @p context is infeasible.
 @throws std::exception if termination_func is invalid on the domain. See
 IrisOptions.termination_func for more details.
+
 @ingroup geometry_optimization
+@ingroup planning_iris
 */
+HPolyhedron IrisNp(const multibody::MultibodyPlant<double>& plant,
+                   const systems::Context<double>& context,
+                   const IrisOptions& options = IrisOptions());
+
+DRAKE_DEPRECATED("2025-12-01", "Use IrisNp instead.")
 HPolyhedron IrisInConfigurationSpace(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
@@ -279,7 +294,9 @@ is no longer contained in the IRIS region with tolerance tol.
 @throws std::exception if x_1.size() != x_2.size().
 @throws std::exception if epsilon <= 0. This is due to the fact that the
 hyperellipsoid for @p iris_options.starting_ellipse must have non-zero volume.
+
 @ingroup geometry_optimization
+@ingroup planning_iris
 */
 void SetEdgeContainmentTerminationCondition(
     IrisOptions* iris_options, const Eigen::Ref<const Eigen::VectorXd>& x_1,
@@ -287,7 +304,9 @@ void SetEdgeContainmentTerminationCondition(
     const double tol = 1e-6);
 
 /** Defines a standardized representation for (named) IrisRegions, which can be
-serialized in both C++ and Python. */
+serialized in both C++ and Python.
+
+@ingroup planning_iris */
 typedef std::map<std::string, HPolyhedron> IrisRegions;
 
 }  // namespace optimization
