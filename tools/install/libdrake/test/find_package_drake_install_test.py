@@ -26,7 +26,7 @@ class FindPackageDrakeInstallTest(unittest.TestCase):
         cmake_prefix_path = install_test_helper.get_install_dir()
 
         cmake_content = """
-            cmake_minimum_required(VERSION 3.9...4.0)
+            cmake_minimum_required(VERSION 3.9...4.1)
             project(find_package_drake_install_test)
             set(CMAKE_PREFIX_PATH {cmake_prefix_path})
             find_package(drake CONFIG REQUIRED)
