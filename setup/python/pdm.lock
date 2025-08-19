@@ -5,7 +5,7 @@
 groups = ["default", "test", "wheel"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:b809d9d13dff5455d6d7ccd47bb4c93d97d5348781bceea33709393623b2d975"
+content_hash = "sha256:e73b23a5ef570b7546e07fc544609503d4ab270dfd6a5417ab174f2123e9f024"
 
 [[metadata.targets]]
 requires_python = ">=3.10"
@@ -225,6 +225,24 @@ files = [
 ]
 
 [[package]]
+name = "build"
+version = "1.3.0"
+requires_python = ">=3.9"
+summary = "A simple, correct Python build frontend"
+groups = ["wheel"]
+dependencies = [
+    "colorama; os_name == \"nt\"",
+    "importlib-metadata>=4.6; python_full_version < \"3.10.2\"",
+    "packaging>=19.1",
+    "pyproject-hooks",
+    "tomli>=1.1.0; python_version < \"3.11\"",
+]
+files = [
+    {file = "build-1.3.0-py3-none-any.whl", hash = "sha256:7145f0b5061ba90a1500d60bd1b13ca0a8a4cebdd0cc16ed8adf1c0e739f43b4"},
+    {file = "build-1.3.0.tar.gz", hash = "sha256:698edd0ea270bde950f53aed21f3a0135672206f3911e0176261a31e0e07b397"},
+]
+
+[[package]]
 name = "certifi"
 version = "2025.8.3"
 requires_python = ">=3.7"
@@ -379,8 +397,8 @@ name = "colorama"
 version = "0.4.6"
 requires_python = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
 summary = "Cross-platform colored terminal text."
-groups = ["default", "test"]
-marker = "sys_platform == \"win32\" or platform_system == \"Windows\""
+groups = ["default", "test", "wheel"]
+marker = "os_name == \"nt\" or sys_platform == \"win32\" or platform_system == \"Windows\""
 files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
@@ -724,6 +742,22 @@ groups = ["default"]
 files = [
     {file = "idna-3.10-py3-none-any.whl", hash = "sha256:946d195a0d259cbba61165e88e65941f16e9b36ea6ddb97f00452bae8b1287d3"},
     {file = "idna-3.10.tar.gz", hash = "sha256:12f65c9b470abda6dc35cf8e63cc574b1c52b11df2c86030af0ac09b01b13ea9"},
+]
+
+[[package]]
+name = "importlib-metadata"
+version = "8.7.0"
+requires_python = ">=3.9"
+summary = "Read metadata from Python packages"
+groups = ["wheel"]
+marker = "python_full_version < \"3.10.2\""
+dependencies = [
+    "typing-extensions>=3.6.4; python_version < \"3.8\"",
+    "zipp>=3.20",
+]
+files = [
+    {file = "importlib_metadata-8.7.0-py3-none-any.whl", hash = "sha256:e5dd1551894c77868a30651cef00984d50e1002d06942a7101d34870c5f02afd"},
+    {file = "importlib_metadata-8.7.0.tar.gz", hash = "sha256:d13b81ad223b890aa16c5471f2ac3056cf76c5f10f82d6f9292f0b415f389000"},
 ]
 
 [[package]]
@@ -1878,6 +1912,17 @@ files = [
 ]
 
 [[package]]
+name = "pyproject-hooks"
+version = "1.2.0"
+requires_python = ">=3.7"
+summary = "Wrappers to call pyproject.toml-based build backend hooks."
+groups = ["wheel"]
+files = [
+    {file = "pyproject_hooks-1.2.0-py3-none-any.whl", hash = "sha256:9e5c6bfa8dcc30091c74b0cf803c81fdd29d94f01992a7707bc97babb1141913"},
+    {file = "pyproject_hooks-1.2.0.tar.gz", hash = "sha256:1e859bd5c40fae9448642dd871adf459e5e2084186e8d2c2a79a824c970da1f8"},
+]
+
+[[package]]
 name = "python-dateutil"
 version = "2.9.0.post0"
 requires_python = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
@@ -2291,7 +2336,7 @@ name = "setuptools"
 version = "80.9.0"
 requires_python = ">=3.9"
 summary = "Easily download, build, install, upgrade, and uninstall Python packages"
-groups = ["default", "wheel"]
+groups = ["default"]
 files = [
     {file = "setuptools-80.9.0-py3-none-any.whl", hash = "sha256:062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922"},
     {file = "setuptools-80.9.0.tar.gz", hash = "sha256:f36b47402ecde768dbfafc46e8e4207b4360c654f1f3bb84475f0a28628fb19c"},
@@ -2380,7 +2425,7 @@ name = "tomli"
 version = "2.2.1"
 requires_python = ">=3.8"
 summary = "A lil' TOML parser"
-groups = ["default"]
+groups = ["default", "wheel"]
 marker = "python_version < \"3.11\""
 files = [
     {file = "tomli-2.2.1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:678e4fa69e4575eb77d103de3df8a895e1591b48e740211bd1067378c69e8249"},
@@ -2629,6 +2674,7 @@ version = "0.45.1"
 requires_python = ">=3.8"
 summary = "A built-package format for Python"
 groups = ["wheel"]
+marker = "sys_platform == \"darwin\""
 files = [
     {file = "wheel-0.45.1-py3-none-any.whl", hash = "sha256:708e7481cc80179af0e556bbf0cc00b8444c7321e2700b8d8580231d13017248"},
     {file = "wheel-0.45.1.tar.gz", hash = "sha256:661e1abd9198507b1409a20c02106d9670b2576e916d58f520316666abca6729"},
@@ -2643,4 +2689,16 @@ groups = ["default"]
 files = [
     {file = "widgetsnbextension-4.0.14-py3-none-any.whl", hash = "sha256:4875a9eaf72fbf5079dc372a51a9f268fc38d46f767cbf85c43a36da5cb9b575"},
     {file = "widgetsnbextension-4.0.14.tar.gz", hash = "sha256:a3629b04e3edb893212df862038c7232f62973373869db5084aed739b437b5af"},
+]
+
+[[package]]
+name = "zipp"
+version = "3.23.0"
+requires_python = ">=3.9"
+summary = "Backport of pathlib-compatible object wrapper for zip files"
+groups = ["wheel"]
+marker = "python_full_version < \"3.10.2\""
+files = [
+    {file = "zipp-3.23.0-py3-none-any.whl", hash = "sha256:071652d6115ed432f5ce1d34c336c0adfd6a884660d1e9712a256d3d3bd4b14e"},
+    {file = "zipp-3.23.0.tar.gz", hash = "sha256:a07157588a12518c9d4034df3fbbee09c814741a33ff63c05fa29d26a2404166"},
 ]
