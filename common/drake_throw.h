@@ -45,3 +45,7 @@ namespace internal {
       ::drake::internal::Throw(#condition, __func__, __FILE__, __LINE__);     \
     }                                                                         \
   } while (0)
+
+/// Provides the same behavior as DRAKE_THROW_UNLESS, except that it throws an
+/// exception iff the value is true.
+#define DRAKE_THROW_IF(condition) DRAKE_THROW_UNLESS(!(condition))
