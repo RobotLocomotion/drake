@@ -2,6 +2,7 @@
 #include "drake/common/schema/stochastic.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/random_rotation.h"
+#include "drake/geometry/proximity/obj_to_surface_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -209,6 +210,36 @@ PointCloud SampleEllipsoidSurface(const Ellipsoid& ellipsoid,
                            2 * p.z() / (c * c));
     cloud.points.emplace_back(T * p);
     cloud.normals.emplace_back(T.rotation() * normal.normalized());
+  }
+  return cloud;
+}
+
+PointCloud SampleMeshSurface(const Mesh& mesh,
+                             const math::RigidTransformd& T, int n) {
+  PointCloud cloud;
+  cloud.points.reserve(n);
+  cloud.normals.reserve(n);
+  const auto surface =
+      ReadObjToTriangleSurfaceMesh(mesh.source(), mesh.scale3());
+  drake::RandomGenerator rgn(1);
+  std::uniform_int_distribution<int> tri_dist(0, surface.num_triangles() - 1);
+  drake::schema::Uniform bary(0.0, 1.0);
+  for (int i = 0; i < n; ++i) {
+    const int f = tri_dist(rgn);
+    const auto& tri = surface.element(f);
+    const Eigen::Vector3d& v0 = surface.vertex(tri.vertex(0));
+    const Eigen::Vector3d& v1 = surface.vertex(tri.vertex(1));
+    const Eigen::Vector3d& v2 = surface.vertex(tri.vertex(2));
+    double u = bary.Sample(&rgn);
+    double v = bary.Sample(&rgn);
+    if (u + v > 1) {
+      u = 1 - u;
+      v = 1 - v;
+    }
+    Eigen::Vector3d p = v0 + u * (v1 - v0) + v * (v2 - v0);
+    const Eigen::Vector3d normal = surface.face_normal(f);
+    cloud.points.emplace_back(T * p);
+    cloud.normals.emplace_back(T.rotation() * normal);
   }
   return cloud;
 }

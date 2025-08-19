@@ -464,7 +464,11 @@ drake_cc_library(
     deps = [
         ":mesh_source",
         "//common:essential",
+        "//geometry/proximity:bvh",
+        "//geometry/proximity:bv",
+        "//geometry/proximity:distance_to_point_callback",
         "//geometry/proximity:polygon_surface_mesh",
+        "//geometry/proximity:triangle_surface_mesh",
         "//math:geometric_transform",
     ],
     implementation_deps = [
@@ -1165,7 +1169,10 @@ drake_cc_googletest(
 
 drake_cc_library(
     name  = "shape_to_point_cloud",
-    hdrs = ["test/shape_to_point_cloud.h"]
+    hdrs = ["test/shape_to_point_cloud.h"],
+    deps = [
+      "//geometry/proximity:obj_to_surface_mesh",
+    ]
 )
 
 drake_cc_googletest(

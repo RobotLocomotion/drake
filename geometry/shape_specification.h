@@ -9,7 +9,11 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/geometry/mesh_source.h"
+#include "drake/geometry/proximity/bvh.h"
+#include "drake/geometry/proximity/calc_signed_distance_to_surface_mesh.h"
+#include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/math/rigid_transform.h"
 
 /** @file
@@ -610,6 +614,12 @@ class Mesh final : public Shape {
            degenerate. */
   const PolygonSurfaceMesh<double>& GetConvexHull() const;
 
+  const geometry::internal::Bvh<geometry::Obb,
+                                geometry::TriangleSurfaceMesh<double>>&
+  GetBVH() const;
+  const geometry::TriangleSurfaceMesh<double>& GetSurfaceMesh() const;
+  const geometry::internal::FeatureNormalSet& GetFeatureNormalSet() const;
+
  private:
   void DoReify(ShapeReifier*, void*) const final;
   std::unique_ptr<Shape> DoClone() const final;
@@ -622,6 +632,12 @@ class Mesh final : public Shape {
   Vector3<double> scale_;
   // Allows the deferred computation of the hull on an otherwise const Mesh.
   mutable std::shared_ptr<PolygonSurfaceMesh<double>> hull_{nullptr};
+  mutable std::shared_ptr<geometry::TriangleSurfaceMesh<double>> tri_mesh_;
+  mutable std::shared_ptr<geometry::internal::Bvh<
+      geometry::Obb, geometry::TriangleSurfaceMesh<double>>>
+      tri_bvh_{nullptr};
+  mutable std::shared_ptr<geometry::internal::FeatureNormalSet>
+      feature_normal_set_;
 };
 
 // TODO(russt): Rename this to `Cone` if/when it is supported by more of the
