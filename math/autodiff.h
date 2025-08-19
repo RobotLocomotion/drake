@@ -1,5 +1,5 @@
 /** @file
-Utilities for arithmetic on AutoDiffScalar. */
+Utilities for arithmetic on autodiff::Scalar. */
 
 #pragma once
 
@@ -146,7 +146,7 @@ void InitializeAutoDiff(const Eigen::MatrixBase<Derived>& value,
   if (!num_derivatives.has_value()) num_derivatives = value.size();
 
   using ADScalar = typename DerivedAutoDiff::Scalar;
-  auto_diff_matrix->resize(value.rows(), value.cols());
+  auto_diff_matrix->derived().resize(value.rows(), value.cols());
   int deriv_num = deriv_num_start.value_or(0);
   for (int i = 0; i < value.size(); ++i) {
     (*auto_diff_matrix)(i) = ADScalar(value(i), *num_derivatives, deriv_num++);
@@ -166,9 +166,17 @@ void InitializeAutoDiff(const Eigen::MatrixBase<Derived>& value,
 /** The appropriate AutoDiffScalar matrix type given the value type and the
 number of derivatives at compile time. */
 template <typename Derived, int nq>
-using AutoDiffMatrixType =
-    MatrixLikewise<Eigen::AutoDiffScalar<Vector<typename Derived::Scalar, nq>>,
-                   Derived>;
+using AutoDiffMatrixType = MatrixLikewise<
+    std::conditional_t<std::is_same_v<typename Derived::Scalar, double>,
+                       AutoDiffXd,
+#if 1
+                       void>,
+#else
+                                              Eigen::AutoDiffScalar<Vector<
+                                                  typename Derived::Scalar,
+                                                  nq> >,
+#endif
+    Derived>;
 
 /** Initializes a single AutoDiff matrix given the corresponding value matrix.
 
