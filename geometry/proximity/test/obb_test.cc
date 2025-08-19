@@ -1019,7 +1019,6 @@ GTEST_TEST(ObbTest, HalfSpaceOverlap) {
       AngleAxisd{M_PI / 7, Vector3d{1, 2, 3}.normalized()},
       AngleAxisd{7 * M_PI / 6, Vector3d{-1, 2, -3}.normalized()},
       AngleAxisd{12 * M_PI / 7, Vector3d{1, -2, 3}.normalized()}};
-  const HalfSpace hs_C;
 
   for (const auto& angle_axis_CH : R_CHs) {
     const RotationMatrixd R_CH{angle_axis_CH};
@@ -1035,13 +1034,13 @@ GTEST_TEST(ObbTest, HalfSpaceOverlap) {
       // configurations of R_CH.
       const Vector3d p_CoHo_C{Vector3d{0.5, -0.25, -p_HoVmin_C(2) + 2 * kEps}};
       RigidTransformd X_CH{R_CH, p_CoHo_C};
-      EXPECT_FALSE(Obb::HasOverlap(obb_H, hs_C, X_CH));
+      EXPECT_FALSE(Obb::HasOverlap(obb_H, X_CH));
     }
     {
       // Place the minimum corner just "below" the plane.
       const Vector3d p_CoHo_C{Vector3d{0.5, -0.25, -p_HoVmin_C(2) - kEps}};
       RigidTransformd X_CH{R_CH, p_CoHo_C};
-      EXPECT_TRUE(Obb::HasOverlap(obb_H, hs_C, X_CH));
+      EXPECT_TRUE(Obb::HasOverlap(obb_H, X_CH));
     }
 
     // As soon as the box penetrates the half space, no amount of movement
@@ -1060,21 +1059,21 @@ GTEST_TEST(ObbTest, HalfSpaceOverlap) {
       // Put the maximum corner just above the z = 0 plane in Frame C.
       const Vector3d p_CoHo_C{Vector3d{0.5, -0.25, -p_HoVmax_C(2) + kEps}};
       RigidTransformd X_CH{R_CH, p_CoHo_C};
-      EXPECT_TRUE(Obb::HasOverlap(obb_H, hs_C, X_CH));
+      EXPECT_TRUE(Obb::HasOverlap(obb_H, X_CH));
     }
 
     {
       // Put the maximum corner just below the z = 0 plane in Frame C.
       const Vector3d p_CoHo_C{Vector3d{0.5, -0.25, -p_HoVmax_C(2) - kEps}};
       RigidTransformd X_CH{R_CH, p_CoHo_C};
-      EXPECT_TRUE(Obb::HasOverlap(obb_H, hs_C, X_CH));
+      EXPECT_TRUE(Obb::HasOverlap(obb_H, X_CH));
     }
 
     {
       // Bury the box deep in the half space.
       const Vector3d p_CoHo_C{Vector3d{0.5, -0.25, -p_HoVmax_C(2) - 1e8}};
       RigidTransformd X_CH{R_CH, p_CoHo_C};
-      EXPECT_TRUE(Obb::HasOverlap(obb_H, hs_C, X_CH));
+      EXPECT_TRUE(Obb::HasOverlap(obb_H, X_CH));
     }
   }
 }

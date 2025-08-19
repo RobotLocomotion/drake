@@ -5,6 +5,7 @@
 
 #include "drake/geometry/proximity/aabb.h"
 #include "drake/geometry/proximity/boxes_overlap.h"
+#include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
@@ -86,7 +87,7 @@ bool Obb::HasOverlap(const Obb& bv, const internal::Plane<double>& plane_P,
   return min_height <= 0 && 0 <= max_height;
 }
 
-bool Obb::HasOverlap(const Obb& bv, const HalfSpace&,
+bool Obb::HasOverlap(const Obb& bv,
                      const math::RigidTransformd& X_CH) {
   /*
                                               Hy           Hx
