@@ -1283,6 +1283,55 @@ GTEST_TEST(ShapeTest, NormalAtMeshPoint) {
   }
 }
 
+GTEST_TEST(ShapeTest, NormalAtConvexPoint) {
+  constexpr double tol = 1e-5;
+  // Read an axis-aligned unit cube.
+  std::string path = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  const Convex cube(path);
+
+  // Check some points on each face of the cube.
+  std::vector<Eigen::Vector3d> points = {{1., 0., 0.}, {-1., 0., 0.},
+                                         {0., 1., 0.}, {0., -1., 0.},
+                                         {0., 0., 1.}, {0., 0., -1.}};
+  for (const Eigen::Vector3d& p : points) {
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(cube, p);
+    EXPECT_TRUE(normal.has_value());
+    EXPECT_LT((normal.value() - p.normalized()).norm(), tol);
+  }
+
+  // Check some outliers.
+  std::vector<Eigen::Vector3d> outliers = {
+      {1.2, 0., 0.}, {0., 0., 2.0}, {0., 1.5, 0.}};
+  for (const Eigen::Vector3d& p : outliers) {
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(cube, p);
+    EXPECT_FALSE(normal.has_value());
+  }
+
+  // Sample random points on the mesh and check their normal.
+  const int n = 50;
+  math::RigidTransformd T;
+  T.SetIdentity();
+  PointCloud cloud = SampleConvexSurface(cube, T, n);
+  for (int i = 0; i < n; ++i) {
+    const Eigen::Vector3d& p = cloud.points.at(i);
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(cube, p);
+    ASSERT_TRUE(normal.has_value());
+    ASSERT_LT((normal.value() - cloud.normals.at(i)).norm(), tol);
+  }
+
+  // Read a rotated unit cube
+  path = FindResourceOrThrow("drake/geometry/test/rotated_cube_unit_scale.obj");
+  const Convex cube_rotated(path);
+  // Sample random points on the mesh and check their normal.
+  cloud = SampleConvexSurface(cube_rotated, T, n);
+  for (int i = 0; i < n; ++i) {
+    const Eigen::Vector3d& p = cloud.points.at(i);
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(cube_rotated, p);
+    ASSERT_TRUE(normal.has_value());
+    ASSERT_LT((normal.value() - cloud.normals.at(i)).norm(), tol);
+  }
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake

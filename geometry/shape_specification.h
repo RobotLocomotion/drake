@@ -358,6 +358,12 @@ class Convex final : public Shape {
            degenerate. */
   const PolygonSurfaceMesh<double>& GetConvexHull() const;
 
+  const geometry::internal::Bvh<geometry::Obb,
+                                geometry::TriangleSurfaceMesh<double>>&
+  GetBVH() const;
+  const geometry::TriangleSurfaceMesh<double>& GetSurfaceMesh() const;
+  const geometry::internal::FeatureNormalSet& GetFeatureNormalSet() const;
+
  private:
   void DoReify(ShapeReifier*, void*) const final;
   std::unique_ptr<Shape> DoClone() const final;
@@ -369,6 +375,15 @@ class Convex final : public Shape {
   Vector3<double> scale_;
   // Allows the deferred computation of the hull on an otherwise const Convex.
   mutable std::shared_ptr<PolygonSurfaceMesh<double>> hull_{nullptr};
+
+  // These members contain data structures that allow for fast searching
+  // on the mesh. Are initialized only on demand and in general are nullptr
+  mutable std::shared_ptr<geometry::TriangleSurfaceMesh<double>> tri_mesh_;
+  mutable std::shared_ptr<geometry::internal::Bvh<
+      geometry::Obb, geometry::TriangleSurfaceMesh<double>>>
+      tri_bvh_{nullptr};
+  mutable std::shared_ptr<geometry::internal::FeatureNormalSet>
+      feature_normal_set_;
 };
 
 /** Definition of a cylinder. It is centered in its canonical frame with the

@@ -196,6 +196,39 @@ std::string Convex::do_to_string() const {
   return MeshToString(type_name(), source(), scale_);
 }
 
+const geometry::TriangleSurfaceMesh<double>& Convex::GetSurfaceMesh() const {
+  if (tri_mesh_ == nullptr) {
+    const geometry::TriangleSurfaceMesh<double> surface =
+        ReadObjToTriangleSurfaceMesh(source(), scale3());
+    tri_mesh_ =
+        std::make_shared<geometry::TriangleSurfaceMesh<double>>(surface);
+  }
+  return *tri_mesh_;
+}
+
+const geometry::internal::FeatureNormalSet& Convex::GetFeatureNormalSet()
+    const {
+  if (feature_normal_set_ == nullptr) {
+    feature_normal_set_ =
+        std::make_shared<geometry::internal::FeatureNormalSet>(
+            std::get<geometry::internal::FeatureNormalSet>(
+                geometry::internal::FeatureNormalSet::MaybeCreate(
+                    GetSurfaceMesh())));
+  }
+  return *feature_normal_set_;
+}
+
+const geometry::internal::Bvh<geometry::Obb,
+                              geometry::TriangleSurfaceMesh<double>>&
+Convex::GetBVH() const {
+  if (tri_bvh_ == nullptr) {
+    tri_bvh_ = std::make_shared<geometry::internal::Bvh<
+        geometry::Obb, geometry::TriangleSurfaceMesh<double>>>(
+        GetSurfaceMesh());
+  }
+  return *tri_bvh_;
+}
+
 Cylinder::Cylinder(double radius, double length)
     : radius_(radius), length_(length) {
   if (radius <= 0 || length <= 0) {

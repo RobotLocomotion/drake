@@ -187,6 +187,31 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPointForMesh(
 }
 
 template <typename T>
+std::optional<Eigen::Vector3<T>> GetNormalAtPointForConvex(
+    const Convex& convex, const Eigen::Vector3<T>& p) {
+  const double tol = 1e-5;
+  const Eigen::Vector3d pd(ExtractDoubleOrThrow(p(0)),
+                           ExtractDoubleOrThrow(p(1)),
+                           ExtractDoubleOrThrow(p(2)));
+  const auto& tri_mesh = convex.GetSurfaceMesh();
+  const auto& bvh = convex.GetBVH();
+  const auto& fns = convex.GetFeatureNormalSet();
+
+  internal::SquaredDistanceToTriangle closest =
+      internal::CalcSquaredDistance(pd, tri_mesh, bvh, fns);
+  const double unsigned_distance = std::sqrt(closest.squared_distance);
+
+  if (std::abs(unsigned_distance) < tol) {
+    Eigen::Vector3<T> normal(closest.feature_normal.x(),
+                             closest.feature_normal.y(),
+                             closest.feature_normal.z());
+    return normal;
+  }
+
+  return std::nullopt;
+}
+
+template <typename T>
 std::optional<Eigen::Vector3<T>> GetNormalAtPoint(const Shape& shape,
                                                   const Eigen::Vector3<T>& p) {
   return shape.Visit<std::optional<Eigen::Vector3<T>>>(
@@ -197,8 +222,7 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPoint(const Shape& shape,
                    return GetNormalAtPointForCapsule<T>(capsule, p);
                  },
                  [&](const Convex& convex) {
-                   (void)convex;
-                   return Eigen::Vector3<T>(p);
+                   return GetNormalAtPointForConvex(convex, p);
                  },
                  [&](const Cylinder& cylinder) {
                    return GetNormalAtPointForCylinder(cylinder, p);
