@@ -4692,7 +4692,7 @@ TEST_F(SdfParserTest, DeformableWallBoundaryConditions) {
 
   EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
 
-  // Verify that the deformable body was created
+  // Verify that the deformable body was created.
   const DeformableBodyId body_id =
       plant_.deformable_model().GetBodyByName("body").body_id();
   EXPECT_TRUE(body_id.is_valid());

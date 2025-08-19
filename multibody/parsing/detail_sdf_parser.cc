@@ -1100,29 +1100,29 @@ void ParseWallBoundaryConditions(
     const sdf::ElementPtr element,
     std::vector<WallBoundaryCondition>* boundary_conditions,
     const SDFormatDiagnostic& diagnostic) {
-  for (sdf::ElementPtr wall_bc_element =
+  for (sdf::ElementPtr wall_boundary_cond_element =
            element->GetElement("drake:wall_boundary_condition");
-       wall_bc_element != nullptr;
-       wall_bc_element =
-           wall_bc_element->GetNextElement("drake:wall_boundary_condition")) {
-    // Parse point_on_plane and outward_normal child tags
-    const Eigen::Vector3d p_WQ =
-        ParseVector3(diagnostic, wall_bc_element, "drake:point_on_plane");
-    const Eigen::Vector3d n_W_raw =
-        ParseVector3(diagnostic, wall_bc_element, "drake:outward_normal");
+       wall_boundary_cond_element != nullptr;
+       wall_boundary_cond_element = wall_boundary_cond_element->GetNextElement(
+           "drake:wall_boundary_condition")) {
+    // Parse point_on_plane and outward_normal child tags.
+    const Eigen::Vector3d p_WQ = ParseVector3(
+        diagnostic, wall_boundary_cond_element, "drake:point_on_plane");
+    const Eigen::Vector3d n_W_raw = ParseVector3(
+        diagnostic, wall_boundary_cond_element, "drake:outward_normal");
 
-    // Validate normal vector is not zero
-    if (n_W_raw.norm() <= 1e-10) {
+    // Validate normal vector is not zero.
+    if (!(n_W_raw.norm() > 1e-10)) {
       diagnostic.Error(
-          wall_bc_element,
+          wall_boundary_cond_element,
           "Outward normal vector cannot be zero in <drake:outward_normal>");
       continue;
     }
 
-    WallBoundaryCondition bc;
-    bc.p_WQ = p_WQ;
-    bc.n_W = n_W_raw.normalized();
-    boundary_conditions->push_back(bc);
+    WallBoundaryCondition boundary_cond;
+    boundary_cond.p_WQ = p_WQ;
+    boundary_cond.n_W = n_W_raw.normalized();
+    boundary_conditions->push_back(boundary_cond);
   }
 }
 
@@ -1363,8 +1363,9 @@ bool AddDeformableLinkFromSpecification(const SDFormatDiagnostic& diag,
       dummy_resolution_hint);
 
   // Apply wall boundary conditions after body registration
-  for (const WallBoundaryCondition& bc : boundary_conditions) {
-    deformable_model.SetWallBoundaryCondition(body_id, bc.p_WQ, bc.n_W);
+  for (const WallBoundaryCondition& boundary_cond : boundary_conditions) {
+    deformable_model.SetWallBoundaryCondition(body_id, boundary_cond.p_WQ,
+                                              boundary_cond.n_W);
   }
 
   return true;
@@ -2154,7 +2155,6 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
   // Add all the links
   for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
     const sdf::Link& link = *model.LinkByIndex(link_index);
-
     if (IsDeformableLink(link)) {
       if (!AddDeformableLinkFromSpecification(diagnostic, model_instance, link,
                                               X_WM, plant, package_map,
