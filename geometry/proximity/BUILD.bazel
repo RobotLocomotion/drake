@@ -103,10 +103,10 @@ drake_cc_library(
     deps = [
         ":boxes_overlap",
         ":posed_half_space",
+        ":polygon_surface_mesh",
         ":triangle_surface_mesh",
         ":volume_mesh",
         "//common:essential",
-        "//geometry:shape_specification",
         "//geometry:utilities",
         "//math:geometric_transform",
     ],
@@ -122,10 +122,10 @@ drake_cc_library(
         ":triangle_surface_mesh",
         ":volume_mesh",
         "//common:essential",
-        "//geometry:shape_specification",
         "//geometry:utilities",
         "//math:geometric_transform",
     ],
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_library(
@@ -901,10 +901,21 @@ drake_cc_library(
         "//common:drake_export",
         "//common:sorted_pair",
         "//geometry:geometry_ids",
-        "//geometry:shape_specification",
         "@fcl_internal//:fcl",
         "@fmt",
     ],
+)
+
+drake_cc_library(
+    name = "proximity_shape_utilities",
+    srcs = [
+      "proximity_shape_utilities.cc"
+    ],
+    hdrs = ["proximity_shape_utilities.h"],
+    deps = [
+      "//common:drake_export",
+      "//geometry:shape_specification",
+    ]
 )
 
 drake_cc_library(
@@ -1348,6 +1359,7 @@ drake_cc_googletest(
     deps = [
         ":hydroelastic_internal",
         ":proximity_utilities",
+        ":proximity_shape_utilities",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
@@ -1404,6 +1416,7 @@ drake_cc_googletest(
     deps = [
         ":make_capsule_mesh",
         ":proximity_utilities",
+        ":proximity_shape_utilities",
     ],
 )
 
