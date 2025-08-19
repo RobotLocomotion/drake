@@ -199,6 +199,12 @@ SignedDistanceToSurfaceMesh CalcSignedDistanceToSurfaceMesh(
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_M,
     const FeatureNormalSet& feature_normals_M);
 
+// An accessor to BvhVisitor::CalcSquaredDistance
+SquaredDistanceToTriangle CalcSquaredDistance(
+    const Vector3<double>& p_MQ, const TriangleSurfaceMesh<double>& mesh_M,
+    const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_M,
+    const FeatureNormalSet& normal_set_M);
+
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
