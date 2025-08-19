@@ -1374,45 +1374,10 @@ The nested elements are:
   world frame, specified as three space-separated floating point values (nx ny
   nz components). The normal vector is automatically normalized to unit length.
 
-A vertex V is considered to be subject to the boundary condition if n̂ ⋅ p_QV <
-0, where Q is the specified point on the plane and n̂ is the normalized outward
-normal vector.
-
 Multiple `drake:wall_boundary_condition` elements can be specified for a single
-deformable link to define multiple boundary conditions.
-
-This element is only valid for deformable links (those containing a
-`drake:deformable_properties` element). Using this element on a rigid link will
-result in a parsing warning.
-
-Example usage:
-```xml
-<link name="deformable_body">
-  <drake:deformable_properties>
-    <drake:youngs_modulus>1e5</drake:youngs_modulus>
-    <drake:poissons_ratio>0.3</drake:poissons_ratio>
-    <drake:mass_density>1000</drake:mass_density>
-  </drake:deformable_properties>
-  <collision name='collision'>
-    <geometry>
-      <mesh><uri>package://path/to/mesh.vtk</uri></mesh>
-    </geometry>
-  </collision>
-  <!-- Wall boundary condition for ground plane -->
-  <drake:wall_boundary_condition>
-    <drake:point_on_plane>0 0 0</drake:point_on_plane>
-    <drake:outward_normal>0 0 1</drake:outward_normal>
-  </drake:wall_boundary_condition>
-  <!-- Additional wall boundary condition -->
-  <drake:wall_boundary_condition>
-    <drake:point_on_plane>1 0 0</drake:point_on_plane>
-    <drake:outward_normal>-1 0 0</drake:outward_normal>
-  </drake:wall_boundary_condition>
-</link>
-```
-
-@warning Be aware of round-off errors in floating point computations when
-placing a vertex very close to the plane defining the half space.
+deformable link to define multiple boundary conditions. This element is only 
+valid for deformable links (those containing a `drake:deformable_properties` 
+element).
 
 @see @ref tag_deformable_link_requirements,
 drake::multibody::DeformableModel::SetWallBoundaryCondition()
