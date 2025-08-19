@@ -240,6 +240,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     return internal::GetInternalTree(this->plant()).get_topology();
   }
 
+  const internal::SpanningForest& forest() const {
+    return internal::GetInternalTree(this->plant()).forest();
+  }
   /* Returns the pointer to the DeformableDriver owned by `this` manager if one
    exists. Otherwise, returns nullptr. */
   const DeformableDriver<double>* deformable_driver() const {

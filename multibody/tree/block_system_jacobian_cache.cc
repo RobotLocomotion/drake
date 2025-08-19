@@ -7,7 +7,7 @@ namespace internal {
 template <typename T>
 BlockSystemJacobianCache<T>::BlockSystemJacobianCache(
     const SpanningForest& forest)
-    : total_rows_(6 * ssize(forest.mobods())),
+    : total_rows_(6 * forest.num_mobods()),
       total_cols_(forest.num_velocities()),
       block_system_jacobian_(forest.trees().size()) {
   // We're counting rows & columns just to verify consistency with the
