@@ -125,7 +125,7 @@ if [[ "$(uname)" == "Darwin" ]]; then
         pydrake/*/*.so
 fi
 
-python setup.py bdist_wheel
+python -m build --wheel
 
 if [[ "$(uname)" == "Darwin" ]]; then
     delocate-wheel -w wheelhouse -v dist/drake*.whl
