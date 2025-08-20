@@ -346,17 +346,18 @@ TEST_F(QuaternionFloatingMobilizerTest, MapUsesN) {
 
 TEST_F(QuaternionFloatingMobilizerTest, MapUsesNplus) {
   // Set an arbitrary "non-zero" state.
-  const Quaterniond Q_WB(
+  const Quaterniond q_WB(
       RollPitchYawd(M_PI / 3, -M_PI / 3, M_PI / 5).ToQuaternion());
-  mobilizer_->SetQuaternion(context_.get(), Q_WB);
+  mobilizer_->SetQuaternion(context_.get(), q_WB);
 
   const Vector3d p_WB(1.0, 2.0, 3.0);
   mobilizer_->SetTranslation(context_.get(), p_WB);
 
-  // Set arbitrary qdot and MapQDotToVelocity
+  // Set an arbitrary qdot.
   VectorX<double> qdot(7);
   qdot << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0;
 
+  // Calculate the angular and translational velocity associated with qdot.
   Vector6<double> v;
   mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
 
@@ -367,6 +368,15 @@ TEST_F(QuaternionFloatingMobilizerTest, MapUsesNplus) {
   // Ensure N⁺(q) is used in `v = N⁺(q)⋅q̇`
   EXPECT_TRUE(CompareMatrices(v, Nplus * qdot, kTolerance,
                               MatrixCompareType::relative));
+
+  // Notice that the rotational part of the arbitrary qdot violates a constraint
+  // on the rotational unit quaternion q_WB.  Why?  Since (q_WB)ᵀ * q_WB = 1,
+  // (q̇_WB)ᵀ * q_WB + (q_WB)ᵀ * q̇_WB = 2 * (q_WB)ᵀ * q̇_WB = 0.  However, since
+  // the qdot above is arbitrary, this is not true.
+  const Vector4<double> qdot_WB(qdot[0], qdot[1], qdot[2], qdot[3]);
+  const double is_zero_if_proper_qdot =
+      Vector4<double>(q_WB.w(), q_WB.x(), q_WB.y(), q_WB.z()).dot(qdot_WB);
+  EXPECT_FALSE(std::abs(is_zero_if_proper_qdot) < 0.1);
 }
 
 TEST_F(QuaternionFloatingMobilizerTest, MapAccelerationToQDDotAndViceVersa) {
