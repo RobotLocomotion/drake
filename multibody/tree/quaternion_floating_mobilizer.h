@@ -351,6 +351,9 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // w_FM_F = 2 * (Q_FM)ᵀ * q̇_FM
   // ẇ_FM_F = 2 * (Q_FM)ᵀ * q̈_FM
   //
+  // Two other uses of Q_FM are Nᵣ ≜ 0.5 Q_FM and Nᵣ⁺ ≜ 2 (Q_FM)ᵀ, the
+  // rotational parts of this mobilizer's N and Nplus matrices.
+  //
   // @note Since the elements of the matrix returned by Q(q) depend linearly on
   // qw, qx, qy, qz, s * Q(q) = Q(s * q), where s is a scalar (e.g., 0.5 or 2).
   //
@@ -363,6 +366,8 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // @param[in] q a generic quaternion which is not necessarily a unit
   // quaternion or a quaternion associated with a rotation matrix.
   // @see QuaternionFloatingMobilizer::CalcQMatrix().
+  // @note: One reason this function exists is that multiplying or dividing an
+  // Eigen Quaternion by a scalar fails when type <T> is expression.
   static Eigen::Matrix<T, 4, 3> CalcQMatrixOverTwo(const Quaternion<T>& q) {
     return CalcQMatrix({0.5 * q.w(), 0.5 * q.x(), 0.5 * q.y(), 0.5 * q.z()});
   }
@@ -371,17 +376,19 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // @param[in] q a generic quaternion which is not necessarily a unit
   // quaternion or a quaternion associated with a rotation matrix.
   // @see QuaternionFloatingMobilizer::CalcQMatrix().
+  // @note: One reason this function exists is that multiplying or dividing an
+  // Eigen Quaternion by a scalar fails when type <T> is expression.
   static Eigen::Matrix<T, 3, 4> CalcTwoTimesQMatrixTranspose(
       const Quaternion<T>& q) {
     return CalcQMatrix({2 * q.w(), 2 * q.x(), 2 * q.y(), 2 * q.z()})
         .transpose();
   }
 
-  // Helper to compute the kinematic map N⁺(q) from quaternion time derivative
-  // to angular velocity for which w_FM_F = N⁺(q)⋅q̇_FM.
+  // Helper to compute this mobilizer's rotational kinematic map Nᵣ⁺(q_FM) from
+  // quaternion time derivative to angular velocity as w_FM_F = Nᵣ⁺(q_FM)⋅q̇_FM.
   // This method can take a non unity quaternion q_tilde such that
-  // w_FM_F = N⁺(q_tilde)⋅q̇_tilde_FM also holds true.
-  // @returns N⁺(q_tilde)
+  // w_FM_F = Nᵣ⁺(q_tilde)⋅q̇_tilde_FM also holds true.
+  // @returns Nᵣ⁺(q_tilde)
   static Eigen::Matrix<T, 3, 4> QuaternionRateToAngularVelocityMatrix(
       const Quaternion<T>& q);
 
