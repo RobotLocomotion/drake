@@ -407,8 +407,9 @@ void QuaternionFloatingMobilizer<T>::DoCalcNplusDotMatrix(
   const Vector4<T> qdot = CalcQMatrixOverTwo(q_FM) * w_FM_F;
   const Quaternion<T> qdot_FM(qdot[0], qdot[1], qdot[2], qdot[3]);
 
-  // Since N⁺ᵣ(qᵣ) = 2 * Q(q_FM)ᵀ, where Q(q_FM) is linear in the elements of
-  // q_FM = [qw, qx, qy, qz]ᵀq_FM, hence Ṅ⁺ᵣ(qᵣ,q̇ᵣ) = 2 * Q(q̇_FM)ᵀ.
+  // In view of the documentation in CalcQMatrix(), since
+  // N⁺ᵣ(q_FM) = 2 * (Q_FM)ᵀ, where Q_FM is linear in the elements of
+  // q_FM = [qw, qx, qy, qz]ᵀ, hence Ṅ⁺ᵣ(q̇_FM) = 2 * (Q̇_FM)ᵀ.
   const Eigen::Matrix<T, 3, 4> NrPlusDot =
       CalcTwoTimesQMatrixTranspose(qdot_FM);
 
@@ -480,7 +481,6 @@ void QuaternionFloatingMobilizer<T>::DoMapQDDotToAcceleration(
     const Eigen::Ref<const VectorX<T>>& qddot,
     EigenPtr<VectorX<T>> vdot) const {
   // This function maps qddot to vdot by calculating v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
-  // It first calculates the rotational part, then the translational part.
   //
   // For the rotational part of this mobilizer, the 1st-derivatives of the
   // generalized velocities ẇ_FM_F = v̇ᵣ = [ẇx, ẇy, ẇz]ᵀ are related to the
@@ -497,8 +497,8 @@ void QuaternionFloatingMobilizer<T>::DoMapQDDotToAcceleration(
   // [Mitiguy, August 2025] Mitiguy, P. Advanced Dynamics & Motion Simulation.
   // Textbook available at www.MotionGenesis.com
 
-  // Since QuaternionRateToAngularVelocityMatrix() calculates N⁺ᵣ(qᵣ), we use
-  // this function to calculate v̇ᵣ = N⁺ᵣ(q)⋅q̈_FM.
+  // To mimic DoMapQDotToVelocity(), use QuaternionRateToAngularVelocityMatrix()
+  // to calculate N⁺ᵣ(q_FM) and use it to calculate v̇ᵣ = N⁺ᵣ(q_FM)⋅q̈_FM.
   const Quaternion<T> q_FM = get_quaternion(context);
   vdot->template head<3>() =
       QuaternionRateToAngularVelocityMatrix(q_FM) * qddot.template head<4>();
