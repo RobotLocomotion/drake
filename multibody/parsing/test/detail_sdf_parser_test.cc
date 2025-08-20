@@ -4696,9 +4696,10 @@ TEST_F(SdfParserTest, DeformableWallBoundaryConditionsBodyOutsideHalfSpace) {
   // Body is outside the half space, so no boundary conditions should be added.
   const auto& fem_model_outside =
       plant_.deformable_model().GetFemModel(body_id_outside);
-  const auto& dirichlet_bc_outside =
+  const auto& dirichlet_boundary_cond_outside =
       fem_model_outside.dirichlet_boundary_condition();
-  EXPECT_TRUE(dirichlet_bc_outside.index_to_boundary_state().empty());
+  EXPECT_TRUE(
+      dirichlet_boundary_cond_outside.index_to_boundary_state().empty());
 }
 
 TEST_F(SdfParserTest, DeformableWallBoundaryConditionsBodyInHalfSpace) {
@@ -4738,9 +4739,10 @@ TEST_F(SdfParserTest, DeformableWallBoundaryConditionsBodyInHalfSpace) {
   // Body is in the half space, so boundary conditions should be added.
   const auto& fem_model_inside =
       plant_.deformable_model().GetFemModel(body_id_inside);
-  const auto& dirichlet_bc_inside =
+  const auto& dirichlet_boundary_cond_inside =
       fem_model_inside.dirichlet_boundary_condition();
-  EXPECT_FALSE(dirichlet_bc_inside.index_to_boundary_state().empty());
+  EXPECT_FALSE(
+      dirichlet_boundary_cond_inside.index_to_boundary_state().empty());
 }
 
 TEST_F(SdfParserTest, DeformableWallMultipleBoundaryConditions) {
