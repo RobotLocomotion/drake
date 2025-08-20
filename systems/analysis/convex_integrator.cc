@@ -309,18 +309,12 @@ bool ConvexIntegrator<T>::StepWithRichardsonExtrapolation(const T& h) {
   if (!this->get_fixed_step_mode()) {
     Context<T>& context = *this->get_mutable_context();
     ContinuousState<T>& x_next = context.get_mutable_continuous_state();
-    const T t0 = context.get_time();
 
     // Do Richardson extrapolation to obtain a second-order estimate
     // This is from Hairer, Sec. II.4, with p=2.
-    x_next_half_2_->get_mutable_vector().PlusEqScaled(
-        0.5, x_next_half_2_->get_vector());
-    x_next_half_2_->get_mutable_vector().PlusEqScaled(
-        -0.5, x_next_full_->get_vector());
-
-    // Set the state to the second-order solution
-    x_next.get_mutable_vector().SetFrom(x_next_half_2_->get_vector());
-    context.SetTimeAndNoteContinuousStateChange(t0 + h);
+    const ContinuousState<T>& err = *this->get_error_estimate();
+    x_next.get_mutable_vector().PlusEqScaled(
+        -1.0, err.get_vector());
   }
 
   return true;  // step was successful
