@@ -5,6 +5,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/fem/deformable_body_config.h"
+#include "drake/multibody/fem/force_density_field_base.h"
 
 namespace drake {
 namespace pydrake {
@@ -24,6 +25,16 @@ void DoScalarIndependentDefinitions(py::module m) {
         .value("kCorotated", Class::kCorotated, cls_doc.kCorotated.doc)
         .value("kNeoHookean", Class::kNeoHookean, cls_doc.kNeoHookean.doc)
         .value("kLinear", Class::kLinear, cls_doc.kLinear.doc);
+  }
+
+  {
+    using Class = drake::multibody::ForceDensityType;
+    constexpr auto& cls_doc = pydrake_doc.drake.multibody.ForceDensityType;
+    py::enum_<Class>(m, "ForceDensityType", cls_doc.doc)
+        .value("kPerCurrentVolume", Class::kPerCurrentVolume,
+            cls_doc.kPerCurrentVolume.doc)
+        .value("kPerReferenceVolume", Class::kPerReferenceVolume,
+            cls_doc.kPerReferenceVolume.doc);
   }
 }
 
@@ -74,6 +85,23 @@ void DoScalarDependentDefinitions(py::module m, T) {
     DefCopyAndDeepCopy(&cls);
   }
 }
+
+template <typename T>
+void DefineForceDensityFieldBase(py::module m, T) {
+  py::tuple param = GetPyParam<T>();
+  {
+    using Class = drake::multibody::ForceDensityFieldBase<T>;
+    constexpr auto& cls_doc = pydrake_doc.drake.multibody.ForceDensityFieldBase;
+    auto cls = DefineTemplateClassWithDefault<Class, std::shared_ptr<Class>>(
+        m, "ForceDensityFieldBase", param, cls_doc.doc);
+    cls  // BR
+        .def("EvaluateAt", &Class::EvaluateAt, py::arg("context"),
+            py::arg("p_WQ"), cls_doc.EvaluateAt.doc)
+        .def("density_type", &Class::density_type, cls_doc.density_type.doc);
+    DefClone(&cls);
+  }
+}
+
 }  // namespace
 
 PYBIND11_MODULE(fem, m) {
@@ -81,10 +109,13 @@ PYBIND11_MODULE(fem, m) {
   m.doc() = "Bindings for multibody fem.";
 
   py::module::import("pydrake.autodiffutils");
+  py::module::import("pydrake.systems.framework");
 
   DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       NonSymbolicScalarPack{});
+  type_visit([m](auto dummy) { DefineForceDensityFieldBase(m, dummy); },
+      CommonScalarPack{});
 }
 
 }  // namespace pydrake

@@ -32,6 +32,8 @@ drake_cc_library(
         "//planning:visibility_graph",
         "//planning/graph_algorithms:max_clique_solver_base",
         "//planning/graph_algorithms:max_clique_solver_via_greedy",
+        "//planning/iris:iris_np2",
+        "//planning/iris:iris_zo",
         "//solvers:gurobi_solver",
         "//solvers:mosek_solver",
     ],
@@ -49,7 +51,12 @@ drake_cc_library(
         "//geometry:meshcat",
         "//geometry/optimization:convex_set",
         "//multibody/rational:rational_forward_kinematics",
+        "//planning:collision_checker",
         "//solvers:mathematical_program",
+        "//solvers:solve",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
     ],
 )
 
@@ -84,6 +91,9 @@ drake_cc_library(
         "//geometry/optimization:iris_internal",
         "//planning:scene_graph_collision_checker",
         "//solvers",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
     ],
 )
 
@@ -128,6 +138,8 @@ drake_cc_googletest(
     tags = [
         "no_asan",
         "no_lsan",
+        # TODO(#22978) Re-enable this if possible.
+        "no_memcheck",
     ],
     deps = [
         ":iris_test_utilities",
@@ -135,6 +147,7 @@ drake_cc_googletest(
         "//common/symbolic:expression",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:maybe_pause_for_user",
+        "//common/yaml",
         "//geometry:meshcat",
         "//geometry/test_utilities:meshcat_environment",
         "//multibody/inverse_kinematics",
@@ -160,6 +173,7 @@ drake_cc_googletest(
         ":iris_test_utilities",
         "//common/symbolic:expression",
         "//common/test_utilities:expect_throws_message",
+        "//common/yaml",
         "//solvers",
     ],
 )

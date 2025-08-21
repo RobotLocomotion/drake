@@ -1,6 +1,7 @@
 import unittest
 
 import pydrake.planning as mut
+from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomGenerator, Parallelism
 from pydrake.geometry.optimization import Hyperellipsoid, HPolyhedron
 from pydrake.multibody.inverse_kinematics import InverseKinematics
@@ -11,6 +12,7 @@ from pydrake.planning import (
     CollisionCheckerParams,
     IrisParameterizationFunction,
 )
+from pydrake.solvers import IpoptSolver
 from pydrake.symbolic import Variable
 
 import numpy as np
@@ -69,7 +71,7 @@ def SetSampledIrisOptions(options):
     options.sampled_iris_options.epsilon = 1e-2
     options.sampled_iris_options.\
         containment_points = np.array([[0, 0], [1, 0]])
-    options.sampled_iris_options.max_iterations = 3
+    options.sampled_iris_options.max_iterations = 1
     options.sampled_iris_options.max_iterations_separating_planes = 20
     options.sampled_iris_options.max_separating_planes_per_iteration = 10
     options.sampled_iris_options.parallelism = Parallelism(True)
@@ -79,6 +81,8 @@ def SetSampledIrisOptions(options):
     options.sampled_iris_options.relative_termination_threshold = 1e-3
     options.sampled_iris_options.random_seed = 1337
     options.sampled_iris_options.mixing_steps = 50
+    options.sampled_iris_options.sample_particles_in_parallel = False
+    options.sampled_iris_options.remove_all_collisions_possible = True
 
 
 class TestIrisZo(unittest.TestCase):
@@ -121,23 +125,24 @@ class TestIrisZo(unittest.TestCase):
         self.assertEqual(
             options.parameterization.get_parameterization_dimension(), 2)
         self.assertTrue(
-            callable(options.parameterization.get_parameterization()))
+            callable(options.parameterization.get_parameterization_double()))
         s = np.array([0, 1])
-        q = options.parameterization.get_parameterization()(s)
+        q = options.parameterization.get_parameterization_double()(s)
         self.assertTrue(np.allclose(q,
                                     kin.ComputeQValue(s, q_star), atol=0))
 
         options2 = mut.IrisZoOptions()
         options2.parameterization = IrisParameterizationFunction(
-            options.parameterization.get_parameterization(),
+            options.parameterization.get_parameterization_double(),
             options.parameterization.get_parameterization_dimension())
         self.assertFalse(
             options2.parameterization.get_parameterization_is_threadsafe())
         self.assertEqual(
             options2.parameterization.get_parameterization_dimension(), 2)
         self.assertTrue(
-            callable(options2.parameterization.get_parameterization()))
-        q2 = options2.parameterization.get_parameterization()(np.array(s))
+            callable(options2.parameterization.get_parameterization_double()))
+        q2 = options2.parameterization.get_parameterization_double()(
+            np.array(s))
         self.assertTrue(np.allclose(q2,
                                     kin.ComputeQValue(s, q_star), atol=0))
 
@@ -148,8 +153,9 @@ class TestIrisZo(unittest.TestCase):
         self.assertEqual(
             options3.parameterization.get_parameterization_dimension(), 2)
         self.assertTrue(
-            callable(options3.parameterization.get_parameterization()))
-        q3 = options3.parameterization.get_parameterization()(np.array(s))
+            callable(options3.parameterization.get_parameterization_double()))
+        q3 = options3.parameterization.get_parameterization_double()(
+            np.array(s))
         self.assertTrue(np.allclose(q3,
                                     kin.ComputeQValue(s, q_star), atol=0))
 
@@ -161,7 +167,8 @@ class TestIrisZo(unittest.TestCase):
             options4.parameterization.get_parameterization_is_threadsafe())
         self.assertEqual(
             options4.parameterization.get_parameterization_dimension(), 1)
-        q3 = options4.parameterization.get_parameterization()(np.zeros(1))[0]
+        q3 = options4.parameterization.get_parameterization_double()(
+            np.zeros(1))[0]
         self.assertEqual(q3, 2 * 0 + 1)
 
 
@@ -177,9 +184,13 @@ class TestIrisNp2(unittest.TestCase):
         checker = SceneGraphCollisionChecker(**params)
         options = mut.IrisNp2Options()
         SetSampledIrisOptions(options)
+        options.sampling_strategy = "greedy"
+        options.ray_sampler_options.only_walk_toward_collisions = True
+        options.ray_sampler_options.ray_search_num_steps = 10
+        options.ray_sampler_options.num_particles_to_walk_towards = 200
 
-        # Feature still TODO.
-        options.sampled_iris_options.containment_points = None
+        # For speed reasons -- IPOPT seems to be faster than SNOPT here.
+        options.solver = IpoptSolver()
 
         domain = HPolyhedron.MakeBox(plant.GetPositionLowerLimits(),
                                      plant.GetPositionUpperLimits())
@@ -191,3 +202,40 @@ class TestIrisNp2(unittest.TestCase):
                              options=options)
         test_point = np.array([0.0, 0.5])
         self.assertTrue(region.PointInSet(test_point))
+
+        def parameterization_function(q):
+            return 2.0 * q + 1.0
+        double_input = np.zeros(2)
+        autodiff_input = np.array(2 * [AutoDiffXd(0.0)])
+        double_output = parameterization_function(double_input)
+        autodiff_output = parameterization_function(autodiff_input)
+        self.assertTrue(isinstance(double_output[0], float))
+        self.assertTrue(isinstance(autodiff_output[0], AutoDiffXd))
+
+        options.parameterization = IrisParameterizationFunction(
+            parameterization=parameterization_function, dimension=2)
+
+        def inverse_parameterization(q):
+            return (q - 1.0) / 2.0
+
+        # The domain in the original coordinates is from -2 to 2 in each
+        # dimension, so in the new coordinates, it's from -1.5 to 0.5 in each
+        # dimension.
+        domain_shifted = HPolyhedron.MakeBox([-1.5, -1.5], [0.5, 0.5])
+        starting_ellipsoid_shifted = Hyperellipsoid.MakeHypersphere(
+            0.01, inverse_parameterization(starting_ellipsoid.center()))
+
+        # We also need to shift the containment points.
+        new_containment_points = options.sampled_iris_options.\
+            containment_points.copy()
+        for i in range(new_containment_points.shape[1]):
+            new_containment_points[:, i] = inverse_parameterization(
+                new_containment_points[:, i])
+        options.sampled_iris_options.\
+            containment_points = new_containment_points
+        region = mut.IrisNp2(checker=checker,
+                             starting_ellipsoid=starting_ellipsoid_shifted,
+                             domain=domain_shifted,
+                             options=options)
+        test_point_shifted = inverse_parameterization(test_point)
+        self.assertTrue(region.PointInSet(test_point_shifted))

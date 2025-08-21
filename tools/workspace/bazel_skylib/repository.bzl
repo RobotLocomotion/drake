@@ -14,7 +14,7 @@ def bazel_skylib_repository(
         When updating, you must also manually propagate to the new version
         number into the MODULE.bazel file (at the top level of Drake).
         """,
-        commit = "1.7.1",
-        sha256 = "e3fea03ff75a9821e84199466799ba560dbaebb299c655b5307f4df1e5970696",  # noqa
+        commit = "1.8.0",
+        sha256 = "49902c0cc841c1b35616669bf9452858a2849112ae441b5d70a0701ffbafb3d7",  # noqa
         mirrors = mirrors,
     )

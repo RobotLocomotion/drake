@@ -15,7 +15,8 @@ from pydrake.symbolic import Expression, Variable
 from pydrake.lcm import DrakeLcm
 from pydrake.math import RigidTransform
 from pydrake.multibody.fem import (
-    DeformableBodyConfig_
+    DeformableBodyConfig_,
+    ForceDensityType,
 )
 from pydrake.multibody.tree import (
     BallRpyJoint_,
@@ -26,10 +27,12 @@ from pydrake.multibody.tree import (
     DoorHinge_,
     DoorHingeConfig,
     FixedOffsetFrame_,
+    ForceDensityField_,
     ForceElement_,
     ForceElementIndex,
     Frame_,
     FrameIndex,
+    GravityForceField_,
     JacobianWrtVariable,
     Joint_,
     JointActuator_,
@@ -1085,8 +1088,12 @@ class TestPlant(unittest.TestCase):
 
         # Test RevoluteSpring accessors
         self.assertEqual(revolute_spring.joint(), revolute_joint)
-        self.assertEqual(revolute_spring.nominal_angle(), 0.1)
-        self.assertEqual(revolute_spring.stiffness(), 100.)
+        self.assertEqual(revolute_spring.default_nominal_angle(), 0.1)
+        self.assertEqual(revolute_spring.default_stiffness(), 100.)
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(revolute_spring.nominal_angle(), 0.1)
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(revolute_spring.stiffness(), 100.)
 
         # Test DoorHinge accessors
         self.assertEqual(door_hinge.joint(), revolute_joint)
@@ -3512,6 +3519,21 @@ class TestPlant(unittest.TestCase):
         q2 = dut.GetPositions(context=plant_context, id=body_id)
         numpy_compare.assert_float_equal(q_ref, q2)
 
+        # Set velocities and get them back.
+        num_nodes = num_dofs // 3
+        v = np.arange(num_dofs, dtype=float).reshape(3, num_nodes)
+        dut.SetVelocities(context=plant_context, id=body_id, v=v)
+        v_back = dut.GetVelocities(context=plant_context, id=body_id)
+        numpy_compare.assert_float_equal(v, v_back)
+
+        # Set positions and velocities and get them back.
+        dut.SetPositionsAndVelocities(context=plant_context, id=body_id,
+                                      q=2*q_ref, v=2*v)
+        q2 = dut.GetPositions(context=plant_context, id=body_id)
+        v2 = dut.GetVelocities(context=plant_context, id=body_id)
+        numpy_compare.assert_float_equal(2*q_ref, q2)
+        numpy_compare.assert_float_equal(2*v, v2)
+
         contact_results = (
             plant.get_contact_results_output_port().Eval(plant_context))
         # There is no deformable contact, but we can still try the API.
@@ -3520,6 +3542,26 @@ class TestPlant(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit,
                                     '.*i < num_deformable_contacts().*'):
             contact_results.deformable_contact_info(0)
+
+    def test_deformable_model_external_force(self):
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
+        dut = plant.mutable_deformable_model()
+
+        # Register one body
+        config = DeformableBodyConfig_[float]()
+        geometry = GeometryInstance(RigidTransform(), Sphere(1.0), "sphere")
+        body_id = dut.RegisterDeformableBody(
+            geometry_instance=geometry, config=config, resolution_hint=1.0)
+
+        dut.AddExternalForce(GravityForceField_[float](
+            gravity_vector=[0, 0, 1], mass_density=1.23))
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+
+        external_forces = dut.GetExternalForces(body_id)
+        numpy_compare.assert_float_equal(
+            external_forces[-1].EvaluateAt(context, [0, 0, 0]), [0, 0, 1.23])
 
     def test_deformable_model_disable_enable(self):
         builder = DiagramBuilder_[float]()
@@ -3586,6 +3628,11 @@ class TestPlant(unittest.TestCase):
         reference_positions = body.reference_positions()
         self.assertIsInstance(reference_positions, np.ndarray)
         self.assertEqual(num_dofs, reference_positions.size)
+
+        # external_forces
+        external_forces = body.external_forces()
+        for external_force in external_forces:
+            self.assertIsInstance(external_force, ForceDensityField_[float])
 
         # discrete_state_index()
         state_index = body.discrete_state_index()
@@ -3681,6 +3728,23 @@ class TestPlant(unittest.TestCase):
         numpy_compare.assert_float_equal(
             reference_positions_reshaped, positions_after)
 
+        # Round-trip SetVelocities / GetVelocities
+        num_dofs = body.num_dofs()
+        num_nodes = num_dofs // 3
+        v = np.arange(num_dofs, dtype=float).reshape(3, num_nodes)
+        body.SetVelocities(context=plant_context, v=v)
+        v_back = body.GetVelocities(context=plant_context)
+        numpy_compare.assert_float_equal(v, v_back)
+
+        # Round-trip SetPositionsAndVelocities / GetPositionsAndVelocities
+        q = 2*reference_positions_reshaped
+        v = 2*v
+        body.SetPositionsAndVelocities(context=plant_context, q=q, v=v)
+        q2 = body.GetPositions(context=plant_context)
+        v2 = body.GetVelocities(context=plant_context)
+        numpy_compare.assert_float_equal(q, q2)
+        numpy_compare.assert_float_equal(v, v2)
+
         # set_default_pose and get_default_pose
         X_WD = RigidTransform_[float](
             RollPitchYaw_[float](np.pi / 2, 0, np.pi / 2), [1, 2, 3])
@@ -3704,3 +3768,55 @@ class TestPlant(unittest.TestCase):
             context=plant_context)
         self.assertIsInstance(w_WScm, np.ndarray)
         self.assertEqual(w_WScm.size, 3)
+
+    @numpy_compare.check_all_types
+    def test_gravity_force_field(self, T):
+        plant = MultibodyPlant_[T](time_step=0.0)
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+
+        dut = GravityForceField_[T](
+            gravity_vector=[0, 0, 1], mass_density=1.23)
+
+        self.assertEqual(dut.density_type(),
+                         ForceDensityType.kPerReferenceVolume)
+        self.assertFalse(dut.has_parent_system())
+
+        numpy_compare.assert_float_equal(
+            dut.EvaluateAt(context, [0, 0, 0]), [0, 0, 1.23])
+
+        dut.Clone()
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    @numpy_compare.check_all_types
+    def test_force_density_field(self, T):
+        class DummyField(ForceDensityField_[T]):
+            def __init__(self, scale):
+                super().__init__()
+                self._scale = scale
+
+            def DoEvaluateAt(self, context, p_WQ):
+                return p_WQ * self._scale
+
+            def DoClone(self):
+                return DummyField(self._scale)
+
+        plant = MultibodyPlant_[T](time_step=0.0)
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+
+        dut = DummyField(2.0)
+        self.assertEqual(dut.density_type(),
+                         ForceDensityType.kPerCurrentVolume)
+        self.assertFalse(dut.has_parent_system())
+
+        p_WQ = [1.0, 2.0, 3.0]
+        value = [2.0, 4.0, 6.0]
+        numpy_compare.assert_float_equal(dut.EvaluateAt(context, p_WQ), value)
+        numpy_compare.assert_float_equal(
+            dut.Clone().EvaluateAt(context, p_WQ), value)
+        numpy_compare.assert_float_equal(
+            copy.copy(dut).EvaluateAt(context, p_WQ), value)
+        numpy_compare.assert_float_equal(
+            copy.deepcopy(dut).EvaluateAt(context, p_WQ), value)

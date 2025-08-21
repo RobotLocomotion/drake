@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <string>
 
@@ -246,18 +247,33 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   bool is_velocity_equal_to_qdot() const override { return false; }
 
- protected:
+ private:
+  // Struct that consolidates sine and cosine calculations to facilitate their
+  // reuse in other functions.
+  // Note: This struct is exempted from the styleguide's prohibition of related
+  // members in a struct by virtue of it being strictly internal (the invariants
+  // are maintained internally like private members of the class).
+  struct SinCosPitchYaw {
+    T sin_pitch{std::numeric_limits<T>::quiet_NaN()};
+    T cos_pitch{std::numeric_limits<T>::quiet_NaN()};
+    T sin_yaw{std::numeric_limits<T>::quiet_NaN()};
+    T cos_yaw{std::numeric_limits<T>::quiet_NaN()};
+  };
+
+  // Returns a struct with calculated sin(pitch), cos(pitch), sin(yaw),
+  // cos(yaw).
+  SinCosPitchYaw CalcSinPitchCosPitchSinYawCosYaw(
+      const systems::Context<T>& context) const;
+
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
   void DoCalcNplusMatrix(const systems::Context<T>& context,
                          EigenPtr<MatrixX<T>> Nplus) const final;
 
-  // Generally, q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇. For this mobilizer, Ṅ is not simple.
   void DoCalcNDotMatrix(const systems::Context<T>& context,
                         EigenPtr<MatrixX<T>> Ndot) const final;
 
-  // Generally, v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈. For this mobilizer, Ṅ⁺ is not simple.
   void DoCalcNplusDotMatrix(const systems::Context<T>& context,
                             EigenPtr<MatrixX<T>> NplusDot) const final;
 
@@ -283,6 +299,13 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
                            const Eigen::Ref<const VectorX<T>>& v,
                            EigenPtr<VectorX<T>> qdot) const final;
 
+  // Implements DoMapVelocityToQDot() with pre-computed values of
+  // sin(pitch), sin(yaw), cos(yaw), 1/cos(pitch).
+  void DoMapVelocityToQDotImpl(const SinCosPitchYaw& sin_cos_pitch_yaw,
+                               const T& cpi,
+                               const Eigen::Ref<const VectorX<T>>& v,
+                               EigenPtr<VectorX<T>> qdot) const;
+
   // Maps time derivatives of the roll-pitch-yaw angles θ₀, θ₁, θ₂ in qdot to
   // the generalized velocity v, which corresponds to the angular velocity
   // w_FM.
@@ -299,6 +322,50 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
                            const Eigen::Ref<const VectorX<T>>& qdot,
                            EigenPtr<VectorX<T>> v) const final;
 
+  // Maps vdot to qddot, which for this mobilizer is q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇.
+  // For simple mobilizers q̈ = v̇. This mobilizer's N and Ṅ are more elaborate.
+  void DoMapAccelerationToQDDot(const systems::Context<T>& context,
+                                const Eigen::Ref<const VectorX<T>>& vdot,
+                                EigenPtr<VectorX<T>> qddot) const final;
+
+  // Maps qddot to vdot, which for this mobilizer is v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
+  // For simple mobilizers v̇ = q̈. This mobilizer's N and Ṅ⁺ are more elaborate.
+  void DoMapQDDotToAcceleration(const systems::Context<T>& context,
+                                const Eigen::Ref<const VectorX<T>>& qddot,
+                                EigenPtr<VectorX<T>> vdot) const final;
+
+  // Calculate the term Ṅ⁺(q,q̇)⋅q̇ which appears in v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
+  Vector3<T> CalcAccelerationBiasForQDDot(const systems::Context<T>& context,
+                                          const char* function_name) const;
+
+  // Implements CalcAccelerationBiasForQDDot() with pre-computed values of
+  // sin(pitch), cos(pitch), sin(yaw), cos(yaw), 1/cos(pitch).
+  Vector3<T> CalcAccelerationBiasForQDDotImpl(
+      const systems::Context<T>& context,
+      const SinCosPitchYaw& sin_cos_pitch_yaw, const T& cpi) const;
+
+  // Certain roll pitch yaw calculations (e.g., calculating the N(q) matrix)
+  // have a singularity (divide-by-zero error) when cos(pitch) ≈ 0.
+  // The tolerance 1.0e-3 is used to test whether the cosine of the pitch angle
+  // is near zero, which occurs when the pitch angle ≈ π/2 ± n π (n=0, 1 2, …).
+  // Throw an exception if a pitch angle is within ≈ 0.057° of a singularity.
+  void ThrowIfCosPitchNearZero(const systems::Context<T>& context,
+                               const T& cos_pitch,
+                               const char* function_name) const {
+    using std::abs;
+    if (abs(cos_pitch) < 1.0e-3)
+      ThrowSinceCosPitchNearZero(context, function_name);
+  }
+
+  // Ideally, ThrowIfCosPitchNearZero() is inlined by separating this function.
+  [[noreturn]] void ThrowSinceCosPitchNearZero(
+      const systems::Context<T>& context, const char* function_name) const;
+
+  // Helper method to make a clone templated on ToScalar.
+  template <typename ToScalar>
+  std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
+      const MultibodyTree<ToScalar>& tree_clone) const;
+
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
 
@@ -307,17 +374,6 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
       const MultibodyTree<symbolic::Expression>& tree_clone) const override;
-
-  // Certain roll pitch yaw calculations (e.g., calculating the N(q) matrix)
-  // have a singularity (divide-by-zero error) when cos(pitch) ≈ 0.
-  void ThrowSinceCosPitchIsNearZero(const T& pitch,
-                                    const char* function_name) const;
-
- private:
-  // Helper method to make a clone templated on ToScalar.
-  template <typename ToScalar>
-  std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
-      const MultibodyTree<ToScalar>& tree_clone) const;
 };
 
 }  // namespace internal

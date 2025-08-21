@@ -1,0 +1,66 @@
+#!/usr/bin/env groovy
+
+// Load utils.
+@UTILS_CONTENT@
+
+// Check if CI should be deferred for this pull request based on the label.
+// CHANGE_ID should always be defined in this file, as it corresponds to
+// pull requests, but we should check anyways.
+if(env.CHANGE_ID) {
+  if (pullRequest.labels.contains('status: defer ci')) {
+    currentBuild.result == 'ABORTED'
+    throw new Exception(
+      "This pull request is labeled 'defer ci'. " +
+      "This label will need to be removed in order for CI to pass " +
+      "before merging."
+    )
+  }
+}
+
+node(getNodeLabel()) {
+  // Define job properties. Other Jenkinsfiles which do not correspond to
+  // multibranch pipelines (i.e., for non-experimental jobs) should inherit
+  // properties from the original job definitions rather than calling
+  // properties() here.
+  def props = [
+    parameters([
+      string(name: 'ciSha', defaultValue: 'main',
+        description: 'Commit SHA or branch name. ' +
+          'For pull requests, enter branch name <code>pr/1234/head</code> ' +
+          'or <code>pr/1234/merge</code> for pull request #1234. ' +
+          'Defaults to <code>main</code>.'),
+      ]
+    ),
+    buildDiscarder(
+      logRotator(
+        daysToKeepStr: '90',
+        artifactDaysToKeepStr: '90'
+      )
+    )
+  ]
+  if (env.JOB_NAME.contains("cache-server-health-check")) {
+    props << disableConcurrentBuilds()
+  }
+  properties(props)
+
+  stage('test') {
+    timeout(600) {
+      ansiColor('xterm') {
+        timestamps {
+          try {
+            // Use the CI branch parameter for checkout (defaults to main).
+            def scmVars = checkout(params.ciSha)
+            doMainBuild(scmVars)
+          } finally {
+            try {
+              checkBuildResult()
+              addCDashBadge()
+            } finally {
+              cleanWorkspace()
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -52,12 +52,12 @@ apt-get remove bazel || true
 # Install bazelisk.
 if [[ $(arch) = "aarch64" ]]; then
   dpkg_install_from_wget \
-    bazelisk 1.26.0 \
-    https://github.com/bazelbuild/bazelisk/releases/download/v1.26.0/bazelisk-arm64.deb \
-    3004b01811c42ddf6124557cfaa0a4c261cf0df10f1902fdae58c8f12aed1f16
+    bazelisk 1.27.0 \
+    https://github.com/bazelbuild/bazelisk/releases/download/v1.27.0/bazelisk-arm64.deb \
+    173c5b367b485a30ce58c1d0d560b39d257a2d7a3c859c45d7d05eb61605a2a1
 else
   dpkg_install_from_wget \
-    bazelisk 1.26.0 \
-    https://github.com/bazelbuild/bazelisk/releases/download/v1.26.0/bazelisk-amd64.deb \
-    1117c1c2c90f090c7fb5118607128974352a552ad40c1a69e57b66db01b2b80a
+    bazelisk 1.27.0 \
+    https://github.com/bazelbuild/bazelisk/releases/download/v1.27.0/bazelisk-amd64.deb \
+    d8b00ea975c823e15263c80200ac42979e17368547fbff4ab177af035badfa83
 fi

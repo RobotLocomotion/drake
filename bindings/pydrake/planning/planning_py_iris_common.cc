@@ -1,3 +1,5 @@
+#include "drake/bindings/pydrake/autodiff_types_pybind.h"
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
@@ -53,10 +55,16 @@ void DefinePlanningCommonSampledIrisOptions(py::module m) {
       .def_readwrite("relative_termination_threshold",
           &CommonSampledIrisOptions::relative_termination_threshold,
           cls_doc.relative_termination_threshold.doc)
+      .def_readwrite("remove_all_collisions_possible",
+          &CommonSampledIrisOptions::remove_all_collisions_possible,
+          cls_doc.remove_all_collisions_possible.doc)
       .def_readwrite("random_seed", &CommonSampledIrisOptions::random_seed,
           cls_doc.random_seed.doc)
       .def_readwrite("mixing_steps", &CommonSampledIrisOptions::mixing_steps,
           cls_doc.mixing_steps.doc)
+      .def_readwrite("sample_particles_in_parallel",
+          &CommonSampledIrisOptions::sample_particles_in_parallel,
+          cls_doc.sample_particles_in_parallel.doc)
       .def("__repr__", [](const CommonSampledIrisOptions& self) {
         return py::str(
             "CommonSampledIrisOptions("
@@ -73,22 +81,76 @@ void DefinePlanningCommonSampledIrisOptions(py::module m) {
             "configuration_space_margin={}, "
             "termination_threshold={}, "
             "relative_termination_threshold={}, "
+            "remove_all_collisions_possible={}, "
             "random_seed={}, "
             "mixing_steps={}, "
+            "sample_particles_in_parallel={}, "
             ")")
             .format(self.num_particles, self.tau, self.delta, self.epsilon,
                 self.max_iterations, self.max_iterations_separating_planes,
                 self.max_separating_planes_per_iteration, self.parallelism,
                 self.verbose, self.require_sample_point_is_contained,
                 self.configuration_space_margin, self.termination_threshold,
-                self.relative_termination_threshold, self.random_seed,
-                self.mixing_steps);
+                self.relative_termination_threshold,
+                self.remove_all_collisions_possible, self.random_seed,
+                self.mixing_steps, self.sample_particles_in_parallel);
       });
 
   DefReadWriteKeepAlive(&common_sampled_iris_options,
       "prog_with_additional_constraints",
       &CommonSampledIrisOptions::prog_with_additional_constraints,
       cls_doc.prog_with_additional_constraints.doc);
+}
+
+// Largely based on code from solvers_py_mathematicalprogram.cc.
+// TODO(cohnt): Refactor for better code reuse.
+enum class ArrayShapeType { Scalar, Vector };
+
+// Checks array shape, provides user-friendly message if it fails.
+void CheckArrayShape(
+    py::str var_name, py::array x, ArrayShapeType shape, int size) {
+  bool ndim_is_good{};
+  py::str ndim_hint;
+  if (shape == ArrayShapeType::Scalar) {
+    ndim_is_good = (x.ndim() == 0);
+    ndim_hint = "0 (scalar)";
+  } else {
+    ndim_is_good = (x.ndim() == 1 || x.ndim() == 2);
+    ndim_hint = "1 or 2 (vector)";
+  }
+  if (!ndim_is_good || x.size() != size) {
+    throw std::runtime_error(
+        py::str("{} must be of .ndim = {} and .size = {}. "
+                "Got .ndim = {} and .size = {} instead.")
+            .format(var_name, ndim_hint, size, x.ndim(), x.size()));
+  }
+}
+
+// Checks array type, provides user-friendly message if it fails.
+template <typename T>
+void CheckReturnedArrayType(py::str cls_name, py::array y) {
+  py::module m = py::module::import("pydrake.solvers._extra");
+  m.attr("_check_returned_array_type")(cls_name, y, GetPyParam<T>()[0]);
+}
+
+// Wraps user function to provide better user-friendliness.
+template <typename T, typename Func>
+Func WrapParameterizationFunc(
+    py::str cls_name, py::function func, int num_vars) {
+  py::cpp_function wrapped = [=](py::array x) {
+    // Check input.
+    // WARNING: If the input is badly sized, we will only reach this error in
+    // Release mode. In debug mode, an assertion error will be triggered.
+    CheckArrayShape(py::str("{}: Input").format(cls_name), x,
+        ArrayShapeType::Vector, num_vars);
+    // N.B. We use `py::object` instead of `py::array` for the return type
+    /// because for dtype=object, you cannot implicitly cast `np.array(T())`
+    // (numpy scalar) to `T` (object), at least for AutoDiffXd.
+    py::object y = func(x);
+    CheckReturnedArrayType<T>(cls_name, y);
+    return y;
+  };
+  return wrapped.cast<Func>();
 }
 
 void DefinePlanningIrisParameterizationFunction(py::module m) {
@@ -101,26 +163,35 @@ void DefinePlanningIrisParameterizationFunction(py::module m) {
 
   const std::string parameterization_function_docstring =
       std::string(cls_doc.ctor
-              .doc_3args_parameterization_parameterization_is_threadsafe_parameterization_dimension) +
+              .doc_3args_parameterization_double_parameterization_is_threadsafe_parameterization_dimension) +
       R"(
 
+.. note:: In order to use IrisNp2, the user-provided parameterization function
+   must support double and AutoDiffXd. If it does not support AutoDiffXd, then
+   only IrisZo can be used.
 
 .. note:: Due to the GIL, it is inefficient to call a Python function
-   concurrently across multiple C++ threads. Therefore, the
-   parameterization setter function automatically sets threadsafe to false.
+   concurrently across multiple C++ threads. Therefore, the constructor
+   automatically sets threadsafe to false.
 )";
 
   py::class_<IrisParameterizationFunction> iris_parameterization_function(
       m, "IrisParameterizationFunction", cls_doc.doc);
   iris_parameterization_function.def(py::init<>(), cls_doc.ctor.doc_0args)
-      .def(py::init(
-               [](const IrisParameterizationFunction::ParameterizationFunction&
-                       parameterization,
-                   int parameterization_dimension) {
-                 return IrisParameterizationFunction(parameterization,
-                     /* parameterization_is_threadsafe = */ false,
-                     parameterization_dimension);
-               }),
+      .def(py::init([](const py::function& parameterization,
+                        int parameterization_dimension) {
+        return IrisParameterizationFunction(
+            WrapParameterizationFunc<double,
+                IrisParameterizationFunction::ParameterizationFunctionDouble>(
+                "IrisParameterizationFunction", parameterization,
+                parameterization_dimension),
+            WrapParameterizationFunc<AutoDiffXd,
+                IrisParameterizationFunction::ParameterizationFunctionAutodiff>(
+                "IrisParameterizationFunction", parameterization,
+                parameterization_dimension),
+            /* parameterization_is_threadsafe = */ false,
+            parameterization_dimension);
+      }),
           py::arg("parameterization"), py::arg("dimension"),
           parameterization_function_docstring.c_str())
       .def(py::init<const Eigen::VectorX<symbolic::Expression>&,
@@ -137,9 +208,12 @@ void DefinePlanningIrisParameterizationFunction(py::module m) {
       .def("get_parameterization_dimension",
           &IrisParameterizationFunction::get_parameterization_dimension,
           cls_doc.get_parameterization_dimension.doc)
-      .def("get_parameterization",
-          &IrisParameterizationFunction::get_parameterization,
-          cls_doc.get_parameterization.doc);
+      .def("get_parameterization_double",
+          &IrisParameterizationFunction::get_parameterization_double,
+          cls_doc.get_parameterization_double.doc)
+      .def("get_parameterization_autodiff",
+          &IrisParameterizationFunction::get_parameterization_autodiff,
+          cls_doc.get_parameterization_autodiff.doc);
 }
 
 }  // namespace

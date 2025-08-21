@@ -28,8 +28,6 @@ filegroup(
         "test/**/*.png",
         "test/**/*.sdf",
         "test/**/*.urdf",
-        "test/**/*.usd",
-        "test/**/*.usda",
         "test/**/*.vtk",
         "test/**/*.xml",
         "test/**/*.zip",
@@ -271,50 +269,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "detail_usd_parser",
-    srcs = select({
-        "//tools:with_usd": [
-            "detail_usd_geometry.cc",
-            "detail_usd_parser.cc",
-        ],
-        "//conditions:default": [
-            "detail_usd_parser_off.cc",
-        ],
-    }),
-    hdrs = select({
-        "//tools:with_usd": [
-            "detail_usd_geometry.h",
-            "detail_usd_parser.h",
-        ],
-        "//conditions:default": [
-            "detail_usd_parser.h",
-        ],
-    }),
-    copts = [
-        # TODO(jwnimmer-tri) OpenUSD has a gargantuan number of warnings.
-        # We should really try to patch it to fix most/all of them.
-        "-w",
-    ],
-    internal = True,
-    visibility = ["//visibility:private"],
-    deps = [
-        ":detail_misc",
-        ":detail_parsing_workspace",
-        "//multibody/plant",
-    ],
-    implementation_deps = [
-        ":detail_make_model_name",
-        "//common:find_runfiles",
-        "//common:unused",
-    ] + select({
-        "//tools:with_usd": [
-            "@openusd_internal//:openusd",
-        ],
-        "//conditions:default": [],
-    }),
-)
-
-drake_cc_library(
     name = "detail_mujoco_parser",
     srcs = ["detail_mujoco_parser.cc"],
     hdrs = ["detail_mujoco_parser.h"],
@@ -389,7 +343,6 @@ drake_cc_library(
         ":detail_parsing_workspace",
         ":detail_sdf_parser",
         ":detail_urdf_parser",
-        ":detail_usd_parser",
     ],
 )
 
@@ -547,7 +500,7 @@ drake_cc_googletest(
 filegroup(
     name = "process_model_directives_test_models",
     testonly = True,
-    data = glob(["test/process_model_directives_test/**"]),
+    data = glob(["test/process_model_directives_test/**"]) + [":test_models"],
     visibility = ["//bindings/pydrake/multibody:__pkg__"],
 )
 
@@ -852,55 +805,6 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name = "detail_usd_parser_test",
-    args = select({
-        "//tools:with_usd": [],
-        "//conditions:default": [
-            "--gtest_filter=-*",
-        ],
-    }),
-    data = [
-        ":test_models",
-    ],
-    deps = [
-        ":detail_usd_parser",
-        "//common:find_resource",
-        "//common/test_utilities:diagnostic_policy_test_base",
-    ],
-)
-
-drake_cc_googletest(
-    name = "detail_usd_geometry_test",
-    args = select({
-        "//tools:with_usd": [],
-        "//conditions:default": [
-            "--gtest_filter=-*",
-        ],
-    }),
-    copts = [
-        "-w",
-    ],
-    defines = select({
-        "//tools:with_usd": [
-            "WITH_USD=1",
-        ],
-        "//conditions:default": [
-            "WITH_USD=0",
-        ],
-    }),
-    deps = [
-        ":detail_usd_parser",
-        "//common:is_approx_equal_abstol",
-        "//common/test_utilities:diagnostic_policy_test_base",
-    ] + select({
-        "//tools:with_usd": [
-            "@openusd_internal//:openusd",
-        ],
-        "//conditions:default": [],
-    }),
-)
-
 install_files(
     name = "install",
     dest = "share/drake/multibody/parsing",
@@ -911,9 +815,4 @@ install_files(
     visibility = ["//visibility:public"],
 )
 
-add_lint_tests(
-    cpplint_extra_srcs = [
-        "detail_usd_parser.cc",
-        "detail_usd_parser_off.cc",
-    ],
-)
+add_lint_tests()

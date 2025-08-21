@@ -36,6 +36,8 @@ using Eigen::MatrixXd;
 using Eigen::Ref;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using internal::CounterexampleConstraint;
+using internal::CounterexampleProgram;
 using internal::IrisConvexSetMaker;
 using math::RigidTransform;
 using multibody::Frame;
@@ -174,150 +176,6 @@ ConvexSets MakeIrisObstacles(const QueryObject<double>& query_object,
 
 namespace {
 
-// Takes a constraint bound to another mathematical program and defines a new
-// constraint that is the negation of one index and one (lower/upper) bound.
-class CounterExampleConstraint : public Constraint {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CounterExampleConstraint);
-
-  explicit CounterExampleConstraint(const MathematicalProgram* prog)
-      : Constraint(1, prog->num_vars(),
-                   Vector1d(-std::numeric_limits<double>::infinity()),
-                   Vector1d::Constant(-kSolverConstraintTolerance - 1e-14)),
-        prog_{prog} {
-    DRAKE_DEMAND(prog != nullptr);
-  }
-
-  ~CounterExampleConstraint() = default;
-
-  // Sets the actual constraint to be falsified, overwriting any previously set
-  // constraints. The Binding<Constraint> must remain valid for the lifetime of
-  // this object (or until a new Binding<Constraint> is set).
-  void set(const Binding<Constraint>* binding_with_constraint_to_be_falsified,
-           int index, bool falsify_lower_bound) {
-    DRAKE_DEMAND(binding_with_constraint_to_be_falsified != nullptr);
-    const int N =
-        binding_with_constraint_to_be_falsified->evaluator()->num_constraints();
-    DRAKE_DEMAND(index >= 0 && index < N);
-    binding_ = binding_with_constraint_to_be_falsified;
-    index_ = index;
-    falsify_lower_bound_ = falsify_lower_bound;
-  }
-
- private:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd* y) const override {
-    DRAKE_DEMAND(binding_ != nullptr);
-    const double val = prog_->EvalBinding(*binding_, x)[index_];
-    if (falsify_lower_bound_) {
-      // val - lb <= -kSolverConstraintTolerance < 0.
-      (*y)[0] = val - binding_->evaluator()->lower_bound()[index_];
-    } else {
-      // ub - val <= -kSolverConstraintTolerance < 0.
-      (*y)[0] = binding_->evaluator()->upper_bound()[index_] - val;
-    }
-  }
-
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd* y) const override {
-    DRAKE_DEMAND(binding_ != nullptr);
-    const AutoDiffXd val = prog_->EvalBinding(*binding_, x)[index_];
-    if (falsify_lower_bound_) {
-      // val - lb <= -kSolverConstraintTolerance < 0.
-      (*y)[0] = val - binding_->evaluator()->lower_bound()[index_];
-    } else {
-      // ub - val <= -kSolverConstraintTolerance < 0.
-      (*y)[0] = binding_->evaluator()->upper_bound()[index_] - val;
-    }
-  }
-
-  void DoEval(const Ref<const VectorX<symbolic::Variable>>&,
-              VectorX<symbolic::Expression>*) const override {
-    // MathematicalProgram::EvalBinding doesn't support symbolic, and we
-    // shouldn't get here.
-    throw std::logic_error(
-        "CounterExampleConstraint doesn't support DoEval for symbolic.");
-  }
-
-  const MathematicalProgram* prog_{};
-  const Binding<Constraint>* binding_{};
-  int index_{0};
-  bool falsify_lower_bound_{true};
-
-  // To find a counter-example for a constraints,
-  //  g(x) ≤ ub,
-  // we need to ask the solver to find
-  //  g(x) + kSolverConstraintTolerance > ub,
-  // which we implement as
-  //  g(x) + kSolverConstraintTolerance ≥ ub + eps.
-  // The variable is static so that it is initialized by the time it is accessed
-  // in the initializer list of the constructor.
-  // TODO(russt): We need a more robust way to get this from the solver. This
-  // value works for SNOPT and is reasonable for most solvers.
-  static constexpr double kSolverConstraintTolerance{1e-6};
-};
-
-// Defines a MathematicalProgram to solve the problem
-// min_q (q-d)*CᵀC(q-d)
-// s.t. counter-example-constraint
-//      Aq ≤ b.
-// where C, d are the matrix and center from the hyperellipsoid E.
-//
-// The class design supports repeated solutions of the (nearly) identical
-// problem from different initial guesses.
-class CounterExampleProgram {
- public:
-  CounterExampleProgram(
-      std::shared_ptr<CounterExampleConstraint> counter_example_constraint,
-      const Hyperellipsoid& E, const Eigen::Ref<const Eigen::MatrixXd>& A,
-      const Eigen::Ref<const Eigen::VectorXd>& b) {
-    q_ = prog_.NewContinuousVariables(A.cols(), "q");
-
-    P_constraint_ = prog_.AddLinearConstraint(
-        A,
-        VectorXd::Constant(b.size(), -std::numeric_limits<double>::infinity()),
-        b, q_);
-    // Scale the objective so the eigenvalues are close to 1, using
-    // scale*lambda_min = 1/scale*lambda_max.
-    const MatrixXd Asq = E.A().transpose() * E.A();
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(Asq);
-    const double scale = 1.0 / std::sqrt(es.eigenvalues().maxCoeff() *
-                                         es.eigenvalues().minCoeff());
-    prog_.AddQuadraticErrorCost(scale * Asq, E.center(), q_);
-
-    prog_.AddConstraint(counter_example_constraint, q_);
-  }
-
-  void UpdatePolytope(const Eigen::Ref<const Eigen::MatrixXd>& A,
-                      const Eigen::Ref<const Eigen::VectorXd>& b) {
-    P_constraint_->evaluator()->UpdateCoefficients(
-        A,
-        VectorXd::Constant(b.size(), -std::numeric_limits<double>::infinity()),
-        b);
-  }
-
-  // Returns true iff a counter-example is found.
-  // Sets `closest` to an optimizing solution q*, if a solution is found.
-  bool Solve(const solvers::SolverInterface& solver,
-             const Eigen::Ref<const Eigen::VectorXd>& q_guess,
-             const std::optional<solvers::SolverOptions>& solver_options,
-             VectorXd* closest) {
-    prog_.SetInitialGuess(q_, q_guess);
-    solvers::MathematicalProgramResult result;
-    solver.Solve(prog_, std::nullopt, solver_options, &result);
-    if (result.is_success()) {
-      *closest = result.GetSolution(q_);
-      return true;
-    }
-    return false;
-  }
-
- private:
-  MathematicalProgram prog_;
-  solvers::VectorXDecisionVariable q_;
-  std::optional<Binding<solvers::LinearConstraint>> P_constraint_{};
-};
-
 // Add the tangent to the (scaled) ellipsoid at @p point as a
 // constraint.
 void AddTangentToPolytope(
@@ -431,9 +289,8 @@ std::vector<int> revolute_joint_indices(const multibody::Joint<double>& joint) {
 
 }  // namespace
 
-HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
-                                     const Context<double>& context,
-                                     const IrisOptions& options) {
+HPolyhedron IrisNp(const MultibodyPlant<double>& plant,
+                   const Context<double>& context, const IrisOptions& options) {
   // Check the inputs.
   plant.ValidateContext(context);
   const int nq = plant.num_positions();
@@ -453,7 +310,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
     const multibody::Joint<double>& joint = plant.get_joint(index);
     if (joint.type_name() == QuaternionFloatingJoint<double>::kTypeName) {
       throw std::runtime_error(
-          "IrisInConfigurationSpace does not support QuaternionFloatingJoint. "
+          "IrisNp does not support QuaternionFloatingJoint. "
           "Consider using RpyFloatingJoint instead.");
     }
     const std::vector<int> continuous_revolute_indices =
@@ -516,7 +373,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
 
   if (boundedness_error) {
     throw std::runtime_error(
-        "IrisInConfigurationSpace requires that the initial domain be bounded. "
+        "IrisNp requires that the initial domain be bounded. "
         "Make sure all joints have position limits (unless that joint is a "
         "RevoluteJoint or the revolute component of a PlanarJoint or "
         "RpyFloatingJoint), or ensure that the intersection of the joint "
@@ -583,11 +440,11 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   b.head(P.A().rows()) = P.b();
   int num_initial_constraints = P.A().rows();
 
-  std::shared_ptr<CounterExampleConstraint> counter_example_constraint{};
-  std::unique_ptr<CounterExampleProgram> counter_example_prog{};
+  std::shared_ptr<CounterexampleConstraint> counter_example_constraint{};
+  std::unique_ptr<CounterexampleProgram> counter_example_prog{};
   std::vector<Binding<Constraint>> additional_constraint_bindings{};
   if (options.prog_with_additional_constraints) {
-    counter_example_constraint = std::make_shared<CounterExampleConstraint>(
+    counter_example_constraint = std::make_shared<CounterexampleConstraint>(
         options.prog_with_additional_constraints);
     additional_constraint_bindings =
         options.prog_with_additional_constraints->GetAllConstraints();
@@ -638,7 +495,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
         options.prog_with_additional_constraints->bounding_box_constraints());
     HandleLinearConstraints(
         options.prog_with_additional_constraints->linear_constraints());
-    counter_example_prog = std::make_unique<CounterExampleProgram>(
+    counter_example_prog = std::make_unique<CounterexampleProgram>(
         counter_example_constraint, E, A.topRows(num_initial_constraints),
         b.head(num_initial_constraints));
 
@@ -648,7 +505,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
 
   if (options.termination_func && options.termination_func(P)) {
     throw std::runtime_error(
-        "IrisInConfigurationSpace: The options.termination_func() returned "
+        "IrisNp: The options.termination_func() returned "
         "true for the initial region (defined by the linear constraints in "
         "prog_with_additional_constraints and bounding_region arguments).  "
         "Please check the implementation of your termination_func.");
@@ -674,22 +531,22 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   bool do_debugging_visualization = options.meshcat && nq <= 3;
 
   const std::string seed_point_error_msg =
-      "IrisInConfigurationSpace: require_sample_point_is_contained is true but "
+      "IrisNp: require_sample_point_is_contained is true but "
       "the seed point exited the initial region. Does the provided "
       "options.starting_ellipse not contain the seed point?";
   const std::string seed_point_msg =
-      "IrisInConfigurationSpace: terminating iterations because the seed point "
+      "IrisNp: terminating iterations because the seed point "
       "is no longer in the region.";
   const std::string termination_error_msg =
-      "IrisInConfigurationSpace: the termination function returned false on "
+      "IrisNp: the termination function returned false on "
       "the computation of the initial region. Are the provided "
       "options.starting_ellipse and options.termination_func compatible?";
   const std::string termination_msg =
-      "IrisInConfigurationSpace: terminating iterations because "
+      "IrisNp: terminating iterations because "
       "options.termination_func returned false.";
 
   while (true) {
-    log()->info("IrisInConfigurationSpace iteration {}", iteration);
+    log()->info("IrisNp iteration {}", iteration);
     int num_constraints = num_initial_constraints;
     HPolyhedron P_candidate = HPolyhedron(A.topRows(num_initial_constraints),
                                           b.head(num_initial_constraints));
@@ -921,7 +778,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
     iteration++;
     if (iteration >= options.iteration_limit) {
       log()->info(
-          "IrisInConfigurationSpace: Terminating because the iteration limit "
+          "IrisNp: Terminating because the iteration limit "
           "{} has been reached.",
           options.iteration_limit);
       break;
@@ -932,14 +789,14 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
     const double delta_volume = volume - best_volume;
     if (delta_volume <= options.termination_threshold) {
       log()->info(
-          "IrisInConfigurationSpace: Terminating because the hyperellipsoid "
+          "IrisNp: Terminating because the hyperellipsoid "
           "volume change {} is below the threshold {}.",
           delta_volume, options.termination_threshold);
       break;
     } else if (delta_volume / best_volume <=
                options.relative_termination_threshold) {
       log()->info(
-          "IrisInConfigurationSpace: Terminating because the hyperellipsoid "
+          "IrisNp: Terminating because the hyperellipsoid "
           "relative volume change {} is below the threshold {}.",
           delta_volume / best_volume, options.relative_termination_threshold);
       break;
@@ -947,6 +804,12 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
     best_volume = volume;
   }
   return P;
+}
+
+HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
+                                     const Context<double>& context,
+                                     const IrisOptions& options) {
+  return IrisNp(plant, context, options);
 }
 
 void SetEdgeContainmentTerminationCondition(

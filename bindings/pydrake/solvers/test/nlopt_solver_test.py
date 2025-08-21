@@ -37,6 +37,7 @@ class TestNloptSolver(unittest.TestCase):
         self.assertIsInstance(NloptSolver.XAbsoluteToleranceName(), str)
         self.assertIsInstance(NloptSolver.MaxEvalName(), str)
         self.assertIsInstance(NloptSolver.AlgorithmName(), str)
+        self.assertIsInstance(NloptSolver.MaxTimeName(), str)
 
     def unavailable(self):
         """Per the BUILD file, this test is only run when NLopt is disabled."""

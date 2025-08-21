@@ -510,7 +510,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * @warning See warning in the @ref polynomial_warning "constructor overview"
    *          above.
    */
-  MatrixX<T> value(const T& t) const final {
+  MatrixX<T> value(const T& t) const {
     // We shadowed the base class to add documentation, not to change logic.
     return PiecewiseTrajectory<T>::value(t);
   }
@@ -543,7 +543,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * Returns the row count of the output matrices.
    * @throws std::exception if empty().
    */
-  Eigen::Index rows() const final {
+  Eigen::Index rows() const {
     // We shadowed the base class to add documentation, not to change logic.
     return PiecewiseTrajectory<T>::rows();
   }
@@ -552,7 +552,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * Returns the column count of the output matrices.
    * @throws std::exception if empty().
    */
-  Eigen::Index cols() const final {
+  Eigen::Index cols() const {
     // We shadowed the base class to add documentation, not to change logic.
     return PiecewiseTrajectory<T>::cols();
   }

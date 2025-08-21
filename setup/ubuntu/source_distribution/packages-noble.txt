@@ -2,7 +2,7 @@ default-jdk
 diffutils
 file
 gfortran
-libclang-17-dev
+libclang-19-dev
 libgl-dev
 libglib2.0-dev
 libglx-dev
@@ -16,5 +16,4 @@ patch
 patchelf
 pkg-config
 python3-all-dev
-python3-pygame
 zlib1g-dev

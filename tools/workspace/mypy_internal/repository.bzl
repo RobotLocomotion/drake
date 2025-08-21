@@ -9,8 +9,8 @@ def mypy_internal_repository(
         # drake/tools/workspace/new_release.py.  When practical, all members
         # of this cohort should be updated at the same time.
         repository = "python/mypy",
-        commit = "v1.16.0",
-        sha256 = "b2bf9faec28adae0a06df04fe5357c369c9703f8ae3bd4a8c5633c183fe90a9a",  # noqa
+        commit = "v1.17.0",
+        sha256 = "d9d5362f087415c58a8a48c53fe2f6e81e9afd97e833fa862661208b44ee243d",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/upstream/reject_double_colon.patch",

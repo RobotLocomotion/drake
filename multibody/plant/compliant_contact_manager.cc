@@ -36,13 +36,13 @@ namespace internal {
 
 template <typename T>
 AccelerationsDueNonConstraintForcesCache<
-    T>::AccelerationsDueNonConstraintForcesCache(const MultibodyTreeTopology&
-                                                     topology)
-    : forces(topology.num_rigid_bodies(), topology.num_velocities()),
-      abic(topology),
-      Zb_Bo_W(topology.num_mobods()),
-      aba_forces(topology),
-      ac(topology) {}
+    T>::AccelerationsDueNonConstraintForcesCache(const internal::SpanningForest&
+                                                     forest)
+    : forces(forest.num_links(), forest.num_velocities()),
+      abic(forest),
+      Zb_Bo_W(forest.num_mobods()),
+      aba_forces(forest),
+      ac(forest) {}
 
 template <typename T>
 CompliantContactManager<T>::CompliantContactManager() = default;
@@ -90,7 +90,7 @@ void CompliantContactManager<T>::DoDeclareCacheEntries() {
   // We cache non-contact forces, ABA forces and accelerations into an
   // AccelerationsDueNonConstraintForcesCache.
   AccelerationsDueNonConstraintForcesCache<T>
-      non_constraint_forces_accelerations(this->internal_tree().get_topology());
+      non_constraint_forces_accelerations(this->internal_tree().forest());
   const auto& non_constraint_forces_accelerations_cache_entry =
       this->DeclareCacheEntry(
           "Non-constraint forces and induced accelerations.",

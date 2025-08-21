@@ -3,7 +3,7 @@
 Drake offers Python-based tutorials using Jupyter notebooks.
 
 We recommend that you
-[view the tutorials online](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2Findex.ipynb).
+[view the tutorials online](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/index-753e3c9d261247ba9f0eb1d7868c18c8).
 
 Alternatively, you may run the tutorials locally.
 

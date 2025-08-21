@@ -630,7 +630,7 @@ class Mesh final : public Shape {
  direction of the frame's +z axis. Or, more formally: a finite section of a
  Lorentz cone (aka "second-order cone"), defined by
 
-      sqrt(x²/a² + y²/b²) ≤ z;  z ∈ [0, height],
+      sqrt(x²/a² + y²/b²) ≤ z/height;  z ∈ [0, height],
 
  where `a` and `b` are the lengths of the principal semi-axes of the horizontal
  section at `z=height()`.

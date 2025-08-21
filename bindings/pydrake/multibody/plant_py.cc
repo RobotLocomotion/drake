@@ -1742,7 +1742,24 @@ PYBIND11_MODULE(plant, m) {
             py::arg("id"), py::arg("q"), cls_doc.SetPositions.doc)
         .def("GetPositions", &Class::GetPositions, py::arg("context"),
             py::arg("id"), cls_doc.GetPositions.doc)
-        // TODO(xuchenhan-tri): Bind AddExternalForce and GetExternalForces.
+        .def("SetVelocities", &Class::SetVelocities, py::arg("context"),
+            py::arg("id"), py::arg("v"), cls_doc.SetVelocities.doc)
+        .def("GetVelocities", &Class::GetVelocities, py::arg("context"),
+            py::arg("id"), cls_doc.GetVelocities.doc)
+        .def("SetPositionsAndVelocities", &Class::SetPositionsAndVelocities,
+            py::arg("context"), py::arg("id"), py::arg("q"), py::arg("v"),
+            cls_doc.SetPositionsAndVelocities.doc)
+        .def("GetPositionsAndVelocities", &Class::GetPositionsAndVelocities,
+            py::arg("context"), py::arg("id"),
+            cls_doc.GetPositionsAndVelocities.doc)
+        .def(
+            "AddExternalForce",
+            [](Class& self, const ForceDensityFieldBase<T>& external_force) {
+              self.AddExternalForce(external_force.Clone());
+            },
+            py::arg("external_force"), cls_doc.AddExternalForce.doc)
+        .def("GetExternalForces", &Class::GetExternalForces, py::arg("id"),
+            py_rvp::reference_internal, cls_doc.GetExternalForces.doc)
         .def("Disable", &Class::Disable, py::arg("id"), py::arg("context"),
             cls_doc.Disable.doc)
         .def("Enable", &Class::Enable, py::arg("id"), py::arg("context"),

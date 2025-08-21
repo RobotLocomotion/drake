@@ -975,6 +975,20 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                   self.interval_binning, self.linear_constraint_only);
         });
 
+    py::class_<GlobalInverseKinematics::Polytope3D>(
+        global_ik, "Polytope3D", cls_doc.Polytope3D.doc)
+        .def(py::init<const Eigen::Ref<const Eigen::MatrixX3d>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&>(),
+            py::arg("A"), py::arg("b"), cls_doc.Polytope3D.ctor.doc)
+        .def_readwrite("A", &GlobalInverseKinematics::Polytope3D::A,
+            cls_doc.Polytope3D.A.doc)
+        .def_readwrite("b", &GlobalInverseKinematics::Polytope3D::b,
+            cls_doc.Polytope3D.b.doc)
+        .def("__repr__", [](const GlobalInverseKinematics::Polytope3D& self) {
+          return py::str("GlobalInverseKinematics.Polytope(A={}, b={})")
+              .format(self.A, self.b);
+        });
+
     global_ik
         .def(py::init<const MultibodyPlant<double>&,
                  const GlobalInverseKinematics::Options&>(),
@@ -1040,10 +1054,35 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             },
             py::arg("q_desired"), py::arg("body_position_cost"),
             py::arg("body_orientation_cost"), cls_doc.AddPostureCost.doc)
+        .def(
+            "BodyPointInOneOfRegions",
+            [](Class* self, BodyIndex body_index,
+                const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                const std::vector<Eigen::Matrix3Xd>& region_vertices) {
+              return self->BodyPointInOneOfRegions(
+                  body_index, p_BQ, region_vertices);
+            },
+            py::arg("body_index"), py::arg("p_BQ"), py::arg("region_vertices"),
+            cls_doc.BodyPointInOneOfRegions.doc)
+        .def(
+            "BodySphereInOneOfPolytopes",
+            [](Class* self, BodyIndex body_index,
+                const Eigen::Ref<const Eigen::Vector3d>& p_BQ, double radius,
+                const std::vector<GlobalInverseKinematics::Polytope3D>&
+                    polytopes) {
+              return self->BodySphereInOneOfPolytopes(
+                  body_index, p_BQ, radius, polytopes);
+            },
+            py::arg("body_index"), py::arg("p_BQ"), py::arg("radius"),
+            py::arg("polytopes"), cls_doc.BodySphereInOneOfPolytopes.doc)
+        .def("AddJointLimitConstraint", &Class::AddJointLimitConstraint,
+            py::arg("body_index"), py::arg("joint_lower_bound"),
+            py::arg("joint_upper_bound"),
+            py::arg("linear_constraint_approximation") = false,
+            cls_doc.AddJointLimitConstraint.doc)
         .def("SetInitialGuess", &Class::SetInitialGuess, py::arg("q"),
             cls_doc.SetInitialGuess.doc);
-    // TODO(russt): Add bindings for Polytope3D struct and related methods
-    // (or convert those methods to use ConvexSets).
+    // TODO(cohnt): Convert methods that use Polytope3D to use ConvexSets.
   }
 
   // TODO(SeanCurtis-TRI): Refactor this into its own stand-alone .cc file and

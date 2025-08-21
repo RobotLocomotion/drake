@@ -690,7 +690,9 @@ bool RenderEngineVtk::ImplementGltf(const Mesh& mesh,
 
   // The relative transform from the file's frame F to the geometry's frame G.
   // This includes the rotation from y-up to z-up and the requested scale.
-  const RigidTransformd X_GF(RotationMatrixd::MakeXRotation(M_PI / 2));
+  const RotationMatrixd R_GF = RotationMatrixd::MakeFromOrthonormalColumns(
+      Vector3d::UnitX(), Vector3d::UnitZ(), -Vector3d::UnitY());
+  const RigidTransformd X_GF(R_GF);
   vtkSmartPointer<vtkTransform> T_GF_transform =
       ConvertToVtkTransform(X_GF, mesh.scale3());
   vtkMatrix4x4* T_GF = T_GF_transform->GetMatrix();

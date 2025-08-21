@@ -213,7 +213,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":schunk_wsg_trajectory_generator",
+        "//common/test_utilities:eigen_matrix_compare",
         "//systems/analysis:simulator",
+        "//systems/primitives:vector_log_sink",
     ],
 )
 

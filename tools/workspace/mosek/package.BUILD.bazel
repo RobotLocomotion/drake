@@ -1,5 +1,7 @@
 # -*- bazel -*-
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@drake//tools/install:install.bzl", "install", "install_files")
 load("@drake//tools/skylark:cc.bzl", "cc_import", "cc_library")
 
@@ -70,11 +72,40 @@ cc_import(
     visibility = ["//visibility:private"],
 )
 
+_MOSEK_SO_NAME = paths.basename(_MOSEK_MAJMIN_GLOB[0])
+
+_IMPLIB_SRCS = [
+    "{}.tramp.S".format(_MOSEK_SO_NAME),
+    "{}.init.c".format(_MOSEK_SO_NAME),
+]
+
+genrule(
+    name = "_gen_implib",
+    srcs = [_MOSEK_MAJMIN_GLOB[0]],
+    outs = _IMPLIB_SRCS,
+    cmd = "$(execpath @implib_so_internal//:gen) --outdir=$(RULEDIR) $<",
+    tools = ["@implib_so_internal//:gen"],
+)
+
+cc_library(
+    name = "implib_mosek",
+    srcs = _IMPLIB_SRCS,
+    linkstatic = True,
+)
+
+config_setting(
+    name = "lazy_load",
+    flag_values = {"@drake//solvers:mosek_lazy_load": "True"},
+)
+
 cc_library(
     name = "mosek",
     hdrs = ["h/mosek.h"],
     includes = ["h"],
-    deps = [":import_mosek"],
+    deps = select({
+        ":lazy_load": [":implib_mosek"],
+        "//conditions:default": [":import_mosek"],
+    }),
     visibility = ["//visibility:public"],
 )
 
@@ -95,10 +126,14 @@ install_files(
 
 install(
     name = "install_licenses",
-    docs = [
-        "mosek-eula.pdf",
+    docs = select({
+        ":lazy_load": [],
+        "//conditions:default": [
+            "mosek-eula.pdf",
+            "@drake//tools/workspace/mosek:LICENSE.third_party",
+        ],
+    }) + [
         "@drake//tools/workspace/mosek:drake_mosek_redistribution.txt",
-        "@drake//tools/workspace/mosek:LICENSE.third_party",
     ],
     doc_strip_prefix = ["tools/workspace/mosek"],
     allowed_externals = ["@drake//:.bazelproject"],

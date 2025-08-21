@@ -7,6 +7,7 @@
 
 #include <fmt/format.h>
 #include <fmt/ranges.h>
+#include <unsupported/Eigen/MatrixFunctions>
 
 #include "drake/common/nice_type_name.h"
 #include "drake/systems/analysis/simulator_config_functions.h"
@@ -14,10 +15,6 @@
 
 namespace drake {
 namespace systems {
-
-// N.B. The overloaded implementations for LinearSystem and AffineSystem are
-// defined in drake/systems/primitives/linear_system.cc for now. After the
-// deprecation period ends on 2025-08-01, we should relocate them into here.
 
 namespace {
 
@@ -327,6 +324,58 @@ class DiscreteTimeSystem final : public LeafSystem<T> {
 }  // namespace
 
 template <typename T>
+std::unique_ptr<LinearSystem<T>> DiscreteTimeApproximation(
+    const LinearSystem<T>& system, double time_period) {
+  // Check that the original system is continuous.
+  DRAKE_THROW_UNLESS(system.IsDifferentialEquationSystem());
+  // Check that the discrete time_period is greater than zero.
+  DRAKE_THROW_UNLESS(time_period > 0);
+
+  const int ns = system.num_states();
+  const int ni = system.num_inputs();
+
+  Eigen::MatrixXd M(ns + ni, ns + ni);
+  M << system.A(), system.B(), Eigen::MatrixXd::Zero(ni, ns + ni);
+
+  Eigen::MatrixXd Md = (M * time_period).exp();
+
+  auto Ad = Md.block(0, 0, ns, ns);
+  auto Bd = Md.block(0, ns, ns, ni);
+  auto& Cd = system.C();
+  auto& Dd = system.D();
+
+  return std::make_unique<LinearSystem<T>>(Ad, Bd, Cd, Dd, time_period);
+}
+
+template <typename T>
+std::unique_ptr<AffineSystem<T>> DiscreteTimeApproximation(
+    const AffineSystem<T>& system, double time_period) {
+  // Check that the original system is continuous.
+  DRAKE_THROW_UNLESS(system.IsDifferentialEquationSystem());
+  // Check that the discrete time_period is greater than zero.
+  DRAKE_THROW_UNLESS(time_period > 0);
+
+  const int ns = system.num_states();
+  const int ni = system.num_inputs();
+
+  Eigen::MatrixXd M(ns + ni + 1, ns + ni + 1);
+  M << system.A(), system.B(), system.f0(),
+      Eigen::MatrixXd::Zero(ni + 1, ns + ni + 1);
+
+  Eigen::MatrixXd Md = (M * time_period).exp();
+
+  auto Ad = Md.block(0, 0, ns, ns);
+  auto Bd = Md.block(0, ns, ns, ni);
+  auto f0d = Md.block(0, ns + ni, ns, 1);
+  auto& Cd = system.C();
+  auto& Dd = system.D();
+  auto& y0d = system.y0();
+
+  return std::make_unique<AffineSystem<T>>(Ad, Bd, f0d, Cd, Dd, y0d,
+                                           time_period);
+}
+
+template <typename T>
 std::unique_ptr<System<T>> DiscreteTimeApproximation(
     std::shared_ptr<const System<T>> system, double time_period,
     const SimulatorConfig& integrator_config) {
@@ -346,6 +395,12 @@ std::unique_ptr<System<T>> DiscreteTimeApproximation(
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    static_cast<std::unique_ptr<::drake::systems::LinearSystem<T>> (*)(
+        const ::drake::systems::LinearSystem<T>&, double)>(
+        &::drake::systems::DiscreteTimeApproximation<T>),
+    static_cast<std::unique_ptr<::drake::systems::AffineSystem<T>> (*)(
+        const ::drake::systems::AffineSystem<T>&, double)>(
+        &::drake::systems::DiscreteTimeApproximation<T>),
     static_cast<std::unique_ptr<System<T>> (*)(std::shared_ptr<const System<T>>,
                                                double, const SimulatorConfig&)>(
         &DiscreteTimeApproximation<T>),

@@ -29,7 +29,9 @@ void DefineSolversNlopt(py::module m) {
       .def_static("MaxEvalName", &NloptSolver::MaxEvalName,
           doc.NloptSolver.MaxEvalName.doc)
       .def_static("AlgorithmName", &NloptSolver::AlgorithmName,
-          doc.NloptSolver.AlgorithmName.doc);
+          doc.NloptSolver.AlgorithmName.doc)
+      .def_static("MaxTimeName", &NloptSolver::MaxTimeName,
+          doc.NloptSolver.MaxTimeName.doc);
 
   py::class_<NloptSolverDetails>(
       m, "NloptSolverDetails", doc.NloptSolverDetails.doc)

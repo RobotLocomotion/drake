@@ -31,13 +31,13 @@ class AccelerationKinematicsCache {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AccelerationKinematicsCache);
 
   // Constructs an acceleration kinematics cache entry for the given
-  // MultibodyTreeTopology.
+  // SpanningForest.
   // In Release builds specific entries are left uninitialized resulting in a
   // zero cost operation. However in Debug builds those entries are set to NaN
   // so that operations using this uninitialized cache entry fail fast, easing
   // bug detection.
-  explicit AccelerationKinematicsCache(const MultibodyTreeTopology& topology) {
-    Allocate(topology);
+  explicit AccelerationKinematicsCache(const internal::SpanningForest& forest) {
+    Allocate(forest);
     DRAKE_ASSERT_VOID(InitializeToNaN());
     // Sets defaults: drake::multibody::world_mobod_index() defines the unique
     // index to the world body and is defined in multibody_tree_indexes.h.
@@ -95,10 +95,10 @@ class AccelerationKinematicsCache {
   int get_num_mobods() const { return static_cast<int>(A_WB_pool_.size()); }
 
   // Allocates resources for this acceleration kinematics cache.
-  void Allocate(const MultibodyTreeTopology& topology) {
-    const int num_mobods = topology.num_mobods();
+  void Allocate(const internal::SpanningForest& forest) {
+    const int num_mobods = forest.num_mobods();
     A_WB_pool_.resize(num_mobods);
-    const int num_velocities = topology.num_velocities();
+    const int num_velocities = forest.num_velocities();
     vdot_.resize(num_velocities);
   }
 

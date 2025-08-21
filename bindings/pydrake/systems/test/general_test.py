@@ -970,6 +970,8 @@ class TestGeneral(unittest.TestCase):
         self.assertIn((adder2, InputPortIndex(0)), connections)
         self.assertEqual(connections[(adder2, InputPortIndex(0))],
                          (adder1, OutputPortIndex(0)))
+        self.assertTrue(diagram.AreConnected(output=adder1.get_output_port(),
+                                             input=adder2.get_input_port()))
         del adder1, adder2, diagram  # To test keep-alive logic
         gc.collect()
         self.assertEqual(list(connections.keys())[0][0].get_name(), "adder2")

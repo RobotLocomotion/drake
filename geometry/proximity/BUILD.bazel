@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":bv",
         ":bvh",
         ":bvh_updater",
+        ":calc_obb",
         ":collision_filter",
         ":contact_surface_utility",
         ":deformable_contact_geometries",
@@ -152,6 +153,17 @@ drake_cc_library(
     implementation_deps = [
         ":distance_to_point_callback",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "calc_obb",
+    srcs = ["calc_obb.cc"],
+    hdrs = ["calc_obb.h"],
+    deps = [
+        ":bv",
+        "//common:essential",
+        "//geometry:shape_specification",
     ],
 )
 
@@ -975,7 +987,9 @@ drake_cc_library(
     hdrs = ["volume_mesh_refiner.h"],
     deps = [
         ":detect_zero_simplex",
+        ":mesh_to_vtk",
         ":volume_mesh",
+        ":vtk_to_volume_mesh",
         "//common:essential",
     ],
 )
@@ -1099,6 +1113,18 @@ drake_cc_googletest(
     deps = [
         ":calc_distance_to_surface_mesh",
         ":make_box_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "calc_obb_test",
+    data = [
+        "//geometry:test_obj_files",
+    ],
+    deps = [
+        ":calc_obb",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -1625,9 +1651,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "obb_test",
+    data = [
+        "//geometry:test_obj_files",
+    ],
     deps = [
         ":bv",
         ":make_box_mesh",
+        ":make_convex_hull_mesh",
         ":make_ellipsoid_mesh",
         ":make_sphere_mesh",
         ":triangle_surface_mesh",

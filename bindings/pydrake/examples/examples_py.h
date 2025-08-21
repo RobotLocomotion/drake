@@ -18,9 +18,6 @@ void DefineExamplesAcrobot(py::module m);
 /* Defines bindings per examples_py_compass_gait.cc. */
 void DefineExamplesCompassGait(py::module m);
 
-/* Defines bindings per examples_py_manipulation_station.cc. */
-void DefineExamplesManipulationStation(py::module m);
-
 /* Defines bindings per examples_py_pendulum.cc. */
 void DefineExamplesPendulum(py::module m);
 

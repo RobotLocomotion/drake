@@ -197,6 +197,55 @@ std::optional<MultibodyConstraintId> ParseBallConstraint(
     const std::function<const RigidBody<double>*(const char*)>& read_body,
     MultibodyPlant<double>* plant);
 
+// Adds a tendon constraint to `plant` from a reading interface in a URDF/SDF
+// agnostic manner. This function validates that the specified joints exist in
+// the model, but otherwise does no semantic parsing and leaves the
+// responsibility of handling errors or missing values to the individual
+// parsers. All values are expected to exist and be well formed. Through this,
+// the API to specify the tendon_constraint tag in both SDF and URDF can be
+// controlled/modified in a single function.
+//
+// __SDF__:
+//
+// <drake:tendon_constraint>
+//   <drake:tendon_constraint_joint name='joint_A' a='10.0'/>
+//   <drake:tendon_constraint_joint name='joint_B' a='20.0'/>
+//   <drake:tendon_constraint_offset>0.5</drake:tendon_constraint_offset>
+//   <drake:tendon_constraint_lower_limit>-1.0</drake:tendon_constraint_lower_limit>
+//   <drake:tendon_constraint_upper_limit>1.0</drake:tendon_constraint_upper_limit>
+//   <drake:tendon_constraint_stiffness>0.1</drake:tendon_constraint_stiffness>
+//   <drake:tendon_constraint_damping>0.01</drake:tendon_constraint_damping>
+// </drake:tendon_constraint>
+//
+// __URDF__:
+//
+// <drake:tendon_constraint>
+//   <drake:tendon_constraint_joint name='joint_A' a='10.0'/>
+//   <drake:tendon_constraint_joint name='joint_B' a='20.0'/>
+//   <drake:tendon_constraint_offset value="0.5"/>
+//   <drake:tendon_constraint_lower_limit value="-1.0"/>
+//   <drake:tendon_constraint_upper_limit value="1.0"/>
+//   <drake:tendon_constraint_stiffness value="0.1"/>
+//   <drake:tendon_constraint_damping value="0.01"/>
+// </drake:tendon_constraint>
+//
+// The various @p read_* functors may (at its option) emit diagnostic errors or
+// warnings but should not throw. ParseTendonConstraint() may return nullopt at
+// its option.
+std::optional<MultibodyConstraintId> ParseTendonConstraint(
+    const drake::internal::DiagnosticPolicy& diagnostic,
+    ModelInstanceIndex model_instance, const ElementNode& constraint_node,
+    const std::function<std::optional<double>(const char*)>& read_double,
+    const std::function<ElementNode(const ElementNode&, const char*)>&
+        next_child_element,
+    const std::function<ElementNode(const ElementNode&, const char*)>&
+        next_sibling_element,
+    const std::function<std::string(const ElementNode&, const char*)>&
+        read_string_attribute,
+    const std::function<double(const ElementNode&, const char*)>&
+        read_double_attribute,
+    MultibodyPlant<double>* plant);
+
 // TODO(@SeanCurtis-TRI): The real solution here is to create a wrapper
 // class that provides a consistent interface to either representation.
 // Then instantiate on the caller side and express the code here in terms of

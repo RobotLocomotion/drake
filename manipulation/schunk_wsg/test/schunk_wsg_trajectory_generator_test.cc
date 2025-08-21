@@ -5,10 +5,12 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/system_output.h"
+#include "drake/systems/primitives/vector_log_sink.h"
 
 namespace drake {
 namespace manipulation {
@@ -89,6 +91,54 @@ GTEST_TEST(SchunkWsgTrajectoryGeneratorTest, DeltaEqualsZero) {
   Eigen::Vector2d target =
       dut.get_target_output_port().Eval(simulator.get_context());
   EXPECT_EQ(target[0], -pos);
+}
+
+// If we reset the diagram containing the ScunkWsgTrajectoryGenerator, we
+// should obtain the same output.
+GTEST_TEST(SchunkWsgTrajectoryGeneratorTest, ResetSim) {
+  systems::DiagramBuilder<double> builder;
+  auto dut = builder.AddSystem<SchunkWsgTrajectoryGenerator>(1, 0);
+  auto target_logger = LogVectorOutput(dut->get_target_output_port(), &builder);
+  auto max_force_logger =
+      LogVectorOutput(dut->get_max_force_output_port(), &builder);
+  auto diagram = builder.Build();
+
+  auto diagram_context = diagram->CreateDefaultContext();
+  auto& dut_context = dut->GetMyMutableContextFromRoot(diagram_context.get());
+  const auto reset_context = diagram_context->Clone();
+
+  const double pos = 0.06;
+  dut->get_desired_position_input_port().FixValue(&dut_context, pos);
+  dut->get_force_limit_input_port().FixValue(&dut_context, 40.0);
+  dut->get_state_input_port().FixValue(&dut_context, -pos / 2.0);
+
+  systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
+  simulator.AdvanceTo(0.1);
+
+  auto get_and_clear_logger = [](const systems::VectorLogSink<double>& sink,
+                                 systems::Context<double>* root_context) {
+    auto& log_context = sink.GetMyMutableContextFromRoot(root_context);
+    systems::VectorLog<double>& log = sink.GetMutableLog(&log_context);
+    const Eigen::MatrixXd data = log.data();
+    log.Clear();
+    return data;
+  };
+  const Eigen::MatrixXd target_data_expected =
+      get_and_clear_logger(*target_logger, &(simulator.get_mutable_context()));
+
+  const Eigen::MatrixXd max_force_data_expected = get_and_clear_logger(
+      *max_force_logger, &(simulator.get_mutable_context()));
+
+  // Simulate the diagram again with reset_context.
+  simulator.get_mutable_context().SetTimeStateAndParametersFrom(*reset_context);
+  simulator.Initialize();
+  simulator.AdvanceTo(0.1);
+  const Eigen::MatrixXd target_data =
+      get_and_clear_logger(*target_logger, &(simulator.get_mutable_context()));
+  const Eigen::MatrixXd max_force_data = get_and_clear_logger(
+      *max_force_logger, &(simulator.get_mutable_context()));
+  EXPECT_TRUE(CompareMatrices(target_data, target_data_expected));
+  EXPECT_TRUE(CompareMatrices(max_force_data, max_force_data_expected));
 }
 
 }  // namespace

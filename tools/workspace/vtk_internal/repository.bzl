@@ -184,8 +184,8 @@ def vtk_internal_repository(
         # TODO(jwnimmer-tri) Once there's a tagged release with support for
         # VTK_ABI_NAMESPACE, we should switch to an official version number
         # here. That probably means waiting for the VTK 10 release.
-        commit = "1d67dcfb29517a1533680a74736fa6786e5029d0",
-        sha256 = "82d86920dbba79d169183baacdf092e5b6f3acef12fea6bb90cd620632a1d567",  # noqa
+        commit = "557befa04130f42d7287b86e5f9c6397117fd4d8",
+        sha256 = "2240f29d8a21f46388407d8ace20f51d00f35a5fb0c4b1fa10d6d7d6e597b4eb",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             # Drake's conventions for VTK patches are:
@@ -196,8 +196,11 @@ def vtk_internal_repository(
             #   edited (e.g., patching IO/Image is named io_image_{foo}.patch).
             # - Use alphabetical order within a directory when listing patches.
             ":patches/upstream/common_core_rm_iostream.patch",
+            ":patches/upstream/common_datamodel_vtkdatasetattributes_iterator.patch",  # noqa
+            ":patches/upstream/common_executionmodel_vtkalgorithm_ternary.patch",  # noqa
             ":patches/upstream/io_geometry_gltf_default_scene.patch",
             ":patches/upstream/io_import_errors.patch",
+            ":patches/upstream/rendering_core_vtkcomposite_exception.patch",
             ":patches/upstream/rendering_opengl2_scaled_albedo_for_ibl.patch",
             ":patches/upstream/vtkpugixml_global_ctor.patch",
             ":patches/common_core_nobacktrace.patch",
@@ -208,6 +211,7 @@ def vtk_internal_repository(
             ":patches/io_image_formats.patch",
             ":patches/rendering_opengl2_nobacktrace.patch",
             ":patches/rendering_opengl2_no_factory.patch",
+            ":patches/rendering_opengl2_no_global_display_counter.patch",
             ":patches/rendering_opengl2_preserve_direct_light_specular_reflections.patch",  # noqa
             ":patches/vtkdoubleconversion_hidden.patch",
             ":patches/vtkfast_float_hidden.patch",

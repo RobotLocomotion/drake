@@ -634,6 +634,13 @@ void BindMathematicalProgram(py::module m) {
           // N.B. There is no corresponding C++ method, so the docstring here
           // is a literal, not a reference to documentation_pybind.h
           "Adds a cost function.")
+      .def(
+          "AddCost",
+          [](MathematicalProgram* self, const Binding<Cost>& binding) {
+            return self->AddCost(binding);
+          },
+          py::arg("binding"),
+          doc.MathematicalProgram.AddCost.doc_1args_binding_cost)
       .def("AddCost",
           static_cast<Binding<Cost> (MathematicalProgram::*)(
               const Expression&)>(&MathematicalProgram::AddCost),
@@ -735,6 +742,10 @@ void BindMathematicalProgram(py::module m) {
           &MathematicalProgram::AddL2NormCostUsingConicConstraint, py::arg("A"),
           py::arg("b"), py::arg("vars"),
           doc.MathematicalProgram.AddL2NormCostUsingConicConstraint.doc)
+      .def("AddL1NormCostInEpigraphForm",
+          &MathematicalProgram::AddL1NormCostInEpigraphForm, py::arg("A"),
+          py::arg("b"), py::arg("vars"),
+          doc.MathematicalProgram.AddL1NormCostInEpigraphForm.doc)
       .def("AddMaximizeLogDeterminantCost",
           static_cast<std::tuple<Binding<LinearCost>,
               VectorX<symbolic::Variable>, MatrixX<symbolic::Expression>> (
@@ -901,6 +912,14 @@ void BindMathematicalProgram(py::module m) {
               &MathematicalProgram::AddLinearEqualityConstraint),
           py::arg("f"),
           doc.MathematicalProgram.AddLinearEqualityConstraint.doc_1args_f)
+      .def("AddLinearEqualityConstraint",
+          static_cast<Binding<LinearEqualityConstraint> (
+              MathematicalProgram::*)(const Eigen::Ref<const Eigen::Array<
+                  symbolic::Formula, Eigen::Dynamic, Eigen::Dynamic>>&)>(
+              &MathematicalProgram::AddLinearEqualityConstraint),
+          py::arg("formulas"),
+          doc.MathematicalProgram.AddLinearEqualityConstraint
+              .doc_1args_formulas)
       .def(
           "AddLinearEqualityConstraint",
           [](MathematicalProgram* self,
@@ -1583,10 +1602,25 @@ void BindSolutionResult(py::module m) {
           doc.SolutionResult.kSolutionResultNotSet.doc);
 }
 
+void BindPyFunctionCost(py::module m) {
+  py::class_<PyFunctionCost, Cost, std::shared_ptr<PyFunctionCost>>(
+      m, "PyFunctionCost", "Cost with its evaluator as a Python function")
+      .def(py::init<int, const py::function&, const std::string&>(),
+          py::arg("num_vars"), py::arg("func"), py::arg("description") = "",
+          "Constructs a cost for a python function `func`, applied to "
+          "`num_vars` variables.");
+}
+
 void BindPyFunctionConstraint(py::module m) {
   py::class_<PyFunctionConstraint, Constraint,
       std::shared_ptr<PyFunctionConstraint>>(m, "PyFunctionConstraint",
       "Constraint with its evaluator as a Python function")
+      .def(py::init<int, const py::function&, const Eigen::VectorXd&,
+               const Eigen::VectorXd&, const std::string&>(),
+          py::arg("num_vars"), py::arg("func"), py::arg("lb"), py::arg("ub"),
+          py::arg("description") = "",
+          "Constructs a constraint for a python function `func`, encoding `lb` "
+          "<= `func` (x) <= `ub`, where x is of size `num_vars`.")
       .def("UpdateLowerBound", &PyFunctionConstraint::UpdateLowerBound,
           py::arg("new_lb"), "Update the lower bound of the constraint.")
       .def("UpdateUpperBound", &PyFunctionConstraint::UpdateUpperBound,
@@ -1694,6 +1728,7 @@ void BindFreeFunctions(py::module m) {
 namespace internal {
 void DefineSolversMathematicalProgram(py::module m) {
   // This list must remain in topological dependency order.
+  BindPyFunctionCost(m);
   BindPyFunctionConstraint(m);
   BindMathematicalProgram(m);
   BindSolutionResult(m);

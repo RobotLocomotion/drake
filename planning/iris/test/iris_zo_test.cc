@@ -10,6 +10,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/maybe_pause_for_user.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/vpolytope.h"
@@ -37,7 +38,57 @@ using geometry::optimization::Hyperellipsoid;
 using geometry::optimization::VPolytope;
 using symbolic::Variable;
 
-// Reproduced from the IrisInConfigurationSpace unit tests.
+GTEST_TEST(IrisZoOptionsTest, Serialize) {
+  IrisZoOptions options;
+  const std::string serialized = yaml::SaveYamlString(options);
+  const auto deserialized = yaml::LoadYamlString<IrisZoOptions>(serialized);
+
+  // Subfields accssed via the CommonSampledIrisOptions member
+  // sampled_iris_options.
+  EXPECT_EQ(deserialized.sampled_iris_options.num_particles,
+            options.sampled_iris_options.num_particles);
+  EXPECT_EQ(deserialized.sampled_iris_options.tau,
+            options.sampled_iris_options.tau);
+  EXPECT_EQ(deserialized.sampled_iris_options.delta,
+            options.sampled_iris_options.delta);
+  EXPECT_EQ(deserialized.sampled_iris_options.epsilon,
+            options.sampled_iris_options.epsilon);
+  EXPECT_EQ(deserialized.sampled_iris_options.containment_points,
+            options.sampled_iris_options.containment_points);
+  EXPECT_EQ(deserialized.sampled_iris_options.max_iterations,
+            options.sampled_iris_options.max_iterations);
+  EXPECT_EQ(deserialized.sampled_iris_options.max_iterations_separating_planes,
+            options.sampled_iris_options.max_iterations_separating_planes);
+  EXPECT_EQ(
+      deserialized.sampled_iris_options.max_separating_planes_per_iteration,
+      options.sampled_iris_options.max_separating_planes_per_iteration);
+  EXPECT_EQ(deserialized.sampled_iris_options.verbose,
+            options.sampled_iris_options.verbose);
+  EXPECT_EQ(deserialized.sampled_iris_options.require_sample_point_is_contained,
+            options.sampled_iris_options.require_sample_point_is_contained);
+  EXPECT_EQ(deserialized.sampled_iris_options.configuration_space_margin,
+            options.sampled_iris_options.configuration_space_margin);
+  EXPECT_EQ(deserialized.sampled_iris_options.termination_threshold,
+            options.sampled_iris_options.termination_threshold);
+  EXPECT_EQ(deserialized.sampled_iris_options.relative_termination_threshold,
+            options.sampled_iris_options.relative_termination_threshold);
+  EXPECT_EQ(deserialized.sampled_iris_options.remove_all_collisions_possible,
+            options.sampled_iris_options.remove_all_collisions_possible);
+  EXPECT_EQ(deserialized.sampled_iris_options.random_seed,
+            options.sampled_iris_options.random_seed);
+  EXPECT_EQ(deserialized.sampled_iris_options.mixing_steps,
+            options.sampled_iris_options.mixing_steps);
+  EXPECT_EQ(deserialized.sampled_iris_options.sample_particles_in_parallel,
+            options.sampled_iris_options.sample_particles_in_parallel);
+
+  // The non-built-in types are not serialized.
+  EXPECT_EQ(deserialized.bisection_steps, options.bisection_steps);
+  EXPECT_EQ(deserialized.sampled_iris_options.meshcat, nullptr);
+  EXPECT_EQ(deserialized.sampled_iris_options.prog_with_additional_constraints,
+            nullptr);
+}
+
+// Reproduced from the IrisNp unit tests.
 TEST_F(JointLimits1D, JointLimitsBasic) {
   IrisZoOptions options;
   HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
@@ -95,7 +146,7 @@ TEST_F(JointLimits1D, JointLimitsWithParameterization) {
     EXPECT_EQ(options.parameterization.get_parameterization_dimension().value(),
               1);
     const Vector1d output =
-        options.parameterization.get_parameterization()(Vector1d(3.0));
+        options.parameterization.get_parameterization_double()(Vector1d(3.0));
     EXPECT_NEAR(output[0], 3.0, 1e-15);
 
     HPolyhedron region =
@@ -143,7 +194,7 @@ TEST_F(JointLimits1D, ParameterizationExpressionErrorChecks) {
                std::exception);
 }
 
-// Reproduced from the IrisInConfigurationSpace unit tests.
+// Reproduced from the IrisNp unit tests.
 TEST_F(DoublePendulum, IrisZoTest) {
   IrisZoOptions options;
   options.sampled_iris_options.verbose = true;
@@ -155,6 +206,37 @@ TEST_F(DoublePendulum, IrisZoTest) {
   CheckRegion(region);
 
   PlotEnvironmentAndRegion(region);
+
+  // Changing the sampling options should lead to a still-correct, but
+  // slightly-different region.
+  options.sampled_iris_options.sample_particles_in_parallel = true;
+  HPolyhedron region2 =
+      IrisZo(*checker_, starting_ellipsoid_, domain_, options);
+  CheckRegion(region2);
+  EXPECT_FALSE(region.A().isApprox(region2.A(), 1e-10));
+}
+
+TEST_F(DoublePendulum, PostprocessRemoveCollisions) {
+  IrisZoOptions options;
+
+  // Deliberately set parameters so the initial region will pass the
+  // probabilistic test.
+  options.sampled_iris_options.tau = 0.01;
+  options.sampled_iris_options.epsilon = 0.99;
+  options.sampled_iris_options.delta = 0.99;
+  options.sampled_iris_options.max_iterations = 1;
+  options.sampled_iris_options.verbose = true;
+  options.sampled_iris_options.remove_all_collisions_possible = false;
+
+  HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
+
+  Vector2d query_point(0.5, 0.0);
+  EXPECT_FALSE(checker_->CheckConfigCollisionFree(query_point));
+  EXPECT_TRUE(region.PointInSet(query_point));
+
+  options.sampled_iris_options.remove_all_collisions_possible = true;
+  region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
+  EXPECT_FALSE(region.PointInSet(query_point));
 }
 
 // Test growing a region for the double pendulum along a parameterization of the
@@ -178,7 +260,7 @@ TEST_F(DoublePendulumRationalForwardKinematics,
   EXPECT_EQ(options.parameterization.get_parameterization_dimension().value(),
             2);
 
-  CheckParameterization(options.parameterization.get_parameterization());
+  CheckParameterization(options.parameterization.get_parameterization_double());
 
   HPolyhedron region =
       IrisZo(*checker_, starting_ellipsoid_rational_forward_kinematics_,
@@ -186,7 +268,7 @@ TEST_F(DoublePendulumRationalForwardKinematics,
 
   CheckRegionRationalForwardKinematics(region);
   PlotEnvironmentAndRegionRationalForwardKinematics(
-      region, options.parameterization.get_parameterization(),
+      region, options.parameterization.get_parameterization_double(),
       region_query_point_1_);
 }
 
@@ -210,7 +292,7 @@ TEST_F(DoublePendulumRationalForwardKinematics,
   EXPECT_TRUE(options.parameterization.get_parameterization_is_threadsafe());
   EXPECT_EQ(options.parameterization.get_parameterization_dimension(), 2);
 
-  CheckParameterization(options.parameterization.get_parameterization());
+  CheckParameterization(options.parameterization.get_parameterization_double());
 
   HPolyhedron region =
       IrisZo(*checker_, starting_ellipsoid_rational_forward_kinematics_,
@@ -234,7 +316,7 @@ TEST_F(DoublePendulumRationalForwardKinematics, BadParameterization) {
       ".*wrong dimension.*");
 }
 
-// Reproduced from the IrisInConfigurationSpace unit tests.
+// Reproduced from the IrisNp unit tests.
 TEST_F(BlockOnGround, IrisZoTest) {
   IrisZoOptions options;
   options.sampled_iris_options.verbose = true;
@@ -246,9 +328,11 @@ TEST_F(BlockOnGround, IrisZoTest) {
   PlotEnvironmentAndRegion(region);
 }
 
-// Reproduced from the IrisInConfigurationSpace unit tests.
+// Reproduced from the IrisNp unit tests.
 TEST_F(ConvexConfigurationSpace, IrisZoTest) {
   IrisZoOptions options;
+
+  options.sampled_iris_options.sample_particles_in_parallel = true;
 
   // Turn on meshcat for addition debugging visualizations.
   // This example is truly adversarial for IRIS. After one iteration, the
@@ -363,7 +447,7 @@ TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
 
   meshcat_->Delete();
   PlotEnvironmentAndRegionSubspace(
-      region, options.parameterization.get_parameterization());
+      region, options.parameterization.get_parameterization_double());
 }
 
 TEST_F(ConvexConfigurationSubspace, ExpressionParameterization) {
