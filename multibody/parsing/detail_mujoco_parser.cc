@@ -475,7 +475,7 @@ class MujocoParser {
                     "supported for free bodies.",
                     name));
       }
-      plant_->SetDefaultFreeBodyPose(child, X_WC);
+      plant_->SetDefaultFloatingBaseBodyPose(child, X_WC);
     } else if (type == "ball") {
       index =
           plant_
@@ -1236,7 +1236,7 @@ class MujocoParser {
       if (XMLElement* freejoint_node = node->FirstChildElement("freejoint")) {
         WarnUnsupportedElement(*freejoint_node, "name");
         WarnUnsupportedElement(*freejoint_node, "group");
-        plant_->SetDefaultFreeBodyPose(body, X_WB);
+        plant_->SetDefaultFloatingBaseBodyPose(body, X_WB);
       } else {
         plant_->WeldFrames(parent.body_frame(), body.body_frame(), X_PB);
       }
