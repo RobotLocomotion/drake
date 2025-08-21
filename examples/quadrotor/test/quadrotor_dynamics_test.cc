@@ -140,7 +140,7 @@ class MultibodyQuadrotor : public Diagram<double> {
     // Set the state of the base_link.
     Context<double>& plant_context =
         this->GetMutableSubsystemContext(*plant_, context);
-    plant_->SetFreeBodyPoseInWorldFrame(&plant_context, *body_, X_WB);
+    plant_->SetFloatingBaseBodyPoseInWorldFrame(&plant_context, *body_, X_WB);
     plant_->SetFreeBodySpatialVelocity(&plant_context, *body_, V_WB);
   }
 
