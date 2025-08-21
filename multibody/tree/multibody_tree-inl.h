@@ -130,9 +130,10 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
 
   // Mark free bodies as needed.
   const BodyIndex outboard_body_index = mobilizer->outboard_body().index();
+  // TODO(sherm1) Try out tighter definition for is_floating.
   bool is_floating_base_body =
       mobilizer->has_six_dofs() &&
-      mobilizer->inboard_frame().body().index() == world_body().index();
+      mobilizer->inboard_frame().index() == world_frame().index();
 
   topology_.get_mutable_rigid_body_topology(outboard_body_index)
       .is_floating_base = is_floating_base_body;
