@@ -316,7 +316,7 @@ geometry.
   Obtain and manipulate position and velocity state variables.
 - @ref mbp_parameters "Parameters"
   Working with system parameters for various multibody elements.
-- @ref mbp_working_with_free_bodies "Free bodies":
+- @ref mbp_working_with_free_bodies "Free and floating base bodies":
   Work conveniently with free (floating) bodies.
 - @ref mbp_kinematic_and_dynamic_computations "Kinematics and dynamics":
   Perform @ref systems::Context "Context"-dependent kinematic and dynamic
@@ -3318,168 +3318,263 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @} <!-- State accessors and mutators -->
 
   /// @anchor mbp_working_with_free_bodies
-  /// @name                Working with free bodies
+  /// @name           Working with free and floating base bodies
   ///
-  /// A %MultibodyPlant user adds sets of RigidBody and Joint objects to `this`
-  /// plant to build a physical representation of a mechanical model.
-  /// At Finalize(), %MultibodyPlant builds a mathematical representation of
-  /// such system as a forest of trees, with each tree's root (which we call
-  /// that tree's _base body_) connected directly to World by a joint defining
-  /// the base body's mobility. If no input joint is provided for a base body,
-  /// one is added automatically. The function SetBaseBodyJointType() can be
-  /// used to change the type of joint used.
+  /// In robotics it is natural to think of some bodies as "floating", in the
+  /// sense that they may be posed independently of any other body. Manipulands
+  /// (objects to be manipulated by a robot) are the most obvious example since
+  /// they aren't connected to anything else. A mobile base or humanoid torso
+  /// can also be posed freely, though other bodies will move along with them.
+  /// %MultibodyPlant recognizes floating bodies at Finalize() by the fact that
+  /// they have no user-provided joint connecting them to any parent body. They
+  /// are given six degrees of freedom relative to the World frame and referred
+  /// to as _floating base bodies_.
   ///
-  /// In this representation each input Joint (including those added for base
-  /// bodies) is modeled internally using a Mobilizer, which grants a certain
-  /// number of degrees of freedom in accordance to the physical specification.
-  /// If a body has _six_ degrees of freedom with respect to its parent, it is
-  /// called a _free body_. If it also the root of a tree, such that its parent
-  /// is the world body, it is a _floating base body_. Bodies that are added to
-  /// the plant without specifying a joint normally become floating base bodies
-  /// after finalization.
+  /// We use the term _free body_ for _any_ body that has six degrees of freedom
+  /// relative to its parent. Floating base bodies are a special case of free
+  /// bodies, with World as the assumed parent. The distinction is where the
+  /// degrees of freedom come from: floating base bodies get theirs from
+  /// Finalize(); all other free bodies get theirs from user-defined joints. The
+  /// APIs below depend on that distinction. Those with "FreeBody" in their
+  /// names work on all free bodies. Those with "FloatingBaseBody" only work on
+  /// floating base bodies.
   ///
-  /// It is possible (and sometimes recommended) to explicitly create a 6-dof
-  /// joint between two bodies. The child body would be free, because it has six
-  /// degrees of freedom, but it would _not_ be a floating base body because its
-  /// parent is not the world. The effects of the various APIs below depend on
-  /// the distinction between "free" and "floating base bodies". Read carefully.
-  /// A user can request the set of all floating base bodies with a call to
-  /// GetFloatingBaseBodies(). Alternatively, a user can query whether a
-  /// RigidBody is a floating base body or not with RigidBody::is_floating().
-  /// For many applications, a user might need to work with indices in the
-  /// multibody state vector. For such applications,
-  /// RigidBody::floating_positions_start() and
-  /// RigidBody::floating_velocities_start_in_v() offer the additional level of
-  /// introspection needed. These APIs only apply to floating base bodies and
-  /// _not_ 6-dof free bodies generally.
+  /// To implement a floating base body at %Finalize(), %MultibodyPlant
+  /// automatically adds a floating joint between that body's frame and the
+  /// World frame. Prior to that there is no joint so we provide a
+  /// pre-Finalize() API here to set the default pose of a floating base body in
+  /// World. (See SetDefaultFloatingBaseBodyPose() below.) The default pose is
+  /// used to initialize the floating joint's coordinates once that joint has
+  /// been added. After %Finalize(), you can use the Joint API by accessing the
+  /// automatically-added floating joint (see below), or continue to use the
+  /// APIs in this group.
   ///
-  /// It is sometimes convenient for users to perform operations on RigidBodies
-  /// uniformly through the APIs of the Joint class. For that reason the plant
-  /// implicitly constructs a 6-dof joint, typically a QuaternionFloatingJoint,
-  /// between the body and the world for all bodies otherwise without declared
-  /// inboard joints at the time of Finalize(). Using Joint APIs to affect a
-  /// free body (setting  state, changing parameters, etc.) has the same effect
-  /// as using the free body APIs below. Each implicitly created joint is named
-  /// the same as the free body, as reported by `RigidBody::name()`. In the rare
-  /// case that there is already some (unrelated) joint with that name, we'll
-  /// prepend underscores to the name until it is unique.
+  /// Post-Finalize() there are a few additional APIs that apply only to
+  /// floating base bodies. For example, you can query whether a RigidBody is a
+  /// floating base body with RigidBody::is_floating_base_body(), and can
+  /// request a list of all floating base bodies with GetFloatingBaseBodies().
+  /// The relevant joint coordinate entries q and v in the multibody state
+  /// vector can be obtained with RigidBody::floating_positions_start() and
+  /// RigidBody::floating_velocities_start_in_v().
   ///
-  /// The APIs below provide affordances for working with free bodies without
-  /// explicitly accessing the corresponding floating joint. The pose of a free
-  /// body (as it is represented in %MultibodyPlant's state) is *always* the
-  /// pose of the free body relative to its parent frame. That is _not_
-  /// necessarily the body's pose in the world (unless the parent frame is the
-  /// world frame).
+  /// If there is a user-provided joint mobilizing a free body, use the Joint
+  /// API as you would for any other joint. You can also use the Joint API to
+  /// work with floating base bodies after %Finalize(), by accessing the
+  /// automatically-added floating joint. Use GetJointByName() with the name of
+  /// the floating base body (see RigidBody::name()). (In the rare case that
+  /// there is already some unrelated joint with that name, we prepend
+  /// underscores to the joint's name until it is unique.)
   /// @{
 
   /// Returns the set of body indices corresponding to the floating base
   /// bodies in the model, in no particular order.
+  /// See @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if called pre-finalize, see Finalize().
   std::unordered_set<BodyIndex> GetFloatingBaseBodies() const;
 
-  /// Gets the pose of a given `body` in the parent frame P.
-  /// @note The parent frame is not necessarily the world frame. See
-  /// @ref mbp_working_with_free_bodies "above for details". To acquire X_WB,
-  /// regardless of what P is, kinematics need to be evaluated by calling
-  /// EvalBodyPoseInWorld().
-  /// @throws std::exception if `body` is not a free body in the model.
+  /// Provisionally records a default World pose for `body`, to be used in case
+  /// `body` turns out to be a floating base body after Finalize().
+  ///
+  /// This may be called pre- or post-Finalize(). Pre-Finalize() this is the
+  /// only way to set the default pose of a floating base body. Post-Finalize(),
+  /// a floating base body's default pose may be set either by this function or
+  /// by setting the default pose directly through the Joint API applied to the
+  /// automatically-added floating joint. The most recent value set by either
+  /// method will be used to initialize the floating joint's coordinates in
+  /// subsequently-created Contexts.
+  ///
+  /// @warning If this is called on a `body` that does _not_ turn out to be a
+  /// floating base body after Finalize(), it will have no effect other than to
+  /// be echoed back in GetDefaultFloatingBaseBodyPose(); in particular it will
+  /// not affect the initial state in a subsequently-created Context. Use the
+  /// Joint API to set the default pose for any body that has an
+  /// explicitly-defined joint to its parent body.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
+  /// @param[in] body
+  ///   RigidBody whose default pose will be set if it turns out to be a
+  ///   floating base body.
+  /// @param[in] X_WB
+  ///   Default pose of the floating base body in the World frame.
+  void SetDefaultFloatingBaseBodyPose(
+      const RigidBody<T>& body, const math::RigidTransform<double>& X_WB) {
+    this->mutable_tree().SetDefaultFloatingBaseBodyPose(body, X_WB);
+  }
+
+  /// Gets the provisional default pose of `body` as set by
+  /// SetDefaultFloatingBaseBodyPose(). If no pose was specified for `body`,
+  /// returns the identity pose. This may be called pre- or post-Finalize().
+  ///
+  /// @warning This value is only meaningful for bodies that turn out to be
+  /// floating base bodies after Finalize(). If called on any other body, the
+  /// result simply echoes whatever provisional pose was set in
+  /// SetDefaultFloatingBaseBodyPose() but has no other effect. Use the Joint
+  /// API to get the default pose for any body that has an explicitly-defined
+  /// joint to its parent body.
+  ///
+  /// @note Post-Finalize(), a floating base body's default pose may be set
+  /// either by SetDefaultFloatingBaseBodyPose() or by setting the default pose
+  /// directly through the Joint API applied to the automatically-added floating
+  /// joint. GetDefaultFloatingBaseBodyPose() will return the most-recent value
+  /// set by either method.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
+  /// @param[in] body
+  ///   RigidBody whose default pose will be retrieved.
+  /// @retval X_WB The default pose of the floating base body B in World. Not
+  ///   meaningful if `body` is not a floating base body.
+  math::RigidTransform<double> GetDefaultFloatingBaseBodyPose(
+      const RigidBody<T>& body) const {
+    return internal_tree().GetDefaultFloatingBaseBodyPose(body);
+  }
+
+  /// Updates `context` to store the pose `X_WB` of a given floating base body
+  /// B's body frame in the World frame W.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `body` is not a floating base body.
+  void SetFloatingBaseBodyPoseInWorldFrame(
+      systems::Context<T>* context, const RigidBody<T>& body,
+      const math::RigidTransform<T>& X_WB) const;
+
+  /// Updates `context` to store the World-frame pose of floating base body B,
+  /// given its pose `X_FB` in an arbitrary anchored frame F.
+  ///
+  /// Frame F must be _anchored_, meaning that it is either on a body which is
+  /// directly welded to a frame on the World body, or more generally, that it
+  /// is on a body for which there is a kinematic path between that body and the
+  /// world body that only includes weld joints.
+  ///
+  /// @warning The World-frame pose is calculated here and stored in `context`.
+  /// Moving F subsequently will not change the stored pose unless you call this
+  /// method again.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
+  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if frame F is not anchored to the world.
+  /// @throws std::exception if `body` is not a floating base body.
+  void SetFloatingBaseBodyPoseInAnchoredFrame(
+      systems::Context<T>* context, const Frame<T>& frame_F,
+      const RigidBody<T>& body, const math::RigidTransform<T>& X_FB) const;
+
+  /// If there is a single base body in the model given by `model_instance`,
+  /// and that body is a floating base body, returns that floating base body.
+  /// Otherwise, throws an exception. Use HasUniqueFloatingBaseBody() to check
+  /// first.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
+  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `model_instance` is not valid.
+  /// @throws std::exception if !HasUniqueFloatingBaseBody(model_instance).
+  /// @see HasUniqueFloatingBaseBody(), GetFloatingBaseBodies()
+  const RigidBody<T>& GetUniqueFloatingBaseBodyOrThrow(
+      ModelInstanceIndex model_instance) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return internal_tree().GetUniqueFloatingBaseBodyOrThrowImpl(model_instance);
+  }
+
+  /// Returns true if there is a single base body in the model given by
+  /// `model_instance`, and that body is a floating base body.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
+  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `model_instance` is not valid.
+  /// @see GetUniqueFloatingBaseBodyOrThrow()
+  bool HasUniqueFloatingBaseBody(ModelInstanceIndex model_instance) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return internal_tree().HasUniqueFloatingBaseBodyImpl(model_instance);
+  }
+
+  /// For any free body's 6-dof joint, gets the pose X_JpJc of the child frame
+  /// Jc in its parent frame Jp.
+  ///
+  /// @note Unless `body` is a floating base body, the parent frame Jp is not
+  /// necessarily the World frame W, and the child frame Jc is not necessarily
+  /// the body frame B.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
+  /// @retval X_JpJc The current pose of child frame Jc in its parent frame Jp.
+  ///                Returns X_WB if `body` B is a floating base body.
+  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `body` is not a free body.
   math::RigidTransform<T> GetFreeBodyPose(const systems::Context<T>& context,
                                           const RigidBody<T>& body) const {
     this->ValidateContext(context);
     return internal_tree().GetFreeBodyPoseOrThrow(context, body);
   }
 
-  /// Sets `context` to store the pose `X_PB` of a given `body` B in the parent
-  /// frame P.
-  /// @note The parent frame is not necessarily the world frame. See
-  /// @ref mbp_working_with_free_bodies "above for details".
-  /// @throws std::exception if `body` is not a free body in the model.
+  /// For any free body's 6-dof joint, sets `context` to store the pose
+  /// X_JpJc of child frame Jc in its parent frame Jp.
+  ///
+  /// @note Unless `body` is a floating base body, the parent frame Jp is not
+  /// necessarily the World frame W, and the child frame Jc is not necessarily
+  /// the body frame B. For a floating base body B, this method sets X_WB, the
+  /// pose of body B in World.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `body` is not a free body.
   void SetFreeBodyPose(systems::Context<T>* context, const RigidBody<T>& body,
-                       const math::RigidTransform<T>& X_PB) const {
+                       const math::RigidTransform<T>& X_JpJc) const {
     this->ValidateContext(context);
-    internal_tree().SetFreeBodyPoseOrThrow(body, X_PB, context);
+    internal_tree().SetFreeBodyPoseOrThrow(body, X_JpJc, context);
   }
 
-  /// Sets `state` to store the pose `X_PB` of a given `body` B in its parent
-  /// frame P, for a given `context` of `this` model.
-  /// @note The parent frame is not necessarily the world frame. See
-  /// @ref mbp_working_with_free_bodies "above for details".
-  /// @throws std::exception if `body` is not a free body in the model.
-  /// @throws std::exception if called pre-finalize.
-  /// @pre `state` comes from this MultibodyPlant.
+  /// (Advanced) Variant of SetFreeBodyPose() that writes to a given `state`
+  /// rather than directly to the Context.
+  /// @pre `state` comes from this %MultibodyPlant.
   void SetFreeBodyPose(const systems::Context<T>& context,
                        systems::State<T>* state, const RigidBody<T>& body,
-                       const math::RigidTransform<T>& X_PB) const {
+                       const math::RigidTransform<T>& X_JpJc) const {
     this->ValidateContext(context);
     this->ValidateCreatedForThisSystem(state);
-    internal_tree().SetFreeBodyPoseOrThrow(body, X_PB, context, state);
+    internal_tree().SetFreeBodyPoseOrThrow(body, X_JpJc, context, state);
   }
 
-  /// Sets the default pose of `body`. If `body.is_floating()` is true, this
-  /// will affect subsequent calls to SetDefaultState(); otherwise, the only
-  /// effect of the call is that the value will be echoed back in
-  /// GetDefaultFreeBodyPose().
-  /// @note The parent frame is not necessarily the world frame. See
-  /// @ref mbp_working_with_free_bodies "above for details".
-  /// @param[in] body
-  ///   RigidBody whose default pose will be set.
-  /// @param[in] X_PB
-  ///   Default pose of the body.
-  void SetDefaultFreeBodyPose(const RigidBody<T>& body,
-                              const math::RigidTransform<double>& X_PB) {
-    this->mutable_tree().SetDefaultFreeBodyPose(body, X_PB);
-  }
-
-  /// Gets the default pose of `body` as set by SetDefaultFreeBodyPose(). If no
-  /// pose is specified for the body, returns the identity pose.
-  /// @param[in] body
-  ///   RigidBody whose default pose will be retrieved.
-  /// @retval X_PB The pose of the free body relative to its parent frame.
-  /// @note The parent frame is not necessarily the world frame. See
-  /// @ref mbp_working_with_free_bodies "above for details".
-  math::RigidTransform<double> GetDefaultFreeBodyPose(
-      const RigidBody<T>& body) const {
-    return internal_tree().GetDefaultFreeBodyPose(body);
-  }
-
-  /// Sets `context` to store the spatial velocity `V_PB` of a given `body` B in
-  /// its parent frame P.
-  /// @note The parent frame is not necessarily the world frame. See
-  /// @ref mbp_working_with_free_bodies "above for details".
-  /// @throws std::exception if `body` is not a free body in the model.
+  /// For any free body's 6-dof joint, sets `context` to store the spatial
+  /// velocity V_JpJc of child frame Jc in its parent frame Jp.
+  ///
+  /// @note Unless `body` is a floating base body, the parent frame Jp is not
+  /// necessarily the World frame W, and the child frame Jc is not necessarily
+  /// the body frame B. For a floating base body B, this method sets V_WB, the
+  /// spatial velocity of body B in World.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `body` is not a free body.
   void SetFreeBodySpatialVelocity(systems::Context<T>* context,
                                   const RigidBody<T>& body,
-                                  const SpatialVelocity<T>& V_PB) const {
+                                  const SpatialVelocity<T>& V_JpJc) const {
     this->ValidateContext(context);
-    internal_tree().SetFreeBodySpatialVelocityOrThrow(body, V_PB, context);
+    internal_tree().SetFreeBodySpatialVelocityOrThrow(body, V_JpJc, context);
   }
 
-  /// Sets `state` to store the spatial velocity `V_PB` of a given `body` B in
-  /// its parent frame P, for a given `context` of `this` model.
-  /// @note The parent frame is not necessarily the world frame. See
-  /// @ref mbp_working_with_free_bodies "above for details".
-  /// @throws std::exception if `body` is not a free body in the model.
-  /// @throws std::exception if called pre-finalize.
-  /// @pre `state` comes from this MultibodyPlant.
+  /// (Advanced) Variant of SetFreeBodySpatialVelocity() that writes to a given
+  /// `state` rather than directly to the Context.
+  /// @pre `state` comes from this %MultibodyPlant.
   void SetFreeBodySpatialVelocity(const systems::Context<T>& context,
                                   systems::State<T>* state,
                                   const RigidBody<T>& body,
-                                  const SpatialVelocity<T>& V_PB) const {
+                                  const SpatialVelocity<T>& V_JpJc) const {
     this->ValidateContext(context);
     this->ValidateCreatedForThisSystem(state);
-    internal_tree().SetFreeBodySpatialVelocityOrThrow(body, V_PB, context,
+    internal_tree().SetFreeBodySpatialVelocityOrThrow(body, V_JpJc, context,
                                                       state);
   }
 
-  /// Sets the distribution used by SetRandomState() to populate the free
-  /// body's x-y-z `translation` with respect to its parent frame P.
-  /// @note The parent frame is not necessarily the world frame. See
-  /// @ref mbp_working_with_free_bodies "above for details".
-  /// @throws std::exception if `body` is not a free body in the model.
+  /// For any free body's 6-dof joint, sets the distribution used by
+  /// SetRandomState() to populate the x-y-z `translation` of its child frame Jc
+  /// with respect to its parent frame Jp.
+  ///
+  /// @note Unless `body` is a floating base body, the parent frame Jp is not
+  /// necessarily the World frame W, and the child frame Jc is not necessarily
+  /// the body frame B. For a floating base body B, this method sets the
+  /// distribution of p_WBo, the position of body B's frame origin Bo in World.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `body` is not a free body.
   void SetFreeBodyRandomTranslationDistribution(
       const RigidBody<T>& body,
       const Vector3<symbolic::Expression>& translation) {
@@ -3487,21 +3582,28 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
         body, translation);
   }
 
-  /// Sets the distribution used by SetRandomState() to populate the free
-  /// body's orientation with respect to its parent frame, expressed as a
-  /// quaternion. Requires that the free body is modeled using a
-  /// QuaternionFloatingJoint.
-  /// @note The parent frame is not necessarily the world frame. See
-  ///   @ref mbp_working_with_free_bodies "above for details".
+  /// For any free body's 6-dof joint, sets the distribution used by
+  /// SetRandomState() to populate the orientation of its child frame Jc with
+  /// respect to its parent frame Jp, expressed as a quaternion. Requires that
+  /// the free body is modeled using a QuaternionFloatingJoint.
+  ///
+  /// @note Unless `body` is a floating base body, the parent frame Jp is not
+  /// necessarily the World frame W, and the child frame Jc is not necessarily
+  /// the body frame B. For a floating base body B, this method sets the
+  /// distribution of R_WB, the orientation of body B's frame in World (as a
+  /// quaternion).
+  ///
   /// @note This distribution is not necessarily uniform over the sphere
-  ///   reachable by the quaternion; that depends on the quaternion expression
-  ///   provided in `rotation`. See
-  ///   SetFreeBodyRandomRotationDistributionToUniform() for a uniform
-  ///   alternative.
-  /// @throws std::exception if `body` is not a free body in the model.
+  /// reachable by the quaternion; that depends on the quaternion expression
+  /// provided in `rotation`. See
+  /// SetFreeBodyRandomRotationDistributionToUniform() for a uniform
+  /// alternative.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
+  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `body` is not a free body.
   /// @throws std::exception if the free body is not modeled with a
   ///   QuaternionFloatingJoint.
-  /// @throws std::exception if called pre-finalize.
   /// @see SetFreeBodyRandomAnglesDistribution() for a free body that is
   ///   modeled using an RpyFloatingJoint.
   /// @see SetBaseBodyJointType() for control over the type of automatically-
@@ -3513,36 +3615,50 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
                                                                       rotation);
   }
 
-  /// Sets the distribution used by SetRandomState() to populate the free
-  /// body's orientation with respect to its parent frame using uniformly random
-  /// rotations (expressed as a quaternion). Requires that the free body is
-  /// modeled using a QuaternionFloatingJoint.
-  /// @note The parent frame is not necessarily the world frame. See
-  ///   @ref mbp_working_with_free_bodies "above for details".
+  /// For any free body's 6-dof joint, sets the distribution used by
+  /// SetRandomState() to populate the orientation of its child frame Jc with
+  /// respect to its parent frame Jp using uniformly random rotations (expressed
+  /// as a quaternion). Requires that the free body is modeled using a
+  /// QuaternionFloatingJoint.
+  ///
+  /// @note Unless `body` is a floating base body, the parent frame Jp is not
+  /// necessarily the World frame W, and the child frame Jc is not necessarily
+  /// the body frame B. For a floating base body B, this method sets the
+  /// distribution of R_WB, the orientation of body B's frame in World (as a
+  /// quaternion).
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
+  /// @throws std::exception if called pre-finalize.
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if the free body is not modeled with a
   ///   QuaternionFloatingJoint.
-  /// @throws std::exception if called pre-finalize.
   /// @see SetFreeBodyRandomAnglesDistribution() for a free body that is
   ///   modeled using an RpyFloatingJoint.
   /// @see SetBaseBodyJointType() for control over the type of automatically-
   ///   added joints.
   void SetFreeBodyRandomRotationDistributionToUniform(const RigidBody<T>& body);
 
-  /// Sets the distribution used by SetRandomState() to populate the free
-  /// body's orientation with respect to its parent frame, expressed with
-  /// roll-pitch-yaw angles. Requires that the free body is modeled using an
-  /// RpyFloatingJoint.
-  /// @note The parent frame is not necessarily the world frame. See
-  ///   @ref mbp_working_with_free_bodies "above for details".
-  /// @note This distribution is not uniform over the sphere reachable by
-  ///   the three angles. For a uniform alternative, switch the joint to
-  ///   QuaternionFloatingJoint and use
-  ///   SetFreeBodyRandomRotationDistributionToUniform().
+  /// For any free body's 6-dof joint, sets the distribution used by
+  /// SetRandomState() to populate the orientation of its child frame Jc with
+  /// respect to its parent frame Jp, expressed with roll-pitch-yaw angles.
+  /// Requires that the free body is modeled using an RpyFloatingJoint.
+  ///
+  /// @note Unless `body` is a floating base body, the parent frame Jp is not
+  /// necessarily the World frame W, and the child frame Jc is not necessarily
+  /// the body frame B. For a floating base body B, this method sets the
+  /// distribution of R_WB, the orientation of body B's frame in World (as
+  /// roll-pitch-yaw angles).
+  ///
+  /// @note This distribution is not uniform over the sphere reachable by the
+  /// three angles. For a uniform alternative, switch the joint to
+  /// QuaternionFloatingJoint and use
+  /// SetFreeBodyRandomRotationDistributionToUniform().
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
+  /// @throws std::exception if called pre-finalize.
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if the free body is not modeled with an
   ///   RpyFloatingJoint.
-  /// @throws std::exception if called pre-finalize.
   /// @see SetFreeBodyRandomRotationDistribution() for a free body that is
   ///   modeled using a QuaternionFloatingJoint.
   /// @see SetBaseBodyJointType() for control over the type of automatically-
@@ -3554,59 +3670,47 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
                                                                     angles);
   }
 
-  /// Sets `context` to store the pose `X_WB` of a given _floating base_ `body`
-  /// B in the world frame W.
-  /// @param[in] context
-  ///   The context to store the pose `X_WB` of `body_B`.
-  /// @param[in] body
-  ///   The _floating base_ body B corresponding to the pose `X_WB` to be stored
-  ///   in `context`.
-  /// @retval X_WB
-  ///   The pose of body frame B in the world frame W.
-  /// @note In general setting the pose and/or velocity of a body in the model
-  /// would involve a complex inverse kinematics problem. This method allows us
-  /// to simplify this process when we know the body is free in space.
-  /// @warning This method only applies to "floating base" bodies; i.e.,
-  /// `body.is_floating()` returns `true`. I.e., not just any free body, despite
-  /// the method name.
-  /// @throws std::exception if `body` is not a free body in the model.
-  /// @throws std::exception if called pre-finalize.
-  /// @throws std::exception if `body.is_floating()` returns `false`.
+  DRAKE_DEPRECATED("2026-01-01",
+                   "Use SetFloatingBaseBodyPoseInWorldFrame() instead.")
   void SetFreeBodyPoseInWorldFrame(systems::Context<T>* context,
                                    const RigidBody<T>& body,
-                                   const math::RigidTransform<T>& X_WB) const;
-
-  /// Updates `context` to store the pose `X_FB` of a given `body` B in a frame
-  /// F.
-  /// Frame F must be anchored, meaning that it is either directly welded to the
-  /// world frame W or, more generally, that there is a kinematic path between
-  /// frame F and the world frame W that only includes weld joints.
-  /// @throws std::exception if called pre-finalize.
-  /// @throws std::exception if frame F is not anchored to the world.
-  void SetFreeBodyPoseInAnchoredFrame(
-      systems::Context<T>* context, const Frame<T>& frame_F,
-      const RigidBody<T>& body, const math::RigidTransform<T>& X_FB) const;
-
-  /// If there exists a unique base body that belongs to the model given by
-  /// `model_instance` and that unique base body is free
-  /// (see HasUniqueBaseBody()), return that free body. Throw an exception
-  /// otherwise.
-  /// @throws std::exception if called pre-finalize.
-  /// @throws std::exception if `model_instance` is not valid.
-  /// @throws std::exception if HasUniqueFreeBaseBody(model_instance) == false.
-  const RigidBody<T>& GetUniqueFreeBaseBodyOrThrow(
-      ModelInstanceIndex model_instance) const {
-    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    return internal_tree().GetUniqueFreeBaseBodyOrThrowImpl(model_instance);
+                                   const math::RigidTransform<T>& X_WB) const {
+    SetFloatingBaseBodyPoseInWorldFrame(context, body, X_WB);
   }
 
-  /// Return true if there exists a unique base body in the model given by
-  /// `model_instance` and that unique base body is free.
-  /// @throws std::exception if called pre-finalize.
-  /// @throws std::exception if `model_instance` is not valid.
+  DRAKE_DEPRECATED("2026-01-01",
+                   "Use SetFloatingBaseBodyPoseInAnchoredFrame() instead.")
+  void SetFreeBodyPoseInAnchoredFrame(
+      systems::Context<T>* context, const Frame<T>& frame_F,
+      const RigidBody<T>& body, const math::RigidTransform<T>& X_FB) const {
+    SetFloatingBaseBodyPoseInAnchoredFrame(context, frame_F, body, X_FB);
+  }
+
+  DRAKE_DEPRECATED("2026-01-01",
+                   "Use GetUniqueFloatingBaseBodyOrThrow() instead.")
+  const RigidBody<T>& GetUniqueFreeBaseBodyOrThrow(
+      ModelInstanceIndex model_instance) const {
+    return GetUniqueFloatingBaseBodyOrThrow(model_instance);
+  }
+
+  DRAKE_DEPRECATED("2026-01-01",
+                   "Use SetDefaultFloatingBaseBodyPose() instead.")
+  void SetDefaultFreeBodyPose(const RigidBody<T>& body,
+                              const math::RigidTransform<double>& X_PB) {
+    SetDefaultFloatingBaseBodyPose(body, X_PB);
+  }
+
+  DRAKE_DEPRECATED("2026-01-01",
+                   "Use GetDefaultFloatingBaseBodyPose() instead.")
+  math::RigidTransform<double> GetDefaultFreeBodyPose(
+      const RigidBody<T>& body) const {
+    return GetDefaultFloatingBaseBodyPose(body);
+  }
+
+  DRAKE_DEPRECATED("2026-01-01", "Use HasUniqueFloatingBaseBody() instead.")
   bool HasUniqueFreeBaseBody(ModelInstanceIndex model_instance) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    return internal_tree().HasUniqueFreeBaseBodyImpl(model_instance);
+    return internal_tree().HasUniqueFloatingBaseBodyImpl(model_instance);
   }
 
   /// @} <!-- Working with free bodies -->

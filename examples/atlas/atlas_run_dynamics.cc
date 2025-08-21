@@ -81,11 +81,11 @@ int do_main() {
   DRAKE_DEMAND(plant.num_velocities() == 36);
   DRAKE_DEMAND(plant.num_positions() == 37);
 
-  // Verify the "pelvis" body is free and modeled with quaternions dofs before
-  // moving on with that assumption.
+  // Verify the "pelvis" body is a floating base body and modeled with
+  // quaternions dofs before moving on with that assumption.
   const drake::multibody::RigidBody<double>& pelvis =
       plant.GetBodyByName("pelvis");
-  DRAKE_DEMAND(pelvis.is_floating());
+  DRAKE_DEMAND(pelvis.is_floating_base_body());
   DRAKE_DEMAND(pelvis.has_quaternion_dofs());
   // Since there is a single floating body, we know that the positions for it
   // lie first in the state vector.
@@ -109,7 +109,7 @@ int do_main() {
 
   // Set the pelvis frame P initial pose.
   const Translation3d X_WP(0.0, 0.0, 0.95);
-  plant.SetFreeBodyPoseInWorldFrame(&plant_context, pelvis, X_WP);
+  plant.SetFloatingBaseBodyPoseInWorldFrame(&plant_context, pelvis, X_WP);
 
   auto simulator =
       MakeSimulatorFromGflags(*diagram, std::move(diagram_context));
