@@ -401,21 +401,21 @@ class SpanningForest {
   for the Tree to which the Primary (original) Link's Mobod belongs. An invalid
   tree index is returned if the Link's Mobod is World. O(1), very fast.
   @pre link_ordinal is in range [0, num_links) */
-  inline TreeIndex link_to_tree(LinkOrdinal link_ordinal) const;
+  inline TreeIndex link_to_tree_index(LinkOrdinal link_ordinal) const;
 
   /* Convenience signature that takes a LinkIndex rather than a LinkOrdinal.
   @pre the index refers to a link that exists and hasn't been removed. */
-  inline TreeIndex link_to_tree(LinkIndex link_index) const;
+  inline TreeIndex link_to_tree_index(LinkIndex link_index) const;
 
   /* Returns the Tree to which a given position coordinate q belongs.
   O(1), very fast.
   @pre q_index is in range [0, num_positions) */
-  inline TreeIndex q_to_tree(int q_index) const;
+  inline TreeIndex q_to_tree_index(int q_index) const;
 
   /* Returns the Tree to which a given velocity coordinate v belongs.
   O(1), very fast.
   @pre v_index is in range [0, num_velocities) */
-  inline TreeIndex v_to_tree(int v_index) const;
+  inline TreeIndex v_to_tree_index(int v_index) const;
 
   // FYI Debugging APIs (including Graphviz-related) are defined in
   // spanning_forest_debug.cc.

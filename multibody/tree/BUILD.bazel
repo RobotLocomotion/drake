@@ -19,7 +19,6 @@ drake_cc_package_library(
         ":multibody_tree_caches",
         ":multibody_tree_core",
         ":multibody_tree_indexes",
-        ":multibody_tree_topology",
         ":rotational_inertia",
         ":scoped_name",
         ":spatial_inertia",
@@ -36,20 +35,6 @@ drake_cc_library(
     deps = [
         "//common:identifier",
         "//common:type_safe_index",
-    ],
-)
-
-drake_cc_library(
-    name = "multibody_tree_topology",
-    srcs = [
-        "multibody_tree_topology.cc",
-    ],
-    hdrs = [
-        "multibody_tree_topology.h",
-    ],
-    deps = [
-        ":multibody_tree_indexes",
-        "//multibody/topology",
     ],
 )
 
@@ -75,9 +60,9 @@ drake_cc_library(
     ],
     deps = [
         ":articulated_body_inertia",
-        ":multibody_tree_topology",
         "//common:autodiff",
         "//multibody/math:spatial_algebra",
+        "//multibody/topology",
         "//systems/framework:leaf_context",
     ],
 )

@@ -3102,7 +3102,7 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
 
   // Try scalar-converting pre-finalize - error.
   DRAKE_EXPECT_THROWS_MESSAGE(systems::System<double>::ToAutoDiffXd(plant),
-                              ".*MultibodyTree with an invalid topology.*");
+                              ".*MultibodyTree that has not been finalized.*");
 
   plant.Finalize();
 

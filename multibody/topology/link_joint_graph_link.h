@@ -113,9 +113,9 @@ class LinkJointGraph::Link {
   MobodIndex mobod_index() const { return mobod_; }
 
   /* Returns the Joint that was used to associate this %Link with its
-  mobilized body. If this %Link is part of a LinkComposite, returns the Joint
-  that connects this %Link to the Composite, not necessarily the Joint that is
-  modeled by the Mobod returned by mobod_index(). */
+  mobilized body. If this %Link is part of a LinkComposite, returns the weld
+  Joint that connects this %Link to the Composite, not necessarily the Joint
+  that is modeled by the Mobod returned by mobod_index(). */
   JointIndex inboard_joint_index() const { return joint_; }
 
   /* Returns the index of the LinkComposite this %Link is part of, if any.

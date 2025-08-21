@@ -2997,18 +2997,18 @@ void MultibodyPlant<T>::CalcGeometryContactData(
     return;
   }
   const auto& geometry_id_to_body_index = geometry_id_to_body_index_;
-  const internal::MultibodyTreeTopology& topology =
-      internal_tree().get_topology();
+  const internal::SpanningForest& forest = internal_tree().forest();
   const std::vector<std::vector<int>>& per_tree_unlocked_indices =
       joint_locking.unlocked_velocity_indices_per_tree;
   const auto is_irrelevant_geometry =
-      [&geometry_id_to_body_index, &topology,
+      [&geometry_id_to_body_index, &forest,
        &per_tree_unlocked_indices](GeometryId geometry_id) {
         // Checks whether `geometry_id` belongs to a zero-dof tree.
         const BodyIndex body_index = geometry_id_to_body_index.at(geometry_id);
         const internal::TreeIndex tree_index =
-            topology.body_to_tree_index(body_index);
-        return !topology.tree_has_dofs(tree_index) ||
+            forest.link_to_tree_index(body_index);
+        const internal::SpanningForest::Tree& tree = forest.trees(tree_index);
+        return !tree.has_dofs() ||
                per_tree_unlocked_indices[tree_index].size() == 0;
       };
   const auto is_irrelevant_point_pair =
@@ -3043,7 +3043,7 @@ void MultibodyPlant<T>::CalcJointLocking(
     internal::JointLockingCacheData<T>* data) const {
   DRAKE_DEMAND(data != nullptr);
 
-  const auto& topology = internal_tree().get_topology();
+  const internal::SpanningForest& forest = internal_tree().forest();
 
   auto& unlocked = data->unlocked_velocity_indices;
   auto& locked = data->locked_velocity_indices;
@@ -3054,8 +3054,8 @@ void MultibodyPlant<T>::CalcJointLocking(
   locked_per_tree.clear();
   unlocked.resize(num_velocities());
   locked.resize(num_velocities());
-  unlocked_per_tree.resize(topology.num_trees());
-  locked_per_tree.resize(topology.num_trees());
+  unlocked_per_tree.resize(forest.num_trees());
+  locked_per_tree.resize(forest.num_trees());
 
   int unlocked_cursor = 0;
   int locked_cursor = 0;
@@ -3088,15 +3088,17 @@ void MultibodyPlant<T>::CalcJointLocking(
   internal::DemandIndicesValid(locked, num_velocities());
 
   for (int dof : unlocked) {
-    const internal::TreeIndex tree = topology.velocity_to_tree_index(dof);
-    const int tree_dof = dof - topology.tree_velocities_start_in_v(tree);
-    unlocked_per_tree[tree].push_back(tree_dof);
+    const internal::TreeIndex tree_index = forest.v_to_tree_index(dof);
+    const internal::SpanningForest::Tree& tree = forest.trees(tree_index);
+    const int tree_dof = dof - tree.v_start();
+    unlocked_per_tree[tree_index].push_back(tree_dof);
   }
 
   for (int dof : locked) {
-    const internal::TreeIndex tree = topology.velocity_to_tree_index(dof);
-    const int tree_dof = dof - topology.tree_velocities_start_in_v(tree);
-    locked_per_tree[tree].push_back(tree_dof);
+    const internal::TreeIndex tree_index = forest.v_to_tree_index(dof);
+    const internal::SpanningForest::Tree& tree = forest.trees(tree_index);
+    const int tree_dof = dof - tree.v_start();
+    locked_per_tree[tree_index].push_back(tree_dof);
   }
 }
 
