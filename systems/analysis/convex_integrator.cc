@@ -313,8 +313,7 @@ bool ConvexIntegrator<T>::StepWithRichardsonExtrapolation(const T& h) {
     // Do Richardson extrapolation to obtain a second-order estimate
     // This is from Hairer, Sec. II.4, with p=2.
     const ContinuousState<T>& err = *this->get_error_estimate();
-    x_next.get_mutable_vector().PlusEqScaled(
-        -1.0, err.get_vector());
+    x_next.get_mutable_vector().PlusEqScaled(-1.0, err.get_vector());
   }
 
   return true;  // step was successful
