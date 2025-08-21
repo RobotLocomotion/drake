@@ -345,14 +345,13 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // Many uses of Q_FM are associated with an angular velocity expressed in
   // a particular frame. The examples below show Q_FM used in conjunction
   // with w_FM_F (frame M's angular velocity in frame F, expressed in F).
+  // Two other uses of Q_FM are for the rotational parts of this mobilizer's
+  // N and Nplus matrices, namely as Nᵣ ≜ 0.5 Q_FM and Nᵣ⁺ ≜ 2 (Q_FM)ᵀ.
   //
   // q̇_FM = 0.5 * Q_FM * w_FM_F
   // q̈_FM = 0.5 * Q_FM * ẇ_FM_F - 0.25 ω² q_FM    Note: ω² = |w_FM_F|²
   // w_FM_F = 2 * (Q_FM)ᵀ * q̇_FM
   // ẇ_FM_F = 2 * (Q_FM)ᵀ * q̈_FM
-  //
-  // Two other uses of Q_FM are Nᵣ ≜ 0.5 Q_FM and Nᵣ⁺ ≜ 2 (Q_FM)ᵀ, the
-  // rotational parts of this mobilizer's N and Nplus matrices.
   //
   // @note Since the elements of the matrix returned by Q(q) depend linearly on
   // qw, qx, qy, qz, s * Q(q) = Q(s * q), where s is a scalar (e.g., 0.5 or 2).
