@@ -14,6 +14,30 @@
 namespace drake {
 namespace geometry {
 
+namespace render {
+/** SSAO parameter for supporting SSAO feature in VTK rendering. */
+struct SsaoParameter {
+  /** Passes this object to an Archive.
+   Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(radius));
+    a->Visit(DRAKE_NVP(bias));
+    a->Visit(DRAKE_NVP(kernel_size));
+    a->Visit(DRAKE_NVP(intensity_scale));
+    a->Visit(DRAKE_NVP(intensity_shift));
+    a->Visit(DRAKE_NVP(blur));
+  }
+
+  double radius{0.5};
+  double bias{0.01};
+  int kernel_size{32};
+  double intensity_scale{1.0};
+  double intensity_shift{0.0};
+  bool blur{false};
+};
+}  // namespace render
+
 // TODO(SeanCurtis-TRI): When CubeMap is implemented, replace NullTexture with
 // CubeMap.
 
@@ -101,6 +125,7 @@ struct RenderEngineVtkParams {
     a->Visit(DRAKE_NVP(lights));
     a->Visit(DRAKE_NVP(environment_map));
     a->Visit(DRAKE_NVP(exposure));
+    a->Visit(DRAKE_NVP(ssao_params));
     a->Visit(DRAKE_NVP(cast_shadows));
     a->Visit(DRAKE_NVP(shadow_map_size));
     a->Visit(DRAKE_NVP(force_to_pbr));
@@ -173,6 +198,21 @@ struct RenderEngineVtkParams {
    if your image seems too dark, or reduce the value if it seems "washed out".
    */
   std::optional<double> exposure{};
+
+  /** An optional SSAO (screen-space ambient occlusion) parameters set. When
+   * specified, VTK will use the parameters provided for SSAO and simulate the
+   * ambient occlusion on surfaces where light is obstructed by the surrounding
+   * geometry, producing images with better qualities and higher fidelity.
+   * See https://www.kitware.com/ssao/ for details.
+   * Non-specified parameters will use default values:
+   * radius: 0.5
+   * bias: 0.01
+   * kernel size: 32
+   * intensity_scale: 1.0
+   * intensity_shift: 0.0
+   * blur: false
+   */
+  std::optional<render::SsaoParameter> ssao_params{};
 
   /** If `true`, *all* lights that are *able* to cast shadows will do so.
 

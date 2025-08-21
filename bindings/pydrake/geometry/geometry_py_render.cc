@@ -27,6 +27,7 @@ using geometry::render::DepthRenderCamera;
 using geometry::render::LightParameter;
 using geometry::render::LightType;
 using geometry::render::RenderEngine;
+using geometry::render::SsaoParameter;
 using math::RigidTransformd;
 using systems::sensors::CameraInfo;
 using systems::sensors::Image;
@@ -407,6 +408,17 @@ void DoScalarIndependentDefinitions(py::module m) {
     using Class = geometry::render::LightParameter;
     constexpr auto& cls_doc = doc.LightParameter;
     py::class_<Class> cls(m, "LightParameter", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = geometry::render::SsaoParameter;
+    constexpr auto& cls_doc = doc.SsaoParameter;
+    py::class_<Class> cls(m, "SsaoParameter", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls);

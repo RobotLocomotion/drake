@@ -3097,6 +3097,87 @@ TEST_F(RenderEngineVtkTest, WholeImageCustomParams) {
   }
 }
 
+// Like WholeImageCustomParams, except we introduce the SSAO pass to the render
+// engine parameters to detect differences.
+TEST_F(RenderEngineVtkTest, WholeImageCustomParamsAndSSAO) {
+  const double last_x =
+      AddShapeRows(nullptr, {.gltf_mesh = true, .no_half_space = true});
+  const RigidTransformd X_WR(RotationMatrixd::MakeXRotation(-3.2 * M_PI / 4),
+                             Vector3d(last_x / 2, -0.75, 1.1));
+
+  // Use default SSAO values
+  const drake::geometry::render::SsaoParameter ssaoParams{};
+  vector<LightParameter> lights_W{{.type = "point",
+                                   .color = Rgba(1.0, 0.75, 0.75),
+                                   .attenuation_values = {0, 0, 1},
+                                   .position = Vector3d(0, 0, 0.3),
+                                   .frame = "world",
+                                   .intensity = 0.5},
+                                  {.type = "spot",
+                                   .color = Rgba(0.75, 1.0, 0.75),
+                                   .position = Vector3d(0, -0.1, 2),
+                                   .frame = "world",
+                                   .intensity = 1,
+                                   .direction = Vector3d(-0.5, 0, -1),
+                                   .cone_angle = 10},
+                                  {.type = "directional",
+                                   .color = Rgba(1, 1, 1),
+                                   .frame = "world",
+                                   .intensity = 1,
+                                   .direction = Vector3d(0.02, -0.05, -1)}};
+  // We should get the same images whether the lights are expressed in the
+  // world frame or the camera frame.
+  // TODO(SeanCurtis-TRI): When we can edit the lights after instantiation,
+  // simplify this so we don't re-instantiate the engine.
+  for (const vector<LightParameter>& lights :
+       {lights_W, TransformLightsToCamera(lights_W, X_WR)}) {
+    const RenderEngineVtkParams params{
+        .default_diffuse = Eigen::Vector4d(0.1, 0.2, 0.4, 1.0),
+        .default_clear_color = Vector3d(0.25, 0.25, 0.25),
+        .lights = lights,
+        .environment_map = {},
+        .exposure = 0.75,
+        .ssao_params = ssaoParams,
+        .cast_shadows = true,
+        .shadow_map_size = 1024,
+        .backend = FLAGS_backend,
+    };
+    RenderEngineVtk engine(params);
+
+    // We'll use the same camera as the default camera for the tests, but shrink
+    // the image size so they're not as big in the repository.
+    const int w = 480;
+    const int h = 360;
+    const CameraInfo& source_intrinsics = depth_camera_.core().intrinsics();
+    const CameraInfo intrinsics(w, h, source_intrinsics.fov_y());
+    const DepthRenderCamera camera(
+        {"unused", intrinsics, depth_camera_.core().clipping(),
+         depth_camera_.core().sensor_pose_in_camera_body()},
+        depth_camera_.depth_range());
+
+    // The value we used to define the camera pose better match.
+    DRAKE_DEMAND(AddShapeRows(&engine, {.gltf_mesh = true,
+                                        .no_half_space = true}) == last_x);
+
+    // Now make the rendering.
+    engine.UpdateViewpoint(X_WR);
+
+    ImageRgba8U color(w, h);
+    ImageDepth32F depth(w, h);
+    ImageLabel16I label(w, h);
+    this->Render(fmt::format("whole_image_custom_color_{}", lights[0].frame),
+                 &engine, &camera, &color, &depth, &label);
+
+    {
+      SCOPED_TRACE(fmt::format("Color image - {}", lights[0].frame));
+      CompareImages(color,
+                    "drake/geometry/render_vtk/test/"
+                    "whole_image_custom_and_SSAO_color.png",
+                    /* tolerance = */ 25);
+    }
+  }
+}
+
 // To work around a bug in VTK, when shadows are enabled, we have to render into
 // a square window, and then crop the image back out. The WholeImageCustomParams
 // implicitly handles non-square images with a *horizontal* aspect ratio. This
