@@ -290,46 +290,6 @@ class MultibodyTree {
   const MobilizerType<T>& AddMobilizer(
       std::unique_ptr<MobilizerType<T>> mobilizer);
 
-  // Constructs a new mobilizer with type `MobilizerType` with the given
-  // `args`, and adds it to `this` %MultibodyTree, which retains ownership.
-  // The `MobilizerType` will be specialized on the scalar type T of this
-  // %MultibodyTree.
-  //
-  // Example of usage:
-  // @code
-  //   MultibodyTree<T> model;
-  //   // ... Code to define inboard and outboard frames by calling
-  //   // MultibodyTree::AddFrame() ...
-  //   // Notice RevoluteMobilizer is a template an a scalar type.
-  //   const RevoluteMobilizer<T>& pin =
-  //     model.template AddMobilizer<RevoluteMobilizer>(
-  //       inboard_frame, outboard_frame,
-  //       Vector3d::UnitZ() /*revolute axis*/);
-  // @endcode
-  //
-  // Note that for dependent names _only_ you must use the template keyword
-  // (say for instance you have a MultibodyTree<T> member within your custom
-  // class).
-  //
-  // @throws std::exception if Finalize() was already called on `this` tree.
-  // @throws std::exception if the new mobilizer attempts to connect a
-  // frame with itself.
-  // @throws std::exception if attempting to connect two bodies with more
-  // than one mobilizer between them.
-  //
-  // @param[in] args The arguments needed to construct a valid Mobilizer of
-  //                 type `MobilizerType`. `MobilizerType` must provide a
-  //                 public constructor that takes these arguments.
-  // @returns A constant reference of type `MobilizerType` to the created
-  //          mobilizer. This reference which will remain valid for the
-  //          lifetime of `this` %MultibodyTree.
-  //
-  // @tparam MobilizerType A template for the type of Mobilizer to construct.
-  //                       The template will be specialized on the scalar type
-  //                       T of `this` %MultibodyTree.
-  template <template <typename Scalar> class MobilizerType, typename... Args>
-  const MobilizerType<T>& AddMobilizer(Args&&... args);
-
   // Creates and adds to `this` %MultibodyTree (which retains ownership) a new
   // `ForceElement` member with the specific type `ForceElementType`. The
   // arguments to this method `args` are forwarded to `ForceElementType`'s
@@ -2880,10 +2840,6 @@ class MultibodyTree {
   std::pair<Eigen::Quaternion<double>, Vector3<double>>
   GetDefaultFloatingBaseBodyPoseAsQuaternionVec3Pair(
       const RigidBody<T>& body) const;
-
-  // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
-  //  a method that verifies the state of the topology with a signature similar
-  //  to RoadGeometry::CheckHasRightSizeForModel().
 
   // These objects are defined via MultibodyPlant and are thus user-visible.
   const RigidBody<T>* world_rigid_body_{nullptr};

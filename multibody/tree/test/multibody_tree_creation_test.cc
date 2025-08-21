@@ -377,24 +377,11 @@ class TreeTopologyTests : public ::testing::Test {
                                             LinkIndex(3), LinkIndex(8)};
     const set<LinkIndex> expected_level3 = {LinkIndex(6)};
 
-    std::vector<std::set<BodyIndex>> topo_levels(topology.num_rigid_bodies());
-    for (BodyIndex index(0); index < topology.num_rigid_bodies(); ++index) {
-      const RigidBodyTopology& rigid_body_topology =
-          topology.get_rigid_body_topology(index);
-      topo_levels[rigid_body_topology.level].insert(index);
-    }
     // Comparison of sets. The order of the elements is not important.
-    EXPECT_EQ(topo_levels[0], expected_level0);
-    EXPECT_EQ(topo_levels[1], expected_level1);
-    EXPECT_EQ(topo_levels[2], expected_level2);
-    EXPECT_EQ(topo_levels[3], expected_level3);
-
-    // Repeat for the forest.
     std::vector<std::set<LinkIndex>> levels(topology.num_rigid_bodies());
     for (const LinkJointGraph::Link& link : forest.links()) {
-      const LinkIndex link_index = link.index();
       const int level = forest.mobods(link.mobod_index()).level();
-      levels[level].insert(link_index);
+      levels[level].insert(link.index());
     }
     EXPECT_EQ(levels[0], expected_level0);
     EXPECT_EQ(levels[1], expected_level1);
