@@ -379,10 +379,40 @@ TEST_F(QuaternionFloatingMobilizerTest, MapUsesNplus) {
   EXPECT_FALSE(std::abs(is_zero_if_proper_qdot) < 0.1);
 }
 
+TEST_F(QuaternionFloatingMobilizerTest, MapVelocityToQDotAndViceVersa) {
+  // Set an arbitrary non-zero state, but with a non-unit quaternion.
+  const Quaternion<double> q_FM(0.7, 0.8, 0.9, -1.2);  // Unnormalized.
+  const Vector3<double> wxyz(5.4, -9.8, 3.2);
+  const Vector3<double> vxyz(0.2, 0.5, -0.87);
+  const Vector6<double> v(wxyz[0], wxyz[1], wxyz[2], vxyz[0], vxyz[1], vxyz[2]);
+  mobilizer_->SetQuaternion(context_.get(), q_FM);
+  mobilizer_->SetAngularVelocity(context_.get(), wxyz);
+  mobilizer_->SetTranslationalVelocity(context_.get(), vxyz);
+
+  // Calculate the qdot associated with angular and translational velocity.
+  Eigen::Matrix<double, 7, 1> qdot;
+  mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
+
+  // Check if q̇_FM (the rotational part of the calculated qdot) satisfies the
+  // time-derivative of the quaternion constraint (q_FM)ᵀ * q_FM = constant, so
+  // (q̇_FM)ᵀ * q_FM + (q_FM)ᵀ * q̇_FM = 2 * (q_FM)ᵀ * q̇_FM = 0.  However, since
+  // the qdot above is arbitrary, this is not true.
+  const Vector4<double> qdot_FM(qdot[0], qdot[1], qdot[2], qdot[3]);
+  const double is_zero_if_proper_qdot =
+      Vector4<double>(q_FM.w(), q_FM.x(), q_FM.y(), q_FM.z()).dot(qdot_FM);
+  EXPECT_TRUE(std::abs(is_zero_if_proper_qdot) < 16 * kTolerance);
+
+  // Use qdot to calculate its associated angular and translational velocity.
+  Vector6<double> v_from_qdot;
+  mobilizer_->MapQDotToVelocity(*context_, qdot, &v_from_qdot);
+  EXPECT_TRUE(CompareMatrices(v, v_from_qdot, 16 * kTolerance,
+                              MatrixCompareType::relative));
+}
+
 TEST_F(QuaternionFloatingMobilizerTest, MapAccelerationToQDDotAndViceVersa) {
   // Set an arbitrary non-zero state.
   const math::RollPitchYaw<double> rpy(M_PI / 3, -M_PI / 4, M_PI / 5);
-  const Quaternion<double> q_FM = rpy.ToQuaternion();
+  Quaternion<double> q_FM = rpy.ToQuaternion();
   const Vector3<double> wxyz(5.4, -9.8, 3.2);
   const Vector3<double> vxyz(0.2, 0.5, -0.87);
   const Vector6<double> v(wxyz[0], wxyz[1], wxyz[2], vxyz[0], vxyz[1], vxyz[2]);
@@ -439,6 +469,17 @@ TEST_F(QuaternionFloatingMobilizerTest, MapAccelerationToQDDotAndViceVersa) {
   MatrixX<double> Nplus_rotational = Nplus.block<3, 4>(0, 0);
   EXPECT_TRUE(CompareMatrices(N_rotational.transpose(), 0.25 * Nplus_rotational,
                               kTolerance, MatrixCompareType::relative));
+
+  // Repeat these experiments with an unnormalized (non-unit) quaternion.
+  // Use MapAccelerationToQDDot() to calculate q̈ and then use this calculated q̈
+  // with MapQDDotToAcceleration() to calculate v̇.
+  // Verify MapQDDotToAcceleration() is the inverse of MapAccelerationToQDDot().
+  q_FM = Quaternion<double>(0.7, 0.8, 0.9, -1.2);  // Unnormalized.
+  mobilizer_->SetQuaternion(context_.get(), q_FM);
+  mobilizer_->MapAccelerationToQDDot(*context_, vdot, &qddot);
+  mobilizer_->MapQDDotToAcceleration(*context_, qddot, &vdot_redo);
+  EXPECT_TRUE(CompareMatrices(vdot_redo, vdot, 16 * kTolerance,
+                              MatrixCompareType::relative));
 }
 
 }  // namespace
