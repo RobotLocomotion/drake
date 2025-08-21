@@ -43,7 +43,6 @@ bool RigidBodyTopology::operator==(const RigidBodyTopology& other) const {
     return false;
   if (parent_body.is_valid() != other.parent_body.is_valid()) return false;
   if (parent_body.is_valid() && parent_body != other.parent_body) return false;
-  if (child_bodies != other.child_bodies) return false;
   if (body_frame != other.body_frame) return false;
   if (level != other.level) return false;
   if (mobod_index != other.mobod_index) return false;
@@ -155,10 +154,6 @@ void MultibodyTreeTopology::add_mobilizer_topology(
   // Similarly, record inboard_body as the parent of outboard_body.
   rigid_body_topology_[outboard_body].parent_body = inboard_body;
 
-  // Records "child" rigid bodies for bookkeeping in the context of the tree
-  // structure of the multibody forest.
-  rigid_body_topology_[inboard_body].child_bodies.push_back(outboard_body);
-
   mobilizer_topology_.emplace_back(mobilizer_index, in_frame, out_frame,
                                    inboard_body, outboard_body, mobod);
 }
@@ -236,11 +231,11 @@ void MultibodyTreeTopology::FinalizeTopology(const LinkJointGraph& graph) {
 
   const SpanningForest& forest = graph.forest();
 
-  // Create a BodyNodeTopology corresponding to each Mobod in the forest,
+  // Create MobilizerTopology corresponding to each Mobod in the forest,
   // indexed identically. Note that Mobods are already in depth-first order so
-  // we can use the same numbering for BodyNodes. Also update RigidBodyTopology,
-  // though in the case where we combine welded-together rigid bodies only the
-  // "active" body of each Composite gets updated here.
+  // we can use the same numbering for Mobilizers. Also update
+  // RigidBodyTopology, though in the case where we combine welded-together
+  // rigid bodies only the "active" body of each Composite gets updated here.
   for (const auto& mobod : forest.mobods()) {
     const MobodIndex node_index(mobod.index());
     const BodyIndex rigid_body_index =

@@ -1,13 +1,10 @@
 #pragma once
 
 #include <algorithm>
-#include <iterator>
 #include <memory>
 #include <optional>
 #include <string>
-#include <tuple>
 #include <type_traits>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -130,22 +127,13 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
 
   const BodyIndex outboard_body_index = mobilizer->outboard_body().index();
   topology_.get_mutable_rigid_body_topology(outboard_body_index)
-      .is_floating_base = is_floating_base_body;
+      .is_floating_base = mobilizer->is_floating_base_mobilizer();
   topology_.get_mutable_rigid_body_topology(outboard_body_index)
       .has_quaternion_dofs = mobilizer->has_quaternion_dofs();
 
   MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
   mobilizers_.push_back(std::move(mobilizer));
   return *raw_mobilizer_ptr;
-}
-
-template <typename T>
-template <template <typename Scalar> class MobilizerType, typename... Args>
-const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(Args&&... args) {
-  static_assert(std::is_base_of_v<Mobilizer<T>, MobilizerType<T>>,
-                "MobilizerType must be a sub-class of Mobilizer<T>.");
-  return AddMobilizer(
-      std::make_unique<MobilizerType<T>>(std::forward<Args>(args)...));
 }
 
 template <typename T>
