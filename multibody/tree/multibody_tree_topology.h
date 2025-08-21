@@ -31,6 +31,9 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+// TODO(sherm1) Eliminate RigidBodyTopology altogether in favor of direct
+//  access to the SpanningForest, which contains the same information.
+
 // Store the topological information associated with a RigidBody.
 struct RigidBodyTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidBodyTopology);
@@ -62,7 +65,7 @@ struct RigidBodyTopology {
 
   // Within the SpanningForest, the immediate outboard (or "child") RigidBodies
   // to this body. Bodies appear in child_bodies in the order mobilizers were
-  // added to the model, with MultibodyTreeTopology::add_mobilizer().
+  // added to the model, with MultibodyTreeTopology::add_mobilizer_topology().
   std::vector<BodyIndex> child_bodies;
 
   // Unique index to the frame associated with this RigidBody.
@@ -75,14 +78,16 @@ struct RigidBodyTopology {
   // SpanningForest.
   MobodIndex mobod_index;
 
-  // `true` if this topology corresponds to a floating base RigidBody, meaning
-  // it has a 6 dof mobilizer connecting it to World.
+  // `true` if this topology corresponds to a floating base body, meaning
+  // it has an ephemeral (automatically added at Finalize()) 6dof mobilizer.
   bool is_floating_base{false};
 
-  // `true` if this topology corresponds to a floating RigidBody with rotations
+  // `true` if this topology corresponds to a free body with rotations
   // parametrized by a quaternion.
   bool has_quaternion_dofs{false};
 
+  // For a floating base body only, these are indices into the multibody
+  // state for its ephemeral 6dof joint's coordinates.
   int floating_positions_start{-1};
   int floating_velocities_start_in_v{-1};
 };

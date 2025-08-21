@@ -134,7 +134,7 @@ class DeformableDriverContactKinematicsTest
     /* Add a dynamic rigid body with the same pose as the deformable body. */
     const RigidBody<double>& rigid_body =
         plant_->AddRigidBody("rigid_body", SpatialInertia<double>::NaN());
-    plant_->SetDefaultFreeBodyPose(rigid_body, X_WF_);
+    plant_->SetDefaultFloatingBaseBodyPose(rigid_body, X_WF_);
     rigid_body_index_ = rigid_body.index();
 
     /* Register the collision geometry so that it intersects with the top of
@@ -191,7 +191,7 @@ class DeformableDriverContactKinematicsTest
     /* Add a dynamic rigid body with the same pose as the deformable body. */
     const RigidBody<double>& rigid_body =
         plant_->AddRigidBody("rigid_body", SpatialInertia<double>::NaN());
-    plant_->SetDefaultFreeBodyPose(rigid_body, X_WF_);
+    plant_->SetDefaultFloatingBaseBodyPose(rigid_body, X_WF_);
     rigid_body_index_ = rigid_body.index();
 
     /* Add a fixed constraint between the rigid body and the deformable body.

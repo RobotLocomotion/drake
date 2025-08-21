@@ -545,9 +545,9 @@ class FilteredContactResultsTest
     const math::RigidTransformd X_WB{Vector3d{0, 0, 1.95 * radius_}};
     const math::RigidTransformd X_WC{Vector3d{0, 0, 3.9 * radius_}};
 
-    plant_->SetDefaultFreeBodyPose(ball_A, X_WA);
-    plant_->SetDefaultFreeBodyPose(ball_B, X_WB);
-    plant_->SetDefaultFreeBodyPose(ball_C, X_WC);
+    plant_->SetDefaultFloatingBaseBodyPose(ball_A, X_WA);
+    plant_->SetDefaultFloatingBaseBodyPose(ball_B, X_WB);
+    plant_->SetDefaultFloatingBaseBodyPose(ball_C, X_WC);
 
     plant_->Finalize();
     diagram_ = builder.Build();

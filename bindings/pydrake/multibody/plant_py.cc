@@ -8,7 +8,6 @@
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
-#include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
@@ -488,11 +487,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
             py::arg("context"), py::arg("body"), py::arg("X_PB"),
             cls_doc.SetFreeBodyPose.doc_3args)
-        .def("SetDefaultFreeBodyPose", &Class::SetDefaultFreeBodyPose,
-            py::arg("body"), py::arg("X_PB"),
-            cls_doc.SetDefaultFreeBodyPose.doc)
-        .def("GetDefaultFreeBodyPose", &Class::GetDefaultFreeBodyPose,
-            py::arg("body"), cls_doc.GetDefaultFreeBodyPose.doc)
+        .def("SetDefaultFloatingBaseBodyPose",
+            &Class::SetDefaultFloatingBaseBodyPose, py::arg("body"),
+            py::arg("X_WC"), cls_doc.SetDefaultFloatingBaseBodyPose.doc)
+        .def("GetDefaultFloatingBaseBodyPose",
+            &Class::GetDefaultFloatingBaseBodyPose, py::arg("body"),
+            cls_doc.GetDefaultFloatingBaseBodyPose.doc)
         .def("GetActuationFromArray", &Class::GetActuationFromArray,
             py::arg("model_instance"), py::arg("u"),
             cls_doc.GetActuationFromArray.doc)
@@ -564,12 +564,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("body"), py::arg("V_PB"), py::arg("context"),
             cls_doc.SetFreeBodySpatialVelocity.doc_3args)
-        .def("HasUniqueFreeBaseBody", &Class::HasUniqueFreeBaseBody,
-            py::arg("model_instance"), cls_doc.HasUniqueFreeBaseBody.doc)
-        .def("GetUniqueFreeBaseBodyOrThrow",
-            &Class::GetUniqueFreeBaseBodyOrThrow, py::arg("model_instance"),
+        .def("HasUniqueFloatingBaseBody", &Class::HasUniqueFloatingBaseBody,
+            py::arg("model_instance"), cls_doc.HasUniqueFloatingBaseBody.doc)
+        .def("GetUniqueFloatingBaseBodyOrThrow",
+            &Class::GetUniqueFloatingBaseBodyOrThrow, py::arg("model_instance"),
             py_rvp::reference_internal,
-            cls_doc.GetUniqueFreeBaseBodyOrThrow.doc)
+            cls_doc.GetUniqueFloatingBaseBodyOrThrow.doc)
         .def(
             "EvalBodyPoseInWorld",
             [](const Class* self, const Context<T>& context,
@@ -594,6 +594,31 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("context"), py::arg("body"),
             cls_doc.EvalBodySpatialVelocityInWorld.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("SetDefaultFreeBodyPose",
+            WrapDeprecated(cls_doc.SetDefaultFreeBodyPose.doc_deprecated,
+                &Class::SetDefaultFreeBodyPose),
+            py::arg("body"), py::arg("X_PB"),
+            cls_doc.SetDefaultFreeBodyPose.doc_deprecated)
+        .def("GetDefaultFreeBodyPose",
+            WrapDeprecated(cls_doc.GetDefaultFreeBodyPose.doc_deprecated,
+                &Class::GetDefaultFreeBodyPose),
+            py::arg("body"), cls_doc.GetDefaultFreeBodyPose.doc_deprecated)
+        .def("HasUniqueFreeBaseBody",
+            WrapDeprecated(cls_doc.HasUniqueFreeBaseBody.doc_deprecated,
+                &Class::HasUniqueFreeBaseBody),
+            py::arg("model_instance"),
+            cls_doc.HasUniqueFreeBaseBody.doc_deprecated)
+        .def("GetUniqueFreeBaseBodyOrThrow",
+            WrapDeprecated(cls_doc.GetUniqueFreeBaseBodyOrThrow.doc_deprecated,
+                &Class::GetUniqueFreeBaseBodyOrThrow),
+            py::arg("model_instance"), py_rvp::reference_internal,
+            cls_doc.GetUniqueFreeBaseBodyOrThrow.doc_deprecated);
+#pragma GCC diagnostic pop
+
     auto CalcJacobianSpatialVelocity =
         [](const Class* self, const systems::Context<T>& context,
             JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
