@@ -147,11 +147,11 @@ TEST_P(TwoBodiesTest, ConfirmConstraintProperties) {
   // function.
   // Moreover, rotate both bodies A and B an arbitrary non-identity amount.
   if (!config.bodyA_anchored) {
-    plant_.SetFreeBodyPoseInWorldFrame(
+    plant_.SetFloatingBaseBodyPoseInWorldFrame(
         context_.get(), *bodyA_,
         RigidTransformd(kRotationOffset_, Vector3d::Zero()));
   }
-  plant_.SetFreeBodyPoseInWorldFrame(
+  plant_.SetFloatingBaseBodyPoseInWorldFrame(
       context_.get(), *bodyB_, RigidTransformd(kRotationOffset_, kOffset_));
   const ContactProblemCache<double>& problem_cache =
       SapDriverTest::EvalContactProblemCache(sap_driver(), *context_);

@@ -264,7 +264,6 @@ class Mobilizer : public MultibodyElement<T> {
       throw std::runtime_error(
           "The provided inboard and outboard frames reference the same object");
     }
-    this->set_is_ephemeral(true);  // Mobilizers are never added by users.
   }
 
   ~Mobilizer() override;
