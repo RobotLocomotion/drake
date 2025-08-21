@@ -58,4 +58,12 @@ drake_py_binary(
     ],
 )
 
+drake_py_binary(
+    name = "simulate_mjcf",
+    srcs = ["simulate_mjcf.py"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
 add_lint_tests()
