@@ -11,6 +11,7 @@
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/geometry/shape_specification_convex_mesh.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"

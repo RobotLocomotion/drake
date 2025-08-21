@@ -54,6 +54,7 @@ drake_cc_package_library(
         ":scene_graph_config",
         ":scene_graph_inspector",
         ":shape_specification",
+        ":shape_specification_convex_mesh",
         ":utilities",
     ],
 )
@@ -72,6 +73,7 @@ drake_cc_library(
         ":internal_geometry",
         ":mesh_deformation_interpolator",
         ":shape_specification",
+        ":shape_specification_convex_mesh",
         "//common:default_scalars",
         "//common:sorted_pair",
         "//geometry/proximity:collision_filter",
@@ -208,6 +210,7 @@ drake_cc_library(
         ":geometry_ids",
         ":geometry_roles",
         ":shape_specification",
+        ":shape_specification_convex_mesh",
         ":utilities",
         "//common:copyable_unique_ptr",
         "//common:essential",
@@ -297,6 +300,7 @@ drake_cc_library(
     deps = [
         ":scene_graph",
         ":shape_specification",
+        ":shape_specification_convex_mesh",
         "//common:essential",
         "//geometry/proximity:bv",
         "//math:geometric_transform",
@@ -327,6 +331,7 @@ drake_cc_library(
     hdrs = ["make_mesh_for_deformable.h"],
     deps = [
         ":shape_specification",
+        ":shape_specification_convex_mesh",
         "//common:overloaded",
         "//geometry/proximity:make_mesh_from_vtk",
         "//geometry/proximity:make_sphere_mesh",
@@ -425,6 +430,7 @@ drake_cc_library(
         ":internal_frame",
         ":make_mesh_for_deformable",
         ":shape_specification",
+        ":shape_specification_convex_mesh",
         "//common:copyable_unique_ptr",
         "//common:essential",
         "//geometry/proximity:bv",
@@ -453,31 +459,47 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "shape_specification",
+    name = "shape_specification_convex_mesh",
     srcs = [
-        "shape_specification.cc",
-        "shape_specification_helpers.cc",
-        ],
+        "shape_specification_convex_mesh.cc",
+    ],
     hdrs = [
-        "shape_specification.h",
-        ],
+        "shape_specification_convex_mesh.h",
+    ],
     deps = [
-        ":mesh_source",
-        "//common:essential",
+        ":shape_specification",
         "//geometry/proximity:bvh",
         "//geometry/proximity:bv",
         "//geometry/proximity:distance_to_point_callback",
-        "//geometry/proximity:polygon_surface_mesh",
         "//geometry/proximity:triangle_surface_mesh",
+    ],
+    implementation_deps = [
+        "//geometry/proximity:make_convex_hull_mesh_impl",
+        "//geometry/proximity:obj_to_surface_mesh",
+        "//geometry/proximity:meshing_utilities",
+        "//geometry/proximity:polygon_to_triangle_mesh",
+    ]
+
+)
+
+drake_cc_library(
+    name = "shape_specification",
+    srcs = [
+        "shape_specification.cc",
+        "shape_specification_helpers.cc"
+    ],
+    hdrs = [
+        "shape_specification.h",
+    ],
+    deps = [
+        ":mesh_source",
+        "//common:essential",
+        "//geometry/proximity:polygon_surface_mesh",
         "//math:geometric_transform",
     ],
     implementation_deps = [
         "//common:nice_type_name",
         "//common:overloaded",
-        "//geometry/proximity:make_convex_hull_mesh_impl",
-        "//geometry/proximity:meshing_utilities",
-        "//geometry/proximity:obj_to_surface_mesh",
-        "//geometry/proximity:polygon_to_triangle_mesh",
     ],
 )
 
@@ -590,6 +612,7 @@ drake_cc_library(
         ":rgba",
         ":scene_graph_inspector",
         ":shape_specification",
+        ":shape_specification_convex_mesh",
         "//common:essential",
         "//common:memory_file",
         "//common:name_value",
@@ -688,6 +711,7 @@ drake_cc_googletest(
         ":meshcat",
         ":scene_graph",
         ":shape_specification",
+        ":shape_specification_convex_mesh",
         "//math:geometric_transform",
         "@nlohmann_internal//:nlohmann",
     ],
@@ -956,6 +980,7 @@ drake_cc_googletest(
         ":geometry_state",
         ":proximity_engine",
         ":shape_specification",
+        ":shape_specification_convex_mesh",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
@@ -1162,6 +1187,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":shape_specification",
+        ":shape_specification_convex_mesh",
         "//common:find_resource",
         "//common:find_runfiles",
     ],
@@ -1171,6 +1197,8 @@ drake_cc_library(
     name  = "shape_to_point_cloud",
     hdrs = ["test/shape_to_point_cloud.h"],
     deps = [
+      ":shape_specification",
+      ":shape_specification_convex_mesh",
       "//geometry/proximity:obj_to_surface_mesh",
     ]
 )
@@ -1185,6 +1213,7 @@ drake_cc_googletest(
     deps = [
         ":shape_to_point_cloud",
         ":shape_specification",
+        ":shape_specification_convex_mesh",
         "//common:find_resource",
         "//common:overloaded",
         "//common/test_utilities",

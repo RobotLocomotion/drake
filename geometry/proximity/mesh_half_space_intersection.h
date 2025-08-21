@@ -10,6 +10,8 @@
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
 #include "drake/geometry/proximity/posed_half_space.h"
+#include "drake/geometry/shape_specification.h"
+#include "drake/geometry/shape_specification_convex_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
 

@@ -9,6 +9,7 @@
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/geometry/shape_specification_convex_mesh.h"
 
 namespace drake {
 namespace examples {

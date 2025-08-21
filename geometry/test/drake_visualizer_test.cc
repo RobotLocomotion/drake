@@ -25,6 +25,7 @@
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/geometry/shape_specification_convex_mesh.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/lcm_messages.h"
 #include "drake/lcmt_viewer_draw.hpp"

@@ -15,6 +15,7 @@
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/geometry/shape_specification_convex_mesh.h"
 #include "drake/geometry/test_utilities/boxes_overlap_transforms.h"
 
 namespace drake {

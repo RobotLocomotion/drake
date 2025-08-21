@@ -113,6 +113,7 @@ drake_cc_library(
         "//common:scope_exit",
         "//geometry:geometry_roles",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
         "//geometry/render:render_material",
         "//geometry/render:render_mesh",
         "@vtk_internal//:vtkCommonCore",

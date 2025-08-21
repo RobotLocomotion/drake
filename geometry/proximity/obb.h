@@ -7,6 +7,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/plane.h"
+#include "drake/geometry/shape_specification.h"
 #include "drake/geometry/utilities.h"
 #include "drake/math/rigid_transform.h"
 
@@ -119,9 +120,9 @@ class Obb {
                          const internal::Plane<double>& plane_P,
                          const math::RigidTransformd& X_PH);
 
-  /** Checks whether bounding volume `bv` intersects an imaginary half space. The
+  /** Checks whether bounding volume `bv` intersects the given half space. The
    bounding volume is centered on its canonical frame B, and B is posed in the
-   corresponding hierarchy frame H. The imaginary half space is defined in its
+   corresponding hierarchy frame H. The half space is defined in its
    canonical frame C (such that the boundary plane of the half space is
    perpendicular to Cz and Co lies on the boundary plane).
 
@@ -130,7 +131,7 @@ class Obb {
                     half space canonical frame C.
    @returns `true` if the half space intersects the box.
    @pydrake_mkdoc_identifier{obb_halfspace} */
-  static bool HasOverlap(const Obb& bv_H,
+  static bool HasOverlap(const Obb& bv_H,  const HalfSpace& hs_C,
                          const math::RigidTransformd& X_CH);
 
   /** Compares the values of the two Obb instances for exact equality down to

@@ -59,6 +59,7 @@ drake_cc_package_library(
         ":polygon_surface_mesh",
         ":polygon_to_triangle_mesh",
         ":posed_half_space",
+        ":proximity_shape_utilities",
         ":sorted_triplet",
         ":tessellation_strategy",
         ":triangle_surface_mesh",
@@ -103,10 +104,10 @@ drake_cc_library(
     deps = [
         ":boxes_overlap",
         ":posed_half_space",
-        ":polygon_surface_mesh",
         ":triangle_surface_mesh",
         ":volume_mesh",
         "//common:essential",
+        "//geometry:shape_specification",
         "//geometry:utilities",
         "//math:geometric_transform",
     ],
@@ -122,6 +123,7 @@ drake_cc_library(
         ":triangle_surface_mesh",
         ":volume_mesh",
         "//common:essential",
+        "//geometry:shape_specification",
         "//geometry:utilities",
         "//math:geometric_transform",
     ],
@@ -164,6 +166,7 @@ drake_cc_library(
         ":bv",
         "//common:essential",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
     ],
 )
 
@@ -222,6 +225,7 @@ drake_cc_library(
         "//geometry:geometry_ids",
         "//geometry:proximity_properties",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
     ],
 )
 
@@ -237,6 +241,7 @@ drake_cc_library(
         "//geometry:geometry_ids",
         "//geometry:geometry_instance",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
         "//geometry/query_results:deformable_contact",
     ],
 )
@@ -450,6 +455,7 @@ drake_cc_library(
         "//geometry:geometry_roles",
         "//geometry:proximity_properties",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
         "@fmt",
     ],
 )
@@ -479,6 +485,7 @@ drake_cc_library(
     deps = [
         ":mesh_field",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
     ],
     implementation_deps = [
         ":distance_to_point_callback",
@@ -497,6 +504,7 @@ drake_cc_library(
         ":volume_mesh",
         ":volume_to_surface_mesh",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
     ],
     implementation_deps = [
         ":proximity_utilities",
@@ -512,6 +520,7 @@ drake_cc_library(
         "//common:essential",
         "//common:unused",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
     ],
 )
 
@@ -525,6 +534,7 @@ drake_cc_library(
         ":volume_to_surface_mesh",
         "//common:essential",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
     ],
     implementation_deps = [
         ":meshing_utilities",
@@ -576,6 +586,7 @@ drake_cc_library(
     hdrs = ["make_convex_hull_mesh.h"],
     deps = [
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
         "//geometry/proximity:polygon_surface_mesh",
     ],
     implementation_deps = [
@@ -590,6 +601,7 @@ drake_cc_library(
     deps = [
         ":volume_mesh",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
     ],
     implementation_deps = [
         ":obj_to_surface_mesh",
@@ -607,6 +619,7 @@ drake_cc_library(
     deps = [
         ":mesh_field",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
     ],
     implementation_deps = [
         ":distance_to_point_callback",
@@ -627,6 +640,7 @@ drake_cc_library(
         ":volume_to_surface_mesh",
         "//common:essential",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
     ],
     implementation_deps = [
         ":meshing_utilities",
@@ -642,6 +656,7 @@ drake_cc_library(
         ":mesh_field",
         "//common:essential",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
     ],
 )
 
@@ -654,6 +669,7 @@ drake_cc_library(
         ":volume_mesh",
         ":volume_to_surface_mesh",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
     ],
 )
 
@@ -677,6 +693,7 @@ drake_cc_library(
         ":volume_mesh",
         ":vtk_to_volume_mesh",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
     ],
 )
 
@@ -687,6 +704,7 @@ drake_cc_library(
         ":mesh_field",
         "//common:essential",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
     ],
 )
 
@@ -700,6 +718,7 @@ drake_cc_library(
         ":volume_to_surface_mesh",
         "//common:sorted_pair",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
     ],
 )
 
@@ -742,6 +761,8 @@ drake_cc_library(
         "//common:essential",
         "//geometry:geometry_ids",
         "//geometry:utilities",
+        "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
         "//geometry/query_results:contact_surface",
     ],
 )
@@ -915,6 +936,7 @@ drake_cc_library(
     deps = [
       "//common:drake_export",
       "//geometry:shape_specification",
+      "//geometry:shape_specification_convex_mesh",
     ]
 )
 
@@ -1091,6 +1113,7 @@ drake_cc_googletest(
         "//geometry:meshcat",
         "//geometry:rgba",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
         "//geometry/test_utilities:boxes_overlap_transforms",
         "@highway_internal//:hwy_test_util",
     ],
@@ -1106,6 +1129,7 @@ drake_cc_googletest(
         ":volume_mesh",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
     ],
 )
 
@@ -1329,6 +1353,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
         "//math:geometric_transform",
     ],
 )
@@ -1379,6 +1404,7 @@ drake_cc_googletest(
         ":volume_to_surface_mesh",
         "//common:find_resource",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
     ],
 )
 
@@ -1639,6 +1665,7 @@ drake_cc_googletest(
         ":mesh_to_vtk",
         "//common:temp_directory",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
         "//math:geometric_transform",
     ],
 )
@@ -1677,6 +1704,7 @@ drake_cc_googletest(
         ":volume_mesh",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry:shape_specification",
+        "//geometry:shape_specification_convex_mesh",
     ],
 )
 

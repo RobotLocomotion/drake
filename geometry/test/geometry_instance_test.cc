@@ -7,6 +7,7 @@
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/geometry/shape_specification_convex_mesh.h"
 
 namespace drake {
 namespace geometry {

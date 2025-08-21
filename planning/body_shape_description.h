@@ -6,6 +6,7 @@
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/geometry/shape_specification_convex_mesh.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {

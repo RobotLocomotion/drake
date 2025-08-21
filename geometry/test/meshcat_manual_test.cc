@@ -16,6 +16,7 @@
 #include "drake/geometry/meshcat_visualizer.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/geometry/shape_specification_convex_mesh.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/meshcat/contact_visualizer.h"

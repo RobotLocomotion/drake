@@ -16,6 +16,8 @@ namespace drake {
 namespace geometry {
 namespace internal DRAKE_NO_EXPORT {
 
+using Eigen::Vector3d;
+
 // TODO(SeanCurtis-TRI): Given the dependencies on fcl for this file, the name
 //  should reflect it so that it doesn't get included in files that will
 //  eventually get included in the public API.

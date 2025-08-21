@@ -31,6 +31,7 @@
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/read_gltf_to_memory.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/geometry/shape_specification_convex_mesh.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
