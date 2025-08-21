@@ -792,6 +792,8 @@ void MultibodyTree<T>::CreateJointImplementations() {
     Mobilizer<T>* mobilizer = owned_mobilizer.get();
     mobilizer->set_model_instance(joint.model_instance());
     mobilizer->set_is_ephemeral(joint.is_ephemeral());
+    // TODO(sherm1) Merge issue: do we need this?
+    // mobilizer->set_is_floating_base_mobilizer(is_floating_base_mobilizer);
     AddMobilizer(std::move(owned_mobilizer));  // ownership->tree
     DRAKE_DEMAND(mobilizer->index() == mobod.index());
     // Record the joint to mobilizer map.
@@ -804,10 +806,8 @@ const Mobilizer<T>& MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
     const RigidBody<T>& body) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   DRAKE_DEMAND(body.index() != world_index());
-  const RigidBodyTopology& rigid_body_topology =
-      get_topology().get_rigid_body_topology(body.index());
-  const Mobilizer<T>& mobilizer =
-      get_mobilizer(rigid_body_topology.inboard_mobilizer);
+  const LinkJointGraph::Link& link = forest().link_by_index(body.index());
+  const Mobilizer<T>& mobilizer = get_mobilizer(link.mobod_index());
   if (!mobilizer.has_six_dofs()) {
     throw std::logic_error("Body '" + body.name() + "' is not a free body.");
   }
@@ -824,9 +824,8 @@ const Frame<T>& MultibodyTree<T>::AddOrGetJointFrame(
     return this->AddFrame<FixedOffsetFrame>(
         fmt::format("{}_{}", joint_name, frame_suffix), body.body_frame(),
         *X_BF, joint_instance);
-  } else {
-    return body.body_frame();
   }
+  return body.body_frame();
 }
 
 template <typename T>
@@ -3157,8 +3156,8 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
   // bodies, w_wF = Js_w_WF * v = 0  and  v_WFpi = Js_v_WFpi * v = 0.
   if (body_F.index() == world_index()) return;
 
-  // Form kinematic path from body_F to the world.
-  std::vector<MobodIndex> path_to_world =
+  // Form kinematic path from World to body_F.
+  std::vector<MobodIndex> path_from_world =
       forest().FindPathFromWorld(body_F.mobod_index());
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
@@ -3171,8 +3170,8 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
   // For all bodies in the kinematic path from the world to body_F, compute
   // each node's contribution to the Jacobians.
   // Skip the world (level = 0).
-  for (size_t level = 1; level < path_to_world.size(); ++level) {
-    const MobodIndex mobod_index = path_to_world[level];
+  for (size_t level = 1; level < path_from_world.size(); ++level) {
+    const MobodIndex mobod_index = path_from_world[level];
     const BodyNode<T>& node = *body_nodes_[mobod_index];
     const SpanningForest::Mobod& mobod = node.mobod();
     const int start_index_in_v = mobod.v_start();
@@ -4200,6 +4199,8 @@ Mobilizer<T>* MultibodyTree<T>::CloneMobilizerAndAdd(
   auto mobilizer_clone = mobilizer.CloneToScalar(*this);
   mobilizer_clone->set_parent_tree(this, mobilizer_index);
   mobilizer_clone->set_model_instance(mobilizer.model_instance());
+  mobilizer_clone->set_is_floating_base_mobilizer(
+      mobilizer.is_floating_base_mobilizer());
   Mobilizer<T>* raw_mobilizer_clone_ptr = mobilizer_clone.get();
   mobilizers_.push_back(std::move(mobilizer_clone));
   return raw_mobilizer_clone_ptr;
@@ -4241,20 +4242,24 @@ template <typename T>
 std::optional<BodyIndex> MultibodyTree<T>::MaybeGetUniqueBaseBodyIndex(
     ModelInstanceIndex model_instance) const {
   DRAKE_THROW_UNLESS(model_instances_.has_element(model_instance));
-  if (model_instance == world_model_instance()) {
-    return std::nullopt;
-  }
+  if (model_instance == world_model_instance()) return std::nullopt;
+
+  // We need only look at World's outboard mobods since those are the base
+  // bodies of each tree in the forest. Each of those mobods has an
+  // associated Link (the active link in case of composites). We're only
+  // interested in links in the given model instance, and there should be
+  // just one of those.
+  const SpanningForest::Mobod& world = forest().world_mobod();
   std::optional<BodyIndex> base_body_index{};
-  for (const RigidBody<T>* body : rigid_bodies_.elements()) {
-    if (body->model_instance() == model_instance &&
-        (topology_.get_rigid_body_topology(body->index()).parent_body ==
-         world_index())) {
-      if (base_body_index.has_value()) {
-        // More than one base body associated with this model.
-        return std::nullopt;
-      }
-      base_body_index = body->index();
-    }
+  for (const MobodIndex& base_mobod_index : world.outboards()) {
+    const SpanningForest::Mobod& base_mobod = forest().mobods(base_mobod_index);
+    DRAKE_DEMAND(base_mobod.level() == 1);
+    const LinkJointGraph::Link& active_link =
+        forest().links(base_mobod.link_ordinal());
+    if (active_link.model_instance() != model_instance) continue;
+    if (base_body_index.has_value())  // Not unique if already set.
+      return std::nullopt;
+    base_body_index = active_link.index();
   }
   return base_body_index;
 }

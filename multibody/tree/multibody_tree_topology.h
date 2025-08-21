@@ -63,11 +63,6 @@ struct RigidBodyTopology {
   // of a Joint. This will remain "invalid" for World.
   BodyIndex parent_body{};
 
-  // Within the SpanningForest, the immediate outboard (or "child") RigidBodies
-  // to this body. Bodies appear in child_bodies in the order mobilizers were
-  // added to the model, with MultibodyTreeTopology::add_mobilizer_topology().
-  std::vector<BodyIndex> child_bodies;
-
   // Unique index to the frame associated with this RigidBody.
   FrameIndex body_frame{0};
 
