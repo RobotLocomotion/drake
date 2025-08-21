@@ -789,8 +789,9 @@ void MultibodyTree<T>::CreateJointImplementations() {
 
     std::unique_ptr<Mobilizer<T>> owned_mobilizer = joint.Build(mobod, this);
     Mobilizer<T>* mobilizer = owned_mobilizer.get();
-    AddMobilizer(std::move(owned_mobilizer));  // ownership->tree
     mobilizer->set_model_instance(joint.model_instance());
+    mobilizer->set_is_ephemeral(joint.is_ephemeral());
+    AddMobilizer(std::move(owned_mobilizer));  // ownership->tree
     DRAKE_DEMAND(mobilizer->index() == mobod.index());
     // Record the joint to mobilizer map.
     joint_to_mobilizer_[joint_index] = mobilizer->index();
