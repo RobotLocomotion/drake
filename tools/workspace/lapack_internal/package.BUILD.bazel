@@ -3,7 +3,7 @@
 load("@drake//tools/skylark:cc.bzl", "cc_library")
 load("@drake//tools/skylark:pathutils.bzl", "basename")
 load(
-    "@drake//tools/workspace/gfortran:fortran.bzl",
+    "@drake//tools/workspace/gfortran_internal:fortran.bzl",
     "fortran_library",
     "fortran_module",
 )

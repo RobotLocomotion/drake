@@ -1,2 +1,0 @@
-# Don't use bzlmod yet.
-common --enable_bzlmod=false
