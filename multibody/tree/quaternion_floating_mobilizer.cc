@@ -298,29 +298,31 @@ Eigen::Matrix<T, 3, 4>
 QuaternionFloatingMobilizer<T>::QuaternionRateToAngularVelocityMatrix(
     const Quaternion<T>& q_FM) {
   const T q_norm = q_FM.norm();
-  // The input quaternion might not be normalized. We refer to the normalized
-  // quaternion as q_FM_tilde. This is retrieved as a Vector4 with its storage
-  // order consistent with the storage order in a MultibodyPlant context. That
-  // is, scalar component first followed by the vector component. See developers
-  // notes in the implementation for get_quaternion().
-  const Vector4<T> q_FM_tilde =
+  // This function accounts for a non-unit input quaternion q_FM.
+  // We de denote the normalized quaternion as q_unit = q_FM / |q_FM|.
+  const Vector4<T> q_unit =
       Vector4<T>(q_FM.w(), q_FM.x(), q_FM.y(), q_FM.z()) / q_norm;
 
-  // Gradient of the normalized quaternion with respect to the unnormalized
-  // generalized coordinates:
+  // Given q_unit = q_FM / |q_FM|, calculate q̇_unit so that when this function
+  // returns, it is ready to multiply by q̇_FM to produce w_FM_F.
+  // q̇_unit = ( [I₄₄] - q_unit * q_unitᵀ) * q̇_FM
+  //        = dqnorm_dq * q̇_FM
   const Matrix4<T> dqnorm_dq =
-      (Matrix4<T>::Identity() - q_FM_tilde * q_FM_tilde.transpose()) / q_norm;
+      (Matrix4<T>::Identity() - q_unit * q_unit.transpose()) / q_norm;
 
-  // From documentation in CalcQMatrix(), N⁺(q_tilde) = 2 * (Q_FM_tilde)ᵀ.
-  return CalcTwoTimesQMatrixTranspose(
-             {q_FM_tilde[0], q_FM_tilde[1], q_FM_tilde[2], q_FM_tilde[3]}) *
-         dqnorm_dq;
+  // From documentation in CalcQMatrix(), Nᵣ⁺(q_unit) = 2 * Q(q_unit)ᵀ.
+  const Eigen::Matrix<T, 3, 4> NrPlus_q_unit = CalcTwoTimesQMatrixTranspose(
+      {q_unit[0], q_unit[1], q_unit[2], q_unit[3]});
+
+  // Returns the matrix that when multiplied by q̇_FM produces
+  // w_FM_F (M's angular velocity in F, expressed in F).
+  return NrPlus_q_unit * dqnorm_dq;
 }
 
 template <typename T>
 void QuaternionFloatingMobilizer<T>::DoCalcNMatrix(
     const systems::Context<T>& context, EigenPtr<MatrixX<T>> N) const {
-  // Upper-left block (rotational part of the N matrix) is 0.5 * Matrix(q_FM).
+  // Upper-left block (rotational part of the N matrix) is Nᵣ ≜ 0.5 Q_FM.
   // See QuaternionFloatingMobilizer::CalcQMatrix() for details.
   N->template block<4, 3>(0, 0) = CalcQMatrixOverTwo(get_quaternion(context));
   // Upper-right block
@@ -334,10 +336,14 @@ void QuaternionFloatingMobilizer<T>::DoCalcNMatrix(
 template <typename T>
 void QuaternionFloatingMobilizer<T>::DoCalcNplusMatrix(
     const systems::Context<T>& context, EigenPtr<MatrixX<T>> Nplus) const {
-  // Upper-left block (rotational part of the N⁺ matrix) is [2 * Matrix(q_FM)]ᵀ
+  // Upper-left block (rotational part of the N⁺ matrix) is Nᵣ⁺ ≜ [2 * Q(q̂_FM)]ᵀ
   // See QuaternionFloatingMobilizer::CalcQMatrix() for details.
+  // Note: Contextual definition of Nᵣ⁺ -- denoting q̂_FM = q_FM / |q_FM|,
+  // w_FM_F = Nᵣ⁺ * d/dt(q̂_FM), where w_FM_F is frame M's angular velocity
+  // in frame F, expressed in F. Hence, this accounts for a non-unit q_FM.
+  const Quaternion<T> q_FM = get_quaternion(context);
   Nplus->template block<3, 4>(0, 0) =
-      QuaternionRateToAngularVelocityMatrix(get_quaternion(context));
+      QuaternionRateToAngularVelocityMatrix(q_FM);
   // Upper-right block
   Nplus->template block<3, 3>(0, 4).setZero();
   // Lower-left block
@@ -410,6 +416,8 @@ void QuaternionFloatingMobilizer<T>::DoCalcNplusDotMatrix(
   // In view of the documentation in CalcQMatrix(), since
   // N⁺ᵣ(q_FM) = 2 * (Q_FM)ᵀ, where Q_FM is linear in the elements of
   // q_FM = [qw, qx, qy, qz]ᵀ, hence Ṅ⁺ᵣ(q̇_FM) = 2 * (Q̇_FM)ᵀ.
+  // TODO(Mitiguy) Ensure this calculation is consistent with the precise
+  //  definition of this function (the definition is also a TODO).
   const Eigen::Matrix<T, 3, 4> NrPlusDot =
       CalcTwoTimesQMatrixTranspose(qdot_FM);
 
@@ -436,10 +444,10 @@ void QuaternionFloatingMobilizer<T>::DoMapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot, EigenPtr<VectorX<T>> v) const {
   const Quaternion<T> q_FM = get_quaternion(context);
-  // Angular component, w_WB = N⁺(q)⋅q̇_WB:
+  // Angular component, w_FM_F = Nᵣ⁺(q̂_FM)⋅q̇_FM.
   v->template head<3>() =
       QuaternionRateToAngularVelocityMatrix(q_FM) * qdot.template head<4>();
-  // Translational component, v_WB = ṗ_WB:
+  // Translational component, v_FMo_F = ṗ_FoMo_F.
   v->template tail<3>() = qdot.template tail<3>();
 }
 
@@ -498,7 +506,7 @@ void QuaternionFloatingMobilizer<T>::DoMapQDDotToAcceleration(
   // Textbook available at www.MotionGenesis.com
 
   // To mimic DoMapQDotToVelocity(), use QuaternionRateToAngularVelocityMatrix()
-  // to calculate N⁺ᵣ(q_FM) and use it to calculate v̇ᵣ = N⁺ᵣ(q_FM)⋅q̈_FM.
+  // to calculate N⁺ᵣ(q̂_FM) and use it to calculate v̇ᵣ = N⁺ᵣ(q̂_FM)⋅q̈_FM.
   const Quaternion<T> q_FM = get_quaternion(context);
   vdot->template head<3>() =
       QuaternionRateToAngularVelocityMatrix(q_FM) * qddot.template head<4>();
