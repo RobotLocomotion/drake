@@ -8,6 +8,7 @@ drake_cc_binary(
     srcs = ["conveyor_belt.cc"],
     data = [
         "conveyor_belt.sdf",
+        "//examples/scene_graph:models",
     ],
     deps = [
         "//geometry:meshcat_visualizer",
@@ -19,7 +20,5 @@ drake_cc_binary(
         "//systems/framework:diagram",
         "//systems/framework:leaf_system",
         "@gflags",
-    ]
-
-
+    ],
 )
