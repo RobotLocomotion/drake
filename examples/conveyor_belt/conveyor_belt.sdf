@@ -1,9 +1,49 @@
 <?xml version="1.0"?>
 <sdf xmlns:drake="http://drake.mit.edu" version="1.7">
+  <!-- This file shows how to create a conveyor belt with a box on top.
+       It also shows how to define a surface velocity for other geometries. -->
   <model name="two_objects_model">
-    <!-- Conveyor belt lying on the floor -->
+    <!-- Floor -->
+    <link name="ground">
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <mass>1.0</mass>
+        <inertia>
+          <ixx>1.0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1.0</iyy>
+          <iyz>0</iyz>
+          <izz>1.0</izz>
+        </inertia>
+      </inertial>
+      <visual name="ground_visual">
+        <geometry>
+          <box>
+            <size>20.0 20.0 0.05</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.05 0.05 0.05 1.0</ambient> <!-- Red color -->
+          <diffuse>0.05 0.05 0.05 1.0</diffuse>
+        </material>
+      </visual>
+      <collision name="ground-collision">
+        <geometry>
+          <plane>
+            <normal>0.0 0.0 1.0</normal>
+          </plane>
+        </geometry>
+      </collision>
+    </link>
+    <joint name="fixed_ground" type="fixed">
+      <parent>world</parent>
+      <child>ground</child>
+    </joint>
+
+    <!-- Conveyor belt -->
     <link name="conveyor_belt">
-      <pose> 0 0 0 0 0.0 0.78</pose>
+      <pose> 0 0 1 0 0.0 0.78</pose>
       <visual name="conveyor_belt_visual">
         <geometry>
           <box>
@@ -36,7 +76,7 @@
 
     <!-- Blue cube on top of the conveyor belt -->
     <link name="box">
-      <pose> -2 -2 0.27 0 0.0 0.0</pose> <!-- Positionet sightly above the belt -->
+      <pose> -2 -2 1.27 0 0.0 0.0</pose> <!-- Position sightly above the belt -->
       <visual name="box_visual">
         <geometry>
           <box>
@@ -60,5 +100,146 @@
         </drake:proximity_properties>
       </collision>
     </link>
+
+    <link name="capsule">
+      <pose> 0.5 0.5 0.3 1.57 0.0 0.0</pose>
+      <visual name="capsule_visual">
+        <geometry>
+          <capsule>
+            <length>0.3</length>
+            <radius>0.1</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <ambient>0.8 0.1 0.4 1.0</ambient> <!-- Red color -->
+          <diffuse>0.8 0.1 0.4 1.0</diffuse>
+        </material>
+      </visual>
+      <collision name="capsule_collision">
+        <geometry>
+          <capsule>
+            <length>0.3</length>
+            <radius>0.1</radius>
+          </capsule>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>0.8</drake:mu_dynamic>
+          <drake:mu_static>1.0</drake:mu_static>
+          <drake:surface_speed>0.25</drake:surface_speed>
+          <drake:surface_velocity_normal>0.0 0.0 0.1</drake:surface_velocity_normal>
+        </drake:proximity_properties>
+      </collision>    
+    </link>
+
+    <link name="Cylinder">
+      <pose> -0.5 -0.5 0.3 1.57 0.77 0.0</pose>
+      <visual name="cylinder_visual">
+        <geometry>
+          <cylinder>
+            <length>0.3</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <ambient>0.6 0.9 0.1 1.0</ambient> <!-- Red color -->
+          <diffuse>0.6 0.9 0.1 1.0</diffuse>
+        </material>
+      </visual>
+      <collision name="cylinder_collision">
+        <geometry>
+          <cylinder>
+            <length>0.3</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>0.8</drake:mu_dynamic>
+          <drake:mu_static>1.0</drake:mu_static>
+          <drake:surface_speed>0.25</drake:surface_speed>
+          <drake:surface_velocity_normal>0.0 0.0 0.1</drake:surface_velocity_normal>
+        </drake:proximity_properties>
+      </collision>    
+    </link>
+
+    <link name="Sphere">
+      <pose> 0.5 -0.5 0.3 0 0 0.0</pose>
+      <visual name="sphere_visual">
+        <geometry>
+          <sphere>
+            <radius>0.15</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <ambient>0.3 0.0 0.5 1.0</ambient> <!-- Red color -->
+          <diffuse>0.3 0.0 0.5 1.0</diffuse>
+        </material>
+      </visual>
+      <collision name="sphere_collision">
+        <geometry>
+          <sphere>
+            <radius>0.15</radius>
+          </sphere>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>0.8</drake:mu_dynamic>
+          <drake:mu_static>1.0</drake:mu_static>
+          <drake:surface_speed>0.25</drake:surface_speed>
+          <drake:surface_velocity_normal>0.0 1.0 0.0</drake:surface_velocity_normal>
+        </drake:proximity_properties>
+      </collision>    
+    </link>
+
+    <link name="Ellipsoid">
+      <pose> -1.0 0.5 0.7 0 0 0.0</pose>
+      <visual name="ellipsoid_visual">
+        <geometry>
+          <ellipsoid>
+            <radii>0.5 0.3 0.3</radii>
+          </ellipsoid>
+        </geometry>
+        <material>
+          <ambient>1.0 0.5 0.15 1.0</ambient> <!-- Red color -->
+          <diffuse>1.0 0.5 0.15 1.0</diffuse>
+        </material>
+      </visual>
+      <collision name="ellipsoid_collision">
+        <geometry>
+          <ellipsoid>
+            <radii>0.5 0.3 0.3</radii>
+          </ellipsoid>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>0.8</drake:mu_dynamic>
+          <drake:mu_static>1.0</drake:mu_static>
+          <drake:surface_speed>0.25</drake:surface_speed>
+          <drake:surface_velocity_normal>-1.0 0.0 0.0</drake:surface_velocity_normal>
+        </drake:proximity_properties>
+      </collision>    
+    </link>
+
+    <link name="Mesh">
+      <pose> 3.0 -3.5 1.3 0.5 0.8 0.0</pose>
+      <visual name="mesh_visual">
+        <geometry>
+          <mesh>
+            <uri>package://drake/examples/scene_graph/cuboctahedron_with_hole.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="mesh_collision">
+        <geometry>
+          <mesh>
+            <uri>package://drake/examples/scene_graph/cuboctahedron_with_hole.obj</uri>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>0.8</drake:mu_dynamic>
+          <drake:mu_static>1.0</drake:mu_static>
+          <drake:surface_speed>0.25</drake:surface_speed>
+          <drake:surface_velocity_normal>0.0 -1.0 0.0</drake:surface_velocity_normal>
+        </drake:proximity_properties>
+      </collision>    
+    </link>
+
   </model>
 </sdf>
