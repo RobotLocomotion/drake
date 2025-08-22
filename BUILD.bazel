@@ -42,6 +42,13 @@ alias(
     visibility = ["//visibility:public"],
 )
 
+# Expose static library for installed binaries.
+alias(
+    name = "drake_static_library",
+    actual = "//tools/install/libdrake:drake_static_library",
+    visibility = ["//visibility:public"],
+)
+
 # A manually-curated collection of most model files in Drake, so that we can
 # easily provide access to them for tools like //tools:model_visualizer.
 filegroup(
@@ -110,7 +117,6 @@ install(
     install_tests_script = _INSTALL_TEST_COMMANDS,
     deps = [
         ":install_files",
-        "//bindings/pydrake:install",
         "//common:install",
         "//examples:install",
         "//geometry:install",
@@ -120,7 +126,10 @@ install(
         "//tools/install/libdrake:install",
         "//tools/workspace:install_external_packages",
         "//tutorials:install",
-    ],
+    ] + select({
+        "//tools/install/libdrake:install_pydrake": ["//bindings/pydrake:install"],
+        "//conditions:default": [],
+    }),
 )
 
 install_test(

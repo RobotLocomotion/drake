@@ -33,7 +33,13 @@ def _find_libdrake_components():
     # TODO(russt/eric-cousineau/jwnimmer): Remove any examples from
     # libdrake.so, pending resolution of #9648.
     components_query = """
-kind("cc_library", visible("//tools/install/libdrake:libdrake.so", "//..."))
+    kind("cc_library",
+      visible(
+        "//tools/install/libdrake:libdrake.so",
+        "//tools/install/libdrake:libdrake.a",
+        "//..."
+      )
+    )
     except(attr("testonly", "1", "//..."))
     except("//:*")
     except("//bindings/pydrake/...")

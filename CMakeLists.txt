@@ -654,6 +654,11 @@ if(CMAKE_INSTALL_NAME_TOOL)
   )
 endif()
 
+option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
+if(NOT BUILD_SHARED_LIBS)
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:static_lib=True")
+endif()
+
 if(CMAKE_STRIP)
   list(INSERT BAZEL_INSTALL_ARGS 0 "--strip_tool" "${CMAKE_STRIP}")
 endif()
