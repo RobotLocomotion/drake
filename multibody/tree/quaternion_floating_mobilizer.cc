@@ -299,7 +299,7 @@ QuaternionFloatingMobilizer<T>::QuaternionRateToAngularVelocityMatrix(
     const Quaternion<T>& q_FM) {
   const T q_norm = q_FM.norm();
   // This function accounts for a non-unit input quaternion q_FM.
-  // We de denote the normalized quaternion as q_unit = q_FM / |q_FM|.
+  // We denote the normalized quaternion as q_unit = q_FM / |q_FM|.
   const Vector4<T> q_unit =
       Vector4<T>(q_FM.w(), q_FM.x(), q_FM.y(), q_FM.z()) / q_norm;
 
