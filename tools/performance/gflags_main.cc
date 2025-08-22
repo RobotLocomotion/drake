@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
     if (std::string_view(argv[i]) == "--help") {
       gflags::ShowUsageWithFlags(argv[0]);
       std::cout << "\n\n";
-      std::cout << "Flags from @googlebenchmark:\n";
+      std::cout << "Flags from @google_benchmark:\n";
       benchmark::Initialize(&argc, argv);
       return 0;
     }

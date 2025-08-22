@@ -1,6 +1,5 @@
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "patch")
 load("//tools/workspace:metadata.bzl", "generate_repository_metadata")
-load("//tools/workspace:workspace_deprecation.bzl", "print_warning")
 load("//tools/workspace/crate_universe:lock/archives.bzl", "ARCHIVES")
 
 def _add_mirrors(*, urls, mirrors):
@@ -85,14 +84,10 @@ crate_http_archive = repository_rule(
     },
 )
 
-def crate_universe_repositories(
+# TODO(jwnimmer-tri) Replace this repository rule with rust bzlmod.
+def crate_universe_repositories_internal(
         *,
-        mirrors,
-        excludes = [],
-        _is_drake_self_call = False):
-    if not _is_drake_self_call:
-        print_warning("crate_universe_repositories")
-
+        mirrors):
     # This dependency is part of a "cohort" defined in
     # drake/tools/workspace/new_release.py.  When practical, all members of
     # this cohort should be updated at the same time.
@@ -100,8 +95,8 @@ def crate_universe_repositories(
     # Metadata for this repository is additionally defined in
     # drake/tools/workspace/metadata.py.
     for kwargs in ARCHIVES:
-        if kwargs["name"] not in excludes:
-            crate_http_archive(
-                mirrors = mirrors,
-                **kwargs
-            )
+        crate_http_archive(
+            mirrors = mirrors,
+            **kwargs
+        )
+    return [kwargs["name"] for kwargs in ARCHIVES]
