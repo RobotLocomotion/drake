@@ -73,6 +73,7 @@ GCC_CC_TEST_FLAGS = [
 GCC_VERSION_SPECIFIC_FLAGS = {
     13: [
         "-Werror=pessimizing-move",
+        "-Werror=uninitialized",
         # TODO(#21337) Investigate and resolve what to do about these warnings
         # long-term. Some seem like true positives (i.e., bugs in Drake).
         "-Wno-array-bounds",
@@ -80,7 +81,6 @@ GCC_VERSION_SPECIFIC_FLAGS = {
         "-Wno-maybe-uninitialized",
         "-Wno-stringop-overflow",
         "-Wno-stringop-overread",
-        "-Wno-uninitialized",
     ],
 }
 

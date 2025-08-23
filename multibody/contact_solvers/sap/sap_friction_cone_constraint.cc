@@ -75,8 +75,10 @@ std::unique_ptr<AbstractValue> SapFrictionConeConstraint<T>::DoMakeData(
   // Bias term.
   const T vn_hat = -configuration_.phi / (time_step + taud);
 
-  SapFrictionConeConstraintData<T> data(parameters_.mu, Rt, Rn, vn_hat);
-  return SapConstraint<T>::MoveAndMakeAbstractValue(std::move(data));
+  // Create our return value in a way that avoids extra copies.
+  return std::unique_ptr<AbstractValue>(
+      new Value<SapFrictionConeConstraintData<T>>(parameters_.mu, Rt, Rn,
+                                                  vn_hat));
 }
 
 template <typename T>

@@ -16,6 +16,7 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 
 namespace drake {
 namespace multibody {
@@ -43,9 +44,9 @@ template <typename T>
 class SpringConstraint final : public SapConstraint<T> {
  public:
   struct Data {
-    Vector3<T> vc;
-    T R;
-    Vector3<T> v_hat;
+    Vector3<T> vc{Vector3d::Constant(kNaN)};
+    T R{kNaN};
+    Vector3<T> v_hat{Vector3d::Constant(kNaN)};
   };
 
   // Model a spring attached to `clique`, expected to be a 3D particle.
