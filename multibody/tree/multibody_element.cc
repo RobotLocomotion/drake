@@ -101,11 +101,9 @@ systems::CacheEntry& MultibodyElement<T>::DeclareCacheEntry(
 }
 
 template <typename T>
-void MultibodyElement<T>::HasParentTreeOrThrow() const {
-  if (!has_parent_tree()) {
-    throw std::logic_error(
-        "This multibody element was not added to a MultibodyTree.");
-  }
+void MultibodyElement<T>::ThrowNoParentTree() const {
+  throw std::logic_error(
+      "This multibody element was not added to a MultibodyTree.");
 }
 
 template <typename T>

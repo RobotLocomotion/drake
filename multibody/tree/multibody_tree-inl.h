@@ -222,6 +222,9 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
                     joint->name(), joint->parent_body().name()));
   }
 
+  DRAKE_THROW_UNLESS(joint->parent_body().has_parent_tree());
+  DRAKE_THROW_UNLESS(joint->child_body().has_parent_tree());
+
   if (&joint->parent_body().get_parent_tree() !=
       &joint->child_body().get_parent_tree()) {
     throw std::logic_error(
@@ -252,6 +255,9 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
     const std::optional<math::RigidTransform<double>>& X_CJc, Args&&... args) {
   static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
                 "JointType<T> must be a sub-class of Joint<T>.");
+
+  DRAKE_THROW_UNLESS(parent.has_parent_tree());
+  DRAKE_THROW_UNLESS(child.has_parent_tree());
 
   if (&parent.get_parent_tree() != this || &child.get_parent_tree() != this) {
     throw std::logic_error(

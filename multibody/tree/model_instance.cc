@@ -48,6 +48,7 @@ std::vector<JointIndex> ModelInstance<T>::GetActuatedJointIndices() const {
 template <typename T>
 VectorX<T> ModelInstance<T>::GetActuationFromArray(
     const Eigen::Ref<const VectorX<T>>& u) const {
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
   if (u.size() != this->get_parent_tree().num_actuated_dofs())
     throw std::logic_error("Passed in array is not properly sized.");
   VectorX<T> u_instance(num_actuated_dofs_);
@@ -67,6 +68,7 @@ template <typename T>
 void ModelInstance<T>::SetActuationInArray(
     const Eigen::Ref<const VectorX<T>>& u_instance,
     EigenPtr<VectorX<T>> u) const {
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
   DRAKE_DEMAND(u != nullptr);
   if (u->size() != this->get_parent_tree().num_actuated_dofs() ||
       u_instance.size() != num_actuated_dofs_) {
@@ -95,6 +97,7 @@ VectorX<T> ModelInstance<T>::GetPositionsFromArray(
 template <typename T>
 void ModelInstance<T>::GetPositionsFromArray(
     const Eigen::Ref<const VectorX<T>>& q, EigenPtr<VectorX<T>> q_out) const {
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
   DRAKE_DEMAND(q_out != nullptr);
   if (q.size() != this->get_parent_tree().num_positions())
     throw std::logic_error("Passed in array is not properly sized.");
@@ -114,6 +117,7 @@ template <class T>
 void ModelInstance<T>::SetPositionsInArray(
     const Eigen::Ref<const VectorX<T>>& model_q,
     EigenPtr<VectorX<T>> q_array) const {
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
   DRAKE_DEMAND(q_array != nullptr);
   if (q_array->size() != this->get_parent_tree().num_positions() ||
       model_q.size() != num_positions()) {
@@ -141,6 +145,7 @@ VectorX<T> ModelInstance<T>::GetVelocitiesFromArray(
 template <typename T>
 void ModelInstance<T>::GetVelocitiesFromArray(
     const Eigen::Ref<const VectorX<T>>& v, EigenPtr<VectorX<T>> v_out) const {
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
   DRAKE_DEMAND(v_out != nullptr);
   if (v.size() != this->get_parent_tree().num_velocities())
     throw std::logic_error("Passed in array is not properly sized.");
@@ -160,6 +165,7 @@ template <class T>
 void ModelInstance<T>::SetVelocitiesInArray(
     const Eigen::Ref<const VectorX<T>>& model_v,
     EigenPtr<VectorX<T>> v_array) const {
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
   DRAKE_DEMAND(v_array != nullptr);
   DRAKE_DEMAND(v_array->size() == this->get_parent_tree().num_velocities());
   DRAKE_DEMAND(model_v.size() == num_velocities());

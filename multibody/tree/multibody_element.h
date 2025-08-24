@@ -130,19 +130,25 @@ class MultibodyElement {
     return ElementOrdinalType{ordinal_};
   }
 
-  /// Returns a constant reference to the parent MultibodyTree that
-  /// owns this element.
-  /// @throws std::exception in debug builds if has_parent_tree() is false.
+  /// Returns a constant reference to the parent MultibodyTree that owns this
+  /// element.
+  /// @pre has_parent_tree is true.
   const internal::MultibodyTree<T>& get_parent_tree() const {
-    DRAKE_ASSERT_VOID(HasParentTreeOrThrow());
+    if constexpr (kDrakeAssertIsArmed) {
+      if (parent_tree_ == nullptr) {
+        ThrowNoParentTree();
+      }
+    }
     return *parent_tree_;
   }
 
   /// Returns a constant reference to the parent MultibodyTreeSystem that
   /// owns the parent MultibodyTree that owns this element.
-  /// @throws std::exception in debug builds if has_parent_tree() is false.
+  /// @throws std::exception if has_parent_tree() is false.
   const internal::MultibodyTreeSystem<T>& GetParentTreeSystem() const {
-    DRAKE_ASSERT_VOID(HasParentTreeOrThrow());
+    if (parent_tree_ == nullptr) {
+      ThrowNoParentTree();
+    }
     return get_parent_tree().tree_system();
   }
 
@@ -227,10 +233,8 @@ class MultibodyElement {
     model_instance_ = model_instance;
   }
 
-  // Checks whether this MultibodyElement has been registered into
-  // a MultibodyTree and throws an exception if not.
-  // @throws std::exception if the element is not in a MultibodyTree.
-  void HasParentTreeOrThrow() const;
+  // @throws std::exception that this element is not in a MultibodyTree.
+  [[noreturn]] void ThrowNoParentTree() const;
 
   // Checks whether this MultibodyElement belongs to the provided
   // MultibodyTree `tree` and throws an exception if not.

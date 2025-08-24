@@ -43,6 +43,9 @@ class PrismaticSpring final : public ForceElement<T> {
 
   ~PrismaticSpring() override;
 
+  /// Returns the joint associated with this spring.
+  /// @throws std::exception if this element is not associated with a
+  ///   MultibodyPlant.
   const PrismaticJoint<T>& joint() const;
 
   double nominal_position() const { return nominal_position_; }

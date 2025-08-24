@@ -255,6 +255,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // @pre `context` is a valid multibody system Context.
   Eigen::VectorBlock<const VectorX<T>, kNq> get_positions(
       const systems::Context<T>& context) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree().template get_state_segment<kNq>(
         context, this->position_start_in_q());
   }
@@ -265,6 +266,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // @pre `context` is a valid multibody system Context.
   Eigen::VectorBlock<VectorX<T>, kNq> GetMutablePositions(
       systems::Context<T>* context) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree().template GetMutableStateSegment<kNq>(
         context, this->position_start_in_q());
   }
@@ -275,6 +277,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // @pre `state` is a valid multibody system State.
   Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_positions(
       systems::State<T>* state) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree().template get_mutable_state_segment<kNq>(
         state, this->position_start_in_q());
   }
@@ -284,6 +287,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // @pre `context` is a valid multibody system Context.
   Eigen::VectorBlock<const VectorX<T>, kNv> get_velocities(
       const systems::Context<T>& context) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree().template get_state_segment<kNv>(
         context, num_qs_in_state() + this->velocity_start_in_v());
   }
@@ -294,6 +298,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // @pre `context` is a valid multibody system Context.
   Eigen::VectorBlock<VectorX<T>, kNv> GetMutableVelocities(
       systems::Context<T>* context) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree().template GetMutableStateSegment<kNv>(
         context, num_qs_in_state() + this->velocity_start_in_v());
   }
@@ -304,6 +309,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // @pre `state` is a valid multibody system State.
   Eigen::VectorBlock<VectorX<T>, kNv> get_mutable_velocities(
       systems::State<T>* state) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree().template get_mutable_state_segment<kNv>(
         state, num_qs_in_state() + this->velocity_start_in_v());
   }

@@ -56,7 +56,10 @@ class UniformGravityFieldElement : public ForceElement<T> {
   /// @returns `true` iff gravity is enabled for `model_instance`.
   /// @see enable(), disable().
   /// @throws std::exception if the model instance is invalid.
+  /// @throws std::exception if this element is not associated with a
+  ///   MultibodyPlant.
   bool is_enabled(ModelInstanceIndex model_instance) const {
+    DRAKE_THROW_UNLESS(this->has_parent_tree());
     if (model_instance >= this->get_parent_tree().num_model_instances()) {
       throw std::logic_error("Model instance index is invalid.");
     }
@@ -66,6 +69,8 @@ class UniformGravityFieldElement : public ForceElement<T> {
   /// Sets is_enabled() for `model_instance` to `is_enabled`.
   /// @throws if the parent model is finalized.
   /// @throws std::exception if the model instance is invalid.
+  /// @throws std::exception if this element is not associated with a
+  ///   MultibodyPlant.
   void set_enabled(ModelInstanceIndex model_instance, bool is_enabled);
 
   /// Computes the generalized forces `tau_g(q)` due to `this` gravity field

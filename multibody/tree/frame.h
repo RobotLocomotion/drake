@@ -75,6 +75,8 @@ class Frame : public MultibodyElement<T> {
 
   /// Returns scoped name of this frame. Neither of the two pieces of the name
   /// will be empty (the scope name and the element name).
+  /// @throws std::exception if this element is not associated with a
+  /// MultibodyPlant.
   ScopedName scoped_name() const;
 
   /// Returns a reference to the body-relative pose X_BF giving the pose of this
