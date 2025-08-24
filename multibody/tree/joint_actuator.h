@@ -70,6 +70,8 @@ class JointActuator final : public MultibodyElement<T> {
   const std::string& name() const { return name_; }
 
   /// Returns a reference to the joint actuated by this %JointActuator.
+  /// @throws std::exception if this element is not associated with a
+  ///   MultibodyPlant.
   const Joint<T>& joint() const;
 
   /// Adds into `forces` a force along one of the degrees of freedom of the
@@ -107,8 +109,11 @@ class JointActuator final : public MultibodyElement<T> {
   /// for the entire plant model.
   /// @return a reference to a nv-dimensional vector, where nv is the number
   ///         of velocity variables of joint().
+  /// @throws std::exception if this element is not associated with a
+  ///         MultibodyPlant.
   const Eigen::Ref<const VectorX<T>> get_actuation_vector(
       const VectorX<T>& u) const {
+    DRAKE_DEMAND(this->has_parent_tree());
     DRAKE_DEMAND(u.size() == this->get_parent_tree().num_actuated_dofs());
     return u.segment(topology_.actuator_dof_start, joint().num_velocities());
   }
