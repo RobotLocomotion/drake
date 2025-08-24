@@ -109,6 +109,7 @@ class JointActuator final : public MultibodyElement<T> {
   ///         of velocity variables of joint().
   const Eigen::Ref<const VectorX<T>> get_actuation_vector(
       const VectorX<T>& u) const {
+    DRAKE_DEMAND(this->has_parent_tree());
     DRAKE_DEMAND(u.size() == this->get_parent_tree().num_actuated_dofs());
     return u.segment(topology_.actuator_dof_start, joint().num_velocities());
   }

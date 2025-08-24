@@ -242,13 +242,16 @@ class RigidBody : public MultibodyElement<T> {
   /// velocities will be 0 until it is unlocked.
   /// @throws std::exception if this body is not a floating base body.
   void Lock(systems::Context<T>* context) const {
+    ThrowIfNotFinalized(__func__);
     // TODO(rpoyner-tri): consider extending the design to allow locking on
     //  non-floating bodies.
     if (!is_floating()) {
+      // TODO(jwnimmer-tri) This code is not supposed to be inlined (GSG).
       throw std::logic_error(fmt::format(
           "Attempted to call Lock() on non-floating-base rigid body {}",
           name()));
     }
+    DRAKE_ASSERT(this->has_parent_tree());
     this->get_parent_tree()
         .get_mobilizer(topology_.inboard_mobilizer)
         .Lock(context);
@@ -257,13 +260,16 @@ class RigidBody : public MultibodyElement<T> {
   /// For a floating base %RigidBody, unlock its inboard joint.
   /// @throws std::exception if this body is not a floating base body.
   void Unlock(systems::Context<T>* context) const {
+    ThrowIfNotFinalized(__func__);
     // TODO(rpoyner-tri): consider extending the design to allow locking on
     //  non-floating bodies.
     if (!is_floating()) {
+      // TODO(jwnimmer-tri) This code is not supposed to be inlined (GSG).
       throw std::logic_error(fmt::format(
           "Attempted to call Unlock() on non-floating-base rigid body {}",
           name()));
     }
+    DRAKE_ASSERT(this->has_parent_tree());
     this->get_parent_tree()
         .get_mobilizer(topology_.inboard_mobilizer)
         .Unlock(context);
@@ -274,6 +280,8 @@ class RigidBody : public MultibodyElement<T> {
   /// generally Joint::is_locked() is preferable otherwise.
   /// @returns true if the body is locked, false otherwise.
   bool is_locked(const systems::Context<T>& context) const {
+    ThrowIfNotFinalized(__func__);
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree()
         .get_mobilizer(topology_.inboard_mobilizer)
         .is_locked(context);
@@ -354,6 +362,7 @@ class RigidBody : public MultibodyElement<T> {
     } else {
       DRAKE_DEMAND(0 <= position_index_in_body && position_index_in_body < 6);
     }
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree()
         .get_mobilizer(topology_.inboard_mobilizer)
         .position_suffix(position_index_in_body);
@@ -369,6 +378,7 @@ class RigidBody : public MultibodyElement<T> {
     ThrowIfNotFinalized(__func__);
     DRAKE_DEMAND(is_floating());
     DRAKE_DEMAND(0 <= velocity_index_in_body && velocity_index_in_body < 6);
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree()
         .get_mobilizer(topology_.inboard_mobilizer)
         .velocity_suffix(velocity_index_in_body);
@@ -427,6 +437,8 @@ class RigidBody : public MultibodyElement<T> {
   /// function of the state of the model stored in `context`.
   const math::RigidTransform<T>& EvalPoseInWorld(
       const systems::Context<T>& context) const {
+    ThrowIfNotFinalized(__func__);
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree().EvalBodyPoseInWorld(context, *this);
   }
 
@@ -436,6 +448,8 @@ class RigidBody : public MultibodyElement<T> {
   /// expressed in W (for point Bo, the body frame's origin).
   const SpatialVelocity<T>& EvalSpatialVelocityInWorld(
       const systems::Context<T>& context) const {
+    ThrowIfNotFinalized(__func__);
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree().EvalBodySpatialVelocityInWorld(context,
                                                                   *this);
   }
@@ -449,6 +463,8 @@ class RigidBody : public MultibodyElement<T> {
   /// once evaluated, successive calls to this method are inexpensive.
   const SpatialAcceleration<T>& EvalSpatialAccelerationInWorld(
       const systems::Context<T>& context) const {
+    ThrowIfNotFinalized(__func__);
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree().EvalBodySpatialAccelerationInWorld(context,
                                                                       *this);
   }
@@ -457,6 +473,8 @@ class RigidBody : public MultibodyElement<T> {
   /// applied at body B's origin Bo and expressed in world frame W.
   const SpatialForce<T>& GetForceInWorld(
       const systems::Context<T>&, const MultibodyForces<T>& forces) const {
+    ThrowIfNotFinalized(__func__);
+    DRAKE_ASSERT(this->has_parent_tree());
     DRAKE_THROW_UNLESS(
         forces.CheckHasRightSizeForModel(this->get_parent_tree()));
     return forces.body_forces()[mobod_index()];
@@ -468,6 +486,8 @@ class RigidBody : public MultibodyElement<T> {
                          const SpatialForce<T>& F_Bo_W,
                          MultibodyForces<T>* forces) const {
     DRAKE_THROW_UNLESS(forces != nullptr);
+    ThrowIfNotFinalized(__func__);
+    DRAKE_ASSERT(this->has_parent_tree());
     DRAKE_THROW_UNLESS(
         forces->CheckHasRightSizeForModel(this->get_parent_tree()));
     forces->mutable_body_forces()[mobod_index()] += F_Bo_W;
@@ -764,7 +784,9 @@ class RigidBody : public MultibodyElement<T> {
   // not be called pre-finalize. The invoking method should pass its name so
   // that the error message can include that detail.
   void ThrowIfNotFinalized(const char* source_method) const {
+    DRAKE_THROW_UNLESS(this->has_parent_tree());
     if (!this->get_parent_tree().topology_is_valid()) {
+      // TODO(jwnimmer-tri) This code is not supposed to be inlined (GSG).
       throw std::runtime_error(
           "From '" + std::string(source_method) +
           "'. The model to which this rigid body belongs must be finalized. "

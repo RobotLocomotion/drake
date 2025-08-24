@@ -57,6 +57,7 @@ class UniformGravityFieldElement : public ForceElement<T> {
   /// @see enable(), disable().
   /// @throws std::exception if the model instance is invalid.
   bool is_enabled(ModelInstanceIndex model_instance) const {
+    DRAKE_THROW_UNLESS(this->has_parent_tree());
     if (model_instance >= this->get_parent_tree().num_model_instances()) {
       throw std::logic_error("Model instance index is invalid.");
     }
