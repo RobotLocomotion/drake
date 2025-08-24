@@ -132,8 +132,10 @@ class BodyNode : public MultibodyElement<T> {
   // Returns a constant reference to the unique parent body P of the body B
   // associated with this node. This method aborts in Debug builds if called on
   // the root node corresponding to the _world_ body.
+  // @pre has_parent_tree() is true.
   const RigidBody<T>& parent_body() const {
     DRAKE_ASSERT(get_parent_body_index().is_valid());
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree().get_body(get_parent_body_index());
   }
 
@@ -187,6 +189,7 @@ class BodyNode : public MultibodyElement<T> {
   //   matrix for this node.
   Eigen::Map<const MatrixUpTo6<T>> GetJacobianFromArray(
       const std::vector<Vector6<T>>& H_array) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     const SpanningForest& forest = this->get_parent_tree().forest();
     DRAKE_DEMAND(static_cast<int>(H_array.size()) == forest.num_velocities());
     const int start_index_in_v = mobod().v_start();
@@ -201,6 +204,7 @@ class BodyNode : public MultibodyElement<T> {
   // Mutable version of GetJacobianFromArray().
   Eigen::Map<MatrixUpTo6<T>> GetMutableJacobianFromArray(
       std::vector<Vector6<T>>* H_array) const {
+    DRAKE_DEMAND(this->has_parent_tree());
     const SpanningForest& forest = this->get_parent_tree().forest();
     DRAKE_DEMAND(static_cast<int>(H_array->size()) == forest.num_velocities());
     const int start_index_in_v = mobod().v_start();
@@ -639,6 +643,7 @@ class BodyNode : public MultibodyElement<T> {
   // Returns an Eigen expression of the vector of generalized velocities.
   Eigen::VectorBlock<const VectorX<T>> get_mobilizer_velocities(
       const systems::Context<T>& context) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     const MultibodyTree<T>& tree = this->get_parent_tree();
     return tree.get_state_segment(
         context, tree.num_positions() + mobod().v_start(), mobod().nv());

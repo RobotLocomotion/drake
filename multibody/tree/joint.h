@@ -324,6 +324,7 @@ class Joint : public MultibodyElement<T> {
                      const T& joint_tau, MultibodyForces<T>* forces) const {
     DRAKE_DEMAND(forces != nullptr);
     DRAKE_DEMAND(0 <= joint_dof && joint_dof < num_velocities());
+    DRAKE_DEMAND(this->has_parent_tree());
     DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
     DoAddInOneForce(context, joint_dof, joint_tau, forces);
   }
@@ -342,6 +343,7 @@ class Joint : public MultibodyElement<T> {
   void AddInDamping(const systems::Context<T>& context,
                     MultibodyForces<T>* forces) const {
     DRAKE_DEMAND(forces != nullptr);
+    DRAKE_DEMAND(this->has_parent_tree());
     DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
     DoAddInDamping(context, forces);
   }
@@ -722,10 +724,13 @@ class Joint : public MultibodyElement<T> {
   /// Refer to default_damping_vector() for details.
   /// @throws std::exception if damping.size() != num_velocities().
   /// @throws std::exception if any of the damping coefficients is negative.
+  /// @throws std::exception if this element is not associated with a
+  ///   MultibodyPlant.
   /// @pre the MultibodyPlant must not be finalized.
   void set_default_damping_vector(const VectorX<double>& damping) {
     DRAKE_THROW_UNLESS(damping.size() == num_velocities());
     DRAKE_THROW_UNLESS((damping.array() >= 0).all());
+    DRAKE_THROW_UNLESS(this->has_parent_tree());
     DRAKE_DEMAND(!this->get_parent_tree().topology_is_valid());
     damping_ = damping;
   }
