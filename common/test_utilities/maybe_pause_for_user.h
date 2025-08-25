@@ -28,5 +28,3 @@ void MaybePauseForUser(std::string_view message = {});
 
 }  // namespace common
 }  // namespace drake
-
-
