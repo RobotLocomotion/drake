@@ -25,13 +25,9 @@ namespace test_utilities {
 // @param[in] frame_E The expressed-in frame for spatial acceleration.
 SpatialAcceleration<double> CalcSpatialAccelerationViaAutomaticDifferentiation(
     const MultibodyPlant<double>& plant,
-    const systems::Context<double>& context,
-    const VectorX<double>& vdot,
-    const Frame<double>& frame_B,
-    const Vector3<double>& p_BoBq_B,
-    const Frame<double>& frame_A,
-    const Frame<double>& frame_E) {
-
+    const systems::Context<double>& context, const VectorX<double>& vdot,
+    const Frame<double>& frame_B, const Vector3<double>& p_BoBq_B,
+    const Frame<double>& frame_A, const Frame<double>& frame_E) {
   // Enable q_autodiff and v_autodiff to differentiate with respect to time.
   // Note: Pass MatrixXd() so the return gradient uses AutoDiffXd (for which we
   // do have explicit instantiations) instead of AutoDiffScalar<Matrix1d>.
@@ -99,13 +95,10 @@ SpatialAcceleration<double> CalcSpatialAccelerationViaAutomaticDifferentiation(
 // @param[in] frame_B The frame for which spatial acceleration is calculated.
 // @param[in] frame_A The measured-in frame for spatial acceleration.
 // @param[in] frame_E The expressed-in frame for spatial acceleration.
-SpatialAcceleration<double>
-    CalcSpatialAccelerationViaAutomaticDifferentiation(
+SpatialAcceleration<double> CalcSpatialAccelerationViaAutomaticDifferentiation(
     const MultibodyPlant<double>& plant,
-    const systems::Context<double>& context,
-    const Frame<double>& frame_B,
-    const Frame<double>& frame_A,
-    const Frame<double>& frame_E) {
+    const systems::Context<double>& context, const Frame<double>& frame_B,
+    const Frame<double>& frame_A, const Frame<double>& frame_E) {
   // Spatial acceleration is a function of the generalized accelerations vdot.
   // Use forward dynamics to calculate values for vdot (for the given q, v).
   const systems::ContinuousState<double>& derivs =
