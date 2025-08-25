@@ -35,7 +35,7 @@ void AddFixedObjectsToPlant(MultibodyPlant<T>* plant) {
   const ModelInstanceIndex robot_table_model =
       Parser(plant, "robot").AddModels(table_sdf_path).at(0);
   plant->WeldFrames(plant->world_frame(),
-                   plant->GetFrameByName("link", robot_table_model));
+                    plant->GetFrameByName("link", robot_table_model));
 
   // Load a second table for objects.
   Parser objects_parser(plant, "objects");
@@ -43,7 +43,7 @@ void AddFixedObjectsToPlant(MultibodyPlant<T>* plant) {
       objects_parser.AddModels(table_sdf_path).at(0);
   const RigidTransformd X_WT(Vector3d(0.8, 0.0, 0.0));
   plant->WeldFrames(plant->world_frame(),
-                   plant->GetFrameByName("link", objects_table_model), X_WT);
+                    plant->GetFrameByName("link", objects_table_model), X_WT);
 
   // Define a fixed frame on the -x, -y corner of the objects table.
   const double table_top_z_in_world =
@@ -65,7 +65,7 @@ void AddFixedObjectsToPlant(MultibodyPlant<T>* plant) {
   // Weld the mug to the table with its center 5 cm above the table, i.e. with
   // its base on the table.
   plant->WeldFrames(objects_frame_O, mug.body_frame(),
-                   Translation3d(0.0, 0.0, 0.05));
+                    Translation3d(0.0, 0.0, 0.05));
 }
 
 }  // namespace test

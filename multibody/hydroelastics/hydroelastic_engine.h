@@ -22,7 +22,7 @@ namespace internal {
 // and moment between nominally rigid objects. Proc. IEEE/RSJ Intl. Conf. on
 // Intelligent Robots and Systems (IROS), 2019.
 template <typename T>
-class HydroelasticEngine  {
+class HydroelasticEngine {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HydroelasticEngine);
 

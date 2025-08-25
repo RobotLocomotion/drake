@@ -70,12 +70,12 @@ RationalForwardKinematics::RationalForwardKinematics(
     // This won't work if there are merged link composites since multiple
     // bodies will map to the same mobilizer.
     const internal::MobodIndex mobod_index =
-      forest.link_by_index(body_index).mobod_index();
+        forest.link_by_index(body_index).mobod_index();
     const internal::SpanningForest::Mobod& mobod = forest.mobods(mobod_index);
     // Confirm that there is only one body following this Mobod.
     DRAKE_DEMAND(ssize(mobod.follower_link_ordinals()) == 1);
     const internal::Mobilizer<double>* mobilizer =
-         &(tree.get_mobilizer(mobod_index));
+        &(tree.get_mobilizer(mobod_index));
     if (IsRevolute(*mobilizer)) {
       const symbolic::Variable s_angle(fmt::format("s[{}]", s_.size()));
       s_.push_back(s_angle);
