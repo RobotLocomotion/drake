@@ -4,7 +4,6 @@
 
 #include "drake/geometry/proximity/tessellation_strategy.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/shape_specification_convex_mesh.h"
 
 namespace drake {
 namespace geometry {

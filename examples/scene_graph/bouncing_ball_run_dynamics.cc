@@ -9,7 +9,6 @@
 #include "drake/geometry/render_vtk/factory.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/shape_specification_convex_mesh.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"

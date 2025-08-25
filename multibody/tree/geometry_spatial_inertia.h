@@ -6,7 +6,6 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/shape_specification_convex_mesh.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 
 namespace drake {

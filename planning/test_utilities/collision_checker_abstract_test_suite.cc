@@ -7,7 +7,6 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/shape_specification_convex_mesh.h"
 #include "drake/planning/collision_avoidance.h"
 
 namespace drake {

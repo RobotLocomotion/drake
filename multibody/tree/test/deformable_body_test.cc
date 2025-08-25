@@ -5,7 +5,6 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/shape_specification_convex_mesh.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/deformable_model.h"
 #include "drake/multibody/plant/multibody_plant.h"

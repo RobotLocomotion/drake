@@ -1,4 +1,5 @@
 #include "drake/common/overloaded.h"
+#include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -161,6 +162,56 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPointForEllipsoid(
 }
 
 template <typename T>
+std::optional<Eigen::Vector3<T>> GetNormalAtPointForMesh(
+    const Mesh& mesh, const Eigen::Vector3<T>& p) {
+  const double tol = 1e-5;
+  const Eigen::Vector3d pd(ExtractDoubleOrThrow(p(0)),
+                           ExtractDoubleOrThrow(p(1)),
+                           ExtractDoubleOrThrow(p(2)));
+  const auto& tri_mesh = mesh.GetSurfaceMesh();
+  const auto& bvh = mesh.GetBVH();
+  const auto& fns = mesh.GetFeatureNormalSet();
+
+  internal::SquaredDistanceToTriangle closest =
+      internal::CalcSquaredDistance(pd, tri_mesh, bvh, fns);
+  const double unsigned_distance = std::sqrt(closest.squared_distance);
+
+  if (std::abs(unsigned_distance) < tol) {
+    Eigen::Vector3<T> normal(closest.feature_normal.x(),
+                             closest.feature_normal.y(),
+                             closest.feature_normal.z());
+    return normal;
+  }
+
+  return std::nullopt;
+}
+
+template <typename T>
+std::optional<Eigen::Vector3<T>> GetNormalAtPointForConvex(
+    const Convex& convex, const Eigen::Vector3<T>& p) {
+  const double tol = 1e-5;
+  const Eigen::Vector3d pd(ExtractDoubleOrThrow(p(0)),
+                           ExtractDoubleOrThrow(p(1)),
+                           ExtractDoubleOrThrow(p(2)));
+  const auto& tri_mesh = convex.GetSurfaceMesh();
+  const auto& bvh = convex.GetBVH();
+  const auto& fns = convex.GetFeatureNormalSet();
+
+  internal::SquaredDistanceToTriangle closest =
+      internal::CalcSquaredDistance(pd, tri_mesh, bvh, fns);
+  const double unsigned_distance = std::sqrt(closest.squared_distance);
+
+  if (std::abs(unsigned_distance) < tol) {
+    Eigen::Vector3<T> normal(closest.feature_normal.x(),
+                             closest.feature_normal.y(),
+                             closest.feature_normal.z());
+    return normal;
+  }
+
+  return std::nullopt;
+}
+
+template <typename T>
 std::optional<Eigen::Vector3<T>> GetNormalAtPoint(const Shape& shape,
                                                   const Eigen::Vector3<T>& p) {
   return shape.Visit<std::optional<Eigen::Vector3<T>>>(
@@ -214,6 +265,8 @@ DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(
     GetNormalAtPointForCylinder, Cylinder);
 DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(
     GetNormalAtPointForEllipsoid, Ellipsoid);
+DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(
+    GetNormalAtPointForMesh, Mesh);
 DRAKE_DEFINE_FUNCTION_INSTANTIATIONS_FOR_DEFAULT_SCALARS(GetNormalAtPoint,
                                                          Shape);
 

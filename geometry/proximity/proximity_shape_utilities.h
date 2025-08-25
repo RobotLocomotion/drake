@@ -2,7 +2,6 @@
 
 #include "drake/common/drake_export.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/shape_specification_convex_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -19,4 +18,4 @@ double CalcDistanceToSurface(const Capsule& capsule, const Vector3d& p_CP);
 }  // namespace internal
 // clang-format on
 }  // namespace geometry
-}  // namespace drake
+}  // namespace drake  

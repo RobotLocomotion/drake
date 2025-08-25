@@ -35,10 +35,8 @@ LIBDRAKE_COMPONENTS = [
     "//examples/rimless_wheel:rimless_wheel_vector_types",  # unpackaged
     "//examples/van_der_pol:van_der_pol",  # unpackaged
     "//geometry",
-    "//geometry:shape_specification_convex_mesh",
     "//geometry/optimization",
     "//geometry/proximity",
-    "//geometry/proximity:proximity_shape_utilities",  # unpackaged
     "//geometry/query_results",
     "//geometry/render",
     "//geometry/render/shaders",

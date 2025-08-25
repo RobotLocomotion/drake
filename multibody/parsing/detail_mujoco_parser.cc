@@ -18,7 +18,6 @@
 #include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/shape_specification_convex_mesh.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"

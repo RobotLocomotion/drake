@@ -108,7 +108,6 @@ drake_cc_library(
     deps = [
         "//geometry:geometry_ids",
         "//geometry:shape_specification",
-        "//geometry:shape_specification_convex_mesh",
         "//geometry/optimization:convex_set",
         "//multibody/rational:rational_forward_kinematics",
         "//multibody/tree:multibody_tree_indexes",

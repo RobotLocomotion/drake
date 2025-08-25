@@ -58,7 +58,6 @@ drake_cc_library(
         "//geometry:geometry_ids",
         "//geometry:geometry_roles",
         "//geometry:shape_specification",
-        "//geometry:shape_specification_convex_mesh",
         "//geometry:utilities",
         "//math:geometric_transform",
         "//systems/sensors:camera_info",

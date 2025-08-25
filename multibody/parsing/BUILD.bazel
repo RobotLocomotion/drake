@@ -224,7 +224,6 @@ drake_cc_library(
         "//geometry:geometry_instance",
         "//geometry:geometry_roles",
         "//geometry:shape_specification",
-        "//geometry:shape_specification_convex_mesh",
         "//multibody/plant:coulomb_friction",
         "@sdformat_internal//:sdformat",
     ],

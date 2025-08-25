@@ -2,7 +2,6 @@
 
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/shape_specification_convex_mesh.h"
 
 namespace drake {
 namespace geometry {

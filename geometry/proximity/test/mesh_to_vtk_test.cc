@@ -10,7 +10,6 @@
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/mesh_intersection.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/shape_specification_convex_mesh.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {

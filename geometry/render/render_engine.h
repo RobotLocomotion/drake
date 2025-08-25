@@ -17,7 +17,6 @@
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/render/render_mesh.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/shape_specification_convex_mesh.h"
 #include "drake/geometry/utilities.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/systems/sensors/camera_info.h"

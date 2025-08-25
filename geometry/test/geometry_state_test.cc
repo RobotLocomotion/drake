@@ -30,7 +30,6 @@
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/shape_specification_convex_mesh.h"
 #include "drake/geometry/test_utilities/dummy_render_engine.h"
 
 namespace drake {

@@ -1,5 +1,4 @@
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/shape_specification_convex_mesh.h"
 #include "shape_to_point_cloud.h"
 
 #include <filesystem>

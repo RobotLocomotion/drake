@@ -25,7 +25,6 @@
 #include "drake/common/unused.h"
 #include "drake/geometry/proximity/collision_filter.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/shape_specification_convex_mesh.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {

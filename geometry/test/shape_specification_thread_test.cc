@@ -6,7 +6,6 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/find_runfiles.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/shape_specification_convex_mesh.h"
 
 /* This tests the race conditions for computing the convex hull on Mesh and
  Convex.
