@@ -12,6 +12,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/overloaded.h"
+#include "drake/geometry/proximity/calc_signed_distance_to_surface_mesh.h"
 #include "drake/geometry/proximity/make_convex_hull_mesh_impl.h"
 #include "drake/geometry/proximity/meshing_utilities.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"

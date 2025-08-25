@@ -1,4 +1,5 @@
 #include "drake/common/overloaded.h"
+#include "drake/geometry/proximity/calc_signed_distance_to_surface_mesh.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -172,8 +173,7 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPointForMesh(
   const auto& bvh = mesh.GetBVH();
   const auto& fns = mesh.GetFeatureNormalSet();
 
-  internal::SquaredDistanceToTriangle closest =
-      internal::CalcSquaredDistance(pd, tri_mesh, bvh, fns);
+  auto closest = internal::CalcSquaredDistance(pd, tri_mesh, bvh, fns);
   const double unsigned_distance = std::sqrt(closest.squared_distance);
 
   if (std::abs(unsigned_distance) < tol) {
@@ -197,8 +197,7 @@ std::optional<Eigen::Vector3<T>> GetNormalAtPointForConvex(
   const auto& bvh = convex.GetBVH();
   const auto& fns = convex.GetFeatureNormalSet();
 
-  internal::SquaredDistanceToTriangle closest =
-      internal::CalcSquaredDistance(pd, tri_mesh, bvh, fns);
+  auto closest = internal::CalcSquaredDistance(pd, tri_mesh, bvh, fns);
   const double unsigned_distance = std::sqrt(closest.squared_distance);
 
   if (std::abs(unsigned_distance) < tol) {

@@ -466,7 +466,6 @@ drake_cc_library(
         "//common:essential",
         "//geometry/proximity:bvh",
         "//geometry/proximity:bv",
-        "//geometry/proximity:distance_to_point_callback",
         "//geometry/proximity:polygon_surface_mesh",
         "//geometry/proximity:triangle_surface_mesh",
         "//math:geometric_transform",
@@ -474,6 +473,7 @@ drake_cc_library(
     implementation_deps = [
         "//common:nice_type_name",
         "//common:overloaded",
+        "//geometry/proximity:distance_to_point_callback",
         "//geometry/proximity:make_convex_hull_mesh_impl",
         "//geometry/proximity:meshing_utilities",
         "//geometry/proximity:obj_to_surface_mesh",

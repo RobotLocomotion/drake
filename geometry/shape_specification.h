@@ -10,7 +10,6 @@
 #include "drake/common/fmt_ostream.h"
 #include "drake/geometry/mesh_source.h"
 #include "drake/geometry/proximity/bvh.h"
-#include "drake/geometry/proximity/calc_signed_distance_to_surface_mesh.h"
 #include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
@@ -24,6 +23,10 @@
 
 namespace drake {
 namespace geometry {
+
+namespace internal {
+class FeatureNormalSet;
+}  // namespace internal
 
 #ifndef DRAKE_DOXYGEN_CXX
 class Box;
