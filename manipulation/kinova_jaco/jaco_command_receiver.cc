@@ -13,31 +13,30 @@ using Eigen::VectorXd;
 using systems::BasicVector;
 using systems::CompositeEventCollection;
 using systems::Context;
-using systems::DiscreteValues;
 using systems::DiscreteUpdateEvent;
+using systems::DiscreteValues;
 using systems::kVectorValued;
 
 JacoCommandReceiver::JacoCommandReceiver(int num_joints, int num_fingers)
-    : num_joints_(num_joints),
-      num_fingers_(num_fingers) {
-  message_input_ = &DeclareAbstractInputPort(
-      "lcmt_jaco_command", Value<lcmt_jaco_command>());
+    : num_joints_(num_joints), num_fingers_(num_fingers) {
+  message_input_ = &DeclareAbstractInputPort("lcmt_jaco_command",
+                                             Value<lcmt_jaco_command>());
   position_measured_input_ = &DeclareInputPort(
       "position_measured", kVectorValued, num_joints + num_fingers);
 
   // This cache entry provides either the input (iff connected) or else zero.
-  position_measured_or_zero_ = &DeclareCacheEntry(
-      "position_measured_or_zero",
-      BasicVector<double>(num_joints + num_fingers),
-      &JacoCommandReceiver::CalcPositionMeasuredOrZero,
-      {position_measured_input_->ticket()});
+  position_measured_or_zero_ =
+      &DeclareCacheEntry("position_measured_or_zero",
+                         BasicVector<double>(num_joints + num_fingers),
+                         &JacoCommandReceiver::CalcPositionMeasuredOrZero,
+                         {position_measured_input_->ticket()});
 
   // When a simulation begins, we will latch positions into a state variable,
   // so that we will hold that pose until the first message is received.
   // Prior to that event, we continue to use the unlatched value.
   latched_position_measured_is_set_ = DeclareDiscreteState(VectorXd::Zero(1));
-  latched_position_measured_ = DeclareDiscreteState(
-      VectorXd::Zero(num_joints + num_fingers));
+  latched_position_measured_ =
+      DeclareDiscreteState(VectorXd::Zero(num_joints + num_fingers));
 
   groomed_input_ = &DeclareCacheEntry(
       "groomed_input", &JacoCommandReceiver::CalcInput,
@@ -48,22 +47,19 @@ JacoCommandReceiver::JacoCommandReceiver(int num_joints, int num_fingers)
 
   commanded_position_output_ = &DeclareVectorOutputPort(
       "position", num_joints + num_fingers,
-      &JacoCommandReceiver::CalcPositionOutput,
-      {groomed_input_->ticket()});
+      &JacoCommandReceiver::CalcPositionOutput, {groomed_input_->ticket()});
 
   commanded_velocity_output_ = &DeclareVectorOutputPort(
       "velocity", num_joints + num_fingers,
-      &JacoCommandReceiver::CalcVelocityOutput,
-      {groomed_input_->ticket()});
+      &JacoCommandReceiver::CalcVelocityOutput, {groomed_input_->ticket()});
 
-  time_output_ = &DeclareVectorOutputPort(
-      "time", 1, &JacoCommandReceiver::CalcTimeOutput,
-      {groomed_input_->ticket()});
+  time_output_ =
+      &DeclareVectorOutputPort("time", 1, &JacoCommandReceiver::CalcTimeOutput,
+                               {groomed_input_->ticket()});
 }
 
 void JacoCommandReceiver::CalcPositionMeasuredOrZero(
-    const Context<double>& context,
-    BasicVector<double>* result) const {
+    const Context<double>& context, BasicVector<double>* result) const {
   if (position_measured_input_->HasValue(context)) {
     result->SetFromVector(position_measured_input_->Eval(context));
   } else {
@@ -72,17 +68,15 @@ void JacoCommandReceiver::CalcPositionMeasuredOrZero(
 }
 
 void JacoCommandReceiver::LatchInitialPosition(
-    const Context<double>& context,
-    DiscreteValues<double>* result) const {
+    const Context<double>& context, DiscreteValues<double>* result) const {
   const auto& bool_index = latched_position_measured_is_set_;
   const auto& value_index = latched_position_measured_;
   result->get_mutable_value(bool_index)[0] = 1.0;
-  result->get_mutable_vector(value_index).SetFrom(
-      position_measured_or_zero_->Eval<BasicVector<double>>(context));
+  result->get_mutable_vector(value_index)
+      .SetFrom(position_measured_or_zero_->Eval<BasicVector<double>>(context));
 }
 
-void JacoCommandReceiver::LatchInitialPosition(
-    Context<double>* context) const {
+void JacoCommandReceiver::LatchInitialPosition(Context<double>* context) const {
   DRAKE_THROW_UNLESS(context != nullptr);
   LatchInitialPosition(*context, &context->get_mutable_discrete_state());
 }
@@ -91,8 +85,8 @@ void JacoCommandReceiver::LatchInitialPosition(
 // "now" event.  We should try to consolidate it with other similar uses within
 // the source tree.  Relates to #11403 somewhat.
 void JacoCommandReceiver::DoCalcNextUpdateTime(
-    const Context<double>& context,
-    CompositeEventCollection<double>* events, double* time) const {
+    const Context<double>& context, CompositeEventCollection<double>* events,
+    double* time) const {
   // We do not support events other than our own message timing events.
   LeafSystem<double>::DoCalcNextUpdateTime(context, events, time);
   DRAKE_THROW_UNLESS(events->HasEvents() == false);
@@ -118,8 +112,8 @@ void JacoCommandReceiver::DoCalcNextUpdateTime(
 // Returns (in "result") the command message input, or if a message has not
 // been received yet returns the initial command (as optionally set by the
 // user).  The result will always have num_joints_ positions and velocities.
-void JacoCommandReceiver::CalcInput(
-  const Context<double>& context, lcmt_jaco_command* result) const {
+void JacoCommandReceiver::CalcInput(const Context<double>& context,
+                                    lcmt_jaco_command* result) const {
   if (!get_message_input_port().HasValue(context)) {
     throw std::logic_error("JacoCommandReceiver has no input connected");
   }
@@ -131,12 +125,12 @@ void JacoCommandReceiver::CalcInput(
   // N.B. This works due to lcm::Serializer<>::CreateDefaultValue() using
   // value-initialization.
   if (lcm::AreLcmMessagesEqual(*result, lcmt_jaco_command{})) {
-    const BasicVector<double>& latch_is_set = context.get_discrete_state(
-        latched_position_measured_is_set_);
+    const BasicVector<double>& latch_is_set =
+        context.get_discrete_state(latched_position_measured_is_set_);
     const BasicVector<double>& default_position =
         latch_is_set[0]
-         ? context.get_discrete_state(latched_position_measured_)
-         : position_measured_or_zero_->Eval<BasicVector<double>>(context);
+            ? context.get_discrete_state(latched_position_measured_)
+            : position_measured_or_zero_->Eval<BasicVector<double>>(context);
 
     result->num_joints = num_joints_;
     const VectorXd& vec = default_position.value();
@@ -145,9 +139,8 @@ void JacoCommandReceiver::CalcInput(
 
     result->num_fingers = num_fingers_;
     if (num_fingers_) {
-      result->finger_position =
-          {vec.data() + num_joints_,
-           vec.data() + num_joints_ + num_fingers_};
+      result->finger_position = {vec.data() + num_joints_,
+                                 vec.data() + num_joints_ + num_fingers_};
       result->finger_velocity.resize(num_fingers_, 0);
     } else {
       result->finger_position.clear();
@@ -224,8 +217,8 @@ void JacoCommandReceiver::CalcVelocityOutput(
   output->SetFromVector(velocity);
 }
 
-void JacoCommandReceiver::CalcTimeOutput(
-    const Context<double>& context, BasicVector<double>* output) const {
+void JacoCommandReceiver::CalcTimeOutput(const Context<double>& context,
+                                         BasicVector<double>* output) const {
   const auto& message = groomed_input_->Eval<lcmt_jaco_command>(context);
   (*output)[0] = static_cast<double>(message.utime) / 1e6;
 }
