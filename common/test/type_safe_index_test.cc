@@ -31,10 +31,10 @@ using std::string;
 // Verifies the constructor behavior -- in debug and release modes.
 GTEST_TEST(TypeSafeIndex, Constructor) {
   AIndex index(1);
-  EXPECT_EQ(index, 1);                      // This also tests operator==(int).
-  AIndex index2(index);                     // Copy constructor.
+  EXPECT_EQ(index, 1);   // This also tests operator==(int).
+  AIndex index2(index);  // Copy constructor.
   EXPECT_EQ(index2, 1);
-  AIndex index3(std::move(index2));              // Move constructor.
+  AIndex index3(std::move(index2));  // Move constructor.
   EXPECT_EQ(index3, 1);
   EXPECT_FALSE(index2.is_valid());
 
@@ -42,8 +42,7 @@ GTEST_TEST(TypeSafeIndex, Constructor) {
   AIndex invalid;  // Default constructor.
   EXPECT_FALSE(invalid.is_valid());
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      AIndex(-1),
-      "Explicitly constructing an invalid index.+");
+      AIndex(-1), "Explicitly constructing an invalid index.+");
   DRAKE_EXPECT_NO_THROW(AIndex{invalid});  // Copy construct invalid index.
 }
 
@@ -112,7 +111,7 @@ GTEST_TEST(TypeSafeIndex, ConversionToInt) {
 
   AIndex invalid;
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(static_cast<int>(invalid),
-                                      "Converting to an int.+");
+                                       "Converting to an int.+");
 }
 
 // Tests valid comparisons of like-typed index instances.
@@ -123,16 +122,16 @@ GTEST_TEST(TypeSafeIndex, IndexComparisonOperators) {
   // true-returning coverage.
   EXPECT_TRUE(index1 == index2);  // operator==
   EXPECT_TRUE(index1 != index3);  // operator!=
-  EXPECT_TRUE(index1 <  index3);  // operator<
+  EXPECT_TRUE(index1 < index3);   // operator<
   EXPECT_TRUE(index1 <= index2);  // operator<=
-  EXPECT_TRUE(index3 >  index1);  // operator>
+  EXPECT_TRUE(index3 > index1);   // operator>
   EXPECT_TRUE(index2 >= index1);  // operator>=
   // false-returning coverage.
   EXPECT_FALSE(index1 == index3);  // operator==
   EXPECT_FALSE(index1 != index2);  // operator!=
-  EXPECT_FALSE(index3 <  index1);  // operator<
+  EXPECT_FALSE(index3 < index1);   // operator<
   EXPECT_FALSE(index3 <= index1);  // operator<=
-  EXPECT_FALSE(index1 >  index3);  // operator>
+  EXPECT_FALSE(index1 > index3);   // operator>
   EXPECT_FALSE(index1 >= index3);  // operator>=
 }
 
@@ -144,29 +143,29 @@ GTEST_TEST(TypeSafeIndex, InvalidIndexComparisonOperators) {
 
   // Comparison operators.
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid == valid,
-                                      "Testing == with invalid LHS.+");
+                                       "Testing == with invalid LHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(valid == invalid,
-                                      "Testing == with invalid RHS.+");
+                                       "Testing == with invalid RHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid != valid,
-                                      "Testing != with invalid LHS.+");
+                                       "Testing != with invalid LHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(valid != invalid,
-                                      "Testing != with invalid RHS.+");
+                                       "Testing != with invalid RHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid < valid,
-                                      "Testing < with invalid LHS.+");
+                                       "Testing < with invalid LHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(valid < invalid,
-                                      "Testing < with invalid RHS.+");
+                                       "Testing < with invalid RHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid <= valid,
-                                      "Testing <= with invalid LHS.+");
+                                       "Testing <= with invalid LHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(valid <= invalid,
-                                      "Testing <= with invalid RHS.+");
+                                       "Testing <= with invalid RHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid > valid,
-                                      "Testing > with invalid LHS.+");
+                                       "Testing > with invalid LHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(valid > invalid,
-                                      "Testing > with invalid RHS.+");
+                                       "Testing > with invalid RHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid >= valid,
-                                      "Testing >= with invalid LHS.+");
+                                       "Testing >= with invalid LHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(valid >= invalid,
-                                      "Testing >= with invalid RHS.+");
+                                       "Testing >= with invalid RHS.+");
 }
 
 // Tests the prefix increment behavior.
@@ -181,12 +180,11 @@ GTEST_TEST(TypeSafeIndex, PrefixIncrement) {
   // Overflow produces an invalid index.
   AIndex max_index(std::numeric_limits<int>::max());
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      ++max_index,
-      "Pre-incrementing produced an invalid index.+");
+      ++max_index, "Pre-incrementing produced an invalid index.+");
   // Increment invalid index.
   AIndex invalid;
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(++invalid,
-                                      "Pre-incrementing an invalid index.+");
+                                       "Pre-incrementing an invalid index.+");
 }
 
 // Tests the postfix increment behavior.
@@ -201,12 +199,11 @@ GTEST_TEST(TypeSafeIndex, PostfixIncrement) {
   // Overflow produces an invalid index.
   AIndex max_index(std::numeric_limits<int>::max());
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      max_index++,
-      "Post-incrementing produced an invalid index.+");
+      max_index++, "Post-incrementing produced an invalid index.+");
   // Increment invalid index.
   AIndex invalid;
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid++,
-                                      "Post-incrementing an invalid index.+");
+                                       "Post-incrementing an invalid index.+");
 }
 
 // Tests the prefix decrement behavior.
@@ -222,7 +219,7 @@ GTEST_TEST(TypeSafeIndex, PrefixDecrement) {
       --about_to_be_negative_index,
       "Pre-decrementing produced an invalid index.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(--AIndex(),
-                                      "Pre-decrementing an invalid index.+");
+                                       "Pre-decrementing an invalid index.+");
 }
 
 // Tests the postfix decrement behavior.
@@ -238,7 +235,7 @@ GTEST_TEST(TypeSafeIndex, PostfixDecrement) {
       about_to_be_negative_index--,
       "Post-decrementing produced an invalid index.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(AIndex()--,
-                                      "Post-decrementing an invalid index.+");
+                                       "Post-decrementing an invalid index.+");
 }
 
 // Tests integer addition and subtraction.
@@ -271,8 +268,7 @@ GTEST_TEST(TypeSafeIndex, InPlaceAddition) {
       "In-place addition with an int produced an invalid index.+");
   AIndex invalid;
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      invalid += 1,
-      "In-place addition with an int on an invalid index.+");
+      invalid += 1, "In-place addition with an int on an invalid index.+");
 
   // In-place with an index.
   AIndex max_index(std::numeric_limits<int>::max());
@@ -283,8 +279,7 @@ GTEST_TEST(TypeSafeIndex, InPlaceAddition) {
       invalid += AIndex(1),
       "In-place addition with another index invalid LHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      index += invalid,
-      "In-place addition with another index invalid RHS.+");
+      index += invalid, "In-place addition with another index invalid RHS.+");
 }
 
 // Tests in-place subtraction.
@@ -304,8 +299,7 @@ GTEST_TEST(TypeSafeIndex, InPlaceSubtract) {
       "In-place subtraction with an int produced an invalid index.+");
   AIndex invalid;
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      invalid -= -3,
-      "In-place subtraction with an int on an invalid index.+");
+      invalid -= -3, "In-place subtraction with an int on an invalid index.+");
 
   // In-place with an index.
   about_to_be_negative_index = AIndex(0);
@@ -330,7 +324,7 @@ GTEST_TEST(TypeSafeIndex, StreamInsertion) {
 
   AIndex invalid;
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(stream << invalid,
-                                      "Converting to an int.+");
+                                       "Converting to an int.+");
 }
 
 // Tests conversion to string via std::to_string function.
@@ -340,8 +334,8 @@ GTEST_TEST(TypeSafeIndex, ToString) {
   EXPECT_EQ(std::to_string(index), std::to_string(value));
 
   AIndex invalid;
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      std::to_string(invalid), "Converting to an int.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(std::to_string(invalid),
+                                       "Converting to an int.+");
 }
 
 // Verifies that it is not possible to convert between two different
@@ -477,7 +471,7 @@ GTEST_TEST(IntegralComparisons, CompareSizeT) {
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       AIndex(small_overflow_value),
       "Explicitly constructing an invalid index. Type .* has an invalid "
-          "value; it must lie in the range .*");
+      "value; it must lie in the range .*");
 
   // The too-large number, when truncated, would produce a positive index which
   // is inherently valid; but the pre-truncation value is validated.
@@ -486,7 +480,7 @@ GTEST_TEST(IntegralComparisons, CompareSizeT) {
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       AIndex(big_overflow_value),
       "Explicitly constructing an invalid index. Type .* has an invalid "
-          "value; it must lie in the range .*");
+      "value; it must lie in the range .*");
 
   // Now we test right out at the limit of the *smaller* type -- the int.
   const AIndex biggest_index{std::numeric_limits<int>::max()};
@@ -553,11 +547,17 @@ GTEST_TEST(TypeSafeIndex, CompareUnsignedShort) {
 // This tests that one index cannot be *constructed* from another index type,
 // but can be constructed from int types.
 template <typename T, typename U, typename = decltype(T(U()))>
-bool has_construct_helper(int) { return true; }
+bool has_construct_helper(int) {
+  return true;
+}
 template <typename T, typename U>
-bool has_construct_helper(...) { return false; }
+bool has_construct_helper(...) {
+  return false;
+}
 template <typename T, typename U>
-bool has_constructor() { return has_construct_helper<T, U>(1); }
+bool has_constructor() {
+  return has_construct_helper<T, U>(1);
+}
 GTEST_TEST(TypeSafeIndex, ConstructorAvailability) {
   EXPECT_FALSE((has_constructor<AIndex, BIndex>()));
   EXPECT_TRUE((has_constructor<AIndex, int>()));

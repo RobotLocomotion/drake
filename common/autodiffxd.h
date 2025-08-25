@@ -25,6 +25,7 @@
 
 #include "drake/common/fmt_ostream.h"
 
+// clang-format off
 namespace Eigen {
 
 #if !defined(DRAKE_DOXYGEN_CXX)
@@ -552,6 +553,7 @@ inline const AutoDiffScalar<VectorXd> max(const AutoDiffScalar<VectorXd>& a,
 #endif
 
 }  // namespace Eigen
+// clang-format on
 
 namespace fmt {
 template <>

@@ -141,10 +141,8 @@ GTEST_TEST(NiceTypeNameTest, Eigen) {
 }
 
 GTEST_TEST(NiceTypeNameTest, Enum) {
-  EXPECT_EQ(NiceTypeName::Get<Color>(),
-            "drake::(anonymous)::Color");
-  EXPECT_EQ(NiceTypeName::Get<ForTesting>(),
-            "drake::(anonymous)::ForTesting");
+  EXPECT_EQ(NiceTypeName::Get<Color>(), "drake::(anonymous)::Color");
+  EXPECT_EQ(NiceTypeName::Get<ForTesting>(), "drake::(anonymous)::ForTesting");
   EXPECT_EQ(NiceTypeName::Get<ForTesting::MyEnum>(),
             "drake::(anonymous)::ForTesting::MyEnum");
   EXPECT_EQ(NiceTypeName::Get<ForTesting::MyEnumClass>(),
@@ -152,8 +150,7 @@ GTEST_TEST(NiceTypeNameTest, Enum) {
 
   EXPECT_EQ(NiceTypeName::Get<decltype(ForTesting::One)>(),
             "drake::(anonymous)::ForTesting::MyEnum");
-  EXPECT_EQ(NiceTypeName::Get<decltype(
-                ForTesting::MyEnumClass::Four)>(),
+  EXPECT_EQ(NiceTypeName::Get<decltype(ForTesting::MyEnumClass::Four)>(),
             "drake::(anonymous)::ForTesting::MyEnumClass");
 }
 
@@ -164,8 +161,7 @@ GTEST_TEST(NiceTypeNameTest, IdentifierTemplate) {
 // Test the type_info form of NiceTypeName::Get().
 GTEST_TEST(NiceTypeNameTest, FromTypeInfo) {
   EXPECT_EQ(NiceTypeName::Get(typeid(int)), "int");
-  EXPECT_EQ(NiceTypeName::Get(typeid(Derived)),
-            "drake::(anonymous)::Derived");
+  EXPECT_EQ(NiceTypeName::Get(typeid(Derived)), "drake::(anonymous)::Derived");
 }
 
 // Test the expression-accepting form of NiceTypeName::Get().
@@ -190,10 +186,8 @@ GTEST_TEST(NiceTypeNameTest, Expressions) {
 
   auto derived_uptr = std::make_unique<Derived>();
   auto base_uptr = std::unique_ptr<Base>(new Derived());
-  EXPECT_EQ(NiceTypeName::Get(*derived_uptr),
-            "drake::(anonymous)::Derived");
-  EXPECT_EQ(NiceTypeName::Get(*base_uptr),
-            "drake::(anonymous)::Derived");
+  EXPECT_EQ(NiceTypeName::Get(*derived_uptr), "drake::(anonymous)::Derived");
+  EXPECT_EQ(NiceTypeName::Get(*base_uptr), "drake::(anonymous)::Derived");
 
   // unique_ptr is not polymorphic (unlike its contents) so its declared type
   // and runtime type are the same.
@@ -203,9 +197,8 @@ GTEST_TEST(NiceTypeNameTest, Expressions) {
 
 GTEST_TEST(NiceTypeNameTest, RemoveNamespaces) {
   EXPECT_EQ(NiceTypeName::RemoveNamespaces("JustAPlainType"), "JustAPlainType");
-  EXPECT_EQ(
-      NiceTypeName::RemoveNamespaces("drake::(anonymous)::Derived"),
-      "Derived");
+  EXPECT_EQ(NiceTypeName::RemoveNamespaces("drake::(anonymous)::Derived"),
+            "Derived");
   // Should ignore nested namespaces.
   EXPECT_EQ(NiceTypeName::RemoveNamespaces(
                 "std::vector<std::string,std::allocator<std::string>>"),
@@ -234,9 +227,8 @@ GTEST_TEST(NiceTypeNameTest, Override) {
         }
       });
 
-  EXPECT_EQ(
-      NiceTypeName::Get<OverrideName>(),
-      "drake::(anonymous)::OverrideName");
+  EXPECT_EQ(NiceTypeName::Get<OverrideName>(),
+            "drake::(anonymous)::OverrideName");
   const OverrideName obj;
   EXPECT_EQ(NiceTypeName::Get(obj), "example_override");
 }

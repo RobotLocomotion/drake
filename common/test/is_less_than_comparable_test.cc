@@ -7,7 +7,9 @@ namespace {
 
 // Dummy operator< for checking is_less_than_comparable().
 struct Z {};
-bool operator<(const Z&, const Z&) { return true; }
+bool operator<(const Z&, const Z&) {
+  return true;
+}
 
 // Verifies that this class is comparable using the less than operator.
 GTEST_TEST(LessThanComparable, RunTime) {
