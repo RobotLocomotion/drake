@@ -53,12 +53,10 @@ void TestDummySystemConstraint(const SystemConstraintWrapper& constraint,
   AutoDiffVecXd y_autodiff_expected;
   DummySystemConstraintCalc<AutoDiffXd>(*context_autodiff,
                                         &y_autodiff_expected);
-  EXPECT_TRUE(CompareMatrices(
-      math::ExtractValue(y_autodiff),
-      math::ExtractValue(y_autodiff_expected), tol));
-  EXPECT_TRUE(CompareMatrices(
-      math::ExtractGradient(y_autodiff),
-      math::ExtractGradient(y_autodiff_expected), tol));
+  EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_autodiff),
+                              math::ExtractValue(y_autodiff_expected), tol));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_autodiff),
+                              math::ExtractGradient(y_autodiff_expected), tol));
 }
 
 GTEST_TEST(SystemConstraintWrapperTest, BasicTest) {
@@ -123,12 +121,12 @@ void TestFreeBodyPlantConstraint(const SystemConstraintWrapper& constraint,
   plant_autodiff->get_constraint(constraint.constraint_index())
       .Calc(*context_autodiff, &y_autodiff_expected);
 
-  EXPECT_TRUE(CompareMatrices(
-      math::ExtractValue(y_autodiff),
-      math::ExtractValue(y_autodiff_expected), 3 * kEps));
-  EXPECT_TRUE(CompareMatrices(
-      math::ExtractGradient(y_autodiff),
-      math::ExtractGradient(y_autodiff_expected), 3 * kEps));
+  EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_autodiff),
+                              math::ExtractValue(y_autodiff_expected),
+                              3 * kEps));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_autodiff),
+                              math::ExtractGradient(y_autodiff_expected),
+                              3 * kEps));
 }
 
 TEST_F(FreeBodyPlantTest, FreeBodyPlantTest) {
