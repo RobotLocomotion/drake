@@ -229,12 +229,14 @@ int DoMain() {
   //  torques; however, contact surfaces are not recorded properly.
   //  For now, we delete contact surfaces to prevent confusion in the playback.
   //  Remove deletion when 19142 is resovled.
-  meshcat->Delete("/drake/contact_forces/hydroelastic/"
-                 "left_finger_bubble+spatula/"
-                 "contact_surface");
-  meshcat->Delete("/drake/contact_forces/hydroelastic/"
-                  "right_finger_bubble+spatula/"
-                  "contact_surface");
+  meshcat->Delete(
+      "/drake/contact_forces/hydroelastic/"
+      "left_finger_bubble+spatula/"
+      "contact_surface");
+  meshcat->Delete(
+      "/drake/contact_forces/hydroelastic/"
+      "right_finger_bubble+spatula/"
+      "contact_surface");
   meshcat->PublishRecording();
 
   systems::PrintSimulatorStatistics(simulator);

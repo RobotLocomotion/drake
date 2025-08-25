@@ -28,9 +28,8 @@ GTEST_TEST(PopulateCylinderPlant, VerifyPlant) {
   const double mass = 0.1;             // The cylinder's mass, kg
   const double g = 9.81;               // Acceleration of gravity, m/s^2
   const double length = 4.0 * radius;  // The cylinder's length, m.
-  const CoulombFriction<double> coulomb_friction(
-      0.5 /* static friction */,
-      0.5 /* dynamic friction */);
+  const CoulombFriction<double> coulomb_friction(0.5 /* static friction */,
+                                                 0.5 /* dynamic friction */);
 
   // Time stepping step size.
   const double time_step = 1.0e-3;
@@ -50,8 +49,7 @@ GTEST_TEST(PopulateCylinderPlant, VerifyPlant) {
   EXPECT_TRUE(plant.geometry_source_is_registered());
 
   ASSERT_TRUE(plant.HasBodyNamed("Cylinder"));
-  const RigidBody<double>& cylinder =
-      plant.GetRigidBodyByName("Cylinder");
+  const RigidBody<double>& cylinder = plant.GetRigidBodyByName("Cylinder");
   EXPECT_EQ(cylinder.default_mass(), mass);
 
   // Verify the value of the inertial properties for the cylinder.
