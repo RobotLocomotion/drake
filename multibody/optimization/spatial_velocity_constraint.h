@@ -71,15 +71,14 @@ class SpatialVelocityConstraint final : public solvers::Constraint {
    * @throws std::exception if `plant_context` is nullptr.
    * @throws std::exception if invalid w_AC_bounds are provided.
    */
-  SpatialVelocityConstraint(const MultibodyPlant<AutoDiffXd>* plant,
-                            const Frame<AutoDiffXd>& frameA,
-                            const Eigen::Ref<const Eigen::Vector3d>& v_AC_lower,
-                            const Eigen::Ref<const Eigen::Vector3d>& v_AC_upper,
-                            const Frame<AutoDiffXd>& frameB,
-                            const Eigen::Ref<const Eigen::Vector3d>& p_BCo,
-                            systems::Context<AutoDiffXd>* plant_context,
-                            const std::optional<AngularVelocityBounds>&
-                                w_AC_bounds = std::nullopt);
+  SpatialVelocityConstraint(
+      const MultibodyPlant<AutoDiffXd>* plant, const Frame<AutoDiffXd>& frameA,
+      const Eigen::Ref<const Eigen::Vector3d>& v_AC_lower,
+      const Eigen::Ref<const Eigen::Vector3d>& v_AC_upper,
+      const Frame<AutoDiffXd>& frameB,
+      const Eigen::Ref<const Eigen::Vector3d>& p_BCo,
+      systems::Context<AutoDiffXd>* plant_context,
+      const std::optional<AngularVelocityBounds>& w_AC_bounds = std::nullopt);
 
   ~SpatialVelocityConstraint() final {}
 
