@@ -32,10 +32,10 @@ struct ExplicitErrorControlledIntegratorTest : public ::testing::Test {
   std::unique_ptr<analysis_test::MySpringMassSystem<double>> spring_mass;
   std::unique_ptr<Context<double>> context;
   std::unique_ptr<IntegratorBase<double>> integrator;
-  const double kDt = 1e-3;         // Integration step size.
+  const double kDt = 1e-3;        // Integration step size.
   const double kBigDt = 1e-1;     // Big integration step size.
   const double kSpringK = 300.0;  // N/m
-  const double kMass = 2.0;        // kg
+  const double kMass = 2.0;       // kg
 };
 
 TYPED_TEST_SUITE_P(ExplicitErrorControlledIntegratorTest);
@@ -57,8 +57,8 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrorEstSupport) {
   EXPECT_GE(this->integrator->get_error_estimate_order(), 1);
   EXPECT_EQ(this->integrator->supports_error_estimation(), true);
   DRAKE_EXPECT_NO_THROW(this->integrator->set_target_accuracy(1e-1));
-  DRAKE_EXPECT_NO_THROW(this->integrator->request_initial_step_size_target(
-      this->kDt));
+  DRAKE_EXPECT_NO_THROW(
+      this->integrator->request_initial_step_size_target(this->kDt));
 }
 
 // Verifies that the stepping works with relatively small
@@ -89,13 +89,16 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, Scaling) {
   this->integrator->Initialize();
 
   // Test scaling
-  EXPECT_EQ(this->integrator->get_mutable_generalized_state_weight_vector().
-            size(), 1);
-  EXPECT_EQ(this->integrator->get_mutable_generalized_state_weight_vector().
-            template lpNorm<Eigen::Infinity>(), 1);
+  EXPECT_EQ(
+      this->integrator->get_mutable_generalized_state_weight_vector().size(),
+      1);
+  EXPECT_EQ(this->integrator->get_mutable_generalized_state_weight_vector()
+                .template lpNorm<Eigen::Infinity>(),
+            1);
   EXPECT_EQ(this->integrator->get_misc_state_weight_vector().size(), 1);
-  EXPECT_EQ(this->integrator->get_mutable_misc_state_weight_vector().
-            template lpNorm<Eigen::Infinity>(), 1);
+  EXPECT_EQ(this->integrator->get_mutable_misc_state_weight_vector()
+                .template lpNorm<Eigen::Infinity>(),
+            1);
 }
 
 // Tests the ability to setup the integrator robustly (i.e., with minimal
@@ -109,9 +112,9 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, BulletProofSetup) {
 
   // Set the initial conditions.
   this->spring_mass->set_position(this->integrator->get_mutable_context(),
-                             initial_position);
+                                  initial_position);
   this->spring_mass->set_velocity(this->integrator->get_mutable_context(),
-                             initial_velocity);
+                                  initial_velocity);
 
   // Setup c1 and c2 for ODE constants.
   const double c1 = initial_position;
@@ -133,7 +136,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, BulletProofSetup) {
   this->integrator->set_maximum_step_size(this->kBigDt);
   this->integrator->request_initial_step_size_target(1e-10);
   EXPECT_THROW(this->integrator->Initialize(), std::logic_error);
-  this->integrator->request_initial_step_size_target(this->kBigDt*2.0);
+  this->integrator->request_initial_step_size_target(this->kBigDt * 2.0);
 
   // Set the accuracy to something too loose, set the maximum step size and
   // try again. Integrator should now silently adjust the target accuracy to
@@ -156,9 +159,8 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, BulletProofSetup) {
 
   // Check the solution. We're not really looking for accuracy here, just
   // want to make sure that the value is finite.
-  EXPECT_NEAR(
-      c1 * std::cos(omega * t_final) + c2 * std::sin(omega * t_final),
-      x_final, 1e0);
+  EXPECT_NEAR(c1 * std::cos(omega * t_final) + c2 * std::sin(omega * t_final),
+              x_final, 1e0);
 }
 
 // Tests the error estimation capabilities.
@@ -174,9 +176,9 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEstOrder) {
 
   // Set initial conditions.
   this->spring_mass->set_position(this->integrator->get_mutable_context(),
-                             initial_position);
+                                  initial_position);
   this->spring_mass->set_velocity(this->integrator->get_mutable_context(),
-                             initial_velocity);
+                                  initial_velocity);
 
   // Setup c1 and c2 for ODE constants.
   const double c1 = initial_position;
@@ -202,8 +204,8 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEstOrder) {
   const double x_true = c1 * std::cos(omega * h) + c2 * std::sin(omega * h);
 
   // Get the integrator's solution.
-  const double x_approx_h = this->context->get_continuous_state_vector().
-      GetAtIndex(0);
+  const double x_approx_h =
+      this->context->get_continuous_state_vector().GetAtIndex(0);
 
   // Get the error estimate and the error in the error estimate.
   const double err_est_h =
@@ -213,21 +215,21 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEstOrder) {
   // Compute the same solution using two half-steps.
   this->context->SetTime(0);
   this->spring_mass->set_position(this->integrator->get_mutable_context(),
-      initial_position);
+                                  initial_position);
   this->spring_mass->set_velocity(this->integrator->get_mutable_context(),
-      initial_velocity);
+                                  initial_velocity);
   this->integrator->Initialize();
-  ASSERT_TRUE(this->integrator->IntegrateWithSingleFixedStepToTime(
-      t_final / 2.0));
+  ASSERT_TRUE(
+      this->integrator->IntegrateWithSingleFixedStepToTime(t_final / 2.0));
   ASSERT_TRUE(this->integrator->IntegrateWithSingleFixedStepToTime(t_final));
   EXPECT_NEAR(this->context->get_time(), h,
               std::numeric_limits<double>::epsilon());
-  const double x_approx_2h_h = this->context->get_continuous_state_vector().
-      GetAtIndex(0);
+  const double x_approx_2h_h =
+      this->context->get_continuous_state_vector().GetAtIndex(0);
   const double err_est_2h_h =
       this->integrator->get_error_estimate()->get_vector().GetAtIndex(0);
-  const double err_est_2h_h_err = std::abs(err_est_2h_h -
-      (x_true - x_approx_2h_h));
+  const double err_est_2h_h_err =
+      std::abs(err_est_2h_h - (x_true - x_approx_2h_h));
 
   // Verify that the error in the error estimate dropped in accordance with the
   // order of the error estimator. Theory indicates that asymptotic error in
@@ -240,7 +242,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEstOrder) {
   const int err_est_order = this->integrator->get_error_estimate_order();
   EXPECT_LE(err_est_2h_h_err, K * err_est_h_err / std::pow(2.0, err_est_order));
   EXPECT_GE(K * err_est_2h_h_err,
-      err_est_h_err / std::pow(2.0, err_est_order + 1));
+            err_est_h_err / std::pow(2.0, err_est_order + 1));
 }
 
 // Integrate a purely continuous system with no sampling using error control.
@@ -264,9 +266,9 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, SpringMassStepEC) {
 
   // Set initial conditions.
   this->spring_mass->set_position(this->integrator->get_mutable_context(),
-                             initial_position);
+                                  initial_position);
   this->spring_mass->set_velocity(this->integrator->get_mutable_context(),
-                             initial_velocity);
+                                  initial_velocity);
 
   // Setup c1 and c2 for ODE constants.
   const double c1 = initial_position;
@@ -290,9 +292,8 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, SpringMassStepEC) {
   int fixed_steps = this->integrator->get_num_steps_taken();
 
   // Check the solution.
-  EXPECT_NEAR(
-      c1 * std::cos(omega * t_final) + c2 * std::sin(omega * t_final),
-      x_final, 1e-5);
+  EXPECT_NEAR(c1 * std::cos(omega * t_final) + c2 * std::sin(omega * t_final),
+              x_final, 1e-5);
 
   // Reset the integrator and set reasonable parameters for integration with
   // error control.
@@ -307,9 +308,9 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, SpringMassStepEC) {
   // Set initial conditions.
   this->integrator->get_mutable_context()->SetTime(0.);
   this->spring_mass->set_position(this->integrator->get_mutable_context(),
-                             initial_position);
+                                  initial_position);
   this->spring_mass->set_velocity(this->integrator->get_mutable_context(),
-                             initial_velocity);
+                                  initial_velocity);
 
   // Step for 1 second.
   do {
@@ -317,9 +318,8 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, SpringMassStepEC) {
   } while (this->context->get_time() < t_final);
 
   // Check the solution.
-  EXPECT_NEAR(
-      c1 * std::cos(omega * t_final) + c2 * std::sin(omega * t_final),
-      x_final, 1e-5);
+  EXPECT_NEAR(c1 * std::cos(omega * t_final) + c2 * std::sin(omega * t_final),
+              x_final, 1e-5);
 
   // Verify that integrator statistics are valid.
   EXPECT_GE(this->integrator->get_previous_integration_step_size(), 0.0);
@@ -350,9 +350,9 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, StepToCurrentTimeNoOp) {
 
   // Set initial conditions.
   this->spring_mass->set_position(this->integrator->get_mutable_context(),
-                             initial_position);
+                                  initial_position);
   this->spring_mass->set_velocity(this->integrator->get_mutable_context(),
-                             initial_velocity);
+                                  initial_velocity);
 
   // Integrate to one second.
   const double t_final = 1.0;
@@ -392,9 +392,9 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, MaxStepSizeRespected) {
   const double initial_position = 0;
   const double initial_velocity = 0;
   this->spring_mass->set_position(this->integrator->get_mutable_context(),
-                             initial_position);
+                                  initial_position);
   this->spring_mass->set_velocity(this->integrator->get_mutable_context(),
-                             initial_velocity);
+                                  initial_velocity);
 
   // Set reasonable parameters for integration with error control.
   const double max_step_size = 1e-2;
@@ -438,9 +438,9 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, IllegalFixedStep) {
   this->integrator->Initialize();
 
   ASSERT_EQ(this->context->get_time(), 0.0);
-  EXPECT_THROW(unused(
-      this->integrator->IntegrateWithSingleFixedStepToTime(1e-8)),
-          std::logic_error);
+  EXPECT_THROW(
+      unused(this->integrator->IntegrateWithSingleFixedStepToTime(1e-8)),
+      std::logic_error);
 }
 
 // Verifies statistics validity for error controlled integrator.
@@ -460,9 +460,9 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, CheckStat) {
   const double initial_position = 0.1;
   const double initial_velocity = 0.01;
   this->spring_mass->set_position(this->integrator->get_mutable_context(),
-                             initial_position);
+                                  initial_position);
   this->spring_mass->set_velocity(this->integrator->get_mutable_context(),
-                             initial_velocity);
+                                  initial_velocity);
 
   // Integrate just one step.
   const double t_final = this->context->get_time() + this->kDt;
@@ -470,8 +470,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, CheckStat) {
 
   // Verify that integrator statistics are valid.
   EXPECT_GE(this->integrator->get_previous_integration_step_size(), 0.0);
-  EXPECT_LE(this->integrator->get_previous_integration_step_size(),
-            this->kDt);
+  EXPECT_LE(this->integrator->get_previous_integration_step_size(), this->kDt);
   EXPECT_LE(this->integrator->get_smallest_adapted_step_size_taken(),
             this->kDt);
 }
@@ -493,9 +492,9 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, DenseOutput) {
   const double initial_position = 0.1;
   const double initial_velocity = 0.01;
   this->spring_mass->set_position(this->integrator->get_mutable_context(),
-                             initial_position);
+                                  initial_position);
   this->spring_mass->set_velocity(this->integrator->get_mutable_context(),
-                             initial_velocity);
+                                  initial_velocity);
 
   // Integrate and confirm that we had to shrink the steps.
   this->integrator->IntegrateWithMultipleStepsToTime(1.);
@@ -512,9 +511,11 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, DenseOutput) {
 }
 
 REGISTER_TYPED_TEST_SUITE_P(ExplicitErrorControlledIntegratorTest,
-    ReqInitialStepTarget, ContextAccess, ErrorEstSupport, MagDisparity, Scaling,
-    BulletProofSetup, ErrEstOrder, SpringMassStepEC, MaxStepSizeRespected,
-    IllegalFixedStep, CheckStat, DenseOutput, StepToCurrentTimeNoOp);
+                            ReqInitialStepTarget, ContextAccess,
+                            ErrorEstSupport, MagDisparity, Scaling,
+                            BulletProofSetup, ErrEstOrder, SpringMassStepEC,
+                            MaxStepSizeRespected, IllegalFixedStep, CheckStat,
+                            DenseOutput, StepToCurrentTimeNoOp);
 
 // T is the integrator type (e.g., RungeKutta3Integrator<double>).
 template <class T>
@@ -563,10 +564,11 @@ TYPED_TEST_P(PleidesTest, Pleides) {
   this->integrator->IntegrateWithMultipleStepsToTime(t_final);
 
   // Check the result.
-  const VectorX<double> q = this->context->get_continuous_state().
-    get_generalized_position().CopyToVector();
-  const VectorX<double> q_des = analysis::test::PleidesSystem::GetSolution(
-        this->context->get_time());
+  const VectorX<double> q = this->context->get_continuous_state()
+                                .get_generalized_position()
+                                .CopyToVector();
+  const VectorX<double> q_des =
+      analysis::test::PleidesSystem::GetSolution(this->context->get_time());
   for (int i = 0; i < q.size(); ++i)
     EXPECT_NEAR(q[i], q_des[i], kTolerance) << i;
 }

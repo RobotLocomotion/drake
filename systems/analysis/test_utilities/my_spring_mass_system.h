@@ -24,8 +24,8 @@ class MySpringMassSystem : public SpringMassSystem<T> {
     this->DeclareForcedPublishEvent(&MySpringMassSystem::CountPublishes);
 
     if (update_rate > 0.0) {
-      this->DeclarePeriodicDiscreteUpdateEvent(1.0 / update_rate, 0.0,
-          &MySpringMassSystem::CountDiscreteUpdates);
+      this->DeclarePeriodicDiscreteUpdateEvent(
+          1.0 / update_rate, 0.0, &MySpringMassSystem::CountDiscreteUpdates);
     }
   }
 

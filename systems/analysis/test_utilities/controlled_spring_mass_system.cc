@@ -12,9 +12,9 @@ namespace systems {
 
 template <typename T>
 PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
-    double spring_stiffness, double mass,
-    double Kp, double Ki, double Kd,
-    const T& target_position) : Diagram<T>() {
+    double spring_stiffness, double mass, double Kp, double Ki, double Kd,
+    const T& target_position)
+    : Diagram<T>() {
   DRAKE_ASSERT(spring_stiffness >= 0);
   DRAKE_ASSERT(mass >= 0);
   DRAKE_ASSERT(Kp >= 0);
@@ -23,8 +23,8 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
 
   DiagramBuilder<T> builder;
 
-  plant_ = builder.template
-      AddSystem<SpringMassSystem>(spring_stiffness, mass, true /* is forced */);
+  plant_ = builder.template AddSystem<SpringMassSystem>(spring_stiffness, mass,
+                                                        true /* is forced */);
   plant_->set_name("plant");
   controller_ = builder.template AddSystem<controllers::PidController>(
       VectorX<double>::Constant(1, Kp), VectorX<double>::Constant(1, Ki),
@@ -45,13 +45,10 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
   auto mux = builder.template AddSystem<Multiplexer>(2);
   mux->set_name("mux");
 
-  builder.Connect(plant_->get_output_port(),
-                  demux->get_input_port(0));
+  builder.Connect(plant_->get_output_port(), demux->get_input_port(0));
 
-  builder.Connect(demux->get_output_port(0),
-                  mux->get_input_port(0));
-  builder.Connect(demux->get_output_port(1),
-                  mux->get_input_port(1));
+  builder.Connect(demux->get_output_port(0), mux->get_input_port(0));
+  builder.Connect(demux->get_output_port(1), mux->get_input_port(1));
 
   // Connects the estimated state to PID.
   builder.Connect(mux->get_output_port(0),
@@ -96,24 +93,23 @@ T PidControlledSpringMassSystem<T>::get_conservative_work(
 }
 
 template <typename T>
-void PidControlledSpringMassSystem<T>::set_position(
-    Context<T>* context, const T& position) const {
+void PidControlledSpringMassSystem<T>::set_position(Context<T>* context,
+                                                    const T& position) const {
   Context<T>& plant_context =
       Diagram<T>::GetMutableSubsystemContext(*plant_, context);
   plant_->set_position(&plant_context, position);
 }
 
 template <typename T>
-void PidControlledSpringMassSystem<T>::set_velocity(
-    Context<T>* context, const T& velocity) const {
+void PidControlledSpringMassSystem<T>::set_velocity(Context<T>* context,
+                                                    const T& velocity) const {
   Context<T>& plant_context =
       Diagram<T>::GetMutableSubsystemContext(*plant_, context);
   plant_->set_velocity(&plant_context, velocity);
 }
 
 template <typename T>
-const SpringMassSystem<T>& PidControlledSpringMassSystem<T>::get_plant()
-const {
+const SpringMassSystem<T>& PidControlledSpringMassSystem<T>::get_plant() const {
   return *plant_;
 }
 

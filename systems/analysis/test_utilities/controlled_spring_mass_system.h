@@ -32,9 +32,8 @@ class PidControlledSpringMassSystem : public Diagram<T> {
   /// @param[in] Ki the integral constant.
   /// @param[in] Kd the derivative constant.
   /// @param[in] target_position the desired target position.
-  PidControlledSpringMassSystem(double spring_stiffness, double mass,
-                                double Kp, double Ki, double Kd,
-                                const T& target_position);
+  PidControlledSpringMassSystem(double spring_stiffness, double mass, double Kp,
+                                double Ki, double Kd, const T& target_position);
 
   ~PidControlledSpringMassSystem() override {}
 

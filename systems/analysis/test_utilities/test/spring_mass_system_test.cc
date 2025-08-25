@@ -148,9 +148,9 @@ TEST_F(SpringMassSystemTest, MapVelocityToConfigurationDerivative) {
   // vector.
   Subvector<double> configuration_derivatives(derivatives_, 0, 1);
 
-  system_->MapVelocityToQDot(
-      *context_, continuous_state.get_generalized_velocity(),
-      &configuration_derivatives);
+  system_->MapVelocityToQDot(*context_,
+                             continuous_state.get_generalized_velocity(),
+                             &configuration_derivatives);
 
   EXPECT_NEAR(3.4, derivatives_->get_position(), 1e-8);
   EXPECT_NEAR(3.4, configuration_derivatives.GetAtIndex(0), 1e-8);
@@ -270,14 +270,12 @@ MatrixX<double> CalcDxdotDx(const System<double>& system,
 }
 
 /* Explicit Euler (unstable): x1 = x0 + h xdot(t0,x0) */
-void StepExplicitEuler(
-    double h, const ContinuousState<double>& derivs,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    Context<double>& context) {
+void StepExplicitEuler(double h, const ContinuousState<double>& derivs,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       Context<double>& context) {
   const double t = context.get_time();
   // Invalidate all xc-dependent quantities.
-  VectorBase<double>& xc =
-      context.get_mutable_continuous_state_vector();
+  VectorBase<double>& xc = context.get_mutable_continuous_state_vector();
   const auto& dxc = derivs.get_vector();
   xc.PlusEqScaled(h, dxc);  // xc += h*dxc
   context.SetTime(t + h);
@@ -312,7 +310,7 @@ void StepSemiExplicitEuler(
   VectorBase<double>& xq = xc.get_mutable_generalized_position();
   auto& dxq = derivs.get_mutable_generalized_position();
   system.MapVelocityToQDot(context, xv, &dxq);  // qdot = N(q)*v
-  xq.PlusEqScaled(h, dxq);                       // xq += h*qdot
+  xq.PlusEqScaled(h, dxq);                      // xq += h*qdot
 }
 
 /* Implicit Euler (unconditionally stable): x1 = x0 + h xdot(t1,x1)
@@ -322,12 +320,11 @@ void StepSemiExplicitEuler(
     do: Solve J(x1) dx = err(x1)
         x1 = x1 - dx
     while (norm(dx)/norm(x0) > tol) */
-void StepImplicitEuler(
-    double h, const System<double>& system,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    ContinuousState<double>& derivs,  // in/out
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    Context<double>& context) {
+void StepImplicitEuler(double h, const System<double>& system,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       ContinuousState<double>& derivs,  // in/out
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       Context<double>& context) {
   const double t = context.get_time();
   ContinuousState<double>& xc = context.get_mutable_continuous_state();
 
