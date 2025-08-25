@@ -38,15 +38,14 @@ class JacoStatusSenderTestBase : public testing::Test {
 class JacoStatusSenderTest : public JacoStatusSenderTestBase {
  public:
   JacoStatusSenderTest()
-      : JacoStatusSenderTestBase(
-            kJacoDefaultArmNumJoints, kJacoDefaultArmNumFingers) {}
+      : JacoStatusSenderTestBase(kJacoDefaultArmNumJoints,
+                                 kJacoDefaultArmNumFingers) {}
 };
 
 class JacoStatusSenderNoFingersTest : public JacoStatusSenderTestBase {
  public:
   JacoStatusSenderNoFingersTest()
-      : JacoStatusSenderTestBase(
-            kJacoDefaultArmNumJoints, 0) {}
+      : JacoStatusSenderTestBase(kJacoDefaultArmNumJoints, 0) {}
 };
 
 const std::vector<double> ToStdVec(const Eigen::VectorXd& in) {

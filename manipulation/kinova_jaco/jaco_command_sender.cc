@@ -9,21 +9,19 @@ namespace kinova_jaco {
 using drake::systems::kVectorValued;
 
 JacoCommandSender::JacoCommandSender(int num_joints, int num_fingers)
-    : num_joints_(num_joints),
-      num_fingers_(num_fingers) {
-  position_input_ = &DeclareInputPort(
-      "position", kVectorValued, num_joints_ + num_fingers_);
-  velocity_input_ = &DeclareInputPort(
-      "velocity", kVectorValued, num_joints_ + num_fingers_);
+    : num_joints_(num_joints), num_fingers_(num_fingers) {
+  position_input_ =
+      &DeclareInputPort("position", kVectorValued, num_joints_ + num_fingers_);
+  velocity_input_ =
+      &DeclareInputPort("velocity", kVectorValued, num_joints_ + num_fingers_);
   time_input_ = &DeclareInputPort("time", kVectorValued, 1);
 
-  this->DeclareAbstractOutputPort(
-      "lcmt_jaco_command", &JacoCommandSender::CalcOutput);
+  this->DeclareAbstractOutputPort("lcmt_jaco_command",
+                                  &JacoCommandSender::CalcOutput);
 }
 
-void JacoCommandSender::CalcOutput(
-    const systems::Context<double>& context, lcmt_jaco_command* output) const {
-
+void JacoCommandSender::CalcOutput(const systems::Context<double>& context,
+                                   lcmt_jaco_command* output) const {
   if (time_input_->HasValue(context)) {
     output->utime = time_input_->Eval(context)[0] * 1e6;
   } else {
@@ -46,10 +44,8 @@ void JacoCommandSender::CalcOutput(
   }
 
   for (int i = 0; i < num_fingers_; ++i) {
-    output->finger_position[i] =
-        position(num_joints_ + i) * kFingerUrdfToSdk;
-    output->finger_velocity[i] =
-        velocity(num_joints_ + i) * kFingerUrdfToSdk;
+    output->finger_position[i] = position(num_joints_ + i) * kFingerUrdfToSdk;
+    output->finger_velocity[i] = velocity(num_joints_ + i) * kFingerUrdfToSdk;
   }
 }
 
