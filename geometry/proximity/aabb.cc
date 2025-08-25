@@ -51,13 +51,32 @@ bool Aabb::HasOverlap(const Aabb& aabb_G, const Obb& obb_H,
 
 bool Aabb::HasOverlap(const Aabb& bv_H, const math::RigidTransformd& X_CH) {
   /*
+                                   ▲ Hy
+                                   ┃
+                        By         ┃        Hx
+                        ▲           ━━━━━━━>
+                        ┃
+                    ┌───────────┐
+                    │           │
+           bv  ---> │     Bo    │
+                    │           │
+                    └───────────┘L
+                        ┃
+                        ▼            Cz
+                                     ^
+                                     ┃  Cx
+              ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┺━━━>┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+              ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Half space
+              ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 
+    This algorithm is borrowed from Obb::HasOverlap(Obb, RigidTransformd); refer
+    to it for details. The only difference is we know that the orientation of
+    the AABB is the Identity matrix. The rest stays the same:
 
     If any point in the bounding volume has a signed distance φ that is less
     than or equal to zero, we consider the box to be overlapping the half space.
     We could simply, yet inefficiently, determine this by iterating over all
     eight vertices and evaluating the signed distance for each vertex.
-
   */
 
   // The z-component of the position vector from box center (Bo) to the lowest

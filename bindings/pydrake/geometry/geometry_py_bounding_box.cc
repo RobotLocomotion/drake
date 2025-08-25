@@ -74,6 +74,12 @@ void DefineGeometryBoundingBox(py::module m) {
       py::arg("aabb_G"), py::arg("obb_H"), py::arg("X_GH"),
       doc.Aabb.HasOverlap.doc_aabb_obb);
 
+  aabb_cls.def_static("HasOverlap",
+      py::overload_cast<const Aabb&, const math::RigidTransformd&>(
+          &Aabb::HasOverlap),
+      py::arg("bv_H"), py::arg("X_CH"),
+      doc.Aabb.HasOverlap.doc_aabb_halfspace);
+
   // Obb static methods.
   obb_cls.def_static("HasOverlap",
       py::overload_cast<const Obb&, const Obb&, const math::RigidTransformd&>(
@@ -88,9 +94,9 @@ void DefineGeometryBoundingBox(py::module m) {
       doc.Obb.HasOverlap.doc_obb_aabb);
 
   obb_cls.def_static("HasOverlap",
-      py::overload_cast<const Obb&, const HalfSpace&,
+      py::overload_cast<const Obb&,
           const math::RigidTransformd&>(&Obb::HasOverlap),
-      py::arg("bv_H"), py::arg("hs_C"), py::arg("X_CH"),
+      py::arg("bv_H"), py::arg("X_CH"),
       doc.Obb.HasOverlap.doc_obb_halfspace);
 
   // AabbMaker and ObbMaker utility functions
