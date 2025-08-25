@@ -9,10 +9,10 @@ namespace drake {
 namespace schema {
 namespace {
 
-using Eigen::Vector3d;
 using drake::math::RollPitchYawd;
 using drake::yaml::LoadYamlString;
 using drake::yaml::SaveYamlString;
+using Eigen::Vector3d;
 
 GTEST_TEST(RotationTest, ConstructorDefault) {
   Rotation rotation;
