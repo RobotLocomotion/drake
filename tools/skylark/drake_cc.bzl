@@ -73,9 +73,7 @@ GCC_CC_TEST_FLAGS = [
 GCC_VERSION_SPECIFIC_FLAGS = {
     13: [
         "-Werror=pessimizing-move",
-        # TODO(#21337) Investigate and resolve what to do about these warnings
-        # long-term. Some seem like true positives (i.e., bugs in Drake).
-        "-Wno-uninitialized",
+        "-Werror=uninitialized",
         # This falsely dings code that returns const references, e.g., our
         # MbP style for "add element" or "find by name" member functions.
         "-Wno-dangling-reference",
