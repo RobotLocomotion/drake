@@ -243,16 +243,17 @@ class _State:
         self._done()
         return digest
 
-    def _download_file(self, name: str,
-                       archive_format: str = 'tarball') -> str:
+    def _download_archive_github(self, name: str, version: str) -> str:
         """
-        Downloads the specified file from the GitHub release. Returns the full
+        Downloads the source archive from the GitHub release. Returns the full
         path to the downloaded file.
         """
         self._begin('downloading', name)
 
         local_path = os.path.join(self._scratch.name, name)
-        assert self.release.archive(archive_format, local_path)
+        archive_url = f'https://github.com/{_GITHUB_REPO_OWNER}/' \
+            f'{_GITHUB_REPO_NAME}/archive/refs/tags/v{version}.tar.gz'
+        assert urllib.request.urlretrieve(archive_url, local_path)
 
         self._done()
         return local_path
@@ -272,7 +273,7 @@ class _State:
                 self._push_asset(a, bucket, f'{path}.sha{h}')
 
     def push_archive(self, name: str, bucket: str, path: str,
-                     archive_format: str = 'tarball') -> None:
+                     version: str) -> None:
         """
         Pushes the release source archive to S3 and GitHub, along with computed
         hashes.
@@ -280,7 +281,7 @@ class _State:
         If --dry-run was given, rather than actually pushing files, prints what
         would be done.
         """
-        local_path = self._download_file(name, archive_format)
+        local_path = self._download_archive_github(name, version)
         self._upload_file_s3(name, bucket, path, local_path)
         self._upload_file_github(name, local_path)
 
@@ -403,7 +404,7 @@ def _push_tar(state: _State) -> None:
         state.push_artifact(tar, _AWS_BUCKET, f'drake/release/{tar.name}')
 
     dest_name = f'drake-{version}-src.tar.gz'
-    state.push_archive(dest_name, _AWS_BUCKET, 'drake/release')
+    state.push_archive(dest_name, _AWS_BUCKET, 'drake/release', version)
 
 
 def _push_deb(state: _State) -> None:
