@@ -12,7 +12,8 @@ namespace drake {
 
 #if FMT_VERSION >= 80000 || defined(DRAKE_DOXYGEN_CXX)
 /** When using fmt >= 8, this is an alias for
-<a href="https://fmt.dev/latest/api.html#compile-time-format-string-checks">fmt::runtime</a>.
+<a
+href="https://fmt.dev/latest/api.html#compile-time-format-string-checks">fmt::runtime</a>.
 When using fmt < 8, this is a no-op. */
 inline auto fmt_runtime(std::string_view s) {
   return fmt::runtime(s);
@@ -40,7 +41,6 @@ std::string fmt_floating_point(T x) {
   }
   return result;
 }
-
 
 /** Returns `fmt::("{:?}", x)`, i.e, using fmt's "debug string format"; see
 https://fmt.dev docs for the '?' presentation type for details. We provide this
@@ -152,7 +152,9 @@ Drake drops support for earlier version of fmt. */
   template <TEMPLATE_ARGS>                                                     \
   struct Converter<NAMESPACE::TYPE> {                                          \
     using InputType = NAMESPACE::TYPE;                                         \
-    static auto call(const InputType& ARG) { return EXPR; }                    \
+    static auto call(const InputType& ARG) {                                   \
+      return EXPR;                                                             \
+    }                                                                          \
   };                                                                           \
                                                                                \
   /* Provides the fmt::formatter<TYPE> implementation. */                      \

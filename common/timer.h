@@ -61,5 +61,4 @@ class ManualTimer final : public Timer {
   double tick_{};
 };
 
-
 }  // namespace drake

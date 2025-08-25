@@ -15,6 +15,7 @@
 #endif
 
 // Check for the expected HAVE_SPDLOG value.
+// clang-format off
 #if TEXT_LOGGING_TEST_SPDLOG
   #ifndef HAVE_SPDLOG
     #error Missing HAVE_SPDLOG.
@@ -24,6 +25,7 @@
     #error Unwanted HAVE_SPDLOG.
   #endif
 #endif
+// clang-format on
 
 #ifdef HAVE_SPDLOG
 #include <spdlog/sinks/dist_sink.h>
@@ -36,7 +38,8 @@ namespace {
 
 class Streamable {
   [[maybe_unused]]  // If we don't have spdlog, this function is dead code.
-  friend std::ostream& operator<<(std::ostream& os, const Streamable& c) {
+  friend std::ostream&
+  operator<<(std::ostream& os, const Streamable& c) {
     return os << "OK";
   }
 };
@@ -69,21 +72,21 @@ GTEST_TEST(TextLoggingTest, ZZZ_ChangeDefaultSink) {
   drake::logging::sink* const sink_base = drake::logging::get_dist_sink();
   ASSERT_NE(sink_base, nullptr);
 
-  // The remainder of the test case only makes sense when spdlog is enabled.
-  #if TEXT_LOGGING_TEST_SPDLOG
-    // Our API promises that the result always has this subtype.
-    auto* const sink = dynamic_cast<spdlog::sinks::dist_sink_mt*>(sink_base);
-    ASSERT_NE(sink, nullptr);
+// The remainder of the test case only makes sense when spdlog is enabled.
+#if TEXT_LOGGING_TEST_SPDLOG
+  // Our API promises that the result always has this subtype.
+  auto* const sink = dynamic_cast<spdlog::sinks::dist_sink_mt*>(sink_base);
+  ASSERT_NE(sink, nullptr);
 
-    // Redirect all logs to a memory stream.
-    std::ostringstream messages;
-    auto custom_sink = std::make_shared<spdlog::sinks::ostream_sink_st>(
-        messages, true /* flush */);
-    sink->set_sinks({custom_sink});
-    drake::log()->info("This is some good info!");
-    EXPECT_THAT(messages.str(), testing::EndsWith(
-        "[console] [info] This is some good info!\n"));
-  #endif
+  // Redirect all logs to a memory stream.
+  std::ostringstream messages;
+  auto custom_sink = std::make_shared<spdlog::sinks::ostream_sink_st>(
+      messages, true /* flush */);
+  sink->set_sinks({custom_sink});
+  drake::log()->info("This is some good info!");
+  EXPECT_THAT(messages.str(),
+              testing::EndsWith("[console] [info] This is some good info!\n"));
+#endif
 }
 
 }  // namespace

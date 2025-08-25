@@ -115,7 +115,7 @@ class reset_on_copy {
   /// The source argument is otherwise ignored.
   reset_on_copy& operator=(const reset_on_copy& source) noexcept(
       std::is_nothrow_destructible_v<T> &&
-          std::is_nothrow_default_constructible_v<T>) {
+      std::is_nothrow_default_constructible_v<T>) {
     if (this != &source) destruct_and_reset_value();
     return *this;
   }
@@ -124,8 +124,8 @@ class reset_on_copy {
   /// value initializes the source.
   reset_on_copy(reset_on_copy&& source) noexcept(
       std::is_nothrow_move_constructible_v<T> &&
-          std::is_nothrow_destructible_v<T> &&
-          std::is_nothrow_default_constructible_v<T>)
+      std::is_nothrow_destructible_v<T> &&
+      std::is_nothrow_default_constructible_v<T>)
       : value_(std::move(source.value_)) {
     source.destruct_and_reset_value();
   }
@@ -135,8 +135,8 @@ class reset_on_copy {
   /// The source argument is otherwise ignored.
   reset_on_copy& operator=(reset_on_copy&& source) noexcept(
       std::is_nothrow_move_assignable_v<T> &&
-          std::is_nothrow_destructible_v<T> &&
-          std::is_nothrow_default_constructible_v<T>) {
+      std::is_nothrow_destructible_v<T> &&
+      std::is_nothrow_default_constructible_v<T>) {
     if (this != &source) {
       value_ = std::move(source);
       source.destruct_and_reset_value();
