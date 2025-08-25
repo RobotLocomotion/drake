@@ -11,10 +11,10 @@ namespace multibody {
 namespace benchmarks {
 namespace free_body {
 
+using Eigen::Quaterniond;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
-using Eigen::Quaterniond;
 
 std::tuple<Quaterniond, Vector3d, Vector3d>
 FreeBody::CalculateExactRotationalSolutionABInitiallyAligned(
