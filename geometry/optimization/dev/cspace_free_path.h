@@ -141,8 +141,7 @@ class CspaceFreePath {
     return map_geometries_to_separating_planes_;
   }
 
-  [[nodiscard]] const std::vector<
-      CSpaceSeparatingPlane<symbolic::Variable>>&
+  [[nodiscard]] const std::vector<CSpaceSeparatingPlane<symbolic::Variable>>&
   separating_planes() const {
     return separating_planes_;
   }
