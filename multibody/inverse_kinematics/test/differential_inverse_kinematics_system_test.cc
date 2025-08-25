@@ -301,7 +301,7 @@ TEST_F(DifferentialInverseKinematicsTest, Structure) {
   recipe->AddIngredient(
       std::make_unique<DiffIk::CartesianVelocityLimitConstraint>(
           DiffIk::CartesianVelocityLimitConstraint::Config{
-            .V_next_TG_limit = Vector6d::Zero()}));
+              .V_next_TG_limit = Vector6d::Zero()}));
   DiffIk dut = MakeDiffIk(std::move(recipe));
 
   // Port check.
