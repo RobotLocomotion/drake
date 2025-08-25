@@ -35,20 +35,21 @@ namespace internal {
 // @tparam S the type of the system to convert.
 // @tparam Callback  the type of the callback.
 template <typename ToScalar, template <typename> class S, typename Callback>
-::testing::AssertionResult is_convertible_to(
-     const S<double>& dut, Callback callback) {
+::testing::AssertionResult is_convertible_to(const S<double>& dut,
+                                             Callback callback) {
   using Traits = typename scalar_conversion::Traits<S>;
   if constexpr (Traits::template supported<ToScalar, double>::value) {
     // Check if a proper type came out; return early if not.
     std::unique_ptr<System<ToScalar>> converted =
         dut.template ToScalarTypeMaybe<ToScalar>();
     ::testing::AssertionResult result =
-          is_dynamic_castable<S<ToScalar>>(converted);
-    if (!result) { return result; }
+        is_dynamic_castable<S<ToScalar>>(converted);
+    if (!result) {
+      return result;
+    }
 
     // Allow calling code to specify additional tests on the converted System.
-    const S<ToScalar>& downcast =
-        dynamic_cast<const S<ToScalar>&>(*converted);
+    const S<ToScalar>& downcast = dynamic_cast<const S<ToScalar>&>(*converted);
     callback(downcast);
 
     return ::testing::AssertionSuccess();
@@ -69,8 +70,8 @@ template <typename ToScalar, template <typename> class S, typename Callback>
 /// `const S<AutoDiffXd>&` and return void; a typical value would be a lambda
 /// such as `[](const auto& converted) { EXPECT_TRUE(converted.thing()); }`.
 template <template <typename> class S, typename Callback>
-::testing::AssertionResult is_autodiffxd_convertible(
-     const S<double>& dut, Callback callback) {
+::testing::AssertionResult is_autodiffxd_convertible(const S<double>& dut,
+                                                     Callback callback) {
   return internal::is_convertible_to<AutoDiffXd>(dut, callback);
 }
 
@@ -78,7 +79,7 @@ template <template <typename> class S, typename Callback>
 /// converted to use AutoDiffXd as its scalar type.
 template <template <typename> class S>
 ::testing::AssertionResult is_autodiffxd_convertible(const S<double>& dut) {
-  return is_autodiffxd_convertible(dut, [](const auto&){});
+  return is_autodiffxd_convertible(dut, [](const auto&) {});
 }
 
 /// Tests whether the given device under test of type S<double> can be
@@ -88,8 +89,8 @@ template <template <typename> class S>
 /// `const S<Expression>&` and return void; a typical value would be a lambda
 /// such as `[](const auto& converted) { EXPECT_TRUE(converted.thing()); }`.
 template <template <typename> class S, typename Callback>
-::testing::AssertionResult is_symbolic_convertible(
-     const S<double>& dut, Callback callback) {
+::testing::AssertionResult is_symbolic_convertible(const S<double>& dut,
+                                                   Callback callback) {
   return internal::is_convertible_to<symbolic::Expression>(dut, callback);
 }
 
@@ -97,7 +98,7 @@ template <template <typename> class S, typename Callback>
 /// converted to use Expression as its scalar type.
 template <template <typename> class S>
 ::testing::AssertionResult is_symbolic_convertible(const S<double>& dut) {
-  return is_symbolic_convertible(dut, [](const auto&){});
+  return is_symbolic_convertible(dut, [](const auto&) {});
 }
 
 }  // namespace systems

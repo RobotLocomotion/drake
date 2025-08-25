@@ -34,7 +34,7 @@ class MyVector : public BasicVector<T> {
   /// Constructs a MyVector where each element is constructed using the
   /// placewise-corresponding member of @p args as the sole constructor
   /// argument.  For instance: `MyVector<2, double>::Make(1.1, 2.2)`.
-  template<typename... Fargs>
+  template <typename... Fargs>
   static std::unique_ptr<MyVector> Make(Fargs&&... args) {
     static_assert(sizeof...(args) == N,
                   "The number of arguments must match the MyVector size");
@@ -61,9 +61,7 @@ class MyVector : public BasicVector<T> {
  private:
   // BasicVector's Clone() method handles copying the values; DoClone() is
   // only supposed to allocate a vector of the right concrete type and size.
-  [[nodiscard]] MyVector* DoClone() const override {
-    return new MyVector();
-  }
+  [[nodiscard]] MyVector* DoClone() const override { return new MyVector(); }
 };
 
 using MyVector1d = MyVector<double, 1>;
