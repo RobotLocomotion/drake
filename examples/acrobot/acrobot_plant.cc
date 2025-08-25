@@ -10,8 +10,8 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/sensors/rotary_encoders.h"
 
-using std::sin;
 using std::cos;
+using std::sin;
 
 namespace drake {
 namespace examples {
@@ -53,7 +53,7 @@ void AcrobotPlant<T>::SetMitAcrobotParameters(
 
 template <typename T>
 Matrix2<T> AcrobotPlant<T>::MassMatrix(
-    const systems::Context<T> &context) const {
+    const systems::Context<T>& context) const {
   const AcrobotState<T>& state = get_state(context);
   const AcrobotParams<T>& p = get_parameters(context);
   const T c2 = cos(state.theta2());
@@ -63,15 +63,13 @@ Matrix2<T> AcrobotPlant<T>::MassMatrix(
 
   const T m12 = I2 + m2l1lc2 * c2;
   Matrix2<T> M;
-  M << I1 + I2 + p.m2() * p.l1() * p.l1() + 2 * m2l1lc2 * c2, m12, m12,
-      I2;
+  M << I1 + I2 + p.m2() * p.l1() * p.l1() + 2 * m2l1lc2 * c2, m12, m12, I2;
   return M;
 }
 
 template <typename T>
-Vector2<T> AcrobotPlant<T>::DynamicsBiasTerm(const systems::Context<T> &
-context)
-const {
+Vector2<T> AcrobotPlant<T>::DynamicsBiasTerm(
+    const systems::Context<T>& context) const {
   const AcrobotState<T>& state = get_state(context);
   const AcrobotParams<T>& p = get_parameters(context);
 
@@ -82,12 +80,12 @@ const {
   Vector2<T> bias;
   // C(q,v)*v terms.
   bias << -2 * m2l1lc2 * s2 * state.theta2dot() * state.theta1dot() +
-           -m2l1lc2 * s2 * state.theta2dot() * state.theta2dot(),
+              -m2l1lc2 * s2 * state.theta2dot() * state.theta2dot(),
       m2l1lc2 * s2 * state.theta1dot() * state.theta1dot();
 
   // -τ_g(q) terms.
   bias(0) += p.gravity() * p.m1() * p.lc1() * s1 +
-          p.gravity() * p.m2() * (p.l1() * s1 + p.lc2() * s12);
+             p.gravity() * p.m2() * (p.l1() * s1 + p.lc2() * s12);
   bias(1) += p.gravity() * p.m2() * p.lc2() * s12;
 
   // Damping terms.
@@ -110,8 +108,7 @@ void AcrobotPlant<T>::DoCalcTimeDerivatives(
   const Vector2<T> B(0, 1);  // input matrix
 
   Vector4<T> xdot;
-  xdot << state.theta1dot(), state.theta2dot(),
-          M.inverse() * (B * tau - bias);
+  xdot << state.theta1dot(), state.theta2dot(), M.inverse() * (B * tau - bias);
   derivatives->SetFromVector(xdot);
 }
 
@@ -133,8 +130,8 @@ void AcrobotPlant<T>::DoCalcImplicitTimeDerivativesResidual(
       proposed_derivatives.get_generalized_velocity().CopyToVector();
 
   *residual << proposed_qdot[0] - state.theta1dot(),
-               proposed_qdot[1] - state.theta2dot(),
-               M * proposed_vdot - (B * tau - bias);
+      proposed_qdot[1] - state.theta2dot(),
+      M * proposed_vdot - (B * tau - bias);
 }
 
 template <typename T>

@@ -36,7 +36,7 @@ GTEST_TEST(QuadrotorPlantTest, ToSymbolic) {
   VectorX<Expression> derivatives =
       plant_sym->EvalTimeDerivatives(*context_sym).CopyToVector();
   for (int i = 0; i < 6; ++i) {
-    EXPECT_EQ(derivatives[i], x[i+6]);
+    EXPECT_EQ(derivatives[i], x[i + 6]);
   }
 }
 

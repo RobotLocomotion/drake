@@ -26,8 +26,8 @@ GTEST_TEST(MultibodyDynamicsTest, AllTests) {
     auto context_mbp = mbp.CreateDefaultContext();
     auto context_p = p.CreateDefaultContext();
 
-    auto& u_mbp = mbp.get_actuation_input_port().FixValue(context_mbp.get(),
-                                                          0.0);
+    auto& u_mbp =
+        mbp.get_actuation_input_port().FixValue(context_mbp.get(), 0.0);
     auto& u_p = p.get_input_port(0).FixValue(context_p.get(), 0.0);
 
     Eigen::Vector4d x;
