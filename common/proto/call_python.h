@@ -75,9 +75,7 @@ class PythonApi {
 
  private:
   // Provides type-cast view for CRTP implementation.
-  const Derived& derived() const {
-    return static_cast<const Derived&>(*this);
-  }
+  const Derived& derived() const { return static_cast<const Derived&>(*this); }
 };
 
 }  // namespace internal
@@ -109,8 +107,7 @@ class PythonAttrPolicy {
                                   const KeyType& key) {
     return CallPython("getattr", obj, key);
   }
-  static PythonRemoteVariable set(PythonRemoteVariable obj,
-                                  const KeyType& key,
+  static PythonRemoteVariable set(PythonRemoteVariable obj, const KeyType& key,
                                   PythonRemoteVariable value) {
     return CallPython("setattr", obj, key, value);
   }
@@ -124,8 +121,7 @@ class PythonItemPolicy {
                                   const KeyType& key) {
     return CallPython("getitem", obj, key);
   }
-  static PythonRemoteVariable set(PythonRemoteVariable obj,
-                                  const KeyType& key,
+  static PythonRemoteVariable set(PythonRemoteVariable obj, const KeyType& key,
                                   PythonRemoteVariable value) {
     return CallPython("setitem", obj, key, value);
   }
@@ -200,18 +196,15 @@ PythonItemAccessor PythonApi<Derived>::slice(Types... args) const {
   return {derived(), CallPython("make_slice_arg", args...)};
 }
 
-void ToPythonRemoteData(const PythonRemoteVariable&,
-                        lcmt_call_python_data*);
+void ToPythonRemoteData(const PythonRemoteVariable&, lcmt_call_python_data*);
 
 template <typename Derived>
 void ToPythonRemoteData(const Eigen::MatrixBase<Derived>&,
                         lcmt_call_python_data*);
 
-void ToPythonRemoteData(double scalar,
-                        lcmt_call_python_data*);
+void ToPythonRemoteData(double scalar, lcmt_call_python_data*);
 
-void ToPythonRemoteData(int scalar,
-                        lcmt_call_python_data*);
+void ToPythonRemoteData(int scalar, lcmt_call_python_data*);
 
 void ToPythonRemoteData(const std::string&, lcmt_call_python_data*);
 
@@ -236,8 +229,7 @@ inline void AssembleRemoteMessage(lcmt_call_python*) {
 }
 
 template <typename T, typename... Types>
-void AssembleRemoteMessage(lcmt_call_python* message, T first,
-                           Types... args) {
+void AssembleRemoteMessage(lcmt_call_python* message, T first, Types... args) {
   message->rhs.emplace_back();
   ToPythonRemoteData(first, &(message->rhs.back()));
   AssembleRemoteMessage(message, args...);

@@ -21,8 +21,7 @@ namespace common {
 static int py_globally_unique_id = 0;
 
 PythonRemoteVariable::PythonRemoteVariable()
-    : unique_id_(py_globally_unique_id++)
-{}
+    : unique_id_(py_globally_unique_id++) {}
 
 namespace internal {
 
@@ -93,9 +92,8 @@ void ToPythonRemoteDataMatrix(const Eigen::Ref<const Eigen::MatrixXd>& mat,
   CopyBytes(mat.data(), num_bytes, message);
 }
 
-void ToPythonRemoteDataMatrix(
-    const Eigen::Ref<const Eigen::MatrixXi>& mat,
-    lcmt_call_python_data* message, bool is_vector) {
+void ToPythonRemoteDataMatrix(const Eigen::Ref<const Eigen::MatrixXi>& mat,
+                              lcmt_call_python_data* message, bool is_vector) {
   message->data_type = lcmt_call_python_data::INT;
   message->shape_type =
       is_vector ? lcmt_call_python_data::VECTOR : lcmt_call_python_data::MATRIX;
@@ -115,8 +113,8 @@ std::ofstream* InitOutput(const std::optional<std::string>& filename) {
   static never_destroyed<std::unique_ptr<std::ofstream>> raw_output;
   if (!raw_output.access()) {
     // If we do not yet have a file, create it.
-    const std::string filename_default
-        = GetRpcPipeTempDirectory() + "/python_rpc";
+    const std::string filename_default =
+        GetRpcPipeTempDirectory() + "/python_rpc";
     const std::string filename_actual = filename ? *filename : filename_default;
     raw_output.access() = std::make_unique<std::ofstream>(filename_actual);
   } else {
