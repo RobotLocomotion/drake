@@ -75,12 +75,18 @@ GCC_VERSION_SPECIFIC_FLAGS = {
         "-Werror=pessimizing-move",
         # TODO(#21337) Investigate and resolve what to do about these warnings
         # long-term. Some seem like true positives (i.e., bugs in Drake).
-        "-Wno-array-bounds",
-        "-Wno-dangling-reference",
-        "-Wno-maybe-uninitialized",
-        "-Wno-stringop-overflow",
-        "-Wno-stringop-overread",
         "-Wno-uninitialized",
+        # This falsely dings code that returns const references, e.g., our
+        # MbP style for "add element" or "find by name" member functions.
+        "-Wno-dangling-reference",
+        # This falsely dings code inside Eigen.
+        "-Wno-maybe-uninitialized",
+        # This falsely dings code inside libstdc++.
+        "-Wno-stringop-overflow",
+        # These two falsely ding initializing an Eigen::Vector1d or Matrix1d.
+        # Eigen uses 16-byte alignment, which these flags doesn't account for.
+        "-Wno-array-bounds",
+        "-Wno-stringop-overread",
     ],
 }
 
