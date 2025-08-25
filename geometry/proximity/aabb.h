@@ -126,6 +126,9 @@ class Aabb {
   static bool HasOverlap(const Aabb& aabb_G, const Obb& obb_H,
                          const math::RigidTransformd& X_GH);
 
+  // An specialization for Halfspace
+  static bool HasOverlap(const Aabb& bv_H, const math::RigidTransformd& X_CH);
+
   // TODO(SeanCurtis-TRI): Support collision with primitives as appropriate
   //  (see obb.h for an example).
 
