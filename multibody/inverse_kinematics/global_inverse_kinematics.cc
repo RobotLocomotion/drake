@@ -164,8 +164,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
               static_cast<const WeldJoint<double>*>(joint);
 
           const RigidTransformd X_JpJc = weld_joint->X_FM();
-          const RigidTransformd X_PC =
-              X_PJp * X_JpJc * X_CJc.inverse();
+          const RigidTransformd X_PC = X_PJp * X_JpJc * X_CJc.inverse();
           // Fixed to the parent body.
 
           // The position can be computed from the parent body pose.
@@ -404,10 +403,9 @@ GlobalInverseKinematics::AddWorldPositionConstraint(
 
 solvers::Binding<solvers::LinearConstraint>
 GlobalInverseKinematics::AddWorldRelativePositionConstraint(
-    BodyIndex body_idx_B, const Eigen::Vector3d& p_BQ,
-    BodyIndex body_idx_A, const Eigen::Vector3d& p_AP,
-    const Eigen::Vector3d& box_lb_F, const Eigen::Vector3d& box_ub_F,
-    const RigidTransformd& X_WF) {
+    BodyIndex body_idx_B, const Eigen::Vector3d& p_BQ, BodyIndex body_idx_A,
+    const Eigen::Vector3d& p_AP, const Eigen::Vector3d& box_lb_F,
+    const Eigen::Vector3d& box_ub_F, const RigidTransformd& X_WF) {
   if (body_idx_B >= plant_.num_bodies() || body_idx_B <= 0) {
     throw std::runtime_error("body index out of range.");
   }

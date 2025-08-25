@@ -392,8 +392,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const MultibodyPlant<double>& robot,
     const systems::Context<double>& context,
-    const Vector6<double>& V_WE_desired,
-    const Frame<double>& frame_E,
+    const Vector6<double>& V_WE_desired, const Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
 /**
@@ -418,8 +417,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const MultibodyPlant<double>& robot,
     const systems::Context<double>& context,
-    const Vector6<double>& V_AE_desired,
-    const Frame<double>& frame_A,
+    const Vector6<double>& V_AE_desired, const Frame<double>& frame_A,
     const Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
@@ -471,8 +469,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const MultibodyPlant<double>& robot,
     const systems::Context<double>& context,
     const math::RigidTransform<double>& X_AE_desired,
-    const Frame<double>& frame_A,
-    const Frame<double>& frame_E,
+    const Frame<double>& frame_A, const Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
 #ifndef DRAKE_DOXYGEN_CXX
@@ -484,8 +481,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const Matrix6X<double>>& J_WE_W,
     const SpatialVelocity<double>& V_WE_desired,
     const DifferentialInverseKinematicsParameters& parameters,
-    const std::optional<Eigen::Ref<const MatrixX<double>>>& N =
-        std::nullopt,
+    const std::optional<Eigen::Ref<const MatrixX<double>>>& N = std::nullopt,
     const std::optional<Eigen::Ref<const MatrixX<double>>>& Nplus =
         std::nullopt);
 }  // namespace internal
