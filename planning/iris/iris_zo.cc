@@ -472,8 +472,9 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
           if (hyperplanes_added == options.sampled_iris_options
                                        .max_separating_planes_per_iteration &&
               options.sampled_iris_options.max_separating_planes_per_iteration >
-                  0)
+                  0) {
             break;
+          }
 
           particle_is_redundant.at(i) = true;
 

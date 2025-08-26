@@ -6594,10 +6594,11 @@ struct AddMultibodyPlantSceneGraphResult final {
   // Provided to support C++'s structured binding.
   template <std::size_t N>
   decltype(auto) get() const {
-    if constexpr (N == 0)
+    if constexpr (N == 0) {
       return plant;
-    else if constexpr (N == 1)
+    } else if constexpr (N == 1) {
       return scene_graph;
+    }
   }
 #endif
 

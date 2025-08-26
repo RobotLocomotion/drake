@@ -108,10 +108,11 @@ DEFINE_bool(
     "server.");
 
 static bool valid_render_engine(const char* flagname, const std::string& val) {
-  if (val == "vtk")
+  if (val == "vtk") {
     return true;
-  else if (val == "client")
+  } else if (val == "client") {
     return true;
+  }
   drake::log()->error("Invalid value for {}: '{}'; options: 'client' or 'vtk'.",
                       flagname, val);
   return false;

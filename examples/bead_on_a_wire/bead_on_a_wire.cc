@@ -137,10 +137,11 @@ Eigen::VectorXd BeadOnAWire<T>::CalcVelocityChangeFromConstraintImpulses(
 
   // The bead on the wire is unit mass, so the velocity change is equal to
   // simply Jᵀλ
-  if (coordinate_type_ == kAbsoluteCoordinates)
+  if (coordinate_type_ == kAbsoluteCoordinates) {
     return J.transpose() * lambda;
-  else
+  } else {
     return Eigen::Matrix<T, 1, 1>(0);
+  }
 }
 
 template <class T>

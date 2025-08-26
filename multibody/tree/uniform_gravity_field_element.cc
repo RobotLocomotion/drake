@@ -30,10 +30,11 @@ void UniformGravityFieldElement<T>::set_enabled(
   if (model_instance >= this->get_parent_tree().num_model_instances()) {
     throw std::logic_error("Model instance index is invalid.");
   }
-  if (is_enabled)
+  if (is_enabled) {
     disabled_model_instances_.erase(model_instance);
-  else
+  } else {
     disabled_model_instances_.insert(model_instance);
+  }
 }
 
 template <typename T>

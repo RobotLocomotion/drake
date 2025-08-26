@@ -38,9 +38,10 @@ PositionConstraint::PositionConstraint(
   if (plant == nullptr) {
     throw std::invalid_argument("PositionConstraint(): plant is nullptr.");
   }
-  if (plant_context == nullptr)
+  if (plant_context == nullptr) {
     throw std::invalid_argument(
         "PositionConstraint(): plant_context is nullptr.");
+  }
 }
 
 PositionConstraint::PositionConstraint(
