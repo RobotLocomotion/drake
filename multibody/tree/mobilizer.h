@@ -432,6 +432,7 @@ class Mobilizer : public MultibodyElement<T> {
   // velocity V_FM. (Not virtual)
   SpatialVelocity<T> GetSpatialVelocity(
       const systems::Context<T>& context) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     const Eigen::VectorBlock<const VectorX<T>> all_v =
         this->get_parent_tree().get_velocities(context);
     const Eigen::Ref<const VectorX<T>> my_v = get_velocities_from_array(all_v);
@@ -689,6 +690,7 @@ class Mobilizer : public MultibodyElement<T> {
   // @pre @p q_array is of size MultibodyTree::num_positions().
   Eigen::Ref<const VectorX<T>> get_positions_from_array(
       const Eigen::Ref<const VectorX<T>>& q_array) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     DRAKE_DEMAND(q_array.size() == this->get_parent_tree().num_positions());
     return q_array.segment(position_start_in_q(), num_positions());
   }
@@ -696,6 +698,7 @@ class Mobilizer : public MultibodyElement<T> {
   // Mutable version of get_positions_from_array().
   Eigen::Ref<VectorX<T>> get_mutable_positions_from_array(
       EigenPtr<VectorX<T>> q_array) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     DRAKE_DEMAND(q_array != nullptr);
     DRAKE_DEMAND(q_array->size() == this->get_parent_tree().num_positions());
     return q_array->segment(position_start_in_q(), num_positions());
@@ -707,6 +710,7 @@ class Mobilizer : public MultibodyElement<T> {
   // @pre @p v_array is of size MultibodyTree::num_velocities().
   Eigen::Ref<const VectorX<T>> get_velocities_from_array(
       const Eigen::Ref<const VectorX<T>>& v_array) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     DRAKE_DEMAND(v_array.size() == this->get_parent_tree().num_velocities());
     return v_array.segment(velocity_start_in_v(), num_velocities());
   }
@@ -714,6 +718,7 @@ class Mobilizer : public MultibodyElement<T> {
   // Mutable version of get_velocities_from_array().
   Eigen::Ref<VectorX<T>> get_mutable_velocities_from_array(
       EigenPtr<VectorX<T>> v_array) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     DRAKE_DEMAND(v_array != nullptr);
     DRAKE_DEMAND(v_array->size() == this->get_parent_tree().num_velocities());
     return v_array->segment(velocity_start_in_v(), num_velocities());
@@ -771,6 +776,7 @@ class Mobilizer : public MultibodyElement<T> {
   // Lock the mobilizer. Its generalized velocities will be 0 until it is
   // unlocked.
   void Lock(systems::Context<T>* context) const {
+    DRAKE_THROW_UNLESS(this->has_parent_tree());
     // Joint locking is only supported for discrete mode.
     context->get_mutable_abstract_parameter(is_locked_parameter_index_)
         .set_value(true);

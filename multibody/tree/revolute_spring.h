@@ -42,6 +42,9 @@ class RevoluteSpring final : public ForceElement<T> {
 
   ~RevoluteSpring() override;
 
+  /// Returns the joint associated with this spring.
+  /// @throws std::exception if this element is not associated with a
+  ///   MultibodyPlant.
   const RevoluteJoint<T>& joint() const;
 
   DRAKE_DEPRECATED("2025-09-01",
