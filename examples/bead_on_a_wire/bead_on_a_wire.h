@@ -134,8 +134,8 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// @throws std::exception if f or inv_f is a nullptr (the functions must
   ///         always be set).
   void reset_wire_parameter_functions(
-        std::function<Eigen::Matrix<ArcLength, 3, 1>(const ArcLength&)> f,
-        std::function<ArcLength(const Eigen::Matrix<ArcLength, 3, 1>&)> inv_f) {
+      std::function<Eigen::Matrix<ArcLength, 3, 1>(const ArcLength&)> f,
+      std::function<ArcLength(const Eigen::Matrix<ArcLength, 3, 1>&)> inv_f) {
     if (!f || !inv_f) throw std::logic_error("Function must be non-null.");
     f_ = f;
     inv_f_ = inv_f;
@@ -148,11 +148,11 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// f(s) = | sin(s) |
   ///        | s      |
   /// </pre>
-  static Eigen::Matrix<ArcLength, 3, 1> helix_function(const ArcLength &s);
+  static Eigen::Matrix<ArcLength, 3, 1> helix_function(const ArcLength& s);
 
   /// Inverse parametric function for the bead on a wire system that uses the
   /// helix parametric example function.
-  static ArcLength inverse_helix_function(const Vector3<ArcLength> &v);
+  static ArcLength inverse_helix_function(const Vector3<ArcLength>& v);
 
   /// Gets the output from the parametric function in Vector3d form.
   /// @param m the output from the parametric wire function.

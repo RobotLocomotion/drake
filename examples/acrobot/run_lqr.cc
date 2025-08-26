@@ -22,8 +22,7 @@ namespace {
 // Note: See also examples/multibody/acrobot for an almost identical test
 // using the MultibodyPlant version of the Acrobot dynamics.
 
-DEFINE_double(simulation_sec, 10.0,
-              "Number of seconds to simulate.");
+DEFINE_double(simulation_sec, 10.0, "Number of seconds to simulate.");
 DEFINE_double(realtime_factor, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
@@ -33,8 +32,8 @@ int do_main() {
   auto acrobot = builder.AddSystem<AcrobotPlant>();
   acrobot->set_name("acrobot");
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
-  AcrobotGeometry::AddToBuilder(
-      &builder, acrobot->get_output_port(0), scene_graph);
+  AcrobotGeometry::AddToBuilder(&builder, acrobot->get_output_port(0),
+                                scene_graph);
   geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph);
 
   auto controller = builder.AddSystem(BalancingLQRController(*acrobot));

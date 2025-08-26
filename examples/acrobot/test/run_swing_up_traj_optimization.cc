@@ -69,8 +69,8 @@ int do_main() {
   dircol.AddRunningCost((R * u) * u);
 
   const double timespan_init = 4;
-  auto traj_init_x = PiecewisePolynomialType::FirstOrderHold(
-      {0, timespan_init}, {x0, xG});
+  auto traj_init_x =
+      PiecewisePolynomialType::FirstOrderHold({0, timespan_init}, {x0, xG});
   dircol.SetInitialTrajectory(PiecewisePolynomialType(), traj_init_x);
 
   solvers::SnoptSolver solver;
