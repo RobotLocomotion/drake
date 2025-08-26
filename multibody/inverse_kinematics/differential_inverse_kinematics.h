@@ -48,7 +48,8 @@ Vector6<double> ComputePoseDiffInCommonFrame(
     const math::RigidTransform<double>& X_C1);
 
 /**
- * Contains parameters for differential inverse kinematics.
+ * Contains parameters for the family of differential inverse kinematics
+ * function overloads below, each named DoDifferentialInverseKinematics().
  */
 class DifferentialInverseKinematicsParameters {
  public:
@@ -357,6 +358,12 @@ class DifferentialInverseKinematicsParameters {
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
  *
+ * @note There is a newer framework-based formulation for differential inverse
+ * kinematics: DifferentialInverseKinematicsSystem. This implementation has been
+ * shown to be more effective for real-world robots. Furthermore, its
+ * architecture is more flexible, allowing for more customization of the cost
+ * and constraint functions.
+ *
  * @ingroup planning_kinematics
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
@@ -387,6 +394,12 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
  *
+ * @note There is a newer framework-based formulation for differential inverse
+ * kinematics: DifferentialInverseKinematicsSystem. This implementation has been
+ * shown to be more effective for real-world robots. Furthermore, its
+ * architecture is more flexible, allowing for more customization of the cost
+ * and constraint functions.
+ *
  * @ingroup planning_kinematics
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
@@ -411,6 +424,12 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * constants.
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
+ *
+ * @note There is a newer framework-based formulation for differential inverse
+ * kinematics: DifferentialInverseKinematicsSystem. This implementation has been
+ * shown to be more effective for real-world robots. Furthermore, its
+ * architecture is more flexible, allowing for more customization of the cost
+ * and constraint functions.
  *
  * @ingroup planning_kinematics
  */
@@ -437,6 +456,12 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
  *
+ * @note There is a newer framework-based formulation for differential inverse
+ * kinematics: DifferentialInverseKinematicsSystem. This implementation has been
+ * shown to be more effective for real-world robots. Furthermore, its
+ * architecture is more flexible, allowing for more customization of the cost
+ * and constraint functions.
+ *
  * @ingroup planning_kinematics
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
@@ -462,6 +487,12 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * constants.
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
+ *
+ * @note There is a newer framework-based formulation for differential inverse
+ * kinematics: DifferentialInverseKinematicsSystem. This implementation has been
+ * shown to be more effective for real-world robots. Furthermore, its
+ * architecture is more flexible, allowing for more customization of the cost
+ * and constraint functions.
  *
  * @ingroup planning_kinematics
  */
