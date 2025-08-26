@@ -12,17 +12,17 @@ namespace drake {
 namespace examples {
 namespace ball_plate {
 
-using geometry::AddContactMaterial;
+using Eigen::Vector3d;
 using geometry::AddCompliantHydroelasticProperties;
+using geometry::AddContactMaterial;
 using geometry::ProximityProperties;
 using geometry::Sphere;
+using math::RigidTransformd;
+using math::RotationMatrixd;
 using multibody::CoulombFriction;
 using multibody::MultibodyPlant;
 using multibody::RigidBody;
 using multibody::SpatialInertia;
-using math::RigidTransformd;
-using math::RotationMatrixd;
-using Eigen::Vector3d;
 
 namespace {
 
@@ -43,8 +43,8 @@ void AddTinyVisualCylinders(const RigidBody<double>& ball, double radius,
   // aligned with p_SC, with Cx and Cy arbitrary.
   // @return X_SC the pose of the spot cylinder given p_SC.
   auto spot_pose = [](const Vector3<double>& p_SC) {
-    return RigidTransformd(
-        RotationMatrixd::MakeFromOneVector(p_SC, 2 /*z*/), p_SC);
+    return RigidTransformd(RotationMatrixd::MakeFromOneVector(p_SC, 2 /*z*/),
+                           p_SC);
   };
   plant->RegisterVisualGeometry(ball, spot_pose({radial_offset, 0., 0.}), spot,
                                 "sphere_x+", red);
@@ -62,10 +62,11 @@ void AddTinyVisualCylinders(const RigidBody<double>& ball, double radius,
 
 }  // namespace
 
-void AddBallPlateBodies(
-    double radius, double mass, double hydroelastic_modulus,
-    double dissipation, const CoulombFriction<double>& surface_friction,
-    double resolution_hint_factor, MultibodyPlant<double>* plant) {
+void AddBallPlateBodies(double radius, double mass, double hydroelastic_modulus,
+                        double dissipation,
+                        const CoulombFriction<double>& surface_friction,
+                        double resolution_hint_factor,
+                        MultibodyPlant<double>* plant) {
   DRAKE_DEMAND(plant != nullptr);
 
   // Add the ball. Let B be the ball's frame (at its center). The ball's
