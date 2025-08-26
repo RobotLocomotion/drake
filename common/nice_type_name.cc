@@ -54,47 +54,47 @@ string NiceTypeName::Canonicalize(const string& demangled) {
   using SPairList = std::initializer_list<SPair>;
   // These are applied in this order.
   static const never_destroyed<std::vector<SPair>> subs{SPairList{
-    // Remove unwanted keywords and following space. (\b is word boundary.)
-    SPair(std::regex("\\b(class|struct|enum|union) "), ""),
-    // Tidy up anonymous namespace.
-    SPair(std::regex("[`(]anonymous namespace[')]"), "(anonymous)"),
-    // Replace Microsoft __int64 with long long.
-    SPair(std::regex("\\b__int64\\b"), "long long"),
-    // Temporarily replace spaces we want to keep with "!". (\w is
-    // alphanumeric or underscore.)
-    SPair(std::regex("(\\w) (\\w)"), "$1!$2"),
-    SPair(std::regex(" "), ""),  // Delete unwanted spaces.
-    // Some compilers throw in extra namespaces like "__1" or "__cxx11".
-    // Delete them.
-    SPair(std::regex("\\b__[[:alnum:]_]+::"), ""),
-    SPair(std::regex("!"), " "),  // Restore wanted spaces.
+      // Remove unwanted keywords and following space. (\b is word boundary.)
+      SPair(std::regex("\\b(class|struct|enum|union) "), ""),
+      // Tidy up anonymous namespace.
+      SPair(std::regex("[`(]anonymous namespace[')]"), "(anonymous)"),
+      // Replace Microsoft __int64 with long long.
+      SPair(std::regex("\\b__int64\\b"), "long long"),
+      // Temporarily replace spaces we want to keep with "!". (\w is
+      // alphanumeric or underscore.)
+      SPair(std::regex("(\\w) (\\w)"), "$1!$2"),
+      SPair(std::regex(" "), ""),  // Delete unwanted spaces.
+      // Some compilers throw in extra namespaces like "__1" or "__cxx11".
+      // Delete them.
+      SPair(std::regex("\\b__[[:alnum:]_]+::"), ""),
+      SPair(std::regex("!"), " "),  // Restore wanted spaces.
 
-    // Recognize std::string's full name and abbreviate.
-    SPair(std::regex("\\bstd::basic_string<char,std::char_traits<char>,"
-                     "std::allocator<char>>"),
-          "std::string"),
+      // Recognize std::string's full name and abbreviate.
+      SPair(std::regex("\\bstd::basic_string<char,std::char_traits<char>,"
+                       "std::allocator<char>>"),
+            "std::string"),
 
-    // Recognize Eigen types ...
-    // ... square matrices ...
-    SPair(std::regex("\\bEigen::Matrix<([^,<>]*),(-?\\d+),\\2,0,\\2,\\2>"),
-          "drake::Matrix$2<$1>"),
-    // ... vectors ...
-    SPair(std::regex("\\bEigen::Matrix<([^,<>]*),(-?\\d+),1,0,\\2,1>"),
-          "drake::Vector$2<$1>"),
-    // ... dynamic-size is "X" not "-1" ...
-    SPair(std::regex("drake::(Matrix|Vector)-1<"), "drake::$1X<"),
-    // ... for double, float, and int, prefer native Eigen spellings ...
-    SPair(std::regex("drake::(Vector|Matrix)(X|\\d+)"
-                     "<((d)ouble|(f)loat|(i)nt)>"),
-          "Eigen::$1$2$4$5$6"),
-    // ... AutoDiff.
-    SPair(std::regex("Eigen::AutoDiffScalar<Eigen::VectorXd>"),
-          "drake::AutoDiffXd"),
+      // Recognize Eigen types ...
+      // ... square matrices ...
+      SPair(std::regex("\\bEigen::Matrix<([^,<>]*),(-?\\d+),\\2,0,\\2,\\2>"),
+            "drake::Matrix$2<$1>"),
+      // ... vectors ...
+      SPair(std::regex("\\bEigen::Matrix<([^,<>]*),(-?\\d+),1,0,\\2,1>"),
+            "drake::Vector$2<$1>"),
+      // ... dynamic-size is "X" not "-1" ...
+      SPair(std::regex("drake::(Matrix|Vector)-1<"), "drake::$1X<"),
+      // ... for double, float, and int, prefer native Eigen spellings ...
+      SPair(std::regex("drake::(Vector|Matrix)(X|\\d+)"
+                       "<((d)ouble|(f)loat|(i)nt)>"),
+            "Eigen::$1$2$4$5$6"),
+      // ... AutoDiff.
+      SPair(std::regex("Eigen::AutoDiffScalar<Eigen::VectorXd>"),
+            "drake::AutoDiffXd"),
 
-    // Recognize Identifier ...
-    // Change e.g., "drake::Identifier<drake::package::FooTag>" to
-    // "drake::package::FooId".
-    SPair(std::regex("\\bdrake::Identifier<([^>]*)Tag>"), "$1Id"),
+      // Recognize Identifier ...
+      // Change e.g., "drake::Identifier<drake::package::FooTag>" to
+      // "drake::package::FooId".
+      SPair(std::regex("\\bdrake::Identifier<([^>]*)Tag>"), "$1Id"),
   }};
 
   string canonical(demangled);

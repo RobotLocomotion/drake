@@ -83,7 +83,7 @@ void OldCalc(double data) {
   return NewCalc(data);
 }
 </pre> */
-class[[maybe_unused]] WarnDeprecated {
+class [[maybe_unused]] WarnDeprecated {
  public:
   /* The removal_date must be in the form YYYY-MM-DD. */
   WarnDeprecated(std::string_view removal_date, std::string_view message);
