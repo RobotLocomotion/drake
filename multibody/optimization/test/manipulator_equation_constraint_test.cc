@@ -145,13 +145,12 @@ class TwoFreeSpheresTest : public ::testing::Test {
         dt_autodiff;
     AutoDiffVecXd y_autodiff;
     manipulator_equation_binding.evaluator()->Eval(x_autodiff, &y_autodiff);
-    EXPECT_TRUE(CompareMatrices(
-        math::ExtractValue(y_autodiff),
-        math::ExtractValue(y_autodiff_expected), 100 * kEps));
-    EXPECT_TRUE(CompareMatrices(
-        math::ExtractGradient(y_autodiff),
-        math::ExtractGradient(y_autodiff_expected),
-        100 * kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_autodiff),
+                                math::ExtractValue(y_autodiff_expected),
+                                100 * kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_autodiff),
+                                math::ExtractGradient(y_autodiff_expected),
+                                100 * kEps));
 
     // Use a std::function instead of auto eval_fun as a lambda. This is
     // explained in ComputeNumericalGradient.
