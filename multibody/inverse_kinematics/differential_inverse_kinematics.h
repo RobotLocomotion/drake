@@ -357,6 +357,12 @@ class DifferentialInverseKinematicsParameters {
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
  *
+ * @note The newer framework-based formulation,
+ * DifferentialInverseKinematicsSystem, is preferred over this family of
+ * stand-alone functions. We recommend pivoting your workflow to using the
+ * system. There is no specific timeline for deprecating and removing these
+ * functions, but it will inevitably happen.
+ *
  * @ingroup planning_kinematics
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
@@ -387,6 +393,12 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
  *
+ * @note The newer framework-based formulation,
+ * DifferentialInverseKinematicsSystem, is preferred over this family of
+ * stand-alone functions. We recommend pivoting your workflow to using the
+ * system. There is no specific timeline for deprecating and removing these
+ * functions, but it will inevitably happen.
+ *
  * @ingroup planning_kinematics
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
@@ -411,6 +423,12 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * constants.
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
+ *
+ * @note The newer framework-based formulation,
+ * DifferentialInverseKinematicsSystem, is preferred over this family of
+ * stand-alone functions. We recommend pivoting your workflow to using the
+ * system. There is no specific timeline for deprecating and removing these
+ * functions, but it will inevitably happen.
  *
  * @ingroup planning_kinematics
  */
@@ -437,6 +455,12 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
  *
+ * @note The newer framework-based formulation,
+ * DifferentialInverseKinematicsSystem, is preferred over this family of
+ * stand-alone functions. We recommend pivoting your workflow to using the
+ * system. There is no specific timeline for deprecating and removing these
+ * functions, but it will inevitably happen.
+ *
  * @ingroup planning_kinematics
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
@@ -462,6 +486,12 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * constants.
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
+ *
+ * @note The newer framework-based formulation,
+ * DifferentialInverseKinematicsSystem, is preferred over this family of
+ * stand-alone functions. We recommend pivoting your workflow to using the
+ * system. There is no specific timeline for deprecating and removing these
+ * functions, but it will inevitably happen.
  *
  * @ingroup planning_kinematics
  */
