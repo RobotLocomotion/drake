@@ -27,14 +27,11 @@ class DiscontinuousSpringMassDamperSystem final
 
   DiscontinuousSpringMassDamperSystem(double spring_constant_N_per_m,
                                       double damping_constant_Ns_per_m,
-                                      double mass_kg,
-                                      double constant_force)
+                                      double mass_kg, double constant_force)
       : SpringMassDamperSystem<T>(
             SystemTypeTag<DiscontinuousSpringMassDamperSystem>{},
-            spring_constant_N_per_m,
-            damping_constant_Ns_per_m,
-            mass_kg),
-      constant_force_(constant_force) {
+            spring_constant_N_per_m, damping_constant_Ns_per_m, mass_kg),
+        constant_force_(constant_force) {
     DRAKE_ASSERT(constant_force >= 0.0);
   }
 
@@ -43,17 +40,15 @@ class DiscontinuousSpringMassDamperSystem final
   explicit DiscontinuousSpringMassDamperSystem(
       const DiscontinuousSpringMassDamperSystem<U>& other)
       : DiscontinuousSpringMassDamperSystem(
-            other.get_spring_constant(),
-            other.get_damping_constant(),
-            other.get_mass(),
-            other.get_constant_force()) {}
+            other.get_spring_constant(), other.get_damping_constant(),
+            other.get_mass(), other.get_constant_force()) {}
 
   /// Gets the magnitude of the constant force acting on the system.
   double get_constant_force() const { return constant_force_; }
 
  protected:
-  void DoCalcTimeDerivatives(const Context <T>& context,
-                             ContinuousState <T>* derivatives) const override {
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const override {
     // Get the current state of the spring.
     const ContinuousState<T>& state = context.get_continuous_state();
 
@@ -69,8 +64,9 @@ class DiscontinuousSpringMassDamperSystem final
     const double b = this->get_damping_constant();
     const T x0 = 0;
     const T x = state[0];
-    if (x <= x0)
+    if (x <= x0) {
       force -= k * (x - x0) + b * v;
+    }
 
     // Second element of the derivative is spring acceleration.
     (*derivatives)[1] = force / this->get_mass();
