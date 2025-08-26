@@ -52,8 +52,8 @@ class SpatialVector {
 
   /// Sizes for spatial quantities and its components in 3D (three dimensions).
   enum {
-    kSpatialVectorSize = 6,
-    kRotationSize = 3,
+    kSpatialVectorSize = 6,  // BR
+    kRotationSize = 3,       //
     kTranslationSize = 3
   };
 
@@ -64,9 +64,7 @@ class SpatialVector {
   /// constructed spatial vector are uninitialized (for speed).  In Debug
   /// builds, the 6 elements are set to NaN so that invalid operations on an
   /// uninitialized spatial vector fail fast (fast bug detection).
-  SpatialVector() {
-    DRAKE_ASSERT_VOID(SetNaN());
-  }
+  SpatialVector() { DRAKE_ASSERT_VOID(SetNaN()); }
 
   /// Constructs a spatial vector from a rotational component w and a
   /// translational component v.
@@ -123,16 +121,14 @@ class SpatialVector {
   const Vector3<T>& translational() const {
     // We are counting on a particular representation for an Eigen Vector3<T>:
     // it must be represented exactly as 3 T's in an array with no metadata.
-    return *reinterpret_cast<const Vector3<T>*>(
-        V_.data() + kRotationSize);
+    return *reinterpret_cast<const Vector3<T>*>(V_.data() + kRotationSize);
   }
 
   /// Mutable access to the translational component of this spatial vector.
   Vector3<T>& translational() {
     // We are counting on a particular representation for an Eigen Vector3<T>:
     // it must be represented exactly as 3 T's in an array with no metadata.
-    return *reinterpret_cast<Vector3<T>*>(
-        V_.data() + kRotationSize);
+    return *reinterpret_cast<Vector3<T>*>(V_.data() + kRotationSize);
   }
 
   /// Returns a (const) bare pointer to the underlying data. It is guaranteed
@@ -203,7 +199,7 @@ class SpatialVector {
   /// of invalid computations that can be tracked back to their source.
   void SetNaN() {
     V_.setConstant(std::numeric_limits<
-        typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
+                   typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
   }
 
   /// Sets both the rotational and translational components of `this`
@@ -214,15 +210,13 @@ class SpatialVector {
   }
 
   /// Returns a mutable reference to the underlying storage.
-  CoeffsEigenType& get_coeffs() { return V_;}
+  CoeffsEigenType& get_coeffs() { return V_; }
 
   /// Returns a constant reference to the underlying storage.
-  const CoeffsEigenType& get_coeffs() const { return V_;}
+  const CoeffsEigenType& get_coeffs() const { return V_; }
 
   /// Unary minus operator.
-  SpatialQuantity operator-() const {
-    return SpatialQuantity(-get_coeffs());
-  }
+  SpatialQuantity operator-() const { return SpatialQuantity(-get_coeffs()); }
 
   /// Addition assignment operator.
   SpatialQuantity& operator+=(const SpatialQuantity& V) {
@@ -286,16 +280,14 @@ class SpatialVector {
   ///   V_F.rotational()    = R_FE * V_E.rotational(),
   ///   V_F.translational() = R_FE * V_E.translational()
   /// </pre>
-  friend SpatialQuantity operator*(
-      const math::RotationMatrix<T>& R_FE, const SpatialQuantity& V_E) {
+  friend SpatialQuantity operator*(const math::RotationMatrix<T>& R_FE,
+                                   const SpatialQuantity& V_E) {
     return SpatialQuantity(R_FE * V_E.rotational(), R_FE * V_E.translational());
   }
 
   /// Factory to create a _zero_ spatial vector, i.e., a %SpatialVector whose
   /// rotational and translational components are both zero.
-  static SpatialQuantity Zero() {
-    return SpatialQuantity{}.SetZero();
-  }
+  static SpatialQuantity Zero() { return SpatialQuantity{}.SetZero(); }
 
  private:
   // Helper method to return a mutable reference to the derived spatial
