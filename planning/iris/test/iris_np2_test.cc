@@ -451,6 +451,49 @@ TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
   }
 }
 
+// Test that we can grow regions along a parameterized subspace that is not
+// full-dimensional when we have additional constraints.
+TEST_F(ConvexConfigurationSubspace,
+       FunctionParameterizationWithAdditionalConstraint) {
+  IrisNp2Options options;
+  auto scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
+
+  auto parameterization_double = [](const Vector1d& config) -> Vector2d {
+    return Vector2d{config[0], 2 * config[0] + 1};
+  };
+  auto parameterization_autodiff =
+      [](const Vector1<AutoDiffXd>& config) -> Vector2<AutoDiffXd> {
+    return Vector2<AutoDiffXd>{config[0], 2 * config[0] + 1};
+  };
+
+  solvers::MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(1, "x");
+  prog.AddLinearConstraint(Vector1d(1.0),
+                           -std::numeric_limits<float>::infinity(), -0.25, x);
+  options.sampled_iris_options.prog_with_additional_constraints = &prog;
+
+  options.parameterization = IrisParameterizationFunction(
+      parameterization_double, parameterization_autodiff,
+      /* parameterization_is_threadsafe */ true,
+      /* parameterization_dimension */ 1);
+
+  HPolyhedron region =
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
+
+  Vector1d query_point_in(-0.3);
+  Vector1d query_point_out(-0.2);
+
+  EXPECT_TRUE(region.PointInSet(query_point_in));
+  EXPECT_FALSE(region.PointInSet(query_point_out));
+
+  // Verify that query_point_out is still collision free. (It just violates the
+  // added constraint.)
+  EXPECT_TRUE(scene_graph_checker->CheckConfigCollisionFree(
+      parameterization_double(query_point_out)));
+}
+
 // Verify that we throw a reasonable error when the initial point is in
 // collision, and when the initial point violates an additional constraint.
 TEST_F(ConvexConfigurationSpaceWithThreadsafeConstraint, BadInitialEllipsoid) {
