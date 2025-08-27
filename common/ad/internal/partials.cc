@@ -71,6 +71,16 @@ void Partials::AddScaled(double scale, const Partials& other) {
 
   ThrowIfDifferentSize(other);
 
+  // Special case: if all coefficients are no-ops, we don't need any multiplies.
+  if (coeff_ == 1.0 && other.coeff_ == 1.0 && scale == 1.0) {
+    double* this_data = storage_.data();
+    const double* const other_data = other.storage_.data();
+    for (int i = 0; i < storage_.size(); ++i) {
+      this_data[i] += other_data[i];
+    }
+    return;
+  }
+
   // We use a linear combination and end up with a new coeff of 1.0.
   double* this_data = storage_.data();
   const double* const other_data = other.storage_.data();
