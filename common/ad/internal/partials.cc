@@ -74,9 +74,9 @@ void Partials::AddScaled(double scale, const Partials& other) {
   // We use a linear combination and end up with a new coeff of 1.0.
   double* this_data = storage_.data();
   const double* const other_data = other.storage_.data();
+  const double other_coeff_scaled = (scale * other.coeff_);
   for (int i = 0; i < storage_.size(); ++i) {
-    this_data[i] =
-        coeff_ * this_data[i] + (scale * other.coeff_) * other_data[i];
+    this_data[i] = coeff_ * this_data[i] + other_coeff_scaled * other_data[i];
   }
   coeff_ = 1.0;
 }
