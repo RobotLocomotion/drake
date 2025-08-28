@@ -1415,7 +1415,8 @@ std::optional<LinkInfo> AddRigidLinkFromSpecification(
 
   // Set the initial pose of the free body (only use if the body is indeed
   // floating).
-  plant->SetDefaultFreeBodyPose(body, X_WL);
+  if (!X_WL.IsExactlyIdentity())
+    plant->SetDefaultFreeBodyPose(body, X_WL);
 
   const std::set<std::string> supported_geometry_elements{
       "box",       "capsule", "cylinder", "drake:capsule", "drake:ellipsoid",
