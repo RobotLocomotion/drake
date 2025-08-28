@@ -4,7 +4,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/multibody/rational/rational_forward_kinematics_internal.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/prismatic_mobilizer.h"
 #include "drake/multibody/tree/revolute_mobilizer.h"
 #include "drake/multibody/tree/weld_mobilizer.h"
@@ -61,15 +60,22 @@ RationalForwardKinematics::RationalForwardKinematics(
     : plant_(*plant) {
   DRAKE_DEMAND(plant != nullptr);
   const internal::MultibodyTree<double>& tree = GetInternalTree(plant_);
+  const internal::SpanningForest& forest = tree.forest();
   // Initialize map_mobilizer_to_s_index_ to -1, where -1 indicates "no s
   // variable".
   map_mobilizer_to_s_index_ = std::vector<int>(tree.num_mobilizers(), -1);
   for (BodyIndex body_index(1); body_index < plant_.num_bodies();
        ++body_index) {
-    const internal::RigidBodyTopology& rigid_body_topology =
-        tree.get_topology().get_rigid_body(body_index);
+    // Note: we're assuming a 1:1 correspondence between bodies and mobilizers.
+    // This won't work if there are merged link composites since multiple
+    // bodies will map to the same mobilizer.
+    const internal::MobodIndex mobod_index =
+        forest.link_by_index(body_index).mobod_index();
+    const internal::SpanningForest::Mobod& mobod = forest.mobods(mobod_index);
+    // Confirm that there is only one body following this Mobod.
+    DRAKE_DEMAND(ssize(mobod.follower_link_ordinals()) == 1);
     const internal::Mobilizer<double>* mobilizer =
-        &(tree.get_mobilizer(rigid_body_topology.inboard_mobilizer));
+        &(tree.get_mobilizer(mobod_index));
     if (IsRevolute(*mobilizer)) {
       const symbolic::Variable s_angle(fmt::format("s[{}]", s_.size()));
       s_.push_back(s_angle);
@@ -227,9 +233,9 @@ RationalForwardKinematics::CalcChildBodyPoseAsMultilinearPolynomial(
   // X_M'C' = X_PF.inverse()
   const internal::MultibodyTree<double>& tree = GetInternalTree(plant_);
   const internal::RigidBodyTopology& parent_topology =
-      tree.get_topology().get_rigid_body(parent);
+      tree.get_topology().get_rigid_body_topology(parent);
   const internal::RigidBodyTopology& child_topology =
-      tree.get_topology().get_rigid_body(child);
+      tree.get_topology().get_rigid_body_topology(child);
   internal::MobodIndex mobilizer_index;
   bool is_order_reversed{};
   if (parent_topology.parent_body.is_valid() &&

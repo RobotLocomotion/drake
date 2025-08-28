@@ -222,6 +222,7 @@ void ApplySimulatorConfig(const SimulatorConfig& config,
   if (!integrator.get_fixed_step_mode()) {
     integrator.set_target_accuracy(config.accuracy);
   }
+  simulator->get_mutable_context().SetTime(config.start_time);
   simulator->set_target_realtime_rate(config.target_realtime_rate);
   // It is almost always the case we want these two next flags to be either both
   // true or both false. Otherwise we could miss the first publish at t = 0.
@@ -246,6 +247,7 @@ SimulatorConfig ExtractSimulatorConfig(const Simulator<T>& simulator) {
     result.use_error_control = false;
     result.accuracy = 0.0;
   }
+  result.start_time = ExtractDoubleOrThrow(simulator.get_context().get_time());
   result.target_realtime_rate =
       ExtractDoubleOrThrow(simulator.get_target_realtime_rate());
   result.publish_every_time_step = simulator.get_publish_every_time_step();
@@ -277,13 +279,25 @@ std::unique_ptr<IntegratorBase<T>> CreateIntegratorFromConfig(
       fmt::format("Unknown integration scheme: {}", config.integration_scheme));
 }
 
+template <typename T>
+bool IsScalarTypeSupportedByIntegrator(std::string_view integration_scheme) {
+  const auto& name_func_pairs = GetAllNamedConfigureIntegratorFuncs<T>();
+  for (const auto& [one_name, one_func] : name_func_pairs) {
+    if (integration_scheme == one_name) {
+      return one_func != nullptr;
+    }
+  }
+  throw std::runtime_error(
+      fmt::format("Unknown integration scheme: {}", integration_scheme));
+}
+
 // We can't support T=symbolic::Expression because Simulator doesn't support it.
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&ResetIntegratorFromFlags<T>, &ApplySimulatorConfig<T>,
      &ExtractSimulatorConfig<T>));
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (&CreateIntegratorFromConfig<T>));
+    (&CreateIntegratorFromConfig<T>, &IsScalarTypeSupportedByIntegrator<T>));
 
 }  // namespace systems
 }  // namespace drake

@@ -295,8 +295,8 @@ def aliases(
 _NORMAL_DEPENDENCIES = {
     "": {
         _COMMON_CONDITION: {
-            "cfg-if": Label("@crate__cfg-if-1.0.0//:cfg_if"),
-            "clarabel": Label("@crate__clarabel-0.10.0//:clarabel"),
+            "cfg-if": Label("@crate__cfg-if-1.0.1//:cfg_if"),
+            "clarabel": Label("@crate__clarabel-0.11.1//:clarabel"),
         },
     },
 }

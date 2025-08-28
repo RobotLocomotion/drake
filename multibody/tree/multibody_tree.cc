@@ -6,7 +6,6 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
@@ -20,8 +19,10 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/body_node_world.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
+#include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/quaternion_floating_mobilizer.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/rpy_floating_joint.h"
 #include "drake/multibody/tree/rpy_floating_mobilizer.h"
@@ -164,7 +165,7 @@ void MultibodyTree<T>::RemoveJointActuator(const JointActuator<T>& actuator) {
   actuator.HasThisParentTreeOrThrow(this);
   JointActuatorIndex actuator_index = actuator.index();
   actuators_.Remove(actuator_index);
-  topology_.RemoveJointActuator(actuator_index);
+  topology_.RemoveJointActuatorTopology(actuator_index);
 }
 
 template <typename T>
@@ -556,13 +557,9 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBodyImpl(
 
   DRAKE_DEMAND(body->model_instance().is_valid());
 
-  BodyIndex body_index(0);
-  FrameIndex body_frame_index(0);
-  std::tie(body_index, body_frame_index) = topology_.add_rigid_body();
-  // These tests MUST be performed BEFORE `rigid_bodies_` and `frames_` are
-  // changed, below. Do not move them around!
-  DRAKE_DEMAND(body_index == num_bodies());
-  DRAKE_DEMAND(body_frame_index == num_frames());
+  const BodyIndex body_index(num_bodies());
+  const FrameIndex body_frame_index(num_frames());
+  topology_.add_rigid_body_topology(body_index, body_frame_index);
 
   if (body_index == 0) {
     // We're adding the first RigidBody -- must be World!
@@ -751,12 +748,19 @@ template <typename T>
 void MultibodyTree<T>::CreateJointImplementations() {
   DRAKE_DEMAND(!topology_is_valid());
 
+  // These are the Joint type names for the joints that are currently
+  // reversible.
+  const std::set<std::string> reversible{PrismaticJoint<double>::kTypeName,
+                                         RevoluteJoint<double>::kTypeName,
+                                         WeldJoint<double>::kTypeName};
+
   // Mobods are in depth-first order, starting with World.
   for (const auto& mobod : forest().mobods()) {
     if (mobod.is_world()) {
       // No associated Joint but we do want a stub "weld" Mobilizer so that
       // Mobods, BodyNodes, and Mobilizers have identical numbering.
-      topology_.add_world_mobilizer(mobod, world_body().body_frame().index());
+      topology_.add_world_mobilizer_topology(mobod,
+                                             world_body().body_frame().index());
       auto dummy_weld = std::make_unique<internal::WeldMobilizer<T>>(
           mobod, world_frame(), world_frame());
       dummy_weld->set_model_instance(world_model_instance());
@@ -769,18 +773,18 @@ void MultibodyTree<T>::CreateJointImplementations() {
         forest().joints(mobod.joint_ordinal()).index();
     Joint<T>& joint = joints_.get_mutable_element(joint_index);
 
-    // Currently we allow a reversed mobilizer only for Weld joints.
-    // TODO(sherm1) Remove this restriction.
-    if (mobod.is_reversed() && !mobod.is_weld()) {
+    // We allow reversed mobilizers only for a subset of joint types.
+    if (mobod.is_reversed() && !reversible.contains(joint.type_name())) {
       throw std::runtime_error(fmt::format(
           "MultibodyPlant::Finalize(): parent/child ordering for "
           "{} joint {} in model instance {} would have to be reversed "
           "to make a tree-structured model for this system. "
-          "Currently Drake does not support that except for Weld "
-          "joints. Reverse the ordering in your joint definition so "
-          "that all parent/child directions form a tree structure.",
+          "Currently Drake does not support reversed {} joints. The joints "
+          "that can be reversed are: {}. Reverse the ordering in your joint "
+          "definition so that its parent body is closer to World in the tree.",
           joint.type_name(), joint.name(),
-          GetModelInstanceName(joint.model_instance())));
+          GetModelInstanceName(joint.model_instance()), joint.type_name(),
+          fmt::join(reversible, ", ")));
     }
 
     std::unique_ptr<Mobilizer<T>> owned_mobilizer = joint.Build(mobod, this);
@@ -799,7 +803,7 @@ const Mobilizer<T>& MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   DRAKE_DEMAND(body.index() != world_index());
   const RigidBodyTopology& rigid_body_topology =
-      get_topology().get_rigid_body(body.index());
+      get_topology().get_rigid_body_topology(body.index());
   const Mobilizer<T>& mobilizer =
       get_mobilizer(rigid_body_topology.inboard_mobilizer);
   if (!mobilizer.has_six_dofs()) {
@@ -836,7 +840,7 @@ void MultibodyTree<T>::FinalizeTopology() {
   // Before performing any setup that depends on the scalar type <T>, compile
   // all the type-T independent topological information.
   DRAKE_DEMAND(graph().forest_is_valid());
-  topology_.Finalize(graph());
+  topology_.FinalizeTopology(graph());
 }
 
 template <typename T>
@@ -869,18 +873,19 @@ void MultibodyTree<T>::FinalizeInternals() {
     actuators_.get_mutable_element(actuator_index).SetTopology(topology_);
   }
 
-  body_node_levels_.resize(topology_.forest_height());
-  for (MobodIndex mobod_index(1); mobod_index < topology_.num_mobods();
+  // TODO(sherm1) Consider building the level collection while building the
+  //  spanning forest.
+  body_node_levels_.resize(forest().height());
+  for (MobodIndex mobod_index(1); mobod_index < forest().num_mobods();
        ++mobod_index) {
-    const BodyNodeTopology& node_topology =
-        topology_.get_body_node(mobod_index);
-    body_node_levels_[node_topology.level].push_back(mobod_index);
+    const SpanningForest::Mobod& mobod = forest().mobods(mobod_index);
+    body_node_levels_[mobod.level()].push_back(mobod_index);
   }
 
   // Creates BodyNodes:
   // This recursion order ensures that a BodyNode's parent is created before the
   // node itself, since BodyNode objects are in Depth First Traversal order.
-  for (MobodIndex mobod_index(0); mobod_index < topology_.num_mobods();
+  for (MobodIndex mobod_index(0); mobod_index < forest().num_mobods();
        ++mobod_index) {
     CreateBodyNode(mobod_index);
   }
@@ -939,8 +944,7 @@ void MultibodyTree<T>::Finalize() {
   "ephemeral" elements. */
 
   /* Add the ephemeral Joints. */
-  for (JointOrdinal i(graph.num_user_joints()); i < ssize(graph.joints());
-       ++i) {
+  for (JointOrdinal i(graph.num_user_joints()); i < graph.num_joints(); ++i) {
     const LinkJointGraph::Joint& added_joint = graph.joints(i);
     DRAKE_DEMAND(added_joint.parent_link_index() == BodyIndex(0));
 
@@ -970,6 +974,15 @@ void MultibodyTree<T>::Finalize() {
   }
 
   // TODO(sherm1) Add shadow links and loop constraints.
+  if (!graph.loop_constraints().empty()) {
+    throw std::runtime_error(fmt::format(
+        "The bodies and joints of this system form one or "
+        "more loops in the system graph. Drake currently does not "
+        "support automatic modeling of such systems; however, they "
+        "can be modeled with some input changes. See "
+        "https://drake.mit.edu/troubleshooting.html"
+        "#mbp-loops-in-graph for advice on how to model systems with loops."));
+  }
 
   CreateJointImplementations();
   FinalizeTopology();
@@ -978,19 +991,19 @@ void MultibodyTree<T>::Finalize() {
 
 template <typename T>
 void MultibodyTree<T>::CreateBodyNode(MobodIndex mobod_index) {
-  const BodyNodeTopology& node_topology = topology_.get_body_node(mobod_index);
-  const BodyIndex body_index = node_topology.rigid_body;
+  const SpanningForest::Mobod& mobod = forest().mobods(mobod_index);
+  const LinkJointGraph::Link& active_link =
+      forest().links(mobod.link_ordinal());
+  const BodyIndex body_index = active_link.index();
 
-  const RigidBody<T>& body =
-      rigid_bodies_.get_element(node_topology.rigid_body);
+  const RigidBody<T>& body = rigid_bodies_.get_element(body_index);
 
   std::unique_ptr<BodyNode<T>> body_node;
-  const Mobilizer<T>* const mobilizer = mobilizers_[node_topology.index].get();
+  const Mobilizer<T>* const mobilizer = mobilizers_[mobod_index].get();
   if (body_index == world_index()) {
     body_node = std::make_unique<BodyNodeWorld<T>>(&world_body(), mobilizer);
   } else {
-    BodyNode<T>* parent_node =
-        body_nodes_[node_topology.parent_body_node].get();
+    BodyNode<T>* parent_node = body_nodes_[mobod.inboard()].get();
 
     // Only the mobilizer knows how to create a BodyNode with compile-time
     // fixed sizes.
@@ -1309,15 +1322,85 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
   // information for each body, we are now in position to perform a base-to-tip
   // recursion to update world positions and parent to child body transforms.
   // This skips the world, level = 0.
-  for (int level = 1; level < forest_height(); ++level) {
-    for (MobodIndex mobod_index : body_node_levels_[level]) {
-      const BodyNode<T>& node = *body_nodes_[mobod_index];
+  // Performs a base-to-tip recursion computing body poses.
+  // Skip the World which is mobod_index(0).
+  for (MobodIndex mobod_index(1); mobod_index < num_mobods(); ++mobod_index) {
+    const BodyNode<T>& node = *body_nodes_[mobod_index];
+    DRAKE_ASSERT(node.mobod_index() == mobod_index);
 
-      DRAKE_ASSERT(node.get_topology().level == level);
-      DRAKE_ASSERT(node.mobod_index() == mobod_index);
+    // Update per-node kinematics.
+    node.CalcPositionKinematicsCache_BaseToTip(frame_body_pose_cache, q, pc);
+  }
+}
 
-      // Update per-node kinematics.
-      node.CalcPositionKinematicsCache_BaseToTip(frame_body_pose_cache, q, pc);
+template <typename T>
+void MultibodyTree<T>::CalcBlockSystemJacobianCache(
+    const systems::Context<T>& context,
+    BlockSystemJacobianCache<T>* sjc) const {
+  DRAKE_DEMAND(sjc != nullptr);
+
+  const PositionKinematicsCache<T>& pc = this->EvalPositionKinematics(context);
+  const std::vector<Vector6<T>>& H_PB_W_cache =
+      EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
+  std::vector<Eigen::MatrixX<T>>& tree_jacobians =
+      sjc->mutable_block_system_jacobian();
+
+  // The iᵗʰ tree (treeᵢ) generates an nᵢ x mᵢ block. Note that we are relying
+  // on the BlockSystemJacobianCache initialization to have zeroed out the
+  // entire Jacobian so that it is safe for us to fill in only the pieces that
+  // we know might be non-zero. The fill-in structure is always the same once
+  // allocated so we only need to rewrite the non-zero pieces.
+  for (const SpanningForest::Tree& tree : forest().trees()) {
+    const int n = 6 * tree.num_mobods();
+    const int m = tree.nv();
+    MatrixX<T>& J = tree_jacobians[tree.index()];  // J_V_WB_W(tree)
+    DRAKE_DEMAND(J.rows() == n && J.cols() == m);
+
+    // The J(0,0) element for this tree is the Jacobian of the base body
+    // w.r.t. to its first mobility (velocity coordinate). Both the bodies
+    // (rows) and mobilities (columns) are numbered consecutively from there.
+    const MobodIndex base_index = tree.base_mobod();  // row 0
+    const int base_v_start = tree.v_start();          // column 0
+
+    // Each mobod Bi fills in a 6xm row of the Jacobian. All the columns
+    // outboard of Bi are left zero. Those inboard of Bi are the same as the
+    // parent's corresponding row except shifted to Bi's body origin Bio.
+    // Note: Tree mobods never include World.
+    for (const SpanningForest::Mobod& mobod : tree) {
+      const MobodIndex index_B = mobod.index();
+      const MobodIndex index_P = mobod.inboard();
+      const SpanningForest::Mobod& parent = forest().mobods(index_P);
+      const Vector3<T>& p_PoBo_W = pc.get_p_PoBo_W(index_B);
+      const int row_B = 6 * (index_B - base_index);
+      const int row_P = 6 * (index_P - base_index);
+
+      // Run through all the parent's non-zero Jacobian entries, shift to Bio
+      // and put the result in the same column of the new row. We are always
+      // shifting the _parent_'s entries; we're running down the ancestors
+      // just to find all the mobilities that affect the parent.
+      const SpanningForest::Mobod* ancestor = &parent;
+      while (!ancestor->is_world()) {
+        for (int i = 0; i < ancestor->nv(); ++i) {
+          const int avi = ancestor->v_start() + i;
+          const int col = avi - base_v_start;
+          const auto Jvi_V_WP = J.template block<6, 1>(row_P, col);
+          const Vector3<T> w_WP = Jvi_V_WP.template head<3>();
+          const Vector3<T> v_WP = Jvi_V_WP.template tail<3>();
+          auto Jvi_V_WB = J.template block<6, 1>(row_B, col);
+          Jvi_V_WB.template head<3>() = w_WP;
+          Jvi_V_WB.template tail<3>() = v_WP + w_WP.cross(p_PoBo_W);
+        }
+        ancestor = &forest().mobods(ancestor->inboard());
+      }
+      // Parent contributions are done, just need to fill in the local
+      // contribution from H_PB_W.
+      for (int i = 0; i < mobod.nv(); ++i) {
+        const int vi = mobod.v_start() + i;
+        const int col = vi - base_v_start;
+        const Vector6<T>& Hi_PB_W = H_PB_W_cache[vi];
+        auto Jvi_V_WB = J.template block<6, 1>(row_B, col);
+        Jvi_V_WB = Hi_PB_W;
+      }
     }
   }
 }
@@ -1342,18 +1425,14 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
   const T* velocities = get_velocities(context).data();
 
   // Performs a base-to-tip recursion computing body velocities.
-  // This skips the world, level = 0.
-  for (int level = 1; level < forest_height(); ++level) {
-    for (MobodIndex mobod_index : body_node_levels_[level]) {
-      const BodyNode<T>& node = *body_nodes_[mobod_index];
+  // Skip the World which is mobod_index(0).
+  for (MobodIndex mobod_index(1); mobod_index < num_mobods(); ++mobod_index) {
+    const BodyNode<T>& node = *body_nodes_[mobod_index];
+    DRAKE_ASSERT(node.mobod_index() == mobod_index);
 
-      DRAKE_ASSERT(node.get_topology().level == level);
-      DRAKE_ASSERT(node.mobod_index() == mobod_index);
-
-      // Update per-mobod kinematics.
-      node.CalcVelocityKinematicsCache_BaseToTip(positions, pc, H_PB_W_cache,
-                                                 velocities, vc);
-    }
+    // Update per-mobod kinematics.
+    node.CalcVelocityKinematicsCache_BaseToTip(positions, pc, H_PB_W_cache,
+                                               velocities, vc);
   }
 }
 
@@ -1365,6 +1444,8 @@ void MultibodyTree<T>::CalcSpatialInertiasInWorld(
   DRAKE_THROW_UNLESS(M_B_W_all != nullptr);
   DRAKE_THROW_UNLESS(ssize(*M_B_W_all) == topology_.num_mobods());
 
+  const FrameBodyPoseCache<T>& frame_body_pose_cache =
+      EvalFrameBodyPoses(context);
   const PositionKinematicsCache<T>& pc = this->EvalPositionKinematics(context);
 
   // Skip the world.
@@ -1378,11 +1459,12 @@ void MultibodyTree<T>::CalcSpatialInertiasInWorld(
     const RotationMatrix<T>& R_WB = X_WB.rotation();
 
     // Spatial inertia of body B about Bo and expressed in the body frame B.
-    // This call has zero cost for rigid bodies.
-    const SpatialInertia<T> M_B = body.CalcSpatialInertiaInBodyFrame(context);
+    const SpatialInertia<T>& M_BBo_B =
+        frame_body_pose_cache.get_M_BBo_B(body.mobod_index());
     // Re-express body B's spatial inertia in the world frame W.
-    SpatialInertia<T>& M_B_W = (*M_B_W_all)[body.mobod_index()];
-    M_B_W = M_B.ReExpress(R_WB);
+    SpatialInertia<T>& M_BBo_W = (*M_B_W_all)[body.mobod_index()];
+    M_BBo_W = M_BBo_B;               // Wrong frame.
+    M_BBo_W.ReExpressInPlace(R_WB);  // Fixed.
   }
 }
 
@@ -1425,6 +1507,8 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
   DRAKE_ASSERT(frame_body_poses->get_X_BF(0).IsExactlyIdentity());
   DRAKE_ASSERT(frame_body_poses->get_X_FB(0).IsExactlyIdentity());
 
+  // The first pass locates each frame with respect to the body frame B
+  // of the body to which it is fixed.
   for (const Frame<T>* frame : frames_.elements()) {
     const int body_pose_index_in_cache = frame->get_body_pose_index_in_cache();
     if (frame->is_body_frame()) {
@@ -1436,29 +1520,43 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
     //  the whole computation is done only when parameters change. But if
     //  there is a performance issue, consider doing this in topological
     //  order (or memoizing) so we don't have to recalculate.
-    frame_body_poses->set_X_BF(body_pose_index_in_cache,
-                               frame->CalcPoseInBodyFrame(context));
+    frame_body_poses->SetX_BF(body_pose_index_in_cache,
+                              frame->CalcPoseInBodyFrame(context));
+  }
+
+  // For every mobilized body, precalculate its body-frame spatial inertia
+  // M_BBo_B from the parameterization of that inertia.
+  for (const SpanningForest::Mobod& mobod : forest().mobods()) {
+    if (mobod.is_world()) continue;
+    // TODO(sherm1) Can't handle composites yet.
+    DRAKE_DEMAND(ssize(mobod.follower_link_ordinals()) == 1);
+    const Mobilizer<T>& mobilizer = get_mobilizer(mobod.index());
+
+    // Get the parameterized spatial inertia.
+    const RigidBody<T>& body = mobilizer.outboard_body();
+    const SpatialInertia<T> M_BBo_B =
+        body.CalcSpatialInertiaInBodyFrame(context);
+    frame_body_poses->SetM_BBo_B(mobod.index(), M_BBo_B);
   }
 }
 
 template <typename T>
 void MultibodyTree<T>::CalcCompositeBodyInertiasInWorld(
     const systems::Context<T>& context,
-    std::vector<SpatialInertia<T>>* Mc_B_W_all) const {
+    std::vector<SpatialInertia<T>>* K_BBo_W_all) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  const std::vector<SpatialInertia<T>>& M_B_W_all =
+  const std::vector<SpatialInertia<T>>& M_BBo_W_all =
       EvalSpatialInertiaInWorldCache(context);
 
   // Perform tip-to-base recursion for each composite body, skipping the world.
-  for (int level = forest_height() - 1; level > 0; --level) {
-    for (MobodIndex mobod_index : body_node_levels_[level]) {
-      // Node corresponding to the base of composite body C. We'll add in
-      // everything outboard of this node.
-      const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
+  for (MobodIndex mobod_index(num_mobods() - 1); mobod_index > 0;
+       --mobod_index) {
+    // Node corresponding to the base of composite body C. We'll add in
+    // everything outboard of this node.
+    const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
 
-      composite_node.CalcCompositeBodyInertia_TipToBase(pc, M_B_W_all,
-                                                        &*Mc_B_W_all);
-    }
+    composite_node.CalcCompositeBodyInertiaInWorld_TipToBase(pc, M_BBo_W_all,
+                                                             &*K_BBo_W_all);
   }
 }
 
@@ -1703,7 +1801,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
     for (MobodIndex mobod_index : body_node_levels_[level]) {
       const BodyNode<T>& node = *body_nodes_[mobod_index];
 
-      DRAKE_ASSERT(node.get_topology().level == level);
+      DRAKE_ASSERT(node.mobod().level() == level);
       DRAKE_ASSERT(node.mobod_index() == mobod_index);
 
       // Compute F_BMo_W for the body associated with this node and project it
@@ -1916,15 +2014,15 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
   //   is the across-mobilizer Jacobian such that we can write
   //   V_PB_W = H_PB_W * v_B, with v_B the generalized velocities of body B's
   //   mobilizer.
-  // - In code we use the monogram notation Mc_C_W to denote the spatial inertia
-  //   of composite body C, about it's frame origin Co, and expressed in the
-  //   world frame W.
+  // - In code we use the monogram notation K_BBo_W to denote the spatial
+  //   inertia of composite body B, about it's frame origin Bo, and expressed in
+  //   the world frame W.
   //
   // - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
   //               algorithms. Springer Science & Business Media, pp. 123-130.
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  const std::vector<SpatialInertia<T>>& Mc_B_W_cache =
+  const std::vector<SpatialInertia<T>>& K_BBo_W_cache =
       EvalCompositeBodyInertiaInWorldCache(context);
   const std::vector<Vector6<T>>& H_PB_W_cache =
       EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
@@ -1932,20 +2030,20 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
 
   // The algorithm below does not recurse zero entries and therefore these must
   // be set a priori.
-  // In addition, we initialize diagonal entries to include the effect of rotor
-  // reflected inertia. See JointActuator::reflected_inertia().
-  (*M) = reflected_inertia.asDiagonal();
+  M->setZero();
 
   // Perform tip-to-base recursion for each composite body, skipping the world.
-  for (int level = forest_height() - 1; level > 0; --level) {
-    for (MobodIndex mobod_index : body_node_levels_[level]) {
-      // Node corresponding to the composite body C.
-      const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
+  for (MobodIndex mobod_index(num_mobods() - 1); mobod_index > 0;
+       --mobod_index) {
+    // Node corresponding to the composite body C.
+    const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
 
-      composite_node.CalcMassMatrixContribution_TipToBase(pc, Mc_B_W_cache,
-                                                          H_PB_W_cache, M);
-    }
+    composite_node.CalcMassMatrixContributionViaWorld_TipToBase(
+        pc, K_BBo_W_cache, H_PB_W_cache, M);
   }
+
+  // Account for reflected inertia.
+  M->diagonal() += reflected_inertia;
 }
 
 template <typename T>
@@ -2555,7 +2653,7 @@ void MultibodyTree<T>::CalcAcrossNodeJacobianWrtVExpressedInWorld(
   const FrameBodyPoseCache<T>& frame_body_pose_cache =
       EvalFrameBodyPoses(context);
 
-  // TODO(joemasterjohn): Consider and optimization where we avoid computing
+  // TODO(joemasterjohn): Consider an optimization where we avoid computing
   //  `H_PB_W` for locked floating bodies.
   for (MobodIndex mobod_index(1); mobod_index < topology_.num_mobods();
        ++mobod_index) {
@@ -3078,12 +3176,11 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
   for (size_t level = 1; level < path_to_world.size(); ++level) {
     const MobodIndex mobod_index = path_to_world[level];
     const BodyNode<T>& node = *body_nodes_[mobod_index];
-    const BodyNodeTopology& node_topology = node.get_topology();
-    const Mobilizer<T>& mobilizer = node.get_mobilizer();
-    const int start_index_in_v = node_topology.mobilizer_velocities_start_in_v;
-    const int start_index_in_q = node_topology.mobilizer_positions_start;
-    const int mobilizer_num_velocities = node_topology.num_mobilizer_velocities;
-    const int mobilizer_num_positions = node_topology.num_mobilizer_positions;
+    const SpanningForest::Mobod& mobod = node.mobod();
+    const int start_index_in_v = mobod.v_start();
+    const int start_index_in_q = mobod.q_start();
+    const int mobilizer_num_velocities = mobod.nv();
+    const int mobilizer_num_positions = mobod.nq();
 
     const int start_index = is_wrt_qdot ? start_index_in_q : start_index_in_v;
     const int mobilizer_jacobian_ncols =
@@ -3110,7 +3207,7 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
       //  right becomes a bottleneck.
       // Nplus is stack allocated above so this isn't a memory allocation.
       Nplus.resize(mobilizer_num_velocities, mobilizer_num_positions);
-      mobilizer.CalcNplusMatrix(context, &Nplus);
+      node.get_mobilizer().CalcNplusMatrix(context, &Nplus);
     }
 
     // The Jacobian angular velocity term is the same for all points Fpi since
@@ -3173,12 +3270,12 @@ template <typename T>
 void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
     const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
     const Frame<T>& frame_A, const Frame<T>& frame_E,
-    EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
+    EigenPtr<Matrix3X<T>> Js_v_AScm_E) const {
   const int num_columns = (with_respect_to == JacobianWrtVariable::kQDot)
                               ? num_positions()
                               : num_velocities();
-  DRAKE_THROW_UNLESS(Js_v_ACcm_E != nullptr);
-  DRAKE_THROW_UNLESS(Js_v_ACcm_E->cols() == num_columns);
+  DRAKE_THROW_UNLESS(Js_v_AScm_E != nullptr);
+  DRAKE_THROW_UNLESS(Js_v_AScm_E->cols() == num_columns);
 
   // Reminder: MultibodyTree always declares a world body (0ᵗʰ body).
   if (num_bodies() <= 1) {
@@ -3189,7 +3286,7 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
     throw std::logic_error(message);
   }
 
-  Js_v_ACcm_E->setZero();
+  Js_v_AScm_E->setZero();
   T composite_mass = 0;
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
@@ -3199,7 +3296,7 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
         context, with_respect_to, body.body_frame(), body.body_frame(),
         pi_BoBcm, frame_A, frame_E, &Jsi_v_ABcm_E);
     const T& body_mass = body.get_mass(context);
-    *Js_v_ACcm_E += body_mass * Jsi_v_ABcm_E;
+    *Js_v_AScm_E += body_mass * Jsi_v_ABcm_E;
     composite_mass += body_mass;
   }
 
@@ -3209,7 +3306,7 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
     throw std::logic_error(message);
   }
 
-  *Js_v_ACcm_E /= composite_mass;
+  *Js_v_AScm_E /= composite_mass;
 }
 
 template <typename T>
@@ -3217,12 +3314,12 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
     const systems::Context<T>& context,
     const std::vector<ModelInstanceIndex>& model_instances,
     JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
-    const Frame<T>& frame_E, EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
+    const Frame<T>& frame_E, EigenPtr<Matrix3X<T>> Js_v_AScm_E) const {
   const int num_columns = (with_respect_to == JacobianWrtVariable::kQDot)
                               ? num_positions()
                               : num_velocities();
-  DRAKE_THROW_UNLESS(Js_v_ACcm_E != nullptr);
-  DRAKE_THROW_UNLESS(Js_v_ACcm_E->cols() == num_columns);
+  DRAKE_THROW_UNLESS(Js_v_AScm_E != nullptr);
+  DRAKE_THROW_UNLESS(Js_v_AScm_E->cols() == num_columns);
 
   // Reminder: MultibodyTree always declares a world body.
   if (num_bodies() <= 1) {
@@ -3234,7 +3331,7 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
   }
 
   T total_mass = 0;
-  Js_v_ACcm_E->setZero();
+  Js_v_AScm_E->setZero();
 
   // Sum over all bodies contained in model_instances except for the 0th body
   // (which is the world body), and count each body's contribution only once.
@@ -3261,7 +3358,7 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
       CalcJacobianTranslationalVelocity(
           context, with_respect_to, body.body_frame(), body.body_frame(),
           pi_BoBcm, frame_A, frame_E, &Jsi_v_ABcm_E);
-      *Js_v_ACcm_E += body_mass * Jsi_v_ABcm_E;
+      *Js_v_AScm_E += body_mass * Jsi_v_ABcm_E;
     }
   }
 
@@ -3280,8 +3377,8 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
     throw std::logic_error(message);
   }
 
-  /// J𝑠_v_ACcm_ = ∑ (mᵢ Jᵢ) / mₛ, where mₛ = ∑ mᵢ.
-  *Js_v_ACcm_E /= total_mass;
+  /// J𝑠_v_AScm_ = ∑ (mᵢ Jᵢ) / mₛ, where mₛ = ∑ mᵢ.
+  *Js_v_AScm_E /= total_mass;
 }
 
 template <typename T>
@@ -3298,15 +3395,15 @@ Vector3<T> MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
   }
 
   T composite_mass = 0;
-  Vector3<T> asBias_ACcm_E = Vector3<T>::Zero();
+  Vector3<T> asBias_AScm_E = Vector3<T>::Zero();
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
     const Vector3<T> pi_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
     const Frame<T>& frame_B = body.body_frame();
-    const SpatialAcceleration<T> AsBiasi_ACcm_E = CalcBiasSpatialAcceleration(
+    const SpatialAcceleration<T> AsBiasi_AScm_E = CalcBiasSpatialAcceleration(
         context, with_respect_to, frame_B, pi_BoBcm_B, frame_A, frame_E);
     const T& body_mass = body.get_mass(context);
-    asBias_ACcm_E += body_mass * AsBiasi_ACcm_E.translational();
+    asBias_AScm_E += body_mass * AsBiasi_AScm_E.translational();
     composite_mass += body_mass;
   }
 
@@ -3315,8 +3412,8 @@ Vector3<T> MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
         "{}(): The system's total mass must be greater than zero.", __func__);
     throw std::logic_error(message);
   }
-  asBias_ACcm_E /= composite_mass;
-  return asBias_ACcm_E;
+  asBias_AScm_E /= composite_mass;
+  return asBias_AScm_E;
 }
 
 template <typename T>
@@ -4152,7 +4249,7 @@ std::optional<BodyIndex> MultibodyTree<T>::MaybeGetUniqueBaseBodyIndex(
   std::optional<BodyIndex> base_body_index{};
   for (const RigidBody<T>* body : rigid_bodies_.elements()) {
     if (body->model_instance() == model_instance &&
-        (topology_.get_rigid_body(body->index()).parent_body ==
+        (topology_.get_rigid_body_topology(body->index()).parent_body ==
          world_index())) {
       if (base_body_index.has_value()) {
         // More than one base body associated with this model.

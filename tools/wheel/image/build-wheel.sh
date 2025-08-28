@@ -43,16 +43,16 @@ copy_license()
     package_name=$1
     mkdir -p ${WHEEL_DIR}/pydrake/doc/${package_name}
     cp -t ${WHEEL_DIR}/pydrake/doc/${package_name}/ \
-        /opt/drake-wheel-licenses/${package_name}/copyright
+        /tmp/drake-wheel-build/drake-wheel-licenses/${package_name}/copyright
 }
 
 ###############################################################################
 
 # Activate Drake's virtual environment, which provides some of the tools that
 # we need to build the wheels.
-. /opt/drake-wheel-build/drake/venv/bin/activate
+. /tmp/drake-wheel-build/drake-src/venv/bin/activate
 
-readonly WHEEL_DIR=/opt/drake-wheel-build/wheel
+readonly WHEEL_DIR=/tmp/drake-wheel-build/drake-wheel
 readonly WHEEL_SHARE_DIR=${WHEEL_DIR}/pydrake/share
 
 # TODO(mwoehlke-kitware) Most of this should move to Bazel.
@@ -62,24 +62,27 @@ mkdir -p ${WHEEL_DIR}/pydrake/share/drake
 cd ${WHEEL_DIR}
 
 cp -r -t ${WHEEL_DIR}/drake \
-    /opt/drake/lib/python*/site-packages/drake/*
+    /tmp/drake-wheel-build/drake-dist/lib/python*/site-packages/drake/*
 
 cp -r -t ${WHEEL_DIR}/pydrake \
-    /opt/drake/share/doc \
-    /opt/drake/lib/python*/site-packages/pydrake/*
+    /tmp/drake-wheel-build/drake-dist/share/doc \
+    /tmp/drake-wheel-build/drake-dist/lib/python*/site-packages/pydrake/*
 
 cp -r -t ${WHEEL_DIR}/pydrake/lib \
-    /opt/drake/lib/libdrake*.so
+    /tmp/drake-wheel-build/drake-dist/lib/libdrake*.so
 
-# MOSEK is "sort of" third party, but is procured as part of Drake's build and
-# ends up in /opt/drake. It should end up in the same place as libdrake.so.
-cp -r -t ${WHEEL_DIR}/pydrake/lib \
-    /opt/drake/lib/libmosek* \
-    /opt/drake/lib/libtbb*
+if [[ "$(uname)" == "Darwin" ]]; then
+    # MOSEK is "sort of" third party, but is procured as part of Drake's build
+    # and ends up in /tmp/drake-wheel-build/drake-dist/. It should end up in
+    # the same place as libdrake.so.
+    cp -r -t ${WHEEL_DIR}/pydrake/lib \
+        /tmp/drake-wheel-build/drake-dist/lib/libmosek* \
+        /tmp/drake-wheel-build/drake-dist/lib/libtbb*
+fi
 
 if [[ "$(uname)" == "Linux" ]]; then
   cp -r -t ${WHEEL_DIR}/pydrake \
-      /opt/drake-wheel-content/*
+      /tmp/drake-wheel-build/drake-wheel-content/*
 fi
 
 # Copy the license files from third party dependencies we vendor.
@@ -91,17 +94,17 @@ if [[ "$(uname)" == "Linux" ]]; then
 fi
 
 cp -r -t ${WHEEL_SHARE_DIR}/drake \
-    /opt/drake/share/drake/.drake-find_resource-sentinel \
-    /opt/drake/share/drake/package.xml \
-    /opt/drake/share/drake/examples \
-    /opt/drake/share/drake/geometry \
-    /opt/drake/share/drake/multibody \
-    /opt/drake/share/drake/tutorials
+    /tmp/drake-wheel-build/drake-dist/share/drake/.drake-find_resource-sentinel \
+    /tmp/drake-wheel-build/drake-dist/share/drake/package.xml \
+    /tmp/drake-wheel-build/drake-dist/share/drake/examples \
+    /tmp/drake-wheel-build/drake-dist/share/drake/geometry \
+    /tmp/drake-wheel-build/drake-dist/share/drake/multibody \
+    /tmp/drake-wheel-build/drake-dist/share/drake/tutorials
 
 if [[ "$(uname)" == "Linux" ]]; then
     mkdir -p ${WHEEL_SHARE_DIR}/drake/setup
     cp -r -t ${WHEEL_SHARE_DIR}/drake/setup \
-        /opt/drake/share/drake/setup/deepnote
+        /tmp/drake-wheel-build/drake-dist/share/drake/setup/deepnote
 fi
 
 if [[ "$(uname)" == "Linux" ]]; then
@@ -122,10 +125,44 @@ if [[ "$(uname)" == "Darwin" ]]; then
         pydrake/*/*.so
 fi
 
-python setup.py bdist_wheel
+python -m build --wheel
 
 if [[ "$(uname)" == "Darwin" ]]; then
     delocate-wheel -w wheelhouse -v dist/drake*.whl
+
+    # Remove libmosek from wheels.
+    for w in wheelhouse/drake*.whl; do
+        mkdir fixup-wheel
+        wheel unpack --dest fixup-wheel "$w"
+
+        rm fixup-wheel/drake-*/pydrake/lib/libmosek*
+        rm fixup-wheel/drake-*/pydrake/lib/libtbb*
+        rm fixup-wheel/drake-*/pydrake/doc/mosek/mosek-eula.pdf
+        rm fixup-wheel/drake-*/pydrake/doc/mosek/LICENSE.third_party
+
+        change_lpath \
+            --old='@loader_path/libtbb' \
+            --old='@loader_path/libmosek' \
+            --new='@loader_path/../../mosek/libtbb' \
+            --new='@loader_path/../../mosek/libmosek' \
+            fixup-wheel/drake-*/pydrake/lib/*.so
+        change_lpath \
+            --old='@loader_path/lib/libtbb' \
+            --old='@loader_path/lib/libmosek' \
+            --new='@loader_path/../mosek/libtbb' \
+            --new='@loader_path/../mosek/libmosek' \
+            fixup-wheel/drake-*/pydrake/*.so
+        change_lpath \
+            --old='@loader_path/../lib/libtbb' \
+            --old='@loader_path/../lib/libmosek' \
+            --new='@loader_path/../../mosek/libtbb' \
+            --new='@loader_path/../../mosek/libmosek' \
+            fixup-wheel/drake-*/pydrake/*/*.so
+
+        rm "$w"
+        wheel pack --dest wheelhouse fixup-wheel/drake-*/
+        rm -rf fixup-wheel
+    done
 else
     GLIBC_VERSION=$(ldd --version | sed -n '1{s/.* //;s/[.]/_/p}')
 

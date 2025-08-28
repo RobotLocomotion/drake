@@ -80,6 +80,7 @@ drake_cc_library(
         ":internal_render_engine_vtk_base",
         ":internal_vtk_util",
         "//common",
+        "//common/yaml:yaml_io",
         "//geometry:vtk_gltf_uri_loader",
         "//geometry/proximity:polygon_to_triangle_mesh",
         "//geometry/render:render_engine",
@@ -147,13 +148,6 @@ config_setting(
 drake_cc_googletest(
     name = "internal_render_engine_vtk_test",
     timeout = "moderate",
-    args = select({
-        # Most tests do not render correctly on macOS CI. Instead of trying to
-        # select the few that randomly happen to pass, we'll skip everything.
-        # TODO(#19424) Re-enable the tests.
-        ":osx": ["--gtest_filter=-*"],
-        "//conditions:default": [],
-    }),
     data = [
         ":test/multi_material_mesh.png",
         ":test/whole_image_custom_color.png",
@@ -164,6 +158,7 @@ drake_cc_googletest(
         ":test/whole_image_default_label.png",
         "//examples/scene_graph:models",
         "//geometry:environment_maps",
+        "//geometry:test_gltf_files",
         "//geometry:test_obj_files",
         "//geometry/render:test_models",
     ],

@@ -673,7 +673,7 @@ void DoDefineFrameworkDiagramBuilder(py::module m) {
             // unowned shared_ptr.
             return self->AddSystem(make_unowned_shared_ptr_from_raw(&system));
           },
-          py::arg("system"), internal::ref_cycle<1, 2>(),
+          py::arg("system"), internal::ref_cycle<1, 2>(), py_rvp::reference,
           doc.DiagramBuilder.AddSystem.doc)
       .def(
           "AddNamedSystem",
@@ -688,7 +688,7 @@ void DoDefineFrameworkDiagramBuilder(py::module m) {
                 name, make_unowned_shared_ptr_from_raw(&system));
           },
           py::arg("name"), py::arg("system"), internal::ref_cycle<1, 3>(),
-          doc.DiagramBuilder.AddNamedSystem.doc)
+          py_rvp::reference, doc.DiagramBuilder.AddNamedSystem.doc)
       .def("RemoveSystem", &DiagramBuilder<T>::RemoveSystem, py::arg("system"),
           doc.DiagramBuilder.RemoveSystem.doc)
       .def("empty", &DiagramBuilder<T>::empty, doc.DiagramBuilder.empty.doc)
@@ -763,6 +763,8 @@ void DoDefineFrameworkDiagramBuilder(py::module m) {
       .def("ExportOutput", &DiagramBuilder<T>::ExportOutput, py::arg("output"),
           py::arg("name") = kUseDefaultName, py_rvp::reference_internal,
           doc.DiagramBuilder.ExportOutput.doc)
+      .def("Disconnect", &DiagramBuilder<T>::Disconnect, py::arg("source"),
+          py::arg("dest"), doc.DiagramBuilder.Disconnect.doc)
       .def(
           "Build",
           [](DiagramBuilder<T>* self) {

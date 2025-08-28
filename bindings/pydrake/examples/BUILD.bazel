@@ -32,7 +32,6 @@ drake_pybind_library(
         "examples_py.cc",
         "examples_py_acrobot.cc",
         "examples_py_compass_gait.cc",
-        "examples_py_manipulation_station.cc",
         "examples_py_pendulum.cc",
         "examples_py_quadrotor.cc",
         "examples_py_rimless_wheel.cc",
@@ -41,9 +40,6 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         "//bindings/pydrake/systems",
-    ],
-    py_srcs = [
-        "_examples_extra.py",
     ],
 )
 
@@ -70,16 +66,6 @@ drake_py_unittest(
     name = "compass_gait_test",
     deps = [
         ":examples",
-    ],
-)
-
-drake_py_unittest(
-    name = "manipulation_station_test",
-    deps = [
-        ":examples",
-        "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/multibody:parsing_py",
-        "//bindings/pydrake/multibody:plant_py",
     ],
 )
 

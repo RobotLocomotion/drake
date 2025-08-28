@@ -1,7 +1,13 @@
 # -*- mode: cmake -*-
 # vi: set ft=cmake :
 
-cmake_minimum_required(VERSION 3.18)
+# The minimum required CMake version should match the minimum listed in
+# doc/_pages/from_source.md, which is also the minimum installed by
+# setup/install_prereqs across all platforms.
+# When this changes, drake-external-examples/drake_cmake_external/CMakeLists.txt
+# should be changed accordingly so that downstream users are synced with
+# Drake itself.
+cmake_minimum_required(VERSION 3.22)
 
 project(drake
   DESCRIPTION "Model-based design and verification for robotics"
@@ -31,14 +37,22 @@ if(ANDROID OR CYGWIN OR IOS OR NOT UNIX)
 endif()
 
 set(BAZELRC_IMPORTS "tools/bazel.rc")
-set(UNIX_DISTRIBUTION_ID)
 set(UNIX_DISTRIBUTION_CODENAME)
 
+# The minimum Darwin version and codename should correspond to the minimum
+# supported macOS version listed in doc/_pages/installation.md and
+# doc/_pages/from_source.md.
+# For Ubuntu, don't make as harsh a check for minimum supported version
+# since Drake *can* compile on non-Ubuntu UNIX, even though it's not
+# officially supported.
+set(MINIMUM_DARWIN_VERSION 23)
+set(MINIMUM_MACOS_CODENAME "Sonoma")
+
 if(APPLE)
-  if(CMAKE_SYSTEM_VERSION VERSION_LESS 21)
-    message(WARNING
-      "Darwin ${CMAKE_SYSTEM_VERSION} is NOT supported. Please use "
-      "Darwin 21.x (macOS Monterey) or newer."
+  if(CMAKE_SYSTEM_VERSION VERSION_LESS ${MINIMUM_DARWIN_VERSION})
+    message(WARNING "Darwin ${CMAKE_SYSTEM_VERSION} is NOT supported. "
+      "Please use Darwin ${MINIMUM_DARWIN_VERSION}.x (macOS "
+      "${MINIMUM_MACOS_CODENAME}) or newer."
     )
   endif()
 
@@ -70,7 +84,11 @@ else()
     else()
       set(MAYBE_RC "tools/ubuntu-${UNIX_DISTRIBUTION_CODENAME}.bazelrc")
       if(NOT EXISTS "${PROJECT_SOURCE_DIR}/${MAYBE_RC}")
-        message(WARNING "Could NOT find config file ${MAYBE_RC}")
+        message(WARNING "Could not find config file ${MAYBE_RC}. "
+          "This may indicate that you're using an OS or OS version that "
+          "is not officially supported, so the build configuration cannot be "
+          "fine-tuned. See https://drake.mit.edu/from_source.html for details "
+          "on officially supported platforms when building from source.")
       else()
         list(APPEND BAZELRC_IMPORTS "${MAYBE_RC}")
       endif()
@@ -108,7 +126,7 @@ endif()
 
 # The minimum compiler versions should match those listed in both
 # doc/_pages/from_source.md and tools/workspace/cc/repository.bzl.
-set(MINIMUM_APPLE_CLANG_VERSION 14)
+set(MINIMUM_APPLE_CLANG_VERSION 16)
 set(MINIMUM_CLANG_VERSION 15)
 set(MINIMUM_GNU_VERSION 11)
 
@@ -277,6 +295,19 @@ if(NOT APPLE)
     " --repo_env=CC=${CMAKE_C_COMPILER}"
     " --repo_env=CXX=${CMAKE_CXX_COMPILER}"
   )
+  # Pass a Bazel flag which enforces the underlying compiler so that
+  # compiler- and version-specific logic (e.g., warnings) is enforced in the
+  # build, since rules_cc's support for compiler identification is not as
+  # robust as using CMake's CMAKE_<LANG>_COMPILER_ID.
+  if(CMAKE_C_COMPILER_ID STREQUAL Clang)
+    string(APPEND BAZEL_REPO_ENV
+      " --@drake//tools/cc_toolchain:compiler=clang"
+    )
+  elseif(CMAKE_C_COMPILER_ID STREQUAL GNU)
+    string(APPEND BAZEL_REPO_ENV
+      " --@drake//tools/cc_toolchain:compiler=gcc"
+    )
+  endif()
 endif()
 
 get_filename_component(PROJECT_BINARY_DIR_REALPATH
@@ -323,9 +354,11 @@ function(symlink_external_repository_includes NAME TARGET)
 endfunction()
 
 # Symlinks the C++ libraries for TARGET as workspace/NAME/lib/*, e.g.
-#  workspace/fmt/lib/libfmt.so.6.1.2 -> .../build/install/lib/fmt/libfmt.so.6.1.2
-#  workspace/fmt/lib/libfmt.so.6 -> .../build/install/lib/fmt/libfmt.so.6.1.2
-function(symlink_external_repository_libs NAME TARGET)
+#  workspace/fmt/lib/libfmt.so.6.1.2 -> .../build/install/lib/libfmt.so.6.1.2
+#  workspace/fmt/lib/libfmt.so.6 -> .../build/install/lib/libfmt.so.6.1.2
+# If USE_SO_MINOR_VERSION is ON, the last line above uses .so.x.y instead, i.e.
+#  workspace/fmt/lib/libfmt.so.6.1 -> ../build/install/lib/libfmt.so.6.1.2
+function(symlink_external_repository_libs NAME TARGET USE_SO_MINOR_VERSION)
   set(workspace "${CMAKE_CURRENT_BINARY_DIR}/external/workspace")
   file(MAKE_DIRECTORY "${workspace}/${NAME}/lib")
   # Link the full library name (i.e., libfmt.so.6.1.2 in the case of shared).
@@ -337,10 +370,17 @@ function(symlink_external_repository_libs NAME TARGET)
   file(CREATE_LINK "${location}" "${workspace}/${NAME}/lib/${basename}" SYMBOLIC)
   # Link the SONAME spelling in case of shared libraries.
   # If the basename does not match this pattern, this part is all a no-op.
-  string(REGEX REPLACE "(\\.so\\.[0-9]+)\\.[0-9]+\\.[0-9]+$" "\\1"
+  if(USE_SO_MINOR_VERSION)
+    string(REGEX REPLACE "(\\.so\\.[0-9]+\\.[0-9]+)\\.[0-9]+$" "\\1"
       other_basename "${basename}")
-  string(REGEX REPLACE "(\\.[0-9]+)\\.[0-9]+\\.[0-9]+\\.dylib$" "\\1.dylib"
+    string(REGEX REPLACE "(\\.[0-9]+\\.[0-9]+)\\.[0-9]+\\.dylib$" "\\1.dylib"
       other_basename "${other_basename}")
+  else()
+    string(REGEX REPLACE "(\\.so\\.[0-9]+)\\.[0-9]+\\.[0-9]+$" "\\1"
+      other_basename "${basename}")
+    string(REGEX REPLACE "(\\.[0-9]+)\\.[0-9]+\\.[0-9]+\\.dylib$" "\\1.dylib"
+      other_basename "${other_basename}")
+  endif()
   file(CREATE_LINK "${location}" "${workspace}/${NAME}/lib/${other_basename}" SYMBOLIC)
 endfunction()
 
@@ -394,7 +434,7 @@ option(WITH_USER_FMT "Use user-provided fmt" ${DEFAULT_WITH_USER_LIBS})
 if(WITH_USER_FMT)
   find_package(fmt CONFIG REQUIRED)
   symlink_external_repository_includes(fmt fmt::fmt)
-  symlink_external_repository_libs(fmt fmt::fmt)
+  symlink_external_repository_libs(fmt fmt::fmt OFF)
   override_module(fmt)
 endif()
 
@@ -408,7 +448,16 @@ if(WITH_USER_SPDLOG)
   endif()
   find_package(spdlog CONFIG REQUIRED)
   symlink_external_repository_includes(spdlog spdlog::spdlog)
-  symlink_external_repository_libs(spdlog spdlog::spdlog)
+  # Modern versions of spdlog (i.e. >= 1.11.0) specify a minor version in the
+  # SONAME spelling, while older versions only use the major version.
+  # We support that logic here to provide compatibility with both.
+  # See https://github.com/gabime/spdlog/releases/tag/v1.11.0 for details.
+  set(SPDLOG_USE_SO_MINOR_VERSION ON)
+  if(${spdlog_VERSION_MAJOR} LESS 1 OR
+     (${spdlog_VERSION_MAJOR} EQUAL 1 AND ${spdlog_VERSION_MINOR} LESS 11))
+     set(SPDLOG_USE_SO_MINOR_VERSION OFF)
+  endif()
+  symlink_external_repository_libs(spdlog spdlog::spdlog ${SPDLOG_USE_SO_MINOR_VERSION})
   override_module(spdlog)
 endif()
 
@@ -470,7 +519,7 @@ else()
   if(WITH_USER_ZLIB)
     find_package(ZLIB REQUIRED)
     symlink_external_repository_includes(zlib ZLIB::ZLIB)
-    symlink_external_repository_libs(zlib ZLIB::ZLIB)
+    symlink_external_repository_libs(zlib ZLIB::ZLIB OFF)
     override_module(zlib)
   endif()
 endif()
@@ -636,6 +685,7 @@ endforeach()
 configure_file(cmake/bazel.rc.in drake_build_cwd/.bazelrc @ONLY)
 configure_file(cmake/MODULE.bazel.in drake_build_cwd/MODULE.bazel @ONLY)
 file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazeliskrc" drake_build_cwd/.bazeliskrc SYMBOLIC)
+file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazelversion" drake_build_cwd/.bazelversion SYMBOLIC)
 
 find_package(Git)
 

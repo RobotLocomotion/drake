@@ -181,8 +181,8 @@ TYPED_TEST(BvhTest, TestComputeBoundingVolume) {
 
   using FaceCentroidPair = std::pair<int, Vector3d>;
   // The positions of centroids are not relevant to this test.
-  std::vector<FaceCentroidPair> upper{{0, Vector3d()}};
-  std::vector<FaceCentroidPair> lower{{1, Vector3d()}};
+  std::vector<FaceCentroidPair> upper{{0, Vector3d::Zero()}};
+  std::vector<FaceCentroidPair> lower{{1, Vector3d::Zero()}};
 
   const BvType bv =
       BvhTester::ComputeBoundingVolume<BvType, TriangleSurfaceMesh<double>>(

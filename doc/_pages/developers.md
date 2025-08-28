@@ -54,8 +54,7 @@ of artifacts distributed with this website.
 
 # Testing
 
-* [Detailed Notes on Drake's Unit Tests](/unit_testing_instructions.html)
-* [Downstream Testing (Drake as a Dependency)](/downstream_testing.html)
+Refer to [Detailed Notes on Drake's Unit Tests](/unit_testing_instructions.html).
 
 # Supported Configurations
 
@@ -242,7 +241,7 @@ can look into the question.
 # Continuous Integration Notes
 
 * [CDash](https://drake-cdash.csail.mit.edu/index.php?project=Drake)
-* [GitHub PR Interaction with Jenkins](/jenkins.html)
+* [Continuous Integration with GitHub Pull Requests](/jenkins.html)
 * [Build Cop](/buildcop.html)
 
 # Programming Tools

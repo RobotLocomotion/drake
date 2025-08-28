@@ -19,14 +19,12 @@ drake_cc_package_library(
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
-        ":deformable_ids",
         ":desired_state_input",
         ":discrete_contact_data",
         ":discrete_contact_pair",
         ":distance_constraint_params",
         ":externally_applied_spatial_force",
         ":externally_applied_spatial_force_multiplexer",
-        ":force_density_field",
         ":internal_geometry_names",
         ":multibody_plant_config",
         ":multibody_plant_config_functions",
@@ -44,7 +42,6 @@ drake_cc_library(
         "constraint_specs.h",
     ],
     deps = [
-        ":deformable_ids",
         "//multibody/tree:multibody_tree_indexes",
     ],
 )
@@ -106,7 +103,6 @@ drake_cc_library(
     hdrs = [
         "compliant_contact_manager.h",
         "deformable_driver.h",
-        "deformable_ids.h",
         "deformable_model.h",
         "discrete_step_memory.h",
         "discrete_update_manager.h",
@@ -129,7 +125,6 @@ drake_cc_library(
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
-        ":deformable_ids",
         ":desired_state_input",
         ":discrete_contact_data",
         ":discrete_contact_pair",
@@ -140,6 +135,7 @@ drake_cc_library(
         ":tamsi_solver",
         "//common:default_scalars",
         "//common:essential",
+        "//common:parallelism",
         "//common:unused",
         "//geometry:geometry_ids",
         "//geometry:geometry_roles",
@@ -238,22 +234,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "force_density_field",
-    srcs = [
-        "force_density_field.cc",
-    ],
-    hdrs = [
-        "force_density_field.h",
-    ],
-    deps = [
-        "//common:default_scalars",
-        "//common:essential",
-        "//multibody/tree",
-        "//systems/framework:context",
-    ],
-)
-
-drake_cc_library(
     name = "internal_geometry_names",
     srcs = ["internal_geometry_names.cc"],
     hdrs = ["internal_geometry_names.h"],
@@ -275,16 +255,6 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:drake_bool",
-    ],
-)
-
-drake_cc_library(
-    name = "deformable_ids",
-    hdrs = [
-        "deformable_ids.h",
-    ],
-    deps = [
-        "//common:identifier",
     ],
 )
 
@@ -873,6 +843,10 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "multibody_plant_reaction_forces_test",
     timeout = "moderate",
+    data = [
+        "test/box.vtk",
+        "test/deformable_box.sdf",
+    ],
     deps = [
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
@@ -880,6 +854,7 @@ drake_cc_googletest(
         "//geometry:drake_visualizer",
         "//lcm",
         "//math:geometric_transform",
+        "//multibody/parsing",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:implicit_euler_integrator",
         "//systems/analysis:simulator",
@@ -1022,6 +997,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "deformable_driver_contact_test",
+    data = ["test/box.vtk"],
     deps = [
         ":multibody_plant_core",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1031,6 +1007,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "deformable_driver_contact_kinematics_test",
+    data = ["test/box.vtk"],
     deps = [
         ":multibody_plant_config_functions",
         ":multibody_plant_core",
@@ -1060,6 +1037,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "deformable_integration_test",
+    timeout = "moderate",
     deps = [
         ":multibody_plant_config_functions",
         ":multibody_plant_core",

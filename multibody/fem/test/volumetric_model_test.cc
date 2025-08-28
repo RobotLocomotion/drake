@@ -136,11 +136,11 @@ class VolumetricModelTest : public ::testing::Test {
     DRAKE_UNREACHABLE();
   }
 
-  /* The model under test. */
-  VolumetricModel<AutoDiffElement> model_{};
   AccelerationNewmarkScheme<AutoDiffXd> autodiff_integrator_{kDt, kGamma,
                                                              kBeta};
   AccelerationNewmarkScheme<double> double_integrator_{kDt, kGamma, kBeta};
+  /* The model under test. */
+  VolumetricModel<AutoDiffElement> model_{autodiff_integrator_.GetWeights()};
 };
 
 /* Tests the mesh has been successfully converted to elements. */
@@ -161,13 +161,12 @@ TEST_F(VolumetricModelTest, TangentMatrixIsResidualDerivative) {
   const FemPlantData<AutoDiffXd> dummy_data{dummy_context, {}};
   model_.CalcResidual(*autodiff_state, dummy_data, &residual);
 
-  VolumetricModel<DoubleElement> double_model;
+  VolumetricModel<DoubleElement> double_model(double_integrator_.GetWeights());
   AddBoxToModel(&double_model);
   unique_ptr<FemState<double>> double_state =
       MakeDeformedFemState(double_model);
   auto tangent_matrix = double_model.MakeTangentMatrix();
-  double_model.CalcTangentMatrix(*double_state, double_integrator_.GetWeights(),
-                                 tangent_matrix.get());
+  double_model.CalcTangentMatrix(*double_state, tangent_matrix.get());
   const MatrixXd tangent_matrix_dense = tangent_matrix->MakeDenseMatrix();
   EXPECT_TRUE(CompareMatrices(math::ExtractGradient(residual),
                               tangent_matrix_dense,
@@ -212,7 +211,7 @@ TEST_F(VolumetricModelTest, MultipleMesh) {
 
 TEST_F(VolumetricModelTest, ElasticEnergy) {
   using DoubleModel = VolumetricModel<DoubleElement>;
-  DoubleModel double_model;
+  DoubleModel double_model(double_integrator_.GetWeights());
   AddBoxToModel(&double_model);
   unique_ptr<FemState<double>> state = double_model.MakeFemState();
   /* Inflate the elements so that the infinitestimal strain E = I. */
@@ -234,7 +233,7 @@ TEST_F(VolumetricModelTest, ElasticEnergy) {
 
 TEST_F(VolumetricModelTest, Clone) {
   using DoubleModel = VolumetricModel<DoubleElement>;
-  DoubleModel double_model;
+  DoubleModel double_model(double_integrator_.GetWeights());
   AddBoxToModel(&double_model);
 
   std::unique_ptr<FemModel<double>> clone = double_model.Clone();
@@ -253,6 +252,17 @@ TEST_F(VolumetricModelTest, Clone) {
   EXPECT_EQ(state->GetAccelerations(), clone_state->GetAccelerations());
   EXPECT_EQ(state->num_dofs(), clone_state->num_dofs());
   EXPECT_EQ(state->num_nodes(), clone_state->num_nodes());
+}
+
+/* Tests the get_total_mass() function for VolumetricModel. */
+TEST_F(VolumetricModelTest, TotalMass) {
+  using DoubleModel = VolumetricModel<DoubleElement>;
+  DoubleModel single_box_model(double_integrator_.GetWeights());
+  AddBoxToModel(&single_box_model);
+  /* Calculate expected mass: density * volume. */
+  const double volume = kBoxLength * kBoxLength * kBoxLength;
+  const double expected_mass = kDensity * volume;
+  EXPECT_DOUBLE_EQ(single_box_model.get_total_mass(), expected_mass);
 }
 
 }  // namespace

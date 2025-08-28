@@ -1,6 +1,5 @@
 #include "drake/multibody/tree/body_node_impl.h"
 
-#include "drake/common/default_scalars.h"
 #include "drake/multibody/tree/curvilinear_mobilizer.h"
 #include "drake/multibody/tree/planar_mobilizer.h"
 #include "drake/multibody/tree/prismatic_mobilizer.h"
@@ -16,19 +15,19 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-template <typename T, template <typename> class ConcreteMobilizer>
-BodyNodeImpl<T, ConcreteMobilizer>::BodyNodeImpl(
-    const internal::BodyNode<T>* parent_node, const RigidBody<T>* rigid_body,
-    const Mobilizer<T>* mobilizer)
+template <typename T, class ConcreteMobilizer>
+BodyNodeImpl<T, ConcreteMobilizer>::BodyNodeImpl(const BodyNode<T>* parent_node,
+                                                 const RigidBody<T>* rigid_body,
+                                                 const Mobilizer<T>* mobilizer)
     : BodyNode<T>(parent_node, rigid_body, mobilizer),
-      mobilizer_(dynamic_cast<const ConcreteMobilizer<T>*>(mobilizer)) {
+      mobilizer_(dynamic_cast<const ConcreteMobilizer*>(mobilizer)) {
   DRAKE_DEMAND(mobilizer_ != nullptr);
 }
 
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 BodyNodeImpl<T, ConcreteMobilizer>::~BodyNodeImpl() = default;
 
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcPositionKinematicsCache_BaseToTip(
     const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
     PositionKinematicsCache<T>* pc) const {
@@ -36,25 +35,94 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcPositionKinematicsCache_BaseToTip(
   DRAKE_ASSERT(mobod_index() != world_mobod_index());
   DRAKE_ASSERT(pc != nullptr);
 
-  // TODO(sherm1) This should be an update rather than generating a whole
-  //  new transform.
+  // RigidBody for this node.
+  const RigidBody<T>& body_B = body();
+
+  // RigidBody for this node's parent, or the parent body P.
+  const RigidBody<T>& body_P = parent_body();
+
+  // Inboard (F)/Outboard (M) frames of this node's mobilizer.
+  const Frame<T>& frame_F = inboard_frame();
+  DRAKE_ASSERT(frame_F.body().index() == body_P.index());
+  const Frame<T>& frame_M = outboard_frame();
+  DRAKE_ASSERT(frame_M.body().index() == body_B.index());
+
+  // Input (const):
+  // - X_PF
+  // - X_MB
+  // - X_WP(q(W:P)), where q(W:P) includes all positions in the kinematics
+  //                 path from parent body P to the world W.
+  const math::RigidTransform<T>& X_PF =
+      frame_F.get_X_BF(frame_body_pose_cache);  // B==P
+  const bool X_PF_is_identity = frame_F.is_X_BF_identity(frame_body_pose_cache);
+
+  const math::RigidTransform<T>& X_MB =
+      frame_M.get_X_FB(frame_body_pose_cache);  // F==M
+  const bool X_MB_is_identity = frame_M.is_X_BF_identity(frame_body_pose_cache);
+  const math::RigidTransform<T>& X_WP = pc->get_X_WB(inboard_mobod_index());
+
+  // Output (updating a cache entry):
+  // - X_FM(q_B)
+  // - X_PB(q_B)
+  // - X_WB(q(W:P), q_B)
+  // - p_PoBo_W(q_B)
+  math::RigidTransform<T>& X_FM = pc->get_mutable_X_FM(mobod_index());
+  math::RigidTransform<T>& X_PB = pc->get_mutable_X_PB(mobod_index());
+  math::RigidTransform<T>& X_WB = pc->get_mutable_X_WB(mobod_index());
+  Vector3<T>& p_PoBo_W = pc->get_mutable_p_PoBo_W(mobod_index());
 
   // Update mobilizer-specific position dependent kinematics.
-  math::RigidTransform<T>& X_FM = get_mutable_X_FM(pc);
-  X_FM = mobilizer_->calc_X_FM(get_q(positions));
+  mobilizer_->update_X_FM(get_q(positions), &X_FM);
 
-  // Given X_FM that we just put into PositionKinematicsCache (pc), and
-  // calculations already done through the parent mobilizer, this
-  // calculates into pc: X_PB, X_WB, p_PoBo_W
-  // Not mobilizer specific so implemented in the base class.
-  BodyNode<T>::CalcAcrossMobilizerBodyPoses_BaseToTip(frame_body_pose_cache,
-                                                      pc);
+  // FYI I measured the effect of the following optimization on CassieBench
+  // position kinematics, over simply executing the general case always. It
+  // runs about 10% faster with the optimization in place.
+
+  // Cases: 0 general case
+  //        1 only X_PF is identity (not likely)
+  //        2 only X_MB is identity (very likely from urdf files)
+  //        3 both are identity (doubtful)
+  const int special_case = X_MB_is_identity << 1 | X_PF_is_identity;
+  switch (special_case) {
+    case 0:  // The general case.
+    {
+      const math::RigidTransform<T> X_FB =
+          mobilizer_->pre_multiply_by_X_FM(X_FM, X_MB);
+      X_PB = X_PF * X_FB;
+      X_WB = X_WP * X_PB;
+    } break;
+    case 1:  // Only X_PF is identity.
+      // X_PB = X_PF * X_FM * X_MB
+      //      =   I  * X_FM * X_MB
+      X_PB = mobilizer_->pre_multiply_by_X_FM(X_FM, X_MB);
+      X_WB = X_WP * X_PB;  // No shortcut.
+      break;
+    case 2:  // Only X_MB is identity (common case).
+      // X_PB = X_PF * X_FM * X_MB
+      //      = X_PF * X_FM *  I
+      X_PB = mobilizer_->post_multiply_by_X_FM(X_PF, X_FM);
+      X_WB = X_WP * X_PB;  // No shortcut.
+      break;
+    case 3:  // The best case: both X_PF and X_BM are identity.
+      // X_PB = X_PF * X_FM * X_MB
+      //      =   I  * X_FM *  I
+      // X_WB = X_WP * X_PB
+      //      = X_WP * X_FM
+      X_PB = X_FM;
+      X_WB = mobilizer_->post_multiply_by_X_FM(X_WP, X_FM);
+      break;
+  }
+
+  // Compute shift vector p_PoBo_W from the parent origin to the body origin.
+  const Vector3<T>& p_PoBo_P = X_PB.translation();
+  const math::RotationMatrix<T>& R_WP = X_WP.rotation();
+  p_PoBo_W = R_WP * p_PoBo_P;
 }
 
 // TODO(sherm1) Consider combining this with VelocityCache computation
 //  so that we don't have to make a separate pass. Or better, get rid of this
 //  computation altogether by working in better frames.
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::
     CalcAcrossNodeJacobianWrtVExpressedInWorld(
         const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
@@ -66,47 +134,61 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
 
   // Nothing to do for a weld mobilizer.
   if constexpr (kNv > 0) {
-    // Inboard frame F of this node's mobilizer.
     const Frame<T>& frame_F = inboard_frame();
-    // Outboard frame M of this node's mobilizer.
     const Frame<T>& frame_M = outboard_frame();
 
-    const math::RigidTransform<T>& X_PF =
-        frame_F.get_X_BF(frame_body_pose_cache);  // B==P
-    const math::RotationMatrix<T>& R_PF = X_PF.rotation();
-    const math::RigidTransform<T>& X_MB =
-        frame_M.get_X_FB(frame_body_pose_cache);  // F==M
-
-    // Form the rotation matrix relating the world frame W and parent body P.
+    const math::RotationMatrix<T>& R_PF =
+        frame_F.get_X_BF(frame_body_pose_cache).rotation();
+    // Get the rotation matrix relating the world frame W and parent body P.
     const math::RotationMatrix<T>& R_WP = get_R_WP(pc);
-
     // Orientation (rotation) of frame F with respect to the world frame W.
     const math::RotationMatrix<T> R_WF = R_WP * R_PF;
 
-    // Vector from Mo to Bo expressed in frame F as needed below:
-    const math::RotationMatrix<T>& R_FM = get_X_FM(pc).rotation();
-    const Vector3<T>& p_MB_M = X_MB.translation();
-    const Vector3<T> p_MB_F = R_FM * p_MB_M;
-
     const T* q = get_q(positions);  // just this mobilizer's q's
-    VVector<T> v = VVector<T>::Zero();
     auto H_PB_W = get_mutable_H(H_PB_W_cache);
     // We compute H_FM(q) one column at a time by calling the multiplication by
     // H_FM operation on a vector of generalized velocities which is zero except
-    // for its imob-th component, which is one.
-    for (int imob = 0; imob < kNv; ++imob) {
-      v(imob) = 1.0;
-      // Compute the imob-th column of H_FM:
-      const SpatialVelocity<T> Himob_FM = mobilizer_->calc_V_FM(q, v.data());
-      v(imob) = 0.0;
-      // V_PB_W = V_PFb_W + V_FMb_W + V_MB_W = V_FMb_W =
-      //         = R_WF * V_FM.Shift(p_MoBo_F)
-      H_PB_W.col(imob) = (R_WF * Himob_FM.Shift(p_MB_F)).get_coeffs();
+    // for its i-th component, which is one.
+
+    // Note: it is frequently the case that the mobilizer outboard frame M is
+    // coincident with the body frame B (and we cache that information for
+    // quick access). That allows us to avoid a shift operation in the small
+    // loop below. I (sherm1) timed velocity kinematics with and without this
+    // optimization, introduced in PR #22977. With gcc 11.4.0 it accounts for
+    // an almost 20% speedup in velocity kinematics, so is worth doing.
+    const bool is_X_MB_identity =
+        frame_M.is_X_BF_identity(frame_body_pose_cache);
+    if (is_X_MB_identity) {
+      VVector<T> v = VVector<T>::Zero();
+      for (int i = 0; i < kNv; ++i) {
+        v(i) = 1.0;  // Compute the i-th column of H_FM (== H_FB here).
+        const SpatialVelocity<T> Hi_FB_F = mobilizer_->calc_V_FM(q, v.data());
+        v(i) = 0.0;
+        // Frame F is fixed to rigid body P so V_PB = V_FB.
+        H_PB_W.col(i) = (R_WF * Hi_FB_F).get_coeffs();
+      }
+      return;
+    }
+
+    // X_MB is not identity.
+    const Vector3<T>& p_MB_M =
+        frame_M.get_X_FB(frame_body_pose_cache).translation();
+    // Vector from Mo to Bo expressed in frame F as needed below:
+    const math::RotationMatrix<T>& R_FM = get_X_FM(pc).rotation();
+    const Vector3<T> p_MB_F = mobilizer_->apply_R_FM(R_FM, p_MB_M);
+
+    VVector<T> v = VVector<T>::Zero();
+    for (int i = 0; i < kNv; ++i) {
+      v(i) = 1.0;  // Compute the i-th column of H_FM.
+      const SpatialVelocity<T> Hi_FM = mobilizer_->calc_V_FM(q, v.data());
+      v(i) = 0.0;
+      // Frame F is fixed to rigid body P so V_PB = V_FB = V_FM.Shift(p_MB).
+      H_PB_W.col(i) = (R_WF * Hi_FM.Shift(p_MB_F)).get_coeffs();
     }
   }
 }
 
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
     const T* positions, const PositionKinematicsCache<T>& pc,
     const std::vector<Vector6<T>>& H_PB_W_cache, const T* velocities,
@@ -117,14 +199,10 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
 
   // Hinge matrix for this node. H_PB_W ∈ ℝ⁶ˣⁿᵐ with nm ∈ [0; 6] the
   // number of mobilities for this node. Therefore, the return is a
-  // MatrixUpTo6 since the number of columns generally changes with the
-  // node.  It is returned as an Eigen::Map to the memory allocated in the
+  // Matrix<6,kNv> since the number of columns depends on the mobilizer type.
+  // It is returned as an Eigen::Map to the memory allocated in the
   // std::vector H_PB_W_cache so that we can work with H_PB_W as with any
   // other Eigen matrix object.
-  //  Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
-  //      this->GetJacobianFromArray(H_PB_W_cache);
-  //  DRAKE_ASSERT(H_PB_W.rows() == 6);
-  //  DRAKE_ASSERT(H_PB_W.cols() == mobilizer_->num_velocities();
 
   // As a guideline for developers, a summary of the computations performed in
   // this method is provided:
@@ -140,7 +218,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
   //   V_WB = V_WPb + V_PB_W (Eq. 5.6 in Jain (2010), p. 77)              (1)
   // where Pb is a frame aligned with P but with its origin shifted from Po
   // to B's origin Bo. Then V_WPb is the spatial velocity of frame Pb,
-  // measured and expressed in the world frame W. Then since V_PB's
+  // measured and expressed in the world frame W. Since V_PB's
   // translational component is also for the point Bo, we can add these
   // spatial velocities. Therefore we need to develop expressions for the two
   // terms (V_WPb and V_PB_W) in Eq. (1).
@@ -152,12 +230,12 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
   // which can be computed from the spatial velocity measured in frame F (as
   // provided by mobilizer's methods)
   //   V_FMb_W = R_WF * V_FMb = R_WF * V_FM.Shift(p_MoBo_F)               (3)
-  // arriving to the desired result:
+  // arriving at the desired result:
   //   V_PB_W = R_WF * V_FM.Shift(p_MoBo_F)                               (4)
   //
-  // V_FM is immediately available from this node's mobilizer with the method
-  // CalcAcrossMobilizerSpatialVelocity() which computes M's spatial velocity
-  // in F by V_FM = H_FM * vm, where H_FM is the mobilizer's hinge matrix.
+  // V_FM = H_FM * vm is immediately available from this node's mobilizer where
+  // H_FM is the mobilizer's hinge matrix, and vm this mobilizer's generalized
+  // velocities.
   //
   // Computation of V_WPb:
   // This can be computed by a simple shift operation from V_WP:
@@ -264,7 +342,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
 //
 // Note: ignores velocities if vc is null, in which case velocities must
 // also be null.
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAcceleration_BaseToTip(
     const FrameBodyPoseCache<T>& frame_body_poses_cache, const T* positions,
     const PositionKinematicsCache<T>& pc,
@@ -297,7 +375,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAcceleration_BaseToTip(
   // TODO(amcastro-tri): consider caching p_MB_F, also used to compute H_PB_W.
   const math::RotationMatrix<T>& R_FM = get_X_FM(pc).rotation();
   const Vector3<T>& p_MB_M = X_MB.translation();
-  const Vector3<T> p_MB_F = R_FM * p_MB_M;
+  const Vector3<T> p_MB_F = mobilizer_->apply_R_FM(R_FM, p_MB_M);
 
   // Shift vector between the parent body P and this node's body B,
   // expressed in the world frame W.
@@ -320,7 +398,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAcceleration_BaseToTip(
   // N.B. It is possible for positions & velocities to be null here if
   // the system consists only of welds (one of our unit tests does that).
 
-  // Operator A_FM = H_FM * vmdot + Hdot_FM * vm
+  // Operator A_FM = H_FM(qₘ)⋅v̇ₘ + Ḣ_FM(qₘ,vₘ)⋅vₘ
   const SpatialAcceleration<T> A_FM = mobilizer_->calc_A_FM(
       get_q(positions), get_v(velocities), get_v(accelerations));
 
@@ -393,7 +471,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAcceleration_BaseToTip(
 
 // Caution: we permit outputs F_BMo_W_array and tau_array to be the same
 // objects as Fapplied_Bo_W_array and tau_applied_array.
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
     const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
     const PositionKinematicsCache<T>& pc,
@@ -409,6 +487,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
   const bool is_tau_applied = (ssize(tau_applied_array) != 0);
 
   // Check sizes.
+  DRAKE_ASSERT(this->has_parent_tree());
   DRAKE_ASSERT(Fb_Bo_W_cache == nullptr ||
                ssize(*Fb_Bo_W_cache) == this->get_parent_tree().num_mobods());
   DRAKE_ASSERT(!is_Fapplied || ssize(Fapplied_Bo_W_array) ==
@@ -422,11 +501,11 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
   //   Ftot_BBo = M_B * A_WB + Fb_Bo
   const SpatialInertia<T>& M_B_W = M_B_W_cache[mobod_index()];
   const SpatialAcceleration<T>& A_WB = A_WB_array[mobod_index()];
-  SpatialForce<T> Ftot_BBo_W = M_B_W * A_WB;
+  SpatialForce<T> Ftot_BBo_W = M_B_W * A_WB;  // 45 flops
   if (Fb_Bo_W_cache != nullptr) {
     // Dynamic bias for body B.
     const SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_cache)[mobod_index()];
-    Ftot_BBo_W += Fb_Bo_W;
+    Ftot_BBo_W += Fb_Bo_W;  // 6 flops
   }
 
   // We're looking for forces due to the mobilizer, so remove the applied
@@ -434,7 +513,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
   if (is_Fapplied) {
     // Use the applied force before it gets overwritten below.
     const SpatialForce<T>& Fapp_Bo_W = Fapplied_Bo_W_array[mobod_index()];
-    Ftot_BBo_W -= Fapp_Bo_W;
+    Ftot_BBo_W -= Fapp_Bo_W;  // 6 flops
   }
 
   // Compute shift vector from Bo to Mo expressed in the world frame W.
@@ -442,14 +521,14 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
       outboard_frame().get_X_BF(frame_body_pose_cache);  // F==M
   const Vector3<T>& p_BoMo_B = X_BM.translation();
   const math::RotationMatrix<T>& R_WB = get_X_WB(pc).rotation();
-  const Vector3<T> p_BoMo_W = R_WB * p_BoMo_B;
+  const Vector3<T> p_BoMo_W = R_WB * p_BoMo_B;  // 15 flops
 
   // Output spatial force that would need to be exerted by this node's
   // mobilizer in order to attain the prescribed acceleration A_WB.
   SpatialForce<T>& F_BMo_W = (*F_BMo_W_array)[mobod_index()];
-  F_BMo_W = Ftot_BBo_W.Shift(p_BoMo_W);  // May override Fapplied.
+  F_BMo_W = Ftot_BBo_W.Shift(p_BoMo_W);  // May override Fapplied (12 flops).
 
-  // Add in contribution to F_B_Mo_W from outboard nodes.
+  // Add in contribution to F_B_Mo_W from outboard nodes. (39 flops per)
   for (const BodyNode<T>* child_node : child_nodes()) {
     const MobodIndex child_node_index = child_node->mobod_index();
 
@@ -461,13 +540,13 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
     const math::RotationMatrix<T>& R_WC =
         pc.get_X_WB(child_node_index).rotation();
     const math::RigidTransform<T>& X_CMc =
-        frame_Mc.get_X_BF(frame_body_pose_cache);  // B==C, F==Mc
-    const Vector3<T>& p_CoMc_W = R_WC * X_CMc.translation();
+        frame_Mc.get_X_BF(frame_body_pose_cache);             // B==C, F==Mc
+    const Vector3<T>& p_CoMc_W = R_WC * X_CMc.translation();  // 15 flops
 
     // Shift position vector from child C outboard mobilizer frame Mc to body
     // B outboard mobilizer Mc. p_MoMc_W:
     // Since p_BoMo = p_BoCo + p_CoMc + p_McMo, we have:
-    const Vector3<T> p_McMo_W = p_BoMo_W - p_BoCo_W - p_CoMc_W;
+    const Vector3<T> p_McMo_W = p_BoMo_W - p_BoCo_W - p_CoMc_W;  // 6 flops
 
     // Spatial force on the child body C at the origin Mc of the outboard
     // mobilizer frame for the child body.
@@ -482,10 +561,10 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
 
     // Shift to this node's mobilizer origin Mo (still, F_CMo is the force
     // acting on the child body C):
-    const SpatialForce<T> F_CMo_W = F_CMc_W.Shift(p_McMo_W);
+    const SpatialForce<T> F_CMo_W = F_CMc_W.Shift(p_McMo_W);  // 12 flops
     // From Eq. (3), this force is added (with positive sign) to the force
     // applied by this body's mobilizer:
-    F_BMo_W += F_CMo_W;
+    F_BMo_W += F_CMo_W;  // 6 flops
   }
 
   // Re-express F_BMo_W in the inboard frame F before projecting it onto the
@@ -496,8 +575,8 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
   const math::RotationMatrix<T>& R_WP = get_R_WP(pc);
   // TODO(amcastro-tri): consider caching R_WF since also used in position and
   //  velocity kinematics.
-  const math::RotationMatrix<T> R_WF = R_WP * R_PF;
-  const SpatialForce<T> F_BMo_F = R_WF.inverse() * F_BMo_W;
+  const math::RotationMatrix<T> R_WF = R_WP * R_PF;          // 45 flops
+  const SpatialForce<T> F_BMo_F = R_WF.inverse() * F_BMo_W;  // 30 flops
 
   // The generalized forces on the mobilizer correspond to the active
   // components of the spatial force performing work. Therefore we need to
@@ -518,7 +597,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
   }
 }
 
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::
     CalcArticulatedBodyInertiaCache_TipToBase(
         const systems::Context<T>& context,
@@ -528,6 +607,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
         ArticulatedBodyInertiaCache<T>* abic) const {
   DRAKE_DEMAND(mobod_index() != world_mobod_index());
   DRAKE_DEMAND(abic != nullptr);
+  DRAKE_DEMAND(this->has_parent_tree());
   DRAKE_DEMAND(diagonal_inertias.size() ==
                this->get_parent_tree().num_velocities());
 
@@ -670,7 +750,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
   }
 }
 
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::
     CalcArticulatedBodyForceCache_TipToBase(
         const systems::Context<T>& context,
@@ -726,7 +806,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
   }
 }
 
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::
     CalcArticulatedBodyAccelerations_BaseToTip(
         const systems::Context<T>& context,
@@ -779,7 +859,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
   }
 }
 
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAccelerationBias(
     const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
     const PositionKinematicsCache<T>& pc, const T* velocities,
@@ -807,7 +887,9 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAccelerationBias(
   const math::RotationMatrix<T> R_WF = R_WP * R_PF;
 
   // Compute shift vector p_MoBo_F.
-  const Vector3<T> p_MoBo_F = get_X_FM(pc).rotation() * X_MB.translation();
+  const math::RotationMatrix<T>& R_FM = get_X_FM(pc).rotation();
+  const Vector3<T>& p_MoBo_M = X_MB.translation();
+  const Vector3<T> p_MoBo_F = mobilizer_->apply_R_FM(R_FM, p_MoBo_M);
 
   // The goal is to compute Ab_WB = Ac_WB + Ab_PB_W, see @ref
   // abi_computing_accelerations.
@@ -864,17 +946,21 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAccelerationBias(
 }
 
 // Macro used to explicitly instantiate implementations for every mobilizer.
-#define EXPLICITLY_INSTANTIATE_IMPLS(T)                        \
-  template class BodyNodeImpl<T, CurvilinearMobilizer>;        \
-  template class BodyNodeImpl<T, PlanarMobilizer>;             \
-  template class BodyNodeImpl<T, PrismaticMobilizer>;          \
-  template class BodyNodeImpl<T, QuaternionFloatingMobilizer>; \
-  template class BodyNodeImpl<T, RevoluteMobilizer>;           \
-  template class BodyNodeImpl<T, RpyBallMobilizer>;            \
-  template class BodyNodeImpl<T, RpyFloatingMobilizer>;        \
-  template class BodyNodeImpl<T, ScrewMobilizer>;              \
-  template class BodyNodeImpl<T, UniversalMobilizer>;          \
-  template class BodyNodeImpl<T, WeldMobilizer>
+#define EXPLICITLY_INSTANTIATE_IMPLS(T)                           \
+  template class BodyNodeImpl<T, CurvilinearMobilizer<T>>;        \
+  template class BodyNodeImpl<T, PlanarMobilizer<T>>;             \
+  template class BodyNodeImpl<T, PrismaticMobilizerAxial<T, 0>>;  \
+  template class BodyNodeImpl<T, PrismaticMobilizerAxial<T, 1>>;  \
+  template class BodyNodeImpl<T, PrismaticMobilizerAxial<T, 2>>;  \
+  template class BodyNodeImpl<T, QuaternionFloatingMobilizer<T>>; \
+  template class BodyNodeImpl<T, RevoluteMobilizerAxial<T, 0>>;   \
+  template class BodyNodeImpl<T, RevoluteMobilizerAxial<T, 1>>;   \
+  template class BodyNodeImpl<T, RevoluteMobilizerAxial<T, 2>>;   \
+  template class BodyNodeImpl<T, RpyBallMobilizer<T>>;            \
+  template class BodyNodeImpl<T, RpyFloatingMobilizer<T>>;        \
+  template class BodyNodeImpl<T, ScrewMobilizer<T>>;              \
+  template class BodyNodeImpl<T, UniversalMobilizer<T>>;          \
+  template class BodyNodeImpl<T, WeldMobilizer<T>>
 
 // Explicitly instantiates on the supported scalar types.
 // These should be kept in sync with the list in default_scalars.h.

@@ -10,6 +10,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/parallelism.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/fem/dirichlet_boundary_condition.h"
 #include "drake/multibody/fem/fem_plant_data.h"
@@ -154,15 +155,11 @@ class FemModel {
    the tangent matrix is set to zero with the exception of the diagonal entries
    which is set to a scalar multiple of identity.
    @param[in] fem_state        The FemState used to evaluate the tangent matrix.
-   @param[in] weights          The weights used to combine stiffness, damping,
-                               and mass matrices (in that order) into the
-                               tangent matrix.
    @param[out] tangent_matrix  The output tangent_matrix.
    @pre tangent_matrix != nullptr.
    @pre The size of `tangent_matrix` is `num_dofs()` * `num_dofs()`.
    @pre All nonzero entries in the resulting tangent matrix have been allocated.
    See MakeTangentMatrix().
-   @pre All entries in `weights` are non-negative.
    @warning This function sometimes makes simplifying approximations to avoid
    taking overly complicated derivatives. As such, the resulting tangent
    matrix may be an approximation of the actual value depending on the
@@ -170,9 +167,45 @@ class FemModel {
    @throws std::exception if the FEM state is incompatible with this model.
    @throws std::exception if T is not double. */
   void CalcTangentMatrix(
-      const FemState<T>& fem_state, const Vector3<T>& weights,
+      const FemState<T>& fem_state,
       contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
       const;
+
+  /** Calculates the position vector from the world origin Wo to the center
+   of mass of all bodies in this FemModel S, expressed in the world frame W.
+   @param[in] fem_state The FemState used to evaluate the center of mass.
+   @retval p_WoScm_W position vector from Wo to Scm expressed in world frame W,
+   where Scm is the center of mass of the system S stored by `this` FemModel.
+   @throws std::exception if the FEM state is incompatible with this model. */
+  Vector3<T> CalcCenterOfMassPositionInWorld(
+      const FemState<T>& fem_state) const;
+
+  /** Calculates system center of mass translational velocity in world frame W.
+   @param[in] fem_state The FemState used for this calculation.
+   @retval v_WScm_W Scm's translational velocity in frame W, expressed in W,
+   where Scm is the center of mass of the system S stored by this FemModel.
+   @throws std::exception if the FEM state is incompatible with this model. */
+  Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
+      const FemState<T>& fem_state) const;
+
+  /** Using an angular momentum analogy, calculates an "effective" angular
+   velocity for this FemModel S, measured and expressed in the world frame W.
+   The effective angular velocity is computed using an angular momentum equation
+   that assumes S is a rigid body (albeit we know S is deformable).
+
+        H_WSSm_W = I_SScm_W * w_WScm_W
+
+   for which when solved for w_WScm_W gives
+
+        w_WScm_W = inverse(I_SScm_W) * H_WSSm_W
+
+   where H_WSSm_W is the FemModel S's angular momentum about its center of mass
+   Scm measured and expressed in the world frame W.
+   @param[in] fem_state The FemState used for this calculation.
+   @retval w_WScm_W the FemModel S's effective angular velocity for Scm,
+   measured and expressed in the world frame W.
+   @throws std::exception if the FEM state is incompatible with this model. */
+  Vector3<T> CalcEffectiveAngularVelocity(const FemState<T>& fem_state) const;
 
   /** Creates a symmetric block sparse matrix that has the sparsity pattern
    of the tangent matrix of this FEM model. In particular, the size of the
@@ -190,10 +223,13 @@ class FemModel {
 
   // TODO(xuchenhan-tri): Internal object in public signature in non-internal
   //  class.
-  /** Sets the Dirichlet boundary condition that this model is subject to. */
+  /** Sets the Dirichlet boundary condition that this model is subject to.
+   If dirichlet_bc specifies the boundary condition for a node for which a
+   boundary condition has already been specified, the lastest one will be used.
+  */
   void SetDirichletBoundaryCondition(
-      internal::DirichletBoundaryCondition<T> dirichlet_bc) {
-    dirichlet_bc_ = std::move(dirichlet_bc);
+      const internal::DirichletBoundaryCondition<T>& dirichlet_bc) {
+    dirichlet_bc_.Merge(dirichlet_bc);
   }
 
   /** Returns the Dirichlet boundary condition that this model is subject to. */
@@ -212,14 +248,36 @@ class FemModel {
     return state.is_created_from_system(*fem_state_system_);
   }
 
+  /* The weights used to combine stiffness, damping, and mass matrices (in that
+   order) to form the tangent matrix . */
+  const Vector3<T>& tangent_matrix_weights() const {
+    return tangent_matrix_weights_;
+  }
+
   /** (Internal use only) Throws std::exception to report a mismatch between
   the FEM model and state that were passed to API method `func`. */
   void ThrowIfModelStateIncompatible(const char* func,
                                      const FemState<T>& fem_state) const;
 
+  // TODO(xuchenhan-tri): Restrict the entry point to parallelism configuration
+  // so that's more difficult to misuse. We want to avoid, for example, a user
+  // calling SetParallelism(Parallelism::Max()) on a model that has already been
+  // parallelized at a higher level.
+  /** (Internal use only) Configures the parallelism that `this` %FemModel uses
+   when opportunities for parallel computation arises. */
+  void set_parallelism(Parallelism parallelism) { parallelism_ = parallelism; }
+
+  /** (Internal use only) Returns the parallelism that `this` %FemModel uses
+   when opportunities for parallel computation arises. */
+  Parallelism parallelism() const { return parallelism_; }
+
+  /** Returns the total mass of the system. */
+  T get_total_mass() const { return total_mass_; }
+
  protected:
-  /** Constructs an empty FEM model. */
-  FemModel();
+  /** Constructs an empty FEM model.
+   @pre tangent_matrix_weights.minCoeff() >= 0.0. */
+  explicit FemModel(const Vector3<T>& tangent_matrix_weights);
 
   /** FemModelImpl must override this method to provide an implementation to
    make a deep copy of the concrete FemModel. */
@@ -241,9 +299,27 @@ class FemModel {
    compatible with `this` FEM model, and the input `tangent_matrix` is
    guaranteed to be non-null and properly sized. */
   virtual void DoCalcTangentMatrix(
-      const FemState<T>& fem_state, const Vector3<T>& weights,
+      const FemState<T>& fem_state,
       contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
       const = 0;
+
+  /** FemModelImpl must override this method to provide an implementation for
+   the NVI CalcCenterOfMassPositionInWorld(). The input `fem_state` is
+   guaranteed to be compatible with `this` FEM model. */
+  virtual Vector3<T> DoCalcCenterOfMassPositionInWorld(
+      const FemState<T>& fem_state) const = 0;
+
+  /** FemModelImpl must override this method to provide an implementation for
+   the NVI CalcCenterOfMassTranslationalVelocityInWorld(). The input `fem_state`
+   is guaranteed to be compatible with `this` FEM model. */
+  virtual Vector3<T> DoCalcCenterOfMassTranslationalVelocityInWorld(
+      const FemState<T>& fem_state) const = 0;
+
+  /** FemModelImpl must override this method to provide an implementation for
+   the NVI CalcEffectiveAngularVelocity(). The input `fem_state`
+   is guaranteed to be compatible with `this` FEM model. */
+  virtual Vector3<T> DoCalcEffectiveAngularVelocity(
+      const FemState<T>& fem_state) const = 0;
 
   /** FemModelImpl must override this method to provide an implementation for
    the NVI MakeTangentMatrix(). */
@@ -272,11 +348,21 @@ class FemModel {
   }
 
  private:
+  /** Computes the total mass of the system. FemModelImpl must override this
+   method to provide an implementation for the NVI CalcTotalMass(). */
+  virtual T DoCalcTotalMass() const = 0;
+
   /* The system that manages the states and cache entries of this FEM model.
    */
   std::unique_ptr<internal::FemStateSystem<T>> fem_state_system_;
   /* The Dirichlet boundary condition that the model is subject to. */
   internal::DirichletBoundaryCondition<T> dirichlet_bc_;
+  /* The weights used to combine stiffness, damping, and mass matrices (in that
+   order) to form the tangent matrix. */
+  Vector3<T> tangent_matrix_weights_;
+  Parallelism parallelism_{false};
+  /* The total mass of the system. */
+  T total_mass_{};
 };
 
 }  // namespace fem

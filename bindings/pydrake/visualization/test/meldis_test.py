@@ -413,12 +413,31 @@ class TestMeldis(unittest.TestCase):
         self.assertNotEqual(gltf_hash_2, empty_hash)
         self.assertNotEqual(gltf_hash_2, gltf_hash_1)
 
-        # Valid glTF file reference an external image.
+        # Valid glTF file references an external image.
         with open(gltf_filename, "w") as f:
             f.write(json.dumps({"images": [{"uri": str(png_filename)}]}))
         gltf_hash_3 = dut(message)
         self.assertNotEqual(gltf_hash_3, empty_hash)
         self.assertNotEqual(gltf_hash_3, gltf_hash_2)
+
+        # Valid glTF file references an inline image.
+        with open(gltf_filename, "w") as f:
+            data_uri = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAgAAZABkAAD"
+            f.write(json.dumps({"images": [{"uri": data_uri}]}))
+        gltf_hash_4 = dut(message)
+        self.assertNotEqual(gltf_hash_4, empty_hash)
+        self.assertNotEqual(gltf_hash_4, gltf_hash_3)
+
+        # Valid(ish) glTF file references a buffer image.
+        with open(gltf_filename, "w") as f:
+            f.write(json.dumps({
+                "buffers": [{"byteLength": 0}],
+                "bufferViews": [{"buffer": 0, "byteLength": 0}],
+                "images": [{"bufferView": 0, "mimeType": "image/png"}],
+            }))
+        gltf_hash_5 = dut(message)
+        self.assertNotEqual(gltf_hash_5, empty_hash)
+        self.assertNotEqual(gltf_hash_5, gltf_hash_4)
 
         # Now finally, the glTF file has a .bin. This time, as a cross-check,
         # inspect the filenames that were hashed instead of the hash itself.

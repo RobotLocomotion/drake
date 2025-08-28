@@ -54,6 +54,7 @@ using drake::trajectories::PiecewiseConstantCurvatureTrajectory;
 using drake::trajectories::Trajectory;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::VectorXd;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
@@ -2558,6 +2559,188 @@ TEST_F(SdfParserTest, BallConstraintNonExistentBody) {
           "<drake:ball_constraint_body_B> does not exist in the model."));
 }
 
+TEST_F(SdfParserTest, TendonConstraint) {
+  AddSceneGraph();
+
+  // Test successful parsing.
+  ParseTestString(R"""(
+    <world name='World'>
+      <model name='Model'>
+        <link name='A'/>
+        <link name='B'/>
+        <link name='C'/>
+        <joint name='revolute_AB' type='revolute'>
+          <child>A</child>
+          <parent>B</parent>
+          <axis>
+            <xyz>0 0 1</xyz>
+          </axis>
+        </joint>
+        <joint name='prismatic_BC' type='prismatic'>
+          <child>B</child>
+          <parent>C</parent>
+          <axis>
+            <xyz>0 0 1</xyz>
+          </axis>
+        </joint>
+        <drake:tendon_constraint>
+          <drake:tendon_constraint_joint name='revolute_AB' a='10'/>
+          <drake:tendon_constraint_joint name='prismatic_BC' a='20'/>
+          <drake:tendon_constraint_offset>0.5</drake:tendon_constraint_offset>
+          <drake:tendon_constraint_lower_limit>-1.0</drake:tendon_constraint_lower_limit>
+          <drake:tendon_constraint_upper_limit>1.0</drake:tendon_constraint_upper_limit>
+          <drake:tendon_constraint_stiffness>0.1</drake:tendon_constraint_stiffness>
+          <drake:tendon_constraint_damping>0.01</drake:tendon_constraint_damping>
+        </drake:tendon_constraint>
+      </model>
+    </world>)""");
+
+  EXPECT_EQ(plant_.num_constraints(), 1);
+  EXPECT_EQ(plant_.num_tendon_constraints(), 1);
+
+  const std::map<MultibodyConstraintId, TendonConstraintSpec>&
+      tendon_constraints = plant_.get_tendon_constraint_specs();
+
+  ASSERT_EQ(ssize(tendon_constraints), 1);
+
+  const MultibodyConstraintId id = tendon_constraints.begin()->first;
+  const TendonConstraintSpec& tendon_constraint =
+      tendon_constraints.begin()->second;
+
+  ASSERT_EQ(ssize(tendon_constraint.joints), 2);
+  ASSERT_EQ(ssize(tendon_constraint.a), 2);
+
+  EXPECT_EQ(tendon_constraint.joints[0],
+            plant_.GetJointByName("revolute_AB").index());
+  EXPECT_EQ(tendon_constraint.a[0], 10.0);
+  EXPECT_EQ(tendon_constraint.joints[1],
+            plant_.GetJointByName("prismatic_BC").index());
+  EXPECT_EQ(tendon_constraint.a[1], 20.0);
+
+  EXPECT_EQ(tendon_constraint.offset, 0.5);
+  EXPECT_EQ(tendon_constraint.lower_limit, -1.0);
+  EXPECT_EQ(tendon_constraint.upper_limit, 1.0);
+  EXPECT_EQ(tendon_constraint.stiffness, 0.1);
+  EXPECT_EQ(tendon_constraint.damping, 0.01);
+  EXPECT_EQ(tendon_constraint.id, id);
+}
+
+TEST_F(SdfParserTest, TendonConstraintNonExistentJoint) {
+  AddSceneGraph();
+
+  // Test successful parsing.
+  ParseTestString(R"""(
+    <world name='World'>
+      <model name='Model'>
+        <link name='A'/>
+        <link name='B'/>
+        <joint name='revolute_AB' type='revolute'>
+          <child>A</child>
+          <parent>B</parent>
+          <axis>
+            <xyz>0 0 1</xyz>
+          </axis>
+        </joint>
+        <drake:tendon_constraint>
+          <drake:tendon_constraint_joint name='revolute_AB' a='10'/>
+          <!-- Joint does not exist in the model -->
+          <drake:tendon_constraint_joint name='does_not_exist' a='20'/>
+          <drake:tendon_constraint_offset>0.5</drake:tendon_constraint_offset>
+          <drake:tendon_constraint_lower_limit>-1.0</drake:tendon_constraint_lower_limit>
+          <drake:tendon_constraint_upper_limit>1.0</drake:tendon_constraint_upper_limit>
+          <drake:tendon_constraint_stiffness>0.1</drake:tendon_constraint_stiffness>
+          <drake:tendon_constraint_damping>0.01</drake:tendon_constraint_damping>
+        </drake:tendon_constraint>
+      </model>
+    </world>)""");
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(
+          ".*<drake:tendon_constraint>: Joint 'does_not_exist' specified for "
+          "<drake:tendon_constraint_joint> does not exist in the model."));
+}
+
+TEST_F(SdfParserTest, TendonConstraintMissingJointName) {
+  AddSceneGraph();
+
+  ParseTestString(R"""(
+    <world name='World'>
+      <model name='Model'>
+        <link name='A'/>
+        <link name='B'/>
+        <joint name='revolute_AB' type='revolute'>
+          <child>A</child>
+          <parent>B</parent>
+          <axis>
+            <xyz>0 0 1</xyz>
+          </axis>
+        </joint>
+        <drake:tendon_constraint>
+          <!-- no "name" attribute -->
+          <drake:tendon_constraint_joint a='10'/>
+          <drake:tendon_constraint_joint name='revolute_AB' a='20'/>
+          <drake:tendon_constraint_offset>0.5</drake:tendon_constraint_offset>
+          <drake:tendon_constraint_lower_limit>-1.0</drake:tendon_constraint_lower_limit>
+          <drake:tendon_constraint_upper_limit>1.0</drake:tendon_constraint_upper_limit>
+          <drake:tendon_constraint_stiffness>0.1</drake:tendon_constraint_stiffness>
+          <drake:tendon_constraint_damping>0.01</drake:tendon_constraint_damping>
+        </drake:tendon_constraint>
+      </model>
+    </world>)""");
+
+  // Two errors are produced because 1) the name attribute fails to parse and
+  // defaults to empty-string, and 2) the empty-string joint does not exist in
+  // the model.
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*The tag <drake:tendon_constraint_joint> is "
+                           "missing the required attribute \"name\""));
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(
+          ".*<drake:tendon_constraint>: Joint '' specified for "
+          "<drake:tendon_constraint_joint> does not exist in the model."));
+}
+
+TEST_F(SdfParserTest, TendonConstraintMissingJointCoeff) {
+  AddSceneGraph();
+
+  ParseTestString(R"""(
+    <world name='World'>
+      <model name='Model'>
+        <link name='A'/>
+        <link name='B'/>
+        <link name='C'/>
+        <joint name='revolute_AB' type='revolute'>
+          <child>A</child>
+          <parent>B</parent>
+          <axis>
+            <xyz>0 0 1</xyz>
+          </axis>
+        </joint>
+        <joint name='prismatic_BC' type='prismatic'>
+          <child>B</child>
+          <parent>C</parent>
+          <axis>
+            <xyz>0 0 1</xyz>
+          </axis>
+        </joint>
+        <drake:tendon_constraint>
+          <!-- no "a" attribute -->
+          <drake:tendon_constraint_joint name='revolute_AB'/>
+          <drake:tendon_constraint_joint name='prismatic_BC' a='20'/>
+          <drake:tendon_constraint_offset>0.5</drake:tendon_constraint_offset>
+          <drake:tendon_constraint_lower_limit>-1.0</drake:tendon_constraint_lower_limit>
+          <drake:tendon_constraint_upper_limit>1.0</drake:tendon_constraint_upper_limit>
+          <drake:tendon_constraint_stiffness>0.1</drake:tendon_constraint_stiffness>
+          <drake:tendon_constraint_damping>0.01</drake:tendon_constraint_damping>
+        </drake:tendon_constraint>
+      </model>
+    </world>)""");
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*The tag <drake:tendon_constraint_joint> is "
+                           "missing the required attribute \"a\""));
+}
+
 TEST_F(SdfParserTest, BushingParsingGood) {
   AddSceneGraph();
   // Test successful parsing.  Add two copies of the model to make sure the
@@ -4206,6 +4389,631 @@ TEST_F(SdfParserTest, VisualRoleConfiguration) {
   //    "SemanticPose has invalid pointer to PoseRelativeToGraph."
   // If those errors were emitted, this test would fail on completion.
   EXPECT_THAT(NumErrors(), 0);
+}
+
+// Happy‑path: a minimal deformable model containing a single link with a mesh
+// collision element should parse and create exactly one deformable body.
+TEST_F(SdfParserTest, ParseMinimalDeformableModel) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 0);
+  plant_.Finalize();
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
+  // Without specifying any proximity properties, the default values are used.
+  GeometryId g_id =
+      plant_.deformable_model().GetBodyByName("body").geometry_id();
+  const auto* proximity_props_ptr =
+      scene_graph_.model_inspector().GetProximityProperties(g_id);
+  ASSERT_NE(proximity_props_ptr, nullptr);
+  EXPECT_EQ(
+      proximity_props_ptr
+          ->GetProperty<CoulombFriction<double>>(
+              geometry::internal::kMaterialGroup, geometry::internal::kFriction)
+          .dynamic_friction(),
+      1.0);
+}
+
+// Happy‑path: a full-fledged deformable model containing a single link with a
+// mesh collision element should parse and create exactly one deformable body.
+TEST_F(SdfParserTest, ParseFullFeatureDeformableModel) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:hunt_crossley_dissipation>0.6</drake:hunt_crossley_dissipation>
+          <drake:relaxation_time>0.7</drake:relaxation_time>
+        </drake:proximity_properties>
+      </collision>
+      <visual name='visual'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/tri_cube.obj</uri></mesh>
+        </geometry>
+      </visual>
+      <drake:deformable_properties>
+        <drake:youngs_modulus>100.0</drake:youngs_modulus>
+        <drake:poissons_ratio>0.3</drake:poissons_ratio>
+        <drake:mass_damping>0.01</drake:mass_damping>
+        <drake:stiffness_damping>0.01</drake:stiffness_damping>
+        <drake:mass_density>800.0</drake:mass_density>
+        <drake:material_model>corotated</drake:material_model>
+      </drake:deformable_properties>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 0);
+  EXPECT_THAT(NumWarnings(), 0);
+  plant_.Finalize();
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
+  const DeformableBodyId body_id =
+      plant_.deformable_model().GetBodyByName("body").body_id();
+  auto geometry_id = plant_.deformable_model().GetGeometryId(body_id);
+  const geometry::ProximityProperties* props =
+      scene_graph_.model_inspector().GetProximityProperties(geometry_id);
+  ASSERT_NE(props, nullptr);
+  EXPECT_EQ(
+      props
+          ->GetProperty<CoulombFriction<double>>(
+              geometry::internal::kMaterialGroup, geometry::internal::kFriction)
+          .dynamic_friction(),
+      0.5);
+  EXPECT_EQ(props->GetProperty<double>(geometry::internal::kMaterialGroup,
+                                       geometry::internal::kHcDissipation),
+            0.6);
+  EXPECT_EQ(props->GetProperty<double>(geometry::internal::kMaterialGroup,
+                                       geometry::internal::kRelaxationTime),
+            0.7);
+}
+
+TEST_F(SdfParserTest, MultipleDeformableBodies) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+    </link>
+    <link name='body2'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 0);
+  plant_.Finalize();
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), 2);
+}
+
+// Deformable bodies can be included in collision filter groups.
+TEST_F(SdfParserTest, DeformableBodiesWithFilteredCollision) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+    </link>
+    <link name='body2'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+    </link>
+    <drake:collision_filter_group name="group_a">
+      <drake:member>body</drake:member>
+      <drake:member>body2</drake:member>
+      <drake:ignored_collision_filter_group>group_a</drake:ignored_collision_filter_group>
+    </drake:collision_filter_group>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 0);
+  plant_.Finalize();
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), 2);
+
+  // Test that collisions are filtered between the deformable bodies.
+  const auto& inspector = scene_graph_.model_inspector();
+  std::vector<GeometryId> ids = inspector.GetAllGeometryIds();
+  ASSERT_EQ(ids.size(), 2);
+
+  std::set<CollisionPair> expected_filters = {
+      {"deformable::body", "deformable::body2"},
+  };
+  VerifyCollisionFilters(ids, expected_filters);
+}
+
+// Specifying both deformable and rigid bodies in the same model is fine.
+TEST_F(SdfParserTest, MixingModelAndDeformableModel) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='mixed'>
+    <link name='deformable'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+    </link>
+    <link name='rigid'>
+    </link>
+  </model>)";
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 0);
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
+  // World body + the parsed rigid body.
+  EXPECT_EQ(plant_.num_bodies(), 2);
+}
+
+// Parsing deformable model requires a SceneGraph. Emits a warning if
+// SceneGraph is not added.
+TEST_F(SdfParserTest, DeformableModelNoSceneGraph) {
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+    </link>
+  </model>)";
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 0);
+  EXPECT_THAT(NumWarnings(), 1);
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*deformable.*without.*geometry source.*"));
+}
+
+TEST_F(SdfParserTest, IllegalDeformablePropertiesParsing) {
+  AddSceneGraph();
+
+  constexpr const char* sdf_template = R"""(
+<model name='deformable_with_illegal_{suffix}'>
+  <link name='body_{suffix}'>
+    <collision name='collision'>
+      <geometry>
+        <mesh>
+          <uri>package://drake/multibody/parsing/test/single_tet.vtk</uri>
+        </mesh>
+      </geometry>
+    </collision>
+    <drake:deformable_properties>
+      {snippet}
+    </drake:deformable_properties>
+  </link>
+</model>)""";
+
+  struct TestCase {
+    std::string snippet;  // the single bad-property XML
+    std::string suffix;   // used in the model name
+    std::string regex;    // expected error regex
+  };
+
+  const std::vector<TestCase> cases = {
+      {"<drake:youngs_modulus>0.0</drake:youngs_modulus>", "youngs_modulus",
+       ".*Young's modulus.*"},
+      {"<drake:poissons_ratio>1.5</drake:poissons_ratio>", "poissons_ratio",
+       ".*Poisson's ratio.*"},
+      {"<drake:mass_damping>-1.0</drake:mass_damping>", "mass_damping",
+       ".*Mass damping.*"},
+      {"<drake:stiffness_damping>-1.0</drake:stiffness_damping>",
+       "stiffness_damping", ".*Stiffness damping.*"},
+      {"<drake:mass_density>-1.0</drake:mass_density>", "mass_density",
+       ".*Mass density.*"},
+      {"<drake:material_model>not_a_material_model</drake:material_model>",
+       "material_model", ".*material_model.*not_a_material_model.*"},
+  };
+
+  for (auto const& c : cases) {
+    SCOPED_TRACE(c.suffix);
+    const std::string sdf =
+        fmt::format(sdf_template, fmt::arg("snippet", c.snippet),
+                    fmt::arg("suffix", c.suffix));
+
+    ParseTestString(sdf);
+    EXPECT_EQ(NumErrors(), 1);
+    EXPECT_THAT(TakeError(), MatchesRegex(c.regex));
+  }
+}
+
+TEST_F(SdfParserTest, IllegalProximityPropertyParsingForDeformable) {
+  AddSceneGraph();
+
+  constexpr const char* sdf_template = R"""(
+<model name='deformable_with_illegal_{suffix}'>
+  <link name='body_{suffix}'>
+    <collision name='collision'>
+      <geometry>
+        <mesh>
+          <uri>package://drake/multibody/parsing/test/single_tet.vtk</uri>
+        </mesh>
+      </geometry>
+      <drake:proximity_properties>
+        {snippet}
+      </drake:proximity_properties>
+    </collision>
+    <drake:deformable_properties/>
+  </link>
+</model>)""";
+
+  struct TestCase {
+    std::string snippet;  // the single bad-property XML
+    std::string suffix;   // used in the model name
+    std::string regex;    // expected error regex
+  };
+
+  const std::vector<TestCase> cases = {
+      {"<drake:mu_dynamic>-1.0</drake:mu_dynamic>", "mu_dynamic",
+       ".*mu_dynamic.*"},
+      {"<drake:hunt_crossley_dissipation>-0.5</"
+       "drake:hunt_crossley_dissipation>",
+       "hunt_crossley_dissipation", ".*hunt_crossley_dissipation.*"},
+      {"<drake:relaxation_time>-1.0</drake:relaxation_time>", "relaxation_time",
+       ".*relaxation_time.*"},
+  };
+
+  for (auto const& c : cases) {
+    SCOPED_TRACE(c.suffix);
+    const std::string sdf =
+        fmt::format(sdf_template, fmt::arg("snippet", c.snippet),
+                    fmt::arg("suffix", c.suffix));
+
+    ParseTestString(sdf);
+    EXPECT_EQ(NumErrors(), 1);
+    EXPECT_THAT(TakeError(), MatchesRegex(c.regex));
+  }
+}
+
+TEST_F(SdfParserTest, DeformableMaterialModels) {
+  AddSceneGraph();
+
+  constexpr const char* sdf_template = R"""(
+<model name='deformable_with_{model}'>
+  <link name='body_{model}'>
+    <collision name='collision'>
+      <geometry>
+        <mesh>
+          <uri>package://drake/multibody/parsing/test/single_tet.vtk</uri>
+        </mesh>
+      </geometry>
+    </collision>
+    <drake:deformable_properties>
+      <drake:material_model>
+        {model}
+      </drake:material_model>
+    </drake:deformable_properties>
+  </link>
+</model>)""";
+
+  const std::vector<std::string> cases = {
+      "corotated",
+      "neohookean",
+      "linear_corotated",
+      "linear",
+  };
+
+  for (auto const& c : cases) {
+    SCOPED_TRACE(c);
+    const std::string sdf = fmt::format(sdf_template, fmt::arg("model", c));
+    ParseTestString(sdf);
+    EXPECT_EQ(NumErrors(), 0);
+  }
+  plant_.Finalize();
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), cases.size());
+}
+
+TEST_F(SdfParserTest, DeformableWithMoreThanOneCollision) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision1'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <collision name='collision2'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 1);
+  EXPECT_THAT(TakeError(), MatchesRegex(".*exactly one <collision>.*"));
+}
+
+TEST_F(SdfParserTest, DeformableWithMoreThanOneVisual) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <visual name='visual1'>
+      </visual>
+      <visual name='visual2'>
+      </visual>
+      <drake:deformable_properties/>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 1);
+  EXPECT_THAT(TakeError(), MatchesRegex(".*at most one <visual>.*"));
+}
+
+TEST_F(SdfParserTest, ComposedPoseForDeformable) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <pose>3 0 0 0 0 0</pose>
+    <link name='body'>
+      <pose>4 0 0 0 0 0</pose>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+    </link>
+  </model>)";
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 0);
+  plant_.Finalize();
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
+  const DeformableBodyId body_id =
+      plant_.deformable_model().GetBodyByName("body").body_id();
+  const VectorXd q_WB =
+      plant_.deformable_model().GetReferencePositions(body_id);
+  VectorXd q_WB_expected(12);
+  // clang-format off
+  q_WB_expected << -3, -10, -10,
+                    17, 0,  0,
+                    7,  10, 0,
+                    7,  0,  10;
+  // clang-format on
+  EXPECT_TRUE(CompareMatrices(q_WB, q_WB_expected,
+                              4.0 * std::numeric_limits<double>::epsilon()));
+}
+
+/* Specifying a non-empty visual geometry when perception properties are turned
+ off is a warning. */
+TEST_F(SdfParserTest, DisabledPerceptionWithVisualMesh) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <visual name='visual'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/tri_cube.obj</uri></mesh>
+        </geometry>
+        <drake:perception_properties enabled="false"/>
+      </visual>
+      <drake:deformable_properties/>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(NumWarnings(), 1);
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*non-empty.*geometry.*ignored.*"));
+}
+
+TEST_F(SdfParserTest, DeformableWallBoundaryConditionsBodyOutsideHalfSpace) {
+  AddSceneGraph();
+  const std::string sdf_outside = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+      <drake:wall_boundary_condition>
+        <drake:point_on_plane>0.0 0.0 -10.0</drake:point_on_plane>
+        <drake:outward_normal>0.0 0.0 1.0</drake:outward_normal>
+      </drake:wall_boundary_condition>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf_outside);
+  EXPECT_THAT(NumErrors(), 0);
+  EXPECT_THAT(NumWarnings(), 0);
+  plant_.Finalize();
+
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
+
+  // Verify that the deformable body was created.
+  DeformableBodyId body_id_outside =
+      plant_.deformable_model().GetBodyByName("body").body_id();
+  EXPECT_TRUE(body_id_outside.is_valid());
+
+  // Body is outside the half space, so no boundary conditions should be added.
+  const auto& fem_model_outside =
+      plant_.deformable_model().GetFemModel(body_id_outside);
+  const auto& dirichlet_boundary_cond_outside =
+      fem_model_outside.dirichlet_boundary_condition();
+  EXPECT_TRUE(
+      dirichlet_boundary_cond_outside.index_to_boundary_state().empty());
+}
+
+TEST_F(SdfParserTest, DeformableWallBoundaryConditionsBodyInHalfSpace) {
+  AddSceneGraph();
+
+  // Test with body in half space region (constraints should be added).
+  // Plane at (0, 0, 10) with normal (0, 0, 1) creates a half space z <= 10,
+  // and the body at origin is below z = 10, so it's inside the half space.
+  const std::string sdf_inside = R"(
+  <model name='deformable_in_halfspace'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+      <drake:wall_boundary_condition>
+        <drake:point_on_plane>0.0 0.0 10.0</drake:point_on_plane>
+        <drake:outward_normal>0.0 0.0 1.0</drake:outward_normal>
+      </drake:wall_boundary_condition>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf_inside);
+  EXPECT_THAT(NumErrors(), 0);
+  EXPECT_THAT(NumWarnings(), 0);
+  plant_.Finalize();
+
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
+
+  // Verify that the deformable body was created.
+  const DeformableBodyId body_id_inside =
+      plant_.deformable_model().GetBodyByName("body").body_id();
+  EXPECT_TRUE(body_id_inside.is_valid());
+
+  // Body is in the half space, so boundary conditions should be added.
+  const auto& fem_model_inside =
+      plant_.deformable_model().GetFemModel(body_id_inside);
+  const auto& dirichlet_boundary_cond_inside =
+      fem_model_inside.dirichlet_boundary_condition();
+  EXPECT_FALSE(
+      dirichlet_boundary_cond_inside.index_to_boundary_state().empty());
+}
+
+TEST_F(SdfParserTest, DeformableWallMultipleBoundaryConditions) {
+  AddSceneGraph();
+
+  const std::string sdf = R"(
+  <model name='deformable_with_wall_bc'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+      <drake:wall_boundary_condition>
+        <drake:point_on_plane>0.0 0.0 10.0</drake:point_on_plane>
+        <drake:outward_normal>0.0 0.0 1.0</drake:outward_normal>
+      </drake:wall_boundary_condition>
+      <drake:wall_boundary_condition>
+        <drake:point_on_plane>0.0 0.0 -10.0</drake:point_on_plane>
+        <drake:outward_normal>0.0 0.0 1.0</drake:outward_normal>
+      </drake:wall_boundary_condition>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 0);
+  EXPECT_THAT(NumWarnings(), 0);
+  plant_.Finalize();
+
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
+
+  // Verify that the deformable body was created.
+  const DeformableBodyId body_id =
+      plant_.deformable_model().GetBodyByName("body").body_id();
+  EXPECT_TRUE(body_id.is_valid());
+
+  // Body is in the half space provided by first boundary condition,
+  // so boundary conditions should be added.
+  const auto& fem_model = plant_.deformable_model().GetFemModel(body_id);
+  const auto& dirichlet_bc = fem_model.dirichlet_boundary_condition();
+  EXPECT_FALSE(dirichlet_bc.index_to_boundary_state().empty());
+}
+
+TEST_F(SdfParserTest, DeformableWallBoundaryConditionMissingChildTag) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable_bad_wall_bc'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+      <drake:wall_boundary_condition>
+        <drake:point_on_plane>1.0 2.0 3.0</drake:point_on_plane>
+        <!-- Missing drake:outward_normal -->
+      </drake:wall_boundary_condition>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 2);
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*Unable to find the <drake:outward_normal> child tag.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Outward normal vector cannot be zero.*"));
+}
+
+TEST_F(SdfParserTest, WallBoundaryConditionOnRigidLink) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='rigid_with_wall_bc'>
+    <link name='body'>
+      <drake:wall_boundary_condition>
+        <drake:point_on_plane>0.0 0.0 0.0</drake:point_on_plane>
+        <drake:outward_normal>0.0 0.0 1.0</drake:outward_normal>
+      </drake:wall_boundary_condition>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  // Wall boundary conditions on rigid links should produce an error
+  EXPECT_THAT(NumErrors(), 1);
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Unsupported SDFormat element in link: "
+                           "drake:wall_boundary_condition.*"));
 }
 
 }  // namespace

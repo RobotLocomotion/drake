@@ -45,6 +45,7 @@
 #include "drake/common/never_destroyed.h"
 #include "drake/common/overloaded.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"
 #include "drake/geometry/render_vtk/internal_make_render_window.h"
@@ -608,6 +609,10 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
   }
 }
 
+std::string RenderEngineVtk::DoGetParameterYaml() const {
+  return yaml::SaveYamlString(parameters_, "RenderEngineVtkParams");
+}
+
 void RenderEngineVtk::ImplementRenderMesh(RenderMesh&& mesh,
                                           const Vector3<double>& scale,
                                           const RegistrationData& data) {
@@ -685,7 +690,9 @@ bool RenderEngineVtk::ImplementGltf(const Mesh& mesh,
 
   // The relative transform from the file's frame F to the geometry's frame G.
   // This includes the rotation from y-up to z-up and the requested scale.
-  const RigidTransformd X_GF(RotationMatrixd::MakeXRotation(M_PI / 2));
+  const RotationMatrixd R_GF = RotationMatrixd::MakeFromOrthonormalColumns(
+      Vector3d::UnitX(), Vector3d::UnitZ(), -Vector3d::UnitY());
+  const RigidTransformd X_GF(R_GF);
   vtkSmartPointer<vtkTransform> T_GF_transform =
       ConvertToVtkTransform(X_GF, mesh.scale3());
   vtkMatrix4x4* T_GF = T_GF_transform->GetMatrix();

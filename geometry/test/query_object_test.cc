@@ -27,6 +27,32 @@ using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 
+// We'll use SceneGraph's friend to poke at the state of its cache entries.
+class SceneGraphTester {
+ public:
+  static void InvalidateFramePositions(const Context<double>& context,
+                                       SceneGraph<double>* sg) {
+    sg->get_mutable_cache_entry(sg->pose_update_index_)
+        .get_mutable_cache_entry_value(context)
+        .mark_out_of_date();
+  }
+  static void InvalidateDeformablePositions(const Context<double>& context,
+                                            SceneGraph<double>* sg) {
+    sg->get_mutable_cache_entry(sg->configuration_update_index_)
+        .get_mutable_cache_entry_value(context)
+        .mark_out_of_date();
+  }
+  static bool FramePositionsAreUpToDate(const Context<double>& context,
+                                        const SceneGraph<double>& sg) {
+    return !sg.get_cache_entry(sg.pose_update_index_).is_out_of_date(context);
+  }
+  static bool DeformablePositionsAreUpToDate(const Context<double>& context,
+                                             const SceneGraph<double>& sg) {
+    return !sg.get_cache_entry(sg.configuration_update_index_)
+                .is_out_of_date(context);
+  }
+};
+
 // Friend class to QueryObject -- left in `drake::geometry` to match the friend
 // declaration.
 class QueryObjectTest : public ::testing::Test {
@@ -109,6 +135,10 @@ class QueryObjectTest : public ::testing::Test {
     return object.geometry_state();
   }
 
+  void FullPoseAndConfigurationUpdate(const QueryObject<double>* query_object) {
+    query_object->FullPoseAndConfigurationUpdate();
+  }
+
   SceneGraph<double> scene_graph_;
 };
 
@@ -168,6 +198,10 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
       default_object.GetConfigurationsInWorld(GeometryId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object.GetDrivenMeshConfigurationsInWorld(
       GeometryId::get_new_id(), Role::kIllustration));
+  EXPECT_DEFAULT_ERROR(
+      default_object.ComputeAabbInWorld(GeometryId::get_new_id()));
+  EXPECT_DEFAULT_ERROR(
+      default_object.ComputeObbInWorld(GeometryId::get_new_id()));
 
   // Penetration queries.
   EXPECT_DEFAULT_ERROR(default_object.ComputePointPairPenetration());
@@ -189,6 +223,8 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
       GeometryId::get_new_id(), GeometryId::get_new_id()));
   EXPECT_DEFAULT_ERROR(
       default_object.ComputeSignedDistanceToPoint(Vector3<double>::Zero()));
+  EXPECT_DEFAULT_ERROR(default_object.ComputeSignedDistanceGeometryToPoint(
+      Vector3<double>::Zero(), GeometrySet(GeometryId::get_new_id())));
 
   EXPECT_DEFAULT_ERROR(default_object.FindCollisionCandidates());
   EXPECT_DEFAULT_ERROR(default_object.HasCollisions());
@@ -302,6 +338,124 @@ TEST_F(QueryObjectTest, BakedCopyHasFullUpdate) {
   // These really are different objects.
   EXPECT_NE(&stale_pose, &baked_pose);
   EXPECT_NE(&stale_configuration, &baked_configuration);
+}
+
+// This test confirms that queries on a live QueryObject update the cached
+// GeometryState. We use the SceneGraphTester above to directly invalidate the
+// cache entries and test their state as a result of invoking a query. Some of
+// the queries will throw (as noted below); all that matters is that the cache
+// entry updates before the throw.
+//
+// Every function must be exercised with a clear declaration of whether it
+// updates rigid poses, deformable poses, or both.
+TEST_F(QueryObjectTest, LiveQueryUpdatesState) {
+  // Dummy ids for queries that require ids as parameters.
+  const GeometryId g_id1 = GeometryId::get_new_id();
+  const GeometryId g_id2 = GeometryId::get_new_id();
+  const FrameId frame_id = FrameId::get_new_id();
+
+  // Masks for reporting what cache entries we expect get updated.
+  const int kPoseOnly = 1;
+  const int kDeformOnly = 2;
+  const int kFullUpdate = kPoseOnly | kDeformOnly;
+
+  unique_ptr<Context<double>> context = scene_graph_.CreateDefaultContext();
+
+  const auto& qo =
+      scene_graph_.get_query_output_port().Eval<QueryObject<double>>(*context);
+  ASSERT_TRUE(is_live(qo));
+
+  auto set_and_confirm_stale = [&]() {
+    SceneGraphTester::InvalidateFramePositions(*context, &scene_graph_);
+    SceneGraphTester::InvalidateDeformablePositions(*context, &scene_graph_);
+    EXPECT_FALSE(
+        SceneGraphTester::FramePositionsAreUpToDate(*context, scene_graph_));
+    EXPECT_FALSE(SceneGraphTester::DeformablePositionsAreUpToDate(
+        *context, scene_graph_));
+  };
+
+  auto confirm_updated = [&](int update_expectations) {
+    // Always expect rigid pose update.
+    EXPECT_EQ(
+        SceneGraphTester::FramePositionsAreUpToDate(*context, scene_graph_),
+        static_cast<bool>(update_expectations & kPoseOnly));
+    EXPECT_EQ(SceneGraphTester::DeformablePositionsAreUpToDate(*context,
+                                                               scene_graph_),
+              static_cast<bool>(update_expectations & kDeformOnly));
+  };
+
+#define EXPECT_UPDATES(func, expect_update) \
+  {                                         \
+    SCOPED_TRACE(#func);                    \
+    set_and_confirm_stale();                \
+    func;                                   \
+    confirm_updated(expect_update);         \
+  }
+
+// For the queries that have not been properly prepped (i.e., bad arguments or
+// missing state), we allow the throw but still expect that the cache got
+// updated before the throw.
+#define EXPECT_UPDATES_WITH_THROW(func, expect_update) \
+  EXPECT_UPDATES(EXPECT_THROW(func, std::exception), expect_update);
+
+  // Configuration-dependent introspection.
+  EXPECT_UPDATES_WITH_THROW(qo.GetPoseInWorld(frame_id), kPoseOnly);
+  EXPECT_UPDATES_WITH_THROW(qo.GetPoseInParent(frame_id), kPoseOnly);
+  EXPECT_UPDATES_WITH_THROW(qo.GetPoseInWorld(g_id1), kPoseOnly);
+  EXPECT_UPDATES_WITH_THROW(qo.GetConfigurationsInWorld(g_id1), kDeformOnly);
+  EXPECT_UPDATES_WITH_THROW(
+      qo.GetDrivenMeshConfigurationsInWorld(g_id1, Role::kProximity),
+      kDeformOnly);
+
+  // Collision queries.
+  EXPECT_UPDATES(qo.ComputePointPairPenetration(), kFullUpdate);
+  EXPECT_UPDATES(
+      qo.ComputeContactSurfaces(HydroelasticContactRepresentation::kTriangle),
+      kPoseOnly);
+  std::vector<ContactSurface<double>> surfaces;
+  std::vector<PenetrationAsPointPair<double>> point_pairs;
+  EXPECT_UPDATES(qo.ComputeContactSurfacesWithFallback(
+                     HydroelasticContactRepresentation::kTriangle, &surfaces,
+                     &point_pairs),
+                 kPoseOnly);
+  internal::DeformableContact<double> deformable_contact;
+  EXPECT_UPDATES(qo.ComputeDeformableContact(&deformable_contact), kFullUpdate);
+  EXPECT_UPDATES(qo.FindCollisionCandidates(), kFullUpdate);
+  EXPECT_UPDATES(qo.HasCollisions(), kFullUpdate);
+
+  // Signed distance queries.
+  EXPECT_UPDATES(qo.ComputeSignedDistancePairwiseClosestPoints(), kFullUpdate);
+  EXPECT_UPDATES_WITH_THROW(
+      qo.ComputeSignedDistancePairClosestPoints(g_id1, g_id2), kFullUpdate);
+  EXPECT_UPDATES(qo.ComputeSignedDistanceToPoint(Vector3d::Zero()),
+                 kFullUpdate);
+  EXPECT_UPDATES(
+      qo.ComputeSignedDistanceGeometryToPoint(Vector3d::Zero(), GeometrySet()),
+      kFullUpdate);
+
+  // Render queries.
+  const DepthRenderCamera depth_camera{
+      {"n/a", {2, 2, M_PI}, {0.1, 10}, RigidTransformd{}}, {0.2, 0.9}};
+  const ColorRenderCamera color_camera{depth_camera.core(), false};
+  const RigidTransformd X_PC = RigidTransformd::Identity();
+
+  ImageRgba8U color_image;
+  EXPECT_UPDATES_WITH_THROW(
+      qo.RenderColorImage(color_camera, frame_id, X_PC, &color_image),
+      kFullUpdate);
+  ImageDepth32F depth_image;
+  EXPECT_UPDATES_WITH_THROW(
+      qo.RenderDepthImage(depth_camera, frame_id, X_PC, &depth_image),
+      kFullUpdate);
+  ImageLabel16I label_image;
+  EXPECT_UPDATES_WITH_THROW(
+      qo.RenderLabelImage(color_camera, frame_id, X_PC, &label_image),
+      kFullUpdate);
+  EXPECT_UPDATES(qo.GetRenderEngineByName("dummy"), kFullUpdate);
+
+  // Bounding box queries.
+  EXPECT_UPDATES_WITH_THROW(qo.ComputeAabbInWorld(g_id1), kDeformOnly);
+  EXPECT_UPDATES_WITH_THROW(qo.ComputeObbInWorld(g_id1), kPoseOnly);
 }
 
 // Ensure that I can construct a QueryObject with the default scalar types.

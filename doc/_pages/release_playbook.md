@@ -22,29 +22,28 @@ push_release, etc.) are supported only on Ubuntu (not macOS).
 1. Choose the next version number.
 2. Create a local Drake branch named ``release_notes-v1.N.0`` (so that others
    can easily find and push to it after the PR is opened).
-3. As the first commit on the branch, mimic the commit
-   [`drake@65adb4dd`](https://github.com/RobotLocomotion/drake/commit/65adb4dd1f89835ad482d6a9a437cb899c05b779)
-   in order to disable CI.  A quick way to do this might be:
-   ```
-   git fetch upstream 65adb4dd1f89835ad482d6a9a437cb899c05b779
-   git cherry-pick FETCH_HEAD
-   ```
+3. Bootstrap the release notes file using the
+   ``tools/release_engineering/relnotes`` tooling, with ``--action=create``
+   for the first run. Instructions can be found atop its source code:
+   [``relnotes.py``](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/relnotes.py).
+      * The output is draft release notes in ``doc/_release-notes/v1.N.0.md``.
+      * The version numbers in ``doc/_pages/from_binary.md`` should also have
+      been automatically upgraded.
+   Commit the results.
 4. Push that branch and then open a new pull request titled:
    ```
    [doc] Add release notes v1.N.0
    ```
    Make sure that "Allow edits by maintainers" on the GitHub PR page is
-   enabled (the checkbox is checked). Set label `release notes: none`.
-5. For release notes, on an ongoing basis, add recent commit messages to the
-   release notes draft using the ``tools/release_engineering/relnotes`` tooling.
-   (Instructions can be found atop its source code: [``relnotes.py``](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/relnotes.py))
-    1. On the first run, use ``--action=create`` to bootstrap the file.
-       * The output is draft release notes in ``doc/_release-notes/v1.N.0.md``.
-    2. On the subsequent runs, use ``--action=update`` to refresh the file.
-       * Try to avoid updating the release notes to refer to changes newer than
-       the likely release, i.e., if you run ``--update`` on the morning you're
-       actually doing the release, be sure to pass the ``--target_commit=``
-       argument to avoid including commits that will not be part of the tag.
+   enabled (the checkbox is checked). Set the labels ``release notes: none``
+   and ``status: defer ci`` to disable CI while notes-only updates are ongoing.
+5. Make gradual updates to the release notes using
+  ``tools/release_engineering/relnotes``, with ``--action=update`` to
+  refresh the file.
+   * Try to avoid updating the release notes to refer to changes newer than
+     the likely release, i.e., if you run ``--update`` on the morning you're
+     actually doing the release, be sure to pass the ``--target_commit=``
+     argument to avoid including commits that will not be part of the tag.
 6. For release notes, on an ongoing basis, clean up and relocate the commit
    notes to properly organized and wordsmithed bullet points. See [Polishing
    the release notes](#polishing-the-release-notes).
@@ -55,9 +54,9 @@ push_release, etc.) are supported only on Ubuntu (not macOS).
 8. As the release is nearly ready, post a call for action for feature teams to
    look at the draft document and provide suggestions (in reviewable) or fixes
    (as pushes).
-    1. To help ensure that the "newly deprecated APIs" section is accurate, grep
-       the code for ``YYYY-MM-01`` deprecation notations, for the ``MM`` values
-       that would have been associated with our +3 months typical period.
+   * To help ensure that the "newly deprecated APIs" section is accurate, grep
+     the code for ``YYYY-MM-01`` deprecation notations, for the ``MM`` values
+     that would have been associated with our +3 months typical period.
 
 ## Polishing the release notes
 
@@ -101,10 +100,10 @@ the main body of the document:
 ## Cutting the release
 
 1. Find a plausible nightly build to use:
-   1. Make sure <https://drake-jenkins.csail.mit.edu/view/Production/> is clean
+   1. Make sure <https://drake-jenkins.csail.mit.edu/view/Production/> is clean.
    2. Make sure <https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/>
       has nothing still running (modulo the ``*-coverage`` builds, which we can
-      ignore)
+      ignore).
    3. Open the latest builds from the following builds:
       1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-jammy-unprovisioned-gcc-cmake-nightly-packaging/>
       2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-noble-unprovisioned-gcc-cmake-nightly-packaging/>
@@ -117,21 +116,21 @@ the main body of the document:
    5. Use the
       ``tools/release_engineering/download_release_candidate`` tool with the
       ``--find-git-sha`` option to download and verify that all the nightlies
-      are built from the same commit.  (It's usage instructions are atop its
+      are built from the same commit.  (Its usage instructions are atop its
       source code:
       [download_release_candidate.py](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/download_release_candidate.py).)
 2. Launch the staging builds for that git commit sha:
    1. Open the following Jenkins jobs (e.g., each in its own
       new window, so you can copy-and-paste sha1 and version easily):
-      - [Linux Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-wheel-staging-release/)
-      - [macOS arm Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sonoma-unprovisioned-clang-wheel-staging-release/)
+      - [Linux Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-wheel-staging-release/)
+      - [macOS arm Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sonoma-clang-wheel-staging-release/)
       - [Jammy Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-cmake-staging-packaging/)
       - [Noble Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-cmake-staging-packaging/)
       - [macOS arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sonoma-clang-cmake-staging-packaging/)
-   2. In the upper right, click "log in" (unless you're already logged in). This
+   2. In the upper right, click "sign in" (unless you're already signed in). This
       will use your GitHub credentials.
    3. Click "Build with Parameters".
-   4. Change "sha1" (not "ci_sha1") to the full **git sha** corresponding to 
+   4. Change "sha1" to the full **git sha** corresponding to
       ``v1.N.0`` and "release_version" to ``1.N.0`` (no "v").
       - If you mistakenly provide the "v" in "release_version", your build will
         appear to work, but actually fail 5-6 minutes later.
@@ -143,18 +142,17 @@ the main body of the document:
    1. There is a dummy date 2099-12-31 nearby that should likewise be changed.
    2. Make sure that the nightly build git sha from the prior steps matches the
       ``newest_commit`` whose changes are enumerated in the notes.
-   3. Update the github links within ``doc/_pages/from_binary.md`` to reflect
-      the upcoming v1.N.0.
-4. Re-enable CI by reverting the commit you added way up above in step 3 of **Prior to release**.
+4. Re-enable CI by removing the label ``status: defer ci`` and commenting
+   ``@drake-jenkins-bot retest this please`` to trigger a re-run.
 5. Wait for the wheel builds to complete, and then download release artifacts:
    1. Use the
       ``tools/release_engineering/download_release_candidate`` tool with the
-      ``--version`` option to download and verify all binaries.  (It's usage
+      ``--version`` option to download and verify all binaries.  (Its usage
       instructions are atop its source code:
       [download_release_candidate.py](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/download_release_candidate.py).)
-6. Merge the release notes PR
+6. Merge the release notes PR.
    1. Take care when squashing not to accept github's auto-generated commit message if it is not appropriate.
-   2. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-jammy-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
+   2. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-noble-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
       * If you don't have "Build now" click "Log in" first in upper right.
 7. Open <https://github.com/RobotLocomotion/drake/releases> and choose "Draft
    a new release".  Note that this page has neither history nor undo.  Be
@@ -169,12 +167,12 @@ the main body of the document:
       appropriate edits as follows:
       * The version number
    5. Click the box labeled "Attach binaries by dropping them here or selecting
-      them." and then choose for upload the **36** release files from
+      them." and then choose for upload the **33** release files from
       ``/tmp/drake-release/v1.N.0/...``:
       - 9: 3 `.tar.gz` + 6 checksums
       - 6: 2 `.deb` + 4 checksums
       - 12: 4 linux `.whl` + 8 checksums
-      - 9: 3 macOS arm `.whl` + 6 checksums
+      - 6: 2 macOS arm `.whl` + 4 checksums
       * Note that on Jammy with `snap` provided Firefox, drag-and-drop from
         Nautilus will fail, and drop all of your release page inputs typed so
         far. Use the Firefox-provided selection dialog instead, by clicking on
@@ -183,7 +181,7 @@ the main body of the document:
 8. Once the documentation build finishes, release!
    1. Check that the link to drake.mit.edu docs from the GitHub release draft
       page actually works.
-   2. Click "Publish release"
+   2. Click "Publish release".
    3. Create a new GitHub issue on the [drake](https://github.com/RobotLocomotion/drake/issues/new/choose)
       repository and select the "Post-Release Actions" template.
    4. Create a GitHub issue on the [drake-ros](https://github.com/RobotLocomotion/drake-ros/issues)
@@ -204,13 +202,20 @@ Most likely, you will want to use an api token to authenticate yourself to the
 ``twine`` uploader. See <https://pypi.org/help/#apitoken> and <https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#create-an-account>
 for advice on managing api tokens.
 
-For Jammy (and later?), ``apt install twine`` gives a perfectly adequate
-version of ``twine``.
+For Jammy, ``apt install twine`` is too old. Instead, you must run it from a
+venv (detail below).
 
 1. Run ``twine`` to upload the wheel release, as follows:
 
    1. You will need your PyPI username and password for this. (Do not use drake-robot.)
-   2. Run ``twine upload /tmp/drake-release/v1.N.0/*.whl``.
+   2. Run:
+      ```
+      $ cd tmp
+      $ python3 -m venv env
+      $ env/bin/pip install twine
+      $ env/bin/twine upload /tmp/drake-release/v1.N.0/*.whl
+      $ rm -rf env
+      ```
    3. Confirm that all of the uploads succeeded without any error messages in
       your terminal.
 
@@ -225,16 +230,16 @@ the email address associated with your github account.
    tutorials deployment now (so that others are aware of the potentially-
    disruptive changes).
 2. Open the tutorials [Dockerfile](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/Dockerfile):
-   1. Edit the first line to refer to the YYYYMMDD for this release (login 
+   1. Edit the first line to refer to the YYYYMMDD for this release (login
       with your github account; otherwise, the file is read-only).
       1. For reference, the typical content is thus:
          ```
-         FROM robotlocomotion/drake:jammy-20250115
+         FROM robotlocomotion/drake:noble-20250612
 
          RUN apt-get -q update && apt-get -q install -y --no-install-recommends curl nginx-light python3-venv && apt-get remove -y python3-notebook && apt-get autoremove -y && apt-get -q clean
 
          ENV PATH="/opt/drake/bin:${PATH}" \
-           PYTHONPATH="/opt/drake/lib/python3.10/site-packages:${PYTHONPATH}"
+           PYTHONPATH="/opt/drake/lib/python3.12/site-packages:${PYTHONPATH}"
          ```
       2. If the current content differs by more than just the date from the
          above template, ask for help on slack in the ``#releases`` channel.
@@ -247,24 +252,33 @@ the email address associated with your github account.
    [requirements.txt](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/requirements.txt)
    file should have the following content:
    ```
-   ipywidgets==7.7.0
+   ipywidgets==8.1.7
 
    # We need to repeat drake's wheel dependencies here so that they end up in
    # Deepnote's venv. Deepnote no longer sees the Ubuntu packages in /usr/lib.
-   matplotlib==3.5.1
-   numpy==1.21.5
-   pydot==1.4.2
-   PyYAML==5.3.1
+   matplotlib==3.10.3
+   numpy==1.26.4
+   pydot==4.0.1
+   PyYAML==6.0.2
    ```
-4. For reference (no action required), the initialization notebook at
-   [init.ipynb](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/Init%20notebook-5fcfe3fc0bd0403899baab3b6cf37a18)
-   has this cell added the bottom, as a Drake-specific customization:
-   ```
-   %%bash
-   /opt/drake/share/drake/setup/deepnote/install_nginx
-   ```
-   For Jammy we also needed to add ``cd /work`` atop the stanza that checks for
-   ``requirements.txt`` to get it working again.
+4. Check the initialization notebook at
+   [init.ipynb](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/Init%20notebook-5fcfe3fc0bd0403899baab3b6cf37a18).
+   1. It has these cells added at the bottom, as a Drake-specific customization:
+      ```
+      import subprocess
+      import sys
+      subprocess.check_call([sys.executable, "-m", "pip", "check"], cwd="/work")
+      ```
+
+      ```
+      %%bash
+      /opt/drake/share/drake/setup/deepnote/install_nginx
+      ```
+      For Jammy we also needed to add ``cd /work`` atop the stanza that checks
+      for ``requirements.txt`` to get it working again.
+   2. Confirm that all cells executed successfully. If the "pip check" cell
+      reports dependency errors, then ask for help on slack in the
+      ``#releases`` channel.
 5. Copy the updated tutorials from the pinned Dockerfile release
    (in ``/opt/drake/share/drake/tutorials/...``) into the Deepnote project
    storage (``~/work/...``):

@@ -191,22 +191,28 @@ void CurvilinearMobilizer<T>::DoCalcNplusMatrix(
 }
 
 template <typename T>
-void CurvilinearMobilizer<T>::MapVelocityToQDot(
+void CurvilinearMobilizer<T>::DoCalcNDotMatrix(
+    const systems::Context<T>&, EigenPtr<MatrixX<T>> Ndot) const {
+  (*Ndot)(0, 0) = 0.0;
+}
+
+template <typename T>
+void CurvilinearMobilizer<T>::DoCalcNplusDotMatrix(
+    const systems::Context<T>&, EigenPtr<MatrixX<T>> NplusDot) const {
+  (*NplusDot)(0, 0) = 0.0;
+}
+
+template <typename T>
+void CurvilinearMobilizer<T>::DoMapVelocityToQDot(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
-  DRAKE_ASSERT(v.size() == kNv);
-  DRAKE_ASSERT(qdot != nullptr);
-  DRAKE_ASSERT(qdot->size() == kNq);
   *qdot = v;
 }
 
 template <typename T>
-void CurvilinearMobilizer<T>::MapQDotToVelocity(
+void CurvilinearMobilizer<T>::DoMapQDotToVelocity(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& qdot,
     EigenPtr<VectorX<T>> v) const {
-  DRAKE_ASSERT(qdot.size() == kNq);
-  DRAKE_ASSERT(v != nullptr);
-  DRAKE_ASSERT(v->size() == kNv);
   *v = qdot;
 }
 

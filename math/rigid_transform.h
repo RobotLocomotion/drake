@@ -292,7 +292,7 @@ class RigidTransform {
     set(RotationMatrix<T>(pose.linear()), pose.translation());
   }
 
-  /// @name     (Internal use only)) methods for specialized transforms
+  /// @name     (Internal use only) methods for specialized transforms
   /// @anchor special_xform_def
   ///
   /// (Internal use only) If we have foreknowledge that a %RigidTransform has
@@ -351,7 +351,7 @@ class RigidTransform {
   /// the rest will be set to 0 or 1. This structure can be exploited for
   /// efficient updating and operating with this transform.
   /// @param[in] theta the rotation angle.
-  /// @retval aX_BC the axial transform (also known as X_BC(theta)).
+  /// @retval arX_BC the axial transform (also known as X_BC(theta)).
   /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
   /// @see @ref special_xform_def "Specialized transforms".
   template <int axis>
@@ -359,12 +359,8 @@ class RigidTransform {
     requires(0 <= axis && axis <= 2)
 #endif
   static RigidTransform<T> MakeAxialRotation(const T& theta) {
-    if constexpr (axis == 0)
-      return RigidTransform<T>(RotationMatrix<T>::MakeXRotation(theta));
-    if constexpr (axis == 1)
-      return RigidTransform<T>(RotationMatrix<T>::MakeYRotation(theta));
-    if constexpr (axis == 2)
-      return RigidTransform<T>(RotationMatrix<T>::MakeZRotation(theta));
+    return RigidTransform<T>(
+        RotationMatrix<T>::template MakeAxialRotation<axis>(theta));
   }
 
   /// (Internal use only) Given an axial rotation transform arX_BC (just an
@@ -434,23 +430,47 @@ class RigidTransform {
 
   /// (Internal use only) With `this` a general transform X_AB, and given an
   /// axial rotation transform arX_BC, efficiently calculates
-  /// `X_AC = X_AB * arX_BC`. This requires only 14 floating point operations.
+  /// `X_AC = X_AB * arX_BC`. This requires only 18 floating point operations.
   /// @param[in] arX_BC An axial rotation transform about the indicated `axis`.
-  /// @param[out] X_AC Preallocated space for the result. Must not overlap with
-  ///   arX_BC in memory.
+  /// @param[out] X_AC Preallocated space for the result, which will be a
+  ///   general transform. Must not overlap with `this` in memory.
   /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
   /// @pre arX_BC is an @ref special_xform_def "Axial rotation transform"
+  /// @pre X_AC does not overlap with `this` in memory.
   template <int axis>
 #ifndef DRAKE_DOXYGEN_CXX
     requires(0 <= axis && axis <= 2)
 #endif
-  void ComposeWithAxialRotation(const RigidTransform<T>& arX_BC,
-                                RigidTransform<T>* X_AC) const {
-    DRAKE_ASSERT(X_AC != nullptr);
+  void PostMultiplyByAxialRotation(const RigidTransform<T>& arX_BC,
+                                   RigidTransform<T>* X_AC) const {
+    DRAKE_ASSERT(X_AC != nullptr && X_AC != this);
     DRAKE_ASSERT_VOID(arX_BC.IsAxialRotationOnlyOrThrow<axis>());
-    rotation().template ComposeWithAxialRotation<axis>(arX_BC.rotation(),
-                                                       &X_AC->R_AB_);
+    rotation().template PostMultiplyByAxialRotation<axis>(arX_BC.rotation(),
+                                                          &X_AC->R_AB_);
     X_AC->set_translation(p_AoBo_A_);  // unchanged
+  }
+
+  /// (Internal use only) With `this` a general transform X_BC, and given an
+  /// axial rotation transform arX_AB, efficiently calculates
+  /// `X_AC = arX_AB * X_BC`. This requires only 24 floating point operations.
+  /// @param[in] arX_AB An axial rotation transform about the indicated `axis`.
+  /// @param[out] X_AC Preallocated space for the result, which will be a
+  ///   general transform. Must not overlap with arX_BC or `this` in memory.
+  /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
+  /// @pre arX_AB is an @ref special_xform_def "Axial rotation transform"
+  /// @pre X_AC does not overlap with arX_AB or `this` in memory.
+  template <int axis>
+#ifndef DRAKE_DOXYGEN_CXX
+    requires(0 <= axis && axis <= 2)
+#endif
+  void PreMultiplyByAxialRotation(const RigidTransform<T>& arX_AB,
+                                  RigidTransform<T>* X_AC) const {
+    DRAKE_ASSERT(X_AC != nullptr && X_AC != this && X_AC != &arX_AB);
+    DRAKE_ASSERT_VOID(arX_AB.IsAxialRotationOnlyOrThrow<axis>());
+    const RotationMatrix<T>& aR_AB = arX_AB.rotation();
+    rotation().template PreMultiplyByAxialRotation<axis>(aR_AB, &X_AC->R_AB_);
+    X_AC->p_AoBo_A_ = RotationMatrix<T>::template ApplyAxialRotation<axis>(
+        aR_AB, translation());
   }
 
   /// (Internal use only) Composes `this` general transform X_AB with a given
@@ -458,20 +478,66 @@ class RigidTransform {
   /// `X_AC = X_AB * atX_BC`. This requires only 6 floating point operations.
   /// @param[in] atX_BC An axial translation transform about the indicated
   ///   `axis`.
-  /// @param[out] X_AC Preallocated space for the result.
+  /// @param[out] X_AC Preallocated space for the result, which will be a
+  ///   general transform.
   /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
   /// @pre atX_BC is an @ref special_xform_def "Axial translation transform".
   template <int axis>
 #ifndef DRAKE_DOXYGEN_CXX
     requires(0 <= axis && axis <= 2)
 #endif
-  void ComposeWithAxialTranslation(const RigidTransform<T>& atX_BC,
-                                   RigidTransform<T>* X_AC) const {
+  void PostMultiplyByAxialTranslation(const RigidTransform<T>& atX_BC,
+                                      RigidTransform<T>* X_AC) const {
     DRAKE_ASSERT(X_AC != nullptr);
     DRAKE_ASSERT_VOID(atX_BC.IsAxialTranslationOnlyOrThrow<axis>());
     const Eigen::Vector3<T>& p_BC = atX_BC.translation();
     X_AC->set_rotation(R_AB_);  // unchanged
     X_AC->set_translation(p_AoBo_A_ + p_BC[axis] * R_AB_.col(axis));
+  }
+
+  /// (Internal use only) With `this` a general transform X_BC, and given an
+  /// axial translation transform atX_AB, efficiently calculates
+  /// `X_AC = atX_AB * X_BC`. This requires just 1 floating point operation.
+  /// @param[in] atX_AB An axial translation transform along the indicated
+  ///   `axis`.
+  /// @param[out] X_AC Preallocated space for the result, which will be a
+  ///   general transform.
+  /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z translation axis.
+  /// @pre atX_AB is an @ref special_xform_def "Axial translation transform"
+  template <int axis>
+#ifndef DRAKE_DOXYGEN_CXX
+    requires(0 <= axis && axis <= 2)
+#endif
+  void PreMultiplyByAxialTranslation(const RigidTransform<T>& atX_AB,
+                                     RigidTransform<T>* X_AC) const {
+    DRAKE_ASSERT(X_AC != nullptr);
+    DRAKE_ASSERT_VOID(atX_AB.IsAxialTranslationOnlyOrThrow<axis>());
+    // Note that R_AB = I.
+    const RigidTransform<T>& X_BC = *this;  // Rename to keep frames straight.
+    X_AC->set_rotation(X_BC.rotation());    // R_AC = R_AB * R_BC = R_BC.
+    X_AC->p_AoBo_A_ = X_BC.translation();   // Initialize to p_BC_B.
+    X_AC->p_AoBo_A_[axis] += atX_AB.translation()[axis];  // The only flop.
+  }
+
+  /// (Internal use only) Given a new `distance`, updates the axial translation
+  /// transform atX_BC to represent the new translation by that amount. We
+  /// expect that atX_BC was already such a transform (about the given x, y, or
+  /// z axis). Only the 1 active element is modified; the other 11 remain
+  /// unchanged. No floating point operations are needed.
+  /// @param[in] distance the component of p_BC along the `axis` direction.
+  /// @param[in,out] atX_BC the axial translation transform matrix to be
+  ///   updated.
+  /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z translation axis.
+  /// @pre atX_BC is an @ref special_xform_def "Axial translation transform".
+  template <int axis>
+#ifndef DRAKE_DOXYGEN_CXX
+    requires(0 <= axis && axis <= 2)
+#endif
+  static void UpdateAxialTranslation(const T& distance,
+                                     RigidTransform<T>* atX_BC) {
+    DRAKE_ASSERT(atX_BC != nullptr);
+    DRAKE_ASSERT_VOID(atX_BC->IsAxialTranslationOnlyOrThrow<axis>());
+    atX_BC->p_AoBo_A_[axis] = distance;
   }
 
   /// (Internal use only) Composes `this` general transform X_AB with a given
@@ -480,8 +546,8 @@ class RigidTransform {
   /// @param[in] rX_BC the rotation-only transform.
   /// @param[out] X_AC Preallocated space for the result.
   /// @pre rX_BC is a @ref special_xform_def "Rotation transform".
-  void ComposeWithRotation(const RigidTransform<T>& rX_BC,
-                           RigidTransform<T>* X_AC) const {
+  void PostMultiplyByRotation(const RigidTransform<T>& rX_BC,
+                              RigidTransform<T>* X_AC) const {
     DRAKE_ASSERT(X_AC != nullptr);
     DRAKE_ASSERT_VOID(rX_BC.IsRotationOnlyOrThrow());
     X_AC->set_rotation(R_AB_ * rX_BC.rotation());
@@ -494,8 +560,8 @@ class RigidTransform {
   /// @param[in] tX_BC the translation-only transform.
   /// @param[out] X_AC preallocated space for the result.
   /// @pre tX_BC is a @ref special_xform_def "Translation transform".
-  void ComposeWithTranslation(const RigidTransform<T>& tX_BC,
-                              RigidTransform<T>* X_AC) const {
+  void PostMultiplyByTranslation(const RigidTransform<T>& tX_BC,
+                                 RigidTransform<T>* X_AC) const {
     DRAKE_ASSERT(X_AC != nullptr);
     DRAKE_ASSERT_VOID(tX_BC.IsTranslationOnlyOrThrow());
     X_AC->set_rotation(R_AB_);  // unchanged

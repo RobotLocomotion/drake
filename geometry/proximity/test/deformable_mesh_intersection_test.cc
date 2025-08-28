@@ -6,6 +6,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity/deformable_contact_geometries.h"
+#include "drake/geometry/proximity/make_box_field.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/shape_specification.h"
@@ -15,19 +16,33 @@ namespace geometry {
 namespace internal {
 namespace {
 
+const deformable::DeformableGeometry MakeDeformableGeometry(
+    const VolumeMesh<double>& mesh) {
+  std::vector<int> surface_vertices;
+  std::vector<int> surface_tri_to_volume_tet;
+  TriangleSurfaceMesh<double> surface_mesh =
+      ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+          mesh, &surface_vertices, &surface_tri_to_volume_tet);
+  return deformable::DeformableGeometry(mesh, std::move(surface_mesh),
+                                        std::move(surface_vertices),
+                                        std::move(surface_tri_to_volume_tet));
+}
+
 GTEST_TEST(ComputeContactSurfaceDeformableRigid, NoContact) {
   const GeometryId deformable_id = GeometryId::get_new_id();
   const Sphere unit_sphere(1.0);
-  const deformable::DeformableGeometry deformable_W(
-      MakeSphereVolumeMesh<double>(
+  const deformable::DeformableGeometry deformable_W =
+      MakeDeformableGeometry(MakeSphereVolumeMesh<double>(
           unit_sphere, 10.0 /* very coarse resolution */,
           TessellationStrategy::kDenseInteriorVertices));
 
   const GeometryId rigid_id = GeometryId::get_new_id();
   // The cube of edge length 2.0 occupies the space [-1,1]x[-1,1]x[-1,1].
-  const TriangleSurfaceMesh<double> rigid_mesh_R = MakeBoxSurfaceMesh<double>(
-      Box::MakeCube(2.0), 10.0 /* very coarse resolution */);
-  const Bvh<Obb, TriangleSurfaceMesh<double>> rigid_bvh_R(rigid_mesh_R);
+  const VolumeMesh<double> rigid_mesh_R =
+      MakeBoxVolumeMeshWithMa<double>(Box::MakeCube(2.0));
+  const Bvh<Obb, VolumeMesh<double>> rigid_bvh_R(rigid_mesh_R);
+  const VolumeMeshFieldLinear<double, double> pressure_field_R =
+      MakeBoxPressureField<double>(Box::MakeCube(2.0), &rigid_mesh_R, 1e5);
 
   /* We use the knowledge that the coarsest sphere volume mesh is a octahedron
    to pose the rigid surface so that
@@ -51,7 +66,7 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, NoContact) {
 
   // Verify that the two BVHs have indeed collided.
   bool bvhs_collide = false;
-  deformable_W.deformable_mesh().bvh().Collide(
+  deformable_W.deformable_surface().bvh().Collide(
       rigid_bvh_R, X_WR, [&bvhs_collide](int, int) {
         bvhs_collide = true;
         return BvttCallbackResult::Terminate;
@@ -60,10 +75,12 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, NoContact) {
 
   DeformableContact<double> contact_data;
   contact_data.RegisterDeformableGeometry(
-      deformable_id, deformable_W.deformable_mesh().mesh().num_vertices());
+      deformable_id, deformable_W.deformable_volume().mesh().num_vertices());
   AddDeformableRigidContactSurface(
-      deformable_W.CalcSignedDistanceField(), deformable_W.deformable_mesh(),
-      deformable_id, rigid_id, rigid_mesh_R, rigid_bvh_R, X_WR, &contact_data);
+      deformable_W.deformable_surface(), deformable_W.deformable_volume(),
+      deformable_W.surface_index_to_volume_index(),
+      deformable_W.surface_tri_to_volume_tet(), deformable_id, rigid_id,
+      pressure_field_R, rigid_bvh_R, X_WR.inverse(), &contact_data);
 
   // Zero contact points and no vertices in contact are good enough indication
   // that the contact data is empty.
@@ -72,7 +89,7 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, NoContact) {
 
 // Note that the deformable rigid contact computation largely utilizes
 // previously tested code in mesh_intersection.cc. On top of that, it evaluates
-// signed distances, reports deformable vertices participating in contact, and
+// pressure, reports deformable vertices participating in contact, and
 // contact point barycentric coordinates. We test the correctness of these newly
 // added operations here in this test.
 GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
@@ -80,27 +97,34 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
   const VolumeMesh<double> single_tetrahedron_mesh_W(
       {{0, 1, 2, 3}}, {Vector3<double>::Zero(), Vector3<double>::UnitX(),
                        Vector3<double>::UnitY(), Vector3<double>::UnitZ()});
-  const deformable::DeformableGeometry deformable_W(
-      std::move(single_tetrahedron_mesh_W));
+  const deformable::DeformableGeometry deformable_W =
+      MakeDeformableGeometry(single_tetrahedron_mesh_W);
 
   const GeometryId rigid_id = GeometryId::get_new_id();
-  // Single-triangle surface mesh with the triangle large enough to intersect
-  // the tetrahedron well.
-  const TriangleSurfaceMesh<double> rigid_mesh_R(
-      {{0, 1, 2}}, {Vector3<double>(-1, -1, 0), Vector3<double>(3, -1, 0),
-                    Vector3<double>(-1, 3, 0)});
-  const Bvh<Obb, TriangleSurfaceMesh<double>> rigid_bvh_R(rigid_mesh_R);
+  // Single-tet rigid geometry.
+  const VolumeMesh<double> rigid_mesh_R(
+      {{0, 1, 2, 3}}, {Vector3<double>::Zero(), Vector3<double>::UnitX(),
+                       Vector3<double>::UnitY(), Vector3<double>::UnitZ()});
+  const Bvh<Obb, VolumeMesh<double>> rigid_bvh_R(rigid_mesh_R);
+  const double dummy_pressure = 123.0;
+  std::vector<double> pressure_values{dummy_pressure, dummy_pressure,
+                                      dummy_pressure, dummy_pressure};
+  const VolumeMeshFieldLinear<double, double> pressure_field(
+      std::move(pressure_values), &rigid_mesh_R);
 
-  // Pose the rigid surface at Wz=0.5 so that it intersects the deformable
-  // octahedron somewhere on that surface (since the triangle is parallel to the
-  // xy-plane).
-  const math::RigidTransform<double> X_WR(Vector3<double>{0, 0, 0.5});
+  // Pose the rigid tet so that it intersects the bottom face
+  // of the deformable tet. We choose a shift so that the intersection
+  // triangle's centroid comes out to have a nice number.
+  const math::RigidTransform<double> X_WR(
+      Vector3<double>{1.0 / 6.0, 1.0 / 6.0, -0.5});
 
   DeformableContact<double> contact_data;
   contact_data.RegisterDeformableGeometry(deformable_id, 4);
   AddDeformableRigidContactSurface(
-      deformable_W.CalcSignedDistanceField(), deformable_W.deformable_mesh(),
-      deformable_id, rigid_id, rigid_mesh_R, rigid_bvh_R, X_WR, &contact_data);
+      deformable_W.deformable_surface(), deformable_W.deformable_volume(),
+      deformable_W.surface_index_to_volume_index(),
+      deformable_W.surface_tri_to_volume_tet(), deformable_id, rigid_id,
+      pressure_field, rigid_bvh_R, X_WR.inverse(), &contact_data);
   constexpr int kExpectedNumContactPoints = 1;
 
   ASSERT_EQ(contact_data.contact_surfaces().size(), 1);
@@ -108,39 +132,36 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
       contact_data.contact_surfaces()[0];
 
   ASSERT_EQ(contact_surface.num_contact_points(), kExpectedNumContactPoints);
-  // The approximated signed distance function is zero because all vertices of
-  // the tet mesh are on the boundary.
-  ASSERT_EQ(contact_surface.signed_distances().size(),
-            kExpectedNumContactPoints);
-  const double signed_distance_at_contact_point =
-      contact_surface.signed_distances()[0];
-  EXPECT_NEAR(signed_distance_at_contact_point, 0.0,
-              std::numeric_limits<double>::epsilon());
-  // The centroid is (1/6, 1/6, 1/2).
+  // The pressure value is equal to the dummy value because the interpolation is
+  // constant.
+  ASSERT_EQ(contact_surface.pressures().size(), kExpectedNumContactPoints);
+  const double pressure = contact_surface.pressures()[0];
+  EXPECT_NEAR(pressure, dummy_pressure, std::numeric_limits<double>::epsilon());
+  // The centroid of the contact triangle in the world frame is (1/3, 1/3, 0).
   const Vector3<double> contact_point_W = contact_surface.contact_points_W()[0];
   constexpr double kTol = 1e-14;
   EXPECT_TRUE(CompareMatrices(
-      contact_point_W, Vector3<double>(1.0 / 6, 1.0 / 6, 1.0 / 2), kTol));
-  // The indexes of vertices incident to the only tetrahedron containing the
-  // only contact point.
-  const Vector4<int> vertex_indexes =
-      contact_surface.contact_vertex_indexes_A()[0];
-  const Vector4<int> expected_vertex_indexes{0, 1, 2, 3};
+      contact_point_W, Vector3<double>(1.0 / 3.0, 1.0 / 3.0, 0.0), kTol));
+  // The indexes of vertices incident to the bottom face of the triangle
+  // containing the only contact point.
+  const Vector3<int> vertex_indexes =
+      contact_surface.tri_contact_vertex_indexes_A()[0];
+  const Vector3<int> expected_vertex_indexes{2, 1, 0};
   EXPECT_EQ(vertex_indexes, expected_vertex_indexes);
-  // The centroid is (1/6, 1/6, 1/2), and the vertex positions are (0, 0, 0),
-  // (1, 0, 0), (0, 1, 0), (0, 0, 1). The the barycentric weights is (1/6, 1/6,
-  // 1/6, 1/2).
-  ASSERT_EQ(contact_surface.barycentric_coordinates_A().size(),
+  // The centroid is (1/3, 1/3, 0), and the vertex positions are (1, 0, 0),
+  // (0, 1, 0), (0, 0, 0), (0, 0, 1). The the barycentric weights is (1/3, 1/3,
+  // 1/3).
+  ASSERT_EQ(contact_surface.tri_barycentric_coordinates_A().size(),
             kExpectedNumContactPoints);
-  EXPECT_TRUE(CompareMatrices(
-      contact_surface.barycentric_coordinates_A()[0],
-      Vector4<double>(1.0 / 6, 1.0 / 6, 1.0 / 6, 1.0 / 2), kTol));
+  EXPECT_TRUE(
+      CompareMatrices(contact_surface.tri_barycentric_coordinates_A()[0],
+                      Vector3<double>(1.0 / 3, 1.0 / 3, 1.0 / 3), kTol));
 
-  // Only on tetrahedron is participating in contact and there are 4 vertices
-  // incident to a tetrahedron.
+  // Only one face is participating in contact and there are 3 vertices
+  // incident to a triangle face.
   const ContactParticipation& contact_participation =
       contact_data.contact_participation(deformable_id);
-  EXPECT_EQ(contact_participation.num_vertices_in_contact(), 4);
+  EXPECT_EQ(contact_participation.num_vertices_in_contact(), 3);
 }
 
 /* Tests that the per-contact-point data depends only on the relative pose
@@ -152,15 +173,18 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
 GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnlyRelativePoseMatters) {
   const GeometryId deformable_id = GeometryId::get_new_id();
   const Sphere unit_sphere(1.0);
-  deformable::DeformableGeometry deformable_W(MakeSphereVolumeMesh<double>(
-      unit_sphere, 10.0 /* very coarse resolution */,
-      TessellationStrategy::kDenseInteriorVertices));
+  deformable::DeformableGeometry deformable_W =
+      MakeDeformableGeometry(MakeSphereVolumeMesh<double>(
+          unit_sphere, 10.0 /* very coarse resolution */,
+          TessellationStrategy::kDenseInteriorVertices));
 
   const GeometryId rigid_id = GeometryId::get_new_id();
   // The cube of edge length 2.0 occupies the space [-1,1]x[-1,1]x[-1,1].
-  const TriangleSurfaceMesh<double> rigid_mesh_R = MakeBoxSurfaceMesh<double>(
-      Box::MakeCube(2.0), 10.0 /* very coarse resolution */);
-  const Bvh<Obb, TriangleSurfaceMesh<double>> rigid_bvh_R(rigid_mesh_R);
+  const VolumeMesh<double> rigid_mesh_R =
+      MakeBoxVolumeMeshWithMa<double>(Box::MakeCube(2.0));
+  const Bvh<Obb, VolumeMesh<double>> rigid_bvh_R(rigid_mesh_R);
+  const VolumeMeshFieldLinear<double, double> pressure_field_R =
+      MakeBoxPressureField<double>(Box::MakeCube(2.0), &rigid_mesh_R, 1e5);
   math::RigidTransform<double> X_WR(Vector3<double>{1.5, 0.0, 0.0});
 
   /* Projected to the xy-plane, the setup of the two geometries looks like
@@ -174,12 +198,14 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnlyRelativePoseMatters) {
                           \|/|____________|                                 */
 
   /* Compute the first set of contact data. */
-  const VolumeMesh<double> mesh_W = deformable_W.deformable_mesh().mesh();
+  const VolumeMesh<double> mesh_W = deformable_W.deformable_volume().mesh();
   DeformableContact<double> contact_data;
   contact_data.RegisterDeformableGeometry(deformable_id, mesh_W.num_vertices());
   AddDeformableRigidContactSurface(
-      deformable_W.CalcSignedDistanceField(), deformable_W.deformable_mesh(),
-      deformable_id, rigid_id, rigid_mesh_R, rigid_bvh_R, X_WR, &contact_data);
+      deformable_W.deformable_surface(), deformable_W.deformable_volume(),
+      deformable_W.surface_index_to_volume_index(),
+      deformable_W.surface_tri_to_volume_tet(), deformable_id, rigid_id,
+      pressure_field_R, rigid_bvh_R, X_WR.inverse(), &contact_data);
   ASSERT_EQ(contact_data.contact_surfaces().size(), 1);
   const DeformableContactSurface<double>& contact_surface =
       contact_data.contact_surfaces()[0];
@@ -194,41 +220,110 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnlyRelativePoseMatters) {
   for (int v = 0; v < mesh_W.num_vertices(); ++v) {
     q_WD.segment<3>(3 * v) = arbitrary_transform * mesh_W.vertex(v);
   }
-  deformable_W.UpdateVertexPositions(q_WD);
+  const TriangleSurfaceMesh<double> surface_mesh_W =
+      deformable_W.deformable_surface().mesh();
+  VectorX<double> q_surface_WD(3 * surface_mesh_W.num_vertices());
+  for (int v = 0; v < surface_mesh_W.num_vertices(); ++v) {
+    q_surface_WD.segment<3>(3 * v) =
+        arbitrary_transform * surface_mesh_W.vertex(v);
+  }
+
+  deformable_W.UpdateVertexPositions(q_WD, q_surface_WD);
   X_WR = arbitrary_transform * X_WR;
   /* Compute the second set of contact data. */
   DeformableContact<double> contact_data2;
   contact_data2.RegisterDeformableGeometry(deformable_id,
                                            mesh_W.num_vertices());
   AddDeformableRigidContactSurface(
-      deformable_W.CalcSignedDistanceField(), deformable_W.deformable_mesh(),
-      deformable_id, rigid_id, rigid_mesh_R, rigid_bvh_R, X_WR, &contact_data2);
+      deformable_W.deformable_surface(), deformable_W.deformable_volume(),
+      deformable_W.surface_index_to_volume_index(),
+      deformable_W.surface_tri_to_volume_tet(), deformable_id, rigid_id,
+      pressure_field_R, rigid_bvh_R, X_WR.inverse(), &contact_data2);
   ASSERT_EQ(contact_data2.contact_surfaces().size(), 1);
   const DeformableContactSurface<double>& contact_surface2 =
       contact_data2.contact_surfaces()[0];
 
   EXPECT_EQ(contact_surface.num_contact_points(),
             contact_surface2.num_contact_points());
-  /* Verify that penetration distances are not all equal simply because they are
+  /* Verify that pressure values are not all equal simply because they are
    all zero -- some meaningful values do exist. */
-  const auto has_negative_distance =
-      [](const DeformableContactSurface<double>& surface) {
-        const std::vector<double>& sdf = surface.signed_distances();
-        bool negative_distance_exists = false;
-        for (const double d : sdf) {
-          EXPECT_LE(d, 0.0);
-          if (d < 0.0) {
-            negative_distance_exists = true;
-          }
-        }
-        EXPECT_TRUE(negative_distance_exists);
-      };
-  has_negative_distance(contact_surface);
-  const std::vector<double>& sdf = contact_surface.signed_distances();
-  const std::vector<double>& sdf2 = contact_surface2.signed_distances();
-  for (int i = 0; i < contact_surface.num_contact_points(); ++i) {
-    EXPECT_NEAR(sdf[i], sdf2[i], 1e-14);
+  const auto [min_element, max_element] = std::minmax_element(
+      contact_surface.pressures().begin(), contact_surface.pressures().end());
+  EXPECT_GE(*min_element, 0.0);
+  EXPECT_GT(*max_element, 0.0);
+}
+
+/* Tests that inverted elements are labeled correctly. */
+GTEST_TEST(ComputeContactSurfaceDeformableRigid, InvertedElements) {
+  const GeometryId deformable_id = GeometryId::get_new_id();
+  const Sphere unit_sphere(1.0);
+  deformable::DeformableGeometry deformable_W =
+      MakeDeformableGeometry(MakeSphereVolumeMesh<double>(
+          unit_sphere, 10.0 /* very coarse resolution */,
+          TessellationStrategy::kDenseInteriorVertices));
+
+  const GeometryId rigid_id = GeometryId::get_new_id();
+  // The cube of edge length 2.0 occupies the space [-1,1]x[-1,1]x[-1,1].
+  const VolumeMesh<double> rigid_mesh_R =
+      MakeBoxVolumeMeshWithMa<double>(Box::MakeCube(2.0));
+  const Bvh<Obb, VolumeMesh<double>> rigid_bvh_R(rigid_mesh_R);
+  const VolumeMeshFieldLinear<double, double> pressure_field_R =
+      MakeBoxPressureField<double>(Box::MakeCube(2.0), &rigid_mesh_R, 1e5);
+  math::RigidTransform<double> X_WR(Vector3<double>{1.5, 0.0, 0.0});
+
+  /* Projected to the xy-plane, the setup of the two geometries looks like
+
+                              ____________
+                          /|\|            |
+                        /  | |\           |
+      sphere volume   /____|_|__\         |  box surface
+      as octeherdron  \    | |  /         |
+                        \  | |/           |
+                          \|/|____________|                                 */
+
+  const VolumeMesh<double> mesh_W = deformable_W.deformable_volume().mesh();
+  VectorX<double> q_WD(3 * mesh_W.num_vertices());
+  for (int v = 0; v < mesh_W.num_vertices(); ++v) {
+    q_WD.segment<3>(3 * v) = mesh_W.vertex(v);
   }
+  const TriangleSurfaceMesh<double> surface_mesh_W =
+      deformable_W.deformable_surface().mesh();
+  VectorX<double> q_surface_WD(3 * surface_mesh_W.num_vertices());
+  for (int v = 0; v < surface_mesh_W.num_vertices(); ++v) {
+    q_surface_WD.segment<3>(3 * v) = surface_mesh_W.vertex(v);
+  }
+
+  auto check_inversion = [&](bool expect_inversion) {
+    DeformableContact<double> contact_data;
+    contact_data.RegisterDeformableGeometry(deformable_id,
+                                            mesh_W.num_vertices());
+    AddDeformableRigidContactSurface(
+        deformable_W.deformable_surface(), deformable_W.deformable_volume(),
+        deformable_W.surface_index_to_volume_index(),
+        deformable_W.surface_tri_to_volume_tet(), deformable_id, rigid_id,
+        pressure_field_R, rigid_bvh_R, X_WR.inverse(), &contact_data);
+    ASSERT_EQ(contact_data.contact_surfaces().size(), 1);
+    const DeformableContactSurface<double>& contact_surface =
+        contact_data.contact_surfaces()[0];
+    EXPECT_GT(contact_surface.num_contact_points(), 0);
+    for (bool inverted : contact_surface.is_element_inverted()) {
+      EXPECT_EQ(inverted, expect_inversion);
+    }
+  };
+
+  /* Now we pull the only internal vertex of the deformable geometry out of its
+   surface so that all participating tets are inverted. Here we use the
+   knowledge that the coarsest sphere mesh (which is an octahedron) has only one
+   internal vertex, and it's v0. */
+  q_WD.segment<3>(0) = Vector3<double>(2.0, 0, 0);
+  deformable_W.UpdateVertexPositions(q_WD, q_surface_WD);
+  check_inversion(true);
+
+  /* If we pull the vertex from "the other side", then the elements in contact
+   are not inverted. */
+  q_WD.segment<3>(0) = Vector3<double>(-2.0, 0, 0);
+  deformable_W.UpdateVertexPositions(q_WD, q_surface_WD);
+  check_inversion(false);
 }
 
 }  // namespace

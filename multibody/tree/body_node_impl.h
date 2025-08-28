@@ -23,23 +23,26 @@ namespace internal {
 // (especially for the O(n²) mass matrix algorithm) the definitions are split
 // into two files to keep compilation times balanced: body_node_impl.cc and
 // body_node_impl_mass_matrix.cc.
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 class BodyNodeImpl final : public BodyNode<T> {
+  static_assert(std::is_same_v<typename ConcreteMobilizer::ScalarType, T>,
+                "BodyNode and Mobilizer must use the same scalar type.");
+
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyNodeImpl);
 
   // Inherit sizes from the concrete mobilizer.
   enum : int {
-    kNq = ConcreteMobilizer<T>::kNq,
-    kNv = ConcreteMobilizer<T>::kNv,
-    kNx = ConcreteMobilizer<T>::kNx
+    kNq = ConcreteMobilizer::kNq,
+    kNv = ConcreteMobilizer::kNv,
+    kNx = ConcreteMobilizer::kNx
   };
   template <typename U>
-  using QVector = typename ConcreteMobilizer<T>::template QVector<U>;
+  using QVector = typename ConcreteMobilizer::template QVector<U>;
   template <typename U>
-  using VVector = typename ConcreteMobilizer<T>::template VVector<U>;
+  using VVector = typename ConcreteMobilizer::template VVector<U>;
   template <typename U>
-  using HMatrix = typename ConcreteMobilizer<T>::template HMatrix<U>;
+  using HMatrix = typename ConcreteMobilizer::template HMatrix<U>;
 
   using BodyNode<T>::body;
   using BodyNode<T>::child_nodes;
@@ -81,28 +84,28 @@ class BodyNodeImpl final : public BodyNode<T> {
       const std::vector<Vector6<T>>& H_PB_W_cache, const T* velocities,
       VelocityKinematicsCache<T>* vc) const final;
 
-  void CalcMassMatrixContribution_TipToBase(
+  void CalcMassMatrixContributionViaWorld_TipToBase(
       const PositionKinematicsCache<T>& pc,
-      const std::vector<SpatialInertia<T>>& Mc_B_W_cache,
+      const std::vector<SpatialInertia<T>>& K_BBo_W_cache,  // composites
       const std::vector<Vector6<T>>& H_PB_W_cache,
       EigenPtr<MatrixX<T>> M) const final;
 
   // Declare functions for the six sizes of mass matrix off-diagonal
   // blocks.
-#define DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(Rnv)                     \
-  void CalcMassMatrixOffDiagonalBlock##Rnv(                             \
-      int R_start_in_v, const std::vector<Vector6<T>>& H_PB_W_cache,    \
-      const Eigen::Matrix<T, 6, Rnv>& Fm_CCo_W, EigenPtr<MatrixX<T>> M) \
+#define DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(Bnv)           \
+  void CalcMassMatrixOffDiagonalBlockViaWorld##Bnv(                     \
+      int B_start_in_v, const std::vector<Vector6<T>>& H_PB_W_cache,    \
+      const Eigen::Matrix<T, 6, Bnv>& Fm_CCo_W, EigenPtr<MatrixX<T>> M) \
       const final
 
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(1);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(2);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(3);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(4);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(5);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(6);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(1);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(2);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(3);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(4);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(5);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(6);
 
-#undef DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK
+#undef DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD
 
   void CalcSpatialAcceleration_BaseToTip(
       const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
@@ -200,7 +203,7 @@ class BodyNodeImpl final : public BodyNode<T> {
         (*H_cache)[mobilizer().velocity_start_in_v()].data());
   }
 
-  const ConcreteMobilizer<T>& mobilizer() const {
+  const ConcreteMobilizer& mobilizer() const {
     DRAKE_ASSERT(mobilizer_ != nullptr);
     return *mobilizer_;
   }
@@ -435,7 +438,7 @@ class BodyNodeImpl final : public BodyNode<T> {
     return aba_force_cache->get_mutable_e_B(mobod_index());
   }
 
-  const ConcreteMobilizer<T>* const mobilizer_;
+  const ConcreteMobilizer* const mobilizer_;
 };
 
 }  // namespace internal

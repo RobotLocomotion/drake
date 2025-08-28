@@ -16,11 +16,11 @@ template <typename T>
 PlanarMobilizer<T>::~PlanarMobilizer() = default;
 
 template <typename T>
-std::unique_ptr<internal::BodyNode<T>> PlanarMobilizer<T>::CreateBodyNode(
-    const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+std::unique_ptr<BodyNode<T>> PlanarMobilizer<T>::CreateBodyNode(
+    const BodyNode<T>* parent_node, const RigidBody<T>* body,
     const Mobilizer<T>* mobilizer) const {
-  return std::make_unique<internal::BodyNodeImpl<T, PlanarMobilizer>>(
-      parent_node, body, mobilizer);
+  return std::make_unique<BodyNodeImpl<T, PlanarMobilizer>>(parent_node, body,
+                                                            mobilizer);
 }
 
 template <typename T>
@@ -166,42 +166,42 @@ void PlanarMobilizer<T>::DoCalcNplusMatrix(const systems::Context<T>&,
 }
 
 template <typename T>
-void PlanarMobilizer<T>::MapVelocityToQDot(
+void PlanarMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>&,
+                                          EigenPtr<MatrixX<T>> Ndot) const {
+  *Ndot = Matrix3<T>::Zero();
+}
+
+template <typename T>
+void PlanarMobilizer<T>::DoCalcNplusDotMatrix(
+    const systems::Context<T>&, EigenPtr<MatrixX<T>> NplusDot) const {
+  *NplusDot = Matrix3<T>::Zero();
+}
+
+template <typename T>
+void PlanarMobilizer<T>::DoMapVelocityToQDot(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
-  DRAKE_ASSERT(v.size() == kNv);
-  DRAKE_ASSERT(qdot != nullptr);
-  DRAKE_ASSERT(qdot->size() == kNq);
   *qdot = v;
 }
 
 template <typename T>
-void PlanarMobilizer<T>::MapQDotToVelocity(
+void PlanarMobilizer<T>::DoMapQDotToVelocity(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& qdot,
     EigenPtr<VectorX<T>> v) const {
-  DRAKE_ASSERT(qdot.size() == kNq);
-  DRAKE_ASSERT(v != nullptr);
-  DRAKE_ASSERT(v->size() == kNv);
   *v = qdot;
 }
 
 template <typename T>
-void PlanarMobilizer<T>::MapAccelerationToQDDot(
+void PlanarMobilizer<T>::DoMapAccelerationToQDDot(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& vdot,
     EigenPtr<VectorX<T>> qddot) const {
-  DRAKE_ASSERT(vdot.size() == kNv);
-  DRAKE_ASSERT(qddot != nullptr);
-  DRAKE_ASSERT(qddot->size() == kNq);
   *qddot = vdot;
 }
 
 template <typename T>
-void PlanarMobilizer<T>::MapQDDotToAcceleration(
+void PlanarMobilizer<T>::DoMapQDDotToAcceleration(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& qddot,
     EigenPtr<VectorX<T>> vdot) const {
-  DRAKE_ASSERT(qddot.size() == kNq);
-  DRAKE_ASSERT(vdot != nullptr);
-  DRAKE_ASSERT(vdot->size() == kNv);
   *vdot = qddot;
 }
 

@@ -105,6 +105,13 @@ class BodyNode : public MultibodyElement<T> {
 
   ~BodyNode() override;
 
+  // The Mobod associated with this BodyNode (and its Mobilizer).
+  const SpanningForest::Mobod& mobod() const { return get_mobilizer().mobod(); }
+
+  // The index of the associated Mobod (same as the index of this BodyNode
+  // and of its Mobilizer).
+  MobodIndex mobod_index() const { return mobod().index(); }
+
   // Method to update the list of child body nodes maintained by this node,
   // outboard to this node. Recall a %BodyNode is a tree node within the tree
   // structure of MultibodyTree. Therefore each %BodyNode has a unique parent
@@ -114,16 +121,7 @@ class BodyNode : public MultibodyElement<T> {
   // MultibodyTree::Finalize() method call.
   void add_child_node(const BodyNode<T>* child) { children_.push_back(child); }
 
-  MobodIndex mobod_index() const {
-    const MobodIndex mobod = get_mobilizer().mobod().index();
-    // TODO(sherm1) BodyNode shouldn't be a MultibodyElement, but is for now.
-    DRAKE_ASSERT(this->template index_impl<MobodIndex>() == mobod);
-    return mobod;
-  }
-
-  MobodIndex inboard_mobod_index() const {
-    return get_mobilizer().mobod().inboard();
-  }
+  MobodIndex inboard_mobod_index() const { return mobod().inboard(); }
 
   // Returns a constant reference to the body B associated with this node.
   const RigidBody<T>& body() const {
@@ -134,8 +132,10 @@ class BodyNode : public MultibodyElement<T> {
   // Returns a constant reference to the unique parent body P of the body B
   // associated with this node. This method aborts in Debug builds if called on
   // the root node corresponding to the _world_ body.
+  // @pre has_parent_tree() is true.
   const RigidBody<T>& parent_body() const {
     DRAKE_ASSERT(get_parent_body_index().is_valid());
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree().get_body(get_parent_body_index());
   }
 
@@ -160,26 +160,17 @@ class BodyNode : public MultibodyElement<T> {
 
   // Returns the number of generalized positions for the Mobilizer in `this`
   // node.
-  int get_num_mobilizer_positions() const {
-    return topology_.num_mobilizer_positions;
-  }
+  int get_num_mobilizer_positions() const { return mobod().nq(); }
 
   // Returns the number of generalized velocities for the Mobilizer in `this`
   // node.
-  int get_num_mobilizer_velocities() const {
-    return topology_.num_mobilizer_velocities;
-  }
+  int get_num_mobilizer_velocities() const { return mobod().nv(); }
 
   // Returns the index to the first generalized velocity for this node
   // within the vector v of generalized velocities for the full multibody
   // system.
-  int velocity_start_in_v() const {
-    return topology_.mobilizer_velocities_start_in_v;
-  }
+  int velocity_start_in_v() const { return mobod().v_start(); }
   //@}
-
-  // Returns the topology information for this body node.
-  const BodyNodeTopology& get_topology() const { return topology_; }
 
   // Helper method to retrieve a Jacobian matrix with respect to generalized
   // velocities v for `this` node from an array storing the columns of a set of
@@ -198,33 +189,16 @@ class BodyNode : public MultibodyElement<T> {
   //   matrix for this node.
   Eigen::Map<const MatrixUpTo6<T>> GetJacobianFromArray(
       const std::vector<Vector6<T>>& H_array) const {
-    DRAKE_DEMAND(static_cast<int>(H_array.size()) ==
-                 this->get_parent_tree().num_velocities());
-    const int start_index_in_v = get_topology().mobilizer_velocities_start_in_v;
-    const int num_velocities = get_topology().num_mobilizer_velocities;
-    DRAKE_DEMAND(num_velocities == 0 ||
-                 start_index_in_v < this->get_parent_tree().num_velocities());
+    DRAKE_ASSERT(this->has_parent_tree());
+    const SpanningForest& forest = this->get_parent_tree().forest();
+    DRAKE_DEMAND(static_cast<int>(H_array.size()) == forest.num_velocities());
+    const int start_index_in_v = mobod().v_start();
+    const int nv = mobod().nv();
+    DRAKE_DEMAND(nv == 0 || start_index_in_v < forest.num_velocities());
     // The first column of this node's hinge matrix H_PB_W:
-    const T* H_col0 =
-        num_velocities == 0 ? nullptr : H_array[start_index_in_v].data();
+    const T* H_col0 = nv == 0 ? nullptr : H_array[start_index_in_v].data();
     // Create an Eigen map to the full H_PB_W for this node:
-    return Eigen::Map<const MatrixUpTo6<T>>(H_col0, 6, num_velocities);
-  }
-
-  // Mutable version of GetJacobianFromArray().
-  Eigen::Map<MatrixUpTo6<T>> GetMutableJacobianFromArray(
-      std::vector<Vector6<T>>* H_array) const {
-    DRAKE_DEMAND(static_cast<int>(H_array->size()) ==
-                 this->get_parent_tree().num_velocities());
-    const int start_index_in_v = get_topology().mobilizer_velocities_start_in_v;
-    const int num_velocities = get_topology().num_mobilizer_velocities;
-    DRAKE_DEMAND(num_velocities == 0 ||
-                 start_index_in_v < this->get_parent_tree().num_velocities());
-    // The first column of this node's hinge matrix H_PB_W:
-    T* H_col0 =
-        num_velocities == 0 ? nullptr : (*H_array)[start_index_in_v].data();
-    // Create an Eigen map to the full H_PB_W for this node:
-    return Eigen::Map<MatrixUpTo6<T>>(H_col0, 6, num_velocities);
+    return Eigen::Map<const MatrixUpTo6<T>>(H_col0, 6, nv);
   }
 
   // This method is used by MultibodyTree within a base-to-tip loop to compute
@@ -296,33 +270,33 @@ class BodyNode : public MultibodyElement<T> {
   // This node must fill in its nv x nv diagonal block in M, and then
   // sweep down to World filling in its diagonal contributions as in the
   // inner loop of algorithm 9.3, using the appropriate
-  // CalcMassMatrixOffDiagonalHelper().
-  virtual void CalcMassMatrixContribution_TipToBase(
+  // CalcMassMatrixOffDiagonalViaWorldHelper().
+  virtual void CalcMassMatrixContributionViaWorld_TipToBase(
       const PositionKinematicsCache<T>& pc,
-      const std::vector<SpatialInertia<T>>& Mc_B_W_cache,
+      const std::vector<SpatialInertia<T>>& K_BBo_W_cache,  // composites
       const std::vector<Vector6<T>>& H_PB_W_cache,
       EigenPtr<MatrixX<T>> M) const = 0;
 
   // There are six functions for calculating the off-diagonal blocks, one for
-  // each possible size Rnv of body R(k)'s inboard mobilizer (welds don't
+  // each possible size Bnv of body B(k)'s inboard mobilizer (welds don't
   // contribute here). This allows us to use fixed-size 2d matrices in the
-  // implementation as we sweep the inboard bodies. Use the separate
-  // dispatcher class CalcMassMatrixOffDiagonalDispatcher (defined below)
-  // to generate the properly sized call for body R(k).
-#define DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(Rnv)                     \
-  virtual void CalcMassMatrixOffDiagonalBlock##Rnv(                     \
-      int R_start_in_v, const std::vector<Vector6<T>>& H_PB_W_cache,    \
-      const Eigen::Matrix<T, 6, Rnv>& Fm_CBo_W, EigenPtr<MatrixX<T>> M) \
+  // implementation as we sweep the inboard bodies. Use the separate dispatcher
+  // class CalcMassMatrixOffDiagonalViaWorldDispatcher (defined below) to
+  // generate the properly sized call for body B(k).
+#define DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(Bnv)           \
+  virtual void CalcMassMatrixOffDiagonalBlockViaWorld##Bnv(             \
+      int B_start_in_v, const std::vector<Vector6<T>>& H_PB_W_cache,    \
+      const Eigen::Matrix<T, 6, Bnv>& Fm_CBo_W, EigenPtr<MatrixX<T>> M) \
       const = 0
 
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(1);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(2);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(3);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(4);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(5);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(6);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(1);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(2);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(3);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(4);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(5);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(6);
 
-#undef DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK
+#undef DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD
 
   // This method is used by MultibodyTree within a base-to-tip loop to compute
   // this node's kinematics that depend on the generalized accelerations, i.e.
@@ -598,39 +572,25 @@ class BodyNode : public MultibodyElement<T> {
       const VelocityKinematicsCache<T>& vc,
       std::vector<SpatialAcceleration<T>>* Ab_WB_array) const = 0;
 
-  // Helper method to be called within a base-to-tip recursion that computes
-  // into the PositionKinematicsCache:
-  // - X_PB(q_B)
-  // - X_WB(q(W:P), q_B)
-  // - p_PoBo_W(q_B)
-  // where q_B is the generalized coordinates associated with this node's
-  // mobilizer. q(W:P) denotes all generalized positions in the kinematics path
-  // between the world and the parent body P. It assumes we are in a base-to-tip
-  // recursion and therefore `X_WP` has already been updated.
-  //
-  // This function doesn't depend on the particular Mobilizer type so we
-  // implement once here in the base class rather than in the templatized
-  // derived class.
-  void CalcAcrossMobilizerBodyPoses_BaseToTip(
-      const FrameBodyPoseCache<T>& frame_body_pose_cache,
-      PositionKinematicsCache<T>* pc) const;
-
   // This method is used by MultibodyTree within a tip-to-base loop to compute
-  // the composite body inertia of each body in the system.
+  // the composite body inertia of each body in the system, taken about its
+  // own body frame origin, and expressed in the World frame.
   //
   // @param[in] pc Position kinematics cache.
-  // @param[in] M_B_W_all Spatial inertias for all bodies B.
-  // About B's origin Bo and expressed in the world frame W.
-  // @param[in] Mc_B_W_all Vector storing the composite body inertia for all
-  // bodies in the multibody system. It must contain already up-to-date
-  // composite body inertias for all the children of `this` node.
-  // @pre CalcCompositeBodyInertia_TipToBase() must have already been called
-  // for the children nodes (and, by recursive precondition, all outboard nodes
-  // in the tree.)
-  virtual void CalcCompositeBodyInertia_TipToBase(
+  // @param[in] M_BBo_W_all Spatial inertias for all bodies B, about Bo,
+  //   and expressed in World (depends on configuration).
+  // @param[in] K_BBo_W_all Vector storing the composite body inertias, taken
+  //   about Bo, and expressed in World, for all bodies in the multibody system.
+  //   It must contain already up-to-date composite body inertias for all the
+  //   children of `this` node.
+  //
+  // @pre CalcCompositeBodyInertiaWorld_TipToBase() must have already been
+  // called for the children nodes (and, by recursive precondition, all outboard
+  // nodes in the tree.)
+  virtual void CalcCompositeBodyInertiaInWorld_TipToBase(
       const PositionKinematicsCache<T>& pc,
-      const std::vector<SpatialInertia<T>>& M_B_W_all,
-      std::vector<SpatialInertia<T>>* Mc_B_W_all) const;
+      const std::vector<SpatialInertia<T>>& M_BBo_W_all,
+      std::vector<SpatialInertia<T>>* K_BBo_W_all) const;
 
   // Forms LLT factorization of articulated rigid body's hinge inertia matrix.
   // @param[in] D_B Articulated rigid body hinge matrix.
@@ -659,7 +619,8 @@ class BodyNode : public MultibodyElement<T> {
   // method returns an invalid BodyIndex. Attempts to using invalid indexes
   // leads to an exception being thrown in Debug builds.
   BodyIndex get_parent_body_index() const {
-    return topology_.parent_rigid_body;
+    if (mobod().is_world()) return BodyIndex{};
+    return get_mobilizer().inboard_frame().body().index();
   }
 
   // =========================================================================
@@ -667,11 +628,10 @@ class BodyNode : public MultibodyElement<T> {
   // Returns an Eigen expression of the vector of generalized velocities.
   Eigen::VectorBlock<const VectorX<T>> get_mobilizer_velocities(
       const systems::Context<T>& context) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     const MultibodyTree<T>& tree = this->get_parent_tree();
     return tree.get_state_segment(
-        context,
-        tree.num_positions() + topology_.mobilizer_velocities_start_in_v,
-        topology_.num_mobilizer_velocities);
+        context, tree.num_positions() + mobod().v_start(), mobod().nv());
   }
 
   // Helper to get an Eigen expression of the vector of generalized velocities
@@ -681,58 +641,55 @@ class BodyNode : public MultibodyElement<T> {
   // to the operator.
   Eigen::VectorBlock<const VectorX<T>> get_mobilizer_velocities(
       const VectorX<T>& v) const {
-    return v.segment(topology_.mobilizer_velocities_start_in_v,
-                     topology_.num_mobilizer_velocities);
+    return v.segment(mobod().v_start(), mobod().nv());
   }
 
  private:
   friend class BodyNodeTester;
 
   // Implementation for MultibodyElement::DoSetTopology().
-  // At MultibodyTree::Finalize() time, each body retrieves its topology
-  // from the parent MultibodyTree.
   // TODO(sherm1) Get rid of this.
-  void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {
-    DRAKE_DEMAND(mobilizer_ != nullptr);  // Should have been set already.
-    topology_ = tree_topology.get_body_node(mobod_index());
+  void DoSetTopology(const MultibodyTreeTopology&) final {
+    // BodyNode gets everything it needs at construction.
+    DRAKE_DEMAND(body_ != nullptr && mobilizer_ != nullptr);
   }
-
-  BodyNodeTopology topology_;
 
   const BodyNode<T>* parent_node_{nullptr};
   std::vector<const BodyNode<T>*> children_;
 
   // Pointers for fast access.
-  const RigidBody<T>* body_;
+  const RigidBody<T>* body_{nullptr};
   const Mobilizer<T>* mobilizer_{nullptr};
 };
 
-// During mass matrix computation, this dispatcher is invoked by the
-// composite body R(k) on each of the bodies on the path to World.
-template <typename T, int Rnv>
-class CalcMassMatrixOffDiagonalDispatcher;
+// During CalcMassMatrix() (using the Composite Body Algorithm via recursion of
+// World-frame quantities), this dispatcher is invoked by the composite body B,
+// whose inboard mobilizer has Bnv dofs, on each of the bodies ("parent nodes")
+// on its inboard path to World.
+template <typename T, int Bnv>
+class CalcMassMatrixOffDiagonalViaWorldDispatcher;
 
-#define SPECIALIZE_MASS_MATRIX_DISPATCHER(Rnv)                           \
-  template <typename T>                                                  \
-  class CalcMassMatrixOffDiagonalDispatcher<T, Rnv> {                    \
-   public:                                                               \
-    static void Dispatch(const BodyNode<T>& body_node, int R_start_in_v, \
-                         const std::vector<Vector6<T>>& H_PB_W_cache,    \
-                         const Eigen::Matrix<T, 6, Rnv>& Fm_CBo_W,       \
-                         EigenPtr<MatrixX<T>> M) {                       \
-      body_node.CalcMassMatrixOffDiagonalBlock##Rnv(                     \
-          R_start_in_v, H_PB_W_cache, Fm_CBo_W, M);                      \
-    }                                                                    \
+#define SPECIALIZE_MASS_MATRIX_VIA_WORLD_DISPATCHER(Bnv)                   \
+  template <typename T>                                                    \
+  class CalcMassMatrixOffDiagonalViaWorldDispatcher<T, Bnv> {              \
+   public:                                                                 \
+    static void Dispatch(const BodyNode<T>& parent_node, int B_start_in_v, \
+                         const std::vector<Vector6<T>>& H_PB_W_cache,      \
+                         const Eigen::Matrix<T, 6, Bnv>& Fm_CPo_W,         \
+                         EigenPtr<MatrixX<T>> M) {                         \
+      parent_node.CalcMassMatrixOffDiagonalBlockViaWorld##Bnv(             \
+          B_start_in_v, H_PB_W_cache, Fm_CPo_W, M);                        \
+    }                                                                      \
   }
 
-SPECIALIZE_MASS_MATRIX_DISPATCHER(1);
-SPECIALIZE_MASS_MATRIX_DISPATCHER(2);
-SPECIALIZE_MASS_MATRIX_DISPATCHER(3);
-SPECIALIZE_MASS_MATRIX_DISPATCHER(4);
-SPECIALIZE_MASS_MATRIX_DISPATCHER(5);
-SPECIALIZE_MASS_MATRIX_DISPATCHER(6);
+SPECIALIZE_MASS_MATRIX_VIA_WORLD_DISPATCHER(1);
+SPECIALIZE_MASS_MATRIX_VIA_WORLD_DISPATCHER(2);
+SPECIALIZE_MASS_MATRIX_VIA_WORLD_DISPATCHER(3);
+SPECIALIZE_MASS_MATRIX_VIA_WORLD_DISPATCHER(4);
+SPECIALIZE_MASS_MATRIX_VIA_WORLD_DISPATCHER(5);
+SPECIALIZE_MASS_MATRIX_VIA_WORLD_DISPATCHER(6);
 
-#undef SPECIALIZE_MASS_MATRIX_DISPATCHER
+#undef SPECIALIZE_MASS_MATRIX_VIA_WORLD_DISPATCHER
 
 }  // namespace internal
 }  // namespace multibody

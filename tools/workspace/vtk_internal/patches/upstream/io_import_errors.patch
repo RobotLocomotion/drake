@@ -1,0 +1,23 @@
+[vtk] Partially revert upstream commit de160283
+
+Upstream deleted important error handling that TRI added, and it should be put
+back. Until that happens, we can unrevert the deletion using this patch file.
+
+When this patch is upstreamed again next time, the VTK team should be sure to
+also add a unit test so that it doesn't get reverted again.
+
+Original description of the fix that got reverted: be sure to forward warnings
+and errors from the loader that's nested inside the importer back to the
+importer proper.
+
+--- IO/Import/vtkGLTFImporter.cxx
++++ IO/Import/vtkGLTFImporter.cxx
+@@ -417,6 +417,8 @@ int vtkGLTFImporter::ImportBegin()
+   vtkNew<vtkEventForwarderCommand> forwarder;
+   forwarder->SetTarget(this);
+   this->Loader->AddObserver(vtkCommand::ProgressEvent, forwarder);
++  this->Loader->AddObserver(vtkCommand::WarningEvent, forwarder);
++  this->Loader->AddObserver(vtkCommand::ErrorEvent, forwarder);
+
+   // Check extension
+   std::vector<char> glbBuffer;

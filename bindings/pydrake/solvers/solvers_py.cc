@@ -38,6 +38,7 @@ top-level documentation for :py:mod:`pydrake.math`.
   internal::DefineSolversMosek(m);
   internal::DefineSolversNlopt(m);
   internal::DefineSolversOsqp(m);
+  internal::DefineSolversProjectedGradientDescent(m);
   internal::DefineSolversScs(m);
   internal::DefineSolversSnopt(m);
   internal::DefineSolversUnrevisedLemke(m);

@@ -132,7 +132,7 @@ GTEST_TEST(ParticleSorterTest, Sort) {
     allocated_offsets.insert(offset);
   };
 
-  another_grid.IterateConstGridWithOffset(callback);
+  another_grid.IterateGridWithOffset(callback);
   for (uint64_t offset : base_node_offsets) {
     const Vector3i coord = another_grid.OffsetToCoordinate(offset);
     /* Get the offsets of nodes in the one-ring of the base node. */

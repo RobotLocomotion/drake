@@ -4,6 +4,7 @@
 
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/bvh_updater.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
 namespace drake {
@@ -110,6 +111,9 @@ class DeformableMeshWithBvh {
 
 template <typename T>
 using DeformableVolumeMeshWithBvh = DeformableMeshWithBvh<VolumeMesh<T>>;
+template <typename T>
+using DeformableSurfaceMeshWithBvh =
+    DeformableMeshWithBvh<TriangleSurfaceMesh<T>>;
 
 }  // namespace internal
 }  // namespace geometry

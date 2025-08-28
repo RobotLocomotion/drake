@@ -11,10 +11,7 @@ other platforms are not supported.
 
 Linux:
 
-    apt install gnupg1
-    apt install aptly
-    apt install docker
-    apt install awscli
+    apt install gnupg1 aptly docker awscli
 
 
 **Note:** There are compatibility issues with `gnupg2` and `aptly`. See
@@ -41,7 +38,7 @@ Using the passphrase from the AWS Secrets Manager, run:
 
     gpg[1] --import <key.asc>
 
-**Note:** It is not clear if `gpg` or `gpg1` is correct to use on Ubuntu
+**Note:** It is not clear if `gpg` or `gpg1` is correct to use on Ubuntu.
 
 ### Log into Docker
 
@@ -54,9 +51,9 @@ The Docker ID and password may be found in the AWS Secrets Manager.
 ### Create GitHub API Token
 
 To create the required `~/.config/readonly_github_api_token.txt` file, open a
-browser to https://github.com/settings/tokens and create a new token (it does
-not need any extra permissions; the default "no checkboxes are set" is good),
-and save the plaintext hexadecimal token to that file.
+browser to https://github.com/settings/tokens and create a new token, making
+sure that `repo` is selected. Save the plaintext hexadecimal token to that
+file.
 
 ### Get the push_release scripts
 
@@ -65,12 +62,14 @@ Clone the drake repository:
     git clone https://github.com/RobotLocomotion/drake.git
     cd drake
 
-## Run script to push docker images and mirror the .tar/.deb artifacts to S3
+## Run script for Docker / S3 / GitHub
+
+The next step is to push docker images, mirror the .tar/.deb artifacts to S3,
+and push the official source code archive to GitHub.
 
 Once your machine is set-up, run the `push_release` script as described below:
 
     bazel run //tools/release_engineering/dev:push_release -- <version>
-
 
 The release creator will provide the version. Throughout this process, don’t
 use `v` on the version string. For example:
@@ -82,15 +81,28 @@ use `v` on the version string. For example:
 Verify that:
 
 1. [s3://drake-packages/drake/release](https://s3.console.aws.amazon.com/s3/buckets/drake-packages?region=us-east-1&prefix=drake/release/&showversions=false)
-contains a set of `drake-<version>-[...].tar.gz[...]` files for each supported
-configuration (e.g. jammy, noble, and mac).
+contains:
 
-1. [Dockerhub](https://hub.docker.com/r/robotlocomotion/drake/tags?ordering=last_updated&page=1)
-has `<version>` tags for each supported configuration (e.g. jammy and noble).
+    * Binaries: A set of `drake-<version>-[...].tar.gz` files for each supported
+    configuration (e.g. jammy, noble, and mac). In addition, there should be
+    `.sha256` and `.sha512` files for each `.tar.gz` file.
+    * Source: A `drake-<version>-src.tar.gz` file and corresponding `.sha256`
+    and `.sha512` files.
 
-1. The `*.deb` files are in AWS
+2. The `*.deb` and corresponding `.sha256` and `.sha512`  files are in AWS
 [s3://drake-packages/drake/release](https://s3.console.aws.amazon.com/s3/buckets/drake-packages?region=us-east-1&prefix=drake/release/&showversions=false)
-`/drake-dev_<version>-1_amd64-<configuration>.deb` for each supported configuration (e.g. jammy and noble)
+for each supported configuration (e.g. jammy and noble) as
+`/drake-dev_<version>-1_amd64-<configuration>.deb`.
+
+3. The [GitHub release](https://github.com/RobotLocomotion/drake/releases),
+found at `https://github.com/RobotLocomotion/drake/releases/tag/v<version>`,
+contains `drake-<version>-src.tar.gz` and corresponding `.sha256` and
+`.sha512` files.
+
+4. [Dockerhub](https://hub.docker.com/r/robotlocomotion/drake/tags?ordering=last_updated&page=1)
+has a plain `<version>` tag as well as a `<version>` tag for each supported
+configuration (e.g. jammy and noble).
+
 
 ## Run script for apt
 
@@ -115,25 +127,26 @@ Secrets Manager. The script may prompt for this multiple times.
 For example, to add Jammy:
 
 1. Edit `~/.aptly.conf` to add a `jammy` section
-1. Add a `jammy` folder to
+2. Add a `jammy` folder to
 [drake-apt](https://s3.console.aws.amazon.com/s3/buckets/drake-apt?region=us-east-1&tab=objects)
 s3 bucket
-1. Edit the `push_release` script:
+3. Edit the `push_release` script:
 
     1. After downloading the aptly database from S3, create the `drake-jammy`
     repo with the command
     ``aptly repo create -distribution=jammy drake-jammy``. For example:
 
-            # Download the current version of the aptly database from S3.
-            aws s3 sync --delete s3://drake-infrastructure/aptly/.aptly "${HOME}/.aptly"
+        # Download the current version of the aptly database from S3.
+        aws s3 sync --delete s3://drake-infrastructure/aptly/.aptly "${HOME}/.aptly"
 
-            aptly repo create -distribution=jammy drake-jammy
+        aptly repo create -distribution=jammy drake-jammy
 
-    1. The first time a repo is published we must use
+    2. The first time a repo is published we must use
     ``aptly publish snapshot`` instead of ``aptly publish switch``:
 
-            aptly publish snapshot -gpg-key="${gpg_key: -8}" -distribution="jammy" "drake-${platform}-${binary_version}" \
-                  "s3:drake-apt.csail.mit.edu/${platform}:"
+        aptly publish snapshot -gpg-key="${gpg_key: -8}" \
+            -distribution="jammy" "drake-${platform}-${binary_version}" \
+            "s3:drake-apt.csail.mit.edu/${platform}:"
 
 Follow instructions below as normal. Don’t forget to revert the changes to
 the `push_release` script!

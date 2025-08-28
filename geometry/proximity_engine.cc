@@ -352,8 +352,15 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                 &anchored_objects_);
   }
 
-  void AddDeformableGeometry(const VolumeMesh<double>& mesh_W, GeometryId id) {
-    geometries_for_deformable_contact_.AddDeformableGeometry(id, mesh_W);
+  void AddDeformableGeometry(const VolumeMesh<double>& mesh_W,
+                             TriangleSurfaceMesh<double> surface_mesh_W,
+                             std::vector<int> surface_index_to_volume_index,
+                             std::vector<int> surface_tri_to_volume_tet,
+                             GeometryId id) {
+    geometries_for_deformable_contact_.AddDeformableGeometry(
+        id, mesh_W, std::move(surface_mesh_W),
+        std::move(surface_index_to_volume_index),
+        std::move(surface_tri_to_volume_tet));
     // Currently, even though no collision filtering is done for deformable
     // geometries, the collision filter still needs to be aware of the existence
     // of deformable geometries. This is because collision filters implicitly
@@ -518,10 +525,19 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void UpdateDeformableVertexPositions(
-      const std::unordered_map<GeometryId, VectorX<T>>& q_WGs) {
+      const std::unordered_map<GeometryId, VectorX<T>>& q_WGs,
+      const std::unordered_map<GeometryId, std::vector<DrivenTriangleMesh>>&
+          driven_meshes) {
     for (const auto& [id, q_WG] : q_WGs) {
+      if (!driven_meshes.contains(id)) {
+        continue;  // No driven meshes for this id because there's no proximity
+                   // role for this geometry.
+      }
+      DRAKE_DEMAND(driven_meshes.at(id).size() == 1);
+      const DrivenTriangleMesh& driven_mesh = driven_meshes.at(id)[0];
       geometries_for_deformable_contact_.UpdateDeformableVertexPositions(
-          id, ExtractDoubleOrThrow(q_WG));
+          id, ExtractDoubleOrThrow(q_WG),
+          driven_mesh.GetDrivenVertexPositions());
     }
   }
 
@@ -642,6 +658,25 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return witness_pairs;
   }
 
+  /* Searches for an fcl::CollisionObject associated with the given `id`.
+   Note: this strips the const away from the collision object because fcl's
+   API requires non-const inputs.
+   @throws if the proximity engine has no geometry for the id. */
+  CollisionObjectd* FindCollisionObject(GeometryId id,
+                                        std::string_view query_type) const {
+    auto iter = dynamic_objects_.find(id);
+    if (iter == dynamic_objects_.end()) {
+      iter = anchored_objects_.find(id);
+      if (iter == anchored_objects_.end()) {
+        throw std::runtime_error(
+            fmt::format("The geometry given by id {} does not reference a "
+                        "geometry that can be used in a {} query",
+                        id, query_type));
+      }
+    }
+    return const_cast<CollisionObjectd*>(iter->second.get());
+  }
+
   SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
       GeometryId id_A, GeometryId id_B,
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
@@ -655,22 +690,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
     data.request.distance_tolerance = distance_tolerance_;
 
-    auto find_geometry = [this](GeometryId id) -> CollisionObjectd* {
-      auto iter = dynamic_objects_.find(id);
-      if (iter == dynamic_objects_.end()) {
-        iter = anchored_objects_.find(id);
-        if (iter == anchored_objects_.end()) {
-          throw std::runtime_error(fmt::format(
-              "The geometry given by id {} does not reference a "
-              "geometry that can be used in a signed distance query",
-              id));
-        }
-      }
-      return const_cast<CollisionObjectd*>(iter->second.get());
-    };
-
-    CollisionObjectd* object_A = find_geometry(id_A);
-    CollisionObjectd* object_B = find_geometry(id_B);
+    CollisionObjectd* object_A = FindCollisionObject(id_A, "signed distance");
+    CollisionObjectd* object_B = FindCollisionObject(id_B, "signed distance");
     shape_distance::Callback<T>(object_A, object_B, &data, max_distance);
 
     // If the callback didn't throw, it returned an actual value.
@@ -705,6 +726,36 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     std::sort(distances.begin(), distances.end(),
               OrderSignedDistanceToPoint<T>);
+    return distances;
+  }
+
+  std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceGeometryToPoint(
+      const Vector3<T>& p_WQ,
+      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
+      const std::unordered_set<GeometryId>& geometries) const {
+    // We create a sphere of zero radius centered at the query point and put
+    // it into a CollisionObject.
+    auto fcl_sphere = make_shared<fcl::Sphered>(0.0);  // sphere of zero radius
+    CollisionObjectd query_point(fcl_sphere);
+    // The FCL broadphase requires double-valued poses; so we use ADL to
+    // efficiently get double-valued poses out of arbitrary T-valued poses.
+    query_point.setTranslation(convert_to_double(p_WQ));
+    query_point.computeAABB();
+
+    // Cheaper to sort the ids than to sort the results.
+    std::vector<GeometryId> ids(geometries.begin(), geometries.end());
+    std::sort(ids.begin(), ids.end());
+
+    double kInf = std::numeric_limits<double>::infinity();
+    std::vector<SignedDistanceToPoint<T>> distances;
+    point_distance::CallbackData<T> data{
+        &query_point, kInf, p_WQ, &X_WGs, &mesh_sdf_data_, &distances};
+    for (const GeometryId& id : ids) {
+      CollisionObjectd* geometry = FindCollisionObject(id, "signed distance");
+      DRAKE_DEMAND(geometry != nullptr);
+
+      point_distance::Callback<T>(&query_point, geometry, &data, kInf);
+    }
     return distances;
   }
 
@@ -916,6 +967,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       return nullptr;
     }
     return &iter->second.tri_mesh();
+  }
+
+  const Aabb& GetDeformableAabbInWorld(GeometryId id) const {
+    return geometries_for_deformable_contact_.GetDeformableAabbInWorld(id);
   }
 
   bool IsFclConvexType(GeometryId id) const {
@@ -1291,9 +1346,13 @@ void ProximityEngine<T>::AddAnchoredGeometry(const Shape& shape,
 }
 
 template <typename T>
-void ProximityEngine<T>::AddDeformableGeometry(const VolumeMesh<double>& mesh,
-                                               GeometryId id) {
-  impl_->AddDeformableGeometry(mesh, id);
+void ProximityEngine<T>::AddDeformableGeometry(
+    const VolumeMesh<double>& mesh, TriangleSurfaceMesh<double> surface_mesh,
+    std::vector<int> surface_index_to_volume_index,
+    std::vector<int> surface_tri_to_volume_tet, GeometryId id) {
+  impl_->AddDeformableGeometry(mesh, std::move(surface_mesh),
+                               std::move(surface_index_to_volume_index),
+                               std::move(surface_tri_to_volume_tet), id);
 }
 
 template <typename T>
@@ -1363,8 +1422,10 @@ void ProximityEngine<T>::UpdateWorldPoses(
 
 template <typename T>
 void ProximityEngine<T>::UpdateDeformableVertexPositions(
-    const std::unordered_map<GeometryId, VectorX<T>>& q_WGs) {
-  impl_->UpdateDeformableVertexPositions(q_WGs);
+    const std::unordered_map<GeometryId, VectorX<T>>& q_WGs,
+    const std::unordered_map<GeometryId, std::vector<DrivenTriangleMesh>>&
+        driven_meshes) {
+  impl_->UpdateDeformableVertexPositions(q_WGs, driven_meshes);
 }
 
 template <typename T>
@@ -1391,6 +1452,15 @@ ProximityEngine<T>::ComputeSignedDistanceToPoint(
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
     const double threshold) const {
   return impl_->ComputeSignedDistanceToPoint(query, X_WGs, threshold);
+}
+
+template <typename T>
+std::vector<SignedDistanceToPoint<T>>
+ProximityEngine<T>::ComputeSignedDistanceGeometryToPoint(
+    const Vector3<T>& query,
+    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
+    const std::unordered_set<GeometryId>& geometries) const {
+  return impl_->ComputeSignedDistanceGeometryToPoint(query, X_WGs, geometries);
 }
 
 template <typename T>
@@ -1471,6 +1541,11 @@ template <typename T>
 const TriangleSurfaceMesh<double>* ProximityEngine<T>::mesh_distance_boundary(
     GeometryId g_id) const {
   return impl_->mesh_distance_boundary(g_id);
+}
+
+template <typename T>
+const Aabb& ProximityEngine<T>::GetDeformableAabbInWorld(GeometryId id) const {
+  return impl_->GetDeformableAabbInWorld(id);
 }
 
 template <typename T>

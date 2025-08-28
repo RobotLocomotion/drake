@@ -1342,13 +1342,13 @@ GTEST_TEST(SpatialInertia, PlusEqualOperatorForTwoMasslessBodies) {
   EXPECT_EQ(M_BcP_E.get_mass(), 0.0);
 
   // Verify we get the arithmetic mean.
-  const Vector3<double> p_PCcm_E =
+  const Vector3<double> p_PScm_E =
       0.5 * (M_B1P_E.get_com() + M_B2P_E.get_com());
-  const Matrix3<double> G_CP_E =
+  const Matrix3<double> G_SP_E =
       0.5 * (M_B1P_E.get_unit_inertia().CopyToFullMatrix3() +
              M_B2P_E.get_unit_inertia().CopyToFullMatrix3());
-  EXPECT_EQ(M_BcP_E.get_com(), p_PCcm_E);
-  EXPECT_EQ(M_BcP_E.get_unit_inertia().CopyToFullMatrix3(), G_CP_E);
+  EXPECT_EQ(M_BcP_E.get_com(), p_PScm_E);
+  EXPECT_EQ(M_BcP_E.get_unit_inertia().CopyToFullMatrix3(), G_SP_E);
 }
 
 // Test the SpatialInertia function that determines an inertia-equivalent shape.
@@ -1510,7 +1510,8 @@ GTEST_TEST(SpatialInertia, VerifyMinimumBoundingBoxLengths) {
       M_BBcm_B.CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
   EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
   EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
-  EXPECT_TRUE(X_BA.translation() == Vector3<double>::Zero());
+  EXPECT_TRUE(
+      CompareMatrices(X_BA.translation(), Vector3<double>::Zero(), kTolerance));
 
   // Verify CalcMinimumPhysicalLength() returns the length of the face-diagonal
   // of the minimum bounding rectangle (i.e., √[(2*a)² + (2*b)²] = 500).
@@ -1533,7 +1534,8 @@ GTEST_TEST(SpatialInertia, VerifyMinimumBoundingBoxLengths) {
       M_BBcm_B.CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
   EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
   EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
-  EXPECT_TRUE(X_BA.translation() == Vector3<double>::Zero());
+  EXPECT_TRUE(
+      CompareMatrices(X_BA.translation(), Vector3<double>::Zero(), kTolerance));
 
   // Verify CalcMinimumPhysicalLength() returns the length of the space-diagonal
   // of the minimum bounding box (i.e., √[(2*a)² + (2*b)² + (2*c)²] = 390 m).

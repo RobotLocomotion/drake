@@ -54,7 +54,7 @@ template <typename T>
 std::vector<std::pair<Vector3<int>, GridData<T>>> SparseGrid<T>::GetGridData()
     const {
   std::vector<std::pair<Vector3<int>, GridData<T>>> result;
-  spgrid_.IterateConstGridWithOffset(
+  spgrid_.IterateGridWithOffset(
       [&](uint64_t offset, const GridData<T>& node_data) {
         if (node_data.m > 0.0) {
           const Vector3<int> coordinate = spgrid_.OffsetToCoordinate(offset);
@@ -67,7 +67,7 @@ std::vector<std::pair<Vector3<int>, GridData<T>>> SparseGrid<T>::GetGridData()
 template <typename T>
 MassAndMomentum<T> SparseGrid<T>::ComputeTotalMassAndMomentum() const {
   MassAndMomentum<T> result;
-  spgrid_.IterateConstGridWithOffset(
+  spgrid_.IterateGridWithOffset(
       [&](uint64_t offset, const GridData<T>& node_data) {
         if (node_data.m > 0.0) {
           const Vector3<T>& xi =
@@ -79,6 +79,26 @@ MassAndMomentum<T> SparseGrid<T>::ComputeTotalMassAndMomentum() const {
         }
       });
   return result;
+}
+
+template <typename T>
+contact_solvers::internal::VertexPartialPermutation
+SparseGrid<T>::SetNodeIndices() {
+  std::vector<int> participating_nodes;
+  int node_index = 0;
+  int participating_node_index = 0;
+  spgrid_.IterateGrid([&](GridData<T>* node_data) {
+    if (node_data->m > 0.0) {
+      if (node_data->index_or_flag.is_flag()) {
+        participating_nodes.push_back(participating_node_index++);
+      } else {
+        participating_nodes.push_back(-1);
+      }
+      node_data->index_or_flag.set_index(node_index++);
+    }
+  });
+  return contact_solvers::internal::VertexPartialPermutation(
+      std::move(participating_nodes));
 }
 
 }  // namespace internal

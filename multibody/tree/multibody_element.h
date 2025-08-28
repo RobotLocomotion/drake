@@ -1,5 +1,8 @@
 #pragma once
 
+#include <set>
+#include <string>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -13,6 +16,9 @@ namespace multibody {
 
 template <typename T>
 class MultibodyPlant;
+
+template <typename T>
+class DeformableModel;
 
 /// A class representing an element (subcomponent) of a MultibodyPlant or
 /// (internally) a MultibodyTree. Examples of multibody elements are bodies,
@@ -72,6 +78,20 @@ class MultibodyElement {
   /// @pre parameters != nullptr
   void SetDefaultParameters(systems::Parameters<T>* parameters) const;
 
+  /// Declares MultibodyTreeSystem discrete states. NVI to the virtual method
+  /// DoDeclareDiscreteState().
+  /// @param[in] tree_system A mutable copy of the parent MultibodyTreeSystem.
+  /// @pre 'tree_system' must be the same as the parent tree system (what's
+  /// returned from GetParentTreeSystem()).
+  void DeclareDiscreteState(internal::MultibodyTreeSystem<T>* tree_system);
+
+  /// (Advanced) Declares all cache entries needed by this element.
+  /// This method is called by MultibodyTree on `this` element during
+  /// MultibodyTree::Finalize(). It subsequently calls DoDeclareCacheEntries().
+  /// Custom elements that need to declare cache entries must override
+  /// DoDeclareCacheEntries().
+  void DeclareCacheEntries(internal::MultibodyTreeSystem<T>* tree_system);
+
   /// Returns `true` if this %MultibodyElement was added during Finalize()
   /// rather than something a user added. (See class comments.)
   bool is_ephemeral() const { return is_ephemeral_; }
@@ -100,24 +120,35 @@ class MultibodyElement {
   }
 
   /// Returns this element's unique ordinal.
-  int ordinal_impl() const {
+  /// @note The int64_t default is present for backwards compatibility but
+  /// you should not use it. Instead, define a ThingOrdinal specialization of
+  /// TypeSafeIndex for any element Thing that has a meaningful ordinal. Then
+  /// use that type explicitly in Thing's public `ordinal()` method.
+  template <typename ElementOrdinalType = int64_t>
+  ElementOrdinalType ordinal_impl() const {
     DRAKE_ASSERT(ordinal_ >= 0);
-    return ordinal_;
+    return ElementOrdinalType{ordinal_};
   }
 
-  /// Returns a constant reference to the parent MultibodyTree that
-  /// owns this element.
-  /// @throws std::exception in debug builds if has_parent_tree() is false.
+  /// Returns a constant reference to the parent MultibodyTree that owns this
+  /// element.
+  /// @pre has_parent_tree is true.
   const internal::MultibodyTree<T>& get_parent_tree() const {
-    DRAKE_ASSERT_VOID(HasParentTreeOrThrow());
+    if constexpr (kDrakeAssertIsArmed) {
+      if (parent_tree_ == nullptr) {
+        ThrowNoParentTree();
+      }
+    }
     return *parent_tree_;
   }
 
   /// Returns a constant reference to the parent MultibodyTreeSystem that
   /// owns the parent MultibodyTree that owns this element.
-  /// @throws std::exception in debug builds if has_parent_tree() is false.
+  /// @throws std::exception if has_parent_tree() is false.
   const internal::MultibodyTreeSystem<T>& GetParentTreeSystem() const {
-    DRAKE_ASSERT_VOID(HasParentTreeOrThrow());
+    if (parent_tree_ == nullptr) {
+      ThrowNoParentTree();
+    }
     return get_parent_tree().tree_system();
   }
 
@@ -140,6 +171,14 @@ class MultibodyElement {
   /// objects may override to set default values of their specific parameters.
   virtual void DoSetDefaultParameters(systems::Parameters<T>*) const;
 
+  /// Implementation of the NVI DeclareDiscreteState(). MultibodyElement-derived
+  /// objects may override to declare their specific state variables.
+  virtual void DoDeclareDiscreteState(internal::MultibodyTreeSystem<T>*);
+
+  /// Derived classes must override this method to declare cache entries
+  /// needed by `this` element. The default implementation is a no-op.
+  virtual void DoDeclareCacheEntries(internal::MultibodyTreeSystem<T>*);
+
   /// To be used by MultibodyElement-derived objects when declaring parameters
   /// in their implementation of DoDeclareParameters(). For an example, see
   /// RigidBody::DoDeclareParameters().
@@ -154,6 +193,21 @@ class MultibodyElement {
       internal::MultibodyTreeSystem<T>* tree_system,
       const AbstractValue& model_value);
 
+  /// To be used by MultibodyElement-derived objects when declaring discrete
+  /// states in their implementation of DoDeclareDiscreteStates(). For an
+  /// example, see DeformableBody::DoDeclareDiscreteStates().
+  systems::DiscreteStateIndex DeclareDiscreteState(
+      internal::MultibodyTreeSystem<T>* tree_system,
+      const VectorX<T>& model_value);
+
+  /// To be used by MultibodyElement-derived objects when declaring cache
+  /// entries in their implementation of DoDeclareCacheEntries(). For an
+  /// example, see DeformableBody::DoDeclareCacheEntries().
+  systems::CacheEntry& DeclareCacheEntry(
+      internal::MultibodyTreeSystem<T>* tree_system, std::string description,
+      systems::ValueProducer value_producer,
+      std::set<systems::DependencyTicket> prerequisites_of_calc);
+
   /// Returns true if this multibody element has a parent tree, otherwise false.
   bool has_parent_tree() const { return parent_tree_ != nullptr; }
 
@@ -161,6 +215,9 @@ class MultibodyElement {
   // MultibodyTree<T> is a natural friend of MultibodyElement objects and
   // therefore it can set the owning parent tree and unique index in that tree.
   friend class internal::MultibodyTree<T>;
+  // Similarly, friend DeformableModel<T> to allow it to set the parent tree and
+  // index for deformable bodies.
+  friend class DeformableModel<T>;
 
   // Give unit tests access to the tree.
   friend class MultibodyElementTester;
@@ -170,16 +227,14 @@ class MultibodyElement {
     parent_tree_ = tree;
   }
 
-  void set_ordinal(int ordinal) { ordinal_ = ordinal; }
+  void set_ordinal(int64_t ordinal) { ordinal_ = ordinal; }
 
   void set_model_instance(ModelInstanceIndex model_instance) {
     model_instance_ = model_instance;
   }
 
-  // Checks whether this MultibodyElement has been registered into
-  // a MultibodyTree and throws an exception if not.
-  // @throws std::exception if the element is not in a MultibodyTree.
-  void HasParentTreeOrThrow() const;
+  // @throws std::exception that this element is not in a MultibodyTree.
+  [[noreturn]] void ThrowNoParentTree() const;
 
   // Checks whether this MultibodyElement belongs to the provided
   // MultibodyTree `tree` and throws an exception if not.
@@ -201,7 +256,7 @@ class MultibodyElement {
   // if MultibodyPlant does not expose any port that has an entry per concrete
   // MultibodyElement type.) This must be set to a valid ordinal value before
   // the element is released to the wild.
-  int ordinal_{-1};
+  int64_t ordinal_{-1};
 
   // The default model instance id is *invalid*. This must be set to a
   // valid index value before the element is released to the wild.

@@ -52,7 +52,7 @@ class MosekSolver::License {
     if (rescode != MSK_RES_OK) {
       throw std::runtime_error(
           fmt::format("Could not acquire MOSEK license: {}. See "
-                      "https://docs.mosek.com/10.1/capi/"
+                      "https://docs.mosek.com/11.0/capi/"
                       "response-codes.html#mosek.rescode for details.",
                       fmt_streamed(rescode)));
     }
@@ -258,7 +258,7 @@ void MosekSolver::DoSolve2(const MathematicalProgram& prog,
 
   // Since Mosek 10, it allows setting the initial guess for both continuous and
   // integer/binary variables. See
-  // https://docs.mosek.com/latest/rmosek/tutorial-mio-shared.html#specifying-an-initial-solution
+  // https://docs.mosek.com/11.0/rmosek/tutorial-mio-shared.html#specifying-an-initial-solution
   // for more details.
   if (initial_guess.array().isFinite().any()) {
     DRAKE_ASSERT(initial_guess.size() == prog.num_vars());
@@ -284,7 +284,7 @@ void MosekSolver::DoSolve2(const MathematicalProgram& prog,
     MSKrescodee trmcode;  // termination code
     rescode = MSK_optimizetrm(impl.task(), &trmcode);
     // Refer to
-    // https://docs.mosek.com/latest/capi/debugging-tutorials.html#debugging-tutorials
+    // https://docs.mosek.com/11.0/capi/debugging-tutorials.html#debugging-tutorials
     // on printing the solution summary.
     if (is_printing) {
       if (rescode == MSK_RES_OK) {
@@ -355,10 +355,18 @@ void MosekSolver::DoSolve2(const MathematicalProgram& prog,
       result->set_x_val(sol_vector);
     }
     MSKrealt optimal_cost;
-    rescode = MSK_getprimalobj(impl.task(), solution_type, &optimal_cost);
-    DRAKE_ASSERT(rescode == MSK_RES_OK);
-    if (rescode == MSK_RES_OK) {
-      result->set_optimal_cost(optimal_cost);
+    switch (solution_status) {
+      case MSK_SOL_STA_PRIM_INFEAS_CER: {
+        result->set_optimal_cost(MathematicalProgram::kGlobalInfeasibleCost);
+        break;
+      }
+      default: {
+        rescode = MSK_getprimalobj(impl.task(), solution_type, &optimal_cost);
+        DRAKE_ASSERT(rescode == MSK_RES_OK);
+        if (rescode == MSK_RES_OK) {
+          result->set_optimal_cost(optimal_cost);
+        }
+      }
     }
     rescode = impl.SetDualSolution(
         solution_type, prog, bb_con_dual_indices, linear_con_dual_indices,

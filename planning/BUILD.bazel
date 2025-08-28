@@ -18,6 +18,8 @@ drake_cc_package_library(
         ":collision_checker_context",
         ":collision_checker_params",
         ":distance_and_interpolation_provider",
+        ":dof_mask",
+        ":joint_limits",
         ":linear_distance_and_interpolation_provider",
         ":robot_clearance",
         ":robot_collision_type",
@@ -102,6 +104,26 @@ drake_cc_library(
     hdrs = ["distance_and_interpolation_provider.h"],
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "dof_mask",
+    srcs = ["dof_mask.cc"],
+    hdrs = ["dof_mask.h"],
+    deps = [
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "joint_limits",
+    srcs = ["joint_limits.cc"],
+    hdrs = ["joint_limits.h"],
+    deps = [
+        ":dof_mask",
+        "//common:essential",
+        "//multibody/plant",
     ],
 )
 
@@ -268,6 +290,25 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "dof_mask_test",
+    deps = [
+        ":dof_mask",
+        ":make_dummy_plant",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "joint_limits_test",
+    deps = [
+        ":joint_limits",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/benchmarks/acrobot:make_acrobot_plant",
+    ],
+)
+
+drake_cc_googletest(
     name = "linear_distance_and_interpolation_provider_test",
     data = [
         "//planning/test_utilities:collision_ground_plane.sdf",
@@ -281,6 +322,16 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "make_dummy_plant",
+    testonly = 1,
+    srcs = ["test/make_dummy_plant.cc"],
+    hdrs = ["test/make_dummy_plant.h"],
+    deps = [
+        "@drake//multibody/plant",
     ],
 )
 

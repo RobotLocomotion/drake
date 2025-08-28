@@ -6,7 +6,6 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
-    "drake_cc_test",
 )
 load(
     "//tools/skylark:drake_py.bzl",
@@ -1334,7 +1333,6 @@ drake_cc_googletest(
 )
 
 add_lint_tests(
-    enable_clang_format_lint = False,
     python_lint_extra_srcs = [
         ":test/resource_tool_installed_test.py",
     ],

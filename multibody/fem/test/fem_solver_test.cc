@@ -13,7 +13,7 @@ namespace fem {
 namespace internal {
 
 using Eigen::MatrixXd;
-constexpr double kTolerance = 16 * std::numeric_limits<double>::epsilon();
+constexpr double kTolerance = 1e-12;
 /* Parameters for the Newmark-beta integration scheme. */
 constexpr double kDt = 0.01;
 constexpr double kGamma = 0.5;
@@ -35,8 +35,8 @@ class FemSolverTest : public ::testing::Test {
   void set_max_newton_iterations(int max_iterations) {
     solver_.max_iterations_ = max_iterations;
   }
-  DummyModel<T::value> model_{};
   AccelerationNewmarkScheme<double> integrator_{kDt, kGamma, kBeta};
+  DummyModel<T::value> model_{integrator_.GetWeights()};
   FemSolver<double> solver_{&model_, &integrator_};
 };
 
@@ -45,14 +45,42 @@ namespace {
 TYPED_TEST_SUITE_P(FemSolverTest);
 TYPED_TEST_P(FemSolverTest, Tolerance) {
   /* Default values. */
-  EXPECT_EQ(this->solver_.relative_tolerance(), 1e-4);
+  EXPECT_EQ(this->solver_.relative_tolerance(), 1e-2);
   EXPECT_EQ(this->solver_.absolute_tolerance(), 1e-6);
+  EXPECT_EQ(this->solver_.max_linear_solver_tolerance(), 0.1);
   /* Test Setters. */
   constexpr double kTol = 1e-8;
   this->solver_.set_relative_tolerance(kTol);
   this->solver_.set_absolute_tolerance(kTol);
+  this->solver_.set_max_linear_solver_tolerance(kTol);
   EXPECT_EQ(this->solver_.relative_tolerance(), kTol);
   EXPECT_EQ(this->solver_.absolute_tolerance(), kTol);
+  EXPECT_EQ(this->solver_.max_linear_solver_tolerance(), kTol);
+  /* Linear solver tolerance. */
+  const double max_tol = 0.2;
+  double residual = 1e-4;
+  double prev_residual = 1e-3;
+  double prev_tol = 0.1;
+  this->solver_.set_max_linear_solver_tolerance(max_tol);
+  /* Negative previous tolerance results in default. */
+  EXPECT_EQ(
+      this->solver_.ComputeLinearSolverTolerance(residual, prev_residual, -1),
+      max_tol);
+  /* The case with tolerance = γ*ratio^α where ratio = ‖Fₖ‖/‖Fₖ₋₁‖. */
+  const double ratio = residual / prev_residual;
+  EXPECT_EQ(this->solver_.ComputeLinearSolverTolerance(residual, prev_residual,
+                                                       prev_tol),
+            ratio * ratio);
+  /* The case where residual is shrinking fast. */
+  residual = 1e-6;
+  EXPECT_EQ(this->solver_.ComputeLinearSolverTolerance(residual, prev_residual,
+                                                       prev_tol),
+            prev_tol * prev_tol);
+  /* The case where residual unexpectedly grows, and the safe-guard kicks in. */
+  residual = 2.0 * prev_residual;
+  EXPECT_EQ(this->solver_.ComputeLinearSolverTolerance(residual, prev_residual,
+                                                       prev_tol),
+            max_tol);
 }
 
 /* Tests that the behavior of FemSolver::AdvanceOneTimeStep agrees with analytic
@@ -72,16 +100,18 @@ TYPED_TEST_P(FemSolverTest, AdvanceOneTimeStep) {
   const std::unordered_set<int> nonparticipating_vertices = {0, 1};
   const systems::LeafContext<double> dummy_context;
   const FemPlantData<double> dummy_data{dummy_context, {}};
+  /* Set a tight linear solve tolerance to show that we can converge to tight
+   tolerances if needed. */
+  this->solver_.set_max_linear_solver_tolerance(
+      std::numeric_limits<double>::epsilon());
   const int num_iterations = this->solver_.AdvanceOneTimeStep(
       *state0, dummy_data, nonparticipating_vertices);
   EXPECT_EQ(num_iterations, 1);
-
   /* Compute the expected result from AdvanceOneTimeStep(). */
   std::unique_ptr<FemState<double>> expected_state =
       this->model_.MakeFemState();
   auto tangent_matrix0 = this->model_.MakeTangentMatrix();
-  this->model_.CalcTangentMatrix(*state0, this->integrator_.GetWeights(),
-                                 tangent_matrix0.get());
+  this->model_.CalcTangentMatrix(*state0, tangent_matrix0.get());
   const MatrixXd A0 = tangent_matrix0->MakeDenseMatrix();
   VectorX<double> b0(this->model_.num_dofs());
   this->model_.CalcResidual(*state0, dummy_data, &b0);
@@ -101,8 +131,7 @@ TYPED_TEST_P(FemSolverTest, AdvanceOneTimeStep) {
 
   /* Check the Schur complement is as expected. */
   auto tangent_matrix = this->model_.MakeTangentMatrix();
-  this->model_.CalcTangentMatrix(computed_state, this->integrator_.GetWeights(),
-                                 tangent_matrix.get());
+  this->model_.CalcTangentMatrix(computed_state, tangent_matrix.get());
   contact_solvers::internal::SchurComplement
       force_balance_tangent_matrix_schur_complement(*tangent_matrix,
                                                     nonparticipating_vertices);
@@ -116,7 +145,7 @@ TYPED_TEST_P(FemSolverTest, AdvanceOneTimeStep) {
 }
 
 /* Tests that AdvanceOneTimeStep for nonlinear models throws an error message if
- * the Newton solver doesn't converge within the max number of iterations. */
+ the Newton solver doesn't converge within the max number of iterations. */
 TYPED_TEST_P(FemSolverTest, Nonconvergence) {
   constexpr bool is_linear = TypeParam::value;
   if (!is_linear) {

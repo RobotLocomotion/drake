@@ -10,6 +10,8 @@
 #include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/primitives/first_order_low_pass_filter.h"
 #include "drake/systems/primitives/pass_through.h"
+#include "drake/systems/primitives/saturation.h"
+#include "drake/systems/primitives/sparse_matrix_gain.h"
 
 namespace drake {
 namespace manipulation {
@@ -62,13 +64,13 @@ Gains MakeInverseDynamicsGains(const std::optional<Eigen::VectorXd>& kp) {
 
 template <typename T>
 SimIiwaDriver<T>::SimIiwaDriver(
-    const IiwaControlMode control_mode,
-    const multibody::MultibodyPlant<T>* const controller_plant,
-    const double ext_joint_filter_tau,
-    const std::optional<Eigen::VectorXd>& kp_gains)
+    const IiwaDriver& driver_config,
+    const multibody::MultibodyPlant<T>* controller_plant)
     : Diagram<T>(systems::SystemTypeTag<SimIiwaDriver>{}) {
   DRAKE_THROW_UNLESS(controller_plant != nullptr);
   const int num_positions = controller_plant->num_positions();
+  const IiwaControlMode control_mode =
+      ParseIiwaControlMode(driver_config.control_mode);
 
   DiagramBuilder<T> builder;
 
@@ -84,7 +86,7 @@ SimIiwaDriver<T>::SimIiwaDriver(
   // into the computed external wrench).
   auto contact_forces =
       builder.template AddNamedSystem<FirstOrderLowPassFilter>(
-          "low_pass_filter", ext_joint_filter_tau, num_positions);
+          "low_pass_filter", driver_config.ext_joint_filter_tau, num_positions);
   builder.ExportInput(contact_forces->get_input_port(),
                       "generalized_contact_forces");
 
@@ -96,10 +98,11 @@ SimIiwaDriver<T>::SimIiwaDriver(
   if (position_enabled(control_mode)) {
     using StateInterpolator = StateInterpolatorWithDiscreteDerivative<T>;
     auto interpolator = builder.template AddNamedSystem<StateInterpolator>(
-        "velocity_interpolator", num_positions, kIiwaLcmStatusPeriod,
+        "velocity_interpolator", num_positions, driver_config.lcm_status_period,
         true /* suppress initial transient */);
     builder.ExportInput(interpolator->get_input_port(), "position");
-    const Gains inverse_dynamics_gains = MakeInverseDynamicsGains(kp_gains);
+    const Gains inverse_dynamics_gains =
+        MakeInverseDynamicsGains(driver_config.desired_kp_gains);
     inverse_dynamics =
         builder.template AddNamedSystem<InverseDynamicsController>(
             "inverse_dynamics_controller", *controller_plant,
@@ -107,6 +110,14 @@ SimIiwaDriver<T>::SimIiwaDriver(
             inverse_dynamics_gains.kd, false /* no feedforward acceleration */);
     builder.Connect(interpolator->GetOutputPort("state"),
                     inverse_dynamics->GetInputPort("desired_state"));
+    const std::vector<int> state_demux_sizes = {// num_positions, num_velocities
+                                                num_positions, num_positions};
+    auto state_desired_demux =
+        builder.template AddSystem<Demultiplexer>(state_demux_sizes);
+    builder.Connect(interpolator->get_output_port(),
+                    state_desired_demux->get_input_port());
+    builder.ExportOutput(state_desired_demux->get_output_port(1),
+                         "velocity_commanded");
   } else {
     inverse_dynamics = builder.template AddNamedSystem<InverseDynamics>(
         "gravity_compensation", controller_plant,
@@ -115,23 +126,45 @@ SimIiwaDriver<T>::SimIiwaDriver(
   builder.ConnectInput("state",
                        inverse_dynamics->GetInputPort("estimated_state"));
 
+  // Use the actuator indices to lookup limits parsed into the plant. Some
+  // limits might be infinite, in which case the saturation won't do anything.
+  auto& joint_actuator_indices = controller_plant->GetJointActuatorIndices();
+  DRAKE_THROW_UNLESS(std::ssize(joint_actuator_indices) == num_positions);
+  const double kNaN = std::numeric_limits<double>::quiet_NaN();
+  Eigen::VectorXd torque_limits =
+      Eigen::VectorXd::Constant(num_positions, kNaN);
+  for (int k = 0; k < num_positions; ++k) {
+    const auto& actuator =
+        controller_plant->get_joint_actuator(joint_actuator_indices[k]);
+    torque_limits[k] = actuator.effort_limit();
+  }
+  auto torque_limiter = builder.template AddNamedSystem<systems::Saturation>(
+      "torque_limiter", -torque_limits, torque_limits);
+
   // When torque control is enabled, declare the `torque` input port and add it
   // to the inverse dynamics output. Otherwise, use the inverse dynamics output
   // by itself.
-  const systems::OutputPort<T>* actuation_output = nullptr;
+  const systems::OutputPort<T>* raw_torque_commanded_output = nullptr;
   if (torque_enabled(control_mode)) {
-    auto actuation =
-        builder.template AddNamedSystem<Adder>("+", 2, num_positions);
+    auto adder = builder.template AddNamedSystem<Adder>("+", 2, num_positions);
     builder.Connect(inverse_dynamics->GetOutputPort("generalized_force"),
-                    actuation->get_input_port(0));
-    builder.ExportInput(actuation->get_input_port(1), "torque");
-    actuation_output = &actuation->get_output_port();
+                    adder->get_input_port(0));
+    builder.ExportInput(adder->get_input_port(1), "torque");
+    raw_torque_commanded_output = &adder->get_output_port();
   } else {
-    actuation_output = &inverse_dynamics->GetOutputPort("generalized_force");
+    raw_torque_commanded_output =
+        &inverse_dynamics->GetOutputPort("generalized_force");
   }
+  builder.Connect(*raw_torque_commanded_output,
+                  torque_limiter->get_input_port());
+
+  // Add B⁻¹ to the diagram.
+  auto Binv = builder.template AddNamedSystem<systems::SparseMatrixGain>(
+      "B⁻¹", controller_plant->MakeActuationMatrixPseudoinverse());
+  builder.Connect(torque_limiter->get_output_port(), Binv->get_input_port());
 
   // Declare the various output ports.
-  builder.ExportOutput(*actuation_output, "actuation");
+  builder.ExportOutput(Binv->get_output_port(), "actuation");
   if (position_enabled(control_mode)) {
     auto pass = builder.template AddNamedSystem<PassThrough>(
         "position_pass_through", num_positions);
@@ -148,10 +181,10 @@ SimIiwaDriver<T>::SimIiwaDriver(
     builder.ConnectInput("state", pass->get_input_port());
     builder.ExportOutput(pass->get_output_port(), "state_estimated");
   }
-  builder.ExportOutput(*actuation_output, "torque_commanded");
+  builder.ExportOutput(torque_limiter->get_output_port(), "torque_commanded");
   // TODO(amcastro-tri): is this what we want to send as the "measured
   // torque"? why coming from the controllers instead of from the plant?
-  builder.ExportOutput(*actuation_output, "torque_measured");
+  builder.ExportOutput(torque_limiter->get_output_port(), "torque_measured");
   builder.ExportOutput(contact_forces->get_output_port(), "torque_external");
 
   builder.BuildInto(this);
@@ -165,15 +198,11 @@ SimIiwaDriver<T>::SimIiwaDriver(const SimIiwaDriver<U>& other)
 template <typename T>
 const System<double>& SimIiwaDriver<T>::AddToBuilder(
     DiagramBuilder<double>* builder, const MultibodyPlant<double>& plant,
-    const ModelInstanceIndex iiwa_instance,
-    const MultibodyPlant<double>& controller_plant, double ext_joint_filter_tau,
-    const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains,
-    IiwaControlMode control_mode) {
-  const std::string name =
-      fmt::format("IiwaDriver({})", plant.GetModelInstanceName(iiwa_instance));
+    const ModelInstanceIndex iiwa_instance, const IiwaDriver& driver_config,
+    const MultibodyPlant<double>& controller_plant) {
+  const std::string name = plant.GetModelInstanceName(iiwa_instance);
   auto system = builder->AddNamedSystem<SimIiwaDriver<double>>(
-      name, control_mode, &controller_plant, ext_joint_filter_tau,
-      desired_iiwa_kp_gains);
+      name, driver_config, &controller_plant);
   builder->Connect(plant.get_state_output_port(iiwa_instance),
                    system->GetInputPort("state"));
   builder->Connect(

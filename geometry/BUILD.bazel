@@ -70,6 +70,7 @@ drake_cc_library(
         ":geometry_ids",
         ":geometry_roles",
         ":internal_geometry",
+        ":mesh_deformation_interpolator",
         ":shape_specification",
         "//common:default_scalars",
         "//common:sorted_pair",
@@ -271,6 +272,7 @@ drake_cc_library(
         ":proximity_engine",
         ":scene_graph_config",
         ":utilities",
+        "//geometry/proximity:calc_obb",
         "//geometry/proximity:make_convex_hull_mesh",
         "//geometry/render:render_engine",
         "//math:gradient",
@@ -425,6 +427,8 @@ drake_cc_library(
         ":shape_specification",
         "//common:copyable_unique_ptr",
         "//common:essential",
+        "//geometry/proximity:bv",
+        "//geometry/proximity:calc_obb",
         "//geometry/proximity:polygon_surface_mesh",
         "//geometry/proximity:volume_mesh",
         "//math:geometric_transform",
@@ -643,6 +647,8 @@ drake_cc_googletest(
         ":meshcat_websocket_client",
         "//geometry/render:test_models",
     ],
+    # Network settings cause this test to occasionally fail in macOS CI.
+    flaky = True,
     tags = [
         "cpu:2",
     ],
@@ -818,6 +824,10 @@ filegroup(
     srcs = [
         "test/cube_with_hole.bin",
         "test/cube_with_hole.gltf",
+        "test/rotated_cube_squished.bin",
+        "test/rotated_cube_squished.gltf",
+        "test/rotated_cube_unit_scale.bin",
+        "test/rotated_cube_unit_scale.gltf",
     ],
 )
 
@@ -934,6 +944,7 @@ drake_cc_googletest(
         ":test_vtk_files",
     ],
     deps = [
+        ":geometry_state",
         ":proximity_engine",
         ":shape_specification",
         "//common/test_utilities:eigen_matrix_compare",

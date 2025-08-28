@@ -30,19 +30,21 @@ constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 class RevoluteMobilizerTest : public MobilizerTester {
  public:
   void SetUp() override {
-    mobilizer_ = &AddJointAndFinalize<RevoluteJoint, RevoluteMobilizer>(
-        std::make_unique<RevoluteJoint<double>>(
-            "joint0", tree().world_body().body_frame(), body_->body_frame(),
-            axis_F_));
+    // The axis is not one of the coordinate axes, so we'll expect to get
+    // new F & M frames that rotate around their common z axis.
+    const RevoluteMobilizer<double>& const_mobilizer =
+        AddJointAndFinalize<RevoluteJoint, RevoluteMobilizer>(
+            std::make_unique<RevoluteJoint<double>>(
+                "joint0", tree().world_body().body_frame(), body_->body_frame(),
+                axis_Jp_));
     // Mobilizers are always ephemeral (i.e. not added by user).
+    mobilizer_ = const_cast<RevoluteMobilizer<double>*>(&const_mobilizer);
     EXPECT_TRUE(mobilizer_->is_ephemeral());
-    mutable_mobilizer_ = const_cast<RevoluteMobilizer<double>*>(mobilizer_);
   }
 
  protected:
-  const RevoluteMobilizer<double>* mobilizer_{nullptr};
-  RevoluteMobilizer<double>* mutable_mobilizer_{nullptr};
-  const Vector3d axis_F_{1.0, 2.0, 3.0};
+  RevoluteMobilizer<double>* mobilizer_{nullptr};
+  const Vector3d axis_Jp_{1.0, 2.0, 3.0};  // also axis_Jc
 };
 
 TEST_F(RevoluteMobilizerTest, CanRotateOrTranslate) {
@@ -50,10 +52,11 @@ TEST_F(RevoluteMobilizerTest, CanRotateOrTranslate) {
   EXPECT_FALSE(mobilizer_->can_translate());
 }
 
-// Verify that RevoluteMobilizer normalizes its axis on construction.
+// Even though we started with a _joint_ axis vector with arbitrary components,
+// we expect that the mobilizer will have a unit vector axis, and in particular
+// that we chose the z axis. We expect exact integer components, no roundoff.
 TEST_F(RevoluteMobilizerTest, AxisIsNormalizedAtConstruction) {
-  EXPECT_TRUE(CompareMatrices(mobilizer_->revolute_axis(), axis_F_.normalized(),
-                              kTolerance, MatrixCompareType::relative));
+  EXPECT_EQ(mobilizer_->revolute_axis(), Vector3d(0, 0, 1));
 }
 
 // Verifies method to mutate and access the context.
@@ -93,7 +96,7 @@ TEST_F(RevoluteMobilizerTest, ZeroState) {
 TEST_F(RevoluteMobilizerTest, DefaultPosition) {
   EXPECT_EQ(mobilizer_->get_angle(*context_), 0);
 
-  mutable_mobilizer_->set_default_position(Vector1d{.4});
+  mobilizer_->set_default_position(Vector1d{.4});
   mobilizer_->set_default_state(*context_, &context_->get_mutable_state());
 
   EXPECT_EQ(mobilizer_->get_angle(*context_), .4);
@@ -104,44 +107,44 @@ TEST_F(RevoluteMobilizerTest, RandomState) {
   std::uniform_real_distribution<symbolic::Expression> uniform;
 
   // Default behavior is to set to zero.
-  mutable_mobilizer_->set_random_state(
-      *context_, &context_->get_mutable_state(), &generator);
+  mobilizer_->set_random_state(*context_, &context_->get_mutable_state(),
+                               &generator);
   EXPECT_EQ(mobilizer_->get_angle(*context_), 0);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), 0);
 
   // Set position to be random, but not velocity (yet).
-  mutable_mobilizer_->set_random_position_distribution(
+  mobilizer_->set_random_position_distribution(
       Vector1<symbolic::Expression>(uniform(generator) + 2.0));
-  mutable_mobilizer_->set_random_state(
-      *context_, &context_->get_mutable_state(), &generator);
+  mobilizer_->set_random_state(*context_, &context_->get_mutable_state(),
+                               &generator);
   EXPECT_GE(mobilizer_->get_angle(*context_), 2.0);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), 0);
 
   // Set the velocity distribution.  Now both should be random.
-  mutable_mobilizer_->set_random_velocity_distribution(
+  mobilizer_->set_random_velocity_distribution(
       Vector1<symbolic::Expression>(uniform(generator) - 2.0));
-  mutable_mobilizer_->set_random_state(
-      *context_, &context_->get_mutable_state(), &generator);
+  mobilizer_->set_random_state(*context_, &context_->get_mutable_state(),
+                               &generator);
   EXPECT_GE(mobilizer_->get_angle(*context_), 2.0);
   EXPECT_LE(mobilizer_->get_angular_rate(*context_), -1.0);
 
   // Check that they change on a second draw from the distribution.
   const double last_angle = mobilizer_->get_angle(*context_);
   const double last_angular_rate = mobilizer_->get_angular_rate(*context_);
-  mutable_mobilizer_->set_random_state(
-      *context_, &context_->get_mutable_state(), &generator);
+  mobilizer_->set_random_state(*context_, &context_->get_mutable_state(),
+                               &generator);
   EXPECT_NE(mobilizer_->get_angle(*context_), last_angle);
   EXPECT_NE(mobilizer_->get_angular_rate(*context_), last_angular_rate);
 }
 
 TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerTransform) {
+  const double kTol = 4 * std::numeric_limits<double>::epsilon();
   const double angle = 1.5;
   mobilizer_->SetAngle(context_.get(), angle);
-  const RigidTransformd X_FM(
-      mobilizer_->CalcAcrossMobilizerTransform(*context_));
+  RigidTransformd X_FM(mobilizer_->CalcAcrossMobilizerTransform(*context_));
 
   const RigidTransformd X_FM_expected(
-      RotationMatrixd(AngleAxisd(angle, axis_F_.normalized())));
+      RotationMatrixd(AngleAxisd(angle, mobilizer_->revolute_axis())));
 
   // Though checked below, we make it explicit here that this mobilizer should
   // introduce no translations at all.
@@ -149,6 +152,22 @@ TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerTransform) {
   EXPECT_TRUE(CompareMatrices(X_FM.GetAsMatrix34(),
                               X_FM_expected.GetAsMatrix34(), kTolerance,
                               MatrixCompareType::relative));
+
+  // Now check the fast inline methods. Since we used a general axis above,
+  // this should have been modeled with a z-axial mobilizer.
+  auto mobilizer_z =
+      dynamic_cast<const RevoluteMobilizerAxial<double, 2>*>(mobilizer_);
+  ASSERT_NE(mobilizer_z, nullptr);
+  RigidTransformd fast_X_FM = mobilizer_z->calc_X_FM(&angle);
+  EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
+  const double new_angle = 2.0;
+  mobilizer_->SetAngle(context_.get(), new_angle);
+  X_FM = mobilizer_->CalcAcrossMobilizerTransform(*context_);
+  mobilizer_z->update_X_FM(&new_angle, &fast_X_FM);
+  EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
+
+  TestApplyR_FM(X_FM, *mobilizer_z);
+  TestPrePostMultiplyByX_FM(X_FM, *mobilizer_z);
 }
 
 TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {
@@ -158,7 +177,7 @@ TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {
                                                      Vector1d(angular_rate));
 
   const SpatialVelocity<double> V_FM_expected(
-      axis_F_.normalized() * angular_rate, Vector3d::Zero());
+      mobilizer_->revolute_axis() * angular_rate, Vector3d::Zero());
 
   // Though checked below, we make it explicit here that this mobilizer should
   // introduce no translations at all.
@@ -173,7 +192,7 @@ TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
           *context_, Vector1d(angular_acceleration));
 
   const SpatialAcceleration<double> A_FM_expected(
-      axis_F_.normalized() * angular_acceleration, Vector3d::Zero());
+      mobilizer_->revolute_axis() * angular_acceleration, Vector3d::Zero());
 
   // Though checked below, we make it explicit here that this mobilizer should
   // introduce no translations at all.
@@ -189,7 +208,7 @@ TEST_F(RevoluteMobilizerTest, ProjectSpatialForce) {
   mobilizer_->ProjectSpatialForce(*context_, F_Mo_F, tau);
 
   // Only the torque along axis_F does work.
-  const double tau_expected = torque_Mo_F.dot(axis_F_.normalized());
+  const double tau_expected = torque_Mo_F.dot(mobilizer_->revolute_axis());
   EXPECT_NEAR(tau(0), tau_expected, kTolerance);
 }
 
@@ -233,6 +252,16 @@ TEST_F(RevoluteMobilizerTest, KinematicMapping) {
   MatrixX<double> Nplus(1, 1);
   mobilizer_->CalcNplusMatrix(*context_, &Nplus);
   EXPECT_EQ(Nplus(0, 0), 1.0);
+
+  // Ensure Ṅ(q,q̇) = [0].
+  MatrixX<double> NDot(1, 1);
+  mobilizer_->CalcNDotMatrix(*context_, &NDot);
+  EXPECT_EQ(NDot(0, 0), 0.0);
+
+  // Ensure Ṅ⁺(q,q̇) = [0].
+  MatrixX<double> NplusDot(1, 1);
+  mobilizer_->CalcNplusDotMatrix(*context_, &NplusDot);
+  EXPECT_EQ(NplusDot(0, 0), 0.0);
 }
 
 TEST_F(RevoluteMobilizerTest, MapUsesN) {

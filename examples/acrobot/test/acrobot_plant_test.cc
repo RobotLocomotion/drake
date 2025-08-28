@@ -30,7 +30,7 @@ GTEST_TEST(AcrobotPlantTest, ImplicitTimeDerivatives) {
   // here) and the solve accuracy. We're limited to using Eigen's M.inverse()
   // here to permit this to be done symbolically, which is not the most
   // accurate method. 100ε (~2e-14) should be achievable.
-  EXPECT_LT(residual.lpNorm<Eigen::Infinity>(), 100*kEpsilon);
+  EXPECT_LT(residual.lpNorm<Eigen::Infinity>(), 100 * kEpsilon);
 }
 
 // Ensure that DoCalcTimeDerivatives succeeds even if the input port is
@@ -56,4 +56,3 @@ GTEST_TEST(AcrobotPlantTest, SetMitAcrobotParameters) {
 }  // namespace acrobot
 }  // namespace examples
 }  // namespace drake
-

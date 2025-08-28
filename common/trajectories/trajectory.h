@@ -25,23 +25,15 @@ class Trajectory {
 
   /**
    * @return A deep copy of this Trajectory.
-   *
-   * @warning Support for overriding this as a virtual function is deprecated
-   * and will be removed on or after 2025-08-01. Subclasses should override the
-   * protected function DoClone(), instead.
    */
-  virtual std::unique_ptr<Trajectory<T>> Clone() const;
+  std::unique_ptr<Trajectory<T>> Clone() const;
 
   /**
    * Evaluates the trajectory at the given time \p t.
    * @param t The time at which to evaluate the trajectory.
    * @return The matrix of evaluated values.
-   *
-   * @warning Support for overriding this as a virtual function is deprecated
-   * and will be removed on or after 2025-08-01. Subclasses should override the
-   * protected function do_value(), instead.
    */
-  virtual MatrixX<T> value(const T& t) const { return do_value(t); }
+  MatrixX<T> value(const T& t) const { return do_value(t); }
 
   /**
    * If cols()==1, then evaluates the trajectory at each time @p t, and returns
@@ -90,46 +82,26 @@ class Trajectory {
 
   /**
    * @return The number of rows in the matrix returned by value().
-   *
-   * @warning Support for overriding this as a virtual function is deprecated
-   * and will be removed on or after 2025-08-01. Subclasses should override the
-   * protected function do_rows(), instead.
    */
-  virtual Eigen::Index rows() const { return do_rows(); }
+  Eigen::Index rows() const { return do_rows(); }
 
   /**
    * @return The number of columns in the matrix returned by value().
-   *
-   * @warning Support for overriding this as a virtual function is deprecated
-   * and will be removed on or after 2025-08-01. Subclasses should override the
-   * protected function do_cols(), instead.
    */
-  virtual Eigen::Index cols() const { return do_cols(); }
+  Eigen::Index cols() const { return do_cols(); }
 
-  /**
-   * @warning Support for overriding this as a virtual function is deprecated
-   * and will be removed on or after 2025-08-01. Subclasses should override the
-   * protected function do_start_time(), instead.
-   */
-  virtual T start_time() const { return do_start_time(); }
+  T start_time() const { return do_start_time(); }
 
-  /**
-   * @warning Support for overriding this as a virtual function is deprecated
-   * and will be removed on or after 2025-08-01. Subclasses should override the
-   * protected function do_end_time(), instead.
-   */
-  virtual T end_time() const { return do_end_time(); }
+  T end_time() const { return do_end_time(); }
 
  protected:
   // Final subclasses are allowed to make copy/move/assign public.
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Trajectory);
   Trajectory() = default;
 
-  // This will become pure virtual on 2025-08-01.
-  virtual std::unique_ptr<Trajectory<T>> DoClone() const;
+  virtual std::unique_ptr<Trajectory<T>> DoClone() const = 0;
 
-  // This will become pure virtual on 2025-08-01.
-  virtual MatrixX<T> do_value(const T& t) const;
+  virtual MatrixX<T> do_value(const T& t) const = 0;
 
   virtual bool do_has_derivative() const;
 
@@ -138,17 +110,13 @@ class Trajectory {
   virtual std::unique_ptr<Trajectory<T>> DoMakeDerivative(
       int derivative_order) const;
 
-  // This will become pure virtual on 2025-08-01.
-  virtual Eigen::Index do_rows() const;
+  virtual Eigen::Index do_rows() const = 0;
 
-  // This will become pure virtual on 2025-08-01.
-  virtual Eigen::Index do_cols() const;
+  virtual Eigen::Index do_cols() const = 0;
 
-  // This will become pure virtual on 2025-08-01.
-  virtual T do_start_time() const;
+  virtual T do_start_time() const = 0;
 
-  // This will become pure virtual on 2025-08-01.
-  virtual T do_end_time() const;
+  virtual T do_end_time() const = 0;
 };
 
 }  // namespace trajectories

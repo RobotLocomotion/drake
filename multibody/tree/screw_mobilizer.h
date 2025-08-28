@@ -34,7 +34,7 @@ T GetScrewRotationFromTranslation(const T& z, double screw_pitch) {
   return revolution_amount * 2 * M_PI;
 }
 
-/* This mobilizer models a screw joint between an inboard frame F and an
+/* This Mobilizer models a screw joint between an inboard frame F and an
  outboard frame M that enables translation along an axis while
  rotating about it, such that the axis is constant when measured
  in either this mobilizer's inboard or outboard frames.
@@ -50,10 +50,11 @@ T GetScrewRotationFromTranslation(const T& z, double screw_pitch) {
  to the right-hand-rule with the thumb aligned in the direction of
  frame F's axis â. The axis â in frame F and in frame M are aligned
  at all times for this mobilizer. The generalized velocity for this mobilizer
- is the rate of change of the coordinate, ω =˙θ (θ_dot).
+ is the rate of change of the coordinate, ω =θ̇ (θ_dot).
 
- H_FM₆ₓ₁ = [axisᵀ f⋅axisᵀ]ᵀ where f=pitch/2π
- Hdot_FM = 0₆ₓ₁
+ H_FM_F₆ₓ₁ = [axis_Fᵀ  f⋅axis_Fᵀ]ᵀ with f=pitch/2π    Hdot_FM_F = 0₆ₓ₁
+ H_FM_M₆ₓ₁ = [axis_Mᵀ  f⋅axis_Mᵀ]ᵀ                    Hdot_FM_M = 0₆ₓ₁
+    where axis_M == axis_F
 
  @tparam_default_scalar */
 template <typename T>
@@ -98,8 +99,8 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   ~ScrewMobilizer() final;
 
-  std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
-      const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+  std::unique_ptr<BodyNode<T>> CreateBodyNode(
+      const BodyNode<T>* parent_node, const RigidBody<T>* body,
       const Mobilizer<T>* mobilizer) const final;
 
   // Overloads to define the suffix names for the position and velocity
@@ -202,10 +203,17 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
     return math::RigidTransform<T>(Eigen::AngleAxis<T>(q[0], axis_), p_FM);
   }
 
+  /* We're not yet attempting to optimize the X_FM update. */
+  // TODO(sherm1) Optimize this.
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    *X_FM = calc_X_FM(q);
+  }
+
   /* Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame
    M measured and expressed in frame F as a function of the input velocity v,
    which is the angular velocity. We scale that by the pitch to find the
-   related translational velocity. */
+   related translational velocity. 8 flops */
   SpatialVelocity<T> calc_V_FM(const T*, const T* v) const {
     DRAKE_ASSERT(v != nullptr);
     const T f_v = GetScrewTranslationFromRotation(v[0], screw_pitch_);
@@ -214,14 +222,14 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   /* Our lone generalized acceleration is the angular acceleration θdotdot about
   the screw axis. Therefore we have H₆ₓ₁=[axis f⋅axis] where f=pitch/2π, and
-  Hdot=0, so A_FM = H⋅vdot + Hdot⋅v = [axis⋅vdot, f⋅axis⋅vdot]ᵀ */
+  Hdot=0, so A_FM = H⋅vdot + Hdot⋅v = [axis⋅vdot, f⋅axis⋅vdot]ᵀ. 8 flops */
   SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
     DRAKE_ASSERT(vdot != nullptr);
     const T f_vdot = GetScrewTranslationFromRotation(vdot[0], screw_pitch_);
     return SpatialAcceleration<T>(vdot[0] * axis_, f_vdot * axis_);
   }
 
-  /* Returns tau = H_FMᵀ⋅F. See above for H. */
+  /* Returns tau = H_FMᵀ⋅F. See above for H. 12 flops */
   void calc_tau(const T*, const SpatialForce<T>& F_BMo_F, T* tau) const {
     DRAKE_ASSERT(tau != nullptr);
     const T f = screw_pitch_ / (2 * M_PI);
@@ -264,32 +272,40 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   bool is_velocity_equal_to_qdot() const override { return true; }
 
-  // Maps v to qdot, which for this mobilizer is q̇ = v.
-  void MapVelocityToQDot(const systems::Context<T>& context,
-                         const Eigen::Ref<const VectorX<T>>& v,
-                         EigenPtr<VectorX<T>> qdot) const final;
-
-  // Maps qdot to v, which for this mobilizer is v = q̇.
-  void MapQDotToVelocity(const systems::Context<T>& context,
-                         const Eigen::Ref<const VectorX<T>>& qdot,
-                         EigenPtr<VectorX<T>> v) const final;
-
-  // Maps vdot to qddot, which for this mobilizer is q̈ = v̇.
-  void MapAccelerationToQDDot(const systems::Context<T>& context,
-                              const Eigen::Ref<const VectorX<T>>& vdot,
-                              EigenPtr<VectorX<T>> qddot) const final;
-
-  // Maps qddot to vdot, which for this mobilizer is v̇ = q̈.
-  void MapQDDotToAcceleration(const systems::Context<T>& context,
-                              const Eigen::Ref<const VectorX<T>>& qddot,
-                              EigenPtr<VectorX<T>> vdot) const final;
-
  protected:
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
   void DoCalcNplusMatrix(const systems::Context<T>& context,
                          EigenPtr<MatrixX<T>> Nplus) const final;
+
+  // Generally, q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇. For this mobilizer, Ṅ = zero matrix.
+  void DoCalcNDotMatrix(const systems::Context<T>& context,
+                        EigenPtr<MatrixX<T>> Ndot) const final;
+
+  // Generally, v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈. For this mobilizer, Ṅ⁺ = zero matrix.
+  void DoCalcNplusDotMatrix(const systems::Context<T>& context,
+                            EigenPtr<MatrixX<T>> NplusDot) const final;
+
+  // Maps v to qdot, which for this mobilizer is q̇ = v.
+  void DoMapVelocityToQDot(const systems::Context<T>& context,
+                           const Eigen::Ref<const VectorX<T>>& v,
+                           EigenPtr<VectorX<T>> qdot) const final;
+
+  // Maps qdot to v, which for this mobilizer is v = q̇.
+  void DoMapQDotToVelocity(const systems::Context<T>& context,
+                           const Eigen::Ref<const VectorX<T>>& qdot,
+                           EigenPtr<VectorX<T>> v) const final;
+
+  // Maps vdot to qddot, which for this mobilizer is q̈ = v̇.
+  void DoMapAccelerationToQDDot(const systems::Context<T>& context,
+                                const Eigen::Ref<const VectorX<T>>& vdot,
+                                EigenPtr<VectorX<T>> qddot) const final;
+
+  // Maps qddot to vdot, which for this mobilizer is v̇ = q̈.
+  void DoMapQDDotToAcceleration(const systems::Context<T>& context,
+                                const Eigen::Ref<const VectorX<T>>& qddot,
+                                EigenPtr<VectorX<T>> vdot) const final;
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const final;

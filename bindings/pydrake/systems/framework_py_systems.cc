@@ -1085,7 +1085,9 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("name"), py_rvp::reference_internal,
             doc.Diagram.GetSubsystemByName.doc)
         .def("GetSystems", &Diagram<T>::GetSystems, py_rvp::reference_internal,
-            doc.Diagram.GetSystems.doc);
+            doc.Diagram.GetSystems.doc)
+        .def("AreConnected", &Diagram<T>::AreConnected, py::arg("output"),
+            py::arg("input"), doc.Diagram.AreConnected.doc);
   }
 
   static void DefineVectorSystem(py::module m) {

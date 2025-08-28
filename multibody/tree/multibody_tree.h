@@ -551,7 +551,7 @@ class MultibodyTree {
   // Returns the number of generalized positions of the model.
   int num_positions() const {
     DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-    return topology_.num_positions();
+    return forest().num_positions();
   }
 
   // Returns the number of generalized positions in a specific model instance.
@@ -563,7 +563,7 @@ class MultibodyTree {
   // Returns the number of generalized velocities of the model.
   int num_velocities() const {
     DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-    return topology_.num_velocities();
+    return forest().num_velocities();
   }
 
   // Returns the number of generalized velocities in a specific model instance.
@@ -575,7 +575,7 @@ class MultibodyTree {
   // Returns the total size of the state vector in the model.
   int num_states() const {
     DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-    return topology_.num_states();
+    return num_positions() + num_velocities();
   }
 
   // Returns the total size of the state vector in a specific model instance.
@@ -1301,14 +1301,14 @@ class MultibodyTree {
   void CalcJacobianCenterOfMassTranslationalVelocity(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_A, const Frame<T>& frame_E,
-      EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const;
+      EigenPtr<Matrix3X<T>> Js_v_AScm_E) const;
 
   // See MultibodyPlant method.
   void CalcJacobianCenterOfMassTranslationalVelocity(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances,
       JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
-      const Frame<T>& frame_E, EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const;
+      const Frame<T>& frame_E, EigenPtr<Matrix3X<T>> Js_v_AScm_E) const;
 
   // See MultibodyPlant method.
   Vector3<T> CalcBiasCenterOfMassTranslationalAcceleration(
@@ -1360,6 +1360,11 @@ class MultibodyTree {
   // Aborts if `pc` is nullptr.
   void CalcPositionKinematicsCache(const systems::Context<T>& context,
                                    PositionKinematicsCache<T>* pc) const;
+
+  // Computes the per-Tree block structured, World-frame System Jacobian
+  // Jv_V_WB.
+  void CalcBlockSystemJacobianCache(const systems::Context<T>& context,
+                                    BlockSystemJacobianCache<T>* sjc) const;
 
   // Computes all the kinematic quantities that depend on the generalized
   // velocities and stores them in the velocity kinematics cache `vc`.
@@ -1416,21 +1421,22 @@ class MultibodyTree {
   void CalcFrameBodyPoses(const systems::Context<T>& context,
                           FrameBodyPoseCache<T>* frame_body_poses) const;
 
-  // Computes the composite body inertia Mc_B_W(q) for each body B in the
+  // Computes the composite body inertia K_BBo_W(q) for each body B in the
   // model about its frame origin Bo and expressed in the world frame W.
   // The composite body inertia is the effective mass properties B would have
   // if every joint outboard of B was welded in its current configuration.
   // @param[in] context
   //   The context storing the state of the model.
-  // @param[out] Mc_B_W_all
-  //   For each body in the model, entry RigidBody::mobod_index() in M_B_W_all
-  //   contains the updated composite body inertia `Mc_B_W(q)` for that body.
-  //   On input it must be a valid pointer to a vector of size num_bodies().
-  // @throws std::exception if Mc_B_W_all is nullptr or if its size is not
-  // num_bodies().
+  // @param[out] K_BBo_W_all
+  //   For each body B in the model, entry RigidBody::mobod_index() in
+  //   M_BBo_W_all contains the updated composite body inertia K_BBo_W(q) for
+  //   that body. On input it must be a valid pointer to a vector of size
+  //   num_mobods().
+  // @throws std::exception if K_BBo_W_all is nullptr or if its size is not
+  //   num_mobods().
   void CalcCompositeBodyInertiasInWorld(
       const systems::Context<T>& context,
-      std::vector<SpatialInertia<T>>* Mc_B_W_all) const;
+      std::vector<SpatialInertia<T>>* K_BBo_W_all) const;
 
   // Computes the bias force `Fb_Bo_W(q, v)` for each body in the model.
   // For a body B, this is the bias term `Fb_Bo_W` in the equation

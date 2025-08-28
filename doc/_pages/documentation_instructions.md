@@ -16,7 +16,7 @@ The website infrastructure uses a combination of
 # Prerequisites
 
 Documentation generation and preview as described in this document are
-supported on Ubuntu **22.04** only.
+supported on Ubuntu 22.04 (Jammy) and 24.04 (Noble).
 
 Before getting started, install Drake's prerequisites with the additional
 ``--with-doc-only`` command line option, i.e.:
@@ -81,7 +81,7 @@ If you would like to check Jenkins results on a pull request, you need to
 by posting a comment
 
 ```
-@drake-jenkins-bot linux-jammy-unprovisioned-gcc-bazel-experimental-documentation please
+@drake-jenkins-bot linux-noble-unprovisioned-gcc-bazel-experimental-documentation please
 ```
 
 # Advanced Building

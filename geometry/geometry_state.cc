@@ -17,7 +17,10 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/proximity/calc_obb.h"
 #include "drake/geometry/proximity/make_convex_hull_mesh.h"
+#include "drake/geometry/proximity/obb.h"
+#include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/proximity_engine.h"
 #include "drake/geometry/proximity_properties.h"
@@ -29,6 +32,7 @@ namespace drake {
 namespace geometry {
 
 using internal::convert_to_double;
+using internal::ConvertVolumeToSurfaceMeshWithBoundaryVertices;
 using internal::DrivenTriangleMesh;
 using internal::FrameNameSet;
 using internal::HydroelasticType;
@@ -48,6 +52,7 @@ using internal::kSlabThickness;
 using internal::MakeRenderMeshFromTriangleSurfaceMesh;
 using internal::ProximityEngine;
 using internal::RenderMesh;
+using internal::VertexSampler;
 using math::RigidTransform;
 using math::RigidTransformd;
 using render::ColorRenderCamera;
@@ -87,13 +92,9 @@ void DrivenMeshData::SetControlMeshPositions(
 }
 
 void DrivenMeshData::SetMeshes(GeometryId id,
-                               std::vector<DrivenTriangleMesh> driven_meshes,
-                               std::vector<RenderMesh> render_meshes) {
+                               std::vector<DrivenTriangleMesh> driven_meshes) {
   DRAKE_DEMAND(!driven_meshes.empty());
-  DRAKE_DEMAND(!render_meshes.empty());
-  DRAKE_DEMAND(driven_meshes.size() == render_meshes.size());
   driven_meshes_.emplace(id, std::move(driven_meshes));
-  render_meshes_.emplace(id, std::move(render_meshes));
 }
 
 }  // namespace internal
@@ -182,15 +183,17 @@ GeometryState<T>::GeometryState()
   frame_index_to_id_map_.push_back(world);
   kinematics_data_.X_WFs.push_back(RigidTransform<T>::Identity());
   kinematics_data_.X_PFs.push_back(RigidTransform<T>::Identity());
+  kinematics_data_.driven_mesh_data[Role::kPerception] = {};
+  kinematics_data_.driven_mesh_data[Role::kIllustration] = {};
+  kinematics_data_.driven_mesh_data[Role::kProximity] = {};
+  deformable_render_meshes_[Role::kPerception] = {};
+  deformable_render_meshes_[Role::kIllustration] = {};
+  deformable_render_meshes_[Role::kProximity] = {};
 
   source_frame_id_map_[self_source_] = {world};
   source_deformable_geometry_id_map_[self_source_] = {};
   source_frame_name_map_[self_source_] = {"world"};
   source_root_frame_map_[self_source_] = {world};
-
-  driven_mesh_data_[Role::kPerception] = {};
-  driven_mesh_data_[Role::kIllustration] = {};
-  driven_mesh_data_[Role::kProximity] = {};
 }
 
 namespace {
@@ -267,6 +270,38 @@ bool BackfillDefaults(ProximityProperties* properties,
   return result;
 }
 
+// Helper data structure for computing the bounding box of a deformable geometry
+// that is fed to AabbMaker/ObbMaker.
+struct BoundingBoxInput {
+  VolumeMesh<double> mesh;
+  std::set<int> vertices;
+};
+
+// Helper function to compute the ingredients for AabbMaker and ObbMaker for
+// a deformable geometry given its current configuration q_WG.
+BoundingBoxInput GetBoundingBoxInputFromDeformableGeometry(
+    const InternalGeometry& geometry, const VectorX<double>& q_WG) {
+  // TODO(SeanCurtis-TRI): Currently, each site that requires the current,
+  //  deformed state of a deformable mesh must perform the computation by
+  //  itself. We should provide a mechanism to compute the deformed mesh once
+  //  and then provide a mechanism to query the deformed mesh.
+  const VolumeMesh<double>& reference_mesh = *geometry.reference_mesh();
+  std::vector<Vector3<double>> deformed_vertices(reference_mesh.num_vertices());
+  for (int i = 0; i < reference_mesh.num_vertices(); ++i) {
+    deformed_vertices[i] = q_WG.template segment<3>(3 * i);
+  }
+  // AabbMaker doesn't depend on tets, only vertices. So, we'll create a single
+  // dummy tet to satisfy VolumeMesh's requirements, but otherwise ignore them.
+  std::vector<VolumeElement> tets{VolumeElement(0, 1, 2, 3)};
+  const VolumeMesh<double> deformed_mesh(std::move(tets),
+                                         std::move(deformed_vertices));
+  std::set<int> vertex_indices;
+  for (int i = 0; i < deformed_mesh.num_vertices(); ++i) {
+    vertex_indices.insert(i);
+  }
+  return BoundingBoxInput{std::move(deformed_mesh), std::move(vertex_indices)};
+}
+
 }  // namespace
 
 // It is _vitally_ important that all members are _explicitly_ accounted for
@@ -286,7 +321,7 @@ GeometryState<T>::GeometryState(const GeometryState<U>& source)
       frames_(source.frames_),
       geometries_(source.geometries_),
       frame_index_to_id_map_(source.frame_index_to_id_map_),
-      driven_mesh_data_(source.driven_mesh_data_),
+      deformable_render_meshes_(source.deformable_render_meshes_),
       geometry_engine_(
           std::move(source.geometry_engine_->template ToScalarType<T>())),
       render_engines_(source.render_engines_),
@@ -747,7 +782,7 @@ const std::vector<RenderMesh>& GeometryState<T>::GetDrivenRenderMeshes(
                     "geometry with specified role {}",
                     id, role));
   }
-  return driven_mesh_data_.at(role).render_meshes(id);
+  return deformable_render_meshes_.at(role).at(id);
 }
 
 template <typename T>
@@ -806,6 +841,13 @@ const PolygonSurfaceMesh<double>* GeometryState<T>::GetConvexHull(
   HullExtractor extractor;
   geometry.shape().Reify(&extractor);
   return extractor.GetConvexHull();
+}
+
+template <typename T>
+const std::optional<Obb>& GeometryState<T>::GetObbInGeometryFrame(
+    GeometryId id) const {
+  const InternalGeometry& geometry = GetValueOrThrow(id, geometries_);
+  return geometry.GetObb();
 }
 
 template <typename T>
@@ -868,6 +910,58 @@ const math::RigidTransform<T>& GeometryState<T>::get_pose_in_world(
 }
 
 template <typename T>
+std::optional<Aabb> GeometryState<T>::ComputeAabbInWorld(
+    GeometryId geometry_id) const {
+  FindOrThrow(geometry_id, geometries_, [geometry_id]() {
+    return fmt::format("No AABB available for invalid geometry id: {}.",
+                       geometry_id);
+  });
+  const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
+  // For non-deformable geometries, we don't support computing the AABB (yet).
+  // TODO(SeanCurtis-TRI): Support computing AABB for shapes (#15121).
+  if (!geometry.is_deformable()) {
+    return std::nullopt;
+  }
+  // For deformable geometries with proximity role, the proximity engine
+  // already keeps track of the AABB.
+  if (geometry.has_proximity_role()) {
+    return geometry_engine_->GetDeformableAabbInWorld(geometry_id);
+  }
+  // For deformable geometries without proximity role, we need to manually
+  // deform the geometry and compute the AABB of the deformed mesh.
+  const BoundingBoxInput input = GetBoundingBoxInputFromDeformableGeometry(
+      geometry, convert_to_double(kinematics_data_.q_WGs.at(geometry_id)));
+  return AabbMaker<VolumeMesh<double>>(input.mesh, input.vertices).Compute();
+}
+
+template <typename T>
+std::optional<Obb> GeometryState<T>::ComputeObbInWorld(
+    GeometryId geometry_id) const {
+  FindOrThrow(geometry_id, geometries_, [geometry_id]() {
+    return fmt::format("No OBB available for invalid geometry id: {}.",
+                       geometry_id);
+  });
+  const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
+  // For deformable geometries, we need to recompute the deformed mesh and
+  // compute the OBB of the deformed mesh.
+  if (geometry.is_deformable()) {
+    const BoundingBoxInput input = GetBoundingBoxInputFromDeformableGeometry(
+        geometry, convert_to_double(kinematics_data_.q_WGs.at(geometry_id)));
+    return ObbMaker<VolumeMesh<double>>(input.mesh, input.vertices).Compute();
+  }
+  // For rigid geometries, we use the cached the geometry frame OBB and simply
+  // transform it to the world frame.
+  const std::optional<Obb>& obb_G = GetObbInGeometryFrame(geometry_id);
+  if (!obb_G.has_value()) {
+    return std::nullopt;
+  }
+  const math::RigidTransform<double>& X_WG =
+      convert_to_double(get_pose_in_world(geometry_id));
+  const math::RigidTransform<double>& X_GB = obb_G->pose();
+  return Obb(X_WG * X_GB, obb_G->half_width());
+}
+
+template <typename T>
 const math::RigidTransform<T>& GeometryState<T>::get_pose_in_parent(
     FrameId frame_id) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
@@ -913,7 +1007,7 @@ std::vector<VectorX<T>> GeometryState<T>::GetDrivenMeshConfigurationsInWorld(
     return result;
   };
 
-  return calc_configuration(driven_mesh_data_.at(role));
+  return calc_configuration(kinematics_data_.driven_mesh_data.at(role));
 }
 
 template <typename T>
@@ -1224,8 +1318,22 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
       geometry.SetRole(std::move(properties));
       if (geometry.is_deformable()) {
         DRAKE_DEMAND(geometry.reference_mesh() != nullptr);
-        geometry_engine_->AddDeformableGeometry(*geometry.reference_mesh(),
-                                                geometry_id);
+        const VolumeMesh<double>& reference_mesh = *geometry.reference_mesh();
+        std::vector<int> surface_vertices;
+        std::vector<int> surface_tri_to_volume_tet;
+        TriangleSurfaceMesh<double> surface_mesh =
+            ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+                reference_mesh, &surface_vertices, &surface_tri_to_volume_tet);
+
+        geometry_engine_->AddDeformableGeometry(
+            reference_mesh, surface_mesh, surface_vertices,
+            surface_tri_to_volume_tet, geometry_id);
+        VertexSampler vertex_sampler(std::move(surface_vertices),
+                                     reference_mesh);
+        std::vector<DrivenTriangleMesh> driven_meshes;
+        driven_meshes.emplace_back(vertex_sampler, surface_mesh);
+        kinematics_data_.driven_mesh_data[Role::kProximity].SetMeshes(
+            geometry_id, std::move(driven_meshes));
       } else if (geometry.is_dynamic()) {
         // Pass the geometry to the engine.
         const RigidTransformd& X_WG =
@@ -1458,6 +1566,20 @@ SignedDistancePair<T> GeometryState<T>::ComputeSignedDistancePairClosestPoints(
 }
 
 template <typename T>
+std::vector<SignedDistanceToPoint<T>>
+GeometryState<T>::ComputeSignedDistanceGeometryToPoint(
+    const Vector3<T>& p_WQ, const GeometrySet& geometries) const {
+  // We're supposed to throw for bad geometry ids and deformable geometry ids.
+  // CollectIds will throw for bad geometry ids, but not deformable ids; it will
+  // only ignore them. So, we include them in the `ids` (kAll) and rely on
+  // ProximityEngine to throw if `ids` includes deformable ids.
+  std::unordered_set<GeometryId> ids =
+      CollectIds(geometries, std::nullopt, CollisionFilterScope::kAll);
+  return geometry_engine_->ComputeSignedDistanceGeometryToPoint(
+      p_WQ, kinematics_data_.X_WGs, ids);
+}
+
+template <typename T>
 void GeometryState<T>::AddRenderer(
     std::string name, std::shared_ptr<render::RenderEngine> renderer) {
   if (render_engines_.contains(name)) {
@@ -1483,7 +1605,7 @@ void GeometryState<T>::AddRenderer(
         const GeometryId id = id_geo_pair.first;
         if (geometry.is_deformable()) {
           accepted |= render_engine->RegisterDeformableVisual(
-              id, driven_mesh_data_.at(Role::kPerception).render_meshes(id),
+              id, deformable_render_meshes_.at(Role::kPerception).at(id),
               *properties);
         } else {
           accepted |= render_engine->RegisterVisual(
@@ -1740,11 +1862,15 @@ void GeometryState<T>::FinalizePoseUpdate(
 template <typename T>
 void GeometryState<T>::FinalizeConfigurationUpdate(
     const internal::KinematicsData<T>& kinematics_data,
-    const internal::DrivenMeshData& driven_meshes,
     internal::ProximityEngine<T>* proximity_engine,
     std::vector<render::RenderEngine*> render_engines) const {
-  proximity_engine->UpdateDeformableVertexPositions(kinematics_data.q_WGs);
-  for (const auto& [id, meshes] : driven_meshes.driven_meshes()) {
+  const internal::DrivenMeshData& proximity_driven_mesh_data =
+      kinematics_data.driven_mesh_data.at(Role::kProximity);
+  proximity_engine->UpdateDeformableVertexPositions(
+      kinematics_data.q_WGs, proximity_driven_mesh_data.driven_meshes());
+  const internal::DrivenMeshData& perception_driven_mesh_data =
+      kinematics_data.driven_mesh_data.at(Role::kPerception);
+  for (const auto& [id, meshes] : perception_driven_mesh_data.driven_meshes()) {
     // Vertex positions of driven meshes.
     std::vector<VectorX<double>> q_WDs(meshes.size());
     // Vertex normals of driven meshes.
@@ -1935,8 +2061,20 @@ void GeometryState<T>::AddToProximityEngineUnchecked(
   const GeometryId geometry_id = geometry.id();
   if (geometry.is_deformable()) {
     DRAKE_DEMAND(geometry.reference_mesh() != nullptr);
-    geometry_engine_->AddDeformableGeometry(*geometry.reference_mesh(),
-                                            geometry_id);
+    const VolumeMesh<double>& reference_mesh = *geometry.reference_mesh();
+    std::vector<int> surface_vertices;
+    std::vector<int> surface_tri_to_volume_tet;
+    TriangleSurfaceMesh<double> surface_mesh =
+        ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+            reference_mesh, &surface_vertices, &surface_tri_to_volume_tet);
+    geometry_engine_->AddDeformableGeometry(
+        reference_mesh, surface_mesh, surface_vertices,
+        surface_tri_to_volume_tet, geometry_id);
+    VertexSampler vertex_sampler(std::move(surface_vertices), reference_mesh);
+    std::vector<DrivenTriangleMesh> driven_meshes;
+    driven_meshes.emplace_back(vertex_sampler, surface_mesh);
+    kinematics_data_.driven_mesh_data[Role::kProximity].SetMeshes(
+        geometry_id, driven_meshes);
   } else if (geometry.is_dynamic()) {
     // Pass the geometry to the engine.
     const RigidTransformd& X_WG =
@@ -2032,7 +2170,7 @@ bool GeometryState<T>::AddDeformableToCompatibleRenderersUnchecked(
   for (auto& engine : *candidate_renderers) {
     added_to_renderer =
         engine->RegisterDeformableVisual(
-            id, driven_mesh_data_.at(Role::kPerception).render_meshes(id),
+            id, deformable_render_meshes_.at(Role::kPerception).at(id),
             properties) ||
         added_to_renderer;
   }
@@ -2067,18 +2205,20 @@ void GeometryState<T>::RegisterDrivenMesh(GeometryId geometry_id, Role role) {
         driven_meshes.emplace_back(MakeTriangleSurfaceMesh(render_mesh),
                                    control_mesh);
       }
-      driven_mesh_data_[Role::kPerception].SetMeshes(
-          geometry_id, std::move(driven_meshes), std::move(render_meshes));
+      kinematics_data_.driven_mesh_data[Role::kPerception].SetMeshes(
+          geometry_id, std::move(driven_meshes));
+      deformable_render_meshes_[Role::kPerception][geometry_id] =
+          std::move(render_meshes);
       return;
     }
   }
 
   // Simply go with the surface mesh of the control mesh.
   driven_meshes.emplace_back(internal::MakeDrivenSurfaceMesh(control_mesh));
+  kinematics_data_.driven_mesh_data[role].SetMeshes(geometry_id, driven_meshes);
   render_meshes.emplace_back(MakeRenderMeshFromTriangleSurfaceMesh(
       driven_meshes.back().triangle_surface_mesh(), properties));
-  driven_mesh_data_[role].SetMeshes(geometry_id, std::move(driven_meshes),
-                                    std::move(render_meshes));
+  deformable_render_meshes_[role][geometry_id] = std::move(render_meshes);
 }
 
 template <typename T>
@@ -2132,7 +2272,8 @@ bool GeometryState<T>::RemovePerceptionRole(GeometryId geometry_id) {
   // perception meshes.
   RemoveFromAllRenderersUnchecked(geometry_id);
   if (IsDeformableGeometry(geometry_id)) {
-    driven_mesh_data_[Role::kPerception].Remove(geometry_id);
+    kinematics_data_.driven_mesh_data[Role::kPerception].Remove(geometry_id);
+    deformable_render_meshes_[Role::kPerception].erase(geometry_id);
   }
   geometry->RemovePerceptionRole();
   return true;

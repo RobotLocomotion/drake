@@ -10,7 +10,7 @@
 namespace drake {
 namespace {
 
-class Boom : public std::exception { };
+class Boom : public std::exception {};
 struct DtorGoesBoom {
   ~DtorGoesBoom() noexcept(false) { throw Boom(); }
 };
@@ -18,7 +18,9 @@ struct DtorGoesBoom {
 // Confirm that we see booms by default.
 GTEST_TEST(NeverDestroyedTest, BoomTest) {
   try {
-    { DtorGoesBoom foo; }
+    {
+      DtorGoesBoom foo;
+    }
     GTEST_FAIL();
   } catch (const Boom&) {
     ASSERT_TRUE(true);
@@ -28,7 +30,9 @@ GTEST_TEST(NeverDestroyedTest, BoomTest) {
 // Confirm that our wrapper stops the booms.
 GTEST_TEST(NeverDestroyedTest, NoBoomTest) {
   try {
-    { never_destroyed<DtorGoesBoom> foo; }
+    {
+      never_destroyed<DtorGoesBoom> foo;
+    }
     ASSERT_TRUE(true);
   } catch (const Boom& e) {
     GTEST_FAIL();
@@ -44,6 +48,7 @@ class Singleton {
     static never_destroyed<Singleton> instance;
     return instance.access();
   }
+
  private:
   friend never_destroyed<Singleton>;
   Singleton() = default;
@@ -61,11 +66,10 @@ enum class Foo { kBar, kBaz };
 Foo ParseFoo(const std::string& foo_string) {
   using Dict = std::unordered_map<std::string, Foo>;
   static const drake::never_destroyed<Dict> string_to_enum{
-    std::initializer_list<Dict::value_type>{
-      {"bar", Foo::kBar},
-      {"baz", Foo::kBaz},
-    }
-  };
+      std::initializer_list<Dict::value_type>{
+          {"bar", Foo::kBar},
+          {"baz", Foo::kBaz},
+      }};
   return string_to_enum.access().at(foo_string);
 }
 

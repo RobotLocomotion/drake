@@ -53,12 +53,14 @@ class DummyModel final : public FemModelImpl<DummyElement<is_linear>> {
   };
 
   /* Constructs an empty DummyModel. */
-  DummyModel() = default;
+  explicit DummyModel(const Vector3<T>& weights)
+      : FemModelImpl<DummyElement<is_linear>>(weights) {}
 
   ~DummyModel() = default;
 
   std::unique_ptr<FemModel<T>> DoClone() const final {
-    auto clone = std::make_unique<DummyModel<is_linear>>();
+    auto clone =
+        std::make_unique<DummyModel<is_linear>>(this->tangent_matrix_weights());
     clone->reference_positions_ = reference_positions_;
     clone->SetFrom(*this);
     return clone;

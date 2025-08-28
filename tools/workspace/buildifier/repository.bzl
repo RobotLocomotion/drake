@@ -6,12 +6,12 @@ def buildifier_repository(
     github_release_attachments(
         name = name,
         repository = "bazelbuild/buildtools",
-        commit = "v8.0.3",
+        commit = "v8.2.1",
         attachments = {
-            "buildifier-darwin-amd64": "b7a3152cde0b3971b1107f2274afe778c5c154dcdf6c9c669a231e3c004f047e",  # noqa
-            "buildifier-darwin-arm64": "674c663f7b5cd03c002f8ca834a8c1c008ccb527a0a2a132d08a7a355883b22d",  # noqa
-            "buildifier-linux-amd64": "c969487c1af85e708576c8dfdd0bb4681eae58aad79e68ae48882c70871841b7",  # noqa
-            "buildifier-linux-arm64": "bdd9b92e2c65d46affeecaefb54e68d34c272d1f4a8c5b54929a3e92ab78820a",  # noqa
+            "buildifier-darwin-amd64": "9f8cffceb82f4e6722a32a021cbc9a5344b386b77b9f79ee095c61d087aaea06",  # noqa
+            "buildifier-darwin-arm64": "cfab310ae22379e69a3b1810b433c4cd2fc2c8f4a324586dfe4cc199943b8d5a",  # noqa
+            "buildifier-linux-amd64": "6ceb7b0ab7cf66fceccc56a027d21d9cc557a7f34af37d2101edb56b92fcfa1a",  # noqa
+            "buildifier-linux-arm64": "3baa1cf7eb41d51f462fdd1fff3a6a4d81d757275d05b2dd5f48671284e9a1a5",  # noqa
         },
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,

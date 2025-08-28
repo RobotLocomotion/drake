@@ -256,15 +256,12 @@ class _GeometryFileHasher:
             _logger.warning(f"glTF file is not valid JSON: {path}")
             return
 
-        # Handle the images
-        for image in document.get("images", []):
-            if not image.get("uri", "").startswith("data:"):
-                self.on_texture_from_disk(path.parent / image["uri"])
-
-        # Handle the .bin files.
-        for buffer in document.get("buffers", []):
-            if not buffer.get("uri", "").startswith("data:"):
-                self._read_file(path.parent / buffer["uri"])
+        # Handle images and .bin files cited via URIs.
+        for array_property in ("images", "buffers"):
+            for item in document.get(array_property, []):
+                uri = item.get("uri", None)
+                if uri and not uri.startswith("data:"):
+                    self._read_file(path.parent / uri)
 
 
 class _ViewerApplet:

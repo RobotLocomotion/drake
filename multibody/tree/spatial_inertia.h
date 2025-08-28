@@ -12,7 +12,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/math/cross_product.h"
@@ -594,15 +593,6 @@ class SpatialInertia {
   /// invalid, otherwise returns an empty optional.
   std::optional<std::string> CreateInvalidityReport() const;
 
-  DRAKE_DEPRECATED("2025-06-01",
-                   "Will be removed.  There is no replacement. "
-                   " File an issue if that is a problem.")
-  std::string CriticizeNotPhysicallyValid() const {
-    std::optional<std::string> invalidity_report = CreateInvalidityReport();
-    if (invalidity_report.has_value()) return *invalidity_report;
-    return {};
-  }
-
   /// @anchor spatial_inertia_equivalent_shapes
   /// @name Spatial inertia equivalent shapes
   /// Calculates principal semi-diameters (half-lengths), principal axes
@@ -719,7 +709,7 @@ class SpatialInertia {
     M.template block<3, 3>(0, 3) = mass_ * VectorToSkewSymmetric(p_PScm_E_);
     M.template block<3, 3>(3, 0) = -M.template block<3, 3>(0, 3);
     M.template block<3, 3>(3, 3) = mass_ * Matrix3<T>::Identity();
-    return M;
+    return M;  // 33 flops and 36 copies
   }
 
   /// Sets `this` spatial inertia to have NaN entries. Typically used for quick
@@ -762,9 +752,9 @@ class SpatialInertia {
   /// On return, `this` is now re-expressed in frame A, that is, `M_SP_A`.
   /// @param[in] R_AE Rotation matrix from frame E to frame A.
   void ReExpressInPlace(const math::RotationMatrix<T>& R_AE) {
-    p_PScm_E_ = R_AE * p_PScm_E_;    // Now p_PScm_A
-    G_SP_E_.ReExpressInPlace(R_AE);  // Now I_SP_A
-    // Now M_SP_A
+    p_PScm_E_ = R_AE * p_PScm_E_;    // Now p_PScm_A, 15 flops
+    G_SP_E_.ReExpressInPlace(R_AE);  // Now I_SP_A, 57 flops
+    // Now M_SP_A, total 72 flops
   }
 
   /// Given `this` spatial inertia `M_SP_E` for some body or composite body S,
@@ -794,7 +784,17 @@ class SpatialInertia {
   /// @param[in] p_PQ_E position vector from the original about-point P to the
   ///                   new about-point Q, expressed in the same frame E that
   ///                   `this` spatial inertia is expressed in.
-  void ShiftInPlace(const Vector3<T>& p_PQ_E);
+  void ShiftInPlace(const Vector3<T>& p_PQ_E) {
+    const Vector3<T> p_QScm_E = p_PScm_E_ - p_PQ_E;  // 3 flops
+    // Use the shift theorem (parallel axis theorem) to first shift
+    // G_SP to G_SScm and then shift G_SScm to G_SQ.
+    G_SP_E_.ShiftToCenterOfMassInPlace(p_PScm_E_);   // 17 flops
+    G_SP_E_.ShiftFromCenterOfMassInPlace(p_QScm_E);  // 17 flops
+    p_PScm_E_ = p_QScm_E;
+    // Note: It would be an implementation bug if a shift starts with a valid
+    // spatial inertia and the shift produces an invalid spatial inertia.
+    // Hence, no need to use DRAKE_ASSERT_VOID(CheckInvariants()).
+  }
 
   /// Given `this` spatial inertia `M_SP_E` for some body or composite body S,
   /// computed about point P, and expressed in frame E, this method uses
@@ -810,7 +810,7 @@ class SpatialInertia {
   ///                   but computed about a new point Q.
   SpatialInertia<T> Shift(const Vector3<T>& p_PQ_E) const {
     SpatialInertia result(*this);
-    result.ShiftInPlace(p_PQ_E);
+    result.ShiftInPlace(p_PQ_E);  // 37 flops
     return result;
   }
 
@@ -939,7 +939,11 @@ class SpatialInertia {
   // @param[in] p_ScmP_E Position vector from Scm to P, expressed-in frame E.
   // @pre On entry, the about-point for `this` SpatialInertia is Scm. Hence, on
   // entry the position vector p_PScm underlying `this` is the zero vector.
-  void ShiftFromCenterOfMassInPlace(const Vector3<T>& p_ScmP_E);
+  void ShiftFromCenterOfMassInPlace(const Vector3<T>& p_ScmP_E) {
+    DRAKE_ASSERT(p_PScm_E_ == Vector3<T>::Zero());
+    G_SP_E_.ShiftFromCenterOfMassInPlace(p_ScmP_E);
+    p_PScm_E_ = -p_ScmP_E;
+  }
 
   // Calculates the spatial inertia that results from shifting `this` spatial
   // inertia for a body (or composite body) S from about-point Scm (S's center
@@ -950,7 +954,11 @@ class SpatialInertia {
   // @pre On entry, the about-point for `this` SpatialInertia is Scm. Hence, on
   // entry the position vector p_PScm underlying `this` is the zero vector.
   [[nodiscard]] SpatialInertia<T> ShiftFromCenterOfMass(
-      const Vector3<T>& p_ScmP_E) const;
+      const Vector3<T>& p_ScmP_E) const {
+    SpatialInertia result(*this);
+    result.ShiftFromCenterOfMassInPlace(p_ScmP_E);
+    return result;
+  }
 
   // Shifts `this` spatial inertia for a body (or composite body) S from
   // about-point P to about-point Scm (S's center of mass). In other words,
@@ -958,7 +966,10 @@ class SpatialInertia {
   // @note On return, the about-point for `this` SpatialInertia is Scm. Hence,
   // on return the position vector p_PScm underlying `this` is the zero vector.
   // @see SpatialInertia::ShiftToCenterOfMass(), ShiftFromCenterOfMassInPlace().
-  void ShiftToCenterOfMassInPlace();
+  void ShiftToCenterOfMassInPlace() {
+    G_SP_E_.ShiftToCenterOfMassInPlace(p_PScm_E_);
+    p_PScm_E_ = Vector3<T>::Zero();
+  }
 
   // Calculates the spatial inertia that results from shifting `this` spatial
   // inertia for a body (or composite body) S from about-point P to

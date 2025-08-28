@@ -188,7 +188,7 @@ class FreeBody {
     const double wz0 = initial_w_NB_B[2];
     const double s = (I - J) / I * wz0;
     const double z = wz0 * J / I;
-    const double p =  std::sqrt(wx0 * wx0 + wy0 * wy0 + z * z);
+    const double p = std::sqrt(wx0 * wx0 + wy0 * wy0 + z * z);
     return std::make_pair(s, p);
   }
 

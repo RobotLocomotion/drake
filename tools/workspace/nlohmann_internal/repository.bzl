@@ -6,8 +6,8 @@ def nlohmann_internal_repository(
     github_archive(
         name = name,
         repository = "nlohmann/json",
-        commit = "v3.11.3",
-        sha256 = "0d8ef5af7f9794e3263480193c491549b2ba6cc74bb018906202ada498a79406",  # noqa
+        commit = "v3.12.0",
+        sha256 = "4b92eb0c06d10683f7447ce9406cb97cd4b453be18d7279320f7b2f025c10187",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/vendor.patch",

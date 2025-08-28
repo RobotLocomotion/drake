@@ -75,6 +75,8 @@ class Frame : public MultibodyElement<T> {
 
   /// Returns scoped name of this frame. Neither of the two pieces of the name
   /// will be empty (the scope name and the element name).
+  /// @throws std::exception if this element is not associated with a
+  /// MultibodyPlant.
   ScopedName scoped_name() const;
 
   /// Returns a reference to the body-relative pose X_BF giving the pose of this
@@ -551,6 +553,17 @@ class Frame : public MultibodyElement<T> {
       const internal::FrameBodyPoseCache<T>& frame_body_poses) const {
     return frame_body_poses.get_X_FB(body_pose_index_in_cache_);
   }
+
+  /// (Internal use only) Given an already up-to-date frame body pose cache,
+  /// returns whether X_BF (and thus X_FB) is exactly identity. This is
+  /// precomputed in the cache so is very fast to check.
+  /// @note Be sure you have called MultibodyTreeSystem::EvalFrameBodyPoses()
+  ///       since the last parameter change; we can't check here.
+  /// @see get_X_BF()
+  bool is_X_BF_identity(
+      const internal::FrameBodyPoseCache<T>& frame_body_poses) const {
+    return frame_body_poses.is_X_BF_identity(body_pose_index_in_cache_);
+  }
   //@}
 
  protected:
@@ -625,7 +638,7 @@ class Frame : public MultibodyElement<T> {
   // Implementation for MultibodyElement::DoSetTopology().
   void DoSetTopology(
       const internal::MultibodyTreeTopology& tree_topology) final {
-    topology_ = tree_topology.get_frame(this->index());
+    topology_ = tree_topology.get_frame_topology(this->index());
     DRAKE_ASSERT(topology_.index == this->index());
   }
 

@@ -28,7 +28,12 @@ class HomecartGlobalIkBenchmark : public benchmark::Fixture {
 // AddPostureCost. Passing this solution to SetInitialGuess demonstrates a
 // limit on the speedup that can be obtained using SetInitialGuess; that
 // speedup is substantial.
-BENCHMARK_F(HomecartGlobalIkBenchmark, PostureCost)(benchmark::State& state) {  // NOLINT
+//
+// clang-format off
+BENCHMARK_F(HomecartGlobalIkBenchmark, PostureCost)
+    // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
+    (benchmark::State& state)  // clang-format on
+{
   multibody::MultibodyPlant<double> plant(0.0);
   geometry::SceneGraph<double> scene_graph;
   plant.RegisterAsSourceForSceneGraph(&scene_graph);

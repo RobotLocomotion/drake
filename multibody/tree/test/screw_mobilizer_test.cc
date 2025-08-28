@@ -195,10 +195,10 @@ TEST_F(ScrewMobilizerTest, RandomState) {
 }
 
 TEST_F(ScrewMobilizerTest, CalcAcrossMobilizerTransform) {
+  const double kTol = 4 * std::numeric_limits<double>::epsilon();
   const double angle = 1.5;
   mobilizer_->SetAngle(context_.get(), angle);
-  const RigidTransformd X_FM(
-      mobilizer_->CalcAcrossMobilizerTransform(*context_));
+  RigidTransformd X_FM(mobilizer_->CalcAcrossMobilizerTransform(*context_));
 
   Vector3d X_FM_translation;
   X_FM_translation << kScrewAxis * angle / (2 * M_PI) * kScrewPitch;
@@ -208,6 +208,18 @@ TEST_F(ScrewMobilizerTest, CalcAcrossMobilizerTransform) {
   EXPECT_TRUE(CompareMatrices(X_FM.GetAsMatrix34(),
                               X_FM_expected.GetAsMatrix34(), kTolerance,
                               MatrixCompareType::relative));
+
+  // Now check the fast inline methods.
+  RigidTransformd fast_X_FM = mobilizer_->calc_X_FM(&angle);
+  EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
+  const double new_angle = 2.0;
+  mobilizer_->SetAngle(context_.get(), new_angle);
+  X_FM = mobilizer_->CalcAcrossMobilizerTransform(*context_);
+  mobilizer_->update_X_FM(&new_angle, &fast_X_FM);
+  EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
+
+  TestApplyR_FM(X_FM, *mobilizer_);
+  TestPrePostMultiplyByX_FM(X_FM, *mobilizer_);
 }
 
 TEST_F(ScrewMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {
@@ -315,6 +327,16 @@ TEST_F(ScrewMobilizerTest, KinematicMapping) {
   MatrixX<double> Nplus(1, 1);
   mobilizer_->CalcNplusMatrix(*context_, &Nplus);
   EXPECT_EQ(Nplus, Matrix1d::Identity().eval());
+
+  // Ensure Ṅ(q,q̇) = 1x1 zero matrix.
+  MatrixX<double> NDot(1, 1);
+  mobilizer_->CalcNDotMatrix(*context_, &NDot);
+  EXPECT_EQ(NDot(0, 0), 0.0);
+
+  // Ensure Ṅ⁺(q,q̇) = 1x1 zero matrix.
+  MatrixX<double> NplusDot(1, 1);
+  mobilizer_->CalcNplusDotMatrix(*context_, &NplusDot);
+  EXPECT_EQ(NplusDot(0, 0), 0.0);
 }
 
 TEST_F(ScrewMobilizerTest, MapUsesN) {

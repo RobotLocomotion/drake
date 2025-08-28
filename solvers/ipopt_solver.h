@@ -1,8 +1,5 @@
 #pragma once
 
-#include <ostream>
-#include <string>
-
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
@@ -44,10 +41,6 @@ struct IpoptSolverDetails {
  * A wrapper to call
  * <a href="https://coin-or.github.io/Ipopt/">Ipopt</a>
  * using Drake's MathematicalProgram.
- *
- * @warning Setting the Ipopt option "linear_solver" to "mumps" is deprecated
- * and will be removed on or after 2025-05-01. Using MUMPS is NOT threadsafe
- * (see https://github.com/coin-or/Ipopt/issues/733).
  */
 class IpoptSolver final : public SolverBase {
  public:
@@ -58,13 +51,6 @@ class IpoptSolver final : public SolverBase {
 
   IpoptSolver();
   ~IpoptSolver() final;
-
-  // Remove on 2025-05-01.
-  /// Changes the default value for Ipopt's "linerar_solver" solver option. This
-  /// is the lowest precedence default -- setting the "linear_solver" option in
-  /// SolverOptions will override this default.
-  /// @experimental
-  void SetDefaultLinearSolver(std::string linear_solver);
 
   /// @name Static versions of the instance methods with similar names.
   //@{
@@ -81,9 +67,6 @@ class IpoptSolver final : public SolverBase {
   void DoSolve2(const MathematicalProgram&, const Eigen::VectorXd&,
                 internal::SpecificOptions*,
                 MathematicalProgramResult*) const final;
-
-  // Remove 2025-05-01.
-  std::string default_linear_solver_;
 };
 
 }  // namespace solvers

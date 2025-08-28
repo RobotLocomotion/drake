@@ -130,15 +130,8 @@ PYBIND11_MODULE(parsing, m) {
             cls_doc.scene_graph.doc)
         .def("package_map", &Class::package_map, py_rvp::reference_internal,
             cls_doc.package_map.doc)
-        .def(
-            "AddModels",
-            // Pybind11 won't implicitly convert strings to
-            // std::filesystem::path, but C++ will. Use a lambda to avoid wider
-            // disruptions in python bindings.
-            [](Parser& self, const std::string& file_name) {
-              return self.AddModels(file_name);
-            },
-            py::arg("file_name"), cls_doc.AddModels.doc)
+        .def("AddModels", &Class::AddModels, py::arg("file_name"),
+            cls_doc.AddModels.doc)
         .def("AddModelsFromUrl", &Class::AddModelsFromUrl, py::arg("url"),
             cls_doc.AddModelsFromUrl.doc)
         .def("AddModelsFromString", &Class::AddModelsFromString,
@@ -298,7 +291,7 @@ PYBIND11_MODULE(parsing, m) {
       [&m]<typename T>(T) {
         m.def("GetScopedFrameByName",
             overload_cast_explicit<const Frame<T>&, const MultibodyPlant<T>&,
-                const std::string&>(&parsing::GetScopedFrameByName),
+                std::string_view>(&parsing::GetScopedFrameByName),
             py::arg("plant"), py::arg("full_name"),
             py::return_value_policy::reference,
             py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
@@ -310,7 +303,7 @@ PYBIND11_MODULE(parsing, m) {
       [&m]<typename T>(T) {
         m.def("GetScopedFrameByNameMaybe",
             overload_cast_explicit<const Frame<T>*, const MultibodyPlant<T>&,
-                const std::string&>(&parsing::GetScopedFrameByNameMaybe),
+                std::string_view>(&parsing::GetScopedFrameByNameMaybe),
             py::arg("plant"), py::arg("full_name"),
             py::return_value_policy::reference,
             py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.

@@ -9,6 +9,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/math/autodiff_gradient.h"
 
 using Eigen::AutoDiffScalar;
@@ -76,18 +77,34 @@ class AutodiffTest : public ::testing::Test {
 };
 
 TEST_F(AutodiffTest, ExtractValue) {
-  const VectorXd values = ExtractValue(output_calculation_);
   VectorXd expected(3);
   expected[0] = cos(v0_) + sin(v0_) * cos(v0_) / v1_;
   expected[1] = sin(v0_) + v1_;
   expected[2] = v0_ * v0_ + v1_ * v1_ * v1_;
+
+  // Overload that returns the result.
+  const VectorXd values_return = ExtractValue(output_calculation_);
+  const double kTol = 1e-10;
+  EXPECT_TRUE(CompareMatrices(expected, values_return, kTol,
+                              MatrixCompareType::absolute));
+
+  // Overload that writes the result to a provided output vector.
+  VectorXd values_out;
+  ExtractValue(output_calculation_, &values_out);
   EXPECT_TRUE(
-      CompareMatrices(expected, values, 1e-10, MatrixCompareType::absolute));
+      CompareMatrices(expected, values_out, kTol, MatrixCompareType::absolute));
+
+  // Test writing result to a preallocated output vector.
+  VectorXd values_prealloc(3);
+  {
+    test::LimitMalloc guard;
+    ExtractValue(output_calculation_, &values_prealloc);
+  }
+  EXPECT_TRUE(CompareMatrices(expected, values_prealloc, kTol,
+                              MatrixCompareType::absolute));
 }
 
 TEST_F(AutodiffTest, ExtractGradient) {
-  MatrixXd gradients = ExtractGradient(output_calculation_);
-
   MatrixXd expected(3, 2);
   // Shorthand notation: Denote v0 = vec_[0], v1 = vec_[1].
   // Function 0: y0 = cos(v0) + sin(v0) * cos(v0) / v1
@@ -108,8 +125,26 @@ TEST_F(AutodiffTest, ExtractGradient) {
   // ∂y2/∂v1 = 3 * v1^2.
   expected(2, 1) = 3 * v1_ * v1_;
 
-  EXPECT_TRUE(
-      CompareMatrices(expected, gradients, 1e-10, MatrixCompareType::absolute));
+  // Overload that returns the result.
+  const MatrixXd gradients_return = ExtractGradient(output_calculation_);
+  const double kTol = 1e-10;
+  EXPECT_TRUE(CompareMatrices(expected, gradients_return, kTol,
+                              MatrixCompareType::absolute));
+
+  // Overload that writes the result to a provided output matrix.
+  MatrixXd gradients_out;
+  ExtractGradient(output_calculation_, {}, &gradients_out);
+  EXPECT_TRUE(CompareMatrices(expected, gradients_out, kTol,
+                              MatrixCompareType::absolute));
+
+  // Test writing result to a preallocated output matrix.
+  MatrixXd gradients_prealloc(output_calculation_.size(), 2);
+  {
+    test::LimitMalloc guard;
+    ExtractGradient(output_calculation_, {}, &gradients_prealloc);
+  }
+  EXPECT_TRUE(CompareMatrices(expected, gradients_prealloc, kTol,
+                              MatrixCompareType::absolute));
 
   // Given an AutoDiff matrix with no derivatives, ExtractGradient() should
   // return a matrix with zero-length rows, or return with specified-length

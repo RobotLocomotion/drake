@@ -6,11 +6,12 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/multibody/fem/corotated_model.h"
 #include "drake/multibody/fem/fem_state.h"
+#include "drake/multibody/fem/linear_corotated_model.h"
 #include "drake/multibody/fem/linear_simplex_element.h"
 #include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/force_density_field.h"
 
 namespace drake {
 namespace multibody {
@@ -31,9 +32,9 @@ static constexpr int kNumQuads = QuadratureType::num_quadrature_points;
 using IsoparametricElementType =
     internal::LinearSimplexElement<AD, kNaturalDimension, kSpatialDimension,
                                    kNumQuads>;
-using ConstitutiveModelType = CorotatedModel<AD>;
+using ConstitutiveModelType = LinearCorotatedModel<AD>;
 using DeformationGradientDataType =
-    std::array<CorotatedModelData<AD>, kNumQuads>;
+    std::array<LinearCorotatedModelData<AD>, kNumQuads>;
 
 const AD kYoungsModulus{1};
 const AD kPoissonRatio{0.25};
@@ -63,7 +64,9 @@ class VolumetricElementTest : public ::testing::Test {
           /* There's only one element in the system. */
           element_data->resize(1);
           const FemState<AD> fem_state(fem_state_system_.get(), &context);
-          (*element_data)[0] = (this->elements_)[0].ComputeData(fem_state);
+          const Vector3<AD> dummy_weights(1, 2, 3);
+          (*element_data)[0] =
+              (this->elements_)[0].ComputeData(fem_state, dummy_weights);
         };
 
     cache_index_ =
@@ -88,6 +91,13 @@ class VolumetricElementTest : public ::testing::Test {
                                         const VectorX<AD>& a) {
     auto fem_state = make_unique<FemState<AD>>(fem_state_system_.get());
     fem_state->SetPositions(q);
+    /* Set q0 to be the same position as q, but drop the derivatives. */
+    const Eigen::VectorXd q0_double = math::ExtractValue(q);
+    VectorX<AD> q0(q0_double.size());
+    for (int i = 0; i < q0_double.size(); ++i) {
+      q0(i) = q0_double(i);
+    }
+    fem_state->SetTimeStepPositions(q0);
     fem_state->SetVelocities(v);
     fem_state->SetAccelerations(a);
     return fem_state;
@@ -158,7 +168,8 @@ class VolumetricElementTest : public ::testing::Test {
   Vector<AD, kNumDofs> CalcNegativeElasticForce(
       const FemState<AD>& fem_state) const {
     Vector<AD, kNumDofs> neg_force = Vector<AD, kNumDofs>::Zero();
-    element().AddNegativeElasticForce(EvalElementData(fem_state), &neg_force);
+    const Data& data = EvalElementData(fem_state);
+    element().AddNegativeElasticForce(data.P, &neg_force);
     return neg_force;
   }
 
@@ -168,7 +179,8 @@ class VolumetricElementTest : public ::testing::Test {
       const FemState<AD>& fem_state) const {
     Eigen::Matrix<AD, kNumDofs, kNumDofs> neg_force_derivative =
         Eigen::Matrix<AD, kNumDofs, kNumDofs>::Zero();
-    element().AddScaledElasticForceDerivative(EvalElementData(fem_state), -1,
+    const Data& data = EvalElementData(fem_state);
+    element().AddScaledElasticForceDerivative(data.dPdF, -1,
                                               &neg_force_derivative);
     return neg_force_derivative;
   }
@@ -191,7 +203,8 @@ class VolumetricElementTest : public ::testing::Test {
   /* Calculates and verifies the energy and elastic forces evaluated with the
    given `data` are zero. */
   void VerifyEnergyAndForceAreZero(const FemState<AD>& fem_state) const {
-    AD energy = element().CalcElasticEnergy(EvalElementData(fem_state));
+    const Data& data = EvalElementData(fem_state);
+    AD energy = element().CalcElasticEnergy(data.Psi);
     EXPECT_NEAR(energy.value(), 0, kEpsilon);
     Vector<AD, kNumDofs> neg_elastic_force =
         CalcNegativeElasticForce(fem_state);
@@ -216,10 +229,7 @@ class VolumetricElementTest : public ::testing::Test {
   /* Calculates the mass matrix of the only element. */
   Eigen::Matrix<AD, kNumDofs, kNumDofs> CalcMassMatrix(
       const FemState<AD>& fem_state) const {
-    Eigen::Matrix<AD, kNumDofs, kNumDofs> mass_matrix =
-        Eigen::Matrix<AD, kNumDofs, kNumDofs>::Zero();
-    element().AddScaledMassMatrix(EvalElementData(fem_state), 1, &mass_matrix);
-    return mass_matrix;
+    return element().mass_matrix_;
   }
 
   unique_ptr<FemStateSystem<AD>> fem_state_system_;
@@ -235,7 +245,7 @@ TEST_F(VolumetricElementTest, Constructor) {
   ElementType move_constructed_element(std::move(elements_[0]));
   EXPECT_EQ(move_constructed_element.node_indices(), kNodeIndices);
   EXPECT_EQ(density(move_constructed_element), kDensity);
-  EXPECT_FALSE(element().is_linear);
+  EXPECT_TRUE(element().is_linear);
 }
 
 /* Any undeformed state gives zero energy and zero force. */
@@ -255,6 +265,7 @@ TEST_F(VolumetricElementTest, UndeformedState) {
   }
   fem_state->SetPositions(Eigen::Map<Vector<AD, kNumDofs>>(
       rigid_transformed_X.data(), rigid_transformed_X.size()));
+  fem_state->SetTimeStepPositions(fem_state->GetPositions());
   VerifyEnergyAndForceAreZero(*fem_state);
 }
 
@@ -282,8 +293,9 @@ TEST_F(VolumetricElementTest, DeformedState) {
       1.0 / 6.0 * std::abs(matrix_for_volume_calculation.determinant());
   const double analytical_energy = energy_density * reference_volume;
   /* Verify calculated energy is close to energy calculated analytically. */
-  EXPECT_NEAR(element().CalcElasticEnergy(EvalElementData(*fem_state)).value(),
-              analytical_energy, kEpsilon);
+  EXPECT_NEAR(
+      element().CalcElasticEnergy(EvalElementData(*fem_state).Psi).value(),
+      analytical_energy, kEpsilon);
 
   const auto neg_elastic_force_autodiff = CalcNegativeElasticForce(*fem_state);
   Vector<double, kNumDofs> neg_elastic_force =
@@ -321,7 +333,7 @@ TEST_F(VolumetricElementTest, DeformedState) {
  elastic energy with respect to the generalized positions. */
 TEST_F(VolumetricElementTest, NegativeElasticForceIsEnergyDerivative) {
   unique_ptr<FemState<AD>> fem_state = MakeDeformedState();
-  AD energy = element().CalcElasticEnergy(EvalElementData(*fem_state));
+  AD energy = element().CalcElasticEnergy(EvalElementData(*fem_state).Psi);
   Vector<AD, kNumDofs> neg_elastic_force = CalcNegativeElasticForce(*fem_state);
   EXPECT_TRUE(
       CompareMatrices(energy.derivatives(), neg_elastic_force, kEpsilon));
@@ -418,7 +430,7 @@ TEST_F(VolumetricElementTest, PerCurrentVolumeExternalForce) {
       return f_;
     };
 
-    std::unique_ptr<ForceDensityField<AD>> DoClone() const final {
+    std::unique_ptr<ForceDensityFieldBase<AD>> DoClone() const final {
       return std::make_unique<ConstantForceDensityField>(*this);
     }
 
@@ -442,6 +454,78 @@ TEST_F(VolumetricElementTest, PerCurrentVolumeExternalForce) {
   const AD current_volume = reference_volume()[0] * scale * scale * scale;
   const Vector3<AD> expected_force = current_volume * force_per_current_volume;
   EXPECT_TRUE(CompareMatrices(total_force, expected_force, kEpsilon));
+}
+
+TEST_F(VolumetricElementTest, CalcMassTimesPositionForQuadraturePoints) {
+  unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
+  const auto& data = EvalElementData(*fem_state);
+
+  Vector3<AD> moment = element().CalcMassTimesPositionForQuadraturePoints(data);
+
+  /* For a single linear tet, there's only one quadrature point at the centroid.
+   The reference_volume_[0] is the volume of the tetrahedron. */
+  const AD expected_mass = density(element()) * reference_volume()[0];
+  const Vector3<AD> expected_moment =
+      expected_mass * data.quadrature_positions[0];
+  EXPECT_TRUE(CompareMatrices(moment, expected_moment, kEpsilon));
+}
+
+TEST_F(VolumetricElementTest, CalcTranslationalMomentumForQuadraturePoints) {
+  unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
+  // Set some non-zero velocities for testing momentum.
+  VectorX<AD> v_all = fem_state->GetVelocities();
+  for (int i = 0; i < kNumNodes; ++i) {
+    v_all.segment<3>(i * 3) = Vector3<AD>(i + 1.0, i + 2.0, i + 3.0);
+  }
+  fem_state->SetVelocities(v_all);
+  const auto& data = EvalElementData(*fem_state);
+
+  Vector3<AD> translational_momentum =
+      element().CalcTranslationalMomentumForQuadraturePoints(data);
+
+  const AD expected_mass_term = density(element()) * reference_volume()[0];
+  const Vector3<AD> expected_translational_momentum =
+      expected_mass_term * data.quadrature_velocities[0];
+  EXPECT_TRUE(CompareMatrices(translational_momentum,
+                              expected_translational_momentum, kEpsilon));
+}
+
+TEST_F(VolumetricElementTest, CalcAngularMomentumAboutWorldOrigin) {
+  /* Test with a pure translational motion for the element. */
+  unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
+  VectorX<AD> v = VectorX<AD>::Zero(kNumDofs);
+  const Vector3<AD> translational_velocity(1.0, 2.0, 3.0);
+  for (int i = 0; i < kNumNodes; ++i) {
+    v.segment<3>(i * 3) = translational_velocity;
+  }
+  fem_state->SetVelocities(v);
+  const auto& data = EvalElementData(*fem_state);
+
+  Vector3<AD> angular_momentum =
+      element().CalcAngularMomentumAboutWorldOrigin(data);
+
+  const Vector3<AD> p_WQ = data.quadrature_positions[0];
+  const Vector3<AD> v_WQ = data.quadrature_velocities[0];
+  const AD mass = density(element()) * reference_volume()[0];
+  const Vector3<AD> expected_angular_momentum = mass * p_WQ.cross(v_WQ);
+
+  EXPECT_TRUE(
+      CompareMatrices(angular_momentum, expected_angular_momentum, kEpsilon));
+}
+
+TEST_F(VolumetricElementTest, CalcRotationalInertiaAboutWorldOrigin) {
+  unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
+  const auto& data = EvalElementData(*fem_state);
+
+  Matrix3<AD> inertia = element().CalcRotationalInertiaAboutWorldOrigin(data);
+
+  const Vector3<AD> p_WQ = data.quadrature_positions[0];
+  const AD mass = density(element()) * reference_volume()[0];
+  const Matrix3<AD> expected_inertia =
+      mass * p_WQ.dot(p_WQ) * Matrix3<AD>::Identity() -
+      mass * p_WQ * p_WQ.transpose();
+
+  EXPECT_TRUE(CompareMatrices(inertia, expected_inertia, kEpsilon));
 }
 
 }  // namespace

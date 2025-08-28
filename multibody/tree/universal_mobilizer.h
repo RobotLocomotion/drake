@@ -43,13 +43,13 @@ namespace internal {
 // aligned in the direction of their respective axes. The generalized
 // velocities for this mobilizer are the rate of change of the angles, v = q̇.
 //
-//    H_FM₆ₓ₂ = [Hw_FM₃ₓ₂]        Hw_FM = [ 1   0   ]        Hv_FM = 0₃ₓ₂
-//              [Hv_FM₃ₓ₂]                [ 0 c(q₀) ]
-//                                        [ 0 s(q₀) ]
+//    H_FM_F₆ₓ₂ = [Hw_FM₃ₓ₂]        Hw_FM_F = [ 1   0   ]       Hv_FM_F = 0₃ₓ₂
+//                [Hv_FM₃ₓ₂]                  [ 0 c(q₀) ]
+//                                            [ 0 s(q₀) ]
 //
-// Hdot_FM₆ₓ₂ = [Hwdot_FM₃ₓ₂]  Hwdot_FM = [ 0    0     ]  Hvdot_FM = 0₃ₓ₂
-//              [Hvdot_FM₃ₓ₂]             [ 0 -v₀s(q₀) ]
-//                                        [ 0  v₀c(q₀) ]
+// Hdot_FM_F₆ₓ₂ = [Hwdot_FM₃ₓ₂]  Hwdot_FM_F = [ 0    0     ]  Hvdot_FM_F = 0₃ₓ₂
+//                [Hvdot_FM₃ₓ₂]               [ 0 -v₀s(q₀) ]
+//                                            [ 0  v₀c(q₀) ]
 //
 // @tparam_default_scalar
 template <typename T>
@@ -76,8 +76,8 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
 
   ~UniversalMobilizer() final;
 
-  std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
-      const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+  std::unique_ptr<BodyNode<T>> CreateBodyNode(
+      const BodyNode<T>* parent_node, const RigidBody<T>* body,
       const Mobilizer<T>* mobilizer) const final;
 
   // Overloads to define the suffix names for the position and velocity
@@ -128,17 +128,24 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   // frame F and the outboard frame M as a function of the angles (θ₀, θ₁)
   // stored in `context`.
   math::RigidTransform<T> calc_X_FM(const T* q) const {
-    const T s1 = sin(q[0]), c1 = cos(q[0]);
-    const T s2 = sin(q[1]), c2 = cos(q[1]);
+    const T s0 = sin(q[0]), c0 = cos(q[0]);
+    const T s1 = sin(q[1]), c1 = cos(q[1]);
     Matrix3<T> R_FM_matrix;
     // clang-format off
-    R_FM_matrix <<   c2,    0.0,  s2,
-                   s1 * s2, c1,  -s1 * c2,
-                  -c1 * s2, s1,   c1 * c2;
+    R_FM_matrix <<   c1,    0.0,  s1,
+                   s0 * s1, c0,  -s0 * c1,
+                  -c0 * s1, s0,   c0 * c1;
     // clang-format on
     return math::RigidTransform<T>(
         math::RotationMatrix<T>::MakeUnchecked(R_FM_matrix),
         Vector3<T>::Zero());
+  }
+
+  /* We're not attempting to optimize the update, but could improve slightly
+  since the translation never changes (always zero). */
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    *X_FM = calc_X_FM(q);
   }
 
   // Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame
@@ -166,9 +173,9 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
                                   Vector3<T>::Zero());
   }
 
-  // Returns tau = H_FMᵀ⋅F. See above for the structure of H.
+  // Returns tau = H_FM_Fᵀ ⋅ F_F. See above for the structure of H.
   void calc_tau(const T* q, const SpatialForce<T>& F_BMo_F, T* tau) const {
-    DRAKE_ASSERT(tau != nullptr);
+    DRAKE_ASSERT(q != nullptr && tau != nullptr);
     Eigen::Map<VVector<T>> tau_as_vector(tau);
     const Vector3<T>& t_B_F = F_BMo_F.rotational();  // torque
     const Eigen::Matrix<T, 3, 2> Hw_FM = this->CalcHwMatrix(q);
@@ -208,24 +215,30 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
 
   bool is_velocity_equal_to_qdot() const override { return true; }
 
-  // Performs the identity mapping from v to qdot since, for this mobilizer,
-  // v = q̇.
-  void MapVelocityToQDot(const systems::Context<T>& context,
-                         const Eigen::Ref<const VectorX<T>>& v,
-                         EigenPtr<VectorX<T>> qdot) const override;
-
-  // Performs the identity mapping from qdot to v since, for this mobilizer,
-  // v = q̇.
-  void MapQDotToVelocity(const systems::Context<T>& context,
-                         const Eigen::Ref<const VectorX<T>>& qdot,
-                         EigenPtr<VectorX<T>> v) const override;
-
  protected:
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
   void DoCalcNplusMatrix(const systems::Context<T>& context,
                          EigenPtr<MatrixX<T>> Nplus) const final;
+
+  // Generally, q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇. For this mobilizer, Ṅ = zero matrix.
+  void DoCalcNDotMatrix(const systems::Context<T>& context,
+                        EigenPtr<MatrixX<T>> Ndot) const final;
+
+  // Generally, v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈. For this mobilizer, Ṅ⁺ = zero matrix.
+  void DoCalcNplusDotMatrix(const systems::Context<T>& context,
+                            EigenPtr<MatrixX<T>> NplusDot) const final;
+
+  // Maps v to qdot, which for this mobilizer is q̇ = v.
+  void DoMapVelocityToQDot(const systems::Context<T>& context,
+                           const Eigen::Ref<const VectorX<T>>& v,
+                           EigenPtr<VectorX<T>> qdot) const final;
+
+  // Maps qdot to v, which for this mobilizer is v = q̇.
+  void DoMapQDotToVelocity(const systems::Context<T>& context,
+                           const Eigen::Ref<const VectorX<T>>& qdot,
+                           EigenPtr<VectorX<T>> v) const final;
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;

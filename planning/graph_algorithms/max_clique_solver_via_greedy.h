@@ -26,8 +26,6 @@ class MaxCliqueSolverViaGreedy final : public MaxCliqueSolverBase {
  private:
   VectorX<bool> DoSolveMaxClique(
       const Eigen::SparseMatrix<bool>& adjacency_matrix) const final;
-
-  [[nodiscard]] std::unique_ptr<MaxCliqueSolverBase> DoClone() const final;
 };
 
 }  // namespace graph_algorithms

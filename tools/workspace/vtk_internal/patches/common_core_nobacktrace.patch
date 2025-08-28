@@ -8,8 +8,8 @@ Reasoning for not upstreaming this patch: Drake-specific build option.
 --- Common/Core/vtkDeserializer.cxx
 +++ Common/Core/vtkDeserializer.cxx
 @@ -186,8 +186,10 @@ vtkDeserializer::ConstructorType vtkDeserializer::GetConstructor(
-     name = superClassNames[--superClassId];
-   } while (superClassId > 0);
+     }
+   }
    vtkErrorMacro(<< "There is no constructor registered for type " << className
 -                << ". Check stack trace to see how we got here.");
 +                << ".");

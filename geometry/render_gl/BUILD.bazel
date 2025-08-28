@@ -96,6 +96,7 @@ drake_cc_library_linux_only(
         ":render_engine_gl_params",
         "//common:diagnostic_policy",
         "//common:string_container",
+        "//common/yaml:yaml_io",
         "//geometry/proximity:polygon_to_triangle_mesh",
         "//geometry/render:render_engine",
         "//geometry/render:render_mesh",
@@ -236,6 +237,11 @@ drake_cc_googletest_linux_only(
         # memcheck tests in order to make progress on related code.
         # TODO(#12962) Investigate, fix or suppress, then re-enable this test.
         "no_memcheck",
+
+        # Since migrating CI Jenkins jobs from Jammy to Noble, this test
+        # causes the newly converted ASAN jobs to fail.
+        # TODO(#23107) Investigate, fix or suppress, then re-enable this test.
+        "no_asan",
     ],
     deps = [
         ":internal_opengl_context",
@@ -255,6 +261,7 @@ drake_cc_googletest_linux_only(
     name = "internal_render_engine_gl_test",
     data = [
         "//examples/scene_graph:models",
+        "//geometry:test_gltf_files",
         "//geometry:test_obj_files",
         "//geometry/render:test_models",
     ] + glob(["test/*.png"]),
@@ -327,9 +334,6 @@ drake_cc_googletest_linux_only(
     tags = vtk_test_tags() + [
         # We launch up to 3 child tasks.
         "cpu:4",
-        # Generally, GL driver shared libraries are not tsan-clean.
-        # Instead we rely on functional testing to detect threading errors.
-        "no_tsan",
     ],
     deps = [
         ":factory",
@@ -350,9 +354,6 @@ drake_cc_googletest_linux_only(
     tags = vtk_test_tags() + [
         # We launch up to 3 child tasks.
         "cpu:4",
-        # Generally, GL driver shared libraries are not tsan-clean.
-        # Instead we rely on functional testing to detect threading errors.
-        "no_tsan",
     ],
     deps = [
         ":factory",

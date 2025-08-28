@@ -1208,10 +1208,6 @@ std::vector<BodyIndex> MultibodyPlant<T>::GetBodiesKinematicallyAffectedBy(
                       "has been removed.",
                       __func__, joint));
     }
-    if (get_joint(joint).num_velocities() == 0) {
-      throw std::logic_error(
-          fmt::format("{}: joint with index {} is welded.", __func__, joint));
-    }
   }
   const std::set<BodyIndex> links =
       internal_tree().GetBodiesKinematicallyAffectedBy(joint_indexes);
@@ -1317,20 +1313,27 @@ void MultibodyPlant<T>::CalcSpatialAccelerationsFromVdot(
   this->ValidateContext(context);
   DRAKE_THROW_UNLESS(A_WB_array != nullptr);
   DRAKE_THROW_UNLESS(ssize(*A_WB_array) == num_bodies());
-  internal_tree().CalcSpatialAccelerationsFromVdot(
-      context, internal_tree().EvalPositionKinematics(context),
-      internal_tree().EvalVelocityKinematics(context), known_vdot, A_WB_array);
-  // Permute MobodIndex -> BodyIndex.
+  const internal::MultibodyTree<T>& multibody_tree = internal_tree();
+  const internal::SpanningForest& forest = multibody_tree.forest();
+
   // TODO(eric.cousineau): Remove dynamic allocations. Making this in-place
   //  still required dynamic allocation for recording permutation indices.
   //  Can change implementation once MultibodyTree becomes fully internal.
-  std::vector<SpatialAcceleration<T>> A_WB_array_mobod = *A_WB_array;
-  const internal::MultibodyTreeTopology& topology =
-      internal_tree().get_topology();
-  for (internal::MobodIndex mobod_index(1); mobod_index < topology.num_mobods();
-       ++mobod_index) {
-    const BodyIndex body_index = topology.get_body_node(mobod_index).rigid_body;
-    (*A_WB_array)[body_index] = A_WB_array_mobod[mobod_index];
+  std::vector<SpatialAcceleration<T>> A_WB_array_mobod(forest.num_mobods());
+  multibody_tree.CalcSpatialAccelerationsFromVdot(
+      context, multibody_tree.EvalPositionKinematics(context),
+      multibody_tree.EvalVelocityKinematics(context), known_vdot,
+      &A_WB_array_mobod);
+
+  // Permute MobodIndex -> BodyIndex.
+  for (const auto& mobod : forest.mobods()) {
+    // TODO(sherm1) Need to calculate accelerations (optionally?) for the
+    //  inactive links on a link composite following this mobod.
+    // Make sure there aren't any inactives for now.
+    DRAKE_DEMAND(ssize(mobod.follower_link_ordinals()) == 1);
+    const BodyIndex active_link_index =
+        forest.links(mobod.link_ordinal()).index();
+    (*A_WB_array)[active_link_index] = A_WB_array_mobod[mobod.index()];
   }
 }
 
@@ -1581,7 +1584,7 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   SetUpJointLimitsParameters();
   if (use_sampled_output_ports_) {
     auto cache = std::make_unique<AccelerationKinematicsCache<T>>(
-        internal_tree().get_topology());
+        internal_tree().forest());
     for (SpatialAcceleration<T>& A_WB : cache->get_mutable_A_WB_pool()) {
       A_WB.SetZero();
     }
@@ -1757,11 +1760,11 @@ void MultibodyPlant<T>::ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
 
   if (collision_filter_group_a.first == collision_filter_group_b.first) {
     scene_graph_->collision_filter_manager().Apply(
-        CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
+        CollisionFilterDeclaration(CollisionFilterScope::kAll)
             .ExcludeWithin(collision_filter_group_a.second));
   } else {
     scene_graph_->collision_filter_manager().Apply(
-        CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
+        CollisionFilterDeclaration(CollisionFilterScope::kAll)
             .ExcludeBetween(collision_filter_group_a.second,
                             collision_filter_group_b.second));
   }
@@ -3280,18 +3283,11 @@ systems::EventStatus MultibodyPlant<T>::CalcStepUnrestricted(
       next_state->get_mutable_discrete_state();
   DiscreteStepMemory::Data<T>& next_memory =
       next_state->template get_mutable_abstract_state<DiscreteStepMemory>(0)
-          .template Allocate<T>(internal_tree().get_topology());
+          .template Allocate<T>(internal_tree().forest());
   discrete_update_manager_->CalcDiscreteValues(context0, &next_discrete_state,
                                                &next_memory);
-  if (discrete_update_manager_->deformable_driver() == nullptr) {
-    next_memory.reaction_forces.resize(num_joints());
-    CalcReactionForces(context0, &next_memory.reaction_forces);
-  } else {
-    // For deformables, SapDriver does not yet support the computation of
-    // reaction forces. Therefore, we skip it here and delay throwing an
-    // exception until someone asks for this output during
-    // CalcReactionForcesOutput<true>().
-  }
+  next_memory.reaction_forces.resize(num_joints());
+  CalcReactionForces(context0, &next_memory.reaction_forces);
   return systems::EventStatus::Succeeded();
 }
 
@@ -3995,16 +3991,6 @@ void MultibodyPlant<T>::CalcReactionForcesOutput(
   this->ValidateContext(context);
   DRAKE_DEMAND(output != nullptr);
   DRAKE_DEMAND(ssize(*output) == num_joints());
-
-  if (discrete_update_manager_ != nullptr &&
-      discrete_update_manager_->deformable_driver() != nullptr) {
-    // SapDriver<T>::CalcDiscreteUpdateMultibodyForces doesn't support
-    // reaction forces yet, so our CalcStepUnrestricted can't sample
-    // this output port.
-    throw std::logic_error(
-        "The computation of MultibodyForces must be updated to include "
-        "deformable objects.");
-  }
 
   // Sampled mode is a simple copy.
   if constexpr (sampled) {

@@ -56,38 +56,6 @@ void DefineSolversOptions(py::module m) {
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
 
-    constexpr char kSetOptionKwargNameDeprecation[] =
-        "The kwarg names for SolverOptions.SetOption have changed; the new "
-        "names are `key` and `value` not `solver_option` and `option_value`; "
-        "the old names are deprecated and will be removed from Drake on or "
-        "after 2025-05-01.";
-    // Deprecated 2025-05.
-    cls  // BR
-        .def("SetOption",
-            WrapDeprecated(kSetOptionKwargNameDeprecation,
-                [](SolverOptions& self, const SolverId& solver_id,
-                    const std::string& solver_option, double option_value) {
-                  self.SetOption(solver_id, solver_option, option_value);
-                }),
-            py::arg("solver_id"), py::arg("solver_option"),
-            py::arg("option_value"), kSetOptionKwargNameDeprecation)
-        .def("SetOption",
-            WrapDeprecated(kSetOptionKwargNameDeprecation,
-                [](SolverOptions& self, const SolverId& solver_id,
-                    const std::string& solver_option, int option_value) {
-                  self.SetOption(solver_id, solver_option, option_value);
-                }),
-            py::arg("solver_id"), py::arg("solver_option"),
-            py::arg("option_value"), kSetOptionKwargNameDeprecation)
-        .def("SetOption",
-            WrapDeprecated(kSetOptionKwargNameDeprecation,
-                [](SolverOptions& self, const SolverId& solver_id,
-                    const std::string& solver_option,
-                    const std::string& option_value) {
-                  self.SetOption(solver_id, solver_option, option_value);
-                }),
-            py::arg("solver_id"), py::arg("solver_option"),
-            py::arg("option_value"), kSetOptionKwargNameDeprecation);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls  // BR

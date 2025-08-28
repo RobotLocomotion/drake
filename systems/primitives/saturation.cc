@@ -3,58 +3,81 @@
 #include <algorithm>
 #include <limits>
 
-#include "drake/common/default_scalars.h"
+#include "drake/math/autodiff_gradient.h"
 
 namespace drake {
 namespace systems {
+namespace {
+
+// Squash down to doubles and cast back.
+// @throws std::exception if derivatives or symbolic variables would be
+// discarded.
+template <typename T, typename U>
+VectorX<T> ConvertVector(const VectorX<U>& input) {
+  if constexpr (std::is_same_v<U, AutoDiffXd>) {
+    // DiscardZeroGradient effectively refuses conversion if derivatives would
+    // be discarded.
+    return math::DiscardZeroGradient(input, 0).template cast<T>();
+  } else {
+    return ExtractDoubleOrThrow(input).template cast<T>();
+  }
+}
+
+}  // namespace
 
 template <typename T>
 Saturation<T>::Saturation(int input_size)
-    : min_max_ports_enabled_(true),
-      input_size_(input_size),
-      max_value_(VectorX<T>::Constant(input_size,
-                                      std::numeric_limits<double>::infinity())),
-      min_value_(VectorX<T>::Constant(
-          input_size, -std::numeric_limits<double>::infinity())) {
-  // Checks if input size is a positive integer.
-  DRAKE_THROW_UNLESS(input_size_ > 0);
-
-  // Input and outputs are of same dimension.
-  input_port_index_ =
-      this->DeclareInputPort(kUseDefaultName, kVectorValued, input_size_)
-          .get_index();
-  max_value_port_index_ =
-      this->DeclareInputPort(kUseDefaultName, kVectorValued, input_size_)
-          .get_index();
-  min_value_port_index_ =
-      this->DeclareInputPort(kUseDefaultName, kVectorValued, input_size_)
-          .get_index();
-  this->DeclareVectorOutputPort(kUseDefaultName, input_size_,
-                                &Saturation::CalcSaturatedOutput)
-      .get_index();
-}
+    : Saturation<T>(true, input_size,
+                    VectorX<T>::Constant(
+                        input_size, -std::numeric_limits<double>::infinity()),
+                    VectorX<T>::Constant(
+                        input_size, std::numeric_limits<double>::infinity())) {}
 
 template <typename T>
 Saturation<T>::Saturation(const VectorX<T>& min_value,
                           const VectorX<T>& max_value)
-    : min_max_ports_enabled_(false),
-      input_size_(min_value.size()),
-      max_value_(max_value),
-      min_value_(min_value) {
+    : Saturation<T>(false, min_value.size(), min_value, max_value) {}
+
+template <typename T>
+template <typename U>
+Saturation<T>::Saturation(const Saturation<U>& other)
+    : Saturation<T>(other.min_max_ports_enabled_, other.input_size_,
+                    ConvertVector<T, U>(other.min_value_),
+                    ConvertVector<T, U>(other.max_value_)) {}
+
+template <typename T>
+Saturation<T>::Saturation(bool min_max_ports_enabled, int input_size,
+                          const VectorX<T>& min_value,
+                          const VectorX<T>& max_value)
+    : LeafSystem<T>(SystemTypeTag<Saturation>{}),
+      min_max_ports_enabled_(min_max_ports_enabled),
+      input_size_(input_size),
+      min_value_(min_value),
+      max_value_(max_value) {
   // Checks if input size is a positive integer.
   DRAKE_THROW_UNLESS(input_size_ > 0);
 
   // Checks if limits are of same dimensions.
   DRAKE_THROW_UNLESS(min_value.size() == max_value.size());
 
+  // Checks no min's are greater than matching max's.
   DRAKE_THROW_UNLESS((min_value_.array() <= max_value_.array()).all());
 
+  // Input and outputs are of same dimension.
   input_port_index_ =
       this->DeclareInputPort(kUseDefaultName, kVectorValued, input_size_)
           .get_index();
+  if (min_max_ports_enabled_) {
+    max_value_port_index_ =
+        this->DeclareInputPort(kUseDefaultName, kVectorValued, input_size_)
+            .get_index();
+    min_value_port_index_ =
+        this->DeclareInputPort(kUseDefaultName, kVectorValued, input_size_)
+            .get_index();
+  }
   this->DeclareVectorOutputPort(kUseDefaultName, input_size_,
-                                &Saturation::CalcSaturatedOutput)
-      .get_index();
+                                &Saturation::CalcSaturatedOutput,
+                                {this->all_input_ports_ticket()});
 }
 
 template <typename T>

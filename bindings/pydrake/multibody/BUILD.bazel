@@ -58,6 +58,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        "//bindings/pydrake/systems:framework_py",
     ],
 )
 
@@ -111,6 +112,7 @@ drake_pybind_library(
         ":math_py",
         ":module_py",
         "//bindings/pydrake/systems:framework_py",
+        "//bindings/pydrake/geometry",
     ],
     py_srcs = [
         "_tree_extra.py",
@@ -187,6 +189,8 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:ref_cycle_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:sorted_pair_pybind",
     ],
     cc_srcs = [
@@ -493,6 +497,7 @@ drake_py_unittest(
     timeout = "moderate",
     data = [
         ":models",
+        "@drake_models//:iiwa_description",
     ],
     deps = [
         ":benchmarks_py",

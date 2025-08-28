@@ -150,8 +150,14 @@ double DiscreteUpdateManager<T>::default_contact_stiffness() const {
 
 template <typename T>
 double DiscreteUpdateManager<T>::default_contact_dissipation() const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<
+  // TODO(xuchenhan-tri): The plant's default contact dissipation may be NaN,
+  // We guard against that here as a band-aid fix. See #19981.
+  const double plant_dissipation = MultibodyPlantDiscreteUpdateManagerAttorney<
       T>::default_contact_dissipation(plant());
+  if (!(plant_dissipation >= 0.0)) {
+    return 0.0;
+  }
+  return plant_dissipation;
 }
 
 template <typename T>

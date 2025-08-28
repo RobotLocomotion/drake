@@ -99,7 +99,9 @@ class GripperBrickHelper {
         base_theta = M_PI;
         break;
       }
-      default: { throw std::runtime_error("Unknown finger."); }
+      default: {
+        throw std::runtime_error("Unknown finger.");
+      }
     }
     return base_theta + base_joint_angle + middle_joint_angle;
   }
@@ -113,7 +115,6 @@ class GripperBrickHelper {
   multibody::CoulombFriction<T> GetFingerTipBrickCoulombFriction(
       Finger finger) const;
 
-
  private:
   std::unique_ptr<systems::Diagram<T>> diagram_;
   multibody::MultibodyPlant<T>* plant_;
@@ -125,10 +126,8 @@ class GripperBrickHelper {
   int brick_translate_z_position_index_;
   int brick_revolute_x_position_index_;
   const multibody::Frame<double>* brick_frame_;
-  std::array<const multibody::Frame<double>*, kNumFingers>
-      finger_link2_frames_;
-  std::array<geometry::GeometryId, kNumFingers>
-      finger_tip_sphere_geometry_ids_;
+  std::array<const multibody::Frame<double>*, kNumFingers> finger_link2_frames_;
+  std::array<geometry::GeometryId, kNumFingers> finger_tip_sphere_geometry_ids_;
 
   Eigen::Vector3d p_L2Fingertip_;
   double finger_tip_radius_;

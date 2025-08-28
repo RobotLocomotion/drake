@@ -122,3 +122,19 @@ class TestSchunkWsg(unittest.TestCase):
             sim_plant=plant, models_from_directives=model_dict, lcms=lcm_bus,
             builder=builder)
         self.assertEqual(len(builder.GetSystems()), 7)
+
+    def test_schunk_wsg_trajectory_generator(self):
+        # Throw away instantiation to confirm optional parameter.
+        dut = mut.SchunkWsgTrajectoryGenerator(
+            input_size=2,
+            position_index=0)
+        # Fully specified.
+        dut = mut.SchunkWsgTrajectoryGenerator(
+            input_size=2,
+            position_index=0,
+            use_force_limit=True)
+        self.assertIsInstance(dut.get_desired_position_input_port(), InputPort)
+        self.assertIsInstance(dut.get_force_limit_input_port(), InputPort)
+        self.assertIsInstance(dut.get_state_input_port(), InputPort)
+        self.assertIsInstance(dut.get_target_output_port(), OutputPort)
+        self.assertIsInstance(dut.get_max_force_output_port(), OutputPort)

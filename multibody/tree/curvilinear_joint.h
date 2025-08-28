@@ -130,9 +130,12 @@ class CurvilinearJoint final : public Joint<T> {
 
   /** Sets the default value of viscous damping for this joint, in N⋅s/m.
    @throws std::exception if damping is negative.
+   @throws std::exception if this element is not associated with a
+   MultibodyPlant.
    @pre the MultibodyPlant must not be finalized. */
   void set_default_damping(double damping) {
     DRAKE_THROW_UNLESS(damping >= 0);
+    DRAKE_THROW_UNLESS(this->has_parent_tree());
     DRAKE_DEMAND(!this->get_parent_tree().topology_is_valid());
     this->set_default_damping_vector(Vector1d(damping));
   }
@@ -249,6 +252,7 @@ class CurvilinearJoint final : public Joint<T> {
   void AddInForce(const systems::Context<T>& context, const T& force,
                   MultibodyForces<T>* forces) const {
     DRAKE_DEMAND(forces != nullptr);
+    DRAKE_DEMAND(this->has_parent_tree());
     DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
     this->AddInOneForce(context, 0, force, forces);
   }

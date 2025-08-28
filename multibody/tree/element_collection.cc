@@ -8,6 +8,7 @@
 
 #include "drake/common/nice_type_name.h"
 #include "drake/common/unused.h"
+#include "drake/multibody/tree/deformable_body.h"
 #include "drake/multibody/tree/joint.h"
 #include "drake/multibody/tree/joint_actuator.h"
 #include "drake/multibody/tree/model_instance.h"
@@ -176,6 +177,12 @@ template class ElementCollection<Expression, ModelInstance, ModelInstanceIndex>;
 template class ElementCollection<double, RigidBody, BodyIndex>;
 template class ElementCollection<AutoDiffXd, RigidBody, BodyIndex>;
 template class ElementCollection<Expression, RigidBody, BodyIndex>;
+
+template class ElementCollection<double, DeformableBody, DeformableBodyIndex>;
+template class ElementCollection<AutoDiffXd, DeformableBody,
+                                 DeformableBodyIndex>;
+template class ElementCollection<Expression, DeformableBody,
+                                 DeformableBodyIndex>;
 
 }  // namespace internal
 }  // namespace multibody

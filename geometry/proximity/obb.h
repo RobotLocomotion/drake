@@ -13,7 +13,6 @@
 
 namespace drake {
 namespace geometry {
-namespace internal {
 
 // Forward declarations.
 template <typename>
@@ -38,11 +37,12 @@ class Obb {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Obb);
 
-  /** The class used for various creation operations on this bounding volume. */
+  /** The class used for various creation operations on this bounding volume.
+   */
   template <typename MeshType>
   using Maker = ObbMaker<MeshType>;
 
-  /* Constructs an oriented bounding box measured and expressed in frame H.
+  /** Constructs an oriented bounding box measured and expressed in frame H.
 
    @param X_HB          The pose of the box in the hierarchy frame H.
                         The box is centered on Bo and aligned with Bx, By,
@@ -53,26 +53,26 @@ class Obb {
   */
   Obb(const math::RigidTransformd& X_HB, const Vector3<double>& half_width);
 
-  /* Returns the center of the box -- equivalent to the position vector from
+  /** Returns the center of the box -- equivalent to the position vector from
    the hierarchy frame's origin Ho to `this` box's origin Bo: `p_HoBo_H`. */
   const Vector3<double>& center() const { return pose_.translation(); }
 
-  /* Returns the half_width -- equivalent to the position vector from the
+  /** Returns the half_width -- equivalent to the position vector from the
    box's center Bo to the box's first octant (+,+,+) corner U expressed in
    the box's frame B: `p_BoU_B`. */
   const Vector3<double>& half_width() const { return half_width_; }
 
-  /* Returns the pose X_HB of the box frame B in the hierarchy frame H */
+  /** Returns the pose X_HB of the box frame B in the hierarchy frame H */
   const math::RigidTransformd& pose() const { return pose_; }
 
-  /* @return Volume of the bounding box.  */
+  /** @return Volume of the bounding box.  */
   double CalcVolume() const {
     // Double the three half widths using * 8 instead of repeating * 2 three
     // times to help the compiler out.
     return half_width_[0] * half_width_[1] * half_width_[2] * 8;
   }
 
-  /* Reports whether the two oriented bounding boxes `a_G` and `b_H` intersect.
+  /** Reports whether the two oriented bounding boxes `a_G` and `b_H` intersect.
    The poses of `a_G` and `b_H` are defined in their corresponding hierarchy
    frames G and H, respectively.
 
@@ -80,11 +80,12 @@ class Obb {
    @param b_H       The second oriented box.
    @param X_GH      The relative pose between hierarchy frame G and hierarchy
                     frame H.
-   @returns `true` if the boxes intersect.   */
+   @returns `true` if the boxes intersect.
+   @pydrake_mkdoc_identifier{obb_obb} */
   static bool HasOverlap(const Obb& a_G, const Obb& b_H,
                          const math::RigidTransformd& X_GH);
 
-  /* Reports whether oriented bounding box `obb_G` intersects the given
+  /** Reports whether oriented bounding box `obb_G` intersects the given
    axis-aligned bounding box `aabb_H`. The poses of `obb_G` and `aabb_H` are
    defined in their corresponding hierarchy frames G and H, respectively.
 
@@ -92,13 +93,17 @@ class Obb {
    @param aabb_H    The axis-aligned box.
    @param X_GH      The relative pose between the obb hierarchy frame G and the
                     aabb hierarchy frame H.
-   @returns `true` if the boxes intersect.   */
+   @returns `true` if the boxes intersect.
+   @pydrake_mkdoc_identifier{obb_aabb} */
   static bool HasOverlap(const Obb& obb_G, const Aabb& aabb_H,
                          const math::RigidTransformd& X_GH);
 
-  /* Checks whether bounding volume `bv` intersects the given plane. The
-   bounding volume is centered on its canonical frame B, and B is posed in the
-   corresponding hierarchy frame H. The plane is defined in frame P.
+  // TODO(xuchenhan-tri): Move Plane out of internal namespace and make this
+  //  non-internal only.
+  /** (Internal use only) Checks whether bounding volume `bv` intersects the
+   given plane. The bounding volume is centered on its canonical frame B, and B
+   is posed in the corresponding hierarchy frame H. The plane is defined in
+   frame P.
 
    The box and plane intersect if _any_ point within the bounding volume has
    zero height (see CalcHeight()).
@@ -111,10 +116,11 @@ class Obb {
    @param X_PH      The relative pose between the hierarchy frame H and the
                     plane frame P.
    @returns `true` if the plane intersects the box.   */
-  static bool HasOverlap(const Obb& bv_H, const Plane<double>& plane_P,
+  static bool HasOverlap(const Obb& bv_H,
+                         const internal::Plane<double>& plane_P,
                          const math::RigidTransformd& X_PH);
 
-  /* Checks whether bounding volume `bv` intersects the given half space. The
+  /** Checks whether bounding volume `bv` intersects the given half space. The
    bounding volume is centered on its canonical frame B, and B is posed in the
    corresponding hierarchy frame H. The half space is defined in its
    canonical frame C (such that the boundary plane of the half space is
@@ -127,11 +133,12 @@ class Obb {
                     measured and expressed in C.
    @param X_CH      The relative pose between the hierarchy frame H and the
                     half space canonical frame C.
-   @returns `true` if the half space intersects the box.   */
+   @returns `true` if the half space intersects the box.
+   @pydrake_mkdoc_identifier{obb_halfspace} */
   static bool HasOverlap(const Obb& bv_H, const HalfSpace& hs_C,
                          const math::RigidTransformd& X_CH);
 
-  /* Compares the values of the two Obb instances for exact equality down to
+  /** Compares the values of the two Obb instances for exact equality down to
    the last bit. Assumes that the quantities are measured and expressed in
    the same frame. */
   bool Equal(const Obb& other) const {
@@ -165,11 +172,11 @@ class Obb {
 template <typename MeshType>
 class ObbMakerTester;
 
-/* %ObbMaker performs an algorithm to create an oriented bounding box that
+/** %ObbMaker performs an algorithm to create an oriented bounding box that
  fits a specified set of vertices in a mesh.
 
- @tparam MeshType is either TriangleSurfaceMesh<T> or VolumeMesh<T>, where T is
-         double or AutoDiffXd.  */
+ @tparam MeshType is TriangleSurfaceMesh<T>, VolumeMesh<T>,
+         PolygonSurfaceMesh<T>, where T is double or AutoDiffXd. */
 template <class MeshType>
 class ObbMaker {
  public:
@@ -178,7 +185,7 @@ class ObbMaker {
   //  and unique before passing it to ObbMaker. Repeated vertices can harm
   //  PCA and slow down the rest of ObbMaker.
 
-  /* Specifies the input mesh with frame M and a set of vertices to fit.
+  /** Specifies the input mesh with frame M and a set of vertices to fit.
    @param mesh_M   The mesh that owns the vertices expressed in frame M.
    @param vertices The vertices to fit.
    @pre `vertices` is not empty, and each of its entry is in the
@@ -188,7 +195,7 @@ class ObbMaker {
     DRAKE_DEMAND(vertices_.size() > 0);
   }
 
-  /* Computes the bounding volume of the vertices specified in the constructor.
+  /** Computes the bounding volume of the vertices specified in the constructor.
    @retval obb_M   The oriented bounding box posed in frame M.  */
   Obb Compute() const;
 
@@ -236,6 +243,5 @@ class ObbMaker {
   friend class ObbMakerTester<MeshType>;
 };
 
-}  // namespace internal
 }  // namespace geometry
 }  // namespace drake

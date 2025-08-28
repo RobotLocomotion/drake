@@ -4,7 +4,6 @@
 
 #include <Eigen/Dense>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/systems/estimators/luenberger_observer.h"
 #include "drake/systems/primitives/linear_system.h"
 
@@ -127,17 +126,6 @@ std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
 std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
     std::shared_ptr<const System<double>> system,
     const Context<double>& context, const Eigen::Ref<const Eigen::MatrixXd>& W,
-    const Eigen::Ref<const Eigen::MatrixXd>& V);
-
-DRAKE_DEPRECATED(
-    "2025-06-01",
-    "This overload is deprecated for removal. Instead, use the other overload "
-    "by passing a const-ref to the context. (Add an asterisk at the call site "
-    "to de-reference the context.)")
-std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
-    std::unique_ptr<System<double>> system,
-    std::unique_ptr<Context<double>> context,
-    const Eigen::Ref<const Eigen::MatrixXd>& W,
     const Eigen::Ref<const Eigen::MatrixXd>& V);
 
 }  // namespace estimators

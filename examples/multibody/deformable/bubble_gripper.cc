@@ -83,7 +83,9 @@ int do_main() {
    deformable bodies.
    1. A valid Coulomb friction coefficient, and
    2. A resolution hint. (Rigid bodies need to be tessellated so that collision
-   queries can be performed against deformable geometries.) */
+   queries can be performed against deformable geometries.)
+   3. A hydroelastic modulus (which is added by default through scene graph
+   config). */
   ProximityProperties rigid_proximity_props;
   const CoulombFriction<double> surface_friction(1.0, 1.0);
   const double resolution_hint = 0.01;
@@ -117,45 +119,15 @@ int do_main() {
       "schunk_wsg_50_deformable_bubble.sdf")[0];
 
   /* Add in the bubbles. */
-  DeformableBodyConfig<double> bubble_config;
-  bubble_config.set_youngs_modulus(1e4);                  // [Pa]
-  bubble_config.set_poissons_ratio(0.45);                 // unitless
-  bubble_config.set_mass_density(10);                     // [kg/m³]
-  bubble_config.set_stiffness_damping_coefficient(0.05);  // [1/s]
-
-  /* Minimally required proximity properties for deformable bodies: A valid
-   Coulomb friction coefficient. */
-  ProximityProperties deformable_proximity_props;
-  AddContactMaterial({}, {}, surface_friction, &deformable_proximity_props);
-
-  /* The mesh we render in the camera sim. */
-  PerceptionProperties perception_properties;
-  const std::string textured_bubble_obj = PackageMap{}.ResolveUrl(
-      "package://drake_models/wsg_50_description/meshes/textured_bubble.obj");
-  /* Assign the mesh to be rendered. If this property is not specified, the
-   untextured surface mesh of the simulated volume mesh is rendered. */
-  perception_properties.AddProperty("deformable", "embedded_mesh",
-                                    textured_bubble_obj);
-
-  /* Add in the left bubble. */
-  const std::string bubble_vtk = PackageMap{}.ResolveUrl(
-      "package://drake_models/wsg_50_description/meshes/bubble.vtk");
-  auto left_bubble_mesh = std::make_unique<Mesh>(bubble_vtk);
-  /* Pose of the left bubble (at initialization) in the world frame. */
-  const RigidTransformd X_WBl(RollPitchYawd(M_PI_2, M_PI, 0),
-                              Vector3d(-0.185, -0.09, 0.06));
-  auto left_bubble_instance = std::make_unique<GeometryInstance>(
-      X_WBl, std::move(left_bubble_mesh), "left bubble");
-  left_bubble_instance->set_proximity_properties(deformable_proximity_props);
-  left_bubble_instance->set_perception_properties(perception_properties);
-  /* Since the deformable geometry is specified through Shape::Mesh, the
-   resolution hint is unused. */
-  const double unused_resolution_hint = 1.0;
-  DeformableModel<double>& deformable_model = plant.mutable_deformable_model();
-  const DeformableBodyId left_bubble_id =
-      deformable_model.RegisterDeformableBody(std::move(left_bubble_instance),
-                                              bubble_config,
-                                              unused_resolution_hint);
+  const auto model_instances = parser.AddModelsFromUrl(
+      "package://drake/examples/multibody/deformable/models/bubbles.sdf");
+  // TODO(xuchenhan-tri): Use name to retrieve deformable bodies for more
+  // robustness.
+  const std::vector<DeformableBodyId> bubble_ids =
+      plant.deformable_model().GetBodyIds(model_instances[0]);
+  const DeformableBodyId left_bubble = bubble_ids[0];
+  const DeformableBodyId right_bubble = bubble_ids[1];
+  auto& deformable_model = plant.mutable_deformable_model();
 
   /* Now we attach the bubble to the WSG finger using a fixed constraint. To do
    that, we specify a box geometry and put all vertices of the bubble geometry
@@ -169,54 +141,23 @@ int do_main() {
    to fixed constraints. */
   const Box box(0.1, 0.004, 0.15);
   deformable_model.AddFixedConstraint(
-      left_bubble_id, left_finger, X_FlBl, box,
+      left_bubble, left_finger, X_FlBl, box,
       /* The pose of the box in the left finger's frame. */
       RigidTransformd(Vector3d(0.0, -0.03, -0.1)));
 
-  /* Add in the right bubble and attach it to the right finger. */
-  auto right_bubble_mesh = std::make_unique<Mesh>(bubble_vtk);
-  /* Pose of the right bubble (at initialization) in the world frame. */
-  const RigidTransformd X_WBr(RollPitchYawd(-M_PI_2, M_PI, 0),
-                              Vector3d(-0.185, 0.09, 0.06));
-  auto right_bubble_instance = std::make_unique<GeometryInstance>(
-      X_WBr, std::move(right_bubble_mesh), "right bubble");
-  right_bubble_instance->set_proximity_properties(deformable_proximity_props);
-  right_bubble_instance->set_perception_properties(perception_properties);
-  const DeformableBodyId right_bubble_id =
-      deformable_model.RegisterDeformableBody(std::move(right_bubble_instance),
-                                              bubble_config,
-                                              unused_resolution_hint);
   const Body<double>& right_finger = plant.GetBodyByName("right_finger");
   /* Pose of the right finger body (at initialization) in the world frame. */
   const RigidTransformd X_FrBr = RigidTransformd(
       math::RollPitchYawd(-M_PI_2, M_PI_2, 0), Vector3d(0.0, 0.03, -0.1125));
   deformable_model.AddFixedConstraint(
-      right_bubble_id, right_finger, X_FrBr, box,
+      right_bubble, right_finger, X_FrBr, box,
       /* The pose of the box in the right finger's frame. */
       RigidTransformd(Vector3d(0.0, 0.03, -0.1)));
 
   /* Add in a deformable manipuland. */
-  DeformableBodyConfig<double> teddy_config;
-  teddy_config.set_youngs_modulus(5e4);                  // [Pa]
-  teddy_config.set_poissons_ratio(0.45);                 // unitless
-  teddy_config.set_mass_density(1000);                   // [kg/m³]
-  teddy_config.set_stiffness_damping_coefficient(0.05);  // [1/s]
-  const std::string teddy_vtk = FindResourceOrThrow(
-      "drake/examples/multibody/deformable/models/teddy.vtk");
-  auto teddy_mesh = std::make_unique<Mesh>(teddy_vtk, /* scale */ 0.15);
-  auto teddy_instance = std::make_unique<GeometryInstance>(
-      RigidTransformd(math::RollPitchYawd(M_PI / 2.0, 0, -M_PI / 2.0),
-                      Vector3d(-0.17, 0, 0)),
-      std::move(teddy_mesh), "teddy");
-  teddy_instance->set_proximity_properties(deformable_proximity_props);
-  /* Give the teddy bear a brown color for illustration to better distinguish it
-   from the bubble gripper in the visualizer. */
-  IllustrationProperties teddy_illustration_props;
-  teddy_illustration_props.AddProperty("phong", "diffuse",
-                                       Rgba(0.82, 0.71, 0.55, 1.0));
-  teddy_instance->set_illustration_properties(teddy_illustration_props);
-  deformable_model.RegisterDeformableBody(std::move(teddy_instance),
-                                          teddy_config, 1.0);
+  parser.AddModelsFromUrl(
+      "package://drake/examples/multibody/deformable/models/"
+      "deformable_teddy.sdf");
 
   /* All rigid and deformable models have been added. Finalize the plant. */
   plant.Finalize();

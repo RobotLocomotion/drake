@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "drake/common/text_logging.h"
+#include "drake/multibody/contact_solvers/eigen_block_3x3_sparse_symmetric_matrix.h"
 
 namespace drake {
 namespace multibody {
@@ -10,6 +11,7 @@ namespace fem {
 namespace internal {
 
 using contact_solvers::internal::Block3x3SparseSymmetricMatrix;
+using contact_solvers::internal::EigenBlock3x3SparseSymmetricMatrix;
 using contact_solvers::internal::SchurComplement;
 using LinearSolver =
     contact_solvers::internal::BlockSparseCholeskySolver<Matrix3<double>>;
@@ -37,18 +39,6 @@ void FemSolver<T>::Scratch::ReinitializeIfNeeded(const FemModel<T>& model) {
     b.resize(model.num_dofs());
     dz.resize(model.num_dofs());
     tangent_matrix = model.MakeTangentMatrix();
-    /* For non-linear models, we use a BlockSparseCholeskySolver to solve the
-     linear systems from Newton-Raphson iterations. This usually allow for
-     better elimination ordering. In addition, since the sparsity pattern
-     remains unchanged throughout Newton iterations, using the linear solver
-     prevents reallocation for the L matrix in the Cholesky factorizations. For
-     linear models, we use `schur_complement` to both solve the linear system
-     and to find the Schur complement to avoid factoring the matrix more times
-     than necessary.
-    */
-    if (!model.is_linear()) {
-      linear_solver.SetMatrix(*tangent_matrix);
-    }
   }
 }
 
@@ -93,6 +83,25 @@ int FemSolver<T>::AdvanceOneTimeStep(
 }
 
 template <typename T>
+double FemSolver<T>::ComputeLinearSolverTolerance(
+    const double current_residual, const double previous_residual,
+    const double previous_tolerance) const {
+  /* first iteration */
+  if (previous_tolerance <= 0.0) {
+    return max_linear_solver_tolerance_;
+  }
+  /* ratio = ‖Fₖ‖/‖Fₖ₋₁‖  */
+  const double ratio = current_residual / previous_residual;
+  /* candidate = γ * ratio^α  with γ=1, α=2.
+   Eq.(2.6) [Eisenstat and Walker, 1996]*/
+  const double candidate = ratio * ratio;
+  /* Safe-guard to prevent the tolerance from being too small.
+   (Choice 2 safeguard in section 2.1 [Eisenstat and Walker, 1996]) */
+  const double safe_guard = previous_tolerance * previous_tolerance;
+  return std::clamp(candidate, safe_guard, max_linear_solver_tolerance_);
+}
+
+template <typename T>
 void FemSolver<T>::SetNextFemState(const FemState<T>& next_state) {
   next_state_and_schur_complement_.state->CopyFrom(next_state);
   next_state_and_schur_complement_.schur_complement =
@@ -119,7 +128,7 @@ int FemSolver<T>::SolveLinearModel(
   model_->ApplyBoundaryCondition(&state);
   model_->CalcResidual(state, plant_data, &b);
   T residual_norm = b.norm();
-  model_->CalcTangentMatrix(state, integrator_->GetWeights(), &tangent_matrix);
+  model_->CalcTangentMatrix(state, &tangent_matrix);
   next_state_and_schur_complement_.schur_complement =
       contact_solvers::internal::SchurComplement(tangent_matrix,
                                                  nonparticipating_vertices);
@@ -139,13 +148,16 @@ int FemSolver<T>::SolveNonlinearModel(
   VectorX<T>& b = scratch_.b;
   VectorX<T>& dz = scratch_.dz;
   Block3x3SparseSymmetricMatrix& tangent_matrix = *scratch_.tangent_matrix;
-  LinearSolver& linear_solver = scratch_.linear_solver;
   FemState<T>& state = *next_state_and_schur_complement_.state;
-
   model_->ApplyBoundaryCondition(&state);
   model_->CalcResidual(state, plant_data, &b);
   T residual_norm = b.norm();
   const T initial_residual_norm = residual_norm;
+  T prev_residual_norm = residual_norm;
+  Eigen::ConjugateGradient<EigenBlock3x3SparseSymmetricMatrix,
+                           Eigen::Lower | Eigen::Upper>
+      cg;
+  double prev_cg_tolerance = 0;
   int iter = 0;
   /* For non-linear FEM models, the system of equations is non-linear and we use
    a Newton-Raphson solver. We iterate until any of the following is true:
@@ -156,19 +168,20 @@ int FemSolver<T>::SolveNonlinearModel(
   while (iter < max_iterations_ &&
          /* On first iteration, this is equivalent to residual_norm < abs_tol */
          !solver_converged(residual_norm, initial_residual_norm)) {
-    model_->CalcTangentMatrix(state, integrator_->GetWeights(),
-                              &tangent_matrix);
-    linear_solver.UpdateMatrix(tangent_matrix);
-    const bool factored = linear_solver.Factor();
-    if (!factored) {
-      throw std::runtime_error(
-          "Tangent matrix factorization failed in FemSolver because the FEM "
-          "tangent matrix is not symmetric positive definite (SPD). This may "
-          "be triggered by a combination of a stiff nonlinear constitutive "
-          "model and a large time step.");
+    model_->CalcTangentMatrix(state, &tangent_matrix);
+    const EigenBlock3x3SparseSymmetricMatrix wrapper(&tangent_matrix,
+                                                     model_->parallelism());
+    const double cg_tolerance = ComputeLinearSolverTolerance(
+        residual_norm, prev_residual_norm, prev_cg_tolerance);
+    cg.setTolerance(cg_tolerance);
+    cg.compute(wrapper);
+    if (cg.info() != Eigen::Success) {
+      return -1;
     }
-    dz = linear_solver.Solve(-b);
+    dz = cg.solve(-b);
     integrator_->UpdateStateFromChangeInUnknowns(dz, &state);
+    prev_residual_norm = residual_norm;
+    prev_cg_tolerance = cg_tolerance;
     model_->CalcResidual(state, plant_data, &b);
     residual_norm = b.norm();
     ++iter;
@@ -178,7 +191,7 @@ int FemSolver<T>::SolveNonlinearModel(
     return -1;
   }
   /* Build the Schur complement after the Newton iterations have converged. */
-  model_->CalcTangentMatrix(state, integrator_->GetWeights(), &tangent_matrix);
+  model_->CalcTangentMatrix(state, &tangent_matrix);
   next_state_and_schur_complement_.schur_complement =
       contact_solvers::internal::SchurComplement(tangent_matrix,
                                                  nonparticipating_vertices);

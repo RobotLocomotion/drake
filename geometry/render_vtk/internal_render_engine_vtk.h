@@ -174,7 +174,7 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
                         const PerceptionProperties& properties,
                         const math::RigidTransformd& X_WG) override;
 
-  // @see RenderEngine::DoRegisterDeforambleVisual().
+  // @see RenderEngine::DoRegisterDeformableVisual().
   bool DoRegisterDeformableVisual(
       GeometryId id,
       const std::vector<geometry::internal::RenderMesh>& render_meshes,
@@ -209,6 +209,9 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   void DoRenderLabelImage(
       const render::ColorRenderCamera& camera,
       systems::sensors::ImageLabel16I* label_image_out) const override;
+
+  // @see RenderEngine::DoGetParameterYaml().
+  std::string DoGetParameterYaml() const override;
 
   // Helper function for mapping a RenderMesh instance into the appropriate VTK
   // polydata.

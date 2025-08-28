@@ -383,61 +383,36 @@ void SpatialInertia<T>::ThrowIfNotPhysicallyValidImpl() const {
     throw std::runtime_error(*invalidity_report);
   }
 }
+
 template <typename T>
 SpatialInertia<T>& SpatialInertia<T>::operator+=(
     const SpatialInertia<T>& M_BP_E) {
-  const T total_mass = get_mass() + M_BP_E.get_mass();
-  if (total_mass != 0) {
-    p_PScm_E_ = (CalcComMoment() + M_BP_E.CalcComMoment()) / total_mass;
-    G_SP_E_.SetFromRotationalInertia(
-        CalcRotationalInertia() + M_BP_E.CalcRotationalInertia(), total_mass);
-  } else {
-    // Compose the spatial inertias of two massless bodies in the limit when
-    // the two bodies have the same mass. In this limit, p_PScm_E_ and G_SP_E_
-    // are the arithmetic mean of the constituent COMs and unit inertias.
-    p_PScm_E_ = 0.5 * (get_com() + M_BP_E.get_com());
-    G_SP_E_.SetFromRotationalInertia(
-        get_unit_inertia() + M_BP_E.get_unit_inertia(), 2.0);
-  }
+  T this_mass = get_mass();
+  T other_mass = M_BP_E.get_mass();
+  T total_mass = this_mass + other_mass;  // 1 flop
   mass_ = total_mass;
-  return *this;
-}
 
-template <typename T>
-void SpatialInertia<T>::ShiftFromCenterOfMassInPlace(
-    const Vector3<T>& p_ScmP_E) {
-  DRAKE_ASSERT(p_PScm_E_ == Vector3<T>::Zero());
-  G_SP_E_.ShiftFromCenterOfMassInPlace(p_ScmP_E);
-  p_PScm_E_ = -p_ScmP_E;
-  // On entry, `this` is M_SScm_E. On return, `this` is M_SP_E.
-}
+  // For two massless bodies we just want the arithmetic mean of the COMs
+  // and unit inertias. Lie about the mass properties to make this happen below.
+  // (Skip for symbolic T.)
+  if constexpr (scalar_predicate<T>::is_bool) {
+    if (total_mass == 0) {
+      DRAKE_ASSERT(this_mass == 0 && other_mass == 0);  // No negative mass!
+      this_mass = other_mass = 1;
+      total_mass = 2;
+    }
+  }
 
-template <typename T>
-SpatialInertia<T> SpatialInertia<T>::ShiftFromCenterOfMass(
-    const Vector3<T>& p_ScmP_E) const {
-  SpatialInertia result(*this);
-  result.ShiftFromCenterOfMassInPlace(p_ScmP_E);
-  return result;
-}
+  const T one_over_total_mass = 1 / total_mass;             // ~6 flops
+  const T this_factor = this_mass * one_over_total_mass;    // 1 flop
+  const T other_factor = other_mass * one_over_total_mass;  // 1 flop
+  p_PScm_E_ =                                               // 9 flops
+      this_factor * get_com() + other_factor * M_BP_E.get_com();
 
-template <typename T>
-void SpatialInertia<T>::ShiftToCenterOfMassInPlace() {
-  G_SP_E_.ShiftToCenterOfMassInPlace(p_PScm_E_);
-  p_PScm_E_ = Vector3<T>::Zero();
-  // On entry, `this` is M_SP_E. On return, `this` is M_SScm_E.
-}
-
-template <typename T>
-void SpatialInertia<T>::ShiftInPlace(const Vector3<T>& p_PQ_E) {
-  const Vector3<T> p_QScm_E = p_PScm_E_ - p_PQ_E;
-  // The following two lines apply the parallel axis theorem (in place) so that:
-  //  G_SQ = G_SP + px_QScm² - px_PScm²
-  G_SP_E_.ShiftFromCenterOfMassInPlace(p_QScm_E);
-  G_SP_E_.ShiftToCenterOfMassInPlace(p_PScm_E_);
-  p_PScm_E_ = p_QScm_E;
-  // Note: It would be an implementation bug if a shift starts with a valid
-  // spatial inertia and the shift produces an invalid spatial inertia.
-  // Hence, no need to use DRAKE_ASSERT_VOID(CheckInvariants()).
+  // 18 flops (lower triangle only)
+  G_SP_E_ = UnitInertia<T>(this_factor * get_unit_inertia() +
+                           other_factor * M_BP_E.get_unit_inertia());
+  return *this;  // total ~36 flops
 }
 
 template <typename T>
@@ -452,10 +427,10 @@ SpatialForce<T> SpatialInertia<T>::operator*(
   return SpatialForce<T>(
       // Note: p_PScm_E here is p_BoBcm in the above notation.
       // Rotational
-      mass_ * (G_SP_E_ * alpha_WB_E + p_PScm_E_.cross(a_WBo_E)),
+      mass_ * (G_SP_E_ * alpha_WB_E + p_PScm_E_.cross(a_WBo_E)),  // 30 flops
       // Translational: notice the order of the cross product is the reversed
       // of the documentation above and thus no minus sign is needed.
-      mass_ * (alpha_WB_E.cross(p_PScm_E_) + a_WBo_E));
+      mass_ * (alpha_WB_E.cross(p_PScm_E_) + a_WBo_E));  // 15 flops
 }
 
 template <typename T>
@@ -470,10 +445,10 @@ SpatialMomentum<T> SpatialInertia<T>::operator*(
   return SpatialMomentum<T>(
       // Note: p_PScm_E here is p_BoBcm in the above notation.
       // Rotational
-      mass_ * (G_SP_E_ * w_WB_E + p_PScm_E_.cross(v_WP_E)),
+      mass_ * (G_SP_E_ * w_WB_E + p_PScm_E_.cross(v_WP_E)),  // 30 flops
       // Translational: notice the order of the cross product is the reversed
       // of the documentation above and thus no minus sign is needed.
-      mass_ * (w_WB_E.cross(p_PScm_E_) + v_WP_E));
+      mass_ * (w_WB_E.cross(p_PScm_E_) + v_WP_E));  // 15 flops
 }
 
 template <typename T>

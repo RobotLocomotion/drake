@@ -37,8 +37,18 @@ def add_library_paths(parameters=None):
             if os.path.exists(sdkroot):
                 parameters += ['-isysroot', sdkroot]
     elif platform.system() == 'Linux':
-        # We expect Clang 15 to be installed.
+        # By default we expect Clang 15 to be installed, but on Ubuntu 24.04
+        # we'll use Clang 19 for compatibility with GCC 14.
         version = 15
+        try:
+            completed_process = subprocess.run(['lsb_release', '-sr'],
+                                               stdout=subprocess.PIPE,
+                                               encoding='utf-8')
+            if completed_process.returncode == 0:
+                if completed_process.stdout.strip() == '24.04':
+                    version = 19
+        except Exception:
+            pass
         arch = platform.machine()
         llvm_root = f'/usr/lib64/llvm{version}'
         if os.path.exists(llvm_root):

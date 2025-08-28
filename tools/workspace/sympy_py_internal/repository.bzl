@@ -6,8 +6,8 @@ def sympy_py_internal_repository(
     github_archive(
         name = name,
         repository = "sympy/sympy",
-        commit = "1.13.3",
-        sha256 = "3dbbbd837ce027285081d1497e8c6aab3bbd197dc7d8990c3f367de99436a6c2",  # noqa
+        commit = "1.14.0",
+        sha256 = "813eecbf60fdf4c692cc1cdb30b940072160f4ab0421fa5d7aaa7a8a8c596615",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

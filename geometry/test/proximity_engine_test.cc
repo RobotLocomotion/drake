@@ -17,6 +17,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/geometry_state.h"
 #include "drake/geometry/proximity/deformable_contact_internal.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/proximity/mesh_distance_boundary.h"
@@ -1241,6 +1242,55 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceToPointNonPositiveThreshold) {
                                             -kPenetration * 0.5 - kEps);
     EXPECT_EQ(results_barely_out.size(), 0u);
   }
+}
+
+// ProximityEngine::ComputeSignedDistanceGeometryToPoint() does no math. It is
+// simply responsible for acquiring the indicated geometry (if possible,
+// throwing if not), bundling it up with the query point, forwarding it to the
+// callback, and returning the measured result. We'll be testing that
+// functionality.
+GTEST_TEST(ProximityEngineTests, SignedDistanceGeometryToPoint) {
+  const double kRadius = 0.5;
+
+  const GeometryId dynamic_id = GeometryId::get_new_id();
+  const GeometryId anchored_id = GeometryId::get_new_id();
+  DRAKE_DEMAND(dynamic_id < anchored_id);
+  const GeometryId bad_id = GeometryId::get_new_id();
+  // Two different arbitrary poses: one for dynamic, one for anchored.
+  const RigidTransformd X_WD(Vector3d(-10, -11, -12));
+  const RigidTransformd X_WA(Vector3d(-9, -8, 7));
+  const unordered_map<GeometryId, RigidTransformd> X_WGs{{dynamic_id, X_WD},
+                                                         {anchored_id, X_WA}};
+
+  Sphere sphere{kRadius};
+
+  std::unordered_set<GeometryId> ids{anchored_id, dynamic_id};
+
+  ProximityEngine<double> engine;
+
+  engine.AddAnchoredGeometry(sphere, X_WA, anchored_id);
+  engine.AddDynamicGeometry(sphere, X_WD, dynamic_id);
+  engine.UpdateWorldPoses(X_WGs);
+
+  // Point in arbitrary point away from the origin.
+  const Vector3d p_WQ{1, 2, 3};
+
+  const std::vector<SignedDistanceToPoint<double>> result =
+      engine.ComputeSignedDistanceGeometryToPoint(p_WQ, X_WGs, ids);
+
+  // Confirm ordering.
+  EXPECT_EQ(result.size(), 2);
+  EXPECT_EQ(result[0].id_G, dynamic_id);
+  EXPECT_EQ(result[1].id_G, anchored_id);
+  // Confirm distance.
+  EXPECT_DOUBLE_EQ(result[0].distance,
+                   (X_WD.translation() - p_WQ).norm() - kRadius);
+  EXPECT_DOUBLE_EQ(result[1].distance,
+                   (X_WA.translation() - p_WQ).norm() - kRadius);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.ComputeSignedDistanceGeometryToPoint(p_WQ, X_WGs, {bad_id}),
+      ".*does not reference a geometry.*signed distance query");
 }
 
 // We put two small spheres with radius 0.1 centered at (1,1,1) and
@@ -4655,10 +4705,14 @@ class ProximityEngineDeformableContactTest : public testing::Test {
         const_cast<internal::deformable::Geometries*>(&geometries));
   }
 
-  ProximityProperties MakeProximityPropsWithRezHint(double resolution_hint) {
+  // Makes proximity properties that allows a geometry to be registered as a
+  // rigid geometry for deformable contact.
+  ProximityProperties MakeProximityPropsForRigidGeometry(
+      double resolution_hint) {
     ProximityProperties props;
     props.AddProperty(internal::kHydroGroup, internal::kRezHint,
                       resolution_hint);
+    props.AddProperty(internal::kHydroGroup, internal::kElastic, 1e6);
     return props;
   }
 
@@ -4683,15 +4737,33 @@ class ProximityEngineDeformableContactTest : public testing::Test {
         deformable_contact_geometries(), id);
   }
 
-  // Registers a deformable sphere with the proximity engine. Returns the id of
-  // the newly registered geometry.
+  // Given the volume mesh of a deformable geometry, registers it with the
+  // proximity engine and stores the driven mesh data in the testing class.
+  void AddDeformableGeometry(const VolumeMesh<double>& mesh, GeometryId id) {
+    std::vector<int> surface_vertices;
+    std::vector<int> surface_tri_to_volume_tet;
+    TriangleSurfaceMesh<double> surface_mesh =
+        ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+            mesh, &surface_vertices, &surface_tri_to_volume_tet);
+    engine_.AddDeformableGeometry(mesh, surface_mesh, surface_vertices,
+                                  surface_tri_to_volume_tet, id);
+
+    VertexSampler vertex_sampler(std::move(surface_vertices), mesh);
+    std::vector<DrivenTriangleMesh> driven_meshes;
+    driven_meshes.emplace_back(vertex_sampler, surface_mesh);
+    driven_mesh_data_.SetMeshes(id, std::move(driven_meshes));
+  }
+
+  // Registers a deformable sphere with the proximity engine and stores the
+  // driven mesh data in the testing class. Returns the id of the
+  // newly registered geometry.
   GeometryId AddDeformableSphere() {
     constexpr double kResolutionHint = 0.5;
     Sphere sphere(kSphereRadius);
     const VolumeMesh<double> input_mesh = MakeSphereVolumeMesh<double>(
         sphere, kResolutionHint, TessellationStrategy::kDenseInteriorVertices);
     const GeometryId id = GeometryId::get_new_id();
-    engine_.AddDeformableGeometry(input_mesh, id);
+    AddDeformableGeometry(input_mesh, id);
     return id;
   }
 
@@ -4750,6 +4822,7 @@ class ProximityEngineDeformableContactTest : public testing::Test {
   }
 
   ProximityEngine<double> engine_;
+  internal::DrivenMeshData driven_mesh_data_;
 };
 
 // Tests that registration of supported rigid (non-deformable) geometries make
@@ -4757,7 +4830,7 @@ class ProximityEngineDeformableContactTest : public testing::Test {
 // Also verifies that no geometry is added if the resolution hint property is
 // missing.
 TEST_F(ProximityEngineDeformableContactTest, AddSupportedRigidGeometries) {
-  ProximityProperties valid_props = MakeProximityPropsWithRezHint(1.0);
+  ProximityProperties valid_props = MakeProximityPropsForRigidGeometry(1.0);
   ProximityProperties empty_props;
   {
     Sphere sphere(0.5);
@@ -4798,9 +4871,9 @@ TEST_F(ProximityEngineDeformableContactTest, AddSupportedRigidGeometries) {
 }
 
 // Tests that registration of geometries supported by ProximityEngine but not
-// supported by deforamble contact (aka HalfSpace) doesn't throw.
+// supported by deformable contact (aka HalfSpace) doesn't throw.
 TEST_F(ProximityEngineDeformableContactTest, AddUnsupportedRigidGeometries) {
-  ProximityProperties valid_props = MakeProximityPropsWithRezHint(1.0);
+  ProximityProperties valid_props = MakeProximityPropsForRigidGeometry(1.0);
   HalfSpace half_space;
   EXPECT_NO_THROW(
       TestRigidRegistrationAndRemoval(half_space, valid_props, false));
@@ -4838,7 +4911,7 @@ TEST_F(ProximityEngineDeformableContactTest, ReplacePropertiesRigid) {
   // Case: The new properties have resolution hint while the old do not; this
   // should add a new deformable contact rigid representation.
   {
-    ProximityProperties props = MakeProximityPropsWithRezHint(1.0);
+    ProximityProperties props = MakeProximityPropsForRigidGeometry(1.0);
     DRAKE_EXPECT_NO_THROW(
         engine_.UpdateRepresentationForNewProperties(sphere, props));
     EXPECT_TRUE(deformable_contact_geometries().is_rigid(sphere.id()));
@@ -4852,18 +4925,16 @@ TEST_F(ProximityEngineDeformableContactTest, ReplacePropertiesRigid) {
         deformable::GeometriesTester::get_rigid_geometry(
             deformable_contact_geometries(), sphere.id());
     const RigidTransformd X_WG_old = geometry_old.pose_in_world();
-    const int num_vertices_old =
-        geometry_old.rigid_mesh().mesh().num_vertices();
+    const int num_vertices_old = geometry_old.mesh().mesh().num_vertices();
 
-    ProximityProperties props = MakeProximityPropsWithRezHint(0.5);
+    ProximityProperties props = MakeProximityPropsForRigidGeometry(0.5);
     engine_.UpdateRepresentationForNewProperties(sphere, props);
 
     const deformable::RigidGeometry geometry_new =
         deformable::GeometriesTester::get_rigid_geometry(
             deformable_contact_geometries(), sphere.id());
     const RigidTransformd X_WG_new = geometry_new.pose_in_world();
-    const int num_vertices_new =
-        geometry_new.rigid_mesh().mesh().num_vertices();
+    const int num_vertices_new = geometry_new.mesh().mesh().num_vertices();
 
     EXPECT_TRUE(deformable_contact_geometries().is_rigid(sphere.id()));
     EXPECT_TRUE(X_WG_new.IsExactlyEqualTo(X_WG_old));
@@ -4899,7 +4970,7 @@ TEST_F(ProximityEngineDeformableContactTest, ReplacePropertiesDeformable) {
   // Case: The new and old properties are both valid proximity properties. The
   // update is a no-op in this case.
   ProximityProperties props;
-  engine_.AddDeformableGeometry(*sphere.reference_mesh(), sphere.id());
+  AddDeformableGeometry(*sphere.reference_mesh(), sphere.id());
   EXPECT_TRUE(deformable_contact_geometries().is_deformable(sphere.id()));
   const internal::deformable::DeformableGeometry& old_geometry =
       deformable_geometry(sphere.id());
@@ -4909,17 +4980,17 @@ TEST_F(ProximityEngineDeformableContactTest, ReplacePropertiesDeformable) {
   const internal::deformable::DeformableGeometry& new_geometry =
       deformable_geometry(sphere.id());
   // Verify that the content didn't change.
-  EXPECT_TRUE(old_geometry.deformable_mesh().mesh().Equal(
-      new_geometry.deformable_mesh().mesh()));
-  EXPECT_TRUE(old_geometry.deformable_mesh().bvh().Equal(
-      new_geometry.deformable_mesh().bvh()));
+  EXPECT_TRUE(old_geometry.deformable_volume().mesh().Equal(
+      new_geometry.deformable_volume().mesh()));
+  EXPECT_TRUE(old_geometry.deformable_volume().bvh().Equal(
+      new_geometry.deformable_volume().bvh()));
   EXPECT_TRUE(old_geometry.CalcSignedDistanceField().Equal(
       new_geometry.CalcSignedDistanceField()));
   // Verify that the address didn't change either; so it's indeed an no-op.
-  EXPECT_EQ(&old_geometry.deformable_mesh().mesh(),
-            &new_geometry.deformable_mesh().mesh());
-  EXPECT_EQ(&old_geometry.deformable_mesh().bvh(),
-            &new_geometry.deformable_mesh().bvh());
+  EXPECT_EQ(&old_geometry.deformable_volume().mesh(),
+            &new_geometry.deformable_volume().mesh());
+  EXPECT_EQ(&old_geometry.deformable_volume().bvh(),
+            &new_geometry.deformable_volume().bvh());
 }
 
 TEST_F(ProximityEngineDeformableContactTest, AddAndRemoveDeformableGeometry) {
@@ -4932,7 +5003,7 @@ TEST_F(ProximityEngineDeformableContactTest, AddAndRemoveDeformableGeometry) {
 }
 
 TEST_F(ProximityEngineDeformableContactTest, UpdatePose) {
-  ProximityProperties props = MakeProximityPropsWithRezHint(1.0);
+  ProximityProperties props = MakeProximityPropsForRigidGeometry(1.0);
   const GeometryId id = GeometryId::get_new_id();
   // Arbitrary initial pose of the rigid geometry.
   RollPitchYawd rpy(1, 2, 3);
@@ -4946,20 +5017,19 @@ TEST_F(ProximityEngineDeformableContactTest, UpdatePose) {
 }
 
 TEST_F(ProximityEngineDeformableContactTest, UpdateDeformablePositions) {
-  constexpr double kRezHint = 0.5;
-  Sphere sphere(kSphereRadius);
-  const VolumeMesh<double> input_mesh = MakeSphereVolumeMesh<double>(
-      sphere, kRezHint, TessellationStrategy::kDenseInteriorVertices);
-  const GeometryId id = GeometryId::get_new_id();
-  engine_.AddDeformableGeometry(input_mesh, id);
+  const GeometryId id = AddDeformableSphere();
+  const VolumeMesh<double>& mesh =
+      deformable_geometry(id).deformable_volume().mesh();
+  const int num_vertices = mesh.num_vertices();
   /* Update the vertex positions to some arbitrary value. */
   const VectorX<double> q =
-      VectorX<double>::LinSpaced(3 * input_mesh.num_vertices(), 0.0, 1.0);
-  engine_.UpdateDeformableVertexPositions({{id, q}});
-  const VolumeMesh<double>& mesh =
-      deformable_geometry(id).deformable_mesh().mesh();
-  for (int i = 0; i < input_mesh.num_vertices(); ++i) {
-    const Vector3d& q_MV = mesh.vertex(i);
+      VectorX<double>::LinSpaced(3 * num_vertices, 0.0, 1.0);
+  engine_.UpdateDeformableVertexPositions({{id, q}},
+                                          driven_mesh_data_.driven_meshes());
+  const VolumeMesh<double>& deformed_mesh =
+      deformable_geometry(id).deformable_volume().mesh();
+  for (int i = 0; i < num_vertices; ++i) {
+    const Vector3d& q_MV = deformed_mesh.vertex(i);
     const Vector3d& expected_q_MV = q.segment<3>(3 * i);
     EXPECT_EQ(q_MV, expected_q_MV);
   }
@@ -4972,8 +5042,10 @@ TEST_F(ProximityEngineDeformableContactTest, ComputeDeformableContact) {
 
   // Add a rigid sphere partially overlapping the deformable sphere.
   const GeometryId rigid_id = GeometryId::get_new_id();
-  ProximityProperties props = MakeProximityPropsWithRezHint(1.0);
-  engine_.AddDynamicGeometry(Sphere(kSphereRadius), {}, rigid_id, props);
+  ProximityProperties props = MakeProximityPropsForRigidGeometry(1.0);
+  const Vector3d p_WR = Vector3d(kSphereRadius, 0, 0);
+  engine_.AddDynamicGeometry(Sphere(kSphereRadius), RigidTransformd(p_WR),
+                             rigid_id, props);
 
   // Verify the two spheres are in contact.
   DeformableContact<double> contact_data;
@@ -4988,19 +5060,24 @@ TEST_F(ProximityEngineDeformableContactTest, ComputeDeformableContact) {
   // in contact.
   const Vector3d offset_W(10, 0, 0);
   const VolumeMesh<double>& mesh =
-      deformable_geometry(deformable_id).deformable_mesh().mesh();
+      deformable_geometry(deformable_id).deformable_volume().mesh();
   Eigen::VectorXd q_WD(3 * mesh.num_vertices());
   for (int i = 0; i < mesh.num_vertices(); ++i) {
     q_WD.segment<3>(3 * i) = mesh.vertex(i) + offset_W;
   }
-  engine_.UpdateDeformableVertexPositions({{deformable_id, q_WD}});
+  std::unordered_map<GeometryId, Eigen::VectorXd> geometry_id_to_q_WD;
+  geometry_id_to_q_WD.insert({deformable_id, q_WD});
+  driven_mesh_data_.SetControlMeshPositions(geometry_id_to_q_WD);
+  engine_.UpdateDeformableVertexPositions(geometry_id_to_q_WD,
+                                          driven_mesh_data_.driven_meshes());
   engine_.ComputeDeformableContact(&contact_data);
   ASSERT_EQ(contact_data.contact_surfaces().size(), 0);
 
   // Shift the rigid geometry by the same offset and they are again in
   // contact.
   std::unordered_map<GeometryId, RigidTransformd> geometry_id_to_world_poses;
-  geometry_id_to_world_poses.insert({rigid_id, RigidTransformd(offset_W)});
+  geometry_id_to_world_poses.insert(
+      {rigid_id, RigidTransformd(p_WR + offset_W)});
   engine_.UpdateWorldPoses(geometry_id_to_world_poses);
   engine_.ComputeDeformableContact(&contact_data);
   ASSERT_EQ(contact_data.contact_surfaces().size(), 1);

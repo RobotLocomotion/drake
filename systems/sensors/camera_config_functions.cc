@@ -12,7 +12,9 @@
 #include "drake/common/never_destroyed.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/overloaded.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/render/render_camera.h"
+#include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render_gl/factory.h"
 #include "drake/geometry/render_gltf_client/factory.h"
 #include "drake/geometry/render_vtk/factory.h"
@@ -39,6 +41,7 @@ using geometry::RenderEngineVtkParams;
 using geometry::SceneGraph;
 using geometry::render::ColorRenderCamera;
 using geometry::render::DepthRenderCamera;
+using geometry::render::RenderEngine;
 using internal::AddSimRgbdSensor;
 using internal::AddSimRgbdSensorLcmPublisher;
 using internal::SimRgbdSensor;
@@ -66,22 +69,8 @@ const std::string& LookupEngineType(const std::string& class_name) {
   return type_lookup.access().at(class_name);
 }
 
-template <typename ParamsType>
-const char* GetEngineName(const ParamsType&) {
-  if constexpr (std::is_same_v<ParamsType, RenderEngineVtkParams>) {
-    return "RenderEngineVtk";
-  } else if constexpr (std::is_same_v<ParamsType, RenderEngineGlParams>) {
-    return "RenderEngineGl";
-    // NOLINTNEXTLINE(readability/braces) The line break confuses the linter.
-  } else if constexpr (std::is_same_v<ParamsType,
-                                      RenderEngineGltfClientParams>) {
-    return "RenderEngineGltfClient";
-  }
-}
-
-void MakeEngineByClassName(const std::string& class_name,
-                           const CameraConfig& config,
-                           SceneGraph<double>* scene_graph) {
+std::unique_ptr<RenderEngine> MakeEngineByClassName(
+    const std::string& class_name, const CameraConfig& config) {
   if (class_name == "RenderEngineGl") {
     if (!geometry::kHasRenderEngineGl) {
       throw std::logic_error(
@@ -89,12 +78,9 @@ void MakeEngineByClassName(const std::string& class_name,
           "is not supported in current build.");
     }
     RenderEngineGlParams params{.default_clear_color = config.background};
-    scene_graph->AddRenderer(config.renderer_name, MakeRenderEngineGl(params));
-    return;
+    return MakeRenderEngineGl(params);
   } else if (class_name == "RenderEngineGltfClient") {
-    scene_graph->AddRenderer(config.renderer_name,
-                             MakeRenderEngineGltfClient({}));
-    return;
+    return MakeRenderEngineGltfClient({});
   }
   // Note: if we add *other* supported render engine implementations, add the
   // logic for detecting and instantiating those types here.
@@ -105,7 +91,29 @@ void MakeEngineByClassName(const std::string& class_name,
   RenderEngineVtkParams params;
   const geometry::Rgba& rgba = config.background;
   params.default_clear_color = Vector3d{rgba.r(), rgba.g(), rgba.b()};
-  scene_graph->AddRenderer(config.renderer_name, MakeRenderEngineVtk(params));
+  return MakeRenderEngineVtk(params);
+}
+
+std::unique_ptr<RenderEngine> MakeEngine(const CameraConfig& config) {
+  return std::visit<std::unique_ptr<RenderEngine>>(
+      overloaded{[&config](const std::string& class_name) {
+                   return MakeEngineByClassName(class_name, config);
+                 },
+                 [](const RenderEngineVtkParams& params) {
+                   return MakeRenderEngineVtk(params);
+                 },
+                 [](const RenderEngineGlParams& params) {
+                   if (!geometry::kHasRenderEngineGl) {
+                     throw std::logic_error(
+                         "Invalid camera configuration; renderer_class = "
+                         "'RenderEngineGl' is not supported in current build.");
+                   }
+                   return MakeRenderEngineGl(params);
+                 },
+                 [](const RenderEngineGltfClientParams& params) {
+                   return MakeRenderEngineGltfClient(params);
+                 }},
+      config.renderer_class);
 }
 
 // Validates the render engine specification in `config`. If the specification
@@ -123,11 +131,13 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
   const std::string type_name =
       scene_graph->GetRendererTypeName(config.renderer_name);
 
-  // Non-empty type name says that it already exists.
-  bool already_exists = !type_name.empty();
+  std::unique_ptr<RenderEngine> engine_candidate = MakeEngine(config);
 
+  // Non-empty type name says that it already exists.
+  const bool already_exists = !type_name.empty();
   if (already_exists) {
-    std::visit<void>(
+    // It already exists. Do we have a collision?
+    std::visit<>(
         overloaded{
             [&type_name, &config](const std::string& class_name) {
               if (!class_name.empty() &&
@@ -139,42 +149,27 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
                     config.renderer_name, class_name, type_name));
               }
             },
-            [&config](auto&&) {
-              throw std::logic_error(fmt::format(
-                  "Invalid camera configuration; requested renderer_name "
-                  " = '{}' with renderer parameters, but the named renderer "
-                  "already exists. Only the first instance of the named "
-                  "renderer can use parameters.",
-                  config.renderer_name));
+            [scene_graph, &config, &engine_candidate](auto&&) {
+              const std::string candidate_yaml =
+                  engine_candidate->GetParameterYaml();
+              const std::string existing_yaml =
+                  scene_graph->GetRendererParameterYaml(config.renderer_name);
+              if (candidate_yaml != existing_yaml) {
+                throw std::logic_error(fmt::format(
+                    "Invalid camera configuration; requested renderer_name = "
+                    "'{}' with renderer parameters, but the named renderer "
+                    "already exists and doesn't match the given parameters",
+                    config.renderer_name));
+              }
             }},
         config.renderer_class);
+    // Either it exists and we've matched or we've thrown. Either way, no need
+    // to add.
+    return;
   }
 
-  if (already_exists) return;
-
-  std::visit<void>(
-      overloaded{
-          [&config, scene_graph](const std::string& class_name) {
-            MakeEngineByClassName(class_name, config, scene_graph);
-          },
-          [&config, scene_graph](const RenderEngineVtkParams& params) {
-            scene_graph->AddRenderer(config.renderer_name,
-                                     MakeRenderEngineVtk(params));
-          },
-          [&config, scene_graph](const RenderEngineGlParams& params) {
-            if (!geometry::kHasRenderEngineGl) {
-              throw std::logic_error(
-                  "Invalid camera configuration; renderer_class = "
-                  "'RenderEngineGl' is not supported in current build.");
-            }
-            scene_graph->AddRenderer(config.renderer_name,
-                                     MakeRenderEngineGl(params));
-          },
-          [&config, scene_graph](const RenderEngineGltfClientParams& params) {
-            scene_graph->AddRenderer(config.renderer_name,
-                                     MakeRenderEngineGltfClient(params));
-          }},
-      config.renderer_class);
+  // The candidate needs adding.
+  scene_graph->AddRenderer(config.renderer_name, std::move(engine_candidate));
 }
 
 }  // namespace

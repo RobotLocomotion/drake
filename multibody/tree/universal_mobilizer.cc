@@ -19,11 +19,11 @@ template <typename T>
 UniversalMobilizer<T>::~UniversalMobilizer() = default;
 
 template <typename T>
-std::unique_ptr<internal::BodyNode<T>> UniversalMobilizer<T>::CreateBodyNode(
-    const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+std::unique_ptr<BodyNode<T>> UniversalMobilizer<T>::CreateBodyNode(
+    const BodyNode<T>* parent_node, const RigidBody<T>* body,
     const Mobilizer<T>* mobilizer) const {
-  return std::make_unique<internal::BodyNodeImpl<T, UniversalMobilizer>>(
-      parent_node, body, mobilizer);
+  return std::make_unique<BodyNodeImpl<T, UniversalMobilizer>>(parent_node,
+                                                               body, mobilizer);
 }
 
 template <typename T>
@@ -158,22 +158,28 @@ void UniversalMobilizer<T>::DoCalcNplusMatrix(
 }
 
 template <typename T>
-void UniversalMobilizer<T>::MapVelocityToQDot(
+void UniversalMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>&,
+                                             EigenPtr<MatrixX<T>> Ndot) const {
+  *Ndot = Matrix2<T>::Zero();
+}
+
+template <typename T>
+void UniversalMobilizer<T>::DoCalcNplusDotMatrix(
+    const systems::Context<T>&, EigenPtr<MatrixX<T>> NplusDot) const {
+  *NplusDot = Matrix2<T>::Zero();
+}
+
+template <typename T>
+void UniversalMobilizer<T>::DoMapVelocityToQDot(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
-  DRAKE_ASSERT(v.size() == kNv);
-  DRAKE_ASSERT(qdot != nullptr);
-  DRAKE_ASSERT(qdot->size() == kNq);
   *qdot = v;
 }
 
 template <typename T>
-void UniversalMobilizer<T>::MapQDotToVelocity(
+void UniversalMobilizer<T>::DoMapQDotToVelocity(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& qdot,
     EigenPtr<VectorX<T>> v) const {
-  DRAKE_ASSERT(qdot.size() == kNq);
-  DRAKE_ASSERT(v != nullptr);
-  DRAKE_ASSERT(v->size() == kNv);
   *v = qdot;
 }
 

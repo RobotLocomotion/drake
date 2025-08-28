@@ -1,8 +1,8 @@
 #include "drake/multibody/plant/multibody_plant.h"
 
-#include <functional>
 #include <limits>
 #include <memory>
+#include <numbers>
 #include <regex>
 #include <set>
 #include <tuple>
@@ -16,7 +16,6 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/limit_malloc.h"
-#include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_object.h"
@@ -43,12 +42,12 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/universal_joint.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/linear_system.h"
-#include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
 
@@ -380,7 +379,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       "Post-finalize calls to '.*' are not allowed; "
       "calls to this method must happen before Finalize\\(\\).");
   // TODO(amcastro-tri): add test to verify that requesting a joint of the wrong
-  // type throws an exception. We need another joint type to do so.
+  //  type throws an exception. We need another joint type to do so.
 
   // Get frame indices by model_instance
   const std::vector<FrameIndex> acrobot_frame_indices =
@@ -1820,10 +1819,13 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesKinematicallyAffectedBy) {
   plant.Finalize();
   EXPECT_EQ(plant.GetBodiesKinematicallyAffectedBy(joints1), expected_bodies1);
 
-  // Test throw condition: weld joint.
+  // Adding a weld joint doesn't change the result; still the same bodies
+  // based on the non-weld joints.
   const std::vector<JointIndex> joints2{shoulder, elbow};
-  DRAKE_EXPECT_THROWS_MESSAGE(plant.GetBodiesKinematicallyAffectedBy(joints2),
-                              ".*joint with index.*welded.");
+  EXPECT_EQ(plant.GetBodiesKinematicallyAffectedBy(joints2), expected_bodies1);
+
+  // Passing only a weld joint produces no bodies.
+  EXPECT_TRUE(plant.GetBodiesKinematicallyAffectedBy({elbow}).empty());
 
   // Test throw condition: unregistered joint.
   std::vector<JointIndex> joint100{JointIndex(100)};
@@ -1846,14 +1848,7 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldJoint) {
   // rotate 90°. Just need to avoid roundoff troubles.
   constexpr double kTolerance = 16 * std::numeric_limits<double>::epsilon();
   const double g = UniformGravityFieldElement<double>::kDefaultStrength;
-
-  // We need a plant to start with but we aren't using anything that depends
-  // on this one specifically. We'll add some bodies and joints that reflect
-  // the conditions we want to test.
-  const std::string sdf_url =
-      "package://drake/multibody/plant/test/split_pendulum.sdf";
   MultibodyPlant<double> plant(0.0);
-  Parser(&plant).AddModelsFromUrl(sdf_url);
 
   // Coincident frames test: We expect the sign of the reaction force to account
   // for the possibility that a Drake user may create a "weird" weld joint with
@@ -1979,26 +1974,280 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldJoint) {
       kTolerance));
 }
 
-GTEST_TEST(MultibodyPlantTest, UnsupportedReversedJoint) {
-  // We need a plant to start with but we aren't using anything that depends
-  // on this one specifically.
-  const std::string sdf_url =
-      "package://drake/multibody/plant/test/split_pendulum.sdf";
+GTEST_TEST(MultibodyPlantTest, ReversedRevoluteJoint) {
+  const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
   MultibodyPlant<double> plant(0.0);
-  Parser(&plant).AddModelsFromUrl(sdf_url);
 
-  // Add a body with parent=reverse_body, child=world. This is only allowed
-  // for Weld joints currently.
+  // Add a normal body which we'll use as the child of a revolute joint.
+  const RigidBody<double>& body = plant.AddRigidBody(
+      "body", default_model_instance(), SpatialInertia<double>::MakeUnitary());
+  const RevoluteJoint<double>& revolute = plant.AddJoint<RevoluteJoint>(
+      "revolute", plant.world_body(), {}, body, {}, Vector3d(1, 1, 1));
+
+  // Add a body with parent=reverse_body, child=world.
   const RigidBody<double>& reverse_body =
       plant.AddRigidBody("reverse_body", default_model_instance(),
                          SpatialInertia<double>::MakeUnitary());
-  plant.AddJoint<RevoluteJoint>("reverse_revolute", reverse_body, {},
-                                plant.world_body(), {}, Vector3d(1, 0, 0));
+  const RevoluteJoint<double>& reverse_revolute =
+      plant.AddJoint<RevoluteJoint>("reverse_revolute", reverse_body, {},
+                                    plant.world_body(), {}, Vector3d(1, 1, 1));
+  EXPECT_NO_THROW(plant.Finalize());
+  auto context = plant.CreateDefaultContext();
+
+  for (int i = 0; i < 3; ++i) {
+    const double third = std::numbers::inv_sqrt3_v<double>;
+    EXPECT_NEAR(revolute.revolute_axis()[i], third, kTolerance);
+    EXPECT_NEAR(reverse_revolute.revolute_axis()[i], third, kTolerance);
+  }
+
+  // The forward and reverse joints should produce the same motion, but the
+  // meaning of the generalized coordinate q (angle) is reversed.
+  revolute.set_angle(&*context, 0.125);
+  EXPECT_EQ(revolute.get_angle(*context), 0.125);
+  reverse_revolute.set_angle(&*context, -0.125);
+  EXPECT_EQ(reverse_revolute.get_angle(*context), -0.125);
+
+  const RigidTransformd pose = body.EvalPoseInWorld(*context);
+  const RigidTransformd rpose = reverse_body.EvalPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(rpose.GetAsMatrix34(), pose.GetAsMatrix34(),
+                              kTolerance, MatrixCompareType::relative));
+
+  // Now check the velocities.
+  revolute.set_angular_rate(&*context, 1.5);
+  EXPECT_EQ(revolute.get_angular_rate(*context), 1.5);
+  reverse_revolute.set_angular_rate(&*context, -1.5);
+  EXPECT_EQ(reverse_revolute.get_angular_rate(*context), -1.5);
+  const SpatialVelocity<double>& velocity =
+      body.EvalSpatialVelocityInWorld(*context);
+  const SpatialVelocity<double>& rvelocity =
+      reverse_body.EvalSpatialVelocityInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(rvelocity.get_coeffs(), velocity.get_coeffs(),
+                              kTolerance, MatrixCompareType::relative));
+}
+
+GTEST_TEST(MultibodyPlantTest, ReversedPrismaticJoint) {
+  const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+  MultibodyPlant<double> plant(0.0);
+
+  // Add a normal body which we'll use as the child of a prismatic joint.
+  const RigidBody<double>& body = plant.AddRigidBody(
+      "body", default_model_instance(), SpatialInertia<double>::MakeUnitary());
+  const PrismaticJoint<double>& prismatic = plant.AddJoint<PrismaticJoint>(
+      "prismatic", plant.world_body(), {}, body, {}, Vector3d(1, 1, 1));
+
+  // Add a body ("reverse_body") and a joint ("reverse_prismatic") with
+  // parent=reverse_body, child=world.
+  const RigidBody<double>& reverse_body =
+      plant.AddRigidBody("reverse_body", default_model_instance(),
+                         SpatialInertia<double>::MakeUnitary());
+  const PrismaticJoint<double>& reverse_prismatic =
+      plant.AddJoint<PrismaticJoint>("reverse_prismatic", reverse_body, {},
+                                     plant.world_body(), {}, Vector3d(1, 1, 1));
+  EXPECT_NO_THROW(plant.Finalize());
+  auto context = plant.CreateDefaultContext();
+
+  for (int i = 0; i < 3; ++i) {
+    const double third = std::numbers::inv_sqrt3_v<double>;
+    EXPECT_NEAR(prismatic.translation_axis()[i], third, kTolerance);
+    EXPECT_NEAR(reverse_prismatic.translation_axis()[i], third, kTolerance);
+  }
+
+  // The forward and reverse joints should produce the same motion, but the
+  // meaning of the generalized coordinate q (translation) is reversed.
+  prismatic.set_translation(&*context, 0.125);
+  EXPECT_EQ(prismatic.get_translation(*context), 0.125);
+  reverse_prismatic.set_translation(&*context, -0.125);
+  EXPECT_EQ(reverse_prismatic.get_translation(*context), -0.125);
+
+  const RigidTransformd pose = body.EvalPoseInWorld(*context);
+  const RigidTransformd rpose = reverse_body.EvalPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(rpose.GetAsMatrix34(), pose.GetAsMatrix34(),
+                              kTolerance, MatrixCompareType::relative));
+
+  // Now check the velocities.
+  prismatic.set_translation_rate(&*context, 1.5);
+  EXPECT_EQ(prismatic.get_translation_rate(*context), 1.5);
+  reverse_prismatic.set_translation_rate(&*context, -1.5);
+  EXPECT_EQ(reverse_prismatic.get_translation_rate(*context), -1.5);
+  const SpatialVelocity<double>& velocity =
+      body.EvalSpatialVelocityInWorld(*context);
+  const SpatialVelocity<double>& rvelocity =
+      reverse_body.EvalSpatialVelocityInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(rvelocity.get_coeffs(), velocity.get_coeffs(),
+                              kTolerance, MatrixCompareType::relative));
+}
+
+GTEST_TEST(MultibodyPlantTest, UnsupportedReversedJoint) {
+  MultibodyPlant<double> plant(0.0);
+
+  // Add a body ("reverse_body") and a joint ("reverse_universal") with
+  // parent=reverse_body, child=world. Reversal is allowed for a limited set of
+  // joints, and UniversalJoint is not currently among them.
+  const RigidBody<double>& reverse_body =
+      plant.AddRigidBody("reverse_body", default_model_instance(),
+                         SpatialInertia<double>::MakeUnitary());
+  plant.AddJoint<UniversalJoint>("reverse_universal", reverse_body, {},
+                                 plant.world_body(), {});
+
+  // Check that the message (a) identifies Finalize() as the failed operation,
+  // (b) complains about the non-reversible joint, (c) lists the reversible
+  // ones (in alphabetical order), and (e) provides instructions about what to
+  // do to get around the problem.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.Finalize(),
+      ".*Finalize.*parent/child ordering.*universal joint reverse_universal"
+      ".*reversed.*does not support.*universal.*can be reversed.*"
+      ".*prismatic.*revolute.*weld.*Reverse.*ordering.*");
+}
+
+// This test verifies that these two issues are fixed:
+//  - #9939 (duplicate welds give a bad error message)
+//  - #17429 (can't weld anything but base link)
+//
+// Issue #17429 complained that welding a non-base body to World failed.
+// This is a model of the system shown in that issue:
+//     base -p-> waist -r-> waist1 -r-> waist2 -r-> torso -r-> arm
+//       legend: p=prismatic, r=revolute, parent -> child
+// When "base" is welded to World, the parent->child directions are preserved
+// as inboard->outboard directions in the tree. But if we weld "waist" or
+// "torso" to World then some of the tree's mobilizers have to be reversed from
+// the joints. That should work as of PR #22949 (2025-04-30).
+GTEST_TEST(MultibodyPlantTest, WeldOfNonBaseBody) {
+  auto fill_plant = [](MultibodyPlant<double>* plant) {
+    const auto& base = plant->AddRigidBody("base");
+    const auto& waist = plant->AddRigidBody("waist");
+    const auto& waist1 = plant->AddRigidBody("waist1");
+    const auto& waist2 = plant->AddRigidBody("waist2");
+    const auto& torso = plant->AddRigidBody("torso");
+    const auto& arm = plant->AddRigidBody("arm");
+
+    plant->AddJoint<PrismaticJoint>("prismatic_z", base, {}, waist, {},
+                                    Vector3d(0, 0, 1));
+    plant->AddJoint<RevoluteJoint>("torso_joint1", waist, {}, waist1, {},
+                                   Vector3d(1, 0, 0));
+    plant->AddJoint<RevoluteJoint>("torso_joint2", waist1, {}, waist2, {},
+                                   Vector3d(0, 1, 0));
+    plant->AddJoint<RevoluteJoint>("torso_joint3", waist2, {}, torso, {},
+                                   Vector3d(0, 1, 0));
+    plant->AddJoint<RevoluteJoint>("shoulder", torso, {}, arm, {},
+                                   Vector3d(1, 1, 1));
+  };
+
+  // Issue #17429, first with no welds so the robot is floating.
+  MultibodyPlant<double> floating(0.0);
+  fill_plant(&floating);
+  EXPECT_NO_THROW(floating.Finalize());
+
+  // Issue #17429, the three welded cases mentioned above.
+  for (auto body : {"base", "waist", "torso"}) {
+    MultibodyPlant<double> plant(0.0);
+    fill_plant(&plant);
+    plant.AddJoint<WeldJoint>("body_to_world", plant.world_body(), {},
+                              plant.GetRigidBodyByName(body), {},
+                              RigidTransformd());
+    EXPECT_NO_THROW(plant.Finalize());
+  }
+
+  // Issue #9939, verify that welding the same body twice now produces a
+  // reasonable error message.
+  MultibodyPlant<double> bad_double_weld(0.0);
+  fill_plant(&bad_double_weld);
+  bad_double_weld.AddJoint<WeldJoint>(
+      "base_to_world1", bad_double_weld.world_body(), {},
+      bad_double_weld.GetRigidBodyByName("base"), {}, RigidTransformd());
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      bad_double_weld.AddJoint<WeldJoint>(
+          "base_to_world2", bad_double_weld.world_body(), {},
+          bad_double_weld.GetRigidBodyByName("base"), {}, RigidTransformd()),
+      "AddJoint.*already.*base_to_world1.*world.*base.*base_to_world2.*"
+      "not allowed.*");
+
+  // The attempt to add the redundant joint should have been ignored.
+  EXPECT_NO_THROW(bad_double_weld.Finalize());
+}
+
+// Currently we don't support automatic modeling of systems where the links
+// and joints form topological loops. Make sure we reject those for now.
+GTEST_TEST(MultibodyPlantTest, UnsupportedTopologicalLoop) {
+  MultibodyPlant<double> plant(0.0);
+
+  // Create a loop with two bodies:
+  //   World->body1->body2<-World
+  const RigidBody<double>& body1 = plant.AddRigidBody(
+      "body1", default_model_instance(), SpatialInertia<double>::MakeUnitary());
+  const RigidBody<double>& body2 = plant.AddRigidBody(
+      "body2", default_model_instance(), SpatialInertia<double>::MakeUnitary());
+  plant.AddJoint<RevoluteJoint>("joint1", plant.world_body(), {}, body1, {},
+                                Vector3d(0, 0, 1));
+  plant.AddJoint<RevoluteJoint>("joint2", body1, {}, body2, {},
+                                Vector3d(0, 0, 1));
+  plant.AddJoint<RevoluteJoint>("joint3", plant.world_body(), {}, body2, {},
+                                Vector3d(0, 0, 1));
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.Finalize(),
-      ".*Finalize.*parent/child ordering.*revolute joint reverse_revolute"
-      ".*reversed.*");
+      "The bodies and joints of this system form one or more loops.*");
+}
+
+// Position kinematics attempts to optimize for cases when X_PF or X_MB are
+// identity matrices. That makes for four distinct cases which we'll engineer
+// here and check that we get X_PB = X_PF * X_FM * X_MB in all cases. We'll
+// avoid any special handling of World by making four systems like this:
+//    World -> parent => child
+// with the joint "=>" being the one we'll check. We don't have direct control
+// over F and M since we only get to specify Jp and Jc for a joint so we'll
+// check to make sure we're testing the right cases. It's sufficient to use
+// easy-to-calculate translations here (no rotations) since we just want to
+// see if the right transforms got applied.
+GTEST_TEST(MultibodyTree, PositionKinematicsFrameOptimizations) {
+  // Test one case, see CalcPositionKinematicsCache_BaseToTip() in
+  // body_node_impl.cc for correspondence.
+  auto test_case = [](int which_case) {
+    const bool X_PF_is_identity = which_case & 0b01;
+    const bool X_BM_is_identity = which_case & 0b10;
+
+    const RigidTransformd X_PJp = X_PF_is_identity
+                                      ? RigidTransformd()
+                                      : RigidTransformd(Vector3d(10, 11, 12));
+
+    const RigidTransformd X_CJc = X_BM_is_identity
+                                      ? RigidTransformd()
+                                      : RigidTransformd(Vector3d(7, 8, 9));
+
+    MultibodyPlant<double> plant(0.0);
+
+    const RigidBody<double>& parent0 = plant.AddRigidBody("parent0");
+    const RigidBody<double>& child0 = plant.AddRigidBody("child0");
+    const PrismaticJoint<double>& joint0 = plant.AddJoint<PrismaticJoint>(
+        "joint0", parent0, X_PJp, child0, X_CJc, Vector3d::UnitX());
+
+    plant.Finalize();
+    auto context = plant.CreateDefaultContext();
+
+    const internal::Mobilizer<double>& mobilizer0 = joint0.GetMobilizerInUse();
+    const RigidTransformd& X_PF =
+        mobilizer0.inboard_frame().EvalPoseInBodyFrame(*context);
+    const RigidTransformd& X_BM =
+        mobilizer0.outboard_frame().EvalPoseInBodyFrame(*context);
+
+    EXPECT_EQ(X_PF.IsExactlyIdentity(), X_PF_is_identity);
+    EXPECT_EQ(X_BM.IsExactlyIdentity(), X_BM_is_identity);
+    const RigidTransformd X_WP = RigidTransformd(Vector3d(1, 2, 3));
+    plant.SetFreeBodyPose(&*context, parent0, X_WP);
+    const RigidTransformd X_JpJc(Vector3d(100, 0, 0));
+    joint0.set_translation(&*context, X_JpJc.translation().x());  // sets X_JpJc
+    const RigidTransformd& X_WC = child0.EvalPoseInWorld(*context);
+
+    EXPECT_EQ(X_WC.translation(), X_WP.translation() + X_PJp.translation() +
+                                      X_JpJc.translation() +
+                                      X_CJc.inverse().translation());
+  };
+
+  test_case(0);
+  test_case(1);
+  test_case(2);
+  test_case(3);
 }
 
 // Verifies exact set of output ports we expect to be a direct feedthrough of
@@ -2741,13 +2990,76 @@ TEST_F(SplitPendulum, MassMatrix) {
   // We choose an arbitrary angle since the mass matrix is independent of the
   // state.
   const double theta = M_PI / 3;
-
-  MatrixX<double> M(1, 1);
   pin_->set_angle(context_.get(), theta);
-  plant_.CalcMassMatrixViaInverseDynamics(*context_, &M);
+
+  MatrixX<double> M_via_id(1, 1), M_via_W(1, 1);
+  plant_.CalcMassMatrixViaInverseDynamics(*context_, &M_via_id);
+  plant_.CalcMassMatrix(*context_, &M_via_W);
 
   // We can only expect values within the precision specified in the sdf file.
-  EXPECT_NEAR(M(0, 0), Io, 1.0e-6);
+  EXPECT_NEAR(M_via_id(0, 0), Io, 1.0e-6);
+  EXPECT_NEAR(M_via_W(0, 0), Io, 1.0e-6);
+}
+
+// This test ensures that we can create a symbolic mass matrix successfully.
+TEST_F(SplitPendulum, SymbolicMassMatrix) {
+  auto sym_plant = systems::System<double>::ToSymbolic(plant_);
+  auto sym_context = sym_plant->CreateDefaultContext();
+
+  // State variables
+  const Eigen::VectorX<symbolic::Variable> q_var =
+      symbolic::MakeVectorVariable(1, "q");
+  const Eigen::VectorX<symbolic::Variable> v_var =
+      symbolic::MakeVectorVariable(1, "v");
+
+  // Parameters
+  const Eigen::VectorX<symbolic::Variable> m_var =
+      symbolic::MakeVectorVariable(2, "m");
+  const Eigen::VectorX<symbolic::Variable> l_var =
+      symbolic::MakeVectorVariable(2, "l");
+
+  const Eigen::VectorX<symbolic::Expression> q = q_var, v = v_var, m = m_var,
+                                             l = l_var;
+
+  const auto& upper_arm = sym_plant->GetBodyByName("upper_section");
+  const SpatialInertia<symbolic::Expression> inertia0(
+      m[0], Vector3<symbolic::Expression>(0, 0, -l[0]),
+      UnitInertia<symbolic::Expression>(l[0] * l[0], l[0] * l[0], 0));
+  upper_arm.SetSpatialInertiaInBodyFrame(sym_context.get(), inertia0);
+  const auto& lower_arm = sym_plant->GetBodyByName("lower_section");
+  const SpatialInertia<symbolic::Expression> inertia1(
+      m[1], Vector3<symbolic::Expression>(0, 0, -l[1]),
+      UnitInertia<symbolic::Expression>(l[1] * l[1], l[1] * l[1], 0));
+  lower_arm.SetSpatialInertiaInBodyFrame(sym_context.get(), inertia1);
+
+  sym_plant->SetPositions(sym_context.get(), q);
+  sym_plant->SetVelocities(sym_context.get(), v);
+
+  // Calculate the mass matrix two different ways, via Inverse Dynamics
+  // ("_via_id") and using the Composite Body Algorithm via recursion of
+  // World-frame quantities ("_via_W"). Verify that evaluating the resulting
+  // expressions yields the same result numerically.
+  Eigen::MatrixX<symbolic::Expression> M_via_id(1, 1), M_via_W(1, 1);
+  sym_plant->CalcMassMatrixViaInverseDynamics(*sym_context, &M_via_id);
+  sym_plant->CalcMassMatrix(*sym_context, &M_via_W);
+
+  const symbolic::Environment env{{q_var(0), 2.0}, {v_var(0), 10.},
+                                  {m_var(0), 3.0}, {m_var(1), 4.0},
+                                  {l_var(0), 5.0}, {l_var(1), 6.0}};
+  EXPECT_NEAR(M_via_W(0, 0).Evaluate(env), M_via_id(0, 0).Evaluate(env), 1e-14);
+
+  // Generate symbolic expressions for a few more quantities here just as a
+  // sanity check that we can do so. We won't look at the results.
+  Eigen::VectorX<symbolic::Expression> Cv(1), tauExt(1);
+  sym_plant->CalcBiasTerm(*sym_context, &Cv);
+  EXPECT_NO_THROW(sym_plant->CalcGravityGeneralizedForces(*sym_context));
+  const Eigen::MatrixX<symbolic::Expression> B =
+      sym_plant->MakeActuationMatrix();
+  EXPECT_EQ(B.rows(), 1);
+  EXPECT_EQ(B.cols(), 1);
+  MultibodyForces<symbolic::Expression> forces(*sym_plant);
+  sym_plant->CalcForceElementsContribution(*sym_context, &forces);
+  sym_plant->CalcGeneralizedForces(*sym_context, forces, &tauExt);
 }
 
 // Verify that we can obtain the owning MultibodyPlant from one of its
@@ -3332,8 +3644,8 @@ TEST_F(MultibodyPlantRemodeling, RemoveJoint) {
   // Validate that ordinals are assigned and updated contiguously.
   const Joint<double>& joint0 = plant_->get_joint(JointIndex(0));
   const Joint<double>& joint2 = plant_->get_joint(JointIndex(2));
-  EXPECT_EQ(joint0.ordinal(), 0);
-  EXPECT_EQ(joint2.ordinal(), 1);
+  EXPECT_EQ(joint0.ordinal(), JointOrdinal(0));
+  EXPECT_EQ(joint2.ordinal(), JointOrdinal(1));
 
   FinalizeAndBuild();
 
@@ -3356,9 +3668,9 @@ TEST_F(MultibodyPlantRemodeling, RemoveJoint) {
       plant_->GetJointByName<QuaternionFloatingJoint>("body1");
   EXPECT_EQ(body1_floating_joint.index(), JointIndex(3));
 
-  EXPECT_EQ(joint0.ordinal(), 0);
-  EXPECT_EQ(joint2.ordinal(), 1);
-  EXPECT_EQ(body1_floating_joint.ordinal(), 2);
+  EXPECT_EQ(joint0.ordinal(), JointOrdinal(0));
+  EXPECT_EQ(joint2.ordinal(), JointOrdinal(1));
+  EXPECT_EQ(body1_floating_joint.ordinal(), JointOrdinal(2));
 
   // Confirm that removed joint logic is preserved after cloning.
   std::unique_ptr<MultibodyPlant<double>> clone =
@@ -3375,9 +3687,9 @@ TEST_F(MultibodyPlantRemodeling, RemoveJoint) {
   EXPECT_THAT(
       clone->GetJointIndices(),
       testing::ElementsAre(JointIndex(0), JointIndex(2), JointIndex(3)));
-  EXPECT_EQ(clone->get_joint(JointIndex(0)).ordinal(), 0);
-  EXPECT_EQ(clone->get_joint(JointIndex(2)).ordinal(), 1);
-  EXPECT_EQ(clone->get_joint(JointIndex(3)).ordinal(), 2);
+  EXPECT_EQ(clone->get_joint(JointIndex(0)).ordinal(), JointOrdinal(0));
+  EXPECT_EQ(clone->get_joint(JointIndex(2)).ordinal(), JointOrdinal(1));
+  EXPECT_EQ(clone->get_joint(JointIndex(3)).ordinal(), JointOrdinal(2));
 }
 
 TEST_F(MultibodyPlantRemodeling, RemoveAndReplaceJoint) {
@@ -3391,7 +3703,7 @@ TEST_F(MultibodyPlantRemodeling, RemoveAndReplaceJoint) {
         "joint1", plant_->GetBodyByName("body0"), {},
         plant_->GetBodyByName("body1"), {}, Vector3d::UnitZ());
     EXPECT_EQ(joint1.index(), JointIndex(2 + i));
-    EXPECT_EQ(joint1.ordinal(), 2);
+    EXPECT_EQ(joint1.ordinal(), JointOrdinal(2));
     plant_->RemoveJoint(joint1);
   }
 
@@ -3415,9 +3727,9 @@ TEST_F(MultibodyPlantRemodeling, RemoveAndReplaceJoint) {
   // Validate that ordinals are assigned and updated contiguously.
   const Joint<double>& joint0 = plant_->get_joint(JointIndex(0));
   const Joint<double>& joint2 = plant_->get_joint(JointIndex(2));
-  EXPECT_EQ(joint0.ordinal(), 0);
-  EXPECT_EQ(joint2.ordinal(), 1);
-  EXPECT_EQ(joint1.ordinal(), 2);
+  EXPECT_EQ(joint0.ordinal(), JointOrdinal(0));
+  EXPECT_EQ(joint2.ordinal(), JointOrdinal(1));
+  EXPECT_EQ(joint1.ordinal(), JointOrdinal(2));
 
   FinalizeAndBuild();
 
@@ -3432,9 +3744,9 @@ TEST_F(MultibodyPlantRemodeling, RemoveAndReplaceJoint) {
   EXPECT_THAT(plant_->GetJointIndices(),
               testing::ElementsAre(JointIndex(0), JointIndex(2),
                                    JointIndex(2 + num_replacements)));
-  EXPECT_EQ(joint0.ordinal(), 0);
-  EXPECT_EQ(joint2.ordinal(), 1);
-  EXPECT_EQ(joint1.ordinal(), 2);
+  EXPECT_EQ(joint0.ordinal(), JointOrdinal(0));
+  EXPECT_EQ(joint2.ordinal(), JointOrdinal(1));
+  EXPECT_EQ(joint1.ordinal(), JointOrdinal(2));
 }
 
 TEST_F(MultibodyPlantRemodeling, RemoveJointWithActuator) {
@@ -3525,10 +3837,9 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
     context_ = plant_->CreateDefaultContext();
   }
 
-  // Helper to set the multibody state x to x[i] = i for each i-th entry in the
-  // state vector.
-  // We use RevoluteJoint's methods to set the state in order to independently
-  // unit test the proper workings of
+  // Helper to set the multibody state x to x[i] = xc[i] for each i-th entry in
+  // the state vector. We use RevoluteJoint's methods to set the state in order
+  // to independently unit test the proper workings of
   // MultibodyTree::get_multibody_state_vector() and its mutable counterpart.
   void SetState(const VectorX<double>& xc) {
     const int nq = plant_->num_positions();
@@ -5232,6 +5543,8 @@ GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
   RigidTransformd X_BP_check2 = frame_P.CalcPoseInBodyFrame(*context);
   EXPECT_TRUE(X_BP_check1.IsNearlyEqualTo(X_BP, kTolerance));
   EXPECT_TRUE(X_BP_check2.IsNearlyEqualTo(X_BP, kTolerance));
+  // Verify parent frame is body_B's frame
+  EXPECT_EQ(frame_P.parent_frame().index(), body_B.body_frame().index());
 
   // Verify frame P's pose in world W.
   RigidTransformd X_WP = X_WWp * X_WpP;

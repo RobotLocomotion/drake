@@ -15,10 +15,8 @@
 #include "drake/multibody/contact_solvers/contact_configuration.h"
 #include "drake/multibody/fem/dirichlet_boundary_condition.h"
 #include "drake/multibody/fem/fem_model.h"
-#include "drake/multibody/fem/velocity_newmark_scheme.h"
 #include "drake/multibody/plant/contact_properties.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
-#include "drake/multibody/plant/force_density_field.h"
 #include "drake/multibody/plant/hydroelastic_quadrature_point_data.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
@@ -35,6 +33,7 @@ using drake::multibody::contact_solvers::internal::MatrixBlock;
 using drake::multibody::contact_solvers::internal::PartialPermutation;
 using drake::multibody::contact_solvers::internal::SapConstraintJacobian;
 using drake::multibody::contact_solvers::internal::SchurComplement;
+using drake::multibody::contact_solvers::internal::VertexPartialPermutation;
 using drake::multibody::fem::FemModel;
 using drake::multibody::fem::FemState;
 using drake::multibody::fem::internal::DirichletBoundaryCondition;
@@ -53,11 +52,6 @@ DeformableDriver<T>::DeformableDriver(
     : deformable_model_(deformable_model), manager_(manager) {
   DRAKE_DEMAND(deformable_model != nullptr);
   DRAKE_DEMAND(manager != nullptr);
-  // TODO(xuchenhan-tri): Expose the integrator as a config.
-  /* Set the time integrator for advancing deformable states in time to be the
-   midpoint rule, i.e., q = q₀ + δt/2 *(v₀ + v). */
-  integrator_ = std::make_unique<fem::internal::VelocityNewmarkScheme<T>>(
-      manager_->plant().time_step(), 1.0, 0.5);
 }
 
 template <typename T>
@@ -84,17 +78,11 @@ void DeformableDriver<T>::DeclareCacheEntries(
     const fem::FemModel<T>& fem_model = deformable_model_->GetFemModel(id);
     std::unique_ptr<fem::FemState<T>> model_state = fem_model.MakeFemState();
     /* Cache entry for current FEM state. */
-    const auto& fem_state_cache_entry = manager->DeclareCacheEntry(
-        fmt::format("FEM state for body with index {}", i),
-        systems::ValueProducer(
-            *model_state,
-            std::function<void(const Context<T>&, fem::FemState<T>*)>{
-                [this, i](const Context<T>& context, fem::FemState<T>* state) {
-                  this->CalcFemState(context, i, state);
-                }}),
-        {systems::System<T>::xd_ticket(),
-         systems::System<T>::all_parameters_ticket()});
-    cache_indexes_.fem_states.emplace_back(fem_state_cache_entry.cache_index());
+    const auto& fem_state_cache_entry_ticket =
+        manager_->plant()
+            .get_cache_entry(
+                deformable_model_->GetBody(i).fem_state_cache_index())
+            .ticket();
 
     /* Constraint participation information for each body. */
     ContactParticipation empty_contact_participation(fem_model.num_nodes());
@@ -114,21 +102,6 @@ void DeformableDriver<T>::DeclareCacheEntries(
     constraint_participation_tickets.emplace(
         constraint_participation_cache_entry.ticket());
 
-    /* Permutation for participating dofs for each body. */
-    const auto& dof_permutation_cache_entry = manager->DeclareCacheEntry(
-        fmt::format("partial permutation for dofs of body {} based on "
-                    "participation in contact",
-                    i),
-        systems::ValueProducer(
-            std::function<void(const Context<T>&, PartialPermutation*)>{
-                [this, i](const Context<T>& context,
-                          PartialPermutation* result) {
-                  this->CalcDofPermutation(context, i, result);
-                }}),
-        {constraint_participation_cache_entry.ticket()});
-    cache_indexes_.dof_permutations.emplace_back(
-        dof_permutation_cache_entry.cache_index());
-
     /* Permutation for participating vertices for each body. */
     const GeometryId g_id =
         deformable_model_->GetGeometryId(deformable_model_->GetBodyId(i));
@@ -137,16 +110,16 @@ void DeformableDriver<T>::DeclareCacheEntries(
                     "participation in contact",
                     i),
         systems::ValueProducer(
-            std::function<void(const Context<T>&, PartialPermutation*)>{
+            std::function<void(const Context<T>&, VertexPartialPermutation*)>{
                 [this, g_id](const Context<T>& context,
-                             PartialPermutation* result) {
-                  this->CalcVertexPermutation(context, g_id, result);
+                             VertexPartialPermutation* result) {
+                  this->CalcPermutation(context, g_id, result);
                 }}),
         {constraint_participation_cache_entry.ticket()});
     cache_indexes_.vertex_permutations.emplace(
         g_id, vertex_permutation_cache_entry.cache_index());
 
-    FemSolver<T> model_fem_solver(&fem_model, integrator_.get());
+    FemSolver<T> model_fem_solver(&fem_model, &deformable_model_->integrator());
     /* Cache entry for free motion FEM state and data. */
     const auto& fem_solver_cache_entry = manager->DeclareCacheEntry(
         fmt::format("FEM solver and data for body with index {}", i),
@@ -159,8 +132,7 @@ void DeformableDriver<T>::DeclareCacheEntries(
                 }}),
         /* Free motion velocities can depend on user defined external forces
          which in turn depends on input ports. */
-        {fem_state_cache_entry.ticket(),
-         vertex_permutation_cache_entry.ticket(),
+        {fem_state_cache_entry_ticket, vertex_permutation_cache_entry.ticket(),
          systems::System<T>::all_input_ports_ticket(),
          systems::System<T>::all_parameters_ticket()});
     cache_indexes_.fem_solvers.emplace_back(
@@ -295,6 +267,7 @@ DeformableDriver<T>::ComputeContactDataForDeformable(
    blocks. */
   std::vector<typename Block3x3SparseMatrix<T>::Triplet> triplets;
   triplets.reserve(4);
+  bool is_deformable_rigid = !surface.is_B_deformable();
   for (int i = 0; i < surface.num_contact_points(); ++i) {
     /* The contact Jacobian (w.r.t. v) of the velocity of the point affixed to
      the geometry that coincides with the contact point C in the world frame,
@@ -304,14 +277,27 @@ DeformableDriver<T>::ComputeContactDataForDeformable(
     Block3x3SparseMatrix<T> scaled_Jv_v_WGc_C(
         /* block rows */ 1,
         /* block columns */ participation.num_vertices_in_contact());
-    const Vector4<int>& participating_vertices =
-        is_A ? surface.contact_vertex_indexes_A()[i]
-             : surface.contact_vertex_indexes_B()[i];
-    const Vector4<T>& b = is_A ? surface.barycentric_coordinates_A()[i]
-                               : surface.barycentric_coordinates_B()[i];
+    Vector4<int> participating_vertices = Vector4<int>::Constant(-1);
+    Vector4<T> barycentric_weights = Vector4<T>::Zero();
+    if (is_deformable_rigid) {
+      DRAKE_DEMAND(is_A);
+      participating_vertices.head<3>() =
+          surface.tri_contact_vertex_indexes_A()[i];
+      barycentric_weights.template head<3>() =
+          surface.tri_barycentric_coordinates_A()[i];
+    } else {
+      participating_vertices = is_A ? surface.tet_contact_vertex_indexes_A()[i]
+                                    : surface.contact_vertex_indexes_B()[i];
+      barycentric_weights = is_A ? surface.tet_barycentric_coordinates_A()[i]
+                                 : surface.barycentric_coordinates_B()[i];
+    }
     Vector3<T> v_WGc = Vector3<T>::Zero();
     triplets.clear();
     for (int v = 0; v < 4; ++v) {
+      if (participating_vertices(v) < 0) {
+        DRAKE_DEMAND(barycentric_weights(v) == 0.0);
+        continue;
+      }
       const bool vertex_under_bc = num_bcs[participating_vertices(v)] > 0;
       /* Map indexes to the permuted domain. */
       const int permuted_vertex =
@@ -321,10 +307,10 @@ DeformableDriver<T>::ComputeContactDataForDeformable(
          v₃ are the velocities of the vertices forming the tetrahedron
          containing the contact point and the b's are their corresponding
          barycentric weights. */
-        triplets.emplace_back(
-            0, permuted_vertex,
-            scale * b(v) * surface.R_WCs()[i].matrix().transpose());
-        v_WGc += b(v) *
+        triplets.emplace_back(0, permuted_vertex,
+                              scale * barycentric_weights(v) *
+                                  surface.R_WCs()[i].matrix().transpose());
+        v_WGc += barycentric_weights(v) *
                  body_participating_v0.template segment<3>(3 * permuted_vertex);
       }
       /* If the vertex is under bc, the corresponding jacobian block is zero
@@ -412,6 +398,9 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
        ++surface_index) {
     const DeformableContactSurface<T>& surface =
         contact_surfaces[surface_index];
+    /* Geometry A is always deformable, so this is deformable vs. deformable
+       contact iff geometry B is deformable. */
+    const bool is_deformable_vs_deformable = surface.is_B_deformable();
     /* Skip this surface if either body in contact is a disabled deformable
      body. */
     const DeformableBodyId body_id_A =
@@ -439,6 +428,8 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
 
     const GeometryId id_A = surface.id_A();
     const GeometryId id_B = surface.id_B();
+    const std::string& name_A = inspector.GetName(id_A);
+    const std::string& name_B = inspector.GetName(id_B);
     /* Body A is guaranteed to be deformable. */
     const int body_index_A =
         deformable_model_->GetBodyIndex(deformable_model_->GetBodyId(id_A));
@@ -465,6 +456,17 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
     std::vector<typename DiscreteContactPair<T>::JacobianTreeBlock>
         jacobian_blocks;
     for (int i = 0; i < surface.num_contact_points(); ++i) {
+      if (!is_deformable_vs_deformable && surface.is_element_inverted()[i]) {
+        /* For deformable rigid contact, we don't register a contact point for
+        deformable surface elements that belong to an inverted tetrahdron.
+        Registering such contact points can cause persistent inversion artifacts
+        that are impossible to recover. By not registering a contact point, we
+        admit transient artifacts (objects suddenly break contact), but in
+        practice, we find that's better than persistent, irrecoverable
+        inversion. */
+        continue;
+      }
+
       jacobian_blocks.clear();
       const Vector3<T>& v_WAc = contact_data_A.v_WGc[i];
       jacobian_blocks.push_back(std::move(contact_data_A.jacobian[i]));
@@ -491,46 +493,84 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
        k * ϕ where ϕ is the penetration distance. The contact force balances
        gravity and we have
 
-         kϕ  = CL²ϕ = gρL³,
+         kϕ  = CL²ϕ = GρL³,
 
-       which gives ϕ = gρL / C.
+       which gives ϕ = GρL / C.
        We choose a large C = 1e8 Pa/m so that for ρ = 1000 kg/m³ and
-       g = 10 m/s², we get ϕ = 1e-4 * L, or 0.01 mm for a 10 cm cube with
+       G = 10 m/s², we get ϕ = 1e-4 * L, or 0.01 mm for a 10 cm cube with
        density of water, a reasonably small penetration. */
-      const T kA = surface.contact_mesh_W().area(i) * 1e8;
-      const T default_rigid_k = std::numeric_limits<T>::infinity();
-      const T kB = surface.is_B_deformable() ? kA : default_rigid_k;
-      /* Combine stiffnesses k₁ (of geometry A) and k₂ (of geometry B) to get k
-       according to the rule: 1/k = 1/k₁ + 1/k₂. */
-      const T k = GetCombinedPointContactStiffness(kA, kB);
+      const T C = 1e8;
 
-      /* While in Drake we provide constraints to model Hunt & Crossley or
-      linear Kelvin–Voigt dissipation, for deformable objects all we want is to
-      enforce the non-penetration constraint. We do this using the high
-      stiffness value specified above. Since compliant contact time scales
-      cannot be resolved at such high stiffness values, dissipation should be
-      irrelevant. Therefore we use zero Hunt & Crossley dissipation and the
-      "near rigid regime" time scale for the linear dissipation. */
-      const T d = 0.0;
+      const Vector3<T>& nhat_BA_W = surface.nhats_W()[i];
+      const T Ae = surface.contact_mesh_W().area(i);
+      std::optional<T> rigid_g;
+      if (!is_deformable_vs_deformable) {
+        /* One dimensional pressure gradient (in Pa/m), only used in deformable
+         vs. rigid contact, following the notation in [Masterjohn, 2022].
+         [Masterjohn, 2022] Velocity Level Approximation of Pressure Field
+         Contact Patches.
+         We Filter out negative directional pressure derivatives (separating
+         contact) and tiny contact polygons (to avoid numerical issues).
+         Unlike [Masterjohn, 2022], the pressure gradient is positive in the
+         direction "into" the rigid body. Therefore, we need a negative sign. */
+        rigid_g = -surface.pressure_gradients_W()[i].dot(nhat_BA_W);
 
-      /* Dissipation time scale. Ignored, for instance, by the Tamsi model of
-       contact approximation. See multibody::DiscreteContactApproximation for
-       details about these contact models. We use dt as the default dissipation
-       constant so that the contact is in near-rigid regime and the compliance
-       is only used as stabilization. */
-      const T tau = manager_->plant().time_step();
+        /* We found that geometry queries might repor tiny triangles (consider
+         for instance an initial condition that perfectly places an object at
+         zero distance from the ground.) While the area of zero sized triangles
+         is not a problem by itself, the badly computed normal on these
+         triangles leads to problems when computing the contact Jacobians (since
+         we need to obtain an orthonormal basis based on that normal). We
+         therefore ignore tiny triangles with areas below a certain arbitrary
+         threshold (1e-14 m²). We also ignore pressure gradients below a certain
+         threshold (1e-14 Pa/m) following the hydroelastic treatment. */
+        if (rigid_g.value() < 1e-14 || Ae < 1e-14) {
+          continue;
+        }
+      }
 
+      const T deformable_k = Ae * C;
+      const double default_dissipation =
+          manager_->default_contact_dissipation();
+      const auto [k, phi0, fn0, d] = [&]() {
+        if (is_deformable_vs_deformable) {
+          const T deformable_phi0 = surface.signed_distances()[i];
+          const T deformable_fn0 = -deformable_k * deformable_phi0;
+          const T deformable_d = GetCombinedHuntCrossleyDissipation(
+              id_A, id_B, deformable_k, deformable_k, default_dissipation,
+              inspector);
+          return std::make_tuple(deformable_k, deformable_phi0, deformable_fn0,
+                                 deformable_d);
+        } else {
+          DRAKE_ASSERT(rigid_g.has_value());
+          /* The one dimensional gradient for the deformable geometry based on
+           the "box-on-ground" estimate above. */
+          const T deformable_g = C;
+          /* Combined "effective" one dimensional gradient. */
+          const T g = 1.0 / (1.0 / deformable_g + 1.0 / rigid_g.value());
+          const T rigid_k = Ae * g;
+          const T rigid_phi0 = -surface.pressures()[i] / g;
+          const T rigid_fn0 = Ae * surface.pressures()[i];
+          const T rigid_d = GetCombinedHuntCrossleyDissipation(
+              id_A, id_B, deformable_k, rigid_k, default_dissipation,
+              inspector);
+          return std::make_tuple(rigid_k, rigid_phi0, rigid_fn0, rigid_d);
+        }
+      }();
+
+      const double default_dissipation_time_constant = 0.1;
+      const T tau = GetCombinedDissipationTimeConstant(
+          id_A, id_B, default_dissipation_time_constant, name_A, name_B,
+          inspector);
       const double mu =
           GetCombinedDynamicCoulombFriction(id_A, id_B, inspector);
 
-      const T& phi0 = surface.signed_distances()[i];
-      const T fn0 = -k * phi0;
-      /* The normal (scalar) component of the contact velocity in the contact
-       frame. */
       /* Contact solver assumes the normal points from A to B whereas the
        surface's normal points from B to A. */
       const Vector3<T> nhat_AB_W = -surface.nhats_W()[i];
       const math::RotationMatrix<T>& R_WC = surface.R_WCs()[i];
+      /* The normal (scalar) component of the contact velocity in the contact
+       frame. */
       const T v_AcBc_Cz = nhat_AB_W.dot(v_WBc - v_WAc);
       DiscreteContactPair<T> contact_pair{
           .jacobian = std::move(jacobian_blocks),
@@ -542,7 +582,7 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
           .p_WC = p_WC,
           .p_ApC_W = p_AC_W,
           .p_BqC_W = p_BC_W,
-          .nhat_BA_W = -nhat_AB_W,
+          .nhat_BA_W = nhat_BA_W,
           .phi0 = phi0,
           .vn0 = v_AcBc_Cz,
           .fn0 = fn0,
@@ -584,18 +624,17 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
           .template Eval<geometry::GeometryConfigurationVector<T>>(context);
   for (DeformableBodyIndex index(0); index < deformable_model_->num_bodies();
        ++index) {
-    DeformableBodyId body_id = deformable_model_->GetBodyId(index);
-    if (!deformable_model_->is_enabled(body_id, context) ||
-        !deformable_model_->HasConstraint(body_id)) {
+    const DeformableBody<T>& body = deformable_model_->GetBody(index);
+    if (!body.is_enabled(context) || !body.has_fixed_constraint()) {
       continue;
     }
 
-    const FemModel<T>& fem_model = deformable_model_->GetFemModel(body_id);
+    const FemModel<T>& fem_model = body.fem_model();
     const DirichletBoundaryCondition<T>& bc =
         fem_model.dirichlet_boundary_condition();
 
-    /* Returns true iff for the deformable body with `body_id`, the given vertex
-     index is under boundary condition. */
+    /* Returns true iff for the deformable body, the given vertex index is under
+     boundary condition. */
     auto is_under_bc = [&](int vertex_index) {
       return bc.index_to_boundary_state().count(
                  multibody::fem::FemNodeIndex(vertex_index)) > 0;
@@ -606,15 +645,13 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
     // Each deformable body forms its own clique and are indexed in inceasing
     // DeformableBodyIndex order and placed after all rigid cliques.
     const TreeIndex clique_index_A(tree_topology.num_trees() + index);
-    GeometryId geometry_id = deformable_model_->GetGeometryId(body_id);
+    const GeometryId geometry_id = body.geometry_id();
     const PartialPermutation& vertex_permutation =
         EvalVertexPermutation(context, geometry_id);
     const VectorX<T>& p_WVs = configurations.value(geometry_id);
 
-    for (const MultibodyConstraintId& constraint_id :
-         deformable_model_->fixed_constraint_ids(body_id)) {
-      const DeformableRigidFixedConstraintSpec& spec =
-          deformable_model_->fixed_constraint_spec(constraint_id);
+    for (const DeformableRigidFixedConstraintSpec& spec :
+         body.fixed_constraint_specs()) {
       const int num_vertices_in_constraint = ssize(spec.vertices);
       /* The Jacobian block for the deformable body A. */
       Block3x3SparseMatrix<T> negative_Jv_v_WAp(
@@ -874,8 +911,9 @@ void DeformableDriver<T>::CalcFemState(const Context<T>& context,
 template <typename T>
 const FemState<T>& DeformableDriver<T>::EvalFemState(
     const Context<T>& context, DeformableBodyIndex index) const {
+  const DeformableBody<T>& body = deformable_model_->GetBody(index);
   return manager_->plant()
-      .get_cache_entry(cache_indexes_.fem_states.at(index))
+      .get_cache_entry(body.fem_state_cache_index())
       .template Eval<FemState<T>>(context);
 }
 
@@ -974,8 +1012,9 @@ void DeformableDriver<T>::CalcNextFemState(const systems::Context<T>& context,
     /* Concatenate the participating and non-participating velocities and
      then apply the inverse permutation to put the dofs in their original
      order. */
-    const PartialPermutation& full_velocity_permutation =
-        participation.CalcDofPermutation();
+    PartialPermutation full_velocity_permutation =
+        EvalDofPermutation(context, index);
+    full_velocity_permutation.ExtendToFullPermutation();
     const int num_dofs = full_velocity_permutation.domain_size();
     VectorX<T> permuted_dv(num_dofs);
     permuted_dv << body_participating_dv, body_nonparticipating_dv;
@@ -985,7 +1024,8 @@ void DeformableDriver<T>::CalcNextFemState(const systems::Context<T>& context,
     VectorX<T>& v_next = dv;
     v_next += EvalFreeMotionFemState(context, index).GetVelocities();
     const FemState<T>& fem_state = EvalFemState(context, index);
-    integrator_->AdvanceOneTimeStep(fem_state, v_next, next_fem_state);
+    deformable_model_->integrator().AdvanceOneTimeStep(fem_state, v_next,
+                                                       next_fem_state);
   }
 }
 
@@ -1007,23 +1047,21 @@ void DeformableDriver<T>::CalcDeformableContact(
   /* Complete the result with information on constraints other than contact. */
   for (DeformableBodyIndex body_index(0);
        body_index < deformable_model_->num_bodies(); ++body_index) {
-    DeformableBodyId body_id = deformable_model_->GetBodyId(body_index);
+    const DeformableBody<T>& body = deformable_model_->GetBody(body_index);
     /* Add in constraints. */
-    if (deformable_model_->HasConstraint(body_id)) {
+    if (body.has_fixed_constraint()) {
       std::unordered_set<int> fixed_vertices;
-      for (const MultibodyConstraintId& constraint_id :
-           deformable_model_->fixed_constraint_ids(body_id)) {
-        const DeformableRigidFixedConstraintSpec& spec =
-            deformable_model_->fixed_constraint_spec(constraint_id);
+      for (const DeformableRigidFixedConstraintSpec& spec :
+           body.fixed_constraint_specs()) {
         fixed_vertices.insert(spec.vertices.begin(), spec.vertices.end());
       }
       /* Register the geometry in case it hasn't been registered because it's
        not participating in contact but is participating in other types of
        constraints. */
-      GeometryId geometry_id = deformable_model_->GetGeometryId(body_id);
+      GeometryId geometry_id = body.geometry_id();
       if (!result->IsRegistered(geometry_id)) {
-        result->RegisterDeformableGeometry(
-            geometry_id, deformable_model_->GetFemModel(body_id).num_nodes());
+        result->RegisterDeformableGeometry(geometry_id,
+                                           body.fem_model().num_nodes());
       }
       result->Participate(geometry_id, fixed_vertices);
     }
@@ -1064,29 +1102,24 @@ const ContactParticipation& DeformableDriver<T>::EvalConstraintParticipation(
 }
 
 template <typename T>
-void DeformableDriver<T>::CalcDofPermutation(const Context<T>& context,
-                                             DeformableBodyIndex index,
-                                             PartialPermutation* result) const {
-  *result =
-      EvalConstraintParticipation(context, index).CalcDofPartialPermutation();
-}
-
-template <typename T>
 const PartialPermutation& DeformableDriver<T>::EvalDofPermutation(
     const Context<T>& context, DeformableBodyIndex index) const {
+  const DeformableBodyId body_id = deformable_model_->GetBodyId(index);
+  const GeometryId geometry_id = deformable_model_->GetGeometryId(body_id);
   return manager_->plant()
-      .get_cache_entry(cache_indexes_.dof_permutations.at(index))
-      .template Eval<PartialPermutation>(context);
+      .get_cache_entry(cache_indexes_.vertex_permutations.at(geometry_id))
+      .template Eval<VertexPartialPermutation>(context)
+      .dof();
 }
 
 template <typename T>
-void DeformableDriver<T>::CalcVertexPermutation(
+void DeformableDriver<T>::CalcPermutation(
     const Context<T>& context, GeometryId id,
-    PartialPermutation* result) const {
+    VertexPartialPermutation* result) const {
   const DeformableBodyIndex index =
       deformable_model_->GetBodyIndex(deformable_model_->GetBodyId(id));
-  *result = EvalConstraintParticipation(context, index)
-                .CalcVertexPartialPermutation();
+  *result =
+      EvalConstraintParticipation(context, index).CalcPartialPermutation();
 }
 
 template <typename T>
@@ -1094,7 +1127,8 @@ const PartialPermutation& DeformableDriver<T>::EvalVertexPermutation(
     const Context<T>& context, GeometryId id) const {
   return manager_->plant()
       .get_cache_entry(cache_indexes_.vertex_permutations.at(id))
-      .template Eval<PartialPermutation>(context);
+      .template Eval<VertexPartialPermutation>(context)
+      .vertex();
 }
 
 template <typename T>

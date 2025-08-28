@@ -13,7 +13,7 @@ problems.
 
 ## Parsing {#mbp-parsing}
 
-If you have a model file (e.g., .urdf, .sdf, .xml, .usd, etc.) that you are loading into a `MultibodyPlant` using the `Parser` class, and the model is not loading properly, then there are a few useful resources you might consider.
+If you have a model file (e.g., .urdf, .sdf, .xml, etc.) that you are loading into a `MultibodyPlant` using the `Parser` class, and the model is not loading properly, then there are a few useful resources you might consider.
 
 Documentation for the specific XML elements and attributes supported by the parser can be found [here](https://drake.mit.edu/doxygen_cxx/group__multibody__parsing.html).
 
@@ -73,6 +73,27 @@ The connection can be reported as missing for several reasons:
       plant_context = plant.GetMyContextFromRoot(root_context=context)
       xdot = plant.EvalTimeDerivatives(context=plant_context)
     ```
+
+## Loops in the body-joint graph {#mbp-loops-in-graph}
+
+Currently Drake does not support automatic modeling of systems for which the
+bodies and joints form one or more loops in the system graph. However, there
+are several ways you can model these systems in Drake:
+
+  - Break each loop at a joint and replace the joint by an equivalent constraint
+    or by using a `LinearBushingRollPitchYaw`
+    ([C++][c_LinearBushingRollPitchYaw],
+    [Python][p_LinearBushingRollPitchYaw]) force element.
+  - Break each loop by cutting one of the bodies involved in the loop. This
+    introduces a new "shadow" body that will follow the "primary" body. For best
+    numerical behavior, distribute the mass and inertia 1/2 to each of the
+    two bodies. Use a Weld constraint to attach the shadow to its primary. This
+    method has the advantage that joints remain uniformly treated and the
+    joint coordinates are unchanged.
+
+It is also possible to introduce loops by accident. If you didn't intend to
+do so, check your system description to see whether some joint may have been
+connected to the wrong body.
 
 # System Framework
 
@@ -238,6 +259,21 @@ Note that the concurrency level passed to `make` (e.g., `make -j 2`) does not
 propagate through to affect the concurrency of most of Drake's build steps; you
 need to configure the dotfile in order to control the build concurrency.
 
+# Pydrake out of memory {#pydrake-oom}
+
+Pydrake programs often control C++ objects that use a lot of memory, so that
+the default behaviors for running garbage collection don't effectively control
+memory growth.
+
+The standard Python [gc](https://docs.python.org/3/library/gc.html) module
+offers ways to customize the garbage collector's behavior. The easiest way is
+to explicitly call ``gc.collect()`` at intervals in your program. This will
+perform a full garbage collection. A more sophisticated method is to use
+``gc.set_threshold()`` to set custom object count thresholds for your program,
+and thus cause automatic collections to run more often.
+
+See also: [Memory management with the Python Bindings](/python_bindings.html#memory-management-with-the-python-bindings)
+
 # Network Configuration
 
 ## LCM on macOS {#lcm-macos}
@@ -285,6 +321,8 @@ sudo route -nv add -net 224.0.0.0/4 -interface lo0
 <!-- drake/multibody/plant -->
 [c_AddMultibodyPlantSceneGraph]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_multibody_plant.html#aac66563a5f3eb9e2041bd4fa8d438827
 [p_AddMultibodyPlantSceneGraph]: https://drake.mit.edu/pydrake/pydrake.multibody.plant.html#pydrake.multibody.plant.AddMultibodyPlantSceneGraph
+[c_LinearBushingRollPitchYaw]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_linear_bushing_roll_pitch_yaw.html
+[p_LinearBushingRollPitchYaw]: https://drake.mit.edu/pydrake/pydrake.multibody.tree.html#pydrake.multibody.tree.LinearBushingRollPitchYaw
 [c_MultibodyPlant]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_multibody_plant.html
 [p_MultibodyPlant]: https://drake.mit.edu/pydrake/pydrake.multibody.plant.html#pydrake.multibody.plant.MultibodyPlant
 

@@ -71,11 +71,21 @@ SpatialInertia<T> ToSpatialInertia(
   DRAKE_DEMAND(spatial_inertia_basic_vector.size() ==
                SpatialInertiaIndex::k_num_coordinates);
   const auto& spatial_inertia_vector = spatial_inertia_basic_vector.get_value();
+  // Kinematics-only code sometimes specifies inertia as NaN since it isn't
+  // needed. Convert back to NaN here rather than risk blowing up below.
+  if constexpr (scalar_predicate<T>::is_bool) {
+    if (spatial_inertia_vector.array().isNaN().any()) {
+      return SpatialInertia<T>::NaN();
+    }
+  }
   return SpatialInertia<T>(
       spatial_inertia_vector[SpatialInertiaIndex::k_mass],
       Vector3<T>(spatial_inertia_vector[SpatialInertiaIndex::k_com_x],
                  spatial_inertia_vector[SpatialInertiaIndex::k_com_y],
                  spatial_inertia_vector[SpatialInertiaIndex::k_com_z]),
+      // TODO(sherm1) Despite the `true` (don't check validity) below, this
+      //  can blow up in Debug mode due to the underlying RotationMatrix
+      //  constructor that gets called from here. Fix.
       UnitInertia<T>(spatial_inertia_vector[SpatialInertiaIndex::k_Gxx],
                      spatial_inertia_vector[SpatialInertiaIndex::k_Gyy],
                      spatial_inertia_vector[SpatialInertiaIndex::k_Gzz],

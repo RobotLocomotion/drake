@@ -60,9 +60,8 @@ const FrameType<T>& MultibodyTree<T>::AddFrame(
         frame->name()));
   }
   DRAKE_DEMAND(frame->model_instance().is_valid());
-  const FrameIndex frame_index = topology_.add_frame(frame->body().index());
-  // This test MUST be performed BEFORE frames_.Add(). Do not move it around!
-  DRAKE_DEMAND(frame_index == num_frames());
+  const FrameIndex frame_index(num_frames());
+  topology_.add_frame_topology(frame_index, frame->body().index());
 
   // TODO(amcastro-tri): consider not depending on setting this pointer at
   //  all. Consider also removing MultibodyElement altogether.
@@ -109,13 +108,13 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
   // later to define mobilizers between those frames in a second tree2.
   mobilizer->inboard_frame().HasThisParentTreeOrThrow(this);   // F frame
   mobilizer->outboard_frame().HasThisParentTreeOrThrow(this);  // M frame
-  MobodIndex mobilizer_index = topology_.add_mobilizer(
-      mobilizer->mobod(), mobilizer->inboard_frame().index(),
-      mobilizer->outboard_frame().index());
 
-  // This DRAKE_DEMAND MUST be performed BEFORE mobilizers_.push_back()
-  // below. Do not move it around!
-  DRAKE_DEMAND(mobilizer_index == num_mobilizers());
+  // Sanity check that we are processing in the expected order.
+  DRAKE_DEMAND(mobilizer->mobod().index() == num_mobilizers());
+
+  topology_.add_mobilizer_topology(mobilizer->mobod(),
+                                   mobilizer->inboard_frame().index(),
+                                   mobilizer->outboard_frame().index());
 
   // TODO(sammy-tri) This effectively means that there's no way to
   //  programmatically add mobilizers from outside of MultibodyTree
@@ -127,7 +126,7 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
 
   // TODO(amcastro-tri): consider not depending on setting this pointer at
   //  all. Consider also removing MultibodyElement altogether.
-  mobilizer->set_parent_tree(this, mobilizer_index);
+  mobilizer->set_parent_tree(this, mobilizer->mobod().index());
 
   // Mark free bodies as needed.
   const BodyIndex outboard_body_index = mobilizer->outboard_body().index();
@@ -135,10 +134,10 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
       mobilizer->has_six_dofs() &&
       mobilizer->inboard_frame().body().index() == world_body().index();
 
-  topology_.get_mutable_rigid_body(outboard_body_index).is_floating_base =
-      is_floating_base_body;
-  topology_.get_mutable_rigid_body(outboard_body_index).has_quaternion_dofs =
-      mobilizer->has_quaternion_dofs();
+  topology_.get_mutable_rigid_body_topology(outboard_body_index)
+      .is_floating_base = is_floating_base_body;
+  topology_.get_mutable_rigid_body_topology(outboard_body_index)
+      .has_quaternion_dofs = mobilizer->has_quaternion_dofs();
 
   MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
   mobilizers_.push_back(std::move(mobilizer));
@@ -223,6 +222,9 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
                     joint->name(), joint->parent_body().name()));
   }
 
+  DRAKE_THROW_UNLESS(joint->parent_body().has_parent_tree());
+  DRAKE_THROW_UNLESS(joint->child_body().has_parent_tree());
+
   if (&joint->parent_body().get_parent_tree() !=
       &joint->child_body().get_parent_tree()) {
     throw std::logic_error(
@@ -253,6 +255,9 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
     const std::optional<math::RigidTransform<double>>& X_CJc, Args&&... args) {
   static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
                 "JointType<T> must be a sub-class of Joint<T>.");
+
+  DRAKE_THROW_UNLESS(parent.has_parent_tree());
+  DRAKE_THROW_UNLESS(child.has_parent_tree());
 
   if (&parent.get_parent_tree() != this || &child.get_parent_tree() != this) {
     throw std::logic_error(
@@ -312,8 +317,8 @@ const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
   // Create the JointActuator before making any changes to our member fields, so
   // if the JointActuator constructor throws our state will still be valid.
   auto actuator = std::make_unique<JointActuator<T>>(name, joint, effort_limit);
-  const JointActuatorIndex actuator_index =
-      topology_.add_joint_actuator(joint.num_velocities());
+  const JointActuatorIndex actuator_index(actuators_.next_index());
+  topology_.add_joint_actuator_topology(actuator_index, joint.num_velocities());
   actuator->set_parent_tree(this, actuator_index);
   return actuators_.Add(std::move(actuator));
 }

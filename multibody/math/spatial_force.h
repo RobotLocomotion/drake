@@ -16,7 +16,8 @@ namespace drake {
 namespace multibody {
 
 // Forward declaration to define dot product with a spatial velocity.
-template <typename T> class SpatialVelocity;
+template <typename T>
+class SpatialVelocity;
 
 /// This class represents a _spatial force_ F (also called a _wrench_) and has 6
 /// elements with a torque 𝛕 (3-element vector) on top of a force 𝐟 (3-element
@@ -61,7 +62,8 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
 
   /// Constructs a spatial force F from a torque 𝛕 (tau) and a force 𝐟.
   SpatialForce(const Eigen::Ref<const Vector3<T>>& tau,
-               const Eigen::Ref<const Vector3<T>>& f) : Base(tau, f) {}
+               const Eigen::Ref<const Vector3<T>>& f)
+      : Base(tau, f) {}
 
   /// Constructs a spatial force F from an Eigen expression that represents a
   /// 6-element vector, i.e., a 3-element torque 𝛕 and a 3-element force 𝐟.

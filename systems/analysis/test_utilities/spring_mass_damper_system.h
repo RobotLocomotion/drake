@@ -25,19 +25,17 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
   /// Constructs an unforced spring-mass-damper system.
   /// Subclasses must use the protected constructor, not this one.
   SpringMassDamperSystem(double spring_constant_N_per_m,
-                         double damping_constant_Ns_per_m,
-                         double mass_kg)
-      : SpringMassDamperSystem<T>(
-            SystemTypeTag<SpringMassDamperSystem>{},
-            spring_constant_N_per_m, damping_constant_Ns_per_m, mass_kg) {}
+                         double damping_constant_Ns_per_m, double mass_kg)
+      : SpringMassDamperSystem<T>(SystemTypeTag<SpringMassDamperSystem>{},
+                                  spring_constant_N_per_m,
+                                  damping_constant_Ns_per_m, mass_kg) {}
 
   /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
   template <typename U>
   explicit SpringMassDamperSystem(const SpringMassDamperSystem<U>& other)
-      : SpringMassDamperSystem(
-            other.get_spring_constant(),
-            other.get_damping_constant(),
-            other.get_mass()) {}
+      : SpringMassDamperSystem(other.get_spring_constant(),
+                               other.get_damping_constant(), other.get_mass()) {
+  }
 
   /// Returns the damping constant that was provided at construction in Ns/m
   double get_damping_constant() const { return damping_constant_Ns_per_m_; }
@@ -55,8 +53,8 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
   /// @param[out] vf the velocity of the spring at time tf, on return.
   /// @throws std::exception if xf or vf is nullptr or the system is
   ///         damped, yet underdamped.
-  void GetClosedFormSolution(const T& x0, const T& v0, const T& tf,
-                             T* xf, T* vf) const {
+  void GetClosedFormSolution(const T& x0, const T& v0, const T& tf, T* xf,
+                             T* vf) const {
     using std::exp;
 
     if (!xf || !vf)
@@ -73,8 +71,8 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
     // Special case #2: underdamping.
     if (get_damping_constant() * get_damping_constant() <
         4 * this->get_mass() * this->get_spring_constant()) {
-      throw std::logic_error("Closed form solution not available for "
-                                 "underdamped system.");
+      throw std::logic_error(
+          "Closed form solution not available for underdamped system.");
     }
 
     // m⋅d²x/dt² + c⋅dx/dt + kx = 0
@@ -84,9 +82,8 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
 
     // Step 1: Solve the equation for z, yielding r and s.
     T r, s;
-    std::tie(r, s) = SolveRestrictedQuadratic(this->get_mass(),
-                                              get_damping_constant(),
-                                              this->get_spring_constant());
+    std::tie(r, s) = SolveRestrictedQuadratic(
+        this->get_mass(), get_damping_constant(), this->get_spring_constant());
 
     // Step 2: Substituting t = 0 into the equatinons above, solve the resulting
     // linear system:
@@ -106,15 +103,13 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
   /// Constructor that specifies @ref system_scalar_conversion support.
   SpringMassDamperSystem(SystemScalarConverter converter,
                          double spring_constant_N_per_m,
-                         double damping_constant_Ns_per_m,
-                         double mass_kg) :
-      SpringMassSystem<T>(std::move(converter),
-                          spring_constant_N_per_m, mass_kg,
-                          false /* unforced */),
-      damping_constant_Ns_per_m_(damping_constant_Ns_per_m) {}
+                         double damping_constant_Ns_per_m, double mass_kg)
+      : SpringMassSystem<T>(std::move(converter), spring_constant_N_per_m,
+                            mass_kg, false /* unforced */),
+        damping_constant_Ns_per_m_(damping_constant_Ns_per_m) {}
 
-  void DoCalcTimeDerivatives(const Context <T>& context,
-                             ContinuousState <T>* derivatives) const override {
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const override {
     // Get the current state of the spring.
     const ContinuousState<T>& state = context.get_continuous_state();
 
@@ -157,9 +152,9 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
   // not trust this code to solve generic quadratic equations*.
   static std::pair<T, T> SolveRestrictedQuadratic(const T& a, const T& b,
                                                   const T& c) {
-    using std::sqrt;
     using std::abs;
-    const T disc = b*b - 4 * a * c;
+    using std::sqrt;
+    const T disc = b * b - 4 * a * c;
     DRAKE_DEMAND(disc >= 0);
     DRAKE_DEMAND(abs(a) > std::numeric_limits<double>::epsilon());
     DRAKE_DEMAND(abs(b) > std::numeric_limits<double>::epsilon());
@@ -174,4 +169,3 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
 }  // namespace implicit_integrator_test
 }  // namespace systems
 }  // namespace drake
-

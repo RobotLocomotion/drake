@@ -50,6 +50,28 @@ void PolarDecompose(const Matrix3<T>& F, EigenPtr<Matrix3<T>> R,
 }
 
 template <typename T>
+void RotationSvd(const Matrix3<T>& F, EigenPtr<Matrix3<T>> U,
+                 EigenPtr<Matrix3<T>> V, EigenPtr<Vector3<T>> sigma) {
+  /* According to https://eigen.tuxfamily.org/dox/classEigen_1_1BDCSVD.html,
+   for matrix of size < 16, it's preferred to used JacobiSVD. */
+  const Eigen::JacobiSVD<Matrix3<T>, Eigen::HouseholderQRPreconditioner> svd(
+      F, Eigen::ComputeFullU | Eigen::ComputeFullV);
+  *U = svd.matrixU();
+  *V = svd.matrixV();
+  *sigma = svd.singularValues();
+  /* We flip an arbitrary singular vector if needed to ensure U and V are
+   rotation matrices. */
+  if (U->determinant() < 0.0) {
+    U->col(0) *= -1.0;
+    (*sigma)(0) *= -1.0;
+  }
+  if (V->determinant() < 0.0) {
+    V->col(0) *= -1.0;
+    (*sigma)(0) *= -1.0;
+  }
+}
+
+template <typename T>
 void AddScaledRotationalDerivative(
     const Matrix3<T>& R, const Matrix3<T>& S, const T& scale,
     math::internal::FourthOrderTensor<T>* scaled_dRdF) {
@@ -175,6 +197,7 @@ VectorX<T> PermuteBlockVector(const Eigen::Ref<const VectorX<T>>& v,
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&CalcConditionNumberOfInvertibleMatrix<T>,  // BR
      &PolarDecompose<T>,                         // BR
+     &RotationSvd<T>,                            // BR
      &AddScaledRotationalDerivative<T>,          // BR
      &CalcCofactorMatrix<T>,                     // BR
      &AddScaledCofactorMatrixDerivative<T>,      // BR
@@ -183,6 +206,10 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
 template void PolarDecompose<float>(const Matrix3<float>& F,
                                     EigenPtr<Matrix3<float>> R,
                                     EigenPtr<Matrix3<float>> S);
+template void RotationSvd<float>(const Matrix3<float>& F,
+                                 EigenPtr<Matrix3<float>> U,
+                                 EigenPtr<Matrix3<float>> V,
+                                 EigenPtr<Vector3<float>> sigma);
 template void AddScaledRotationalDerivative<float>(
     const Matrix3<float>& R, const Matrix3<float>& S, const float& scale,
     math::internal::FourthOrderTensor<float>* scaled_dRdF);

@@ -11,6 +11,9 @@
 namespace drake {
 namespace pydrake {
 
+/** Define the bounding box functions. See geometry_py_bounding_box.cc. */
+void DefineGeometryBoundingBox(py::module m);
+
 /** Defines the common elements in the drake::geometry namespace. See
  geometry_py_common.cc. */
 void DefineGeometryCommon(py::module m);
@@ -37,6 +40,9 @@ void DefineGeometrySceneGraph(py::module m);
 
 /** Binds the visualizers in drake::geometry. See geometry_py_visualizers.cc. */
 void DefineGeometryVisualizers(py::module m);
+
+/** Defines the mesh refinement functions. See geometry_py_refine.cc. */
+void DefineGeometryRefine(py::module m);
 
 }  // namespace pydrake
 }  // namespace drake

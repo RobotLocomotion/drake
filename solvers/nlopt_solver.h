@@ -40,6 +40,10 @@ class NloptSolver final : public SolverBase {
   /** The key name for int-valued maximum number of evaluations. */
   static std::string MaxEvalName();
 
+  /** The key name for the maximum runtime. By default, there is no maximum
+   * runtime. A nonpositive value will be interpreted as no maximum runtime. */
+  static std::string MaxTimeName();
+
   /** The key name for the string-valued algorithm. */
   static std::string AlgorithmName();
 

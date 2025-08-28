@@ -70,6 +70,10 @@ void DefineSolversOptions(py::module m);
 /* Defines the OSQP bindings. See solvers_py_osqp.cc. */
 void DefineSolversOsqp(py::module m);
 
+/* Defines the ProjectedGradientDescentSolver bindings. See
+ * solvers_py_projected_gradient_descent.cc. */
+void DefineSolversProjectedGradientDescent(py::module m);
+
 /* Defines the SCS bindings. See solvers_py_scs.cc. */
 void DefineSolversScs(py::module m);
 

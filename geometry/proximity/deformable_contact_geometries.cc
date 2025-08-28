@@ -56,26 +56,38 @@ DeformableGeometry& DeformableGeometry::operator=(
     const DeformableGeometry& other) {
   if (this == &other) return *this;
 
-  deformable_mesh_ = std::make_unique<DeformableVolumeMeshWithBvh<double>>(
-      *other.deformable_mesh_);
+  deformable_volume_ = std::make_unique<DeformableVolumeMeshWithBvh<double>>(
+      *other.deformable_volume_);
+  deformable_surface_ = std::make_unique<DeformableSurfaceMeshWithBvh<double>>(
+      *other.deformable_surface_);
+  surface_index_to_volume_index_ = other.surface_index_to_volume_index_;
+  surface_tri_to_volume_tet_ = other.surface_tri_to_volume_tet_;
   // We can't simply copy the field; the copy must contain a pointer to
   // the new mesh. So, we use CloneAndSetMesh() instead.
-  signed_distance_field_ =
-      other.signed_distance_field_->CloneAndSetMesh(&deformable_mesh_->mesh());
+  signed_distance_field_ = other.signed_distance_field_->CloneAndSetMesh(
+      &deformable_volume_->mesh());
   return *this;
 }
 
-DeformableGeometry::DeformableGeometry(VolumeMesh<double> mesh)
-    : deformable_mesh_(std::make_unique<DeformableVolumeMeshWithBvh<double>>(
-          std::move(mesh))),
+DeformableGeometry::DeformableGeometry(
+    VolumeMesh<double> volume_mesh, TriangleSurfaceMesh<double> surface_mesh,
+    std::vector<int> surface_index_to_volume_index,
+    std::vector<int> surface_tri_to_volume_tet)
+    : deformable_volume_(std::make_unique<DeformableVolumeMeshWithBvh<double>>(
+          std::move(volume_mesh))),
+      deformable_surface_(
+          std::make_unique<DeformableSurfaceMeshWithBvh<double>>(
+              std::move(surface_mesh))),
+      surface_index_to_volume_index_(std::move(surface_index_to_volume_index)),
+      surface_tri_to_volume_tet_(std::move(surface_tri_to_volume_tet)),
       signed_distance_field_(
-          ApproximateSignedDistanceField(&deformable_mesh_->mesh())) {}
+          ApproximateSignedDistanceField(&deformable_volume_->mesh())) {}
 
 const VolumeMeshFieldLinear<double, double>&
 DeformableGeometry::CalcSignedDistanceField() const {
   std::vector<double> values = signed_distance_field_->values();
   *signed_distance_field_ = VolumeMeshFieldLinear<double, double>(
-      std::move(values), &deformable_mesh_->mesh());
+      std::move(values), &deformable_volume_->mesh());
   return *signed_distance_field_;
 }
 

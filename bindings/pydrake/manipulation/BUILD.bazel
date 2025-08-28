@@ -24,6 +24,7 @@ drake_pybind_library(
     name = "manipulation",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:ref_cycle_pybind",
         "//bindings/pydrake/common:serialize_pybind",
@@ -53,9 +54,11 @@ drake_py_unittest(
     data = [
         "//manipulation/util:test_directives",
         "@drake_models//:iiwa_description",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":manipulation",
+        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/multibody",
         "//bindings/pydrake/systems",
         "//bindings/pydrake/systems:test_util_py",
@@ -66,6 +69,8 @@ drake_py_unittest(
     name = "schunk_wsg_test",
     data = [
         "//manipulation/util:test_directives",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":manipulation",
@@ -79,6 +84,8 @@ drake_py_unittest(
     data = [
         "//manipulation/util:test_directives",
         "//multibody/benchmarks/acrobot:models",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:wsg_50_description",
     ],
     deps = [
         ":manipulation",

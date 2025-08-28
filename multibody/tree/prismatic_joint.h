@@ -16,13 +16,12 @@ namespace multibody {
 
 /// This Joint allows two bodies to translate relative to one another along a
 /// common axis.
-/// That is, given a frame F attached to the parent body P and a frame M
-/// attached to the child body B (see the Joint class's documentation),
-/// this Joint allows frames F and M to translate with respect to each other
+/// That is, given a frame Jp attached to the parent body P and a frame Jc
+/// attached to the child body C (see the Joint class's documentation),
+/// this Joint allows frames Jp and Jc to translate with respect to each other
 /// along an axis â. The translation distance is defined positive when child
-/// body B translates along the direction of â.
-/// Axis â is constant and has the same measures in both frames F and M, that
-/// is, `â_F = â_M`.
+/// body C translates along the direction of â. Axis vector â is constant and
+/// has the same components in both frames Jp and Jc, that is, `â_Jp = â_Jc`.
 ///
 /// @tparam_default_scalar
 template <typename T>
@@ -36,8 +35,8 @@ class PrismaticJoint final : public Joint<T> {
   static const char kTypeName[];
 
   /// Constructor to create a prismatic joint between two bodies so that
-  /// frame F attached to the parent body P and frame M attached to the child
-  /// body B, translate relatively to one another along a common axis. See this
+  /// frame Jp attached to the parent body P and frame Jc attached to the child
+  /// body C, translate relatively to one another along a common axis. See this
   /// class's documentation for further details on the definition of these
   /// frames and translation distance.
   /// The first three arguments to this constructor are those of the Joint class
@@ -45,10 +44,10 @@ class PrismaticJoint final : public Joint<T> {
   /// The additional parameter `axis` is:
   /// @param[in] axis
   ///   A vector in ℝ³ specifying the translation axis for this joint. Given
-  ///   that frame M only translates with respect to F and there is no relative
-  ///   rotation, the measures of `axis` in either frame F or M
-  ///   are exactly the same, that is, `axis_F = axis_M`.
-  ///   This vector can have any length, only the direction is used.
+  ///   that frame Jc only translates with respect to Jp and there is no
+  ///   relative rotation, the components of `axis` in either frame Jp or Jc
+  ///   are exactly the same, that is, `axis_Jp = axis_Jc`. This vector can have
+  ///   any length, only the direction is used.
   /// @param[in] pos_lower_limit
   ///   Lower position limit, in meters, for the translation coordinate
   ///   (see get_translation()).
@@ -76,9 +75,9 @@ class PrismaticJoint final : public Joint<T> {
   const std::string& type_name() const final;
 
   /// Returns the axis of translation for `this` joint as a unit vector.
-  /// Since the measures of this axis in either frame F or M are the same (see
-  /// this class's documentation for frame definitions) then,
-  /// `axis = axis_F = axis_M`.
+  /// Since the components of this axis in either frame Jp or Jc are the same
+  /// (see this class's documentation for frame definitions) then,
+  /// `axis = axis_Jp = axis_Jc`.
   const Vector3<double>& translation_axis() const { return axis_; }
 
   /// Returns `this` joint's default damping constant in N⋅s/m.
@@ -86,9 +85,12 @@ class PrismaticJoint final : public Joint<T> {
 
   /// Sets the default value of viscous damping for this joint, in N⋅s/m.
   /// @throws std::exception if damping is negative.
+  /// @throws std::exception if this element is not associated with a
+  ///   MultibodyPlant.
   /// @pre the MultibodyPlant must not be finalized.
   void set_default_damping(double damping) {
     DRAKE_THROW_UNLESS(damping >= 0);
+    DRAKE_THROW_UNLESS(this->has_parent_tree());
     DRAKE_DEMAND(!this->get_parent_tree().topology_is_valid());
     this->set_default_damping_vector(Vector1d(damping));
   }
@@ -224,6 +226,7 @@ class PrismaticJoint final : public Joint<T> {
   void AddInForce(const systems::Context<T>& context, const T& force,
                   MultibodyForces<T>* multibody_forces) const {
     DRAKE_DEMAND(multibody_forces != nullptr);
+    DRAKE_DEMAND(this->has_parent_tree());
     DRAKE_DEMAND(
         multibody_forces->CheckHasRightSizeForModel(this->get_parent_tree()));
     this->AddInOneForce(context, 0, force, multibody_forces);
@@ -243,6 +246,7 @@ class PrismaticJoint final : public Joint<T> {
                        MultibodyForces<T>* forces) const final {
     // Right now we assume all the forces in joint_tau go into a single
     // mobilizer.
+    DRAKE_DEMAND(joint_dof == 0);
     Eigen::Ref<VectorX<T>> tau_mob =
         get_mobilizer().get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
@@ -300,16 +304,7 @@ class PrismaticJoint final : public Joint<T> {
   // Joint<T> finals:
   std::unique_ptr<internal::Mobilizer<T>> MakeMobilizerForJoint(
       const internal::SpanningForest::Mobod& mobod,
-      internal::MultibodyTree<T>*) const final {
-    const auto [inboard_frame, outboard_frame] =
-        this->tree_frames(mobod.is_reversed());
-    // TODO(sherm1) The mobilizer needs to be reversed, not just the frames.
-    auto prismatic_mobilizer =
-        std::make_unique<internal::PrismaticMobilizer<T>>(
-            mobod, *inboard_frame, *outboard_frame, axis_);
-    prismatic_mobilizer->set_default_position(this->default_positions());
-    return prismatic_mobilizer;
-  }
+      internal::MultibodyTree<T>*) const final;
 
   std::unique_ptr<Joint<double>> DoCloneToScalar(
       const internal::MultibodyTree<double>& tree_clone) const final;

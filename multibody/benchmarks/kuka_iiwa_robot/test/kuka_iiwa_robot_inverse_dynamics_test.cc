@@ -9,8 +9,8 @@ namespace benchmarks {
 namespace kuka_iiwa_robot {
 namespace {
 
-using Eigen::Vector3d;
 using Eigen::Matrix3d;
+using Eigen::Vector3d;
 using test_utilities::SpatialKinematicsPVA;
 using SpatialForced = SpatialForce<double>;
 using Vector7d = Eigen::Matrix<double, 7, 1>;
@@ -51,7 +51,6 @@ void TestKukaArmInverseDynamics(const Eigen::Ref<const VectorX<double>>& q,
   EXPECT_TRUE(drake_kinematics.translational_acceleration().isApprox(
       MG_kinematics.translational_acceleration(), kEpsilon));
 
-
   // Inverse dynamics: Get Drake's joint forces/torques, including:
   // --------|-------------------------------------------------
   // F_Ao_W  | Spatial force on Ao from N, expressed in frame W (world).
@@ -84,7 +83,6 @@ void TestKukaArmInverseDynamics(const Eigen::Ref<const VectorX<double>>& q,
   EXPECT_TRUE(F_Eo_W.IsApprox(forces.F_Eo_W, tolerance));
   EXPECT_TRUE(F_Fo_W.IsApprox(forces.F_Fo_W, tolerance));
 }
-
 
 // Verify Drake's computed results for joint reaction forces/torques.
 GTEST_TEST(KukaIIwaRobotKinematics, InverseDynamicsTestA) {
@@ -135,7 +133,6 @@ GTEST_TEST(KukaIIwaRobotKinematics, InverseDynamicsTestA) {
   TestKukaArmInverseDynamics(q, qDt, qDDt, gravityA);
   TestKukaArmInverseDynamics(q, qDt, qDDt, gravityB);
 }
-
 
 }  // namespace
 }  // namespace kuka_iiwa_robot

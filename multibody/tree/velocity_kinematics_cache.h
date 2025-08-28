@@ -37,13 +37,13 @@ class VelocityKinematicsCache {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VelocityKinematicsCache);
 
   // Constructs a velocity kinematics cache entry for the given
-  // MultibodyTreeTopology.
+  // SpanningForest.
   // In Release builds specific entries are left uninitialized resulting in a
   // zero cost operation. However in Debug builds those entries are set to NaN
   // so that operations using this uninitialized cache entry fail fast, easing
   // bug detection.
-  explicit VelocityKinematicsCache(const MultibodyTreeTopology& topology)
-      : num_mobods_(topology.num_mobods()) {
+  explicit VelocityKinematicsCache(const SpanningForest& forest)
+      : num_mobods_(forest.num_mobods()) {
     Allocate();
     DRAKE_ASSERT_VOID(InitializeToNaN());
     // Sets defaults.

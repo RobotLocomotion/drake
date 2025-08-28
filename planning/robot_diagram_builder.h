@@ -14,6 +14,19 @@
 namespace drake {
 namespace planning {
 
+namespace internal {
+
+// Support for transferring ownership of the internal diagram builder. This
+// mechanism is necessary for the Python bindings to maintain a consistent
+// memory model.
+template <typename T>
+struct BuildResultForPython {
+  std::unique_ptr<systems::DiagramBuilder<T>> builder;
+  std::unique_ptr<planning::RobotDiagram<T>> diagram;
+};
+
+}  // namespace internal
+
 /** Storage for a combined diagram builder, plant, and scene graph.
 When T == double, a parser (and package map) is also available.
 
@@ -107,6 +120,12 @@ class RobotDiagramBuilder {
   already been finalized.
   @throws exception when IsDiagramBuilt() already. */
   std::unique_ptr<RobotDiagram<T>> Build();
+
+  /** (Internal use only) Performs all the actions of Build(). In addition,
+  transfers ownership of both the built diagram and the internal builder on
+  return.
+  @throws exception when IsDiagramBuilt() already. */
+  internal::BuildResultForPython<T> BuildForPython();
 
  private:
   void ThrowIfAlreadyBuiltOrCorrupted() const;

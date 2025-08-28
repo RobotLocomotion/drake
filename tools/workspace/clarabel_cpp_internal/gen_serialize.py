@@ -11,6 +11,9 @@ _FIELDS_TO_SKIP = {
     # These are enums, which we don't support yet.
     "chordal_decomposition_merge_method",
     "direct_solve_method",
+    # We don't use FEATURE_PARDISO_ANY, so these don't actually exist.
+    "pardiso_iparm[64]",
+    "pardiso_verbose",
 }
 
 _PROLOGUE = """\
@@ -46,7 +49,7 @@ def _settings_names():
     # Read the DefaultSettings.h header.
     manifest = runfiles.Create()
     headers_dir = "clarabel_cpp_internal/include/cpp"
-    header = manifest.Rlocation(f"{headers_dir}/DefaultSettings.h")
+    header = manifest.Rlocation(f"{headers_dir}/DefaultSettings.hpp")
     with open(header) as f:
         text = f.read()
 

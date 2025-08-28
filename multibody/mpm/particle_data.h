@@ -9,6 +9,7 @@
 #include "drake/multibody/fem/deformable_body_config.h"
 #include "drake/multibody/fem/linear_constitutive_model.h"
 #include "drake/multibody/fem/linear_corotated_model.h"
+#include "drake/multibody/fem/neohookean_model.h"
 #include "drake/multibody/mpm/mass_and_momentum.h"
 
 namespace drake {
@@ -21,12 +22,14 @@ namespace internal {
 template <typename T>
 using ConstitutiveModelVariant =
     std::variant<fem::internal::CorotatedModel<T>,
+                 fem::internal::NeoHookeanModel<T>,
                  fem::internal::LinearCorotatedModel<T>,
                  fem::internal::LinearConstitutiveModel<T>>;
 
 template <typename T>
 using DeformationGradientDataVariant =
     std::variant<fem::internal::CorotatedModelData<T>,
+                 fem::internal::NeoHookeanModelData<T>,
                  fem::internal::LinearCorotatedModelData<T>,
                  fem::internal::LinearConstitutiveModelData<T>>;
 
@@ -62,7 +65,7 @@ class ParticleData {
   /* Const accessors for state-dependent data. */
   const std::vector<int>& in_constraint() const { return in_constraint_; }
   const std::vector<DeformationGradientDataVariant<T>>&
-  deformation_gradient_data() {
+  deformation_gradient_data() const {
     return deformation_gradient_data_;
   }
   const std::vector<Matrix3<T>>& tau_volume() const { return tau_volume_; }

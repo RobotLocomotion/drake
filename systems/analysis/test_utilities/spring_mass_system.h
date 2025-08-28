@@ -198,17 +198,19 @@ class SpringMassSystem : public LeafSystem<T> {
   /// @param[out] vf the velocity of the spring at time tf, on return.
   /// @throws std::exception if xf or vf is nullptr or if the system is
   ///         forced.
-  void GetClosedFormSolution(const T& x0, const T& v0, const T& tf,
-                             T* xf, T* vf) const {
-    using std::sqrt;
-    using std::sin;
+  void GetClosedFormSolution(const T& x0, const T& v0, const T& tf, T* xf,
+                             T* vf) const {
     using std::cos;
+    using std::sin;
+    using std::sqrt;
 
-    if (!xf || !vf)
+    if (!xf || !vf) {
       throw std::logic_error("Passed final position/velocity is null.");
-    if (system_is_forced_)
-      throw std::logic_error("Can only compute closed form solution on "
-                                 "unforced system");
+    }
+    if (system_is_forced_) {
+      throw std::logic_error(
+          "Can only compute closed form solution on unforced system");
+    }
 
     // d^2x/dt^2 = -kx/m
     // solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)
@@ -220,17 +222,15 @@ class SpringMassSystem : public LeafSystem<T> {
     const T omega = sqrt(get_spring_constant() / get_mass());
     const T c1 = x0;
     const T c2 = v0 / omega;
-    *xf = c1*cos(omega*tf) + c2*sin(omega*tf);
-    *vf = -c1*sin(omega*tf)*omega + c2*cos(omega*tf)*omega;
+    *xf = c1 * cos(omega * tf) + c2 * sin(omega * tf);
+    *vf = -c1 * sin(omega * tf) * omega + c2 * cos(omega * tf) * omega;
   }
 
  protected:
   /// Constructor that specifies @ref system_scalar_conversion support.
-  SpringMassSystem(
-      SystemScalarConverter converter,
-      double spring_constant_N_per_m,
-      double mass_kg,
-      bool system_is_forced);
+  SpringMassSystem(SystemScalarConverter converter,
+                   double spring_constant_N_per_m, double mass_kg,
+                   bool system_is_forced);
 
  private:
   // This is the calculator method for the output port.

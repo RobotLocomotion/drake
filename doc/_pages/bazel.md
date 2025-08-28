@@ -130,7 +130,8 @@ bazel test --config lint //...                       # Only run style checks; do
 
 * The "``:``" syntax separates target names from the directory path of the
   ``BUILD`` file they appear in. In this case, for example,
-  ``drake/common/BUILD`` specifies ``drake_cc_test(name = "polynomial_test")``.
+  ``drake/common/BUILD`` specifies
+  ``drake_cc_googletest(name = "polynomial_test")``.
 * Note that the configuration switches (``-c`` and ``--config``) influence the
   entire command. For example, running a test in ``dbg`` mode means that its
   prerequisite libraries are also compiled and linked in ``dbg`` mode.

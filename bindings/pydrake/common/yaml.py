@@ -6,7 +6,6 @@ import math
 from pathlib import Path
 import types
 import typing
-import warnings
 
 import numpy as np
 import yaml
@@ -316,17 +315,6 @@ def _convert_yaml_primitive_to_schema_type(*, yaml_value, value_schema):
             return True
         if yaml_value == "false":
             return False
-    # Other conversions between JSON types (like float->str) are deprecated,
-    # because the string might look nothing like the scalar in the document.
-    if (yaml_value_type in _PRIMITIVE_JSON_TYPES
-            and value_schema in _PRIMITIVE_JSON_TYPES):
-        warnings.warn(
-            f"Loading yaml_value {yaml_value!r} into the schema type "
-            f"{value_schema} is deprecated and will be become a parsing "
-            "error in Drake on or after 2025-05-01.",
-            category=DrakeDeprecationWarning,
-        )
-        return value_schema(yaml_value)
     # Don't allow any other primitive conversions.
     return None
 

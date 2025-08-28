@@ -5,6 +5,8 @@ load("@drake//tools/skylark:cc.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
+COPTS = ["-w"]
+
 cc_library(
     name = "common_robotics_utilities",
     srcs = [
@@ -49,7 +51,7 @@ cc_library(
         "include/common_robotics_utilities/zlib_helpers.hpp",
     ],
     includes = ["include"],
-    copts = ["-w"],
+    copts = COPTS,
     linkstatic = True,
     deps = [
         "@eigen",
@@ -64,6 +66,7 @@ cc_library(
 cc_test(
     name = "hausdorff_distance_test",
     srcs = ["test/hausdorff_distance_test.cpp"],
+    copts = COPTS,
     env = {"OMP_NUM_THREADS": "2"},
     tags = [
         "cpu:2",
@@ -77,8 +80,21 @@ cc_test(
 )
 
 cc_test(
+    name = "math_test",
+    srcs = ["test/math_test.cpp"],
+    copts = COPTS,
+    tags = ["no_kcov"],
+    deps = [
+        ":common_robotics_utilities",
+        "@eigen",
+        "@gtest//:without_main",
+    ],
+)
+
+cc_test(
     name = "maybe_test",
     srcs = ["test/maybe_test.cpp"],
+    copts = COPTS,
     tags = ["no_kcov"],
     deps = [
         ":common_robotics_utilities",
@@ -91,6 +107,7 @@ cc_test(
 cc_test(
     name = "parallelism_test",
     srcs = ["test/parallelism_test.cpp"],
+    copts = COPTS,
     env = {"OMP_NUM_THREADS": "2"},
     tags = [
         "cpu:2",
@@ -110,6 +127,7 @@ cc_test(
 cc_test(
     name = "planning_test",
     srcs = ["test/planning_test.cpp"],
+    copts = COPTS,
     env = {"OMP_NUM_THREADS": "2"},
     tags = [
         "cpu:2",
@@ -127,6 +145,7 @@ cc_test(
 cc_test(
     name = "task_planning_test",
     srcs = ["test/task_planning_test.cpp"],
+    copts = COPTS,
     tags = ["no_kcov"],
     deps = [
         ":common_robotics_utilities",
@@ -137,6 +156,7 @@ cc_test(
 cc_test(
     name = "utility_test",
     srcs = ["test/utility_test.cpp"],
+    copts = COPTS,
     tags = ["no_kcov"],
     deps = [
         ":common_robotics_utilities",
@@ -148,6 +168,7 @@ cc_test(
 cc_test(
     name = "voxel_grid_test",
     srcs = ["test/voxel_grid_test.cpp"],
+    copts = COPTS,
     tags = ["no_kcov"],
     deps = [
         ":common_robotics_utilities",
@@ -160,6 +181,7 @@ test_suite(
     name = "test_suite",
     tests = [
         "hausdorff_distance_test",
+        "math_test",
         "maybe_test",
         "parallelism_test",
         "planning_test",

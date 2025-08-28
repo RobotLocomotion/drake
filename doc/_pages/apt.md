@@ -91,6 +91,6 @@ Nightly packages are retained for 56 days from their date of creation.
 To install a nightly apt package, download the archive and install it directly:
 
 ```bash
-wget https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-jammy.deb
-sudo apt-get install --no-install-recommends ./drake-dev_latest-1_amd64-jammy.deb
+wget https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb
+sudo apt-get install --no-install-recommends ./drake-dev_latest-1_amd64-noble.deb
 ```

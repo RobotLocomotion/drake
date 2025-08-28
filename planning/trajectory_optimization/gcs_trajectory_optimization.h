@@ -236,7 +236,9 @@ class GcsTrajectoryOptimization final {
         const Eigen::Ref<const Eigen::VectorXd>& lb,
         const Eigen::Ref<const Eigen::VectorXd>& ub, int derivative_order);
 
-    /** Enforces derivative continuity constraints on the subgraph.
+    /** Enforces that for any two subsequent path segments within the subgraph,
+    the `continuity_order`th path derivative at the end of the first segment
+    equals that of the start of the second segment.
 
     Note that the constraints are on the control points of the
     derivatives of r(s) and not q(t). This may result in discontinuities of the
@@ -250,10 +252,15 @@ class GcsTrajectoryOptimization final {
         the order the subgraphs.
     @throws std::exception if the continuity order is less than one since path
     continuity is enforced by default.
+
+    @note To enforce that the trajectory is of class C^k, you must call
+    AddPathContinuityConstraint for each continuity_order 1 through k.
     */
     void AddPathContinuityConstraints(int continuity_order);
 
-    /** Enforces derivative continuity constraints on the subgraph.
+    /** Enforces that for any two subsequent path segments within the subgraph,
+    the `continuity_order`th time derivative at the end of the first segment
+    equals that of the start of the second segment.
 
     This adds a nonlinear constraint to the restriction and MIP
     GraphOfConvexSets::Transcription, while adding a convex surrogate to the
@@ -275,6 +282,9 @@ class GcsTrajectoryOptimization final {
       the order the subgraphs.
     @throws std::exception if the continuity order is less than one since path
       continuity is enforced by default.
+
+    @note To enforce that the trajectory is of class C^k, you must call
+    AddContinuityConstraint for each continuity_order 1 through k.
     */
     void AddContinuityConstraints(int continuity_order);
 
@@ -659,8 +669,10 @@ class GcsTrajectoryOptimization final {
     */
     void AddZeroDerivativeConstraints(int derivative_order);
 
-    /** Enforces derivative continuity constraints on the edges between the
-    subgraphs.
+    /** Enforces that for any two subsequent path segments that are joined by an
+    edge in this EdgesBetweenSubgraphs, the `continuity_order`th path derivative
+    at the end of the first segment equals that of the start of the second
+    segment.
 
     Note that the constraints are on the control points of the
     derivatives of r(s) and not q(t). This may result in discontinuities of the
@@ -674,11 +686,16 @@ class GcsTrajectoryOptimization final {
         the order of both subgraphs.
     @throws std::exception if the continuity order is less than one since path
     continuity is enforced by default.
+
+    @note To enforce that the trajectory is of class C^k, you must call
+    AddPathContinuityConstraint for each continuity_order 1 through k.
     */
     void AddPathContinuityConstraints(int continuity_order);
 
-    /** Enforces derivative continuity constraints on the edges between the
-    subgraphs.
+    /** Enforces that for any two subsequent path segments that are joined by an
+    edge in this EdgesBetweenSubgraphs, the `continuity_order`th time derivative
+    at the end of the first segment equals that of the start of the second
+    segment.
 
     This adds a nonlinear constraint to the restriction and MIP
     GraphOfConvexSets::Transcription, while adding a convex surrogate to the
@@ -700,6 +717,9 @@ class GcsTrajectoryOptimization final {
       the order of both subgraphs.
     @throws std::exception if the continuity order is less than one since path
       continuity is enforced by default.
+
+    @note To enforce that the trajectory is of class C^k, you must call
+    AddContinuityConstraint for each continuity_order 1 through k.
     */
     void AddContinuityConstraints(int continuity_order);
 
@@ -1157,7 +1177,9 @@ class GcsTrajectoryOptimization final {
                                     const Eigen::Ref<const Eigen::VectorXd>& ub,
                                     int derivative_order);
 
-  /** Enforces derivative continuity constraints on the entire graph.
+  /** Enforces that for any two subsequent path segments in the entire graph,
+  the `continuity_order`th path derivative at the end of the first segment
+  equals that of the start of the second segment.
 
   Note that the constraints are on the control points of the
   derivatives of r(s) and not q(t). This may result in discontinuities of the
@@ -1169,10 +1191,15 @@ class GcsTrajectoryOptimization final {
 
   @throws std::exception if the continuity order is less than one since path
   continuity is enforced by default.
+
+  @note To enforce that the trajectory is of class C^k, you must call
+  AddPathContinuityConstraint for each continuity_order 1 through k.
   */
   void AddPathContinuityConstraints(int continuity_order);
 
-  /** Enforces derivative continuity constraints on the entire graph.
+  /** Enforces that for any two subsequent path segments in the entire graph,
+  the `continuity_order`th time derivative at the end of the first segment
+  equals that of the start of the second segment.
 
   This adds a nonlinear constraint to the restriction and MIP
   GraphOfConvexSets::Transcription, while adding a convex surrogate to the
@@ -1192,6 +1219,9 @@ class GcsTrajectoryOptimization final {
 
   @throws std::exception if the continuity order is less than one since path
     continuity is enforced by default.
+
+  @note To enforce that the trajectory is of class C^k, you must call
+  AddContinuityConstraint for each continuity_order 1 through k.
   */
   void AddContinuityConstraints(int continuity_order);
 

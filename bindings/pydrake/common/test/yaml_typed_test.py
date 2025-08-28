@@ -16,7 +16,6 @@ import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test.serialize_test_util import MyData2
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.meta import (
     ValueParameterizedTest,
     run_with_multiple_values,
@@ -314,10 +313,8 @@ class TestYamlTypedRead(unittest.TestCase,
             x = yaml_load_typed(schema=IntStruct, data=data, **options)
             self.assertEqual(x.value, expected)
 
-        # Deprecated 2025-05-01.
-        with catch_drake_warnings(expected_count=1):
-            x = yaml_load_typed(schema=IntStruct, data="value: 1.1", **options)
-        self.assertEqual(x.value, 1)
+        with self.assertRaisesRegex(Exception, "Expected.*int.*"):
+            yaml_load_typed(schema=IntStruct, data="value: 1.1", **options)
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_bool(self, *, options):
@@ -325,7 +322,10 @@ class TestYamlTypedRead(unittest.TestCase,
             # Plain scalars in canonical form.
             ("true", True),
             ("false", False),
-            # Strings.
+            # Plain scalars in non-canonical form.
+            ("yes", True),
+            ("no", False),
+            # Using the canonical form keywords but typed as strings.
             ("'true'", True),
             ("'false'", False),
         ]
@@ -337,29 +337,25 @@ class TestYamlTypedRead(unittest.TestCase,
         # Yaml's insane non-canonical plain scalars. (This is not the complete
         # set, rather just a couple as a sanity check.)
         bad_cases = (
-            "yes",
-            "no",
+            # Using the non-canonical form keywords but typed as strings.
+            "'yes'",
+            "'no'",
         )
-        for value in cases:
-            expected = True
+        for value in bad_cases:
             data = f"value: {value}"
-            # Deprecated 2025-05-01.
-            with catch_drake_warnings(expected_count=1):
-                x = yaml_load_typed(schema=BoolStruct, data=data, **options)
-            self.assertEqual(x.value, expected)
+            with self.assertRaisesRegex(Exception, "Expected.*bool.*"):
+                yaml_load_typed(schema=BoolStruct, data=data, **options)
 
-    # Deprecated 2025-05-01.
     @run_with_multiple_values(_all_typed_read_options())
-    def test_read_string_deprecated(self, *, options):
+    def test_read_string_scalar_type_mismatch(self, *, options):
         cases = [
-            ("0", "0"),
-            ("3.0e+4", "30000.0"),
+            "0",
+            "3.0e+4",
         ]
-        for value, expected in cases:
+        for value in cases:
             data = f"value: {value}"
-            with catch_drake_warnings(expected_count=1):
-                x = yaml_load_typed(schema=StringStruct, data=data, **options)
-            self.assertEqual(x.value, expected)
+            with self.assertRaisesRegex(Exception, "Expected.*str.*"):
+                yaml_load_typed(schema=StringStruct, data=data, **options)
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_path(self, *, options):

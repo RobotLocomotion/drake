@@ -1,4 +1,5 @@
 default-jdk
+diffutils
 file
 gfortran
 libclang-15-dev
@@ -6,7 +7,6 @@ libgl-dev
 libglib2.0-dev
 libglx-dev
 liblapack-dev
-libmumps-seq-dev
 libopengl-dev
 libx11-dev
 nasm
@@ -16,5 +16,4 @@ patch
 patchelf
 pkg-config
 python3-all-dev
-python3-pygame
 zlib1g-dev

@@ -13,6 +13,7 @@
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/articulated_body_force_cache.h"
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
+#include "drake/multibody/tree/block_system_jacobian_cache.h"
 #include "drake/multibody/tree/frame_body_pose_cache.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
@@ -111,6 +112,16 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<PositionKinematicsCache<T>>(context);
   }
 
+  /* Returns a reference to the up-to-date BlockSystemJacobianCache in the
+  given Context, recalculating it first if necessary. Also if necessary, the
+  PositionKinematicsCache will be recalculated as well. */
+  const BlockSystemJacobianCache<T>& EvalBlockSystemJacobianCache(
+      const systems::Context<T>& context) const {
+    this->ValidateContext(context);
+    return block_system_jacobian_cache_entry()
+        .template Eval<BlockSystemJacobianCache<T>>(context);
+  }
+
   /* Returns a reference to the up-to-date VelocityKinematicsCache in the
   given Context, recalculating it first if necessary. Also if necessary, the
   PositionKinematicsCache will be recalculated as well. */
@@ -171,7 +182,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   }
 
   /* Returns a reference to the up-to-date cache of composite-body inertias
-  in the given Context, recalculating it first if necessary. */
+  K_BBo_W in the given Context, recalculating it first if necessary. */
   const std::vector<SpatialInertia<T>>& EvalCompositeBodyInertiaInWorldCache(
       const systems::Context<T>& context) const {
     this->ValidateContext(context);
@@ -257,6 +268,11 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   /* Returns the cache entry that holds position kinematics results. */
   const systems::CacheEntry& position_kinematics_cache_entry() const {
     return this->get_cache_entry(cache_indexes_.position_kinematics);
+  }
+
+  /* Returns the cache entry that holds the system Jacobian. */
+  const systems::CacheEntry& block_system_jacobian_cache_entry() const {
+    return this->get_cache_entry(cache_indexes_.block_system_jacobian);
   }
 
   /* Returns the cache entry that holds velocity kinematics results. */
@@ -404,6 +420,13 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     internal_tree().CalcPositionKinematicsCache(context, position_cache);
   }
 
+  void CalcBlockSystemJacobianCache(
+      const systems::Context<T>& context,
+      BlockSystemJacobianCache<T>* block_system_jacobian_cache) const {
+    internal_tree().CalcBlockSystemJacobianCache(context,
+                                                 block_system_jacobian_cache);
+  }
+
   void CalcSpatialInertiasInWorld(
       const systems::Context<T>& context,
       std::vector<SpatialInertia<T>>* spatial_inertias) const {
@@ -427,9 +450,8 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   void CalcCompositeBodyInertiasInWorld(
       const systems::Context<T>& context,
-      std::vector<SpatialInertia<T>>* composite_body_inertias) const {
-    internal_tree().CalcCompositeBodyInertiasInWorld(context,
-                                                     composite_body_inertias);
+      std::vector<SpatialInertia<T>>* K_BBo_W_all) const {
+    internal_tree().CalcCompositeBodyInertiasInWorld(context, K_BBo_W_all);
   }
 
   void CalcAcrossNodeJacobianWrtVExpressedInWorld(
@@ -550,6 +572,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     systems::CacheIndex composite_body_inertia_in_world;
     systems::CacheIndex spatial_acceleration_bias;
     systems::CacheIndex velocity_kinematics;
+    systems::CacheIndex block_system_jacobian;
   };
 
   // This is the one real constructor. From the public API, a null tree is
@@ -592,7 +615,7 @@ class ForceDensityField;
 
 namespace internal {
 
-// Attorney to give access to MultibodyElement and ForceDensityField to a
+// Attorney to give access to MultibodyElement and ForceDensityFieldBase to a
 // selection of protected methods for declaring/accessing/mutating
 // MultibodyTreeSystem parameters, cache entries, and input ports.
 template <typename T>
@@ -642,6 +665,12 @@ class MultibodyTreeSystemElementAttorney {
       const systems::BasicVector<T>& model_value) {
     DRAKE_DEMAND(tree_system != nullptr);
     return tree_system->DeclareVectorInputPort(std::move(name), model_value);
+  }
+
+  static systems::DiscreteStateIndex DeclareDiscreteState(
+      MultibodyTreeSystem<T>* tree_system, const VectorX<T>& model_value) {
+    DRAKE_DEMAND(tree_system != nullptr);
+    return tree_system->DeclareDiscreteState(model_value);
   }
 };
 }  // namespace internal

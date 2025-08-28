@@ -75,50 +75,6 @@ class CustomTrajectory(Trajectory):
         return 4.0
 
 
-# Legacy custom trajectory class used to test Trajectory subclassing in Python.
-# This uses the old spellings for how to override the NVI functions.
-class LegacyCustomTrajectory(Trajectory):
-    def __init__(self):
-        Trajectory.__init__(self)
-
-    def Clone(self):
-        return LegacyCustomTrajectory()
-
-    # This spelling of the virtual override is deprecated.
-    def rows(self):
-        return 1
-
-    # This spelling of the virtual override is deprecated.
-    def cols(self):
-        return 2
-
-    # This spelling of the virtual override is deprecated.
-    def start_time(self):
-        return 3.0
-
-    # This spelling of the virtual override is deprecated.
-    def end_time(self):
-        return 4.0
-
-    # This spelling of the virtual override is deprecated.
-    def value(self, t):
-        return np.array([[t + 1.0, t + 2.0]])
-
-    def do_has_derivative(self):
-        return True
-
-    def DoEvalDerivative(self, t, derivative_order):
-        if derivative_order >= 2:
-            return np.zeros((1, 2))
-        elif derivative_order == 1:
-            return np.ones((1, 2))
-        elif derivative_order == 0:
-            return self.value(t)
-
-    def DoMakeDerivative(self, derivative_order):
-        return DerivativeTrajectory_[float](self, derivative_order)
-
-
 class TestTrajectories(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_trajectory_start_end_time(self, T):
@@ -154,38 +110,6 @@ class TestTrajectories(unittest.TestCase):
         self.assertIn(
             "_WrappedTrajectory(<pydrake.trajectories.DerivativeTrajectory",
             repr(deriv))
-
-    def test_legacy_custom_trajectory(self):
-        trajectory = LegacyCustomTrajectory()
-        self.assertEqual(trajectory.rows(), 1)
-        self.assertEqual(trajectory.cols(), 2)
-        self.assertEqual(trajectory.start_time(), 3.0)
-        self.assertEqual(trajectory.end_time(), 4.0)
-        self.assertTrue(trajectory.has_derivative())
-        numpy_compare.assert_float_equal(trajectory.value(t=1.5),
-                                         np.array([[2.5, 3.5]]))
-        numpy_compare.assert_float_equal(
-            trajectory.EvalDerivative(t=2.3, derivative_order=1),
-            np.ones((1, 2)))
-        numpy_compare.assert_float_equal(
-            trajectory.EvalDerivative(t=2.3, derivative_order=2),
-            np.zeros((1, 2)))
-
-        # Use StackedTrajectory to call the deprecated overrides from C++ so
-        # that we trigger the deprecation warnings.
-        stacked = StackedTrajectory_[float]()
-        with catch_drake_warnings():
-            # The C++ code calls rows() and cols() and Clone() -- all of which
-            # cause deprecation warnings with the legacy overrides -- but the
-            # total number of calls varies between Debug and Release, so we
-            # don't check the exact tally here.
-            stacked.Append(trajectory)
-        with catch_drake_warnings(expected_count=1):
-            stacked.value(t=1.5)
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(stacked.start_time(), 3.0)
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(stacked.end_time(), 4.0)
 
     @numpy_compare.check_all_types
     def test_bezier_curve(self, T):

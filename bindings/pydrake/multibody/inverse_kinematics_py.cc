@@ -2,6 +2,7 @@
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -67,7 +68,8 @@ PYBIND11_MODULE(inverse_kinematics, m) {
   {
     using Class = InverseKinematics;
     constexpr auto& cls_doc = doc.InverseKinematics;
-    py::class_<Class> cls(m, "InverseKinematics", cls_doc.doc);
+    py::class_<Class> cls(
+        m, "InverseKinematics", py::dynamic_attr(), cls_doc.doc);
     cls.def(py::init<const MultibodyPlant<double>&, bool>(), py::arg("plant"),
            py::arg("with_joint_limits") = true,
            // Keep alive, reference: `self` keeps `plant` alive.
@@ -158,7 +160,8 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::arg("frameF"), py::arg("frameG"), py::arg("p_GP"), py::arg("A"),
             py::arg("b"), cls_doc.AddPolyhedronConstraint.doc)
         .def("q", &Class::q, cls_doc.q.doc)
-        .def("prog", &Class::prog, py_rvp::reference_internal, cls_doc.prog.doc)
+        .def("prog", &Class::prog, internal::ref_cycle<0, 1>(),
+            py_rvp::reference, cls_doc.prog.doc)
         .def("get_mutable_prog", &Class::get_mutable_prog,
             py_rvp::reference_internal, cls_doc.get_mutable_prog.doc)
         .def("context", &Class::context, py_rvp::reference_internal,
@@ -972,6 +975,20 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                   self.interval_binning, self.linear_constraint_only);
         });
 
+    py::class_<GlobalInverseKinematics::Polytope3D>(
+        global_ik, "Polytope3D", cls_doc.Polytope3D.doc)
+        .def(py::init<const Eigen::Ref<const Eigen::MatrixX3d>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&>(),
+            py::arg("A"), py::arg("b"), cls_doc.Polytope3D.ctor.doc)
+        .def_readwrite("A", &GlobalInverseKinematics::Polytope3D::A,
+            cls_doc.Polytope3D.A.doc)
+        .def_readwrite("b", &GlobalInverseKinematics::Polytope3D::b,
+            cls_doc.Polytope3D.b.doc)
+        .def("__repr__", [](const GlobalInverseKinematics::Polytope3D& self) {
+          return py::str("GlobalInverseKinematics.Polytope(A={}, b={})")
+              .format(self.A, self.b);
+        });
+
     global_ik
         .def(py::init<const MultibodyPlant<double>&,
                  const GlobalInverseKinematics::Options&>(),
@@ -1037,10 +1054,35 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             },
             py::arg("q_desired"), py::arg("body_position_cost"),
             py::arg("body_orientation_cost"), cls_doc.AddPostureCost.doc)
+        .def(
+            "BodyPointInOneOfRegions",
+            [](Class* self, BodyIndex body_index,
+                const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                const std::vector<Eigen::Matrix3Xd>& region_vertices) {
+              return self->BodyPointInOneOfRegions(
+                  body_index, p_BQ, region_vertices);
+            },
+            py::arg("body_index"), py::arg("p_BQ"), py::arg("region_vertices"),
+            cls_doc.BodyPointInOneOfRegions.doc)
+        .def(
+            "BodySphereInOneOfPolytopes",
+            [](Class* self, BodyIndex body_index,
+                const Eigen::Ref<const Eigen::Vector3d>& p_BQ, double radius,
+                const std::vector<GlobalInverseKinematics::Polytope3D>&
+                    polytopes) {
+              return self->BodySphereInOneOfPolytopes(
+                  body_index, p_BQ, radius, polytopes);
+            },
+            py::arg("body_index"), py::arg("p_BQ"), py::arg("radius"),
+            py::arg("polytopes"), cls_doc.BodySphereInOneOfPolytopes.doc)
+        .def("AddJointLimitConstraint", &Class::AddJointLimitConstraint,
+            py::arg("body_index"), py::arg("joint_lower_bound"),
+            py::arg("joint_upper_bound"),
+            py::arg("linear_constraint_approximation") = false,
+            cls_doc.AddJointLimitConstraint.doc)
         .def("SetInitialGuess", &Class::SetInitialGuess, py::arg("q"),
             cls_doc.SetInitialGuess.doc);
-    // TODO(russt): Add bindings for Polytope3D struct and related methods
-    // (or convert those methods to use ConvexSets).
+    // TODO(cohnt): Convert methods that use Polytope3D to use ConvexSets.
   }
 
   // TODO(SeanCurtis-TRI): Refactor this into its own stand-alone .cc file and

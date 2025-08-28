@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <optional>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -203,6 +204,10 @@ class RenderEngine {
     }
   }
 
+  // TODO(xuchenhan-tri): It may be dangerous the silently ignore the geometry
+  // that is not registered. The data may be coming from the wrong source (e.g.
+  // the wrong SceneGraph). But currently, render engine doesn't have a way to
+  // check that.
   /** Updates the configurations of all meshes associated with the given
    deformable geometry (see RegisterDeformableVisual()). The number of elements
    in the supplied vertex position vector `q_WGs` and the vertex normal vector
@@ -211,6 +216,8 @@ class RenderEngine {
    normals must be ordered the same way as the vertices specified in the render
    mesh at registration when reshaped to be an Nx3 matrix with N being the
    number of vertices in the mesh.
+
+   No-op if no geometry with the given `id` is registered with this engine.
 
    @experimental
    @param id       The unique identifier of a deformable geometry registered
@@ -221,8 +228,6 @@ class RenderEngine {
    @param nhats_W  The vertex normals of all meshes associated with the given
                    deformable geometry (measured and expressed in the world
                    frame).
-   @throws std::exception if no geometry with the given `id` is registered as
-           deformable geometry in this `RenderEngine`.
    @throws std::exception if the sizes of `q_WGs` or `nhats_W` are incompatible
            with the number of degrees of freedom of the meshes registered with
            the deformable geometry. */
@@ -298,6 +303,10 @@ class RenderEngine {
   /** Reports the render label value this render engine has been configured to
    use.  */
   RenderLabel default_render_label() const { return default_render_label_; }
+
+  /** Produces a yaml string that can be deserialized into this *particular*
+   RenderEngine's type. */
+  std::string GetParameterYaml() const { return DoGetParameterYaml(); }
 
  protected:
   // Allow derived classes to implement Cloning via copy-construction.
@@ -472,6 +481,10 @@ class RenderEngine {
           intrinsics.height()));
     }
   }
+
+  /** The NVI-function for GetParameterYaml(). Derived classes must implement
+   this in order to support engine comparisons. */
+  virtual std::string DoGetParameterYaml() const;
 
  private:
   friend class RenderEngineTester;

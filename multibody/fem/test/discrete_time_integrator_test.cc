@@ -22,6 +22,10 @@ class DummyScheme final : public DiscreteTimeIntegrator<double> {
   ~DummyScheme() = default;
 
  private:
+  std::unique_ptr<DiscreteTimeIntegrator<double>> DoClone() const final {
+    return std::make_unique<DummyScheme>(dt());
+  }
+
   Vector3d DoGetWeights() const final { return {1, 2, 3}; }
 
   const VectorXd& DoGetUnknowns(const FemState<double>& state) const final {

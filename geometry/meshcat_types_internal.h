@@ -211,7 +211,7 @@ struct CapsuleGeometryData : public GeometryData {
   // For a complete description of these parameters see:
   // https://threejs.org/docs/#api/en/geometries/CapsuleGeometry
   double radius{};
-  double length{};
+  double height{};
   double radialSegments{20};  // Number of segmented faces around the
                               // circumference of the capsule.
   double capSegments{10};     // Number of curve segments used to build
@@ -224,7 +224,7 @@ struct CapsuleGeometryData : public GeometryData {
     o.pack("CapsuleGeometry");
     PACK_MAP_VAR(o, uuid);
     PACK_MAP_VAR(o, radius);
-    PACK_MAP_VAR(o, length);
+    PACK_MAP_VAR(o, height);
     PACK_MAP_VAR(o, radialSegments);
     PACK_MAP_VAR(o, capSegments);
   }

@@ -27,8 +27,7 @@ namespace {
 // we can mutate it for efficiency; the data may be invalid afterwards, so the
 // caller should not use it for anything after we return.
 // @param[in,out] app The application to copy the options into.
-void SetAppOptions(const std::string& default_linear_solver,
-                   internal::SpecificOptions* options,
+void SetAppOptions(internal::SpecificOptions* options,
                    Ipopt::IpoptApplication* app) {
   // Wrap our calls to IPOPT to check for errors (i.e., unknown options).
   const auto set_double_option = [&app](const std::string& name, double value) {
@@ -39,7 +38,20 @@ void SetAppOptions(const std::string& default_linear_solver,
     }
   };
   const auto set_int_option = [&app](const std::string& name, int value) {
-    const bool success = app->Options()->SetIntegerValue(name, value);
+    bool success{false};
+    // Sometimes the option needs a double value, but the user sets the option
+    // with an integer value. We will check the value type based on the
+    // registered option name, and promote the value if necessary.
+    auto reg_option = app->RegOptions()->GetOption(name);
+    if (Ipopt::IsValid(reg_option)) {
+      const auto option_type = reg_option->Type();
+      if (option_type == Ipopt::RegisteredOptionType::OT_Number) {
+        success =
+            app->Options()->SetNumericValue(name, static_cast<double>(value));
+      } else if (option_type == Ipopt::RegisteredOptionType::OT_Integer) {
+        success = app->Options()->SetIntegerValue(name, value);
+      }
+    }
     if (!success) {
       throw std::logic_error(
           fmt::format("Error setting IPOPT integer option {}={}", name, value));
@@ -57,18 +69,15 @@ void SetAppOptions(const std::string& default_linear_solver,
   // Turn off the banner.
   set_string_option("sb", "yes");
 
-  if (!default_linear_solver.empty()) {
-    set_string_option("linear_solver", default_linear_solver);
-  }
-
   set_string_option("hessian_approximation", "limited-memory");
 
-  // Any user-supplied options handled below will overwrite the above defaults.
+  // Any user-supplied options handled below will overwrite the above
+  // defaults.
   options->Respell([](const auto& common, auto* respelled) {
-    // Note: 0 <= print_level <= 12, with higher numbers more verbose; 4 is very
-    // useful for debugging. Otherwise, we default to printing nothing. The user
-    // can always select an arbitrary print level, by setting the ipopt-specific
-    // option name directly.
+    // Note: 0 <= print_level <= 12, with higher numbers more verbose; 4 is
+    // very useful for debugging. Otherwise, we default to printing nothing.
+    // The user can always select an arbitrary print level, by setting the
+    // ipopt-specific option name directly.
     const int verbose = 4;
     respelled->emplace("print_level", common.print_to_console ? verbose : 0);
     if (!common.print_file_name.empty()) {
@@ -143,13 +152,7 @@ const char* IpoptSolverDetails::ConvertStatusToString() const {
 
 IpoptSolver::IpoptSolver()
     : SolverBase(id(), &is_available, &is_enabled,
-                 &ProgramAttributesSatisfied) {
-  const std::vector<std::string_view> linear_solvers =
-      internal::GetSupportedIpoptLinearSolvers();
-  if (!linear_solvers.empty()) {
-    default_linear_solver_ = linear_solvers.at(0);
-  }
-}
+                 &ProgramAttributesSatisfied) {}
 
 bool IpoptSolver::is_available() {
   return true;
@@ -167,7 +170,7 @@ void IpoptSolver::DoSolve2(const MathematicalProgram& prog,
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
   app->RethrowNonIpoptException(true);
 
-  SetAppOptions(default_linear_solver_, options, &(*app));
+  SetAppOptions(options, &(*app));
 
   Ipopt::ApplicationReturnStatus status = app->Initialize();
   if (status != Ipopt::Solve_Succeeded) {

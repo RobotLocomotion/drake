@@ -21,7 +21,9 @@ constexpr bool kHasOpenmp = false;
 // abstracts away this difference.  The openmp_helpers.hpp wrapper from
 // common_robotics_utilities is a likely candidate to delegate to, or at
 // least take as inspiration.
-int omp_get_thread_num() { return 0; }
+int omp_get_thread_num() {
+  return 0;
+}
 #endif
 
 // Mostly, this just checks for compilation failures.

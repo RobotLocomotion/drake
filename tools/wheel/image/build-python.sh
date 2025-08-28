@@ -11,7 +11,7 @@ readonly EXPECTED_SHA=$3
 
 readonly ARCHIVE=Python-$VERSION.tar.xz
 readonly URL=https://www.python.org/ftp/python/$VERSION/$ARCHIVE
-readonly SRC_DIR=/opt/drake-wheel-build/python
+readonly SRC_DIR=/tmp/drake-wheel-build/python-src
 
 mkdir -p $SRC_DIR
 cd $SRC_DIR

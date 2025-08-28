@@ -1,14 +1,11 @@
 #include <limits>
 
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/multibody/plant/test/kuka_iiwa_model_tests.h"
 #include "drake/multibody/tree/frame.h"
-#include "drake/multibody/tree/rigid_body.h"
 
 namespace drake {
 

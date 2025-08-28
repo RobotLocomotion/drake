@@ -21,6 +21,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/render_gltf_client/internal_http_service.h"
 #include "drake/geometry/render_gltf_client/internal_merge_gltf.h"
 #include "drake/geometry/render_gltf_client/render_engine_gltf_client_params.h"
@@ -100,6 +101,20 @@ class RenderEngineGltfClientTest : public ::testing::Test {
   const ColorRenderCamera color_camera_;
   const DepthRenderCamera depth_camera_;
 };
+
+TEST_F(RenderEngineGltfClientTest, ParameterMatching) {
+  auto make_yaml = [](const RenderEngineGltfClientParams& params) {
+    return yaml::SaveYamlString(params, "RenderEngineGltfClientParams");
+  };
+  const RenderEngineGltfClientParams params1{.verbose = true};
+  const RenderEngineGltfClientParams params2{.verbose = false};
+
+  const RenderEngineGltfClient engine(params1);
+  const std::string from_engine = engine.GetParameterYaml();
+
+  EXPECT_EQ(from_engine, make_yaml(params1));
+  EXPECT_NE(from_engine, make_yaml(params2));
+}
 
 TEST_F(RenderEngineGltfClientTest, Constructor) {
   // Reference values of default parameters; we'll use this to make sure that

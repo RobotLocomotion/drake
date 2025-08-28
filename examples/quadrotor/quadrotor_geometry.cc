@@ -14,18 +14,15 @@ namespace examples {
 namespace quadrotor {
 
 const QuadrotorGeometry* QuadrotorGeometry::AddToBuilder(
-      systems::DiagramBuilder<double>* builder,
-      const systems::OutputPort<double>& quadrotor_state_port,
-      geometry::SceneGraph<double>* scene_graph) {
+    systems::DiagramBuilder<double>* builder,
+    const systems::OutputPort<double>& quadrotor_state_port,
+    geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(builder != nullptr);
   DRAKE_THROW_UNLESS(scene_graph != nullptr);
 
   auto quadrotor_geometry = builder->AddSystem(
-      std::unique_ptr<QuadrotorGeometry>(
-          new QuadrotorGeometry(scene_graph)));
-  builder->Connect(
-      quadrotor_state_port,
-      quadrotor_geometry->get_input_port(0));
+      std::unique_ptr<QuadrotorGeometry>(new QuadrotorGeometry(scene_graph)));
+  builder->Connect(quadrotor_state_port, quadrotor_geometry->get_input_port(0));
   builder->Connect(
       quadrotor_geometry->get_output_port(0),
       scene_graph->get_source_pose_port(quadrotor_geometry->source_id_));
@@ -43,8 +40,8 @@ QuadrotorGeometry::QuadrotorGeometry(
   multibody::MultibodyPlant<double> mbp(0.0);
   multibody::Parser parser(&mbp, scene_graph);
 
-  const auto model_instance_indices = parser.AddModelsFromUrl(
-      "package://drake_models/skydio_2/quadrotor.urdf");
+  const auto model_instance_indices =
+      parser.AddModelsFromUrl("package://drake_models/skydio_2/quadrotor.urdf");
   mbp.Finalize();
 
   // Identify the single quadrotor body and its frame.
@@ -56,8 +53,8 @@ QuadrotorGeometry::QuadrotorGeometry(
   frame_id_ = mbp.GetBodyFrameIdOrThrow(body_index);
 
   this->DeclareVectorInputPort("state", 12);
-  this->DeclareAbstractOutputPort(
-      "geometry_pose", &QuadrotorGeometry::OutputGeometryPose);
+  this->DeclareAbstractOutputPort("geometry_pose",
+                                  &QuadrotorGeometry::OutputGeometryPose);
 }
 
 QuadrotorGeometry::~QuadrotorGeometry() = default;
@@ -68,9 +65,8 @@ void QuadrotorGeometry::OutputGeometryPose(
   DRAKE_DEMAND(frame_id_.is_valid());
 
   const auto& state = get_input_port(0).Eval(context);
-  math::RigidTransformd pose(
-      math::RollPitchYawd(state.segment<3>(3)),
-      state.head<3>());
+  math::RigidTransformd pose(math::RollPitchYawd(state.segment<3>(3)),
+                             state.head<3>());
 
   *poses = {{frame_id_, pose}};
 }

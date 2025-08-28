@@ -235,23 +235,6 @@ void DefineSensorsRgbd(py::module m) {
             cls_doc.body_pose_in_world_output_port.doc)
         .def("image_time_output_port", &Class::image_time_output_port,
             py_rvp::reference_internal, cls_doc.image_time_output_port.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    rgbd_sensor_async  // BR
-        .def("parent_id",
-            WrapDeprecated(cls_doc.parent_id.doc_deprecated, &Class::parent_id),
-            cls_doc.parent_id.doc_deprecated)
-        .def("X_PB", WrapDeprecated(cls_doc.X_PB.doc_deprecated, &Class::X_PB),
-            cls_doc.X_PB.doc_deprecated)
-        .def("color_camera",
-            WrapDeprecated(
-                cls_doc.color_camera.doc_deprecated, &Class::color_camera),
-            cls_doc.color_camera.doc_deprecated)
-        .def("depth_camera",
-            WrapDeprecated(
-                cls_doc.depth_camera.doc_deprecated, &Class::depth_camera),
-            cls_doc.depth_camera.doc_deprecated);
-#pragma GCC diagnostic pop
   }
 }
 

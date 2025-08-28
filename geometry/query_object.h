@@ -2,9 +2,11 @@
 
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
+#include "drake/geometry/proximity/aabb.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/deformable_contact.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
@@ -191,6 +193,24 @@ class QueryObject {
    @experimental */
   std::vector<VectorX<T>> GetDrivenMeshConfigurationsInWorld(
       GeometryId deformable_geometry_id, Role role) const;
+
+  /** Reports the axis-aligned bounding box of the geometry indicated by
+   `geometry_id` in the world frame. Returns std::nullopt if the geometry is
+   not supported for this query. Currently, only deformable geometries are
+   supported.
+   @throws std::exception if the `geometry_id` is not valid. */
+  std::optional<Aabb> ComputeAabbInWorld(GeometryId geometry_id) const;
+
+  /** Reports the oriented bounding box of the geometry indicated by
+   `geometry_id` in the world frame. Returns std::nullopt if the geometry is
+   an HalfSpace (and doesn't have a bounding box).
+   @note If geometry_id refers to a deformable geometry, the OBB is computed
+   using the deformed mesh in the world frame. See
+   SceneGraphInspector::GetObbInGeometryFrame() for computing the OBB of the
+   reference mesh in its canonical frame.
+   @throws std::exception if the `geometry_id` is not valid. */
+  std::optional<Obb> ComputeObbInWorld(GeometryId geometry_id) const;
+
   //@}
 
   /**
@@ -837,6 +857,26 @@ class QueryObject {
       const Vector3<T>& p_WQ,
       const double threshold = std::numeric_limits<double>::infinity()) const;
   //@}
+
+  /** A variant of ComputeSignedDistanceToPoint(). Instead of finding distances
+   to all geometries, provides the distance to only the geometries indicated by
+   the given set of `geometries`.
+
+   @param p_WQ          Position of a query point Q in world frame W.
+   @param geometries    The set of geometries to query against. The distances
+                        between the surface of each geometry and the point Q
+                        will be returned.
+   @returns the distance measurements. The ordering of the results is guaranteed
+   to be consistent -- for a fixed set of geometries, the results will remain
+   the same.
+
+   @throws std::exception if any GeometryId in `geometries` is invalid.
+   @throws std::exception if the combination of an indicated geometry's Shape
+   type and the given scalar Type T are unsupported in
+   ComputeSignedDistanceToPoint()'s support table.
+   @throws std::exception if any indicated geometry is deformable. */
+  std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceGeometryToPoint(
+      const Vector3<T>& p_WQ, const GeometrySet& geometries) const;
 
   //---------------------------------------------------------------------------
   /**

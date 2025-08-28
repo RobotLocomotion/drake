@@ -2488,15 +2488,20 @@ GTEST_TEST(TestMathematicalProgram, AddSymbolicLinearEqualityConstraint5) {
 }
 
 // Tests `AddLinearEqualityConstraint(const symbolic::Formula& f)` method with a
-// case where `f` is a conjunction of linear-equality formulas .
+// case where `f` is a conjunction of linear-equality formulas, and tests
+// `AddLinearEqualityConstraint(const Eigen::Ref<const
+// Eigen::Array<symbolic::Formula, Eigen::Dynamic, Eigen::Dynamic>>& formulas)`
+// method with a case where `f` is a vector of linear-equality formulas, a
+// vector of conjunctions of linear-equality formulas, or a mix of the two.
 GTEST_TEST(TestMathematicalProgram, AddSymbolicLinearEqualityConstraint6) {
   // Test problem: Ax = b where
   //
   // A = |-3.0  0.0  2.0|  x = |x0|  b = | 9.0|
   //     | 0.0  7.0 -3.0|      |x1|      | 3.0|
   //     | 2.0  5.0  0.0|      |x2|      |-5.0|
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<3>("x");
+  MathematicalProgram prog1;
+  VectorX<Variable> x = prog1.NewContinuousVariables<3>("x");
+  prog1.AddDecisionVariables(x);
   Eigen::Matrix3d A;
   Vector3d b;
   // clang-format off
@@ -2508,22 +2513,59 @@ GTEST_TEST(TestMathematicalProgram, AddSymbolicLinearEqualityConstraint6) {
       -5.0;
   // clang-format on
   const Formula f{A * x == b};
-  const Binding<LinearEqualityConstraint> binding{
-      prog.AddLinearEqualityConstraint(f)};
-  EXPECT_EQ(prog.linear_equality_constraints().size(), 1u);
+  Binding<LinearEqualityConstraint> binding1{
+      prog1.AddLinearEqualityConstraint(f)};
 
-  // Checks if AddLinearEqualityConstraint added the constraint correctly.
-  const Eigen::Matrix<Expression, 3, 1> exprs_in_added_constraint{
-      binding.evaluator()->GetDenseA() * binding.variables() -
-      binding.evaluator()->lower_bound()};
   const Eigen::Matrix<Expression, 3, 1> expected_exprs{A * x - b};
+  auto check_binding =
+      [&expected_exprs](const MathematicalProgram& test_prog,
+                        const Binding<LinearEqualityConstraint>& test_binding) {
+        EXPECT_EQ(test_prog.linear_equality_constraints().size(), 1u);
 
-  // Since a conjunctive symbolic formula uses `std::set` as an internal
-  // representation, we need to check if `exprs_in_added_constraint` is a
-  // permutation of `expected_exprs`.
-  EXPECT_TRUE(is_permutation(
-      exprs_in_added_constraint.data(), exprs_in_added_constraint.data() + 3,
-      expected_exprs.data(), expected_exprs.data() + 3, ExprEqual));
+        // Checks if AddLinearEqualityConstraint added the constraint correctly.
+        auto exprs_in_added_constraint = Eigen::Matrix<Expression, 3, 1>{
+            test_binding.evaluator()->GetDenseA() * test_binding.variables() -
+            test_binding.evaluator()->lower_bound()};
+
+        // Since a conjunctive symbolic formula uses `std::set` as an internal
+        // representation, we need to check if `exprs_in_added_constraint` is a
+        // permutation of `expected_exprs`.
+        EXPECT_TRUE(is_permutation(exprs_in_added_constraint.data(),
+                                   exprs_in_added_constraint.data() + 3,
+                                   expected_exprs.data(),
+                                   expected_exprs.data() + 3, ExprEqual));
+      };
+
+  check_binding(prog1, binding1);
+
+  // Now we test the vector of formulas bindings.
+  std::vector<Binding<LinearEqualityConstraint>> bindings;
+
+  // Test 1: each formula is its own entry.
+  Eigen::Vector3<Formula> f1;
+  for (int i = 0; i < 3; ++i) {
+    f1[i] = A.row(i).dot(x) == b[i];
+  }
+
+  // Test 2: combine the first two formulas in a conjunction of equalities,
+  // while leaving the third as an equality.
+  Eigen::Vector2<Formula> f2;
+  f2[0] = f1[0] && f1[1];
+  f2[1] = f1[2];
+
+  // Test 3: combine all three formulas in a conjunction of equalities.
+  Vector1<Formula> f3;
+  f3[0] = f1[0] && f1[1] && f1[2];
+
+  std::vector<VectorX<Formula>> formulas{f1, f2, f3};
+
+  for (const auto& test_formula : formulas) {
+    MathematicalProgram prog2;
+    prog2.AddDecisionVariables(x);
+    Binding<LinearEqualityConstraint> binding2{
+        prog2.AddLinearEqualityConstraint(test_formula)};
+    check_binding(prog2, binding2);
+  }
 }
 
 // Checks if `AddLinearEqualityConstraint(f)` throws std::runtime_error if `f`
@@ -3477,6 +3519,76 @@ GTEST_TEST(TestMathematicalProgram, AddL2NormCostUsingConicConstraint) {
                     lorentz_cone_constraint.variables() +
                 lorentz_cone_constraint.evaluator()->b(),
             lorentz_eval_expected);
+}
+
+GTEST_TEST(TestMathematicalProgram, AddL1NormCostInEpigraphForm_Rectangular) {
+  MathematicalProgram prog{};
+  auto x = prog.NewContinuousVariables<2>("x");
+
+  // Rectangular A: 3 rows, 2 columns.
+  Eigen::Matrix<double, 3, 2> A;
+  A << 1, 0, 0, 1, 1, 1;
+  const Eigen::Vector3d b(1, -2, -1);  // So that A * [1, -2] + b = 0.
+
+  const auto [s, linear_cost, linear_constraint] =
+      prog.AddL1NormCostInEpigraphForm(A, b, x);
+
+  // Check that s was added as new decision variables.
+  EXPECT_EQ(s.rows(), 3);
+  for (int i = 0; i < s.size(); ++i) {
+    ASSERT_NO_THROW(void(prog.FindDecisionVariableIndex(s(i))));
+  }
+
+  // Check that the linear cost is Σᵢsᵢ.
+  EXPECT_TRUE(linear_cost.evaluator());
+  EXPECT_EQ(linear_cost.variables(), s);
+  EXPECT_TRUE((linear_cost.evaluator()->a().array() == 1.0).all());
+  EXPECT_EQ(linear_cost.evaluator()->b(), 0.0);
+  EXPECT_EQ(prog.linear_costs().size(), 1);
+
+  // Check that the constraint s >= Ax + b and s >= -(Ax + b) is encoded
+  // correctly.
+  EXPECT_TRUE(linear_constraint.evaluator() != nullptr);
+  EXPECT_EQ(prog.linear_constraints().size(), 1);
+  EXPECT_EQ(linear_constraint.evaluator()->GetDenseA().rows(),
+            6);  // 2 * A.rows().
+  EXPECT_EQ(linear_constraint.evaluator()->GetDenseA().cols(),
+            5);  // s.size() + x.size().
+
+  // Check constraint variable ordering: [s0, s1, s2, x0, x1].
+  const auto& constraint_vars = linear_constraint.variables();
+  EXPECT_EQ(constraint_vars.size(), 5);
+  EXPECT_EQ(constraint_vars.segment(0, 3), s);
+  EXPECT_EQ(constraint_vars.segment(3, 2), x);
+
+  // s should satisfy:
+  // s ≥  A * x + b
+  // s ≥ -A * x - b.
+  const Eigen::Vector2d x_value(-1.0, 2.0);
+  const Eigen::Vector3d s_value = Eigen::Vector3d::Zero();
+
+  // Form the full variable vector [s; x].
+  Eigen::Matrix<double, 5, 1> vars;
+  vars << s_value, x_value;
+
+  const double kTol = 1e-15;
+  EXPECT_TRUE(linear_constraint.evaluator()->CheckSatisfied(vars, kTol));
+
+  // Verify it still works if s is larger.
+  vars[0] += 1.0;
+  EXPECT_TRUE(linear_constraint.evaluator()->CheckSatisfied(vars, kTol));
+  vars[0] -= 1.0;
+
+  // Check cost
+  const double expected_cost = 0.0;
+  Eigen::VectorXd actual_cost(1);
+  linear_cost.evaluator()->Eval(s_value, &actual_cost);
+  ASSERT_EQ(actual_cost.size(), 1);
+  EXPECT_EQ(actual_cost[0], expected_cost);
+
+  // Check failure case.
+  vars[0] -= 2 * kTol;  // Decrease s[0].
+  EXPECT_FALSE(linear_constraint.evaluator()->CheckSatisfied(vars, kTol));
 }
 
 // Helper function for ArePolynomialIsomorphic.

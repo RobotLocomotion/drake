@@ -22,7 +22,7 @@ from pydrake.systems.analysis import (
     ResetIntegratorFromFlags,
     RungeKutta2Integrator,
     Simulator, Simulator_,
-    )
+)
 from pydrake.systems.framework import (
     BasicVector, BasicVector_,
     CacheEntry,
@@ -57,7 +57,7 @@ from pydrake.systems.framework import (
     TriggerType,
     VectorSystem, VectorSystem_,
     _ExternalSystemConstraint,
-    )
+)
 from pydrake.systems.primitives import (
     Adder, Adder_,
     ConstantValueSource,
@@ -66,8 +66,12 @@ from pydrake.systems.primitives import (
     LinearSystem,
     PassThrough, PassThrough_,
     ZeroOrderHold,
-    )
-from pydrake.systems.test.test_util import MyVector2
+)
+from pydrake.systems.test.test_util import (
+    MyVector2,
+    DummySystemA,
+    MakeDummySystem,
+)
 from pydrake.systems.test_utilities import framework_test_util
 
 # TODO(eric.cousineau): The scope of this test file and `custom_test.py`
@@ -946,6 +950,9 @@ class TestGeneral(unittest.TestCase):
             builder.Connect(adder1.get_output_port(), adder2.get_input_port())
             self.assertTrue(
                 builder.IsConnectedOrExported(port=adder2.get_input_port()))
+            builder.Connect(adder2.get_output_port(), adder1.get_input_port(0))
+            builder.Disconnect(source=adder2.get_output_port(),
+                               dest=adder1.get_input_port(0))
             builder.ExportInput(adder1.get_input_port(0), "in0")
             builder.ExportInput(adder1.get_input_port(1), "in1")
             builder.ExportOutput(adder2.get_output_port(), "out")
@@ -963,6 +970,8 @@ class TestGeneral(unittest.TestCase):
         self.assertIn((adder2, InputPortIndex(0)), connections)
         self.assertEqual(connections[(adder2, InputPortIndex(0))],
                          (adder1, OutputPortIndex(0)))
+        self.assertTrue(diagram.AreConnected(output=adder1.get_output_port(),
+                                             input=adder2.get_input_port()))
         del adder1, adder2, diagram  # To test keep-alive logic
         gc.collect()
         self.assertEqual(list(connections.keys())[0][0].get_name(), "adder2")
@@ -1048,3 +1057,25 @@ class TestGeneral(unittest.TestCase):
             dut, ports = make_hazard_system(api_kind)
             dut = [dut]  # The helper function requires passing dut via a list.
             framework_test_util.check_ports_lifetime_hazard(self, dut, ports)
+
+    def test_system_builder_add_system(self):
+        # This test ensures that `DiagramBuilder.AddSystem` and
+        # `DiagramBuilder.AddNamedSystem` are bound with the correct return
+        # value policy, otherwise it may lead to premature deletion of the
+        # system. See issue #22880 for details.
+        builder = DiagramBuilder()
+
+        # `system1` has type `pydrake.systems.test.test_util.DummySystemA`.
+        system1 = MakeDummySystem()
+        # The return value of `builder.AddSystem(system1)` has type `pydrake.
+        # systems.framework.System`, and its reference count is zero.
+        builder.AddSystem(system1)
+        # The c++ code for `AddSystem` returns a raw pointer. If pybind11
+        # treats it as `take_ownership`, and since the reference count is
+        # zero, pybind11 calls delete on the raw pointer, leading to a
+        # use-after-free hazard.
+
+        system2 = MakeDummySystem()
+        builder.AddNamedSystem("system2", system2)
+
+        builder.Build()

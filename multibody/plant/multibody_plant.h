@@ -947,17 +947,17 @@ call to Finalize() must be performed. This call will:
 - declare collision filters to ignore collisions among rigid bodies:
   - between rigid bodies connected by a joint,
   - within subgraphs of welded rigid bodies.
-Note that MultibodyPlant will *not* introduce *any* collision filters
-on deformable bodies.
+
+Note that MultibodyPlant will *not* introduce any automatic collision filters on
+deformable bodies. Collision filters for deformable bodies can be explicitly
+applied via ExcludeCollisionGeometriesWithCollisionFilterGroupPair() or during
+parsing.
 
 <!-- TODO(amcastro-tri): Consider making the actual geometry registration
      with GS AFTER Finalize() so that we can tell if there are any bodies
      welded to the world to which we could just assign anchored geometry
      instead of dynamic geometry. This is an optimization and the API, and
      pre/post-finalize conditions should not change. -->
-
-@warning Subclassing MultibodyPlant is deprecated; it will be marked `final`
-or or after 2025-05-01.
 
 @anchor mbp_table_of_contents
 
@@ -976,7 +976,7 @@ or or after 2025-05-01.
 @tparam_default_scalar
 @ingroup systems */
 template <typename T>
-class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
+class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPlant);
 
@@ -2405,9 +2405,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const std::vector<geometry::GeometryId>& GetCollisionGeometriesForBody(
       const RigidBody<T>& body) const;
 
-  /// Excludes the rigid collision geometries between two given collision filter
-  /// groups. Note that collisions involving deformable geometries are not
-  /// filtered by this function.
+  /// Excludes the collision geometries between two given collision filter
+  /// groups.
   /// @pre RegisterAsSourceForSceneGraph() has been called.
   /// @pre Finalize() has *not* been called.
   void ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
@@ -2634,11 +2633,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 #endif
 
   /// Returns the DeformableModel owned by this plant.
-  /// @throw std::exception if this plant doesn't own a %DeformableModel.
   /// @experimental
   const DeformableModel<T>& deformable_model() const {
     const DeformableModel<T>* model = physical_models_->deformable_model();
-    DRAKE_THROW_UNLESS(model != nullptr);
+    // A DeformableModel is always added to the plant at construction time.
+    DRAKE_DEMAND(model != nullptr);
     return *model;
   }
 
@@ -3072,6 +3071,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     this->ValidateContext(context);
     this->ValidateCreatedForThisSystem(state);
     internal_tree().SetDefaultState(context, state);
+    deformable_model().SetDefaultState(context, state);
   }
 
   /// Assigns random values to all elements of the state, by drawing samples
@@ -4452,6 +4452,52 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// CalcJacobianCenterOfMassTranslationalVelocity()
   ///@{
 
+  /// (Internal use only) Returns the System Jacobian Jv_V_WB(q) in block form.
+  /// Each block is dense and corresponds to one Tree of the as-built
+  /// internal::SpanningForest. The blocks follow the Tree ordering defined by
+  /// the SpanningForest, so are in TreeIndex order. The block for Treeᵢ is a
+  /// MatrixX of size 6nᵢ x mᵢ, where nᵢ is the number of mobilized bodies in
+  /// Treeᵢ and mᵢ is the total number of mobilizer velocity degrees of freedom
+  /// (mobilities) in the Tree. Every Tree has an entry even if it has no
+  /// mobilities (in that case mᵢ=0). World is not part of any Tree so there
+  /// is no block corresponding to World here.
+  ///
+  /// To be precise: the iᵗʰ block Jvi_V_WB ≡ ∂Vi_WB/∂vᵢ where Vi_WB is the
+  /// stacked spatial velocities for each mobilized body in Treeᵢ (in order of
+  /// MobodIndex), and vᵢ is the vector of generalized velocities associated
+  /// with those mobilized bodies, in the same order. Thus Jvi_V_WB⋅v for some
+  /// set of mᵢ generalized velocities v, returns the spatial velocities for
+  /// each body in Treeᵢ that would result from velocities v.
+  ///
+  /// Note that locking and unlocking mobilizers does not affect the Jacobian;
+  /// the Jacobian reflects what would happen if a velocity variable changed
+  /// regardless of whether it can currently do so.
+  /// @see CalcJacobianSpatialVelocity(), CalcFullSystemJacobian()
+  const std::vector<Eigen::MatrixX<T>>& EvalBlockSystemJacobian(
+      const systems::Context<T>& context) const {
+    const internal::BlockSystemJacobianCache<T>& sjc =
+        this->EvalBlockSystemJacobianCache(context);
+    return sjc.block_system_jacobian();
+  }
+
+  /// (Internal use only) Evaluates the block system Jacobian, then uses it to
+  /// fill in an equivalent full matrix of size 6n x m where n is the number of
+  /// mobilized bodies and m the number of generalized velocities (mobilities).
+  /// Each mobilized body generates a 6 x m strip of the Jacobian (6 rows) and
+  /// those are ordered by MobodIndex. Note that World is the 0th mobilized body
+  /// so to keep the numbering consistent the first 6 rows of the Jacobian
+  /// correspond to the World Mobod (and are thus all zero).
+  ///
+  /// This is most useful for testing; it is more efficient to use
+  /// EvalBlockSystemJacobian() and to work with the individual blocks.
+  /// @see EvalBlockSystemJacobian(), CalcJacobianSpatialVelocity()
+  Eigen::MatrixX<T> CalcFullSystemJacobian(
+      const systems::Context<T>& context) const {
+    const internal::BlockSystemJacobianCache<T>& sjc =
+        this->EvalBlockSystemJacobianCache(context);
+    return sjc.ToFullMatrix();
+  }
+
   /// For one point Bp fixed/welded to a frame B, calculates J𝑠_V_ABp, Bp's
   /// spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>
@@ -4653,25 +4699,25 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         frame_A, frame_E, Jq_p_AoBi_E);
   }
 
-  /// Calculates J𝑠_v_ACcm_E, point Ccm's translational velocity Jacobian in
-  /// frame A with respect to "speeds" 𝑠, expressed in frame E, where point CCm
-  /// is the center of mass of the system of all non-world bodies contained in
+  /// Calculates J𝑠_v_AScm_E, point Scm's translational velocity Jacobian in
+  /// frame A with respect to "speeds" 𝑠, expressed in frame E, where point Scm
+  /// is the center of mass of the system S of all non-world bodies contained in
   /// `this` MultibodyPlant.
   /// @param[in] context contains the state of the model.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_v_ACcm_E` is
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_v_AScm_E` is
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   /// positions) or with respect to 𝑠 = v (generalized velocities).
   /// @param[in] frame_A The frame in which the translational velocity
-  /// v_ACcm and its Jacobian J𝑠_v_ACcm are measured.
-  /// @param[in] frame_E The frame in which the Jacobian J𝑠_v_ACcm is
+  /// v_AScm and its Jacobian J𝑠_v_AScm are measured.
+  /// @param[in] frame_E The frame in which the Jacobian J𝑠_v_AScm is
   /// expressed on output.
-  /// @param[out] Js_v_ACcm_E Point Ccm's translational velocity Jacobian in
+  /// @param[out] Js_v_AScm_E Point Scm's translational velocity Jacobian in
   /// frame A with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
-  /// J𝑠_v_ACcm_E is a 3 x n matrix, where n is the number of elements in 𝑠.
+  /// J𝑠_v_AScm_E is a 3 x n matrix, where n is the number of elements in 𝑠.
   /// The Jacobian is a function of only generalized positions q (which are
   /// pulled from the context).
-  /// @throws std::exception if CCm does not exist, which occurs if there
+  /// @throws std::exception if Scm does not exist, which occurs if there
   /// are no massive bodies in MultibodyPlant (except world_body()).
   /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of all non-world
   /// bodies contained in `this` MultibodyPlant).
@@ -4680,37 +4726,37 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CalcJacobianCenterOfMassTranslationalVelocity(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_A, const Frame<T>& frame_E,
-      EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
+      EigenPtr<Matrix3X<T>> Js_v_AScm_E) const {
     this->ValidateContext(context);
-    DRAKE_DEMAND(Js_v_ACcm_E != nullptr);
+    DRAKE_DEMAND(Js_v_AScm_E != nullptr);
     internal_tree().CalcJacobianCenterOfMassTranslationalVelocity(
-        context, with_respect_to, frame_A, frame_E, Js_v_ACcm_E);
+        context, with_respect_to, frame_A, frame_E, Js_v_AScm_E);
   }
 
-  /// Calculates J𝑠_v_ACcm_E, point Ccm's translational velocity Jacobian in
-  /// frame A with respect to "speeds" 𝑠, expressed in frame E, where point CCm
-  /// is the center of mass of the system of all non-world bodies contained in
+  /// Calculates J𝑠_v_AScm_E, point Scm's translational velocity Jacobian in
+  /// frame A with respect to "speeds" 𝑠, expressed in frame E, where point Scm
+  /// is the center of mass of the system S of all non-world bodies contained in
   /// model_instances.
   /// @param[in] context contains the state of the model.
   /// @param[in] model_instances Vector of selected model instances.  If a model
   /// instance is repeated in the vector (unusual), it is only counted once.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_v_ACcm_E` is
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_v_AScm_E` is
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   /// positions) or with respect to 𝑠 = v (generalized velocities).
   /// @param[in] frame_A The frame in which the translational velocity
-  /// v_ACcm and its Jacobian J𝑠_v_ACcm are measured.
-  /// @param[in] frame_E The frame in which the Jacobian J𝑠_v_ACcm is
+  /// v_AScm and its Jacobian J𝑠_v_AScm are measured.
+  /// @param[in] frame_E The frame in which the Jacobian J𝑠_v_AScm is
   /// expressed on output.
-  /// @param[out] Js_v_ACcm_E Point Ccm's translational velocity Jacobian in
+  /// @param[out] Js_v_AScm_E Point Scm's translational velocity Jacobian in
   /// frame A with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
-  /// J𝑠_v_ACcm_E is a 3 x n matrix, where n is the number of elements in 𝑠.
+  /// J𝑠_v_AScm_E is a 3 x n matrix, where n is the number of elements in 𝑠.
   /// The Jacobian is a function of only generalized positions q (which are
   /// pulled from the context).
   /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of all non-world
   /// bodies contained in model_instances).
   /// @throws std::exception if model_instances is empty or only has world body.
-  /// @note The world_body() is ignored.  J𝑠_v_ACcm_ = ∑ (mᵢ Jᵢ) / mₛ, where
+  /// @note The world_body() is ignored.  J𝑠_v_AScm_ = ∑ (mᵢ Jᵢ) / mₛ, where
   /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body contained in model_instances,
   /// and Jᵢ is Bᵢcm's translational velocity Jacobian in frame A, expressed in
   /// frame E (Bᵢcm is the center of mass of the iᵗʰ body).
@@ -4720,12 +4766,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances,
       JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
-      const Frame<T>& frame_E, EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
+      const Frame<T>& frame_E, EigenPtr<Matrix3X<T>> Js_v_AScm_E) const {
     this->ValidateContext(context);
-    DRAKE_DEMAND(Js_v_ACcm_E != nullptr);
+    DRAKE_DEMAND(Js_v_AScm_E != nullptr);
     internal_tree().CalcJacobianCenterOfMassTranslationalVelocity(
         context, model_instances, with_respect_to, frame_A, frame_E,
-        Js_v_ACcm_E);
+        Js_v_AScm_E);
   }
   /// @} <!-- Jacobian_functions -->
 
@@ -5100,11 +5146,22 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const RigidBody<T>& body) const;
 
   /// Returns all bodies whose kinematics are transitively affected by the given
-  /// vector of Joints. The affected bodies are returned in increasing order of
-  /// body indexes. Note that this is a kinematic relationship rather than a
-  /// dynamic one. For example, if one of the inboard joints is a free (6dof)
-  /// joint, the kinematic influence is still felt even though dynamically
-  /// there would be no influence on the outboard body.
+  /// vector of Joints. This is a _kinematic_ relationship rather than a
+  /// dynamic one. It is is inherently a query on the topology of the plant's
+  /// modeled tree. Constraints are likewise not considered.
+  ///
+  /// The affected bodies are returned in increasing order of body indices. A
+  /// body is included in the output if that body's spatial velocity is
+  /// affected by the generalized velocities v of one of the indicated joints.
+  ///
+  /// As such, there are some notable implications:
+  ///
+  ///   1. If a body has an inboard free (6 dof) joint, it will be
+  ///      _kinematically_ affected by joints further inboard, even though there
+  ///      might not be any dynamic influence on that body.
+  ///   2. If the set of joints have no velocities (i.e., they are all weld (0
+  ///      dof) joints), then, by definition, no bodies will be affected.
+  ///
   /// This function can be only be called post-finalize, see Finalize().
   /// @throws std::exception if any of the given joint has an invalid index,
   /// doesn't correspond to a mobilizer, or is welded.
@@ -5615,12 +5672,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return scene_graph_;
   }
 
+  /// (Internal use only) Provides access to the internal::LinkJointGraph.
+  /// You can use graph().forest() to access the as-built
+  /// internal::SpanningForest if you've already called Finalize().
+  const internal::LinkJointGraph& graph() const {
+    return internal_tree().graph();
+  }
+
   /// @} <!-- Introspection -->
 
 #ifndef DRAKE_DOXYGEN_CXX
   // Internal-only access to LinkJointGraph::FindSubgraphsOfWeldedBodies();
   // TODO(calderpg-tri) Properly expose this method (docs/tests/bindings).
   std::vector<std::set<BodyIndex>> FindSubgraphsOfWeldedBodies() const;
+
 #endif
 
   using internal::MultibodyTreeSystem<T>::is_discrete;

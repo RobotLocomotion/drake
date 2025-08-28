@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -61,6 +62,8 @@ void ApplySimulatorConfig(const SimulatorConfig& config,
 
 /** Reports the simulator's current configuration, including the configuration
 of the integrator.
+The start_time of the extracted config is set to the current time of the
+simulator context.
 
 @param[in] simulator The Simulator to extract the configuration from.
 @tparam_nonsymbolic_scalar
@@ -91,6 +94,17 @@ SimulatorConfig ExtractSimulatorConfig(
 template <typename T>
 std::unique_ptr<IntegratorBase<T>> CreateIntegratorFromConfig(
     const System<T>* system, const SimulatorConfig& integrator_config);
+
+/** Reports if an integration scheme supports the scalar type T.
+
+@param integration_scheme Integration scheme to be checked.
+@throw std::exception if the integration scheme does not match any of
+  GetIntegrationSchemes().
+@tparam_default_scalar
+
+@ingroup simulator_configuration */
+template <typename T>
+bool IsScalarTypeSupportedByIntegrator(std::string_view integration_scheme);
 
 }  // namespace systems
 }  // namespace drake

@@ -50,6 +50,7 @@ drake_pybind_library(
     cc_srcs = [
         "geometry_py.cc",
         "geometry_py.h",
+        "geometry_py_bounding_box.cc",
         "geometry_py_common.cc",
         "geometry_py_hydro.cc",
         "geometry_py_meshes.cc",
@@ -57,6 +58,7 @@ drake_pybind_library(
         "geometry_py_render.cc",
         "geometry_py_scene_graph.cc",
         "geometry_py_visualizers.cc",
+        "geometry_py_refine.cc",
     ],
     package_info = PACKAGE_INFO,
     py_data = [
@@ -88,6 +90,14 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "bounding_box_test",
+    deps = [
+        ":geometry",
+        "//bindings/pydrake/common/test_utilities:pickle_compare_py",
+    ],
+)
+
+drake_py_unittest(
     name = "common_test",
     deps = [
         ":geometry",
@@ -112,6 +122,7 @@ drake_py_unittest(
     name = "meshes_test",
     data = [
         "//geometry:test_obj_files",
+        "//geometry:test_vtk_files",
     ],
     deps = [
         ":geometry",
@@ -123,6 +134,7 @@ drake_py_unittest(
     name = "optimization_test",
     deps = [
         ":geometry",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
         "//bindings/pydrake/multibody:inverse_kinematics_py",
         "//bindings/pydrake/multibody:parsing_py",

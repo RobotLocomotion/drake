@@ -52,10 +52,10 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
         sphere, math::RigidTransformd::Identity(),
         geometry::Sphere(spheres_[i].radius), "sphere" + std::to_string(i),
         spheres_[i].friction));
-    plant_->RegisterVisualGeometry(
-        sphere, math::RigidTransformd::Identity(),
-        geometry::Sphere(spheres_[i].radius), "sphere" + std::to_string(i),
-        geometry::IllustrationProperties());
+    plant_->RegisterVisualGeometry(sphere, math::RigidTransformd::Identity(),
+                                   geometry::Sphere(spheres_[i].radius),
+                                   "sphere" + std::to_string(i),
+                                   geometry::IllustrationProperties());
   }
   // Add boxes and register collision geometry.
   for (int i = 0; i < num_boxes; ++i) {

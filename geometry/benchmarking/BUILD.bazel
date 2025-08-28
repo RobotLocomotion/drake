@@ -10,8 +10,8 @@ load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 package(default_visibility = ["//visibility:private"])
 
 drake_cc_googlebench_binary(
-    name = "iris_in_configuration_space_benchmarks",
-    srcs = ["iris_in_configuration_space_benchmarks.cc"],
+    name = "iris_np_benchmarks",
+    srcs = ["iris_np_benchmarks.cc"],
     add_test_rule = True,
     data = [
         "@drake_models//:iiwa_description",
@@ -32,8 +32,8 @@ drake_cc_googlebench_binary(
 )
 
 drake_py_experiment_binary(
-    name = "iris_in_configuration_space_experiment",
-    googlebench_binary = ":iris_in_configuration_space_benchmarks",
+    name = "iris_np_experiment",
+    googlebench_binary = ":iris_np_benchmarks",
 )
 
 drake_cc_googlebench_binary(

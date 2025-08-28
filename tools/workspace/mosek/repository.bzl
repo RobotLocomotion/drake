@@ -6,15 +6,18 @@ def mosek_repository(
     repository_impl(
         name = name,
         # When the version is updated:
+        # - Documentation in solvers needs updating, e.g.:
+        #     git grep -l 'https://docs.mosek.com/' | xargs -n1 sed -i \
+        #     '/https:\/\/docs\.mosek\.com/s,/11\.0/capi,/11.1/capi,
+        # - tools/wheel/image/setup.py must also be updated
         # - tools/dynamic_analysis/tsan.supp may also need updating
         # - LICENSE.third_party may also need updating to match
         #   https://docs.mosek.com/latest/licensing/license-agreement-info.html
-        version = "10.1.21",
+        version = "11.0.24",
         sha256 = {
-            "mosektoolslinuxaarch64.tar.bz2": "c2d15979dc1190ff83949b2e79244137ed4013fdb47de90fb62836088749e0ca",  # noqa
-            "mosektoolslinux64x86.tar.bz2": "f37b7b3806e467c64a02e95b2ab009f6fe8430f25ffc72ed56885f7684dec486",  # noqa
-            "mosektoolsosxaarch64.tar.bz2": "f6e862cab171b7897a6f1ad21c3c0fbdf33dc1310f50c792295ab008321950c7",  # noqa
-            "mosektoolsosx64x86.tar.bz2": "3ad45f7e535b6d3bb8be955f403ded30a7f186424057f11024afc57427cbb012",  # noqa
+            "mosektoolslinuxaarch64.tar.bz2": "68e94abb10087bf38dd4b378cc51a412dc1f94171ef50dff9075a4c1bf909bb6",  # noqa
+            "mosektoolslinux64x86.tar.bz2": "f058e4bec5cde899cf5193f7ac966a923a256c335466a0678604068a51404362",  # noqa
+            "mosektoolsosxaarch64.tar.bz2": "b0bd9232e45597d098b9464eb6302b17cf0f3bd5679e06bce1e74c046604da34",  # noqa
         },
         mirrors = mirrors,
     )

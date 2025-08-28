@@ -229,7 +229,8 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.frame_body_poses =
       this->DeclareCacheEntry(
               std::string("frame pose in body frame"),
-              FrameBodyPoseCache<T>(num_frame_body_poses_needed),
+              FrameBodyPoseCache<T>(internal_tree().num_mobods(),
+                                    num_frame_body_poses_needed),
               &MultibodyTreeSystem<T>::CalcFrameBodyPoses,
               {this->all_parameters_ticket()})
           .cache_index();
@@ -245,9 +246,18 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.position_kinematics =
       this->DeclareCacheEntry(
               std::string("position kinematics"),
-              PositionKinematicsCache<T>(internal_tree().get_topology()),
+              PositionKinematicsCache<T>(internal_tree().forest()),
               &MultibodyTreeSystem<T>::CalcPositionKinematicsCache,
               {position_ticket, this->all_parameters_ticket()})
+          .cache_index();
+
+  // Allocate system Jacobian cache.
+  cache_indexes_.block_system_jacobian =
+      this->DeclareCacheEntry(
+              std::string("system Jacobian"),
+              BlockSystemJacobianCache<T>(internal_tree().forest()),
+              &MultibodyTreeSystem<T>::CalcBlockSystemJacobianCache,
+              {position_kinematics_cache_entry().ticket()})
           .cache_index();
 
   // Allocate cache entry to store spatial inertia M_B_W(q) for each body.
@@ -260,10 +270,10 @@ void MultibodyTreeSystem<T>::Finalize() {
               {position_kinematics_cache_entry().ticket()})
           .cache_index();
 
-  // Allocate cache entry for composite-body inertias Mc_B_W(q) for each body.
+  // Allocate cache entry for composite-body inertias K_BBo_W(q) for each body.
   cache_indexes_.composite_body_inertia_in_world =
       this->DeclareCacheEntry(
-              std::string("composite body inertia in world (Mc_B_W)"),
+              std::string("composite body inertia in world (K_BBo_W)"),
               std::vector<SpatialInertia<T>>(internal_tree().num_bodies(),
                                              SpatialInertia<T>::NaN()),
               &MultibodyTreeSystem<T>::CalcCompositeBodyInertiasInWorld,
@@ -276,7 +286,7 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.velocity_kinematics =
       this->DeclareCacheEntry(
               std::string("velocity kinematics"),
-              VelocityKinematicsCache<T>(internal_tree().get_topology()),
+              VelocityKinematicsCache<T>(internal_tree().forest()),
               &MultibodyTreeSystem<T>::CalcVelocityKinematicsCache,
               {position_ticket, velocity_ticket, this->all_parameters_ticket()})
           .cache_index();
@@ -312,7 +322,7 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.abi_cache_index =
       this->DeclareCacheEntry(
               std::string("Articulated Body Inertia"),
-              ArticulatedBodyInertiaCache<T>(internal_tree().get_topology()),
+              ArticulatedBodyInertiaCache<T>(internal_tree().forest()),
               &MultibodyTreeSystem<T>::CalcArticulatedBodyInertiaCache,
               {position_ticket, this->all_parameters_ticket()})
           .cache_index();
@@ -338,8 +348,9 @@ void MultibodyTreeSystem<T>::Finalize() {
 
   // Forces, and thus accelerations, are functions not only of state but also
   // inputs. In addition, the forces and accelerations can have extra
-  // user-injected dependencies through MultibodyElement and ForceDensityField,
-  // so we must include tickets that users might depend on.
+  // user-injected dependencies through MultibodyElement and
+  // ForceDensityFieldBase, so we must include tickets that users might depend
+  // on.
   const std::set<DependencyTicket> force_and_acceleration_prereqs = {
       position_ticket,
       velocity_ticket,
@@ -351,7 +362,7 @@ void MultibodyTreeSystem<T>::Finalize() {
   // Articulated Body Algorithm (ABA) force cache.
   const auto& articulated_body_forces_cache_entry = this->DeclareCacheEntry(
       std::string("ABA force cache"),
-      ArticulatedBodyForceCache<T>(internal_tree().get_topology()),
+      ArticulatedBodyForceCache<T>(internal_tree().forest()),
       &MultibodyTreeSystem<T>::CalcArticulatedBodyForceCache,
       force_and_acceleration_prereqs);
   cache_indexes_.articulated_body_forces =
@@ -363,7 +374,7 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.acceleration_kinematics =
       this->DeclareCacheEntry(
               std::string("Accelerations"),
-              AccelerationKinematicsCache<T>(internal_tree().get_topology()),
+              AccelerationKinematicsCache<T>(internal_tree().forest()),
               &MultibodyTreeSystem<T>::CalcForwardDynamics,
               force_and_acceleration_prereqs)
           .cache_index();

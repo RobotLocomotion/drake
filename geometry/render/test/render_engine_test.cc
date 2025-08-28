@@ -182,11 +182,10 @@ GTEST_TEST(RenderEngine, DeformableGeometryRegistrationAndUpdate) {
   }
 
   // Now we test for throw conditions for the update.
-  // Non-existant geometry.
+  // Non-existent geometry is fine. It's silently ignored.
   const GeometryId fake_id = GeometryId::get_new_id();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.UpdateDeformableConfigurations(fake_id, {new_q}, {new_normal}),
-      "No deformable geometry with id.*");
+  EXPECT_NO_THROW(
+      engine.UpdateDeformableConfigurations(fake_id, {new_q}, {new_normal}));
   // Wrong number of vertex positions/normals.
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.UpdateDeformableConfigurations(id0, {new_q, new_q}, {new_normal}),

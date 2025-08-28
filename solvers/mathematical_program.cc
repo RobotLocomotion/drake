@@ -600,6 +600,40 @@ MathematicalProgram::AddL2NormCostUsingConicConstraint(
   return std::make_tuple(s, linear_cost, lorentz_cone_constraint);
 }
 
+std::tuple<VectorX<symbolic::Variable>, Binding<LinearCost>,
+           Binding<LinearConstraint>>
+MathematicalProgram::AddL1NormCostInEpigraphForm(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b,
+    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+  auto s = this->NewContinuousVariables(A.rows(), "l1_norm_cost_epigraph");
+  // We want to encode s >= Ax+b and s >= -(Ax+b), with a cost Σᵢsᵢ on s. This
+  // can be written as:
+  //   A_full = [-I  A]
+  //            [-I -A]
+  //   ub = [-b]
+  //        [ b]
+  // A_full * vars <= ub
+  // for variables [s; vars]
+  auto linear_cost = this->AddLinearCost(Eigen::VectorXd::Ones(A.rows()), 0, s);
+
+  Eigen::MatrixXd I = Eigen::MatrixXd::Identity(A.rows(), A.rows());
+  Eigen::MatrixXd A_full(2 * A.rows(), A.rows() + A.cols());
+  A_full.topRows(A.rows()) << -I, A;
+  A_full.bottomRows(A.rows()) << -I, -A;
+
+  Eigen::VectorXd lb = Eigen::VectorXd::Constant(
+      2 * A.rows(), -std::numeric_limits<double>::infinity());
+  Eigen::VectorXd ub(2 * A.rows());
+  ub.head(A.rows()) = -b;
+  ub.tail(A.rows()) = b;
+
+  solvers::VectorXDecisionVariable all_vars(s.size() + vars.size());
+  all_vars << s, vars;
+  auto linear_constraint = this->AddLinearConstraint(A_full, lb, ub, all_vars);
+  return std::make_tuple(s, linear_cost, linear_constraint);
+}
+
 Binding<PolynomialCost> MathematicalProgram::AddPolynomialCost(
     const Expression& e) {
   auto binding = AddCost(internal::ParsePolynomialCost(e));
@@ -969,6 +1003,25 @@ MathematicalProgram::AddLinearEqualityConstraint(const Expression& e,
 Binding<LinearEqualityConstraint>
 MathematicalProgram::AddLinearEqualityConstraint(const Formula& f) {
   return AddConstraint(internal::ParseLinearEqualityConstraint(f));
+}
+
+Binding<LinearEqualityConstraint>
+MathematicalProgram::AddLinearEqualityConstraint(
+    const Eigen::Ref<const Eigen::Array<Formula, Eigen::Dynamic,
+                                        Eigen::Dynamic>>& formulas) {
+  std::set<Formula> formula_set;
+  for (int i = 0; i < formulas.rows(); ++i) {
+    for (int j = 0; j < formulas.cols(); ++j) {
+      if (is_conjunction(formulas(i, j))) {
+        for (const Formula& operand : get_operands(formulas(i, j))) {
+          formula_set.insert(operand);
+        }
+      } else {
+        formula_set.insert(formulas(i, j));
+      }
+    }
+  }
+  return AddConstraint(internal::ParseLinearEqualityConstraint(formula_set));
 }
 
 Binding<LinearEqualityConstraint>

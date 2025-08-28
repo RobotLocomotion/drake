@@ -37,7 +37,7 @@ GTEST_TEST(GripperLcmTest, GripperCommandPassthroughTest) {
   lcmt_planar_gripper_command command{};
   command.num_fingers = kNumFingers;
   command.finger_command.resize(kNumFingers);
-  auto &fcommand_in = command.finger_command[0];
+  auto& fcommand_in = command.finger_command[0];
   fcommand_in.joint_position[0] = 0.1;
   fcommand_in.joint_position[1] = 0.2;
   fcommand_in.joint_velocity[0] = 0.3;
@@ -89,7 +89,7 @@ GTEST_TEST(GripperLcmTest, GripperStatusPassthroughTest) {
   lcmt_planar_gripper_status status{};
   status.num_fingers = kNumFingers;
   status.finger_status.resize(kNumFingers);
-  auto &fstatus_in = status.finger_status[0];
+  auto& fstatus_in = status.finger_status[0];
   fstatus_in.joint_position[0] = 0.1;
   fstatus_in.joint_position[1] = 0.2;
   fstatus_in.joint_velocity[0] = 0.3;
