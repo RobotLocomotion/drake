@@ -1,5 +1,7 @@
 #include "drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h"  // noqa
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
