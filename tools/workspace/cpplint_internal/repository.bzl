@@ -6,12 +6,11 @@ def cpplint_internal_repository(
     github_archive(
         name = name,
         repository = "cpplint/cpplint",
-        commit = "2.0.1",
-        sha256 = "49cffdaad85a19a760811f8ce7736293f994d8eabee7c11fcf8bb72075a84239",  # noqa
+        commit = "2.0.2",
+        sha256 = "fc6d0cd40f934b58e8e0bb5eb5f1f2b651880b5fbc0e93a54e6fb6503f733b3d",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/transitive_includes.patch",
-            ":patches/whitespace_newline.patch",
         ],
         mirrors = mirrors,
     )
