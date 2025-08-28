@@ -35,10 +35,11 @@ GTEST_TEST(testQPInverseDynamicsController, testPoseSetpoint) {
                                              Vector6<double>::Zero());
 
     double err = ang_d - ang;
-    if (err > M_PI)
+    if (err > M_PI) {
       err -= 2 * M_PI;
-    else if (err < -M_PI)
+    } else if (err < -M_PI) {
       err += 2 * M_PI;
+    }
 
     expected.head<3>() = err * vec_d;
     EXPECT_TRUE(

@@ -247,10 +247,11 @@ std::vector<std::string> SystemBase::GetGraphvizPortLabels(bool input) const {
   result.reserve(num_ports);
   for (int i = 0; i < num_ports; ++i) {
     const PortBase& port = [&]() -> const PortBase& {
-      if (input)
+      if (input) {
         return GetInputPortBaseOrThrow("", i, /* warn_deprecated = */ false);
-      else
+      } else {
         return GetOutputPortBaseOrThrow("", i, /* warn_deprecated = */ false);
+      }
     }();
     std::string label = HtmlEscape(port.get_name());
     // For deprecated ports, use strikethrough and a unicode headstone (🪦).

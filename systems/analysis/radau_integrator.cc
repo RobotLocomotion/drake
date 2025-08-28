@@ -97,10 +97,11 @@ void RadauIntegrator<T, num_stages>::DoInitialize() {
   // integrator can provide, use the integrator's loosest accuracy setting
   // instead.
   double working_accuracy = this->get_target_accuracy();
-  if (isnan(working_accuracy))
+  if (isnan(working_accuracy)) {
     working_accuracy = kDefaultAccuracy;
-  else if (working_accuracy > kLoosestAccuracy)
+  } else if (working_accuracy > kLoosestAccuracy) {
     working_accuracy = kLoosestAccuracy;
+  }
   this->set_accuracy_in_use(working_accuracy);
 
   // Reset the Jacobian matrix (so that recomputation is forced).

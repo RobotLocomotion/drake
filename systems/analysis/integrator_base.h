@@ -220,10 +220,11 @@ class IntegratorBase {
   // TODO(edrumwri): complain if integrator with error estimation wants to drop
   //                 below the minimum step size
   void set_target_accuracy(double accuracy) {
-    if (!supports_error_estimation())
+    if (!supports_error_estimation()) {
       throw std::logic_error(
           "Integrator does not support accuracy estimation "
           "and user has requested error control");
+    }
     target_accuracy_ = accuracy;
     accuracy_in_use_ = accuracy;
   }
@@ -657,10 +658,11 @@ class IntegratorBase {
    */
   void request_initial_step_size_target(const T& step_size) {
     using std::isnan;
-    if (!supports_error_estimation())
+    if (!supports_error_estimation()) {
       throw std::logic_error(
           "Integrator does not support error estimation and "
           "user has initial step size target");
+    }
     req_initial_step_size_ = step_size;
   }
 
@@ -1067,10 +1069,11 @@ class IntegratorBase {
           "IntegrateWithSingleFixedStepToTime() called with "
           "a negative step size.");
     }
-    if (!this->get_fixed_step_mode())
+    if (!this->get_fixed_step_mode()) {
       throw std::logic_error(
           "IntegrateWithSingleFixedStepToTime() requires "
           "fixed stepping.");
+    }
 
     if (!Step(h)) {
       return false;
