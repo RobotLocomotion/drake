@@ -647,15 +647,22 @@ endif()
 
 set(BAZEL_INSTALL_ARGS "\${CMAKE_INSTALL_PREFIX}")
 
-if(CMAKE_INSTALL_NAME_TOOL)
-  list(INSERT BAZEL_INSTALL_ARGS 0
-    "--install_name_tool"
-    "${CMAKE_INSTALL_NAME_TOOL}"
+if(APPLE)
+  set(INSTALL_NAME_TOOL "" CACHE FILEPATH
+    "Path to the install name tool program"
   )
+  if(INSTALL_NAME_TOOL)
+    list(INSERT BAZEL_INSTALL_ARGS 0
+      "--install_name_tool" "${INSTALL_NAME_TOOL}"
+    )
+  endif()
 endif()
 
-if(CMAKE_STRIP)
-  list(INSERT BAZEL_INSTALL_ARGS 0 "--strip_tool" "${CMAKE_STRIP}")
+set(INSTALL_STRIP_TOOL "" CACHE FILEPATH
+  "Path to the strip program"
+)
+if(INSTALL_STRIP_TOOL)
+  list(INSERT BAZEL_INSTALL_ARGS 0 "--strip_tool" "${INSTALL_STRIP_TOOL}")
 endif()
 
 # If CMAKE_BUILD_TYPE is Debug or RelWithDebInfo, do NOT strip symbols during
@@ -692,11 +699,17 @@ find_package(Git)
 set(GIT_DIR "${PROJECT_SOURCE_DIR}/.git")
 
 set(GENERATE_DRAKE_VERSION_ARGS)
-if(DEFINED DRAKE_VERSION_OVERRIDE)
+set(DRAKE_VERSION_OVERRIDE "" CACHE STRING
+  "The version of Drake being installed"
+)
+if(DRAKE_VERSION_OVERRIDE)
   list(APPEND GENERATE_DRAKE_VERSION_ARGS
     "-DDRAKE_VERSION_OVERRIDE=${DRAKE_VERSION_OVERRIDE}")
 endif()
-if(DEFINED DRAKE_GIT_SHA_OVERRIDE)
+set(DRAKE_GIT_SHA_OVERRIDE "" CACHE STRING
+  "The Git SHA of Drake being installed"
+)
+if(DRAKE_GIT_SHA_OVERRIDE)
   list(APPEND GENERATE_DRAKE_VERSION_ARGS
     "-DDRAKE_GIT_SHA_OVERRIDE=${DRAKE_GIT_SHA_OVERRIDE}")
 endif()

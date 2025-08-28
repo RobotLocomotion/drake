@@ -61,6 +61,12 @@ maybe require extra setup. See the
 
 # Building with CMake
 
+Drake's primary build system is Bazel; refer to our
+[Bazel instructions](/bazel.html) for details. Drake provides a secondary CMake
+build as an alternative, but it ultimately runs the build using Bazel.
+Drake is installed using CMake only, and it can be imported from other builds
+using CMake.
+
 For sample projects that show how to import Drake as a CMake external project
 (either by building Drake from source, or by downloading a pre-compiled Drake
 release) please see our gallery of
@@ -85,13 +91,41 @@ make install
 To change the build options, you can run one of the standard CMake GUIs (e.g.,
 `ccmake` or `cmake-gui`) or specify command-line options with `-D` to `cmake`.
 
+## Native CMake Options Supported by Drake
+
+A selection of
+[CMake variables](https://cmake.org/cmake/help/latest/manual/cmake-variables.7.html)
+are passed to the underlying Bazel build after being parsed by Drake's CMake.
+
+* `CMAKE_BUILD_TYPE`
+* `CMAKE_C_COMPILER` and `CMAKE_CXX_COMPILER`
+* `CMAKE_C_COMPILER_ID` and `CMAKE_CXX_COMPILER_ID`
+* `CMAKE_CXX_COMPILER_VERSION`
+* `CMAKE_INSTALL_PREFIX`
+
 ## Drake-specific CMake Options
 
-These options can be set using `-DFOO=bar` on the CMake command line, or in one
-of the CMake GUIs.
+Drake also defines a number of CMake options to control different facets of
+the build.
+
+Adjusting the installation:
+
+* `INSTALL_NAME_TOOL` (default `OFF`). When `ON`, uses the provided path to
+  the `install_name_tool` program.
+  * This option is only available on macOS.
+* `INSTALL_STRIP_TOOL` (default `OFF`). When `ON`, uses the provided path to
+  the `strip` program.
+* `DRAKE_VERSION_OVERRIDE` (default `OFF`). When `ON`, uses the provided
+  version in the installed version file.
+* `DRAKE_GIT_SHA_OVERRIDE` (default `OFF`). When `ON`, uses the provided Git
+  SHA in the installed version file.
 
 Adjusting open-source dependencies:
 
+* `Python_EXECUTABLE` (default undefined). When defined, uses the provided
+  path to the Python interpreter. Otherwise, uses `find_package(Python)` to
+  try and find the Python version supported by the host platform (falling
+  back to finding any Python version at all if needed).
 * `WITH_USER_EIGEN` (default `ON`). When `ON`, uses `find_package(Eigen3)`
   to locate a user-provided `Eigen3::Eigen` library
   instead of hard-coding to the operating system version.
@@ -221,8 +255,3 @@ the solver and set environment variables per the
 
 There is no way to install Drake from Bazel. To install Drake, use CMake
 (see above).
-
-# Making Changes to Drake
-
-Drake developers use Bazel for development.
-Refer to our [Bazel instructions](/bazel.html) for details.
