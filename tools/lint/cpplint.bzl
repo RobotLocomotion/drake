@@ -180,4 +180,5 @@ def cpplint_extra(
         name = name,
         source_labels = srcs,
         source_filenames = ["$(location %s)" % x for x in srcs],
+        enable_clang_format_lint = True,
     )

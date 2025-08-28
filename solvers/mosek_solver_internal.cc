@@ -1679,8 +1679,8 @@ void MosekSolverProgram::UpdateOptions(
       }
       *is_printing = true;
     }
-    const int num_threads = common.max_threads.value_or(
-        Parallelism::Max().num_threads());
+    const int num_threads =
+        common.max_threads.value_or(Parallelism::Max().num_threads());
     respelled->emplace("MSK_IPAR_NUM_THREADS", num_threads);
   });
   options->CopyToCallbacks(
