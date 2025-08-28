@@ -1,6 +1,13 @@
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 
 #include <forward_list>
+#include <limits>
+#include <memory>
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

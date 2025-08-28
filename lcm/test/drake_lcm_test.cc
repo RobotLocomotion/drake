@@ -1,8 +1,11 @@
 #include "drake/lcm/drake_lcm.h"
 
 #include <chrono>
+#include <memory>
 #include <stdexcept>
+#include <string>
 #include <thread>
+#include <utility>
 
 #include "lcm/lcm-cpp.hpp"
 #include <gtest/gtest.h>

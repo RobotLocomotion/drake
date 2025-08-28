@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <functional>
+#include <limits>
+#include <vector>
 
 #include <gtest/gtest.h>
 

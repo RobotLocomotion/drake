@@ -1,5 +1,6 @@
 #include "drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h"
 
+#include <utility>
 #include <vector>
 
 #include "drake/systems/controllers/pid_controller.h"
