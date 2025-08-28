@@ -122,13 +122,16 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
 
   mobilizer->set_parent_tree(this, mobilizer->mobod().index());
 
-  // Mark floating base bodies as needed. Note the strict definition: the
-  // inboard frame must be literally the World frame, not just any anchored
-  // frame.
+  // Mark floating base bodies as needed. Note the strict definition:
+  // (1) the inboard frame must be literally the World frame, not just any
+  //     anchored frame, and
+  // (2) the outboard frame must be the body frame.
   const BodyIndex outboard_body_index = mobilizer->outboard_body().index();
+  const RigidBody<T>& outboard_body = get_body(outboard_body_index);
   bool is_floating_base_body =
       mobilizer->has_six_dofs() &&
-      mobilizer->inboard_frame().index() == world_frame().index();
+      mobilizer->inboard_frame().index() == world_frame().index() &&
+      mobilizer->outboard_frame().index() == outboard_body.body_frame().index();
 
   topology_.get_mutable_rigid_body_topology(outboard_body_index)
       .is_floating_base = is_floating_base_body;
