@@ -1,5 +1,6 @@
 #include "drake/common/overloaded.h"
 
+#include <string>
 #include <variant>
 
 #include <gtest/gtest.h>

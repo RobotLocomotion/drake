@@ -1,4 +1,7 @@
+#include <limits>
+#include <memory>
 #include <stdexcept>
+#include <utility>
 
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>

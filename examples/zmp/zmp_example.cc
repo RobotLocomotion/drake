@@ -1,5 +1,6 @@
 #include <chrono>
 #include <thread>
+#include <vector>
 
 #include "drake/common/proto/call_python.h"
 #include "drake/planning/locomotion/test_utilities/zmp_test_util.h"

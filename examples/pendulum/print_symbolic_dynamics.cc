@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 
 #include "drake/common/symbolic/expression.h"
 #include "drake/examples/pendulum/pendulum_plant.h"

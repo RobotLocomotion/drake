@@ -2,6 +2,8 @@
 #include "drake/common/symbolic/expression/expression_cell.h"
 #undef DRAKE_COMMON_SYMBOLIC_EXPRESSION_DETAIL_HEADER
 
+#include <algorithm>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/symbolic_test_util.h"

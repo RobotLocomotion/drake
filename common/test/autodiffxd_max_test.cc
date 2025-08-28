@@ -3,6 +3,8 @@
 #include "drake/common/ad/test/standard_operations_test.h"
 /* clang-format on */
 
+#include <algorithm>
+
 namespace drake {
 namespace test {
 namespace {

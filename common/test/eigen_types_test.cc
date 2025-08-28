@@ -1,5 +1,8 @@
 #include "drake/common/eigen_types.h"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/nice_type_name.h"

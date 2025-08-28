@@ -2,6 +2,7 @@
 #include "drake/common/text_logging.h"
 /* clang-format on */
 
+#include <memory>
 #include <ostream>
 #include <sstream>
 

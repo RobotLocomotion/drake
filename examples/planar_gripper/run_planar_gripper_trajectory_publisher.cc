@@ -12,7 +12,10 @@
 ///        the vertical case. Using these keyframes to simulate the horizontal
 ///        case may cause the simulation to fail.
 
+#include <map>
 #include <memory>
+#include <string>
+#include <utility>
 
 #include <gflags/gflags.h>
 

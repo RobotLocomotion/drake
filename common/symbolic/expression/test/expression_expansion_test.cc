@@ -2,8 +2,10 @@
 #include "drake/common/symbolic/expression/all.h"
 /* clang-format on */
 
+#include <algorithm>
 #include <cmath>
 #include <functional>
+#include <iostream>
 #include <stdexcept>
 #include <utility>
 #include <vector>
