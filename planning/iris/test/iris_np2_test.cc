@@ -149,9 +149,14 @@ TEST_F(DoublePendulum, PaddingUnsupported) {
       ".*negative padding.*");
 }
 
-// Check the error message for a parameterization from rational kinematics.
+// Test growing a region for the double pendulum along a parameterization of the
+// configuration space built from RationalForwardKinematics. This also
+// implicitly ensures that the IrisParameterizationFunction constructor that
+// takes in a RationalForwardKinematics object populates the double- and
+// AutoDiffXd-valued parameterization functions, since both must be available in
+// order to call IrisNp2.
 TEST_F(DoublePendulumRationalForwardKinematics,
-       ParameterizationMissingAutodiff) {
+       ParameterizationFromStaticConstructor) {
   IrisNp2Options options;
   auto scene_graph_checker =
       dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
@@ -160,9 +165,29 @@ TEST_F(DoublePendulumRationalForwardKinematics,
   options.parameterization =
       IrisParameterizationFunction(&rational_kinematics_,
                                    /* q_star_val */ Vector2d::Zero());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
-      ".*autodiff-compatible parameterization.*");
+  options.sampled_iris_options.verbose = true;
+
+  meshcat_->Delete();
+  options.sampled_iris_options.meshcat = meshcat_;
+
+  // Check that the parameterization was set correctly.
+  EXPECT_EQ(options.parameterization.get_parameterization_is_threadsafe(),
+            true);
+  ASSERT_TRUE(
+      options.parameterization.get_parameterization_dimension().has_value());
+  EXPECT_EQ(options.parameterization.get_parameterization_dimension().value(),
+            2);
+
+  CheckParameterization(options.parameterization.get_parameterization_double());
+
+  HPolyhedron region = IrisNp2(*scene_graph_checker,
+                               starting_ellipsoid_rational_forward_kinematics_,
+                               domain_rational_forward_kinematics_, options);
+
+  CheckRegionRationalForwardKinematics(region);
+  PlotEnvironmentAndRegionRationalForwardKinematics(
+      region, options.parameterization.get_parameterization_double(),
+      region_query_point_1_);
 }
 
 TEST_F(DoublePendulum, IrisNp2Test) {
