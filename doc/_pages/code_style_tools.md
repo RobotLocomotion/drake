@@ -36,6 +36,9 @@ User manuals for the style-checking tools are as follows:
 * Bazel: Uses both pycodestyle like Python, and also the buildifier tool as
   described in [Updating BUILD files](/bazel.html#updating-build-files).
 
+To opt-out of all linting (e.g., when committing vendored copies of third-party
+external files into Drake's workspace), add `tags = ["nolint"]` to the
+`BUILD.bazel` rule(s) for the copied code.
 
 # Manual style fixups
 
@@ -48,20 +51,7 @@ cd drake
 bazel run //tools/lint:clang-format -- -i -style=file [file name]
 ```
 
-Using ``clang-format`` will modify the entire file that is specified. As an
-alternative, you can use ``git clang-format`` on Ubuntu to change only the
-portions of a file that you have modified. To run ``git clang-format``:
-
-```
-# Make sure the clang-format program exists at the path we want to use.
-bazel build //tools/lint/...
-
-# For development on Ubuntu: format a file that has been staged in git
-git clang-format --binary=/path/to/drake/bazel-bin/tools/lint/clang-format -- [file name]
-
-# For development on Ubuntu: format a file that has been modified but not staged
-git clang-format --binary=/path/to/drake/bazel-bin/tools/lint/clang-format -f -- [file name]
-```
+Using ``clang-format`` will modify the entire file that is specified.
 
 ### IDE integration
 
