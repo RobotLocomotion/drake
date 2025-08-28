@@ -1,5 +1,7 @@
 #include "drake/systems/analysis/antiderivative_function.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"

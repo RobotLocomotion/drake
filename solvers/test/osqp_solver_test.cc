@@ -1,5 +1,7 @@
 #include "drake/solvers/osqp_solver.h"
 
+#include <limits>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

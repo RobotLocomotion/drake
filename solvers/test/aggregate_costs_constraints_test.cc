@@ -1,6 +1,10 @@
 #include "drake/solvers/aggregate_costs_constraints.h"
 
 #include <limits>
+#include <memory>
+#include <string>
+#include <unordered_set>
+#include <vector>
 
 #include <fmt/format.h>
 #include <gmock/gmock.h>
