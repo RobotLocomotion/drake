@@ -1,3 +1,8 @@
+#include <memory>
+#include <string>
+#include <unordered_set>
+#include <utility>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

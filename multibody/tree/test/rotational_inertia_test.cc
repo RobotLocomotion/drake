@@ -1,8 +1,10 @@
 #include "drake/multibody/tree/rotational_inertia.h"
 
 #include <iomanip>
+#include <limits>
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include <gtest/gtest.h>
 

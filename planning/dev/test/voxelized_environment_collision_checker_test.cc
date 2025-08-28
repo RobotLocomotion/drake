@@ -1,5 +1,8 @@
 #include "drake/planning/dev/voxelized_environment_collision_checker.h"
 
+#include <string>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/planning/dev/sphere_robot_model_collision_checker.h"

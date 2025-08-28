@@ -1,4 +1,11 @@
 // NOLINTNEXTLINE(build/include): prevent complaint re link_joint_graph.h
+#include <memory>
+#include <set>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
+
 #include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"

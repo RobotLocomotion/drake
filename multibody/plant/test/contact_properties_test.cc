@@ -1,5 +1,10 @@
 #include "drake/multibody/plant/contact_properties.h"
 
+#include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/pointer_cast.h"

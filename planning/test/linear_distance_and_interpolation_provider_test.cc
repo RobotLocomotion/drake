@@ -1,5 +1,8 @@
 #include "drake/planning/linear_distance_and_interpolation_provider.h"
 
+#include <limits>
+#include <map>
+#include <memory>
 #include <string>
 
 #include <common_robotics_utilities/math.hpp>

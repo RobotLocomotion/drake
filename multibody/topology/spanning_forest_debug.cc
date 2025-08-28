@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <string>
 #include <vector>
 
 #include "drake/common/drake_throw.h"
