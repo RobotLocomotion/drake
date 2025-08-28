@@ -96,12 +96,8 @@ void CheckSeparationBySamples(
                                              state_value.get());
     EXPECT_FALSE(query_object.HasCollisions());
     for (int plane_index = 0;
-         plane_index <
-         static_cast<int>(
-             tester.get_separating_planes().size());
-         ++plane_index) {
-      const auto& plane =
-          tester.get_separating_planes()[plane_index];
+         plane_index < ssize(tester.get_separating_planes()); ++plane_index) {
+      const auto& plane = tester.get_separating_planes()[plane_index];
       if (!ignored_collision_pairs.contains(SortedPair<geometry::GeometryId>(
               plane.positive_side_geometry->id(),
               plane.negative_side_geometry->id())) &&
