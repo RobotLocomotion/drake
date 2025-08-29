@@ -4,8 +4,14 @@
 /* clang-format on */
 
 #include <algorithm>
+#include <functional>
 #include <ios>
+#include <limits>
+#include <memory>
 #include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"

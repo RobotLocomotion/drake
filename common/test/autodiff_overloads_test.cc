@@ -1,3 +1,4 @@
+#include <limits>
 #include <type_traits>
 
 #include <Eigen/Dense>

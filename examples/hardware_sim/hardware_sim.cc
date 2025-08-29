@@ -15,6 +15,10 @@ controller operates the robot, without extra hassle.
 Drake maintainers should keep this file in sync with hardware_sim.py. */
 
 #include <fstream>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include <gflags/gflags.h>
 

@@ -1,6 +1,7 @@
 #include "drake/common/trajectories/path_parameterized_trajectory.h"
 
 #include <algorithm>
+#include <memory>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"

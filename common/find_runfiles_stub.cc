@@ -14,6 +14,8 @@
 // test); it's not even used in the Bazel-installed binary release build (e.g.,
 // as called by Drake's CMakeLists.txt files).  It is nominally dead code.
 
+#include <string>
+
 namespace drake {
 
 bool HasRunfiles() {

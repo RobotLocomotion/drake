@@ -1,6 +1,9 @@
 #include "drake/common/yaml/yaml_write_archive.h"
 
 #include <filesystem>
+#include <map>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <fmt/args.h>

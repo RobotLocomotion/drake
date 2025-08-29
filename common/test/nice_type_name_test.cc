@@ -1,6 +1,7 @@
 #include "drake/common/nice_type_name.h"
 
 #include <complex>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>

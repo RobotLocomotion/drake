@@ -1,7 +1,9 @@
 #include "drake/common/test_utilities/limit_malloc.h"
 
 #include <cstdlib>
+#include <iostream>
 #include <stdexcept>
+#include <string>
 
 #include <gtest/gtest.h>
 

@@ -1,5 +1,7 @@
 #include "drake/common/fmt_eigen.h"
 
+#include <string>
+
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 

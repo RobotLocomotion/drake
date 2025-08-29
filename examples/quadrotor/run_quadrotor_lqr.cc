@@ -7,6 +7,7 @@
 ///   bazel run //tools:meldis -- -w
 
 #include <memory>
+#include <utility>
 
 #include <gflags/gflags.h>
 

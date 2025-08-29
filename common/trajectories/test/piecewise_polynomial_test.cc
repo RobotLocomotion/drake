@@ -1,7 +1,11 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
 
+#include <algorithm>
+#include <limits>
+#include <memory>
 #include <random>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include <Eigen/Core>

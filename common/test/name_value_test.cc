@@ -1,5 +1,7 @@
 #include "drake/common/name_value.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 namespace drake {

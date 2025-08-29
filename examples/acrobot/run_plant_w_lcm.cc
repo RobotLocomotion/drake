@@ -9,7 +9,9 @@
  * LcmPublisherSystem
  *
  */
+#include <limits>
 #include <memory>
+#include <string>
 #include <thread>
 
 #include <gflags/gflags.h>

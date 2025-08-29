@@ -1,6 +1,8 @@
 #include "drake/common/yaml/yaml_io.h"
 
 #include <fstream>
+#include <map>
+#include <string>
 
 #include <gtest/gtest.h>
 

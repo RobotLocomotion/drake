@@ -1,5 +1,8 @@
 #include "drake/examples/planar_gripper/planar_gripper_common.h"
 
+#include <map>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"

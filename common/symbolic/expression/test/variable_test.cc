@@ -2,7 +2,9 @@
 #include "drake/common/symbolic/expression/all.h"
 /* clang-format on */
 
+#include <algorithm>
 #include <map>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>

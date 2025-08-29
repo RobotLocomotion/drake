@@ -3,6 +3,8 @@
 #include "drake/common/ad/test/standard_operations_test.h"
 /* clang-format on */
 
+#include <algorithm>
+
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {

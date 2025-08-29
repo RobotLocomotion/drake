@@ -1,5 +1,7 @@
 #include "drake/common/symbolic/chebyshev_basis_element.h"
 
+#include <unordered_map>
+
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 

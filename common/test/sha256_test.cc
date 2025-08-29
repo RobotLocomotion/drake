@@ -1,6 +1,7 @@
 #include "drake/common/sha256.h"
 
 #include <fstream>
+#include <string>
 
 #include <gtest/gtest.h>
 

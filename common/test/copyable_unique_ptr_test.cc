@@ -1,8 +1,10 @@
 #include "drake/common/copyable_unique_ptr.h"
 
+#include <algorithm>
 #include <memory>
 #include <regex>
 #include <sstream>
+#include <utility>
 
 #include <gtest/gtest.h>
 

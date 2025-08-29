@@ -5,7 +5,9 @@
 /// and lcmt_iiwa_command messages. It is intended to be a be a direct
 /// replacement for the KUKA iiwa driver and the actual robot hardware.
 
+#include <limits>
 #include <memory>
+#include <string>
 
 #include <gflags/gflags.h>
 

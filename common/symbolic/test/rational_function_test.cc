@@ -1,5 +1,7 @@
 #include "drake/common/symbolic/rational_function.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic/expression.h"

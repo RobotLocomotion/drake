@@ -1,6 +1,8 @@
 #include "drake/common/trajectories/piecewise_trajectory.h"
 
+#include <memory>
 #include <random>
+#include <vector>
 
 #include <gtest/gtest.h>
 

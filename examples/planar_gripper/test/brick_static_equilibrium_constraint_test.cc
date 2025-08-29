@@ -1,5 +1,7 @@
 #include "drake/examples/planar_gripper/brick_static_equilibrium_constraint.h"
 
+#include <vector>
+
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/compute_numerical_gradient.h"

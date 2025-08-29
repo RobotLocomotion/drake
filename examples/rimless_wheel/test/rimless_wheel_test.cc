@@ -1,5 +1,8 @@
 #include "drake/examples/rimless_wheel/rimless_wheel.h"
 
+#include <limits>
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/systems/analysis/simulator.h"

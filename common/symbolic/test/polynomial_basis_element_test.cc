@@ -1,5 +1,9 @@
 #include "drake/common/symbolic/polynomial_basis_element.h"
 
+#include <map>
+#include <utility>
+#include <vector>
+
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 

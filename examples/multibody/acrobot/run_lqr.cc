@@ -1,4 +1,5 @@
 #include <memory>
+#include <string>
 
 #include <gflags/gflags.h>
 

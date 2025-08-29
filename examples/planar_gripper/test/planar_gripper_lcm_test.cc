@@ -1,5 +1,7 @@
 #include "drake/examples/planar_gripper/planar_gripper_lcm.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/lcmt_planar_gripper_command.hpp"

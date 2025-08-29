@@ -1,5 +1,7 @@
 #include "drake/examples/compass_gait/compass_gait.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

@@ -1,5 +1,6 @@
 #include "drake/examples/bead_on_a_wire/bead_on_a_wire.h"
 
+#include <limits>
 #include <memory>
 
 #include <gtest/gtest.h>

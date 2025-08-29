@@ -9,6 +9,8 @@
 // TODO(jadecastro) Transcribe this example into Python.
 #include <cmath>
 #include <iostream>
+#include <map>
+#include <utility>
 
 #include "drake/common/proto/call_python.h"
 #include "drake/common/symbolic/polynomial.h"

@@ -6,7 +6,9 @@
 #include "drake/common/ad/auto_diff.h"
 /* clang-format on */
 
+#include <limits>
 #include <ostream>
+#include <utility>
 
 #include <fmt/format.h>
 

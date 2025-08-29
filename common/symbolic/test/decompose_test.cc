@@ -1,7 +1,10 @@
 #include "drake/common/symbolic/decompose.h"
 
+#include <algorithm>
 #include <limits>
 #include <stdexcept>
+#include <unordered_map>
+#include <vector>
 
 #include <gtest/gtest.h>
 

@@ -1,5 +1,7 @@
 #include "drake/common/is_approx_equal_abstol.h"
 
+#include <limits>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 

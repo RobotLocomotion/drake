@@ -1,5 +1,7 @@
 #include "drake/examples/allegro_hand/allegro_lcm.h"
 
+#include <memory>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 

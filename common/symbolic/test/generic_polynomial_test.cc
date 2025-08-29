@@ -1,5 +1,9 @@
 #include "drake/common/symbolic/generic_polynomial.h"
 
+#include <algorithm>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic/polynomial_basis.h"

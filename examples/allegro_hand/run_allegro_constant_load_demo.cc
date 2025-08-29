@@ -5,6 +5,10 @@
 /// and defined by a command-line parameter. This demo also allows to specify
 /// whether the right or left hand is simulated.
 
+#include <memory>
+#include <string>
+#include <utility>
+
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"

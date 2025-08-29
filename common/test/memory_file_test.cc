@@ -1,6 +1,8 @@
 #include "drake/common/memory_file.h"
 
 #include <fstream>
+#include <string>
+#include <utility>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

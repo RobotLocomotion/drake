@@ -1,6 +1,7 @@
 #include "drake/common/trajectories/piecewise_constant_curvature_trajectory.h"
 
 #include <random>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

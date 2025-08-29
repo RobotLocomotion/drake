@@ -1,5 +1,7 @@
 #include "drake/common/trajectories/piecewise_pose.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
