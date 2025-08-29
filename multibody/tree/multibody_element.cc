@@ -1,5 +1,7 @@
 #include "drake/multibody/tree/multibody_element.h"
 
+#include <utility>
+
 namespace drake {
 namespace multibody {
 

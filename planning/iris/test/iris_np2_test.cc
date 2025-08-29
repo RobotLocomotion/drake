@@ -1,5 +1,8 @@
 #include "drake/planning/iris/iris_np2.h"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"

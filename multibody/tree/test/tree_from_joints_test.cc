@@ -3,7 +3,10 @@
 // clang-format: on
 
 #include <functional>
+#include <limits>
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

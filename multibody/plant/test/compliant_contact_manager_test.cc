@@ -1,6 +1,10 @@
 #include "drake/multibody/plant/compliant_contact_manager.h"
 
 #include <algorithm>
+#include <limits>
+#include <memory>
+#include <utility>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

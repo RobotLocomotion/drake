@@ -2,8 +2,12 @@
 #include "drake/multibody/topology/forest.h"
 /* clang-format on */
 
+#include <map>
+#include <set>
 #include <string>
 #include <tuple>
+#include <utility>
+#include <vector>
 
 #include <fmt/format.h>
 #include <gmock/gmock.h>

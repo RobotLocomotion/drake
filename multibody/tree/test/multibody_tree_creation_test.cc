@@ -4,10 +4,13 @@
 /* clang-format on */
 
 #include <algorithm>
+#include <limits>
+#include <map>
 #include <memory>
 #include <set>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 

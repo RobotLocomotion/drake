@@ -1,7 +1,9 @@
 #include "drake/planning/iris/iris_zo.h"
 
 #include <chrono>
+#include <string>
 #include <thread>
+#include <vector>
 
 #include <gtest/gtest.h>
 

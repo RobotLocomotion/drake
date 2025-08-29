@@ -1,5 +1,10 @@
 #include "drake/multibody/tree/curvilinear_joint.h"
 
+#include <limits>
+#include <memory>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"

@@ -1,5 +1,8 @@
 #include "drake/multibody/tree/rpy_ball_mobilizer.h"
 
+#include <limits>
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"

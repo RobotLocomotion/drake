@@ -1,5 +1,7 @@
 #include "drake/multibody/plant/make_discrete_update_manager.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"

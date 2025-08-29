@@ -1,5 +1,10 @@
 #include "drake/planning/scene_graph_collision_checker.h"
 
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

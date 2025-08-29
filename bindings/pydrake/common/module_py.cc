@@ -1,3 +1,6 @@
+#include <memory>
+#include <string>
+
 #include "pybind11/eval.h"
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"

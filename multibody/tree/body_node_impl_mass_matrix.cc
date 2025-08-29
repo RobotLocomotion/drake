@@ -3,6 +3,8 @@
 #include "drake/multibody/tree/body_node_impl.h"
 /* clang-format on */
 
+#include <vector>
+
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/tree/curvilinear_mobilizer.h"
 #include "drake/multibody/tree/planar_mobilizer.h"

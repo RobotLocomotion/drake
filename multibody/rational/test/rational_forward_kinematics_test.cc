@@ -1,6 +1,11 @@
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 
 #include <limits>
+#include <memory>
+#include <string>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

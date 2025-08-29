@@ -1,5 +1,7 @@
 #include "drake/multibody/plant/slicing_and_indexing.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"

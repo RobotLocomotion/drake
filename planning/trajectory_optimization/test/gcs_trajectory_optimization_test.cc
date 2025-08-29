@@ -1,5 +1,12 @@
 #include "drake/planning/trajectory_optimization/gcs_trajectory_optimization.h"
 
+#include <algorithm>
+#include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

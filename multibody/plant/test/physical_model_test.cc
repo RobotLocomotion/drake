@@ -1,3 +1,6 @@
+#include <memory>
+#include <utility>
+
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/plant/dummy_physical_model.h"

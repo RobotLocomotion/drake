@@ -3,7 +3,9 @@
 // @file
 // Tests the public interfaces in `sorted_pair_pybind.h`.
 
+#include <map>
 #include <string>
+#include <utility>
 
 #include "pybind11/embed.h"
 #include "pybind11/eval.h"

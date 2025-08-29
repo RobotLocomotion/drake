@@ -1,6 +1,9 @@
 #include "drake/planning/graph_algorithms/min_clique_cover_solver_via_greedy.h"
 
 #include <exception>
+#include <memory>
+#include <set>
+#include <vector>
 
 #include <gtest/gtest.h>
 

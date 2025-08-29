@@ -1,5 +1,6 @@
 #include "drake/multibody/tree/unit_inertia.h"
 
+#include <limits>
 #include <utility>
 
 #include <gtest/gtest.h>

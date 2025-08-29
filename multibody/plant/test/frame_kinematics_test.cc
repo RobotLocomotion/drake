@@ -3,6 +3,7 @@
 /// There are similar tests in multibody_plant_kinematics_test.cc which test
 /// kinematics methods in the MultibodyPlant class.
 #include <limits>
+#include <memory>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

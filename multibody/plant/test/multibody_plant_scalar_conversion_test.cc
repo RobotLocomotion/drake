@@ -1,5 +1,9 @@
 #include <limits>
+#include <map>
 #include <memory>
+#include <string>
+#include <tuple>
+#include <utility>
 
 #include <gtest/gtest.h>
 

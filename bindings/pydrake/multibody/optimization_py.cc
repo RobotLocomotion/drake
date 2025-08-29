@@ -1,3 +1,7 @@
+#include <memory>
+#include <set>
+#include <utility>
+
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"

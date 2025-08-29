@@ -1,5 +1,7 @@
 #include "drake/multibody/plant/distance_constraint_params.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 using Eigen::Vector3d;

@@ -1,5 +1,7 @@
 #include "drake/planning/dev/mbp_environment_collision_checker.h"
 
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/planning/dev/test/sphere_robot_model_collision_checker_abstract_test_suite.h"

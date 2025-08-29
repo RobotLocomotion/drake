@@ -2,6 +2,7 @@
 
 #include <exception>
 #include <optional>
+#include <vector>
 
 #include <gtest/gtest.h>
 

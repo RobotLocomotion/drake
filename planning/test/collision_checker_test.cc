@@ -1,7 +1,12 @@
 #include "drake/planning/collision_checker.h"
 
+#include <algorithm>
 #include <chrono>
+#include <limits>
 #include <map>
+#include <memory>
+#include <set>
+#include <string>
 #include <thread>
 #include <utility>
 #include <vector>

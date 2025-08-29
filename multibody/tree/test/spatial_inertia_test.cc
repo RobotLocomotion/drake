@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <limits>
 #include <sstream>
+#include <string>
 
 #include <gtest/gtest.h>
 

@@ -1,5 +1,8 @@
 #include "drake/multibody/plant/deformable_contact_info.h"
 
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 using drake::geometry::GeometryId;

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <string>
+#include <vector>
 
 #include <common_robotics_utilities/parallelism.hpp>
 

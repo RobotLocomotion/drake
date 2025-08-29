@@ -1,5 +1,7 @@
 #include "drake/planning/robot_collision_type.h"
 
+#include <string>
+
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 

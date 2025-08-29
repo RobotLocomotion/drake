@@ -1,5 +1,7 @@
 #include "drake/multibody/tree/deformable_body.h"
 
+#include <utility>
+
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/fem/corotated_model.h"
 #include "drake/multibody/fem/dirichlet_boundary_condition.h"

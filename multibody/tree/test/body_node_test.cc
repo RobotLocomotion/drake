@@ -1,5 +1,9 @@
 #include "drake/multibody/tree/body_node.h"
 
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/fmt_eigen.h"
