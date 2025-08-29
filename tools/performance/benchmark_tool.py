@@ -2,7 +2,7 @@
 
 If necessary, installs software for CPU speed adjustment. Runs a bazel target,
 with CPU speed control disabled. Copies result data to a user selected output
-directory. Only supported on Ubuntu 22.04.
+directory. Only supported on Ubuntu 24.04.
 
 The purpose of CPU speed control for benchmarking is to disable automatic CPU
 speed scaling, so that results of similar experiments will be more repeatable,
@@ -15,39 +15,13 @@ and to actually change the CPU configuration.
 
 import argparse
 import contextlib
+import copy
 import os
 import re
 import shlex
 import subprocess
 import sys
 import time
-
-
-def is_default_ubuntu():
-    """Return True iff platform is Ubuntu 22.04."""
-    if os.uname().sysname != "Linux":
-        return False
-    release_info = subprocess.check_output(
-                ["lsb_release", "-irs"], encoding='utf-8')
-    return ("Ubuntu\n22.04" in release_info)
-
-
-def get_installed_version(package_name):
-    """Returns the installed version of a package, or None."""
-    result = subprocess.run(
-        ['dpkg-query', '--showformat=${db:Status-Abbrev} ${Version}',
-         '--show', package_name],
-        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-        encoding='utf-8')
-    if result.returncode != 0:
-        return None
-    words = result.stdout.split()
-    if len(words) < 2:
-        return None
-    status, version = words[:2]
-    if status != "ii":
-        return None
-    return version
 
 
 def say(*args):
@@ -126,26 +100,45 @@ class LinuxKernelBoost:
 
 class CpuSpeedSettings:
     """Routines for controlling CPU speed."""
-    def __init__(self):
+    def __init__(self, *, cpu: int):
+        """The `cpu` specifies which specific cpu to govern. We disable boost
+        for the entire machine, but we only govern the frequency of this one
+        specific cpu."""
+        assert isinstance(cpu, int)
+        self._cpu = str(cpu)
         self._boost = None
         for boost in [LinuxKernelBoost, IntelBoost, NoBoost]:
             if boost().is_supported():
                 self._boost = boost()
+                break
+        self._ensure_cpupower_exists()
+
+    @staticmethod
+    def _ensure_cpupower_exists():
+        if os.path.exists("/usr/bin/cpupower"):
+            return
+        say("Install tools for CPU speed control. [Note: sudo!]")
+        kernel_name = subprocess.check_output(
+            ["uname", "-r"], encoding="utf-8").strip()
+        kernel_packages = [f"linux-tools-{kernel_name}", "linux-tools-common"]
+        sudo("apt", "install", *kernel_packages)
 
     def is_supported_cpu(self):
         """Returns True if the current CPU is supported for speed control."""
-        return self._boost is not None
+        return not isinstance(self._boost, NoBoost)
 
     def get_cpu_governor(self):
         """Return the current CPU governor name string."""
         text = subprocess.check_output(
-            ["cpupower", "frequency-info", "-p"], encoding='utf-8')
+            ["cpupower", "-c", self._cpu, "frequency-info", "-p"],
+            encoding='utf-8')
         m = re.search(r'\bgovernor "([^"]*)" ', text)
         return m.group(1)
 
     def set_cpu_governor(self, governor):
         """Set the CPU governor to the given name string."""
-        sudo('cpupower', 'frequency-set', '--governor', governor, quiet=True)
+        sudo("cpupower", "-c", self._cpu, "frequency-set",
+             "--governor", governor, quiet=True)
 
     def get_boost(self):
         """Return the current boost state; True means boost is enabled."""
@@ -174,8 +167,9 @@ class CpuSpeedSettings:
 
 
 def do_benchmark(args):
-    if not CpuSpeedSettings().is_supported_cpu():
-        raise RuntimeError(f"""
+    cpu_speed_settings = CpuSpeedSettings(cpu=args.cputask)
+    if not cpu_speed_settings.is_supported_cpu():
+        say(f"""
 No method of controlling cpu frequency scaling was detected. Without it, there
 is no way to prevent arbitrary cpu frequency scaling, and experiment results
 will be invalid. Supported methods are:
@@ -185,16 +179,6 @@ will be invalid. Supported methods are:
  * intel_pstate driver, controlled through
    {IntelBoost().NO_TURBO_CONTROL_FILE}.
 """)
-
-    command_prologue = []
-    if is_default_ubuntu():
-        kernel_name = subprocess.check_output(
-            ['uname', '-r'], encoding='utf-8').strip()
-        kernel_packages = [f'linux-tools-{kernel_name}', 'linux-tools-common']
-        if not all([get_installed_version(x) for x in kernel_packages]):
-            say("Install tools for CPU speed control. [Note: sudo!]")
-            sudo('apt', 'install', *kernel_packages)
-        command_prologue = ["taskset", "--cpu-list", str(args.cputask)]
 
     if args.sleep:
         say(f"Wait {args.sleep} seconds for lingering activity to subside.")
@@ -206,12 +190,15 @@ will be invalid. Supported methods are:
         '--benchmark_out_format=json',
         f'--benchmark_out={args.output_dir}/results.json',
     ]
-    command = command_prologue + [args.binary] + default_args + args.extra_args
+    command = ["taskset", "--cpu-list", str(args.cputask)]
+    command += [args.binary] + default_args + args.extra_args
+    env = copy.copy(os.environ)
+    env["DRAKE_GOOGLEBENCH_SUPPRESS_SCALING_WARNING"] = "1"
     with open(f'{args.output_dir}/summary.txt', 'wb') as summary:
-        with CpuSpeedSettings().scope(governor="performance", boost=False):
+        with cpu_speed_settings.scope(governor="performance", boost=False):
             say("Run the experiment.")
             print('Running: ', shlex.join(command))
-            popen = subprocess.Popen(command, stdout=subprocess.PIPE)
+            popen = subprocess.Popen(command, stdout=subprocess.PIPE, env=env)
             for line in popen.stdout:
                 summary.write(line)
                 print(line.decode("utf-8").strip(), flush=True)
@@ -251,6 +238,9 @@ def main():
         parser.error("BINARY does not exist .")
     if os.path.exists(args.output_dir):
         parser.error("OUTPUT-DIR must not already exist.")
+
+    # Get the password check out of the way before doing anything else.
+    sudo("-v")
 
     # Run.
     do_benchmark(args)
