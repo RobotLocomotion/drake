@@ -4,6 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
+#include "drake/geometry/proximity/proximity_shape_utilities.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 namespace drake {

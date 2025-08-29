@@ -228,6 +228,14 @@ SignedDistanceToSurfaceMesh CalcSignedDistanceToSurfaceMesh(
                                              : sign * p_NQ_M.normalized()};
 }
 
+SquaredDistanceToTriangle CalcSquaredDistance(
+    const Vector3d& p_MQ, const TriangleSurfaceMesh<double>& mesh_M,
+    const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_M,
+    const FeatureNormalSet& normal_set_M) {
+  return BvhVisitor::CalcSquaredDistance(p_MQ, mesh_M, bvh_M,
+                                         normal_set_M);
+}
+
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake

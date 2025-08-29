@@ -20,6 +20,10 @@
 
 namespace drake {
 namespace geometry {
+
+// Forward declaration
+class HalfSpace;
+
 namespace internal {
 
 /* Forward declaration to enable Bvh for deformable meshes. */
@@ -291,7 +295,38 @@ class Bvh {
       const auto node = nodes.top();
       nodes.pop();
 
+      if (std::is_same<PrimitiveType, HalfSpace>::value) {
+        if (!BvType::HasOverlap(node->bv(), X_PH)) {
+          continue;
+        }
+      }
+
       if (!BvType::HasOverlap(node->bv(), primitive_P, X_PH)) {
+        continue;
+      }
+      // Run the call back if `node` is a leaf.
+      if (node->is_leaf()) {
+        const int num_elements = node->num_element_indices();
+        for (int i = 0; i < num_elements; ++i) {
+          BvttCallbackResult result = callback(node->element_index(i));
+          if (result == BvttCallbackResult::Terminate) return;  // Exit early.
+        }
+      } else {
+        nodes.emplace(&node->left());
+        nodes.emplace(&node->right());
+      }
+    }
+  }
+
+  void Collide(const math::RigidTransformd& X_PH,
+               std::function<BvttCallbackResult(int)> callback) const {
+    std::stack<const NodeType*> nodes;
+    nodes.emplace(&root_node());
+    while (!nodes.empty()) {
+      const auto node = nodes.top();
+      nodes.pop();
+
+      if (!BvType::HasOverlap(node->bv(), X_PH)) {
         continue;
       }
       // Run the call back if `node` is a leaf.
