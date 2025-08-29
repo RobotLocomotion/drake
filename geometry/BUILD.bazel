@@ -494,7 +494,7 @@ drake_cc_library(
 
 genrule(
     name = "stats_js_genrule",
-    srcs = ["@statsjs//:build/stats.min.js"],
+    srcs = ["@statsjs_internal//:build/stats.min.js"],
     outs = ["stats.min.js"],
     cmd = "cp $< $@",
     visibility = ["//visibility:private"],
