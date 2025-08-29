@@ -1274,18 +1274,18 @@ void MultibodyPlant<T>::RegisterRigidBodyWithSceneGraph(
 
 template <typename T>
 void MultibodyPlant<T>::SetFreeBodyPoseInWorldFrame(
-    systems::Context<T>* context, const RigidBody<T>& body,
-    const math::RigidTransform<T>& X_WB) const {
+    systems::Context<T>* context, const RigidBody<T>& body_C,
+    const math::RigidTransform<T>& X_WJc) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  DRAKE_THROW_UNLESS(body.is_floating());
+  DRAKE_THROW_UNLESS(body_C.is_floating());
   this->ValidateContext(context);
-  internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context);
+  internal_tree().SetFreeBodyPoseOrThrow(body_C, X_WJc, context);
 }
 
 template <typename T>
 void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
     systems::Context<T>* context, const Frame<T>& frame_F,
-    const RigidBody<T>& body, const math::RigidTransform<T>& X_FB) const {
+    const RigidBody<T>& body_C, const math::RigidTransform<T>& X_FJc) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   this->ValidateContext(context);
 
@@ -1297,13 +1297,15 @@ void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
                            "' must be anchored to the world frame.");
   }
 
-  // Pose of frame F in its parent body frame P.
+  // Pose of frame F in its parent body frame P (not state dependent).
   const RigidTransform<T>& X_PF = frame_F.EvalPoseInBodyFrame(*context);
   // Pose of frame F's parent body P in the world.
+  // TODO(sherm1) This shouldn't be state dependent since F is anchored, but
+  //  it currently is due to the way we evaluate poses.
   const RigidTransform<T>& X_WP = EvalBodyPoseInWorld(*context, frame_F.body());
-  // Pose of "body" B in the world frame.
-  const RigidTransform<T> X_WB = X_WP * X_PF * X_FB;
-  SetFreeBodyPoseInWorldFrame(context, body, X_WB);
+  // Pose of floating base body C's child frame Jc in the world frame.
+  const RigidTransform<T> X_WJc = X_WP * X_PF * X_FJc;
+  SetFreeBodyPoseInWorldFrame(context, body_C, X_WJc);
 }
 
 template <typename T>

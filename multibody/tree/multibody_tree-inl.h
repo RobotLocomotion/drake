@@ -116,23 +116,22 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
                                    mobilizer->inboard_frame().index(),
                                    mobilizer->outboard_frame().index());
 
-  // TODO(sammy-tri) This effectively means that there's no way to
-  //  programmatically add mobilizers from outside of MultibodyTree
-  //  itself with multiple model instances.  I'm not convinced that
-  //  this is a problem.
   if (!mobilizer->model_instance().is_valid()) {
     mobilizer->set_model_instance(default_model_instance());
   }
 
-  // TODO(amcastro-tri): consider not depending on setting this pointer at
-  //  all. Consider also removing MultibodyElement altogether.
   mobilizer->set_parent_tree(this, mobilizer->mobod().index());
 
-  // Mark free bodies as needed.
+  // Mark floating base bodies as needed. Note the strict definition:
+  // (1) the inboard frame must be literally the World frame, not just any
+  //     anchored frame, and
+  // (2) the outboard frame must be the body frame.
   const BodyIndex outboard_body_index = mobilizer->outboard_body().index();
+  const RigidBody<T>& outboard_body = get_body(outboard_body_index);
   bool is_floating_base_body =
       mobilizer->has_six_dofs() &&
-      mobilizer->inboard_frame().body().index() == world_body().index();
+      mobilizer->inboard_frame().index() == world_frame().index() &&
+      mobilizer->outboard_frame().index() == outboard_body.body_frame().index();
 
   topology_.get_mutable_rigid_body_topology(outboard_body_index)
       .is_floating_base = is_floating_base_body;
