@@ -2,7 +2,11 @@
 
 #include <filesystem>
 #include <fstream>
+#include <map>
+#include <memory>
 #include <set>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <common_robotics_utilities/base64_helpers.hpp>

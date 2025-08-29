@@ -1,6 +1,11 @@
 #include "drake/geometry/optimization/hpolyhedron.h"
 
 #include <limits>
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

@@ -1,5 +1,9 @@
 #include "drake/math/matrix_util.h"
 
+#include <limits>
+#include <set>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic/expression.h"

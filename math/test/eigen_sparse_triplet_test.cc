@@ -1,5 +1,7 @@
 #include "drake/math/eigen_sparse_triplet.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 namespace drake {

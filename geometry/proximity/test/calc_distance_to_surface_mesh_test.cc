@@ -1,5 +1,8 @@
 #include "drake/geometry/proximity/calc_distance_to_surface_mesh.h"
 
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/geometry/proximity/make_box_mesh.h"

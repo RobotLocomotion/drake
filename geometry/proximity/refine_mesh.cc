@@ -2,6 +2,8 @@
 
 #include <cstdlib>
 #include <filesystem>
+#include <string>
+#include <vector>
 
 #include <gflags/gflags.h>
 

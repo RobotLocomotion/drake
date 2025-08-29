@@ -1,5 +1,10 @@
 #include "drake/geometry/geometry_properties.h"
 
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <utility>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 

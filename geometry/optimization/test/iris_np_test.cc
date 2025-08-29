@@ -1,3 +1,9 @@
+#include <algorithm>
+#include <limits>
+#include <memory>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"

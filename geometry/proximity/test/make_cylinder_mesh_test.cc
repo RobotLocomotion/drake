@@ -1,5 +1,9 @@
 #include "drake/geometry/proximity/make_cylinder_mesh.h"
 
+#include <algorithm>
+#include <limits>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"

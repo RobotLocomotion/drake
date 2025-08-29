@@ -1,7 +1,9 @@
 #include "drake/geometry/proximity/field_intersection.h"
 
 #include <memory>
+#include <set>
 #include <utility>
+#include <vector>
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>

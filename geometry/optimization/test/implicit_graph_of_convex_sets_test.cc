@@ -1,5 +1,8 @@
 #include "drake/geometry/optimization/implicit_graph_of_convex_sets.h"
 
+#include <map>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"

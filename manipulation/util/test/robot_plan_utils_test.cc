@@ -1,5 +1,6 @@
 #include "drake/manipulation/util/robot_plan_utils.h"
 
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>

@@ -1,6 +1,7 @@
 #include "drake/geometry/geometry_instance.h"
 
 #include <memory>
+#include <string>
 
 #include <gtest/gtest.h>
 

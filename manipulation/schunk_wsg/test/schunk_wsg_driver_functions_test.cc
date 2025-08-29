@@ -1,5 +1,8 @@
 #include "drake/manipulation/schunk_wsg/schunk_wsg_driver_functions.h"
 
+#include <map>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "drake/lcm/drake_lcm_params.h"

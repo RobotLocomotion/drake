@@ -1,5 +1,7 @@
 #include "drake/geometry/proximity/make_convex_hull_mesh.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"

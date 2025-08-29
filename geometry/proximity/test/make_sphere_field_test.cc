@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity/make_sphere_field.h"
 
 #include <limits>
+#include <vector>
 
 #include <gtest/gtest.h>
 

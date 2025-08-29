@@ -1,4 +1,7 @@
 #include <limits>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 #include <gtest/gtest.h>
 

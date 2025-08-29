@@ -2,6 +2,7 @@
 #include <chrono>
 #include <mutex>
 #include <stdexcept>
+#include <string>
 #include <thread>
 
 #include "lcm/lcm-cpp.hpp"

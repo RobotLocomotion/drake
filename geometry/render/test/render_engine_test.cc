@@ -1,5 +1,6 @@
 #include "drake/geometry/render/render_engine.h"
 
+#include <memory>
 #include <optional>
 #include <set>
 #include <unordered_map>

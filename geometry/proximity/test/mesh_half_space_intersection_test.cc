@@ -1,8 +1,11 @@
 #include "drake/geometry/proximity/mesh_half_space_intersection.h"
 
+#include <algorithm>
 #include <functional>
 #include <limits>
 #include <memory>
+#include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 

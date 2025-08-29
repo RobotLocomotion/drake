@@ -1,5 +1,8 @@
 #include "drake/geometry/optimization/geodesic_convexity.h"
 
+#include <utility>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

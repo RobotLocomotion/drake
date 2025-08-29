@@ -1,7 +1,11 @@
 #include "drake/geometry/shape_specification.h"
 
 #include <filesystem>
+#include <limits>
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

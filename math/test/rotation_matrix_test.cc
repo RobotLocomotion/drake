@@ -1,5 +1,8 @@
 #include "drake/math/rotation_matrix.h"
 
+#include <limits>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/extract_double.h"

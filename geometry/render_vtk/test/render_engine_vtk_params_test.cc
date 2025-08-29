@@ -1,5 +1,7 @@
 #include "drake/geometry/render_vtk/render_engine_vtk_params.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"

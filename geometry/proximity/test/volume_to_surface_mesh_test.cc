@@ -4,6 +4,7 @@
 #include <cmath>
 #include <set>
 #include <tuple>
+#include <vector>
 
 #include <gtest/gtest.h>
 

@@ -24,6 +24,8 @@
       - This, again, can only be tested once the TODO in
         RenderEngineVtk::ImplementGltf is resolved. */
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 // To ease build system upkeep, we annotate VTK includes with their deps.

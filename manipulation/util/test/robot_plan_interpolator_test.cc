@@ -1,5 +1,9 @@
 #include "drake/manipulation/util/robot_plan_interpolator.h"
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/lcmt_robot_plan.hpp"

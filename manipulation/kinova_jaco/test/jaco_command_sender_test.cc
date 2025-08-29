@@ -1,5 +1,8 @@
 #include "drake/manipulation/kinova_jaco/jaco_command_sender.h"
 
+#include <memory>
+#include <vector>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 

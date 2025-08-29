@@ -1,5 +1,8 @@
 #include "drake/manipulation/kinova_jaco/jaco_status_receiver.h"
 
+#include <memory>
+#include <vector>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 

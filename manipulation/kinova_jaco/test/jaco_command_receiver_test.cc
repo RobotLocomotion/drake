@@ -1,5 +1,7 @@
 #include "drake/manipulation/kinova_jaco/jaco_command_receiver.h"
 
+#include <memory>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 

@@ -1,5 +1,7 @@
 #include "drake/geometry/optimization/cspace_free_internal.h"
 
+#include <unordered_set>
+
 #include <gtest/gtest.h>
 
 #include "drake/geometry/optimization/test/c_iris_test_utilities.h"

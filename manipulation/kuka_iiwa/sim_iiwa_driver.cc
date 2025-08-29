@@ -1,6 +1,8 @@
 #include "drake/manipulation/kuka_iiwa/sim_iiwa_driver.h"
 
+#include <limits>
 #include <string>
+#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"

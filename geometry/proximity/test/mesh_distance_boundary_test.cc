@@ -1,5 +1,7 @@
 #include "drake/geometry/proximity/mesh_distance_boundary.h"
 
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/geometry/proximity/volume_mesh.h"

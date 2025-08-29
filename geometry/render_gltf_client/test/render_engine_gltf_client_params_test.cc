@@ -1,5 +1,8 @@
 #include "drake/geometry/render_gltf_client/render_engine_gltf_client_params.h"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/yaml/yaml_io.h"

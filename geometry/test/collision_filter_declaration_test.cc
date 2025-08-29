@@ -1,5 +1,7 @@
 #include "drake/geometry/collision_filter_declaration.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/geometry/geometry_ids.h"

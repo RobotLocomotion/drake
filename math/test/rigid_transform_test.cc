@@ -1,5 +1,9 @@
 #include "drake/math/rigid_transform.h"
 
+#include <cstdio>
+#include <limits>
+#include <string>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

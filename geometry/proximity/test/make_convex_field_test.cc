@@ -1,6 +1,8 @@
 #include "drake/geometry/proximity/make_convex_field.h"
 
 #include <limits>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 

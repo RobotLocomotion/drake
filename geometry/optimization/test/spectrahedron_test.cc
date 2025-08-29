@@ -1,6 +1,8 @@
 #include "drake/geometry/optimization/spectrahedron.h"
 
 #include <limits>
+#include <memory>
+#include <utility>
 
 #include <gtest/gtest.h>
 

@@ -1,11 +1,17 @@
 #include "drake/geometry/render_gl/internal_render_engine_gl.h"
 
+#include <algorithm>
 #include <array>
 #include <cstring>
 #include <filesystem>
+#include <limits>
+#include <memory>
 #include <optional>
 #include <source_location>
+#include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>

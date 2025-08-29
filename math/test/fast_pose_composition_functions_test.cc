@@ -1,5 +1,6 @@
 #include "drake/math/fast_pose_composition_functions.h"
 
+#include <string>
 #include <tuple>
 
 #pragma GCC diagnostic push

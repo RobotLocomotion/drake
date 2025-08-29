@@ -1,10 +1,13 @@
 #include "drake/geometry/proximity/mesh_plane_intersection.h"
 
+#include <algorithm>
 #include <functional>
 #include <limits>
 #include <memory>
 #include <set>
+#include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <fmt/ranges.h>

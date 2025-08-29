@@ -3,7 +3,11 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <memory>
+#include <string>
 #include <thread>
+#include <utility>
+#include <vector>
 
 #include <gflags/gflags.h>
 

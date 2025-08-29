@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity_properties.h"
 
 #include <sstream>
+#include <vector>
 
 #include <gtest/gtest.h>
 

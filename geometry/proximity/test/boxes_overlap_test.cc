@@ -1,5 +1,6 @@
 #include "drake/geometry/proximity/boxes_overlap.h"
 
+#include <memory>
 #include <string>
 
 #pragma GCC diagnostic push

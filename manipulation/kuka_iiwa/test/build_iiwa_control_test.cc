@@ -2,6 +2,8 @@
 
 #include <cmath>
 #include <memory>
+#include <string>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

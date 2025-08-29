@@ -1,3 +1,7 @@
+#include <memory>
+#include <string>
+#include <vector>
+
 #include <benchmark/benchmark.h>
 #include <gflags/gflags.h>
 

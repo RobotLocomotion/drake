@@ -1,5 +1,7 @@
 #include <limits>
 #include <queue>
+#include <unordered_map>
+#include <vector>
 
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
