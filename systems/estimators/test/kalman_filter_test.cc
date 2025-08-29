@@ -1,5 +1,7 @@
 #include "drake/systems/estimators/kalman_filter.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

@@ -1,5 +1,10 @@
 #include "drake/visualization/inertia_visualizer.h"
 
+#include <algorithm>
+#include <memory>
+#include <string>
+#include <utility>
+
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 

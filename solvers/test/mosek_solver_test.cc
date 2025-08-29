@@ -1,6 +1,8 @@
 #include "drake/solvers/mosek_solver.h"
 
 #include <filesystem>
+#include <limits>
+#include <string>
 
 #include <gtest/gtest.h>
 

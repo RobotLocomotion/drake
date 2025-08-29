@@ -1,5 +1,8 @@
 #include "drake/systems/framework/wrapped_system.h"
 
+#include <memory>
+#include <utility>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

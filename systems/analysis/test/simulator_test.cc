@@ -3,7 +3,14 @@
 #include <cmath>
 #include <complex>
 #include <functional>
+#include <iostream>
+#include <limits>
 #include <map>
+#include <memory>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

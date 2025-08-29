@@ -1,5 +1,7 @@
 #include "drake/systems/lcm/lcm_buses.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/lcm/drake_lcm.h"

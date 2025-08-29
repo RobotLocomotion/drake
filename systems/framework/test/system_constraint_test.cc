@@ -1,5 +1,6 @@
 #include "drake/systems/framework/system_constraint.h"
 
+#include <limits>
 #include <memory>
 #include <stdexcept>
 

@@ -1,3 +1,5 @@
+#include <memory>
+
 #include "drake/solvers/gurobi_solver.h"
 
 using drake::solvers::GurobiSolver;

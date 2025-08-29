@@ -1,7 +1,9 @@
 #include "drake/systems/framework/basic_vector.h"
 
 #include <cmath>
+#include <memory>
 #include <sstream>
+#include <string>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

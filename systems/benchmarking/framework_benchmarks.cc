@@ -1,3 +1,6 @@
+#include <memory>
+#include <vector>
+
 #include <benchmark/benchmark.h>
 
 #include "drake/systems/framework/diagram_builder.h"

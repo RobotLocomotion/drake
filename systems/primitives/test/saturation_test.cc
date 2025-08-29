@@ -1,6 +1,7 @@
 #include "drake/systems/primitives/saturation.h"
 
 #include <memory>
+#include <utility>
 
 #include <gtest/gtest.h>
 

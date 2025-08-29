@@ -1,6 +1,8 @@
 #include "drake/systems/estimators/luenberger_observer.h"
 
 #include <cmath>
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>

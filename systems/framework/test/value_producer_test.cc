@@ -1,5 +1,6 @@
 #include "drake/systems/framework/value_producer.h"
 
+#include <memory>
 #include <stdexcept>
 #include <string>
 

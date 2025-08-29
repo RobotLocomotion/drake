@@ -1,5 +1,7 @@
 #include "drake/solvers/sos_basis_generator.h"
 
+#include <set>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic/monomial_util.h"

@@ -1,5 +1,6 @@
 #include "drake/systems/framework/system_base.h"
 
+#include <map>
 #include <memory>
 #include <string>
 

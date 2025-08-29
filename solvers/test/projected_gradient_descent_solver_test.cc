@@ -1,5 +1,7 @@
 #include "drake/solvers/projected_gradient_descent_solver.h"
 
+#include <algorithm>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

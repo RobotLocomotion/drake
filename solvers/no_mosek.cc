@@ -2,6 +2,7 @@
 #include "drake/solvers/mosek_solver.h"
 /* clang-format on */
 
+#include <memory>
 #include <stdexcept>
 
 using std::runtime_error;

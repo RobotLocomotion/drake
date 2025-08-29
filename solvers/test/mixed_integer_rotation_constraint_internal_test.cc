@@ -2,6 +2,10 @@
 #include "drake/solvers/mixed_integer_rotation_constraint_internal.h"
 /* clang-format on */
 
+#include <algorithm>
+#include <limits>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

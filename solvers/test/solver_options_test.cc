@@ -1,6 +1,8 @@
 #include "drake/solvers/solver_options.h"
 
 #include <limits>
+#include <string>
+#include <unordered_set>
 
 // Remove this include on 2025-09-01 upon completion of deprecation.
 #include <sstream>

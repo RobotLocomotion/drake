@@ -1,5 +1,7 @@
 #include "drake/solvers/integer_inequality_solver.h"
 
+#include <set>
+
 #include <gtest/gtest.h>
 namespace drake {
 namespace solvers {

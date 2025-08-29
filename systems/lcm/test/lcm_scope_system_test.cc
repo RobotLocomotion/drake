@@ -1,5 +1,7 @@
 #include "drake/systems/lcm/lcm_scope_system.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "drake/lcmt_scope.hpp"

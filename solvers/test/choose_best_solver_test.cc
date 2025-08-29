@@ -1,5 +1,10 @@
 #include "drake/solvers/choose_best_solver.h"
 
+#include <memory>
+#include <set>
+#include <unordered_set>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"

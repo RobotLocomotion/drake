@@ -1,5 +1,8 @@
 #include "drake/systems/framework/abstract_value_cloner.h"
 
+#include <memory>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "drake/systems/framework/basic_vector.h"

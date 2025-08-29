@@ -2,6 +2,8 @@
 #include "drake/solvers/osqp_solver.h"
 /* clang-format on */
 
+#include <string>
+
 #include "drake/common/never_destroyed.h"
 #include "drake/solvers/aggregate_costs_constraints.h"
 #include "drake/solvers/mathematical_program.h"

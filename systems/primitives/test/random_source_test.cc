@@ -1,6 +1,8 @@
 #include "drake/systems/primitives/random_source.h"
 
+#include <memory>
 #include <stdexcept>
+#include <utility>
 
 #include <gtest/gtest.h>
 

@@ -1,5 +1,8 @@
 #include "drake/systems/optimization/system_constraint_adapter.h"
 
+#include <limits>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

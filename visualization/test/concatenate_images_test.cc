@@ -1,5 +1,8 @@
 #include "drake/visualization/concatenate_images.h"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/systems/sensors/test_utilities/image_compare.h"

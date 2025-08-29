@@ -1,6 +1,7 @@
 #include "drake/systems/analysis/initial_value_problem.h"
 
 #include <algorithm>
+#include <memory>
 
 #include <gtest/gtest.h>
 

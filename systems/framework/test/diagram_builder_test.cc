@@ -1,6 +1,8 @@
 #include "drake/systems/framework/diagram_builder.h"
 
+#include <memory>
 #include <regex>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

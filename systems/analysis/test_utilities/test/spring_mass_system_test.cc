@@ -1,6 +1,7 @@
 #include "drake/systems/analysis/test_utilities/spring_mass_system.h"
 
 #include <memory>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

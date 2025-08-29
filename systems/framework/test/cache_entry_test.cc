@@ -1,5 +1,9 @@
 #include "drake/systems/framework/cache_entry.h"
 
+#include <map>
+#include <set>
+#include <string>
+
 #include "drake/common/test_utilities/expect_no_throw.h"
 
 // Tests the System (const) side of caching, which consists of a CacheEntry

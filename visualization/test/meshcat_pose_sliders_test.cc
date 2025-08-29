@@ -1,5 +1,10 @@
 #include "drake/visualization/meshcat_pose_sliders.h"
 
+#include <limits>
+#include <memory>
+#include <string>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

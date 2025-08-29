@@ -1,3 +1,5 @@
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/examples/pendulum/pendulum_plant.h"

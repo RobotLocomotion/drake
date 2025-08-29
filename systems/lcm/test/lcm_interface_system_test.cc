@@ -1,7 +1,10 @@
 #include "drake/systems/lcm/lcm_interface_system.h"
 
 #include <chrono>
+#include <memory>
+#include <string>
 #include <thread>
+#include <utility>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

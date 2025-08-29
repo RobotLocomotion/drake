@@ -1,5 +1,8 @@
 #include "drake/systems/framework/system_scalar_converter.h"
 
+#include <memory>
+#include <string>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

@@ -1,5 +1,7 @@
 #include "drake/systems/primitives/bus_selector.h"
 
+#include <utility>
+
 #include "drake/common/default_scalars.h"
 
 namespace drake {

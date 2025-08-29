@@ -4,6 +4,9 @@
 #include "drake/systems/framework/continuous_state.h"
 
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

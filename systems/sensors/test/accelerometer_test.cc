@@ -1,5 +1,9 @@
 #include "drake/systems/sensors/accelerometer.h"
 
+#include <limits>
+#include <memory>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"

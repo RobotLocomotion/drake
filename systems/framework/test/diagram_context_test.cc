@@ -1,6 +1,10 @@
 #include "drake/systems/framework/diagram_context.h"
 
+#include <memory>
+#include <set>
 #include <stdexcept>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Dense>

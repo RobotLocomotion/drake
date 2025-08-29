@@ -1,5 +1,6 @@
 #include "drake/solvers/moby_lcp_solver.h"
 
+#include <limits>
 #include <memory>
 #include <vector>
 

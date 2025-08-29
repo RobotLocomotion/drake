@@ -1,5 +1,7 @@
 #include "drake/systems/sensors/rgbd_sensor_async.h"
 
+#include <memory>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

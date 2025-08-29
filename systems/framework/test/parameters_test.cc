@@ -1,5 +1,9 @@
 #include "drake/systems/framework/parameters.h"
 
+#include <memory>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/systems/framework/test_utilities/pack_value.h"

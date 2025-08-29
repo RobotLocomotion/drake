@@ -1,5 +1,8 @@
 #include "drake/systems/primitives/affine_system.h"
 
+#include <memory>
+#include <string>
+
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff.h"

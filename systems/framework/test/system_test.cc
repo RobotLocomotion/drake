@@ -1,7 +1,12 @@
 #include "drake/systems/framework/system.h"
 
+#include <limits>
+#include <map>
 #include <memory>
 #include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <gmock/gmock.h>

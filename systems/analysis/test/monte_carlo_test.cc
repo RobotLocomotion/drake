@@ -1,7 +1,10 @@
 #include "drake/systems/analysis/monte_carlo.h"
 
 #include <cmath>
+#include <memory>
 #include <thread>
+#include <unordered_set>
+#include <utility>
 
 #include <gtest/gtest.h>
 

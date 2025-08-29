@@ -3,7 +3,9 @@
 #include <filesystem>
 #include <fstream>
 #include <limits>
+#include <string>
 #include <thread>
+#include <vector>
 
 #include <gflags/gflags.h>
 #include <gmock/gmock.h>

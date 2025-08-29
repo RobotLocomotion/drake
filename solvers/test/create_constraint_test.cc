@@ -1,6 +1,8 @@
 #include "drake/solvers/create_constraint.h"
 
 #include <limits>
+#include <memory>
+#include <set>
 
 #include <gtest/gtest.h>
 

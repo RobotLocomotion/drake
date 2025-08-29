@@ -1,6 +1,10 @@
 #include "drake/solvers/mixed_integer_rotation_constraint.h"
 
+#include <memory>
 #include <random>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

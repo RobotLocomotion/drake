@@ -1,5 +1,11 @@
 #include "drake/systems/analysis/discrete_time_approximation.h"
 
+#include <map>
+#include <memory>
+#include <set>
+#include <utility>
+#include <vector>
+
 #include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
