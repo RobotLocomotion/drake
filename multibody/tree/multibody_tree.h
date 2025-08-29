@@ -2877,7 +2877,7 @@ class MultibodyTree {
       ModelInstanceIndex model_instance) const;
 
   // Helper function for GetDefaultFreeBodyPose().
-  std::pair<Eigen::Quaternion<double>, Vector3<double>>
+  std::optional<std::pair<Eigen::Quaternion<double>, Vector3<double>>>
   GetDefaultFreeBodyPoseAsQuaternionVec3Pair(const RigidBody<T>& body) const;
 
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write

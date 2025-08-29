@@ -898,9 +898,11 @@ void MultibodyTree<T>::FinalizeInternals() {
     auto& joint = joints_.get_mutable_element(i);
     const RigidBody<T>& body = joint.child_body();
     if (body.is_floating()) {
-      const auto [quaternion, translation] =
-          GetDefaultFreeBodyPoseAsQuaternionVec3Pair(body);
-      joint.SetDefaultPosePair(quaternion, translation);
+      const auto pose_if_any = GetDefaultFreeBodyPoseAsQuaternionVec3Pair(body);
+      if (pose_if_any.has_value()) {
+        const auto [quaternion, translation] = pose_if_any.value();
+        joint.SetDefaultPosePair(quaternion, translation);
+      }
       default_body_poses_[body.index()] = joint.index();
     }
   }
@@ -1147,18 +1149,17 @@ template <typename T>
 RigidTransform<double> MultibodyTree<T>::GetDefaultFreeBodyPose(
     const RigidBody<T>& body) const {
   const std::pair<Eigen::Quaternion<double>, Vector3<double>> pose =
-      GetDefaultFreeBodyPoseAsQuaternionVec3Pair(body);
+      GetDefaultFreeBodyPoseAsQuaternionVec3Pair(body).value_or(std::make_pair(
+          Eigen::Quaternion<double>::Identity(), Vector3<double>::Zero()));
   return RigidTransform<double>(pose.first, pose.second);
 }
 
 template <typename T>
-std::pair<Eigen::Quaternion<double>, Vector3<double>>
+std::optional<std::pair<Eigen::Quaternion<double>, Vector3<double>>>
 MultibodyTree<T>::GetDefaultFreeBodyPoseAsQuaternionVec3Pair(
     const RigidBody<T>& body) const {
-  if (!default_body_poses_.contains(body.index())) {
-    return std::make_pair(Eigen::Quaternion<double>::Identity(),
-                          Vector3<double>::Zero());
-  }
+  if (!default_body_poses_.contains(body.index())) return {};
+
   const auto& default_body_pose = default_body_poses_.at(body.index());
   if (std::holds_alternative<JointIndex>(default_body_pose)) {
     const auto& joint =
