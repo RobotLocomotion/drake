@@ -6,8 +6,9 @@ See https://drake.mit.edu/styleguide/cppguide.html#Include_What_You_Use:
   statements from its associated foo.h header file.
 
 That rule is a Drake-specific amendment to the Google Style Guide,
-so would ordinarily be flagged by the upstream cpplint.py. We need
-to patch the code to allow for this special case.
+so would ordinarily be flagged by the upstream cpplint.py (see
+https://github.com/cpplint/cpplint/issues/218). We need to patch
+the code to allow for this special case.
 
 Reason for not upstreaming this patch: Drake-specific convention.
 
