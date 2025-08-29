@@ -1,6 +1,11 @@
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
 
+#include <iostream>
+#include <limits>
 #include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

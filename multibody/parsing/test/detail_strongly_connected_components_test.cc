@@ -1,5 +1,7 @@
 #include "drake/multibody/parsing/detail_strongly_connected_components.h"
 
+#include <unordered_set>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

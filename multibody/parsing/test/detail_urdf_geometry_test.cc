@@ -1,6 +1,9 @@
 #include "drake/multibody/parsing/detail_urdf_geometry.h"
 
 #include <memory>
+#include <string>
+#include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include <fmt/format.h>

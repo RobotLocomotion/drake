@@ -1,6 +1,8 @@
 #include "drake/multibody/contact_solvers/sap/sap_holonomic_constraint.h"
 
+#include <limits>
 #include <memory>
+#include <utility>
 
 #include <gtest/gtest.h>
 

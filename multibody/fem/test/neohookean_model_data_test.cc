@@ -1,5 +1,7 @@
 #include "drake/multibody/fem/neohookean_model_data.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

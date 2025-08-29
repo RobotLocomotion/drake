@@ -1,5 +1,8 @@
 #include "drake/multibody/meshcat/contact_visualizer.h"
 
+#include <memory>
+#include <string>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

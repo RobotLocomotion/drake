@@ -1,5 +1,10 @@
 #include "drake/multibody/mpm/mpm_model.h"
 
+#include <limits>
+#include <set>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

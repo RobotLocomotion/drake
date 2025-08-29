@@ -1,5 +1,8 @@
 #include "drake/multibody/mpm/particle_data.h"
 
+#include <limits>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"

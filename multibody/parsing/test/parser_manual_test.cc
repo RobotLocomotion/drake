@@ -1,4 +1,5 @@
 #include <regex>
+#include <vector>
 
 #include <gflags/gflags.h>
 

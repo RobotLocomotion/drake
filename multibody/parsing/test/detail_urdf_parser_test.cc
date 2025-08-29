@@ -1,9 +1,13 @@
 #include "drake/multibody/parsing/detail_urdf_parser.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <limits>
+#include <map>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <gmock/gmock.h>

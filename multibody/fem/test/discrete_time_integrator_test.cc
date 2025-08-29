@@ -1,5 +1,7 @@
 #include "drake/multibody/fem/discrete_time_integrator.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 namespace drake {

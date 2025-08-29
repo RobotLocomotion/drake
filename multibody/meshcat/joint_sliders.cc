@@ -1,5 +1,6 @@
 #include "drake/multibody/meshcat/joint_sliders.h"
 
+#include <algorithm>
 #include <chrono>
 #include <thread>
 #include <unordered_set>

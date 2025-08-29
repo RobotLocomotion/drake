@@ -1,5 +1,7 @@
 #include "drake/multibody/meshcat/hydroelastic_contact_visualizer.h"
 
+#include <memory>
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>

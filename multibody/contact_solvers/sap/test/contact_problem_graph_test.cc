@@ -1,5 +1,7 @@
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 namespace drake {

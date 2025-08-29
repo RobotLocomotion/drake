@@ -1,6 +1,7 @@
 #include "drake/multibody/parsing/detail_common.h"
 
 #include <filesystem>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 

@@ -1,5 +1,8 @@
 #include "drake/multibody/inverse_kinematics/com_position_constraint.h"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"

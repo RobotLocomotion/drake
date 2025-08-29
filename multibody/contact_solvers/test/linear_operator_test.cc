@@ -1,5 +1,7 @@
 #include "drake/multibody/contact_solvers/linear_operator.h"
 
+#include <string>
+
 #include <Eigen/SparseCore>
 #include <gtest/gtest.h>
 

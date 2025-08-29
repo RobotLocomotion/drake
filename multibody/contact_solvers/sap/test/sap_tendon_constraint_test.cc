@@ -1,6 +1,10 @@
 #include "drake/multibody/contact_solvers/sap/sap_tendon_constraint.h"
 
 #include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

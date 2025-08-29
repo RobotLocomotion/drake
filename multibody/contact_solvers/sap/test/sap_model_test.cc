@@ -1,6 +1,10 @@
 #include "drake/multibody/contact_solvers/sap/sap_model.h"
 
+#include <limits>
+#include <memory>
 #include <numeric>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

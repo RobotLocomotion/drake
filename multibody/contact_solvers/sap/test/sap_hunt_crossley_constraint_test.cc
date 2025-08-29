@@ -1,6 +1,12 @@
 #include "drake/multibody/contact_solvers/sap/sap_hunt_crossley_constraint.h"
 
+#include <algorithm>
 #include <array>
+#include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

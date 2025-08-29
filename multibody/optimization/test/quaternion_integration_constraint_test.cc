@@ -1,6 +1,8 @@
 #include "drake/multibody/optimization/quaternion_integration_constraint.h"
 
 #include <limits>
+#include <memory>
+#include <vector>
 
 #include <gtest/gtest.h>
 

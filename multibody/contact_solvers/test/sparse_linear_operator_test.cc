@@ -1,6 +1,7 @@
 #include "drake/multibody/contact_solvers/sparse_linear_operator.h"
 
 #include <memory>
+#include <vector>
 
 #include <Eigen/SparseCore>
 #include <gtest/gtest.h>

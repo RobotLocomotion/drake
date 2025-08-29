@@ -4,7 +4,10 @@
 //          Euler parameters for an axis-symmetric rigid body B, when the moment
 //          of forces on B about Bcm (B's center of mass) is zero (torque-free).
 //-----------------------------------------------------------------------------
+#include <algorithm>
 #include <cmath>
+#include <limits>
+#include <memory>
 #include <tuple>
 
 #include <gtest/gtest.h>

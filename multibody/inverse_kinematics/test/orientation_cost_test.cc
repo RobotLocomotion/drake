@@ -1,6 +1,7 @@
 #include "drake/multibody/inverse_kinematics/orientation_cost.h"
 
 #include <limits>
+#include <memory>
 
 #include <gtest/gtest.h>
 
