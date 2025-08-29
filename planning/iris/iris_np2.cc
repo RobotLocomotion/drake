@@ -399,7 +399,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
   if (options.sampled_iris_options.prog_with_additional_constraints) {
     DRAKE_THROW_UNLESS(options.sampled_iris_options
-                           .prog_with_additional_constraints->num_vars() == nq);
+                           .prog_with_additional_constraints->num_vars() ==
+                       parameterization_dimension);
   }
   // TODO(cohnt): Allow users to set this parameter if it ever becomes needed.
   const double constraints_tol = 1e-6;
