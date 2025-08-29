@@ -118,10 +118,11 @@ class Fields {
   /// specified.
   Fields& operator|=(const Fields& rhs) {
     base_fields_ = base_fields_ | rhs.base_fields_;
-    if (has_descriptor())
+    if (has_descriptor()) {
       throw std::runtime_error(
           "Cannot have multiple Descriptor flags. "
           "Can only add flags iff (!rhs.has_descriptor()).");
+    }
     descriptor_type_ = rhs.descriptor_type_;
     return *this;
   }

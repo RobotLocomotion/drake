@@ -1,17 +1,21 @@
 load("//tools/skylark:drake_py.bzl", "py_test_isolated")
 
-# From https://bazel.build/reference/be/c-cpp.html#cc_library.srcs
+# From https://bazel.build/reference/be/c-cpp#cc_library.srcs.
+# Keep this list in sync with clang_format_lint.py.
 _SOURCE_EXTENSIONS = [source_ext for source_ext in """
 .c
 .cc
 .cpp
 .cxx
-.c++.C
+.c++
+.C
 .h
 .hh
 .hpp
 .hxx
 .inc
+.inl
+.H
 """.split("\n") if len(source_ext)]
 
 _IGNORE_EXTENSIONS = []
@@ -46,8 +50,7 @@ def _add_linter_rules(
         source_labels,
         source_filenames,
         name,
-        data = None,
-        enable_clang_format_lint = False):
+        data = None):
     # Common attributes for all of our py_test invocations.
     data = (data or [])
     size = "small"
@@ -92,23 +95,21 @@ def _add_linter_rules(
         tags = ["drakelint", "lint"],
     )
 
-    # Possibly clang-format idempotence.
-    if enable_clang_format_lint:
-        py_test_isolated(
-            name = name + "_clang_format_lint",
-            srcs = ["@drake//tools/lint:clang_format_lint"],
-            data = data + source_labels,
-            args = source_filenames,
-            main = "@drake//tools/lint:clang_format_lint.py",
-            size = size,
-            tags = ["clang_format_lint", "lint"],
-        )
+    # Idempotence during clang-format.
+    py_test_isolated(
+        name = name + "_clang_format_lint",
+        srcs = ["@drake//tools/lint:clang_format_lint"],
+        data = data + source_labels,
+        args = source_filenames,
+        main = "@drake//tools/lint:clang_format_lint.py",
+        size = size,
+        tags = ["clang_format_lint", "lint"],
+    )
 
 def cpplint(
         existing_rules = None,
         data = None,
-        extra_srcs = None,
-        enable_clang_format_lint = False):
+        extra_srcs = None):
     """For every rule in the BUILD file so far, adds a test rule that runs
     cpplint over the C++ sources listed in that rule.  Thus, BUILD file authors
     should call this function at the *end* of every C++-related BUILD file.
@@ -131,9 +132,6 @@ def cpplint(
         if "nolint" in rule.get("tags"):
             # Disable linting when requested (e.g., for generated code).
             continue
-        use_clang_lint = enable_clang_format_lint and (
-            "nolint_clang_format" not in rule.get("tags")
-        )
 
         # Extract the list of C++ source code labels and convert to filenames.
         candidate_labels = (
@@ -154,7 +152,6 @@ def cpplint(
                 source_filenames,
                 name = rule["name"],
                 data = data,
-                enable_clang_format_lint = use_clang_lint,
             )
 
     # Lint all of the extra_srcs separately in a single rule.
@@ -166,7 +163,6 @@ def cpplint(
             source_filenames,
             name = "extra_srcs_cpplint",
             data = data,
-            enable_clang_format_lint = enable_clang_format_lint,
         )
 
 def cpplint_extra(

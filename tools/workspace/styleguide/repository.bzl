@@ -6,8 +6,8 @@ def styleguide_repository(
     github_archive(
         name = name,
         repository = "RobotLocomotion/styleguide",
-        commit = "930013ec1863a0c7bdf8766c8c16443515d2a66d",
-        sha256 = "555e5f27b7e318e27f5facc74d70bdff9dde6558119fcb175706b898e4ef0fcc",  # noqa
+        commit = "81521cacb27b933acea048f37ffccd8b68769cc2",
+        sha256 = "c4519d54cc30372cec99188578e419bf82e871a0e1c63fed9af376a4705b7f28",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
