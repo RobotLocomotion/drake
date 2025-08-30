@@ -75,7 +75,7 @@ if(APPLE)
   set(_apple_soname_prologue "@rpath/")
 endif()
 
-if(@DRAKE_SHARED_LIB@)
+if(@LIBDRAKE_WAS_LINKED_SHARED@)
   set(_drake_library_type SHARED)
   set(_drake_library_name libdrake.so)
 else()
@@ -91,7 +91,7 @@ set_target_properties(drake::drake PROPERTIES
   INTERFACE_COMPILE_FEATURES "cxx_std_20"
   INTERFACE_COMPILE_DEFINITIONS "${_drake_interface_compile_definitions}"
 )
-if(@DRAKE_SHARED_LIB@)
+if(@LIBDRAKE_WAS_LINKED_SHARED@)
   set_target_properties(drake::drake PROPERTIES
     IMPORTED_SONAME "${_apple_soname_prologue}${_drake_library_name}"
   )

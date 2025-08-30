@@ -112,9 +112,30 @@ install(
     visibility = ["//visibility:private"],
 )
 
+config_setting(
+    name = "install_pydrake_true",
+    flag_values = {
+        "//tools/flags:install_pydrake": "True",
+    },
+)
+
+config_setting(
+    name = "install_pydrake_true_and_install_libdrake_static",
+    flag_values = {
+        "//tools/flags:install_pydrake": "True",
+        "//tools/flags:install_libdrake": "static",
+    },
+)
+
 install(
     name = "install",
     install_tests_script = _INSTALL_TEST_COMMANDS,
+    target_compatible_with = select({
+        "install_pydrake_true_and_install_libdrake_static": [
+            "@platforms//:incompatible",
+        ],
+        "//conditions:default": [],
+    }),
     deps = [
         ":install_files",
         "//common:install",
@@ -127,7 +148,7 @@ install(
         "//tools/workspace:install_external_packages",
         "//tutorials:install",
     ] + select({
-        "//tools/install/libdrake:install_pydrake": ["//bindings/pydrake:install"],
+        "//:install_pydrake_true": ["//bindings/pydrake:install"],
         "//conditions:default": [],
     }),
 )

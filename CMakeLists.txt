@@ -656,7 +656,8 @@ endif()
 
 option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
 if(NOT BUILD_SHARED_LIBS)
-  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:static_lib=True")
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_pydrake=False")
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_libdrake=static")
 endif()
 
 if(CMAKE_STRIP)

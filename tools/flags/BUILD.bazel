@@ -288,18 +288,24 @@ bool_flag(
 )
 
 # -----------------------------------------------------------------------------
+# Configuration for Drake's CMake install.
+#
+# The Bazel spelling of these flags should be consisered "internal use only".
+# Users should interact with the CMake options, not these flags.
 
-# The :static_lib flag configures whether to link libdrake as a static library
-# (i.e., output libdrake.a). When off (the default), libdrake is linked as a
-# shared library, outputting libdrake.so.
-bool_flag(
-    name = "static_lib",
-    build_setting_default = False,
+# The :install_libdrake flag configures whether to install libdrake as a shared
+# or static library (i.e., libdrake.so or libdrake.a).
+string_flag(
+    name = "install_libdrake",
+    build_setting_default = "shared",
+    values = [
+        "shared",
+        "static",
+    ],
 )
 
 # The :install_pydrake controls whether to install pydrake (and the pybind11
-# headers). If :static_lib is True, the value of this flag will be ignored
-# and pydrake will not be installed.
+# headers). When True, the :install_libdrake flag must be set to "shared".
 bool_flag(
     name = "install_pydrake",
     build_setting_default = True,

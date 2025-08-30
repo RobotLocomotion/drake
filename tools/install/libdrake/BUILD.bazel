@@ -97,13 +97,13 @@ generate_file(
 )
 
 generate_file(
-    name = "drake_shared_lib.cmake",
+    name = "libdrake_was_linked_shared.cmake",
     content = select({
-        ":static_lib": (
-            "set(DRAKE_SHARED_LIB OFF)"
+        ":install_libdrake_static": (
+            "set(LIBDRAKE_WAS_LINKED_SHARED OFF)"
         ),
         "//conditions:default": (
-            "set(DRAKE_SHARED_LIB ON)"
+            "set(LIBDRAKE_WAS_LINKED_SHARED ON)"
         ),
     }),
 )
@@ -135,7 +135,7 @@ cmake_configure_file(
         ":bazel_eigen_defines.cmake",
         ":bazel_fmt_defines.cmake",
         ":bazel_spdlog_defines.cmake",
-        ":drake_shared_lib.cmake",
+        ":libdrake_was_linked_shared.cmake",
         ":python_version.cmake",
         ":stamp_version.cmake",
         ":with_user_eigen.cmake",
@@ -163,16 +163,8 @@ cc_whole_archive_library(
 )
 
 config_setting(
-    name = "static_lib",
-    flag_values = {"//tools/flags:static_lib": "True"},
-)
-
-config_setting(
-    name = "install_pydrake",
-    flag_values = {
-        "//tools/flags:static_lib": "False",
-        "//tools/flags:install_pydrake": "True",
-    },
+    name = "install_libdrake_static",
+    flag_values = {"//tools/flags:install_libdrake": "static"},
 )
 
 # The Drake binary package libdrake.so contains all the symbols from all the
@@ -250,7 +242,7 @@ install(
         "test/rpath_install_test.py",
     ],
     targets = select({
-        ":static_lib": ["libdrake.a"],
+        ":install_libdrake_static": ["libdrake.a"],
         "//conditions:default": ["libdrake.so"],
     }),
     hdrs = [":libdrake_headers"],
