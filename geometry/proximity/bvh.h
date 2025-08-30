@@ -387,8 +387,6 @@ class Bvh {
     }
   }
 
-  static constexpr int kElementVertexCount = MeshType::kVertexPerElement;
-
   copyable_unique_ptr<NodeType> root_node_;
 };
 
