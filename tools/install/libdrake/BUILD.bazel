@@ -8,7 +8,16 @@ load(
     "//third_party:com_github_bazelbuild_rules_cc/whole_archive.bzl",
     "cc_whole_archive_library",
 )
-load("//tools/install:install.bzl", "install", "install_cmake_config")
+load(
+    "//third_party:com_github_bazelbuild_rules_cc/cc_static_libary.bzl",
+    "cc_static_library",
+)
+load(
+    "//tools/install:install.bzl",
+    "install",
+    "install_cmake_config",
+    "install_files",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:cc.bzl", "cc_binary", "cc_library")
 load(
@@ -215,6 +224,39 @@ cc_library(
     ],
 )
 
+# Also create libdrake_static_archive.a in addition to libdrake.so. We'll only
+# install one of them, but we want to build both of them during `test //...` to
+# ensure that both can build in CI without adding more CI job flavors.
+cc_static_library(
+    name = "libdrake_static_archive",
+    deps = [":libdrake_components_whole_archive"],
+)
+
+# Our install.bzl doesn't know how to install cc_static_library targets, so we
+# need to install it as a plain file. Note that this rule only ends up being
+# run when //tools/flags:install_libdrake is set to "static".
+install_files(
+    name = "install_libdrake_static_archive",
+    files = [":libdrake_static_archive"],
+    dest = "lib",
+    rename = {
+        "lib/libdrake_static_archive.a": "libdrake.a",
+    },
+)
+
+# Install either libdrake.so or libdrake.a, depending on the flag setting.
+install(
+    name = "install_libdrake",
+    targets = select({
+        ":install_libdrake_static": [],
+        "//conditions:default": ["libdrake.so"],
+    }),
+    deps = select({
+        ":install_libdrake_static": [":install_libdrake_static_archive"],
+        "//conditions:default": [],
+    }),
+)
+
 # Install libdrake along with all transitive headers in the same workspace
 # (i.e. in Drake itself; not externals).
 install(
@@ -225,16 +267,13 @@ install(
         "test/snopt_visibility_install_test.py",
         "test/rpath_install_test.py",
     ],
-    targets = select({
-        ":install_libdrake_static": [":libdrake_components_whole_archive"],
-        "//conditions:default": ["libdrake.so"],
-    }),
     hdrs = [":libdrake_headers"],
     hdr_dest = "include/drake",
     allowed_externals = ["//:LICENSE.TXT"],  # Root for our #include paths.
     visibility = ["//:__pkg__"],
     deps = [
         ":install_cmake_config",
+        ":install_libdrake",
     ],
 )
 
