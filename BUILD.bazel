@@ -42,13 +42,6 @@ alias(
     visibility = ["//visibility:public"],
 )
 
-# Expose static library for installed binaries.
-alias(
-    name = "drake_static_library",
-    actual = "//tools/install/libdrake:drake_static_library",
-    visibility = ["//visibility:public"],
-)
-
 # A manually-curated collection of most model files in Drake, so that we can
 # easily provide access to them for tools like //tools:model_visualizer.
 filegroup(
