@@ -90,6 +90,12 @@ To change the build options, you can run one of the standard CMake GUIs (e.g.,
 These options can be set using `-DFOO=bar` on the CMake command line, or in one
 of the CMake GUIs.
 
+Adjusting installation:
+
+* `BUILD_SHARED_LIBS` (default `ON`). When `OFF`, installs a static `libdrake.a`
+  (as opposed to a shared `libdrake.so`), and does not install `pydrake` (nor
+  `pybind11`).
+
 Adjusting open-source dependencies:
 
 * `WITH_USER_EIGEN` (default `ON`). When `ON`, uses `find_package(Eigen3)`
@@ -173,8 +179,9 @@ prior tree (within the `install` sub-directory) before running `make`.
 
 ## Running the Python Bindings after a CMake Install
 
-To run the installed copy of `pydrake`, you will also need to have your
-``PYTHONPATH`` configured correctly.
+To run the installed copy of `pydrake` (assuming you've installed Drake as a
+shared library), you will also need to have your ``PYTHONPATH``
+configured correctly.
 
 *Ubuntu 22.04 (Jammy):*
 
