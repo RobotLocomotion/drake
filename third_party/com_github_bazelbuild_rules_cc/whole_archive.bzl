@@ -13,11 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//tools/skylark:cc.bzl", "CcInfo")
 load(
     "//third_party:com_github_bazelbuild_rules_cc/find_cc_toolchain.bzl",
     "find_cc_toolchain",
 )
+load("//tools/skylark:cc.bzl", "CcInfo")
 
 # This function was inspired by bazelbuild/rules_cc as of:
 # https://github.com/bazelbuild/rules_cc/blob/262ebec3c2296296526740db4aefce68c80de7fa/examples/my_c_archive/my_c_archive.bzl

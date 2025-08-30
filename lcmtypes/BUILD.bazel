@@ -344,7 +344,7 @@ install(
         ":install_python_true": [
             ":lcmtypes_drake_py",
         ],
-        "//conditions:default": []
+        "//conditions:default": [],
     }) + select({
         ":lcm_install_java_is_off": [],
         "//conditions:default": [

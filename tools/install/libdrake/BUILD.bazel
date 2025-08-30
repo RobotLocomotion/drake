@@ -5,12 +5,12 @@ load(
     "cmake_configure_file",
 )
 load(
-    "//third_party:com_github_bazelbuild_rules_cc/whole_archive.bzl",
-    "cc_whole_archive_library",
-)
-load(
     "//third_party:com_github_bazelbuild_rules_cc/cc_static_libary.bzl",
     "cc_static_library",
+)
+load(
+    "//third_party:com_github_bazelbuild_rules_cc/whole_archive.bzl",
+    "cc_whole_archive_library",
 )
 load(
     "//tools/install:install.bzl",
@@ -237,8 +237,8 @@ cc_static_library(
 # run when //tools/flags:install_libdrake is set to "static".
 install_files(
     name = "install_libdrake_static_archive",
-    files = [":libdrake_static_archive"],
     dest = "lib",
+    files = [":libdrake_static_archive"],
     rename = {
         "lib/libdrake_static_archive.a": "libdrake.a",
     },
