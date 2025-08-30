@@ -17,6 +17,9 @@
 # https://github.com/bazelbuild/bazel/blob/1f67e16bb5477c41bdd2c2712a2c6997bf2ad5a3/src/main/starlark/builtins_bzl/common/cc/cc_static_library.bzl
 # with slightly modifications by Drake to cooperate with @rules_cc when this
 # this is not vendored inside of the Bazel JRE.
+# TODO(jwnimmer-tri) Once our minimum Bazel version offers this without the
+# need for an `--experimental_...` flag (bazel >= 8.4), we should delete our
+# copy and use the built-in implementation.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@rules_cc//cc:action_names.bzl", "ACTION_NAMES")
