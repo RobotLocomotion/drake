@@ -331,11 +331,21 @@ config_setting(
     values = {"define": "LCM_INSTALL_JAVA=OFF"},
 )
 
+config_setting(
+    name = "install_python_true",
+    flag_values = {
+        "//tools/flags:install_python": "True",
+    },
+)
+
 install(
     name = "install",
-    targets = [
-        ":lcmtypes_drake_py",
-    ] + select({
+    targets = select({
+        ":install_python_true": [
+            ":lcmtypes_drake_py",
+        ],
+        "//conditions:default": []
+    }) + select({
         ":lcm_install_java_is_off": [],
         "//conditions:default": [
             ":lcmtypes_drake_java",

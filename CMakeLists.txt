@@ -656,7 +656,7 @@ endif()
 
 option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
 if(NOT BUILD_SHARED_LIBS)
-  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_pydrake=False")
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_python=False")
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_libdrake=static")
 endif()
 

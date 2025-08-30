@@ -304,10 +304,11 @@ string_flag(
     ],
 )
 
-# The :install_pydrake controls whether to install pydrake (and the pybind11
-# headers). When True, the :install_libdrake flag must be set to "shared".
+# The :install_python flag controls whether to install Drake's Python-related
+# software (i.e., pydrake, pybind11 headers, and python lcmtypes). When True,
+# the :install_libdrake flag must be set to "shared".
 bool_flag(
-    name = "install_pydrake",
+    name = "install_python",
     build_setting_default = True,
 )
 

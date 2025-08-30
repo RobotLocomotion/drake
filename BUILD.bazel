@@ -106,16 +106,16 @@ install(
 )
 
 config_setting(
-    name = "install_pydrake_true",
+    name = "install_python_true",
     flag_values = {
-        "//tools/flags:install_pydrake": "True",
+        "//tools/flags:install_python": "True",
     },
 )
 
 config_setting(
-    name = "install_pydrake_true_and_install_libdrake_static",
+    name = "install_python_true_and_install_libdrake_static",
     flag_values = {
-        "//tools/flags:install_pydrake": "True",
+        "//tools/flags:install_python": "True",
         "//tools/flags:install_libdrake": "static",
     },
 )
@@ -124,7 +124,7 @@ install(
     name = "install",
     install_tests_script = _INSTALL_TEST_COMMANDS,
     target_compatible_with = select({
-        "install_pydrake_true_and_install_libdrake_static": [
+        "install_python_true_and_install_libdrake_static": [
             "@platforms//:incompatible",
         ],
         "//conditions:default": [],
@@ -141,7 +141,7 @@ install(
         "//tools/workspace:install_external_packages",
         "//tutorials:install",
     ] + select({
-        "//:install_pydrake_true": ["//bindings/pydrake:install"],
+        "//:install_python_true": ["//bindings/pydrake:install"],
         "//conditions:default": [],
     }),
 )
