@@ -1,0 +1,18 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
+
+drake_py_unittest(
+    name = "lint_test",
+    data = [
+        "//third_party:com_github_bazelbuild_bazelisk/LICENSE",
+        "//third_party:com_github_bazelbuild_bazelisk/bazelisk.py",
+        "@bazelisk_internal//:LICENSE",
+        "@bazelisk_internal//:bazelisk.py",
+    ],
+    tags = ["lint"],
+    deps = [
+        "@rules_python//python/runfiles",
+    ],
+)
+
+add_lint_tests()

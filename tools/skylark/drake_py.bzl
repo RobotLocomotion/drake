@@ -203,7 +203,7 @@ def drake_py_unittest(
         allow_import_unittest = True,
         _drake_py_unittest_shard_count = kwargs.pop("shard_count", None),
         deps = kwargs.pop("deps", []) + [
-            "@xmlrunner_py",
+            "@xmlrunner_py_internal//:xmlrunner_py",
         ],
         **kwargs
     )

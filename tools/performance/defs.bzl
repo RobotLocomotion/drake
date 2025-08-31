@@ -24,7 +24,7 @@ def drake_cc_googlebench_binary(
         fail("Missing srcs")
     if add_test_rule == None:
         fail("Missing add_test_rule")
-    new_deps = (deps or []) + ["@googlebenchmark//:benchmark"]
+    new_deps = (deps or []) + ["@google_benchmark//:benchmark"]
 
     # We need this to be a cc_binary (not a cc_test) so that Bazel's flag
     # --trim_test_configuration will permit the py_experiment_binary target
