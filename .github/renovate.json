@@ -9,6 +9,7 @@
     "at 6am on the first day of the month"
   ],
   "enabledManagers": [
-    "bazelisk"
+    "bazelisk",
+    "bazel-module"
   ]
 }
