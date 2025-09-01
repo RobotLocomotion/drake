@@ -151,7 +151,7 @@ elseif(CMAKE_C_COMPILER_ID STREQUAL GNU)
 else()
   message(WARNING
     "Compilation with ${CMAKE_C_COMPILER_ID} is NOT supported. Compilation of "
-    "project drake_cxx_python may fail."
+    "project drake_install may fail."
   )
 endif()
 
@@ -176,7 +176,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
 else()
   message(WARNING
     "Compilation with ${CMAKE_CXX_COMPILER_ID} is NOT supported. Compilation "
-    "of project drake_cxx_python may fail."
+    "of project drake_install may fail."
   )
 endif()
 
@@ -273,7 +273,7 @@ endif()
 if(NOT Python_INTERPRETER_ID STREQUAL Python)
   message(WARNING
     "Python interpreter ${Python_INTERPRETER_ID} is NOT supported. Python "
-    "code in project drake_cxx_python may fail at runtime."
+    "code in project drake_install may fail at runtime."
   )
 endif()
 set(PYTHON_VERSION_MAJOR_MINOR
@@ -598,7 +598,7 @@ if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
   else()
     message(WARNING
       "Compilation with ${CMAKE_Fortran_COMPILER_ID} is NOT supported. "
-      "Compilation of project drake_cxx_python may fail."
+      "Compilation of project drake_install may fail."
     )
   endif()
 
@@ -654,10 +654,25 @@ if(CMAKE_INSTALL_NAME_TOOL)
   )
 endif()
 
-option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
-if(NOT BUILD_SHARED_LIBS)
-  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_python=False")
+# Options for whether to link libdrake as static or shared, and whether to
+# install pydrake. If these options are in conflict, provide a warning.
+option(BUILD_SHARED_LIBS "Install shared libraries" ON)
+if(BUILD_SHARED_LIBS)
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_libdrake=shared")
+else()
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_libdrake=static")
+endif()
+option(DRAKE_INSTALL_PYTHON "Install Drake's Python bindings" ON)
+if(DRAKE_INSTALL_PYTHON)
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_python=True")
+else()
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_python=False")
+endif()
+if(NOT BUILD_SHARED_LIBS AND DRAKE_INSTALL_PYTHON)
+  message(WARNING
+    "Compilation with static libraries is incompatible with the Python "
+    "bindings. Compilation of project drake_install may fail."
+  )
 endif()
 
 if(CMAKE_STRIP)
@@ -717,12 +732,12 @@ add_custom_target(drake_version ALL
     -P "${PROJECT_SOURCE_DIR}/tools/install/libdrake/generate_version.cmake"
 )
 
-add_custom_target(drake_cxx_python ALL
+add_custom_target(drake_install ALL
   COMMAND "${Bazel_EXECUTABLE}" build ${BAZEL_INSTALL_TARGET}
   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/drake_build_cwd"
   USES_TERMINAL
 )
-add_dependencies(drake_cxx_python drake_version)
+add_dependencies(drake_install drake_version)
 
 install(CODE
   "execute_process(
