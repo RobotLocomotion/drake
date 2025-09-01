@@ -12,7 +12,7 @@ module(
 
 # Add starlark rules.
 
-bazel_dep(name = "apple_support", version = "1.17.1", repo_name = "build_bazel_apple_support")  # noqa
+bazel_dep(name = "apple_support", version = "1.23.1", repo_name = "build_bazel_apple_support")  # noqa
 bazel_dep(name = "bazel_features", version = "1.30.0")
 bazel_dep(name = "bazel_skylib", version = "1.8.0")
 bazel_dep(name = "platforms", version = "0.0.11")
