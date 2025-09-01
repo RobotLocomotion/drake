@@ -1,5 +1,11 @@
 #include "drake/multibody/optimization/manipulator_equation_constraint.h"
 
+#include <limits>
+#include <memory>
+#include <set>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

@@ -4,6 +4,7 @@
 #include <functional>
 #include <queue>
 #include <set>
+#include <tuple>
 #include <utility>
 
 #include "drake/multibody/contact_solvers/sap/partial_permutation.h"

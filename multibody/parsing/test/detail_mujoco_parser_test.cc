@@ -1,6 +1,10 @@
 #include "drake/multibody/parsing/detail_mujoco_parser.h"
 
 #include <filesystem>
+#include <limits>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

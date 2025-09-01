@@ -1,5 +1,9 @@
 #include "drake/multibody/inverse_kinematics/constraint_relaxing_ik.h"
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/random.h"

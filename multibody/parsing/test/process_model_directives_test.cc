@@ -2,7 +2,10 @@
 
 #include <filesystem>
 #include <memory>
+#include <set>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
