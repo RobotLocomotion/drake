@@ -109,11 +109,11 @@ class DeformableBodyConfig {
     material_model_ = material_model;
   }
 
-  /** @pre 0 <= element_subdivision <= 4. */
-  void set_element_subdivision(int element_subdivision) {
-    DRAKE_THROW_UNLESS(element_subdivision >= 0);
-    DRAKE_THROW_UNLESS(element_subdivision <= 4);
-    element_subdivision_ = element_subdivision;
+  /** @pre 0 <= element_subdivision_count <= 4. */
+  void set_element_subdivision_count(int element_subdivision_count) {
+    DRAKE_THROW_UNLESS(element_subdivision_count >= 0);
+    DRAKE_THROW_UNLESS(element_subdivision_count <= 4);
+    element_subdivision_count_ = element_subdivision_count;
   }
 
   /** Returns the Young's modulus, with unit of N/m². */
@@ -135,7 +135,7 @@ class DeformableBodyConfig {
   /** Returns the number of times each element is subdivided when evaluating the
    external forces. Useful when elements are too coarse to resolve external
    force fields. */
-  int element_subdivision() const { return element_subdivision_; }
+  int element_subdivision_count() const { return element_subdivision_count_; }
 
  private:
   T youngs_modulus_{1e8};
@@ -144,7 +144,7 @@ class DeformableBodyConfig {
   T stiffness_damping_coefficient_{0};
   T mass_density_{1.5e3};
   MaterialModel material_model_{MaterialModel::kLinearCorotated};
-  int element_subdivision_{0};
+  int element_subdivision_count_{0};
 };
 
 }  // namespace fem

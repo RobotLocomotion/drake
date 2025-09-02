@@ -400,7 +400,7 @@ DeformableBody<T>::ConstitutiveModelHelper(
     const geometry::VolumeMesh<double>& mesh,
     const fem::DeformableBodyConfig<T>& config,
     const Vector3<double>& weights) {
-  switch (config.element_subdivision()) {
+  switch (config.element_subdivision_count()) {
     case 0:
       SubdElementHelper<Model, 0>(mesh, config, weights);
       break;

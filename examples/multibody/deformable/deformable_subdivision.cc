@@ -28,7 +28,7 @@ DEFINE_double(
     contact_damping, 10.0,
     "Hunt and Crossley damping for the deformable body, only used when "
     "'contact_approximation' is set to 'lagged' or 'similar' [s/m].");
-DEFINE_int32(element_subdivision, 0,
+DEFINE_int32(element_subdivision_count, 0,
              "The number of times each FEM element is subdivided when "
              "evaluating external forces.");
 
@@ -69,7 +69,8 @@ int do_main() {
   deformable_config.set_poissons_ratio(0.4);
   deformable_config.set_mass_density(1e3);
   deformable_config.set_stiffness_damping_coefficient(0.01);
-  deformable_config.set_element_subdivision(FLAGS_element_subdivision);
+  deformable_config.set_element_subdivision_count(
+      FLAGS_element_subdivision_count);
 
   DeformableModel<double>& deformable_model = plant.mutable_deformable_model();
 

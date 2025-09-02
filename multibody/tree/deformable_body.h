@@ -410,7 +410,7 @@ class DeformableBody final : public MultibodyElement<T> {
                           const Vector3<double>& weights);
 
   /* Helper function for BuildLinearVolumetricModel that turns
-   element_subdivision to a template parameter. */
+   element_subdivision_count to a template parameter. */
   template <template <class> class Model, int num_subd, typename T1 = T>
   typename std::enable_if_t<std::is_same_v<T1, double>, void> SubdElementHelper(
       const geometry::VolumeMesh<double>& mesh,
