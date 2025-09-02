@@ -46,6 +46,19 @@ behavior. Finally, one of the torus bodies is again disabled to demonstrate that
 it is removed from contact participation, causing the other tori to pass through
 it.
 
+# Deformable subdivision
+
+This is an example to showcase the automatic subdivision of FEM elements. A
+coarse deformable torus is added to the scene and a very concentrated force
+field acts on it. At zero or low subdivision counts, the force field falls
+between the element vertices and has no effect. As the subdivision count
+increases, the simulation accuracy improves.
+
+Tune the `--element_subdivision` parameter between 0-4 to observe the effects of
+greater subdivision counts. Observe that a coarse mesh does not interact with
+the concentrated force field, but a subdivided one does.
+
+The source code demonstrates how to assign an element subdivision count.
 
 ## Run visualizer
 
