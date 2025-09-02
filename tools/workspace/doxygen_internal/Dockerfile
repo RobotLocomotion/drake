@@ -3,7 +3,7 @@
 # during the build. They are neither called during the build nor expected to be
 # called by most developers or users of the project.
 
-ARG UBUNTU_CODENAME=focal
+ARG UBUNTU_CODENAME=noble
 FROM ubuntu:${UBUNTU_CODENAME}
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update --quiet --quiet \
@@ -35,7 +35,7 @@ RUN wget --quiet "https://drake-mirror.csail.mit.edu/other/doxygen/doxygen-${DOX
     -DCMAKE_CXX_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wno-return-local-addr -Wno-return-type -Wno-unused-result -Wno-stringop-overflow' \
     -DCMAKE_EXE_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro' \
     -DCMAKE_INSTALL_PREFIX:PATH=/opt/doxygen \
-    -DPYTHON_EXECUTABLE:PATH=/usr/bin/python3 \
+    -DPython_EXECUTABLE:PATH=/usr/bin/python3 \
     -GNinja \
     -Wno-dev \
     "../doxygen-${DOXYGEN_VERSION}" \
