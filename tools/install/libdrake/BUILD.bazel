@@ -122,6 +122,25 @@ generate_file(
     }),
 )
 
+config_setting(
+    name = "installed_with_python",
+    flag_values = {
+        "//tools/flags:install_python": "True",
+    },
+)
+
+generate_file(
+    name = "installed_with_python.cmake",
+    content = select({
+        ":installed_with_python": (
+            "set(INSTALLED_WITH_PYTHON ON)"
+        ),
+        "//conditions:default": (
+            "set(INSTALLED_WITH_PYTHON OFF)"
+        ),
+    }),
+)
+
 cc_defines(
     name = "bazel_eigen_defines.cmake",
     var = "BAZEL_EIGEN_DEFINES",
@@ -150,6 +169,7 @@ cmake_configure_file(
         ":bazel_fmt_defines.cmake",
         ":bazel_spdlog_defines.cmake",
         ":libdrake_was_linked_shared.cmake",
+        ":installed_with_python.cmake",
         ":python_version.cmake",
         ":stamp_version.cmake",
         ":with_user_eigen.cmake",
