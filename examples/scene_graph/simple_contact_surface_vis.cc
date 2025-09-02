@@ -8,7 +8,9 @@
  and anchored) and their properties to see the effect on contact surface.  */
 
 #include <memory>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 #include <gflags/gflags.h>
 

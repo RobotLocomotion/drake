@@ -2,6 +2,7 @@
 // is used to write out YAML details without repeating the default values.
 
 #include <cmath>
+#include <string>
 #include <vector>
 
 #include <Eigen/Core>

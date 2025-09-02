@@ -1,6 +1,8 @@
 #include "drake/common/reset_on_copy.h"
 
+#include <algorithm>
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

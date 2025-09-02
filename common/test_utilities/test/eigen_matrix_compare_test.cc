@@ -1,5 +1,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 namespace drake {

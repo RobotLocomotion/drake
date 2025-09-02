@@ -1,7 +1,9 @@
 #include "drake/common/never_destroyed.h"
 
 #include <random>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 #include <gtest/gtest.h>
 

@@ -1,3 +1,5 @@
+#include <memory>
+
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_copyable.h"

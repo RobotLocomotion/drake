@@ -5,6 +5,7 @@
 
 #include <limits>
 #include <memory>
+#include <vector>
 
 #include <gflags/gflags.h>
 
