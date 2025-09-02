@@ -401,12 +401,21 @@ class DeformableBody final : public MultibodyElement<T> {
                              const fem::DeformableBodyConfig<T>& config,
                              const Vector3<double>& weights);
 
-  /* Helper for BuildLinearVolumetricModel templated on constitutive model. */
+  /* Helper function for BuildLinearVolumetricModel that turns
+   constitutive model to a template parameter. */
   template <template <class> class Model, typename T1 = T>
   typename std::enable_if_t<std::is_same_v<T1, double>, void>
-  BuildLinearVolumetricModelHelper(const geometry::VolumeMesh<double>& mesh,
-                                   const fem::DeformableBodyConfig<T>& config,
-                                   const Vector3<double>& weights);
+  ConstitutiveModelHelper(const geometry::VolumeMesh<double>& mesh,
+                          const fem::DeformableBodyConfig<T>& config,
+                          const Vector3<double>& weights);
+
+  /* Helper function for BuildLinearVolumetricModel that turns
+   element_subdivision to a template parameter. */
+  template <template <class> class Model, int num_subd, typename T1 = T>
+  typename std::enable_if_t<std::is_same_v<T1, double>, void> SubdElementHelper(
+      const geometry::VolumeMesh<double>& mesh,
+      const fem::DeformableBodyConfig<T>& config,
+      const Vector3<double>& weights);
 
   void DoSetTopology(const internal::MultibodyTreeTopology&) final {
     /* No-op because deformable bodies are not part of the MultibodyTree
