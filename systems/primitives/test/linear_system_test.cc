@@ -1,6 +1,8 @@
 #include "drake/systems/primitives/linear_system.h"
 
+#include <memory>
 #include <stdexcept>
+#include <vector>
 
 #include <gtest/gtest.h>
 

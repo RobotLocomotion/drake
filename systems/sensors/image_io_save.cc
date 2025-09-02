@@ -3,6 +3,7 @@
 /* clang-format on */
 
 #include <stdexcept>
+#include <string>
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
 #include <vtkImageData.h>     // vtkCommonDataModel

@@ -1,6 +1,7 @@
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 
 #include <cmath>
+#include <limits>
 
 #include <gtest/gtest.h>
 

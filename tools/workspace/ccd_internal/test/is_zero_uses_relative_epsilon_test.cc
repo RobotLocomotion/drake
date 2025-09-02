@@ -1,4 +1,5 @@
 #include <memory>
+#include <vector>
 
 #include <fcl/fcl.h>
 #include <gtest/gtest.h>

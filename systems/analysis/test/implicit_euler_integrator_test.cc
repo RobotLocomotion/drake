@@ -1,5 +1,7 @@
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"

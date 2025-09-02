@@ -1,6 +1,8 @@
 #include "drake/solvers/solver_options.h"
 
 #include <limits>
+#include <string>
+#include <unordered_set>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

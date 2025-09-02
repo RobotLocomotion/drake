@@ -1,5 +1,7 @@
 #include "drake/systems/analysis/scalar_initial_value_problem.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"

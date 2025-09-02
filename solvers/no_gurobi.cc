@@ -2,6 +2,7 @@
 #include "drake/solvers/gurobi_solver.h"
 /* clang-format on */
 
+#include <memory>
 #include <stdexcept>
 
 namespace drake {
