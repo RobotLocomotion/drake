@@ -16,7 +16,7 @@ bazel_dep(name = "apple_support", version = "1.23.1", repo_name = "build_bazel_a
 bazel_dep(name = "bazel_features", version = "1.35.0")
 bazel_dep(name = "bazel_skylib", version = "1.8.1")
 bazel_dep(name = "platforms", version = "1.0.0")
-bazel_dep(name = "rules_cc", version = "0.2.2")
+bazel_dep(name = "rules_cc", version = "0.2.3")
 bazel_dep(name = "rules_java", version = "8.15.2")
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_python", version = "1.5.4")
