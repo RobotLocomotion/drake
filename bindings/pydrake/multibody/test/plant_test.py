@@ -107,7 +107,6 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.eigen_geometry import Quaternion_
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import (
@@ -1090,10 +1089,6 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(revolute_spring.joint(), revolute_joint)
         self.assertEqual(revolute_spring.default_nominal_angle(), 0.1)
         self.assertEqual(revolute_spring.default_stiffness(), 100.)
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(revolute_spring.nominal_angle(), 0.1)
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(revolute_spring.stiffness(), 100.)
 
         # Test DoorHinge accessors
         self.assertEqual(door_hinge.joint(), revolute_joint)

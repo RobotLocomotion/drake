@@ -115,16 +115,6 @@ TEST_F(BuildIiwaControlTest, BuildIiwaControl) {
   }
 }
 
-TEST_F(BuildIiwaControlTest, DeprecatedBuildIiwaControl) {
-  int tare = builder_.GetSystems().size();
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  BuildIiwaControl(*sim_plant_, iiwa7_info_.model_instance, *controller_plant_,
-                   &lcm_, &builder_, 0.01, {}, IiwaControlMode::kTorqueOnly);
-#pragma GCC diagnostic pop
-  EXPECT_GT(builder_.GetSystems().size(), tare);
-}
-
 TEST_F(BuildIiwaControlTest, PositionOnly) {
   driver_config_.control_mode = "position_only";
   IiwaControlPorts control_ports{};
@@ -260,16 +250,6 @@ TEST_F(BuildIiwaControlTest, PositionAndTorque) {
   }
 }
 
-TEST_F(BuildIiwaControlTest, DeprecatedSimplified) {
-  IiwaControlPorts control_ports{};
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  control_ports = BuildSimplifiedIiwaControl(
-      *sim_plant_, iiwa7_info_.model_instance, *controller_plant_, &builder_,
-      0.01, {}, IiwaControlMode::kTorqueOnly);
-#pragma GCC diagnostic pop
-  ASSERT_NE(control_ports.commanded_torque, nullptr);
-}
 }  // namespace
 }  // namespace kuka_iiwa
 }  // namespace manipulation
