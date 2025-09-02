@@ -62,17 +62,6 @@ void BuildIiwaControl(
     const IiwaDriver& driver_config,
     const multibody::MultibodyPlant<double>& controller_plant);
 
-DRAKE_DEPRECATED("2025-09-01",
-                 "Use the overload taking `driver_config` instead.")
-void BuildIiwaControl(
-    const multibody::MultibodyPlant<double>& plant,
-    const multibody::ModelInstanceIndex iiwa_instance,
-    const multibody::MultibodyPlant<double>& controller_plant,
-    lcm::DrakeLcmInterface* lcm, systems::DiagramBuilder<double>* builder,
-    double ext_joint_filter_tau = 0.01,
-    const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains = std::nullopt,
-    IiwaControlMode control_mode = IiwaControlMode::kPositionAndTorque);
-
 /// The return type of BuildSimplifiedIiwaControl(). Depending on the
 /// `control_mode`, some of the input ports might be null. The output ports are
 /// never null.
@@ -102,17 +91,6 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
     const multibody::ModelInstanceIndex iiwa_instance,
     const IiwaDriver& driver_config,
     const multibody::MultibodyPlant<double>& controller_plant);
-
-DRAKE_DEPRECATED("2025-09-01",
-                 "Use the overload taking `driver_config` instead.")
-IiwaControlPorts BuildSimplifiedIiwaControl(
-    const multibody::MultibodyPlant<double>& plant,
-    const multibody::ModelInstanceIndex iiwa_instance,
-    const multibody::MultibodyPlant<double>& controller_plant,
-    systems::DiagramBuilder<double>* builder,
-    double ext_joint_filter_tau = 0.01,
-    const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains = std::nullopt,
-    IiwaControlMode control_mode = IiwaControlMode::kPositionAndTorque);
 
 }  // namespace kuka_iiwa
 }  // namespace manipulation

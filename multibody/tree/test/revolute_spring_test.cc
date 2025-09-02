@@ -96,14 +96,6 @@ TEST_F(SpringTester, ConstructionAndAccessors) {
   EXPECT_EQ(spring_->default_nominal_angle(), nominal_angle_);
 }
 
-TEST_F(SpringTester, DeprecatedAccessors) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(spring_->stiffness(), stiffness_);
-  EXPECT_EQ(spring_->nominal_angle(), nominal_angle_);
-#pragma GCC diagnostic pop
-}
-
 TEST_F(SpringTester, ContextDependentAccess) {
   const double some_value = 5;
   EXPECT_EQ(spring_->GetStiffness(*context_), stiffness_);
