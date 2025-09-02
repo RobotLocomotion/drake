@@ -1037,7 +1037,7 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
             .nhat_BA_W = nhat_BA_W,
             .phi0 = phi0,
             .vn0 = vn0,
-            .v_b ={}, // no bias velocity yet
+            .v_b = {},  // No bias velocity yet.
             .fn0 = fn0,
             .stiffness = k,
             .damping = d,
@@ -1045,7 +1045,7 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
             .friction_coefficient = mu,
             .surface_index = surface_index,
             .face_index = face,
-            .point_pair_index = {} /* no point pair index */};
+            .point_pair_index = {} /* No point pair index. */};
         contact_pairs->AppendHydroData(std::move(contact_pair));
       }
     }

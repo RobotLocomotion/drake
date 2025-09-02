@@ -119,10 +119,10 @@ class Obb {
                          const internal::Plane<double>& plane_P,
                          const math::RigidTransformd& X_PH);
 
-  /** Checks whether bounding volume `bv` intersects an imaginary half space. The
-   bounding volume is centered on its canonical frame B, and B is posed in the
-   corresponding hierarchy frame H. The imaginary half space is defined in its
-   canonical frame C (such that the boundary plane of the half space is
+  /** Checks whether bounding volume `bv` intersects an imaginary half space.
+   The bounding volume is centered on its canonical frame B, and B is posed in
+   the corresponding hierarchy frame H. The imaginary half space is defined in
+   its canonical frame C (such that the boundary plane of the half space is
    perpendicular to Cz and Co lies on the boundary plane).
 
    @param bv_H      The bounding box to test.
@@ -130,8 +130,7 @@ class Obb {
                     half space canonical frame C.
    @returns `true` if the half space intersects the box.
    @pydrake_mkdoc_identifier{obb_halfspace} */
-  static bool HasOverlap(const Obb& bv_H,
-                         const math::RigidTransformd& X_CH);
+  static bool HasOverlap(const Obb& bv_H, const math::RigidTransformd& X_CH);
 
   /** Compares the values of the two Obb instances for exact equality down to
    the last bit. Assumes that the quantities are measured and expressed in

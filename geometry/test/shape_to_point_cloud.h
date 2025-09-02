@@ -1,12 +1,15 @@
+#pragma once
+
+#include <vector>
+
 #include "drake/common/random.h"
 #include "drake/common/schema/stochastic.h"
+#include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/random_rotation.h"
-#include "drake/geometry/proximity/obj_to_surface_mesh.h"
 
 namespace drake {
 namespace geometry {
-namespace {
 
 struct PointCloud {
   std::vector<Eigen::Vector3d> points;
@@ -214,8 +217,8 @@ PointCloud SampleEllipsoidSurface(const Ellipsoid& ellipsoid,
   return cloud;
 }
 
-PointCloud SampleMeshSurface(const Mesh& mesh,
-                             const math::RigidTransformd& T, int n) {
+PointCloud SampleMeshSurface(const Mesh& mesh, const math::RigidTransformd& T,
+                             int n) {
   PointCloud cloud;
   cloud.points.reserve(n);
   cloud.normals.reserve(n);
@@ -274,6 +277,5 @@ PointCloud SampleConvexSurface(const Convex& convex,
   return cloud;
 }
 
-}  // namespace
 }  // namespace geometry
 }  // namespace drake

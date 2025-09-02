@@ -77,8 +77,7 @@ void DefineGeometryBoundingBox(py::module m) {
   aabb_cls.def_static("HasOverlap",
       py::overload_cast<const Aabb&, const math::RigidTransformd&>(
           &Aabb::HasOverlap),
-      py::arg("bv_H"), py::arg("X_CH"),
-      doc.Aabb.HasOverlap.doc_aabb_halfspace);
+      py::arg("bv_H"), py::arg("X_CH"), doc.Aabb.HasOverlap.doc_aabb_halfspace);
 
   // Obb static methods.
   obb_cls.def_static("HasOverlap",
@@ -94,10 +93,9 @@ void DefineGeometryBoundingBox(py::module m) {
       doc.Obb.HasOverlap.doc_obb_aabb);
 
   obb_cls.def_static("HasOverlap",
-      py::overload_cast<const Obb&,
-          const math::RigidTransformd&>(&Obb::HasOverlap),
-      py::arg("bv_H"), py::arg("X_CH"),
-      doc.Obb.HasOverlap.doc_obb_halfspace);
+      py::overload_cast<const Obb&, const math::RigidTransformd&>(
+          &Obb::HasOverlap),
+      py::arg("bv_H"), py::arg("X_CH"), doc.Obb.HasOverlap.doc_obb_halfspace);
 
   // AabbMaker and ObbMaker utility functions
   // Instead of binding the classes directly (which have lifetime issues with

@@ -11,9 +11,9 @@ namespace geometry {
 namespace internal {
 namespace {
 
+using Eigen::Vector3d;
 using fcl::CollisionGeometryd;
 using fcl::CollisionObjectd;
-using Eigen::Vector3d;
 
 // Construct a couple of encodings and test their properties.
 GTEST_TEST(EncodedData, ConstructorAndProperties) {

@@ -18,4 +18,4 @@ double CalcDistanceToSurface(const Capsule& capsule, const Vector3d& p_CP);
 }  // namespace internal
 // clang-format on
 }  // namespace geometry
-}  // namespace drake  
+}  // namespace drake

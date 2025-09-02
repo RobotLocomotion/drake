@@ -457,15 +457,15 @@ drake_cc_library(
     srcs = [
         "shape_specification.cc",
         "shape_specification_helpers.cc",
-        ],
+    ],
     hdrs = [
         "shape_specification.h",
-        ],
+    ],
     deps = [
         ":mesh_source",
         "//common:essential",
-        "//geometry/proximity:bvh",
         "//geometry/proximity:bv",
+        "//geometry/proximity:bvh",
         "//geometry/proximity:polygon_surface_mesh",
         "//geometry/proximity:triangle_surface_mesh",
         "//math:geometric_transform",
@@ -1168,11 +1168,12 @@ drake_cc_googletest(
 )
 
 drake_cc_library(
-    name  = "shape_to_point_cloud",
+    name = "shape_to_point_cloud",
     hdrs = ["test/shape_to_point_cloud.h"],
+    tags = ["exclude_from_package"],
     deps = [
-      "//geometry/proximity:obj_to_surface_mesh",
-    ]
+        "//geometry/proximity:obj_to_surface_mesh",
+    ],
 )
 
 drake_cc_googletest(
@@ -1183,12 +1184,12 @@ drake_cc_googletest(
         ":test_vtk_files",
     ],
     deps = [
-        ":shape_to_point_cloud",
         ":shape_specification",
+        ":shape_to_point_cloud",
         "//common:find_resource",
         "//common:overloaded",
-        "//common/test_utilities",
         "//common/schema:stochastic",
+        "//common/test_utilities",
     ],
 )
 

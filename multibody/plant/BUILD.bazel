@@ -1286,7 +1286,7 @@ drake_cc_googletest(
     srcs = ["test/surface_velocity_test.cc"],
     deps = [
         ":multibody_plant_core",
-    ]
+    ],
 )
 
 add_lint_tests()

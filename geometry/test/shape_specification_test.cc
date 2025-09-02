@@ -1,10 +1,9 @@
 #include "drake/geometry/shape_specification.h"
-#include "shape_to_point_cloud.h"
 
 #include <filesystem>
-#include <iostream>
 #include <memory>
 
+#include "shape_to_point_cloud.h"
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"

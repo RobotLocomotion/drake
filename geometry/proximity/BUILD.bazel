@@ -102,8 +102,8 @@ drake_cc_library(
     ],
     deps = [
         ":boxes_overlap",
-        ":posed_half_space",
         ":polygon_surface_mesh",
+        ":posed_half_space",
         ":triangle_surface_mesh",
         ":volume_mesh",
         "//common:essential",
@@ -116,6 +116,7 @@ drake_cc_library(
     name = "bvh",
     srcs = ["bvh.cc"],
     hdrs = ["bvh.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":bv",
         ":posed_half_space",
@@ -125,7 +126,6 @@ drake_cc_library(
         "//geometry:utilities",
         "//math:geometric_transform",
     ],
-    visibility = ["//visibility:public"],
 )
 
 drake_cc_library(
@@ -909,13 +909,14 @@ drake_cc_library(
 drake_cc_library(
     name = "proximity_shape_utilities",
     srcs = [
-      "proximity_shape_utilities.cc"
+        "proximity_shape_utilities.cc",
     ],
     hdrs = ["proximity_shape_utilities.h"],
+    tags = ["exclude_from_package"],
     deps = [
-      "//common:drake_export",
-      "//geometry:shape_specification",
-    ]
+        "//common:drake_export",
+        "//geometry:shape_specification",
+    ],
 )
 
 drake_cc_library(
@@ -1358,8 +1359,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":hydroelastic_internal",
-        ":proximity_utilities",
         ":proximity_shape_utilities",
+        ":proximity_utilities",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
@@ -1415,8 +1416,8 @@ drake_cc_googletest(
     name = "make_capsule_mesh_test",
     deps = [
         ":make_capsule_mesh",
-        ":proximity_utilities",
         ":proximity_shape_utilities",
+        ":proximity_utilities",
     ],
 )
 

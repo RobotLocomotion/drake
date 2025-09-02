@@ -87,8 +87,7 @@ bool Obb::HasOverlap(const Obb& bv, const internal::Plane<double>& plane_P,
   return min_height <= 0 && 0 <= max_height;
 }
 
-bool Obb::HasOverlap(const Obb& bv,
-                     const math::RigidTransformd& X_CH) {
+bool Obb::HasOverlap(const Obb& bv, const math::RigidTransformd& X_CH) {
   /*
                                               Hy           Hx
                                                 ╲        ╱
