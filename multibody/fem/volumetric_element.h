@@ -75,21 +75,25 @@ struct FemElementTraits<VolumetricElement<
     SubdIsoparametricElementType, SubdQuadratureType>> {
   /* Check that template parameters are of the correct types. */
   static_assert(
-      is_isoparametric_element<IsoparametricElementType>::value,
-      "The IsoparametricElementType template parameter must be a derived "
-      "class of IsoparametricElement");
+      is_isoparametric_element<IsoparametricElementType>::value &&
+          is_isoparametric_element<SubdIsoparametricElementType>::value,
+      "The IsoparametricElementType/SubdIsoparametricElementType template "
+      "parameter must be a derived class of IsoparametricElement");
   static_assert(
-      is_quadrature<QuadratureType>::value,
-      "The QuadratureType template parameter must be a derived class of "
-      "Quadrature<T, natural_dimension, num_quadrature_points>, where "
-      "`natural_dimension` can be 1, 2 or 3.");
+      is_quadrature<QuadratureType>::value &&
+          is_quadrature<SubdQuadratureType>::value,
+      "The QuadratureType/SubdQuadratureType template parameter must be a "
+      "derived class of Quadrature<T, natural_dimension, "
+      "num_quadrature_points>, where `natural_dimension` can be 1, 2 or 3.");
   static_assert(
       is_constitutive_model<ConstitutiveModelType>::value,
       "The ConstitutiveModelType template parameter must be a derived "
       "class of ConstitutiveModel");
   /* Check that the scalar types are compatible. */
   static_assert(std::is_same_v<typename IsoparametricElementType::T,
-                               typename ConstitutiveModelType::T>,
+                               typename ConstitutiveModelType::T> &&
+                    std::is_same_v<typename SubdIsoparametricElementType::T,
+                                   typename ConstitutiveModelType::T>,
                 "The scalar type of the isoparametric element and the "
                 "constitutive model must be the same.");
   /* Check that the number of quadrature points are compatible. */
@@ -112,8 +116,16 @@ struct FemElementTraits<VolumetricElement<
                 "The natural dimension of the isoparametric element must be 3 "
                 "for volumetric FEM elements. Codimensional objects are not "
                 "yet supported.");
-  // TODO(xuchenhan-tri): check consistency of isoparametric element/quadrature
-  // with their subd counterparts.
+  /* Check consistency of isoparametric element/quadrature with subd
+   * counterparts */
+  static_assert(IsoparametricElementType::natural_dimension ==
+                    SubdIsoparametricElementType::natural_dimension,
+                "The natural dimension of the subd isoparametric element must "
+                "match that of the isoparametric element.");
+  static_assert(IsoparametricElementType::spatial_dimension ==
+                    SubdIsoparametricElementType::spatial_dimension,
+                "The spatial dimension of the subd isoparametric element must "
+                "match that of the isoparametric element.");
 
   using T = typename ConstitutiveModelType::T;
   using ConstitutiveModel = ConstitutiveModelType;
