@@ -678,6 +678,28 @@ MODULE_SETTINGS = {
             "ThirdParty/pugixml/**/*.cpp",
         ],
     },
+    "VTK::scn": {
+        "cmake_undefines": [
+            "VTK_MODULE_USE_EXTERNAL_VTK_scn",
+        ],
+        "includes_extra": [
+            "ThirdParty/scn/vtkscn/include",
+            "ThirdParty/scn/vtkscn/src",
+        ],
+        "srcs_glob_extra": [
+            "ThirdParty/scn/vtkscn/src/vtkscn/*.cpp",
+        ],
+        "hdrs_content": {
+            "ThirdParty/scn/vtkscn/include/vtkscn/scn_export.h": """
+#pragma once
+#define SCN_EXPORT
+#define SCN_NO_EXPORT
+#define SCN_DEPRECATED
+#define SCN_DEPRECATED_EXPORT
+#define SCN_DEPRECATED_NO_EXPORT
+            """,
+        },
+    },
     "VTK::token": {
         "hdrs_glob_exclude": [
             # We use `hdrs_content` instead of a full-blown configure file.
