@@ -144,9 +144,12 @@ MODULE_SETTINGS = {
             "VTK_HAS_ISFINITE=1",
             "VTK_HAS_ISINF=1",
             "VTK_HAS_ISNAN=1",
+            "VTK_HAS_STD_CHARS_FORMAT=1",
+            "VTK_HAS_STD_FROM_CHARS_RESULT=1",
             "VTK_HAS_STD_ISFINITE=1",
             "VTK_HAS_STD_ISINF=1",
             "VTK_HAS_STD_ISNAN=1",
+            "VTK_HAS_STD_TO_CHARS_RESULT=1",
             "VTK_USE_64BIT_IDS=1",
             "VTK_USE_64BIT_TIMESTAMPS=1",
             # Threading.
