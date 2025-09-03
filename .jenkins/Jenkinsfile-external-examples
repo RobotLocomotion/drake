@@ -190,7 +190,9 @@ node(getNodeLabel()) {
         artifactDaysToKeepStr: '90'
       )
     ),
-    githubProjectProperty('https://github.com/RobotLocomotion/drake')
+    disableConcurrentBuilds(
+      abortPrevious: true
+    ),
   ])
 
   stage('drake-checkout') {
