@@ -6155,10 +6155,58 @@ GTEST_TEST(MultibodyPlantTest, GetNames) {
 GTEST_TEST(MultibodyPlantTest, FloatingJointNames) {
   {
     MultibodyPlant<double> plant(0.0);
-    plant.AddRigidBody("free_body", default_model_instance(),
-                       SpatialInertia<double>::MakeUnitary());
+    const ModelInstanceIndex my_model_instance =
+        plant.AddModelInstance("MyModelInstance");
+
+    // These bodies are in "my_model_instance" _not_ the default one. Their
+    // body frames are in the same model instance.
+    const RigidBody<double>& free_body = plant.AddRigidBody(
+        "free_body", my_model_instance, SpatialInertia<double>::MakeUnitary());
+    const RigidBody<double>& outer_body = plant.AddRigidBody(
+        "outer_body", my_model_instance, SpatialInertia<double>::MakeUnitary());
+
+    // But this frame is in the default model instance.
+    auto frame_on_outer_ptr = std::make_unique<FixedOffsetFrame<double>>(
+        "frame_on_outer", outer_body.body_frame(),
+        RigidTransform<double>(Vector3<double>(1, 0, 0)),
+        default_model_instance());
+    const Frame<double>& frame_on_outer =
+        plant.AddFrame(std::move(frame_on_outer_ptr));
+
+    // A joint inherits its model instance from the child _frame_, not the
+    // child _body_. Hence, this joint is in the default model instance while
+    // the ephemeral floating joint will be in my_model_instance. This caused
+    // a bug in the past (see issue #23379).
+    auto the_joint_ptr = std::make_unique<RevoluteJoint<double>>(
+        "the_joint", free_body.body_frame(), frame_on_outer,
+        Vector3<double>(0, 0, 1));
+    plant.AddJoint(std::move(the_joint_ptr));
+
+    // This weld joint is in "my_model_instance", but follows an unrelated
+    // joint, so its "start coordinate" is outside the range of coordinates
+    // in use by my_model_instance. That shouldn't cause any problems, but
+    // did in the past (see issue #23379).
+    const RigidBody<double>& last_body = plant.AddRigidBody(
+        "last_body", my_model_instance, SpatialInertia<double>::MakeUnitary());
+    plant.AddJoint<WeldJoint>("weld_joint", last_body, {}, outer_body, {},
+                              RigidTransform<double>::Identity());
+
     plant.Finalize();
-    EXPECT_NO_THROW(plant.GetJointByName("free_body"));
+    // The floating joint was automatically named "free_body" to match
+    // the body to which it is attached.
+    const Joint<double>& floating_joint = plant.GetJointByName("free_body");
+    EXPECT_EQ(floating_joint.num_positions(), 7);
+    EXPECT_EQ(floating_joint.num_velocities(), 6);
+    EXPECT_EQ(floating_joint.model_instance(), my_model_instance);
+
+    // There was a bug where either
+    //   - the different model instances for child frame and child body, or
+    //   - the out-of-range start coordinate for the weld joint
+    // caused GetPositionNames(model_instance) to throw.
+    // Check that the various forms all work now.
+    EXPECT_NO_THROW(plant.GetPositionNames());
+    EXPECT_NO_THROW(plant.GetPositionNames(my_model_instance));
+    EXPECT_NO_THROW(plant.GetPositionNames(default_model_instance()));
   }
 
   // Verify that in case of a name conflict, we prepend with underscores
