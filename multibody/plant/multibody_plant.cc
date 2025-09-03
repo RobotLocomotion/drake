@@ -1900,6 +1900,8 @@ std::vector<std::string> MultibodyPlant<T>::GetPositionNames(
 
   for (JointIndex joint_index : GetJointIndices()) {
     const Joint<T>& joint = get_joint(joint_index);
+    if (joint.num_positions() == 0) continue;  // Skip welds.
+
     const std::string prefix =
         add_model_instance_prefix
             ? fmt::format("{}_", GetModelInstanceName(joint.model_instance()))
@@ -1933,6 +1935,8 @@ std::vector<std::string> MultibodyPlant<T>::GetPositionNames(
 
   for (const auto& joint_index : joint_indices) {
     const Joint<T>& joint = get_joint(joint_index);
+    if (joint.num_positions() == 0) continue;  // Skip welds.
+
     // Sanity check: joint positions are in range.
     DRAKE_DEMAND(joint.position_start() >= position_offset);
     DRAKE_DEMAND(joint.position_start() + joint.num_positions() -
@@ -1963,6 +1967,8 @@ std::vector<std::string> MultibodyPlant<T>::GetVelocityNames(
 
   for (JointIndex joint_index : GetJointIndices()) {
     const Joint<T>& joint = get_joint(joint_index);
+    if (joint.num_positions() == 0) continue;  // Skip welds.
+
     const std::string prefix =
         add_model_instance_prefix
             ? fmt::format("{}_", GetModelInstanceName(joint.model_instance()))
@@ -1996,6 +2002,8 @@ std::vector<std::string> MultibodyPlant<T>::GetVelocityNames(
 
   for (const auto& joint_index : joint_indices) {
     const Joint<T>& joint = get_joint(joint_index);
+    if (joint.num_positions() == 0) continue;  // Skip welds.
+
     // Sanity check: joint velocities are in range.
     DRAKE_DEMAND(joint.velocity_start() >= velocity_offset);
     DRAKE_DEMAND(joint.velocity_start() + joint.num_velocities() -
