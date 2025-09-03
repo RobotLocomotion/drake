@@ -617,20 +617,6 @@ MODULE_SETTINGS = {
     # VTK's name mangling of these is a little bit weak (it just adds "vtk" to
     # the front, leaving them as public symbols); we might want to improve upon
     # that later on.
-    "VTK::doubleconversion": {
-        "cmake_undefines": [
-            "VTK_MODULE_USE_EXTERNAL_vtkdoubleconversion",
-        ],
-        "hdrs_content": {
-            "ThirdParty/doubleconversion/vtkdoubleconversion_export.h": """
-                #pragma once
-                #define VTKDOUBLECONVERSION_EXPORT
-            """,
-        },
-        "srcs_glob_extra": [
-            "ThirdParty/doubleconversion/**/*.cc",
-        ],
-    },
     "VTK::fast_float": {
         "cmake_undefines": [
             "VTK_MODULE_USE_EXTERNAL_vtkfast_float",
