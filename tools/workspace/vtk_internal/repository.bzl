@@ -215,6 +215,7 @@ def vtk_internal_repository(
             ":patches/rendering_opengl2_preserve_direct_light_specular_reflections.patch",  # noqa
             ":patches/vtkfast_float_hidden.patch",
             ":patches/vtkpugixml_hidden.patch",
+            ":patches/vtkscn_hidden.patch",
             ":patches/vtksys_hidden.patch",
         ],
         settings_bzl = ":settings.bzl",
