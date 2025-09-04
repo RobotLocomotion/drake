@@ -1161,6 +1161,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "characterization_utilities_test",
+    srcs = ["test/test/characterization_utilities_test.cc"],
     deps = [":characterization_utilities"],
 )
 
