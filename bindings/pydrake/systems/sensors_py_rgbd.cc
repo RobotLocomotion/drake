@@ -1,3 +1,5 @@
+#include <memory>
+
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"

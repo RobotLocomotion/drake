@@ -1,3 +1,6 @@
+#include <string>
+#include <vector>
+
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/visualization/visualization_py.h"
