@@ -173,6 +173,7 @@ single_version_override(
     patches = [
         "//tools/workspace/google_benchmark:patches/console_allocs.patch",
         "//tools/workspace/google_benchmark:patches/remove_overloaded_fixture_set_up.patch",  # noqa
+        "//tools/workspace/google_benchmark:patches/reporter_scaling.patch",
         "//tools/workspace/google_benchmark:patches/string_precision.patch",
     ],
 )
