@@ -68,7 +68,7 @@ tools/wheel
 <td><code>geometry general</code></td>
 <td>Geometry infrastructure or topics that defy categorization into other
   geometry components.</td>
-<td>rpoyner-tri</td>
+<td>SeanCurtis-TRI</td>
 <td><small>
 n/a
 </small></td>
