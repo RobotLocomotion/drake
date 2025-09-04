@@ -897,7 +897,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           } else {
             internal::AddTangentToPolytope(
                 E, closest,
-                options.sampled_iris_options.configuration_space_margin, &A, &b,
+                options.sampled_iris_options.configuration_space_margin,
+                options.sampled_iris_options.relax_margin, &A, &b,
                 &num_constraints);
           }
           P_candidate =

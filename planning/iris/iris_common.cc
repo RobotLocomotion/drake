@@ -95,7 +95,7 @@ float calc_delta_min(double delta, int max_iterations) {
 void AddTangentToPolytope(
     const geometry::optimization::Hyperellipsoid& E,
     const Eigen::Ref<const Eigen::VectorXd>& point,
-    double configuration_space_margin,
+    double configuration_space_margin, bool relax_margin,
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>* A,
     Eigen::VectorXd* b, int* num_constraints) {
   while (*num_constraints >= A->rows()) {
@@ -104,17 +104,27 @@ void AddTangentToPolytope(
     b->conservativeResize(b->rows() * 2);
   }
 
-  A->row(*num_constraints) =
-      (E.A().transpose() * E.A() * (point - E.center())).normalized();
-  (*b)[*num_constraints] =
-      A->row(*num_constraints) * point - configuration_space_margin;
-  if (A->row(*num_constraints) * E.center() > (*b)[*num_constraints]) {
-    throw std::logic_error(
-        "The current center of the IRIS region is within "
-        "sampled_iris_options.configuration_space_margin of being "
-        "infeasible.  Check your sample point and/or any additional "
-        "constraints you've passed in via the options. The configuration "
-        "space surrounding the sample point must have an interior.");
+  while (true) {
+    A->row(*num_constraints) =
+        (E.A().transpose() * E.A() * (point - E.center())).normalized();
+    (*b)[*num_constraints] =
+        A->row(*num_constraints) * point - configuration_space_margin;
+    // Check if the new hyperplane cuts off the seed point. If it does, we throw
+    // an error or decrease the configuration space margin.
+    if (A->row(*num_constraints) * E.center() > (*b)[*num_constraints]) {
+      if (relax_margin) {
+        configuration_space_margin /= 2.0;
+      } else {
+        throw std::logic_error(
+            "The current center of the IRIS region is within "
+            "sampled_iris_options.configuration_space_margin of being "
+            "infeasible. Check your sample point and/or any additional "
+            "constraints you've passed in via the options. The configuration "
+            "space surrounding the sample point must have an interior.");
+      }
+    } else {
+      break;
+    }
   }
   *num_constraints += 1;
 }

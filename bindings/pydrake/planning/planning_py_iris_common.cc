@@ -49,6 +49,8 @@ void DefinePlanningCommonSampledIrisOptions(py::module m) {
       .def_readwrite("configuration_space_margin",
           &CommonSampledIrisOptions::configuration_space_margin,
           cls_doc.configuration_space_margin.doc)
+      .def_readwrite("relax_margin", &CommonSampledIrisOptions::relax_margin,
+          cls_doc.relax_margin.doc)
       .def_readwrite("termination_threshold",
           &CommonSampledIrisOptions::termination_threshold,
           cls_doc.termination_threshold.doc)
@@ -79,6 +81,7 @@ void DefinePlanningCommonSampledIrisOptions(py::module m) {
             "verbose={}, "
             "require_sample_point_is_contained={}, "
             "configuration_space_margin={}, "
+            "relax_margin={}, "
             "termination_threshold={}, "
             "relative_termination_threshold={}, "
             "remove_all_collisions_possible={}, "
@@ -90,8 +93,8 @@ void DefinePlanningCommonSampledIrisOptions(py::module m) {
                 self.max_iterations, self.max_iterations_separating_planes,
                 self.max_separating_planes_per_iteration, self.parallelism,
                 self.verbose, self.require_sample_point_is_contained,
-                self.configuration_space_margin, self.termination_threshold,
-                self.relative_termination_threshold,
+                self.configuration_space_margin, self.relax_margin,
+                self.termination_threshold, self.relative_termination_threshold,
                 self.remove_all_collisions_possible, self.random_seed,
                 self.mixing_steps, self.sample_particles_in_parallel);
       });
