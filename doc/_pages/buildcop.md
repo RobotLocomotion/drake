@@ -72,12 +72,12 @@ change, every CI failure should result in an issue, comment on an existing
 issue, revert PR, or fix-forward PR.  There will of course be exceptions to
 this rule.
 
-Use the [DrakeDevelopers Slack channel #buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
+Use the [DrakeDevelopers Slack channel #ci](https://drakedevelopers.slack.com/archives/C270MN28G)
 to discuss build issues with your partner build cop and other Drake
 contributors.
 
 At the end of each rotation, the build cop should
-notify the next build cop on the [DrakeDevelopers Slack channel #buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/).
+notify the next build cop on the [DrakeDevelopers Slack channel #ci](https://drakedevelopers.slack.com/archives/C270MN28G).
 
 # Revert Template
 
@@ -182,7 +182,7 @@ Message indicating success:
 The exact key hash is not important, it's just important that it's non-empty.
 
 If there is an issue with the cache server, post the details on the
-[#buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
+[#ci](https://drakedevelopers.slack.com/archives/C270MN28G/)
 channel on Slack, ensuring that `@betsymcphail` is mentioned in the message.
 
 ## Monitor the Build Queue
@@ -193,7 +193,7 @@ infrastructure issues that prevent nodes from launching. In this case, as the
 jobs never fail, build cops are not notified via email.
 
 If jobs seems to be stuck, report the issue by tagging `@betsymcphail` on the
-[#buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
+[#ci](https://drakedevelopers.slack.com/archives/C270MN28G/)
 channel on Slack.
 
 ## Respond to Breakage
@@ -323,10 +323,10 @@ vendor's control, spread the news and simply wait it out.
 
 Details of failures in the [drake-external-examples](https://github.com/RobotLocomotion/drake-external-examples/)
 repository, which may be denoted by red "build failing" icons at the top of the build
-dashboard on Jenkins, should be posted to the [#buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
+dashboard on Jenkins, should be posted to the [#ci](https://drakedevelopers.slack.com/archives/C270MN28G/)
 channel on Slack, ensuring that `@betsymcphail` is mentioned in the message.
 
 ## Documentation Repo Failures
 If the [automatically generated documentation repo](https://github.com/RobotLocomotion/RobotLocomotion.github.io/commits/master)
-fails, post in [DrakeDevelopers Slack channel #buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/),
+fails, post in [DrakeDevelopers Slack channel #ci](https://drakedevelopers.slack.com/archives/C270MN28G/),
 and try to locate the offensive Drake commit. Each commit in the documentation repo is associated with a matching Drake commit.
