@@ -1,6 +1,9 @@
 #include "drake/geometry/proximity/bvh.h"
 
+#include <algorithm>
+#include <set>
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

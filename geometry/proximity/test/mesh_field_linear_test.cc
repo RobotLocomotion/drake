@@ -1,8 +1,11 @@
 #include "drake/geometry/proximity/mesh_field_linear.h"
 
 #include <cmath>
+#include <limits>
 #include <memory>
+#include <set>
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

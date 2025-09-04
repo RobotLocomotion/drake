@@ -1,6 +1,8 @@
 #include "drake/geometry/proximity/deformable_mesh_intersection.h"
 
+#include <limits>
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

@@ -1,7 +1,10 @@
 #include "drake/geometry/scene_graph.h"
 
+#include <limits>
 #include <memory>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>

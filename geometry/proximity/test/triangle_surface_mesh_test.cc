@@ -1,7 +1,9 @@
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 
+#include <limits>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

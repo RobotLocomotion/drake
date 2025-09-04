@@ -1,5 +1,11 @@
 #include "drake/geometry/proximity/obb.h"
 
+#include <limits>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
