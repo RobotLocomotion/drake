@@ -1,5 +1,11 @@
 #include "drake/bindings/pydrake/multibody/tree_py.h"
 
+#include <limits>
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
+
 #include "pybind11/eval.h"
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"

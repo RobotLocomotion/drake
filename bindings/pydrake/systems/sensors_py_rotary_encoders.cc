@@ -1,3 +1,5 @@
+#include <vector>
+
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"

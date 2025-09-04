@@ -2,6 +2,7 @@
  They can be found in the pydrake.geometry module. */
 
 #include <filesystem>
+#include <vector>
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
