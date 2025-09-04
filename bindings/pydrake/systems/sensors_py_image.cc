@@ -1,3 +1,5 @@
+#include <string>
+
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"

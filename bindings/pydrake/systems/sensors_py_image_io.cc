@@ -1,3 +1,7 @@
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"

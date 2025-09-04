@@ -1,5 +1,11 @@
 #include "drake/bindings/pydrake/systems/framework_py_systems.h"
 
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "pybind11/eval.h"
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"

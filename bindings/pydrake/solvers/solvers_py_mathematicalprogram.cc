@@ -1,6 +1,9 @@
 #include <cstddef>
 #include <memory>
 #include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"

@@ -1,5 +1,8 @@
 /* @file This contains the bounding box functions for pydrake.geometry. */
 
+#include <set>
+#include <utility>
+
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/geometry/proximity/aabb.h"
