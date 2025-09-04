@@ -522,6 +522,12 @@ MODULE_SETTINGS = {
             "//conditions:default": [
                 # On linux, we also want the EGL and GLX renderers.
                 "Rendering/OpenGL2/vtkEGLRenderWindow.cxx",
+                "Rendering/OpenGL2/Private/vtkEGLConfig.h",
+                "Rendering/OpenGL2/Private/vtkEGLConfig.cxx",
+                "Rendering/OpenGL2/Private/vtkEGLDefaultConfig.h",
+                "Rendering/OpenGL2/Private/vtkEGLDefaultConfig.cxx",
+                "Rendering/OpenGL2/Private/vtkEGLRenderWindowInternals.h",
+                "Rendering/OpenGL2/Private/vtkEGLRenderWindowInternals.cxx",
                 "Rendering/OpenGL2/vtkXOpenGLRenderWindow.cxx",
             ],
         }),
