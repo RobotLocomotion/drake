@@ -202,6 +202,7 @@ def vtk_internal_repository(
             ":patches/upstream/io_import_errors.patch",
             ":patches/upstream/rendering_core_vtkcomposite_exception.patch",
             ":patches/upstream/vtkpugixml_global_ctor.patch",
+            ":patches/common_core_fmt9.patch",
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_rm_cin_prompting.patch",
             ":patches/common_core_version.patch",
