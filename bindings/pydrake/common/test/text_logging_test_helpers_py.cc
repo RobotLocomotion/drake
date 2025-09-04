@@ -1,6 +1,7 @@
 #include <atomic>
 #include <chrono>
 #include <future>
+#include <memory>
 #include <thread>
 
 #include "pybind11/pybind11.h"

@@ -1,5 +1,9 @@
 #include "drake/systems/sensors/rgbd_sensor_discrete.h"
 
+#include <memory>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/geometry/scene_graph.h"

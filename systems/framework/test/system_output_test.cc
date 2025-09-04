@@ -1,7 +1,9 @@
 #include "drake/systems/framework/system_output.h"
 
+#include <algorithm>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include <gtest/gtest.h>
 

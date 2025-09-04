@@ -1,5 +1,8 @@
 #include "drake/systems/rendering/multibody_position_to_geometry_pose.h"
 
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

@@ -1,3 +1,5 @@
+#include <utility>
+
 #include <fmt/format.h>
 
 #include "drake/common/symbolic/monomial_util.h"

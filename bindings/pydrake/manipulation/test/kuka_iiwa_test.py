@@ -8,7 +8,6 @@ import numpy as np
 import weakref
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.lcm import DrakeLcm
 from pydrake.math import RigidTransform
 from pydrake.multibody.parsing import (
@@ -136,21 +135,6 @@ class TestKukaIiwa(unittest.TestCase):
             iiwa_instance=plant.GetModelInstanceByName("iiwa7"),
             driver_config=mut.IiwaDriver(), controller_plant=controller_plant,
         )
-        self.assertGreater(len(builder.GetSystems()), tare)
-
-    def test_deprecated_kuka_iiwa_build_control(self):
-        builder, plant, controller_plant = (
-            self.make_builder_plant_controller_plant()
-        )
-        tare = len(builder.GetSystems())
-        with catch_drake_warnings(expected_count=1):
-            mut.BuildIiwaControl(
-                plant=plant,
-                iiwa_instance=plant.GetModelInstanceByName("iiwa7"),
-                controller_plant=controller_plant, lcm=DrakeLcm(),
-                builder=builder, ext_joint_filter_tau=0.12,
-                desired_iiwa_kp_gains=np.arange(7),
-            )
         self.assertGreater(len(builder.GetSystems()), tare)
 
     def test_kuka_iiwa_driver(self):

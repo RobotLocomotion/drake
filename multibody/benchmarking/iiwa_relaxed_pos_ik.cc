@@ -4,6 +4,10 @@
 // This benchmark is intended to analyze the performance of nonlinear
 // optimization with position constraints.
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
 #include "drake/multibody/parsing/parser.h"

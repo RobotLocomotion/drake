@@ -1,7 +1,9 @@
 #include "drake/multibody/triangle_quadrature/triangle_quadrature.h"
 
 #include <algorithm>
+#include <limits>
 #include <numeric>
+#include <vector>
 
 #include <gtest/gtest.h>
 

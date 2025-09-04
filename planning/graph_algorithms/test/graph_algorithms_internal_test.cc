@@ -1,5 +1,7 @@
 #include "drake/planning/graph_algorithms/graph_algorithms_internal.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

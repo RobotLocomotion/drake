@@ -1,5 +1,10 @@
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 
+#include <limits>
+#include <memory>
+#include <unordered_map>
+#include <vector>
+
 #include <fcl/fcl.h>
 #include <gtest/gtest.h>
 

@@ -11,7 +11,6 @@ import scipy.sparse
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import kDrakeAssertIsArmed, Parallelism
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
 from pydrake.forwarddiff import jacobian
 from pydrake.math import ge
@@ -1380,8 +1379,6 @@ class TestMathematicalProgram(unittest.TestCase):
             prog.SetSolverOption(solver, "india", 2)
             prog.SetSolverOption(solver, "sierra", "3")
             expected = {"foxtrot": 1.0, "india": 2, "sierra": "3"}
-            with catch_drake_warnings(expected_count=1):
-                self.assertDictEqual(prog.GetSolverOptions(solver), expected)
             old_options = prog.solver_options()
             self.assertEqual(old_options.options, {
                 gurobi_id.name(): expected,
@@ -1391,8 +1388,6 @@ class TestMathematicalProgram(unittest.TestCase):
             self.assertNotEqual(new_options, old_options)
             prog.SetSolverOptions(new_options)
             expected["india"] = 4
-            with catch_drake_warnings(expected_count=1):
-                self.assertDictEqual(prog.GetSolverOptions(solver), expected)
             self.assertEqual(old_options.options, {
                 gurobi_id.name(): expected,
             })
@@ -1424,19 +1419,6 @@ class TestMathematicalProgram(unittest.TestCase):
                 for key, value in expected_common.items()
             )
         })
-        with catch_drake_warnings(expected_count=1):
-            self.assertDictEqual(dut.GetOptions(solver_id), expected_dummy)
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(dut.common_solver_options(), expected_common)
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(dut.get_print_to_console(), True)
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(dut.get_print_file_name(), "print.log")
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(dut.get_standalone_reproduction_file_name(),
-                             "repro.txt")
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(dut.get_max_threads(), 4)
         self.assertTrue(dut == dut)
         self.assertFalse(dut != dut)
         copy.deepcopy(dut)

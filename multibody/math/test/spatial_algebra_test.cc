@@ -1,5 +1,7 @@
 #include "drake/multibody/math/spatial_algebra.h"
 
+#include <algorithm>
+#include <limits>
 #include <sstream>
 #include <string>
 

@@ -1,5 +1,11 @@
 #include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
 
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

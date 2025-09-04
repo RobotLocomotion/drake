@@ -1,5 +1,7 @@
 #include "drake/geometry/proximity/detect_zero_simplex.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 namespace drake {

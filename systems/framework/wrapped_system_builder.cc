@@ -2,6 +2,9 @@
 #include "drake/systems/framework/wrapped_system.h"
 /* clang-format on */
 
+#include <memory>
+#include <utility>
+
 #include "drake/common/default_scalars.h"
 #include "drake/systems/framework/diagram_builder.h"
 

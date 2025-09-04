@@ -1,5 +1,7 @@
 #include "drake/systems/analysis/radau_integrator.h"
 
+#include <limits>
+#include <memory>
 #include <vector>
 
 #include <gtest/gtest.h>

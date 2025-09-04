@@ -1,9 +1,13 @@
 #include "drake/geometry/meshcat.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <memory>
+#include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include <fmt/format.h>

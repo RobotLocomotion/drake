@@ -1,5 +1,6 @@
 #include "drake/geometry/deformable_mesh_with_bvh.h"
 
+#include <algorithm>
 #include <limits>
 #include <utility>
 

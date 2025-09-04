@@ -1,6 +1,8 @@
 #include "drake/math/roll_pitch_yaw.h"
 
 #include <cmath>
+#include <limits>
+#include <string>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

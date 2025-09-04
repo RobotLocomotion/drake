@@ -1,5 +1,13 @@
 #include "drake/planning/iris/iris_np2.h"
 
+#include <algorithm>
+#include <map>
+#include <memory>
+#include <set>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
 #include <common_robotics_utilities/parallelism.hpp>
 
 #include "drake/common/text_logging.h"
@@ -399,7 +407,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
   if (options.sampled_iris_options.prog_with_additional_constraints) {
     DRAKE_THROW_UNLESS(options.sampled_iris_options
-                           .prog_with_additional_constraints->num_vars() == nq);
+                           .prog_with_additional_constraints->num_vars() ==
+                       parameterization_dimension);
   }
   // TODO(cohnt): Allow users to set this parameter if it ever becomes needed.
   const double constraints_tol = 1e-6;

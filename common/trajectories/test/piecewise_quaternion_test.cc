@@ -1,6 +1,8 @@
 #include "drake/common/trajectories/piecewise_quaternion.h"
 
+#include <algorithm>
 #include <random>
+#include <vector>
 
 #include <gtest/gtest.h>
 

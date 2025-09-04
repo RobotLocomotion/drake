@@ -36,11 +36,11 @@ node(getNodeLabel()) {
         daysToKeepStr: '90',
         artifactDaysToKeepStr: '90'
       )
+    ),
+    disableConcurrentBuilds(
+      abortPrevious: true
     )
   ]
-  if (env.JOB_NAME.contains("cache-server-health-check")) {
-    props << disableConcurrentBuilds()
-  }
   properties(props)
 
   stage('test') {

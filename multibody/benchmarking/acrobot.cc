@@ -3,6 +3,9 @@
 //
 // This program is a successor to Hongkai Dai's original benchmark; see #8482.
 
+#include <memory>
+#include <utility>
+
 #include <benchmark/benchmark.h>
 
 #include "drake/common/eigen_types.h"

@@ -1,12 +1,16 @@
 #include "drake/multibody/plant/multibody_plant.h"
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <numbers>
 #include <regex>
 #include <set>
+#include <string>
 #include <tuple>
+#include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

@@ -1,5 +1,7 @@
 #include "drake/systems/primitives/vector_log.h"
 
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/default_scalars.h"

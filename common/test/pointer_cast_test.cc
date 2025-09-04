@@ -1,5 +1,8 @@
 #include "drake/common/pointer_cast.h"
 
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"

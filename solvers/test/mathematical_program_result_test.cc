@@ -1,6 +1,10 @@
 #include "drake/solvers/mathematical_program_result.h"
 
 #include <limits>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 #include <gtest/gtest.h>
 

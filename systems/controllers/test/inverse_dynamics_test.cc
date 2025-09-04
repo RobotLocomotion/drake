@@ -1,8 +1,10 @@
 #include "drake/systems/controllers/inverse_dynamics.h"
 
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include <gtest/gtest.h>
 

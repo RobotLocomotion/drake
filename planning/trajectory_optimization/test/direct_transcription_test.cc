@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <memory>
 #include <vector>
 
 #include <fmt/format.h>

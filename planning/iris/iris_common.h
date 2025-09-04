@@ -227,7 +227,7 @@ class IrisParameterizationFunction {
    * the order that they should be evaluated. Each `Variable` in `variables`
    * must be used, each `Variable` used in `expression_parameterization` must
    * appear in `variables`, and there must be no duplicates in `variables`.
-   * @note This currently only populates the VectorX<double> parameterization.
+   * @note This constructor only populates the VectorX<double> parameterization.
    * @note Expression parameterizations are always threadsafe.
    * @throws if the number of variables used across
    * `expression_parameterization` does not match `ssize(variables)`.
@@ -243,7 +243,8 @@ class IrisParameterizationFunction {
    * rational kinematic parameterization. Regions are grown in the `s`
    * variables, so as to minimize collisions in the `q` variables. See
    * RationalForwardKinematics for details.
-   * @note This currently only populates the VectorX<double> parameterization.
+   * @note This constructor populates the VectorX<double> and
+   * VectorX<AutoDiffXd> parameterizations.
    * @note The user is responsible for ensuring `kin` (and the underlying
    * MultibodyPlant it is built on) is kept alive. If that object is deleted,
    * then the parameterization can no longer be used. */

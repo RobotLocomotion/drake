@@ -1,6 +1,9 @@
 #include "drake/geometry/proximity/collision_filter.h"
 
+#include <set>
 #include <tuple>
+#include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>

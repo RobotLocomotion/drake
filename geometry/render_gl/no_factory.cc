@@ -1,3 +1,5 @@
+#include <memory>
+
 #include "drake/geometry/render_gl/factory.h"
 #include "drake/geometry/render_gl/render_engine_gl_params.h"
 

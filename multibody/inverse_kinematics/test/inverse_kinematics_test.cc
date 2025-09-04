@@ -1,5 +1,7 @@
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 
+#include <memory>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

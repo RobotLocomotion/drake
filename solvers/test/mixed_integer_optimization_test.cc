@@ -1,3 +1,6 @@
+#include <limits>
+#include <list>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

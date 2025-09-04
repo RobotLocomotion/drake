@@ -64,7 +64,7 @@ drake_py_binary(
         ":doxygen_input.txt",
         "//:.bazelproject",
         "//tools/workspace:cmake_configure_file",
-        "@doxygen",
+        "@doxygen_internal//:doxygen",
         "@rules_python//python/runfiles",
     ],
     test_rule_args = [

@@ -2,7 +2,10 @@
 #include "drake/multibody/topology/graph.h"
 /* clang-format on */
 
+#include <set>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>

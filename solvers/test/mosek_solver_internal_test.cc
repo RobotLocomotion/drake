@@ -1,6 +1,9 @@
 #include "drake/solvers/mosek_solver_internal.h"
 
 #include <limits>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

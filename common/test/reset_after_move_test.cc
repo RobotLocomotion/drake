@@ -1,6 +1,7 @@
 #include "drake/common/reset_after_move.h"
 
 #include <type_traits>
+#include <utility>
 
 #include <gtest/gtest.h>
 

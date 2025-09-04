@@ -1,6 +1,8 @@
 #include "drake/geometry/query_object.h"
 
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

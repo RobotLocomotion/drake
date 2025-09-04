@@ -1,4 +1,3 @@
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -55,46 +54,6 @@ void DefineSolversOptions(py::module m) {
     DefAttributesUsingSerialize(&cls);
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("GetOptions",
-            WrapDeprecated(doc.SolverOptions.GetOptionsDouble.doc_deprecated,
-                [](const SolverOptions& solver_options, SolverId solver_id) {
-                  py::dict out;
-                  py::object update = out.attr("update");
-                  update(solver_options.GetOptionsDouble(solver_id));
-                  update(solver_options.GetOptionsInt(solver_id));
-                  update(solver_options.GetOptionsStr(solver_id));
-                  return out;
-                }),
-            py::arg("solver_id"),
-            doc.SolverOptions.GetOptionsDouble.doc_deprecated)
-        .def("common_solver_options",
-            WrapDeprecated(
-                doc.SolverOptions.common_solver_options.doc_deprecated,
-                &SolverOptions::common_solver_options),
-            doc.SolverOptions.common_solver_options.doc_deprecated)
-        .def("get_print_file_name",
-            WrapDeprecated(doc.SolverOptions.get_print_file_name.doc_deprecated,
-                &SolverOptions::get_print_file_name),
-            doc.SolverOptions.get_print_file_name.doc_deprecated)
-        .def("get_print_to_console",
-            WrapDeprecated(
-                doc.SolverOptions.get_print_to_console.doc_deprecated,
-                &SolverOptions::get_print_to_console),
-            doc.SolverOptions.get_print_to_console.doc_deprecated)
-        .def("get_standalone_reproduction_file_name",
-            WrapDeprecated(
-                doc.SolverOptions.get_standalone_reproduction_file_name
-                    .doc_deprecated,
-                &SolverOptions::get_standalone_reproduction_file_name))
-        .def("get_max_threads",
-            WrapDeprecated(doc.SolverOptions.get_max_threads.doc_deprecated,
-                &SolverOptions::get_max_threads),
-            doc.SolverOptions.get_max_threads.doc_deprecated);
-#pragma GCC diagnostic pop
   }
 }
 

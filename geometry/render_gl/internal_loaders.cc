@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <stdexcept>
+#include <string>
 
 #if !defined(__APPLE__)
 #include <vtkglad/include/glad/egl.h>

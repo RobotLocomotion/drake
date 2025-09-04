@@ -1,5 +1,7 @@
 #include "drake/multibody/inverse_kinematics/differential_inverse_kinematics.h"
 
+#include <algorithm>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <random>
