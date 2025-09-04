@@ -128,7 +128,7 @@ def emailFailureResults() {
 }
 
 /**
- * Deletes the workspace and tmp directories, for use at the end of a build.
+ * Deletes the workspace and tmp directories.
  */
 def cleanWorkspace() {
   dir(env.WORKSPACE) {
@@ -176,9 +176,12 @@ node(getNodeLabel()) {
       ansiColor('xterm') {
         timestamps {
           try {
-            // Always use drake-ci/main and drake/master for production builds.
-            def scmVars = checkout('main', 'master')
-            doMainBuild(scmVars)
+            cleanWorkspace()
+            dir(env.WORKSPACE) {
+              // Always use drake-ci/main and drake/master for production builds.
+              def scmVars = checkout('main', 'master')
+              doMainBuild(scmVars)
+            }
           } finally {
             try {
               checkBuildResult()
