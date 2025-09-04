@@ -158,9 +158,8 @@ TEST_P(TwoBodiesTest, ConfirmConstraintProperties) {
   // constraint. We'll observe a non-zero value when evaluating the constraint
   // function.
   const double kDistanceAoBo = 2.0;
-  plant_.SetFreeBodyPoseInWorldFrame(
-      context_.get(), *bodyB_,
-      RigidTransformd(Vector3d(kDistanceAoBo, 0.0, 0.0)));
+  plant_.SetFreeBodyPose(context_.get(), *bodyB_,
+                         RigidTransformd(Vector3d(kDistanceAoBo, 0.0, 0.0)));
 
   const ContactProblemCache<double>& problem_cache =
       SapDriverTest::EvalContactProblemCache(sap_driver(), *context_);

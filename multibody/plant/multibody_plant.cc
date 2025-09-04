@@ -1221,7 +1221,7 @@ std::unordered_set<BodyIndex> MultibodyPlant<T>::GetFloatingBaseBodies() const {
   std::unordered_set<BodyIndex> floating_bodies;
   for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
-    if (body.is_floating()) floating_bodies.insert(body.index());
+    if (body.is_floating_base_body()) floating_bodies.insert(body.index());
   }
   return floating_bodies;
 }
@@ -1277,7 +1277,7 @@ void MultibodyPlant<T>::SetFreeBodyPoseInWorldFrame(
     systems::Context<T>* context, const RigidBody<T>& body_C,
     const math::RigidTransform<T>& X_WJc) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  DRAKE_THROW_UNLESS(body_C.is_floating());
+  DRAKE_THROW_UNLESS(body_C.is_floating_base_body());
   this->ValidateContext(context);
   internal_tree().SetFreeBodyPoseOrThrow(body_C, X_WJc, context);
 }
@@ -1285,8 +1285,9 @@ void MultibodyPlant<T>::SetFreeBodyPoseInWorldFrame(
 template <typename T>
 void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
     systems::Context<T>* context, const Frame<T>& frame_F,
-    const RigidBody<T>& body_C, const math::RigidTransform<T>& X_FJc) const {
+    const RigidBody<T>& body_C, const math::RigidTransform<T>& X_FC) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(body_C.is_floating_base_body());
   this->ValidateContext(context);
 
   if (!internal_tree()
@@ -1303,9 +1304,9 @@ void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
   // TODO(sherm1) This shouldn't be state dependent since F is anchored, but
   //  it currently is due to the way we evaluate poses.
   const RigidTransform<T>& X_WP = EvalBodyPoseInWorld(*context, frame_F.body());
-  // Pose of floating base body C's child frame Jc in the world frame.
-  const RigidTransform<T> X_WJc = X_WP * X_PF * X_FJc;
-  SetFreeBodyPoseInWorldFrame(context, body_C, X_WJc);
+  // Pose of floating base body C's body frame in the world frame.
+  const RigidTransform<T> X_WC = X_WP * X_PF * X_FC;
+  SetFreeBodyPose(context, body_C, X_WC);
 }
 
 template <typename T>

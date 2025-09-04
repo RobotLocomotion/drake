@@ -109,7 +109,7 @@ int do_main() {
 
   // Set the pelvis frame P initial pose.
   const Translation3d X_WP(0.0, 0.0, 0.95);
-  plant.SetFreeBodyPoseInWorldFrame(&plant_context, pelvis, X_WP);
+  plant.SetFreeBodyPose(&plant_context, pelvis, X_WP);
 
   auto simulator =
       MakeSimulatorFromGflags(*diagram, std::move(diagram_context));
