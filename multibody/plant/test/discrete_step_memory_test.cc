@@ -1,5 +1,7 @@
 #include "drake/multibody/plant/discrete_step_memory.h"
 
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/multibody/plant/multibody_plant.h"

@@ -1,5 +1,13 @@
 #include "drake/planning/iris/iris_np2.h"
 
+#include <algorithm>
+#include <map>
+#include <memory>
+#include <set>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
 #include <common_robotics_utilities/parallelism.hpp>
 
 #include "drake/common/text_logging.h"
