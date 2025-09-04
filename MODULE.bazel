@@ -154,6 +154,16 @@ use_repo(
 # Load developer module dependencies.
 
 bazel_dep(
+    # N.B. This isn't actually used by Drake (yet). We need to declare it here
+    # for now so that our `visibility = ...` can refer to it.
+    name = "googletest",
+    version = "1.17.0",
+    # TODO(jwnimmer-tri) Try to set dev_dependency = True, but at the moment
+    # that prevents downstream from using even non-test code, maybe due to our
+    # bazel query-based tests?
+)
+
+bazel_dep(
     name = "google_benchmark",
     version = "1.9.4",
     dev_dependency = True,

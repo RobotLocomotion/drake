@@ -77,13 +77,17 @@ drake_cc_library(
 
 drake_cc_library(
     name = "gtest_printers",
-    testonly = 1,
     hdrs = [
         "eigen_printer.h",
         "fmt_format_printer.h",
     ],
     tags = ["exclude_from_package"],
-    visibility = ["@gtest//:__pkg__"],
+    visibility = [
+        # We allow two spellings for where gtest came from -- the bazel central
+        # registry @googletest, or our traditional module extension @gtest.
+        "@googletest//:__pkg__",
+        "@gtest//:__pkg__",
+    ],
     deps = [
         "//common:fmt",
         "@eigen",
