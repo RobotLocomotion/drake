@@ -9,6 +9,7 @@
 DEFINE_bool(memory_manager, true, "Enable memory reporting");
 
 int main(int argc, char** argv) {
+  benchmark::MaybeReenterWithoutASLR(argc, argv);
   gflags::SetUsageMessage("see drake/tools/performance/README.md");
   for (int i = 1; i < argc; ++i) {
     if (std::string_view(argv[i]) == "--help") {
