@@ -814,7 +814,7 @@ def drake_cc_binary(
         **kwargs
     )
 
-    if "@gtest//:main" in deps:
+    if "@googletest//:gtest_main" in deps:
         fail("Use drake_cc_googletest to declare %s as a test" % name)
 
     if add_test_rule:
@@ -907,7 +907,7 @@ def drake_cc_googletest(
     By default, sets size="small" because that indicates a unit test.
     By default, sets name="test/${name}.cc" per Drake's filename convention.
     By default, sets use_default_main=True to use a default main() function.
-    Otherwise, it will depend on @gtest//:without_main.
+    Otherwise, it will depend on @googletest//:gtest.
 
     If disable_in_compilation_mode_dbg is True, then in debug-mode builds all
     test cases will be suppressed, so the test will trivially pass. This option
@@ -918,7 +918,7 @@ def drake_cc_googletest(
             "//common/test_utilities:drake_cc_googletest_main",
         ]
     else:
-        deps = deps + ["@gtest//:without_main"]
+        deps = deps + ["@googletest//:gtest"]
     new_args = args
     new_tags = tags
     if disable_in_compilation_mode_dbg:
@@ -1027,7 +1027,7 @@ def drake_cc_googletest_linux_only(
         tags = ["manual"],
         deps = select({
             enable_condition: deps + [
-                "@gtest//:without_main",
+                "@googletest//:gtest",
             ],
             "//conditions:default": [],
         }),

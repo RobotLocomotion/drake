@@ -53,7 +53,7 @@ drake_cc_library(
         "//multibody/parsing:parser",
         "//multibody/plant",
         "//solvers:solve",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 
