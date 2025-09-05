@@ -19,6 +19,25 @@ Reason for not upstreaming this patch: Drake-specific convention.
 
 --- cpplint.py
 +++ cpplint.py
+@@ -6909,7 +6909,7 @@
+     """Check if these two filenames belong to the same module.
+ 
+     The concept of a 'module' here is a as follows:
+-    foo.h, foo-inl.h, foo.cc, foo_test.cc and foo_unittest.cc belong to the
++    foo.h, foo-inl.h, foo.cc belong to the
+     same 'module' if they are in the same directory.
+     some/path/public/xyzzy and some/path/internal/xyzzy are also considered
+     to belong to the same module here.
+@@ -6943,9 +6943,6 @@
+         return (False, "")
+ 
+     filename_cc = filename_cc[: -(len(fileinfo_cc.Extension()))]
+-    if matched_test_suffix := re.search(_TEST_FILE_SUFFIX, fileinfo_cc.BaseName()):
+-        filename_cc = filename_cc[: -len(matched_test_suffix.group(1))]
+-
+     filename_cc = filename_cc.replace("/public/", "/")
+     filename_cc = filename_cc.replace("/internal/", "/")
+ 
 @@ -7018,6 +7018,23 @@ def CheckForIncludeWhatYouUse(filename, clean_lines, include_state, error, io=co
      # Let's flatten the include_state include_list and copy it into a dictionary.
      include_dict = dict([item for sublist in include_state.include_list for item in sublist])
