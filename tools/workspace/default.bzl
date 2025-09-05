@@ -154,6 +154,7 @@ def _add_internal_repositories():
     stable_baselines3_internal_repository(name = "stable_baselines3_internal", mirrors = mirrors)  # noqa
     statsjs_internal_repository(name = "statsjs_internal", mirrors = mirrors)
     stduuid_internal_repository(name = "stduuid_internal", mirrors = mirrors)
+    styleguide_repository(name = "styleguide_internal", mirrors = mirrors)
     suitesparse_internal_repository(name = "suitesparse_internal", mirrors = mirrors)  # noqa
     sympy_py_internal_repository(name = "sympy_py_internal", mirrors = mirrors)
     tinygltf_internal_repository(name = "tinygltf_internal", mirrors = mirrors)
@@ -187,7 +188,6 @@ def _drake_dep_repositories_impl(module_ctx):
     pycodestyle_repository(name = "pycodestyle", mirrors = mirrors)
     python_repository(name = "python")
     snopt_repository(name = "snopt")
-    styleguide_repository(name = "styleguide", mirrors = mirrors)
     x11_repository(name = "x11")
     zlib_repository(name = "zlib")
     for name in ["eigen", "fmt", "spdlog"]:
@@ -195,6 +195,9 @@ def _drake_dep_repositories_impl(module_ctx):
             name = name,
             aliases = {name: "@drake//tools/workspace/" + name},
         )
+
+    # Deprecated 2026-01-01.
+    styleguide_repository(name = "styleguide", mirrors = mirrors)
 
 drake_dep_repositories = module_extension(
     implementation = _drake_dep_repositories_impl,

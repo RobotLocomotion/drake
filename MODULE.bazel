@@ -146,7 +146,6 @@ use_repo(
     "python",
     "snopt",
     "spdlog",
-    "styleguide",
     "x11",
     "zlib",
 )
@@ -244,6 +243,7 @@ use_repo(
     "stable_baselines3_internal",
     "statsjs_internal",
     "stduuid_internal",
+    "styleguide_internal",
     "suitesparse_internal",
     "sympy_py_internal",
     "tinygltf_internal",
