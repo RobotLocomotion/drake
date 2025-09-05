@@ -10,6 +10,11 @@ so would ordinarily be flagged by the upstream cpplint.py (see
 https://github.com/cpplint/cpplint/issues/218). We need to patch
 the code to allow for this special case.
 
+Note that we don't have any direct unit tests of this logic. If it
+fails to inherit the includes (false positive) then a bunch of lint
+will show up and that's good enough to notice. If it can't find the
+"related header" it wants to parse, it will crash and show up.
+
 Reason for not upstreaming this patch: Drake-specific convention.
 
 --- cpplint.py
