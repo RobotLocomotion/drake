@@ -46,7 +46,7 @@ void TetSubdivisionQuadrature<subdivisions>::SubdivideAndCollectCentroids(
   }
 
   /* Otherwise, subdivide this tetrahedron into 4 smaller ones by connecting
-   he centroid G to each face: */
+   the centroid G to each face: */
   const Vector3<double> G = ComputeCentroid(tet);
 
   const Tetrahedron t0{{G, tet.v[0], tet.v[1], tet.v[2]}};
