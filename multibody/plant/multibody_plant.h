@@ -3318,23 +3318,29 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @} <!-- State accessors and mutators -->
 
   /// @anchor mbp_working_with_free_bodies
-  /// @name            Working with free & floating base bodies
+  /// @name                Working with free bodies
   ///
   /// A %MultibodyPlant user adds sets of RigidBody and Joint objects to `this`
   /// plant to build a representation of a mechanical system of interest. At
   /// Finalize(), %MultibodyPlant builds a mathematical model of the system as a
   /// forest of trees, in which bodies (also called _links_) are modeled as
-  /// nodes and joints as edges. Each tree's root node (which we call that
-  /// tree's _base body_) must be connected to World by a joint defining the
-  /// base body's mobility. If the user doesn't provide a joint connecting a
-  /// base body to World, a "floating" (6-dof) joint is added automatically. In
-  /// that case we call that base body a _floating base body_. (See
+  /// nodes and joints as edges. Each body has a unique joint connecting it to
+  /// its parent body, with that joint defining the body's mobility relative to
+  /// its parent. Any body with six degrees of freedom relative to its parent is
+  /// called a _free body_.
+  ///
+  /// Each tree's root node (which we call that tree's _base body_) must be
+  /// connected to World by a joint defining the base body's mobility. If the
+  /// user doesn't provide a joint connecting a base body to World, a "floating"
+  /// (6-dof) joint is added automatically at Finalize(). That creates a special
+  /// kind of free body we call a _floating base body_. (See
   /// SetBaseBodyJointType() to change the type of floating joint used;
   /// typically it is a QuaternionFloatingJoint.)
   ///
-  /// A floating base body has two important properties:
+  /// A floating base body has two important properties that distinguish it from
+  /// a generic free body:
   /// - It can be posed arbitrarily in World, and
-  /// - Its joint to World does not exist until after Finalize().
+  /// - its joint to World does not exist until after Finalize().
   ///
   /// Consequently, we provide a pre-Finalize() API here to set the default pose
   /// of a floating base body in World. (See SetDefaultFloatingBaseBodyPose()
@@ -3356,8 +3362,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// RigidBody::floating_positions_start() and
   /// RigidBody::floating_velocities_start_in_v().
   ///
-  /// It is possible (and sometimes useful) to explicitly create a 6-dof joint
-  /// between two bodies. In that case we call the child body a _free body_,
+  /// It is sometimes useful to explicitly create a 6-dof joint
+  /// between two bodies. In that case the child body is a free body,
   /// because it has six degrees of freedom, but it is _not_ a floating base
   /// body since it has an explicitly-provided joint. Use the ordinary joint API
   /// to set the default or runtime pose of a free body.
@@ -3365,23 +3371,20 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   /// Returns the set of body indices corresponding to the floating base
   /// bodies in the model, in no particular order.
-  /// See @ref mbp_working_with_free_bodies "Working with free bodies" for the
-  /// definition of a "floating base body".
+  /// See @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if called pre-finalize, see Finalize().
   std::unordered_set<BodyIndex> GetFloatingBaseBodies() const;
 
-  /// Gets the pose of a free body's child frame in its parent frame.
-  /// @note The parent frame Jp is not necessarily the World frame W, and the
-  ///   child frame Jc is not necessarily the body frame B.
+  /// For a free body's 6dof joint, gets the pose X_JpJc of the child frame Jc
+  /// in its parent frame Jp.
   ///
-  /// If `body` is a floating base body, we have Jp==W so the returned transform
-  /// is X_WJc. If, in addition, Jc is the floating base body's body frame C
-  /// (typical) then the returned transform is X_WC, the pose of the floating
-  /// base body in World. Otherwise, to get X_WC requires evaluating kinematics
-  /// by calling EvalBodyPoseInWorld().
+  /// @note Unless `body` is a floating base body, the parent frame Jp is not
+  /// necessarily the World frame W, and the child frame Jc is not necessarily
+  /// the body frame C.
+  ///
   /// See @ref mbp_working_with_free_bodies "above for details".
-  /// @retval X_JpJc the current pose of the free body's child frame Jc
-  ///   in its parent frame Jp.
+  /// @retval X_JpJc The current pose of child frame Jc in its parent frame Jp.
+  ///                Returns X_WC if `body` C is a floating base body.
   /// @throws std::exception if `body` is not a free body.
   /// @throws std::exception if called pre-finalize.
   math::RigidTransform<T> GetFreeBodyPose(const systems::Context<T>& context,
@@ -3390,10 +3393,14 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetFreeBodyPoseOrThrow(context, body);
   }
 
-  /// Sets `context` to store the pose X_JpJc of a free body's child frame Jc in
-  /// its parent frame Jp.
-  /// @note The parent frame Jp is not necessarily the World frame W, and the
-  ///   child frame Jc is not necessarily the body frame C.
+  /// For a free body's 6dof joint, sets `context` to store the pose
+  /// X_JpJc of child frame Jc in its parent frame Jp.
+  ///
+  /// @note Unless `body` is a floating base body, the parent frame Jp is not
+  /// necessarily the World frame W, and the child frame Jc is not necessarily
+  /// the body frame C. For a floating base body C, this method sets X_WC, the
+  /// pose of body C in World.
+  ///
   /// See @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if `body` is not a free body.
   /// @throws std::exception if called pre-finalize.
