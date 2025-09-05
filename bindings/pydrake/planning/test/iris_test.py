@@ -77,6 +77,7 @@ def SetSampledIrisOptions(options):
     options.sampled_iris_options.parallelism = Parallelism(True)
     options.sampled_iris_options.verbose = False
     options.sampled_iris_options.configuration_space_margin = 1e-2
+    options.sampled_iris_options.relax_margin = False
     options.sampled_iris_options.termination_threshold = 1e-2
     options.sampled_iris_options.relative_termination_threshold = 1e-3
     options.sampled_iris_options.random_seed = 1337

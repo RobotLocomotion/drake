@@ -323,6 +323,25 @@ TEST_F(DoublePendulum, PostprocessRemoveCollisions) {
   EXPECT_FALSE(region.PointInSet(query_point));
 }
 
+TEST_F(DoublePendulum, RelaxMargin) {
+  IrisNp2Options options;
+  auto* scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
+
+  // Deliberately set the configuration space margin to be very large, so that
+  // the hyperplanes added will cut off the seed point and cause an error.
+  options.sampled_iris_options.configuration_space_margin = 1e8;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
+      ".*within sampled_iris_options\\.configuration_space_margin of being "
+      "infeasible.*");
+
+  options.sampled_iris_options.relax_margin = true;
+  EXPECT_NO_THROW(
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options));
+}
+
 TEST_F(DoublePendulumRationalForwardKinematics, FunctionParameterization) {
   IrisNp2Options options;
   auto* scene_graph_checker =
