@@ -296,7 +296,7 @@ drake_cc_library(
         "//multibody/plant",
         "//multibody/tree",
         "//planning:robot_diagram_builder",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 
@@ -464,7 +464,7 @@ drake_cc_library(
         "//solvers:ipopt_solver",
         "//solvers:snopt_solver",
         "//solvers:solve",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 

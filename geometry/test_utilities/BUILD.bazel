@@ -56,7 +56,7 @@ drake_cc_library(
     ],
     deps = [
         "//geometry:meshcat",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 

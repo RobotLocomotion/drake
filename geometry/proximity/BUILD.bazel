@@ -920,7 +920,7 @@ drake_cc_library(
         ":volume_to_surface_mesh",
         "//common:essential",
         "//math:geometric_transform",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 

@@ -75,7 +75,7 @@ cc_test(
     deps = [
         ":common_robotics_utilities",
         "@eigen",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -87,7 +87,7 @@ cc_test(
     deps = [
         ":common_robotics_utilities",
         "@eigen",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -99,7 +99,7 @@ cc_test(
     deps = [
         ":common_robotics_utilities",
         "@eigen",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -119,7 +119,7 @@ cc_test(
     timeout = "moderate",
     deps = [
         ":common_robotics_utilities",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -136,7 +136,7 @@ cc_test(
     deps = [
         ":common_robotics_utilities",
         "@eigen",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -149,7 +149,7 @@ cc_test(
     tags = ["no_kcov"],
     deps = [
         ":common_robotics_utilities",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -161,7 +161,7 @@ cc_test(
     deps = [
         ":common_robotics_utilities",
         "@eigen",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -173,7 +173,7 @@ cc_test(
     deps = [
         ":common_robotics_utilities",
         "@eigen",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 

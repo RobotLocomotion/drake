@@ -58,6 +58,8 @@ selects.config_setting_group(
     ],
 )
 
+DEPRECATION = "WARNING: The @buildifier module extension provided by Drake is deprecated and will be removed on or after 2026-01-01, including removal of the buildifier_repository() function. Please switch to the Bazel Central Registry module bazel_dep(name = 'buildifier_prebuilt') instead."  # noqa
+
 genrule(
     name = "select_buildifier",
     srcs = select({
@@ -70,4 +72,5 @@ genrule(
     executable = True,
     cmd = "cp $< $@ && chmod a+x $@",
     visibility = ["//visibility:public"],
+    deprecation = DEPRECATION,
 )

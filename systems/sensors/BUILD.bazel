@@ -486,7 +486,7 @@ drake_cc_library(
     deps = [
         ":image",
         ":image_file_format",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkCommonDataModel",
     ],

@@ -259,7 +259,7 @@ drake_cc_library(
         "//geometry:scene_graph",
         "//solvers:mathematical_program",
         "//solvers:solve",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 
@@ -439,7 +439,7 @@ drake_cc_library(
         "//multibody/plant",
         "//solvers:sos_basis_generator",
         "//systems/framework:diagram_builder",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 

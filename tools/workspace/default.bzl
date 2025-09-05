@@ -63,6 +63,7 @@ load("//tools/workspace/pkgconfig_lapack_internal:repository.bzl", "pkgconfig_la
 load("//tools/workspace/poisson_disk_sampling_internal:repository.bzl", "poisson_disk_sampling_internal_repository")  # noqa
 load("//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
 load("//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")
+load("//tools/workspace/pycodestyle_internal:repository.bzl", "pycodestyle_internal_repository")  # noqa
 load("//tools/workspace/python:repository.bzl", "python_repository")
 load("//tools/workspace/qdldl_internal:repository.bzl", "qdldl_internal_repository")  # noqa
 load("//tools/workspace/qhull_internal:repository.bzl", "qhull_internal_repository")  # noqa
@@ -145,6 +146,7 @@ def _add_internal_repositories():
     pkgconfig_blas_internal_repository(name = "pkgconfig_blas_internal")
     pkgconfig_lapack_internal_repository(name = "pkgconfig_lapack_internal")
     poisson_disk_sampling_internal_repository(name = "poisson_disk_sampling_internal", mirrors = mirrors)  # noqa
+    pycodestyle_internal_repository(name = "pycodestyle_internal", mirrors = mirrors)  # noqa
     qdldl_internal_repository(name = "qdldl_internal", mirrors = mirrors)
     qhull_internal_repository(name = "qhull_internal", mirrors = mirrors)
     ros_xacro_internal_repository(name = "ros_xacro_internal", mirrors = mirrors)  # noqa
@@ -173,11 +175,8 @@ def _add_internal_repositories():
 def _drake_dep_repositories_impl(module_ctx):
     mirrors = DEFAULT_MIRRORS
     blas_repository(name = "blas")
-    buildifier_repository(name = "buildifier", mirrors = mirrors)
     drake_models_repository(name = "drake_models", mirrors = mirrors)
-    gflags_repository(name = "gflags", mirrors = mirrors)
     glib_repository(name = "glib")
-    gtest_repository(name = "gtest", mirrors = mirrors)
     gurobi_repository(name = "gurobi")
     lapack_repository(name = "lapack")
     lcm_repository(name = "lcm", mirrors = mirrors)
@@ -185,7 +184,6 @@ def _drake_dep_repositories_impl(module_ctx):
     mosek_repository(name = "mosek", mirrors = mirrors)
     opencl_repository(name = "opencl")
     pybind11_repository(name = "pybind11", mirrors = mirrors)
-    pycodestyle_repository(name = "pycodestyle", mirrors = mirrors)
     python_repository(name = "python")
     snopt_repository(name = "snopt")
     x11_repository(name = "x11")
@@ -197,6 +195,10 @@ def _drake_dep_repositories_impl(module_ctx):
         )
 
     # Deprecated 2026-01-01.
+    buildifier_repository(name = "buildifier", mirrors = mirrors)
+    gflags_repository(name = "gflags", mirrors = mirrors)
+    gtest_repository(name = "gtest", mirrors = mirrors)
+    pycodestyle_repository(name = "pycodestyle", mirrors = mirrors)
     styleguide_repository(name = "styleguide", mirrors = mirrors)
 
 drake_dep_repositories = module_extension(

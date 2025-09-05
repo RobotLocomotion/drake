@@ -128,7 +128,7 @@ cc_test(
         ":opencl_voxelization_helpers",
         ":pointcloud_voxelization",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -144,7 +144,7 @@ cc_test(
     deps = [
         ":voxelized_geometry_tools",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -160,7 +160,7 @@ cc_test(
     deps = [
         ":voxelized_geometry_tools",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 

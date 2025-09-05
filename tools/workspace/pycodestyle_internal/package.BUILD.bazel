@@ -1,0 +1,12 @@
+# -*- bazel -*-
+
+load("@drake//tools/skylark:py.bzl", "py_binary")
+
+licenses(["notice"])  # MIT
+
+package(default_visibility = ["//visibility:public"])
+
+py_binary(
+    name = "pycodestyle",
+    srcs = ["pycodestyle.py"],
+)

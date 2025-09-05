@@ -100,7 +100,7 @@ _OVERLOOK_RELEASE_REPOSITORIES = {
     "gz_math_internal": r"^(gz)",
     "gz_utils_internal": r"^(gz)",
     "petsc": r"^(v)",
-    "pycodestyle": "",
+    "pycodestyle_internal": "",
     "qhull_internal": r"^(2)",
     "sdformat_internal": "",
     "xmlrunner_py": "",
