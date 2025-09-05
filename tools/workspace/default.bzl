@@ -12,6 +12,7 @@ load("//tools/workspace/coinutils_internal:repository.bzl", "coinutils_internal_
 load("//tools/workspace/com_jidesoft_jide_oss_internal:repository.bzl", "com_jidesoft_jide_oss_internal_repository")  # noqa
 load("//tools/workspace/common_robotics_utilities_internal:repository.bzl", "common_robotics_utilities_internal_repository")  # noqa
 load("//tools/workspace/commons_io_internal:repository.bzl", "commons_io_internal_repository")  # noqa
+load("//tools/workspace/cpplint_internal:repository.bzl", "cpplint_internal_repository")  # noqa
 load("//tools/workspace/crate_universe:repository.bzl", "crate_universe_repositories_internal")  # noqa
 load("//tools/workspace/csdp_internal:repository.bzl", "csdp_internal_repository")  # noqa
 load("//tools/workspace/curl_internal:repository.bzl", "curl_internal_repository")  # noqa
@@ -106,6 +107,7 @@ def _add_internal_repositories():
     com_jidesoft_jide_oss_internal_repository(name = "com_jidesoft_jide_oss_internal", mirrors = mirrors)  # noqa
     common_robotics_utilities_internal_repository(name = "common_robotics_utilities_internal", mirrors = mirrors)  # noqa
     commons_io_internal_repository(name = "commons_io_internal", mirrors = mirrors)  # noqa
+    cpplint_internal_repository(name = "cpplint_internal", mirrors = mirrors)
     csdp_internal_repository(name = "csdp_internal", mirrors = mirrors)
     curl_internal_repository(name = "curl_internal", mirrors = mirrors)
     doxygen_internal_repository(name = "doxygen_internal", mirrors = mirrors)

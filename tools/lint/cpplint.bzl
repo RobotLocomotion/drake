@@ -76,10 +76,10 @@ def _add_linter_rules(
     # Google cpplint.
     py_test_isolated(
         name = name + "_cpplint",
-        srcs = ["@styleguide//:cpplint"],
+        srcs = ["@cpplint_internal//:cpplint"],
         data = cpplint_data + source_labels,
         args = _EXTENSIONS_ARGS + source_filenames,
-        main = "@styleguide//:cpplint/cpplint.py",
+        main = "@cpplint_internal//:cpplint.py",
         size = size,
         tags = ["cpplint", "lint"],
     )
@@ -128,6 +128,8 @@ def cpplint(
     if existing_rules == None:
         existing_rules = native.existing_rules().values()
 
+    # Collect the list of files to lint, grouped by target name.
+    name_to_labels = {}
     for rule in existing_rules:
         if "nolint" in rule.get("tags"):
             # Disable linting when requested (e.g., for generated code).
@@ -143,16 +145,29 @@ def cpplint(
             for label in candidate_labels
             if _is_source_label(label)
         ]
-        source_filenames = ["$(location %s)" % x for x in source_labels]
+        if len(source_labels) == 0:
+            continue
 
-        # Run the cpplint checker as a unit test.
-        if len(source_filenames) > 0:
-            _add_linter_rules(
-                source_labels,
-                source_filenames,
-                name = rule["name"],
-                data = data,
-            )
+        # Undo the effect of _maybe_add_pruned_private_hdrs_dep, which computes
+        # its `name = "_" + base_name + "_private_headers_cc_impl"`.
+        rule_name = rule["name"]
+        private_suffix = "_private_headers_cc_impl"
+        if rule_name.endswith(private_suffix):
+            rule_name = rule_name[1:-len(private_suffix)]
+
+        # Note the files to be linted.
+        name_to_labels.setdefault(rule_name, [])
+        name_to_labels[rule_name].extend(source_labels)
+
+    # Run the cpplint checker as unit tests.
+    for rule_name, source_labels in name_to_labels.items():
+        source_filenames = ["$(location %s)" % x for x in source_labels]
+        _add_linter_rules(
+            source_labels,
+            source_filenames,
+            name = rule_name,
+            data = data,
+        )
 
     # Lint all of the extra_srcs separately in a single rule.
     if extra_srcs:
