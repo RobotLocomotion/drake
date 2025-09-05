@@ -239,3 +239,89 @@ class TestIrisNp2(unittest.TestCase):
                              options=options)
         test_point_shifted = inverse_parameterization(test_point)
         self.assertTrue(region.PointInSet(test_point_shifted))
+
+
+class TestOptionsPrinting(unittest.TestCase):
+    def test_options_printing(self):
+        options_zo = mut.IrisZoOptions()
+        options_np2 = mut.IrisNp2Options()
+
+        s_zo = repr(options_zo)
+        self.assertTrue(
+                ("bisection_steps=%d" % options_zo.bisection_steps) in s_zo)
+
+        s_np2 = repr(options_np2)
+        self.assertTrue(
+                ("sampling_strategy=%s" %
+                 options_np2.sampling_strategy) in s_np2)
+        self.assertTrue(
+                ("only_walk_toward_collisions=%r" %
+                 options_np2.ray_sampler_options.
+                 only_walk_toward_collisions) in s_np2)
+        self.assertTrue(
+                ("ray_search_num_steps=%d" %
+                 options_np2.ray_sampler_options.
+                 ray_search_num_steps) in s_np2)
+        self.assertTrue(
+                ("num_particles_to_walk_towards=%d" %
+                 options_np2.ray_sampler_options.
+                 num_particles_to_walk_towards) in s_np2)
+
+        for options in [options_zo, options_np2]:
+            s = repr(options)
+            print(s)
+            print("tau=%f" % options.sampled_iris_options.tau)
+            self.assertTrue(
+                    ("num_particles=%d" %
+                     options.sampled_iris_options.num_particles) in s)
+            self.assertTrue(
+                    ("tau=%g" % options.sampled_iris_options.tau) in s)
+            self.assertTrue(
+                    ("delta=%g" % options.sampled_iris_options.delta) in s)
+            self.assertTrue(
+                    ("epsilon=%g" % options.sampled_iris_options.epsilon) in s)
+            self.assertTrue(
+                    ("max_iterations=%d" %
+                     options.sampled_iris_options.max_iterations) in s)
+            self.assertTrue(
+                    ("max_iterations_separating_planes=%d" %
+                     options.sampled_iris_options.
+                     max_iterations_separating_planes) in s)
+            self.assertTrue(
+                    ("max_separating_planes_per_iteration=%d" %
+                     options.sampled_iris_options.
+                     max_separating_planes_per_iteration) in s)
+            self.assertTrue(
+                    ("parallelism=%s" %
+                     options.sampled_iris_options.parallelism) in s)
+            self.assertTrue(
+                    ("verbose=%r" % options.sampled_iris_options.verbose) in s)
+            self.assertTrue(
+                    ("require_sample_point_is_contained=%r" %
+                     options.sampled_iris_options.
+                     require_sample_point_is_contained) in s)
+            self.assertTrue(
+                    ("configuration_space_margin=%g" %
+                     options.sampled_iris_options.
+                     configuration_space_margin) in s)
+            self.assertTrue(
+                    ("termination_threshold=%g" %
+                     options.sampled_iris_options.termination_threshold) in s)
+            self.assertTrue(
+                    ("relative_termination_threshold=%g" %
+                     options.sampled_iris_options.
+                     relative_termination_threshold) in s)
+            self.assertTrue(
+                    ("remove_all_collisions_possible=%r" %
+                     options.sampled_iris_options.
+                     remove_all_collisions_possible) in s)
+            self.assertTrue(
+                    ("random_seed=%d" %
+                     options.sampled_iris_options.random_seed) in s)
+            self.assertTrue(
+                    ("mixing_steps=%d" %
+                     options.sampled_iris_options.mixing_steps) in s)
+            self.assertTrue(
+                    ("sample_particles_in_parallel=%r" %
+                     options.sampled_iris_options.
+                     sample_particles_in_parallel) in s)
