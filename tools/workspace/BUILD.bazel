@@ -133,7 +133,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "//conditions:default": [],
 }) + select({
     "//tools/workspace/clarabel_cpp_internal:enabled": [
-        "//tools/workspace/crate_universe:install",
+        # XXX "//tools/workspace/crate_universe:install",
         "@clarabel_cpp_internal//:install",
     ],
     "//conditions:default": [],
