@@ -388,7 +388,10 @@ def _do_upgrade_github_archive(
 
     # Download the new source archive.
     info("Downloading new archive...")
-    new_url = f"https://github.com/{repository}/archive/{new_commit}.tar.gz"
+    if len(new_commit) == 40:
+        new_url = f"https://github.com/{repository}/archive/{new_commit}.tar.gz"  # noqa
+    else:
+        new_url = f"https://github.com/{repository}/archive/refs/tags/{new_commit}.tar.gz"  # noqa
     new_filename = new_commit.replace("/", "_")
     new_checksum = _download(new_url, f"{temp_dir}/{new_filename}.tar.gz")
 
