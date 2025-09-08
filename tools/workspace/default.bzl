@@ -13,7 +13,6 @@ load("//tools/workspace/com_jidesoft_jide_oss_internal:repository.bzl", "com_jid
 load("//tools/workspace/common_robotics_utilities_internal:repository.bzl", "common_robotics_utilities_internal_repository")  # noqa
 load("//tools/workspace/commons_io_internal:repository.bzl", "commons_io_internal_repository")  # noqa
 load("//tools/workspace/cpplint_internal:repository.bzl", "cpplint_internal_repository")  # noqa
-load("//tools/workspace/crate_universe:repository.bzl", "crate_universe_repositories_internal")  # noqa
 load("//tools/workspace/csdp_internal:repository.bzl", "csdp_internal_repository")  # noqa
 load("//tools/workspace/curl_internal:repository.bzl", "curl_internal_repository")  # noqa
 load("//tools/workspace/dm_control_internal:repository.bzl", "dm_control_internal_repository")  # noqa
@@ -213,18 +212,5 @@ internal_repositories = module_extension(
     implementation = _internal_repositories_impl,
     doc = """(Internal use only) Wraps the add_default_repositories repository
     rule into a bzlmod module extension, excluding repositories that are
-    already covered by modules, drake_dep_repositories, and crate_universe.""",
-)
-
-def _internal_crate_universe_repositories_impl(module_ctx):
-    names = crate_universe_repositories_internal(mirrors = DEFAULT_MIRRORS)
-    return module_ctx.extension_metadata(
-        root_module_direct_deps = names,
-        root_module_direct_dev_deps = [],
-    )
-
-internal_crate_universe_repositories = module_extension(
-    implementation = _internal_crate_universe_repositories_impl,
-    doc = """(Internal use only) Wraps the crate_universe repository rules to
-    be usable as a bzlmod module extension.""",
+    already covered by modules or drake_dep_repositories.""",
 )
