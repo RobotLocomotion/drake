@@ -199,6 +199,23 @@ string_flag(
     ],
 )
 
+# The :glib_repo flag configures where Drake obtains @glib from.
+# The public dependency alias is `@drake//tools/workspace/glib` or use the
+# drake_dep_repositories() module extension at //tools/workspace:default.bzl.
+string_flag(
+    name = "glib_repo",
+    build_setting_default = "default",
+    values = [
+        # The default is based on :private_runtime_repo_default -- "internal"
+        # maps to "source" and "external" maps to "pkgconfig".
+        "default",
+        # Compile glib from source.
+        "source",
+        # Find glib via pkg-config.
+        "pkgconfig",
+    ],
+)
+
 # The :zlib_repo flag configures where Drake obtains @zlib from.
 # The public dependency alias is `@drake//tools/workspace/zlib` or use the
 # drake_dep_repositories() module extension at //tools/workspace:default.bzl.
