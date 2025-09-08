@@ -1,6 +1,103 @@
-# This file exists to make our directory into a Bazel package, so that our
-# neighboring *.bzl file can be loaded elsewhere.
-
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
+load("//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+
+# ---- Logic for choosing which glib to use. ---
+
+config_setting(
+    name = "flag_glib_repo_pkgconfig",
+    flag_values = {
+        "//tools/flags:glib_repo": "pkgconfig",
+    },
+)
+
+config_setting(
+    name = "flag_glib_repo_default",
+    flag_values = {
+        "//tools/flags:glib_repo": "default",
+    },
+)
+
+config_setting(
+    name = "flag_private_runtime_repo_default_external",
+    flag_values = {
+        "//tools/flags:private_runtime_repo_default": "external",
+    },
+)
+
+selects.config_setting_group(
+    name = "flag_glib_repo_default_pkgconfig",
+    match_all = [
+        ":flag_glib_repo_default",
+        ":flag_private_runtime_repo_default_external",
+    ],
+)
+
+selects.config_setting_group(
+    name = "use_pkgconfig",
+    match_any = [
+        ":flag_glib_repo_pkgconfig",
+        ":flag_glib_repo_default_pkgconfig",
+    ],
+)
+
+alias(
+    name = "glib",
+    actual = select({
+        ":use_pkgconfig": "@pkgconfig_glib",
+        "//conditions:default": "@module_glib//glib",
+    }),
+    visibility = ["//visibility:public"],
+)
+
+# ---- Logic for installing glib-related files. ---
+
+bool_flag(
+    name = "with_user_glib",
+    # This is overridden by our CMakeLists.txt to match the CMake option.
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "is_with_user_true",
+    flag_values = {":with_user_glib": "True"},
+)
+
+selects.config_setting_group(
+    name = "is_external",
+    match_any = [
+        ":is_with_user_true",
+        ":use_pkgconfig",
+    ],
+)
+
+# The COPYING file upstream is symlink; to avoid installing it as a (broken)
+# symlink, we'll force a copy before installing it.
+copy_file(
+    name = "copy_license",
+    src = "@module_glib//:COPYING",
+    out = "COPYING",
+    allow_symlink = False,
+    visibility = ["//visibility:private"],
+)
+
+install(
+    name = "install_license",
+    docs = [":COPYING"],
+    doc_dest = "share/doc/glib",
+)
+
+install(
+    name = "install",
+    visibility = ["//tools/workspace:__pkg__"],
+    deps = select({
+        ":is_external": [],
+        "//conditions:default": [
+            ":install_license",
+        ],
+    }),
+)
 
 add_lint_tests()

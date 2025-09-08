@@ -500,6 +500,16 @@ if(NOT APPLE)
   endif()
 endif()
 
+option(WITH_USER_GLIB "Use user-provided GLIB" ${DEFAULT_WITH_USER_LIBS})
+
+if(WITH_USER_GLIB)
+  find_package(PkgConfig REQUIRED)
+  pkg_search_module(GLib REQUIRED IMPORTED_TARGET glib-2.0)
+  symlink_external_repository_includes(glib PkgConfig::GLib)
+  symlink_external_repository_libs(glib PkgConfig::GLib OFF)
+  override_module(glib)
+endif()
+
 option(WITH_USER_ZLIB "Use user-provided ZLIB" ${DEFAULT_WITH_USER_LIBS})
 
 if(APPLE)

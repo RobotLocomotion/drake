@@ -123,6 +123,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "eigen",
     "fmt",
     "gflags",
+    "glib",
     "highway_internal",
     "lapack",
     "libjpeg_turbo_internal",

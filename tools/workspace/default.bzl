@@ -24,7 +24,6 @@ load("//tools/workspace/gflags:repository.bzl", "gflags_repository")
 load("//tools/workspace/gfortran_internal:repository.bzl", "gfortran_internal_repository")  # noqa
 load("//tools/workspace/github3_py_internal:repository.bzl", "github3_py_internal_repository")  # noqa
 load("//tools/workspace/gklib_internal:repository.bzl", "gklib_internal_repository")  # noqa
-load("//tools/workspace/glib:repository.bzl", "glib_repository")
 load("//tools/workspace/gtest:repository.bzl", "gtest_repository")
 load("//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
 load("//tools/workspace/gymnasium_py_internal:repository.bzl", "gymnasium_py_internal_repository")  # noqa
@@ -176,7 +175,6 @@ def _drake_dep_repositories_impl(module_ctx):
     buildifier_repository(name = "buildifier", mirrors = mirrors)
     drake_models_repository(name = "drake_models", mirrors = mirrors)
     gflags_repository(name = "gflags", mirrors = mirrors)
-    glib_repository(name = "glib")
     gtest_repository(name = "gtest", mirrors = mirrors)
     gurobi_repository(name = "gurobi")
     lapack_repository(name = "lapack")
@@ -190,7 +188,7 @@ def _drake_dep_repositories_impl(module_ctx):
     snopt_repository(name = "snopt")
     x11_repository(name = "x11")
     zlib_repository(name = "zlib")
-    for name in ["eigen", "fmt", "spdlog"]:
+    for name in ["eigen", "fmt", "glib", "spdlog"]:
         alias_repository(
             name = name,
             aliases = {name: "@drake//tools/workspace/" + name},
