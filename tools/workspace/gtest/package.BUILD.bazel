@@ -9,6 +9,8 @@ config_setting(
     values = {"cpu": "k8"},
 )
 
+DEPRECATION = "WARNING: The @gtest module extension provided by Drake is deprecated and will be removed on or after 2026-01-01, including removal of the gtest_repository() function. Please switch to the Bazel Central Registry module bazel_dep(name = 'googletest') instead."  # noqa
+
 cc_library(
     name = "without_main",
     testonly = 1,
@@ -50,6 +52,7 @@ cc_library(
         "@drake//common/test_utilities:gtest_printers",
     ],
     visibility = ["//visibility:public"],
+    deprecation = DEPRECATION,
 )
 
 cc_library(
@@ -61,4 +64,5 @@ cc_library(
     deps = [
         ":without_main",
     ],
+    deprecation = DEPRECATION,
 )
