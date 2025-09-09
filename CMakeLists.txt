@@ -546,8 +546,9 @@ if(WITH_USER_GLIB)
     LIBRARIES ${GLib_LINK_LIBRARIES}
   )
   override_module(glib)
-  string(APPEND BAZEL_REPO_ENV
-      " --@drake//tools/flags:glib_repo=pkgconfig")
+  file(WRITE
+    "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/glib/glib/BUILD.bazel"
+    "alias(name = 'glib', actual = '//:glib', visibility = ['//visibility:public'])")
 endif()
 
 option(WITH_USER_ZLIB "Use user-provided ZLIB" ${DEFAULT_WITH_USER_LIBS})
