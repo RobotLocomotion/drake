@@ -347,41 +347,77 @@ set(BAZEL_OUTPUT_BASE
 # Symlinks the C++ include path for TARGET as workspace/NAME/include, e.g.
 #  workspace/eigen/include -> .../build/install/include/eigen3
 function(symlink_external_repository_includes NAME TARGET)
-  get_target_property(include_dir ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
+  get_target_property(include_dirs ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
   set(workspace ${CMAKE_CURRENT_BINARY_DIR}/external/workspace)
   file(MAKE_DIRECTORY ${workspace}/${NAME})
-  file(CREATE_LINK ${include_dir} ${workspace}/${NAME}/include SYMBOLIC)
+  list(LENGTH include_dirs n_include_dirs)
+  if (n_include_dirs GREATER 1)
+    # Treat multiple include directories as subdirectories within "include",
+    # which will all be symlinked individually.
+    file(MAKE_DIRECTORY ${workspace}/${NAME}/include)
+    foreach (dir IN LISTS include_dirs)
+      file(GLOB subdirs RELATIVE ${dir} ${dir}/*)
+      foreach (subdir IN LISTS subdirs)
+        file(CREATE_LINK ${dir}/${subdir}
+          ${workspace}/${NAME}/include/${subdir} SYMBOLIC)
+      endforeach()
+    endforeach()
+  else()
+    # Treat a single include directory as the whole "include."
+    file(CREATE_LINK ${include_dirs} ${workspace}/${NAME}/include SYMBOLIC)
+  endif()
 endfunction()
 
 # Symlinks the C++ libraries for TARGET as workspace/NAME/lib/*, e.g.
 #  workspace/fmt/lib/libfmt.so.6.1.2 -> .../build/install/lib/libfmt.so.6.1.2
 #  workspace/fmt/lib/libfmt.so.6 -> .../build/install/lib/libfmt.so.6.1.2
-# If USE_SO_MINOR_VERSION is ON, the last line above uses .so.x.y instead, i.e.
+# If USE_SO_MINOR_VERSION is provided as argument, the last line above uses
+# .so.x.y instead, e.g.
 #  workspace/fmt/lib/libfmt.so.6.1 -> ../build/install/lib/libfmt.so.6.1.2
-function(symlink_external_repository_libs NAME TARGET USE_SO_MINOR_VERSION)
+# Uses the LOCATION_<CONFIG> target property to determine the location of the
+# target file on disk to be symlinked, unless LIBRARIES is provided as
+# argument, in which case they are used directly.
+function(symlink_external_repository_libs NAME TARGET)
+  cmake_parse_arguments(ARG "USE_SO_MINOR_VERSION" "" "LIBRARIES" ${ARGN})
+
+  function(_create_links lib_dir location)
+    get_filename_component(basename "${location}" NAME)
+    file(CREATE_LINK "${location}" "${lib_dir}/${basename}" SYMBOLIC)
+    # Link the SONAME spelling in case of shared libraries.
+    # If the basename does not match this pattern, this part is all a no-op.
+    if(ARG_USE_SO_MINOR_VERSION)
+      string(REGEX REPLACE "(\\.so\\.[0-9]+\\.[0-9]+)\\.[0-9]+$" "\\1"
+        other_basename "${basename}")
+      string(REGEX REPLACE "(\\.[0-9]+\\.[0-9]+)\\.[0-9]+\\.dylib$" "\\1.dylib"
+        other_basename "${other_basename}")
+    else()
+      string(REGEX REPLACE "(\\.so\\.[0-9]+)\\.[0-9]+\\.[0-9]+$" "\\1"
+        other_basename "${basename}")
+      string(REGEX REPLACE "(\\.[0-9]+)\\.[0-9]+\\.[0-9]+\\.dylib$" "\\1.dylib"
+        other_basename "${other_basename}")
+    endif()
+    file(CREATE_LINK "${location}" "${lib_dir}/${other_basename}" SYMBOLIC)
+  endfunction()
+
   set(workspace "${CMAKE_CURRENT_BINARY_DIR}/external/workspace")
-  file(MAKE_DIRECTORY "${workspace}/${NAME}/lib")
-  # Link the full library name (i.e., libfmt.so.6.1.2 in the case of shared).
-  get_target_property(location ${TARGET} LOCATION_${CMAKE_BUILD_TYPE})
-  if(NOT location)
-    message(FATAL_ERROR "Target ${TARGET} has no library in LOCATION_${CMAKE_BUILD_TYPE}")
-  endif()
-  get_filename_component(basename "${location}" NAME)
-  file(CREATE_LINK "${location}" "${workspace}/${NAME}/lib/${basename}" SYMBOLIC)
-  # Link the SONAME spelling in case of shared libraries.
-  # If the basename does not match this pattern, this part is all a no-op.
-  if(USE_SO_MINOR_VERSION)
-    string(REGEX REPLACE "(\\.so\\.[0-9]+\\.[0-9]+)\\.[0-9]+$" "\\1"
-      other_basename "${basename}")
-    string(REGEX REPLACE "(\\.[0-9]+\\.[0-9]+)\\.[0-9]+\\.dylib$" "\\1.dylib"
-      other_basename "${other_basename}")
+  set(lib_dir "${workspace}/${NAME}/lib/")
+  file(MAKE_DIRECTORY "${lib_dir}")
+
+  if (ARG_LIBRARIES)
+    if (NOT ARG_LIBRARIES)
+      message(FATAL_ERROR "Target ${TARGET} has no location on disk.")
+    endif()
+    foreach(lib IN LISTS ARG_LIBRARIES)
+      _create_links("${lib_dir}" "${lib}")
+    endforeach()
   else()
-    string(REGEX REPLACE "(\\.so\\.[0-9]+)\\.[0-9]+\\.[0-9]+$" "\\1"
-      other_basename "${basename}")
-    string(REGEX REPLACE "(\\.[0-9]+)\\.[0-9]+\\.[0-9]+\\.dylib$" "\\1.dylib"
-      other_basename "${other_basename}")
+    get_target_property(location ${TARGET} LOCATION_${CMAKE_BUILD_TYPE})
+    if(NOT location)
+      message(FATAL_ERROR "Target ${TARGET} has no location on disk.")
+    endif()
+    _create_links("${lib_dir}" "${location}")
   endif()
-  file(CREATE_LINK "${location}" "${workspace}/${NAME}/lib/${other_basename}" SYMBOLIC)
+
 endfunction()
 
 macro(override_module NAME)
@@ -434,7 +470,7 @@ option(WITH_USER_FMT "Use user-provided fmt" ${DEFAULT_WITH_USER_LIBS})
 if(WITH_USER_FMT)
   find_package(fmt CONFIG REQUIRED)
   symlink_external_repository_includes(fmt fmt::fmt)
-  symlink_external_repository_libs(fmt fmt::fmt OFF)
+  symlink_external_repository_libs(fmt fmt::fmt)
   override_module(fmt)
 endif()
 
@@ -452,12 +488,12 @@ if(WITH_USER_SPDLOG)
   # SONAME spelling, while older versions only use the major version.
   # We support that logic here to provide compatibility with both.
   # See https://github.com/gabime/spdlog/releases/tag/v1.11.0 for details.
-  set(SPDLOG_USE_SO_MINOR_VERSION ON)
   if(${spdlog_VERSION_MAJOR} LESS 1 OR
-     (${spdlog_VERSION_MAJOR} EQUAL 1 AND ${spdlog_VERSION_MINOR} LESS 11))
-     set(SPDLOG_USE_SO_MINOR_VERSION OFF)
+    (${spdlog_VERSION_MAJOR} EQUAL 1 AND ${spdlog_VERSION_MINOR} LESS 11))
+    symlink_external_repository_libs(spdlog spdlog::spdlog)
+  else()
+    symlink_external_repository_libs(spdlog spdlog::spdlog USE_SO_MINOR_VERSION)
   endif()
-  symlink_external_repository_libs(spdlog spdlog::spdlog ${SPDLOG_USE_SO_MINOR_VERSION})
   override_module(spdlog)
 endif()
 
@@ -506,8 +542,12 @@ if(WITH_USER_GLIB)
   find_package(PkgConfig REQUIRED)
   pkg_search_module(GLib REQUIRED IMPORTED_TARGET glib-2.0)
   symlink_external_repository_includes(glib PkgConfig::GLib)
-  symlink_external_repository_libs(glib PkgConfig::GLib OFF)
+  symlink_external_repository_libs(glib PkgConfig::GLib
+    LIBRARIES ${GLib_LINK_LIBRARIES}
+  )
   override_module(glib)
+  string(APPEND BAZEL_REPO_ENV
+      " --@drake//tools/flags:glib_repo=pkgconfig")
 endif()
 
 option(WITH_USER_ZLIB "Use user-provided ZLIB" ${DEFAULT_WITH_USER_LIBS})
