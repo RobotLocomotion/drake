@@ -867,7 +867,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
               counter_example_prog->Solve(*solver, particle, {}, &closest);
         }
 
-        bool add_hyperplane = solve_succeeded || options.add_hyperplane_if_solve_fails;
+        bool add_hyperplane =
+            solve_succeeded || options.add_hyperplane_if_solve_fails;
         VectorXd* point_to_add_hyperplane{nullptr};
 
         if (solve_succeeded) {
@@ -901,7 +902,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           DRAKE_ASSERT(point_to_add_hyperplane != nullptr);
           if (options.sampled_iris_options.containment_points.has_value()) {
             internal::AddTangentToPolytope(
-                E, *point_to_add_hyperplane, containment_points_vpolytope, *solver,
+                E, *point_to_add_hyperplane, containment_points_vpolytope,
+                *solver,
                 options.sampled_iris_options.configuration_space_margin, &A, &b,
                 &num_constraints, &max_relaxation);
           } else {
@@ -921,10 +923,22 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
             }
           }
 
-          // Update the counterexample search program. No need to update the closest collision program, since it is re-created each time.
+          // Update the counterexample search program. No need to update the
+          // closest collision program, since it is re-created each time.
           if (counter_example_prog != nullptr) {
             counter_example_prog->UpdatePolytope(A.topRows(num_constraints),
-                                b.head(num_constraints));
+                                                 b.head(num_constraints));
+          }
+        } else {
+          ++num_prog_failures;
+          if (do_debugging_visualization) {
+            point_to_draw.head(nq) = closest;
+            std::string path = fmt::format("iteration{:02}/{:03}/closest",
+                                           iteration, num_points_drawn);
+            options.sampled_iris_options.meshcat->SetObject(
+                path, Sphere(0.01), geometry::Rgba(0.1, 0.8, 0.8, 1.0));
+            options.sampled_iris_options.meshcat->SetTransform(
+                path, RigidTransform<double>(point_to_draw));
           }
         }
       }
