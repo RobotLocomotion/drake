@@ -35,7 +35,7 @@ drake_py_binary(
     srcs = ["buildifier.py"],
     data = [
         ":buildifier-tables.json",
-        "@buildifier",
+        "@buildifier_prebuilt//:buildifier",
     ],
     deps = [
         ":module_py",
@@ -92,7 +92,7 @@ drake_py_binary(
     main = "bzlcodestyle.py",
     deps = [
         ":module_py",
-        "@pycodestyle",
+        "@pycodestyle_internal//:pycodestyle",
     ],
 )
 
