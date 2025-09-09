@@ -356,7 +356,9 @@ function(symlink_external_repository_includes NAME TARGET)
   string(REPLACE ";" "|" implicit_include_dirs
     "${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES}"
   )
-  list(FILTER include_dirs EXCLUDE REGEX "(\${implicit_include_dirs})")
+  string(REPLACE "." "\\." implicit_include_dirs "${implicit_include_dirs}")
+  set(implicit_include_dirs "^(${implicit_include_dirs})\$")
+  list(FILTER include_dirs EXCLUDE REGEX ${implicit_include_dirs})
 
   set(workspace ${CMAKE_CURRENT_BINARY_DIR}/external/workspace)
   file(MAKE_DIRECTORY ${workspace}/${NAME})
