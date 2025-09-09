@@ -811,11 +811,6 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           // TODO(cohnt): Allow the user to specify the solver options used
           // here.
           solve_succeeded = prog.Solve(*solver, particle, {}, &closest);
-
-          if (solve_succeeded) {
-            prog.UpdatePolytope(A.topRows(num_constraints),
-                                b.head(num_constraints));
-          }
         } else {
           // We did not find a collision pair corresponding to this particle, so
           // the particle must be violating one of the constraints from
@@ -870,15 +865,14 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           // here.
           solve_succeeded =
               counter_example_prog->Solve(*solver, particle, {}, &closest);
-
-          if (solve_succeeded) {
-            counter_example_prog->UpdatePolytope(A.topRows(num_constraints),
-                                                 b.head(num_constraints));
-          }
         }
+
+        bool add_hyperplane = solve_succeeded || options.add_hyperplane_if_solve_fails;
+        VectorXd* point_to_add_hyperplane{nullptr};
 
         if (solve_succeeded) {
           ++num_prog_successes;
+          point_to_add_hyperplane = &closest;
           if (do_debugging_visualization) {
             point_to_draw.head(nq) =
                 options.parameterization.get_parameterization_double()(closest);
@@ -889,14 +883,30 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
             options.sampled_iris_options.meshcat->SetTransform(
                 path, RigidTransform<double>(point_to_draw));
           }
+        } else {
+          ++num_prog_failures;
+          point_to_add_hyperplane = &particle;
+          if (do_debugging_visualization) {
+            point_to_draw.head(nq) = closest;
+            std::string path = fmt::format("iteration{:02}/{:03}/closest",
+                                           iteration, num_points_drawn);
+            options.sampled_iris_options.meshcat->SetObject(
+                path, Sphere(0.01), geometry::Rgba(0.1, 0.8, 0.8, 1.0));
+            options.sampled_iris_options.meshcat->SetTransform(
+                path, RigidTransform<double>(point_to_draw));
+          }
+        }
+
+        if (add_hyperplane) {
+          DRAKE_ASSERT(point_to_add_hyperplane != nullptr);
           if (options.sampled_iris_options.containment_points.has_value()) {
             internal::AddTangentToPolytope(
-                E, closest, containment_points_vpolytope, *solver,
+                E, *point_to_add_hyperplane, containment_points_vpolytope, *solver,
                 options.sampled_iris_options.configuration_space_margin, &A, &b,
                 &num_constraints, &max_relaxation);
           } else {
             internal::AddTangentToPolytope(
-                E, closest,
+                E, *point_to_add_hyperplane,
                 options.sampled_iris_options.configuration_space_margin, &A, &b,
                 &num_constraints);
           }
@@ -910,16 +920,11 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
               return P;
             }
           }
-        } else {
-          ++num_prog_failures;
-          if (do_debugging_visualization) {
-            point_to_draw.head(nq) = closest;
-            std::string path = fmt::format("iteration{:02}/{:03}/closest",
-                                           iteration, num_points_drawn);
-            options.sampled_iris_options.meshcat->SetObject(
-                path, Sphere(0.01), geometry::Rgba(0.1, 0.8, 0.8, 1.0));
-            options.sampled_iris_options.meshcat->SetTransform(
-                path, RigidTransform<double>(point_to_draw));
+
+          // Update the counterexample search program. No need to update the closest collision program, since it is re-created each time.
+          if (counter_example_prog != nullptr) {
+            counter_example_prog->UpdatePolytope(A.topRows(num_constraints),
+                                b.head(num_constraints));
           }
         }
       }
