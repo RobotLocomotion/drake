@@ -351,14 +351,8 @@ set(BAZEL_OUTPUT_BASE
 # directory within each include directory.
 function(symlink_external_repository_includes NAME TARGET)
   get_target_property(include_dirs ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
-
   # Exclude system include directories.
-  string(REPLACE ";" "|" implicit_include_dirs
-    "${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES}"
-  )
-  string(REPLACE "." "\\." implicit_include_dirs "${implicit_include_dirs}")
-  set(implicit_include_dirs "^(${implicit_include_dirs})\$")
-  list(FILTER include_dirs EXCLUDE REGEX ${implicit_include_dirs})
+  list(REMOVE_ITEM include_dirs ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
 
   set(workspace ${CMAKE_CURRENT_BINARY_DIR}/external/workspace)
   file(MAKE_DIRECTORY ${workspace}/${NAME})
@@ -366,9 +360,9 @@ function(symlink_external_repository_includes NAME TARGET)
 
   if (n_include_dirs GREATER 1)
     file(MAKE_DIRECTORY ${workspace}/${NAME}/include)
-    foreach (dir IN LISTS include_dirs)
+    foreach(dir IN LISTS include_dirs)
       file(GLOB items RELATIVE ${dir} ${dir}/*)
-      foreach (item IN LISTS items)
+      foreach(item IN LISTS items)
         file(CREATE_LINK ${dir}/${item}
           ${workspace}/${NAME}/include/${item} SYMBOLIC)
       endforeach()
@@ -388,7 +382,10 @@ endfunction()
 # target file on disk to be symlinked, unless LIBRARIES is provided as
 # argument, in which case they are used directly.
 function(symlink_external_repository_libs NAME TARGET)
-  cmake_parse_arguments(ARG "USE_SO_MINOR_VERSION" "" "LIBRARIES" ${ARGN})
+  cmake_parse_arguments(ARG
+    "USE_SO_MINOR_VERSION;USE_INTERFACE_LIBS"
+    "" "" ${ARGN}
+  )
 
   function(_create_links lib_dir location)
     get_filename_component(basename "${location}" NAME)
@@ -413,11 +410,12 @@ function(symlink_external_repository_libs NAME TARGET)
   set(lib_dir "${workspace}/${NAME}/lib/")
   file(MAKE_DIRECTORY "${lib_dir}")
 
-  if (ARG_LIBRARIES)
-    if (NOT ARG_LIBRARIES)
-      message(FATAL_ERROR "Target ${TARGET} has no location on disk.")
+  if (ARG_USE_INTERFACE_LIBS)
+    get_target_property(libs ${TARGET} INTERFACE_LINK_LIBRARIES)
+    if(NOT libs)
+      message(FATAL_ERROR "Target ${TARGET} has no interface link libraries.")
     endif()
-    foreach(lib IN LISTS ARG_LIBRARIES)
+    foreach(lib IN LISTS libs)
       _create_links("${lib_dir}" "${lib}")
     endforeach()
   else()
@@ -498,12 +496,12 @@ if(WITH_USER_SPDLOG)
   # SONAME spelling, while older versions only use the major version.
   # We support that logic here to provide compatibility with both.
   # See https://github.com/gabime/spdlog/releases/tag/v1.11.0 for details.
+  set(SPDLOG_USE_SO_MINOR_VERSION USE_MINOR_VERSION)
   if(${spdlog_VERSION_MAJOR} LESS 1 OR
     (${spdlog_VERSION_MAJOR} EQUAL 1 AND ${spdlog_VERSION_MINOR} LESS 11))
-    symlink_external_repository_libs(spdlog spdlog::spdlog)
-  else()
-    symlink_external_repository_libs(spdlog spdlog::spdlog USE_SO_MINOR_VERSION)
+    set(SPDLOG_USE_SO_MINOR_VERSION)
   endif()
+  symlink_external_repository_libs(spdlog spdlog::spdlog ${SPDLOG_USE_SO_MINOR_VERSION})
   override_module(spdlog)
 endif()
 
@@ -552,9 +550,7 @@ if(WITH_USER_GLIB)
   find_package(PkgConfig REQUIRED)
   pkg_search_module(GLib REQUIRED IMPORTED_TARGET glib-2.0)
   symlink_external_repository_includes(glib PkgConfig::GLib)
-  symlink_external_repository_libs(glib PkgConfig::GLib
-    LIBRARIES ${GLib_LINK_LIBRARIES}
-  )
+  symlink_external_repository_libs(glib PkgConfig::GLib USE_INTERFACE_LIBS)
   override_module(glib)
   # glib's BCR module defines its library in a subdirectory BUILD file rather
   # than the top-level file, so we must replicate that structure here.
