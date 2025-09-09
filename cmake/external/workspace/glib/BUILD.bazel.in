@@ -8,8 +8,11 @@ cc_library(
         ["lib/**"],
         allow_empty = False,
     ),
-    hdrs = glob(
-        ["include/**"],
+    hdrs = [
+        "include/glib.h",
+        "include/glibconfig.h",
+    ] + glob(
+        ["include/glib/**"],
         allow_empty = False,
     ),
     includes = ["include"],
