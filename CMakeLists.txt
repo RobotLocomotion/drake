@@ -344,26 +344,26 @@ set(BAZEL_OUTPUT_BASE
   "${BAZEL_OUTPUT_BASE}/_bazel_$ENV{USER}/${PROJECT_BINARY_DIR_MD5}"
 )
 
-# Symlinks the C++ include path for TARGET as workspace/NAME/include, e.g.
+# Symlinks the C++ interface include directories for TARGET as
+# workspace/NAME/include, e.g.
 #  workspace/eigen/include -> .../build/install/include/eigen3
+# If TARGET has multiple include directories, then symlink each file or
+# directory within each include directory.
 function(symlink_external_repository_includes NAME TARGET)
   get_target_property(include_dirs ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
   set(workspace ${CMAKE_CURRENT_BINARY_DIR}/external/workspace)
   file(MAKE_DIRECTORY ${workspace}/${NAME})
   list(LENGTH include_dirs n_include_dirs)
   if (n_include_dirs GREATER 1)
-    # Treat multiple include directories as subdirectories within "include",
-    # which will all be symlinked individually.
     file(MAKE_DIRECTORY ${workspace}/${NAME}/include)
     foreach (dir IN LISTS include_dirs)
-      file(GLOB subdirs RELATIVE ${dir} ${dir}/*)
-      foreach (subdir IN LISTS subdirs)
-        file(CREATE_LINK ${dir}/${subdir}
-          ${workspace}/${NAME}/include/${subdir} SYMBOLIC)
+      file(GLOB items RELATIVE ${dir} ${dir}/*)
+      foreach (item IN LISTS items)
+        file(CREATE_LINK ${dir}/${item}
+          ${workspace}/${NAME}/include/${item} SYMBOLIC)
       endforeach()
     endforeach()
   else()
-    # Treat a single include directory as the whole "include."
     file(CREATE_LINK ${include_dirs} ${workspace}/${NAME}/include SYMBOLIC)
   endif()
 endfunction()
@@ -546,6 +546,8 @@ if(WITH_USER_GLIB)
     LIBRARIES ${GLib_LINK_LIBRARIES}
   )
   override_module(glib)
+  # glib's BCR module defines its library in a subdirectory BUILD file rather
+  # than the top-level file, so we must replicate that structure here.
   file(WRITE
     "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/glib/glib/BUILD.bazel"
     "alias(name = 'glib', actual = '//:glib', visibility = ['//visibility:public'])")
