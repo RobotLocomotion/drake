@@ -811,11 +811,6 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           // TODO(cohnt): Allow the user to specify the solver options used
           // here.
           solve_succeeded = prog.Solve(*solver, particle, {}, &closest);
-
-          if (solve_succeeded) {
-            prog.UpdatePolytope(A.topRows(num_constraints),
-                                b.head(num_constraints));
-          }
         } else {
           // We did not find a collision pair corresponding to this particle, so
           // the particle must be violating one of the constraints from
@@ -870,11 +865,6 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           // here.
           solve_succeeded =
               counter_example_prog->Solve(*solver, particle, {}, &closest);
-
-          if (solve_succeeded) {
-            counter_example_prog->UpdatePolytope(A.topRows(num_constraints),
-                                                 b.head(num_constraints));
-          }
         }
 
         if (solve_succeeded) {
@@ -909,6 +899,13 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
               log()->info(seed_point_msg);
               return P;
             }
+          }
+
+          // Update the counterexample search program. No need to update the
+          // closest collision program, since it is re-created each time.
+          if (counter_example_prog != nullptr) {
+            counter_example_prog->UpdatePolytope(A.topRows(num_constraints),
+                                                 b.head(num_constraints));
           }
         } else {
           ++num_prog_failures;
