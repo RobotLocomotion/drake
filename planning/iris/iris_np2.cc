@@ -555,7 +555,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   if (options.sampled_iris_options.verbose) {
     log()->info(
         "IrisNp2 finding region that is {} collision free with {} certainty ",
-        options.sampled_iris_options.epsilon,
+        1 - options.sampled_iris_options.epsilon,
         1 - options.sampled_iris_options.delta);
     log()->info("IrisNp2 worst case test requires {} samples.", N_max);
   }
