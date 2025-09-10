@@ -188,6 +188,7 @@ class TestIrisNp2(unittest.TestCase):
         options.ray_sampler_options.only_walk_toward_collisions = True
         options.ray_sampler_options.ray_search_num_steps = 10
         options.ray_sampler_options.num_particles_to_walk_towards = 200
+        options.add_hyperplane_if_solve_fails = False
 
         # For speed reasons -- IPOPT seems to be faster than SNOPT here.
         options.solver = IpoptSolver()
