@@ -351,15 +351,14 @@ set(BAZEL_OUTPUT_BASE
 # directory within each include directory.
 function(symlink_external_repository_includes NAME TARGET)
   get_target_property(include_dirs ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
-  # Exclude system include directories.
-  list(REMOVE_ITEM include_dirs ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
-
   set(workspace ${CMAKE_CURRENT_BINARY_DIR}/external/workspace)
   file(MAKE_DIRECTORY ${workspace}/${NAME})
   list(LENGTH include_dirs n_include_dirs)
 
   if (n_include_dirs GREATER 1)
     file(MAKE_DIRECTORY ${workspace}/${NAME}/include)
+    # Exclude system include directories.
+    list(REMOVE_ITEM include_dirs ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
     foreach(dir IN LISTS include_dirs)
       file(GLOB items RELATIVE ${dir} ${dir}/*)
       foreach(item IN LISTS items)
