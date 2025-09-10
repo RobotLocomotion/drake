@@ -46,7 +46,6 @@ load("//tools/workspace/mujoco_menagerie_internal:repository.bzl", "mujoco_menag
 load("//tools/workspace/mypy_extensions_internal:repository.bzl", "mypy_extensions_internal_repository")  # noqa
 load("//tools/workspace/mypy_internal:repository.bzl", "mypy_internal_repository")  # noqa
 load("//tools/workspace/nanoflann_internal:repository.bzl", "nanoflann_internal_repository")  # noqa
-load("//tools/workspace/nasm:repository.bzl", "nasm_repository")
 load("//tools/workspace/nlohmann_internal:repository.bzl", "nlohmann_internal_repository")  # noqa
 load("//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
 load("//tools/workspace/onetbb_internal:repository.bzl", "onetbb_internal_repository")  # noqa
@@ -127,7 +126,6 @@ def _add_internal_repositories():
     mypy_extensions_internal_repository(name = "mypy_extensions_internal", mirrors = mirrors)  # noqa
     mypy_internal_repository(name = "mypy_internal", mirrors = mirrors)
     nanoflann_internal_repository(name = "nanoflann_internal", mirrors = mirrors)  # noqa
-    nasm_repository(name = "nasm")
     nlohmann_internal_repository(name = "nlohmann_internal", mirrors = mirrors)
     nlopt_internal_repository(name = "nlopt_internal", mirrors = mirrors)
     onetbb_internal_repository(name = "onetbb_internal", mirrors = mirrors)
