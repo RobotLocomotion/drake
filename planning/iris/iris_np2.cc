@@ -888,7 +888,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           ++num_prog_failures;
           point_to_add_hyperplane = &particle;
           if (do_debugging_visualization) {
-            point_to_draw.head(nq) = closest;
+            point_to_draw.head(nq) =
+                options.parameterization.get_parameterization_double()(closest);
             std::string path = fmt::format("iteration{:02}/{:03}/closest",
                                            iteration, num_points_drawn);
             options.sampled_iris_options.meshcat->SetObject(
@@ -899,7 +900,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
         }
 
         if (add_hyperplane) {
-          DRAKE_ASSERT(point_to_add_hyperplane != nullptr);
+          DRAKE_DEMAND(point_to_add_hyperplane != nullptr);
           if (options.sampled_iris_options.containment_points.has_value()) {
             internal::AddTangentToPolytope(
                 E, *point_to_add_hyperplane, containment_points_vpolytope,
@@ -928,17 +929,6 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           if (counter_example_prog != nullptr) {
             counter_example_prog->UpdatePolytope(A.topRows(num_constraints),
                                                  b.head(num_constraints));
-          }
-        } else {
-          ++num_prog_failures;
-          if (do_debugging_visualization) {
-            point_to_draw.head(nq) = closest;
-            std::string path = fmt::format("iteration{:02}/{:03}/closest",
-                                           iteration, num_points_drawn);
-            options.sampled_iris_options.meshcat->SetObject(
-                path, Sphere(0.01), geometry::Rgba(0.1, 0.8, 0.8, 1.0));
-            options.sampled_iris_options.meshcat->SetTransform(
-                path, RigidTransform<double>(point_to_draw));
           }
         }
       }
