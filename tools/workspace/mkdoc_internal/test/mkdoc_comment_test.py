@@ -1,6 +1,6 @@
 import unittest
 
-from tools.workspace.pybind11.mkdoc_comment import process_comment
+from tools.workspace.mkdoc_internal.mkdoc_comment import process_comment
 
 
 class TestDocstring(unittest.TestCase):

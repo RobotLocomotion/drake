@@ -1,0 +1,12 @@
+[gflags] Deprecate Drake's build rules
+
+--- bazel/gflags.bzl
++++ bazel/gflags.bzl
+@@ -94,6 +94,7 @@
+         copts += ["-DNO_THREADS"]
+     native.cc_library(
+         name       = name,
++        deprecation = "WARNING: The @gflags module extension provided by Drake is deprecated and will be removed on or after 2026-01-01, including removal of the gflags_repository() function. Please switch to the Bazel Central Registry module bazel_dep(name = 'gflags') instead.",
+         hdrs       = hdrs,
+         srcs       = srcs,
+         copts      = copts,

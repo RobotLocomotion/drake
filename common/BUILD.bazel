@@ -428,7 +428,11 @@ drake_cc_library(
     name = "nice_type_name_override_header",
     hdrs = ["nice_type_name_override.h"],
     install_hdrs_exclude = ["nice_type_name_override.h"],
-    tags = ["exclude_from_package"],
+    tags = [
+        "exclude_from_package",
+        # This is linted using `extra_srcs`, below.
+        "nolint",
+    ],
     visibility = ["//bindings/pydrake/common:__pkg__"],
 )
 
@@ -440,6 +444,10 @@ drake_cc_library(
     ],
     hdrs = [
         "nice_type_name.h",
+    ],
+    tags = [
+        # This is linted using `extra_srcs`, below.
+        "nolint",
     ],
     deps = [
         ":essential",
@@ -1333,6 +1341,12 @@ drake_cc_googletest(
 )
 
 add_lint_tests(
+    cpplint_extra_srcs = [
+        "nice_type_name.cc",
+        "nice_type_name.h",
+        "nice_type_name_override.cc",
+        "nice_type_name_override.h",
+    ],
     python_lint_extra_srcs = [
         ":test/resource_tool_installed_test.py",
     ],

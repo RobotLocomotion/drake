@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "drake/tools/workspace/pybind11/test/sample_header_documentation.h"
+#include "drake/tools/workspace/mkdoc_internal/test/sample_header_documentation.h"
 
 namespace {
 

@@ -16,11 +16,11 @@ filegroup(
     srcs = [
         ":_config.yml",
         ":_layouts/default.html",
-        "@styleguide//:cppguide.html",
-        "@styleguide//:include/link.png",
-        "@styleguide//:include/styleguide.css",
-        "@styleguide//:include/styleguide.js",
-        "@styleguide//:pyguide.md",
+        "@styleguide_internal//:cppguide.html",
+        "@styleguide_internal//:include/link.png",
+        "@styleguide_internal//:include/styleguide.css",
+        "@styleguide_internal//:include/styleguide.js",
+        "@styleguide_internal//:pyguide.md",
     ],
 )
 

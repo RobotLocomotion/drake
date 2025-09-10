@@ -11,8 +11,8 @@ def _read(filename):
 # header file, use this command ...
 #
 # cp \
-#  bazel-bin/tools/workspace/pybind11/test/sample_header_documentation.h \
-#  tools/workspace/pybind11/test/sample_header_documentation.expected.h
+# bazel-bin/tools/workspace/mkdoc_internal/test/sample_header_documentation.h \
+# tools/workspace/mkdoc_internal/test/sample_header_documentation.expected.h
 #
 # ... and then manually put back the "SCRUBBED" change.
 
@@ -22,7 +22,7 @@ class TestDocumentation(unittest.TestCase):
         self.maxDiff = None
 
     def test_regression(self):
-        d = "tools/workspace/pybind11/test"
+        d = "tools/workspace/mkdoc_internal/test"
         expected_file = join(d, "sample_header_documentation.expected.h")
         actual_file = join(d, "sample_header_documentation.h")
         # Ensure there is no difference between files.
