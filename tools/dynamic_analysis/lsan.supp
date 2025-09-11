@@ -1,0 +1,4 @@
+# This function purposefully creates a never-deleted singleton display, but
+# LSan can't discern that the g_display (and memory associated with it) is
+# still reachable at the end of the program.
+leak:drake::geometry::render_gl::internal::GladLoaderLoadGlx
