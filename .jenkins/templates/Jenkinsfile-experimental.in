@@ -48,9 +48,12 @@ node(getNodeLabel()) {
       ansiColor('xterm') {
         timestamps {
           try {
-            // Use the CI branch parameter for checkout (defaults to main).
-            def scmVars = checkout(params.ciSha)
-            doMainBuild(scmVars)
+            cleanWorkspace()
+            dir(env.WORKSPACE) {
+              // Use the CI branch parameter for checkout (defaults to main).
+              def scmVars = checkout(params.ciSha)
+              doMainBuild(scmVars)
+            }
           } finally {
             try {
               checkBuildResult()

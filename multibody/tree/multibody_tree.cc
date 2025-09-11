@@ -1019,15 +1019,9 @@ void MultibodyTree<T>::CreateBodyNode(MobodIndex mobod_index) {
 template <typename T>
 void MultibodyTree<T>::FinalizeModelInstances() {
   // Add all of our mobilizers and joint actuators to the appropriate instance.
-  // The order of the mobilizers should match the order in which the bodies were
-  // added to the tree, which may not be the order in which the mobilizers were
-  // added, so we get the mobilizer through the BodyNode.
-  for (const auto& body_node : body_nodes_) {
-    if (body_node->get_num_mobilizer_positions() > 0 ||
-        body_node->get_num_mobilizer_velocities() > 0) {
-      model_instances_.get_mutable_element(body_node->model_instance())
-          .add_mobilizer(&body_node->get_mobilizer());
-    }
+  for (const auto& mobilizer : mobilizers_) {
+    model_instances_.get_mutable_element(mobilizer->model_instance())
+        .add_mobilizer(mobilizer.get());
   }
 
   // N.B. The result of the code below is that actuators are sorted by

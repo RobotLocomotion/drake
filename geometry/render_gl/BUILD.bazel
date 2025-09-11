@@ -116,6 +116,10 @@ drake_cc_library(
     hdrs = [
         "factory.h",
     ],
+    tags = [
+        # This is linted using `extra_srcs`, below.
+        "nolint",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":render_engine_gl_params",
@@ -394,5 +398,6 @@ add_lint_tests(
     cpplint_extra_srcs = [
         "no_factory.cc",
         "factory.cc",
+        "factory.h",
     ],
 )

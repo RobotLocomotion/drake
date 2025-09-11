@@ -418,10 +418,9 @@ TEST_F(ConvexConfigurationSpace, IrisNp2Test) {
     options.sampled_iris_options.meshcat = meshcat_;
     options.sampled_iris_options.verbose = true;
 
-    // We use IPOPT for this test since SNOPT has a large number of solve
-    // failures in this environment.
-    solvers::IpoptSolver solver;
-    options.solver = &solver;
+    // SNOPT has a large number of solve failures in this environment, but the
+    // add_hyperplane_if_solve_fails helps mitigate them.
+    options.add_hyperplane_if_solve_fails = true;
 
     HPolyhedron region =
         IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);

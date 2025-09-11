@@ -1,3 +1,5 @@
+#include <string>
+
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"

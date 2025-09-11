@@ -35,10 +35,10 @@ officially supports when building from source:
 
 | Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           | Java       |
 |------------------------------------|--------------|------------|-------|-------|------------------------------|------------|
-| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 8.3   | 3.22  | GCC 11 (default) or Clang 15 | OpenJDK 11 |
-| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12       | 8.3   | 3.28  | GCC 13 (default) or Clang 19 | OpenJDK 21 |
-| macOS Sonoma (14)                  | arm64        | 3.13       | 8.3   | 4.1   | Apple LLVM 16 (Xcode 16.2)   | OpenJDK 23 |
-| macOS Sequoia (15)                 | arm64        | 3.13       | 8.3   | 4.1   | Apple LLVM 17 (Xcode 16.4)   | OpenJDK 23 |
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 8.4   | 3.22  | GCC 11 (default) or Clang 15 | OpenJDK 11 |
+| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12       | 8.4   | 3.28  | GCC 13 (default) or Clang 19 | OpenJDK 21 |
+| macOS Sonoma (14)                  | arm64        | 3.13       | 8.4   | 4.1   | Apple LLVM 16 (Xcode 16.2)   | OpenJDK 23 |
+| macOS Sequoia (15)                 | arm64        | 3.13       | 8.4   | 4.1   | Apple LLVM 17 (Xcode 16.4)   | OpenJDK 23 |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -60,6 +60,11 @@ maybe require extra setup. See the
 ⁽³⁾ Drake requires a compiler running in C++20 (or greater) mode.
 
 # Building with CMake
+
+Drake's build rules are defined using Bazel `BUILD` files, but we provide a
+CMake wrapper for installing Drake. While this compiles and installs Drake by
+invoking Bazel under the hood, it does so according to CMake conventions
+and using the options provided via CMake.
 
 For sample projects that show how to import Drake as a CMake external project
 (either by building Drake from source, or by downloading a pre-compiled Drake
@@ -85,10 +90,33 @@ make install
 To change the build options, you can run one of the standard CMake GUIs (e.g.,
 `ccmake` or `cmake-gui`) or specify command-line options with `-D` to `cmake`.
 
+Important note: when compiling Drake with Clang 17 or newer on Linux, you must
+add `-fno-assume-unique-vtables` to your project's `CMAKE_CXX_FLAGS`, or else
+Drake's use of run-time type information and dynamic casts will not work correctly.
+
+## Native CMake Options Supported by Drake
+
+A selection of
+[CMake variables](https://cmake.org/cmake/help/latest/manual/cmake-variables.7.html)
+can be specified by the user to be parsed by Drake's CMake and passed to the
+Bazel build.
+
+* [`CMAKE_BUILD_TYPE`](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html)
+* [`CMAKE_(C|CXX)_COMPILER`](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
+* [`CMAKE_INSTALL_PREFIX`](https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html)
+
+Building and installing Drake also requires a working installation of Python.
+When `Python_EXECUTABLE` is specified, it uses the given path to the Python
+interpreter. Otherwise, it uses `find_package(Python)` to find the Python
+version supported by Drake on the host platform (falling back to finding any
+Python version at all if needed). See
+[`FindPython`](https://cmake.org/cmake/help/latest/module/FindPython.html)
+for further details.
+
 ## Drake-specific CMake Options
 
-These options can be set using `-DFOO=bar` on the CMake command line, or in one
-of the CMake GUIs.
+Drake also defines a number of CMake options to control different facets of
+the build.
 
 Adjusting open-source dependencies:
 
@@ -151,9 +179,12 @@ Adjusting closed-source (commercial) software dependencies:
   * This option is only valid for MIT- or TRI-affiliated Drake developers.
   * This option is mutally exclusive with `WITH_SNOPT`.
 
-Important note: when compiling Drake with Clang 17 or newer on Linux, you must
-add `-fno-assume-unique-vtables` to your project's `CXXFLAGS`, or else Drake's
-use of run-time type information and dynamic casts will not work correctly.
+Adjusting installation methods (advanced):
+
+* `INSTALL_NAME_TOOL`. When specified, uses the path to the
+  `install_name_tool` program.
+  * This option is only available on macOS.
+* `INSTALL_STRIP_TOOL`. When specified, uses the path to the `strip` program.
 
 ## CMake Caveats
 

@@ -1,0 +1,26 @@
+[googletest] Adds more printer options for displaying values under test
+
+This is a companion to add_printers.patch that should only be used
+with the bazel_dep() module dependency @googletest, not the module
+extension @gtest. When we remove the deprecated @gtest on 2026-01-01,
+we should fold this patch content into add_printers.patch.
+
+Reasoning for not upstreaming this patch: Drake-specific dependency.
+
+--- MODULE.bazel
++++ MODULE.bazel
+@@ -35,3 +35,4 @@
+     compatibility_level = 1,
+ )
++bazel_dep(name = "drake")
+ 
+
+--- BUILD.bazel
++++ BUILD.bazel
+@@ -144,3 +144,5 @@
+     }),
+-    deps = select({
++    deps = [
++        "@drake//common/test_utilities:gtest_printers",
++    ] + select({
+         ":has_absl": [

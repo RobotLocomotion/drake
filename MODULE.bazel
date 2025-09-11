@@ -12,14 +12,15 @@ module(
 
 # Add starlark rules.
 
-bazel_dep(name = "apple_support", version = "1.23.1", repo_name = "build_bazel_apple_support")  # noqa
+bazel_dep(name = "apple_support", version = "1.23.1")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
 bazel_dep(name = "bazel_features", version = "1.35.0")
 bazel_dep(name = "bazel_skylib", version = "1.8.1")
 bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_cc", version = "0.2.3")
 bazel_dep(name = "rules_java", version = "8.15.2")
+bazel_dep(name = "rules_jvm_external", version = "6.8")
 bazel_dep(name = "rules_license", version = "1.0.0")
-bazel_dep(name = "rules_python", version = "1.6.0")
+bazel_dep(name = "rules_python", version = "1.6.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
 bazel_dep(name = "rules_rust", version = "0.64.0")
 bazel_dep(name = "rules_shell", version = "0.6.0")
 
@@ -127,40 +128,85 @@ drake_dep_repositories = use_extension(
 )
 use_repo(
     drake_dep_repositories,
-    "blas",
-    "buildifier",
-    "drake_models",
+    # Aliases for C++ dependencies that are part of our public API.
     "eigen",
     "fmt",
-    "gflags",
-    "glib",
-    "gtest",
-    "gurobi",
-    "lapack",
-    "lcm",
-    "meshcat",
-    "mosek",
-    "opencl",
-    "pybind11",
-    "pycodestyle",
-    "python",
-    "snopt",
     "spdlog",
-    "styleguide",
-    "x11",
+    # Aliases for C++ dependencies that are used by our implementation.
+    "blas",
+    "lapack",
     "zlib",
+    # First-party dependencies (i.e., drake-maintained).
+    "drake_models",
+    "meshcat",
+    # Commercial solver dependencies. In principle, these externals don't need
+    # to be public, but it's not too much work for us to provide them.
+    "gurobi",
+    "mosek",
+    "snopt",
+    # For convenience, we make our Python toolchains available downstream.
+    # If at some point the Bazel ecosystem evolves so that rules_python on its
+    # own is sufficiently easy to use, we might decide to mark this internal.
+    "python",
+    # For now, we'll offer Drake's customized pybind11 as public. Ideally this
+    # would be internal, but given the pending port to nanobind, it's not worth
+    # deprecating it until we have nanobind ready.
+    "pybind11",
+    # TODO(jwnimmer-tri) Move both of these to be internal (+ deprecation).
+    "opencl",
+    "x11",
+    # TODO(jwnimmer-tri) Move both of these to be internal (+ deprecation).
+    # However, both have bzlmod support so the rework will be a bit nuanced,
+    # so will need to be attacked a dedicated commit just for these two.
+    "glib",
+    "lcm",
 )
 
-# Load developer module dependencies.
+# Load Java dependencies.
+
+maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+maven.install(
+    name = "lcm_maven",
+    artifacts = [
+        "net.sf.jchart2d:jchart2d:3.3.2",
+    ],
+)
+use_repo(maven, "lcm_maven")
+
+# Load developer dependencies that are modules.
 
 bazel_dep(
-    # N.B. This isn't actually used by Drake (yet). We need to declare it here
-    # for now so that our `visibility = ...` can refer to it.
+    name = "buildifier_prebuilt",
+    version = "8.2.0.2",
+    dev_dependency = True,
+)
+
+bazel_dep(
+    name = "gflags",
+    version = "2.2.2",
+    # TODO(jwnimmer-tri) Try to set dev_dependency = True, but at the moment
+    # that prevents downstream from using even non-test code, maybe due to our
+    # bazel query-based tests?
+)
+bazel_dep(
     name = "googletest",
     version = "1.17.0",
     # TODO(jwnimmer-tri) Try to set dev_dependency = True, but at the moment
     # that prevents downstream from using even non-test code, maybe due to our
     # bazel query-based tests?
+)
+single_version_override(
+    module_name = "googletest",
+    patches = [
+        "//tools/workspace/googletest:patches/add_printers.patch",
+        "//tools/workspace/googletest:patches/add_printers_deps.patch",
+        "//tools/workspace/googletest:patches/defines.patch",
+    ],
+    # We must pin the same version as ~10 lines prior, because our patch to
+    # MODULE.bazel doesn't apply correctly to other versions of googletest,
+    # but Bazel's MVS selection will try to apply it anyway to all versions
+    # being considered when resolving the dependency graph.
+    version = "1.17.0",
 )
 
 bazel_dep(
@@ -194,9 +240,8 @@ use_repo(
     "clarabel_cpp_internal",
     "clp_internal",
     "coinutils_internal",
-    "com_jidesoft_jide_oss_internal",
     "common_robotics_utilities_internal",
-    "commons_io_internal",
+    "cpplint_internal",
     "csdp_internal",
     "curl_internal",
     "dm_control_internal",
@@ -222,17 +267,16 @@ use_repo(
     "mypy_extensions_internal",
     "mypy_internal",
     "nanoflann_internal",
-    "net_sf_jchart2d_internal",
     "nlohmann_internal",
     "nlopt_internal",
     "onetbb_internal",
-    "org_apache_xmlgraphics_commons_internal",
     "osqp_internal",
     "pathspec_internal",
     "picosha2_internal",
     "pkgconfig_blas_internal",
     "pkgconfig_lapack_internal",
     "poisson_disk_sampling_internal",
+    "pycodestyle_internal",
     "qdldl_internal",
     "qhull_internal",
     "ros_xacro_internal",
@@ -243,6 +287,7 @@ use_repo(
     "stable_baselines3_internal",
     "statsjs_internal",
     "stduuid_internal",
+    "styleguide_internal",
     "suitesparse_internal",
     "sympy_py_internal",
     "tinygltf_internal",
