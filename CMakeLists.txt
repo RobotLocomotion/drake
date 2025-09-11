@@ -357,8 +357,6 @@ function(symlink_external_repository_includes NAME TARGET)
 
   if (n_include_dirs GREATER 1)
     file(MAKE_DIRECTORY ${workspace}/${NAME}/include)
-    # Exclude system include directories.
-    list(REMOVE_ITEM include_dirs ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
     foreach(dir IN LISTS include_dirs)
       file(GLOB items RELATIVE ${dir} ${dir}/*)
       foreach(item IN LISTS items)
@@ -547,7 +545,19 @@ option(WITH_USER_GLIB "Use user-provided GLIB" ${DEFAULT_WITH_USER_LIBS})
 
 if(WITH_USER_GLIB)
   find_package(PkgConfig REQUIRED)
+
+  # CMake's pkg-config allows for system libraries and cflags, which contains
+  # -I/usr/include on Ubuntu, and we don't want to generate symlinks for every
+  # item contained there later. In this case, we can truncate because we know
+  # this flag comes from PCRE and that GLib doesn't have any public
+  # dependencies. Also, ensure we don't leak our PKG_CONFIG_ARGN modification
+  # for future use.
+  set(_pkg_config_argn "${PKG_CONFIG_ARGN}")
+  list(APPEND PKG_CONFIG_ARGN "--maximum-traverse-depth=2")
   pkg_search_module(GLib REQUIRED IMPORTED_TARGET glib-2.0)
+  set(PKG_CONFIG_ARGN "${_pkg_config_argn}")
+  unset(_pkg_config_argn)
+
   symlink_external_repository_includes(glib PkgConfig::GLib)
   symlink_external_repository_libs(glib PkgConfig::GLib USE_INTERFACE_LIBS)
   override_module(glib)
