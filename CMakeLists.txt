@@ -423,7 +423,6 @@ function(symlink_external_repository_libs NAME TARGET)
     endif()
     _create_links("${lib_dir}" "${location}")
   endif()
-
 endfunction()
 
 macro(override_module NAME)
@@ -494,7 +493,7 @@ if(WITH_USER_SPDLOG)
   # SONAME spelling, while older versions only use the major version.
   # We support that logic here to provide compatibility with both.
   # See https://github.com/gabime/spdlog/releases/tag/v1.11.0 for details.
-  set(SPDLOG_USE_SO_MINOR_VERSION USE_MINOR_VERSION)
+  set(SPDLOG_USE_SO_MINOR_VERSION USE_SO_MINOR_VERSION)
   if(${spdlog_VERSION_MAJOR} LESS 1 OR
     (${spdlog_VERSION_MAJOR} EQUAL 1 AND ${spdlog_VERSION_MINOR} LESS 11))
     set(SPDLOG_USE_SO_MINOR_VERSION)
