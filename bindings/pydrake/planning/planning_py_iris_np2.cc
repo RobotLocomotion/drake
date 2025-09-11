@@ -42,12 +42,17 @@ void DefinePlanningIrisNp2(py::module m) {
           cls_doc.sampling_strategy.doc)
       .def_readwrite("ray_sampler_options",
           &IrisNp2Options::ray_sampler_options, cls_doc.ray_sampler_options.doc)
+      .def_readwrite("add_hyperplane_if_solve_fails",
+          &IrisNp2Options::add_hyperplane_if_solve_fails,
+          cls_doc.add_hyperplane_if_solve_fails.doc)
       .def("__repr__", [](const IrisNp2Options& self) {
         return py::str(
             "IrisNp2Options("
             "sampled_iris_options={}, "
+            "add_hyperplane_if_solve_fails={}, "
             ")")
-            .format(self.sampled_iris_options);
+            .format(
+                self.sampled_iris_options, self.add_hyperplane_if_solve_fails);
       });
 
   DefReadWriteKeepAlive(

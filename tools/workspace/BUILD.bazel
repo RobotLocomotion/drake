@@ -81,9 +81,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "ccd_internal",
     "clp_internal",
     "coinutils_internal",
-    "com_jidesoft_jide_oss_internal",
     "common_robotics_utilities_internal",
-    "commons_io_internal",
     "curl_internal",
     "fcl_internal",
     "gklib_internal",
@@ -96,11 +94,9 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "meshcat",
     "metis_internal",
     "msgpack_internal",
-    "net_sf_jchart2d_internal",
     "nanoflann_internal",
     "nlohmann_internal",
     "nlopt_internal",
-    "org_apache_xmlgraphics_commons_internal",
     "picosha2_internal",
     "poisson_disk_sampling_internal",
     "pybind11",
@@ -163,16 +159,6 @@ install(
     deps = _DRAKE_EXTERNAL_PACKAGE_INSTALLS,
 )
 
-check_licenses(
-    _DRAKE_EXTERNAL_PACKAGE_INSTALLS,
-    ignore_labels = [
-        # Jar files have their license notices embedded into the jar already;
-        # there is no need for them to install a separate license file.
-        "@com_jidesoft_jide_oss_internal//:install",
-        "@commons_io_internal//:install",
-        "@net_sf_jchart2d_internal//:install",
-        "@org_apache_xmlgraphics_commons_internal//:install",
-    ],
-)
+check_licenses(_DRAKE_EXTERNAL_PACKAGE_INSTALLS)
 
 add_lint_tests()

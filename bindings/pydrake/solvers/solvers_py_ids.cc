@@ -1,3 +1,5 @@
+#include <string>
+
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/solvers/solver_id.h"

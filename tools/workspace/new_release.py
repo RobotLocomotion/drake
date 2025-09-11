@@ -100,7 +100,7 @@ _OVERLOOK_RELEASE_REPOSITORIES = {
     "gz_math_internal": r"^(gz)",
     "gz_utils_internal": r"^(gz)",
     "petsc": r"^(v)",
-    "pycodestyle": "",
+    "pycodestyle_internal": "",
     "qhull_internal": r"^(2)",
     "sdformat_internal": "",
     "xmlrunner_py": "",
@@ -388,7 +388,10 @@ def _do_upgrade_github_archive(
 
     # Download the new source archive.
     info("Downloading new archive...")
-    new_url = f"https://github.com/{repository}/archive/{new_commit}.tar.gz"
+    if _smells_like_a_git_commit(new_commit):
+        new_url = f"https://github.com/{repository}/archive/{new_commit}.tar.gz"  # noqa
+    else:
+        new_url = f"https://github.com/{repository}/archive/refs/tags/{new_commit}.tar.gz"  # noqa
     new_filename = new_commit.replace("/", "_")
     new_checksum = _download(new_url, f"{temp_dir}/{new_filename}.tar.gz")
 

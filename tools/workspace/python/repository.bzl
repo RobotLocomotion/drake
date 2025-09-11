@@ -41,7 +41,6 @@ load(
     "homebrew_prefix",
     "which",
 )
-load("//tools/workspace:os.bzl", "is_wheel_build")
 
 def _get_python_interpreter(repo_ctx):
     """Returns the tuple (python_interpreter_path, major_minor_version) based
@@ -120,7 +119,8 @@ def _get_linkopts(repo_ctx, python_config):
 def _prepare_venv(repo_ctx, python):
     # Only macOS and wheel builds use a venv at the moment.
     os_name = repo_ctx.os.name  # "linux" or "mac os x"
-    if os_name != "mac os x" and not is_wheel_build(repo_ctx):
+    is_wheel_build = repo_ctx.getenv("DRAKE_WHEEL", "") == "1"
+    if os_name != "mac os x" and not is_wheel_build:
         return python
 
     # Locate lock files and mark them to be monitored for changes.
@@ -132,7 +132,7 @@ def _prepare_venv(repo_ctx, python):
     repo_ctx.watch(pdmlock)
 
     # Choose which dependencies to install.
-    if is_wheel_build(repo_ctx):
+    if is_wheel_build:
         repo_ctx.file("@pdm-install-args", content = "-G wheel")
     elif repo_ctx.attr.requirements_flavor == "test":
         repo_ctx.file("@pdm-install-args", content = "-G test")
@@ -202,6 +202,9 @@ PYTHON_LINKOPTS = {linkopts}
 
 python_repository = repository_rule(
     _impl,
+    environ = [
+        "DRAKE_WHEEL",
+    ],
     attrs = {
         "linux_interpreter_path": attr.string(
             default = "/usr/bin/python3",

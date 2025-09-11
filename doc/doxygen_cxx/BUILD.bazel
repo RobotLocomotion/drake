@@ -21,7 +21,7 @@ drake_py_library(
     srcs = ["system_doxygen.py"],
     visibility = [
         "//doc/pydrake:__pkg__",
-        "//tools/workspace/pybind11:__pkg__",
+        "//tools/workspace/mkdoc_internal:__pkg__",
     ],
 )
 

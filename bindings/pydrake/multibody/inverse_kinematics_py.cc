@@ -1,5 +1,9 @@
 #include "drake/bindings/pydrake/multibody/inverse_kinematics_py.h"
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"

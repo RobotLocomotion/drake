@@ -15,9 +15,12 @@ load(
     "//tools/skylark:pybind.bzl",
     "drake_pybind_cc_googletest",
     "drake_pybind_library",
-    "generate_pybind_documentation_header",
     "get_drake_py_installs",
     "get_pybind_package_info",
+)
+load(
+    "//tools/workspace/mkdoc_internal:defs.bzl",
+    "generate_pybind_documentation_header",
 )
 load(
     "//tools/workspace/pybind11:repository.bzl",

@@ -647,15 +647,26 @@ endif()
 
 set(BAZEL_INSTALL_ARGS "\${CMAKE_INSTALL_PREFIX}")
 
-if(CMAKE_INSTALL_NAME_TOOL)
-  list(INSERT BAZEL_INSTALL_ARGS 0
-    "--install_name_tool"
-    "${CMAKE_INSTALL_NAME_TOOL}"
+if(APPLE)
+  set(INSTALL_NAME_TOOL "" CACHE FILEPATH
+    "Path to the install name tool program"
   )
+  # Users should rarely need to modify this option.
+  mark_as_advanced(INSTALL_NAME_TOOL)
+  if(INSTALL_NAME_TOOL)
+    list(INSERT BAZEL_INSTALL_ARGS 0
+      "--install_name_tool" "${INSTALL_NAME_TOOL}"
+    )
+  endif()
 endif()
 
-if(CMAKE_STRIP)
-  list(INSERT BAZEL_INSTALL_ARGS 0 "--strip_tool" "${CMAKE_STRIP}")
+set(INSTALL_STRIP_TOOL "" CACHE FILEPATH
+  "Path to the strip program"
+)
+# Users should rarely need to modify this option.
+mark_as_advanced(INSTALL_STRIP_TOOL)
+if(INSTALL_STRIP_TOOL)
+  list(INSERT BAZEL_INSTALL_ARGS 0 "--strip_tool" "${INSTALL_STRIP_TOOL}")
 endif()
 
 # If CMAKE_BUILD_TYPE is Debug or RelWithDebInfo, do NOT strip symbols during

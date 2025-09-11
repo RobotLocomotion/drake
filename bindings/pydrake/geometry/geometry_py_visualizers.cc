@@ -1,6 +1,10 @@
 /* @file This contains the bindings for the various visualizer System types
  found in drake::geometry. They can be found in the pydrake.geometry module. */
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"

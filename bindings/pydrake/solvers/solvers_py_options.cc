@@ -1,3 +1,7 @@
+#include <memory>
+#include <string>
+#include <utility>
+
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"

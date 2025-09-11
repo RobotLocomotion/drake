@@ -1,0 +1,64 @@
+[cpplint_internal] For iwyu, allow foo.cc to presume foo.h includes
+
+See https://drake.mit.edu/styleguide/cppguide.html#Include_What_You_Use:
+
+  In particular, we do not expect a foo.cc file to repeat any #include
+  statements from its associated foo.h header file.
+
+That rule is a Drake-specific amendment to the Google Style Guide,
+so would ordinarily be flagged by the upstream cpplint.py (see
+https://github.com/cpplint/cpplint/issues/218). We need to patch
+the code to allow for this special case.
+
+Note that we don't have any direct unit tests of this logic. If it
+fails to inherit the includes (false positive) then a bunch of lint
+will show up and that's good enough to notice. If it can't find the
+"related header" it wants to parse, it will crash and show up.
+
+Reason for not upstreaming this patch: Drake-specific convention.
+
+--- cpplint.py
++++ cpplint.py
+@@ -6909,7 +6909,7 @@
+     """Check if these two filenames belong to the same module.
+ 
+     The concept of a 'module' here is a as follows:
+-    foo.h, foo-inl.h, foo.cc, foo_test.cc and foo_unittest.cc belong to the
++    foo.h, foo-inl.h, foo.cc belong to the
+     same 'module' if they are in the same directory.
+     some/path/public/xyzzy and some/path/internal/xyzzy are also considered
+     to belong to the same module here.
+@@ -6943,9 +6943,6 @@
+         return (False, "")
+ 
+     filename_cc = filename_cc[: -(len(fileinfo_cc.Extension()))]
+-    if matched_test_suffix := re.search(_TEST_FILE_SUFFIX, fileinfo_cc.BaseName()):
+-        filename_cc = filename_cc[: -len(matched_test_suffix.group(1))]
+-
+     filename_cc = filename_cc.replace("/public/", "/")
+     filename_cc = filename_cc.replace("/internal/", "/")
+ 
+@@ -7018,6 +7018,23 @@ def CheckForIncludeWhatYouUse(filename, clean_lines, include_state, error, io=co
+     # Let's flatten the include_state include_list and copy it into a dictionary.
+     include_dict = dict([item for sublist in include_state.include_list for item in sublist])
+ 
++    # As a Drake-specific amendment, allow path/to/foo.cc to inherit its IWYU
++    # from drake/path/to/foo.h; they are the same module.
++    for header in list(include_dict.keys()):
++        if header.startswith("drake/"):
++            (same_module, _) = FilesBelongToSameModule(f"drake/{filename}", header)
++            if same_module:
++                header_sans_drake = header[len("drake/"):]
++                headerfile = io.open(header_sans_drake, "r", "utf8", "replace")
++                linenum = 0
++                for line in headerfile:
++                    linenum += 1
++                    clean_line = CleanseComments(line)
++                    match = _RE_PATTERN_INCLUDE.search(clean_line)
++                    if match:
++                        include = match.group(2)
++                        include_dict.setdefault(include, linenum)
++
+     # All the lines have been processed, report the errors found.
+     for header in sorted(required, key=required.__getitem__):
+         template = required[header][1]

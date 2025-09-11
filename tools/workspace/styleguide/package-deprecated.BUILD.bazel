@@ -1,0 +1,13 @@
+# -*- bazel -*-
+
+licenses(["notice"])  # BSD-3-Clause
+
+package(default_visibility = ["//visibility:public"])
+
+print("DRAKE DEPRECATED: The @styleguide external is deprecated and will be removed from Drake on or after 2026-01-01.")  # noqa
+
+# Export doc files for website publication.
+exports_files(glob([
+    "*",
+    "include/*",
+]))

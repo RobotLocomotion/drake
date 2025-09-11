@@ -806,6 +806,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // Perform a query of the dynamic objects against themselves.
     dynamic_tree_.collide(&data, has_collisions::Callback);
 
+    // Testing to see if we've already discovered collisions here is not just
+    // a matter of efficiency; it is a matter of correctness. If the only
+    // observable collisions are between dynamic objects, blindly proceeding to
+    // examining collisions between dynamic-anchored pairs will end up
+    // overwriting the `collision_exist` value we'd already found.
+    if (data.collisions_exist) return true;
+
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
     FclCollide(dynamic_tree_, anchored_tree_, &data, has_collisions::Callback);
