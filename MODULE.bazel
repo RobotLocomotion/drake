@@ -12,14 +12,15 @@ module(
 
 # Add starlark rules.
 
-bazel_dep(name = "apple_support", version = "1.23.1", repo_name = "build_bazel_apple_support")  # noqa
+bazel_dep(name = "apple_support", version = "1.23.1")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
 bazel_dep(name = "bazel_features", version = "1.35.0")
 bazel_dep(name = "bazel_skylib", version = "1.8.1")
 bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_cc", version = "0.2.3")
 bazel_dep(name = "rules_java", version = "8.15.2")
+bazel_dep(name = "rules_jvm_external", version = "6.8")
 bazel_dep(name = "rules_license", version = "1.0.0")
-bazel_dep(name = "rules_python", version = "1.6.0")
+bazel_dep(name = "rules_python", version = "1.6.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
 bazel_dep(name = "rules_rust", version = "0.64.0")
 bazel_dep(name = "rules_shell", version = "0.6.0")
 
@@ -166,6 +167,17 @@ use_repo(
     "lcm",
 )
 
+# Load Java dependencies.
+
+maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+maven.install(
+    name = "lcm_maven",
+    artifacts = [
+        "net.sf.jchart2d:jchart2d:3.3.2",
+    ],
+)
+use_repo(maven, "lcm_maven")
+
 # Load developer dependencies that are modules.
 
 bazel_dep(
@@ -233,9 +245,7 @@ use_repo(
     "clarabel_cpp_internal",
     "clp_internal",
     "coinutils_internal",
-    "com_jidesoft_jide_oss_internal",
     "common_robotics_utilities_internal",
-    "commons_io_internal",
     "cpplint_internal",
     "csdp_internal",
     "curl_internal",
@@ -262,11 +272,9 @@ use_repo(
     "mypy_extensions_internal",
     "mypy_internal",
     "nanoflann_internal",
-    "net_sf_jchart2d_internal",
     "nlohmann_internal",
     "nlopt_internal",
     "onetbb_internal",
-    "org_apache_xmlgraphics_commons_internal",
     "osqp_internal",
     "pathspec_internal",
     "picosha2_internal",

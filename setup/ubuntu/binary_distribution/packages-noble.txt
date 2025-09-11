@@ -7,7 +7,6 @@ libgfortran5
 libglib2.0-0
 libglx0
 libgomp1
-libjchart2d-java
 liblapack3
 libopengl0
 libquadmath0

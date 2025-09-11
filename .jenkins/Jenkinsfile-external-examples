@@ -128,7 +128,7 @@ def emailFailureResults() {
 }
 
 /**
- * Deletes the workspace and tmp directories, for use at the end of a build.
+ * Deletes the workspace and tmp directories.
  */
 def cleanWorkspace() {
   dir(env.WORKSPACE) {

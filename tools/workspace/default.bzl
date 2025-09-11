@@ -9,9 +9,7 @@ load("//tools/workspace/clang_cindex_python3_internal:repository.bzl", "clang_ci
 load("//tools/workspace/clarabel_cpp_internal:repository.bzl", "clarabel_cpp_internal_repository")  # noqa
 load("//tools/workspace/clp_internal:repository.bzl", "clp_internal_repository")  # noqa
 load("//tools/workspace/coinutils_internal:repository.bzl", "coinutils_internal_repository")  # noqa
-load("//tools/workspace/com_jidesoft_jide_oss_internal:repository.bzl", "com_jidesoft_jide_oss_internal_repository")  # noqa
 load("//tools/workspace/common_robotics_utilities_internal:repository.bzl", "common_robotics_utilities_internal_repository")  # noqa
-load("//tools/workspace/commons_io_internal:repository.bzl", "commons_io_internal_repository")  # noqa
 load("//tools/workspace/cpplint_internal:repository.bzl", "cpplint_internal_repository")  # noqa
 load("//tools/workspace/crate_universe:repository.bzl", "crate_universe_repositories_internal")  # noqa
 load("//tools/workspace/csdp_internal:repository.bzl", "csdp_internal_repository")  # noqa
@@ -47,13 +45,10 @@ load("//tools/workspace/mujoco_menagerie_internal:repository.bzl", "mujoco_menag
 load("//tools/workspace/mypy_extensions_internal:repository.bzl", "mypy_extensions_internal_repository")  # noqa
 load("//tools/workspace/mypy_internal:repository.bzl", "mypy_internal_repository")  # noqa
 load("//tools/workspace/nanoflann_internal:repository.bzl", "nanoflann_internal_repository")  # noqa
-load("//tools/workspace/nasm:repository.bzl", "nasm_repository")
-load("//tools/workspace/net_sf_jchart2d_internal:repository.bzl", "net_sf_jchart2d_internal_repository")  # noqa
 load("//tools/workspace/nlohmann_internal:repository.bzl", "nlohmann_internal_repository")  # noqa
 load("//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
 load("//tools/workspace/onetbb_internal:repository.bzl", "onetbb_internal_repository")  # noqa
 load("//tools/workspace/opencl:repository.bzl", "opencl_repository")
-load("//tools/workspace/org_apache_xmlgraphics_commons_internal:repository.bzl", "org_apache_xmlgraphics_commons_internal_repository")  # noqa
 load("//tools/workspace/osqp_internal:repository.bzl", "osqp_internal_repository")  # noqa
 load("//tools/workspace/pathspec_internal:repository.bzl", "pathspec_internal_repository")  # noqa
 load("//tools/workspace/picosha2_internal:repository.bzl", "picosha2_internal_repository")  # noqa
@@ -103,9 +98,7 @@ def _add_internal_repositories():
     clarabel_cpp_internal_repository(name = "clarabel_cpp_internal", mirrors = mirrors)  # noqa
     clp_internal_repository(name = "clp_internal", mirrors = mirrors)
     coinutils_internal_repository(name = "coinutils_internal", mirrors = mirrors)  # noqa
-    com_jidesoft_jide_oss_internal_repository(name = "com_jidesoft_jide_oss_internal", mirrors = mirrors)  # noqa
     common_robotics_utilities_internal_repository(name = "common_robotics_utilities_internal", mirrors = mirrors)  # noqa
-    commons_io_internal_repository(name = "commons_io_internal", mirrors = mirrors)  # noqa
     cpplint_internal_repository(name = "cpplint_internal", mirrors = mirrors)
     csdp_internal_repository(name = "csdp_internal", mirrors = mirrors)
     curl_internal_repository(name = "curl_internal", mirrors = mirrors)
@@ -132,12 +125,9 @@ def _add_internal_repositories():
     mypy_extensions_internal_repository(name = "mypy_extensions_internal", mirrors = mirrors)  # noqa
     mypy_internal_repository(name = "mypy_internal", mirrors = mirrors)
     nanoflann_internal_repository(name = "nanoflann_internal", mirrors = mirrors)  # noqa
-    nasm_repository(name = "nasm")
-    net_sf_jchart2d_internal_repository(name = "net_sf_jchart2d_internal", mirrors = mirrors)  # noqa
     nlohmann_internal_repository(name = "nlohmann_internal", mirrors = mirrors)
     nlopt_internal_repository(name = "nlopt_internal", mirrors = mirrors)
     onetbb_internal_repository(name = "onetbb_internal", mirrors = mirrors)
-    org_apache_xmlgraphics_commons_internal_repository(name = "org_apache_xmlgraphics_commons_internal", mirrors = mirrors)  # noqa
     osqp_internal_repository(name = "osqp_internal", mirrors = mirrors)
     pathspec_internal_repository(name = "pathspec_internal", mirrors = mirrors)
     picosha2_internal_repository(name = "picosha2_internal", mirrors = mirrors)

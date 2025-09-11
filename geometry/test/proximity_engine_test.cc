@@ -2767,6 +2767,34 @@ TEST_F(SimplePenetrationTest, HasCollisionsDynamicAndDynamicSingleSource) {
   EXPECT_TRUE(sym_engine->HasCollisions());
 }
 
+// There was a bug (23406). If anchored geometries existed but they were not
+// in collision with dynamic geometries, collisions between dynamics geometries
+// would be ignored and the HasCollisions() query would return a lie. This is
+// a test against that bug coming back.
+TEST_F(SimplePenetrationTest, HasCollisionsAnchoredInterference) {
+  const GeometryId dynamic_id_1 = GeometryId::get_new_id();
+  engine_.AddDynamicGeometry(sphere_, {}, dynamic_id_1);
+
+  const GeometryId dynamic_id_2 = GeometryId::get_new_id();
+  engine_.AddDynamicGeometry(sphere_, {}, dynamic_id_2);
+  EXPECT_EQ(engine_.num_geometries(), 2);
+
+  X_WGs_[dynamic_id_1] = RigidTransformd::Identity();
+  X_WGs_[dynamic_id_2] = RigidTransformd::Identity();
+
+  EXPECT_TRUE(engine_.HasCollisions());
+
+  // The anchored geometry must be non-colliding, but close enough that its
+  // bounding box overlaps.
+  const Vector3d p_WA =
+      Vector3d(1, 1, 0).normalized() * (sphere_.radius() * 2.1);
+  const GeometryId anchored_id = GeometryId::get_new_id();
+  engine_.AddAnchoredGeometry(sphere_, RigidTransformd(p_WA), anchored_id);
+  EXPECT_EQ(engine_.num_geometries(), 3);
+  // We still have collisions (original code would report false).
+  EXPECT_TRUE(engine_.HasCollisions());
+}
+
 // Performs the same collision test where the geometries have been filtered.
 TEST_F(SimplePenetrationTest, WithCollisionFilters) {
   GeometryId origin_id = GeometryId::get_new_id();
