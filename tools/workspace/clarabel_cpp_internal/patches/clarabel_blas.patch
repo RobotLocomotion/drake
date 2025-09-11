@@ -1,5 +1,7 @@
 [clarabel] Opt-out of Rust linking for BLAS/LAPACK
 
+N.B. This is a patch to Clarabel.rs, not Clarabel.cpp!
+
 The blas_src and lapack_src crates are the Rust ecosystem's solution
 for inversion of control when linking the BLAS and LAPACK libraries.
 Library code refers to those crates and then the top-level Cargo file

@@ -304,62 +304,31 @@ use_repo(
     "yaml_cpp_internal",
 )
 
-internal_crate_universe_repositories = use_extension(
-    "//tools/workspace:default.bzl",
-    "internal_crate_universe_repositories",
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+
+# The following stanza repeats the cargo dependencies from Clarabel.cpp.
+# https://github.com/oxfordcontrol/Clarabel.cpp/blob/main/rust_wrapper/Cargo.toml
+crate.spec(
+    features = ["sdp"],
+    package = "clarabel",
+    version = "0.11.1",
 )
-use_repo(
-    internal_crate_universe_repositories,
-    "crate__amd-0.2.2",
-    "crate__autocfg-1.5.0",
-    "crate__blas-0.22.0",
-    "crate__blas-sys-0.7.1",
-    "crate__bumpalo-3.19.0",
-    "crate__cfg-if-1.0.1",
-    "crate__clarabel-0.11.1",
-    "crate__darling-0.14.4",
-    "crate__darling_core-0.14.4",
-    "crate__darling_macro-0.14.4",
-    "crate__derive_builder-0.11.2",
-    "crate__derive_builder_core-0.11.2",
-    "crate__derive_builder_macro-0.11.2",
-    "crate__either-1.15.0",
-    "crate__enum_dispatch-0.3.13",
-    "crate__equivalent-1.0.2",
-    "crate__fnv-1.0.7",
-    "crate__hashbrown-0.15.4",
-    "crate__ident_case-1.0.1",
-    "crate__indexmap-2.10.0",
-    "crate__itertools-0.11.0",
-    "crate__itoa-1.0.15",
-    "crate__js-sys-0.3.77",
-    "crate__lapack-0.19.0",
-    "crate__lapack-sys-0.14.0",
-    "crate__lazy_static-1.5.0",
-    "crate__libc-0.2.174",
-    "crate__log-0.4.27",
-    "crate__memchr-2.7.5",
-    "crate__num-complex-0.4.6",
-    "crate__num-traits-0.2.19",
-    "crate__once_cell-1.21.3",
-    "crate__paste-1.0.15",
-    "crate__proc-macro2-1.0.95",
-    "crate__quote-1.0.40",
-    "crate__ryu-1.0.20",
-    "crate__serde-1.0.219",
-    "crate__serde-big-array-0.5.1",
-    "crate__serde_derive-1.0.219",
-    "crate__serde_json-1.0.141",
-    "crate__strsim-0.10.0",
-    "crate__syn-1.0.109",
-    "crate__syn-2.0.104",
-    "crate__thiserror-1.0.69",
-    "crate__thiserror-impl-1.0.69",
-    "crate__unicode-ident-1.0.18",
-    "crate__wasm-bindgen-0.2.100",
-    "crate__wasm-bindgen-backend-0.2.100",
-    "crate__wasm-bindgen-macro-0.2.100",
-    "crate__wasm-bindgen-macro-support-0.2.100",
-    "crate__wasm-bindgen-shared-0.2.100",
-    "crate__web-time-0.2.4",
+crate.annotation(
+    crate = "clarabel",
+    patches = [
+        "@drake//tools/workspace/clarabel_cpp_internal:patches/clarabel_blas.patch",  # noqa
+    ],
 )
+crate.spec(
+    features = [],
+    package = "paste",
+    version = "1.0",
+)
+crate.spec(
+    features = [],
+    package = "cfg-if",
+    version = "1.0",
+)
+
+crate.from_specs()
+use_repo(crate, crates_internal = "crates")
