@@ -380,7 +380,7 @@ endfunction()
 # argument, in which case they are used directly.
 function(symlink_external_repository_libs NAME TARGET)
   cmake_parse_arguments(ARG
-    "USE_SO_MINOR_VERSION;USE_INTERFACE_LIBS"
+    "USE_SO_MINOR_VERSION"
     "" "" ${ARGN}
   )
 
@@ -407,7 +407,8 @@ function(symlink_external_repository_libs NAME TARGET)
   set(lib_dir "${workspace}/${NAME}/lib/")
   file(MAKE_DIRECTORY "${lib_dir}")
 
-  if (ARG_USE_INTERFACE_LIBS)
+  get_target_property(type ${TARGET} TYPE)
+  if (type STREQUAL INTERFACE_LIBRARY)
     get_target_property(libs ${TARGET} INTERFACE_LINK_LIBRARIES)
     if(NOT libs)
       message(FATAL_ERROR "Target ${TARGET} has no interface link libraries.")
@@ -559,7 +560,7 @@ if(WITH_USER_GLIB)
   unset(_pkg_config_argn)
 
   symlink_external_repository_includes(glib PkgConfig::GLib)
-  symlink_external_repository_libs(glib PkgConfig::GLib USE_INTERFACE_LIBS)
+  symlink_external_repository_libs(glib PkgConfig::GLib)
   override_module(glib)
   # glib's BCR module defines its library in a subdirectory BUILD file rather
   # than the top-level file, so we must replicate that structure here.
