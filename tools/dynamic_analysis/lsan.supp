@@ -2,3 +2,6 @@
 # LSan can't discern that the g_display (and memory associated with it) is
 # still reachable at the end of the program.
 leak:drake::geometry::render_gl::internal::GladLoaderLoadGlx
+# LSan also can't discern that the pointer passed to this function is the
+# same singleton as the one created with the function above.
+leak:drake::geometry::render_gl::internal::(anonymous namespace)::vtk_glad_glXCreateContextAttribsARB
