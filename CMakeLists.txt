@@ -384,7 +384,7 @@ function(symlink_external_repository_libs NAME TARGET)
     "" "" ${ARGN}
   )
 
-  function(_create_links lib_dir location)
+  macro(_create_links location)
     get_filename_component(basename "${location}" NAME)
     file(CREATE_LINK "${location}" "${lib_dir}/${basename}" SYMBOLIC)
     # Link the SONAME spelling in case of shared libraries.
@@ -401,7 +401,7 @@ function(symlink_external_repository_libs NAME TARGET)
         other_basename "${other_basename}")
     endif()
     file(CREATE_LINK "${location}" "${lib_dir}/${other_basename}" SYMBOLIC)
-  endfunction()
+  endmacro()
 
   set(workspace "${CMAKE_CURRENT_BINARY_DIR}/external/workspace")
   set(lib_dir "${workspace}/${NAME}/lib/")
@@ -414,16 +414,15 @@ function(symlink_external_repository_libs NAME TARGET)
       message(FATAL_ERROR "Target ${TARGET} has no interface link libraries.")
     endif()
     foreach(lib IN LISTS libs)
-      _create_links("${lib_dir}" "${lib}")
+      _create_links("${lib}")
     endforeach()
   else()
     get_target_property(location ${TARGET} LOCATION_${CMAKE_BUILD_TYPE})
     if(NOT location)
       message(FATAL_ERROR "Target ${TARGET} has no location on disk.")
     endif()
-    _create_links("${lib_dir}" "${location}")
+    _create_links("${location}")
   endif()
-
 endfunction()
 
 macro(override_module NAME)
@@ -494,7 +493,7 @@ if(WITH_USER_SPDLOG)
   # SONAME spelling, while older versions only use the major version.
   # We support that logic here to provide compatibility with both.
   # See https://github.com/gabime/spdlog/releases/tag/v1.11.0 for details.
-  set(SPDLOG_USE_SO_MINOR_VERSION USE_MINOR_VERSION)
+  set(SPDLOG_USE_SO_MINOR_VERSION USE_SO_MINOR_VERSION)
   if(${spdlog_VERSION_MAJOR} LESS 1 OR
     (${spdlog_VERSION_MAJOR} EQUAL 1 AND ${spdlog_VERSION_MINOR} LESS 11))
     set(SPDLOG_USE_SO_MINOR_VERSION)
