@@ -24,12 +24,6 @@ build --config=packaging
 build --define=LCM_INSTALL_JAVA=OFF
 # Enable MOSEK lazy loading. Right now this is only done for Linux builds.
 build --@drake//solvers:mosek_lazy_load=True
-# The JDK mentioned here is not actually used, but must not be local_jdk
-# because we don't have any local JDK installed and rules_java fails fast
-# when that option is selected but no JDK can be found.
-# TODO(jwnimmer-tri) Offer an official //tools/flags and CMake option to
-# disable Drake's Java support, and use it here.
-build --java_runtime_version=remotejdk_11
 EOF
 
 # Install Drake using our wheel-build-specific Python interpreter.

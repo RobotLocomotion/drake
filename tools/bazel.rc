@@ -23,6 +23,14 @@ build --strict_system_includes
 # Use the host Python interpreter by default.
 build --extra_toolchains=@python//:all
 
+# For background, see https://bazel.build/docs/bazel-and-java.
+# The java_runtime_version defaults to local_jdk, which is some uncontrolled
+# version from Ubuntu or Homebrew that can lead to build failures. Instead,
+# we'll set it (and correspondingly the java_language_version) to an arbitrary
+# value that's compatible with what `lcm.jar` needs.
+build --java_language_version=11
+build --java_runtime_version=remotejdk_11
+
 # Use C++23 by default.
 build --cxxopt=-std=c++23
 build --host_cxxopt=-std=c++23
