@@ -14,6 +14,7 @@ exports_files([
     ".bazelproject",
     ".clang-format",
     ".drake-find_resource-sentinel",
+    ".ruff.toml",
     "package.xml",
 ])
 

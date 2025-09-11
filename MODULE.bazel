@@ -229,6 +229,18 @@ single_version_override(
     ],
 )
 
+bazel_dep(
+    name = "ruff_prebuilt",
+    dev_dependency = True,
+    repo_name = "ruff",
+)
+archive_override(
+    module_name = "ruff_prebuilt",
+    integrity = "sha256-HzWNz/lpTlUPt349985rNMomXb3R4zwUvo2j+ffCRxs=",
+    strip_prefix = "ruff_prebuilt-c99c00bdd4f4b0550fcd638c108a9b40636a58a3",
+    url = "https://github.com/RobotLocomotion/ruff_prebuilt/archive/c99c00bdd4f4b0550fcd638c108a9b40636a58a3.tar.gz",  # noqa
+)
+
 # Load dependencies which are "private", i.e., not available for use by
 # downstream projects. These are all "internal use only".
 
