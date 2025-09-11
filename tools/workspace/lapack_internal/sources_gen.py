@@ -18,12 +18,18 @@ _WANTED = (
     "SBLAS1",
     "SBLAS2",
     "SBLAS3",
+    "ZBLAS1",
+    "ZBLAS2",
+    "ZBLAS3",
+    "ZB1AUX",
     "ALLAUX",
     "SCLAUX",
     "DZLAUX",
     "SLASRC",
     "DSLASRC",
+    "ZCLASRC",
     "DLASRC",
+    "ZLASRC",
 )
 
 
