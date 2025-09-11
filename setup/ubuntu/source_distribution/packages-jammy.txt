@@ -1,4 +1,3 @@
-default-jdk
 diffutils
 file
 gfortran
