@@ -6,8 +6,8 @@ def styleguide_repository(
     github_archive(
         name = name,
         repository = "RobotLocomotion/styleguide",
-        commit = "81521cacb27b933acea048f37ffccd8b68769cc2",
-        sha256 = "c4519d54cc30372cec99188578e419bf82e871a0e1c63fed9af376a4705b7f28",  # noqa
+        commit = "63d2e8ef2a1931f014f35d1939e4e902dc57ef13",
+        sha256 = "23e25b88ef9ccb916b7f5097300956147f8cb51157fbc1967f24ebe2b445c82e",  # noqa
         # TODO(jwnimmer-tri) Simplify on 2025-06-01 during deprecation removal.
         build_file = "@drake//tools/workspace/styleguide:package.BUILD.bazel" if "internal" in name else ":package-deprecated.BUILD.bazel",  # noqa
         mirrors = mirrors,
