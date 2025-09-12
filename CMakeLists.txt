@@ -541,31 +541,33 @@ if(NOT APPLE)
   endif()
 endif()
 
-option(WITH_USER_GLIB "Use user-provided GLIB" ${DEFAULT_WITH_USER_LIBS})
+find_package(PkgConfig 1)
+if(PkgConfig_FOUND)
+  option(WITH_USER_GLIB "Use user-provided GLIB" ${DEFAULT_WITH_USER_LIBS})
 
-if(WITH_USER_GLIB)
-  find_package(PkgConfig REQUIRED)
+  if(WITH_USER_GLIB)
 
-  # CMake's pkg-config allows for system libraries and cflags, which contains
-  # -I/usr/include on Ubuntu, and we don't want to generate symlinks for every
-  # item contained there later. In this case, we can truncate because we know
-  # this flag comes from PCRE and that GLib doesn't have any public
-  # dependencies. Also, ensure we don't leak our PKG_CONFIG_ARGN modification
-  # for future use.
-  set(_pkg_config_argn "${PKG_CONFIG_ARGN}")
-  list(APPEND PKG_CONFIG_ARGN "--maximum-traverse-depth=2")
-  pkg_search_module(GLib REQUIRED IMPORTED_TARGET glib-2.0)
-  set(PKG_CONFIG_ARGN "${_pkg_config_argn}")
-  unset(_pkg_config_argn)
+    # CMake's pkg-config allows for system libraries and cflags, which contains
+    # -I/usr/include on Ubuntu, and we don't want to generate symlinks for every
+    # item contained there later. In this case, we can truncate because we know
+    # this flag comes from PCRE and that GLib doesn't have any public
+    # dependencies. Also, ensure we don't leak our PKG_CONFIG_ARGN modification
+    # for future use.
+    set(_pkg_config_argn "${PKG_CONFIG_ARGN}")
+    list(APPEND PKG_CONFIG_ARGN "--maximum-traverse-depth=2")
+    pkg_search_module(GLib REQUIRED IMPORTED_TARGET glib-2.0)
+    set(PKG_CONFIG_ARGN "${_pkg_config_argn}")
+    unset(_pkg_config_argn)
 
-  symlink_external_repository_includes(glib PkgConfig::GLib)
-  symlink_external_repository_libs(glib PkgConfig::GLib)
-  override_module(glib)
-  # glib's BCR module defines its library in a subdirectory BUILD file rather
-  # than the top-level file, so we must replicate that structure here.
-  file(WRITE
-    "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/glib/glib/BUILD.bazel"
-    "alias(name = 'glib', actual = '//:glib', visibility = ['//visibility:public'])")
+    symlink_external_repository_includes(glib PkgConfig::GLib)
+    symlink_external_repository_libs(glib PkgConfig::GLib)
+    override_module(glib)
+    # glib's BCR module defines its library in a subdirectory BUILD file rather
+    # than the top-level file, so we must replicate that structure here.
+    file(WRITE
+      "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/glib/glib/BUILD.bazel"
+      "alias(name = 'glib', actual = '//:glib', visibility = ['//visibility:public'])")
+  endif()
 endif()
 
 option(WITH_USER_ZLIB "Use user-provided ZLIB" ${DEFAULT_WITH_USER_LIBS})

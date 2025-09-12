@@ -140,6 +140,7 @@ Adjusting open-source dependencies:
 * `WITH_USER_GLIB` (default `ON`). When `ON`, uses `pkg_search_module(GLib
   glib-2.0)` to locate a user-provided GLib library instead of building from
   source.
+  * This option is only available if pkg-config is at least version 1.0.
 * `WITH_USER_ZLIB` (default `ON`). When `ON`, uses `find_package(ZLIB)` to
   locate a user-provided `ZLIB::ZLIB` library instead of building from source.
   * Caveat: on macOS, for now this hardcodes `-lz`
