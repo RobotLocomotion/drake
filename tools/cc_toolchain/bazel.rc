@@ -9,6 +9,11 @@ build --action_env=CCACHE_DISABLE=1
 # command line, or promote *any* warnings even from externals to errors via
 # --copt=-Werror.
 #
-# When compiilng Drake as an external package, this rcfile is not loaded and we
+# When compiling Drake as an external package, this rcfile is not loaded and we
 # won't promote warnings to errors by default.
 build --@drake//tools/cc_toolchain:error_severity=error
+
+# Similarly, only allow using the mold linker when Drake is the main
+# module. Other conditions will be checked as well; see
+# //tools/cc_toolchain:use_mold_linker for more details.
+build --@drake//tools/cc_toolchain:allow_mold_linker=true
