@@ -1,0 +1,5 @@
+# Per our style guide.
+line-length = 80
+
+# Per our oldest supported platform (currently Ubuntu 22.04 "Jammy").
+target-version = "py310"
