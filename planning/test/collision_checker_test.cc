@@ -324,7 +324,7 @@ GTEST_TEST(MakeModel, EnvironmentalFloatingBase) {
   auto [robot, robot_index] =
       MakeModel({.weld_robot = false, .on_env_base = true});
   const auto& floater = robot->plant().GetBodyByName("floater");
-  ASSERT_TRUE(floater.is_floating());
+  ASSERT_TRUE(floater.is_floating_base_body());
   ASSERT_TRUE(floater.has_quaternion_dofs());
 
   const std::set<int> base_dofs = GetFloatingBaseDofs();

@@ -180,16 +180,17 @@ const std::string& MultibodyTree<T>::GetModelInstanceName(
 }
 
 template <typename T>
-bool MultibodyTree<T>::HasUniqueFreeBaseBodyImpl(
+bool MultibodyTree<T>::HasUniqueFloatingBaseBodyImpl(
     ModelInstanceIndex model_instance) const {
   std::optional<BodyIndex> base_body_index =
       MaybeGetUniqueBaseBodyIndex(model_instance);
   return base_body_index.has_value() &&
-         rigid_bodies_.get_element(base_body_index.value()).is_floating();
+         rigid_bodies_.get_element(base_body_index.value())
+             .is_floating_base_body();
 }
 
 template <typename T>
-const RigidBody<T>& MultibodyTree<T>::GetUniqueFreeBaseBodyOrThrowImpl(
+const RigidBody<T>& MultibodyTree<T>::GetUniqueFloatingBaseBodyOrThrowImpl(
     ModelInstanceIndex model_instance) const {
   std::optional<BodyIndex> base_body_index =
       MaybeGetUniqueBaseBodyIndex(model_instance);
@@ -200,10 +201,10 @@ const RigidBody<T>& MultibodyTree<T>::GetUniqueFreeBaseBodyOrThrowImpl(
   }
   const RigidBody<T>& result =
       rigid_bodies_.get_element(base_body_index.value());
-  if (!result.is_floating()) {
-    throw std::logic_error(
-        fmt::format("Model {} has a unique base body, but it is not free.",
-                    model_instances_.get_element(model_instance).name()));
+  if (!result.is_floating_base_body()) {
+    throw std::logic_error(fmt::format(
+        "Model {} has a unique base body, but it is not a floating base body.",
+        model_instances_.get_element(model_instance).name()));
   }
   return result;
 }
@@ -789,8 +790,9 @@ void MultibodyTree<T>::CreateJointImplementations() {
 
     std::unique_ptr<Mobilizer<T>> owned_mobilizer = joint.Build(mobod, this);
     Mobilizer<T>* mobilizer = owned_mobilizer.get();
-    AddMobilizer(std::move(owned_mobilizer));  // ownership->tree
     mobilizer->set_model_instance(joint.model_instance());
+    mobilizer->set_is_ephemeral(joint.is_ephemeral());
+    AddMobilizer(std::move(owned_mobilizer));  // ownership->tree
     DRAKE_DEMAND(mobilizer->index() == mobod.index());
     // Record the joint to mobilizer map.
     joint_to_mobilizer_[joint_index] = mobilizer->index();
@@ -892,14 +894,16 @@ void MultibodyTree<T>::FinalizeInternals() {
 
   FinalizeModelInstances();
 
-  // For all floating bodies, route their future default poses queries through
-  // its joint representation.
+  // For each floating base body, transfer its default pose to its newly-added
+  // ephemeral floating joint and route its future default pose setting &
+  // querying through its joint representation.
   for (JointIndex i : GetJointIndices()) {
     auto& joint = joints_.get_mutable_element(i);
     const RigidBody<T>& body = joint.child_body();
-    if (body.is_floating()) {
+    if (body.is_floating_base_body()) {
+      DRAKE_DEMAND(joint.is_ephemeral());
       const auto [quaternion, translation] =
-          GetDefaultFreeBodyPoseAsQuaternionVec3Pair(body);
+          GetDefaultFloatingBaseBodyPoseAsQuaternionVec3Pair(body);
       joint.SetDefaultPosePair(quaternion, translation);
       default_body_poses_[body.index()] = joint.index();
     }
@@ -1122,7 +1126,7 @@ RigidTransform<T> MultibodyTree<T>::GetFreeBodyPoseOrThrow(
 }
 
 template <typename T>
-void MultibodyTree<T>::SetDefaultFreeBodyPose(
+void MultibodyTree<T>::SetDefaultFloatingBaseBodyPose(
     const RigidBody<T>& body, const RigidTransform<double>& X_WB) {
   if (!default_body_poses_.contains(body.index()) ||
       std::holds_alternative<
@@ -1138,16 +1142,16 @@ void MultibodyTree<T>::SetDefaultFreeBodyPose(
 }
 
 template <typename T>
-RigidTransform<double> MultibodyTree<T>::GetDefaultFreeBodyPose(
+RigidTransform<double> MultibodyTree<T>::GetDefaultFloatingBaseBodyPose(
     const RigidBody<T>& body) const {
   const std::pair<Eigen::Quaternion<double>, Vector3<double>> pose =
-      GetDefaultFreeBodyPoseAsQuaternionVec3Pair(body);
+      GetDefaultFloatingBaseBodyPoseAsQuaternionVec3Pair(body);
   return RigidTransform<double>(pose.first, pose.second);
 }
 
 template <typename T>
 std::pair<Eigen::Quaternion<double>, Vector3<double>>
-MultibodyTree<T>::GetDefaultFreeBodyPoseAsQuaternionVec3Pair(
+MultibodyTree<T>::GetDefaultFloatingBaseBodyPoseAsQuaternionVec3Pair(
     const RigidBody<T>& body) const {
   if (!default_body_poses_.contains(body.index())) {
     return std::make_pair(Eigen::Quaternion<double>::Identity(),

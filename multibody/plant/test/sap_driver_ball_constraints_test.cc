@@ -132,8 +132,8 @@ TEST_P(TwoBodiesTest, ConfirmConstraintProperties) {
   // Place Bo at known offset from Ao; this does *not* satisfy the
   // constraint. We'll observe a non-zero value when evaluating the constraint
   // function.
-  plant_.SetFreeBodyPoseInWorldFrame(context_.get(), *bodyB_,
-                                     RigidTransformd(kOffset_));
+  plant_.SetFloatingBaseBodyPoseInWorldFrame(context_.get(), *bodyB_,
+                                             RigidTransformd(kOffset_));
 
   const ContactProblemCache<double>& problem_cache =
       SapDriverTest::EvalContactProblemCache(sap_driver(), *context_);
