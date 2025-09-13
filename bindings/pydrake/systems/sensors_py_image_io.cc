@@ -2,9 +2,9 @@
 #include <utility>
 #include <vector>
 
+#include "drake/bindings/generated_docstrings/systems_sensors.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"
 #include "drake/systems/sensors/image_file_format.h"
 #include "drake/systems/sensors/image_io.h"
@@ -19,7 +19,7 @@ using systems::LeafSystem;
 void DefineSensorsImageIo(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::sensors;
-  constexpr auto& doc = pydrake_doc.drake.systems.sensors;
+  constexpr auto& doc = pydrake_doc_systems_sensors.drake.systems.sensors;
 
   {
     py::enum_<ImageFileFormat>(m, "ImageFileFormat")

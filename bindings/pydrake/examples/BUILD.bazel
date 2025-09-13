@@ -23,7 +23,12 @@ PACKAGE_INFO = get_pybind_package_info("//bindings")
 drake_pybind_library(
     name = "examples",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:examples_acrobot",
+        "//bindings/generated_docstrings:examples_compass_gait",
+        "//bindings/generated_docstrings:examples_pendulum",
+        "//bindings/generated_docstrings:examples_quadrotor",
+        "//bindings/generated_docstrings:examples_rimless_wheel",
+        "//bindings/generated_docstrings:examples_van_der_pol",
         "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_so_name = "__init__",

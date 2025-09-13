@@ -1,0 +1,132 @@
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_cc.bzl", "drake_cc_googletest")
+load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_test")
+load(":defs.bzl", "generate_docstrings")
+
+# List of the subdirectories we need docstrings for.
+_SUBDIRS = [
+    "common",
+    "common/schema",
+    "common/symbolic",
+    "common/symbolic/expression",
+    "common/trajectories",
+    "examples/acrobot",
+    "examples/compass_gait",
+    "examples/pendulum",
+    "examples/quadrotor",
+    "examples/rimless_wheel",
+    "examples/van_der_pol",
+    "geometry",
+    "geometry/optimization",
+    "geometry/proximity",
+    "geometry/query_results",
+    "geometry/render",
+    "geometry/render_gl",
+    "geometry/render_gltf_client",
+    "geometry/render_vtk",
+    "lcm",
+    "manipulation/kuka_iiwa",
+    "manipulation/schunk_wsg",
+    "manipulation/util",
+    "math",
+    "multibody/benchmarks/acrobot",
+    "multibody/benchmarks/free_body",
+    "multibody/benchmarks/inclined_plane",
+    "multibody/benchmarks/kuka_iiwa_robot",
+    "multibody/benchmarks/mass_damper_spring",
+    "multibody/benchmarks/pendulum",
+    "multibody/fem",
+    "multibody/inverse_kinematics",
+    "multibody/math",
+    "multibody/meshcat",
+    "multibody/optimization",
+    "multibody/parsing",
+    "multibody/plant",
+    "multibody/rational",
+    "multibody/tree",
+    "perception",
+    "planning",
+    "planning/graph_algorithms",
+    "planning/iris",
+    "planning/locomotion",
+    "planning/trajectory_optimization",
+    "solvers",
+    "systems/analysis",
+    "systems/controllers",
+    "systems/estimators",
+    "systems/framework",
+    "systems/lcm",
+    "systems/optimization",
+    "systems/primitives",
+    "systems/rendering",
+    "systems/sensors",
+    "visualization",
+]
+
+# List of the generated filenames.
+_FILENAMES = [
+    subdir.replace("/", "_") + ".h"
+    for subdir in _SUBDIRS
+]
+
+# Generate a docstring file for each of the _SUBDIRS.
+[
+    generate_docstrings(subdir = subdir)
+    for subdir in _SUBDIRS
+]
+
+# Provide rule that refreshes the generated files.
+write_file(
+    name = "write_regenerate.py",
+    out = "regenerate.py",
+    content = [
+        "from pathlib import Path",
+        "from python import runfiles",
+        "manifest = runfiles.Create()",
+        "drake = Path(manifest.Rlocation('drake/.bazelproject')).parent",
+        "output_dir = drake / 'bindings/generated_docstrings'",
+        "input_dir = Path('bindings/generated_docstrings/gen')",
+        "encoding = dict(encoding='utf-8')",
+        "def write(filename):",
+        "    new_content = (input_dir / filename).read_text(**encoding)",
+        "    (output_dir / filename).write_text(new_content, **encoding)",
+    ] + [
+        "write('{}')".format(filename)
+        for filename in _FILENAMES
+    ],
+)
+
+drake_py_binary(
+    name = "regenerate",
+    srcs = [":regenerate.py"],
+    data = [
+        "//:.bazelproject",
+    ] + [
+        "gen/" + filename
+        for filename in _FILENAMES
+    ],
+    tags = ["nolint"],
+    deps = ["@rules_python//python/runfiles"],
+)
+
+# Complain if the committed docstrings differ from the reference docstrings.
+drake_py_test(
+    name = "diff_test",
+    args = _FILENAMES,
+    data = _FILENAMES + [
+        "gen/" + filename
+        for filename in _FILENAMES
+    ],
+    tags = ["lint"],
+    deps = ["@rules_python//python/runfiles"],
+)
+
+drake_cc_googletest(
+    name = "documentation_pybind_test",
+    deps = [
+        ":math",
+    ],
+)
+
+add_lint_tests()
