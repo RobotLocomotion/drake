@@ -5,13 +5,13 @@
 #include <utility>
 #include <vector>
 
+#include "drake/bindings/generated_docstrings/systems_framework.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/builder_life_support_pybind.h"
 #include "drake/bindings/pydrake/systems/value_producer_pybind.h"
@@ -31,7 +31,7 @@ namespace {
 
 // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
 using namespace drake::systems;
-constexpr auto& doc = pydrake_doc.drake.systems;
+constexpr auto& doc = pydrake_doc_systems_framework.drake.systems;
 
 // Given a vector of (possibly null) pointers, returns a vector formed by
 // calling Clone() elementwise.

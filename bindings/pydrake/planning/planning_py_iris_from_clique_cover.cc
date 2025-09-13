@@ -1,6 +1,6 @@
 #include <vector>
 
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/generated_docstrings/planning_iris.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_base.h"
@@ -13,7 +13,7 @@ namespace internal {
 void DefinePlanningIrisFromCliqueCover(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
-  constexpr auto& doc = pydrake_doc.drake.planning;
+  constexpr auto& doc = pydrake_doc_planning_iris.drake.planning;
   auto cls_doc = doc.IrisFromCliqueCoverOptions;
   py::class_<IrisFromCliqueCoverOptions>(
       m, "IrisFromCliqueCoverOptions", cls_doc.doc)

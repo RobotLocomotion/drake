@@ -260,7 +260,7 @@ consider placing them in a heredoc string.
 An example of incorporating docstrings from `pydrake_doc`:
 
 ```{.cc}
-    #include "drake/bindings/pydrake/documentation_pybind.h"
+    #include "drake/bindings/generated_docstrings/documentation_pybind.h"
 
     PYBIND11_MODULE(math, m) {
       using namespace drake::math;
@@ -320,6 +320,7 @@ To browse the generated documentation strings that are available for use (or
 especially, to find out the names for overloaded functions' documentation),
 generate and open the docstring header:
 
+    XXX
     bazel build //bindings/pydrake:documentation_pybind.h
     $EDITOR bazel-bin/bindings/pydrake/documentation_pybind.h
 

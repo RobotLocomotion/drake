@@ -2,11 +2,11 @@
 #include <string>
 #include <vector>
 
+#include "drake/bindings/generated_docstrings/multibody_meshcat.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/meshcat/contact_visualizer.h"
 #include "drake/multibody/meshcat/contact_visualizer_params.h"
@@ -24,7 +24,7 @@ namespace {
 void DoScalarIndependentDefinitions(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody::meshcat;
-  constexpr auto& doc = pydrake_doc.drake.multibody.meshcat;
+  constexpr auto& doc = pydrake_doc_multibody_meshcat.drake.multibody.meshcat;
 
   // ContactVisualizerParams
   {
@@ -108,7 +108,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody::meshcat;
-  constexpr auto& doc = pydrake_doc.drake.multibody.meshcat;
+  constexpr auto& doc = pydrake_doc_multibody_meshcat.drake.multibody.meshcat;
 
   // ContactVisualizer
   {
