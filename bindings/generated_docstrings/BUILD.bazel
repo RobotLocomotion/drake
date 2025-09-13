@@ -1,0 +1,90 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load(":defs.bzl", "generate_docstrings")
+
+# List of which subdirectories we need docstrings for.
+_SUBDIRS = [
+    "common",
+    "common/schema",
+    "common/symbolic",
+    "common/symbolic/expression",
+    "common/trajectories",
+    "common/yaml",
+    "examples/acrobot",
+    "examples/compass_gait",
+    "examples/pendulum",
+    "examples/quadrotor",
+    "examples/rimless_wheel",
+    "examples/van_der_pol",
+    "geometry",
+    "geometry/optimization",
+    "geometry/proximity",
+    "geometry/query_results",
+    "geometry/render",
+    "geometry/render_gl",
+    "geometry/render_gltf_client",
+    "geometry/render_vtk",
+    "lcm",
+    "manipulation/kinova_jaco",
+    "manipulation/kuka_iiwa",
+    "manipulation/schunk_wsg",
+    "manipulation/util",
+    "math",
+    "multibody/benchmarks/acrobot",
+    "multibody/benchmarks/free_body",
+    "multibody/benchmarks/inclined_plane",
+    "multibody/benchmarks/kuka_iiwa_robot",
+    "multibody/benchmarks/mass_damper_spring",
+    "multibody/benchmarks/pendulum",
+    "multibody/contact_solvers",
+    "multibody/contact_solvers/sap",
+    "multibody/fem",
+    "multibody/hydroelastics",
+    "multibody/inverse_kinematics",
+    "multibody/math",
+    "multibody/meshcat",
+    "multibody/optimization",
+    "multibody/parsing",
+    "multibody/plant",
+    "multibody/rational",
+    "multibody/topology",
+    "multibody/tree",
+    "multibody/triangle_quadrature",
+    "perception",
+    "planning",
+    "planning/graph_algorithms",
+    "planning/iris",
+    "planning/locomotion",
+    "planning/trajectory_optimization",
+    "solvers",
+    "systems/analysis",
+    "systems/controllers",
+    "systems/estimators",
+    "systems/framework",
+    "systems/lcm",
+    "systems/optimization",
+    "systems/primitives",
+    "systems/rendering",
+    "systems/sensors",
+    "visualization",
+]
+
+# Generate a docstring file for each of the _SUBDIRS.
+[
+    generate_docstrings(subdir = subdir)
+    for subdir in _SUBDIRS
+]
+
+# XXX rewrite me or something
+drake_cc_googletest(
+    name = "documentation_pybind_test",
+    deps = [
+        ":math",
+    ],
+)
+
+add_lint_tests()

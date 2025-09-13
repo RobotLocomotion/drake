@@ -89,7 +89,10 @@ selects.config_setting_group(
 
 cc_nolink_library(
     name = "hdrs",
-    visibility = ["//tools/install/libdrake:__pkg__"],
+    visibility = [
+        "//bindings/generated_docstrings:__pkg__",
+        "//tools/install/libdrake:__pkg__",
+    ],
     deps = ["@spdlog"],
 )
 

@@ -2,11 +2,11 @@
 #include <set>
 #include <utility>
 
+#include "drake/bindings/generated_docstrings/multibody_optimization.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/optimization/centroidal_momentum_constraint.h"
 #include "drake/multibody/optimization/quaternion_integration_constraint.h"
@@ -21,7 +21,7 @@ namespace {
 PYBIND11_MODULE(optimization, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  constexpr auto& doc = pydrake_doc.drake.multibody;
+  constexpr auto& doc = pydrake_doc_multibody_optimization.drake.multibody;
 
   m.doc() = "Optimization module for MultibodyPlant motion planning";
 

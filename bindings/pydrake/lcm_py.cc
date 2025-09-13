@@ -1,9 +1,9 @@
 #include <cstring>
 #include <string>
 
+#include "drake/bindings/generated_docstrings/lcm.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_interface.h"
@@ -14,7 +14,7 @@ namespace pydrake {
 PYBIND11_MODULE(lcm, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::lcm;
-  constexpr auto& doc = pydrake_doc.drake.lcm;
+  constexpr auto& doc = pydrake_doc_lcm.drake.lcm;
 
   py::module::import("pydrake.common");
 
