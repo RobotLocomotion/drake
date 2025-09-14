@@ -98,7 +98,7 @@ def _defang(flags):
 # The BASE_COPTS are used for all drake_cc_{binary,library,test} rules.
 BASE_COPTS = select({
     "//tools/cc_toolchain:apple_clang_with_errors": APPLECLANG_FLAGS,
-    "//tools/cc_toolchain:apple_clang_with_warnings": _defang(APPLECLANG_FLAGS),  # noqa
+    "//tools/cc_toolchain:apple_clang_with_warnings": _defang(APPLECLANG_FLAGS),
     "//tools/cc_toolchain:gcc_with_errors": GCC_FLAGS,
     "//tools/cc_toolchain:gcc_with_warnings": _defang(GCC_FLAGS),
     "//tools/cc_toolchain:linux_clang_with_errors": CLANG_FLAGS,
