@@ -137,6 +137,10 @@ Adjusting open-source dependencies:
   user-provided `LAPACK::LAPACK` library instead of building from source.
   * This option is not available on macOS.
   * When `ON`, `WITH_USER_BLAS` must also be `ON`.
+* `WITH_USER_GLIB` (default `ON`). When `ON`, uses `pkg_search_module(GLib
+  glib-2.0)` to locate a user-provided GLib library instead of building from
+  source.
+  * This option is only available if pkg-config is at least version 1.0.
 * `WITH_USER_ZLIB` (default `ON`). When `ON`, uses `find_package(ZLIB)` to
   locate a user-provided `ZLIB::ZLIB` library instead of building from source.
   * Caveat: on macOS, for now this hardcodes `-lz`

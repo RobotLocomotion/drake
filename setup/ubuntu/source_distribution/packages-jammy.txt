@@ -1,4 +1,3 @@
-default-jdk
 diffutils
 file
 gfortran
@@ -9,7 +8,6 @@ libglx-dev
 liblapack-dev
 libopengl-dev
 libx11-dev
-nasm
 ocl-icd-opencl-dev
 opencl-headers
 patch
