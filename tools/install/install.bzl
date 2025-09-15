@@ -462,6 +462,8 @@ def _install_impl(ctx):
         elif hasattr(t, "files_to_run") and t.files_to_run.executable:
             # Executable scripts copied from source directory.
             actions += _install_runtime_actions(ctx, t)
+        else:
+            fail("Don't know how to install {}".format(t.label))
 
     # Generate install test actions.
     installed_tests += _install_test_actions(ctx)

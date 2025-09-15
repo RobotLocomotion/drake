@@ -339,6 +339,17 @@ bool_flag(
     build_setting_default = True,
 )
 
+# The :install_libdrake flag configures whether to install libdrake as a shared
+# or static library (i.e., libdrake.so or libdrake.a).
+string_flag(
+    name = "install_libdrake",
+    build_setting_default = "shared",
+    values = [
+        "shared",
+        "static",
+    ],
+)
+
 # -----------------------------------------------------------------------------
 
 add_lint_tests()
