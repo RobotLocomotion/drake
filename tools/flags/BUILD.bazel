@@ -331,6 +331,25 @@ bool_flag(
     build_setting_default = True,
 )
 
+# The :install_libdrake flag configures whether to install libdrake as a shared
+# or static library (i.e., libdrake.so or libdrake.a).
+string_flag(
+    name = "install_libdrake",
+    build_setting_default = "shared",
+    values = [
+        "shared",
+        "static",
+    ],
+)
+
+# The :install_python flag controls whether to install Drake's Python-related
+# software (i.e., pydrake, pybind11 headers, and python lcmtypes). When True,
+# the :install_libdrake flag must be set to "shared".
+bool_flag(
+    name = "install_python",
+    build_setting_default = True,
+)
+
 # -----------------------------------------------------------------------------
 
 add_lint_tests()
