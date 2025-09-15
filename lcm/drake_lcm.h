@@ -58,6 +58,12 @@ class DrakeLcm : public DrakeLcmInterface {
       MultichannelHandlerFunction) override;
   int HandleSubscriptions(int) override;
 
+  /** Returns true if the LCM runtime library is enabled in this build of Drake.
+   * When false, functions that require the runtime (e.g., HandleSubscriptions
+   * and Publish) will throw an error.
+   */
+  static bool available();
+
  private:
   friend class DrakeLcmTester;
 

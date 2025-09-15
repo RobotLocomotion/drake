@@ -153,6 +153,13 @@ Adjusting open-source dependencies:
 * `WITH_NLOPT` (default `ON`). When `ON`, enables the `NloptSolver` in the build.
 * `WITH_OSQP` (default `ON`). When `ON`, enables the `OsqpSolver` in the build.
 * `WITH_SCS` (default `ON`). When `ON`, enables the `ScsSolver` in the build.
+* `WITH_LCM_RUNTIME` (default `ON`). When `ON`, the LGPL-licensed LCM runtime
+  library will be installed alongside Drake. When OFF, the library will not be
+  installed and the static methods `DrakeLcm::available()` and
+  `DrakeLcmLog::available()` will return `false`.
+* `WITH_DRAKE_LCMTYPES_JAVA` (default `ON`). When `ON`, the message library
+  `lcmtypes_drake.jar` will be compiled and installed. Setting to `OFF` might be
+  helpful to avoid depending on a JDK during the build.
 
 Adjusting closed-source (commercial) software dependencies:
 

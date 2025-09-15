@@ -305,5 +305,23 @@ bool_flag(
 )
 
 # -----------------------------------------------------------------------------
+# Configuration for LCM (http://lcm-proj.github.io/lcm/).
+
+# When False, LCM is not available at runtime (i.e., DrakeLcm::available() and
+# DrakeLcmLog::available() will both be `false`). This does not affect lcm-gen
+# code generation for messages.
+bool_flag(
+    name = "with_lcm_runtime",
+    build_setting_default = True,
+)
+
+# When False, lcmtypes_drake.jar will not be installed. (This might be helpful
+# to avoid depending on a JDK during the build.)
+bool_flag(
+    name = "with_drake_lcmtypes_java",
+    build_setting_default = True,
+)
+
+# -----------------------------------------------------------------------------
 
 add_lint_tests()
