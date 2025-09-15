@@ -88,7 +88,7 @@ def _cc_whole_archive_library_impl(ctx):
                 cc_toolchain = cc_toolchain,
                 static_library = old_library.static_library,
                 pic_static_library = old_library.pic_static_library,
-                dynamic_library = old_library.resolved_symlink_dynamic_library,  # noqa
+                dynamic_library = old_library.resolved_symlink_dynamic_library,
                 interface_library = old_library.resolved_symlink_interface_library,  # noqa
                 # This is where the magic happens!
                 alwayslink = True,
@@ -98,7 +98,7 @@ def _cc_whole_archive_library_impl(ctx):
             owner = ctx.label,
             libraries = depset(direct = new_libraries),
             additional_inputs = depset(direct = old_linker_input.additional_inputs),  # noqa
-            user_link_flags = depset(direct = old_linker_input.user_link_flags),  # noqa
+            user_link_flags = depset(direct = old_linker_input.user_link_flags),
         )
         new_linker_inputs.append(new_linker_input)
 

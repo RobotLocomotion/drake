@@ -4,10 +4,10 @@ load("//tools/workspace/abseil_cpp_internal:repository.bzl", "abseil_cpp_interna
 load("//tools/workspace/bazelisk_internal:repository.bzl", "bazelisk_internal_repository")  # noqa
 load("//tools/workspace/blas:repository.bzl", "blas_repository")
 load("//tools/workspace/buildifier:repository.bzl", "buildifier_repository")
-load("//tools/workspace/ccd_internal:repository.bzl", "ccd_internal_repository")  # noqa
+load("//tools/workspace/ccd_internal:repository.bzl", "ccd_internal_repository")
 load("//tools/workspace/clang_cindex_python3_internal:repository.bzl", "clang_cindex_python3_internal_repository")  # noqa
 load("//tools/workspace/clarabel_cpp_internal:repository.bzl", "clarabel_cpp_internal_repository")  # noqa
-load("//tools/workspace/clp_internal:repository.bzl", "clp_internal_repository")  # noqa
+load("//tools/workspace/clp_internal:repository.bzl", "clp_internal_repository")
 load("//tools/workspace/coinutils_internal:repository.bzl", "coinutils_internal_repository")  # noqa
 load("//tools/workspace/common_robotics_utilities_internal:repository.bzl", "common_robotics_utilities_internal_repository")  # noqa
 load("//tools/workspace/cpplint_internal:repository.bzl", "cpplint_internal_repository")  # noqa
@@ -16,8 +16,8 @@ load("//tools/workspace/csdp_internal:repository.bzl", "csdp_internal_repository
 load("//tools/workspace/curl_internal:repository.bzl", "curl_internal_repository")  # noqa
 load("//tools/workspace/dm_control_internal:repository.bzl", "dm_control_internal_repository")  # noqa
 load("//tools/workspace/doxygen_internal:repository.bzl", "doxygen_internal_repository")  # noqa
-load("//tools/workspace/drake_models:repository.bzl", "drake_models_repository")  # noqa
-load("//tools/workspace/fcl_internal:repository.bzl", "fcl_internal_repository")  # noqa
+load("//tools/workspace/drake_models:repository.bzl", "drake_models_repository")
+load("//tools/workspace/fcl_internal:repository.bzl", "fcl_internal_repository")
 load("//tools/workspace/gflags:repository.bzl", "gflags_repository")
 load("//tools/workspace/gfortran_internal:repository.bzl", "gfortran_internal_repository")  # noqa
 load("//tools/workspace/github3_py_internal:repository.bzl", "github3_py_internal_repository")  # noqa
@@ -62,7 +62,7 @@ load("//tools/workspace/python:repository.bzl", "python_repository")
 load("//tools/workspace/qdldl_internal:repository.bzl", "qdldl_internal_repository")  # noqa
 load("//tools/workspace/qhull_internal:repository.bzl", "qhull_internal_repository")  # noqa
 load("//tools/workspace/ros_xacro_internal:repository.bzl", "ros_xacro_internal_repository")  # noqa
-load("//tools/workspace/scs_internal:repository.bzl", "scs_internal_repository")  # noqa
+load("//tools/workspace/scs_internal:repository.bzl", "scs_internal_repository")
 load("//tools/workspace/sdformat_internal:repository.bzl", "sdformat_internal_repository")  # noqa
 load("//tools/workspace/snopt:repository.bzl", "snopt_repository")
 load("//tools/workspace/spgrid_internal:repository.bzl", "spgrid_module_extension_impl")  # noqa
@@ -82,7 +82,7 @@ load("//tools/workspace/uritemplate_py_internal:repository.bzl", "uritemplate_py
 load("//tools/workspace/usockets_internal:repository.bzl", "usockets_internal_repository")  # noqa
 load("//tools/workspace/uwebsockets_internal:repository.bzl", "uwebsockets_internal_repository")  # noqa
 load("//tools/workspace/voxelized_geometry_tools_internal:repository.bzl", "voxelized_geometry_tools_internal_repository")  # noqa
-load("//tools/workspace/vtk_internal:repository.bzl", "vtk_internal_repository")  # noqa
+load("//tools/workspace/vtk_internal:repository.bzl", "vtk_internal_repository")
 load("//tools/workspace/x11:repository.bzl", "x11_repository")
 load("//tools/workspace/xmlrunner_py_internal:repository.bzl", "xmlrunner_py_internal_repository")  # noqa
 load("//tools/workspace/yaml_cpp_internal:repository.bzl", "yaml_cpp_internal_repository")  # noqa

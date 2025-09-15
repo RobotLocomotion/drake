@@ -389,7 +389,7 @@ def _do_upgrade_github_archive(
     # Download the new source archive.
     info("Downloading new archive...")
     if _smells_like_a_git_commit(new_commit):
-        new_url = f"https://github.com/{repository}/archive/{new_commit}.tar.gz"  # noqa
+        new_url = f"https://github.com/{repository}/archive/{new_commit}.tar.gz"
     else:
         new_url = f"https://github.com/{repository}/archive/refs/tags/{new_commit}.tar.gz"  # noqa
     new_filename = new_commit.replace("/", "_")
