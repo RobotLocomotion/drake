@@ -963,23 +963,20 @@ void RenderEngineVtk::InitializePipelines() {
   vtkNew<vtkSequencePass> full_seq;
   vtkNew<vtkRenderPassCollection> full_passes;
   full_passes->AddItem(vtkNew<vtkLightsPass>());
-  if (parameters_.ssao_params.has_value()) {
+  if (parameters_.ssao.has_value()) {
     vtkNew<vtkCameraPass> ssao_camera_pass;
     vtkNew<vtkOpaquePass> opaque_pass;
     ssao_camera_pass->SetDelegatePass(opaque_pass);
 
     vtkNew<vtkSSAOPass> ssao_pass;
-    const auto& ssao_parameter = parameters_.ssao_params.value();
+    const auto& ssao_parameter = parameters_.ssao.value();
     ssao_pass->SetDelegatePass(ssao_camera_pass);
-    ssao_pass->SetRadius(ssao_parameter.radius);  // comparison radius
-    ssao_pass->SetBias(ssao_parameter.bias);      // comparison bias
-    ssao_pass->SetKernelSize(
-        ssao_parameter.kernel_size);  // number of samples used
+    ssao_pass->SetRadius(ssao_parameter.radius);
+    ssao_pass->SetBias(ssao_parameter.bias);
+    ssao_pass->SetKernelSize(ssao_parameter.sample_count);
     ssao_pass->SetIntensityScale(ssao_parameter.intensity_scale);
     ssao_pass->SetIntensityShift(ssao_parameter.intensity_shift);
-    if (!ssao_parameter.blur) {
-      ssao_pass->BlurOff();  // do not blur occlusion
-    }
+    ssao_pass->SetBlur(ssao_parameter.blur);
     full_passes->AddItem(ssao_pass);
   } else {
     full_passes->AddItem(vtkNew<vtkOpaquePass>());

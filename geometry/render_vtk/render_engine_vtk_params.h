@@ -15,7 +15,32 @@ namespace drake {
 namespace geometry {
 
 namespace render {
-/** SSAO parameter for supporting SSAO feature in VTK rendering. */
+/** Screen-space ambient occlusion (SSAO) parameters.
+
+ Ambient occlusion is a shading method used to calculate how exposed each point
+ in a scene is to ambient lighting. The more occluded a point is, the darker it
+ appears. SSAO is an efficient, real-time approximation of ambient occlusion
+ that operates in screen space. It enhances the depth and realism of a scene by
+ adding subtle shadowing effects in creases, holes, and surfaces that are close
+ to each other. See https://www.kitware.com/ssao/ for an overview.
+
+ The default parameter values below have been chosen as a best-guess effort at
+ producing good quality images. They may not be optimal for your particular
+ scene.
+
+ To understand how to tune these parameters, you need a bit of insight into how
+ ambient occlusion works generally, and how SSAO works specifically. For each
+ pixel, its "occlusion factor" is determined by examining a hemispherical area
+ around the pixel's position in 3D space (oriented based on its normal). The
+ fraction of the hemisphere contained within geometry is the occlusion factor.
+
+ SSAO produces a discrete approximation of the true occlusion factor. It
+ evaluates a discrete number of samples within the hemisphere and compares their
+ depths (in the OpenGL-camera sense) with that of the pixel being shaded to
+ determine how much of the hemisphere is occupied by geometry. As with all
+ discrete approximations, there is a tradeoff between fidelity and cost. The
+ parameter documentation below provides some guidance on the effect of each
+ parameter on the final rendered image. */
 struct SsaoParameter {
   /** Passes this object to an Archive.
    Refer to @ref yaml_serialization "YAML Serialization" for background. */
@@ -23,18 +48,61 @@ struct SsaoParameter {
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(radius));
     a->Visit(DRAKE_NVP(bias));
-    a->Visit(DRAKE_NVP(kernel_size));
+    a->Visit(DRAKE_NVP(sample_count));
     a->Visit(DRAKE_NVP(intensity_scale));
     a->Visit(DRAKE_NVP(intensity_shift));
     a->Visit(DRAKE_NVP(blur));
   }
 
-  double radius{0.5};
+  /** The radius (in meters) of the sampling hemisphere. There is no "correct"
+   value. Heuristically, it should scale with your scene. A rubric of 1/10th the
+   size of your scene is reasonable. For example, 0.25 meters is good for a
+   robot working at a table top.
+
+   If the radius is too large, pixels will exhibit occlusion (darkness) from
+   objects that might seem too distant to be relevant. A too-small radius would
+   have the opposite effect; missing occlusion where it seems it should occur.
+   */
+  double radius{0.25};
+
+  /** SSAO works in screen space; so it uses the depth image to determine
+   whether a sample lies within the hemisphere or not. We compare the depth of
+   a sample point with the recorded depth in the same direction. In principle,
+   if the sample point is farther than the recorded depth, the sample is
+   occluded. This bias pads that calculation by specifying how far in front (in
+   meters) the recorded distance has to be before the sample is considered
+   occluded. Larger bias values will classify fewer samples as occluded,
+   reducing the amount of ambient occlusion (darkness) in the final image.
+
+   A non-zero value is usually helpful to help resolve potential issues due to
+   depth map precision issues (so-called "acne"), but it should generally be
+   small. */
   double bias{0.01};
-  int kernel_size{32};
+
+  /** This is simply the number of samples taken. More samples lead to smoother
+   occlusion patterns. Large numbers will produce better images, but you should
+   use the smallest number that still provides acceptable visual quality. */
+  int sample_count{128};
+
+  /** Once the occlusion factor is computed, prior to applying the factor to
+   the shaded pixel, you can apply a final affine transformation:
+
+       occlusion = (occlusion - intensity_shift) * intensity_scale
+
+   Using these two values allows you to tune the contrast and mean occlusion
+   value independent of the sampling algorithm above. Remember, the more
+   occlusion, the more darkness. So, scale factors greater than one will make
+   the image darker as will *negative* shift values. */
   double intensity_scale{1.0};
   double intensity_shift{0.0};
-  bool blur{false};
+
+  /** The discrete sampling approach will ultimately produce shading with a
+   noisy pattern. More samples will reduce the noise, but you can also apply a
+   blur to the final occlusion image to reduce the noise. This is a screen
+   space blur, so it is fast. However, it will also reduce the sharpness of
+   occlusion patterns. You can disable blurring to speed things up, but it will
+   emphasize the sampling noise. */
+  bool blur{true};
 };
 }  // namespace render
 
@@ -125,7 +193,7 @@ struct RenderEngineVtkParams {
     a->Visit(DRAKE_NVP(lights));
     a->Visit(DRAKE_NVP(environment_map));
     a->Visit(DRAKE_NVP(exposure));
-    a->Visit(DRAKE_NVP(ssao_params));
+    a->Visit(DRAKE_NVP(ssao));
     a->Visit(DRAKE_NVP(cast_shadows));
     a->Visit(DRAKE_NVP(shadow_map_size));
     a->Visit(DRAKE_NVP(force_to_pbr));
@@ -200,19 +268,9 @@ struct RenderEngineVtkParams {
   std::optional<double> exposure{};
 
   /** An optional SSAO (screen-space ambient occlusion) parameters set. When
-   * specified, VTK will use the parameters provided for SSAO and simulate the
-   * ambient occlusion on surfaces where light is obstructed by the surrounding
-   * geometry, producing images with better qualities and higher fidelity.
-   * See https://www.kitware.com/ssao/ for details.
-   * Non-specified parameters will use default values:
-   * radius: 0.5
-   * bias: 0.01
-   * kernel size: 32
-   * intensity_scale: 1.0
-   * intensity_shift: 0.0
-   * blur: false
-   */
-  std::optional<render::SsaoParameter> ssao_params{};
+   specified, VTK enable screen-space ambient occlusion configured by the
+   given parameters. */
+  std::optional<render::SsaoParameter> ssao{};
 
   /** If `true`, *all* lights that are *able* to cast shadows will do so.
 
