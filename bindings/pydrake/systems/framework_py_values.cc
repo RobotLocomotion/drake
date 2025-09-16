@@ -1,6 +1,7 @@
 #include "drake/bindings/pydrake/systems/framework_py_values.h"
 
 #include <sstream>
+#include <string>
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"

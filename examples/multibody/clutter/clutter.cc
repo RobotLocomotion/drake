@@ -2,10 +2,12 @@
 #include <cstdio>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <random>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <gflags/gflags.h>
 #include <valgrind/callgrind.h>

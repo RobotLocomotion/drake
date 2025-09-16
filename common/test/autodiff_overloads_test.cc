@@ -1,3 +1,4 @@
+#include <limits>
 #include <type_traits>
 
 #include <Eigen/Dense>
@@ -406,9 +407,9 @@ GTEST_TEST(AutodiffOverloadsTest, CheckEigenLiteral) {
   using Literald = typename Eigen::NumTraits<Td>::Literal;
   using Literalf = typename Eigen::NumTraits<Tf>::Literal;
 
-  static_assert(std::is_same_v<Literald, double> &&
-                    std::is_same_v<Literalf, float>,
-                "Eigen::NumTraits<T>::Literal didn't behave as expected.");
+  static_assert(
+      std::is_same_v<Literald, double> && std::is_same_v<Literalf, float>,
+      "Eigen::NumTraits<T>::Literal didn't behave as expected.");
 }
 
 GTEST_TEST(AutodiffOverloadsTest, DummyValueX) {

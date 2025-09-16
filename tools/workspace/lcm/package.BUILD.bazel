@@ -248,12 +248,9 @@ java_library(
         # Suppressed until lcm-proj/lcm#159 is fixed.
         "-XepDisableAllChecks",
     ],
-    runtime_deps = [
-        "@com_jidesoft_jide_oss//jar",
-        "@commons_io//jar",
-        "@org_apache_xmlgraphics_commons//jar",
+    deps = [
+        "@lcm_maven//:net_sf_jchart2d_jchart2d",
     ],
-    deps = ["@net_sf_jchart2d//jar"],
 )
 
 drake_java_binary(

@@ -1,5 +1,11 @@
 #include "drake/common/yaml/yaml_node.h"
 
+#include <memory>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
+
 #include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

@@ -232,9 +232,9 @@ std::string TableOfAverages();
 #define PushTimer(index) ((void)index)
 #define PopTimer()
 #define averageTimeInSec(index) ((void)index)
-#define TableOfAverages()    \
-  ("Profiling turned off.\n" \
-  "Enable profiling by running with --copt=-DENABLE_TIMERS.")
+#define TableOfAverages()                                     \
+  "Profiling turned off.\n Enable profiling by running with " \
+  "--copt=-DENABLE_TIMERS."
 #define INSTRUMENT_FUNCTION(details_string) ((void)details_string)
 
 #endif  // ENABLE_TIMERS

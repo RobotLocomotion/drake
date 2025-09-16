@@ -2,6 +2,8 @@
 #include "drake/solvers/nlopt_solver.h"
 /* clang-format on */
 
+#include <string>
+
 #include "drake/common/never_destroyed.h"
 #include "drake/solvers/mathematical_program.h"
 

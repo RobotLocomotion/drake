@@ -44,7 +44,7 @@ drake_cc_library(
     hdrs = ["test/c_iris_path_test_utilities.h"],
     deps = [
         ":cspace_free_path",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 
@@ -81,5 +81,4 @@ drake_cc_googletest(
     ],
 )
 
-# test
-add_lint_tests(enable_clang_format_lint = False)
+add_lint_tests()

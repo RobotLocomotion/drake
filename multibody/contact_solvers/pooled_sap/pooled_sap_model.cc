@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <set>
+#include <utility>
 #include <vector>
 
 #include "drake/common/default_scalars.h"

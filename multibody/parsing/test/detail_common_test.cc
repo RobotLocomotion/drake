@@ -1,5 +1,8 @@
 #include "drake/multibody/parsing/detail_common.h"
 
+#include <string>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

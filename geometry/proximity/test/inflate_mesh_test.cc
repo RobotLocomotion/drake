@@ -1,8 +1,11 @@
 #include "drake/geometry/proximity/inflate_mesh.h"
 
 #include <algorithm>
+#include <limits>
 #include <map>
 #include <numeric>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 

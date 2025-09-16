@@ -1,10 +1,15 @@
 #include "drake/bindings/pydrake/multibody/tree_py.h"
 
+#include <limits>
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
+
 #include "pybind11/eval.h"
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
@@ -1039,16 +1044,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.GetNominalAngle.doc)
         .def("SetNominalAngle", &Class::SetNominalAngle, py::arg("context"),
             py::arg("nominal_angle"), cls_doc.SetNominalAngle.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("stiffness",
-           WrapDeprecated(cls_doc.stiffness.doc_deprecated, &Class::stiffness),
-           cls_doc.stiffness.doc_deprecated)
-        .def("nominal_angle",
-            WrapDeprecated(
-                cls_doc.nominal_angle.doc_deprecated, &Class::nominal_angle),
-            cls_doc.nominal_angle.doc_deprecated);
-#pragma GCC diagnostic pop
   }
 
   {

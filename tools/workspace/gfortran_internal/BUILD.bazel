@@ -1,0 +1,21 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+# Provides a single point of control within Drake for which fortran compiler
+# to use. This is cited by our fortran.bzl rules in the current directory.
+alias(
+    name = "compiler",
+    actual = "@gfortran_internal//:compiler",
+    visibility = ["//visibility:public"],
+)
+
+# Provides a single point of control within Drake for which fortran runtime
+# libraries to link to. This may be used like it was a cc_library target that
+# listed linkopts= for any libraries used by Fortran. This is cited by our
+# fortran.bzl rules in the current directory.
+alias(
+    name = "runtime",
+    actual = "@gfortran_internal//:runtime",
+    visibility = ["//visibility:public"],
+)
+
+add_lint_tests()

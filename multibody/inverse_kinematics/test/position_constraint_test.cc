@@ -63,8 +63,8 @@ TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
     VectorX<AutoDiffXd> q_autodiff = math::InitializeAutoDiff(q);
     AutoDiffVecXd y_autodiff;
     dut.Eval(q_autodiff, &y_autodiff);
-    this->plant_autodiff_->SetPositions(
-        this->plant_context_autodiff_.get(), q_autodiff);
+    this->plant_autodiff_->SetPositions(this->plant_context_autodiff_.get(),
+                                        q_autodiff);
     Vector3<AutoDiffXd> y_autodiff_expected = EvalPositionConstraintAutoDiff(
         *(this->plant_context_autodiff_), *(this->plant_autodiff_),
         this->plant_autodiff_->GetFrameByName(frameAbar.name()), X_AAbar_val,
@@ -74,8 +74,8 @@ TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
     // Test with non-identity gradient for q_autodiff.
     q_autodiff =
         math::InitializeAutoDiff(q, MatrixX<double>::Ones(q.size(), 2));
-    this->plant_autodiff_->SetPositions(
-        this->plant_context_autodiff_.get(), q_autodiff);
+    this->plant_autodiff_->SetPositions(this->plant_context_autodiff_.get(),
+                                        q_autodiff);
     dut.Eval(q_autodiff, &y_autodiff);
     y_autodiff_expected = EvalPositionConstraintAutoDiff(
         *(this->plant_context_autodiff_), *(this->plant_autodiff_),
@@ -149,24 +149,23 @@ TEST_F(TwoFreeBodiesConstraintTest, PositionConstraint) {
   plant_->SetPositions(plant_context_, q);
   const Eigen::Vector3d p_BQ(0.2, 0.3, 0.4);
   Eigen::Vector3d p_AQ;
-  plant_->CalcPointsPositions(
-      *plant_context_, plant_->get_frame(body1_index_), p_BQ,
-      plant_->get_frame(body2_index_), &p_AQ);
+  plant_->CalcPointsPositions(*plant_context_, plant_->get_frame(body1_index_),
+                              p_BQ, plant_->get_frame(body2_index_), &p_AQ);
 
   {
-    PositionConstraint good_constraint(
-        plant_, plant_->get_frame(body2_index_),
-        p_AQ - Eigen::Vector3d::Constant(0.001),
-        p_AQ + Eigen::Vector3d::Constant(0.001),
-        plant_->get_frame(body1_index_), p_BQ, plant_context_);
+    PositionConstraint good_constraint(plant_, plant_->get_frame(body2_index_),
+                                       p_AQ - Eigen::Vector3d::Constant(0.001),
+                                       p_AQ + Eigen::Vector3d::Constant(0.001),
+                                       plant_->get_frame(body1_index_), p_BQ,
+                                       plant_context_);
     EXPECT_TRUE(good_constraint.CheckSatisfied(q));
   }
   {
-    PositionConstraint bad_constraint(
-        plant_, plant_->get_frame(body2_index_),
-        p_AQ - Eigen::Vector3d::Constant(0.002),
-        p_AQ - Eigen::Vector3d::Constant(0.001),
-        plant_->get_frame(body1_index_), p_BQ, plant_context_);
+    PositionConstraint bad_constraint(plant_, plant_->get_frame(body2_index_),
+                                      p_AQ - Eigen::Vector3d::Constant(0.002),
+                                      p_AQ - Eigen::Vector3d::Constant(0.001),
+                                      plant_->get_frame(body1_index_), p_BQ,
+                                      plant_context_);
     EXPECT_FALSE(bad_constraint.CheckSatisfied(q));
   }
 }

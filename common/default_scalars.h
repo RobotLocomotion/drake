@@ -104,6 +104,8 @@ struct scalar_phase_t<2> {
 }  // namespace internal
 }  // namespace drake
 
+// This preprocessor code doesn't auto-format very well.
+// clang-format off
 #ifndef DRAKE_ONCE_PER_SCALAR_PHASE
 /// Defines template instantiations for Drake's default scalars.
 /// This should only be used in .cc files, never in .h files.
@@ -155,6 +157,7 @@ extern template SomeType<::drake::symbolic::Expression>;
       SomeType) \
 extern template SomeType<double>; \
 extern template SomeType<::drake::AutoDiffXd>;
+// clang-format on
 
 /// @}
 
@@ -226,7 +229,8 @@ extern template SomeType<::drake::AutoDiffXd>;
 ///
 /// @note In the case of an overloaded function, the `&FunctionName<T>` syntax
 /// is ambiguous.  To resolve the ambiguity, you will need a
-/// <a href=https://en.cppreference.com/w/cpp/language/static_cast#Notes>static_cast</a>.
+/// <a
+/// href=https://en.cppreference.com/w/cpp/language/static_cast#Notes>static_cast</a>.
 
 // N.B. Below we use "Make_Function_Pointers" (etc.) as function names and
 // static variable names, which violates our function name style guide by mixing
@@ -235,6 +239,8 @@ extern template SomeType<::drake::AutoDiffXd>;
 // can't use a namespace because we need to allow for easy friendship in case a
 // member function does not have public access.
 
+// This preprocessor code doesn't auto-format very well.
+// clang-format off
 #ifndef DRAKE_ONCE_PER_SCALAR_PHASE
 /// Defines template instantiations for Drake's default scalars.
 /// This should only be used in .cc files, never in .h files.
@@ -323,5 +329,6 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS( \
     FunctionPointersTuple) \
 static_assert(true);
 #endif
+// clang-format on
 
 /// @}

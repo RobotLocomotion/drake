@@ -19,9 +19,11 @@ IrisParameterizationFunction::IrisParameterizationFunction(
                 Eigen::VectorXd(q_star_val)](const Eigen::VectorXd& s_val) {
         return kin->ComputeQValue(s_val, q_star_captured);
       };
-  // TODO(cohnt): Construct a VectorX<AutoDiffXd> parameterization when using
-  // this constructor as well.
-  parameterization_autodiff_ = nullptr;
+  parameterization_autodiff_ = [kin,
+                                q_star_captured = Eigen::VectorXd(q_star_val)](
+                                   const Eigen::VectorX<AutoDiffXd>& s_val) {
+    return kin->ComputeQValue(s_val, q_star_captured);
+  };
 
   parameterization_is_threadsafe_ = true;
   parameterization_dimension_ = dimension;
@@ -63,8 +65,8 @@ IrisParameterizationFunction::IrisParameterizationFunction(
             });
         return out;
       };
-  // TODO(cohnt): Construct a VectorX<AutoDiffXd> parameterization when using
-  // this constructor as well.
+  // Since Expression cannot be evaluated on type AutoDiffXd, we currently
+  // cannot support a VectorX<AutoDiffXd> parameterization.
   parameterization_autodiff_ = nullptr;
 
   parameterization_is_threadsafe_ = true;

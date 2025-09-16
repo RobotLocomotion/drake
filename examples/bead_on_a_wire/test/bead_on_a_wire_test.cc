@@ -1,5 +1,6 @@
 #include "drake/examples/bead_on_a_wire/bead_on_a_wire.h"
 
+#include <limits>
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -42,13 +43,13 @@ class BeadOnAWireTest : public ::testing::Test {
   std::unique_ptr<systems::Context<double>> context_abs_, context_min_;
   std::unique_ptr<systems::SystemOutput<double>> output_abs_, output_min_;
   std::unique_ptr<systems::ContinuousState<double>> derivatives_abs_,
-                                                    derivatives_min_;
+      derivatives_min_;
 };
 
 // Checks output is as expected.
 TEST_F(BeadOnAWireTest, Output) {
-  const systems::ContinuousState<double>& v = context_abs_->
-                                                get_continuous_state();
+  const systems::ContinuousState<double>& v =
+      context_abs_->get_continuous_state();
   dut_abs_->CalcOutput(*context_abs_, output_abs_.get());
   for (int i = 0; i < v.size(); ++i)
     EXPECT_EQ(v[i], output_abs_->get_vector_data(0)->value()(i));
@@ -80,15 +81,15 @@ TEST_F(BeadOnAWireTest, Helix) {
   // Compute the derivative at pi/3.
   s.derivatives()(0) = 1.0;
   s.value().derivatives()(0) = 1.0;
-  const auto w = dut_abs_->get_pfunction_first_derivative(
-      dut_abs_->helix_function(s));
+  const auto w =
+      dut_abs_->get_pfunction_first_derivative(dut_abs_->helix_function(s));
   EXPECT_NEAR(w(0), -std::sin(svalue), tol);
   EXPECT_NEAR(w(1), std::cos(svalue), tol);
   EXPECT_NEAR(w(2), 1.0, tol);
 
   // Compute the second derivative at pi/3.
-  const auto w2 = dut_abs_->get_pfunction_second_derivative(
-      dut_abs_->helix_function(s));
+  const auto w2 =
+      dut_abs_->get_pfunction_second_derivative(dut_abs_->helix_function(s));
   EXPECT_NEAR(w2(0), -std::cos(svalue), tol);
   EXPECT_NEAR(w2(1), -std::sin(svalue), tol);
   EXPECT_NEAR(w2(2), 0.0, tol);
@@ -112,10 +113,9 @@ TEST_F(BeadOnAWireTest, InverseHelix) {
   // Compute the derivative of the inverse helix function.
   s.derivatives()(0) = 1.0;
   s.value().derivatives()(0) = 1.0;
-  auto wprime = dut_abs_->inverse_helix_function(dut_abs_->
-      helix_function(s));
-  const double candidate_value = dut_abs_->get_inv_pfunction_first_derivative(
-      wprime);
+  auto wprime = dut_abs_->inverse_helix_function(dut_abs_->helix_function(s));
+  const double candidate_value =
+      dut_abs_->get_inv_pfunction_first_derivative(wprime);
 
   // Apply numerical differentiation to the inverse helix function. We
   // do this by computing the output:
@@ -138,8 +138,8 @@ TEST_F(BeadOnAWireTest, InverseHelix) {
   const double xdot = 1.0;
   const double ydot = 2.0;
   const double zdot = 3.0;
-  const double inv_helix_dot = -y / (x * x + y * y) * xdot +
-      x / (x * x + y * y) * ydot;
+  const double inv_helix_dot =
+      -y / (x * x + y * y) * xdot + x / (x * x + y * y) * ydot;
   Eigen::Matrix<BeadOnAWire<double>::ArcLength, 3, 1> xx;
   xx(0).value() = x;
   xx(1).value() = y;
@@ -154,33 +154,32 @@ TEST_F(BeadOnAWireTest, InverseHelix) {
 
 // A parametric wire function that allows the bead to move along x² - y² = 0
 // (which is orthogonal to gravity).
-static Eigen::Matrix<BeadOnAWire<double>::ArcLength, 3, 1>
-  horz_line_function(const BeadOnAWire<double>::ArcLength& s) {
-  return Vector3<BeadOnAWire<double>::ArcLength>(s*s, s*s, s*0);
+static Eigen::Matrix<BeadOnAWire<double>::ArcLength, 3, 1> horz_line_function(
+    const BeadOnAWire<double>::ArcLength& s) {
+  return Vector3<BeadOnAWire<double>::ArcLength>(s * s, s * s, s * 0);
 }
 
 // The inverse of the parametric wire function that allows the bead to move
 // along x² - y² = 0 (which is orthogonal to gravity).
 static BeadOnAWire<double>::ArcLength inverse_horz_line_function(
-        const Vector3<BeadOnAWire<double>::ArcLength>& v) {
+    const Vector3<BeadOnAWire<double>::ArcLength>& v) {
   using std::sqrt;
-  return (sqrt(v(1))+sqrt(v(0)))/2;
+  return (sqrt(v(1)) + sqrt(v(0))) / 2;
 }
 
 // A parametric wire function that allows the bead to along the z-axis (i.e.,
 // parallel to gravity).
-static Eigen::Matrix<BeadOnAWire<double>::ArcLength, 3, 1>
-  vert_line_function(const BeadOnAWire<double>::ArcLength& s) {
-  return Vector3<BeadOnAWire<double>::ArcLength>(s*0, s*0, s);
+static Eigen::Matrix<BeadOnAWire<double>::ArcLength, 3, 1> vert_line_function(
+    const BeadOnAWire<double>::ArcLength& s) {
+  return Vector3<BeadOnAWire<double>::ArcLength>(s * 0, s * 0, s);
 }
 
 // The inverse of the parametric wire function that allows the bead to along
 // the z-axis.
 static BeadOnAWire<double>::ArcLength inverse_vert_line_function(
-        const Vector3<BeadOnAWire<double>::ArcLength>& v) {
+    const Vector3<BeadOnAWire<double>::ArcLength>& v) {
   return v(2);
 }
-
 
 // Tests the constraint function evaluation using the helix function.
 TEST_F(BeadOnAWireTest, ConstraintFunctionEval) {
@@ -199,8 +198,8 @@ TEST_F(BeadOnAWireTest, ConstraintFunctionEval) {
 
   // Verify that the constraint error is effectively zero.
   const double tol = std::numeric_limits<double>::epsilon() * 10;
-  EXPECT_NEAR(dut_abs_->EvalConstraintEquations(*context_abs_).norm(),
-              0.0, tol);
+  EXPECT_NEAR(dut_abs_->EvalConstraintEquations(*context_abs_).norm(), 0.0,
+              tol);
 
   // Move the bead off of the wire and verify the expected error.
   const double err = 1.0;
@@ -225,8 +224,8 @@ TEST_F(BeadOnAWireTest, ConstraintDotFunctionEval) {
 
   // Verify that the constraint error is effectively zero.
   const double tol = std::numeric_limits<double>::epsilon() * 10;
-  EXPECT_NEAR(dut_abs_->EvalConstraintEquationsDot(*context_abs_).norm(),
-              0.0, tol);
+  EXPECT_NEAR(dut_abs_->EvalConstraintEquationsDot(*context_abs_).norm(), 0.0,
+              tol);
 }
 
 // Verify that the minimal coordinate dynamics computations are reasonable.
@@ -239,12 +238,12 @@ TEST_F(BeadOnAWireTest, MinimalCoordinateDeriv) {
   // v is the velocity and R is the radius. In this test case, the
   // instantaneous radius (i.e., that for initial s = 1.0) is 1.0 and the
   // initial velocity is 1.0.
-  const double ca = 1.0;       // centripetal acceleration
+  const double ca = 1.0;  // centripetal acceleration
   dut_min_->reset_wire_parameter_functions(&horz_line_function,
                                            &inverse_horz_line_function);
   dut_min_->CalcTimeDerivatives(*context_min_, derivatives_min_.get());
   Eigen::VectorXd deriv = derivatives_min_->get_vector().CopyToVector();
-  EXPECT_LT(std::abs(deriv.segment(n_vars/2, n_vars/2).norm() - ca), tol);
+  EXPECT_LT(std::abs(deriv.segment(n_vars / 2, n_vars / 2).norm() - ca), tol);
 
   // For vertical wire function, velocity derivatives should be gravitational
   // acceleration.
@@ -252,7 +251,7 @@ TEST_F(BeadOnAWireTest, MinimalCoordinateDeriv) {
                                            &inverse_vert_line_function);
   dut_min_->CalcTimeDerivatives(*context_min_, derivatives_min_.get());
   deriv = derivatives_min_->get_vector().CopyToVector();
-  EXPECT_NEAR(deriv.segment(n_vars/2, n_vars/2).norm(),
+  EXPECT_NEAR(deriv.segment(n_vars / 2, n_vars / 2).norm(),
               std::abs(dut_min_->get_gravitational_acceleration()), tol);
 }
 

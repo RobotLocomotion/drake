@@ -1,5 +1,8 @@
 #include "drake/common/trajectories/bezier_curve.h"
 
+#include <memory>
+#include <utility>
+
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
 

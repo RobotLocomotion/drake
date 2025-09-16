@@ -52,8 +52,7 @@ namespace bouncing_ball {
 /// @note The given plant is not finalized. You must call Finalize() on the new
 ///   model once you are done populating it.
 void PopulateBallPlant(
-    double radius, double mass,
-    double hydroelastic_modulus, double dissipation,
+    double radius, double mass, double hydroelastic_modulus, double dissipation,
     const drake::multibody::CoulombFriction<double>& surface_friction,
     const Vector3<double>& gravity_W, bool rigid_sphere, bool compliant_ground,
     drake::multibody::MultibodyPlant<double>* plant);

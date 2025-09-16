@@ -73,14 +73,18 @@ GCC_CC_TEST_FLAGS = [
 GCC_VERSION_SPECIFIC_FLAGS = {
     13: [
         "-Werror=pessimizing-move",
-        # TODO(#21337) Investigate and resolve what to do about these warnings
-        # long-term. Some seem like true positives (i.e., bugs in Drake).
-        "-Wno-array-bounds",
+        "-Werror=uninitialized",
+        # This falsely dings code that returns const references, e.g., our
+        # MbP style for "add element" or "find by name" member functions.
         "-Wno-dangling-reference",
+        # This falsely dings code inside Eigen.
         "-Wno-maybe-uninitialized",
+        # This falsely dings code inside libstdc++.
         "-Wno-stringop-overflow",
+        # These two falsely ding initializing an Eigen::Vector1d or Matrix1d.
+        # Eigen uses 16-byte alignment, which these flags doesn't account for.
+        "-Wno-array-bounds",
         "-Wno-stringop-overread",
-        "-Wno-uninitialized",
     ],
 }
 
@@ -94,7 +98,7 @@ def _defang(flags):
 # The BASE_COPTS are used for all drake_cc_{binary,library,test} rules.
 BASE_COPTS = select({
     "//tools/cc_toolchain:apple_clang_with_errors": APPLECLANG_FLAGS,
-    "//tools/cc_toolchain:apple_clang_with_warnings": _defang(APPLECLANG_FLAGS),  # noqa
+    "//tools/cc_toolchain:apple_clang_with_warnings": _defang(APPLECLANG_FLAGS),
     "//tools/cc_toolchain:gcc_with_errors": GCC_FLAGS,
     "//tools/cc_toolchain:gcc_with_warnings": _defang(GCC_FLAGS),
     "//tools/cc_toolchain:linux_clang_with_errors": CLANG_FLAGS,
@@ -480,22 +484,9 @@ def _raw_drake_cc_library(
         textual_hdrs = srcs
         srcs = new_srcs
 
-    # If we're using implementation_deps, then the result of compiling our srcs
-    # needs to use an intermediate label name. The actual `name` label will be
-    # used for the "implementation sandwich", below.
-    # TODO(jwnimmer-tri) Once https://github.com/bazelbuild/bazel/issues/12350
-    # is fixed and Bazel offers implementation_deps natively, then we can
-    # switch to that implementation instead of making our own sandwich.
-    compiled_name = name
-    compiled_visibility = visibility
-    compiled_deprecation = deprecation
-    if implementation_deps:
-        if not linkstatic:
-            fail("implementation_deps are only supported for static libraries")
-        compiled_name = "_{}_compiled_cc_impl".format(name)
-        compiled_visibility = ["//visibility:private"]
+    # Finally, do the actual compilation.
     cc_library(
-        name = compiled_name,
+        name = name,
         srcs = srcs,
         hdrs = hdrs,
         textual_hdrs = textual_hdrs,
@@ -504,54 +495,16 @@ def _raw_drake_cc_library(
         copts = copts,
         defines = defines,
         data = data,
-        deps = (deps or []) + (implementation_deps or []),
+        deps = deps,
+        implementation_deps = implementation_deps,
         linkstatic = linkstatic,
         linkopts = linkopts,
         alwayslink = alwayslink,
         tags = tags,
         testonly = testonly,
-        visibility = compiled_visibility,
-        deprecation = compiled_deprecation,
+        visibility = visibility,
+        deprecation = deprecation,
     )
-
-    # If we're using implementation_deps, then make me an "implementation
-    # sandwich".  Create one library with our headers, one library with only
-    # our static archive, and then squash them together to the final result.
-    if implementation_deps:
-        headers_name = "_{}_headers_cc_impl".format(name)
-        cc_library(
-            name = headers_name,
-            hdrs = hdrs,
-            textual_hdrs = None,
-            strip_include_prefix = strip_include_prefix,
-            include_prefix = include_prefix,
-            defines = defines,
-            deps = deps,  # N.B. No implementation_deps!
-            linkstatic = 1,
-            tags = tags,
-            testonly = testonly,
-            visibility = ["//visibility:private"],
-        )
-        archive_name = "_{}_archive_cc_impl".format(name)
-        cc_linkonly_library(
-            name = archive_name,
-            deps = [":" + compiled_name],
-            visibility = ["//visibility:private"],
-            tags = tags,
-            testonly = testonly,
-        )
-        cc_library(
-            name = name,
-            deps = [
-                ":" + headers_name,
-                ":" + archive_name,
-            ],
-            linkstatic = 1,
-            tags = tags,
-            testonly = testonly,
-            visibility = visibility,
-            deprecation = deprecation,
-        )
 
 def _maybe_add_pruned_private_hdrs_dep(
         base_name,
@@ -810,7 +763,7 @@ def drake_cc_binary(
         **kwargs
     )
 
-    if "@gtest//:main" in deps:
+    if "@googletest//:gtest_main" in deps:
         fail("Use drake_cc_googletest to declare %s as a test" % name)
 
     if add_test_rule:
@@ -903,7 +856,7 @@ def drake_cc_googletest(
     By default, sets size="small" because that indicates a unit test.
     By default, sets name="test/${name}.cc" per Drake's filename convention.
     By default, sets use_default_main=True to use a default main() function.
-    Otherwise, it will depend on @gtest//:without_main.
+    Otherwise, it will depend on @googletest//:gtest.
 
     If disable_in_compilation_mode_dbg is True, then in debug-mode builds all
     test cases will be suppressed, so the test will trivially pass. This option
@@ -914,7 +867,7 @@ def drake_cc_googletest(
             "//common/test_utilities:drake_cc_googletest_main",
         ]
     else:
-        deps = deps + ["@gtest//:without_main"]
+        deps = deps + ["@googletest//:gtest"]
     new_args = args
     new_tags = tags
     if disable_in_compilation_mode_dbg:
@@ -1023,7 +976,7 @@ def drake_cc_googletest_linux_only(
         tags = ["manual"],
         deps = select({
             enable_condition: deps + [
-                "@gtest//:without_main",
+                "@googletest//:gtest",
             ],
             "//conditions:default": [],
         }),

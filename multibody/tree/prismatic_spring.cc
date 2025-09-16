@@ -30,6 +30,7 @@ PrismaticSpring<T>::~PrismaticSpring() = default;
 
 template <typename T>
 const PrismaticJoint<T>& PrismaticSpring<T>::joint() const {
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
   const PrismaticJoint<T>* joint = dynamic_cast<const PrismaticJoint<T>*>(
       &this->get_parent_tree().get_joint(joint_index_));
   DRAKE_DEMAND(joint != nullptr);

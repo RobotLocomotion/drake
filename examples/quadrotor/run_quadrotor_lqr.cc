@@ -7,6 +7,7 @@
 ///   bazel run //tools:meldis -- -w
 
 #include <memory>
+#include <utility>
 
 #include <gflags/gflags.h>
 
@@ -24,10 +25,10 @@ DEFINE_double(simulation_real_time_rate, 1.0, "Real time rate");
 DEFINE_double(trial_duration, 7.0, "Duration of execution of each trial");
 
 namespace drake {
-using systems::DiagramBuilder;
-using systems::Simulator;
 using systems::Context;
 using systems::ContinuousState;
+using systems::DiagramBuilder;
+using systems::Simulator;
 using systems::VectorBase;
 
 namespace examples {
@@ -40,29 +41,30 @@ int do_main() {
   DiagramBuilder<double> builder;
 
   // The nominal hover position is at (0, 0, 1.0) in world coordinates.
-  const Eigen::Vector3d kNominalPosition{((Eigen::Vector3d() << 0.0, 0.0, 1.0).
-      finished())};
+  const Eigen::Vector3d kNominalPosition{
+      ((Eigen::Vector3d() << 0.0, 0.0, 1.0).finished())};
 
   auto quadrotor = builder.AddSystem<QuadrotorPlant<double>>();
   quadrotor->set_name("quadrotor");
-  auto controller = builder.AddSystem(StabilizingLQRController(
-      quadrotor, kNominalPosition));
+  auto controller =
+      builder.AddSystem(StabilizingLQRController(quadrotor, kNominalPosition));
   controller->set_name("controller");
   builder.Connect(quadrotor->get_output_port(0), controller->get_input_port());
   builder.Connect(controller->get_output_port(), quadrotor->get_input_port(0));
 
   // Set up visualization
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
-  QuadrotorGeometry::AddToBuilder(
-      &builder, quadrotor->get_output_port(0), scene_graph);
+  QuadrotorGeometry::AddToBuilder(&builder, quadrotor->get_output_port(0),
+                                  scene_graph);
   geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph);
 
   auto diagram = builder.Build();
   Simulator<double> simulator(*diagram);
   VectorX<double> x0 = VectorX<double>::Zero(12);
 
-  const VectorX<double> kNominalState{((Eigen::VectorXd(12) << kNominalPosition,
-  Eigen::VectorXd::Zero(9)).finished())};
+  const VectorX<double> kNominalState{
+      ((Eigen::VectorXd(12) << kNominalPosition, Eigen::VectorXd::Zero(9))
+           .finished())};
 
   srand(42);
 
@@ -87,8 +89,7 @@ int do_main() {
     const ContinuousState<double>& state = context.get_continuous_state();
     const VectorX<double>& position_vector = state.CopyToVector();
 
-    if (!is_approx_equal_abstol(
-        position_vector, kNominalState, 1e-4)) {
+    if (!is_approx_equal_abstol(position_vector, kNominalState, 1e-4)) {
       throw std::runtime_error("Target state is not achieved.");
     }
 

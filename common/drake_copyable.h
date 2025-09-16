@@ -72,22 +72,23 @@ of the functions.  If it is important for performance that the move functions
 actually move (instead of making a copy), then you should consider capturing
 that in a unit test.
 */
-#define DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Classname)       \
-  Classname(const Classname&) = default;                        \
-  Classname& operator=(const Classname&) = default;             \
-  Classname(Classname&&) = default;                             \
-  Classname& operator=(Classname&&) = default;                  \
-  /* Fails at compile-time if copy-assign doesn't compile. */   \
-  /* Note that we do not test the copy-ctor here, because  */   \
-  /* it will not exist when Classname is abstract.         */   \
-  static void DrakeDefaultCopyAndMoveAndAssign_DoAssign(        \
-      Classname* a, const Classname& b) { *a = b; }             \
-  static_assert(                                                \
-      &DrakeDefaultCopyAndMoveAndAssign_DoAssign ==             \
-      &DrakeDefaultCopyAndMoveAndAssign_DoAssign,               \
-      "This assertion is never false; its only purpose is to "  \
-      "generate 'use of deleted function: operator=' errors "   \
-      "when Classname is a template.");
+#define DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Classname)                     \
+  Classname(const Classname&) = default;                                      \
+  Classname& operator=(const Classname&) = default;                           \
+  Classname(Classname&&) = default;                                           \
+  Classname& operator=(Classname&&) = default;                                \
+  /* Fails at compile-time if copy-assign doesn't compile. */                 \
+  /* Note that we do not test the copy-ctor here, because  */                 \
+  /* it will not exist when Classname is abstract.         */                 \
+  static void DrakeDefaultCopyAndMoveAndAssign_DoAssign(Classname* a,         \
+                                                        const Classname& b) { \
+    *a = b;                                                                   \
+  }                                                                           \
+  static_assert(&DrakeDefaultCopyAndMoveAndAssign_DoAssign ==                 \
+                    &DrakeDefaultCopyAndMoveAndAssign_DoAssign,               \
+                "This assertion is never false; its only purpose is to "      \
+                "generate 'use of deleted function: operator=' errors "       \
+                "when Classname is a template.");
 
 /** DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN declares the special member functions
 for copy-construction, copy-assignment, move-construction, and move-assignment.

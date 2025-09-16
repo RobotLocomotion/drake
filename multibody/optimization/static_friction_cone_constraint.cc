@@ -71,26 +71,25 @@ void StaticFrictionConeConstraint::DoEval(
           signed_distance_pair.id_B);
 
   const CoulombFriction<double>& geometryA_friction =
-      geometryA_props.GetProperty<CoulombFriction<double>>(
-          "material", "coulomb_friction");
+      geometryA_props.GetProperty<CoulombFriction<double>>("material",
+                                                           "coulomb_friction");
   const CoulombFriction<double>& geometryB_friction =
-      geometryB_props.GetProperty<CoulombFriction<double>>(
-          "material", "coulomb_friction");
+      geometryB_props.GetProperty<CoulombFriction<double>>("material",
+                                                           "coulomb_friction");
 
   CoulombFriction<double> combined_friction =
       CalcContactFrictionFromSurfaceProperties(geometryA_friction,
-                                                geometryB_friction);
+                                               geometryB_friction);
 
   const auto& nhat_BA_W = signed_distance_pair.nhat_BA_W;
   // The constraint n̂_AB_W.dot(f_Cb_W) >= 0
   (*y)(0) = -nhat_BA_W.dot(f_Cb_W);
 
   // The constraint f_Cb_Wᵀ * ((μ² + 1)* n̂_AB_W * n̂_AB_Wᵀ - I) * f_Cb_W >= 0
-  (*y)(1) =
-      f_Cb_W.dot(((std::pow(combined_friction.static_friction(), 2) + 1) *
-                      nhat_BA_W * nhat_BA_W.transpose() -
-                  Eigen::Matrix3d::Identity()) *
-                  f_Cb_W);
+  (*y)(1) = f_Cb_W.dot(((std::pow(combined_friction.static_friction(), 2) + 1) *
+                            nhat_BA_W * nhat_BA_W.transpose() -
+                        Eigen::Matrix3d::Identity()) *
+                       f_Cb_W);
 }
 
 void StaticFrictionConeConstraint::DoEval(

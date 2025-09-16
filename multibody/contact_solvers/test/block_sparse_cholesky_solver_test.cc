@@ -2,7 +2,9 @@
 
 #include <memory>
 #include <numeric>
+#include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

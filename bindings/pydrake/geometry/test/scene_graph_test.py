@@ -707,7 +707,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
             results = query_object.ComputeContactSurfaces(
                 representation=hydro_rep)
             self.assertEqual(len(results), 0)
-            surfaces, results = query_object.ComputeContactSurfacesWithFallback(  # noqa
+            surfaces, results = query_object.ComputeContactSurfacesWithFallback(
                 representation=hydro_rep)
             self.assertEqual(len(surfaces), 0)
             self.assertEqual(len(results), 0)

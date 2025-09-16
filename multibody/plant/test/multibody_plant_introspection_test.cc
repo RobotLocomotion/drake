@@ -2,7 +2,9 @@
 #include <limits>
 #include <memory>
 #include <set>
+#include <string>
 #include <tuple>
+#include <unordered_set>
 #include <utility>
 
 #include <gmock/gmock.h>

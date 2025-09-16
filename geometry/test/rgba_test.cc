@@ -1,6 +1,7 @@
 #include "drake/geometry/rgba.h"
 
 #include <limits>
+#include <string>
 
 #include <gtest/gtest.h>
 

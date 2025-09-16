@@ -12,14 +12,13 @@ namespace planar_gripper {
 
 using systems::BasicVector;
 using systems::Context;
-using systems::DiscreteValues;
 using systems::DiscreteUpdateEvent;
+using systems::DiscreteValues;
 
-GripperCommandDecoder::GripperCommandDecoder(int num_fingers) :
-      num_fingers_(num_fingers), num_joints_(num_fingers * 2) {
-  this->DeclareAbstractInputPort(
-      "lcmt_planar_gripper_command",
-      Value<lcmt_planar_gripper_command>{});
+GripperCommandDecoder::GripperCommandDecoder(int num_fingers)
+    : num_fingers_(num_fingers), num_joints_(num_fingers * 2) {
+  this->DeclareAbstractInputPort("lcmt_planar_gripper_command",
+                                 Value<lcmt_planar_gripper_command>{});
   state_output_port_ = &this->DeclareVectorOutputPort(
       "state", num_joints_ * 2, &GripperCommandDecoder::OutputStateCommand);
   torques_output_port_ = &this->DeclareVectorOutputPort(
@@ -38,8 +37,7 @@ void GripperCommandDecoder::set_initial_position(
     Context<double>* context,
     const Eigen::Ref<const VectorX<double>> pos) const {
   // The Discrete state consists of positions, velocities, torques.
-  auto state_value =
-      context->get_mutable_discrete_state(0).get_mutable_value();
+  auto state_value = context->get_mutable_discrete_state(0).get_mutable_value();
   DRAKE_ASSERT(pos.size() == num_joints_);
   // Set the initial positions.
   state_value.head(num_joints_) = pos;
@@ -86,13 +84,12 @@ void GripperCommandDecoder::OutputStateCommand(
 
 void GripperCommandDecoder::OutputTorqueCommand(
     const Context<double>& context, BasicVector<double>* output) const {
-  Eigen::VectorBlock<VectorX<double>> output_vec =
-      output->get_mutable_value();
+  Eigen::VectorBlock<VectorX<double>> output_vec = output->get_mutable_value();
   output_vec = context.get_discrete_state(0).get_value().tail(num_joints_);
 }
 
-GripperCommandEncoder::GripperCommandEncoder(int num_fingers) :
-      num_fingers_(num_fingers), num_joints_(num_fingers * 2) {
+GripperCommandEncoder::GripperCommandEncoder(int num_fingers)
+    : num_fingers_(num_fingers), num_joints_(num_fingers * 2) {
   state_input_port_ =
       &this->DeclareInputPort("state", systems::kVectorValued, num_joints_ * 2);
   torques_input_port_ =
@@ -115,8 +112,7 @@ void GripperCommandEncoder::OutputCommand(
 
   for (int i = 0; i < num_fingers_; ++i) {
     const int st_index = 2 * i;
-    lcmt_planar_gripper_finger_command& fcommand =
-        command->finger_command[i];
+    lcmt_planar_gripper_finger_command& fcommand = command->finger_command[i];
     fcommand.joint_position[0] = state_input->GetAtIndex(st_index);
     fcommand.joint_position[1] = state_input->GetAtIndex(st_index + 1);
     fcommand.joint_velocity[0] =
@@ -140,7 +136,7 @@ GripperStatusDecoder::GripperStatusDecoder(int num_fingers)
   this->DeclareAbstractInputPort("lcmt_planar_gripper_status",
                                  Value<lcmt_planar_gripper_status>{});
   // Discrete state includes: {state, fingertip_force(y,z)}.
-  this->DeclareDiscreteState((num_joints_* 2) + (num_fingers_ * 2));
+  this->DeclareDiscreteState((num_joints_ * 2) + (num_fingers_ * 2));
 
   this->DeclarePeriodicDiscreteUpdateEvent(
       kGripperLcmStatusPeriod, 0., &GripperStatusDecoder::UpdateDiscreteState);
@@ -219,10 +215,8 @@ void GripperStatusEncoder::OutputStatus(
     lcmt_planar_gripper_finger_status& fstatus = status->finger_status[i];
     fstatus.joint_position[0] = state_value(st_index);
     fstatus.joint_position[1] = state_value(st_index + 1);
-    fstatus.joint_velocity[0] =
-        state_value(num_joints_ + st_index);
-    fstatus.joint_velocity[1] =
-        state_value(num_joints_ + st_index + 1);
+    fstatus.joint_velocity[0] = state_value(num_joints_ + st_index);
+    fstatus.joint_velocity[1] = state_value(num_joints_ + st_index + 1);
     fstatus.fingertip_force.timestamp =
         static_cast<int64_t>(context.get_time() * 1e3);
     fstatus.fingertip_force.fy = force_value(st_index);

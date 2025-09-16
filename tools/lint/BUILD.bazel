@@ -35,7 +35,7 @@ drake_py_binary(
     srcs = ["buildifier.py"],
     data = [
         ":buildifier-tables.json",
-        "@buildifier",
+        "@buildifier_prebuilt//:buildifier",
     ],
     deps = [
         ":module_py",
@@ -82,7 +82,6 @@ drake_py_binary(
     testonly = 1,
     srcs = ["drakelint.py"],
     deps = [
-        ":formatter",
         ":module_py",
     ],
 )
@@ -93,26 +92,7 @@ drake_py_binary(
     main = "bzlcodestyle.py",
     deps = [
         ":module_py",
-        "@pycodestyle",
-    ],
-)
-
-drake_py_library(
-    name = "formatter",
-    testonly = 1,
-    srcs = ["formatter.py"],
-    deps = [":clang_format"],
-)
-
-drake_py_binary(
-    name = "clang-format-includes",
-    testonly = 1,
-    srcs = ["clang_format_includes.py"],
-    main = "clang_format_includes.py",
-    deps = [
-        ":formatter",
-        ":module_py",
-        ":util",
+        "@pycodestyle_internal//:pycodestyle",
     ],
 )
 
@@ -156,21 +136,6 @@ drake_py_unittest(
         "no_kcov",
     ],
     deps = [":util"],
-)
-
-drake_py_unittest(
-    name = "formatter_test",
-    deps = [":formatter"],
-)
-
-drake_sh_test(
-    name = "clang_format_includes_test",
-    srcs = ["test/clang_format_includes_test.sh"],
-    data = [
-        ":clang-format-includes",
-    ],
-    # Valgrind Memcheck reports numerous leaks in the python executable.
-    tags = ["no_memcheck"],
 )
 
 # Exercise `ignore` for `python_lint`.

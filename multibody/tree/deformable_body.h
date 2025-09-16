@@ -52,7 +52,9 @@ class DeformableBody final : public MultibodyElement<T> {
   const std::string& name() const { return name_; }
 
   /** Returns scoped name of this body. Neither of the two pieces of the name
-   will be empty (the scope name and the element name). */
+   will be empty (the scope name and the element name).
+   @throws std::exception if this element is not associated with a
+           MultibodyPlant. */
   ScopedName scoped_name() const;
 
   /** Returns the geometry id of the deformable geometry used to simulate this
@@ -150,7 +152,9 @@ class DeformableBody final : public MultibodyElement<T> {
    @throws std::exception unless `body_B` is registered with the same multibody
            tree owning this deformable body.
    @throws std::exception if no constraint is added (i.e. no vertex of the
-           deformable body is inside the given `shape` with the given poses). */
+           deformable body is inside the given `shape` with the given poses).
+   @throws std::exception if this element is not associated with a
+           MultibodyPlant. */
   MultibodyConstraintId AddFixedConstraint(
       const RigidBody<T>& body_B, const math::RigidTransform<double>& X_BA,
       const geometry::Shape& shape_G, const math::RigidTransform<double>& X_BG);

@@ -56,7 +56,8 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// Constructs a spatial velocity V from an angular velocity ω and a
   /// translational velocity v.
   SpatialVelocity(const Eigen::Ref<const Vector3<T>>& w,
-                  const Eigen::Ref<const Vector3<T>>& v) : Base(w, v) {}
+                  const Eigen::Ref<const Vector3<T>>& v)
+      : Base(w, v) {}
 
   /// Constructs a spatial velocity V from an Eigen expression that represents a
   /// 6-element vector, i.e., two 3-element vectors, namely an angular velocity
@@ -201,8 +202,8 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
 /// @see Shift(), ShiftInPlace(), and ComposeWithMovingFrameVelocity().
 /// @relates SpatialVelocity
 template <typename T>
-inline SpatialVelocity<T> operator+(
-    const SpatialVelocity<T>& V1_E, const SpatialVelocity<T>& V2_E) {
+inline SpatialVelocity<T> operator+(const SpatialVelocity<T>& V1_E,
+                                    const SpatialVelocity<T>& V2_E) {
   // Although this implementation calls the base class operator, it is needed
   // for documentation.
   return SpatialVector<SpatialVelocity, T>::operator+(V1_E, V2_E);
@@ -233,8 +234,8 @@ inline SpatialVelocity<T> operator+(
 /// @see Shift(), ShiftInPlace(), and ComposeWithMovingFrameVelocity().
 /// @relates SpatialVelocity
 template <typename T>
-inline SpatialVelocity<T> operator-(
-    const SpatialVelocity<T>& V1_E, const SpatialVelocity<T>& V2_E) {
+inline SpatialVelocity<T> operator-(const SpatialVelocity<T>& V1_E,
+                                    const SpatialVelocity<T>& V2_E) {
   // Although this implementation calls the base class operator, it is needed
   // for documentation.
   return SpatialVector<SpatialVelocity, T>::operator-(V1_E, V2_E);

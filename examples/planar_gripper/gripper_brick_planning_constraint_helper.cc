@@ -120,8 +120,8 @@ Vector3<AutoDiffXd> ComputeFingerTipInBrickFrame(
       plant_context, multibody::JacobianWrtVariable::kQDot,
       gripper_brick.finger_link2_frame(finger), gripper_brick.p_L2Fingertip(),
       gripper_brick.brick_frame(), gripper_brick.brick_frame(), &Jv_BF2_B);
-  return math::InitializeAutoDiff(
-      p_BFingertip, Jv_BF2_B * math::ExtractGradient(q));
+  return math::InitializeAutoDiff(p_BFingertip,
+                                  Jv_BF2_B * math::ExtractGradient(q));
 }
 
 namespace internal {
@@ -129,13 +129,13 @@ FingerNoSlidingConstraint::FingerNoSlidingConstraint(
     const GripperBrickHelper<double>* gripper_brick, Finger finger,
     BrickFace face, systems::Context<double>* from_context,
     systems::Context<double>* to_context)
-    : solvers::Constraint(1 /* number of constraint */,
-                          2 * gripper_brick->plant()
-                                  .num_positions(),  // Number of variables,
-                                                     // the variables are q_to
-                                                     // and q_from.
-                          Vector1d(0), Vector1d(0),
-                          "finger_no_sliding_constraint"),
+    : solvers::Constraint(
+          // Number of constraints.
+          1,
+          // Number of variables, the variables are q_to and q_from.
+          2 * gripper_brick->plant().num_positions(),
+          // Lower and upper bounds.
+          Vector1d(0), Vector1d(0), "finger_no_sliding_constraint"),
       gripper_brick_(gripper_brick),
       finger_(finger),
       face_(face),

@@ -1,5 +1,7 @@
 #include "drake/systems/analysis/convex_integrator.h"
 
+#include <algorithm>
+
 #include "drake/math/quaternion.h"
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
 

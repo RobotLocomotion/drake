@@ -20,19 +20,15 @@ BeadOnAWire<T>::BeadOnAWire(BeadOnAWire<T>::CoordinateType type)
 
 template <class T>
 Eigen::Matrix<typename BeadOnAWire<T>::ArcLength, 3, 1>
-  BeadOnAWire<T>::helix_function(
-      const typename BeadOnAWire<T>::ArcLength& s) {
+BeadOnAWire<T>::helix_function(const typename BeadOnAWire<T>::ArcLength& s) {
   using std::cos;
   using std::sin;
-  return Vector3<BeadOnAWire<T>::ArcLength>(cos(s),
-                                          sin(s),
-                                          s);
+  return Vector3<BeadOnAWire<T>::ArcLength>(cos(s), sin(s), s);
 }
 
 template <class T>
-typename BeadOnAWire<T>::ArcLength
-    BeadOnAWire<T>::inverse_helix_function(
-        const Vector3<typename BeadOnAWire<T>::ArcLength>& v) {
+typename BeadOnAWire<T>::ArcLength BeadOnAWire<T>::inverse_helix_function(
+    const Vector3<typename BeadOnAWire<T>::ArcLength>& v) {
   using std::atan2;
   return atan2(v(1), v(0));
 }
@@ -52,10 +48,11 @@ Eigen::VectorXd BeadOnAWire<T>::EvalConstraintEquations(
   // Get the position of the bead.
   constexpr int three_d = 3;
   Eigen::Matrix<ArcLength, three_d, 1> x;
-  const auto position = context.get_continuous_state().
-      get_generalized_position().CopyToVector();
-  for (int i = 0; i < three_d; ++i)
+  const auto position =
+      context.get_continuous_state().get_generalized_position().CopyToVector();
+  for (int i = 0; i < three_d; ++i) {
     x(i).value() = position[i];
+  }
 
   // Call the inverse function.
   ArcLength s = inv_f_(x);
@@ -112,11 +109,11 @@ Eigen::VectorXd BeadOnAWire<T>::EvalConstraintEquationsDot(
   const double dinvf_dt = inv_f_(xprime).value().derivatives()(0);
 
   // Set the velocity vector.
-  const Eigen::Vector3d v(xc.GetAtIndex(3), xc.GetAtIndex(4),
-                          xc.GetAtIndex(5));
+  const Eigen::Vector3d v(xc.GetAtIndex(3), xc.GetAtIndex(4), xc.GetAtIndex(5));
 
   // Compute the result.
-  Eigen::VectorXd result = get_pfunction_first_derivative(fprime)*dinvf_dt - v;
+  Eigen::VectorXd result =
+      get_pfunction_first_derivative(fprime) * dinvf_dt - v;
 
   return result;
 }
@@ -131,7 +128,6 @@ template <class T>
 Eigen::VectorXd BeadOnAWire<T>::CalcVelocityChangeFromConstraintImpulses(
     const systems::Context<T>&, const Eigen::MatrixXd& J,
     const Eigen::VectorXd& lambda) const {
-
   // TODO(edrumwri): Test this method as soon as DAE solver is available,
   //                 (necessarily removing abort() first).
   if (true) {
@@ -141,10 +137,11 @@ Eigen::VectorXd BeadOnAWire<T>::CalcVelocityChangeFromConstraintImpulses(
 
   // The bead on the wire is unit mass, so the velocity change is equal to
   // simply Jᵀλ
-  if (coordinate_type_ == kAbsoluteCoordinates)
+  if (coordinate_type_ == kAbsoluteCoordinates) {
     return J.transpose() * lambda;
-  else
+  } else {
     return Eigen::Matrix<T, 1, 1>(0);
+  }
 }
 
 template <class T>
@@ -193,9 +190,9 @@ template <typename T>
 void BeadOnAWire<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
-  using std::sin;
-  using std::cos;
   using std::abs;
+  using std::cos;
+  using std::sin;
 
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
 
@@ -235,8 +232,9 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
     const double ag = get_gravitational_acceleration();
     const Eigen::Vector3d dfds = get_pfunction_first_derivative(foutput);
     const Eigen::Vector3d d2fds2 = get_pfunction_second_derivative(foutput);
-    const double s_ddot = (tau + dfds(2)*ag - dfds.dot(d2fds2)*s_dot*s_dot) /
-                          dfds.dot(dfds);
+    const double s_ddot =
+        (tau + dfds(2) * ag - dfds.dot(d2fds2) * s_dot * s_dot) /
+        dfds.dot(dfds);
 
     // Set derivative.
     f.SetAtIndex(0, s_dot);
@@ -281,12 +279,14 @@ void BeadOnAWire<T>::SetDefaultState(const systems::Context<T>&,
 
     // Set x0 appropriately.
     x0.resize(state_size);
+    // clang-format off
     x0 << q(0).value().value(),
           q(1).value().value(),
           q(2).value().value(),
           q(0).derivatives()(0).value() * s_dot,
           q(1).derivatives()(0).value() * s_dot,
           q(2).derivatives()(0).value() * s_dot;
+    // clang-format on
   } else {
     const int state_size = 2;
     x0.resize(state_size);

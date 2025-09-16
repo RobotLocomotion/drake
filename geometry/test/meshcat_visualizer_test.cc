@@ -1,6 +1,9 @@
 #include "drake/geometry/meshcat_visualizer.h"
 
+#include <memory>
+#include <string>
 #include <thread>
+#include <utility>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

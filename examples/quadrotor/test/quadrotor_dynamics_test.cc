@@ -1,4 +1,7 @@
+#include <limits>
+#include <memory>
 #include <stdexcept>
+#include <utility>
 
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
@@ -19,8 +22,8 @@ namespace quadrotor {
 namespace {
 
 using Eigen::Quaterniond;
-using Eigen::VectorXd;
 using Eigen::Vector3d;
+using Eigen::VectorXd;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using multibody::MultibodyPlant;
@@ -54,7 +57,7 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 const double kSimulationDuration = 0.1;
 
 // Case (#1): The Diagram that wraps a QuadrotorPlant.
-class GenericQuadrotor: public Diagram<double> {
+class GenericQuadrotor : public Diagram<double> {
  public:
   GenericQuadrotor() {
     DiagramBuilder<double> builder;
@@ -104,7 +107,7 @@ class GenericQuadrotor: public Diagram<double> {
 };
 
 // Case (#2): The Diagram that wraps a MultibodyPlant.
-class MultibodyQuadrotor: public Diagram<double> {
+class MultibodyQuadrotor : public Diagram<double> {
  public:
   MultibodyQuadrotor() {
     auto owned_plant = std::make_unique<MultibodyPlant<double>>(0.0);
@@ -179,24 +182,24 @@ void TestPassiveBehavior(const VectorXd& x0) {
   // Verify initial configuration (rotation matrix and position).
   const RigidTransformd ge_initial_pose = ge_model.GetPose(ge_context);
   const RigidTransformd mb_initial_pose = mb_model.GetPose(mb_context);
-  EXPECT_TRUE(CompareMatrices(
-      ge_initial_pose.translation(), mb_initial_pose.translation(),
-        4 * kEpsilon, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(
-      ge_initial_pose.rotation().matrix(), mb_initial_pose.rotation().matrix(),
-        4 * kEpsilon, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(ge_initial_pose.translation(),
+                              mb_initial_pose.translation(), 4 * kEpsilon,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(ge_initial_pose.rotation().matrix(),
+                              mb_initial_pose.rotation().matrix(), 4 * kEpsilon,
+                              MatrixCompareType::absolute));
 
   // Verify initial motion (translational and rotational velocities).
   const SpatialVelocity<double> ge_initial_velocity =
       ge_model.GetVelocity(ge_context);
   const SpatialVelocity<double> mb_initial_velocity =
       mb_model.GetVelocity(mb_context);
-  EXPECT_TRUE(CompareMatrices(
-      ge_initial_velocity.translational(), mb_initial_velocity.translational(),
-      4 * kEpsilon, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(
-      ge_initial_velocity.rotational(), mb_initial_velocity.rotational(),
-      4 * kEpsilon, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(ge_initial_velocity.translational(),
+                              mb_initial_velocity.translational(), 4 * kEpsilon,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(ge_initial_velocity.rotational(),
+                              mb_initial_velocity.rotational(), 4 * kEpsilon,
+                              MatrixCompareType::absolute));
 
   // Simulate and advance time.
   ge_simulator.AdvanceTo(kSimulationDuration);
@@ -206,23 +209,22 @@ void TestPassiveBehavior(const VectorXd& x0) {
   // rotation is much higher than the allowable error in translation.
   const RigidTransformd ge_pose = ge_model.GetPose(ge_context);
   const RigidTransformd mb_pose = mb_model.GetPose(mb_context);
-  EXPECT_TRUE(CompareMatrices(
-        ge_pose.translation(), mb_pose.translation(),
-        1e-10, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(
-        ge_pose.rotation().matrix(), mb_pose.rotation().matrix(),
-        1e-5, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(ge_pose.translation(), mb_pose.translation(),
+                              1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(ge_pose.rotation().matrix(),
+                              mb_pose.rotation().matrix(), 1e-5,
+                              MatrixCompareType::absolute));
 
   // Verify motion after advancing time. Herein, the allowable error in
   // rotation is much higher than the allowable error in translation.
   const SpatialVelocity<double> ge_velocity = ge_model.GetVelocity(ge_context);
   const SpatialVelocity<double> mb_velocity = mb_model.GetVelocity(mb_context);
-  EXPECT_TRUE(CompareMatrices(
-      ge_velocity.translational(), mb_velocity.translational(),
-      1E-14, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(
-      ge_velocity.rotational(), mb_velocity.rotational(),
-      1E-4, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(ge_velocity.translational(),
+                              mb_velocity.translational(), 1E-14,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(ge_velocity.rotational(),
+                              mb_velocity.rotational(), 1E-4,
+                              MatrixCompareType::absolute));
 }
 
 // Test comparing the state for of each kind of plant under passive behaviour.

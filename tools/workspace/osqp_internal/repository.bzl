@@ -7,10 +7,11 @@ def osqp_internal_repository(
         name = name,
         repository = "osqp/osqp",
         upgrade_advice = """
-        When updating this commit, see drake/tools/workspace/qdldl/README.md.
+        When updating this commit, see
+        drake/tools/workspace/qdldl_internal/README.md.
         """,
-        commit = "v0.6.3",
-        sha256 = "a6b4148019001f87489c27232e2bdbac37c94f38fa37c1b4ee11eaa5654756d2",  # noqa
+        commit = "v1.0.0",
+        sha256 = "dd6a1c2e7e921485697d5e7cdeeb043c712526c395b3700601f51d472a7d8e48",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

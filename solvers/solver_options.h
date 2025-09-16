@@ -3,13 +3,6 @@
 #include <string>
 #include <variant>
 
-// Remove on 2025-09-01 upon completion of deprecation.
-#include <optional>
-#include <ostream>
-#include <unordered_map>
-#include <unordered_set>
-
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 #include "drake/common/name_value.h"
 #include "drake/common/string_unordered_map.h"
@@ -102,85 +95,7 @@ struct SolverOptions final {
   /** The options are indexed first by the solver name and second by the key.
   In the case of Drake's common options, the solver name is "Drake". */
   string_unordered_map<string_unordered_map<OptionValue>> options;
-
-  // ==========================================================================
-  // EVERYTHING AFTER THIS POINT IN THIS STRUCT IS DEPRECATION GOOP; IGNORE IT.
-  // ==========================================================================
-
-  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
-  std::unordered_map<std::string, double> GetOptionsDouble(
-      const SolverId& solver_id) const;
-
-  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
-  std::unordered_map<std::string, int> GetOptionsInt(
-      const SolverId& solver_id) const;
-
-  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
-  std::unordered_map<std::string, std::string> GetOptionsStr(
-      const SolverId& solver_id) const;
-
-  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
-  std::unordered_map<CommonSolverOption, OptionValue> common_solver_options()
-      const;
-
-  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
-  std::string get_print_file_name() const;
-
-  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
-  bool get_print_to_console() const;
-
-  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
-  std::string get_standalone_reproduction_file_name() const;
-
-  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
-  std::optional<int> get_max_threads() const;
-
-  template <typename T>
-  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
-  std::unordered_map<std::string, T> GetOptions(
-      const SolverId& solver_id) const {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    if constexpr (std::is_same_v<T, double>) {
-      return GetOptionsDouble(solver_id);
-    } else if constexpr (std::is_same_v<T, int>) {
-      return GetOptionsInt(solver_id);
-    } else if constexpr (std::is_same_v<T, std::string>) {
-      return GetOptionsStr(solver_id);
-    }
-#pragma GCC diagnostic pop
-    DRAKE_UNREACHABLE();
-  }
-
-  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
-  std::unordered_set<SolverId> GetSolverIds() const;
-
-  // Check if for a given solver_id, the option keys are included in
-  // double_keys, int_keys and str_keys.
-  // @param solver_id If this SolverOptions has set options for this solver_id,
-  // then we check if the option keys are a subset of `double_keys`, `int_keys`
-  // and `str_keys`.
-  // @param double_keys The set of allowable keys for double options.
-  // @param int_keys The set of allowable keys for int options.
-  // @param str_keys The set of allowable keys for string options.
-  // @throws std::exception if the solver contains un-allowed options.
-  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
-  void CheckOptionKeysForSolver(
-      const SolverId& solver_id,
-      const std::unordered_set<std::string>& allowable_double_keys,
-      const std::unordered_set<std::string>& allowable_int_keys,
-      const std::unordered_set<std::string>& allowable_str_keys) const;
-
- private:
-  // Remove this field on 2025-09-01 upon completion of deprecation.
-  std::unordered_set<SolverId> solver_ids;
 };
-
-DRAKE_DEPRECATED("2025-09-01", "Use options.to_string(), instead.")
-std::string to_string(const SolverOptions&);
-
-DRAKE_DEPRECATED("2025-09-01", "Use options.to_string(), instead.")
-std::ostream& operator<<(std::ostream&, const SolverOptions&);
 
 namespace internal {
 /* Converts the option_value to a string. */

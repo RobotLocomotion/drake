@@ -1,5 +1,7 @@
 #include "drake/solvers/solver_id.h"
 
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/limit_malloc.h"

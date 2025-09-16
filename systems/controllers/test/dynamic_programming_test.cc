@@ -1,6 +1,7 @@
 #include "drake/systems/controllers/dynamic_programming.h"
 
 #include <cmath>
+#include <memory>
 
 #include <gtest/gtest.h>
 

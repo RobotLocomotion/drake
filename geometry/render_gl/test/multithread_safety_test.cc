@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <future>
+#include <memory>
 #include <optional>
 #include <string>
 #include <variant>

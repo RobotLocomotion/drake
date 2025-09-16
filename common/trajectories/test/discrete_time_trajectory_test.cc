@@ -1,5 +1,7 @@
 #include "drake/common/trajectories/discrete_time_trajectory.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"

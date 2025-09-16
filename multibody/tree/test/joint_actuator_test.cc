@@ -1,6 +1,8 @@
 #include "drake/multibody/tree/joint_actuator.h"
 
 #include <limits>
+#include <memory>
+#include <utility>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

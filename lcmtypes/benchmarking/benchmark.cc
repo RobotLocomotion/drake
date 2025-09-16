@@ -1,3 +1,6 @@
+#include <string>
+#include <vector>
+
 #include <benchmark/benchmark.h>
 
 #include "drake/lcmt_image.hpp"

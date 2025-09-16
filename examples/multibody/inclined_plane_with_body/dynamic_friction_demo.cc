@@ -1,5 +1,8 @@
 #include <iostream>
+#include <limits>
 #include <memory>
+#include <string>
+#include <utility>
 
 #include <gflags/gflags.h>
 
@@ -51,8 +54,8 @@ int do_main() {
 
   systems::DiagramBuilder<double> builder;
 
-  const CoulombFriction<double> friction(
-      FLAGS_static_friction, FLAGS_dynamic_friction);
+  const CoulombFriction<double> friction(FLAGS_static_friction,
+                                         FLAGS_dynamic_friction);
 
   MultibodyPlantConfig plant_config;
   plant_config.time_step = FLAGS_mbp_time_step;
@@ -86,8 +89,7 @@ int do_main() {
   const double damping = 100.0;
   const RevoluteJoint<double>& joint = plant.AddJoint<RevoluteJoint>(
       "plane_joint", plant.world_body(), RigidTransform<double>(), plane,
-      std::optional<RigidTransform<double>>{}, Vector3d::UnitY(),
-      damping);
+      std::optional<RigidTransform<double>>{}, Vector3d::UnitY(), damping);
   plant.AddJointActuator("actuator", joint);
 
   // Add a box on the plane

@@ -1,3 +1,8 @@
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"

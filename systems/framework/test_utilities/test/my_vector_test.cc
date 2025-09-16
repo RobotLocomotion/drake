@@ -36,9 +36,8 @@ GTEST_TEST(MyVectorTest, Construction) {
 GTEST_TEST(MyVectorTest, BadSize) {
   Vector4d fixed_size4(1., 2., 3., 4.);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      MyVector3d(VectorX<double>(fixed_size4)),
-      ".*size.*fail.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(MyVector3d(VectorX<double>(fixed_size4)),
+                              ".*size.*fail.*");
 
   // This won't compile since there is no constructor with mismatched sizes.
   // MyVector3d from_4(fixed_size4);

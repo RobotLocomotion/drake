@@ -2,8 +2,6 @@ import os
 import re
 import sys
 
-from tools.lint.formatter import IncludeFormatter
-
 
 def _check_unguarded_openmp_uses(filename):
     """Returns 0 if all OpenMP uses in `filename` are properly guarded by
@@ -90,27 +88,6 @@ def _check_invalid_line_endings(filename):
             print("ERROR: non-Unix newline characters found")
             return 1
 
-    return 0
-
-
-def _check_includes(filename):
-    """Returns 0 if clang-format-includes is a no-op, and 1 otherwise."""
-    try:
-        tool = IncludeFormatter(filename)
-    except Exception as e:
-        print("ERROR: " + filename + ":0: " + str(e))
-        return 1
-    tool.format_includes()
-    first_difference = tool.get_first_differing_original_index()
-    if first_difference is not None:
-        print(f"ERROR: {filename}:{first_difference + 1}: "
-              "the #include ordering is incorrect")
-        print("note: fix via bazel-bin/tools/lint/clang-format-includes "
-              + filename)
-        print("note: if that program does not exist, "
-              "you might need to compile it first: "
-              "bazel build //tools/lint/...")
-        return 1
     return 0
 
 
@@ -255,7 +232,6 @@ def main():
             # also, but that runs into some struggle with genfiles.
             total_errors += _check_shebang(filename, disallow_executable)
         if not filename.endswith(".py"):
-            total_errors += _check_includes(filename)
             total_errors += _check_unguarded_openmp_uses(filename)
             total_errors += _check_iostream(filename)
             total_errors += _check_clang_format_toggles(filename)

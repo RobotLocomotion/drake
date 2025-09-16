@@ -1,7 +1,9 @@
 #include "drake/common/test_utilities/limit_malloc.h"
 
 #include <cstdlib>
+#include <iostream>
 #include <stdexcept>
+#include <string>
 
 #include <gtest/gtest.h>
 
@@ -18,7 +20,9 @@ void CallMalloc() {
   void* dummy = malloc(16);
   g_dummy = dummy;
   free(dummy);
-  if (g_dummy == nullptr) { throw std::runtime_error("null dummy"); }
+  if (g_dummy == nullptr) {
+    throw std::runtime_error("null dummy");
+  }
 }
 
 // Calls calloc (and then immediately frees).
@@ -26,7 +30,9 @@ void CallCalloc() {
   void* dummy = calloc(1, 16);
   g_dummy = dummy;
   free(dummy);
-  if (g_dummy == nullptr) { throw std::runtime_error("null dummy"); }
+  if (g_dummy == nullptr) {
+    throw std::runtime_error("null dummy");
+  }
 }
 
 // Calls realloc (and then immediately frees).
@@ -34,7 +40,9 @@ void CallRealloc() {
   void* dummy = realloc(nullptr, 16);
   g_dummy = dummy;
   free(dummy);
-  if (g_dummy == nullptr) { throw std::runtime_error("null dummy"); }
+  if (g_dummy == nullptr) {
+    throw std::runtime_error("null dummy");
+  }
 }
 
 // A value-parameterized test fixture.
@@ -42,9 +50,15 @@ class LimitMallocTest : public ::testing::TestWithParam<int> {
  public:
   void Allocate() {
     switch (GetParam()) {
-      case 0: CallMalloc(); return;
-      case 1: CallCalloc(); return;
-      case 2: CallRealloc(); return;
+      case 0:
+        CallMalloc();
+        return;
+      case 1:
+        CallCalloc();
+        return;
+      case 2:
+        CallRealloc();
+        return;
     }
     throw std::logic_error("Bad GetParam()");
   }
@@ -69,7 +83,7 @@ TEST_P(LimitMallocTest, UnlimitedTest) {
   int num_allocations = -1;
   LimitMallocParams args{10, 20, true};
   {
-    LimitMalloc guard(LimitMallocParams{ /* no limits specified */ });
+    LimitMalloc guard(LimitMallocParams{/* no limits specified */});
     num_allocations = guard.num_allocations();
     args = guard.params();
     Allocate();  // Malloc is OK.
@@ -107,10 +121,12 @@ constexpr const char* const kMinDeathMessage =
 TEST_P(LimitMallocDeathTest, BasicTest) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
   Allocate();  // Malloc is OK.
-  ASSERT_DEATH({
-      LimitMalloc guard;
-      Allocate();  // Malloc is NOT ok.
-    }, kMaxDeathMessage);
+  ASSERT_DEATH(
+      {
+        LimitMalloc guard;
+        Allocate();  // Malloc is NOT ok.
+      },
+      kMaxDeathMessage);
 }
 
 TEST_P(LimitMallocTest, MaxLimitTest) {
@@ -149,13 +165,15 @@ TEST_P(LimitMallocDeathTest, MaxLimitTest) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
   const auto expected_message =
       std::string("Once was okay\n") + kMaxDeathMessage;
-  ASSERT_DEATH({
-      LimitMalloc guard({.max_num_allocations = 1});
-      Allocate();
-      std::cerr << "Once was okay\n";
-      // A second allocation will fail.
-      Allocate();
-    }, expected_message);
+  ASSERT_DEATH(
+      {
+        LimitMalloc guard({.max_num_allocations = 1});
+        Allocate();
+        std::cerr << "Once was okay\n";
+        // A second allocation will fail.
+        Allocate();
+      },
+      expected_message);
 }
 
 TEST_P(LimitMallocDeathTest, ObservationTest) {
@@ -165,26 +183,26 @@ TEST_P(LimitMallocDeathTest, ObservationTest) {
   // working implementation.
   int num_allocations = -1;  // Choose spoiler value for testing.
   {
-      LimitMalloc guard({.max_num_allocations = 1});
-      Allocate();
-      num_allocations = guard.num_allocations();
+    LimitMalloc guard({.max_num_allocations = 1});
+    Allocate();
+    num_allocations = guard.num_allocations();
   }
   EXPECT_EQ(num_allocations, 1);
 }
 
 TEST_P(LimitMallocDeathTest, MinLimitTest) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-  ASSERT_DEATH({
-      LimitMalloc guard({.max_num_allocations = 5, .min_num_allocations = 4});
-      Allocate();  // Some few allocations are not enough.
-      // The destructor will fail.
-    }, kMinDeathMessage);
+  ASSERT_DEATH(
+      {
+        LimitMalloc guard({.max_num_allocations = 5, .min_num_allocations = 4});
+        Allocate();  // Some few allocations are not enough.
+        // The destructor will fail.
+      },
+      kMinDeathMessage);
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    All, LimitMallocTest, ::testing::Range(0, 3));
-INSTANTIATE_TEST_SUITE_P(
-    All, LimitMallocDeathTest, ::testing::Range(0, 3));
+INSTANTIATE_TEST_SUITE_P(All, LimitMallocTest, ::testing::Range(0, 3));
+INSTANTIATE_TEST_SUITE_P(All, LimitMallocDeathTest, ::testing::Range(0, 3));
 
 // When the user whitelists no-op reallocs, a call to realloc() that does not
 // change the size should not fail.
@@ -193,11 +211,9 @@ GTEST_TEST(LimitReallocTest, ChangingSizeTest) {
   g_dummy = dummy;
   ASSERT_TRUE(g_dummy != nullptr);
   {
-    LimitMalloc guard({
-        .max_num_allocations = 0,
-        .min_num_allocations = -1,
-        .ignore_realloc_noops = true
-    });
+    LimitMalloc guard({.max_num_allocations = 0,
+                       .min_num_allocations = -1,
+                       .ignore_realloc_noops = true});
     dummy = realloc(dummy, 16);  // No change.
     g_dummy = dummy;
   }
@@ -215,18 +231,18 @@ GTEST_TEST(LimitReallocDeathTest, ChangingSizeTest) {
   ASSERT_TRUE(g_dummy != nullptr);
   const auto expected_message =
       std::string("Once was okay\n") + kMaxDeathMessage;
-  ASSERT_DEATH({
-      LimitMalloc guard({
-          .max_num_allocations = 0,
-          .min_num_allocations = -1,
-          .ignore_realloc_noops = true
-      });
-      dummy = realloc(dummy, 16);  // No change.
-      g_dummy = dummy;
-      std::cerr << "Once was okay\n";
-      dummy = realloc(dummy, 16384);  // A change.
-      g_dummy = dummy;
-    }, expected_message);
+  ASSERT_DEATH(
+      {
+        LimitMalloc guard({.max_num_allocations = 0,
+                           .min_num_allocations = -1,
+                           .ignore_realloc_noops = true});
+        dummy = realloc(dummy, 16);  // No change.
+        g_dummy = dummy;
+        std::cerr << "Once was okay\n";
+        dummy = realloc(dummy, 16384);  // A change.
+        g_dummy = dummy;
+      },
+      expected_message);
   free(dummy);
 }
 

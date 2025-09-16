@@ -1,5 +1,7 @@
 #include "drake/solvers/get_program_type.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 namespace drake {

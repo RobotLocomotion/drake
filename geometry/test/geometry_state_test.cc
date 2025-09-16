@@ -7,6 +7,9 @@
 #include <memory>
 #include <optional>
 #include <set>
+#include <string>
+#include <tuple>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -3125,10 +3128,11 @@ TEST_F(GeometryStateTest, AssignRolesToGeometry) {
                                    : "not expected, but found. ");
       passes = false;
     }
-    if (passes)
+    if (passes) {
       return ::testing::AssertionSuccess();
-    else
+    } else {
       return failure;
+    }
   };
 
   // Given three role types, assign all eight types of assignments.
@@ -3600,10 +3604,11 @@ TEST_F(GeometryStateTest, ChildGeometryRoleCount) {
                 << role << " role. Found " << actual_count;
       }
     }
-    if (success)
+    if (success) {
       return ::testing::AssertionSuccess();
-    else
+    } else {
       return failure;
+    }
   };
 
   // Assert initial conditions.

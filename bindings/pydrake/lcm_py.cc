@@ -1,4 +1,5 @@
 #include <cstring>
+#include <string>
 
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"

@@ -1,7 +1,7 @@
 module(name = "drake_cmake")
 
-bazel_dep(name = "apple_support", version = "1.17.1")
-bazel_dep(name = "rules_python", version = "0.40.0")
+bazel_dep(name = "apple_support", version = "1.23.1")
+bazel_dep(name = "rules_python", version = "1.6.0")
 
 bazel_dep(name = "drake")
 local_path_override(
@@ -24,3 +24,8 @@ python_repository(
 )
 
 register_toolchains("@python//:all")
+
+single_version_override(
+    module_name = "rules_cc",
+    patches = ["//:pr456.patch"],
+)

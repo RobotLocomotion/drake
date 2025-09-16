@@ -1,17 +1,21 @@
 load("//tools/skylark:drake_py.bzl", "py_test_isolated")
 
-# From https://bazel.build/versions/master/docs/be/c-cpp.html#cc_library.srcs
+# From https://bazel.build/reference/be/c-cpp#cc_library.srcs.
+# Keep this list in sync with clang_format_lint.py.
 _SOURCE_EXTENSIONS = [source_ext for source_ext in """
 .c
 .cc
 .cpp
 .cxx
-.c++.C
+.c++
+.C
 .h
 .hh
 .hpp
 .hxx
 .inc
+.inl
+.H
 """.split("\n") if len(source_ext)]
 
 _IGNORE_EXTENSIONS = []
@@ -46,8 +50,7 @@ def _add_linter_rules(
         source_labels,
         source_filenames,
         name,
-        data = None,
-        enable_clang_format_lint = False):
+        data = None):
     # Common attributes for all of our py_test invocations.
     data = (data or [])
     size = "small"
@@ -73,10 +76,10 @@ def _add_linter_rules(
     # Google cpplint.
     py_test_isolated(
         name = name + "_cpplint",
-        srcs = ["@styleguide//:cpplint"],
+        srcs = ["@cpplint_internal//:cpplint"],
         data = cpplint_data + source_labels,
         args = _EXTENSIONS_ARGS + source_filenames,
-        main = "@styleguide//:cpplint/cpplint.py",
+        main = "@cpplint_internal//:cpplint.py",
         size = size,
         tags = ["cpplint", "lint"],
     )
@@ -92,23 +95,21 @@ def _add_linter_rules(
         tags = ["drakelint", "lint"],
     )
 
-    # Possibly clang-format idempotence.
-    if enable_clang_format_lint:
-        py_test_isolated(
-            name = name + "_clang_format_lint",
-            srcs = ["@drake//tools/lint:clang_format_lint"],
-            data = data + source_labels,
-            args = source_filenames,
-            main = "@drake//tools/lint:clang_format_lint.py",
-            size = size,
-            tags = ["clang_format_lint", "lint"],
-        )
+    # Idempotence during clang-format.
+    py_test_isolated(
+        name = name + "_clang_format_lint",
+        srcs = ["@drake//tools/lint:clang_format_lint"],
+        data = data + source_labels,
+        args = source_filenames,
+        main = "@drake//tools/lint:clang_format_lint.py",
+        size = size,
+        tags = ["clang_format_lint", "lint"],
+    )
 
 def cpplint(
         existing_rules = None,
         data = None,
-        extra_srcs = None,
-        enable_clang_format_lint = False):
+        extra_srcs = None):
     """For every rule in the BUILD file so far, adds a test rule that runs
     cpplint over the C++ sources listed in that rule.  Thus, BUILD file authors
     should call this function at the *end* of every C++-related BUILD file.
@@ -127,13 +128,12 @@ def cpplint(
     if existing_rules == None:
         existing_rules = native.existing_rules().values()
 
+    # Collect the list of files to lint, grouped by target name.
+    name_to_labels = {}
     for rule in existing_rules:
         if "nolint" in rule.get("tags"):
             # Disable linting when requested (e.g., for generated code).
             continue
-        use_clang_lint = enable_clang_format_lint and (
-            "nolint_clang_format" not in rule.get("tags")
-        )
 
         # Extract the list of C++ source code labels and convert to filenames.
         candidate_labels = (
@@ -145,17 +145,29 @@ def cpplint(
             for label in candidate_labels
             if _is_source_label(label)
         ]
-        source_filenames = ["$(location %s)" % x for x in source_labels]
+        if len(source_labels) == 0:
+            continue
 
-        # Run the cpplint checker as a unit test.
-        if len(source_filenames) > 0:
-            _add_linter_rules(
-                source_labels,
-                source_filenames,
-                name = rule["name"],
-                data = data,
-                enable_clang_format_lint = use_clang_lint,
-            )
+        # Undo the effect of _maybe_add_pruned_private_hdrs_dep, which computes
+        # its `name = "_" + base_name + "_private_headers_cc_impl"`.
+        rule_name = rule["name"]
+        private_suffix = "_private_headers_cc_impl"
+        if rule_name.endswith(private_suffix):
+            rule_name = rule_name[1:-len(private_suffix)]
+
+        # Note the files to be linted.
+        name_to_labels.setdefault(rule_name, [])
+        name_to_labels[rule_name].extend(source_labels)
+
+    # Run the cpplint checker as unit tests.
+    for rule_name, source_labels in name_to_labels.items():
+        source_filenames = ["$(location %s)" % x for x in source_labels]
+        _add_linter_rules(
+            source_labels,
+            source_filenames,
+            name = rule_name,
+            data = data,
+        )
 
     # Lint all of the extra_srcs separately in a single rule.
     if extra_srcs:
@@ -166,7 +178,6 @@ def cpplint(
             source_filenames,
             name = "extra_srcs_cpplint",
             data = data,
-            enable_clang_format_lint = enable_clang_format_lint,
         )
 
 def cpplint_extra(

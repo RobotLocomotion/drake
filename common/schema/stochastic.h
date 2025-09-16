@@ -303,12 +303,11 @@ class UniformDiscrete final : public Distribution {
 };
 
 /// Variant over all kinds of distributions.
-using DistributionVariant = std::variant<
-    double, Deterministic, Gaussian, Uniform, UniformDiscrete>;
+using DistributionVariant =
+    std::variant<double, Deterministic, Gaussian, Uniform, UniformDiscrete>;
 
 /// Copies the given variant into a Distribution base class.
-std::unique_ptr<Distribution> ToDistribution(
-    const DistributionVariant& var);
+std::unique_ptr<Distribution> ToDistribution(const DistributionVariant& var);
 
 /// Like Distribution::Sample, but on a DistributionVariant instead.
 double Sample(const DistributionVariant& var,
@@ -471,19 +470,16 @@ struct InvalidVariantSelection {
 /// @tparam Size rows at compile time (max 6) or else Eigen::Dynamic.
 template <int Size>
 using DistributionVectorVariant = std::variant<
-  drake::Vector<double, Size>,
-  DeterministicVector<Size>,
-  GaussianVector<Size>,
-  UniformVector<Size>,
-  std::conditional_t<(Size == Eigen::Dynamic || Size == 1),
-    Deterministic,
-    internal::InvalidVariantSelection<Deterministic>>,
-  std::conditional_t<(Size == Eigen::Dynamic || Size == 1),
-    Gaussian,
-    internal::InvalidVariantSelection<Gaussian>>,
-  std::conditional_t<(Size == Eigen::Dynamic || Size == 1),
-    Uniform,
-    internal::InvalidVariantSelection<Uniform>>>;
+    drake::Vector<double, Size>,  // BR
+    DeterministicVector<Size>,    //
+    GaussianVector<Size>,         //
+    UniformVector<Size>,          //
+    std::conditional_t<(Size == Eigen::Dynamic || Size == 1), Deterministic,
+                       internal::InvalidVariantSelection<Deterministic>>,
+    std::conditional_t<(Size == Eigen::Dynamic || Size == 1), Gaussian,
+                       internal::InvalidVariantSelection<Gaussian>>,
+    std::conditional_t<(Size == Eigen::Dynamic || Size == 1), Uniform,
+                       internal::InvalidVariantSelection<Uniform>>>;
 
 /// DistributionVectorVariant that permits any vector size dynamically.
 using DistributionVectorVariantX = DistributionVectorVariant<Eigen::Dynamic>;
@@ -507,18 +503,17 @@ Eigen::VectorXd GetDeterministicValue(
     const DistributionVectorVariant<Size>& vec);
 
 #define DRAKE_DECLARE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(Func) \
-  extern template Func(const DistributionVectorVariantX&); \
-  extern template Func(const DistributionVectorVariant<1>&); \
-  extern template Func(const DistributionVectorVariant<2>&); \
-  extern template Func(const DistributionVectorVariant<3>&); \
-  extern template Func(const DistributionVectorVariant<4>&); \
-  extern template Func(const DistributionVectorVariant<5>&); \
+  extern template Func(const DistributionVectorVariantX&);       \
+  extern template Func(const DistributionVectorVariant<1>&);     \
+  extern template Func(const DistributionVectorVariant<2>&);     \
+  extern template Func(const DistributionVectorVariant<3>&);     \
+  extern template Func(const DistributionVectorVariant<4>&);     \
+  extern template Func(const DistributionVectorVariant<5>&);     \
   extern template Func(const DistributionVectorVariant<6>&);
 
 DRAKE_DECLARE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(
     std::unique_ptr<DistributionVector> ToDistributionVector)
-DRAKE_DECLARE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(
-    bool IsDeterministic)
+DRAKE_DECLARE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(bool IsDeterministic)
 DRAKE_DECLARE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(
     Eigen::VectorXd GetDeterministicValue)
 

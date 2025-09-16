@@ -75,7 +75,7 @@ class GazeTargetConstraint : public solvers::Constraint {
                        double cone_half_angle,
                        systems::Context<AutoDiffXd>* plant_context);
 
-  ~GazeTargetConstraint() override{};
+  ~GazeTargetConstraint() override {};
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

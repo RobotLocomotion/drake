@@ -20,7 +20,7 @@ cc_library(
     name = "voxelized_geometry_tools",
     srcs = [
         "src/voxelized_geometry_tools/collision_map.cpp",
-        "src/voxelized_geometry_tools/dynamic_spatial_hashed_collision_map.cpp",  # noqa
+        "src/voxelized_geometry_tools/dynamic_spatial_hashed_collision_map.cpp",
         "src/voxelized_geometry_tools/mesh_rasterizer.cpp",
         "src/voxelized_geometry_tools/signed_distance_field.cpp",
         "src/voxelized_geometry_tools/signed_distance_field_generation.cpp",  # noqa
@@ -31,7 +31,7 @@ cc_library(
         "include/voxelized_geometry_tools/dynamic_spatial_hashed_collision_map.hpp",  # noqa
         "include/voxelized_geometry_tools/mesh_rasterizer.hpp",
         "include/voxelized_geometry_tools/signed_distance_field.hpp",
-        "include/voxelized_geometry_tools/signed_distance_field_generation.hpp",  # noqa
+        "include/voxelized_geometry_tools/signed_distance_field_generation.hpp",
         "include/voxelized_geometry_tools/tagged_object_collision_map.hpp",
         "include/voxelized_geometry_tools/topology_computation.hpp",
         "include/voxelized_geometry_tools/vgt_namespace.hpp",
@@ -128,7 +128,7 @@ cc_test(
         ":opencl_voxelization_helpers",
         ":pointcloud_voxelization",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -144,7 +144,7 @@ cc_test(
     deps = [
         ":voxelized_geometry_tools",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -160,7 +160,7 @@ cc_test(
     deps = [
         ":voxelized_geometry_tools",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 

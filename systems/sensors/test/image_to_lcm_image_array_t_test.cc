@@ -1,5 +1,8 @@
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
 
+#include <memory>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "drake/lcmt_image_array.hpp"

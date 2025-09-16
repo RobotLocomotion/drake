@@ -1,5 +1,11 @@
 #include "drake/systems/analysis/convex_integrator.h"
 
+#include <iostream>
+#include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

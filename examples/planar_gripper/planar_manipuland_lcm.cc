@@ -46,9 +46,8 @@ void PlanarManipulandStatusDecoder::OutputStatus(
 
 PlanarManipulandStatusEncoder::PlanarManipulandStatusEncoder() {
   this->DeclareInputPort(systems::kUseDefaultName, systems::kVectorValued, 6);
-  this->DeclareAbstractOutputPort(
-      systems::kUseDefaultName,
-      &PlanarManipulandStatusEncoder::OutputStatus);
+  this->DeclareAbstractOutputPort(systems::kUseDefaultName,
+                                  &PlanarManipulandStatusEncoder::OutputStatus);
 }
 
 void PlanarManipulandStatusEncoder::OutputStatus(

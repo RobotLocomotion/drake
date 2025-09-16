@@ -47,18 +47,10 @@ class Acrobot {
   /// - b1: damping coefficient of the shoulder joint.
   /// - b2: damping coefficient of the elbow joint.
   /// - g: acceleration of gavity.
-  Acrobot(const Vector3<T>& normal, const Vector3<T>& up,
-          double m1 = 1.0,
-          double m2 = 1.0,
-          double l1 = 1.0,
-          double l2 = 1.0,
-          double lc1 = 0.5,
-          double lc2 = 0.5,
-          double Ic1 = .083,
-          double Ic2 = .33,
-          double b1 = 0.1,
-          double b2 = 0.1,
-          double g = 9.81);
+  Acrobot(const Vector3<T>& normal, const Vector3<T>& up, double m1 = 1.0,
+          double m2 = 1.0, double l1 = 1.0, double l2 = 1.0, double lc1 = 0.5,
+          double lc2 = 0.5, double Ic1 = .083, double Ic2 = .33,
+          double b1 = 0.1, double b2 = 0.1, double g = 9.81);
 
   /// Computes the mass matrix `H(q)` for the double pendulum system. It turns
   /// out that for this system the mass matrix is independent of the shoulder
@@ -91,8 +83,8 @@ class Acrobot {
   /// @param theta2 The elbow angle in radians.
   /// @returns X_WL2 the pose of link 2 measured and expressed in the world
   /// frame.
-  math::RigidTransform<T> CalcLink2PoseInWorldFrame(
-      const T& theta1, const T& theta2) const;
+  math::RigidTransform<T> CalcLink2PoseInWorldFrame(const T& theta1,
+                                                    const T& theta2) const;
 
   /// Computes the pose of the elbow outboard frame `Eo` in the world frame W.
   /// @param theta1 The shoulder angle in radians.
@@ -107,8 +99,8 @@ class Acrobot {
   /// @param theta1dot The shoulder angular velocity in radians per second.
   /// @returns V_WL1_W the spatial velocity of the center of mass of link 1 with
   /// respect to the world and expressed in the world frame.
-  Vector6<T> CalcLink1SpatialVelocityInWorldFrame(
-      const T& theta1, const T& theta1dot) const;
+  Vector6<T> CalcLink1SpatialVelocityInWorldFrame(const T& theta1,
+                                                  const T& theta1dot) const;
 
   /// Computes the spatial velocity of the center of mass of link 2 expressed
   /// in the world frame.
@@ -118,9 +110,10 @@ class Acrobot {
   /// @param theta2dot The elbow angular velocity in radians per second.
   /// @returns V_WL2_W the spatial velocity of the center of mass of link 2 with
   /// respect to the world and expressed in the world frame.
-  Vector6<T> CalcLink2SpatialVelocityInWorldFrame(
-      const T& theta1, const T& theta2,
-      const T& theta1dot, const T& theta2dot) const;
+  Vector6<T> CalcLink2SpatialVelocityInWorldFrame(const T& theta1,
+                                                  const T& theta2,
+                                                  const T& theta1dot,
+                                                  const T& theta2dot) const;
 
   /// Computes the spatial acceleration of the center of mass of link 1
   /// expressed in the world frame.
@@ -154,8 +147,7 @@ class Acrobot {
   ///   the spatial acceleration of the center of mass of link 2 with respect to
   ///   the world and expressed in the world frame.
   Vector6<T> CalcLink2SpatialAccelerationInWorldFrame(
-      const T& theta1, const T& theta2,
-      const T& theta1dot, const T& theta2dot,
+      const T& theta1, const T& theta2, const T& theta1dot, const T& theta2dot,
       const T& theta1dotdot, const T& theta2dotdot) const;
 
   /// Computes the total potential energy due to gravity of the acrobot system
@@ -164,11 +156,10 @@ class Acrobot {
   T CalcPotentialEnergy(const T& theta1, const T& theta2) const;
 
  private:
-  const T
-      m1_{1.0},    // Mass of link 1 (kg).
-      m2_{1.0},    // Mass of link 2 (kg).
-      l1_{1.0},    // Length of link 1 (m).
-      l2_{1.0},    // Length of link 2 (m).
+  const T m1_{1.0},  // Mass of link 1 (kg).
+      m2_{1.0},      // Mass of link 2 (kg).
+      l1_{1.0},      // Length of link 1 (m).
+      l2_{1.0},      // Length of link 2 (m).
       lc1_{0.5},   // Vertical distance from shoulder joint to center of mass of
                    // link 1 (m).
       lc2_{0.5},   // Vertical distance from elbox joint to center of mass of

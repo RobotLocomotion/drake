@@ -1,4 +1,5 @@
 #include <memory>
+#include <string>
 
 #include <gflags/gflags.h>
 
@@ -15,17 +16,17 @@
 
 namespace drake {
 
+using Eigen::Vector2d;
 using geometry::SceneGraph;
-using multibody::benchmarks::acrobot::AcrobotParameters;
-using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::AddMultibodyPlantSceneGraph;
+using multibody::JointActuator;
 using multibody::MultibodyPlant;
 using multibody::Parser;
-using multibody::JointActuator;
 using multibody::RevoluteJoint;
+using multibody::benchmarks::acrobot::AcrobotParameters;
+using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using systems::Context;
 using systems::InputPort;
-using Eigen::Vector2d;
 
 namespace examples {
 namespace multibody {
@@ -39,9 +40,10 @@ DEFINE_double(target_realtime_rate, 1.0,
 DEFINE_double(simulation_time, 3.0,
               "Desired duration of the simulation in seconds.");
 
-DEFINE_bool(time_stepping, true, "If 'true', the plant is modeled as a "
-    "discrete system with periodic updates. "
-    "If 'false', the plant is modeled as a continuous system.");
+DEFINE_bool(time_stepping, true,
+            "If 'true', the plant is modeled as a discrete system with "
+            "periodic updates. "
+            "If 'false', the plant is modeled as a continuous system.");
 
 // This helper method makes an LQR controller to balance an acrobot model
 // specified in the SDF file `file_name`.
@@ -121,8 +123,7 @@ int do_main() {
 
   // For this example the controller's model of the plant exactly matches the
   // plant to be controlled (in reality there would always be a mismatch).
-  auto controller = builder.AddSystem(
-      MakeBalancingLQRController(acrobot_url));
+  auto controller = builder.AddSystem(MakeBalancingLQRController(acrobot_url));
   controller->set_name("controller");
   builder.Connect(acrobot.get_state_output_port(),
                   controller->get_input_port());
@@ -139,8 +140,8 @@ int do_main() {
 
   // Setup distribution for random initial conditions.
   std::normal_distribution<symbolic::Expression> gaussian;
-  shoulder.set_random_angle_distribution(M_PI + 0.02*gaussian(generator));
-  elbow.set_random_angle_distribution(0.05*gaussian(generator));
+  shoulder.set_random_angle_distribution(M_PI + 0.02 * gaussian(generator));
+  elbow.set_random_angle_distribution(0.05 * gaussian(generator));
 
   for (int i = 0; i < 5; i++) {
     simulator.get_mutable_context().SetTime(0.0);

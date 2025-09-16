@@ -1,5 +1,9 @@
 #include "drake/planning/body_shape_description.h"
 
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/multibody/parsing/parser.h"

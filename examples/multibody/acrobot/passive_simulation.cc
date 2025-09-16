@@ -1,4 +1,5 @@
 #include <memory>
+#include <utility>
 
 #include <gflags/gflags.h>
 
@@ -20,10 +21,10 @@ namespace drake {
 using geometry::SceneGraph;
 using geometry::SourceId;
 using lcm::DrakeLcm;
-using multibody::benchmarks::acrobot::AcrobotParameters;
-using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::MultibodyPlant;
 using multibody::RevoluteJoint;
+using multibody::benchmarks::acrobot::AcrobotParameters;
+using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using systems::ImplicitEulerIntegrator;
 using systems::RungeKutta3Integrator;
 using systems::SemiExplicitEulerIntegrator;
@@ -63,12 +64,10 @@ int do_main() {
   const AcrobotParameters acrobot_parameters;
   const MultibodyPlant<double>& acrobot = *builder.AddSystem(MakeAcrobotPlant(
       acrobot_parameters, true /* Finalize the plant */, &scene_graph));
-  const RevoluteJoint<double>& shoulder =
-      acrobot.GetJointByName<RevoluteJoint>(
-          acrobot_parameters.shoulder_joint_name());
-  const RevoluteJoint<double>& elbow =
-      acrobot.GetJointByName<RevoluteJoint>(
-          acrobot_parameters.elbow_joint_name());
+  const RevoluteJoint<double>& shoulder = acrobot.GetJointByName<RevoluteJoint>(
+      acrobot_parameters.shoulder_joint_name());
+  const RevoluteJoint<double>& elbow = acrobot.GetJointByName<RevoluteJoint>(
+      acrobot_parameters.elbow_joint_name());
 
   // A constant source for a zero applied torque at the elbow joint.
   double applied_torque(0.0);
@@ -103,19 +102,16 @@ int do_main() {
 
   systems::IntegratorBase<double>* integrator{nullptr};
   if (FLAGS_integration_scheme == "implicit_euler") {
-    integrator =
-        &simulator.reset_integrator<ImplicitEulerIntegrator<double>>();
+    integrator = &simulator.reset_integrator<ImplicitEulerIntegrator<double>>();
   } else if (FLAGS_integration_scheme == "runge_kutta3") {
-    integrator =
-        &simulator.reset_integrator<RungeKutta3Integrator<double>>();
+    integrator = &simulator.reset_integrator<RungeKutta3Integrator<double>>();
   } else if (FLAGS_integration_scheme == "semi_explicit_euler") {
     integrator =
         &simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
             max_time_step);
   } else {
-    throw std::runtime_error(
-        "Integration scheme '" + FLAGS_integration_scheme +
-        "' not supported for this example.");
+    throw std::runtime_error("Integration scheme '" + FLAGS_integration_scheme +
+                             "' not supported for this example.");
   }
   integrator->set_maximum_step_size(max_time_step);
 
@@ -138,27 +134,26 @@ int do_main() {
     // From IntegratorBase::set_maximum_step_size():
     // "The integrator may stretch the maximum step size by as much as 1% to
     // reach discrete event." Thus the 1.01 factor in this DRAKE_DEMAND.
-    DRAKE_DEMAND(
-        integrator->get_largest_step_size_taken() <= 1.01 * max_time_step);
+    DRAKE_DEMAND(integrator->get_largest_step_size_taken() <=
+                 1.01 * max_time_step);
     DRAKE_DEMAND(integrator->get_smallest_adapted_step_size_taken() <=
-        integrator->get_largest_step_size_taken());
-    DRAKE_DEMAND(
-        integrator->get_num_steps_taken() >= simulation_time / max_time_step);
+                 integrator->get_largest_step_size_taken());
+    DRAKE_DEMAND(integrator->get_num_steps_taken() >=
+                 simulation_time / max_time_step);
   }
 
   // Checks for fixed time step integrators.
   if (integrator->get_fixed_step_mode()) {
     DRAKE_DEMAND(integrator->get_num_derivative_evaluations() ==
-        integrator->get_num_steps_taken());
-    DRAKE_DEMAND(
-        integrator->get_num_step_shrinkages_from_error_control() == 0);
+                 integrator->get_num_steps_taken());
+    DRAKE_DEMAND(integrator->get_num_step_shrinkages_from_error_control() == 0);
   }
 
   // We made a good guess for max_time_step and therefore we expect no
   // failures when taking a time step.
   DRAKE_DEMAND(integrator->get_num_substep_failures() == 0);
-  DRAKE_DEMAND(
-      integrator->get_num_step_shrinkages_from_substep_failures() == 0);
+  DRAKE_DEMAND(integrator->get_num_step_shrinkages_from_substep_failures() ==
+               0);
 
   return 0;
 }

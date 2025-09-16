@@ -3,7 +3,7 @@
 load("@drake//tools/skylark:cc.bzl", "cc_library")
 load("@drake//tools/skylark:pathutils.bzl", "basename")
 load(
-    "@drake//tools/workspace/gfortran:fortran.bzl",
+    "@drake//tools/workspace/gfortran_internal:fortran.bzl",
     "fortran_library",
     "fortran_module",
 )
@@ -22,6 +22,12 @@ load(
     "SBLAS3",
     "SCLAUX",
     "SLASRC",
+    "ZB1AUX",
+    "ZBLAS1",
+    "ZBLAS2",
+    "ZBLAS3",
+    "ZCLASRC",
+    "ZLASRC",
 )
 load("@rules_license//rules:license.bzl", "license")
 
@@ -45,9 +51,11 @@ filegroup(
 # Mimic these lines from the Makefile:
 #  single: $(SBLAS1) $(ALLBLAS) $(SBLAS2) $(SBLAS3)
 #  double: $(DBLAS1) $(ALLBLAS) $(DBLAS2) $(DBLAS3)
+#  complex16: $(ZBLAS1) $(ZB1AUX) $(ALLBLAS) $(ZBLAS2) $(ZBLAS3)
 BLAS_SRCS = depset(
     SBLAS1 + ALLBLAS + SBLAS2 + SBLAS3 +
-    DBLAS1 + ALLBLAS + DBLAS2 + DBLAS3,
+    DBLAS1 + ALLBLAS + DBLAS2 + DBLAS3 +
+    ZBLAS1 + ZB1AUX + ALLBLAS + ZBLAS2 + ZBLAS3,
 ).to_list()
 
 fortran_library(
@@ -75,11 +83,13 @@ cc_library(
 #  SINGLE_DEPS += $(SCLAUX) $(ALLAUX)
 #  DOUBLE_DEPS := $(DLASRC) $(DSLASRC)
 #  DOUBLE_DEPS += $(DZLAUX) $(ALLAUX)
+#  COMPLEX16_DEPS := $(ZLASRC) $(ZCLASRC)
 LAPACK_ALL_SRCS = depset(
     SLASRC + DSLASRC +
     SCLAUX + ALLAUX +
     DLASRC + DSLASRC +
-    DZLAUX + ALLAUX,
+    DZLAUX + ALLAUX +
+    ZLASRC + ZCLASRC,
 ).to_list()
 
 # The next two need special attention since they are actual Fortran modules.

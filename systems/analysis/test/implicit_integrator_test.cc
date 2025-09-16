@@ -1,5 +1,8 @@
 #include "drake/systems/analysis/implicit_integrator.h"
 
+#include <limits>
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/pointer_cast.h"

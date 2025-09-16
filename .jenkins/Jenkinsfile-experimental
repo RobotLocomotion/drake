@@ -128,7 +128,7 @@ def emailFailureResults() {
 }
 
 /**
- * Deletes the workspace and tmp directories, for use at the end of a build.
+ * Deletes the workspace and tmp directories.
  */
 def cleanWorkspace() {
   dir(env.WORKSPACE) {
@@ -203,11 +203,11 @@ node(getNodeLabel()) {
         daysToKeepStr: '90',
         artifactDaysToKeepStr: '90'
       )
+    ),
+    disableConcurrentBuilds(
+      abortPrevious: true
     )
   ]
-  if (env.JOB_NAME.contains("cache-server-health-check")) {
-    props << disableConcurrentBuilds()
-  }
   properties(props)
 
   stage('test') {
@@ -215,9 +215,12 @@ node(getNodeLabel()) {
       ansiColor('xterm') {
         timestamps {
           try {
-            // Use the CI branch parameter for checkout (defaults to main).
-            def scmVars = checkout(params.ciSha)
-            doMainBuild(scmVars)
+            cleanWorkspace()
+            dir(env.WORKSPACE) {
+              // Use the CI branch parameter for checkout (defaults to main).
+              def scmVars = checkout(params.ciSha)
+              doMainBuild(scmVars)
+            }
           } finally {
             try {
               checkBuildResult()

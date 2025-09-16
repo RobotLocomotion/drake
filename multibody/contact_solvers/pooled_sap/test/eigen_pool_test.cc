@@ -1,5 +1,6 @@
 #include "drake/multibody/contact_solvers/pooled_sap/eigen_pool.h"
 
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>

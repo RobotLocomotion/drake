@@ -1,10 +1,15 @@
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
 #include <filesystem>
+#include <limits>
+#include <map>
 #include <memory>
 #include <regex>
+#include <set>
 #include <sstream>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

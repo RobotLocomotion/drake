@@ -1,5 +1,7 @@
 #include "drake/math/evenly_distributed_pts_on_sphere.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

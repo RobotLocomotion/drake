@@ -28,6 +28,8 @@ generate_file(
     visibility = ["//visibility:private"],
 )
 
+DEPRECATION = "WARNING: The @pycodestyle module extension provided by Drake is deprecated and will be removed on or after 2026-01-01, including removal of the pycodestyle_repository() function. Please use some other mechanism to load this dependency into your project, if necessary by copying this code from Drake."  # noqa
+
 py_binary(
     name = "pycodestyle",
     srcs = [
@@ -37,4 +39,5 @@ py_binary(
     main = "pycodestyle.py",
     python_version = "PY3",
     srcs_version = "PY3",
+    deprecation = DEPRECATION,
 )

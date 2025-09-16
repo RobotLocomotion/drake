@@ -1,6 +1,8 @@
 #include "drake/geometry/proximity/meshing_utilities.h"
 
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 

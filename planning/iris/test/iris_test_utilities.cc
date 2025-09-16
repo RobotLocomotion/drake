@@ -1,5 +1,8 @@
 #include "drake/planning/iris/test/iris_test_utilities.h"
 
+#include <algorithm>
+#include <utility>
+
 #include "drake/common/test_utilities/maybe_pause_for_user.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/hpolyhedron.h"

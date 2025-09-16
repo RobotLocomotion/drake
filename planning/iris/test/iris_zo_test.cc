@@ -1,7 +1,9 @@
 #include "drake/planning/iris/iris_zo.h"
 
 #include <chrono>
+#include <string>
 #include <thread>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -448,6 +450,27 @@ TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
   meshcat_->Delete();
   PlotEnvironmentAndRegionSubspace(
       region, options.parameterization.get_parameterization_double());
+
+  // Also verify that we can have additional constraints, and they play nice
+  // with the parameterization.
+  solvers::MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(1, "x");
+  prog.AddLinearConstraint(Vector1d(1.0),
+                           -std::numeric_limits<float>::infinity(), -0.25, x);
+  options.sampled_iris_options.prog_with_additional_constraints = &prog;
+
+  region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
+
+  Vector1d query_point_in(-0.3);
+  Vector1d query_point_out(-0.2);
+
+  EXPECT_TRUE(region.PointInSet(query_point_in));
+  EXPECT_FALSE(region.PointInSet(query_point_out));
+
+  // Verify that query_point_out is still collision free. (It just violates the
+  // added constraint.)
+  EXPECT_TRUE(checker_->CheckConfigCollisionFree(
+      options.parameterization.get_parameterization_double()(query_point_out)));
 }
 
 TEST_F(ConvexConfigurationSubspace, ExpressionParameterization) {

@@ -26,10 +26,11 @@ TrajectorySource<T>::TrajectorySource(const Trajectory<T>& trajectory,
   DRAKE_THROW_UNLESS(output_derivative_order >= 0);
 
   for (int i = 0; i < output_derivative_order; ++i) {
-    if (i == 0)
+    if (i == 0) {
       derivatives_.push_back(trajectory_->MakeDerivative());
-    else
+    } else {
       derivatives_.push_back(derivatives_[i - 1]->MakeDerivative());
+    }
   }
 
   CheckInvariants();
@@ -100,10 +101,11 @@ void TrajectorySource<T>::UpdateTrajectory(
 
   trajectory_ = trajectory.Clone();
   for (int i = 0; i < ssize(derivatives_); ++i) {
-    if (i == 0)
+    if (i == 0) {
       derivatives_[i] = trajectory_->MakeDerivative();
-    else
+    } else {
       derivatives_[i] = derivatives_[i - 1]->MakeDerivative();
+    }
   }
 
   failsafe_trajectory_ = nullptr;

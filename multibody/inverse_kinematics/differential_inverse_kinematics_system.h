@@ -204,7 +204,7 @@ class DifferentialInverseKinematicsSystem final
   double K_VX() const { return K_VX_; }
 
   /** Gets the clamping limit applied to inferred desired cartesian velocities.
-  */
+   */
   const SpatialVelocity<double>& Vd_TG_limit() const { return Vd_TG_limit_; }
 
   /** Returns the input port for the joint positions. */

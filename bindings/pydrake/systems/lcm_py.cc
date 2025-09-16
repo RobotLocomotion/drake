@@ -1,4 +1,9 @@
+#include <algorithm>
 #include <cstring>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "pybind11/eval.h"
 

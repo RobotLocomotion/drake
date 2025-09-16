@@ -1,5 +1,8 @@
 #include "drake/multibody/contact_solvers/pooled_sap/pooled_sap_builder.h"
 
+#include <limits>
+#include <utility>
+
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/multibody/plant/contact_properties.h"
 #include "drake/multibody/topology/graph.h"

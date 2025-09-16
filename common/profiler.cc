@@ -13,7 +13,9 @@ namespace common {
 
 using std::vector;
 
-void Timer::start() { start_ = std::chrono::high_resolution_clock::now(); }
+void Timer::start() {
+  start_ = std::chrono::high_resolution_clock::now();
+}
 
 }  // namespace common
 }  // namespace drake
@@ -190,9 +192,13 @@ TimerIndex PushTimer(TimerIndex index) {
   return Profiler::getMutableInstance().PushTimer(index);
 }
 
-void PopTimer() { return Profiler::getMutableInstance().PopTimer(); }
+void PopTimer() {
+  return Profiler::getMutableInstance().PopTimer();
+}
 
-void UpdateStack(double dt) { Profiler::getMutableInstance().UpdateStack(dt); }
+void UpdateStack(double dt) {
+  Profiler::getMutableInstance().UpdateStack(dt);
+}
 
 double lapTimer(TimerIndex index) {
   return Profiler::getMutableInstance().lap<LapTimer::Units>(index);

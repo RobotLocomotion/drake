@@ -1,3 +1,9 @@
+#include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "pybind11/eval.h"
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
