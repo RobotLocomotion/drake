@@ -129,30 +129,40 @@ def _call_build(*, build, out_dir):
         return build(out_dir=out_dir, temp_dir=temp_dir)
 
 
-class _HttpHandler(SimpleHTTPRequestHandler):
-    """An HTTP handler without logging."""
+def _do_built_preview(*, source_dir, port, on_error):
+    """Implements the "serve" (http) mode of main(), with "source_dir" given.
 
-    def log_message(*_):
-        pass
-
-    def log_request(*_):
-        pass
-
-
-def _on_server_error(server, *_):
-    """An implementation of socketserver.BaseServer.handle_error that ignores
-    expected errors.
+    Args:
+        source_dir: Local directory to serve, per the command line.
+        port: Local port number to serve on, per the command line.
+        on_error: Callback function to report problems with source_dir.
     """
-    exception = sys.exc_info()[1]
-    if isinstance(exception, ConnectionError):
-        # These are expected errors when the browser closes the connection.
-        return
-    # Other errors would be unexpected, so print them.
-    traceback.print_exc()
+    if not os.path.exists(source_dir):
+        on_error(f"--source_dir={source_dir} does not exist")
+    with tempfile.TemporaryDirectory(prefix="doc_builder_preview_") as scratch:
+        print("Serving at the following URL for local preview:")
+        print()
+        print(f"  http://127.0.0.1:{port}")
+        print()
+        print("Use Ctrl-C to exit.")
+        try:
+            check_call(
+                [
+                    "jekyll", "serve",
+                    "-s", source_dir,
+                    "-d", scratch,
+                    "--port", str(port),
+                ],
+                cwd=scratch,
+            )
+        except KeyboardInterrupt:
+            print()
+            return
 
 
-def _do_preview(*, build, subdir, port):
-    """Implements the "serve" (http) mode of main().
+def _do_generated_preview(*, build, subdir, port):
+    """Implements the "serve" (http) mode of main(), with no "source_dir"
+    given (building the "subdir" with "build" using a temporary directory).
 
     Args:
         build: Same as per main().
@@ -174,20 +184,25 @@ def _do_preview(*, build, subdir, port):
                 "drake/doc/header_and_footer_images.txt",
                 strip_prefix=["drake/doc/"],
                 temp_dir=scratch)
-        os.chdir(scratch)
         print(f"The files have temporarily been generated into {scratch}")
         print()
-        print("Serving at the following URLs for local preview:")
+        print("Serving at the following URL(s) for local preview:")
         print()
         for page in pages:
             print(f"  http://127.0.0.1:{port}/{join(subdir, page)}")
         print()
         print("Use Ctrl-C to exit.")
-        ThreadingTCPServer.allow_reuse_address = True
-        server = ThreadingTCPServer(("127.0.0.1", port), _HttpHandler)
-        server.handle_error = _on_server_error
         try:
-            server.serve_forever()
+            # N.B. Without "-d" given, the default is "./_site". Since we're
+            # already in a temporary directory, that's fine.
+            check_call(
+                [
+                    "jekyll", "serve",
+                    "-s", scratch,
+                    "--port", str(port),
+                ],
+                cwd=scratch,
+            )
         except KeyboardInterrupt:
             print()
             return
@@ -195,6 +210,7 @@ def _do_preview(*, build, subdir, port):
 
 def _do_generate(*, build, out_dir, on_error):
     """Implements the "generate" (file output) mode of main().
+
     Args:
         build: Same as per main().
         out_dir: Directory to generate into, per the command line.
@@ -236,16 +252,19 @@ def main(*, build, subdir, description, supports_modules=False,
       supports_quick: Whether build() has a quick=bool argument.
     """
     parser = argparse.ArgumentParser(description=description)
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument(
+    parser.add_argument(
         "--serve", action='store_true',
         help="Serve the documentation on the given PORT for easy preview.")
-    group.add_argument(
-        "--out_dir", type=str, metavar="DIR",
+    parser.add_argument(
+        "--source_dir", type=str, metavar="SRC_DIR",
+        help="Use the given source directory to serve the documentation."
+        " The SRC_DIR must be an absolute path, and it must already exist.")
+    parser.add_argument(
+        "--out_dir", type=str, metavar="OUT_DIR",
         help="Generate the documentation to the given output directory."
-        " The DIR must be an absolute path."
-        " If DIR already exists, then it must be empty."
-        " (For regression testing, the DIR can be the magic value <test>,"
+        " The OUT_DIR must be an absolute path."
+        " If OUT_DIR already exists, then it must be empty."
+        " (For regression testing, the OUT_DIR can be the magic value <test>,"
         " in which case a $TEST_TMPDIR subdir will be used.)")
     parser.add_argument(
         "--port", type=int, metavar="PORT", default=8000,
@@ -266,6 +285,8 @@ def main(*, build, subdir, description, supports_modules=False,
             help="Omit from the output items that are slow to generate. "
             "This yields a faster preview, but the output will be incomplete.")
     args = parser.parse_args()
+    if not (bool(args.serve) ^ bool(args.out_dir)):
+        parser.error("Exactly one of --serve or --out_dir is required.")
     if args.verbose:
         global _verbose
         _verbose = True
@@ -282,7 +303,12 @@ def main(*, build, subdir, description, supports_modules=False,
             curried_build, quick=args.quick)
     if args.out_dir is None:
         assert args.serve
-        _do_preview(build=curried_build, subdir=subdir, port=args.port)
+        if args.source_dir is None:
+            _do_generated_preview(build=curried_build, subdir=subdir,
+                                  port=args.port)
+        else:
+            _do_built_preview(source_dir=args.source_dir, port=args.port,
+                              on_error=parser.error)
     else:
         _do_generate(build=curried_build, out_dir=args.out_dir,
                      on_error=parser.error)
