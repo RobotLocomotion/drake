@@ -107,7 +107,7 @@ the main body of the document:
    3. Open the latest builds from the following builds:
       1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-jammy-unprovisioned-gcc-cmake-nightly-packaging/>
       2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-noble-unprovisioned-gcc-cmake-nightly-packaging/>
-      3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-arm-sonoma-clang-cmake-nightly-packaging/>
+      3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-arm-sequoia-clang-cmake-nightly-packaging/>
    4. Check the logs for those packaging builds and find the URLs they posted
       to (open the latest build, go to "View as plain text", and search for
       ``drake/nightly/drake-0.0.20``), and find the date.  It will be ``YYYYMMDD``
@@ -123,10 +123,10 @@ the main body of the document:
    1. Open the following Jenkins jobs (e.g., each in its own
       new window, so you can copy-and-paste sha1 and version easily):
       - [Linux Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-wheel-staging-release/)
-      - [macOS arm Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sonoma-clang-wheel-staging-release/)
+      - [macOS arm Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sequoia-clang-wheel-staging-release/)
       - [Jammy Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-cmake-staging-packaging/)
       - [Noble Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-cmake-staging-packaging/)
-      - [macOS arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sonoma-clang-cmake-staging-packaging/)
+      - [macOS arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sequoia-clang-cmake-staging-packaging/)
    2. In the upper right, click "sign in" (unless you're already signed in). This
       will use your GitHub credentials.
    3. Click "Build with Parameters".

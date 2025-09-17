@@ -45,8 +45,8 @@ set(UNIX_DISTRIBUTION_CODENAME)
 # For Ubuntu, don't make as harsh a check for minimum supported version
 # since Drake *can* compile on non-Ubuntu UNIX, even though it's not
 # officially supported.
-set(MINIMUM_DARWIN_VERSION 23)
-set(MINIMUM_MACOS_CODENAME "Sonoma")
+set(MINIMUM_DARWIN_VERSION 24)
+set(MINIMUM_MACOS_CODENAME "Sequoia")
 
 if(APPLE)
   if(CMAKE_SYSTEM_VERSION VERSION_LESS ${MINIMUM_DARWIN_VERSION})
