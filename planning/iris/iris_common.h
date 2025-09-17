@@ -108,7 +108,7 @@ class CommonSampledIrisOptions {
 
   /** We retreat by this margin from each C-space obstacle in order to avoid the
    * possibility of requiring an infinite number of faces to approximate a
-   * curved boundary.*/
+   * curved boundary. */
   double configuration_space_margin{1e-2};
 
   /** Suppose stepping back by configuration_space_margin would cut off the seed
