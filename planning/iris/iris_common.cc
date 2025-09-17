@@ -103,30 +103,34 @@ void AddTangentToPolytope(
     A->conservativeResize(A->rows() * 2, A->cols());
     b->conservativeResize(b->rows() * 2);
   }
+  const Eigen::VectorXd a_face =
+      (E.A().transpose() * E.A() * (point - E.center())).normalized();
+  double b_face = a_face.transpose() * point - configuration_space_margin;
 
-  while (true) {
-    A->row(*num_constraints) =
-        (E.A().transpose() * E.A() * (point - E.center())).normalized();
-    (*b)[*num_constraints] =
-        A->row(*num_constraints) * point - configuration_space_margin;
-    // Check if the new hyperplane cuts off the seed point. If it does, we throw
-    // an error or decrease the configuration space margin.
-    if (A->row(*num_constraints) * E.center() > (*b)[*num_constraints]) {
-      if (relax_margin) {
-        configuration_space_margin /= 2.0;
-      } else {
-        throw std::logic_error(
-            "The current center of the IRIS region is within "
-            "sampled_iris_options.configuration_space_margin of being "
-            "infeasible. Check your sample point and/or any additional "
-            "constraints you've passed in via the options. The configuration "
-            "space surrounding the sample point must have an interior.");
-      }
+  // Check if the face cuts off the seed point, and if so, by how much.
+  double relaxation = a_face.transpose() * E.center() - b_face;
+  if (relaxation > 0) {
+    if (relax_margin) {
+      b_face += relaxation;
     } else {
-      break;
+      throw std::logic_error(
+          "The current center of the IRIS region is within "
+          "sampled_iris_options.configuration_space_margin of being "
+          "infeasible. Check your sample point and/or any additional "
+          "constraints you've passed in via the options. The configuration "
+          "space surrounding the sample point must have an interior.");
     }
   }
+
+  A->row(*num_constraints) = a_face.transpose();
+  (*b)[*num_constraints] = b_face;
   *num_constraints += 1;
+
+  // Resize A matrix if we need more faces.
+  if (A->rows() <= *num_constraints) {
+    A->conservativeResize(A->rows() * 2, A->cols());
+    b->conservativeResize(b->rows() * 2);
+  }
 }
 
 void AddTangentToPolytope(
