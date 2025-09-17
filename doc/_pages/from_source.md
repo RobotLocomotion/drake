@@ -37,8 +37,8 @@ officially supports when building from source:
 |------------------------------------|--------------|------------|-------|-------|------------------------------|------------|
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 8.4   | 3.22  | GCC 11 (default) or Clang 15 | OpenJDK 11 |
 | Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12       | 8.4   | 3.28  | GCC 13 (default) or Clang 19 | OpenJDK 21 |
-| macOS Sonoma (14)                  | arm64        | 3.13       | 8.4   | 4.1   | Apple LLVM 16 (Xcode 16.2)   | OpenJDK 23 |
 | macOS Sequoia (15)                 | arm64        | 3.13       | 8.4   | 4.1   | Apple LLVM 17 (Xcode 16.4)   | OpenJDK 23 |
+| macOS Tahoe (26) ⁽⁴⁾               | arm64        | TBD        | TBD   | TBD   | TBD                          | TBD        |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -58,6 +58,9 @@ maybe require extra setup. See the
 ⁽²⁾ CPython is the only Python implementation supported.
 
 ⁽³⁾ Drake requires a compiler running in C++20 (or greater) mode.
+
+⁽⁴⁾ Tahoe support is in development; refer to
+[#23439](https://github.com/RobotLocomotion/drake/issues/23439) for details.
 
 # Building with CMake
 
