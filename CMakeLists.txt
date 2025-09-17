@@ -636,6 +636,22 @@ if(WITH_MOSEK)
   string(APPEND BAZEL_CONFIG " --config=mosek")
 endif()
 
+option(WITH_LCM_RUNTIME "Build with LCM runtime library support" ON)
+
+if(WITH_LCM_RUNTIME)
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_lcm_runtime=True")
+else()
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_lcm_runtime=False")
+endif()
+
+option(DRAKE_INSTALL_JAVA "Install Drake's Java tools (currently only Java lcmtypes)" ON)
+
+if(DRAKE_INSTALL_JAVA)
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_drake_lcmtypes_java=True")
+else()
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_drake_lcmtypes_java=False")
+endif()
+
 option(WITH_OPENMP "Build with support for OpenMP" OFF)
 if(WITH_OPENMP)
   string(APPEND BAZEL_CONFIG " --config=omp")

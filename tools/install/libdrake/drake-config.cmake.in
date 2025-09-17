@@ -45,7 +45,10 @@ if (@WITH_USER_SPDLOG@)
 else()
   list(APPEND _drake_interface_compile_definitions @BAZEL_SPDLOG_DEFINES@)
 endif()
-set(_expectedTargets drake::drake drake::drake-lcmtypes-cpp drake::drake-lcmtypes-java drake::drake-marker)
+set(_expectedTargets drake::drake drake::drake-lcmtypes-cpp drake::drake-marker)
+if(DRAKE_INSTALL_JAVA)
+  list(APPEND _expectedTargets drake::drake-lcmtypes-java)
+endif()
 
 set(_targetsDefined)
 set(_targetsNotDefined)
@@ -90,11 +93,13 @@ set_target_properties(drake::drake-lcmtypes-cpp PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/include"
 )
 
-add_library(drake::drake-lcmtypes-java STATIC IMPORTED)
-set_target_properties(drake::drake-lcmtypes-java PROPERTIES
-  IMPORTED_LOCATION "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/share/java/lcmtypes_drake.jar"
-  JAR_FILE "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/share/java/lcmtypes_drake.jar"
-)
+if(DRAKE_INSTALL_JAVA)
+  add_library(drake::drake-lcmtypes-java STATIC IMPORTED)
+  set_target_properties(drake::drake-lcmtypes-java PROPERTIES
+    IMPORTED_LOCATION "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/share/java/lcmtypes_drake.jar"
+    JAR_FILE "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/share/java/lcmtypes_drake.jar"
+  )
+endif()
 
 # TODO(eric.cousineau): Try to make the CMake target `drake-marker` private,
 # such that no downstream users can use it?
