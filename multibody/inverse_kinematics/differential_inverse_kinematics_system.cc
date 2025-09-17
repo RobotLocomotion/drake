@@ -141,8 +141,7 @@ DifferentialInverseKinematicsSystem::LeastSquaresCost::AddToProgram(
   //    0.5*xᵀ*Q*x + bᵀ*x + c.
   // 0.5Q = JᵀJ    -->  Q = 2JᵀJ
   // bᵀ = -2VᵀJ    -->  b = -2JᵀV
-  // c = VᵀV       -->  we're choosing to omit it; it reduces the minimum cost,
-  //                    but not where that cost occurs.
+  // c = VᵀV       -->  A constant term.
   const DiagonalMatrixXd selector = BuildBlockDiagonalAxisSelector(
       details->frame_list, config_.cartesian_axis_masks);
   const MatrixXd masked_Jv = selector * Jv_TGs;
@@ -153,9 +152,11 @@ DifferentialInverseKinematicsSystem::LeastSquaresCost::AddToProgram(
   const double scale = config_.use_legacy_implementation ? 1 : 2;
   const MatrixXd Q_cart = scale * masked_Jv.transpose() * masked_Jv;
   const MatrixXd b_cart = -2 * masked_Jv.transpose() * masked_Vd;
-  auto binding = prog.AddQuadraticCost(config_.cartesian_qp_weight * Q_cart,
-                                       config_.cartesian_qp_weight * b_cart,
-                                       v_next, is_convex);
+  auto binding = prog.AddQuadraticCost(
+      config_.cartesian_qp_weight * Q_cart,
+      config_.cartesian_qp_weight * b_cart,
+      config_.cartesian_qp_weight * masked_Vd.dot(masked_Vd), v_next,
+      is_convex);
   binding.evaluator()->set_description("Least squares cost");
   return std::vector<Binding<EvaluatorBase>>{std::move(binding)};
 }
