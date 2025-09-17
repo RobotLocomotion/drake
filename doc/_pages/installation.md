@@ -23,7 +23,6 @@ officially supports:
 |------------------------------------|--------------|------------|-----------------|
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽³⁾   | March 2026      |
 | Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12 ⁽³⁾   | March 2028      |
-| macOS Sonoma (14)                  | arm64        | 3.13 ⁽³⁾   | October 2025    |
 | macOS Sequoia (15)                 | arm64        | 3.13 ⁽³⁾   | October 2026    |
 
 "Official support" means that we have Continuous Integration test coverage to
@@ -61,7 +60,6 @@ Drake's pre-compiled binaries:
 |------------------------------------|----------------------------|-------|
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | GCC 11                     | C++20 |
 | Ubuntu 24.04 LTS (Noble Numbat)    | GCC 13                     | C++23 |
-| macOS Sonoma (14)                  | Apple LLVM 16 (Xcode 16.2) | C++23 |
 | macOS Sequoia (15)                 | Apple LLVM 17 (Xcode 16.4) | C++23 |
 
 Any other configuration not listed here will lead to undefined behavior

@@ -169,7 +169,7 @@ Check once per week that caching is still enabled for Linux and macOS builds.
 Open the following jobs and search for ``REMOTE_CACHE_KEY`` and confirm it has a value:
 
 - [https://drake-jenkins.csail.mit.edu/job/linux-noble-clang-bazel-continuous-everything-release/lastBuild/consoleFull](https://drake-jenkins.csail.mit.edu/job/linux-noble-clang-bazel-continuous-everything-release/lastBuild/consoleFull)
-- [https://drake-jenkins.csail.mit.edu/job/mac-arm-sonoma-clang-bazel-continuous-release/lastBuild/consoleFull](https://drake-jenkins.csail.mit.edu/job/mac-arm-sonoma-clang-bazel-continuous-release/lastBuild/consoleFull)
+- [https://drake-jenkins.csail.mit.edu/job/mac-arm-sequoia-clang-bazel-continuous-release/lastBuild/consoleFull](https://drake-jenkins.csail.mit.edu/job/mac-arm-sequoia-clang-bazel-continuous-release/lastBuild/consoleFull)
 
 Message indicating a problem:
 
