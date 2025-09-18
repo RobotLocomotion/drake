@@ -233,6 +233,10 @@ TEST_F(DoublePendulum, PositivePadding) {
         dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
     ASSERT_TRUE(scene_graph_checker != nullptr);
 
+    options.sampled_iris_options.epsilon = 0.05;
+    options.sampled_iris_options.delta = 0.1;
+    options.sampled_iris_options.max_iterations = 1;
+
     const double padding = 0.5;
     scene_graph_checker->SetPaddingAllRobotEnvironmentPairs(padding);
     scene_graph_checker->SetPaddingAllRobotRobotPairs(padding);
@@ -349,6 +353,10 @@ TEST_F(DoublePendulumRationalForwardKinematics, FunctionParameterization) {
 
   CheckParameterization(options.parameterization.get_parameterization_double());
 
+  options.sampled_iris_options.epsilon = 0.05;
+  options.sampled_iris_options.delta = 0.1;
+  options.sampled_iris_options.max_iterations = 1;
+
   HPolyhedron region = IrisNp2(*scene_graph_checker,
                                starting_ellipsoid_rational_forward_kinematics_,
                                domain_rational_forward_kinematics_, options);
@@ -422,6 +430,10 @@ TEST_F(ConvexConfigurationSpace, IrisNp2Test) {
     // add_hyperplane_if_solve_fails helps mitigate them.
     options.add_hyperplane_if_solve_fails = true;
 
+    options.sampled_iris_options.epsilon = 0.05;
+    options.sampled_iris_options.delta = 0.1;
+    options.sampled_iris_options.max_iterations = 1;
+
     HPolyhedron region =
         IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
     CheckRegion(region);
@@ -466,6 +478,10 @@ TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
         parameterization_double, parameterization_autodiff,
         /* parameterization_is_threadsafe */ true,
         /* parameterization_dimension */ 1);
+
+    options.sampled_iris_options.epsilon = 0.05;
+    options.sampled_iris_options.delta = 0.1;
+    options.sampled_iris_options.max_iterations = 1;
 
     HPolyhedron region =
         IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
@@ -513,6 +529,12 @@ TEST_F(ConvexConfigurationSubspace,
         parameterization_double, parameterization_autodiff,
         /* parameterization_is_threadsafe */ true,
         /* parameterization_dimension */ 1);
+
+    options_to_try[i].sampled_iris_options.epsilon = 0.05;
+    options_to_try[i].sampled_iris_options.delta = 0.1;
+    options_to_try[i].sampled_iris_options.max_iterations = 1;
+    options_to_try[i].sampled_iris_options.remove_all_collisions_possible =
+        true;
 
     HPolyhedron region = IrisNp2(*scene_graph_checker, starting_ellipsoid_,
                                  domain_, options_to_try[i]);
@@ -563,6 +585,10 @@ TEST_F(ConvexConfigurationSpaceWithThreadsafeConstraint, IrisNp2Test) {
 
   options.sampled_iris_options.prog_with_additional_constraints = &prog_;
   options.sampled_iris_options.verbose = true;
+
+  options.sampled_iris_options.epsilon = 0.05;
+  options.sampled_iris_options.delta = 0.1;
+  options.sampled_iris_options.max_iterations = 1;
 
   meshcat_->Delete();
   options.sampled_iris_options.meshcat = meshcat_;
