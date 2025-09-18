@@ -103,7 +103,7 @@ _OVERLOOK_RELEASE_REPOSITORIES = {
     "pycodestyle_internal": "",
     "qhull_internal": r"^(2)",
     "sdformat_internal": "",
-    "xmlrunner_py": "",
+    "xmlrunner_py_internal": "",
 }
 
 # Packages in these cohorts should be upgraded together (in a single commit).
@@ -209,6 +209,7 @@ def _handle_github(workspace_name, gh, data):
         return old_commit, new_commit
 
     # Sometimes prefer checking only tags, not releases.
+    print(workspace_name)
     tags_pattern = _OVERLOOK_RELEASE_REPOSITORIES.get(workspace_name)
     if tags_pattern == "":
         new_commit = _latest_tag(gh_repo, workspace_name)
