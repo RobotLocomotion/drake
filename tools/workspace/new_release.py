@@ -99,11 +99,10 @@ _OVERLOOK_RELEASE_REPOSITORIES = {
     "github3_py_internal": r"^(\d+.)",
     "gz_math_internal": r"^(gz)",
     "gz_utils_internal": r"^(gz)",
-    "petsc": r"^(v)",
     "pycodestyle_internal": "",
     "qhull_internal": r"^(2)",
     "sdformat_internal": "",
-    "xmlrunner_py": "",
+    "xmlrunner_py_internal": "",
 }
 
 # Packages in these cohorts should be upgraded together (in a single commit).
