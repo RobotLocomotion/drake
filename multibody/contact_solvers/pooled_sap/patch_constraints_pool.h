@@ -197,17 +197,17 @@ class PooledSapModel<T>::PatchConstraintsPool {
     // Coefficient of friction is determined based on previous velocity. This
     // allows us to consider a Streibeck-like curve while maintaining a convex
     // formulation.
-    const T vt0 = v_AcBc_W.norm() - vn0;
+    const T vt0 = (v_AcBc_W - vn0 * normal_W).norm();
+    const T s = vt0 / stiction_tolerance_;
+    const T& mu_s = static_friction_[p];
+    const T& mu_d = dynamic_friction_[p];
 
-    // Friction coefficient as a function of tangential velocity
-    auto calc_friction_coefficient = [&]() -> T {
-      const T s = vt0 / stiction_tolerance_;
-      const T& mu_s = static_friction_[p];
-      const T& mu_d = dynamic_friction_[p];
-      const T x = s - 10.0;
-      return -0.5 * (mu_s - mu_d) * (x / sqrt(1 + x * x) - 1.0) + mu_d;
+    auto sigmoid = [](const T& x) -> T {
+      return x / sqrt(1 + x * x);
     };
-    const T mu = calc_friction_coefficient();
+
+    const T mu =
+        (mu_s - mu_d) * 0.5 * (1 - (sigmoid(s - 10) / sigmoid(10))) + mu_d;
     net_friction_.push_back(mu);
 
     // Compute per-patch regularization of friction. We use a "spherical body

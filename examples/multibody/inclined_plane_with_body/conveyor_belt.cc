@@ -32,7 +32,7 @@ DEFINE_double(mbp_time_step, 0.0, "Time step for plant (0 => continuous).");
 DEFINE_double(integrator_time_step, 0.1, "Time step for the integrator.");
 DEFINE_double(simulation_time, 4.0, "Simulation duration in seconds");
 DEFINE_double(static_friction, 1.0, "Coefficient of static friction.");
-DEFINE_double(dynamic_friction, 0.25, "Coefficient of dynamic friciton.");
+DEFINE_double(dynamic_friction, 0.5, "Coefficient of dynamic friction.");
 DEFINE_double(frequency, 0.5, "Oscillation frequency (Hz).");
 DEFINE_double(amplitude, 10.0, "Force amplitude (N).");
 DEFINE_double(stiction_tolerance, 1e-4, "Stiction velocity (m/s).");
