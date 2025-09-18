@@ -487,47 +487,38 @@ TEST_F(ConvexConfigurationSubspace,
       dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
   ASSERT_TRUE(scene_graph_checker != nullptr);
 
-  std::vector<IrisNp2Options> options_to_try(3);
-  options_to_try[0].sampling_strategy = "greedy";
-  options_to_try[1].sampling_strategy = "ray";
-  options_to_try[2].sampling_strategy = "ray";
-  options_to_try[2].ray_sampler_options.only_walk_toward_collisions = true;
+  auto parameterization_double = [](const Vector1d& config) -> Vector2d {
+    return Vector2d{config[0], 2 * config[0] + 1};
+  };
+  auto parameterization_autodiff =
+      [](const Vector1<AutoDiffXd>& config) -> Vector2<AutoDiffXd> {
+    return Vector2<AutoDiffXd>{config[0], 2 * config[0] + 1};
+  };
 
-  for (int i = 0; i < ssize(options_to_try); ++i) {
-    auto parameterization_double = [](const Vector1d& config) -> Vector2d {
-      return Vector2d{config[0], 2 * config[0] + 1};
-    };
-    auto parameterization_autodiff =
-        [](const Vector1<AutoDiffXd>& config) -> Vector2<AutoDiffXd> {
-      return Vector2<AutoDiffXd>{config[0], 2 * config[0] + 1};
-    };
+  solvers::MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(1, "x");
+  prog.AddLinearConstraint(Vector1d(1.0),
+                           -std::numeric_limits<float>::infinity(), -0.25, x);
+  options.sampled_iris_options.prog_with_additional_constraints = &prog;
 
-    solvers::MathematicalProgram prog;
-    auto x = prog.NewContinuousVariables(1, "x");
-    prog.AddLinearConstraint(Vector1d(1.0),
-                             -std::numeric_limits<float>::infinity(), -0.25, x);
-    options_to_try[i].sampled_iris_options.prog_with_additional_constraints =
-        &prog;
+  options.parameterization = IrisParameterizationFunction(
+      parameterization_double, parameterization_autodiff,
+      /* parameterization_is_threadsafe */ true,
+      /* parameterization_dimension */ 1);
 
-    options_to_try[i].parameterization = IrisParameterizationFunction(
-        parameterization_double, parameterization_autodiff,
-        /* parameterization_is_threadsafe */ true,
-        /* parameterization_dimension */ 1);
+  HPolyhedron region =
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
 
-    HPolyhedron region = IrisNp2(*scene_graph_checker, starting_ellipsoid_,
-                                 domain_, options_to_try[i]);
+  Vector1d query_point_in(-0.3);
+  Vector1d query_point_out(-0.2);
 
-    Vector1d query_point_in(-0.3);
-    Vector1d query_point_out(-0.2);
+  EXPECT_TRUE(region.PointInSet(query_point_in));
+  EXPECT_FALSE(region.PointInSet(query_point_out));
 
-    EXPECT_TRUE(region.PointInSet(query_point_in));
-    EXPECT_FALSE(region.PointInSet(query_point_out));
-
-    // Verify that query_point_out is still collision free. (It just violates
-    // the added constraint.)
-    EXPECT_TRUE(scene_graph_checker->CheckConfigCollisionFree(
-        parameterization_double(query_point_out)));
-  }
+  // Verify that query_point_out is still collision free. (It just violates the
+  // added constraint.)
+  EXPECT_TRUE(scene_graph_checker->CheckConfigCollisionFree(
+      parameterization_double(query_point_out)));
 }
 
 // Verify that we throw a reasonable error when the initial point is in

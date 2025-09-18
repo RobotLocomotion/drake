@@ -270,7 +270,7 @@ bool RaySamplerProcess(const SceneGraphCollisionChecker& checker,
     std::vector<uint8_t> particle_satisfies_additional_constraints =
         internal::CheckProgConstraintsParallel(
             options.sampled_iris_options.prog_with_additional_constraints,
-            candidate_particles, chunk_size, constraints_tol);
+            ambient_particles, chunk_size, constraints_tol);
 
     for (int i = 0; i < ssize(ambient_particles); ++i) {
       if (!particle_collision_free[i] ||
