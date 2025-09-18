@@ -249,6 +249,9 @@ string_flag(
 # we cannot guarantee that all tests will pass or that all Drake features will
 # operate correctly. In other words, we cannot guarantee Drake's correctness
 # when a default-enabled solver is opted-out of.
+#
+# See `FooSolver::available()` (e.g., `ClarabelSolver::available()`) to retrieve
+# these setting at runtime.
 
 # Open-source solvers.
 
@@ -302,6 +305,30 @@ bool_flag(
 bool_flag(
     name = "with_snopt",
     build_setting_default = False,
+)
+
+# -----------------------------------------------------------------------------
+# Configuration for LCM (http://lcm-proj.github.io/lcm/).
+
+# When False, LCM is not available at runtime (i.e., DrakeLcm::available() and
+# DrakeLcmLog::available() will both be `false`). This does not affect lcm-gen
+# code generation for messages.
+bool_flag(
+    name = "with_lcm_runtime",
+    build_setting_default = True,
+)
+
+# -----------------------------------------------------------------------------
+# Configuration for Drake's CMake install.
+#
+# The Bazel spelling of these flags should be consisered "internal use only".
+# Users should interact with the CMake options, not these flags.
+
+# When False, lcmtypes_drake.jar will not be installed. (This might be helpful
+# to avoid depending on a JDK during the build.)
+bool_flag(
+    name = "install_java",
+    build_setting_default = True,
 )
 
 # -----------------------------------------------------------------------------

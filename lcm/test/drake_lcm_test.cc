@@ -74,6 +74,7 @@ class DrakeLcmTest : public ::testing::Test {
 };
 
 TEST_F(DrakeLcmTest, DefaultUrlTest) {
+  EXPECT_TRUE(DrakeLcm::available());
   EXPECT_GT(dut_->get_lcm_url().size(), 0);
 }
 

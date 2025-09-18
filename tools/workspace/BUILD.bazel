@@ -88,7 +88,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "gz_math_internal",
     "gz_utils_internal",
     "ipopt_internal",
-    "lcm",
     "libpng_internal",
     "libtiff_internal",
     "meshcat",
@@ -151,6 +150,9 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "//conditions:default": [],
 }) + select({
     "//tools/workspace/scs_internal:enabled": ["@scs_internal//:install"],
+    "//conditions:default": [],
+}) + select({
+    "//tools/workspace/lcm:flag_with_lcm_runtime_true": ["@lcm//:install"],
     "//conditions:default": [],
 })
 

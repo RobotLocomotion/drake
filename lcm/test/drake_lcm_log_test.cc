@@ -16,6 +16,8 @@ namespace {
 // Generates a log file using the write-only interface, then plays it back
 // and check message content with a subscriber.
 GTEST_TEST(LcmLogTest, LcmLogTestSaveAndRead) {
+  EXPECT_TRUE(DrakeLcmLog::available());
+
   auto w_log = std::make_unique<DrakeLcmLog>("test.log", true);
   const std::string channel_name("test_channel");
 
