@@ -1,0 +1,15 @@
+[msgpack] Include <type_traits>
+
+This header is needed for std::remove_volatile below. Errors started occurring
+when compiling Drake on macOS using Xcode 26.0.
+
+--- include/msgpack/v1/cpp_config_decl.hpp.orig
++++ include/msgpack/v1/cpp_config_decl.hpp
+@@ -87,6 +87,7 @@ struct is_pointer;
+
+ #include <memory>
+ #include <tuple>
++#include <type_traits>
+
+ namespace msgpack {
+ /// @cond
