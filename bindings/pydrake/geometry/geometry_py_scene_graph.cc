@@ -9,11 +9,12 @@
 #include <utility>
 #include <vector>
 
+#include "drake/bindings/generated_docstrings/geometry.h"
+#include "drake/bindings/generated_docstrings/geometry_query_results.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/scene_graph.h"
@@ -28,7 +29,9 @@ using systems::LeafSystem;
 
 // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
 using namespace drake::geometry;
-constexpr auto& doc = pydrake_doc.drake.geometry;
+constexpr auto& doc = pydrake_doc_geometry.drake.geometry;
+constexpr auto& doc_query_results =
+    pydrake_doc_geometry_query_results.drake.geometry;
 
 // TODO(jwnimmer-tri) Reformat this entire file to remove the unnecessary
 // indentation.
@@ -37,7 +40,8 @@ void DoScalarIndependentDefinitions(py::module m) {
   // HydroelasticContactRepresentation enumeration
   {
     using Class = HydroelasticContactRepresentation;
-    constexpr auto& cls_doc = doc.HydroelasticContactRepresentation;
+    constexpr auto& cls_doc =
+        doc_query_results.HydroelasticContactRepresentation;
     py::enum_<Class>(m, "HydroelasticContactRepresentation", cls_doc.doc)
         .value("kTriangle", Class::kTriangle, cls_doc.kTriangle.doc)
         .value("kPolygon", Class::kPolygon, cls_doc.kPolygon.doc);
@@ -676,25 +680,21 @@ void DefineSignedDistancePair(py::module m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = SignedDistancePair<T>;
+    constexpr auto& cls_doc = doc_query_results.SignedDistancePair;
     auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "SignedDistancePair", param, doc.SignedDistancePair.doc);
+        m, "SignedDistancePair", param, cls_doc.doc);
     cls  // BR
-        .def(ParamInit<Class>(), doc.SignedDistancePair.ctor.doc)
-        .def_readwrite("id_A", &SignedDistancePair<T>::id_A,
-            doc.SignedDistancePair.id_A.doc)
-        .def_readwrite("id_B", &SignedDistancePair<T>::id_B,
-            doc.SignedDistancePair.id_B.doc)
+        .def(ParamInit<Class>(), cls_doc.ctor.doc)
+        .def_readwrite("id_A", &SignedDistancePair<T>::id_A, cls_doc.id_A.doc)
+        .def_readwrite("id_B", &SignedDistancePair<T>::id_B, cls_doc.id_B.doc)
         .def_readwrite("p_ACa", &SignedDistancePair<T>::p_ACa,
-            return_value_policy_for_scalar_type<T>(),
-            doc.SignedDistancePair.p_ACa.doc)
+            return_value_policy_for_scalar_type<T>(), cls_doc.p_ACa.doc)
         .def_readwrite("p_BCb", &SignedDistancePair<T>::p_BCb,
-            return_value_policy_for_scalar_type<T>(),
-            doc.SignedDistancePair.p_BCb.doc)
-        .def_readwrite("distance", &SignedDistancePair<T>::distance,
-            doc.SignedDistancePair.distance.doc)
+            return_value_policy_for_scalar_type<T>(), cls_doc.p_BCb.doc)
+        .def_readwrite(
+            "distance", &SignedDistancePair<T>::distance, cls_doc.distance.doc)
         .def_readwrite("nhat_BA_W", &SignedDistancePair<T>::nhat_BA_W,
-            return_value_policy_for_scalar_type<T>(),
-            doc.SignedDistancePair.nhat_BA_W.doc);
+            return_value_policy_for_scalar_type<T>(), cls_doc.nhat_BA_W.doc);
   }
 }
 
@@ -703,20 +703,19 @@ void DefineSignedDistanceToPoint(py::module m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = SignedDistanceToPoint<T>;
+    constexpr auto& cls_doc = doc_query_results.SignedDistanceToPoint;
     auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "SignedDistanceToPoint", param, doc.SignedDistanceToPoint.doc);
+        m, "SignedDistanceToPoint", param, cls_doc.doc);
     cls  // BR
-        .def(ParamInit<Class>(), doc.SignedDistanceToPoint.ctor.doc)
-        .def_readwrite("id_G", &SignedDistanceToPoint<T>::id_G,
-            doc.SignedDistanceToPoint.id_G.doc)
+        .def(ParamInit<Class>(), cls_doc.ctor.doc)
+        .def_readwrite(
+            "id_G", &SignedDistanceToPoint<T>::id_G, cls_doc.id_G.doc)
         .def_readwrite("p_GN", &SignedDistanceToPoint<T>::p_GN,
-            return_value_policy_for_scalar_type<T>(),
-            doc.SignedDistanceToPoint.p_GN.doc)
+            return_value_policy_for_scalar_type<T>(), cls_doc.p_GN.doc)
         .def_readwrite("distance", &SignedDistanceToPoint<T>::distance,
-            doc.SignedDistanceToPoint.distance.doc)
+            cls_doc.distance.doc)
         .def_readwrite("grad_W", &SignedDistanceToPoint<T>::grad_W,
-            return_value_policy_for_scalar_type<T>(),
-            doc.SignedDistanceToPoint.grad_W.doc);
+            return_value_policy_for_scalar_type<T>(), cls_doc.grad_W.doc);
   }
 }
 
@@ -725,22 +724,23 @@ void DefinePenetrationAsPointPair(py::module m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = PenetrationAsPointPair<T>;
+    constexpr auto& cls_doc = doc_query_results.PenetrationAsPointPair;
     auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "PenetrationAsPointPair", param, doc.PenetrationAsPointPair.doc);
+        m, "PenetrationAsPointPair", param, cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>())
-        .def_readwrite("id_A", &PenetrationAsPointPair<T>::id_A,
-            doc.PenetrationAsPointPair.id_A.doc)
-        .def_readwrite("id_B", &PenetrationAsPointPair<T>::id_B,
-            doc.PenetrationAsPointPair.id_B.doc)
+        .def_readwrite(
+            "id_A", &PenetrationAsPointPair<T>::id_A, cls_doc.id_A.doc)
+        .def_readwrite(
+            "id_B", &PenetrationAsPointPair<T>::id_B, cls_doc.id_B.doc)
         .def_readwrite("p_WCa", &PenetrationAsPointPair<T>::p_WCa,
-            py::return_value_policy::copy, doc.PenetrationAsPointPair.p_WCa.doc)
+            py::return_value_policy::copy, cls_doc.p_WCa.doc)
         .def_readwrite("p_WCb", &PenetrationAsPointPair<T>::p_WCb,
-            py::return_value_policy::copy, doc.PenetrationAsPointPair.p_WCb.doc)
+            py::return_value_policy::copy, cls_doc.p_WCb.doc)
         .def_readwrite("nhat_BA_W", &PenetrationAsPointPair<T>::nhat_BA_W,
-            doc.PenetrationAsPointPair.nhat_BA_W.doc)
-        .def_readwrite("depth", &PenetrationAsPointPair<T>::depth,
-            doc.PenetrationAsPointPair.depth.doc);
+            cls_doc.nhat_BA_W.doc)
+        .def_readwrite(
+            "depth", &PenetrationAsPointPair<T>::depth, cls_doc.depth.doc);
   }
 }
 
@@ -751,7 +751,7 @@ void DefineContactSurface(py::module m, T) {
   // construct it directly yet. We can get it from ComputeContactSurface*().
   if constexpr (scalar_predicate<T>::is_bool) {
     using Class = ContactSurface<T>;
-    constexpr auto& cls_doc = doc.ContactSurface;
+    constexpr auto& cls_doc = doc_query_results.ContactSurface;
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "ContactSurface", param, cls_doc.doc);
     cls  // BR

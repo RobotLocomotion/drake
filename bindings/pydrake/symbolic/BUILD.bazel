@@ -43,7 +43,8 @@ drake_cc_library(
         "//bindings/pydrake/common:__pkg__",
     ],
     deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:common_symbolic",
+        "//bindings/generated_docstrings:common_symbolic_expression",
         "//bindings/pydrake:math_operators_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/common:eigen_pybind",
