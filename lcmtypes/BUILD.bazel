@@ -318,36 +318,41 @@ drake_transitive_installed_hdrs_filegroup(
 )
 
 install(
-    name = "install_drake_cc_headers",
+    name = "install_lcmtypes_cc",
     hdrs = [":lcmtypes_drake_cc_headers"],
     hdr_dest = "include",
     visibility = ["//visibility:private"],
 )
 
-# Provide an opt-out that avoids installing Java LCM libraries (e.g., we don't
-# need to install Java typtes when we're building a Python wheel).
+install(
+    name = "install_lcmtypes_python",
+    targets = [":lcmtypes_drake_py"],
+    visibility = ["//visibility:private"],
+)
+
+install(
+    name = "install_lcmtypes_java",
+    targets = [":lcmtypes_drake_java"],
+    rename = {"share/java/liblcmtypes_drake_java.jar": "lcmtypes_drake.jar"},
+    visibility = ["//visibility:private"],
+)
+
 config_setting(
-    name = "lcm_install_java_is_off",
-    values = {"define": "LCM_INSTALL_JAVA=OFF"},
+    name = "flag_install_java_true",
+    flag_values = {"//tools/flags:install_java": "True"},
 )
 
 install(
     name = "install",
-    targets = [
-        ":lcmtypes_drake_py",
-    ] + select({
-        ":lcm_install_java_is_off": [],
-        "//conditions:default": [
-            ":lcmtypes_drake_java",
-        ],
-    }),
-    rename = {
-        "share/java/liblcmtypes_drake_java.jar": "lcmtypes_drake.jar",
-    },
     deps = [
-        ":install_drake_cc_headers",
-        "@lcm//:install",
-    ],
+        ":install_lcmtypes_cc",
+        ":install_lcmtypes_python",
+    ] + select({
+        ":flag_install_java_true": [
+            ":install_lcmtypes_java",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 # === test/ ===

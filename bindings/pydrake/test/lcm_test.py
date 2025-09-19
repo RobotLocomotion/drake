@@ -16,6 +16,7 @@ class TestLcm(unittest.TestCase):
         self.count = 0
 
     def test_lcm(self):
+        self.assertTrue(DrakeLcm.available())
         dut = DrakeLcm()
         self.assertIsInstance(dut, DrakeLcmInterface)
         dut.get_lcm_url()
