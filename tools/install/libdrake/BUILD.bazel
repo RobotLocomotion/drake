@@ -30,6 +30,18 @@ load(":header_lint.bzl", "cc_check_allowed_headers")
 
 package(default_visibility = ["//visibility:private"])
 
+generate_file(
+    name = "drake_install_java.cmake",
+    content = select({
+        "//lcmtypes:flag_install_java_true": (
+            "set(DRAKE_INSTALL_JAVA ON)"
+        ),
+        "//conditions:default": (
+            "set(DRAKE_INSTALL_JAVA OFF)"
+        ),
+    }),
+)
+
 genrule(
     name = "python_version_cmake",
     srcs = ["//tools/workspace/python:python_version.txt"],
@@ -58,6 +70,18 @@ run_binary(
         "$(location stamp_version.cmake)",
     ],
     tool = "parse_version",
+)
+
+generate_file(
+    name = "with_lcm_runtime.cmake",
+    content = select({
+        "//tools/workspace/lcm:flag_with_lcm_runtime_true": (
+            "set(WITH_LCM_RUNTIME ON)"
+        ),
+        "//conditions:default": (
+            "set(WITH_LCM_RUNTIME OFF)"
+        ),
+    }),
 )
 
 generate_file(
@@ -123,8 +147,10 @@ cmake_configure_file(
         ":bazel_eigen_defines.cmake",
         ":bazel_fmt_defines.cmake",
         ":bazel_spdlog_defines.cmake",
+        ":drake_install_java.cmake",
         ":python_version.cmake",
         ":stamp_version.cmake",
+        ":with_lcm_runtime.cmake",
         ":with_user_eigen.cmake",
         ":with_user_fmt.cmake",
         ":with_user_spdlog.cmake",
@@ -279,8 +305,8 @@ cc_library(
         ":x11_deps",
         "//common:drake_marker_shared_library",
         "//tools/workspace/fmt:shared_library_maybe",
+        "//tools/workspace/lcm:shared_library_maybe",
         "//tools/workspace/spdlog:shared_library_maybe",
-        "@lcm",
     ],
 )
 

@@ -1,6 +1,20 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
 
+config_setting(
+    name = "flag_with_lcm_runtime_true",
+    flag_values = {"//tools/flags:with_lcm_runtime": "True"},
+)
+
+cc_library(
+    name = "shared_library_maybe",
+    visibility = ["//tools/install/libdrake:__pkg__"],
+    deps = select({
+        ":flag_with_lcm_runtime_true": ["@lcm"],
+        "//conditions:default": [],
+    }),
+)
+
 drake_py_unittest(
     name = "no_lcm_warnings_test",
     deps = ["@lcm//:lcm-python"],
