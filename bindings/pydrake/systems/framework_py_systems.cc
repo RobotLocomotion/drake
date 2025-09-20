@@ -8,12 +8,12 @@
 
 #include "pybind11/eval.h"
 
+#include "drake/bindings/generated_docstrings/systems_framework.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/value_producer_pybind.h"
 #include "drake/systems/framework/diagram.h"
@@ -56,7 +56,7 @@ using systems::internal::WrappedSystem;
 
 // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
 using namespace drake::systems;
-constexpr auto& doc = pydrake_doc.drake.systems;
+constexpr auto& doc = pydrake_doc_systems_framework.drake.systems;
 
 // TODO(jwnimmer-tri) Reformat this entire file to remove the unnecessary
 // indentation.
@@ -1305,7 +1305,8 @@ void DefineSystemScalarConverter(PyClass* cls) {
             });
     // Bind templated instantiations.
     auto converter_methods = [converter](auto pack) {
-      constexpr auto& cls_doc = pydrake_doc.drake.systems.SystemScalarConverter;
+      constexpr auto& cls_doc =
+          pydrake_doc_systems_framework.drake.systems.SystemScalarConverter;
       using Pack = decltype(pack);
       using T = typename Pack::template type_at<0>;
       using U = typename Pack::template type_at<1>;

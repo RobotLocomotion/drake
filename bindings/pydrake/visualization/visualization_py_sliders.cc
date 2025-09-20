@@ -1,8 +1,8 @@
 #include <string>
 #include <vector>
 
+#include "drake/bindings/generated_docstrings/visualization.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/visualization/visualization_py.h"
 #include "drake/visualization/meshcat_pose_sliders.h"
 
@@ -17,7 +17,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::visualization;
-  constexpr auto& doc = pydrake_doc.drake.visualization;
+  constexpr auto& doc = pydrake_doc_visualization.drake.visualization;
 
   // MeshcatPoseSliders
   {

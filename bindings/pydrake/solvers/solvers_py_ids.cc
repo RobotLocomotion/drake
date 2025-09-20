@@ -1,6 +1,6 @@
 #include <string>
 
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/generated_docstrings/solvers.h"
 #include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/solvers/solver_id.h"
 #include "drake/solvers/solver_type.h"
@@ -13,7 +13,7 @@ using solvers::SolverId;
 using solvers::SolverType;
 
 void DefineSolversIds(py::module m) {
-  constexpr auto& doc = pydrake_doc.drake.solvers;
+  constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
   py::class_<SolverId>(m, "SolverId", doc.SolverId.doc)
       .def(py::init<std::string>(), py::arg("name"), doc.SolverId.ctor.doc)
       .def("name", &SolverId::name, doc.SolverId.name.doc)

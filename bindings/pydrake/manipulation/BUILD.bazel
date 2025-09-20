@@ -23,7 +23,9 @@ PACKAGE_INFO = get_pybind_package_info("//bindings")
 drake_pybind_library(
     name = "manipulation",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:manipulation_kuka_iiwa",
+        "//bindings/generated_docstrings:manipulation_schunk_wsg",
+        "//bindings/generated_docstrings:manipulation_util",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:ref_cycle_pybind",
         "//bindings/pydrake/common:serialize_pybind",

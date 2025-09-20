@@ -1,5 +1,5 @@
+#include "drake/bindings/generated_docstrings/manipulation_util.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/manipulation/manipulation_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/manipulation/util/named_positions_functions.h"
@@ -13,7 +13,7 @@ namespace internal {
 void DefineManipulationUtil(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::manipulation;
-  constexpr auto& doc = pydrake_doc.drake.manipulation;
+  constexpr auto& doc = pydrake_doc_manipulation_util.drake.manipulation;
 
   {
     using Class = ZeroForceDriver;

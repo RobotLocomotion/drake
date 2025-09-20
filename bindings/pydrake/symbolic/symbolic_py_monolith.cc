@@ -6,8 +6,9 @@
 
 #include <fmt/format.h>
 
+#include "drake/bindings/generated_docstrings/common_symbolic.h"
+#include "drake/bindings/generated_docstrings/common_symbolic_expression.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/math_operators_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic/symbolic_py.h"
@@ -30,18 +31,20 @@ using std::string;
 void DefineSymbolicMonolith(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::symbolic;
-  constexpr auto& doc = pydrake_doc.drake.symbolic;
+  constexpr auto& doc = pydrake_doc_common_symbolic.drake.symbolic;
+  constexpr auto& doc_expr =
+      pydrake_doc_common_symbolic_expression.drake.symbolic;
 
   // These declarations must be first, because low-level operators return them.
-  py::class_<Expression> expr_cls(m, "Expression", doc.Expression.doc);
-  py::class_<Formula> formula_cls(m, "Formula", doc.Formula.doc);
+  py::class_<Expression> expr_cls(m, "Expression", doc_expr.Expression.doc);
+  py::class_<Formula> formula_cls(m, "Formula", doc_expr.Formula.doc);
   py::class_<Polynomial> polynomial_cls(m, "Polynomial", doc.Polynomial.doc);
   py::class_<RationalFunction> rat_fun_cls(
       m, "RationalFunction", doc.RationalFunction.doc);
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
-  py::class_<Variable> var_cls(m, "Variable", doc.Variable.doc);
-  constexpr auto& var_doc = doc.Variable;
+  py::class_<Variable> var_cls(m, "Variable", doc_expr.Variable.doc);
+  constexpr auto& var_doc = doc_expr.Variable;
   py::enum_<Variable::Type>(var_cls, "Type")
       .value(
           "CONTINUOUS", Variable::Type::CONTINUOUS, var_doc.Type.CONTINUOUS.doc)
@@ -147,7 +150,7 @@ void DefineSymbolicMonolith(py::module m) {
           int order) {
         return symbolic::TaylorExpand(f, symbolic::Environment(a), order);
       },
-      py::arg("f"), py::arg("a"), py::arg("order"), doc.TaylorExpand.doc);
+      py::arg("f"), py::arg("a"), py::arg("order"), doc_expr.TaylorExpand.doc);
 
   // Bind the free functions for Make(Vector|Matrix)(...)Variable.
   m  // BR
@@ -158,28 +161,28 @@ void DefineSymbolicMonolith(py::module m) {
           },
           py::arg("rows"), py::arg("cols"), py::arg("name"),
           py::arg("type") = symbolic::Variable::Type::CONTINUOUS,
-          doc.MakeMatrixVariable.doc_4args)
+          doc_expr.MakeMatrixVariable.doc_4args)
       .def(
           "MakeMatrixBinaryVariable",
           [](int rows, int cols, const std::string& name) {
             return symbolic::MakeMatrixBinaryVariable(rows, cols, name);
           },
           py::arg("rows"), py::arg("cols"), py::arg("name"),
-          doc.MakeMatrixBinaryVariable.doc_3args)
+          doc_expr.MakeMatrixBinaryVariable.doc_3args)
       .def(
           "MakeMatrixContinuousVariable",
           [](int rows, int cols, const std::string& name) {
             return symbolic::MakeMatrixContinuousVariable(rows, cols, name);
           },
           py::arg("rows"), py::arg("cols"), py::arg("name"),
-          doc.MakeMatrixContinuousVariable.doc_3args)
+          doc_expr.MakeMatrixContinuousVariable.doc_3args)
       .def(
           "MakeMatrixBooleanVariable",
           [](int rows, int cols, const std::string& name) {
             return symbolic::MakeMatrixBooleanVariable(rows, cols, name);
           },
           py::arg("rows"), py::arg("cols"), py::arg("name"),
-          doc.MakeMatrixBooleanVariable.doc_3args)
+          doc_expr.MakeMatrixBooleanVariable.doc_3args)
       .def(
           "MakeVectorVariable",
           [](int rows, const std::string& name, Variable::Type type) {
@@ -187,75 +190,76 @@ void DefineSymbolicMonolith(py::module m) {
           },
           py::arg("rows"), py::arg("name"),
           py::arg("type") = symbolic::Variable::Type::CONTINUOUS,
-          doc.MakeVectorVariable.doc_3args)
+          doc_expr.MakeVectorVariable.doc_3args)
       .def(
           "MakeVectorBinaryVariable",
           [](int rows, const std::string& name) {
             return symbolic::MakeVectorBinaryVariable(rows, name);
           },
           py::arg("rows"), py::arg("name"),
-          doc.MakeVectorBinaryVariable.doc_2args)
+          doc_expr.MakeVectorBinaryVariable.doc_2args)
       .def(
           "MakeVectorBooleanVariable",
           [](int rows, const std::string& name) {
             return symbolic::MakeVectorBooleanVariable(rows, name);
           },
           py::arg("rows"), py::arg("name"),
-          doc.MakeVectorBooleanVariable.doc_2args)
+          doc_expr.MakeVectorBooleanVariable.doc_2args)
       .def(
           "MakeVectorContinuousVariable",
           [](int rows, const std::string& name) {
             return symbolic::MakeVectorContinuousVariable(rows, name);
           },
           py::arg("rows"), py::arg("name"),
-          doc.MakeVectorContinuousVariable.doc_2args);
+          doc_expr.MakeVectorContinuousVariable.doc_2args);
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads,
   // etc.
-  py::class_<Variables>(m, "Variables", doc.Variables.doc)
-      .def(py::init<>(), doc.Variables.ctor.doc_0args)
+  constexpr auto& doc_variables = doc_expr.Variables;
+  py::class_<Variables>(m, "Variables", doc_variables.doc)
+      .def(py::init<>(), doc_variables.ctor.doc_0args)
       .def(py::init<const Eigen::Ref<const VectorX<Variable>>&>(),
-          doc.Variables.ctor.doc_1args_vec)
-      .def("size", &Variables::size, doc.Variables.size.doc)
-      .def("__len__", &Variables::size, doc.Variables.size.doc)
-      .def("empty", &Variables::empty, doc.Variables.empty.doc)
-      .def("__str__", &Variables::to_string, doc.Variables.to_string.doc)
+          doc_variables.ctor.doc_1args_vec)
+      .def("size", &Variables::size, doc_variables.size.doc)
+      .def("__len__", &Variables::size, doc_variables.size.doc)
+      .def("empty", &Variables::empty, doc_variables.empty.doc)
+      .def("__str__", &Variables::to_string, doc_variables.to_string.doc)
       .def("__repr__",
           [](const Variables& self) {
             return fmt::format("<Variables \"{}\">", self);
           })
-      .def("to_string", &Variables::to_string, doc.Variables.to_string.doc)
+      .def("to_string", &Variables::to_string, doc_variables.to_string.doc)
       .def("__hash__",
           [](const Variables& self) { return std::hash<Variables>{}(self); })
       .def(
           "insert",
           [](Variables& self, const Variable& var) { self.insert(var); },
-          py::arg("var"), doc.Variables.insert.doc_1args_var)
+          py::arg("var"), doc_variables.insert.doc_1args_var)
       .def(
           "insert",
           [](Variables& self, const Variables& vars) { self.insert(vars); },
-          py::arg("vars"), doc.Variables.insert.doc_1args_vars)
+          py::arg("vars"), doc_variables.insert.doc_1args_vars)
       .def(
           "erase",
           [](Variables& self, const Variable& key) { return self.erase(key); },
-          py::arg("key"), doc.Variables.erase.doc_1args_key)
+          py::arg("key"), doc_variables.erase.doc_1args_key)
       .def(
           "erase",
           [](Variables& self, const Variables& vars) {
             return self.erase(vars);
           },
-          py::arg("vars"), doc.Variables.erase.doc_1args_vars)
+          py::arg("vars"), doc_variables.erase.doc_1args_vars)
       .def("include", &Variables::include, py::arg("key"),
-          doc.Variables.include.doc)
+          doc_variables.include.doc)
       .def("__contains__", &Variables::include)
       .def("IsSubsetOf", &Variables::IsSubsetOf, py::arg("vars"),
-          doc.Variables.IsSubsetOf.doc)
+          doc_variables.IsSubsetOf.doc)
       .def("IsSupersetOf", &Variables::IsSupersetOf, py::arg("vars"),
-          doc.Variables.IsSupersetOf.doc)
+          doc_variables.IsSupersetOf.doc)
       .def("IsStrictSubsetOf", &Variables::IsStrictSubsetOf, py::arg("vars"),
-          doc.Variables.IsStrictSubsetOf.doc)
+          doc_variables.IsStrictSubsetOf.doc)
       .def("IsStrictSupersetOf", &Variables::IsStrictSupersetOf,
-          py::arg("vars"), doc.Variables.IsStrictSupersetOf.doc)
+          py::arg("vars"), doc_variables.IsStrictSupersetOf.doc)
       .def("EqualTo", [](const Variables& self,
                           const Variables& vars) { return self == vars; })
       .def(
@@ -278,11 +282,11 @@ void DefineSymbolicMonolith(py::module m) {
       [](const Variables& vars1, const Variables& vars2) {
         return intersect(vars1, vars2);
       },
-      py::arg("vars1"), py::arg("vars2"), doc.intersect.doc);
+      py::arg("vars1"), py::arg("vars2"), doc_expr.intersect.doc);
 
   {
-    constexpr auto& cls_doc = doc.ExpressionKind;
-    py::enum_<ExpressionKind>(m, "ExpressionKind", doc.ExpressionKind.doc)
+    constexpr auto& cls_doc = doc_expr.ExpressionKind;
+    py::enum_<ExpressionKind>(m, "ExpressionKind", cls_doc.doc)
         .value("Constant", ExpressionKind::Constant, cls_doc.Constant.doc)
         .value("Var", ExpressionKind::Var, cls_doc.Var.doc)
         .value("Add", ExpressionKind::Add, cls_doc.Add.doc)
@@ -314,27 +318,28 @@ void DefineSymbolicMonolith(py::module m) {
   }
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
-  expr_cls.def(py::init<>(), doc.Expression.ctor.doc_0args)
+  constexpr auto doc_expression = doc_expr.Expression;
+  expr_cls.def(py::init<>(), doc_expression.ctor.doc_0args)
       .def(py::init<double>(), py::arg("constant"),
-          doc.Expression.ctor.doc_1args_constant)
+          doc_expression.ctor.doc_1args_constant)
       .def(py::init<const Variable&>(), py::arg("var"),
-          doc.Expression.ctor.doc_1args_var)
-      .def("__str__", &Expression::to_string, doc.Expression.to_string.doc)
+          doc_expression.ctor.doc_1args_var)
+      .def("__str__", &Expression::to_string, doc_expression.to_string.doc)
       .def("__repr__",
           [](const Expression& self) {
             return fmt::format("<Expression \"{}\">", self.to_string());
           })
       .def(
           "__copy__", [](const Expression& self) -> Expression { return self; })
-      .def("get_kind", &Expression::get_kind, doc.Expression.get_kind.doc)
-      .def("to_string", &Expression::to_string, doc.Expression.to_string.doc)
+      .def("get_kind", &Expression::get_kind, doc_expression.get_kind.doc)
+      .def("to_string", &Expression::to_string, doc_expression.to_string.doc)
       .def(
           "Unapply",
           [m](const symbolic::Expression& e) {
             return internal::Unapply(m, e);
           },
           internal::kUnapplyExpressionDoc)
-      .def("Expand", &Expression::Expand, doc.Expression.Expand.doc)
+      .def("Expand", &Expression::Expand, doc_expression.Expand.doc)
       .def(
           "Evaluate",
           [](const Expression& self, const Environment::map& env,
@@ -342,38 +347,38 @@ void DefineSymbolicMonolith(py::module m) {
             return self.Evaluate(Environment{env}, generator);
           },
           py::arg("env") = Environment::map{}, py::arg("generator") = nullptr,
-          doc.Expression.Evaluate.doc_2args)
+          doc_expression.Evaluate.doc_2args)
       .def(
           "Evaluate",
           [](const Expression& self, RandomGenerator* generator) {
             return self.Evaluate(generator);
           },
-          py::arg("generator"), doc.Expression.Evaluate.doc_1args)
+          py::arg("generator"), doc_expression.Evaluate.doc_1args)
       .def(
           "EvaluatePartial",
           [](const Expression& self, const Environment::map& env) {
             return self.EvaluatePartial(Environment{env});
           },
-          py::arg("env"), doc.Expression.EvaluatePartial.doc)
+          py::arg("env"), doc_expression.EvaluatePartial.doc)
       .def("GetVariables", &Expression::GetVariables,
-          doc.Expression.GetVariables.doc)
+          doc_expression.GetVariables.doc)
       .def("GetFreeVariables", &Expression::GetFreeVariables,
-          doc.Expression.GetFreeVariables.doc)
+          doc_expression.GetFreeVariables.doc)
       .def(
           "Substitute",
           [](const Expression& self, const Variable& var, const Expression& e) {
             return self.Substitute(var, e);
           },
-          py::arg("var"), py::arg("e"), doc.Expression.Substitute.doc_2args)
+          py::arg("var"), py::arg("e"), doc_expression.Substitute.doc_2args)
       .def(
           "Substitute",
           [](const Expression& self, const Substitution& s) {
             return self.Substitute(s);
           },
-          py::arg("s"), doc.Expression.Substitute.doc_1args)
-      .def("EqualTo", &Expression::EqualTo, doc.Expression.EqualTo.doc)
+          py::arg("s"), doc_expression.Substitute.doc_1args)
+      .def("EqualTo", &Expression::EqualTo, doc_expression.EqualTo.doc)
       .def("is_polynomial", &Expression::is_polynomial,
-          doc.Expression.is_polynomial.doc)
+          doc_expression.is_polynomial.doc)
       // Addition
       .def(py::self + py::self)
       .def(py::self + Variable())
@@ -449,18 +454,19 @@ void DefineSymbolicMonolith(py::module m) {
       .def(py::self != Variable())
       .def(py::self != double())
       .def("Differentiate", &Expression::Differentiate, py::arg("x"),
-          doc.Expression.Differentiate.doc)
+          doc_expression.Differentiate.doc)
       .def("Jacobian", &Expression::Jacobian, py::arg("vars"),
-          doc.Expression.Jacobian.doc);
+          doc_expression.Jacobian.doc);
   // TODO(eric.cousineau): Clean this overload stuff up (#15041).
   pydrake::internal::BindMathOperators<Expression>(&expr_cls);
   pydrake::internal::BindMathOperators<Expression>(&m);
   DefCopyAndDeepCopy(&expr_cls);
 
   m.def("if_then_else", &symbolic::if_then_else, py::arg("f_cond"),
-      py::arg("e_then"), py::arg("e_else"), doc.if_then_else.doc);
+      py::arg("e_then"), py::arg("e_else"), doc_expr.if_then_else.doc);
   m.def("uninterpreted_function", &symbolic::uninterpreted_function,
-      py::arg("name"), py::arg("arguments"), doc.uninterpreted_function.doc);
+      py::arg("name"), py::arg("arguments"),
+      doc_expr.uninterpreted_function.doc);
 
   m.def(
       "Jacobian",
@@ -468,7 +474,7 @@ void DefineSymbolicMonolith(py::module m) {
           const Eigen::Ref<const VectorX<Variable>>& vars) {
         return Jacobian(f, vars);
       },
-      py::arg("f"), py::arg("vars"), doc.Jacobian.doc);
+      py::arg("f"), py::arg("vars"), doc_expr.Jacobian.doc);
 
   m.def(
       "IsAffine",
@@ -490,23 +496,24 @@ void DefineSymbolicMonolith(py::module m) {
         return Evaluate(M, Environment{env}, random_generator);
       },
       py::arg("m"), py::arg("env") = Environment::map{},
-      py::arg("generator") = nullptr, doc.Evaluate.doc_expression);
+      py::arg("generator") = nullptr, doc_expr.Evaluate.doc_expression);
 
   m.def("GetVariableVector", &symbolic::GetVariableVector,
-      py::arg("expressions"), doc.GetVariableVector.doc);
+      py::arg("expressions"), doc_expr.GetVariableVector.doc);
 
   m.def(
       "Substitute",
       [](const MatrixX<Expression>& M, const Substitution& subst) {
         return Substitute(M, subst);
       },
-      py::arg("m"), py::arg("subst"), doc.Substitute.doc_2args);
+      py::arg("m"), py::arg("subst"), doc_expr.Substitute.doc_2args);
 
   m.def(
       "Substitute",
       [](const MatrixX<Expression>& M, const Variable& var,
           const Expression& e) { return Substitute(M, var, e); },
-      py::arg("m"), py::arg("var"), py::arg("e"), doc.Substitute.doc_3args);
+      py::arg("m"), py::arg("var"), py::arg("e"),
+      doc_expr.Substitute.doc_3args);
 
   {
     using Enum = SinCosSubstitutionType;
@@ -552,8 +559,8 @@ void DefineSymbolicMonolith(py::module m) {
       doc.SubstituteStereographicProjection.doc);
 
   {
-    constexpr auto& cls_doc = doc.FormulaKind;
-    py::enum_<FormulaKind>(m, "FormulaKind", doc.FormulaKind.doc)
+    constexpr auto& cls_doc = doc_expr.FormulaKind;
+    py::enum_<FormulaKind>(m, "FormulaKind", cls_doc.doc)
         // `True` and `False` are reserved keywords as of Python3.
         .value("False_", FormulaKind::False, cls_doc.False.doc)
         .value("True_", FormulaKind::True, cls_doc.True.doc)
@@ -573,50 +580,51 @@ void DefineSymbolicMonolith(py::module m) {
             cls_doc.PositiveSemidefinite.doc);
   }
 
-  formula_cls.def(py::init<>(), doc.Formula.ctor.doc_0args)
+  constexpr auto& doc_formula = doc_expr.Formula;
+  formula_cls.def(py::init<>(), doc_formula.ctor.doc_0args)
       .def(py::init<bool>(), py::arg("value").noconvert(),
-          doc.Formula.ctor.doc_1args_value)
+          doc_formula.ctor.doc_1args_value)
       .def(py::init<const Variable&>(), py::arg("var"),
-          doc.Formula.ctor.doc_1args_var)
+          doc_formula.ctor.doc_1args_var)
       .def(
           "Unapply",
           [m](const symbolic::Formula& f) { return internal::Unapply(m, f); },
           internal::kUnapplyFormulaDoc)
-      .def("get_kind", &Formula::get_kind, doc.Formula.get_kind.doc)
+      .def("get_kind", &Formula::get_kind, doc_formula.get_kind.doc)
       .def("GetFreeVariables", &Formula::GetFreeVariables,
-          doc.Formula.GetFreeVariables.doc)
-      .def("EqualTo", &Formula::EqualTo, doc.Formula.EqualTo.doc)
+          doc_formula.GetFreeVariables.doc)
+      .def("EqualTo", &Formula::EqualTo, doc_formula.EqualTo.doc)
       .def(
           "Evaluate",
           [](const Formula& self, const Environment::map& env) {
             return self.Evaluate(Environment{env});
           },
-          py::arg("env") = Environment::map{}, doc.Formula.Evaluate.doc_2args)
+          py::arg("env") = Environment::map{}, doc_formula.Evaluate.doc_2args)
       .def(
           "Substitute",
           [](const Formula& self, const Variable& var, const Expression& e) {
             return self.Substitute(var, e);
           },
-          py::arg("var"), py::arg("e"), doc.Formula.Substitute.doc_2args)
+          py::arg("var"), py::arg("e"), doc_formula.Substitute.doc_2args)
       .def(
           "Substitute",
           [](const Formula& self, const Variable& var1, const Variable& var2) {
             return self.Substitute(var1, var2);
           },
-          py::arg("var"), py::arg("e"), doc.Formula.Substitute.doc_2args)
+          py::arg("var"), py::arg("e"), doc_formula.Substitute.doc_2args)
       .def(
           "Substitute",
           [](const Formula& self, const Variable& var, const double c) {
             return self.Substitute(var, c);
           },
-          py::arg("var"), py::arg("e"), doc.Formula.Substitute.doc_2args)
+          py::arg("var"), py::arg("e"), doc_formula.Substitute.doc_2args)
       .def(
           "Substitute",
           [](const Formula& self, const Substitution& s) {
             return self.Substitute(s);
           },
-          py::arg("s"), doc.Formula.Substitute.doc_1args)
-      .def("to_string", &Formula::to_string, doc.Formula.to_string.doc)
+          py::arg("s"), doc_formula.Substitute.doc_1args)
+      .def("to_string", &Formula::to_string, doc_formula.to_string.doc)
       .def("__str__", &Formula::to_string)
       .def("__repr__",
           [](const Formula& self) {
@@ -629,8 +637,8 @@ void DefineSymbolicMonolith(py::module m) {
       .def("__hash__",
           [](const Formula& self) { return std::hash<Formula>{}(self); })
       // `True` and `False` are reserved keywords as of Python3.
-      .def_static("True_", &Formula::True, doc.FormulaTrue.doc)
-      .def_static("False_", &Formula::False, doc.FormulaFalse.doc)
+      .def_static("True_", &Formula::True, doc_expr.FormulaTrue.doc)
+      .def_static("False_", &Formula::False, doc_expr.FormulaFalse.doc)
       .def("__nonzero__", [](const Formula&) {
         throw std::runtime_error(
             "You should not call `__bool__` / `__nonzero__` on `Formula`. "
@@ -657,14 +665,14 @@ void DefineSymbolicMonolith(py::module m) {
           [](const Formula& a, const Formula& b) { return a || b; })
       .def("logical_not", [](const Formula& a) { return !a; });
 
-  m.def("isnan", &symbolic::isnan, py::arg("e"), doc.isnan.doc);
+  m.def("isnan", &symbolic::isnan, py::arg("e"), doc_expr.isnan.doc);
   m.def("forall", &symbolic::forall, py::arg("vars"), py::arg("f"),
-      doc.forall.doc);
+      doc_expr.forall.doc);
   m.def("positive_semidefinite",
       overload_cast_explicit<Formula,
           const Eigen::Ref<const MatrixX<Expression>>&>(
           &symbolic::positive_semidefinite),
-      py::arg("m"), doc.positive_semidefinite.doc_1args_m);
+      py::arg("m"), doc_expr.positive_semidefinite.doc_1args_m);
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   py::class_<Monomial>(m, "Monomial", doc.Monomial.doc)

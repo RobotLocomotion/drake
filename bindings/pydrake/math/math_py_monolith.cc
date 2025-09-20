@@ -4,13 +4,13 @@
 #include <utility>
 #include <vector>
 
+#include "drake/bindings/generated_docstrings/math.h"
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/math/math_py.h"
 #include "drake/bindings/pydrake/math_operators_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -50,7 +50,7 @@ void DefineRigidTransform(py::module m, py::class_<PyClass<T>>& cls) {
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-  constexpr auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc_math.drake.math;
 
   // N.B. Some classes define `__repr__` in `_math_extra.py`.
 
@@ -170,7 +170,7 @@ void DefineRotationMatrix(py::module m, py::class_<PyClass<T>>& cls) {
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-  constexpr auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc_math.drake.math;
 
   {
     using Class = RotationMatrix<T>;
@@ -262,7 +262,7 @@ void DefineRollPitchYaw(py::class_<PyClass<T>>& cls) {
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-  constexpr auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc_math.drake.math;
 
   {
     using Class = RollPitchYaw<T>;
@@ -323,7 +323,7 @@ void DefineRollPitchYaw(py::class_<PyClass<T>>& cls) {
 void DefineRigidTransformRotationMatrixRollPitchYaw(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-  constexpr auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc_math.drake.math;
 
   // The two rotation classes (RotationMatrix, RollPitchYaw) cyclically depend
   // on each other, so we must declare them both before defining them. Also,
@@ -376,7 +376,7 @@ void DoMiscScalarDependentDefinitions(py::module m, T) {
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-  constexpr auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc_math.drake.math;
   {
     using Class = BsplineBasis<T>;
     constexpr auto& cls_doc = doc.BsplineBasis;
@@ -489,7 +489,7 @@ void DoMiscScalarDependentDefinitions(py::module m, T) {
 void DoScalarIndependentDefinitions(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-  constexpr auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc_math.drake.math;
 
   // TODO(eric.cousineau): Bind remaining classes for all available scalar
   // types.
@@ -680,7 +680,7 @@ template <typename T>
 void DoNonsymbolicScalarDefinitions(py::module m, T) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-  constexpr auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc_math.drake.math;
 
   // Soft min and max
   m.def("SoftOverMax", &SoftOverMax<T>, py::arg("x"), py::arg("alpha") = 1.0,
@@ -697,7 +697,7 @@ void DoNonsymbolicScalarDefinitions(py::module m, T) {
 void DefineRandomRotation(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-  constexpr auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc_math.drake.math;
   using T = double;
 
   // Random Rotations

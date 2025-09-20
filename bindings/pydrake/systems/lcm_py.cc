@@ -7,7 +7,8 @@
 
 #include "pybind11/eval.h"
 
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/generated_docstrings/lcm.h"
+#include "drake/bindings/generated_docstrings/systems_lcm.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/lcm_py_bind_cpp_serializers.h"
 #include "drake/lcm/drake_lcm.h"
@@ -105,7 +106,7 @@ PYBIND11_MODULE(lcm, m) {
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::lcm;
-  constexpr auto& doc = pydrake_doc.drake.systems.lcm;
+  constexpr auto& doc = pydrake_doc_systems_lcm.drake.systems.lcm;
 
   py::module::import("pydrake.lcm");
   py::module::import("pydrake.systems.framework");
@@ -123,10 +124,11 @@ PYBIND11_MODULE(lcm, m) {
         // want in Python. For now, we'll just bind the simple ones that don't
         // use function callbacks.
         .def("get_lcm_url", &Class::get_lcm_url,
-            pydrake_doc.drake.lcm.DrakeLcmInterface.get_lcm_url.doc)
+            pydrake_doc_lcm.drake.lcm.DrakeLcmInterface.get_lcm_url.doc)
         .def("HandleSubscriptions", &Class::HandleSubscriptions,
             py::arg("timeout_millis"),
-            pydrake_doc.drake.lcm.DrakeLcmInterface.HandleSubscriptions.doc);
+            pydrake_doc_lcm.drake.lcm.DrakeLcmInterface.HandleSubscriptions
+                .doc);
   }
 
   {

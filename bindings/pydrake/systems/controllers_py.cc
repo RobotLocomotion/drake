@@ -1,9 +1,9 @@
 #include <memory>
 #include <utility>
 
+#include "drake/bindings/generated_docstrings/systems_controllers.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -26,7 +26,8 @@ PYBIND11_MODULE(controllers, m) {
   using drake::systems::Diagram;
   using drake::systems::LeafSystem;
   using drake::systems::System;
-  constexpr auto& doc = pydrake_doc.drake.systems.controllers;
+  constexpr auto& doc =
+      pydrake_doc_systems_controllers.drake.systems.controllers;
 
   py::module::import("pydrake.math");
   py::module::import("pydrake.multibody.plant");

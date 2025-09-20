@@ -5,13 +5,13 @@
 #include <string>
 #include <vector>
 
+#include "drake/bindings/generated_docstrings/geometry.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/bindings/pydrake/systems/builder_life_support_pybind.h"
 #include "drake/geometry/drake_visualizer.h"
@@ -30,7 +30,7 @@ using systems::LeafSystem;
 
 // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
 using namespace drake::geometry;
-constexpr auto& doc = pydrake_doc.drake.geometry;
+constexpr auto& doc = pydrake_doc_geometry.drake.geometry;
 
 // TODO(jwnimmer-tri) Reformat this entire file to remove the unnecessary
 // indentation.

@@ -1,9 +1,9 @@
 #include <memory>
 
+#include "drake/bindings/generated_docstrings/multibody_fem.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/fem/deformable_body_config.h"
@@ -16,7 +16,8 @@ namespace {
 void DoScalarIndependentDefinitions(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody::fem;
-  constexpr auto& doc = pydrake_doc.drake.multibody.fem;
+  constexpr auto& doc_multibody = pydrake_doc_multibody_fem.drake.multibody;
+  constexpr auto& doc = doc_multibody.fem;
 
   {
     using Class = MaterialModel;
@@ -31,7 +32,7 @@ void DoScalarIndependentDefinitions(py::module m) {
 
   {
     using Class = drake::multibody::ForceDensityType;
-    constexpr auto& cls_doc = pydrake_doc.drake.multibody.ForceDensityType;
+    constexpr auto& cls_doc = doc_multibody.ForceDensityType;
     py::enum_<Class>(m, "ForceDensityType", cls_doc.doc)
         .value("kPerCurrentVolume", Class::kPerCurrentVolume,
             cls_doc.kPerCurrentVolume.doc)
@@ -46,7 +47,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody::fem;
-  constexpr auto& doc = pydrake_doc.drake.multibody.fem;
+  constexpr auto& doc = pydrake_doc_multibody_fem.drake.multibody.fem;
 
   {
     using Class = DeformableBodyConfig<T>;
@@ -90,10 +91,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
 template <typename T>
 void DefineForceDensityFieldBase(py::module m, T) {
+  constexpr auto& doc_multibody = pydrake_doc_multibody_fem.drake.multibody;
   py::tuple param = GetPyParam<T>();
   {
     using Class = drake::multibody::ForceDensityFieldBase<T>;
-    constexpr auto& cls_doc = pydrake_doc.drake.multibody.ForceDensityFieldBase;
+    constexpr auto& cls_doc = doc_multibody.ForceDensityFieldBase;
     auto cls = DefineTemplateClassWithDefault<Class, std::shared_ptr<Class>>(
         m, "ForceDensityFieldBase", param, cls_doc.doc);
     cls  // BR

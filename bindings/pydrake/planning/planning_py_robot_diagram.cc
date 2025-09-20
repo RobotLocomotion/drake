@@ -1,7 +1,7 @@
+#include "drake/bindings/generated_docstrings/planning.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/builder_life_support_pybind.h"
@@ -15,7 +15,7 @@ namespace internal {
 void DefinePlanningRobotDiagram(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
-  constexpr auto& doc = pydrake_doc.drake.planning;
+  constexpr auto& doc = pydrake_doc_planning.drake.planning;
 
   auto bind_common_scalar_types = [&m, &doc](auto dummy) {
     using T = decltype(dummy);

@@ -1,7 +1,7 @@
 #include <memory>
 #include <vector>
 
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/generated_docstrings/planning_graph_algorithms.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_base.h"
@@ -17,7 +17,8 @@ namespace internal {
 void DefinePlanningGraphAlgorithms(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning::graph_algorithms;
-  constexpr auto& doc = pydrake_doc.drake.planning.graph_algorithms;
+  constexpr auto& doc =
+      pydrake_doc_planning_graph_algorithms.drake.planning.graph_algorithms;
   {
     class PyMaxCliqueSolverBase : public MaxCliqueSolverBase {
      public:

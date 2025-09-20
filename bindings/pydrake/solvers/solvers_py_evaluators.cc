@@ -3,13 +3,13 @@
 #include <utility>
 #include <vector>
 
+#include "drake/bindings/generated_docstrings/solvers.h"
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_function.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -60,7 +60,7 @@ namespace {
  */
 template <typename C>
 auto RegisterBinding(py::handle* scope) {
-  constexpr auto& cls_doc = pydrake_doc.drake.solvers.Binding;
+  constexpr auto& cls_doc = pydrake_doc_solvers.drake.solvers.Binding;
   typedef Binding<C> B;
   const string pyname = TemporaryClassName<B>();
   py::class_<B> binding_cls(*scope, pyname.c_str());
@@ -154,7 +154,7 @@ void DefTesting(py::module m) {
 }
 
 void BindEvaluatorsAndBindings(py::module m) {
-  constexpr auto& doc = pydrake_doc.drake.solvers;
+  constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
   {
     using Class = EvaluatorBase;
     constexpr auto& cls_doc = doc.EvaluatorBase;

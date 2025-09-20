@@ -1,8 +1,8 @@
+#include "drake/bindings/generated_docstrings/multibody_math.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/math/spatial_algebra.h"
 
@@ -14,7 +14,7 @@ using math::RotationMatrix;
 // Binds any child classes of the `SpatialVector` mixin.
 template <typename T, typename PyClass>
 void BindSpatialVectorMixin(PyClass* pcls) {
-  constexpr auto& doc = pydrake_doc.drake.multibody;
+  constexpr auto& doc = pydrake_doc_multibody_math.drake.multibody;
   using Class = typename PyClass::type;
   auto& cls = *pcls;
   cls  // BR
@@ -84,7 +84,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
   py::tuple param = GetPyParam<T>();
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  constexpr auto& doc = pydrake_doc.drake.multibody;
+  constexpr auto& doc = pydrake_doc_multibody_math.drake.multibody;
 
   m.doc() = "Bindings for multibody math.";
 

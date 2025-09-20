@@ -1,9 +1,9 @@
 #include <Eigen/Core>
 #include <unsupported/Eigen/AutoDiff>
 
+#include "drake/bindings/generated_docstrings/math.h"
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/autodiffutils/autodiffutils_py.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/math_operators_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_throw.h"
@@ -22,7 +22,7 @@ namespace internal {
 void DefineAutodiffutils(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-  constexpr auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc_math.drake.math;
 
   // TODO(m-chaturvedi) Add Pybind11 documentation.
   py::class_<AutoDiffXd> autodiff(m, "AutoDiffXd");

@@ -1,5 +1,5 @@
+#include "drake/bindings/generated_docstrings/planning_iris.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -12,7 +12,7 @@ namespace internal {
 void DefinePlanningIrisZo(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
-  constexpr auto& doc = pydrake_doc.drake.planning;
+  constexpr auto& doc = pydrake_doc_planning_iris.drake.planning;
 
   // IrisZoOptions
   const auto& cls_doc = doc.IrisZoOptions;

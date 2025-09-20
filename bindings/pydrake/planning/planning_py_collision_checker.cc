@@ -4,8 +4,8 @@
 #include <utility>
 #include <vector>
 
+#include "drake/bindings/generated_docstrings/planning.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/planning/collision_checker.h"
@@ -24,7 +24,7 @@ using multibody::RigidBody;
 void DefinePlanningCollisionChecker(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
-  constexpr auto& doc = pydrake_doc.drake.planning;
+  constexpr auto& doc = pydrake_doc_planning.drake.planning;
 
   {
     using Class = CollisionChecker;

@@ -1,11 +1,11 @@
 #include <string>
 #include <vector>
 
+#include "drake/bindings/generated_docstrings/multibody_parsing.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/parsing/parser.h"
@@ -25,7 +25,7 @@ PYBIND11_MODULE(parsing, m) {
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  constexpr auto& doc = pydrake_doc.drake.multibody;
+  constexpr auto& doc = pydrake_doc_multibody_parsing.drake.multibody;
 
   py::module::import("pydrake.common.schema");
   py::module::import("pydrake.geometry");

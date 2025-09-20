@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/bindings/generated_docstrings/multibody_plant.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
@@ -13,7 +14,6 @@
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/builder_life_support_pybind.h"
 #include "drake/common/eigen_types.h"
@@ -68,7 +68,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
   py::tuple param = GetPyParam<T>();
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  constexpr auto& doc = pydrake_doc.drake.multibody;
+  constexpr auto& doc = pydrake_doc_multibody_plant.drake.multibody;
   // PointPairContactInfo
   {
     using Class = PointPairContactInfo<T>;
@@ -1568,7 +1568,7 @@ PYBIND11_MODULE(plant, m) {
   py::module::import("pydrake.multibody.tree");
   py::module::import("pydrake.systems.framework");
 
-  constexpr auto& doc = pydrake_doc.drake.multibody;
+  constexpr auto& doc = pydrake_doc_multibody_plant.drake.multibody;
 
   using T = double;
 

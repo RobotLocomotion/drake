@@ -1,5 +1,5 @@
+#include "drake/bindings/generated_docstrings/common.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/polynomial_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/polynomial.h"
@@ -13,7 +13,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
   py::tuple param = GetPyParam<T>();
 
   using Class = Polynomial<T>;
-  constexpr auto& cls_doc = pydrake_doc.drake.Polynomial;
+  constexpr auto& cls_doc = pydrake_doc_common.drake.Polynomial;
   auto cls = DefineTemplateClassWithDefault<Class>(
       m, "Polynomial", param, cls_doc.doc);
   cls  // BR

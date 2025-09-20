@@ -59,8 +59,9 @@ drake_pybind_library(
         ":serialize_pybind",
         ":type_pack",
         ":value_pybind",
+        "//bindings/generated_docstrings:common",
+        "//bindings/generated_docstrings:common_schema",
         "//bindings/pydrake:autodiff_types_pybind",
-        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:math_operators_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/autodiffutils:autodiffutils_py",
@@ -194,7 +195,7 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//:drake_shared_library",
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:common",
     ],
 )
 
@@ -233,7 +234,7 @@ drake_cc_library(
     deps = [
         ":value_pybind",
         "//:drake_shared_library",
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:common",
     ],
 )
 
@@ -414,6 +415,7 @@ generate_pybind_documentation_header(
     name = "deprecation_example_class_documentation_genrule",
     testonly = True,
     out = "test/deprecation_example/example_class_documentation.h",
+    hdr_subdir = "drake/bindings/pydrake/common/test/deprecation_example",
     targets = [":deprecation_example_class"],
 )
 

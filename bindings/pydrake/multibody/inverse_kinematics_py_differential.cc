@@ -1,8 +1,8 @@
 #include <memory>
 #include <vector>
 
+#include "drake/bindings/generated_docstrings/multibody_inverse_kinematics.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/multibody/inverse_kinematics_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/inverse_kinematics/differential_inverse_kinematics.h"
@@ -27,7 +27,8 @@ void DefineDifferentialIkLegacy(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
 
-  constexpr auto& doc = pydrake_doc.drake.multibody;
+  constexpr auto& doc =
+      pydrake_doc_multibody_inverse_kinematics.drake.multibody;
 
   py::module::import("pydrake.systems.framework");
 
@@ -293,7 +294,8 @@ PyClassIngredient<Derived> BindIngredient(const char* class_name,
 void DefineDifferentialIkSystem(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  constexpr auto& doc = pydrake_doc.drake.multibody;
+  constexpr auto& doc =
+      pydrake_doc_multibody_inverse_kinematics.drake.multibody;
 
   constexpr auto& cls_doc = doc.DifferentialInverseKinematicsSystem;
 
@@ -425,7 +427,8 @@ void DefineDifferentialIkSystem(py::module m) {
 void DefineDifferentialIkController(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  constexpr auto& doc = pydrake_doc.drake.multibody;
+  constexpr auto& doc =
+      pydrake_doc_multibody_inverse_kinematics.drake.multibody;
 
   using Class = DifferentialInverseKinematicsController;
   constexpr auto& cls_doc = doc.DifferentialInverseKinematicsController;

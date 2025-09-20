@@ -87,6 +87,7 @@ generate_pybind_documentation_header(
     name = "generate_sample_header",
     testonly = True,
     out = "test/sample_header_documentation.h",
+    hdr_subdir = "drake/tools/workspace/mkdoc_internal/test",
     root_name = "sample_header_doc",
     targets = [
         ":sample_header",

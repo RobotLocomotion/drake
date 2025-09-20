@@ -1,8 +1,8 @@
 #include <memory>
 
+#include "drake/bindings/generated_docstrings/systems_sensors.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"
 #include "drake/systems/sensors/camera_info.h"
 #include "drake/systems/sensors/rgbd_sensor.h"
@@ -21,7 +21,7 @@ using systems::LeafSystem;
 void DefineSensorsRgbd(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::sensors;
-  constexpr auto& doc = pydrake_doc.drake.systems.sensors;
+  constexpr auto& doc = pydrake_doc_systems_sensors.drake.systems.sensors;
 
   auto def_camera_ports = [](auto* ppy_class, auto cls_doc) {
     auto& py_class = *ppy_class;

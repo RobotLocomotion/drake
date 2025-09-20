@@ -43,7 +43,6 @@ drake_pybind_library(
     add_install = False,
     cc_deps = [
         "//bindings/pydrake:autodiff_types_pybind",
-        "//bindings/pydrake:documentation_pybind",
     ],
     cc_so_name = "autodiffutils_test_util",
     cc_srcs = ["autodiffutils_test_util_py.cc"],

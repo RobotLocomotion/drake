@@ -1,9 +1,9 @@
 #include <string>
 
+#include "drake/bindings/generated_docstrings/systems_sensors.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/pixel_types.h"
@@ -17,7 +17,7 @@ using Eigen::Map;
 void DefineSensorsImage(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::sensors;
-  constexpr auto& doc = pydrake_doc.drake.systems.sensors;
+  constexpr auto& doc = pydrake_doc_systems_sensors.drake.systems.sensors;
 
   // Note: for this module's C++ enums we choose not to bind the C++ `to_string`
   // functions as `__str__` in Python. The `enum.Enum` class already provides a

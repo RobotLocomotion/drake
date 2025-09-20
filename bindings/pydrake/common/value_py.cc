@@ -3,10 +3,10 @@
 
 #include "pybind11/eval.h"
 
+#include "drake/bindings/generated_docstrings/common.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/submodules_py.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 
 namespace drake {
@@ -49,7 +49,7 @@ void AddPrimitiveValueInstantiations(py::module m) {
 }  // namespace
 
 void DefineModuleValue(py::module m) {
-  constexpr auto& doc = pydrake_doc.drake;
+  constexpr auto& doc = pydrake_doc_common.drake;
 
   // `AddValueInstantiation` will define methods specific to `T` for
   // `Value<T>`. Since Python is nominally dynamic, these methods are

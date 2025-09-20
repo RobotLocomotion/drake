@@ -1,5 +1,5 @@
+#include "drake/bindings/generated_docstrings/systems_estimators.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/systems/estimators/kalman_filter.h"
 #include "drake/systems/estimators/luenberger_observer.h"
@@ -10,7 +10,7 @@ namespace pydrake {
 PYBIND11_MODULE(estimators, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::estimators;
-  constexpr auto& doc = pydrake_doc.drake.systems.estimators;
+  constexpr auto& doc = pydrake_doc_systems_estimators.drake.systems.estimators;
 
   using drake::systems::Context;
   using drake::systems::LeafSystem;
