@@ -1,6 +1,6 @@
+#include "drake/bindings/generated_docstrings/manipulation_kuka_iiwa.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/manipulation/manipulation_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/builder_life_support_pybind.h"
@@ -24,7 +24,8 @@ using systems::LeafSystem;
 void DefineManipulationKukaIiwa(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::manipulation::kuka_iiwa;
-  constexpr auto& doc = pydrake_doc.drake.manipulation.kuka_iiwa;
+  constexpr auto& doc =
+      pydrake_doc_manipulation_kuka_iiwa.drake.manipulation.kuka_iiwa;
 
   // Constants.
   m.attr("kIiwaArmNumJoints") = kIiwaArmNumJoints;

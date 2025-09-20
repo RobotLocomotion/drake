@@ -1,4 +1,4 @@
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/generated_docstrings/examples_rimless_wheel.h"
 #include "drake/bindings/pydrake/examples/examples_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/rimless_wheel/rimless_wheel.h"
@@ -15,7 +15,8 @@ void DefineExamplesRimlessWheel(py::module m) {
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::examples::rimless_wheel;
-  constexpr auto& doc = pydrake_doc.drake.examples.rimless_wheel;
+  constexpr auto& doc =
+      pydrake_doc_examples_rimless_wheel.drake.examples.rimless_wheel;
 
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar

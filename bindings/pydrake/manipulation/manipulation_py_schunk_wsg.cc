@@ -1,5 +1,5 @@
+#include "drake/bindings/generated_docstrings/manipulation_schunk_wsg.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/manipulation/manipulation_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/manipulation/schunk_wsg/build_schunk_wsg_control.h"
@@ -19,7 +19,8 @@ using systems::Diagram;
 using systems::LeafSystem;
 
 void DefineManipulationSchunkWsg(py::module m) {
-  constexpr auto& doc = pydrake_doc.drake.manipulation.schunk_wsg;
+  constexpr auto& doc =
+      pydrake_doc_manipulation_schunk_wsg.drake.manipulation.schunk_wsg;
 
   {
     using Class = manipulation::schunk_wsg::SchunkWsgPositionController;

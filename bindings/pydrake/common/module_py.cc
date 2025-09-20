@@ -3,12 +3,12 @@
 
 #include "pybind11/eval.h"
 
+#include "drake/bindings/generated_docstrings/common.h"
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/autodiffutils/autodiffutils_py.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/submodules_py.h"
 #include "drake/bindings/pydrake/common/text_logging_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/math/math_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic/symbolic_py.h"
@@ -98,7 +98,7 @@ namespace {
 void InitLowLevelModules(py::module m) {
   m.doc() = "Bindings for //common:common";
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
-  constexpr auto& doc = pydrake_doc.drake;
+  constexpr auto& doc = pydrake_doc_common.drake;
 
   // Morph any DRAKE_ASSERT and DRAKE_DEMAND failures into SystemExit exceptions
   // instead of process aborts.  See RobotLocomotion/drake#5268.

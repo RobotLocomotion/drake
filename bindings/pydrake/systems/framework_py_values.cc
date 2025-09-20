@@ -3,11 +3,11 @@
 #include <sstream>
 #include <string>
 
+#include "drake/bindings/generated_docstrings/systems_framework.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/bus_value.h"
@@ -24,7 +24,7 @@ template <typename T>
 void DoScalarDependentDefinitions(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
-  constexpr auto& doc = pydrake_doc.drake.systems;
+  constexpr auto& doc = pydrake_doc_systems_framework.drake.systems;
 
   // Value types.
   DefineTemplateClassWithDefault<VectorBase<T>>(
@@ -136,7 +136,8 @@ void DoScalarDependentDefinitions(py::module m) {
 
 void DefineBusValue(py::module m) {
   using Class = systems::BusValue;
-  constexpr auto& cls_doc = pydrake_doc.drake.systems.BusValue;
+  constexpr auto& cls_doc =
+      pydrake_doc_systems_framework.drake.systems.BusValue;
   py::class_<Class> cls(m, "BusValue", cls_doc.doc);
   cls  // BR
       .def(py::init<>(), cls_doc.ctor.doc)
