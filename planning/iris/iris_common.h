@@ -55,7 +55,9 @@ class CommonSampledIrisOptions {
 
   CommonSampledIrisOptions() = default;
 
-  /** Number of particles used to estimate the closest collision. */
+  /** Minimum number of particles drawn per inner iteration. Some or all of
+   * these particles, depending on the other algorithm settings, will be used to
+   * find the closest collisions. */
   int num_particles = 1e3;
 
   /** Decision threshold for the unadaptive test. Choosing a small value
