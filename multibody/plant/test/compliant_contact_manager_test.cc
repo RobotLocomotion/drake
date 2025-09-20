@@ -540,10 +540,10 @@ TEST_F(SpheresStackTest, DoCalcDiscreteValues) {
 
   // In this simple setup only positions change since there is no angular
   // velocities nor external torques.
-  plant_->SetFreeBodyPoseInWorldFrame(next_context.get(), *sphere1_,
-                                      RigidTransformd(p_WS1));
-  plant_->SetFreeBodyPoseInWorldFrame(next_context.get(), *sphere2_,
-                                      RigidTransformd(p_WS2));
+  plant_->SetFloatingBaseBodyPoseInWorldFrame(next_context.get(), *sphere1_,
+                                              RigidTransformd(p_WS1));
+  plant_->SetFloatingBaseBodyPoseInWorldFrame(next_context.get(), *sphere2_,
+                                              RigidTransformd(p_WS2));
   plant_->SetFreeBodySpatialVelocity(next_context.get(), *sphere1_, V_WS);
   plant_->SetFreeBodySpatialVelocity(next_context.get(), *sphere2_, V_WS);
 

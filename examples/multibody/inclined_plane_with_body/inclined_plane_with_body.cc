@@ -168,7 +168,7 @@ int do_main() {
       plant.GetBodyByName("BodyB");
   const Vector3<double> p_WoBo_W(-1.0, 0, 1.2);
   const math::RigidTransform<double> X_WB(p_WoBo_W);
-  plant.SetFreeBodyPoseInWorldFrame(&plant_context, bodyB, X_WB);
+  plant.SetFloatingBaseBodyPoseInWorldFrame(&plant_context, bodyB, X_WB);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
   systems::IntegratorBase<double>& integrator =

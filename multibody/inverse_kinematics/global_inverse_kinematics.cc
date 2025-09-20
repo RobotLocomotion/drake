@@ -138,7 +138,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
         solvers::AddRotationMatrixOrthonormalSocpConstraint(&prog_,
                                                             R_WB_[body_idx]);
       }
-      if (body.is_floating()) {
+      if (body.is_floating_base_body()) {
         // This is the floating base case, just add the rotation matrix
         // constraint.
         rotation_generator.AddToProgram(R_WB_[body_idx], &prog_);
@@ -248,7 +248,7 @@ void GlobalInverseKinematics::ReconstructGeneralizedPositionSolutionForBody(
     std::vector<Eigen::Matrix3d>* reconstruct_R_WB) const {
   const RigidBody<double>& body = plant_.get_body(body_idx);
   const Matrix3d R_WC = result.GetSolution(R_WB_[body_idx]);
-  if (body.is_floating()) {
+  if (body.is_floating_base_body()) {
     // p_WBi is the position of the body frame in the world frame.
     const Vector3d p_WBi = result.GetSolution(p_WBo_[body_idx]);
     const math::RotationMatrix<double> normalized_rotmat =
@@ -353,7 +353,7 @@ Eigen::VectorXd GlobalInverseKinematics::ReconstructGeneralizedPositionSolution(
       std::stack<BodyIndex> unvisited_links;
       unvisited_links.push(body_idx);
       BodyIndex parent_idx{};
-      if (plant_.get_body(body_idx).is_floating()) {
+      if (plant_.get_body(body_idx).is_floating_base_body()) {
         parent_idx = plant_.world_body().index();
       } else {
         parent_idx = plant_.get_joint(body_to_joint_map.at(body_idx))
@@ -363,7 +363,7 @@ Eigen::VectorXd GlobalInverseKinematics::ReconstructGeneralizedPositionSolution(
       while (!is_link_visited[parent_idx]) {
         unvisited_links.push(parent_idx);
         // Now update parent_idx
-        if (plant_.get_body(BodyIndex{parent_idx}).is_floating()) {
+        if (plant_.get_body(BodyIndex{parent_idx}).is_floating_base_body()) {
           parent_idx = plant_.world_body().index();
         } else {
           parent_idx =
@@ -619,7 +619,7 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
     throw std::runtime_error(
         "The joint lower bound should be no larger than the upper bound.");
   }
-  if (plant_.get_body(body_index).is_floating()) {
+  if (plant_.get_body(body_index).is_floating_base_body()) {
     throw std::runtime_error(
         "The body is floating, do not use AddJointLimitConstraint(), impose "
         "the bounds on R_WB and p_WB directly.");

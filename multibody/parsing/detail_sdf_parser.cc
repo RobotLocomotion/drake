@@ -1413,9 +1413,10 @@ std::optional<LinkInfo> AddRigidLinkFromSpecification(
   const RigidTransformd X_WL = X_WM * X_ML;
   link_info = LinkInfo{&body, X_WL};
 
-  // Set the initial pose of the free body (only use if the body is indeed
-  // floating).
-  plant->SetDefaultFreeBodyPose(body, X_WL);
+  // Provisionally record the preferred World pose of this link. This will
+  // be ignored unless this link turns out to be a floating base body,
+  // meaning that no user-defined joint connects it to a parent link.
+  plant->SetDefaultFloatingBaseBodyPose(body, X_WL);
 
   const std::set<std::string> supported_geometry_elements{
       "box",       "capsule", "cylinder", "drake:capsule", "drake:ellipsoid",
@@ -2395,7 +2396,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
 // Helper function that computes the default pose of a Frame
 RigidTransformd GetDefaultFramePose(const MultibodyPlant<double>& plant,
                                     const Frame<double>& frame) {
-  const RigidTransformd X_WB = plant.GetDefaultFreeBodyPose(frame.body());
+  const RigidTransformd X_WB =
+      plant.GetDefaultFloatingBaseBodyPose(frame.body());
   const RigidTransformd X_WF = X_WB * frame.GetFixedPoseInBodyFrame();
   return X_WF;
 }
@@ -2411,7 +2413,7 @@ void AddBodiesToInterfaceModel(const MultibodyPlant<double>& plant,
                                const RigidTransformd& X_MW) {
   for (auto index : body_indices) {
     const auto& link = plant.get_body(index);
-    RigidTransformd X_ML = X_MW * plant.GetDefaultFreeBodyPose(link);
+    RigidTransformd X_ML = X_MW * plant.GetDefaultFloatingBaseBodyPose(link);
     interface_model->AddLink({link.name(), ToIgnitionPose3d(X_ML)});
   }
 }
@@ -2493,7 +2495,8 @@ sdf::InterfaceModelPtr ConvertToInterfaceModel(
           sdf::Errors inner_errors =
               graph.ResolveNestedFramePose(X_WL, interface_link.name());
           PropagateErrors(std::move(inner_errors), errors);
-          plant->SetDefaultFreeBodyPose(interface_link, ToRigidTransform(X_WL));
+          plant->SetDefaultFloatingBaseBodyPose(interface_link,
+                                                ToRigidTransform(X_WL));
         }
       };
 

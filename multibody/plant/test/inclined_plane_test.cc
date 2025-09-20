@@ -133,7 +133,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
       RotationMatrix<double>::MakeYRotation(inclined_plane_angle);
   const Vector3<double> p_WoBo_W_initial = R_WA * p_WoBo_A_initial;
   const RigidTransform<double> X_WB_initial(p_WoBo_W_initial);
-  plant.SetFreeBodyPoseInWorldFrame(&plant_context, ball, X_WB_initial);
+  plant.SetFloatingBaseBodyPoseInWorldFrame(&plant_context, ball, X_WB_initial);
 
   Simulator<double> simulator(*diagram, std::move(diagram_context));
 

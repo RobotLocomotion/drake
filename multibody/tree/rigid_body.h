@@ -247,7 +247,7 @@ class RigidBody : public MultibodyElement<T> {
     ThrowIfNotFinalized(__func__);
     // TODO(rpoyner-tri): consider extending the design to allow locking on
     //  non-floating bodies.
-    if (!is_floating()) {
+    if (!is_floating_base_body()) {
       // TODO(jwnimmer-tri) This code is not supposed to be inlined (GSG).
       throw std::logic_error(fmt::format(
           "Attempted to call Lock() on non-floating-base rigid body {}",
@@ -265,7 +265,7 @@ class RigidBody : public MultibodyElement<T> {
     ThrowIfNotFinalized(__func__);
     // TODO(rpoyner-tri): consider extending the design to allow locking on
     //  non-floating bodies.
-    if (!is_floating()) {
+    if (!is_floating_base_body()) {
       // TODO(jwnimmer-tri) This code is not supposed to be inlined (GSG).
       throw std::logic_error(fmt::format(
           "Attempted to call Unlock() on non-floating-base rigid body {}",
@@ -295,18 +295,24 @@ class RigidBody : public MultibodyElement<T> {
   /// index into all associated quantities.
   internal::MobodIndex mobod_index() const { return topology_.mobod_index; }
 
-  /// (Advanced) Returns `true` if this body is granted 6-dofs by a Mobilizer
-  /// and the parent body of this body's associated 6-dof joint is `world`.
+  /// (Advanced) Returns `true` if this body is a _floating base body_, meaning
+  /// it had no explicit joint to a parent body so is mobilized by an
+  /// automatically-added (ephemeral) floating (6 dof) joint to World.
+  ///
   /// @note A floating base body is not necessarily modeled with a quaternion
   /// mobilizer, see has_quaternion_dofs(). Alternative options include a
   /// roll-pitch-yaw (rpy) parametrization of rotations, see
   /// RpyFloatingMobilizer.
+  ///
   /// @throws std::exception if called pre-finalize,
   /// @see MultibodyPlant::Finalize()
-  bool is_floating() const {
+  bool is_floating_base_body() const {
     ThrowIfNotFinalized(__func__);
     return topology_.is_floating_base;
   }
+
+  DRAKE_DEPRECATED("2026-01-01", "Use is_floating_base_body() instead.")
+  bool is_floating() const { return is_floating_base_body(); }
 
   /// (Advanced) If `true`, this body's generalized position coordinates q
   /// include a quaternion, which occupies the first four elements of q. Note
@@ -314,13 +320,13 @@ class RigidBody : public MultibodyElement<T> {
   /// have fewer than 6 dofs or its inboard body could be something other than
   /// World.
   /// @throws std::exception if called pre-finalize
-  /// @see is_floating(), MultibodyPlant::Finalize()
+  /// @see is_floating_base_body(), MultibodyPlant::Finalize()
   bool has_quaternion_dofs() const {
     ThrowIfNotFinalized(__func__);
     return topology_.has_quaternion_dofs;
   }
 
-  /// (Advanced) For floating base bodies (see is_floating()) this method
+  /// (Advanced) For floating base bodies (see is_floating_base_body()),
   /// returns the index of this %RigidBody's first generalized position in the
   /// vector q of generalized position coordinates for a MultibodyPlant model.
   /// Positions q for this %RigidBody are then contiguous starting at this
@@ -330,35 +336,37 @@ class RigidBody : public MultibodyElement<T> {
   /// %RigidBody's orientation.
   /// @throws std::exception if called pre-finalize
   /// @pre this is a floating base body
-  /// @see is_floating(), has_quaternion_dofs(), MultibodyPlant::Finalize()
+  /// @see is_floating_base_body(), has_quaternion_dofs()
+  /// @see MultibodyPlant::Finalize()
   int floating_positions_start() const {
     ThrowIfNotFinalized(__func__);
-    DRAKE_DEMAND(is_floating());
+    DRAKE_DEMAND(is_floating_base_body());
     return topology_.floating_positions_start;
   }
 
-  /// (Advanced) For floating base bodies (see is_floating()) this method
+  /// (Advanced) For floating base bodies (see is_floating_base_body()),
   /// returns the index of this %RigidBody's first generalized velocity in the
   /// vector v of generalized velocities for a MultibodyPlant model. Velocities
   /// v for this %RigidBody are then contiguous starting at this index.
   /// @throws std::exception if called pre-finalize
   /// @pre this is a floating base body
-  /// @see is_floating(), MultibodyPlant::Finalize()
+  /// @see is_floating_base_body(), MultibodyPlant::Finalize()
   int floating_velocities_start_in_v() const {
     ThrowIfNotFinalized(__func__);
-    DRAKE_DEMAND(is_floating());
+    DRAKE_DEMAND(is_floating_base_body());
     return topology_.floating_velocities_start_in_v;
   }
 
   /// Returns a string suffix (e.g. to be appended to the name()) to identify
-  /// the `k`th position in the floating base. `position_index_in_body` must
-  /// be in [0, 7) if `has_quaternion_dofs()` is true, otherwise in [0, 6).
+  /// the `k`th position in the floating base body. `position_index_in_body`
+  /// must be in [0, 7) if `has_quaternion_dofs()` is true, otherwise in [0, 6).
   /// @throws std::exception if called pre-finalize
   /// @pre this is a floating base body
-  /// @see is_floating(), has_quaternion_dofs(), MultibodyPlant::Finalize()
+  /// @see is_floating_base_body(), has_quaternion_dofs()
+  /// @see MultibodyPlant::Finalize()
   std::string floating_position_suffix(int position_index_in_body) const {
     ThrowIfNotFinalized(__func__);
-    DRAKE_DEMAND(is_floating());
+    DRAKE_DEMAND(is_floating_base_body());
     if (has_quaternion_dofs()) {
       DRAKE_DEMAND(0 <= position_index_in_body && position_index_in_body < 7);
     } else {
@@ -371,14 +379,14 @@ class RigidBody : public MultibodyElement<T> {
   }
 
   /// Returns a string suffix (e.g. to be appended to the name()) to identify
-  /// the `k`th velocity in the floating base. `velocity_index_in_body` must
-  /// be in [0,6).
+  /// the `k`th velocity in the floating base body. `velocity_index_in_body`
+  /// must be in [0,6).
   /// @throws std::exception if called pre-finalize
   /// @pre this is a floating base body
-  /// @see is_floating(), MultibodyPlant::Finalize()
+  /// @see is_floating_base_body(), MultibodyPlant::Finalize()
   std::string floating_velocity_suffix(int velocity_index_in_body) const {
     ThrowIfNotFinalized(__func__);
-    DRAKE_DEMAND(is_floating());
+    DRAKE_DEMAND(is_floating_base_body());
     DRAKE_DEMAND(0 <= velocity_index_in_body && velocity_index_in_body < 6);
     DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree()

@@ -81,7 +81,7 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
     // Set the initial plant state.
     VectorXd q = plant_->GetPositions(*context_);
     if (floating) {
-      plant_->SetFreeBodyPoseInWorldFrame(
+      plant_->SetFloatingBaseBodyPoseInWorldFrame(
           context_, plant_->GetBodyByName("iiwa_link_0"),
           math::RigidTransformd(math::RollPitchYawd(0.12, 0.24, 0.35),
                                 Vector3d{-1.2, 2.5, 5.3}));

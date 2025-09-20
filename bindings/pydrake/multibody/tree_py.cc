@@ -10,6 +10,7 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
@@ -338,7 +339,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("scoped_name", &Class::scoped_name, cls_doc.scoped_name.doc)
         .def("body_frame", &Class::body_frame, py_rvp::reference_internal,
             cls_doc.body_frame.doc)
-        .def("is_floating", &Class::is_floating, cls_doc.is_floating.doc)
+        .def("is_floating_base_body", &Class::is_floating_base_body,
+            cls_doc.is_floating_base_body.doc)
         .def("has_quaternion_dofs", &Class::has_quaternion_dofs,
             cls_doc.has_quaternion_dofs.doc)
         .def("floating_positions_start", &Class::floating_positions_start,
@@ -401,6 +403,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetSpatialInertiaInBodyFrame",
             &Class::SetSpatialInertiaInBodyFrame, py::arg("context"),
             py::arg("M_Bo_B"), cls_doc.SetSpatialInertiaInBodyFrame.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("is_floating",
+            WrapDeprecated(
+                cls_doc.is_floating.doc_deprecated, &Class::is_floating),
+            cls_doc.is_floating.doc_deprecated);
+#pragma GCC diagnostic pop
 
     // Aliases for backwards compatibility (dispreferred).
     m.attr("Body") = m.attr("RigidBody");
