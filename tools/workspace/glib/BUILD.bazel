@@ -46,7 +46,7 @@ selects.config_setting_group(
 alias(
     name = "glib",
     actual = select({
-        ":use_pkgconfig": "@pkgconfig_glib",
+        ":use_pkgconfig": "@pkgconfig_glib_internal",
         "//conditions:default": "@module_glib//glib",
     }),
     visibility = ["//visibility:public"],

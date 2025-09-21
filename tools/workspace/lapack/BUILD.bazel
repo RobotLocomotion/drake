@@ -3,7 +3,6 @@ load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("//tools/install:check_is_cc_import.bzl", "check_is_cc_import")
 load("//tools/install:install.bzl", "install", "install_license")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:cc.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:private"])
 
