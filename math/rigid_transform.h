@@ -847,7 +847,13 @@ class RigidTransform {
   /// @param[in] p_BoQ_B position vector from Bo to Q, expressed in frame B.
   /// @retval p_AoQ_A position vector from Ao to Q, expressed in frame A.
   Vector3<T> operator*(const Vector3<T>& p_BoQ_B) const {
-    return p_AoBo_A_ + R_AB_ * p_BoQ_B;
+    Vector3<T> p_AoQ_A;
+    if constexpr (std::is_same_v<T, double>) {
+      internal::ComposeXp(*this, p_BoQ_B.data(), p_AoQ_A.data());
+    } else {
+      p_AoQ_A = p_AoBo_A_ + R_AB_ * p_BoQ_B;
+    }
+    return p_AoQ_A;
   }
 
   /// Multiplies `this` %RigidTransform `X_AB` by the 4-element vector
@@ -864,8 +870,12 @@ class RigidTransform {
   Vector4<T> operator*(const Vector4<T>& vec_B) const {
     if (vec_B(3) == 1 || vec_B(3) == 0) {
       Vector4<T> vec_A;
-      vec_A.head(3) = (p_AoBo_A_ * vec_B(3)) + (R_AB_ * vec_B.head(3));
-      vec_A(3) = vec_B(3);
+      if constexpr (std::is_same_v<T, double>) {
+        internal::ComposeXv4(*this, vec_B.data(), vec_A.data());
+      } else {
+        vec_A.head(3) = (p_AoBo_A_ * vec_B(3)) + (R_AB_ * vec_B.head(3));
+        vec_A(3) = vec_B(3);
+      }
       return vec_A;
     } else {
       ThrowInvalidMultiplyVector4(vec_B);
