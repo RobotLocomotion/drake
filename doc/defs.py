@@ -27,8 +27,9 @@ def verbose():
     return _verbose
 
 
-def symlink_input(filegroup_resource_path, temp_dir, strip_prefix=None,
-                  copy=False):
+def symlink_input(
+    filegroup_resource_path, temp_dir, strip_prefix=None, copy=False
+):
     """Symlinks a rule's input data into a temporary directory.
 
     This is useful both to create a hermetic set of inputs to pass to a
@@ -54,9 +55,9 @@ def symlink_input(filegroup_resource_path, temp_dir, strip_prefix=None,
         orig_name = manifest.Rlocation(name)
         assert os.path.exists(orig_name), name
         dest_name = name
-        for prefix in (strip_prefix or []):
+        for prefix in strip_prefix or []:
             if dest_name.startswith(prefix):
-                dest_name = dest_name[len(prefix):]
+                dest_name = dest_name[len(prefix) :]
                 break
         temp_name = join(temp_dir, dest_name)
         os.makedirs(os.path.dirname(temp_name), exist_ok=True)
@@ -84,11 +85,12 @@ def check_call(args, *, cwd=None):
         print(echo, flush=True)
         proc = subprocess.run(args, cwd=cwd, env=env, stderr=STDOUT)
     else:
-        proc = subprocess.run(args, cwd=cwd, env=env, stderr=STDOUT,
-                              stdout=PIPE, encoding='utf-8')
+        proc = subprocess.run(
+            args, cwd=cwd, env=env, stderr=STDOUT, stdout=PIPE, encoding="utf-8"
+        )
         if proc.returncode != 0:
             print(echo, flush=True)
-            print(proc.stdout, end='', flush=True)
+            print(proc.stdout, end="", flush=True)
     proc.check_returncode()
 
 
@@ -101,8 +103,9 @@ def perl_cleanup_html_output(*, out_dir, extra_perl_statements=None):
     for dirpath, _, filenames in os.walk(out_dir):
         for filename in filenames:
             if filename.endswith(".html"):
-                html_files.append(os.path.relpath(
-                    os.path.join(dirpath, filename), out_dir))
+                html_files.append(
+                    os.path.relpath(os.path.join(dirpath, filename), out_dir)
+                )
 
     # Figure out what to do.
     default_perl_statements = [
@@ -111,21 +114,22 @@ def perl_cleanup_html_output(*, out_dir, extra_perl_statements=None):
     ]
     perl_statements = default_perl_statements + (extra_perl_statements or [])
     for x in perl_statements:
-        assert x.endswith(';'), x
+        assert x.endswith(";"), x
 
     # Do it.
     while html_files:
         # Work in batches of 100, so we don't overflow the argv limit.
         first, html_files = html_files[:100], html_files[100:]
-        check_call(["perl", "-pi", "-e", "".join(perl_statements)] + first,
-                   cwd=out_dir)
+        check_call(
+            ["perl", "-pi", "-e", "".join(perl_statements)] + first, cwd=out_dir
+        )
 
 
 def _call_build(*, build, out_dir):
     """Calls build() into out_dir, while also supplying a temp_dir."""
     with tempfile.TemporaryDirectory(
-            dir=os.environ.get("TEST_TMPDIR"),
-            prefix="doc_builder_temp_") as temp_dir:
+        dir=os.environ.get("TEST_TMPDIR"), prefix="doc_builder_temp_"
+    ) as temp_dir:
         return build(out_dir=out_dir, temp_dir=temp_dir)
 
 
@@ -173,7 +177,8 @@ def _do_preview(*, build, subdir, port):
             symlink_input(
                 "drake/doc/header_and_footer_images.txt",
                 strip_prefix=["drake/doc/"],
-                temp_dir=scratch)
+                temp_dir=scratch,
+            )
         os.chdir(scratch)
         print(f"The files have temporarily been generated into {scratch}")
         print()
@@ -222,8 +227,9 @@ def _do_generate(*, build, out_dir, on_error):
     print("... done")
 
 
-def main(*, build, subdir, description, supports_modules=False,
-         supports_quick=False):
+def main(
+    *, build, subdir, description, supports_modules=False, supports_quick=False
+):
     """Reusable main() function for documentation binaries; processes
     command-line arguments and generates documentation.
 
@@ -238,55 +244,69 @@ def main(*, build, subdir, description, supports_modules=False,
     parser = argparse.ArgumentParser(description=description)
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
-        "--serve", action='store_true',
-        help="Serve the documentation on the given PORT for easy preview.")
+        "--serve",
+        action="store_true",
+        help="Serve the documentation on the given PORT for easy preview.",
+    )
     group.add_argument(
-        "--out_dir", type=str, metavar="DIR",
+        "--out_dir",
+        type=str,
+        metavar="DIR",
         help="Generate the documentation to the given output directory."
         " The DIR must be an absolute path."
         " If DIR already exists, then it must be empty."
         " (For regression testing, the DIR can be the magic value <test>,"
-        " in which case a $TEST_TMPDIR subdir will be used.)")
+        " in which case a $TEST_TMPDIR subdir will be used.)",
+    )
     parser.add_argument(
-        "--port", type=int, metavar="PORT", default=8000,
-        help="Use a non-default PORT when serving for preview.")
+        "--port",
+        type=int,
+        metavar="PORT",
+        default=8000,
+        help="Use a non-default PORT when serving for preview.",
+    )
     parser.add_argument(
-        "--verbose", action="store_true",
-        help="Echo detailed commands, progress, etc. to the console")
+        "--verbose",
+        action="store_true",
+        help="Echo detailed commands, progress, etc. to the console",
+    )
     if supports_modules:
         parser.add_argument(
-            "module", nargs="*",
+            "module",
+            nargs="*",
             help="Limit the generated documentation to only these modules and "
             "their children.  When none are provided, all will be generated. "
             "For example, specify drake.math or drake/math for the C++ "
-            "module, or pydrake.math or pydrake/math for the Python module.")
+            "module, or pydrake.math or pydrake/math for the Python module.",
+        )
     if supports_quick:
         parser.add_argument(
-            "--quick", action="store_true", default=False,
+            "--quick",
+            action="store_true",
+            default=False,
             help="Omit from the output items that are slow to generate. "
-            "This yields a faster preview, but the output will be incomplete.")
+            "This yields a faster preview, but the output will be incomplete.",
+        )
     args = parser.parse_args()
     if args.verbose:
         global _verbose
         _verbose = True
     curried_build = build
     if supports_modules:
-        canonicalized_modules = [
-            x.replace('/', '.')
-            for x in args.module
-        ]
+        canonicalized_modules = [x.replace("/", ".") for x in args.module]
         curried_build = functools.partial(
-            curried_build, modules=canonicalized_modules)
+            curried_build, modules=canonicalized_modules
+        )
     if supports_quick:
-        curried_build = functools.partial(
-            curried_build, quick=args.quick)
+        curried_build = functools.partial(curried_build, quick=args.quick)
     if args.out_dir is None:
         assert args.serve
         _do_preview(build=curried_build, subdir=subdir, port=args.port)
     else:
-        _do_generate(build=curried_build, out_dir=args.out_dir,
-                     on_error=parser.error)
+        _do_generate(
+            build=curried_build, out_dir=args.out_dir, on_error=parser.error
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
