@@ -118,6 +118,18 @@ for further details.
 Drake also defines a number of CMake options to control different facets of
 the build.
 
+Adjusting installation:
+
+* `DRAKE_INSTALL_JAVA` (default `ON`). When `OFF`, does not install Java-based
+  tools (currently only the Java lcmtypes). Setting to `OFF` might be helpful to
+  avoid depending on a JDK during the build.
+* `DRAKE_INSTALL_PYTHON` (default `ON`). When `OFF`, does not install
+  Python-based tools (`pydrake`, `pybind11` headers, tutorials, and Python
+  lcmtypes). Setting to `OFF` might be helpful to avoid spending time compiling
+  code that's not needed.
+  * Note that regardless of the `DRAKE_INSTALL_PYTHON` option, a working Python
+    interpreter is still required to build Drake.
+
 Adjusting open-source dependencies:
 
 * `WITH_USER_EIGEN` (default `ON`). When `ON`, uses `find_package(Eigen3)`
@@ -163,9 +175,6 @@ Adjusting open-source dependencies:
 * `WITH_LCM_RUNTIME` (default `ON`). When `OFF`, the LGPL-licensed LCM runtime
   library will be not installed alongside Drake. See  `DrakeLcm::available()` to
   retrieve this setting at runtime.
-* `DRAKE_INSTALL_JAVA` (default `ON`). When `OFF`, does not install Java-based
-  tools (currently only the Java lcmtypes). Setting to `OFF` might be helpful to
-  avoid depending on a JDK during the build.
 
 Adjusting closed-source (commercial) software dependencies:
 

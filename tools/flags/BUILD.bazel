@@ -331,6 +331,14 @@ bool_flag(
     build_setting_default = True,
 )
 
+# When False, Drake's Python-related software (i.e., pydrake, pybind11 headers,
+# tutorials, and Python lcmtypes) will not be installed. (This might be helpful
+# to avoid spending time compiling code that's not needed.)
+bool_flag(
+    name = "install_python",
+    build_setting_default = True,
+)
+
 # -----------------------------------------------------------------------------
 
 add_lint_tests()
