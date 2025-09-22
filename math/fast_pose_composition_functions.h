@@ -44,9 +44,9 @@ void ComposeRinvR(const RotationMatrix<double>& R_BA,
 /* Composes a RotationMatrix<double> with a 3-element vector, resulting in a new
 3-element vector.
 
-It is OK for v_A to overlap with one or both inputs. */
-void ComposeRv3(const RotationMatrix<double>& R_AB, const double* v_B,
-                double* v_A);
+v_A MUST NOT overlap with R_AB or v_B. */
+void ComposeRv3(const RotationMatrix<double>& R_AB, const double v_B[3],
+                double v_A[3]);
 
 /* Composes two RigidTransform<double> objects as quickly as possible, resulting
 in a new RigidTransform.
@@ -79,9 +79,9 @@ in a new 3-element position vector.
 @note This function is specialized for RigidTransforms and is not just a matrix
 multiply.
 
-It is OK for p_AoQ_A to overlap with one or both inputs. */
-void ComposeXp(const RigidTransform<double>& X_AB, const double* p_BoQ_B,
-               double* p_AoQ_A);
+p_AoQ_A MUST NOT overlap with X_AB or p_BoQ_B. */
+void ComposeXp(const RigidTransform<double>& X_AB, const double p_BoQ_B[3],
+               double p_AoQ_A[3]);
 
 /* Composes a RigidTransform<double> with a 4-element vector, resulting in a new
 4-element vector.
@@ -89,9 +89,9 @@ void ComposeXp(const RigidTransform<double>& X_AB, const double* p_BoQ_B,
 @note This function is specialized for RigidTransforms and is not just a matrix
 multiply.
 
-It is OK for vec_A to overlap with one or both inputs. */
-void ComposeXv4(const RigidTransform<double>& X_AB, const double* vec_B,
-                double* vec_A);
+vec_A MUST NOT overlap with X_AB or vec_B. */
+void ComposeXv4(const RigidTransform<double>& X_AB, const double vec_B[4],
+                double vec_A[4]);
 
 }  // namespace internal
 }  // namespace math

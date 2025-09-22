@@ -148,42 +148,34 @@ TEST_P(FastPoseCompositionFunctions, ComposeRR) {
 TEST_P(FastPoseCompositionFunctions, ComposeRv3) {
   const Param& param = GetParam();
 
-  // We have three options for input / output objects.
-  RotationMatrixd R_A = MakeA().rotation();
-  RotationMatrixd R_B = MakeB().rotation();
-  RotationMatrixd R_O;
+  DRAKE_DEMAND(param.args.at(0) == 'A');
 
-  Vector3<double> v_A = MakeA().translation();
-  Vector3<double> v_B = MakeB().translation();
-  Vector3<double> v_O = Vector3<double>::Zero();
+  const RotationMatrixd R_A = MakeA().rotation();
+
+  const Vector3<double> v_A = MakeA().translation();
+  const Vector3<double> v_B = MakeB().translation();
+  const Vector3<double> v_O = Vector3<double>::Zero();
 
   // Choose which arguments we want to pass in this instance.
-  auto r_lookup = [&R_A, &R_B, &R_O](char abo) -> RotationMatrixd* {
-    if (abo == 'A') return &R_A;
-    if (abo == 'B') return &R_B;
-    if (abo == 'O') return &R_O;
+  auto v_lookup = [&v_A, &v_B, &v_O](char abo) -> const Vector3<double>& {
+    if (abo == 'A') return v_A;
+    if (abo == 'B') return v_B;
+    if (abo == 'O') return v_O;
     DRAKE_UNREACHABLE();
   };
-  auto v_lookup = [&v_A, &v_B, &v_O](char abo) -> Vector3<double>* {
-    if (abo == 'A') return &v_A;
-    if (abo == 'B') return &v_B;
-    if (abo == 'O') return &v_O;
-    DRAKE_UNREACHABLE();
-  };
-  const RotationMatrixd* const arg1 = r_lookup(param.args.at(0));
-  const Vector3<double>* const arg2 = v_lookup(param.args.at(1));
-  Vector3<double>* const arg3 = v_lookup(param.args.at(2));
+  const RotationMatrixd& arg1 = R_A;
+  const Vector3<double> arg2 = v_lookup(param.args.at(1));
+  Vector3<double> arg3 = Vector3<double>::Zero();
 
-  // We must prepare the answer prior to calling the function. Some calls will
-  // alias their input and output.
-  DRAKE_DEMAND(param.args.at(0) == 'A');
-  const Vector3<double> expected = MakeA().rotation().matrix() * *arg2;
+  // Note that we do not allow aliasing between arg2 and arg3.
+
+  const Vector3<double> expected = arg1.matrix() * arg2;
 
   // Call the function under test.
-  ComposeRv3(*arg1, arg2->data(), arg3->data());
+  ComposeRv3(arg1, arg2.data(), arg3.data());
 
   // Check the answer.
-  EXPECT_TRUE(CompareMatrices(*arg3, expected));
+  EXPECT_TRUE(CompareMatrices(arg3, expected));
 }
 
 TEST_P(FastPoseCompositionFunctions, ComposeXX) {
@@ -222,51 +214,42 @@ TEST_P(FastPoseCompositionFunctions, ComposeXX) {
 TEST_P(FastPoseCompositionFunctions, ComposeXp) {
   const Param& param = GetParam();
 
-  // We have three options for input / output objects.
-  RigidTransformd X_A = MakeA();
-  RigidTransformd X_B = MakeB();
-  RigidTransformd X_O;
+  DRAKE_DEMAND(param.args.at(0) == 'A');
 
-  Vector3<double> p_A = MakeA().translation();
-  Vector3<double> p_B = MakeB().translation();
-  Vector3<double> p_O = Vector3<double>::Zero();
+  const RigidTransformd X_A = MakeA();
+
+  const Vector3<double> p_A = MakeA().translation();
+  const Vector3<double> p_B = MakeB().translation();
+  const Vector3<double> p_O = Vector3<double>::Zero();
 
   // Choose which arguments we want to pass in this instance.
-  auto x_lookup = [&X_A, &X_B, &X_O](char abo) -> RigidTransformd* {
-    if (abo == 'A') return &X_A;
-    if (abo == 'B') return &X_B;
-    if (abo == 'O') return &X_O;
+  auto p_lookup = [&p_A, &p_B, &p_O](char abo) -> const Vector3<double>& {
+    if (abo == 'A') return p_A;
+    if (abo == 'B') return p_B;
+    if (abo == 'O') return p_O;
     DRAKE_UNREACHABLE();
   };
-  auto p_lookup = [&p_A, &p_B, &p_O](char abo) -> Vector3<double>* {
-    if (abo == 'A') return &p_A;
-    if (abo == 'B') return &p_B;
-    if (abo == 'O') return &p_O;
-    DRAKE_UNREACHABLE();
-  };
-  const RigidTransformd* const arg1 = x_lookup(param.args.at(0));
-  const Vector3<double>* const arg2 = p_lookup(param.args.at(1));
-  Vector3<double>* const arg3 = p_lookup(param.args.at(2));
+  const RigidTransformd& arg1 = X_A;
+  const Vector3<double>& arg2 = p_lookup(param.args.at(1));
+  Vector3<double> arg3 = Vector3<double>::Zero();
 
-  // We must prepare the answer prior to calling the function. Some calls will
-  // alias their input and output.
-  DRAKE_DEMAND(param.args.at(0) == 'A');
-  const Vector3<double> expected = MakeA().GetAsIsometry3() * *arg2;
+  // Note that we do not allow aliasing between arg2 and arg3.
+
+  const Vector3<double> expected = arg1.GetAsIsometry3() * arg2;
 
   // Call the function under test.
-  ComposeXp(*arg1, arg2->data(), arg3->data());
+  ComposeXp(arg1, arg2.data(), arg3.data());
 
   // Check the answer.
-  EXPECT_TRUE(CompareMatrices(*arg3, expected));
+  EXPECT_TRUE(CompareMatrices(arg3, expected));
 }
 
 TEST_P(FastPoseCompositionFunctions, ComposeXv4) {
   const Param& param = GetParam();
 
-  // We have three options for input / output objects.
-  RigidTransformd X_A = MakeA();
-  RigidTransformd X_B = MakeB();
-  RigidTransformd X_O;
+  DRAKE_DEMAND(param.args.at(0) == 'A');
+
+  const RigidTransformd X_A = MakeA();
 
   // Reuse param.inverse to select the last element of the vector.
   auto make_v4 = [](const Vector3<double>& v3, const bool inverse) {
@@ -276,37 +259,30 @@ TEST_P(FastPoseCompositionFunctions, ComposeXv4) {
     return v4;
   };
 
-  Vector4<double> v_A = make_v4(MakeA().translation(), param.inverse);
-  Vector4<double> v_B = make_v4(MakeB().translation(), param.inverse);
-  Vector4<double> v_O = make_v4(Vector3<double>::Zero(), param.inverse);
+  const Vector4<double> v_A = make_v4(MakeA().translation(), param.inverse);
+  const Vector4<double> v_B = make_v4(MakeB().translation(), param.inverse);
+  const Vector4<double> v_O = make_v4(Vector3<double>::Zero(), param.inverse);
 
   // Choose which arguments we want to pass in this instance.
-  auto x_lookup = [&X_A, &X_B, &X_O](char abo) -> RigidTransformd* {
-    if (abo == 'A') return &X_A;
-    if (abo == 'B') return &X_B;
-    if (abo == 'O') return &X_O;
+  auto v_lookup = [&v_A, &v_B, &v_O](char abo) -> const Vector4<double>& {
+    if (abo == 'A') return v_A;
+    if (abo == 'B') return v_B;
+    if (abo == 'O') return v_O;
     DRAKE_UNREACHABLE();
   };
-  auto v_lookup = [&v_A, &v_B, &v_O](char abo) -> Vector4<double>* {
-    if (abo == 'A') return &v_A;
-    if (abo == 'B') return &v_B;
-    if (abo == 'O') return &v_O;
-    DRAKE_UNREACHABLE();
-  };
-  const RigidTransformd* const arg1 = x_lookup(param.args.at(0));
-  const Vector4<double>* const arg2 = v_lookup(param.args.at(1));
-  Vector4<double>* const arg3 = v_lookup(param.args.at(2));
+  const RigidTransformd& arg1 = X_A;
+  const Vector4<double>& arg2 = v_lookup(param.args.at(1));
+  Vector4<double> arg3 = Vector4<double>::Zero();
 
-  // We must prepare the answer prior to calling the function. Some calls will
-  // alias their input and output.
-  DRAKE_DEMAND(param.args.at(0) == 'A');
-  const Vector4<double> expected = MakeA().GetAsMatrix4() * *arg2;
+  // Note that we do not allow aliasing between arg2 and arg3.
+
+  const Vector4<double> expected = arg1.GetAsMatrix4() * arg2;
 
   // Call the function under test.
-  ComposeXv4(*arg1, arg2->data(), arg3->data());
+  ComposeXv4(arg1, arg2.data(), arg3.data());
 
   // Check the answer.
-  EXPECT_TRUE(CompareMatrices(*arg3, expected));
+  EXPECT_TRUE(CompareMatrices(arg3, expected));
 }
 
 }  // namespace

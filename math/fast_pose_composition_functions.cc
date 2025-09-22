@@ -862,10 +862,9 @@ void ComposeRinvRImpl(const double* R_BA, const double* R_BC, double* R_AC) {
 }
 
 void ComposeRv3Impl(const double* R_AB, const double* v_B, double* v_A) {
+  DRAKE_ASSERT(v_B != nullptr);
   DRAKE_ASSERT(v_A != nullptr);
-  double v_A_temp[3];  // Protect from overlap with inputs.
-  ComposeRv3NoAlias(R_AB, v_B, v_A_temp);
-  std::copy(v_A_temp, v_A_temp + 3, v_A);
+  ComposeRv3NoAlias(R_AB, v_B, v_A);
 }
 
 void ComposeXXImpl(const double* X_AB, const double* X_BC, double* X_AC) {
@@ -883,17 +882,15 @@ void ComposeXinvXImpl(const double* X_BA, const double* X_BC, double* X_AC) {
 }
 
 void ComposeXpImpl(const double* X_AB, const double* p_BoQ_B, double* p_AoQ_A) {
+  DRAKE_ASSERT(p_BoQ_B != nullptr);
   DRAKE_ASSERT(p_AoQ_A != nullptr);
-  double p_AoQ_A_temp[3];  // Protect from overlap with inputs.
-  ComposeXpNoAlias(X_AB, p_BoQ_B, p_AoQ_A_temp);
-  std::copy(p_AoQ_A_temp, p_AoQ_A_temp + 3, p_AoQ_A);
+  ComposeXpNoAlias(X_AB, p_BoQ_B, p_AoQ_A);
 }
 
 void ComposeXv4Impl(const double* X_AB, const double* vec_B, double* vec_A) {
+  DRAKE_ASSERT(vec_B != nullptr);
   DRAKE_ASSERT(vec_A != nullptr);
-  double vec_A_temp[4];  // Protect from overlap with inputs.
-  ComposeXv4NoAlias(X_AB, vec_B, vec_A_temp);
-  std::copy(vec_A_temp, vec_A_temp + 4, vec_A);
+  ComposeXv4NoAlias(X_AB, vec_B, vec_A);
 }
 
 #endif  // HWY_MAX_BYTES
@@ -977,8 +974,8 @@ void ComposeRinvR(const RotationMatrix<double>& R_BA,
       GetRawData(R_BA), GetRawData(R_BC), GetRawData(R_AC));
 }
 
-void ComposeRv3(const RotationMatrix<double>& R_AB, const double* v_B,
-                double* v_A) {
+void ComposeRv3(const RotationMatrix<double>& R_AB, const double v_B[3],
+                double v_A[3]) {
   LateBoundFunction<ChooseBestComposeRv3>::Call(GetRawData(R_AB), v_B, v_A);
 }
 
@@ -996,14 +993,14 @@ void ComposeXinvX(const RigidTransform<double>& X_BA,
       GetRawData(X_BA), GetRawData(X_BC), GetRawData(X_AC));
 }
 
-void ComposeXp(const RigidTransform<double>& X_AB, const double* p_BoQ_B,
-               double* p_AoQ_A) {
+void ComposeXp(const RigidTransform<double>& X_AB, const double p_BoQ_B[3],
+               double p_AoQ_A[3]) {
   LateBoundFunction<ChooseBestComposeXp>::Call(GetRawData(X_AB), p_BoQ_B,
                                                p_AoQ_A);
 }
 
-void ComposeXv4(const RigidTransform<double>& X_AB, const double* vec_B,
-                double* vec_A) {
+void ComposeXv4(const RigidTransform<double>& X_AB, const double vec_B[4],
+                double vec_A[4]) {
   LateBoundFunction<ChooseBestComposeXv4>::Call(GetRawData(X_AB), vec_B, vec_A);
 }
 
