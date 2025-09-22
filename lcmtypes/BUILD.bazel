@@ -7,10 +7,6 @@ load(
     "drake_transitive_installed_hdrs_filegroup",
 )
 load(
-    "//tools/skylark:drake_java.bzl",
-    "drake_java_binary",
-)
-load(
     "//tools/skylark:drake_lcm.bzl",
     "drake_lcm_cc_library",
     "drake_lcm_java_library",
@@ -20,6 +16,10 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_library",
     "drake_py_test",
+)
+load(
+    "//tools/skylark:java.bzl",
+    "java_binary",
 )
 load("//tools/workspace:generate_file.bzl", "generate_file")
 load(":defs.bzl", "ALL_LCM_SRCS")
@@ -297,7 +297,7 @@ LCMTYPES_CC = [
 
 # This rule should list every LCM type that is known to Drake or its external
 # dependencies.
-drake_java_binary(
+java_binary(
     name = "drake-lcm-spy",
     main_class = "lcm.spy.Spy",
     visibility = ["//visibility:private"],
