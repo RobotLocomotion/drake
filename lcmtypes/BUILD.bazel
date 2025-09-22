@@ -342,12 +342,23 @@ config_setting(
     flag_values = {"//tools/flags:install_java": "True"},
 )
 
+config_setting(
+    name = "flag_install_python_true",
+    flag_values = {
+        "//tools/flags:install_python": "True",
+    },
+)
+
 install(
     name = "install",
     deps = [
         ":install_lcmtypes_cc",
-        ":install_lcmtypes_python",
     ] + select({
+        ":flag_install_python_true": [
+            ":install_lcmtypes_python",
+        ],
+        "//conditions:default": [],
+    }) + select({
         ":flag_install_java_true": [
             ":install_lcmtypes_java",
         ],
