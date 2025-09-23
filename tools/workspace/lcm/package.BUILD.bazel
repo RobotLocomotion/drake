@@ -142,6 +142,9 @@ cc_binary(
     deps = [":lcm"],
 )
 
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
 cc_binary(
     name = "lcm-gen",
     srcs = [
