@@ -446,7 +446,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
           } else {
             internal::AddTangentToPolytope(
                 current_ellipsoid, nearest_particle,
-                options.sampled_iris_options.configuration_space_margin, &A, &b,
+                options.sampled_iris_options.configuration_space_margin,
+                options.sampled_iris_options.relax_margin, &A, &b,
                 &current_num_faces);
           }
           ++hyperplanes_added;

@@ -10,7 +10,7 @@ def _collect_cc_header_info(targets):
 
             for define in compilation_context.defines.to_list():
                 compile_flags.append("-D{}".format(define))
-            for system_include in compilation_context.system_includes.to_list():  # noqa
+            for system_include in compilation_context.system_includes.to_list():
                 system_include = system_include or "."
                 compile_flags.append("-isystem{}".format(system_include))
             for include in compilation_context.includes.to_list():

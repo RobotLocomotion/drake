@@ -1,4 +1,3 @@
-default-jre
 jupyter-notebook
 libblas-dev
 libegl1

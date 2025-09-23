@@ -162,5 +162,9 @@ void DrakeLcmLog::OnHandleSubscriptionsError(const std::string& error_message) {
   throw std::runtime_error(error_message);
 }
 
+bool DrakeLcmLog::available() {
+  return true;
+}
+
 }  // namespace lcm
 }  // namespace drake

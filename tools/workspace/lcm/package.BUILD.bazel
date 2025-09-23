@@ -2,8 +2,7 @@
 
 load("@drake//tools/install:install.bzl", "install")
 load("@drake//tools/skylark:cc.bzl", "cc_binary", "cc_library")
-load("@drake//tools/skylark:drake_java.bzl", "drake_java_binary")
-load("@drake//tools/skylark:java.bzl", "java_library")
+load("@drake//tools/skylark:java.bzl", "java_binary", "java_library")
 load("@drake//tools/skylark:py.bzl", "py_library")
 load(
     "@drake//tools/workspace:generate_export_header.bzl",
@@ -253,13 +252,13 @@ java_library(
     ],
 )
 
-drake_java_binary(
+java_binary(
     name = "lcm-logplayer-gui",
     main_class = "lcm.logging.LogPlayer",
     runtime_deps = [":lcm-java"],
 )
 
-drake_java_binary(
+java_binary(
     name = "lcm-spy",
     jvm_flags = [
         # These flags are copied from the lcm/lcm-java/lcm-spy.sh.in.
