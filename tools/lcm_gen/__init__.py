@@ -987,7 +987,13 @@ def main():
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("src", nargs="+", help="*.lcm source file(s)")
     parser.add_argument(
-        "--outdir",
+        "--cpp",
+        action="count",
+        help="Ignored for backwards compatiblity",
+    )
+    parser.add_argument(
+        "--cpp-hpath",
+        dest="outdir",
         required=True,
         type=pathlib.Path,
         help="Directory where output files should be written",
@@ -1004,7 +1010,8 @@ def main():
         struct = Parser.parse(filename=src)
         generator = CppGen(struct=struct)
         content = generator.generate()
-        path = args.outdir / f"{struct.typ.name}.hpp"
+        package_dir = (struct.typ.package or "").replace(".", "/")
+        path = args.outdir / package_dir / f"{struct.typ.name}.hpp"
         path.write_text(content, encoding="utf-8")
 
 

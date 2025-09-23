@@ -96,7 +96,7 @@ genrule(
         "test/romeo/november.hpp",
     ],
     cmd = " ".join([
-        "$(execpath @lcm//:lcm-gen)",
+        "$(execpath @lcm_internal//lcmgen:lcm-gen)",
         "--cpp",
         "--cpp-std=c++11",
         "--use-quotes-for-includes",
@@ -106,7 +106,7 @@ genrule(
         "$(execpath :test/romeo/november.lcm)",
     ]),
     tools = [
-        "@lcm//:lcm-gen",
+        "@lcm_internal//lcmgen:lcm-gen",
     ],
 )
 
