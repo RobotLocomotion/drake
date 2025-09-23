@@ -1,7 +1,0 @@
-package package1.package2;
-
-struct lcmt_foo
-{
-  int64_t utime;
-  package1.package2.lcmt_bar bar;
-}

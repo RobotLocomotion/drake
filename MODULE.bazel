@@ -270,6 +270,7 @@ use_repo(
     "implib_so_internal",
     "ipopt_internal",
     "lapack_internal",
+    "lcm_internal",
     "libjpeg_turbo_internal",
     "libpng_internal",
     "libtiff_internal",
