@@ -11,41 +11,45 @@ import subprocess
 
 
 _REPOSITORIES_WITH_NO_METADATA = [
-    # Bazel modules.
-    "eigen",
-    "fmt",
-    "spdlog",
-    "module_eigen",
-    "module_fmt",
-    "module_spdlog",
-    "pkgconfig_eigen",
-    "pkgconfig_fmt",
-    "pkgconfig_spdlog",
+    # Bazel modules (or module extentions thereof).
+    "apple_support",
+    "bazel_skylib",
+    "bazel_tools",
+    "buildifier_prebuilt",
+    "gflags",
+    "google_benchmark",
+    "googletest",
+    "gurobi",
+    "lcm_maven",
+    "llvm",
+    "nasm",
     "platforms",
     "rules_cc",
     "rules_java",
+    "rules_jvm_external",
     "rules_license",
     "rules_python",
     "rules_rust",
     "rules_shell",
     # Host libraries / binaries.
-    "gfortran",
-    "glib",
-    "gurobi",
-    "lapack",
-    "libblas",
-    "liblapack",
-    "nasm",
-    "net_sf_jchart2d_internal",
-    "opencl",
-    "org_apache_xmlgraphics_commons_internal",
-    "x11",
-    "zlib",
-    # Vendored.
-    "doxygen",
+    "gfortran_internal",
+    # Only ever upgraded by hand.
+    "doxygen_internal",
     "snopt",
     "spgrid_internal",
 ]
+
+
+def _expect_to_have_metadata(apparent_name):
+    if apparent_name.startswith("crate_"):
+        # Handled by the over-arching "crate_universe" upgrade.
+        return False
+    if apparent_name.startswith("module_"):
+        # Bazel modules are handled by Renovate, not Drake tools.
+        return False
+    if apparent_name in _REPOSITORIES_WITH_NO_METADATA:
+        return False
+    return True
 
 
 def _check_output(args):
@@ -80,13 +84,6 @@ def read_repository_metadata(repositories=None):
             apparent_name = line[1:].split("/")[0]
             repositories.add(apparent_name)
 
-        # The bazel query only finds build-time dependencies.  Drake also
-        # requires some load-time dependencies such as starlark libraries,
-        # compilers, etc.  Here, we add by hand those we want to be archived
-        # and upgraded.
-        repositories.add("bazel_skylib")
-        repositories.add("com_github_nelhage_rules_boost_internal")
-
     # Make sure all of the repository_rule results are up-to-date.
     subprocess.check_call(["bazel", "fetch", "//..."])
 
@@ -103,16 +100,18 @@ def read_repository_metadata(repositories=None):
                 with open(json_path, "r") as f:
                     data = json.load(f)
                     result[data["name"]] = data
+                found = True
             except IOError:
                 pass
             if found:
                 break
 
-    # Yell when something went wrong.
-    if not found and apparent_name not in _REPOSITORIES_WITH_NO_METADATA:
-        logging.warn(f"Missing metadata for {apparent_name}")
-    elif found and apparent_name in _REPOSITORIES_WITH_NO_METADATA:
-        logging.warn(f"Unexpectedly found metadata for {name}")
+        # Yell when something went wrong.
+        expect_to_find = _expect_to_have_metadata(apparent_name)
+        if expect_to_find and not found:
+            logging.warn(f"Missing metadata for {apparent_name}")
+        elif not expect_to_find and found:
+            logging.warn(f"Unexpectedly found metadata for {name}")
 
     # Add 'magic' metadata for repositories that don't/can't generate it the
     # usual way.

@@ -8,13 +8,9 @@ def _impl(repo_ctx):
     # later on, if and only if the library is actually used.
     setup_pkg_config_repository(repo_ctx)
 
-spdlog_repository = repository_rule(
+pkgconfig_glib_internal_repository = repository_rule(
     attrs = {
-        "modname": attr.string(default = "spdlog"),
-        # Offered for backwards compatibility, but ignored.
-        "mirrors": attr.string_list_dict(),
-        # TODO(jwnimmer-tri) Remove this line when we drop WORKSPACE support.
-        "extra_defines": attr.string_list(default = ["HAVE_SPDLOG"]),
+        "modname": attr.string(default = "glib-2.0"),
     },
     local = True,
     configure = True,

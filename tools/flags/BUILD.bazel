@@ -179,6 +179,23 @@ string_flag(
     ],
 )
 
+# The :glib_repo flag configures where Drake obtains @glib from.
+# The public dependency alias is `@drake//tools/workspace/glib` or use the
+# drake_dep_repositories() module extension at //tools/workspace:default.bzl.
+string_flag(
+    name = "glib_repo",
+    build_setting_default = "default",
+    values = [
+        # The default is based on :private_runtime_repo_default -- "internal"
+        # maps to "source" and "external" maps to "pkgconfig".
+        "default",
+        # Compile glib from source.
+        "source",
+        # Find glib via pkg-config.
+        "pkgconfig",
+    ],
+)
+
 # The :lapack_repo flag configures where Drake obtains @lapack from.
 # The public dependency alias is `@drake//tools/workspace/lapack` or use the
 # drake_dep_repositories() module extension at //tools/workspace:default.bzl.
@@ -199,22 +216,25 @@ string_flag(
     ],
 )
 
-# The :glib_repo flag configures where Drake obtains @glib from.
-# The public dependency alias is `@drake//tools/workspace/glib` or use the
+# The :opencl_repo flag configures where Drake obtains @opencl from.
+# The public dependency alias is `@drake//tools/workspace/opencl` or use the
 # drake_dep_repositories() module extension at //tools/workspace:default.bzl.
 string_flag(
-    name = "glib_repo",
+    name = "opencl_repo",
     build_setting_default = "default",
     values = [
-        # The default is based on :private_runtime_repo_default -- "internal"
-        # maps to "source" and "external" maps to "pkgconfig".
+        # The default on Apple is "framework". The default on Linux is
+        # "pkgconfig".
         "default",
-        # Compile glib from source.
-        "source",
-        # Find glib via pkg-config.
+        # Find OpenCL via pkg-config.
         "pkgconfig",
+        # Use Apple's OpenCL framework.
+        "framework",
     ],
 )
+
+# TODO(jwnimmer-tri) There is an "libx11" module in BCR, but I haven't been able
+# to get it to work yet, so for the moment we don't offer it as a module option.
 
 # The :zlib_repo flag configures where Drake obtains @zlib from.
 # The public dependency alias is `@drake//tools/workspace/zlib` or use the
