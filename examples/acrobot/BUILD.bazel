@@ -98,7 +98,7 @@ drake_cc_library(
     hdrs = ["acrobot_lcm.h"],
     deps = [
         ":acrobot_state",
-        "//lcmtypes:acrobot",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/framework:leaf_system",
         "//systems/framework:vector",
     ],
@@ -204,7 +204,7 @@ drake_cc_binary(
     srcs = ["test/acrobot_lcm_msg_generator.cc"],
     deps = [
         "//lcm",
-        "//lcmtypes:acrobot",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/analysis:simulator",
     ],
 )
