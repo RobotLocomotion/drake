@@ -1366,7 +1366,7 @@ class TestPlant(unittest.TestCase):
         X_WB_desired = RigidTransform.Identity()
         X_WB = plant.CalcRelativeTransform(context, world_frame, base_frame)
         plant.SetFreeBodyPose(
-            context=context, body=base, X_PB=X_WB_desired)
+            context=context, body=base, X_JpJc=X_WB_desired)
         numpy_compare.assert_float_equal(
             X_WB.GetAsMatrix4(),
             numpy_compare.to_float(X_WB_desired.GetAsMatrix4()))
@@ -1387,7 +1387,7 @@ class TestPlant(unittest.TestCase):
         # Set a spatial velocity for the base.
         v_WB = SpatialVelocity(w=[1, 2, 3], v=[4, 5, 6])
         plant.SetFreeBodySpatialVelocity(
-            context=context, body=base, V_PB=v_WB)
+            context=context, body=base, V_JpJc=v_WB)
         v_base = plant.EvalBodySpatialVelocityInWorld(context, base)
         numpy_compare.assert_float_equal(
                 v_base.rotational(), numpy_compare.to_float(v_WB.rotational()))
@@ -1530,7 +1530,7 @@ class TestPlant(unittest.TestCase):
         body = plant.AddRigidBody("body")
         plant.Finalize()
         X_WB_default = RigidTransform_[float]([1, 2, 3])
-        plant.SetDefaultFloatingBaseBodyPose(body=body, X_WC=X_WB_default)
+        plant.SetDefaultFloatingBaseBodyPose(body=body, X_WB=X_WB_default)
         with catch_drake_warnings(expected_count=1) as w:
             plant.SetDefaultFreeBodyPose(body=body, X_PB=X_WB_default)
             self.assertIn("Use SetDefaultFloatingBaseBodyPose",

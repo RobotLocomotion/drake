@@ -3322,12 +3322,13 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// In robotics it is natural to think of some bodies as "floating", in the
   /// sense that they may be posed independently of any other body. Manipulands
-  /// are the most obvious example since they aren't connected to anything else.
-  /// A mobile base or humanoid torso can also be posed freely, though other
-  /// bodies will move along with them. %MultibodyPlant recognizes floating
-  /// bodies at Finalize() by the fact that they have no user-provided joint
-  /// connecting them to any parent body. They are given six degrees of freedom
-  /// relative to the World frame and referred to as _floating base bodies_.
+  /// (objects to be manipulated by a robot) are the most obvious example since
+  /// they aren't connected to anything else. A mobile base or humanoid torso
+  /// can also be posed freely, though other bodies will move along with them.
+  /// %MultibodyPlant recognizes floating bodies at Finalize() by the fact that
+  /// they have no user-provided joint connecting them to any parent body. They
+  /// are given six degrees of freedom relative to the World frame and referred
+  /// to as _floating base bodies_.
   ///
   /// We use the term _free body_ for _any_ body that has six degrees of freedom
   /// relative to its parent. Floating base bodies are a special case of free
@@ -3376,7 +3377,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// This may be called pre- or post-Finalize(). Pre-Finalize() this is the
   /// only way to set the default pose of a floating base body. Post-Finalize(),
-  /// a floating base body's default pose may be set either by this funcition or
+  /// a floating base body's default pose may be set either by this function or
   /// by setting the default pose directly through the Joint API applied to the
   /// automatically-added floating joint. The most recent value set by either
   /// method will be used to initialize the floating joint's coordinates in
@@ -3673,8 +3674,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
                    "Use SetFloatingBaseBodyPoseInWorldFrame() instead.")
   void SetFreeBodyPoseInWorldFrame(systems::Context<T>* context,
                                    const RigidBody<T>& body,
-                                   const math::RigidTransform<T>& X_WC) const {
-    SetFloatingBaseBodyPoseInWorldFrame(context, body, X_WC);
+                                   const math::RigidTransform<T>& X_WB) const {
+    SetFloatingBaseBodyPoseInWorldFrame(context, body, X_WB);
   }
 
   DRAKE_DEPRECATED("2026-01-01",
@@ -3695,8 +3696,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   DRAKE_DEPRECATED("2026-01-01",
                    "Use SetDefaultFloatingBaseBodyPose() instead.")
   void SetDefaultFreeBodyPose(const RigidBody<T>& body,
-                              const math::RigidTransform<double>& X_WC) {
-    SetDefaultFloatingBaseBodyPose(body, X_WC);
+                              const math::RigidTransform<double>& X_PB) {
+    SetDefaultFloatingBaseBodyPose(body, X_PB);
   }
 
   DRAKE_DEPRECATED("2026-01-01",
