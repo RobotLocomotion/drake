@@ -6,8 +6,13 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <vector>
+
+#include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include "drake/common/drake_assertion_error.h"
+#include "drake/common/fmt.h"
 #include "drake/common/never_destroyed.h"
 
 namespace drake {
@@ -46,10 +51,19 @@ void Abort(const char* condition, const char* func, const char* file,
 }
 
 // Declared in drake_throw.h.
-void Throw(const char* condition, const char* func, const char* file,
-           int line) {
+void Throw(const char* condition, const char* func, const char* file, int line,
+           const ThrowValuesBuf& buffer) {
   std::ostringstream what;
   PrintFailureDetailTo(what, condition, func, file, line);
+  if (buffer.values[0].first != nullptr) {
+    std::vector<std::string> pairs;
+    pairs.reserve(buffer.values.size());
+    for (const auto& [key, value_str] : buffer.values) {
+      if (key == nullptr) break;
+      pairs.push_back(fmt::format("{} = {}", key, value_str));
+    }
+    what << fmt::format(" {}.", fmt::join(pairs, ", "));
+  }
   throw assertion_error(what.str().c_str());
 }
 
@@ -62,6 +76,19 @@ void AssertionFailed(const char* condition, const char* func, const char* file,
     Abort(condition, func, file, line);
   }
 }
+
+template <typename T>
+std::string StringifyErrorDetailValue(const T& value)
+  requires(std::is_same_v<T, float> || std::is_same_v<T, double>)
+{
+  // TODO(SeanCurtis-TRI) This version only supports floats. As we seek to pass
+  // *other* types (strings, paths, eigen types, etc.), we'll need to extend
+  // the supported types here and extend the declarations below.
+  return fmt_floating_point(value);
+}
+
+template std::string StringifyErrorDetailValue<float>(const float&);
+template std::string StringifyErrorDetailValue<double>(const double&);
 
 }  // namespace internal
 }  // namespace drake
