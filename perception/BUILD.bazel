@@ -65,7 +65,7 @@ drake_cc_library(
     hdrs = ["point_cloud_to_lcm.h"],
     deps = [
         ":point_cloud",
-        "//lcmtypes:point_cloud",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/framework:leaf_system",
     ],
 )

@@ -1,6 +1,6 @@
 load("//tools/workspace:github.bzl", "github_archive")
 
-def lcm_repository(
+def lcm_internal_repository(
         name,
         mirrors = None):
     github_archive(
@@ -13,8 +13,12 @@ def lcm_repository(
         # TODO(jwnimmer-tri) At the moment we have both @lcm and @lcm_internal
         # repositories. We are working to deprecate @lcm. In the meantime, be
         # aware that we have a different pins for each repository.
-        commit = "v1.5.1",
-        sha256 = "40ba0b7fb7c9ad06d05e06b4787d743cf11be30eb4f1a03abf4a92641c5b1203",  # noqa
-        build_file = ":package.BUILD.bazel",
+        # TODO(jwnimmer-tri) Once LCM has its next tagged release >v1.5.1, we
+        # should switch this back to a release tag instead of this hash.
+        commit = "e4bed2c86fbd6dd2280326801acf71cbd05074be",
+        sha256 = "b2bf5bf7fed61805d72855c8ea9d247de95e5ca885ee6c5c8c9185aa87dda74c",  # noqa
+        patches = [
+            ":patches/respell_glib_deps.patch",
+        ],
         mirrors = mirrors,
     )

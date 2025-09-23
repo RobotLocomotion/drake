@@ -22,11 +22,11 @@ class BaseTest(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
         self._lima_path = self._resource("lima.lcm")
-        self._lima_hpp_path = self._resource("goal/lima.hpp")
+        self._lima_hpp_path = self._resource("goal/papa/lima.hpp")
         self._mike_path = self._resource("mike.lcm")
-        self._mike_hpp_path = self._resource("goal/mike.hpp")
+        self._mike_hpp_path = self._resource("goal/papa/mike.hpp")
         self._november_path = self._resource("november.lcm")
-        self._november_hpp_path = self._resource("goal/november.hpp")
+        self._november_hpp_path = self._resource("goal/papa/november.hpp")
 
         assert self._lima_path.exists()
         assert self._lima_hpp_path.exists()
@@ -225,8 +225,8 @@ class TestCppGen(BaseTest):
 ===========================================================================
 To replace the goal files with newly-regenerated copies, run this command:
 
-bazel run //tools/lcm_gen -- \
-  tools/lcm_gen/test/*.lcm --outdir=tools/lcm_gen/test/goal
+bazel run -- //tools/lcm_gen \
+  tools/lcm_gen/test/*.lcm --cpp-hpath=tools/lcm_gen/test/goal
 
 ===========================================================================
 """
