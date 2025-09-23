@@ -1,6 +1,24 @@
-# This file exists to make our directory into a Bazel package, so that our
-# neighboring *.bzl file can be loaded elsewhere.
-
+load("//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+
+# ---- Logic for choosing which x11 to use. ---
+
+# TODO(jwnimmer-tri) There is a "libx11" module in BCR, but I haven't been able
+# to get it to work yet, so for the moment we don't offer it as an option.
+
+alias(
+    name = "x11",
+    actual = "@pkgconfig_x11_internal",
+    visibility = ["//visibility:public"],
+)
+
+# ---- Logic for installing x11-related files. ---
+
+install(
+    name = "install",
+    visibility = ["//tools/workspace:__pkg__"],
+    # There's nothing to do here. We aren't redistributing X11, so we don't
+    # need to install its license.
+)
 
 add_lint_tests()

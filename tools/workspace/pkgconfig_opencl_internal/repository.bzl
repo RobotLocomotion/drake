@@ -8,9 +8,9 @@ def _impl(repo_ctx):
     # later on, if and only if the library is actually used.
     setup_pkg_config_repository(repo_ctx)
 
-glib_repository = repository_rule(
+pkgconfig_opencl_internal_repository = repository_rule(
     attrs = {
-        "modname": attr.string(default = "glib-2.0"),
+        "modname": attr.string(default = "OpenCL"),
     },
     local = True,
     configure = True,
