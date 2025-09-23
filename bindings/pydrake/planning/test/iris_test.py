@@ -310,6 +310,9 @@ class TestOptionsPrinting(unittest.TestCase):
                      options.sampled_iris_options.
                      configuration_space_margin) in s)
             self.assertTrue(
+                    ("relax_margin=%r" %
+                     options.sampled_iris_options.relax_margin) in s)
+            self.assertTrue(
                     ("termination_threshold=%g" %
                      options.sampled_iris_options.termination_threshold) in s)
             self.assertTrue(
