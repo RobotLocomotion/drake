@@ -1991,12 +1991,26 @@ class TestPlant(unittest.TestCase):
         # Overwrite the (invalid) base coordinates, wherever in `q` they are.
         link0 = plant.GetBodyByName("iiwa_link_0")
         plant.SetFreeBodyPose(
-            context, link0,
-            RigidTransform(RollPitchYaw([0.1, 0.2, 0.3]),
-                           p=[0.4, 0.5, 0.6]))
+            context=context, body=link0,
+            X_JpJc=RigidTransform(RollPitchYaw([0.1, 0.2, 0.3]),
+                                  p=[0.4, 0.5, 0.6]))
         numpy_compare.assert_float_allclose(
-            plant.GetFreeBodyPose(context, link0).translation(),
+            plant.GetFreeBodyPose(context=context, body=link0).translation(),
             [0.4, 0.5, 0.6])
+        plant.SetFloatingBaseBodyPoseInWorldFrame(
+            context=context, body=link0,
+            X_WB=RigidTransform(RollPitchYaw([0.4, 0.5, 0.6]),
+                                p=[0.7, 0.8, 0.9]))
+        numpy_compare.assert_float_allclose(
+            plant.GetFreeBodyPose(context=context, body=link0).translation(),
+            [0.7, 0.8, 0.9])
+        plant.SetFloatingBaseBodyPoseInAnchoredFrame(
+            context=context, frame_F=plant.world_frame(), body=link0,
+            X_FB=RigidTransform(RollPitchYaw([0.45, 0.55, 0.65]),
+                                p=[0.75, 0.85, 0.95]))
+        numpy_compare.assert_float_allclose(
+            plant.GetFreeBodyPose(context=context, body=link0).translation(),
+            [0.75, 0.85, 0.95])
         self.assertNotEqual(link0.floating_positions_start(), -1)
         self.assertNotEqual(link0.floating_velocities_start_in_v(), -1)
         self.assertFalse(plant.IsVelocityEqualToQDot())
@@ -3363,13 +3377,16 @@ class TestPlant(unittest.TestCase):
         plant.Finalize()
         self.assertTrue(plant.HasBodyNamed("body", model_instance))
         self.assertTrue(plant.HasUniqueFloatingBaseBody(model_instance))
-        body = plant.GetUniqueFloatingBaseBodyOrThrow(model_instance)
+        body = plant.GetUniqueFloatingBaseBodyOrThrow(
+            model_instance=model_instance)
         self.assertEqual(body.index(), added_body.index())
         with catch_drake_warnings(expected_count=1) as w:
-            self.assertTrue(plant.HasUniqueFreeBaseBody(model_instance))
+            self.assertTrue(plant.HasUniqueFreeBaseBody(
+                model_instance=model_instance))
             self.assertIn("Use HasUniqueFloatingBaseBody", str(w[0].message))
         with catch_drake_warnings(expected_count=1) as w:
-            body = plant.GetUniqueFreeBaseBodyOrThrow(model_instance)
+            body = plant.GetUniqueFreeBaseBodyOrThrow(
+                model_instance=model_instance)
             self.assertEqual(body.index(), added_body.index())
             self.assertIn("Use GetUniqueFloatingBaseBodyOrThrow",
                           str(w[0].message))
