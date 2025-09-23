@@ -38,7 +38,7 @@ drake_cc_library(
     srcs = ["planar_gripper_lcm.cc"],
     hdrs = ["planar_gripper_lcm.h"],
     deps = [
-        "//lcmtypes:planar_gripper",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/framework:leaf_system",
     ],
 )
@@ -48,7 +48,7 @@ drake_cc_library(
     srcs = ["planar_manipuland_lcm.cc"],
     hdrs = ["planar_manipuland_lcm.h"],
     deps = [
-        "//lcmtypes:planar_manipuland_status",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/framework:event_collection",
         "//systems/framework:leaf_system",
     ],

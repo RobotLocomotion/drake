@@ -135,7 +135,7 @@ drake_cc_library(
     hdrs = ["lcmt_drake_signal_utils.h"],
     deps = [
         "//common:essential",
-        "//lcmtypes:drake_signal",
+        "//lcmtypes:lcmtypes_drake_cc",
     ],
 )
 
@@ -147,7 +147,7 @@ drake_cc_googletest(
         ":lcm_messages",
         ":lcmt_drake_signal_utils",
         "//common/test_utilities",
-        "//lcmtypes:drake_signal",
+        "//lcmtypes:lcmtypes_drake_cc",
     ],
 )
 
@@ -207,7 +207,7 @@ drake_cc_googletest(
         ":drake_lcm_params",
         ":interface",
         "//common/test_utilities:expect_throws_message",
-        "//lcmtypes:drake_signal",
+        "//lcmtypes:lcmtypes_drake_cc",
     ],
 )
 
@@ -228,7 +228,7 @@ drake_cc_binary(
     deps = [
         ":drake_lcm",
         "//common:add_text_logging_gflags",
-        "//lcmtypes:drake_signal",
+        "//lcmtypes:lcmtypes_drake_cc",
         "@gflags",
     ],
 )
