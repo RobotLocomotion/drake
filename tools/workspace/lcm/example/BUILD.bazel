@@ -23,6 +23,7 @@ lcm_cc_library(
     aggregate_hdr = "package1/package2/package2.hpp",
     lcm_package = _LCM_PACKAGE,
     lcm_srcs = _LCM_SRCS,
+    macro_deprecation = None,
     # Disable Drake's add_lint_tests() for this library.
     # This line would not typically be required for non-Drake projects.
     tags = ["nolint"],
@@ -32,6 +33,7 @@ lcm_java_library(
     name = "java_lib",
     lcm_package = _LCM_PACKAGE,
     lcm_srcs = _LCM_SRCS,
+    macro_deprecation = None,
     # Disable Drake's add_lint_tests() for this library.
     # This line would not typically be required for non-Drake projects.
     tags = ["nolint"],
@@ -41,6 +43,7 @@ lcm_py_library(
     name = "py_lib",
     lcm_package = _LCM_PACKAGE,
     lcm_srcs = _LCM_SRCS,
+    macro_deprecation = None,
     # Disable Drake's add_lint_tests() for this library.
     # This line would not typically be required for non-Drake projects.
     tags = ["nolint"],
