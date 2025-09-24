@@ -292,22 +292,49 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
     return velocity.get_coeffs();
   }
 
-  // This function calculates this mobilizers N matrix using the quaternion in
-  // context, _without_ normalization -- differs from DoCalcNplusMatrix().
+  // This function calculates this mobilizer's N matrix using the quaternion in
+  // context, _without_ normalization, which differs from DoCalcNplusMatrix().
+  // This mobilizer's N(q) matrix relates q̇ (time derivatives of 7 generalized
+  // positions) to v (6 generalized velocities) as q̇ = N(q)⋅v, where
+  // N(q) = ⎡ Nᵣ(q)  0₄₃ ⎤   0₄₃ is the 4x3 zero matrix.
+  //        ⎣ 0₃₃    I₃₃ ⎦   I₃₃ is the 3x3 identity matrix.
+  // Nᵣ(q) = 0.5 * QuaternionFloatingMobilizer::CalcQMatrix() is a 4x3 matrix.
+  // Note: The time-derivative of the quaternion qᵣ in context can be calculated
+  // q̇ᵣ = Nᵣ(q) w_FM_F, where w_FM_F is frame M's angular velocity in frame F,
+  // expressed in F. For a unit quaternion q̂ᵣ, we prove d/dt(q̂ᵣ) satisfies the
+  // "orthogonality constraint" i.e., d/dt(q̂ᵣ ⋅ q̂ᵣ = 1)  =>  q̂ᵣ ⋅ d/dt(q̂ᵣ) = 0
+  // via q̂ᵣ ⋅ d/dt(q̂ᵣ) = q̂ᵣ ⋅ Nᵣ(q̂ᵣ) w_FM_F = [0 0 0] w_FM_F = 0.
+  // For a non-unit quaternion qᵣ, the orthogonality constraint is proved via
+  // qᵣ ⋅ d/dt(qᵣ) =  qᵣ ⋅ Nᵣ(qᵣ) w_FM_F = |qᵣ| q̂ᵣ ⋅ |qᵣ| Nᵣ(q̂ᵣ) w_FM_F =
+  // |qᵣ|² q̂ᵣ ⋅ Nᵣ(q̂ᵣ) w_FM_F = |qᵣ|² [0 0 0] w_FM_F = 0, where this proof
+  // uses the fact Nᵣ(qᵣ) is linear in qᵣ and qᵣ = |qᵣ| q̂ᵣ.
+  // Summary: If the quaternion in context is a unit quaternion q̂ᵣ, then its
+  // time-derivative can be calculated as d/dt(q̂ᵣ) = Nᵣ(q̂ᵣ) w_FM_F.
+  // If the quaternion is context is a non-unit quaternion, then its time-
+  // derivative can be calculated d/dt(qᵣ) = Nᵣ(qᵣ) w_FM_F = |qᵣ| Nᵣ(q̂ᵣ) w_FM_F.
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
-  // This function calculates this mobilizers N matrix using the quaternion in
-  // context, _with_ normalization -- differs from DoCalcNMatrix().
+  // This function calculates this mobilizer's N⁺ matrix using the quaternion in
+  // context, _with_ normalization, which differs from DoCalcNMatrix().
+  // This mobilizer's N⁺(q) matrix relates v (6 generalized velocities) to q̇
+  // (time derivatives of 7 generalized positions) as v = N⁺(q)⋅q̇, where
+  // N⁺(q) = ⎡ Nᵣ(q)⁺  0₃₄ ⎤   0₃₄ is the 4x3 zero matrix.
+  //         ⎣ 0₃₃     I₃₃ ⎦   I₃₃ is the 3x3 identity matrix.
+  // Nᵣ⁺(q) is a 3x4 matrix formed by QuaternionRateToAngularVelocityMatrix().
+  // Note: Contextual definition of Nᵣ⁺ -- denoting q̂_FM = q_FM / |q_FM|,
+  // w_FM_F = Nᵣ⁺ * d/dt(q̂_FM), where w_FM_F is frame M's angular velocity
+  // in frame F, expressed in F. Hence, this accounts for a non-unit q_FM.
   void DoCalcNplusMatrix(const systems::Context<T>& context,
                          EigenPtr<MatrixX<T>> Nplus) const final;
 
-  // This function calculates this mobilizers Ṅ matrix using the quaternion in
-  // context, _without_ normalization.
+  // This function calculates this mobilizer's Ṅ matrix using the quaternion
+  // and angular velocity in the context.
   void DoCalcNDotMatrix(const systems::Context<T>& context,
                         EigenPtr<MatrixX<T>> Ndot) const final;
 
-  // TODO(Mitiguy) Provide a precise definition of this function.
+  // This function calculates this mobilizer's Ṅ⁺ matrix using the quaternion
+  // and angular velocity in the context.
   void DoCalcNplusDotMatrix(const systems::Context<T>& context,
                             EigenPtr<MatrixX<T>> NplusDot) const final;
 
@@ -349,17 +376,17 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // @note Herein, we denote the function that forms this matrix as Q(q).
   // When q is the quaternion q_FM that relates the orientation of frames F
   // F and M, we define the matrix Q_FM ≜ Q(q_FM).  When q_FM is a unit
-  // quaternion, we denote it as q̂_FM and Q̂_FM ≜ Q(q̂_FM).
+  // quaternion, we denote it as q̂_FM. Similarly, Q̂_FM ≜ Q(q̂_FM).
   // Many uses of Q_FM and Q̂_FM are associated with angular velocity expressed
   // in a particular frame. The examples below show them used in conjunction
   // with w_FM_F (frame M's angular velocity in frame F, expressed in F).
   // Another use of Q_FM and Q̂_FM are for rotational parts of this mobilizer's
-  // N and Nplus matrices, namely as Nᵣ ≜ 0.5 Q_FM and Nᵣ⁺ ≜ 2 (Q̂_FM)ᵀ.
+  // N and Nplus matrices, e.g., as Nᵣ ≜ 0.5 Q_FM and Nᵣ⁺ = 2 (Q̂_FM)ᵀ.
   //
   // q̇_FM = 0.5 * Q_FM * w_FM_F
   // q̈_FM = 0.5 * Q_FM * ẇ_FM_F - 0.25 ω² q_FM    Note: ω² = |w_FM_F|²
-  // w_FM_F = 2 * (Q̂_FM)ᵀ * q̇_FM
-  // ẇ_FM_F = 2 * (Q̂_FM)ᵀ * q̈_FM
+  // w_FM_F = 2 * (Q̂_FM)ᵀ * d/dt(q̂_FM)
+  // ẇ_FM_F = 2 * (Q̂_FM)ᵀ * d²/dt²(q̂_FM)
   //
   // @note Since the elements of the matrix returned by Q(q) depend linearly on
   // qw, qx, qy, qz, s * Q(q) = Q(s * q), where s is a scalar (e.g., 0.5 or 2).
@@ -393,7 +420,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
 
   // Helper to compute this mobilizer's rotational kinematic map Nᵣ⁺(q̂_FM) from
   // quaternion time derivative to angular velocity as w_FM_F = Nᵣ⁺ * d/dt(q̂_FM)
-  // where q̂_FM ≜ q_FM / |q_FM|, where w_FM_F is frame M's angular velocity
+  // where q̂_FM ≜ q_FM / |q_FM| and w_FM_F is frame M's angular velocity
   // in frame F, expressed in F. Hence, this accounts for a non-unit q_FM.
   // param[in] q_FM quaternion describing the orientation of frames F and M.
   // @note The argument q_FM can be a non-unit quaternion as this function
