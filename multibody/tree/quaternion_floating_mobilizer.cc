@@ -314,8 +314,9 @@ QuaternionFloatingMobilizer<T>::QuaternionRateToAngularVelocityMatrix(
   const Eigen::Matrix<T, 3, 4> NrPlus_q_unit = CalcTwoTimesQMatrixTranspose(
       {q_unit[0], q_unit[1], q_unit[2], q_unit[3]});
 
-  // Returns the matrix that when multiplied by q̇_FM produces
-  // w_FM_F (M's angular velocity in F, expressed in F).
+  // Returns the matrix that when multiplied by q̇_FM produces w_FM_F
+  // (M's angular velocity in F, expressed in F). Note: When q_FM is a unit
+  // quaternion (so q_norm = 1), the returned value is denoted Nᵣ⁺(q̂_FM).
   return NrPlus_q_unit * dqnorm_dq;
 }
 
@@ -324,13 +325,11 @@ void QuaternionFloatingMobilizer<T>::DoCalcNMatrix(
     const systems::Context<T>& context, EigenPtr<MatrixX<T>> N) const {
   // Upper-left block (rotational part of the N matrix) is Nᵣ ≜ 0.5 Q_FM.
   // See QuaternionFloatingMobilizer::CalcQMatrix() for details.
+  // The lower-right block (translational part of the N matrix) is [I₃₃].
   N->template block<4, 3>(0, 0) = CalcQMatrixOverTwo(get_quaternion(context));
-  // Upper-right block
-  N->template block<4, 3>(0, 3).setZero();
-  // Lower-left block
-  N->template block<3, 3>(4, 0).setZero();
-  // Lower-right block (translational part of the N matrix).
-  N->template block<3, 3>(4, 3).setIdentity();
+  N->template block<4, 3>(0, 3).setZero();      // Upper-right block.
+  N->template block<3, 3>(4, 0).setZero();      // Lower-left block.
+  N->template block<3, 3>(4, 3).setIdentity();  // Lower-right block.
 }
 
 template <typename T>
@@ -343,13 +342,10 @@ void QuaternionFloatingMobilizer<T>::DoCalcNplusMatrix(
   // in frame F, expressed in F. Hence, this accounts for a non-unit q_FM.
   const Quaternion<T> q_FM = get_quaternion(context);
   Nplus->template block<3, 4>(0, 0) =
-      QuaternionRateToAngularVelocityMatrix(q_FM);
-  // Upper-right block
-  Nplus->template block<3, 3>(0, 4).setZero();
-  // Lower-left block
-  Nplus->template block<3, 4>(3, 0).setZero();
-  // Lower-right block
-  Nplus->template block<3, 3>(3, 4).setIdentity();
+      QuaternionRateToAngularVelocityMatrix(q_FM);  // Upper-left block.
+  Nplus->template block<3, 3>(0, 4).setZero();      // Upper-right block.
+  Nplus->template block<3, 4>(3, 0).setZero();      // Lower-left block.
+  Nplus->template block<3, 3>(3, 4).setIdentity();  // Lower-right block.
 }
 
 template <typename T>
@@ -366,11 +362,6 @@ void QuaternionFloatingMobilizer<T>::DoCalcNDotMatrix(
   // | q̇y |       | -qz    qw    qx | ⌊ ωz ⌋
   // ⌊ q̇z ⌋       ⌊  qy   -qx    qw ⌋
   //
-  // For the translational part of this mobilizer, the time-derivative of the
-  // generalized positions q̇ₜ = [ẋ, ẏ, ż]ᵀ are related to the translational
-  // generalized velocities v_FM_F = vₜ = [vx, vy, vz]ᵀ as q̇ₜ = Nₜ(q)⋅vₜ, where
-  // Nₜ(q) = [I₃₃] (3x3 identity matrix). Hence, Ṅₜ(q,q̇ᵣ) = [0₃₃] (zero matrix).
-
   // Calculate the time-derivative of the quaternion, i.e., q̇ᵣ = Nᵣ(q)⋅vᵣ.
   const Quaternion<T> q_FM = get_quaternion(context);
   const Vector3<T> w_FM_F = get_angular_velocity(context);
@@ -380,6 +371,11 @@ void QuaternionFloatingMobilizer<T>::DoCalcNDotMatrix(
   // Since Nᵣ(qᵣ) = 0.5 * Q(q_FM), where Q(q_FM) is linear in the elements of
   // q_FM = [qw, qx, qy, qz]ᵀ, so Ṅᵣ(qᵣ,q̇ᵣ) = 0.5 * Q(q̇_FM).
   const Eigen::Matrix<T, 4, 3> NrDotMatrix = CalcQMatrixOverTwo(qdot_FM);
+
+  // For the translational part of this mobilizer, the time-derivative of the
+  // generalized positions q̇ₜ = [ẋ, ẏ, ż]ᵀ are related to the translational
+  // generalized velocities v_FM_F = vₜ = [vx, vy, vz]ᵀ as q̇ₜ = Nₜ(q)⋅vₜ, where
+  // Nₜ(q) = [I₃₃] (3x3 identity matrix). Hence, Ṅₜ(q,q̇ᵣ) = [0₃₃] (zero matrix).
 
   // Form the Ṅ(q,q̇) matrix associated with q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇.
   Ndot->template block<4, 3>(0, 0) = NrDotMatrix;  // Upper-left block.
@@ -402,11 +398,6 @@ void QuaternionFloatingMobilizer<T>::DoCalcNplusDotMatrix(
   // ⌊ ωz ⌋       | -qz   -qy    qx   qw | | q̇y |
   //                                       ⌊ q̇z ⌋
   //
-  // For the translational part of this mobilizer, the translational generalized
-  // velocities v_FM_F = vₜ = [vx, vy, vz]ᵀ are related to the time-derivatives
-  // of the generalized positions q̇ₜ = [ẋ, ẏ, ż]ᵀ as vₜ = N⁺ₜ(q)⋅q̇ₜ, where
-  // Nₜ(q) = [I₃₃] (3x3 identity matrix). Thus, Ṅ⁺ₜ(q,q̇ₜ) = [0₃₃] (zero matrix).
-
   // Calculate the time-derivative of the quaternion, i.e., q̇ᵣ = Nᵣ(q)⋅vᵣ.
   const Quaternion<T> q_FM = get_quaternion(context);
   const Vector3<T> w_FM_F = get_angular_velocity(context);
@@ -416,10 +407,15 @@ void QuaternionFloatingMobilizer<T>::DoCalcNplusDotMatrix(
   // In view of the documentation in CalcQMatrix(), since
   // N⁺ᵣ(q_FM) = 2 * (Q_FM)ᵀ, where Q_FM is linear in the elements of
   // q_FM = [qw, qx, qy, qz]ᵀ, hence Ṅ⁺ᵣ(q̇_FM) = 2 * (Q̇_FM)ᵀ.
-  // TODO(Mitiguy) Ensure this calculation is consistent with the precise
-  //  definition of this function (the definition is also a TODO).
+  // TODO(Mitiguy) Ensure this calculation provides the time derivative of the
+  //  calculation in DoCalcNplusMatrix().
   const Eigen::Matrix<T, 3, 4> NrPlusDot =
       CalcTwoTimesQMatrixTranspose(qdot_FM);
+
+  // For the translational part of this mobilizer, the translational generalized
+  // velocities v_FM_F = vₜ = [vx, vy, vz]ᵀ are related to the time-derivatives
+  // of the generalized positions q̇ₜ = [ẋ, ẏ, ż]ᵀ as vₜ = N⁺ₜ(q)⋅q̇ₜ, where
+  // Nₜ(q) = [I₃₃] (3x3 identity matrix). Thus, Ṅ⁺ₜ(q,q̇ₜ) = [0₃₃] (zero matrix).
 
   // Form the Ṅ⁺(q,q̇) matrix associated with v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈.
   NplusDot->template block<3, 4>(0, 0) = NrPlusDot;  // Upper-left block.
