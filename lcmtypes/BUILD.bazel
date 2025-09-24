@@ -60,198 +60,9 @@ _EXTRA_ALL = [
 )
 
 drake_lcm_cc_library(
-    name = "acrobot",
+    name = "lcmtypes_drake_cc",
     lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_acrobot_u.lcm",
-        "lcmt_acrobot_x.lcm",
-        "lcmt_acrobot_y.lcm",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "call_python",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_call_python.lcm",
-        "lcmt_call_python_data.lcm",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "contact_results_for_viz",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_contact_results_for_viz.lcm"],
-    deps = [
-        ":hydroelastic_contact_surface_for_viz",
-        ":point_pair_contact_info_for_viz",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "header",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_header.lcm"],
-)
-
-drake_lcm_cc_library(
-    name = "hydroelastic_contact_surface_for_viz",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_hydroelastic_contact_surface_for_viz.lcm"],
-    deps = [
-        ":hydroelastic_quadrature_per_point_data_for_viz",
-        ":point",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "hydroelastic_quadrature_per_point_data_for_viz",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_hydroelastic_quadrature_per_point_data_for_viz.lcm"],
-)
-
-drake_lcm_cc_library(
-    name = "image",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_image.lcm"],
-    deps = [":header"],
-)
-
-drake_lcm_cc_library(
-    name = "image_array",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_image_array.lcm"],
-    deps = [
-        ":header",
-        ":image",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "point",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_point.lcm"],
-)
-
-drake_lcm_cc_library(
-    name = "point_cloud",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_point_cloud.lcm",
-        "lcmt_point_cloud_field.lcm",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "point_pair_contact_info_for_viz",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_point_pair_contact_info_for_viz.lcm"],
-)
-
-drake_lcm_cc_library(
-    name = "planar_manipuland_status",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_planar_manipuland_status.lcm"],
-)
-
-drake_lcm_cc_library(
-    name = "planar_gripper",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_planar_gripper_command.lcm",
-        "lcmt_planar_gripper_status.lcm",
-        "lcmt_planar_gripper_finger_command.lcm",
-        "lcmt_planar_gripper_finger_face_assignment.lcm",
-        "lcmt_planar_gripper_finger_face_assignments.lcm",
-        "lcmt_planar_gripper_finger_status.lcm",
-        "lcmt_planar_plant_state.lcm",
-        "lcmt_force_torque.lcm",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "quaternion",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_quaternion.lcm"],
-)
-
-drake_lcm_cc_library(
-    name = "robot_plan",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_robot_plan.lcm",
-        "lcmt_robot_state.lcm",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "scope",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_scope.lcm"],
-)
-
-drake_lcm_cc_library(
-    name = "drake_signal",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_drake_signal.lcm"],
-)
-
-drake_lcm_cc_library(
-    name = "viewer",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_viewer_command.lcm",
-        "lcmt_viewer_draw.lcm",
-        "lcmt_viewer_geometry_data.lcm",
-        "lcmt_viewer_link_data.lcm",
-        "lcmt_viewer_load_robot.lcm",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "allegro",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_allegro_command.lcm",
-        "lcmt_allegro_status.lcm",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "iiwa",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_iiwa_command.lcm",
-        "lcmt_iiwa_status.lcm",
-        "lcmt_iiwa_status_telemetry.lcm",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "schunk",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_schunk_wsg_command.lcm",
-        "lcmt_schunk_wsg_status.lcm",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "jaco",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_jaco_command.lcm",
-        "lcmt_jaco_status.lcm",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "panda",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_panda_command.lcm",
-        "lcmt_panda_status.lcm",
-    ],
+    lcm_srcs = ALL_LCM_SRCS,
 )
 
 drake_lcm_py_library(
@@ -295,6 +106,17 @@ LCMTYPES_CC = [
     ":viewer",
 ]
 
+[
+    cc_library(
+        name = colon_name[1:],
+        deprecation = "DRAKE DEPRECATED: The fine-grained LCM message library \"@drake//lcmtypes:{}\" is deprecated for removal. Instead, you use depend on the all-messages library \"@drake//lcmtypes:lcmtypes_drake_cc\". The deprecated code will be removed from Drake on or after 2026-01-01.",  # noqa
+        tags = ["manual"],
+        visibility = ["//visibility:public"],
+        deps = [":lcmtypes_drake_cc"],
+    )
+    for colon_name in LCMTYPES_CC
+]
+
 # This rule should list every LCM type that is known to Drake or its external
 # dependencies.
 java_binary(
@@ -306,15 +128,10 @@ java_binary(
     ],
 )
 
-drake_cc_library(
-    name = "lcmtypes_drake_cc",
-    deps = LCMTYPES_CC,
-)
-
 drake_transitive_installed_hdrs_filegroup(
     name = "lcmtypes_drake_cc_headers",
     visibility = ["//visibility:private"],
-    deps = LCMTYPES_CC,
+    deps = [":lcmtypes_drake_cc"],
 )
 
 install(
