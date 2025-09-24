@@ -99,6 +99,7 @@ using Eigen::VectorXd;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using math::RotationMatrixd;
+using render::ClippingRange;
 using render::ColorRenderCamera;
 using render::DepthRange;
 using render::DepthRenderCamera;
@@ -3118,8 +3119,11 @@ TEST_F(RenderEngineVtkTest, WholeImageCustomParams) {
     const int h = 360;
     const CameraInfo& source_intrinsics = depth_camera_.core().intrinsics();
     const CameraInfo intrinsics(w, h, source_intrinsics.fov_y());
+    // Shorten the clipping range to help CI's depth precision (just beyond the
+    // depth range).
+    const ClippingRange clipping(0.1, kZFar + 0.25);
     const DepthRenderCamera camera(
-        {"unused", intrinsics, depth_camera_.core().clipping(),
+        {"unused", intrinsics, clipping,
          depth_camera_.core().sensor_pose_in_camera_body()},
         depth_camera_.depth_range());
 
