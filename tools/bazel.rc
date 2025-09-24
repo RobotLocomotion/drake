@@ -6,7 +6,7 @@ common --@drake//tools/flags:private_runtime_repo_default=external
 
 # Tell spdlog to build a library, not header-only. This *substantially* reduces
 # build size and improves build speed.
-build --@@spdlog+//:header_only=False
+common --@@spdlog+//:header_only=False
 
 # Require all rules to be loaded in MODULE.bazel -- don't allow any legacy
 # implicit loads built-in to Bazel itself to take effect.
