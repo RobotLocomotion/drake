@@ -147,7 +147,7 @@ drake_cc_library(
     ],
     implementation_deps = [
         "//lcm:drake_lcm",
-        "//lcmtypes:viewer",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/lcm:lcm_system_graphviz",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@nlohmann_internal//:nlohmann",
@@ -922,7 +922,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//lcm",
-        "//lcmtypes:viewer",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/analysis:simulator",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@nlohmann_internal//:nlohmann",
