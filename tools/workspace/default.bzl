@@ -31,6 +31,7 @@ load("//tools/workspace/implib_so_internal:repository.bzl", "implib_so_internal_
 load("//tools/workspace/ipopt_internal:repository.bzl", "ipopt_internal_repository")  # noqa
 load("//tools/workspace/lapack_internal:repository.bzl", "lapack_internal_repository")  # noqa
 load("//tools/workspace/lcm:repository.bzl", "lcm_repository")
+load("//tools/workspace/lcm_internal:repository.bzl", "lcm_internal_repository")
 load("//tools/workspace/libjpeg_turbo_internal:repository.bzl", "libjpeg_turbo_internal_repository")  # noqa
 load("//tools/workspace/libpng_internal:repository.bzl", "libpng_internal_repository")  # noqa
 load("//tools/workspace/libtiff_internal:repository.bzl", "libtiff_internal_repository")  # noqa
@@ -117,6 +118,7 @@ def _add_internal_repositories():
     implib_so_internal_repository(name = "implib_so_internal", mirrors = mirrors)  # noqa
     ipopt_internal_repository(name = "ipopt_internal", mirrors = mirrors)
     lapack_internal_repository(name = "lapack_internal", mirrors = mirrors)
+    lcm_internal_repository(name = "lcm_internal", mirrors = mirrors)
     libjpeg_turbo_internal_repository(name = "libjpeg_turbo_internal", mirrors = mirrors)  # noqa
     libpng_internal_repository(name = "libpng_internal", mirrors = mirrors)
     libtiff_internal_repository(name = "libtiff_internal", mirrors = mirrors)
