@@ -1,6 +1,70 @@
-# This file exists to make our directory into a Bazel package, so that our
-# neighboring *.bzl file can be loaded elsewhere.
-
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:cc.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:private"])
+
+# ---- Logic for choosing which OpenCL to use. ---
+
+config_setting(
+    name = "apple",
+    constraint_values = ["@platforms//os:osx"],
+)
+
+cc_library(
+    name = "framework",
+    linkopts = ["-framework OpenCL"],
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "flag_opencl_repo_default",
+    flag_values = {
+        "//tools/flags:opencl_repo": "default",
+    },
+)
+
+config_setting(
+    name = "flag_opencl_repo_framework",
+    flag_values = {
+        "//tools/flags:opencl_repo": "framework",
+    },
+)
+
+selects.config_setting_group(
+    name = "defaulted_to_framework",
+    match_all = [
+        ":flag_opencl_repo_default",
+        ":apple",
+    ],
+)
+
+selects.config_setting_group(
+    name = "use_framework",
+    match_any = [
+        ":defaulted_to_framework",
+        ":flag_opencl_repo_framework",
+    ],
+)
+
+alias(
+    name = "opencl",
+    actual = select({
+        ":use_framework": ":framework",
+        "//conditions:default": "@pkgconfig_opencl_internal",
+    }),
+    visibility = ["//visibility:public"],
+)
+
+# ---- Logic for installing opencl-related files. ---
+
+install(
+    name = "install",
+    visibility = ["//tools/workspace:__pkg__"],
+    # There's nothing to do here. We aren't redistributing OpenCL, so we don't
+    # need to install its license.
+)
 
 add_lint_tests()

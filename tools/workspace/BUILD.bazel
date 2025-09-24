@@ -122,7 +122,9 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "highway_internal",
     "lapack",
     "libjpeg_turbo_internal",
+    "opencl",
     "spdlog",
+    "x11",
     "zlib",
 ]] + select({
     "//tools/workspace/csdp_internal:enabled": ["@csdp_internal//:install"],
