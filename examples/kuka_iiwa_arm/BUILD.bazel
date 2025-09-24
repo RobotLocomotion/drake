@@ -116,8 +116,7 @@ drake_cc_binary(
     deps = [
         "//common/trajectories:piecewise_polynomial",
         "//lcm:drake_lcm",
-        "//lcmtypes:iiwa",
-        "//lcmtypes:robot_plan",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//multibody/parsing",
         "//multibody/plant",
     ],
@@ -134,7 +133,7 @@ drake_cc_binary(
         ":iiwa_common",
         "//common:add_text_logging_gflags",
         "//lcm:drake_lcm",
-        "//lcmtypes:iiwa",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//manipulation/util:move_ik_demo_base",
         "//math:geometric_transform",
     ],

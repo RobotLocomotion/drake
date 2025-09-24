@@ -265,7 +265,7 @@ drake_installed_headers = rule(
 def _path_startswith_match(path, only_startswith, never_startswith):
     # Ignore some leading path elements.  These will happen if Drake is
     # consumed as an external.
-    strip = "../drake/"
+    strip = "../drake+/"
     if path.startswith(strip):
         path = path[len(strip):]
 
