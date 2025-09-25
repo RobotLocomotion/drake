@@ -4,11 +4,12 @@
 #include <string>
 #include <vector>
 
+#include "drake/bindings/generated_docstrings/multibody_inverse_kinematics.h"
+#include "drake/bindings/generated_docstrings/solvers.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/inverse_kinematics/add_multibody_plant_constraints.h"
 #include "drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h"
@@ -59,8 +60,9 @@ using solvers::Constraint;
 PYBIND11_MODULE(inverse_kinematics, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  constexpr auto& doc = pydrake_doc.drake.multibody;
-  constexpr auto& constraint_doc = pydrake_doc.drake.solvers.Constraint;
+  constexpr auto& doc =
+      pydrake_doc_multibody_inverse_kinematics.drake.multibody;
+  constexpr auto& constraint_doc = pydrake_doc_solvers.drake.solvers.Constraint;
 
   m.doc() = "InverseKinematics module";
 

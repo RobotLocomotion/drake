@@ -38,8 +38,8 @@ PACKAGE_INFO = get_pybind_package_info("//bindings")
 drake_pybind_library(
     name = "solvers",
     cc_deps = [
+        "//bindings/generated_docstrings:solvers",
         "//bindings/pydrake:autodiff_types_pybind",
-        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/common:cpp_param_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
