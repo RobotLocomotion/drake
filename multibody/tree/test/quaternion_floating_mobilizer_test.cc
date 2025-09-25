@@ -9,6 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/math/quaternion.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
@@ -381,31 +382,55 @@ TEST_F(QuaternionFloatingMobilizerTest, MapUsesNplus) {
 
 TEST_F(QuaternionFloatingMobilizerTest, MapVelocityToQDotAndViceVersa) {
   // Set an arbitrary non-zero state, but with a non-unit quaternion.
-  const Quaternion<double> q_FM(0.7, 0.8, 0.9, -1.2);  // Unnormalized.
+  // Test with both a unnormalized and normalized quaternion q_FM.
+  const Quaternion<double> q_nonUnit(0.7, 0.8, 0.9, -1.2);   // Unnormalized.
+  const Quaternion<double> q_unit = q_nonUnit.normalized();  // Unit quaternion.
   const Vector3<double> wxyz(5.4, -9.8, 3.2);
   const Vector3<double> vxyz(0.2, 0.5, -0.87);
   const Vector6<double> v(wxyz[0], wxyz[1], wxyz[2], vxyz[0], vxyz[1], vxyz[2]);
-  mobilizer_->SetQuaternion(context_.get(), q_FM);
+  mobilizer_->SetQuaternion(context_.get(), q_unit);
   mobilizer_->SetAngularVelocity(context_.get(), wxyz);
   mobilizer_->SetTranslationalVelocity(context_.get(), vxyz);
 
   // Calculate the qdot associated with angular and translational velocity.
-  Eigen::Matrix<double, 7, 1> qdot;
-  mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
+  Eigen::Matrix<double, 7, 1> qdot_unit;  // Calculate qdot using q_unit.
+  mobilizer_->MapVelocityToQDot(*context_, v, &qdot_unit);
 
-  // Check if q̇_FM (the rotational part of the calculated qdot) satisfies the
-  // time-derivative of the quaternion constraint (q_FM)ᵀ * q_FM = constant, so
-  // (q̇_FM)ᵀ * q_FM + (q_FM)ᵀ * q̇_FM = 2 * (q_FM)ᵀ * q̇_FM = 0.  However, since
-  // the qdot above is arbitrary, this is not true.
-  const Vector4<double> qdot_FM(qdot[0], qdot[1], qdot[2], qdot[3]);
-  const double is_zero_if_proper_qdot =
-      Vector4<double>(q_FM.w(), q_FM.x(), q_FM.y(), q_FM.z()).dot(qdot_FM);
-  EXPECT_TRUE(std::abs(is_zero_if_proper_qdot) < 16 * kTolerance);
+  // Use the previously calculated qdot to calculate an associated angular and
+  // translational velocity -- and check that they match the original v.
+  Vector6<double> v_from_qdot_unit;
+  mobilizer_->MapQDotToVelocity(*context_, qdot_unit, &v_from_qdot_unit);
+  EXPECT_TRUE(CompareMatrices(v, v_from_qdot_unit, 16 * kTolerance,
+                              MatrixCompareType::relative));
 
-  // Use qdot to calculate its associated angular and translational velocity.
-  Vector6<double> v_from_qdot;
-  mobilizer_->MapQDotToVelocity(*context_, qdot, &v_from_qdot);
-  EXPECT_TRUE(CompareMatrices(v, v_from_qdot, 16 * kTolerance,
+  // Ensure that the calculated q̇ᵣ (rotational part of the calculated qdot)
+  // satisfies the time-derivative of the quaternion constraint.
+  // Mathematically: (qᵣ)ᵀ * qᵣ = constant, so it should be true that
+  // (q̇ᵣ)ᵀ * qᵣ + (qᵣ)ᵀ * q̇ᵣ = 2 * (qᵣ)ᵀ * q̇ᵣ = 0. Due to the fact that q̇ᵣ is
+  // calculated as q̇ᵣ = Nᵣ * vᵣ, we can prove this is true. Double check here.
+  const Vector4<double> qrdot_unit(qdot_unit[0], qdot_unit[1], qdot_unit[2],
+                                   qdot_unit[3]);
+  double is_zero_if_OK_qdot =
+      math::CalculateQuaternionDtConstraintViolation(q_unit, qrdot_unit);
+  EXPECT_TRUE(std::abs(is_zero_if_OK_qdot) < 16 * kTolerance);
+
+  // Repeat the previous calculations with a non-unit quaternion.
+  mobilizer_->SetQuaternion(context_.get(), q_nonUnit);
+  Eigen::Matrix<double, 7, 1> qdot_nonUnit;  // Calculate qdot using q_nonUnit.
+  mobilizer_->MapVelocityToQDot(*context_, v, &qdot_nonUnit);
+  Vector6<double> v_from_qdot_nonUnit;
+  mobilizer_->MapQDotToVelocity(*context_, qdot_nonUnit, &v_from_qdot_nonUnit);
+  EXPECT_TRUE(CompareMatrices(v, v_from_qdot_nonUnit, 16 * kTolerance,
+                              MatrixCompareType::relative));
+  const Vector4<double> qrdot_nonUnit(qdot_nonUnit[0], qdot_nonUnit[1],
+                                      qdot_nonUnit[2], qdot_nonUnit[3]);
+  is_zero_if_OK_qdot =
+      math::CalculateQuaternionDtConstraintViolation(q_unit, qrdot_nonUnit);
+  EXPECT_TRUE(std::abs(is_zero_if_OK_qdot) < 16 * kTolerance);
+
+  // Verify that qdot_nonUnit = |qr_nonUnit| * qdot_unit.
+  const double s = q_nonUnit.norm();
+  EXPECT_TRUE(CompareMatrices(qrdot_nonUnit, s * qrdot_unit, 16 * kTolerance,
                               MatrixCompareType::relative));
 }
 
