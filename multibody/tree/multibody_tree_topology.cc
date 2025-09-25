@@ -43,15 +43,8 @@ bool RigidBodyTopology::operator==(const RigidBodyTopology& other) const {
     return false;
   if (parent_body.is_valid() != other.parent_body.is_valid()) return false;
   if (parent_body.is_valid() && parent_body != other.parent_body) return false;
-  if (child_bodies != other.child_bodies) return false;
   if (body_frame != other.body_frame) return false;
   if (level != other.level) return false;
-  if (mobod_index != other.mobod_index) return false;
-  if (is_floating_base != other.is_floating_base) return false;
-  if (has_quaternion_dofs != other.has_quaternion_dofs) return false;
-  if (floating_positions_start != other.floating_positions_start) return false;
-  if (floating_velocities_start_in_v != other.floating_velocities_start_in_v)
-    return false;
   return true;
 }
 
@@ -155,10 +148,6 @@ void MultibodyTreeTopology::add_mobilizer_topology(
   // Similarly, record inboard_body as the parent of outboard_body.
   rigid_body_topology_[outboard_body].parent_body = inboard_body;
 
-  // Records "child" rigid bodies for bookkeeping in the context of the tree
-  // structure of the multibody forest.
-  rigid_body_topology_[inboard_body].child_bodies.push_back(outboard_body);
-
   mobilizer_topology_.emplace_back(mobilizer_index, in_frame, out_frame,
                                    inboard_body, outboard_body, mobod);
 }
@@ -236,17 +225,16 @@ void MultibodyTreeTopology::FinalizeTopology(const LinkJointGraph& graph) {
 
   const SpanningForest& forest = graph.forest();
 
-  // Create a BodyNodeTopology corresponding to each Mobod in the forest,
+  // Create MobilizerTopology corresponding to each Mobod in the forest,
   // indexed identically. Note that Mobods are already in depth-first order so
-  // we can use the same numbering for BodyNodes. Also update RigidBodyTopology,
-  // though in the case where we combine welded-together rigid bodies only the
-  // "active" body of each Composite gets updated here.
+  // we can use the same numbering for Mobilizers. Also update
+  // RigidBodyTopology, though in the case where we combine welded-together
+  // rigid bodies only the "active" body of each Composite gets updated here.
   for (const auto& mobod : forest.mobods()) {
     const MobodIndex node_index(mobod.index());
     const BodyIndex rigid_body_index =
         graph.links(mobod.link_ordinal()).index();
     RigidBodyTopology& current_body = rigid_body_topology_[rigid_body_index];
-    current_body.mobod_index = node_index;
     current_body.level = mobod.level();
     const MobodIndex mobilizer_index = current_body.inboard_mobilizer;
     DRAKE_DEMAND(mobilizer_index == node_index);
@@ -257,19 +245,6 @@ void MultibodyTreeTopology::FinalizeTopology(const LinkJointGraph& graph) {
   num_positions_ = forest.num_positions();
   num_velocities_ = forest.num_velocities();
   num_states_ = num_positions_ + num_velocities_;
-
-  // Update position/velocity indexes for free rigid bodies so that they are
-  // easily accessible.
-  for (RigidBodyTopology& rigid_body_topology : rigid_body_topology_) {
-    if (rigid_body_topology.is_floating_base) {
-      DRAKE_DEMAND(rigid_body_topology.inboard_mobilizer.is_valid());
-      const MobilizerTopology& mobilizer =
-          get_mobilizer_topology(rigid_body_topology.inboard_mobilizer);
-      rigid_body_topology.floating_positions_start = mobilizer.positions_start;
-      rigid_body_topology.floating_velocities_start_in_v =
-          mobilizer.velocities_start_in_v;
-    }
-  }
 
   ExtractForestInfo(graph);
 
