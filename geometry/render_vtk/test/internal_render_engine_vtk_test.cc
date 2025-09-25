@@ -308,25 +308,23 @@ RigidTransformd PoseCamera(const Vector3d& p_WC, const Vector3d& p_WT,
 
 // Compares the test image against a reference image.
 //
-// The bytes of `test_image` are compared with the bytes of `ref_image` to
-// within the given tolerance.
+// The bytes of `test_image` are compared with the bytes of `ref_image`.
+// Equivalence is determined by both tolerance and conformity. Confirming image
+// equivalence is tricky. We want to be sensitive to changes in code that might
+// produce different images but, at the same time, write a test that will
+// survive the vagaries of rendering in CI.
+//
+// @param tolerance   Allowed pixel-wise, per-channel deviation.
+// @param conformity  The fraction of channel values that must deviate less than
+//                    `tolerance`. The default value (99.5%) is strict enough to
+//                    catch most changes in the "WholeImage*" family of tests;
+//                    each object takes about 0.5% of the image (by pixel area).
+//                    So, detecting if that much of the image changes will help
+//                    catch most changes to object behavior. However, some tests
+//                    may need to tweak it on a case-by-case basis.
 template <typename ImageType>
 void CompareImages(const ImageType& test_image, const ImageType& ref_image,
-                   double tolerance) {
-  // Confirming image equivalence is tricky. We want to be sensitive to changes
-  // in code that might produce different images but, at the same time, write a
-  // test that will survive the vagaries of rendering in CI. To that end, we
-  // employ two thresholds:
-  //
-  //   - tolerance: allowed per-channel deviation (passed as parameter).
-  //   - conformity: the fraction of channel values that must deviate less than
-  //                 `tolerance` (hard-coded below).
-  //
-  // Tolerance is provided by each test, but the conformity is hard-coded to be
-  // a high value (99.5%). Essentially, each of the primitives added by
-  // AddShapeRows() fills about 0.5% of the final image. If we want to recognize
-  // when any of those shapes changes in some significant way, we need to fail
-  // if that number of pixels deviates.
+                   double tolerance, double conformity = 0.995) {
   using T = typename ImageType::T;
   ASSERT_EQ(ref_image.size(), test_image.size());
   Eigen::Map<const VectorX<T>> data_expected(ref_image.at(0, 0),
@@ -338,18 +336,15 @@ void CompareImages(const ImageType& test_image, const ImageType& ref_image,
                                          .array()
                                          .abs();
   const int num_acceptable = (differences <= tolerance).count();
-  const double kConformity = 0.995;
-  EXPECT_GE(num_acceptable / static_cast<float>(ref_image.size()), kConformity);
+  EXPECT_GE(num_acceptable / static_cast<float>(ref_image.size()), conformity);
 }
 
-// Compares the test image against a reference image.
+// Compares the test image against a reference image named by its file path.
 //
-// The bytes of `test_image` are compared with the decoded bytes of the image
-// located at `ref_resource` to within the given tolerance.
-// Note: We'll call FindResource(ref_resource) to resolve the filename.
+// See the CompareImages(ImageType, ImageType) overload for details.
 template <typename ImageType>
 void CompareImages(const ImageType& test_image, const std::string& ref_resource,
-                   double tolerance) {
+                   double tolerance, double conformity = 0.995) {
   // The type we save to disk and compare the bytes of; may not be the same as
   // the input image type.
   using CompareType =
@@ -369,7 +364,7 @@ void CompareImages(const ImageType& test_image, const std::string& ref_resource,
   CompareType expected_image;
   ASSERT_TRUE(systems::sensors::LoadImage(ref_path, &expected_image));
 
-  CompareImages(compare_image, expected_image, tolerance);
+  CompareImages(compare_image, expected_image, tolerance, conformity);
 }
 
 // Sanitizes a test case description into a legal filename.
@@ -2407,9 +2402,14 @@ TEST_F(RenderEngineVtkTest, Ssao) {
 
   const SsaoParameter default_ssao;
   const ImageRgba8U default_image = render_image(default_ssao, "default");
-  CompareImages(default_image,
-                "drake/geometry/render_vtk/test/ssao_reference.png",
-                /* tolerance = */ 2);
+  {
+    SCOPED_TRACE("Default image");
+    // Note: There is slight deviation from linux to mac in CI such that the
+    // default 99.5% conformity value is too strict.
+    CompareImages(default_image,
+                  "drake/geometry/render_vtk/test/ssao_reference.png",
+                  /* tolerance = */ 2, /* conformity = */ 0.99);
+  }
 
   struct Config {
     std::string description;
