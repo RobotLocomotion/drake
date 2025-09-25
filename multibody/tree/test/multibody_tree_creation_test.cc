@@ -358,7 +358,6 @@ class TreeTopologyTests : public ::testing::Test {
                              const SpanningForest& forest) {
     const int kNumRigidBodies = 10;
 
-    EXPECT_EQ(topology.num_rigid_bodies(), kNumRigidBodies);
     EXPECT_EQ(topology.num_mobilizers(), kNumRigidBodies);
     EXPECT_EQ(topology.num_mobods(), kNumRigidBodies);
     EXPECT_EQ(topology.forest_height(), 4);
@@ -378,7 +377,7 @@ class TreeTopologyTests : public ::testing::Test {
     const set<LinkIndex> expected_level3 = {LinkIndex(6)};
 
     // Comparison of sets. The order of the elements is not important.
-    std::vector<std::set<LinkIndex>> levels(topology.num_rigid_bodies());
+    std::vector<std::set<LinkIndex>> levels(forest.height());
     for (const LinkJointGraph::Link& link : forest.links()) {
       const int level = forest.mobods(link.mobod_index()).level();
       levels[level].insert(link.index());

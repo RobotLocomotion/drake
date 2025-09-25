@@ -560,7 +560,7 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBodyImpl(
 
   const BodyIndex body_index(num_bodies());
   const FrameIndex body_frame_index(num_frames());
-  topology_.add_rigid_body_topology(body_index, body_frame_index);
+  topology_.add_frame_topology(body_frame_index, body_index);
 
   if (body_index == 0) {
     // We're adding the first RigidBody -- must be World!
@@ -792,8 +792,14 @@ void MultibodyTree<T>::CreateJointImplementations() {
     Mobilizer<T>* mobilizer = owned_mobilizer.get();
     mobilizer->set_model_instance(joint.model_instance());
     mobilizer->set_is_ephemeral(joint.is_ephemeral());
-    // TODO(sherm1) Merge issue: do we need this?
-    // mobilizer->set_is_floating_base_mobilizer(is_floating_base_mobilizer);
+
+    // Mark floating base bodies as needed. Note the strict definition:
+    // (1) the inboard joint must have six degrees of freedom, and
+    // (2) that joint must be ephemeral (added automatically).
+    bool is_floating_base_mobilizer =
+        mobilizer->has_six_dofs() && mobilizer->is_ephemeral();
+    mobilizer->set_is_floating_base_mobilizer(is_floating_base_mobilizer);
+
     AddMobilizer(std::move(owned_mobilizer));  // ownership->tree
     DRAKE_DEMAND(mobilizer->index() == mobod.index());
     // Record the joint to mobilizer map.

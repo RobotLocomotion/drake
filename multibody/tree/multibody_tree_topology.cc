@@ -10,7 +10,6 @@ bool MultibodyTreeTopology::operator==(
   if (forest_height_ != other.forest_height_) return false;
 
   if (frame_topology_ != other.frame_topology_) return false;
-  if (rigid_body_topology_ != other.rigid_body_topology_) return false;
   if (mobilizer_topology_ != other.mobilizer_topology_) return false;
   if (joint_actuator_topology_ != other.joint_actuator_topology_) return false;
 
@@ -34,26 +33,6 @@ bool MultibodyTreeTopology::operator==(
                     other.rigid_body_to_tree_index_.end());
 }
 
-bool RigidBodyTopology::operator==(const RigidBodyTopology& other) const {
-  if (index != other.index) return false;
-  if (inboard_mobilizer.is_valid() != other.inboard_mobilizer.is_valid())
-    return false;
-  if (inboard_mobilizer.is_valid() &&
-      inboard_mobilizer != other.inboard_mobilizer)
-    return false;
-  if (parent_body.is_valid() != other.parent_body.is_valid()) return false;
-  if (parent_body.is_valid() && parent_body != other.parent_body) return false;
-  if (body_frame != other.body_frame) return false;
-  if (level != other.level) return false;
-  if (mobod_index != other.mobod_index) return false;
-  if (is_floating_base != other.is_floating_base) return false;
-  if (has_quaternion_dofs != other.has_quaternion_dofs) return false;
-  if (floating_positions_start != other.floating_positions_start) return false;
-  if (floating_velocities_start_in_v != other.floating_velocities_start_in_v)
-    return false;
-  return true;
-}
-
 MultibodyTreeTopology::~MultibodyTreeTopology() = default;
 
 const JointActuatorTopology& MultibodyTreeTopology::get_joint_actuator_topology(
@@ -61,20 +40,6 @@ const JointActuatorTopology& MultibodyTreeTopology::get_joint_actuator_topology(
   DRAKE_ASSERT(index < ssize(joint_actuator_topology_));
   DRAKE_DEMAND(joint_actuator_topology_[index].has_value());
   return *joint_actuator_topology_[index];
-}
-
-void MultibodyTreeTopology::add_rigid_body_topology(
-    BodyIndex body_index, FrameIndex body_frame_index) {
-  if (is_valid()) {
-    throw std::logic_error(
-        "This MultibodyTreeTopology is finalized already. "
-        "Therefore adding more rigid bodies is not allowed. "
-        "See documentation for Finalize() for details.");
-  }
-  DRAKE_DEMAND(body_index == num_rigid_bodies());
-  DRAKE_DEMAND(body_frame_index == num_frames());
-  add_frame_topology(body_frame_index, body_index);
-  rigid_body_topology_.emplace_back(body_index, body_frame_index);
 }
 
 void MultibodyTreeTopology::add_frame_topology(FrameIndex frame_index,
@@ -127,32 +92,6 @@ void MultibodyTreeTopology::add_mobilizer_topology(
         "More than one mobilizer between two bodies is not allowed.",
         inboard_body, outboard_body));
   }
-  // Checks for graph loops. Each body can have only one inboard mobilizer.
-  if (rigid_body_topology_[outboard_body].inboard_mobilizer.is_valid()) {
-    throw std::runtime_error(
-        "When creating a model, an attempt was made to add two inboard "
-        "joints to the same rigid body; this is not allowed. One possible "
-        "cause might be attempting to weld a robot to World somewhere other "
-        "than its base rigid body; see Drake issue #17429 for discussion and "
-        "work-arounds, e.g., reversing some joint parent/child directions. "
-        "Another possible cause might be attempting to form a kinematic "
-        "loop using joints; to create a loop, consider using a "
-        "LinearBushingRollPitchYaw instead of a joint.");
-  }
-
-  // The checks above guarantee that it is the first time we add an inboard
-  // mobilizer to `outboard_body`. The DRAKE_DEMANDs below double check our
-  // implementation. RigidBodyTopology::inboard_mobilizer and
-  // RigidBodyTopology::parent_body are both set within this method right
-  // after these checks.
-  DRAKE_DEMAND(
-      !rigid_body_topology_[outboard_body].inboard_mobilizer.is_valid());
-  DRAKE_DEMAND(!rigid_body_topology_[outboard_body].parent_body.is_valid());
-
-  // Make note of the inboard mobilizer for the outboard body.
-  rigid_body_topology_[outboard_body].inboard_mobilizer = mobilizer_index;
-  // Similarly, record inboard_body as the parent of outboard_body.
-  rigid_body_topology_[outboard_body].parent_body = inboard_body;
 
   mobilizer_topology_.emplace_back(mobilizer_index, in_frame, out_frame,
                                    inboard_body, outboard_body, mobod);
@@ -171,7 +110,6 @@ void MultibodyTreeTopology::add_world_mobilizer_topology(
   mobilizer_topology_.emplace_back(MobodIndex(0), world_body_frame,
                                    world_body_frame, world_body_index,
                                    world_body_index, world_mobod);
-  rigid_body_topology_[world_body_index].inboard_mobilizer = MobodIndex(0);
 }
 
 void MultibodyTreeTopology::add_joint_actuator_topology(
@@ -231,40 +169,9 @@ void MultibodyTreeTopology::FinalizeTopology(const LinkJointGraph& graph) {
 
   const SpanningForest& forest = graph.forest();
 
-  // Create MobilizerTopology corresponding to each Mobod in the forest,
-  // indexed identically. Note that Mobods are already in depth-first order so
-  // we can use the same numbering for Mobilizers. Also update
-  // RigidBodyTopology, though in the case where we combine welded-together
-  // rigid bodies only the "active" body of each Composite gets updated here.
-  for (const auto& mobod : forest.mobods()) {
-    const MobodIndex node_index(mobod.index());
-    const BodyIndex rigid_body_index =
-        graph.links(mobod.link_ordinal()).index();
-    RigidBodyTopology& current_body = rigid_body_topology_[rigid_body_index];
-    current_body.mobod_index = node_index;
-    current_body.level = mobod.level();
-    const MobodIndex mobilizer_index = current_body.inboard_mobilizer;
-    DRAKE_DEMAND(mobilizer_index == node_index);
-    const MobilizerTopology& mobilizer = mobilizer_topology_[mobilizer_index];
-    DRAKE_DEMAND(mobilizer.index == node_index);
-  }
-
   num_positions_ = forest.num_positions();
   num_velocities_ = forest.num_velocities();
   num_states_ = num_positions_ + num_velocities_;
-
-  // Update position/velocity indexes for free rigid bodies so that they are
-  // easily accessible.
-  for (RigidBodyTopology& rigid_body_topology : rigid_body_topology_) {
-    if (rigid_body_topology.is_floating_base) {
-      DRAKE_DEMAND(rigid_body_topology.inboard_mobilizer.is_valid());
-      const MobilizerTopology& mobilizer =
-          get_mobilizer_topology(rigid_body_topology.inboard_mobilizer);
-      rigid_body_topology.floating_positions_start = mobilizer.positions_start;
-      rigid_body_topology.floating_velocities_start_in_v =
-          mobilizer.velocities_start_in_v;
-    }
-  }
 
   ExtractForestInfo(graph);
 
