@@ -2359,16 +2359,36 @@ TEST_F(RenderEngineVtkTest, PbrMaterialSettingSurvivesCloning) {
   EXPECT_EQ(clone_image, pbr_image);
 }
 
-// The purpose of this test is simply to confirm that all of the SSAO parameters
-// affect the rendered image. SSAO is also applied in WholeImageCustomParams
-// and the *reasonableness* of its default values can be assessed by looking
-// at that test's reference color image.
-TEST_F(RenderEngineVtkTest, SsaoParametersAffectImage) {
-  const RigidTransformd X_WC =
-      PoseCamera(/* p_WC */ Vector3d(2, -2, 2), /* p_WT */ Vector3d(0, 0, 0.5));
+// The purpose of this test is two-fold:
+//   1. Provide a base-line image to validate the default values as visually
+//      reasonable.
+//   2. Show that all of the parameters effect the rendered result. Note: the
+//      effects aren't predicted or tested in their specifics; just that changes
+//      in parameters lead to changes in images.
+//
+// We have a cached image of the default parameters (so a human can inspect the
+// image and judge whether the defaults are reasonable). All other renderings
+// are compared against that reference image.
+TEST_F(RenderEngineVtkTest, Ssao) {
+  const RigidTransformd X_WC = PoseCamera(/* p_WC */ Vector3d(1.5, -1.5, 2.5),
+                                          /* p_WT */ Vector3d(0, 0, 1));
   const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
 
-  auto render_image = [this, &camera, &X_WC](
+  auto populate_renderer = [this, &X_WC](RenderEngineVtk* renderer) {
+    InitializeRenderer(X_WC, true /* add terrain */, renderer);
+    // Simple cube.
+    const Mesh mesh(FindResourceOrThrow(
+                        "drake/geometry/render_vtk/test/cube_with_insets.gltf"),
+                    /* scale= */ 0.5);
+    const GeometryId id = GeometryId::get_new_id();
+    PerceptionProperties material;
+    material.AddProperty("label", "id", RenderLabel(17));
+    renderer->RegisterVisual(id, mesh, material,
+                             RigidTransformd(Vector3d(0, 0, 1)),
+                             false /* needs update */);
+  };
+
+  auto render_image = [this, &camera, &X_WC, &populate_renderer](
                           SsaoParameter ssao, const std::string& description,
                           const std::source_location& caller =
                               std::source_location::current()) {
@@ -2376,19 +2396,21 @@ TEST_F(RenderEngineVtkTest, SsaoParametersAffectImage) {
         .ssao = ssao,
         .force_to_pbr = true,
     });
-    InitializeRenderer(X_WC, true /* add terrain */, &renderer);
-    PopulateSimpleBoxTest(&renderer);
+    populate_renderer(&renderer);
     ImageRgba8U image(camera.core().intrinsics().width(),
                       camera.core().intrinsics().height());
     renderer.RenderColorImage(camera, &image);
-    const std::string stem =
-        fmt::format("line_{:0>4}_{}", caller.line(), SafeFilename(description));
-    SaveTestOutputImage(image, fmt::format("{0}_color.png", stem));
+    const std::string stem = fmt::format("line_{:0>4}_ssao_{}", caller.line(),
+                                         SafeFilename(description));
+    SaveTestOutputImage(image, fmt::format("{0}.png", stem));
     return image;
   };
 
   const SsaoParameter default_ssao;
   const ImageRgba8U default_image = render_image(default_ssao, "default");
+  CompareImages(default_image,
+                "drake/geometry/render_vtk/test/ssao_reference.png",
+                /* tolerance = */ 2);
 
   struct Config {
     std::string description;
@@ -2396,15 +2418,15 @@ TEST_F(RenderEngineVtkTest, SsaoParametersAffectImage) {
   };
 
   const std::vector<Config> configs{
-      {"radius change", SsaoParameter{.radius = default_ssao.radius * 2}},
-      {"bias change", SsaoParameter{.bias = default_ssao.bias * 10}},
-      {"sample count change",
+      {"radius increase", SsaoParameter{.radius = default_ssao.radius * 2}},
+      {"bias increase", SsaoParameter{.bias = default_ssao.bias * 10}},
+      {"sample count decrease",
        SsaoParameter{.sample_count = default_ssao.sample_count / 4}},
-      {"intensity scale change",
+      {"intensity scale increase",
        SsaoParameter{.intensity_scale = default_ssao.intensity_scale * 4}},
-      {"intensity shift change",
+      {"intensity shift increase",
        SsaoParameter{.intensity_shift = default_ssao.intensity_shift + 0.25}},
-      {"blur change", SsaoParameter{.blur = !default_ssao.blur}},
+      {"blur toggle", SsaoParameter{.blur = !default_ssao.blur}},
   };
 
   for (const auto& config : configs) {
@@ -3104,9 +3126,8 @@ TEST_F(RenderEngineVtkTest, WholeImageCustomParams) {
             // able to see the skybox.
             .texture = EquirectangularMap{.path = hdr_path}}},
         .exposure = 0.75,
-        // Note: this isn't an actual test of the SSAO parameters; just a proof
-        // of life.
-        .ssao = SsaoParameter{},
+        // We're _explicitly_ excluding SSAO; the CI environment seems to panic
+        // on this scene when enabling SSAO.
         .cast_shadows = true,
         .shadow_map_size = 1024,
         .backend = FLAGS_backend,
@@ -3205,7 +3226,6 @@ TEST_F(RenderEngineVtkTest, WholeImageVerticalAspectRatio) {
           // able to see the skybox.
           .texture = EquirectangularMap{.path = hdr_path}}},
       .exposure = 0.75,
-      .ssao = SsaoParameter{},
       .cast_shadows = true,
       .shadow_map_size = 1024,
       .backend = FLAGS_backend,
