@@ -77,9 +77,10 @@ namespace internal {
 // Wrapper for Object.
 struct wrapper_pydrake_object {
   using Type = Object;
-  static constexpr auto original_name = py::detail::_("pydrake::Object");
+  static constexpr auto original_name =
+      py::detail::const_name("pydrake::Object");
   using WrappedType = py::object;
-  static constexpr auto wrapped_name = py::detail::_("object");
+  static constexpr auto wrapped_name = py::detail::const_name("object");
 
   static Object unwrap(const py::object& obj) {
     return Object::from_pyobject(obj);
