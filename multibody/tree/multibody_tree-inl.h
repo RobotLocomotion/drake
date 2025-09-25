@@ -125,12 +125,6 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
   //  all. Consider also removing MultibodyElement altogether.
   mobilizer->set_parent_tree(this, mobilizer->mobod().index());
 
-  const BodyIndex outboard_body_index = mobilizer->outboard_body().index();
-  topology_.get_mutable_rigid_body_topology(outboard_body_index)
-      .is_floating_base = mobilizer->is_floating_base_mobilizer();
-  topology_.get_mutable_rigid_body_topology(outboard_body_index)
-      .has_quaternion_dofs = mobilizer->has_quaternion_dofs();
-
   MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
   mobilizers_.push_back(std::move(mobilizer));
   return *raw_mobilizer_ptr;
