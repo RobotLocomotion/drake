@@ -1,5 +1,9 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_test",
+    "drake_py_unittest",
+)
 
 config_setting(
     name = "flag_with_lcm_runtime_true",
@@ -13,6 +17,12 @@ cc_library(
         ":flag_with_lcm_runtime_true": ["@lcm"],
         "//conditions:default": [],
     }),
+)
+
+drake_py_test(
+    name = "import_lcm_test",
+    allow_import_unittest = True,
+    deps = ["@lcm//:lcm-python"],
 )
 
 drake_py_unittest(
