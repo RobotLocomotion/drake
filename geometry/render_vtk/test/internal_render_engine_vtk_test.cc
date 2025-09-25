@@ -2387,7 +2387,7 @@ TEST_F(RenderEngineVtkTest, Ssao) {
                              false /* needs update */);
   };
 
-  auto render_image = [this, &camera, &X_WC, &populate_renderer](
+  auto render_image = [&camera, &populate_renderer](
                           SsaoParameter ssao, const std::string& description,
                           const std::source_location& caller =
                               std::source_location::current()) {
