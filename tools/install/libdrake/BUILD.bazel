@@ -85,7 +85,7 @@ run_binary(
 generate_file(
     name = "with_lcm_runtime.cmake",
     content = select({
-        "//tools/workspace/lcm:flag_with_lcm_runtime_true": (
+        "//tools/workspace/lcm_internal:flag_with_lcm_runtime_true": (
             "set(WITH_LCM_RUNTIME ON)"
         ),
         "//conditions:default": (
@@ -315,7 +315,7 @@ cc_library(
         ":x11_deps",
         "//common:drake_marker_shared_library",
         "//tools/workspace/fmt:shared_library_maybe",
-        "//tools/workspace/lcm:shared_library_maybe",
+        "//tools/workspace/lcm_internal:shared_library_maybe",
         "//tools/workspace/spdlog:shared_library_maybe",
     ],
 )
