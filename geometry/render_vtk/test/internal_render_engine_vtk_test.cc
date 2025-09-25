@@ -99,7 +99,6 @@ using Eigen::VectorXd;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using math::RotationMatrixd;
-using render::ClippingRange;
 using render::ColorRenderCamera;
 using render::DepthRange;
 using render::DepthRenderCamera;
@@ -3127,7 +3126,7 @@ TEST_F(RenderEngineVtkTest, WholeImageCustomParams) {
             .texture = EquirectangularMap{.path = hdr_path}}},
         .exposure = 0.75,
         // We're _explicitly_ excluding SSAO; the CI environment seems to panic
-        // on this scene when enabling SSAO.
+        // on this scene when enabling SSAO. See the Ssao test above for more.
         .cast_shadows = true,
         .shadow_map_size = 1024,
         .backend = FLAGS_backend,
@@ -3140,11 +3139,8 @@ TEST_F(RenderEngineVtkTest, WholeImageCustomParams) {
     const int h = 360;
     const CameraInfo& source_intrinsics = depth_camera_.core().intrinsics();
     const CameraInfo intrinsics(w, h, source_intrinsics.fov_y());
-    // Shorten the clipping range to help CI's depth precision (just beyond the
-    // depth range).
-    const ClippingRange clipping(0.1, kZFar + 0.25);
     const DepthRenderCamera camera(
-        {"unused", intrinsics, clipping,
+        {"unused", intrinsics, depth_camera_.core().clipping(),
          depth_camera_.core().sensor_pose_in_camera_body()},
         depth_camera_.depth_range());
 
@@ -3283,16 +3279,9 @@ TEST_F(RenderEngineVtkTest, WholeImageVerticalAspectRatio) {
   ImageRgba8U color(w, h / 2);
   clip_image(tall_color, &color);
 
-  /* Note: without SSAO applied, this test passes with a tolerance of 2. The
-   change in aspect ratio seems to lead to a *biased* change in ambient
-   occlusion. The fact that the AO calculations don't match exactly isn't
-   particularly surprising due to the non-deterministic nature of SSAO
-   calculations. But the fact that the AO in this vertical image has obviously
-   darker occlusions *is* surprising. Determining if this is important and how
-   it might be corrected are exercises for a later day. */
   CompareImages(color,
                 "drake/geometry/render_vtk/test/whole_image_custom_color.png",
-                /* tolerance = */ 4);
+                /* tolerance = */ 2);
 }
 
 }  // namespace
