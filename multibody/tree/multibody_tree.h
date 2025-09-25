@@ -738,11 +738,11 @@ class MultibodyTree {
   const std::string& GetModelInstanceName(
       ModelInstanceIndex model_instance) const;
 
-  // Implements MultibodyPlant::HasUniqueFreeBaseBody.
-  bool HasUniqueFreeBaseBodyImpl(ModelInstanceIndex model_instance) const;
+  // Implements MultibodyPlant::HasUniqueFloatingBaseBody.
+  bool HasUniqueFloatingBaseBodyImpl(ModelInstanceIndex model_instance) const;
 
-  // Implements MultibodyPlant::GetUniqueFreeBaseBodyOrThrow.
-  const RigidBody<T>& GetUniqueFreeBaseBodyOrThrowImpl(
+  // Implements MultibodyPlant::GetUniqueFloatingBaseBodyOrThrow.
+  const RigidBody<T>& GetUniqueFloatingBaseBodyOrThrowImpl(
       ModelInstanceIndex model_instance) const;
 
   // @name Querying for multibody elements by name
@@ -1093,12 +1093,12 @@ class MultibodyTree {
   math::RigidTransform<T> GetFreeBodyPoseOrThrow(
       const systems::Context<T>& context, const RigidBody<T>& body) const;
 
-  // See MultibodyPlant::SetDefaultFreeBodyPose.
-  void SetDefaultFreeBodyPose(const RigidBody<T>& body,
-                              const math::RigidTransform<double>& X_WB);
+  // See MultibodyPlant::SetDefaultFloatingBaseBodyPose.
+  void SetDefaultFloatingBaseBodyPose(const RigidBody<T>& body,
+                                      const math::RigidTransform<double>& X_WB);
 
-  // See MultibodyPlant::GetDefaultFreeBodyPose.
-  math::RigidTransform<double> GetDefaultFreeBodyPose(
+  // See MultibodyPlant::GetDefaultFloatingBaseBodyPose.
+  math::RigidTransform<double> GetDefaultFloatingBaseBodyPose(
       const RigidBody<T>& body) const;
 
   // See MultibodyPlant::SetFreeBodyPose.
@@ -2876,9 +2876,10 @@ class MultibodyTree {
   std::optional<BodyIndex> MaybeGetUniqueBaseBodyIndex(
       ModelInstanceIndex model_instance) const;
 
-  // Helper function for GetDefaultFreeBodyPose().
+  // Helper function for GetDefaultFloatingBaseBodyPose().
   std::pair<Eigen::Quaternion<double>, Vector3<double>>
-  GetDefaultFreeBodyPoseAsQuaternionVec3Pair(const RigidBody<T>& body) const;
+  GetDefaultFloatingBaseBodyPoseAsQuaternionVec3Pair(
+      const RigidBody<T>& body) const;
 
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
   //  a method that verifies the state of the topology with a signature similar

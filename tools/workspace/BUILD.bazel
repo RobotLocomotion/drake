@@ -88,7 +88,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "gz_math_internal",
     "gz_utils_internal",
     "ipopt_internal",
-    "lcm",
     "libpng_internal",
     "libtiff_internal",
     "meshcat",
@@ -99,7 +98,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "nlopt_internal",
     "picosha2_internal",
     "poisson_disk_sampling_internal",
-    "pybind11",
+    # N.B. The @pybind11//:install is handled by //bindings/pydrake:install.
     "qhull_internal",
     "sdformat_internal",
     "spral_internal",
@@ -123,7 +122,9 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "highway_internal",
     "lapack",
     "libjpeg_turbo_internal",
+    "opencl",
     "spdlog",
+    "x11",
     "zlib",
 ]] + select({
     "//tools/workspace/csdp_internal:enabled": ["@csdp_internal//:install"],
@@ -151,6 +152,9 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "//conditions:default": [],
 }) + select({
     "//tools/workspace/scs_internal:enabled": ["@scs_internal//:install"],
+    "//conditions:default": [],
+}) + select({
+    "//tools/workspace/lcm:flag_with_lcm_runtime_true": ["@lcm//:install"],
     "//conditions:default": [],
 })
 

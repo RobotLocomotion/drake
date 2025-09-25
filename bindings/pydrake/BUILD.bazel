@@ -528,6 +528,8 @@ install(
         "//bindings/pydrake/autodiffutils:install",
         "//bindings/pydrake/math:install",
         "//bindings/pydrake/symbolic:install",
+        # Install the pybind11 headers if and only if we're installing pydrake.
+        "@pybind11//:install",
     ],
 )
 

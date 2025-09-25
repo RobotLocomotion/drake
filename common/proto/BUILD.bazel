@@ -31,7 +31,7 @@ drake_cc_library(
     deps = [
         ":rpc_pipe_temp_directory",
         "//common:essential",
-        "//lcmtypes:call_python",
+        "//lcmtypes:lcmtypes_drake_cc",
     ],
 )
 

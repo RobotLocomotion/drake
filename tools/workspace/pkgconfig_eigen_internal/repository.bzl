@@ -8,11 +8,12 @@ def _impl(repo_ctx):
     # later on, if and only if the library is actually used.
     setup_pkg_config_repository(repo_ctx)
 
-fmt_repository = repository_rule(
+pkgconfig_eigen_internal_repository = repository_rule(
     attrs = {
-        "modname": attr.string(default = "fmt"),
-        # Offered for backwards compatibility, but ignored.
-        "mirrors": attr.string_list_dict(),
+        "modname": attr.string(default = "eigen3"),
+        "extra_defines": attr.string_list(default = [
+            "EIGEN_MPL2_ONLY",
+        ]),
     },
     local = True,
     configure = True,

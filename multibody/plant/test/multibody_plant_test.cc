@@ -596,11 +596,12 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
   EXPECT_EQ(plant.num_actuated_dofs(cylinder_instance), 0);
 
   // Verify which bodies are free and modeled with quaternions.
-  EXPECT_FALSE(plant.GetBodyByName("Link1").is_floating());
+  EXPECT_FALSE(plant.GetBodyByName("Link1").is_floating_base_body());
   EXPECT_FALSE(plant.GetBodyByName("Link1").has_quaternion_dofs());
-  EXPECT_FALSE(plant.GetBodyByName("Link2").is_floating());
+  EXPECT_FALSE(plant.GetBodyByName("Link2").is_floating_base_body());
   EXPECT_FALSE(plant.GetBodyByName("Link2").has_quaternion_dofs());
-  EXPECT_TRUE(plant.GetBodyByName("uniformSolidCylinder").is_floating());
+  EXPECT_TRUE(
+      plant.GetBodyByName("uniformSolidCylinder").is_floating_base_body());
   EXPECT_TRUE(
       plant.GetBodyByName("uniformSolidCylinder").has_quaternion_dofs());
 
@@ -1237,9 +1238,9 @@ TEST_F(AcrobotPlantTests, SetPositionAndVelocitiesWithNonFinites) {
   }
 }
 
-GTEST_TEST(MultibodyPlantTest, SetDefaultFreeBodyPose) {
-  // We cannot use Acrobot for testing `SetDefaultFreeBodyPose` since it has no
-  // free bodies.
+GTEST_TEST(MultibodyPlantTest, SetDefaultFloatingBaseBodyPose) {
+  // We cannot use Acrobot for testing `SetDefaultFloatingBaseBodyPose` since it
+  // has no free bodies.
   MultibodyPlant<double> plant(0.0);
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const auto& body =
@@ -1248,19 +1249,21 @@ GTEST_TEST(MultibodyPlantTest, SetDefaultFreeBodyPose) {
       plant.AddRigidBody("welded body", SpatialInertia<double>::MakeUnitary());
   plant.WeldFrames(plant.world_body().body_frame(), welded_body.body_frame());
   // Default pose is identity when unset.
-  EXPECT_TRUE(CompareMatrices(plant.GetDefaultFreeBodyPose(body).GetAsMatrix4(),
-                              RigidTransformd::Identity().GetAsMatrix4()));
+  EXPECT_TRUE(
+      CompareMatrices(plant.GetDefaultFloatingBaseBodyPose(body).GetAsMatrix4(),
+                      RigidTransformd::Identity().GetAsMatrix4()));
 
   // Ok to set default pose for any body pre-finalize.
   const RigidTransformd X_WB(RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
-  EXPECT_NO_THROW(plant.SetDefaultFreeBodyPose(body, X_WB));
-  EXPECT_NO_THROW(plant.SetDefaultFreeBodyPose(welded_body, X_WB));
+  EXPECT_NO_THROW(plant.SetDefaultFloatingBaseBodyPose(body, X_WB));
+  EXPECT_NO_THROW(plant.SetDefaultFloatingBaseBodyPose(welded_body, X_WB));
   const double kTolerance = 4.0 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(plant.GetDefaultFreeBodyPose(body).GetAsMatrix4(),
-                              X_WB.GetAsMatrix4(), kTolerance));
   EXPECT_TRUE(
-      CompareMatrices(plant.GetDefaultFreeBodyPose(welded_body).GetAsMatrix4(),
+      CompareMatrices(plant.GetDefaultFloatingBaseBodyPose(body).GetAsMatrix4(),
                       X_WB.GetAsMatrix4(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(
+      plant.GetDefaultFloatingBaseBodyPose(welded_body).GetAsMatrix4(),
+      X_WB.GetAsMatrix4(), kTolerance));
 
   plant.Finalize();
   EXPECT_GT(plant.num_positions(), 0);
@@ -1268,7 +1271,7 @@ GTEST_TEST(MultibodyPlantTest, SetDefaultFreeBodyPose) {
   EXPECT_TRUE(CompareMatrices(body.EvalPoseInWorld(*context).GetAsMatrix4(),
                               X_WB.GetAsMatrix4(), kTolerance));
   // The pose of a non-free body isn't affected by the call to
-  // SetDefaultFreeBodyPose() even though it's allowed.
+  // SetDefaultFloatingBaseBodyPose() even though it's allowed.
   EXPECT_TRUE(
       CompareMatrices(welded_body.EvalPoseInWorld(*context).GetAsMatrix4(),
                       RigidTransformd::Identity().GetAsMatrix4(), kTolerance));
@@ -4121,7 +4124,7 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
 
   // Assert the base of the robot is free and modeled with a quaternion before
   // moving on with this assumption.
-  ASSERT_TRUE(plant.GetBodyByName("iiwa_link_0").is_floating());
+  ASSERT_TRUE(plant.GetBodyByName("iiwa_link_0").is_floating_base_body());
   ASSERT_TRUE(plant.GetBodyByName("iiwa_link_0").has_quaternion_dofs());
 
   // Sanity check basic invariants.
@@ -4332,7 +4335,7 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
 //
 // This test explicitly omits some APIs because they are tested elsewhere:
 //   - GTEST_TEST(StateSelection, FloatingBodies) tests
-//     SetFreeBodyPoseInAnchoredFrame.
+//     SetFloatingBaseBodyPoseInAnchoredFrame.
 //   - GTEST_TEST(SetRandomTest, FloatingBodies) the random distribution of
 //     of free body poses, as that is dealt with below in
 //   - multibody_plant_introspection_test.cc covers the "UniqueFreeBody" APIs.
@@ -4390,7 +4393,7 @@ GTEST_TEST(StateSelection, FreeBodiesVsFloatingBaseBodies) {
     DRAKE_DEMAND(mug_in_world || !CompareMatrices(X_PM.GetAsMatrix34(),
                                                   X_WM.GetAsMatrix34(), 1));
     // Whether the mug is a "floating base" body depends on its parent frame.
-    ASSERT_EQ(mug.is_floating(), mug_in_world);
+    ASSERT_EQ(mug.is_floating_base_body(), mug_in_world);
     ASSERT_EQ(plant.GetFloatingBaseBodies().contains(mug.index()),
               mug_in_world);
 
@@ -4420,25 +4423,26 @@ GTEST_TEST(StateSelection, FreeBodiesVsFloatingBaseBodies) {
     // tested by the call to SetFreeBodyPose(context, body, X_PB).
 
     // Explicitly setting things in the world frame produces the expected pose
-    // in world for floating free bodies, but not for "internal" free bodies.
+    // in world for floating base bodies, but not for "internal" free bodies.
     if (mug_in_world) {
-      plant.SetFreeBodyPoseInWorldFrame(context.get(), mug, X_WM);
+      plant.SetFloatingBaseBodyPoseInWorldFrame(context.get(), mug, X_WM);
       EXPECT_TRUE(CompareMatrices(
           plant.EvalBodyPoseInWorld(*context, mug).GetAsMatrix34(),
           X_WM.GetAsMatrix34()));
     } else {
-      EXPECT_THROW(plant.SetFreeBodyPoseInWorldFrame(context.get(), mug, X_WM),
-                   std::exception);
+      EXPECT_THROW(
+          plant.SetFloatingBaseBodyPoseInWorldFrame(context.get(), mug, X_WM),
+          std::exception);
     }
 
     // Although the mug has a quaternion floating joint, that is insufficient
     // for setting a *default* floating pose -- the parent must be world.
-    plant.SetDefaultFreeBodyPose(mug, X_PM);
+    plant.SetDefaultFloatingBaseBodyPose(mug, X_PM);
 
     // As promised, the value set is regurgitated back.
-    EXPECT_TRUE(
-        CompareMatrices(plant.GetDefaultFreeBodyPose(mug).GetAsMatrix34(),
-                        X_PM.GetAsMatrix34()));
+    EXPECT_TRUE(CompareMatrices(
+        plant.GetDefaultFloatingBaseBodyPose(mug).GetAsMatrix34(),
+        X_PM.GetAsMatrix34()));
 
     // The default pose takes affect iff the world is the parent frame.
     auto alt_context = plant.CreateDefaultContext();
@@ -4468,7 +4472,7 @@ GTEST_TEST(StateSelection, FreeBodiesVsFloatingBaseBodies) {
 }
 
 // This unit test verifies the workings of
-// MBP::SetFreeBodyPoseInAnchoredFrame(). To that end we build a model
+// MBP::SetFloatingBaseBodyPoseInAnchoredFrame(). To that end we build a model
 // representative of a real setup consisting of a robot arm mounted on a robot
 // table, an objects table and a mug. This test defines an objects frame O with
 // its origin located a the -x, -y corner of the objects table. With this setup,
@@ -4530,7 +4534,7 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   plant.Finalize();
 
   // Assert that the mug is a free body before moving on with this assumption.
-  ASSERT_TRUE(mug.is_floating());
+  ASSERT_TRUE(mug.is_floating_base_body());
   ASSERT_TRUE(mug.has_quaternion_dofs());
   EXPECT_EQ(mug.floating_position_suffix(0), "qw");
   EXPECT_EQ(mug.floating_position_suffix(1), "qx");
@@ -4547,11 +4551,12 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   EXPECT_EQ(mug.floating_velocity_suffix(5), "vz");
 
   // The "world" is not considered as a free body.
-  EXPECT_FALSE(plant.world_body().is_floating());
+  EXPECT_FALSE(plant.world_body().is_floating_base_body());
 
   // Sanity check that bodies welded to the world are not free.
-  EXPECT_FALSE(plant.GetBodyByName("iiwa_link_0").is_floating());
-  EXPECT_FALSE(plant.GetBodyByName("link", objects_table_model).is_floating());
+  EXPECT_FALSE(plant.GetBodyByName("iiwa_link_0").is_floating_base_body());
+  EXPECT_FALSE(
+      plant.GetBodyByName("link", objects_table_model).is_floating_base_body());
 
   std::unordered_set<BodyIndex> expected_floating_bodies({mug.index()});
   auto floating_bodies = plant.GetFloatingBaseBodies();
@@ -4566,8 +4571,8 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   // Initialize the pose X_OM of the mug frame M in the objects table frame O.
   const Vector3d p_OoMo_O(0.05, 0.0, 0.05);
   const RigidTransformd X_OM(p_OoMo_O);
-  plant.SetFreeBodyPoseInAnchoredFrame(context.get(), objects_frame_O, mug,
-                                       X_OM);
+  plant.SetFloatingBaseBodyPoseInAnchoredFrame(context.get(), objects_frame_O,
+                                               mug, X_OM);
 
   // Retrieve the pose of the mug in the world.
   const RigidTransformd& X_WM = plant.EvalBodyPoseInWorld(*context, mug);
@@ -4578,14 +4583,14 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   EXPECT_TRUE(CompareMatrices(X_WM.GetAsMatrix4(), X_WM_expected.GetAsMatrix4(),
                               kTolerance, MatrixCompareType::relative));
 
-  // SetFreeBodyPoseInAnchoredFrame() should throw if the reference frame F is
-  // not anchored to the world.
+  // SetFloatingBaseBodyPoseInAnchoredFrame() should throw if the reference
+  // frame F is not anchored to the world.
   const Frame<double>& end_effector_frame =
       plant.GetFrameByName("iiwa_link_7", arm_model);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.SetFreeBodyPoseInAnchoredFrame(context.get(), end_effector_frame,
-                                           mug, X_OM),
+      plant.SetFloatingBaseBodyPoseInAnchoredFrame(
+          context.get(), end_effector_frame, mug, X_OM),
       "Frame 'iiwa_link_7' must be anchored to the world frame.");
 
   // Check qdot to v mappings.
@@ -4641,9 +4646,9 @@ GTEST_TEST(MultibodyPlantTest, BaseBodyJointChoice) {
               BaseBodyJointType::kQuaternionFloatingJoint);
 
     plant->Finalize();  // Two quaternion floating joints.
-    EXPECT_TRUE(default_body->is_floating());
+    EXPECT_TRUE(default_body->is_floating_base_body());
     EXPECT_TRUE(default_body->has_quaternion_dofs());
-    EXPECT_TRUE(instance_body->is_floating());
+    EXPECT_TRUE(instance_body->is_floating_base_body());
     EXPECT_TRUE(instance_body->has_quaternion_dofs());
     EXPECT_EQ(plant->num_joints(), 2);
     EXPECT_EQ(plant->num_positions(), 14);
@@ -4699,9 +4704,9 @@ GTEST_TEST(MultibodyPlantTest, BaseBodyJointChoice) {
     EXPECT_EQ(plant->GetBaseBodyJointType(model_instance),
               BaseBodyJointType::kRpyFloatingJoint);
 
-    EXPECT_TRUE(default_body->is_floating());
+    EXPECT_TRUE(default_body->is_floating_base_body());
     EXPECT_FALSE(default_body->has_quaternion_dofs());
-    EXPECT_TRUE(instance_body->is_floating());
+    EXPECT_TRUE(instance_body->is_floating_base_body());
     EXPECT_FALSE(instance_body->has_quaternion_dofs());
     EXPECT_EQ(plant->num_joints(), 2);
     EXPECT_EQ(plant->num_positions(), 12);
@@ -4743,9 +4748,9 @@ GTEST_TEST(MultibodyPlantTest, BaseBodyJointChoice) {
               BaseBodyJointType::kRpyFloatingJoint);
 
     plant->Finalize();  // One quaternion and one rpy floating joint.
-    EXPECT_TRUE(default_body->is_floating());
+    EXPECT_TRUE(default_body->is_floating_base_body());
     EXPECT_TRUE(default_body->has_quaternion_dofs());
-    EXPECT_TRUE(instance_body->is_floating());
+    EXPECT_TRUE(instance_body->is_floating_base_body());
     EXPECT_FALSE(instance_body->has_quaternion_dofs());
     EXPECT_EQ(plant->num_joints(), 2);
     EXPECT_EQ(plant->num_positions(), 13);
@@ -4764,9 +4769,9 @@ GTEST_TEST(MultibodyPlantTest, BaseBodyJointChoice) {
               BaseBodyJointType::kQuaternionFloatingJoint);
 
     plant->Finalize();  // One weld and one quaternion floating joint.
-    EXPECT_FALSE(default_body->is_floating());
+    EXPECT_FALSE(default_body->is_floating_base_body());
     EXPECT_FALSE(default_body->has_quaternion_dofs());
-    EXPECT_TRUE(instance_body->is_floating());
+    EXPECT_TRUE(instance_body->is_floating_base_body());
     EXPECT_TRUE(instance_body->has_quaternion_dofs());
     EXPECT_EQ(plant->num_joints(), 2);
     EXPECT_EQ(plant->num_positions(), 7);
@@ -4970,8 +4975,8 @@ GTEST_TEST(SetRandomTest, SetDefaultWhenNoDistributionSpecified) {
                               Vector3d(1.0, 2.0, 3.0));
   const RigidTransformd X_WB1(RollPitchYawd(0.1, 0.2, 0.3),
                               Vector3d(2.0, 4.0, 6.0));
-  plant.SetDefaultFreeBodyPose(body0, X_WB0);
-  plant.SetDefaultFreeBodyPose(body1, X_WB1);
+  plant.SetDefaultFloatingBaseBodyPose(body0, X_WB0);
+  plant.SetDefaultFloatingBaseBodyPose(body1, X_WB1);
 
   // The random positions should match the default positions when no
   // distribution is set.

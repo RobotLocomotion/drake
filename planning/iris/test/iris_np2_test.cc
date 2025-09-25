@@ -323,6 +323,25 @@ TEST_F(DoublePendulum, PostprocessRemoveCollisions) {
   EXPECT_FALSE(region.PointInSet(query_point));
 }
 
+TEST_F(DoublePendulum, RelaxMargin) {
+  IrisNp2Options options;
+  auto* scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
+
+  // Deliberately set the configuration space margin to be very large, so that
+  // the hyperplanes added will cut off the seed point and cause an error.
+  options.sampled_iris_options.configuration_space_margin = 1e8;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
+      ".*within sampled_iris_options\\.configuration_space_margin of being "
+      "infeasible.*");
+
+  options.sampled_iris_options.relax_margin = true;
+  EXPECT_NO_THROW(
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options));
+}
+
 TEST_F(DoublePendulumRationalForwardKinematics, FunctionParameterization) {
   IrisNp2Options options;
   auto* scene_graph_checker =
@@ -487,38 +506,47 @@ TEST_F(ConvexConfigurationSubspace,
       dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
   ASSERT_TRUE(scene_graph_checker != nullptr);
 
-  auto parameterization_double = [](const Vector1d& config) -> Vector2d {
-    return Vector2d{config[0], 2 * config[0] + 1};
-  };
-  auto parameterization_autodiff =
-      [](const Vector1<AutoDiffXd>& config) -> Vector2<AutoDiffXd> {
-    return Vector2<AutoDiffXd>{config[0], 2 * config[0] + 1};
-  };
+  std::vector<IrisNp2Options> options_to_try(3);
+  options_to_try[0].sampling_strategy = "greedy";
+  options_to_try[1].sampling_strategy = "ray";
+  options_to_try[2].sampling_strategy = "ray";
+  options_to_try[2].ray_sampler_options.only_walk_toward_collisions = true;
 
-  solvers::MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables(1, "x");
-  prog.AddLinearConstraint(Vector1d(1.0),
-                           -std::numeric_limits<float>::infinity(), -0.25, x);
-  options.sampled_iris_options.prog_with_additional_constraints = &prog;
+  for (int i = 0; i < ssize(options_to_try); ++i) {
+    auto parameterization_double = [](const Vector1d& config) -> Vector2d {
+      return Vector2d{config[0], 2 * config[0] + 1};
+    };
+    auto parameterization_autodiff =
+        [](const Vector1<AutoDiffXd>& config) -> Vector2<AutoDiffXd> {
+      return Vector2<AutoDiffXd>{config[0], 2 * config[0] + 1};
+    };
 
-  options.parameterization = IrisParameterizationFunction(
-      parameterization_double, parameterization_autodiff,
-      /* parameterization_is_threadsafe */ true,
-      /* parameterization_dimension */ 1);
+    solvers::MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables(1, "x");
+    prog.AddLinearConstraint(Vector1d(1.0),
+                             -std::numeric_limits<float>::infinity(), -0.25, x);
+    options_to_try[i].sampled_iris_options.prog_with_additional_constraints =
+        &prog;
 
-  HPolyhedron region =
-      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
+    options_to_try[i].parameterization = IrisParameterizationFunction(
+        parameterization_double, parameterization_autodiff,
+        /* parameterization_is_threadsafe */ true,
+        /* parameterization_dimension */ 1);
 
-  Vector1d query_point_in(-0.3);
-  Vector1d query_point_out(-0.2);
+    HPolyhedron region = IrisNp2(*scene_graph_checker, starting_ellipsoid_,
+                                 domain_, options_to_try[i]);
 
-  EXPECT_TRUE(region.PointInSet(query_point_in));
-  EXPECT_FALSE(region.PointInSet(query_point_out));
+    Vector1d query_point_in(-0.3);
+    Vector1d query_point_out(-0.2);
 
-  // Verify that query_point_out is still collision free. (It just violates the
-  // added constraint.)
-  EXPECT_TRUE(scene_graph_checker->CheckConfigCollisionFree(
-      parameterization_double(query_point_out)));
+    EXPECT_TRUE(region.PointInSet(query_point_in));
+    EXPECT_FALSE(region.PointInSet(query_point_out));
+
+    // Verify that query_point_out is still collision free. (It just violates
+    // the added constraint.)
+    EXPECT_TRUE(scene_graph_checker->CheckConfigCollisionFree(
+        parameterization_double(query_point_out)));
+  }
 }
 
 // Verify that we throw a reasonable error when the initial point is in

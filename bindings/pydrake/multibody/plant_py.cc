@@ -8,7 +8,6 @@
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
-#include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
@@ -481,18 +480,40 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("model_instances"),
             py::arg("with_respect_to"), py::arg("frame_A"), py::arg("frame_E"),
             cls_doc.CalcJacobianCenterOfMassTranslationalVelocity.doc_6args)
+        .def("GetFloatingBaseBodies", &Class::GetFloatingBaseBodies,
+            cls_doc.GetFloatingBaseBodies.doc)
+        .def("SetDefaultFloatingBaseBodyPose",
+            &Class::SetDefaultFloatingBaseBodyPose, py::arg("body"),
+            py::arg("X_WB"), cls_doc.SetDefaultFloatingBaseBodyPose.doc)
+        .def("GetDefaultFloatingBaseBodyPose",
+            &Class::GetDefaultFloatingBaseBodyPose, py::arg("body"),
+            cls_doc.GetDefaultFloatingBaseBodyPose.doc)
+        .def("SetFloatingBaseBodyPoseInWorldFrame",
+            &Class::SetFloatingBaseBodyPoseInWorldFrame, py::arg("context"),
+            py::arg("body"), py::arg("X_WB"),
+            cls_doc.SetFloatingBaseBodyPoseInWorldFrame.doc)
+        .def("SetFloatingBaseBodyPoseInAnchoredFrame",
+            &Class::SetFloatingBaseBodyPoseInAnchoredFrame, py::arg("context"),
+            py::arg("frame_F"), py::arg("body"), py::arg("X_FB"),
+            cls_doc.SetFloatingBaseBodyPoseInAnchoredFrame.doc)
+        .def("GetUniqueFloatingBaseBodyOrThrow",
+            &Class::GetUniqueFloatingBaseBodyOrThrow, py::arg("model_instance"),
+            py_rvp::reference_internal,
+            cls_doc.GetUniqueFloatingBaseBodyOrThrow.doc)
+        .def("HasUniqueFloatingBaseBody", &Class::HasUniqueFloatingBaseBody,
+            py::arg("model_instance"), cls_doc.HasUniqueFloatingBaseBody.doc)
         .def("GetFreeBodyPose", &Class::GetFreeBodyPose, py::arg("context"),
             py::arg("body"), cls_doc.GetFreeBodyPose.doc)
         .def("SetFreeBodyPose",
             overload_cast_explicit<void, Context<T>*, const RigidBody<T>&,
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
-            py::arg("context"), py::arg("body"), py::arg("X_PB"),
+            py::arg("context"), py::arg("body"), py::arg("X_JpJc"),
             cls_doc.SetFreeBodyPose.doc_3args)
-        .def("SetDefaultFreeBodyPose", &Class::SetDefaultFreeBodyPose,
-            py::arg("body"), py::arg("X_PB"),
-            cls_doc.SetDefaultFreeBodyPose.doc)
-        .def("GetDefaultFreeBodyPose", &Class::GetDefaultFreeBodyPose,
-            py::arg("body"), cls_doc.GetDefaultFreeBodyPose.doc)
+        .def("SetFreeBodySpatialVelocity",
+            overload_cast_explicit<void, Context<T>*, const RigidBody<T>&,
+                const SpatialVelocity<T>&>(&Class::SetFreeBodySpatialVelocity),
+            py::arg("context"), py::arg("body"), py::arg("V_JpJc"),
+            cls_doc.SetFreeBodySpatialVelocity.doc_3args)
         .def("GetActuationFromArray", &Class::GetActuationFromArray,
             py::arg("model_instance"), py::arg("u"),
             cls_doc.GetActuationFromArray.doc)
@@ -557,20 +578,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("model_instance"),
             cls_doc.GetVelocities.doc_2args)
         .def(
-            "SetFreeBodySpatialVelocity",
-            [](const Class* self, const RigidBody<T>& body,
-                const SpatialVelocity<T>& V_WB, Context<T>* context) {
-              self->SetFreeBodySpatialVelocity(context, body, V_WB);
-            },
-            py::arg("body"), py::arg("V_PB"), py::arg("context"),
-            cls_doc.SetFreeBodySpatialVelocity.doc_3args)
-        .def("HasUniqueFreeBaseBody", &Class::HasUniqueFreeBaseBody,
-            py::arg("model_instance"), cls_doc.HasUniqueFreeBaseBody.doc)
-        .def("GetUniqueFreeBaseBodyOrThrow",
-            &Class::GetUniqueFreeBaseBodyOrThrow, py::arg("model_instance"),
-            py_rvp::reference_internal,
-            cls_doc.GetUniqueFreeBaseBodyOrThrow.doc)
-        .def(
             "EvalBodyPoseInWorld",
             [](const Class* self, const Context<T>& context,
                 const RigidBody<T>& body_B) {
@@ -594,6 +601,52 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("context"), py::arg("body"),
             cls_doc.EvalBodySpatialVelocityInWorld.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    const char* X_PB_parameter_name_deprecated =
+        "X_PB parameter name for SetFreeBodyPose() is deprecated and will be "
+        "removed 2026-01-01. Use X_JpJc instead.";
+    const char* V_PB_parameter_name_deprecated =
+        "The parameter order and V_PB parameter name for "
+        "SetFreeBodySpatialVelocity() are deprecated and will be removed "
+        "2026-01-01. Use context, body, V_JpJc instead.";
+    cls  // BR
+        .def("SetDefaultFreeBodyPose",
+            WrapDeprecated(cls_doc.SetDefaultFreeBodyPose.doc_deprecated,
+                &Class::SetDefaultFreeBodyPose),
+            py::arg("body"), py::arg("X_PB"),
+            cls_doc.SetDefaultFreeBodyPose.doc_deprecated)
+        .def("GetDefaultFreeBodyPose",
+            WrapDeprecated(cls_doc.GetDefaultFreeBodyPose.doc_deprecated,
+                &Class::GetDefaultFreeBodyPose),
+            py::arg("body"), cls_doc.GetDefaultFreeBodyPose.doc_deprecated)
+        .def("HasUniqueFreeBaseBody",
+            WrapDeprecated(cls_doc.HasUniqueFreeBaseBody.doc_deprecated,
+                &Class::HasUniqueFreeBaseBody),
+            py::arg("model_instance"),
+            cls_doc.HasUniqueFreeBaseBody.doc_deprecated)
+        .def("GetUniqueFreeBaseBodyOrThrow",
+            WrapDeprecated(cls_doc.GetUniqueFreeBaseBodyOrThrow.doc_deprecated,
+                &Class::GetUniqueFreeBaseBodyOrThrow),
+            py::arg("model_instance"), py_rvp::reference_internal,
+            cls_doc.GetUniqueFreeBaseBodyOrThrow.doc_deprecated)
+        .def("SetFreeBodyPose",
+            WrapDeprecated(X_PB_parameter_name_deprecated,
+                overload_cast_explicit<void, Context<T>*, const RigidBody<T>&,
+                    const RigidTransform<T>&>(&Class::SetFreeBodyPose)),
+            py::arg("context"), py::arg("body"), py::arg("X_PB"),
+            X_PB_parameter_name_deprecated)
+        .def("SetFreeBodySpatialVelocity",
+            WrapDeprecated(V_PB_parameter_name_deprecated,
+                [](const Class* self, const RigidBody<T>& body,
+                    const SpatialVelocity<T>& V_PB, Context<T>* context) {
+                  self->SetFreeBodySpatialVelocity(context, body, V_PB);
+                }),
+            py::arg("body"), py::arg("V_PB"), py::arg("context"),
+            V_PB_parameter_name_deprecated);
+#pragma GCC diagnostic pop
+
     auto CalcJacobianSpatialVelocity =
         [](const Class* self, const systems::Context<T>& context,
             JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
@@ -1027,8 +1080,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("coulomb_friction"),
             cls_doc.RegisterCollisionGeometry
                 .doc_5args_body_X_BG_shape_name_coulomb_friction)
-        .def("GetFloatingBaseBodies", &Class::GetFloatingBaseBodies,
-            cls_doc.GetFloatingBaseBodies.doc)
         .def("get_source_id", &Class::get_source_id, cls_doc.get_source_id.doc)
         .def("get_geometry_query_input_port",
             &Class::get_geometry_query_input_port, py_rvp::reference_internal,

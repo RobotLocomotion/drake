@@ -218,7 +218,7 @@ drake_cc_library(
     ],
     deps = [
         ":image",
-        "//lcmtypes:image",
+        "//lcmtypes:lcmtypes_drake_cc",
     ],
 )
 
@@ -232,7 +232,7 @@ drake_cc_library(
     ],
     deps = [
         "//common:essential",
-        "//lcmtypes:image_array",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/framework",
     ],
     implementation_deps = [
@@ -257,7 +257,7 @@ drake_cc_library(
     implementation_deps = [
         ":lcm_image_traits",
         ":vtk_image_reader_writer",
-        "//lcmtypes:image_array",
+        "//lcmtypes:lcmtypes_drake_cc",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkIOImage",
         "@zlib",
@@ -631,7 +631,7 @@ drake_cc_googletest(
     deps = [
         ":lcm_image_array_to_images",
         "//common:find_resource",
-        "//lcmtypes:image_array",
+        "//lcmtypes:lcmtypes_drake_cc",
     ],
 )
 
