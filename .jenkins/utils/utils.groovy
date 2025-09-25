@@ -117,8 +117,7 @@ def emailFailureResults() {
     }
     emailext (
       subject: "${subject}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-      body: "See <${env.BUILD_URL}display/redirect?page=changes> " +
-        "and <${env.BUILD_URL}changes>",
+      body: "See <${env.BUILD_URL}/console> and <${env.BUILD_URL}/changes>",
       to: '$DEFAULT_RECIPIENTS',
     )
   }
