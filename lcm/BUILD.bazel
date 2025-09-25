@@ -8,7 +8,6 @@ load(
 )
 load(
     "//tools/skylark:drake_py.bzl",
-    "drake_py_test",
     "drake_py_unittest",
 )
 
@@ -257,13 +256,6 @@ drake_cc_googletest(
     deps = [
         ":lcmt_drake_signal_utils",
     ],
-)
-
-drake_py_test(
-    name = "import_lcm_test",
-    # TODO(jwnimmer-tri) Port this to drake_py_unittest.
-    allow_import_unittest = True,
-    deps = ["@lcm//:lcm-python"],
 )
 
 add_lint_tests(
