@@ -119,6 +119,9 @@ cc_library(
     linkstatic = True,
 )
 
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
 cc_binary(
     name = "lcm-logger",
     srcs = [
@@ -133,6 +136,9 @@ cc_binary(
     ],
 )
 
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
 cc_binary(
     name = "lcm-logplayer",
     srcs = [
@@ -171,6 +177,9 @@ cc_binary(
     ],
 )
 
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
 cc_binary(
     name = "_lcm.so",
     srcs = [
@@ -193,6 +202,10 @@ cc_binary(
     ],
 )
 
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
+#
 # Downstream users of lcm-python expect to say "import lcm". However, in the
 # sandbox the python package is located at lcm-python/lcm/__init__.py to match
 # the source tree structure of LCM; without declaring an `imports = [...]` path
@@ -229,6 +242,9 @@ exec(compile(_text, _filename, 'exec'))
     visibility = ["//visibility:private"],
 )
 
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
 py_library(
     name = "lcm-python-upstream",
     srcs = ["lcm-python/lcm/__init__.py"],  # Actual code from upstream.
@@ -236,6 +252,9 @@ py_library(
     visibility = ["//visibility:private"],
 )
 
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
 py_library(
     name = "lcm-python",
     srcs = ["gen/lcm/__init__.py"],  # Shim, from the genrule above.
@@ -243,6 +262,9 @@ py_library(
     deps = [":lcm-python-upstream"],
 )
 
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
 java_library(
     name = "lcm-java",
     srcs = glob(["lcm-java/lcm/**/*.java"]),
@@ -255,12 +277,18 @@ java_library(
     ],
 )
 
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
 java_binary(
     name = "lcm-logplayer-gui",
     main_class = "lcm.logging.LogPlayer",
     runtime_deps = [":lcm-java"],
 )
 
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
 java_binary(
     name = "lcm-spy",
     jvm_flags = [

@@ -194,7 +194,7 @@ java_library(
     name = "lcmtypes_drake_java",
     srcs = [":messages_java_srcs"],
     visibility = ["//visibility:public"],
-    deps = ["@lcm//:lcm-java"],
+    deps = ["@lcm_internal//lcm-java"],
 )
 
 install(
