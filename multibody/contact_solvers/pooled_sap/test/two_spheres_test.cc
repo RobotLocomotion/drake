@@ -159,9 +159,9 @@ class TwoSpheres : public testing::Test {
   }
 
   void SetInContact(double penetration) {
-    plant_->SetFreeBodyPoseInWorldFrame(plant_context_, *sphere1_,
-                                        RigidTransformd::Identity());
-    plant_->SetFreeBodyPoseInWorldFrame(
+    plant_->SetFloatingBaseBodyPoseInWorldFrame(plant_context_, *sphere1_,
+                                                RigidTransformd::Identity());
+    plant_->SetFloatingBaseBodyPoseInWorldFrame(
         plant_context_, *sphere2_,
         RigidTransformd(Vector3d(kRadius1 + kRadius2 - penetration, 0, 0)));
 

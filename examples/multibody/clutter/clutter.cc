@@ -483,7 +483,7 @@ void SetObjectsIntoAPile(const MultibodyPlant<double>& plant,
   int i = 1;
   for (auto body_index : bodies) {
     const auto& body = plant.get_body(body_index);
-    if (body.is_floating()) {
+    if (body.is_floating_base_body()) {
       double e = FLAGS_scale_factor > 0 ? i - 1 : num_objects - i;
       double scale = std::pow(std::abs(FLAGS_scale_factor), e);
 

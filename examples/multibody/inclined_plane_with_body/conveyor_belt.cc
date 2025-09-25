@@ -147,7 +147,7 @@ int do_main() {
   // Set initial conditions
   const Vector3<double> p_WoBo_W(0.0, 0.0, LBz / 2.0);
   const math::RigidTransform<double> X_WB(p_WoBo_W);
-  plant.SetFreeBodyPoseInWorldFrame(&plant_context, block, X_WB);
+  plant.SetFloatingBaseBodyPoseInWorldFrame(&plant_context, block, X_WB);
 
   // Set up the simulator with the convex integrator
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));

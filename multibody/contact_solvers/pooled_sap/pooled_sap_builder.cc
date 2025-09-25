@@ -178,7 +178,8 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
       // former has an identity Jacobian, the latter does not.
       const auto& link = forest.link_by_index(BodyIndex(b));
       const auto& mobod = forest.mobods(link.mobod_index());
-      const bool is_free_floating = body.is_floating() && mobod.is_leaf_mobod();
+      const bool is_free_floating =
+          body.is_floating_base_body() && mobod.is_leaf_mobod();
       params->body_is_floating.push_back(is_free_floating ? 1 : 0);
 
       // TODO(amcastro-tri): consider using forest.link_composites() in
@@ -220,7 +221,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
         params->body_cliques.push_back(clique);
         typename EigenPool<Matrix6X<T>>::ElementView Jv_WBc_W =
             params->J_WB.Add(6, nt);
-        if (body.is_floating()) {
+        if (body.is_floating_base_body()) {
           Jv_WBc_W.setIdentity();
         } else {
           plant().CalcJacobianSpatialVelocity(
