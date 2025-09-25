@@ -1,23 +1,8 @@
 #pragma once
 
 /// @file
-/// This file defines the topological structures which represent the logical
-/// connectivities between multibody tree elements. For instance, the
-/// RigidBodyTopology for a RigidBody will contain the topological information
-/// specifying its inboard (or parent) RigidBody in the forest model, and its
-/// outboard (or children) rigid bodies, and the level or depth in the forest.
-/// All of this information is independent of the particular scalar type T the
-/// MultibodyTree and its components are specialized with. All of the data
-/// structures defined in this file are meant to be the minimal
-/// representation that can store this information. These data structures are
-/// used in the following ways:
-///
-/// - To aid the process of cloning or transmogrifying multibody tree
-///   components without having to create maps between the "original" and
-///   "cloned" objects.
-/// - Each topological Multibody element has a copy (acquired at
-///   MultibodyTree::Finalize() stage) of its topology which serves as a
-///   key into the Context for that element's state.
+/// This file is unnecessarily duplicative of multibody/topology and is
+/// being removed.
 
 #include <optional>
 #include <vector>
@@ -30,62 +15,6 @@
 namespace drake {
 namespace multibody {
 namespace internal {
-
-// TODO(sherm1) Eliminate RigidBodyTopology altogether in favor of direct
-//  access to the SpanningForest, which contains the same information.
-
-// Store the topological information associated with a RigidBody.
-struct RigidBodyTopology {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidBodyTopology);
-
-  // Default construction to invalid configuration.
-  RigidBodyTopology() {}
-
-  // Constructs for RigidBody with index `body_index` and corresponding
-  // RigidBodyFrame with index `frame_index`.
-  RigidBodyTopology(BodyIndex body_index, FrameIndex frame_index)
-      : index(body_index), body_frame(frame_index) {}
-
-  // Returns `true` if all members of `this` topology are exactly equal to the
-  // members of `other`.
-  bool operator==(const RigidBodyTopology& other) const;
-
-  // Unique index in the MultibodyPlant.
-  BodyIndex index{0};
-
-  // Index to the one and only inboard mobilizer a RigidBody can have.
-  MobodIndex inboard_mobilizer{};
-
-  // Within the SpanningForest, the RigidBody immediately inboard of this body;
-  // That is, the body at the other side of the inboard_mobilizer at a level
-  // one lower (closer to World) in the Forest. We're calling this "parent"
-  // here (in the tree sense) but don't confuse it with the parent RigidBody
-  // of a Joint. This will remain "invalid" for World.
-  BodyIndex parent_body{};
-
-  // Unique index to the frame associated with this RigidBody.
-  FrameIndex body_frame{0};
-
-  // Depth level in the SpanningForest, level = 0 for World.
-  int level{-1};
-
-  // Index to the mobilized body (BodyNode) modeling this RigidBody in the
-  // SpanningForest.
-  MobodIndex mobod_index;
-
-  // `true` if this topology corresponds to a floating base body, meaning
-  // it has an ephemeral (automatically added at Finalize()) 6dof mobilizer.
-  bool is_floating_base{false};
-
-  // `true` if this topology corresponds to a free body with rotations
-  // parametrized by a quaternion.
-  bool has_quaternion_dofs{false};
-
-  // For a floating base body only, these are indices into the multibody
-  // state for its ephemeral 6dof joint's coordinates.
-  int floating_positions_start{-1};
-  int floating_velocities_start_in_v{-1};
-};
 
 // Data structure to store the topological information associated with a Frame.
 struct FrameTopology {
@@ -206,9 +135,7 @@ class MultibodyTreeTopology {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyTreeTopology);
 
-  // Default constructor creates an empty, invalid topology. The minimum valid
-  // topology for a MultibodyPlant contains at least the
-  // RigidBodyTopology for World.
+  // Default constructor creates an empty, invalid topology.
   MultibodyTreeTopology() {}
 
   ~MultibodyTreeTopology();
@@ -216,11 +143,6 @@ class MultibodyTreeTopology {
   // Returns `true` if all members of `this` topology are exactly equal to the
   // members of `other`.
   bool operator==(const MultibodyTreeTopology& other) const;
-
-  // Returns the number of RigidBody elements in the MultibodyPlant. This
-  // includes the World RigidBody and therefore the minimum number of rigid
-  // bodies after MultibodyTree::Finalize() will always be one, not zero.
-  int num_rigid_bodies() const { return ssize(rigid_body_topology_); }
 
   // Returns the number of physical frames in the multibody tree.
   int num_frames() const { return ssize(frame_topology_); }
@@ -245,19 +167,6 @@ class MultibodyTreeTopology {
   const FrameTopology& get_frame_topology(FrameIndex index) const {
     DRAKE_ASSERT(index < num_frames());
     return frame_topology_[index];
-  }
-
-  // Returns a constant reference to the corresponding RigidBodyTopology given a
-  // BodyIndex.
-  const RigidBodyTopology& get_rigid_body_topology(BodyIndex index) const {
-    DRAKE_ASSERT(index < num_rigid_bodies());
-    return rigid_body_topology_[index];
-  }
-
-  // Mutable version of get_rigid_body().
-  RigidBodyTopology& get_mutable_rigid_body_topology(BodyIndex index) {
-    DRAKE_ASSERT(index < num_rigid_bodies());
-    return rigid_body_topology_[index];
   }
 
   // Returns a constant reference to the corresponding MobilizerTopology given a
@@ -304,7 +213,7 @@ class MultibodyTreeTopology {
   // TreeIndex::is_valid().
   // @pre Index b is valid and b < num_rigid_bodies().
   TreeIndex body_to_tree_index(BodyIndex b) const {
-    DRAKE_ASSERT(b < num_rigid_bodies());
+    DRAKE_ASSERT(b < ssize(rigid_body_to_tree_index_));
     return rigid_body_to_tree_index_[b];
   }
 
@@ -322,14 +231,6 @@ class MultibodyTreeTopology {
     if (!tree_index.is_valid()) return false;  // World doesn't have a Tree.
     return num_tree_velocities(tree_index) > 0;
   }
-
-  // Creates and adds a new RigidBodyTopology to this MultibodyTreeTopology
-  // using the indicated BodyIndex and FrameIndex values.
-  //
-  // @throws std::exception if FinalizeTopology() was already called on `this`
-  // topology.
-  // @pre the given indexes are the ones for the next available slots
-  void add_rigid_body_topology(BodyIndex, FrameIndex);
 
   // Creates and adds a new FrameTopology, associated with the given
   // BodyIndex, to this MultibodyTreeTopology.
@@ -433,7 +334,6 @@ class MultibodyTreeTopology {
 
   // Topological elements:
   std::vector<FrameTopology> frame_topology_;
-  std::vector<RigidBodyTopology> rigid_body_topology_;
   std::vector<MobilizerTopology> mobilizer_topology_;
   std::vector<std::optional<JointActuatorTopology>> joint_actuator_topology_;
 
