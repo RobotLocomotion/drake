@@ -5,19 +5,9 @@ load(
     "drake_py_unittest",
 )
 
-config_setting(
-    name = "flag_with_lcm_runtime_true",
-    flag_values = {"//tools/flags:with_lcm_runtime": "True"},
-)
-
-cc_library(
-    name = "shared_library_maybe",
-    visibility = ["//tools/install/libdrake:__pkg__"],
-    deps = select({
-        ":flag_with_lcm_runtime_true": ["@lcm"],
-        "//conditions:default": [],
-    }),
-)
+# TODO(jwnimmer-tri) These tests are no longer relevant for Drake, but are kept
+# around as a regresion coverage of our `package.BUILD.bazel` file. This file
+# (and its tests) will be removed when the `@lcm` deprecation is removed.
 
 drake_py_test(
     name = "import_lcm_test",
