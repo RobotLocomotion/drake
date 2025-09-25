@@ -119,18 +119,6 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
 
   mobilizer->set_parent_tree(this, mobilizer->mobod().index());
 
-  // Mark floating base bodies as needed. Note the strict definition:
-  // (1) the inboard joint must have six degrees of freedom, and
-  // (2) that joint must be ephemeral (added automatically).
-  bool is_floating_base_body =
-      mobilizer->has_six_dofs() && mobilizer->is_ephemeral();
-
-  const BodyIndex outboard_body_index = mobilizer->outboard_body().index();
-  topology_.get_mutable_rigid_body_topology(outboard_body_index)
-      .is_floating_base = mobilizer->is_floating_base_mobilizer();
-  topology_.get_mutable_rigid_body_topology(outboard_body_index)
-      .has_quaternion_dofs = mobilizer->has_quaternion_dofs();
-
   MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
   mobilizers_.push_back(std::move(mobilizer));
   return *raw_mobilizer_ptr;
@@ -428,7 +416,7 @@ MultibodyTree<T>::get_mutable_positions_and_velocities(
 // Must be implemented carefully to avoid invalidating more cache entries than
 // are necessary.
 // TODO(sherm1) Currently we can only get q and v together so have no way to
-// invalidate just q-dependent or v-dependent cache entries.
+//  invalidate just q-dependent or v-dependent cache entries.
 template <typename T>
 Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::GetMutablePositions(
     systems::Context<T>* context) const {

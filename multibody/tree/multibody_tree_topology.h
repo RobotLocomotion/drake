@@ -38,9 +38,6 @@ namespace internal {
 struct RigidBodyTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidBodyTopology);
 
-  // Default construction to invalid configuration.
-  RigidBodyTopology() {}
-
   // Constructs for RigidBody with index `body_index` and corresponding
   // RigidBodyFrame with index `frame_index`.
   RigidBodyTopology(BodyIndex body_index, FrameIndex frame_index)
@@ -53,7 +50,13 @@ struct RigidBodyTopology {
   // Unique index in the MultibodyPlant.
   BodyIndex index{0};
 
+  // Unique index to the frame associated with this RigidBody.
+  FrameIndex body_frame{0};
+
+  // Below here these members are set at FinalizeTopology().
+
   // Index to the one and only inboard mobilizer a RigidBody can have.
+  // This is also the index of the BodyNode and Mobod.
   MobodIndex inboard_mobilizer{};
 
   // Within the SpanningForest, the RigidBody immediately inboard of this body;
@@ -63,28 +66,8 @@ struct RigidBodyTopology {
   // of a Joint. This will remain "invalid" for World.
   BodyIndex parent_body{};
 
-  // Unique index to the frame associated with this RigidBody.
-  FrameIndex body_frame{0};
-
   // Depth level in the SpanningForest, level = 0 for World.
   int level{-1};
-
-  // Index to the mobilized body (BodyNode) modeling this RigidBody in the
-  // SpanningForest.
-  MobodIndex mobod_index;
-
-  // `true` if this topology corresponds to a floating base body, meaning
-  // it has an ephemeral (automatically added at Finalize()) 6dof mobilizer.
-  bool is_floating_base{false};
-
-  // `true` if this topology corresponds to a free body with rotations
-  // parametrized by a quaternion.
-  bool has_quaternion_dofs{false};
-
-  // For a floating base body only, these are indices into the multibody
-  // state for its ephemeral 6dof joint's coordinates.
-  int floating_positions_start{-1};
-  int floating_velocities_start_in_v{-1};
 };
 
 // Data structure to store the topological information associated with a Frame.
