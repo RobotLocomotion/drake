@@ -100,6 +100,7 @@ def _check_cc_deps(*, cc_deps, testonly):
     """Fails-fast in case of potential ODR violations."""
     allowed_prefix = [
         # The dep uses a fully-qualified path to somewhere within pydrake.
+        "//bindings/generated_docstrings",
         "//bindings/pydrake",
         # The dep is local to pydrake already.
         ":",

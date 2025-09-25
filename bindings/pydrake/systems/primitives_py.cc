@@ -3,11 +3,11 @@
 #include <utility>
 #include <vector>
 
+#include "drake/bindings/generated_docstrings/systems_primitives.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/affine_system.h"
@@ -59,7 +59,7 @@ PYBIND11_MODULE(primitives, m) {
   using namespace drake::systems;
 
   m.doc() = "Bindings for the primitives portion of the Systems framework.";
-  constexpr auto& doc = pydrake_doc.drake.systems;
+  constexpr auto& doc = pydrake_doc_systems_primitives.drake.systems;
 
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.trajectories");

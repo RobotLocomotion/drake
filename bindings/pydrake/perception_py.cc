@@ -1,8 +1,8 @@
 #include <string>
 
+#include "drake/bindings/generated_docstrings/perception.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/perception/depth_image_to_point_cloud.h"
 #include "drake/perception/point_cloud.h"
@@ -19,7 +19,7 @@ namespace {
 void init_pc_flags(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::perception::pc_flags;
-  constexpr auto& doc = pydrake_doc.drake.perception.pc_flags;
+  constexpr auto& doc = pydrake_doc_perception.drake.perception.pc_flags;
 
   {
     using Class = BaseField;
@@ -52,7 +52,7 @@ void init_pc_flags(py::module m) {
 void init_perception(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::perception;
-  constexpr auto& doc = pydrake_doc.drake.perception;
+  constexpr auto& doc = pydrake_doc_perception.drake.perception;
 
   using systems::LeafSystem;
   using systems::sensors::CameraInfo;
