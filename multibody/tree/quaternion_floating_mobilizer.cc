@@ -325,11 +325,10 @@ void QuaternionFloatingMobilizer<T>::DoCalcNMatrix(
     const systems::Context<T>& context, EigenPtr<MatrixX<T>> N) const {
   // Upper-left block (rotational part of the N matrix) is Nᵣ ≜ 0.5 Q_FM.
   // See QuaternionFloatingMobilizer::CalcQMatrix() for details.
-  // The lower-right block (translational part of the N matrix) is [I₃₃].
   N->template block<4, 3>(0, 0) = CalcQMatrixOverTwo(get_quaternion(context));
   N->template block<4, 3>(0, 3).setZero();      // Upper-right block.
   N->template block<3, 3>(4, 0).setZero();      // Lower-left block.
-  N->template block<3, 3>(4, 3).setIdentity();  // Lower-right block.
+  N->template block<3, 3>(4, 3).setIdentity();  // Lower-right block = [I₃₃].
 }
 
 template <typename T>
