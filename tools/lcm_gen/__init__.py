@@ -987,10 +987,25 @@ def main():
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("src", nargs="+", help="*.lcm source file(s)")
     parser.add_argument(
+        "--cpp",
+        action="count",
+        help="Ignored for backwards compatiblity.",
+    )
+    directory_config = parser.add_mutually_exclusive_group(required=True)
+    directory_config.add_argument(
         "--outdir",
-        required=True,
         type=pathlib.Path,
-        help="Directory where output files should be written",
+        metavar="DIR",
+        help="Directory where output files should be written. "
+        "The lcm package name will NOT be used as a subdirectory name. "
+        "(This is a Drake-specific flag, not available in upstream lcm-gen.)",
+    )
+    directory_config.add_argument(
+        "--cpp-hpath",
+        type=pathlib.Path,
+        metavar="DIR",
+        help="Directory where output files should be written. "
+        "The lcm package name WILL be used as a subdirectory name.",
     )
     args = parser.parse_args()
 
@@ -1002,9 +1017,14 @@ def main():
 
     for src in args.src:
         struct = Parser.parse(filename=src)
+        package = struct.typ.package or ""
+        name = struct.typ.name
         generator = CppGen(struct=struct)
         content = generator.generate()
-        path = args.outdir / f"{struct.typ.name}.hpp"
+        if args.outdir is not None:
+            path = args.outdir / f"{name}.hpp"
+        else:
+            path = args.cpp_hpath / package / f"{name}.hpp"
         path.write_text(content, encoding="utf-8")
 
 
