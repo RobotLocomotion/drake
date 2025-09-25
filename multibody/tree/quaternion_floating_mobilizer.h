@@ -300,18 +300,18 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   //        ⎣ 0₃₃    I₃₃ ⎦   I₃₃ is the 3x3 identity matrix.
   // Nᵣ(q) = 0.5 * QuaternionFloatingMobilizer::CalcQMatrix() is a 4x3 matrix.
   // Note: The time-derivative of the quaternion qᵣ in context can be calculated
-  // q̇ᵣ = Nᵣ(q) w_FM_F, where w_FM_F is frame M's angular velocity in frame F,
-  // expressed in F. For a unit quaternion q̂ᵣ, we prove d/dt(q̂ᵣ) satisfies the
-  // "orthogonality constraint" i.e., d/dt(q̂ᵣ ⋅ q̂ᵣ = 1)  =>  q̂ᵣ ⋅ d/dt(q̂ᵣ) = 0
-  // via q̂ᵣ ⋅ d/dt(q̂ᵣ) = q̂ᵣ ⋅ Nᵣ(q̂ᵣ) w_FM_F = [0 0 0] w_FM_F = 0.
-  // For a non-unit quaternion qᵣ, the orthogonality constraint is proved via
-  // qᵣ ⋅ d/dt(qᵣ) =  qᵣ ⋅ Nᵣ(qᵣ) w_FM_F = |qᵣ| q̂ᵣ ⋅ |qᵣ| Nᵣ(q̂ᵣ) w_FM_F =
-  // |qᵣ|² q̂ᵣ ⋅ Nᵣ(q̂ᵣ) w_FM_F = |qᵣ|² [0 0 0] w_FM_F = 0, where this proof
-  // uses the fact Nᵣ(qᵣ) is linear in qᵣ and qᵣ = |qᵣ| q̂ᵣ.
+  // q̇ᵣ = Nᵣ(q) vᵣ, where vᵣ are the rotational generalized velocities. For a
+  // quaternion qᵣ, we prove q̇ᵣ satisfies the "orthogonality constraint".
+  // Mathematically, the derivative of a unit or constant-length quaternion
+  // i.e.,  qᵣ ⋅ qᵣ = constant  is  d/dt(qᵣ ⋅ qᵣ = constant)  =>  qᵣ ⋅ q̇ᵣ = 0.
+  // With q̇ᵣ = Nᵣ(q) vᵣ, we prove q̇ᵣ satisfies the orthogonality constraint via
+  // qᵣ ⋅ q̇ᵣ = qᵣ ⋅ Nᵣ(qᵣ) vᵣ = |qᵣ| q̂ᵣ ⋅ |qᵣ| Nᵣ(q̂ᵣ) vᵣ
+  //         = |qᵣ|² q̂ᵣ ⋅ Nᵣ(q̂ᵣ) vᵣ = |qᵣ|² [0 0 0] vᵣ = 0, since we can prove
+  // q̂ᵣ ⋅ Nᵣ(q̂ᵣ) = [0 0 0], where  q̂ᵣ is a unit quaternion.
   // Summary: If the quaternion in context is a unit quaternion q̂ᵣ, then its
-  // time-derivative can be calculated as d/dt(q̂ᵣ) = Nᵣ(q̂ᵣ) w_FM_F.
+  // time-derivative can be calculated as d/dt(q̂ᵣ) = Nᵣ(q̂ᵣ) vᵣ.
   // If the quaternion is context is a non-unit quaternion, then its time-
-  // derivative can be calculated d/dt(qᵣ) = Nᵣ(qᵣ) w_FM_F = |qᵣ| Nᵣ(q̂ᵣ) w_FM_F.
+  // derivative can be calculated d/dt(qᵣ) = Nᵣ(qᵣ) vᵣ = |qᵣ| Nᵣ(q̂ᵣ) vᵣ.
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
