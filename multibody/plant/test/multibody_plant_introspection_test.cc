@@ -66,7 +66,7 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
   // Introspection of the underlying mathematical model is not available until
   // we call Finalize().
   DRAKE_EXPECT_THROWS_MESSAGE(
-      mug.is_floating(),
+      mug.is_floating_base_body(),
       ".*The model to which this rigid body belongs must be finalized.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       mug.has_quaternion_dofs(),
@@ -75,8 +75,8 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
       plant.GetFloatingBaseBodies(),
       "Pre-finalize calls to 'GetFloatingBaseBodies\\(\\)' are not allowed.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.GetUniqueFreeBaseBodyOrThrow(robot_table_model),
-      "Pre-finalize calls to 'GetUniqueFreeBaseBodyOrThrow\\(\\)' are not "
+      plant.GetUniqueFloatingBaseBodyOrThrow(robot_table_model),
+      "Pre-finalize calls to 'GetUniqueFloatingBaseBodyOrThrow\\(\\)' are not "
       "allowed.*");
 
   plant.Finalize();
@@ -95,38 +95,40 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
 
   // Assert that the mug and the two Atlas robot pelvises are floating and
   // modeled with quaternions.
-  ASSERT_TRUE(mug.is_floating());
+  ASSERT_TRUE(mug.is_floating_base_body());
   ASSERT_TRUE(mug.has_quaternion_dofs());
-  ASSERT_TRUE(pelvis1.is_floating());
+  ASSERT_TRUE(pelvis1.is_floating_base_body());
   ASSERT_TRUE(pelvis1.has_quaternion_dofs());
-  ASSERT_TRUE(pelvis2.is_floating());
+  ASSERT_TRUE(pelvis2.is_floating_base_body());
   ASSERT_TRUE(pelvis2.has_quaternion_dofs());
 
-  // Assert that the floating base of the Atlas robot are the pelvises.
-  EXPECT_TRUE(plant.HasUniqueFreeBaseBody(atlas_model1));
-  EXPECT_TRUE(plant.HasUniqueFreeBaseBody(atlas_model2));
-  EXPECT_EQ(plant.GetUniqueFreeBaseBodyOrThrow(atlas_model1).index(),
+  // Assert that the floating base bodies of the Atlas robot are the pelvises.
+  EXPECT_TRUE(plant.HasUniqueFloatingBaseBody(atlas_model1));
+  EXPECT_TRUE(plant.HasUniqueFloatingBaseBody(atlas_model2));
+  EXPECT_EQ(plant.GetUniqueFloatingBaseBodyOrThrow(atlas_model1).index(),
             pelvis1.index());
-  EXPECT_EQ(plant.GetUniqueFreeBaseBodyOrThrow(atlas_model2).index(),
+  EXPECT_EQ(plant.GetUniqueFloatingBaseBodyOrThrow(atlas_model2).index(),
             pelvis2.index());
 
-  // The float mug is its own unique floating base.
-  EXPECT_TRUE(plant.HasUniqueFreeBaseBody(mug_model));
-  EXPECT_EQ(plant.GetUniqueFreeBaseBodyOrThrow(mug_model).index(), mug.index());
+  // The float mug is its own unique floating base body.
+  EXPECT_TRUE(plant.HasUniqueFloatingBaseBody(mug_model));
+  EXPECT_EQ(plant.GetUniqueFloatingBaseBodyOrThrow(mug_model).index(),
+            mug.index());
 
-  // The "world" is not considered as a free body.
-  EXPECT_FALSE(plant.world_body().is_floating());
+  // The "world" is not considered a floating base body.
+  EXPECT_FALSE(plant.world_body().is_floating_base_body());
   // Moreover, the "world" does not have a base body because by definition, a
   // base body is a body whose parent is the world.
-  EXPECT_FALSE(plant.HasUniqueFreeBaseBody(world_model_instance()));
+  EXPECT_FALSE(plant.HasUniqueFloatingBaseBody(world_model_instance()));
 
   // The table has been anchored to the world.
-  EXPECT_FALSE(plant.GetBodyByName("link", robot_table_model).is_floating());
-  EXPECT_FALSE(plant.HasUniqueFreeBaseBody(robot_table_model));
+  EXPECT_FALSE(
+      plant.GetBodyByName("link", robot_table_model).is_floating_base_body());
+  EXPECT_FALSE(plant.HasUniqueFloatingBaseBody(robot_table_model));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.GetUniqueFreeBaseBodyOrThrow(robot_table_model),
+      plant.GetUniqueFloatingBaseBodyOrThrow(robot_table_model),
       "Model " + plant.GetModelInstanceName(robot_table_model) +
-          " has a unique base body, but it is not free.");
+          " has a unique base body, but it is not a floating base body.");
 
   // Retrieve floating bodies.
   std::unordered_set<BodyIndex> expected_floating_bodies(
@@ -163,18 +165,19 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
 GTEST_TEST(MultibodyPlantIntrospection, NonUniqueBaseBody) {
   MultibodyPlant<double> plant(0.0);
   // Add two objects to the same (default) model instance and let one of them be
-  // free.
+  // a floating base body (that is, we don't give it a joint).
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-  plant.AddRigidBody("free_body", default_model_instance(),
+  plant.AddRigidBody("floating_base_body", default_model_instance(),
                      SpatialInertia<double>::MakeUnitary());
   const RigidBody<double>& fixed_body = plant.AddRigidBody(
       "fixed_body", default_model_instance(), SpatialInertia<double>::NaN());
   plant.WeldFrames(plant.world_frame(), fixed_body.body_frame());
   plant.Finalize();
-  // Even though there is only one free body, the base body is not unique.
-  EXPECT_FALSE(plant.HasUniqueFreeBaseBody(default_model_instance()));
+  // Even though there is only one floating base body, there is another base
+  // body so there is not a unique base body.
+  EXPECT_FALSE(plant.HasUniqueFloatingBaseBody(default_model_instance()));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.GetUniqueFreeBaseBodyOrThrow(default_model_instance()),
+      plant.GetUniqueFloatingBaseBodyOrThrow(default_model_instance()),
       "Model " + plant.GetModelInstanceName(default_model_instance()) +
           " does not have a unique base body.");
 }
