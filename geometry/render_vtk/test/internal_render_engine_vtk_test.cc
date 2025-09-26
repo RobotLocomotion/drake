@@ -309,12 +309,13 @@ RigidTransformd PoseCamera(const Vector3d& p_WC, const Vector3d& p_WT,
 // Compares the test image against a reference image.
 //
 // The bytes of `test_image` are compared with the bytes of `ref_image`.
-// Equivalence is determined by both tolerance and conformity. Confirming image
-// equivalence is tricky. We want to be sensitive to changes in code that might
-// produce different images but, at the same time, write a test that will
-// survive the vagaries of rendering in CI.
+// Confirming image equivalence is tricky. We want to be sensitive to changes in
+// code that might produce different images but, at the same time, write a test
+// that will survive the vagaries of rendering in CI. Equivalence is determined
+// by both tolerance and conformity.
 //
-// @param tolerance   Allowed pixel-wise, per-channel deviation.
+// @param tolerance   The maximum acceptable pixel-wise, per-channel deviation
+//                    (for 8-bit channels in the range [0, 255]).
 // @param conformity  The fraction of channel values that must deviate less than
 //                    `tolerance`. The default value (99.5%) is strict enough to
 //                    catch most changes in the "WholeImage*" family of tests;
@@ -2365,25 +2366,36 @@ TEST_F(RenderEngineVtkTest, PbrMaterialSettingSurvivesCloning) {
 // are compared against that reference image.
 TEST_F(RenderEngineVtkTest, Ssao) {
   const RigidTransformd X_WC = PoseCamera(/* p_WC */ Vector3d(1.5, -1.5, 2.5),
-                                          /* p_WT */ Vector3d(0, 0, 1));
+                                          /* p_WT */ Vector3d(0, 0, 0.5));
   const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
 
   auto populate_renderer = [this, &X_WC](RenderEngineVtk* renderer) {
     InitializeRenderer(X_WC, true /* add terrain */, renderer);
-    // Simple cube.
-    const Mesh mesh(FindResourceOrThrow(
-                        "drake/geometry/render_vtk/test/cube_with_insets.gltf"),
-                    /* scale= */ 0.5);
-    const GeometryId id = GeometryId::get_new_id();
+    // We'll create an arrangement of cubes, so we can get some interesting and
+    // obvious ambient occlusion effects.
     PerceptionProperties material;
     material.AddProperty("label", "id", RenderLabel(17));
-    renderer->RegisterVisual(id, mesh, material,
-                             RigidTransformd(Vector3d(0, 0, 1)),
-                             false /* needs update */);
+    material.AddProperty("phong", "diffuse", Rgba(0.8, 0.2, 0.2));
+    const RigidTransformd X_WB(Vector3d(0, 0, 0.5));
+    renderer->RegisterVisual(GeometryId::get_new_id(), Box(1, 1, 1), material,
+                             X_WB, false);
+    renderer->RegisterVisual(GeometryId::get_new_id(), Box(1.45, 0.5, 0.5),
+                             material, X_WB, false);
+    renderer->RegisterVisual(GeometryId::get_new_id(), Box(1.6, 0.2, 0.2),
+                             material, X_WB, false);
+    renderer->RegisterVisual(GeometryId::get_new_id(), Box(0.5, 0.5, 1.45),
+                             material, X_WB, false);
+    renderer->RegisterVisual(GeometryId::get_new_id(), Box(0.2, 0.2, 1.6),
+                             material, X_WB, false);
+    renderer->RegisterVisual(GeometryId::get_new_id(), Box(0.5, 1.45, 0.5),
+                             material, X_WB, false);
+    renderer->RegisterVisual(GeometryId::get_new_id(), Box(0.2, 1.6, 0.2),
+                             material, X_WB, false);
   };
 
   auto render_image = [&camera, &populate_renderer](
-                          SsaoParameter ssao, const std::string& description,
+                          std::optional<SsaoParameter> ssao,
+                          const std::string& description,
                           const std::source_location& caller =
                               std::source_location::current()) {
     RenderEngineVtk renderer(RenderEngineVtkParams{
@@ -2413,7 +2425,7 @@ TEST_F(RenderEngineVtkTest, Ssao) {
 
   struct Config {
     std::string description;
-    SsaoParameter params;
+    std::optional<SsaoParameter> params;
   };
 
   const std::vector<Config> configs{
@@ -2426,6 +2438,7 @@ TEST_F(RenderEngineVtkTest, Ssao) {
       {"intensity shift increase",
        SsaoParameter{.intensity_shift = default_ssao.intensity_shift + 0.25}},
       {"blur toggle", SsaoParameter{.blur = !default_ssao.blur}},
+      {"diabled", std::nullopt},
   };
 
   for (const auto& config : configs) {

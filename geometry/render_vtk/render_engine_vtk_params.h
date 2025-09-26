@@ -80,8 +80,9 @@ struct SsaoParameter {
   double bias{0.01};
 
   /** This is simply the number of samples taken. More samples lead to smoother
-   occlusion patterns. Large numbers will produce better images, but you should
-   use the smallest number that still provides acceptable visual quality. */
+   occlusion patterns. Large numbers will produce better images but at a higher
+   computational cost. You should use the smallest number that still provides
+   acceptable visual quality. */
   int sample_count{128};
 
   /** Once the occlusion factor is computed, prior to applying the factor to
@@ -92,7 +93,12 @@ struct SsaoParameter {
    Using these two values allows you to tune the contrast and mean occlusion
    value independent of the sampling algorithm above. Remember, the more
    occlusion, the more darkness. So, scale factors greater than one will make
-   the image darker as will *negative* shift values. */
+   the image darker as will *negative* shift values.
+
+   One reason to consider shifting is is based on the total lighting in the
+   scene. For a very brightly lit scene with a large camera exposure, the
+   ambient occlusion effects should have a smaller influence. A scale less
+   than one, or a shift greater than zero, will reduce the SSAO effect. */
   double intensity_scale{1.0};
   double intensity_shift{0.0};
 
