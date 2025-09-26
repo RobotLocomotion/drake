@@ -23,25 +23,25 @@ constexpr struct /* pydrake_doc_geometry_render_vtk */ {
     struct /* geometry */ {
       // Symbol: drake::geometry::EnvironmentMap
       struct /* EnvironmentMap */ {
-        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:43
+        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:139
         const char* doc = R"""()""";
         // Symbol: drake::geometry::EnvironmentMap::Serialize
         struct /* Serialize */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:47
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:143
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::geometry::EnvironmentMap::skybox
         struct /* skybox */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:54
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:150
           const char* doc =
 R"""(If true, the environment map will be rendered in a sky box. If false,
 it won't be visible in the background, but it will illuminate objects.)""";
         } skybox;
         // Symbol: drake::geometry::EnvironmentMap::texture
         struct /* texture */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:72
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:168
           const char* doc =
 R"""(The texture to use for the environment map. If none is defined, there
 is no environment map.
@@ -84,18 +84,18 @@ Note:
       } EnvironmentMap;
       // Symbol: drake::geometry::EquirectangularMap
       struct /* EquirectangularMap */ {
-        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:29
+        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:125
         const char* doc = R"""()""";
         // Symbol: drake::geometry::EquirectangularMap::Serialize
         struct /* Serialize */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:33
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:129
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::geometry::EquirectangularMap::path
         struct /* path */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:40
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:136
           const char* doc = R"""(The path to the map file.)""";
         } path;
         auto Serialize__fields() const {
@@ -106,21 +106,21 @@ Serialization" for background.)""";
       } EquirectangularMap;
       // Symbol: drake::geometry::GltfExtension
       struct /* GltfExtension */ {
-        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:78
+        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:174
         const char* doc =
 R"""(Specifies how to deal with glTF "extensions" (non-standard
 capabilities).
 https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#specifying-extensions)""";
         // Symbol: drake::geometry::GltfExtension::Serialize
         struct /* Serialize */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:82
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:178
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::geometry::GltfExtension::warn_unimplemented
         struct /* warn_unimplemented */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:90
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:186
           const char* doc =
 R"""(Whether to log a warning when this extension is used (i.e., is listed
 in ``extensionsUsed``) but isn't implemented by the render engine. By
@@ -216,13 +216,13 @@ e.g., render label validation).)""";
       } MakeRenderEngineVtk;
       // Symbol: drake::geometry::NullTexture
       struct /* NullTexture */ {
-        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:22
+        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:118
         const char* doc =
 R"""((Internal use only) A place holder indicating that no texture has been
 provided for environment map (and, therefore, no environment map).)""";
         // Symbol: drake::geometry::NullTexture::Serialize
         struct /* Serialize */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:26
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:122
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
@@ -230,19 +230,19 @@ Serialization" for background.)""";
       } NullTexture;
       // Symbol: drake::geometry::RenderEngineVtkParams
       struct /* RenderEngineVtkParams */ {
-        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:94
+        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:190
         const char* doc =
 R"""(Construction parameters for the RenderEngineVtk.)""";
         // Symbol: drake::geometry::RenderEngineVtkParams::Serialize
         struct /* Serialize */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:98
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:194
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::geometry::RenderEngineVtkParams::backend
         struct /* backend */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:258
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:360
           const char* doc =
 R"""(Controls which graphics library will be used to perform the rendering.
 
@@ -268,7 +268,7 @@ support this display.)""";
         } backend;
         // Symbol: drake::geometry::RenderEngineVtkParams::cast_shadows
         struct /* cast_shadows */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:205
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:307
           const char* doc =
 R"""(If ``True``, *all* lights that are *able* to cast shadows will do so.
 
@@ -295,7 +295,7 @@ basis.)""";
         } cast_shadows;
         // Symbol: drake::geometry::RenderEngineVtkParams::default_clear_color
         struct /* default_clear_color */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:119
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:216
           const char* doc =
 R"""(The rgb color to which the color buffer is cleared (each channel in
 the range [0, 1]). The default value (in byte values) would be [204,
@@ -303,7 +303,7 @@ the range [0, 1]). The default value (in byte values) would be [204,
         } default_clear_color;
         // Symbol: drake::geometry::RenderEngineVtkParams::default_diffuse
         struct /* default_diffuse */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:114
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:211
           const char* doc =
 R"""(The (optional) rgba color to apply to the (phong, diffuse) property
 when none is otherwise specified. Note: currently the alpha channel is
@@ -311,7 +311,7 @@ unused by RenderEngineVtk.)""";
         } default_diffuse;
         // Symbol: drake::geometry::RenderEngineVtkParams::environment_map
         struct /* environment_map */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:138
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:235
           const char* doc =
 R"""(An optional environment map. When providing the environment map, the
 render engine will be configured for physically-based rendering (PBR);
@@ -326,7 +326,7 @@ to combine with the environment map.)""";
         } environment_map;
         // Symbol: drake::geometry::RenderEngineVtkParams::exposure
         struct /* exposure */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:175
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:272
           const char* doc =
 R"""(Exposure is an aspect of "tone mapping" (as described in `VTK's
 description of its PBR capabilities
@@ -367,7 +367,7 @@ value if it seems "washed out".)""";
         } exposure;
         // Symbol: drake::geometry::RenderEngineVtkParams::force_to_pbr
         struct /* force_to_pbr */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:228
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:330
           const char* doc =
 R"""(RenderEngineVtk can use one of two illumination models: Phong or
 Physically based rendering (PBR). It defaults to Phong. However, it
@@ -384,14 +384,14 @@ rendered images even if literally nothing else changes.)""";
         } force_to_pbr;
         // Symbol: drake::geometry::RenderEngineVtkParams::gltf_extensions
         struct /* gltf_extensions */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:232
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:334
           const char* doc =
 R"""(Map from the name of a glTF extension (e.g., "KHR_materials_sheen") to
 render engine settings related to that extension.)""";
         } gltf_extensions;
         // Symbol: drake::geometry::RenderEngineVtkParams::lights
         struct /* lights */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:127
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:224
           const char* doc =
 R"""(Lights in the scene. If no lights are defined, a single directional
 light, fixed to the camera frame, is used.
@@ -402,7 +402,7 @@ attenuation values have no effect on VTK *directional* lights.)""";
         } lights;
         // Symbol: drake::geometry::RenderEngineVtkParams::shadow_map_size
         struct /* shadow_map_size */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:214
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:316
           const char* doc =
 R"""(The size of texture map (in pixels) to use for shadow maps. Note: this
 is a *global* setting. All shadow casting lights will use a map of the
@@ -412,6 +412,14 @@ times but improve shadow fidelity (less obvious pixelation).
 See the note on ``cast_shadows`` for the warning on directional lights
 and shadow maps.)""";
         } shadow_map_size;
+        // Symbol: drake::geometry::RenderEngineVtkParams::ssao
+        struct /* ssao */ {
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:277
+          const char* doc =
+R"""(An optional SSAO (screen-space ambient occlusion) parameters set. When
+specified, VTK enable screen-space ambient occlusion configured by the
+given parameters.)""";
+        } ssao;
         auto Serialize__fields() const {
           return std::array{
             std::make_pair("backend", backend.doc),
@@ -424,9 +432,138 @@ and shadow maps.)""";
             std::make_pair("gltf_extensions", gltf_extensions.doc),
             std::make_pair("lights", lights.doc),
             std::make_pair("shadow_map_size", shadow_map_size.doc),
+            std::make_pair("ssao", ssao.doc),
           };
         }
       } RenderEngineVtkParams;
+      // Symbol: drake::geometry::SsaoParameter
+      struct /* SsaoParameter */ {
+        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:43
+        const char* doc =
+R"""(Screen-space ambient occlusion (SSAO) parameters.
+
+Ambient occlusion is a shading method used to calculate how exposed
+each point in a scene is to ambient lighting. The more occluded a
+point is, the darker it appears. SSAO is an efficient, real-time
+approximation of ambient occlusion that operates in screen space. It
+enhances the depth and realism of a scene by adding subtle shadowing
+effects in creases, holes, and surfaces that are close to each other.
+See https://www.kitware.com/ssao/ for an overview.
+
+The default parameter values below have been chosen as a best-guess
+effort at producing good quality images. They may not be optimal for
+your particular scene.
+
+To understand how to tune these parameters, you need a bit of insight
+into how ambient occlusion works generally, and how SSAO works
+specifically. For each pixel, its "occlusion factor" is determined by
+examining a hemispherical area around the pixel's position in 3D space
+(oriented based on its normal). The fraction of the hemisphere
+contained within geometry is the occlusion factor.
+
+SSAO produces a discrete approximation of the true occlusion factor.
+It evaluates a discrete number of samples within the hemisphere and
+compares their depths (in the OpenGL-camera sense) with that of the
+pixel being shaded to determine how much of the hemisphere is occupied
+by geometry. As with all discrete approximations, there is a tradeoff
+between fidelity and cost. The parameter documentation below provides
+some guidance on the effect of each parameter on the final rendered
+image.)""";
+        // Symbol: drake::geometry::SsaoParameter::Serialize
+        struct /* Serialize */ {
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:47
+          const char* doc =
+R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
+Serialization" for background.)""";
+        } Serialize;
+        // Symbol: drake::geometry::SsaoParameter::bias
+        struct /* bias */ {
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:79
+          const char* doc =
+R"""(SSAO works in screen space; so it uses the depth image to determine
+whether a sample lies within the hemisphere or not. We compare the
+depth of a sample point with the recorded depth in the same direction.
+In principle, if the sample point is farther than the recorded depth,
+the sample is occluded. This bias pads that calculation by specifying
+how far in front (in meters) the recorded distance has to be before
+the sample is considered occluded. Larger bias values will classify
+fewer samples as occluded, reducing the amount of ambient occlusion
+(darkness) in the final image.
+
+A non-zero value is usually helpful to help resolve potential issues
+due to depth map precision issues (so-called "acne"), but it should
+generally be small.)""";
+        } bias;
+        // Symbol: drake::geometry::SsaoParameter::blur
+        struct /* blur */ {
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:110
+          const char* doc =
+R"""(The discrete sampling approach will ultimately produce shading with a
+noisy pattern. More samples will reduce the noise, but you can also
+apply a blur to the final occlusion image to reduce the noise. This is
+a screen space blur, so it is fast. However, it will also reduce the
+sharpness of occlusion patterns. You can disable blurring to speed
+things up, but it will emphasize the sampling noise.)""";
+        } blur;
+        // Symbol: drake::geometry::SsaoParameter::intensity_scale
+        struct /* intensity_scale */ {
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:101
+          const char* doc =
+R"""(Once the occlusion factor is computed, prior to applying the factor to
+the shaded pixel, you can apply a final affine transformation:
+
+occlusion = (occlusion - intensity_shift) * intensity_scale
+
+Using these two values allows you to tune the contrast and mean
+occlusion value independent of the sampling algorithm above. Remember,
+the more occlusion, the more darkness. So, scale factors greater than
+one will make the image darker as will *negative* shift values.
+
+One reason to consider shifting is is based on the total lighting in
+the scene. For a very brightly lit scene with a large camera exposure,
+the ambient occlusion effects should have a smaller influence. A scale
+less than one, or a shift greater than zero, will reduce the SSAO
+effect.)""";
+        } intensity_scale;
+        // Symbol: drake::geometry::SsaoParameter::intensity_shift
+        struct /* intensity_shift */ {
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:102
+          const char* doc = R"""()""";
+        } intensity_shift;
+        // Symbol: drake::geometry::SsaoParameter::radius
+        struct /* radius */ {
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:65
+          const char* doc =
+R"""(The radius (in meters) of the sampling hemisphere. There is no
+"correct" value. Heuristically, it should scale with your scene. A
+rubric of 1/10th the size of your scene is reasonable. For example,
+0.25 meters is good for a robot working at a table top.
+
+If the radius is too large, pixels will exhibit occlusion (darkness)
+from objects that might seem too distant to be relevant. A too-small
+radius would have the opposite effect; missing occlusion where it
+seems it should occur.)""";
+        } radius;
+        // Symbol: drake::geometry::SsaoParameter::sample_count
+        struct /* sample_count */ {
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:85
+          const char* doc =
+R"""(This is simply the number of samples taken. More samples lead to
+smoother occlusion patterns. Large numbers will produce better images
+but at a higher computational cost. You should use the smallest number
+that still provides acceptable visual quality.)""";
+        } sample_count;
+        auto Serialize__fields() const {
+          return std::array{
+            std::make_pair("bias", bias.doc),
+            std::make_pair("blur", blur.doc),
+            std::make_pair("intensity_scale", intensity_scale.doc),
+            std::make_pair("intensity_shift", intensity_shift.doc),
+            std::make_pair("radius", radius.doc),
+            std::make_pair("sample_count", sample_count.doc),
+          };
+        }
+      } SsaoParameter;
       // Symbol: drake::geometry::render_vtk
       struct /* render_vtk */ {
       } render_vtk;

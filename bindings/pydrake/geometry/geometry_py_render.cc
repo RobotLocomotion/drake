@@ -426,7 +426,7 @@ void DoScalarIndependentDefinitions(py::module m) {
 
   {
     using Class = geometry::SsaoParameter;
-    constexpr auto& cls_doc = doc.SsaoParameter;
+    constexpr auto& cls_doc = doc_vtk.SsaoParameter;
     py::class_<Class> cls(m, "SsaoParameter", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
