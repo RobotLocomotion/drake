@@ -113,9 +113,34 @@ config_setting(
     },
 )
 
+config_setting(
+    name = "lcm_runtime_true_and_install_libdrake_static",
+    flag_values = {
+        "//tools/flags:with_lcm_runtime": "True",
+        "//tools/flags:install_libdrake": "static",
+    },
+)
+
+config_setting(
+    name = "install_python_true_and_install_libdrake_static",
+    flag_values = {
+        "//tools/flags:install_python": "True",
+        "//tools/flags:install_libdrake": "static",
+    },
+)
+
 install(
     name = "install",
     install_tests_script = _INSTALL_TEST_COMMANDS,
+    target_compatible_with = select({
+        "install_python_true_and_install_libdrake_static": [
+            "@platforms//:incompatible",
+        ],
+        "lcm_runtime_true_and_install_libdrake_static": [
+            "@platforms//:incompatible",
+        ],
+        "//conditions:default": [],
+    }),
     deps = [
         ":install_files",
         "//common:install",

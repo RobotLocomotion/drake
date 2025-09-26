@@ -636,7 +636,16 @@ if(WITH_MOSEK)
   string(APPEND BAZEL_CONFIG " --config=mosek")
 endif()
 
-option(WITH_LCM_RUNTIME "Build with LCM runtime library support" ON)
+option(BUILD_SHARED_LIBS "Install libdrake as a shared library" ON)
+if(BUILD_SHARED_LIBS)
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_libdrake=shared")
+else()
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_libdrake=static")
+endif()
+
+option(WITH_LCM_RUNTIME
+  "Build with LCM runtime library support" ${BUILD_SHARED_LIBS}
+)
 
 if(WITH_LCM_RUNTIME)
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_lcm_runtime=True")
@@ -654,12 +663,22 @@ endif()
 
 option(DRAKE_INSTALL_PYTHON
   "Install Drake's Python tools (pydrake, pybind11 headers, tutorials, and Python lcmtypes)"
-  ON
+  ${BUILD_SHARED_LIBS}
 )
 if(DRAKE_INSTALL_PYTHON)
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_python=True")
 else()
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_python=False")
+endif()
+
+if((NOT BUILD_SHARED_LIBS AND DRAKE_INSTALL_PYTHON) OR
+   (NOT BUILD_SHARED_LIBS AND WITH_LCM_RUNTIME))
+  message(FATAL_ERROR
+    "Building and installing a static libdrake is incompatible with "
+    "installing Python tools and LCM runtime library support. Set "
+    "DRAKE_INSTALL_PYTHON=OFF WITH_LCM_RUNTIME=OFF or use a shared libdrake "
+    "by setting BUILD_SHARED_LIBS=ON (the default)."
+  )
 endif()
 
 option(WITH_OPENMP "Build with support for OpenMP" OFF)
