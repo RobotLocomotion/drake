@@ -27,15 +27,25 @@ bazel test --config lint //common/...  # Check common/ and its child subdirector
 User manuals for the style-checking tools are as follows:
 
 * C/C++: See the cpplint ``USAGE`` string at
-  [https://github.com/google/styleguide/blob/gh-pages/cpplint/cpplint.py](https://github.com/google/styleguide/blob/gh-pages/cpplint/cpplint.py).
+  [https://github.com/cpplint/cpplint/blob/develop/cpplint.py](https://github.com/cpplint/cpplint/blob/develop/cpplint.py).
   * In particular, note the ``// NOLINT(foo/bar)`` syntax to disable a warning.
-* Python: See the pycodestyle manual at
-  [http://pycodestyle.readthedocs.io/en/latest/intro.html](http://pycodestyle.readthedocs.io/en/latest/intro.html).
+* Python:
+  * When the call to `add_lint_tests()` has `use_ruff = True`, we use `ruff` as
+    the linter. Drake uses both `check` mode along with `format --check` mode.
+    See the ruff manual at
+    [https://docs.astral.sh/ruff/linter/#error-suppression](https://docs.astral.sh/ruff/linter/#error-suppression)
+	and
+	[https://docs.astral.sh/ruff/formatter/#format-suppression](https://docs.astral.sh/ruff/formatter/#format-suppression).
+  * Otherwise, we use `pycodestyle`. See the pycodestyle manual at
+    [http://pycodestyle.readthedocs.io/en/latest/intro.html](http://pycodestyle.readthedocs.io/en/latest/intro.html).
   * The syntax ``# noqa`` can be used to quiet the warning about an overly-long
     line.
 * Bazel: Uses both pycodestyle like Python, and also the buildifier tool as
   described in [Updating BUILD files](/bazel.html#updating-build-files).
 
+To opt-out of all linting (e.g., when committing vendored copies of third-party
+external files into Drake's workspace), add `tags = ["nolint"]` to the
+`BUILD.bazel` rule(s) for the copied code.
 
 # Manual style fixups
 
@@ -48,20 +58,7 @@ cd drake
 bazel run //tools/lint:clang-format -- -i -style=file [file name]
 ```
 
-Using ``clang-format`` will modify the entire file that is specified. As an
-alternative, you can use ``git clang-format`` on Ubuntu to change only the
-portions of a file that you have modified. To run ``git clang-format``:
-
-```
-# Make sure the clang-format program exists at the path we want to use.
-bazel build //tools/lint/...
-
-# For development on Ubuntu: format a file that has been staged in git
-git clang-format --binary=/path/to/drake/bazel-bin/tools/lint/clang-format -- [file name]
-
-# For development on Ubuntu: format a file that has been modified but not staged
-git clang-format --binary=/path/to/drake/bazel-bin/tools/lint/clang-format -f -- [file name]
-```
+Using ``clang-format`` will modify the entire file that is specified.
 
 ### IDE integration
 
@@ -71,3 +68,12 @@ We have some tips for specific IDEs:
 * [CLion](/clion.html#formatting-files)
 * [Emacs](/emacs.html#c-code-formatting)
 * [VS Code](/vscode.html#c-code-formatting)
+
+## Python: Ruff Format
+
+To run ``ruff`` auto-formatter:
+
+```
+cd drake
+bazel run -- //tools/lint:ruff format path/to/my_file.py
+```

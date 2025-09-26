@@ -2,7 +2,10 @@
 #include "drake/multibody/topology/graph.h"
 /* clang-format on */
 
+#include <set>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>
@@ -677,14 +680,20 @@ GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
       "to itself.");
 
   // Sanity check sizes.
-  EXPECT_EQ(ssize(graph.links()), 6);  // This includes the world Link.
-  EXPECT_EQ(ssize(graph.joints()), 5);
+  EXPECT_EQ(graph.num_links(), 6);  // This includes the world Link.
+  EXPECT_EQ(graph.num_joints(), 5);
 
   // Verify we can get bodies/joints.
   EXPECT_EQ(graph.link_by_index(LinkIndex(3)).name(), "link3");
   EXPECT_EQ(graph.joint_by_index(JointIndex(3)).name(), "pin4");
   EXPECT_THROW((void)graph.link_by_index(LinkIndex(9)), std::exception);
   EXPECT_THROW((void)graph.joint_by_index(JointIndex(9)), std::exception);
+
+  // Check that index to ordinal mappings work in the easy case where nothing
+  // has been removed. (We can't remove Links yet; Joint removal is tested
+  // below.)
+  EXPECT_EQ(graph.index_to_ordinal(LinkIndex(3)), LinkOrdinal(3));
+  EXPECT_EQ(graph.index_to_ordinal(JointIndex(3)), JointOrdinal(3));
 
   // Verify we can query if a Link/Joint is in the graph.
   const ModelInstanceIndex kInvalidModelInstance(666);
@@ -775,6 +784,11 @@ GTEST_TEST(LinkJointGraph, RemoveJoint) {
   //       0                 1           ordinals
   EXPECT_EQ(graph.joint_by_index(JointIndex(0)).ordinal(), 0);
   EXPECT_EQ(graph.joint_by_index(JointIndex(2)).ordinal(), 1);
+
+  // Check that index->ordinal mapping works across joint removal.
+  EXPECT_EQ(graph.index_to_ordinal(JointIndex(0)), 0);
+  EXPECT_EQ(graph.index_to_ordinal(JointIndex(2)), 1);
+
   EXPECT_EQ(ssize(graph.joints()), 2);
   EXPECT_EQ(graph.num_user_joints(), 2);
   EXPECT_FALSE(graph.has_joint(JointIndex(1)));
@@ -810,6 +824,10 @@ GTEST_TEST(LinkJointGraph, RemoveJoint) {
   EXPECT_EQ(graph.joint_by_index(JointIndex(0)).ordinal(), 0);
   EXPECT_EQ(graph.joint_by_index(JointIndex(2)).ordinal(), 1);
   EXPECT_EQ(graph.joint_by_index(JointIndex(3)).ordinal(), 2);
+
+  EXPECT_EQ(graph.index_to_ordinal(JointIndex(0)), 0);
+  EXPECT_EQ(graph.index_to_ordinal(JointIndex(2)), 1);
+  EXPECT_EQ(graph.index_to_ordinal(JointIndex(3)), 2);
 
   EXPECT_EQ(ssize(graph.joints()), 3);
   EXPECT_EQ(graph.num_user_joints(), 3);
@@ -864,6 +882,9 @@ GTEST_TEST(LinkJointGraph, RemoveJoint) {
   EXPECT_TRUE(graph.joint_is_ephemeral(JointIndex(5)));
   EXPECT_EQ(graph.joint_by_index(JointIndex(4)).ordinal(), 2);
   EXPECT_EQ(graph.joint_by_index(JointIndex(5)).ordinal(), 3);
+
+  EXPECT_EQ(graph.index_to_ordinal(JointIndex(4)), 2);
+  EXPECT_EQ(graph.index_to_ordinal(JointIndex(5)), 3);
 
   // Test the case of removing the highest-index user joint (3 in this case),
   // then build the forest, then make sure that no ephemeral joint gets that

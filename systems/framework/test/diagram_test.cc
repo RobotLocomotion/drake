@@ -1,5 +1,10 @@
 #include "drake/systems/framework/diagram.h"
 
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <Eigen/Dense>
 #include <fmt/ranges.h>
 #include <gmock/gmock.h>

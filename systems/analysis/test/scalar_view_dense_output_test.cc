@@ -1,5 +1,8 @@
 #include "drake/systems/analysis/scalar_view_dense_output.h"
 
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"

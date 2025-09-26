@@ -39,12 +39,14 @@ $ bazel run //doc:build -- --serve
 # Speed up the preview by only processing certain tool(s):
 $ bazel run //doc:pages             -- --serve  # Only the main site.
 $ bazel run //doc/doxygen_cxx:build -- --serve  # Only the C++ API reference.
-$ bazel run //doc/pydrake:build     -- --serve  # Only the Python API reference.
+$ bazel run //bindings/generated_docstrings:regenerate && \
+#   bazel run //doc/pydrake:build   -- --serve  # Only the Python API reference.
 $ bazel run //doc/styleguide:build  -- --serve  # Only the Style Guide.
 
 # Further speed up preview generating only some API modules, e.g., math:
 $ bazel run //doc/doxygen_cxx:build -- --serve drake.math            # C++ math API.
-$ bazel run //doc/pydrake:build     -- --serve pydrake.math          # Python math API.
+$ bazel run //bindings/generated_docstrings:regenerate && \
+$   bazel run //doc/pydrake:build   -- --serve pydrake.math          # Python math API.
 $ bazel run //doc:build             -- --serve {drake,pydrake}.math  # Both at once.
 
 # Further speed up preview by omitting expensive `dot` graphs (C++ API only):

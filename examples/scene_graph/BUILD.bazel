@@ -69,7 +69,7 @@ drake_cc_binary(
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//lcm",
-        "//lcmtypes:contact_results_for_viz",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/lcm:lcm_pubsub_system",
@@ -131,4 +131,4 @@ drake_cc_binary(
     ],
 )
 
-add_lint_tests(enable_clang_format_lint = False)
+add_lint_tests()

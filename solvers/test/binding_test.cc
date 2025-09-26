@@ -1,5 +1,9 @@
 #include "drake/solvers/binding.h"
 
+#include <memory>
+#include <string>
+#include <unordered_map>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

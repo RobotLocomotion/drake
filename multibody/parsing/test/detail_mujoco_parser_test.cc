@@ -1,6 +1,10 @@
 #include "drake/multibody/parsing/detail_mujoco_parser.h"
 
 #include <filesystem>
+#include <limits>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -1238,14 +1242,14 @@ TEST_F(MujocoParserTest, Joint) {
   const RigidBody<double>& freejoint_body = plant_->GetBodyByName("freejoint");
   EXPECT_FALSE(plant_->HasJointNamed("xfreejoint"));
   EXPECT_TRUE(plant_->HasJointNamed("freejoint"));
-  EXPECT_TRUE(freejoint_body.is_floating());
+  EXPECT_TRUE(freejoint_body.is_floating_base_body());
   EXPECT_TRUE(plant_->GetFreeBodyPose(*context, freejoint_body)
                   .IsNearlyEqualTo(X_WB, 1e-14));
 
   const RigidBody<double>& free_body = plant_->GetBodyByName("free");
   EXPECT_FALSE(plant_->HasJointNamed("xfree"));
   EXPECT_TRUE(plant_->HasJointNamed("free"));
-  EXPECT_TRUE(free_body.is_floating());
+  EXPECT_TRUE(free_body.is_floating_base_body());
   EXPECT_TRUE(plant_->GetFreeBodyPose(*context, free_body)
                   .IsNearlyEqualTo(X_WB, 1e-14));
 

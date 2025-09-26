@@ -31,6 +31,8 @@ from github3.repos.tag import RepoTag
 
 _GITHUB_REPO_OWNER = 'RobotLocomotion'
 _GITHUB_REPO_NAME = 'drake'
+_GITHUB_REPO_URI = \
+    f'https://github.com/{_GITHUB_REPO_OWNER}/{_GITHUB_REPO_NAME}'
 
 _ARCHIVE_HASHES = {'sha256', 'sha512'}
 
@@ -243,16 +245,17 @@ class _State:
         self._done()
         return digest
 
-    def _download_file(self, name: str,
-                       archive_format: str = 'tarball') -> str:
+    def _download_archive_github(self, name: str) -> str:
         """
-        Downloads the specified file from the GitHub release. Returns the full
+        Downloads the source archive from the GitHub release. Returns the full
         path to the downloaded file.
         """
         self._begin('downloading', name)
 
         local_path = os.path.join(self._scratch.name, name)
-        assert self.release.archive(archive_format, local_path)
+        archive_url = f'{_GITHUB_REPO_URI}/archive/refs/tags/' \
+            f'v{self.options.source_version}.tar.gz'
+        assert urllib.request.urlretrieve(archive_url, local_path)
 
         self._done()
         return local_path
@@ -271,8 +274,7 @@ class _State:
             for h, a in artifact.hashes.items():
                 self._push_asset(a, bucket, f'{path}.sha{h}')
 
-    def push_archive(self, name: str, bucket: str, path: str,
-                     archive_format: str = 'tarball') -> None:
+    def push_archive(self, name: str, bucket: str, path: str) -> None:
         """
         Pushes the release source archive to S3 and GitHub, along with computed
         hashes.
@@ -280,7 +282,7 @@ class _State:
         If --dry-run was given, rather than actually pushing files, prints what
         would be done.
         """
-        local_path = self._download_file(name, archive_format)
+        local_path = self._download_archive_github(name)
         self._upload_file_s3(name, bucket, path, local_path)
         self._upload_file_github(name, local_path)
 

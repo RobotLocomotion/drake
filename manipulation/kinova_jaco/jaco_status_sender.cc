@@ -9,26 +9,23 @@ namespace kinova_jaco {
 using drake::systems::kVectorValued;
 
 JacoStatusSender::JacoStatusSender(int num_joints, int num_fingers)
-    : num_joints_(num_joints),
-      num_fingers_(num_fingers) {
-  position_input_ = &DeclareInputPort(
-      "position", kVectorValued, num_joints_ + num_fingers_);
-  velocity_input_ = &DeclareInputPort(
-      "velocity", kVectorValued, num_joints_ + num_fingers_);
-  torque_input_ = &DeclareInputPort(
-      "torque", kVectorValued, num_joints_ + num_fingers_);
-  torque_external_input_ = &DeclareInputPort(
-      "torque_external", kVectorValued, num_joints_ + num_fingers_);
-  current_input_ = &DeclareInputPort(
-      "current", kVectorValued, num_joints_ + num_fingers_);
-  time_measured_input_ = &DeclareInputPort(
-      "time_measured", kVectorValued, 1);
-  DeclareAbstractOutputPort(
-      "lcmt_jaco_status", &JacoStatusSender::CalcOutput);
+    : num_joints_(num_joints), num_fingers_(num_fingers) {
+  position_input_ =
+      &DeclareInputPort("position", kVectorValued, num_joints_ + num_fingers_);
+  velocity_input_ =
+      &DeclareInputPort("velocity", kVectorValued, num_joints_ + num_fingers_);
+  torque_input_ =
+      &DeclareInputPort("torque", kVectorValued, num_joints_ + num_fingers_);
+  torque_external_input_ = &DeclareInputPort("torque_external", kVectorValued,
+                                             num_joints_ + num_fingers_);
+  current_input_ =
+      &DeclareInputPort("current", kVectorValued, num_joints_ + num_fingers_);
+  time_measured_input_ = &DeclareInputPort("time_measured", kVectorValued, 1);
+  DeclareAbstractOutputPort("lcmt_jaco_status", &JacoStatusSender::CalcOutput);
 }
 
-void JacoStatusSender::CalcOutput(
-    const systems::Context<double>& context, lcmt_jaco_status* output) const {
+void JacoStatusSender::CalcOutput(const systems::Context<double>& context,
+                                  lcmt_jaco_status* output) const {
   const double time_measured =
       get_time_measured_input_port().HasValue(context)
           ? get_time_measured_input_port().Eval(context)[0]
@@ -36,18 +33,16 @@ void JacoStatusSender::CalcOutput(
 
   const Eigen::VectorXd zero_state =
       Eigen::VectorXd::Zero(num_joints_ + num_fingers_);
-  const auto& torque =
-      get_torque_input_port().HasValue(context) ?
-      get_torque_input_port().Eval(context) :
-      zero_state;
+  const auto& torque = get_torque_input_port().HasValue(context)
+                           ? get_torque_input_port().Eval(context)
+                           : zero_state;
   const auto& torque_external =
-      get_torque_external_input_port().HasValue(context) ?
-      get_torque_external_input_port().Eval(context) :
-      zero_state;
-  const auto& current =
-      get_current_input_port().HasValue(context) ?
-      get_current_input_port().Eval(context) :
-      zero_state;
+      get_torque_external_input_port().HasValue(context)
+          ? get_torque_external_input_port().Eval(context)
+          : zero_state;
+  const auto& current = get_current_input_port().HasValue(context)
+                            ? get_current_input_port().Eval(context)
+                            : zero_state;
 
   lcmt_jaco_status& status = *output;
   status.utime = time_measured * 1e6;

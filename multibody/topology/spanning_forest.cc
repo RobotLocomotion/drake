@@ -1,6 +1,8 @@
 // NOLINTNEXTLINE(build/include): prevent complaint re spanning_forest.h
+#include <algorithm>
 #include <queue>
 #include <stack>
+#include <tuple>
 #include <utility>
 #include <vector>
 

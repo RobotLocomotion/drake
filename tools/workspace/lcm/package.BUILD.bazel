@@ -2,8 +2,7 @@
 
 load("@drake//tools/install:install.bzl", "install")
 load("@drake//tools/skylark:cc.bzl", "cc_binary", "cc_library")
-load("@drake//tools/skylark:drake_java.bzl", "drake_java_binary")
-load("@drake//tools/skylark:java.bzl", "java_library")
+load("@drake//tools/skylark:java.bzl", "java_binary", "java_library")
 load("@drake//tools/skylark:py.bzl", "py_library")
 load(
     "@drake//tools/workspace:generate_export_header.bzl",
@@ -120,6 +119,9 @@ cc_library(
     linkstatic = True,
 )
 
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
 cc_binary(
     name = "lcm-logger",
     srcs = [
@@ -134,6 +136,9 @@ cc_binary(
     ],
 )
 
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
 cc_binary(
     name = "lcm-logplayer",
     srcs = [
@@ -143,6 +148,9 @@ cc_binary(
     deps = [":lcm"],
 )
 
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
 cc_binary(
     name = "lcm-gen",
     srcs = [
@@ -169,6 +177,9 @@ cc_binary(
     ],
 )
 
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
 cc_binary(
     name = "_lcm.so",
     srcs = [
@@ -191,6 +202,10 @@ cc_binary(
     ],
 )
 
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
+#
 # Downstream users of lcm-python expect to say "import lcm". However, in the
 # sandbox the python package is located at lcm-python/lcm/__init__.py to match
 # the source tree structure of LCM; without declaring an `imports = [...]` path
@@ -227,6 +242,9 @@ exec(compile(_text, _filename, 'exec'))
     visibility = ["//visibility:private"],
 )
 
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
 py_library(
     name = "lcm-python-upstream",
     srcs = ["lcm-python/lcm/__init__.py"],  # Actual code from upstream.
@@ -234,6 +252,9 @@ py_library(
     visibility = ["//visibility:private"],
 )
 
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
 py_library(
     name = "lcm-python",
     srcs = ["gen/lcm/__init__.py"],  # Shim, from the genrule above.
@@ -241,6 +262,9 @@ py_library(
     deps = [":lcm-python-upstream"],
 )
 
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
 java_library(
     name = "lcm-java",
     srcs = glob(["lcm-java/lcm/**/*.java"]),
@@ -248,21 +272,24 @@ java_library(
         # Suppressed until lcm-proj/lcm#159 is fixed.
         "-XepDisableAllChecks",
     ],
-    runtime_deps = [
-        "@com_jidesoft_jide_oss//jar",
-        "@commons_io//jar",
-        "@org_apache_xmlgraphics_commons//jar",
+    deps = [
+        "@lcm_maven//:net_sf_jchart2d_jchart2d",
     ],
-    deps = ["@net_sf_jchart2d//jar"],
 )
 
-drake_java_binary(
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
+java_binary(
     name = "lcm-logplayer-gui",
     main_class = "lcm.logging.LogPlayer",
     runtime_deps = [":lcm-java"],
 )
 
-drake_java_binary(
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
+java_binary(
     name = "lcm-spy",
     jvm_flags = [
         # These flags are copied from the lcm/lcm-java/lcm-spy.sh.in.

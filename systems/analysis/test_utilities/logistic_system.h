@@ -35,7 +35,8 @@ class LogisticSystem : public LeafSystem<T> {
   }
 
  protected:
-  void DoCalcTimeDerivatives(const systems::Context<T>& context,
+  void DoCalcTimeDerivatives(
+      const systems::Context<T>& context,
       systems::ContinuousState<T>* continuous_state) const override {
     using std::pow;
 
@@ -46,7 +47,7 @@ class LogisticSystem : public LeafSystem<T> {
     const T& x = context.get_continuous_state()[0];
 
     // Compute the derivative.
-    (*continuous_state)[0] = alpha_ * (1 - pow(x/k_, nu_)) * t;
+    (*continuous_state)[0] = alpha_ * (1 - pow(x / k_, nu_)) * t;
   }
 
   void DoGetWitnessFunctions(

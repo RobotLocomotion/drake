@@ -1,5 +1,6 @@
 #include <chrono>
 #include <thread>
+#include <vector>
 
 #include "drake/common/proto/call_python.h"
 #include "drake/planning/locomotion/test_utilities/zmp_test_util.h"
@@ -16,10 +17,10 @@ void PlotResults(const planning::ZmpTestTraj& traj) {
   CallPython("figure", 1);
   CallPython("clf");
   CallPython("subplot", 2, 1, 1);
-  CallPython("plot", traj.time.transpose(),
-             traj.desired_zmp.row(0).transpose(), "r");
-  CallPython("plot", traj.time.transpose(),
-             traj.nominal_com.row(0).transpose(), "b");
+  CallPython("plot", traj.time.transpose(), traj.desired_zmp.row(0).transpose(),
+             "r");
+  CallPython("plot", traj.time.transpose(), traj.nominal_com.row(0).transpose(),
+             "b");
   CallPython("plot", traj.time.transpose(), traj.cop.row(0).transpose(), "g");
   CallPython("plot", traj.time.transpose(), traj.x.row(0).transpose(), "c");
   CallPython("xlabel", "time [s]");
@@ -28,10 +29,10 @@ void PlotResults(const planning::ZmpTestTraj& traj) {
                                      "planned cop", "actual com"));
 
   CallPython("subplot", 2, 1, 2);
-  CallPython("plot", traj.time.transpose(),
-             traj.desired_zmp.row(1).transpose(), "r");
-  CallPython("plot", traj.time.transpose(),
-             traj.nominal_com.row(1).transpose(), "b");
+  CallPython("plot", traj.time.transpose(), traj.desired_zmp.row(1).transpose(),
+             "r");
+  CallPython("plot", traj.time.transpose(), traj.nominal_com.row(1).transpose(),
+             "b");
   CallPython("plot", traj.time.transpose(), traj.cop.row(1).transpose(), "g");
   CallPython("plot", traj.time.transpose(), traj.x.row(1).transpose(), "c");
   CallPython("xlabel", "time [s]");
@@ -44,16 +45,16 @@ void PlotResults(const planning::ZmpTestTraj& traj) {
   CallPython("figure", 2);
   CallPython("clf");
   CallPython("subplot", 2, 1, 1);
-  CallPython("plot", traj.time.transpose(),
-             traj.nominal_com.row(2).transpose(), "b");
+  CallPython("plot", traj.time.transpose(), traj.nominal_com.row(2).transpose(),
+             "b");
   CallPython("plot", traj.time.transpose(), traj.x.row(2).transpose(), "c");
   CallPython("xlabel", "time [s]");
   CallPython("ylabel", "xd [m/s]");
   CallPython("legend", ToPythonTuple("planned comd", "actual comd"));
 
   CallPython("subplot", 2, 1, 2);
-  CallPython("plot", traj.time.transpose(),
-             traj.nominal_com.row(3).transpose(), "b");
+  CallPython("plot", traj.time.transpose(), traj.nominal_com.row(3).transpose(),
+             "b");
   CallPython("plot", traj.time.transpose(), traj.x.row(3).transpose(), "c");
   CallPython("xlabel", "time [s]");
   CallPython("ylabel", "yd [m/s]");
@@ -65,15 +66,15 @@ void PlotResults(const planning::ZmpTestTraj& traj) {
   CallPython("clf");
   CallPython("subplot", 2, 1, 1);
   CallPython("plot", traj.time.transpose(), traj.u.row(0).transpose(), "r");
-  CallPython("plot", traj.time.transpose(),
-             traj.nominal_com.row(4).transpose(), "b.");
+  CallPython("plot", traj.time.transpose(), traj.nominal_com.row(4).transpose(),
+             "b.");
   CallPython("xlabel", "time [s]");
   CallPython("ylabel", "xdd [m/s2]");
   CallPython("legend", ToPythonTuple("comdd from policy", "nominal comdd"));
   CallPython("subplot", 2, 1, 2);
   CallPython("plot", traj.time.transpose(), traj.u.row(1).transpose(), "r");
-  CallPython("plot", traj.time.transpose(),
-             traj.nominal_com.row(5).transpose(), "b.");
+  CallPython("plot", traj.time.transpose(), traj.nominal_com.row(5).transpose(),
+             "b.");
   CallPython("xlabel", "time [s]");
   CallPython("ylabel", "ydd [m/s2]");
   CallPython("legend", ToPythonTuple("comdd from policy", "nominal comdd"));
@@ -115,5 +116,3 @@ int main() {
   drake::examples::zmp::do_main();
   return 0;
 }
-
-

@@ -11,17 +11,16 @@ namespace multibody {
 template <typename T>
 template <typename>
 const MultibodyPlant<T>& MultibodyElement<T>::GetParentPlant() const {
-  HasParentTreeOrThrow();
-
-  const auto plant =
-      dynamic_cast<const MultibodyPlant<T>*>(&get_parent_tree().tree_system());
-
-  if (plant == nullptr) {
-    throw std::logic_error(
-        "This multibody element was not owned by a MultibodyPlant.");
+  if (parent_tree_ != nullptr) {
+    const internal::MultibodyTreeSystem<T>& system =
+        parent_tree_->tree_system();
+    const auto* plant = dynamic_cast<const MultibodyPlant<T>*>(&system);
+    if (plant != nullptr) {
+      return *plant;
+    }
   }
-
-  return *plant;
+  throw std::logic_error(
+      "This multibody element was not owned by a MultibodyPlant.");
 }
 
 // clang-format off

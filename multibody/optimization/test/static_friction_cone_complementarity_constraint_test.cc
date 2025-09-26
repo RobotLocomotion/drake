@@ -101,11 +101,13 @@ GTEST_TEST(StaticFrictionConeComplementarityNonlinearConstraint, TestEval) {
   std::function<void(const Eigen::Ref<const Eigen::VectorXd>&,
                      Eigen::VectorXd*)>
       eval_fun = [&constraint](const Eigen::Ref<const Eigen::VectorXd>& x,
-                               Eigen::VectorXd* y) { constraint.Eval(x, y); };
+                               Eigen::VectorXd* y) {
+        constraint.Eval(x, y);
+      };
   auto dy_dx = math::ComputeNumericalGradient(eval_fun, x_val);
   const double gradient_tol = 1E-5;
-  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_ad),
-                              dy_dx * dx, gradient_tol));
+  EXPECT_TRUE(
+      CompareMatrices(math::ExtractGradient(y_ad), dy_dx * dx, gradient_tol));
 
   x_val.head<7>() << 1, 0, 0, 0, 0, 0, radius;
   // Try a friction force that is not in the friction cone. The constraint

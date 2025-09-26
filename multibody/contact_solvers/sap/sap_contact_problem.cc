@@ -244,9 +244,10 @@ int SapContactProblem<T>::AddConstraint(std::unique_ptr<SapConstraint<T>> c) {
   }
 
   for (int object_index : c->objects()) {
-    if (object_index < 0 || object_index >= num_objects())
+    if (object_index < 0 || object_index >= num_objects()) {
       throw std::runtime_error(
           "Constraint object indices must be in the range [0, num_objects()).");
+    }
   }
 
   // Update graph.

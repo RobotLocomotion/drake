@@ -1,8 +1,9 @@
 #include <cstring>
+#include <string>
 
+#include "drake/bindings/generated_docstrings/lcm.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_interface.h"
@@ -13,7 +14,7 @@ namespace pydrake {
 PYBIND11_MODULE(lcm, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::lcm;
-  constexpr auto& doc = pydrake_doc.drake.lcm;
+  constexpr auto& doc = pydrake_doc_lcm.drake.lcm;
 
   py::module::import("pydrake.common");
 
@@ -48,9 +49,10 @@ PYBIND11_MODULE(lcm, m) {
                   channel, [handler](const void* data, int size) {
                     handler(py::bytes(static_cast<const char*>(data), size));
                   });
-              DRAKE_DEMAND(subscription != nullptr);
-              // This is already the default, but for clarity we'll repeat it.
-              subscription->set_unsubscribe_on_delete(false);
+              if (subscription != nullptr) {
+                // This is already the default, but for clarity we'll repeat it.
+                subscription->set_unsubscribe_on_delete(false);
+              }
             },
             py::arg("channel"), py::arg("handler"), cls_doc.Subscribe.doc)
         .def(
@@ -63,9 +65,10 @@ PYBIND11_MODULE(lcm, m) {
                     handler(channel,
                         py::bytes(static_cast<const char*>(data), size));
                   });
-              DRAKE_DEMAND(subscription != nullptr);
-              // This is already the default, but for clarity we'll repeat it.
-              subscription->set_unsubscribe_on_delete(false);
+              if (subscription != nullptr) {
+                // This is already the default, but for clarity we'll repeat it.
+                subscription->set_unsubscribe_on_delete(false);
+              }
             },
             py::arg("regex"), py::arg("handler"),
             cls_doc.SubscribeMultichannel.doc)
@@ -78,9 +81,10 @@ PYBIND11_MODULE(lcm, m) {
                     handler(channel,
                         py::bytes(static_cast<const char*>(data), size));
                   });
-              DRAKE_DEMAND(subscription != nullptr);
-              // This is already the default, but for clarity we'll repeat it.
-              subscription->set_unsubscribe_on_delete(false);
+              if (subscription != nullptr) {
+                // This is already the default, but for clarity we'll repeat it.
+                subscription->set_unsubscribe_on_delete(false);
+              }
             },
             py::arg("handler"), cls_doc.SubscribeAllChannels.doc)
         .def("HandleSubscriptions", &DrakeLcmInterface::HandleSubscriptions,
@@ -107,7 +111,8 @@ PYBIND11_MODULE(lcm, m) {
         .def(py::init<std::string>(), py::arg("lcm_url"),
             cls_doc.ctor.doc_1args_lcm_url)
         .def(py::init<DrakeLcmParams>(), py::arg("params"),
-            cls_doc.ctor.doc_1args_params);
+            cls_doc.ctor.doc_1args_params)
+        .def_static("available", &Class::available, cls_doc.available.doc);
   }
 
   ExecuteExtraPythonCode(m);

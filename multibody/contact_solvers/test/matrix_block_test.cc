@@ -1,5 +1,9 @@
 #include "drake/multibody/contact_solvers/matrix_block.h"
 
+#include <limits>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

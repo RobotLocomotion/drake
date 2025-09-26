@@ -24,16 +24,18 @@ UniformGravityFieldElement<T>::~UniformGravityFieldElement() = default;
 template <typename T>
 void UniformGravityFieldElement<T>::set_enabled(
     ModelInstanceIndex model_instance, bool is_enabled) {
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
   if (this->get_parent_tree().topology_is_valid()) {
     throw std::logic_error("Gravity can only be enabled pre-finalize.");
   }
   if (model_instance >= this->get_parent_tree().num_model_instances()) {
     throw std::logic_error("Model instance index is invalid.");
   }
-  if (is_enabled)
+  if (is_enabled) {
     disabled_model_instances_.erase(model_instance);
-  else
+  } else {
     disabled_model_instances_.insert(model_instance);
+  }
 }
 
 template <typename T>
@@ -46,12 +48,13 @@ UniformGravityFieldElement<T>::UniformGravityFieldElement(
 template <typename T>
 VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
     const systems::Context<T>& context) const {
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
   const internal::MultibodyTree<T>& model = this->get_parent_tree();
 
   // TODO(amcastro-tri): Get these from the cache.
-  internal::PositionKinematicsCache<T> pc(model.get_topology());
+  internal::PositionKinematicsCache<T> pc(model.forest());
   model.CalcPositionKinematicsCache(context, &pc);
-  internal::VelocityKinematicsCache<T> vc(model.get_topology());
+  internal::VelocityKinematicsCache<T> vc(model.forest());
   vc.InitializeToZero();
 
   // Create a multibody forces initialized by default to zero forces.
@@ -101,6 +104,7 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
 
   // Add the force of gravity contribution for each body in the model.
   // Skip the world.
+  DRAKE_ASSERT(this->has_parent_tree());
   const internal::MultibodyTree<T>& model = this->get_parent_tree();
   const int num_bodies = model.num_bodies();
   // Skip the "world" body.
@@ -132,6 +136,7 @@ T UniformGravityFieldElement<T>::CalcPotentialEnergy(
     const internal::PositionKinematicsCache<T>& pc) const {
   // Add the potential energy due to gravity for each body in the model.
   // Skip the world.
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
   const internal::MultibodyTree<T>& model = this->get_parent_tree();
   const int num_bodies = model.num_bodies();
   T TotalPotentialEnergy = 0.0;
@@ -165,6 +170,7 @@ T UniformGravityFieldElement<T>::CalcConservativePower(
     const internal::VelocityKinematicsCache<T>& vc) const {
   // Add the potential energy due to gravity for each body in the model.
   // Skip the world.
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
   const internal::MultibodyTree<T>& model = this->get_parent_tree();
   const int num_bodies = model.num_bodies();
   T TotalConservativePower = 0.0;

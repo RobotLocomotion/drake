@@ -1,5 +1,7 @@
 #include "drake/geometry/in_memory_mesh.h"
 
+#include <string>
+
 #include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

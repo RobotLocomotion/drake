@@ -1,4 +1,10 @@
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include <memory>
+#include <string>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+
+#include "drake/bindings/generated_docstrings/planning_trajectory_optimization.h"
 #include "drake/bindings/pydrake/geometry/optimization_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -17,7 +23,8 @@ template <typename C>
 void RegisterAddConstraintToAllKnotPoints(
     py::class_<planning::trajectory_optimization::MultipleShooting>* cls) {
   using drake::planning::trajectory_optimization::MultipleShooting;
-  constexpr auto& doc = pydrake_doc.drake.planning.trajectory_optimization;
+  constexpr auto& doc = pydrake_doc_planning_trajectory_optimization.drake
+                            .planning.trajectory_optimization;
   cls->def(
       "AddConstraintToAllKnotPoints",
       [](MultipleShooting* self, C* constraint,
@@ -35,7 +42,8 @@ void RegisterAddConstraintToAllKnotPoints(
 void DefinePlanningTrajectoryOptimization(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning::trajectory_optimization;
-  constexpr auto& doc = pydrake_doc.drake.planning.trajectory_optimization;
+  constexpr auto& doc = pydrake_doc_planning_trajectory_optimization.drake
+                            .planning.trajectory_optimization;
 
   using solvers::MathematicalProgram;
   using solvers::MatrixXDecisionVariable;

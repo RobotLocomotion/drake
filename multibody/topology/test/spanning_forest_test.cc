@@ -2,8 +2,12 @@
 #include "drake/multibody/topology/forest.h"
 /* clang-format on */
 
+#include <map>
+#include <set>
 #include <string>
 #include <tuple>
+#include <utility>
+#include <vector>
 
 #include <fmt/format.h>
 #include <gmock/gmock.h>
@@ -68,6 +72,9 @@ GTEST_TEST(SpanningForest, WorldOnlyTest) {
   EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links,
             std::vector{world_link_index});
   EXPECT_FALSE(graph.link_composites(LinkCompositeIndex(0)).is_massless);
+
+  EXPECT_FALSE(forest.link_to_tree(LinkOrdinal(0)).is_valid());
+  EXPECT_FALSE(forest.link_to_tree(LinkIndex(0)).is_valid());
 
   // Check that the World-only forest makes sense.
   EXPECT_EQ(ssize(forest.mobods()), 1);
@@ -155,15 +162,25 @@ GTEST_TEST(SpanningForest, TreeAndLoopConstraintAPIs) {
   EXPECT_TRUE(graph.BuildForest());
 
   // Here's the forest we're expecting:
-  //            -> mobod1 -> mobod2
+  //            -> mobod1 -> mobod2                             tree0
   //     World                 ^
-  //            -> mobod3 =====+  loop weld constraint
+  //            -> mobod3 =====+  loop weld constraint          tree1
   //
   // We had to cut link2. Mobod2 is for the shadow link.
 
-  EXPECT_EQ(ssize(forest.trees()), 2);
-  EXPECT_EQ(ssize(forest.mobods()), 4);
+  EXPECT_EQ(forest.num_trees(), 2);
+  EXPECT_EQ(forest.num_mobods(), 4);
   EXPECT_EQ(ssize(forest.loop_constraints()), 1);
+
+  EXPECT_FALSE(forest.link_to_tree(LinkIndex(0)).is_valid());
+  EXPECT_EQ(forest.link_to_tree(LinkIndex(1)), TreeIndex(0));
+  // Link2's primary follows mobod3, which is in tree1.
+  EXPECT_EQ(forest.link_to_tree(LinkIndex(2)), TreeIndex(1));
+
+  // The index and ordinal values are the same here.
+  EXPECT_FALSE(forest.link_to_tree(LinkOrdinal(0)).is_valid());
+  EXPECT_EQ(forest.link_to_tree(LinkOrdinal(1)), TreeIndex(0));
+  EXPECT_EQ(forest.link_to_tree(LinkOrdinal(2)), TreeIndex(1));
 
   // Not much to check for the loop constraint.
   const auto& loop_constraint = forest.loop_constraints(LoopConstraintIndex(0));
@@ -304,9 +321,12 @@ GTEST_TEST(SpanningForest, MultipleBranchesDefaultOptions) {
 
   // See that the graph got augmented properly to reflect the as-built forest.
   EXPECT_EQ(graph.num_user_links(), 16);
-  EXPECT_EQ(ssize(graph.links()), 16);  // no links added
+  EXPECT_EQ(graph.num_links(), 16);  // no links added
   EXPECT_EQ(graph.num_user_joints(), 12);
-  EXPECT_EQ(ssize(graph.joints()), 15);  // modeling adds 3 floating joints
+  EXPECT_EQ(graph.num_joints(), 15);  // modeling adds 3 floating joints
+
+  EXPECT_EQ(forest.num_links(), graph.num_links());
+  EXPECT_EQ(forest.num_joints(), graph.num_joints());
 
   // The only LinkComposite is the World composite and it is alone there.
   EXPECT_EQ(ssize(graph.link_composites()), 1);  // just World
@@ -314,8 +334,8 @@ GTEST_TEST(SpanningForest, MultipleBranchesDefaultOptions) {
   EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links[0],
             graph.world_link().index());
 
-  EXPECT_EQ(ssize(forest.trees()), 3);
-  EXPECT_EQ(ssize(forest.mobods()), 16);        // includes World
+  EXPECT_EQ(forest.num_trees(), 3);
+  EXPECT_EQ(forest.num_mobods(), 16);           // includes World
   EXPECT_EQ(ssize(forest.welded_mobods()), 1);  // just World
   EXPECT_EQ(forest.num_positions(), 33);   // 12 revolute, 3 x 7 quat floating
   EXPECT_EQ(forest.num_velocities(), 30);  // 12 revolute, 3 x 6 floating

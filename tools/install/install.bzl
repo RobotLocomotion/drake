@@ -1,6 +1,5 @@
 load("@rules_license//rules:providers.bzl", "LicenseInfo")
 load("//tools/skylark:cc.bzl", "CcInfo")
-load("//tools/skylark:drake_java.bzl", "MainClassInfo")
 load("//tools/skylark:drake_py.bzl", "drake_py_test")
 load("//tools/skylark:java.bzl", "JavaInfo")
 load(
@@ -339,46 +338,6 @@ def _install_runtime_actions(ctx, target):
     )
 
 #------------------------------------------------------------------------------
-# Compute install actions for a java launchers.
-def _install_java_launcher_actions(
-        ctx,
-        dest,
-        java_dest,
-        java_strip_prefix,
-        rename,
-        target):
-    main_class = target[MainClassInfo].main_class
-
-    # List runtime_classpath and compute their install paths.
-    classpath = []
-    actions = []
-
-    for jar in _depset_to_list(target[MainClassInfo].classpath):
-        jar_install = _install_action(
-            ctx,
-            jar,
-            java_dest,
-            java_strip_prefix,
-            rename,
-        )
-        classpath.append(join_paths("$prefix", jar_install.dst))
-
-    # Compute destination file name.
-    filename = target[MainClassInfo].filename
-    file_dest = join_paths(dest, filename)
-    file_dest = _rename(file_dest, rename)
-    jvm_flags = target[MainClassInfo].jvm_flags
-
-    actions.append(struct(
-        dst = file_dest,
-        classpath = classpath,
-        jvm_flags = jvm_flags,
-        main_class = main_class,
-    ))
-
-    return actions
-
-#------------------------------------------------------------------------------
 def _install_test_actions(ctx):
     """Compute and return list of install test command lines.
 
@@ -500,18 +459,11 @@ def _install_impl(ctx):
             actions += _install_java_actions(ctx, t)
         elif PyInfo in t:
             actions += _install_py_actions(ctx, t)
-        elif MainClassInfo in t:
-            actions += _install_java_launcher_actions(
-                ctx,
-                ctx.attr.runtime_dest,
-                ctx.attr.java_dest,
-                ctx.attr.java_strip_prefix,
-                rename,
-                t,
-            )
         elif hasattr(t, "files_to_run") and t.files_to_run.executable:
             # Executable scripts copied from source directory.
             actions += _install_runtime_actions(ctx, t)
+        else:
+            fail("Don't know how to install {}".format(t.label))
 
     # Generate install test actions.
     installed_tests += _install_test_actions(ctx)

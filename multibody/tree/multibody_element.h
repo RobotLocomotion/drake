@@ -120,24 +120,35 @@ class MultibodyElement {
   }
 
   /// Returns this element's unique ordinal.
-  int ordinal_impl() const {
+  /// @note The int64_t default is present for backwards compatibility but
+  /// you should not use it. Instead, define a ThingOrdinal specialization of
+  /// TypeSafeIndex for any element Thing that has a meaningful ordinal. Then
+  /// use that type explicitly in Thing's public `ordinal()` method.
+  template <typename ElementOrdinalType = int64_t>
+  ElementOrdinalType ordinal_impl() const {
     DRAKE_ASSERT(ordinal_ >= 0);
-    return ordinal_;
+    return ElementOrdinalType{ordinal_};
   }
 
-  /// Returns a constant reference to the parent MultibodyTree that
-  /// owns this element.
-  /// @throws std::exception in debug builds if has_parent_tree() is false.
+  /// Returns a constant reference to the parent MultibodyTree that owns this
+  /// element.
+  /// @pre has_parent_tree is true.
   const internal::MultibodyTree<T>& get_parent_tree() const {
-    DRAKE_ASSERT_VOID(HasParentTreeOrThrow());
+    if constexpr (kDrakeAssertIsArmed) {
+      if (parent_tree_ == nullptr) {
+        ThrowNoParentTree();
+      }
+    }
     return *parent_tree_;
   }
 
   /// Returns a constant reference to the parent MultibodyTreeSystem that
   /// owns the parent MultibodyTree that owns this element.
-  /// @throws std::exception in debug builds if has_parent_tree() is false.
+  /// @throws std::exception if has_parent_tree() is false.
   const internal::MultibodyTreeSystem<T>& GetParentTreeSystem() const {
-    DRAKE_ASSERT_VOID(HasParentTreeOrThrow());
+    if (parent_tree_ == nullptr) {
+      ThrowNoParentTree();
+    }
     return get_parent_tree().tree_system();
   }
 
@@ -216,16 +227,14 @@ class MultibodyElement {
     parent_tree_ = tree;
   }
 
-  void set_ordinal(int ordinal) { ordinal_ = ordinal; }
+  void set_ordinal(int64_t ordinal) { ordinal_ = ordinal; }
 
   void set_model_instance(ModelInstanceIndex model_instance) {
     model_instance_ = model_instance;
   }
 
-  // Checks whether this MultibodyElement has been registered into
-  // a MultibodyTree and throws an exception if not.
-  // @throws std::exception if the element is not in a MultibodyTree.
-  void HasParentTreeOrThrow() const;
+  // @throws std::exception that this element is not in a MultibodyTree.
+  [[noreturn]] void ThrowNoParentTree() const;
 
   // Checks whether this MultibodyElement belongs to the provided
   // MultibodyTree `tree` and throws an exception if not.
@@ -247,7 +256,7 @@ class MultibodyElement {
   // if MultibodyPlant does not expose any port that has an entry per concrete
   // MultibodyElement type.) This must be set to a valid ordinal value before
   // the element is released to the wild.
-  int ordinal_{-1};
+  int64_t ordinal_{-1};
 
   // The default model instance id is *invalid*. This must be set to a
   // valid index value before the element is released to the wild.

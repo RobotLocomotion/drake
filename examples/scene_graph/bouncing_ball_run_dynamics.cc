@@ -1,4 +1,5 @@
 #include <memory>
+#include <string>
 #include <utility>
 
 #include <gflags/gflags.h>
@@ -37,26 +38,25 @@ namespace {
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using geometry::DrakeVisualizerd;
-using geometry::GeometryInstance;
-using geometry::SceneGraph;
 using geometry::GeometryId;
+using geometry::GeometryInstance;
 using geometry::HalfSpace;
 using geometry::IllustrationProperties;
 using geometry::PerceptionProperties;
 using geometry::ProximityProperties;
-using geometry::render::ColorRenderCamera;
-using geometry::render::DepthRenderCamera;
-using geometry::render::RenderLabel;
 using geometry::RenderEngineVtkParams;
 using geometry::SceneGraph;
 using geometry::SourceId;
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthRenderCamera;
+using geometry::render::RenderLabel;
 using lcm::DrakeLcm;
 using math::RigidTransformd;
 using math::RotationMatrixd;
+using std::make_unique;
 using systems::InputPort;
 using systems::sensors::PixelType;
 using systems::sensors::RgbdSensor;
-using std::make_unique;
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
@@ -143,16 +143,14 @@ int do_main() {
 
     systems::lcm::LcmPublisherSystem* image_array_lcm_publisher{nullptr};
     if ((FLAGS_color || FLAGS_depth || FLAGS_label)) {
-      image_array_lcm_publisher =
-          builder.AddSystem(systems::lcm::LcmPublisherSystem::Make<
-              lcmt_image_array>(
+      image_array_lcm_publisher = builder.AddSystem(
+          systems::lcm::LcmPublisherSystem::Make<lcmt_image_array>(
               "DRAKE_RGBD_CAMERA_IMAGES", &lcm,
               1. / FLAGS_render_fps /* publish period */));
       image_array_lcm_publisher->set_name("publisher");
 
-      builder.Connect(
-          image_to_lcm_image_array->image_array_t_msg_output_port(),
-          image_array_lcm_publisher->get_input_port());
+      builder.Connect(image_to_lcm_image_array->image_array_t_msg_output_port(),
+                      image_array_lcm_publisher->get_input_port());
     }
 
     if (FLAGS_color) {
@@ -164,15 +162,15 @@ int do_main() {
 
     if (FLAGS_depth) {
       const auto& port =
-          image_to_lcm_image_array
-              ->DeclareImageInputPort<PixelType::kDepth32F>("depth");
+          image_to_lcm_image_array->DeclareImageInputPort<PixelType::kDepth32F>(
+              "depth");
       builder.Connect(camera->depth_image_32F_output_port(), port);
     }
 
     if (FLAGS_label) {
       const auto& port =
-          image_to_lcm_image_array
-              ->DeclareImageInputPort<PixelType::kLabel16I>("label");
+          image_to_lcm_image_array->DeclareImageInputPort<PixelType::kLabel16I>(
+              "label");
       builder.Connect(camera->label_image_output_port(), port);
     }
   }

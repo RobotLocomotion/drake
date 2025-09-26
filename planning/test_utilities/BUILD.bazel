@@ -32,7 +32,7 @@ drake_cc_library(
         "//planning:collision_avoidance",
         "//planning:collision_checker",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 

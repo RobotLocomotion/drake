@@ -88,10 +88,11 @@ Eigen::AutoDiffScalar<DerType> copysign(const Eigen::AutoDiffScalar<DerType>& x,
                                         const T& y) {
   using std::isnan;
   if (isnan(x)) return (y >= 0) ? NAN : -NAN;
-  if ((x < 0 && y >= 0) || (x >= 0 && y < 0))
+  if ((x < 0 && y >= 0) || (x >= 0 && y < 0)) {
     return -x;
-  else
+  } else {
     return x;
+  }
 }
 
 /// Overloads copysign from <cmath>.
@@ -99,10 +100,11 @@ template <typename DerType>
 double copysign(double x, const Eigen::AutoDiffScalar<DerType>& y) {
   using std::isnan;
   if (isnan(x)) return (y >= 0) ? NAN : -NAN;
-  if ((x < 0 && y >= 0) || (x >= 0 && y < 0))
+  if ((x < 0 && y >= 0) || (x >= 0 && y < 0)) {
     return -x;
-  else
+  } else {
     return x;
+  }
 }
 
 /// Overloads pow for an AutoDiffScalar base and exponent, implementing the

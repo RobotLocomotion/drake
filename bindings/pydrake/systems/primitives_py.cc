@@ -1,9 +1,13 @@
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "drake/bindings/generated_docstrings/systems_primitives.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/affine_system.h"
@@ -55,7 +59,7 @@ PYBIND11_MODULE(primitives, m) {
   using namespace drake::systems;
 
   m.doc() = "Bindings for the primitives portion of the Systems framework.";
-  constexpr auto& doc = pydrake_doc.drake.systems;
+  constexpr auto& doc = pydrake_doc_systems_primitives.drake.systems;
 
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.trajectories");
@@ -881,28 +885,6 @@ PYBIND11_MODULE(primitives, m) {
 
   m.def("IsDetectable", &IsDetectable, py::arg("sys"),
       py::arg("threshold") = std::nullopt, doc.IsDetectable.doc);
-
-  {
-    constexpr char kDocDeprecation[] =
-        "The DiscreteTimeApproximation function defined in the "
-        "pydrake.systems.primitives module is deprecated and will be removed "
-        "on or after 2025-08-01. Instead, import the function from the "
-        "pydrake.systems.analysis module.";
-
-    m.def("DiscreteTimeApproximation",
-        WrapDeprecated(kDocDeprecation,
-            overload_cast_explicit<std::unique_ptr<LinearSystem<double>>,
-                const LinearSystem<double>&, double>(
-                &DiscreteTimeApproximation)),
-        py::arg("system"), py::arg("time_period"), kDocDeprecation);
-
-    m.def("DiscreteTimeApproximation",
-        WrapDeprecated(kDocDeprecation,
-            overload_cast_explicit<std::unique_ptr<AffineSystem<double>>,
-                const AffineSystem<double>&, double>(
-                &DiscreteTimeApproximation)),
-        py::arg("system"), py::arg("time_period"), kDocDeprecation);
-  }
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

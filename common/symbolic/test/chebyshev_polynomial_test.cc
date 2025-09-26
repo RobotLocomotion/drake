@@ -2,6 +2,9 @@
 
 #include <limits>
 #include <ostream>
+#include <set>
+#include <unordered_map>
+#include <vector>
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>

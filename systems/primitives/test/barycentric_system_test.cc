@@ -1,6 +1,7 @@
 #include "drake/systems/primitives/barycentric_system.h"
 
 #include <memory>
+#include <utility>
 
 #include <gtest/gtest.h>
 

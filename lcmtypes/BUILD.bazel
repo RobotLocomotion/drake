@@ -1,30 +1,50 @@
+load(
+    "@lcm_internal//lcm-bazel:lcm_cc_library_srcs.bzl",
+    "lcm_cc_library_srcs",
+)
+load(
+    "@lcm_internal//lcm-bazel:lcm_java_library_srcs.bzl",
+    "lcm_java_library_srcs",
+)
+load(
+    "@lcm_internal//lcm-bazel:lcm_library.bzl",
+    "lcm_library",
+)
+load(
+    "@lcm_internal//lcm-bazel:lcm_py_library_srcs.bzl",
+    "lcm_py_library_srcs",
+)
 load("//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:cc.bzl",
+    "cc_library",
+)
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
-    "drake_transitive_installed_hdrs_filegroup",
-)
-load(
-    "//tools/skylark:drake_java.bzl",
-    "drake_java_binary",
-)
-load(
-    "//tools/skylark:drake_lcm.bzl",
-    "drake_lcm_cc_library",
-    "drake_lcm_java_library",
-    "drake_lcm_py_library",
+    "drake_installed_headers",
 )
 load(
     "//tools/skylark:drake_py.bzl",
-    "drake_py_library",
     "drake_py_test",
+)
+load(
+    "//tools/skylark:java.bzl",
+    "java_binary",
+    "java_library",
+)
+load(
+    "//tools/skylark:py.bzl",
+    "py_library",
 )
 load("//tools/workspace:generate_file.bzl", "generate_file")
 load(":defs.bzl", "ALL_LCM_SRCS")
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
+
+# === Message sources (*.lcm files) ===
 
 # Search for all *.lcm files.
 _GLOB_ALL_LCM_SRCS = sorted(glob(["*.lcm"]))
@@ -59,217 +79,48 @@ _EXTRA_ALL = [
     ),
 )
 
-drake_lcm_cc_library(
-    name = "acrobot",
+lcm_library(
+    name = "messages",
+    srcs = ALL_LCM_SRCS,
     lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_acrobot_u.lcm",
-        "lcmt_acrobot_x.lcm",
-        "lcmt_acrobot_y.lcm",
+    visibility = ["//visibility:public"],
+)
+
+# === C++ ===
+
+lcm_cc_library_srcs(
+    name = "messages_cc_srcs",
+    src = ":messages",
+    # For C++ (only), we use an improved, Drake-specific lcm-gen.
+    lcmgen = "//tools/lcm_gen",
+)
+
+cc_library(
+    name = "lcmtypes_drake_cc",
+    srcs = [":messages_cc_srcs"],
+    includes = ["."],
+    visibility = ["//visibility:public"],
+)
+
+drake_installed_headers(
+    name = "lcmtypes_drake_cc.installed_headers",
+    hdrs = [
+        "drake/{}.h".format(lcm_src[:-len(".lcm")])
+        for lcm_src in ALL_LCM_SRCS
     ],
+    tags = ["nolint"],
+    visibility = ["//visibility:public"],
+    deps = [],
 )
 
-drake_lcm_cc_library(
-    name = "call_python",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_call_python.lcm",
-        "lcmt_call_python_data.lcm",
-    ],
+install(
+    name = "install_lcmtypes_cc",
+    hdrs = [":messages_cc_srcs"],
+    hdr_dest = "include",
 )
 
-drake_lcm_cc_library(
-    name = "contact_results_for_viz",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_contact_results_for_viz.lcm"],
-    deps = [
-        ":hydroelastic_contact_surface_for_viz",
-        ":point_pair_contact_info_for_viz",
-    ],
-)
+# === C++ deprecation (remove on 2026-06-01) ===
 
-drake_lcm_cc_library(
-    name = "header",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_header.lcm"],
-)
-
-drake_lcm_cc_library(
-    name = "hydroelastic_contact_surface_for_viz",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_hydroelastic_contact_surface_for_viz.lcm"],
-    deps = [
-        ":hydroelastic_quadrature_per_point_data_for_viz",
-        ":point",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "hydroelastic_quadrature_per_point_data_for_viz",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_hydroelastic_quadrature_per_point_data_for_viz.lcm"],
-)
-
-drake_lcm_cc_library(
-    name = "image",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_image.lcm"],
-    deps = [":header"],
-)
-
-drake_lcm_cc_library(
-    name = "image_array",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_image_array.lcm"],
-    deps = [
-        ":header",
-        ":image",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "point",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_point.lcm"],
-)
-
-drake_lcm_cc_library(
-    name = "point_cloud",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_point_cloud.lcm",
-        "lcmt_point_cloud_field.lcm",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "point_pair_contact_info_for_viz",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_point_pair_contact_info_for_viz.lcm"],
-)
-
-drake_lcm_cc_library(
-    name = "planar_manipuland_status",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_planar_manipuland_status.lcm"],
-)
-
-drake_lcm_cc_library(
-    name = "planar_gripper",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_planar_gripper_command.lcm",
-        "lcmt_planar_gripper_status.lcm",
-        "lcmt_planar_gripper_finger_command.lcm",
-        "lcmt_planar_gripper_finger_face_assignment.lcm",
-        "lcmt_planar_gripper_finger_face_assignments.lcm",
-        "lcmt_planar_gripper_finger_status.lcm",
-        "lcmt_planar_plant_state.lcm",
-        "lcmt_force_torque.lcm",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "quaternion",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_quaternion.lcm"],
-)
-
-drake_lcm_cc_library(
-    name = "robot_plan",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_robot_plan.lcm",
-        "lcmt_robot_state.lcm",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "scope",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_scope.lcm"],
-)
-
-drake_lcm_cc_library(
-    name = "drake_signal",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_drake_signal.lcm"],
-)
-
-drake_lcm_cc_library(
-    name = "viewer",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_viewer_command.lcm",
-        "lcmt_viewer_draw.lcm",
-        "lcmt_viewer_geometry_data.lcm",
-        "lcmt_viewer_link_data.lcm",
-        "lcmt_viewer_load_robot.lcm",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "allegro",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_allegro_command.lcm",
-        "lcmt_allegro_status.lcm",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "iiwa",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_iiwa_command.lcm",
-        "lcmt_iiwa_status.lcm",
-        "lcmt_iiwa_status_telemetry.lcm",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "schunk",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_schunk_wsg_command.lcm",
-        "lcmt_schunk_wsg_status.lcm",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "jaco",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_jaco_command.lcm",
-        "lcmt_jaco_status.lcm",
-    ],
-)
-
-drake_lcm_cc_library(
-    name = "panda",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_panda_command.lcm",
-        "lcmt_panda_status.lcm",
-    ],
-)
-
-drake_lcm_py_library(
-    name = "lcmtypes_drake_py",
-    lcm_package = "drake",
-    lcm_srcs = ALL_LCM_SRCS,
-    deps = [
-        "//:module_py",
-    ],
-)
-
-drake_lcm_java_library(
-    name = "lcmtypes_drake_java",
-    lcm_package = "drake",
-    lcm_srcs = ALL_LCM_SRCS,
-)
-
-# This should list every LCM type that is known to Drake.
 LCMTYPES_CC = [
     ":acrobot",
     ":allegro",
@@ -295,62 +146,97 @@ LCMTYPES_CC = [
     ":viewer",
 ]
 
-# This rule should list every LCM type that is known to Drake or its external
-# dependencies.
-drake_java_binary(
+[
+    cc_library(
+        name = colon_name[1:],
+        deprecation = "DRAKE DEPRECATED: The fine-grained LCM message library \"@drake//lcmtypes:{}\" is deprecated for removal. Instead, you should depend on the all-messages library \"@drake//lcmtypes:lcmtypes_drake_cc\". The deprecated code will be removed from Drake on or after 2026-01-01.",  # noqa
+        tags = ["manual"],
+        visibility = ["//visibility:public"],
+        deps = [":lcmtypes_drake_cc"],
+    )
+    for colon_name in LCMTYPES_CC
+]
+
+# === Python ===
+
+lcm_py_library_srcs(
+    name = "messages_py_srcs",
+    src = ":messages",
+)
+
+py_library(
+    name = "lcmtypes_drake_py",
+    srcs = [":messages_py_srcs"],
+    imports = ["."],
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install_lcmtypes_python",
+    targets = [":lcmtypes_drake_py"],
+)
+
+config_setting(
+    name = "flag_install_python_true",
+    flag_values = {
+        "//tools/flags:install_python": "True",
+    },
+)
+
+# === Java ===
+
+lcm_java_library_srcs(
+    name = "messages_java_srcs",
+    src = ":messages",
+)
+
+java_library(
+    name = "lcmtypes_drake_java",
+    srcs = [":messages_java_srcs"],
+    visibility = ["//visibility:public"],
+    deps = ["@lcm_internal//lcm-java"],
+)
+
+install(
+    name = "install_lcmtypes_java",
+    targets = [":lcmtypes_drake_java"],
+    rename = {"share/java/liblcmtypes_drake_java.jar": "lcmtypes_drake.jar"},
+)
+
+config_setting(
+    name = "flag_install_java_true",
+    flag_values = {"//tools/flags:install_java": "True"},
+)
+
+java_binary(
     name = "drake-lcm-spy",
     main_class = "lcm.spy.Spy",
-    visibility = ["//visibility:private"],
     runtime_deps = [
         ":lcmtypes_drake_java",
     ],
 )
 
-drake_cc_library(
-    name = "lcmtypes_drake_cc",
-    deps = LCMTYPES_CC,
-)
-
-drake_transitive_installed_hdrs_filegroup(
-    name = "lcmtypes_drake_cc_headers",
-    visibility = ["//visibility:private"],
-    deps = LCMTYPES_CC,
-)
-
-install(
-    name = "install_drake_cc_headers",
-    hdrs = [":lcmtypes_drake_cc_headers"],
-    hdr_dest = "include",
-    visibility = ["//visibility:private"],
-)
-
-# Provide an opt-out that avoids installing Java LCM libraries (e.g., we don't
-# need to install Java typtes when we're building a Python wheel).
-config_setting(
-    name = "lcm_install_java_is_off",
-    values = {"define": "LCM_INSTALL_JAVA=OFF"},
-)
+# === Install logic (with opt-outs) ===
 
 install(
     name = "install",
-    targets = [
-        ":lcmtypes_drake_py",
-    ] + select({
-        ":lcm_install_java_is_off": [],
-        "//conditions:default": [
-            ":lcmtypes_drake_java",
-        ],
-    }),
-    rename = {
-        "share/java/liblcmtypes_drake_java.jar": "lcmtypes_drake.jar",
-    },
+    visibility = ["//:__pkg__"],
     deps = [
-        ":install_drake_cc_headers",
-        "@lcm//:install",
-    ],
+        ":install_lcmtypes_cc",
+    ] + select({
+        ":flag_install_python_true": [
+            ":install_lcmtypes_python",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        ":flag_install_java_true": [
+            ":install_lcmtypes_java",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
-# === test/ ===
+# === Tests ===
 
 drake_py_test(
     name = "nested_types_test",

@@ -1,6 +1,7 @@
 #include "drake/common/yaml/yaml_read_archive.h"
 
 #include <filesystem>
+#include <map>
 #include <optional>
 #include <string>
 #include <vector>

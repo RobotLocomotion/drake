@@ -33,15 +33,9 @@ class PendulumParameters {
   ///   The joint's damping in N⋅m⋅s.
   /// @param gravity
   ///   Gravitational constant (m/s²).
-  PendulumParameters(
-      double mass = 1.0,
-      double length = 0.5,
-      double damping = 0.1,
-      double gravity = 9.81) :
-      mass_(mass),
-      length_(length),
-      damping_(damping),
-      g_(gravity) {}
+  PendulumParameters(double mass = 1.0, double length = 0.5,
+                     double damping = 0.1, double gravity = 9.81)
+      : mass_(mass), length_(length), damping_(damping), g_(gravity) {}
 
   // getters for pendulum parameters
   double m() const { return mass_; }
@@ -66,10 +60,10 @@ class PendulumParameters {
 
   // The physical parameters of the model. They are initialized with NaN for a
   // quick detection of uninitialized values.
-  double mass_{nan()},    // In kilograms.
-      length_{nan()},     // In meters.
-      damping_{nan()},    // Damping in N⋅m⋅s.
-      g_{nan()};          // In m/s².
+  double mass_{nan()},  // In kilograms.
+      length_{nan()},   // In meters.
+      damping_{nan()},  // Damping in N⋅m⋅s.
+      g_{nan()};        // In m/s².
 
   // Modeling elements' names.
   std::string body_name_{"PointMass"};

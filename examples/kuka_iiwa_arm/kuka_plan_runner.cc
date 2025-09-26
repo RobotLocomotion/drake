@@ -13,6 +13,7 @@
 
 #include <iostream>
 #include <memory>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/fmt_eigen.h"

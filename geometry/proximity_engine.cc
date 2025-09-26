@@ -806,6 +806,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // Perform a query of the dynamic objects against themselves.
     dynamic_tree_.collide(&data, has_collisions::Callback);
 
+    // Testing to see if we've already discovered collisions here is not just
+    // a matter of efficiency; it is a matter of correctness. If the only
+    // observable collisions are between dynamic objects, blindly proceeding to
+    // examining collisions between dynamic-anchored pairs will end up
+    // overwriting the `collision_exist` value we'd already found.
+    if (data.collisions_exist) return true;
+
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
     FclCollide(dynamic_tree_, anchored_tree_, &data, has_collisions::Callback);
@@ -967,6 +974,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       return nullptr;
     }
     return &iter->second.tri_mesh();
+  }
+
+  const Aabb& GetDeformableAabbInWorld(GeometryId id) const {
+    return geometries_for_deformable_contact_.GetDeformableAabbInWorld(id);
   }
 
   bool IsFclConvexType(GeometryId id) const {
@@ -1537,6 +1548,11 @@ template <typename T>
 const TriangleSurfaceMesh<double>* ProximityEngine<T>::mesh_distance_boundary(
     GeometryId g_id) const {
   return impl_->mesh_distance_boundary(g_id);
+}
+
+template <typename T>
+const Aabb& ProximityEngine<T>::GetDeformableAabbInWorld(GeometryId id) const {
+  return impl_->GetDeformableAabbInWorld(id);
 }
 
 template <typename T>

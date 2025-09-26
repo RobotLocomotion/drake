@@ -1,5 +1,7 @@
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 
+#include <memory>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -119,9 +121,8 @@ GTEST_TEST(InverseKinematicsTest, ConstructorWithJointLimits) {
 
 TEST_F(TwoFreeBodiesTest, ConstructorAddsUnitQuaterionConstraints) {
   // By default, the initial guess was set to be [1, 0, 0, 0].
-  EXPECT_TRUE(
-      CompareMatrices(ik_.prog().GetInitialGuess(ik_.q().head<4>()),
-                      Eigen::Vector4d(1, 0, 0, 0)));
+  EXPECT_TRUE(CompareMatrices(ik_.prog().GetInitialGuess(ik_.q().head<4>()),
+                              Eigen::Vector4d(1, 0, 0, 0)));
 
   ik_.get_mutable_prog()->SetInitialGuess(ik_.q().head<4>(),
                                           Eigen::Vector4d(1, 2, 3, 4));

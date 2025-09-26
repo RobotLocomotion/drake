@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <string>
 
 #include <fmt/format.h>
 
@@ -94,10 +95,11 @@ std::string LinkJointGraph::GenerateGraphvizString(
     LinkOrdinal revised_child_ordinal = child_ordinal;
     if (show_as_modeled && joint.mobod_index().is_valid()) {
       const SpanningForest::Mobod& mobod = forest().mobods(joint.mobod_index());
-      if (mobod.is_reversed())
+      if (mobod.is_reversed()) {
         revised_parent_ordinal = mobod.link_ordinal();
-      else
+      } else {
         revised_child_ordinal = mobod.link_ordinal();
+      }
     }
 
     // Draw the effective joint connection.

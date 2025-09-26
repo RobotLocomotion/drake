@@ -37,8 +37,7 @@ int main(int argc, char* argv[]) {
   const auto& log = logger->FindLog(simulator.get_context());
   for (int n = 0; n < log.sample_times().size(); ++n) {
     const double t = log.sample_times()[n];
-    std::cout << n << ": " << log.data()(0, n)
-              << " (t=" << t << ")\n";
+    std::cout << n << ": " << log.data()(0, n) << " (t=" << t << ")\n";
   }
 
   return 0;
@@ -49,6 +48,6 @@ int main(int argc, char* argv[]) {
 }  // namespace examples
 }  // namespace drake
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   return drake::examples::fibonacci::main(argc, argv);
 }

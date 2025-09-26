@@ -1,4 +1,5 @@
 #include <exception>
+#include <map>
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>

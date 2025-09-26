@@ -1,5 +1,7 @@
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"

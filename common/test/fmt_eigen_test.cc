@@ -1,5 +1,7 @@
 #include "drake/common/fmt_eigen.h"
 
+#include <string>
+
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
@@ -28,9 +30,11 @@ GTEST_TEST(FmtEigenTest, EmptyMatrix) {
 
 GTEST_TEST(FmtEigenTest, Matrix3d) {
   Eigen::Matrix3d value;
+  // clang-format off
   value << 1.1, 1.2, 1.3,
            2.1, 2.2, 2.3,
            3.1, 3.2, 3.3;
+  // clang-format on
   EXPECT_EQ(fmt::format("{}", fmt_eigen(value)),
             "1.1 1.2 1.3\n"
             "2.1 2.2 2.3\n"
@@ -39,9 +43,11 @@ GTEST_TEST(FmtEigenTest, Matrix3d) {
 
 GTEST_TEST(FmtEigenTest, Matrix3dNeedsPadding) {
   Eigen::Matrix3d value;
+  // clang-format off
   value << 10.1, 1.2, 1.3,
            2.1, 2.2, 2.3,
            3.1, 3.2, 3.3;
+  // clang-format on
   EXPECT_EQ(fmt::format("{}", fmt_eigen(value)),
             "10.1  1.2  1.3\n"
             " 2.1  2.2  2.3\n"
@@ -50,9 +56,11 @@ GTEST_TEST(FmtEigenTest, Matrix3dNeedsPadding) {
 
 GTEST_TEST(FmtEigenTest, Matrix3i) {
   Eigen::Matrix3i value;
+  // clang-format off
   value << 11, 12, 13,
            21, 22, 23,
            31, 32, 33;
+  // clang-format on
   EXPECT_EQ(fmt::format("{}", fmt_eigen(value)),
             "11 12 13\n"
             "21 22 23\n"
@@ -61,8 +69,10 @@ GTEST_TEST(FmtEigenTest, Matrix3i) {
 
 GTEST_TEST(FmtEigenTest, MatrixString) {
   Eigen::MatrixX<std::string> value(2, 3);
+  // clang-format off
   value << "hello", "world", "!",
            "goodbye", "cruel", "world";
+  // clang-format on
   EXPECT_EQ(fmt::format("{}", fmt_eigen(value)),
             "  hello   world       !\n"
             "goodbye   cruel   world");

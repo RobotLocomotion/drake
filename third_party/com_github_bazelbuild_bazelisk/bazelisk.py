@@ -54,7 +54,7 @@ BAZEL_GCS_PATH_PATTERN = (
     "https://storage.googleapis.com/bazel-builds/artifacts/{platform}/{commit}/bazel"
 )
 
-SUPPORTED_PLATFORMS = {"linux": "ubuntu1404", "windows": "windows", "darwin": "macos"}
+SUPPORTED_PLATFORMS = {"linux": "linux", "windows": "windows", "darwin": "macos"}
 
 TOOLS_BAZEL_PATH = "./tools/bazel"
 

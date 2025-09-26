@@ -69,7 +69,7 @@ struct formatter<drake::internal::fmt_eigen_ref<Scalar>>
   template <typename FormatContext>
   auto format(const drake::internal::fmt_eigen_ref<Scalar>& ref,
               // NOLINTNEXTLINE(runtime/references) To match fmt API.
-              FormatContext& ctx) DRAKE_FMT8_CONST->decltype(ctx.out()) {
+              FormatContext& ctx) DRAKE_FMT8_CONST -> decltype(ctx.out()) {
     const auto& matrix = ref.matrix;
     if constexpr (std::is_same_v<Scalar, double> ||
                   std::is_same_v<Scalar, float>) {

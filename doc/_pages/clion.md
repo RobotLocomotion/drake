@@ -157,19 +157,12 @@ selected file, make sure that file is "active" by clicking on it. The
 
 ## Formatting files
 
-You can use clang format to modify the formatting of your file in the GUI. We'll
-introduce three variants:
+You can use clang-format to reformat your file in the GUI.
 
-* Apply clang-format to a whole file.
-* Apply clang-format to selected lines.
-* Apply clang-format to correct ``#include`` ordering.
-
-These tools modify the selected file. There is a synchronization issue with
+The formatter modifies the selected file. There is a synchronization issue with
 CLion such that the modification may not be immediately apparent. When in doubt,
 select away from the target file and back; this will cause the file to refresh
 and you can confirm that the file has been modified as expected.
-
-### Clang format selected file
 
 Open the ``Edit Tool`` for external tools as outlined above and enter the
 following values for the fields:
@@ -178,35 +171,6 @@ following values for the fields:
 * **Description:** ``Apply clang-format to the active file``
 * **Program:** ``bazel``
 * **Arguments:** ``run //tools/lint:clang-format -- -i $FilePath$``
-* **Working directory:** ``$Projectpath$``
-* **Advanced Options:** Uncheck ``Open console for tool output``
-
-Leave the checkbox options in their default state.
-
-### Clang format selected lines
-
-Open the ``Edit Tool`` for external tools as outlined above and enter the
-following values for the fields:
-
-* **Name:** ``Clang Format Selected Lines``
-* **Description:** ``Apply clang-format to the selected lines``
-* **Program:** ``bazel``
-* **Arguments:** ``run //tools/lint:clang-format -- -lines $SelectionStartLine$:$SelectionEndLine$ -i $FilePath$``
-* **Working directory:** ``$Projectpath$``
-* **Advanced Options:** Uncheck ``Open console for tool output``
-
-Leave the checkbox options in their default state.
-
-### Correct #include ordering
-
-Open the ``Edit Tool`` for external tools as outlined above and enter the
-following values for the fields:
-
-* **Name:** ``Clang Format Include Ordering``
-* **Description:** ``Runs the clang format for correcting includes on the current
-                  file``
-* **Program:** ``bazel``
-* **Arguments:** ``run //tools/lint:clang-format-includes -- $FilePath$``
 * **Working directory:** ``$Projectpath$``
 * **Advanced Options:** Uncheck ``Open console for tool output``
 
@@ -244,7 +208,7 @@ following values for the fields:
 * **Name:** ``Cpplint File``
 * **Description:** ``Apply cpplint to the current file``
 * **Program:** ``bazel``
-* **Arguments:** ``run @styleguide//:cpplint -- --output=eclipse
+* **Arguments:** ``run @cpplint_internal//:cpplint -- --output=eclipse
                  $FilePath$``
 * **Working directory:** ``$Projectpath$``
 * **Advanced Options:** Confirm ``Open console for tool output`` is checked
@@ -272,12 +236,10 @@ following values for the fields:
 * **Working directory:** ``$Projectpath$``
 * **Advanced Options:** Confirm ``Open console for tool output`` is checked
 
-In the event of finding a lint problem (e.g., out-of-order include files), the
+In the event of finding a lint problem, the
 CLion output will contain a *single* clickable link. This link is only the
 *first* error encountered in the include section; there may be more. The link
-merely provides a hint to the developer to see the problem area. Rather than
-fixing by hand, we strongly recommend executing the ``Clang Format Include
-Ordering`` external tool on the file.
+merely provides a hint to the developer to see the problem area.
 
 ### Alternative linting configuration
 
@@ -304,7 +266,7 @@ Change the following fields in the instructions given above:
 
 Building the google styleguide lint tool:
 
-``bazel build @styleguide//:cpplint``
+``bazel build @cpplint_internal//:cpplint``
 
 **Drake style addenda**
 

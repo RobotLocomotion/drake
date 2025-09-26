@@ -1,5 +1,6 @@
 #include <limits>
 #include <memory>
+#include <string>
 
 #include <gtest/gtest.h>
 
@@ -71,15 +72,17 @@ class CartPoleTest : public ::testing::Test {
     const double l = default_parameters_.l();    // length of the pole in m
     const double c = cos(theta);
     Matrix2<double> M;
-    M << mc+mp, mp*l*c,
-         mp*l*c, mp*l*l;
+    // clang-format off
+    M << mc + mp,    mp * l * c,
+         mp * l * c, mp * l * l;
+    // clang-format on
     return M;
   }
 
-  Vector4<double> CartPoleHandWrittenDynamics(
-      const Vector2<double>& q, const Vector2<double>& v) {
-    const double mp = default_parameters_.mp();  // Pole's point mass in kg.
-    const double l = default_parameters_.l();    // length of the pole in m
+  Vector4<double> CartPoleHandWrittenDynamics(const Vector2<double>& q,
+                                              const Vector2<double>& v) {
+    const double mp = default_parameters_.mp();      // Pole's point mass in kg.
+    const double l = default_parameters_.l();        // length of the pole in m
     const double g = default_parameters_.gravity();  // Gravity in m/s^2.
 
     // Mass matrix.
@@ -97,7 +100,7 @@ class CartPoleTest : public ::testing::Test {
 
     // Compute the dynamics of the system.
     Vector4<double> state_dot;
-    state_dot << v , M.llt().solve(tau_g - C * v);
+    state_dot << v, M.llt().solve(tau_g - C * v);
     return state_dot;
   }
 
@@ -123,8 +126,8 @@ TEST_F(CartPoleTest, MassMatrix) {
 
   // Matrix verified to this tolerance.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(M, M_expected,
-                  kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(
+      CompareMatrices(M, M_expected, kTolerance, MatrixCompareType::relative));
 
   {  // Repeat the computation to confirm the heap behavior.  We allow the
      // method to heap-allocate 4 temporaries.
@@ -152,11 +155,10 @@ TEST_F(CartPoleTest, SystemDynamics) {
   const Vector4<double> xc_dot_expected = CartPoleHandWrittenDynamics(q, v);
 
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(xc_dot->CopyToVector(),
-                              xc_dot_expected, kTolerance,
-                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(xc_dot->CopyToVector(), xc_dot_expected,
+                              kTolerance, MatrixCompareType::relative));
 
-    // Verify that the implicit dynamics match the continuous ones.
+  // Verify that the implicit dynamics match the continuous ones.
   Eigen::VectorXd residual =
       cart_pole_.AllocateImplicitTimeDerivativesResidual();
   cart_pole_.CalcImplicitTimeDerivativesResidual(*context_, *xc_dot, &residual);

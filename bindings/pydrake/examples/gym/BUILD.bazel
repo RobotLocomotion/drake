@@ -99,7 +99,7 @@ drake_py_test(
     main = "train_cart_pole.py",
     deps = [
         ":cart_pole_binaries",
-        "@gymnasium_py",
+        "@gymnasium_py_internal//:gymnasium_py",
         "@stable_baselines3_internal//:stable_baselines3",
     ],
 )
@@ -111,7 +111,7 @@ drake_py_test(
     main = "play_cart_pole.py",
     deps = [
         ":cart_pole_binaries",
-        "@gymnasium_py",
+        "@gymnasium_py_internal//:gymnasium_py",
         "@stable_baselines3_internal//:stable_baselines3",
     ],
 )

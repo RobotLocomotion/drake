@@ -1,3 +1,5 @@
+#include <memory>
+
 #include <benchmark/benchmark.h>
 #include <fmt/format.h>
 

@@ -1,5 +1,9 @@
 #include "drake/multibody/contact_solvers/eigen_block_3x3_sparse_symmetric_matrix.h"
 
+#include <limits>
+#include <utility>
+#include <vector>
+
 #include <Eigen/IterativeLinearSolvers>
 #include <gtest/gtest.h>
 

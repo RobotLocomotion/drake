@@ -3,6 +3,7 @@ import pydrake.systems.sensors as mut
 import copy
 import gc
 import tempfile
+import textwrap
 import unittest
 
 import numpy as np
@@ -26,6 +27,9 @@ from pydrake.math import (
 )
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
+)
+from pydrake.multibody.parsing import (
+    Parser,
 )
 from pydrake.systems.framework import (
     DiagramBuilder,
@@ -68,6 +72,87 @@ image_type_aliases = [
 
 
 class TestSensors(unittest.TestCase):
+
+    def _make_single_body_scene(self):
+        builder = DiagramBuilder()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        parser = Parser(plant=plant)
+        scene_yaml = textwrap.dedent("""
+            directives:
+            - add_model:
+                name: box
+                file: package://drake/multibody/models/box.urdf
+            """)
+        parser.AddModelsFromString(scene_yaml, "dmd.yaml")
+        return plant, builder
+
+    def test_accelerometer(self):
+        plant, builder = self._make_single_body_scene()
+        box_body = plant.GetBodyByName("box")
+        accelerometer = builder.AddSystem(mut.Accelerometer(
+            body=box_body,
+            X_BS=RigidTransform(),
+        ))
+
+        plant.set_gravity_enabled(box_body.model_instance(), False)
+        plant.Finalize()
+
+        builder.Connect(
+            plant.get_body_poses_output_port(),
+            accelerometer.get_body_poses_input_port()
+        )
+
+        builder.Connect(
+            plant.get_body_spatial_velocities_output_port(),
+            accelerometer.get_body_velocities_input_port()
+        )
+
+        builder.Connect(
+            plant.get_body_spatial_accelerations_output_port(),
+            accelerometer.get_body_accelerations_input_port()
+        )
+        diagram = builder.Build()
+
+        context = diagram.CreateDefaultContext()
+        accelerometer_context = diagram.GetMutableSubsystemContext(
+            accelerometer, context)
+        evaluated_acceleration = (
+            accelerometer.get_measurement_output_port().Eval(
+                accelerometer_context))
+        self.assertTrue(np.all(evaluated_acceleration == 0.0))
+        self.assertTrue(np.all(accelerometer.gravity_vector() == 0.0))
+        self.assertEqual(accelerometer.body_index(), box_body.index())
+        self.assertTrue(accelerometer.pose().IsExactlyIdentity())
+
+    def test_gyroscope(self):
+        plant, builder = self._make_single_body_scene()
+        box_body = plant.GetBodyByName("box")
+        gyroscope = builder.AddSystem(mut.Gyroscope(
+            body=box_body,
+            X_BS=RigidTransform(),
+        ))
+        plant.Finalize()
+
+        builder.Connect(
+            plant.get_body_poses_output_port(),
+            gyroscope.get_body_poses_input_port()
+        )
+
+        builder.Connect(
+            plant.get_body_spatial_velocities_output_port(),
+            gyroscope.get_body_velocities_input_port()
+        )
+
+        diagram = builder.Build()
+
+        context = diagram.CreateDefaultContext()
+        gyroscope_context = diagram.GetMutableSubsystemContext(
+            gyroscope, context)
+        evaluated_angular_velocity = (
+            gyroscope.get_measurement_output_port().Eval(gyroscope_context))
+        self.assertTrue(np.all(evaluated_angular_velocity == 0.0))
+        self.assertEqual(gyroscope.body_index(), box_body.index())
+        self.assertTrue(gyroscope.pose().IsExactlyIdentity())
 
     def test_image_traits(self):
         # Ensure that we test all available enums.

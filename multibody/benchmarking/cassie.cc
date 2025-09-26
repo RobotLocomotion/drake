@@ -1,3 +1,5 @@
+#include <memory>
+
 #include <benchmark/benchmark.h>
 
 #include "drake/common/drake_assert.h"

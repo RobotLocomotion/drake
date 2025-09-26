@@ -32,9 +32,46 @@ from pydrake.common.deprecation import DrakeDeprecationWarning
 from doc.doxygen_cxx.system_doxygen import system_yaml_to_html
 
 
-def rindex(s, sub):
-    """Reverse index of a substring."""
-    return len(s) - s[::-1].index(sub) - len(sub)
+def generate_sig_re(extended=False):
+    """Returns a regular expression suitable for extracting signatures.
+
+    These are based on the regular expressions from sphinx 7.2.6, but have been
+    modified to accept type-parameterized class names and to treat member
+    type parameters as part of the name, rather than extracting them as a
+    separate group.
+    """
+    if extended:
+        expression = r'''^ ([\w.]+::)?       # explicit module name
+                           ([\w.]+           # module and/or class name(s)
+                       (?: \[\s*[^(]*\s*])?  # optional: type parameters list
+                      \.)?                   # end of module/class name(s)
+                     '''
+    else:
+        expression = r'''^ ([\w.]*           # class name(s)
+                       (?: \[\s*[^(]*\s*])?  # optional: type parameters list
+                      \.)?                   # end of class name(s)
+                     '''
+
+    expression += r'''(\w+  \s*              # thing name
+                       (?: \[\s*.*\s*])?     # optional: type parameters list
+                      )                      # end of thing name
+                  '''
+
+    # TODO(mwoehlke-kitware): Make unconditional when Jammy is no longer
+    # supported.
+    if sphinx_version[:3] >= (7, 1, 0):
+        # More recent versions of Sphinx capture an optional type parameters
+        # list. But we want to capture that as part of the name(s). However,
+        # we still need to provide a capture group, so 'capture' something that
+        # won't exist in order to make the number of capture groups correct.
+        expression += r'(!!dummy_tp_list!!)?'
+
+    expression += r'''(?: \((.*)\)           # optional: arguments
+                       (?:\s* -> \s* (.*))?  #           return annotation
+                      )? $                   # and nothing more
+                  '''
+
+    return re.compile(expression, re.VERBOSE)
 
 
 def patch(obj, name, f):
@@ -64,75 +101,6 @@ def repair_naive_name_split(objpath):
             cur = ''
     assert len(cur) == 0, (objpath, cur, out)
     return out
-
-
-class IrregularExpression:
-    """Provides analogous parsing to `autodoc.py_ext_sig_re` and
-    `pydoc.py_sig_re`, but permits nested parsing for class-like directives to
-    work with the munged names.
-
-    These are meant to be used to monkey-patch existing compiled regular
-    expressions.
-    """
-
-    FakeMatch = namedtuple('FakeMatch', 'groups')
-
-    py_sig_old = autodoc.py_ext_sig_re
-    py_sig = re.compile(
-        r'''^     (\w.*?) \s*               # symbol
-                  (?:
-                      \((.*)\)              # optional: arguments
-                      (?:\s* -> \s* (.*))?  # return annotation
-                  )? $
-              ''', re.VERBOSE)
-
-    def __init__(self, extended):
-        """
-        Args:
-            extended: For use in `autodoc` (returns explicit reST module name
-                scope).
-        """
-        self.extended = extended
-
-    def match(self, full):
-        """Tests if a string matches `full`. If not, returns None."""
-        m = self.py_sig.match(full)
-        if not m:
-            return None
-        symbol, arg, retann = m.groups()
-        # Heuristic to not try and match for docstring phrases. Any space
-        # should be balanced with a comma for the symbol.
-        if symbol.count(' ') > symbol.count(','):
-            return None
-        # Extract module name using a greedy match.
-        explicit_modname = None
-        if "::" in symbol:
-            pos = rindex(symbol, "::") + 2
-            explicit_modname = symbol[:pos]
-            symbol = symbol[pos:].strip()
-        # Extract {path...}.{base}, accounting for brackets.
-        if not symbol:
-            return
-        pieces = repair_naive_name_split(symbol.split('.'))
-        assert len(pieces) > 0, (symbol, pieces)
-        base = pieces[-1]
-        if len(pieces) > 1:
-            path = '.'.join(pieces[:-1]) + '.'
-        else:
-            path = None
-        if self.extended:
-            # Different versions of sphinx have different groups in their
-            # regular expressions, so our returned groups must match the
-            # signature of the specific version of sphinx being wrapped.
-            if sphinx_version[:3] >= (7, 1, 0):
-                type_par = ""
-                groups = (explicit_modname, path, base, type_par, arg, retann)
-            else:
-                groups = (explicit_modname, path, base, arg, retann)
-        else:
-            assert explicit_modname is None
-            groups = (path, base, arg, retann)
-        return self.FakeMatch(lambda: groups)
 
 
 class TemplateDocumenter(autodoc.ModuleLevelDocumenter):
@@ -428,9 +396,9 @@ def setup(app):
     # Register autodocumentation for templates.
     app.add_autodoc_attrgetter(TemplateBase, tpl_attrgetter)
     app.add_autodocumenter(TemplateDocumenter)
-    # Hack regular expressions to make them irregular (nested).
-    autodoc.py_ext_sig_re = IrregularExpression(extended=True)
-    pydoc.py_sig_re = IrregularExpression(extended=False)
+    # Hack regular expressions to match type-parameterized names.
+    autodoc.py_ext_sig_re = generate_sig_re(extended=True)
+    pydoc.py_sig_re = generate_sig_re(extended=False)
     patch(autodoc.ClassLevelDocumenter, 'resolve_name', patch_resolve_name)
     patch(autodoc.ModuleLevelDocumenter, 'resolve_name', patch_resolve_name)
     patch(autodoc.Documenter, 'document_members', patch_document_members)

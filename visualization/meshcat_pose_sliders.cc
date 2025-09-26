@@ -46,10 +46,11 @@ double AdjustAngle(double x, double lower_bound, double upper_bound) {
   }
 
   // If after adjusting, x is outside of bounds, return the closest bound.
-  if (x < lower_bound)
+  if (x < lower_bound) {
     return lower_bound;
-  else if (x > upper_bound)
+  } else if (x > upper_bound) {
     return upper_bound;
+  }
 
   // Otherwise, return the adjusted angle.
   return x;

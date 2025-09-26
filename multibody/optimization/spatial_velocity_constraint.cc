@@ -8,9 +8,9 @@
 namespace drake {
 namespace multibody {
 
+using Eigen::VectorXd;
 using internal::RefFromPtrOrThrow;
 using internal::UpdateContextPositionsAndVelocities;
-using Eigen::VectorXd;
 
 namespace {
 
@@ -68,8 +68,7 @@ SpatialVelocityConstraint::SpatialVelocityConstraint(
   if (plant_context == nullptr)
     throw std::invalid_argument("plant_context is nullptr.");
   if (w_AC_bounds) {
-    w_AC_reference_direction_ =
-        w_AC_bounds->reference_direction.normalized();
+    w_AC_reference_direction_ = w_AC_bounds->reference_direction.normalized();
   }
 }
 
@@ -80,8 +79,8 @@ void SpatialVelocityConstraint::DoEval(
   *y = math::ExtractValue(y_t);
 }
 
-void SpatialVelocityConstraint::DoEval(
-    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
+void SpatialVelocityConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                                       AutoDiffVecXd* y) const {
   y->resize(this->num_constraints());
   UpdateContextPositionsAndVelocities(context_, *plant_, x);
   const Frame<AutoDiffXd>& frameA = plant_->get_frame(frameA_index_);

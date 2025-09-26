@@ -30,10 +30,10 @@ and/or trajectories of dynamical systems.
   internal::DefinePlanningGraphAlgorithms(m);
   internal::DefinePlanningTrajectoryOptimization(m);
   internal::DefinePlanningVisibilityGraph(m);
-  internal::DefinePlanningIrisFromCliqueCover(m);
   internal::DefinePlanningIrisCommon(m);
   internal::DefinePlanningIrisNp2(m);
   internal::DefinePlanningIrisZo(m);
+  internal::DefinePlanningIrisFromCliqueCover(m);
   internal::DefinePlanningZmpPlanner(m);
 }
 

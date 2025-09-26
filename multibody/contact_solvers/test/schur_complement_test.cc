@@ -1,5 +1,10 @@
 #include "drake/multibody/contact_solvers/schur_complement.h"
 
+#include <limits>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

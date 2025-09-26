@@ -119,8 +119,8 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
   // Note: The expression below has quantities with different scalar types.
   // The casts from `double` to `T` preserves derivative or symbolic information
   // in R_AbarBbar (if it exists).
-  const math::RotationMatrix<T> R_AB = R_AAbar.cast<T>() * R_AbarBbar
-                                     * R_BbarB.cast<T>();
+  const math::RotationMatrix<T> R_AB =
+      R_AAbar.cast<T>() * R_AbarBbar * R_BbarB.cast<T>();
   if constexpr (std::is_same_v<T, S>) {
     (*y)(0) = R_AB.matrix().trace();
   } else {

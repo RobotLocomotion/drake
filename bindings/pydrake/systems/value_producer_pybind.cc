@@ -1,5 +1,8 @@
 #include "drake/bindings/pydrake/systems/value_producer_pybind.h"
 
+#include <string>
+#include <utility>
+
 namespace drake {
 namespace pydrake {
 

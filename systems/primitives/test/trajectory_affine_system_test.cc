@@ -1,5 +1,7 @@
 #include "drake/systems/primitives/trajectory_affine_system.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

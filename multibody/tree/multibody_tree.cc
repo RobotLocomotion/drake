@@ -165,7 +165,7 @@ void MultibodyTree<T>::RemoveJointActuator(const JointActuator<T>& actuator) {
   actuator.HasThisParentTreeOrThrow(this);
   JointActuatorIndex actuator_index = actuator.index();
   actuators_.Remove(actuator_index);
-  topology_.RemoveJointActuator(actuator_index);
+  topology_.RemoveJointActuatorTopology(actuator_index);
 }
 
 template <typename T>
@@ -180,16 +180,17 @@ const std::string& MultibodyTree<T>::GetModelInstanceName(
 }
 
 template <typename T>
-bool MultibodyTree<T>::HasUniqueFreeBaseBodyImpl(
+bool MultibodyTree<T>::HasUniqueFloatingBaseBodyImpl(
     ModelInstanceIndex model_instance) const {
   std::optional<BodyIndex> base_body_index =
       MaybeGetUniqueBaseBodyIndex(model_instance);
   return base_body_index.has_value() &&
-         rigid_bodies_.get_element(base_body_index.value()).is_floating();
+         rigid_bodies_.get_element(base_body_index.value())
+             .is_floating_base_body();
 }
 
 template <typename T>
-const RigidBody<T>& MultibodyTree<T>::GetUniqueFreeBaseBodyOrThrowImpl(
+const RigidBody<T>& MultibodyTree<T>::GetUniqueFloatingBaseBodyOrThrowImpl(
     ModelInstanceIndex model_instance) const {
   std::optional<BodyIndex> base_body_index =
       MaybeGetUniqueBaseBodyIndex(model_instance);
@@ -200,10 +201,10 @@ const RigidBody<T>& MultibodyTree<T>::GetUniqueFreeBaseBodyOrThrowImpl(
   }
   const RigidBody<T>& result =
       rigid_bodies_.get_element(base_body_index.value());
-  if (!result.is_floating()) {
-    throw std::logic_error(
-        fmt::format("Model {} has a unique base body, but it is not free.",
-                    model_instances_.get_element(model_instance).name()));
+  if (!result.is_floating_base_body()) {
+    throw std::logic_error(fmt::format(
+        "Model {} has a unique base body, but it is not a floating base body.",
+        model_instances_.get_element(model_instance).name()));
   }
   return result;
 }
@@ -557,13 +558,9 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBodyImpl(
 
   DRAKE_DEMAND(body->model_instance().is_valid());
 
-  BodyIndex body_index(0);
-  FrameIndex body_frame_index(0);
-  std::tie(body_index, body_frame_index) = topology_.add_rigid_body();
-  // These tests MUST be performed BEFORE `rigid_bodies_` and `frames_` are
-  // changed, below. Do not move them around!
-  DRAKE_DEMAND(body_index == num_bodies());
-  DRAKE_DEMAND(body_frame_index == num_frames());
+  const BodyIndex body_index(num_bodies());
+  const FrameIndex body_frame_index(num_frames());
+  topology_.add_rigid_body_topology(body_index, body_frame_index);
 
   if (body_index == 0) {
     // We're adding the first RigidBody -- must be World!
@@ -763,7 +760,8 @@ void MultibodyTree<T>::CreateJointImplementations() {
     if (mobod.is_world()) {
       // No associated Joint but we do want a stub "weld" Mobilizer so that
       // Mobods, BodyNodes, and Mobilizers have identical numbering.
-      topology_.add_world_mobilizer(mobod, world_body().body_frame().index());
+      topology_.add_world_mobilizer_topology(mobod,
+                                             world_body().body_frame().index());
       auto dummy_weld = std::make_unique<internal::WeldMobilizer<T>>(
           mobod, world_frame(), world_frame());
       dummy_weld->set_model_instance(world_model_instance());
@@ -792,8 +790,9 @@ void MultibodyTree<T>::CreateJointImplementations() {
 
     std::unique_ptr<Mobilizer<T>> owned_mobilizer = joint.Build(mobod, this);
     Mobilizer<T>* mobilizer = owned_mobilizer.get();
-    AddMobilizer(std::move(owned_mobilizer));  // ownership->tree
     mobilizer->set_model_instance(joint.model_instance());
+    mobilizer->set_is_ephemeral(joint.is_ephemeral());
+    AddMobilizer(std::move(owned_mobilizer));  // ownership->tree
     DRAKE_DEMAND(mobilizer->index() == mobod.index());
     // Record the joint to mobilizer map.
     joint_to_mobilizer_[joint_index] = mobilizer->index();
@@ -806,7 +805,7 @@ const Mobilizer<T>& MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   DRAKE_DEMAND(body.index() != world_index());
   const RigidBodyTopology& rigid_body_topology =
-      get_topology().get_rigid_body(body.index());
+      get_topology().get_rigid_body_topology(body.index());
   const Mobilizer<T>& mobilizer =
       get_mobilizer(rigid_body_topology.inboard_mobilizer);
   if (!mobilizer.has_six_dofs()) {
@@ -843,7 +842,7 @@ void MultibodyTree<T>::FinalizeTopology() {
   // Before performing any setup that depends on the scalar type <T>, compile
   // all the type-T independent topological information.
   DRAKE_DEMAND(graph().forest_is_valid());
-  topology_.Finalize(graph());
+  topology_.FinalizeTopology(graph());
 }
 
 template <typename T>
@@ -876,32 +875,35 @@ void MultibodyTree<T>::FinalizeInternals() {
     actuators_.get_mutable_element(actuator_index).SetTopology(topology_);
   }
 
-  body_node_levels_.resize(topology_.forest_height());
-  for (MobodIndex mobod_index(1); mobod_index < topology_.num_mobods();
+  // TODO(sherm1) Consider building the level collection while building the
+  //  spanning forest.
+  body_node_levels_.resize(forest().height());
+  for (MobodIndex mobod_index(1); mobod_index < forest().num_mobods();
        ++mobod_index) {
-    const BodyNodeTopology& node_topology =
-        topology_.get_body_node(mobod_index);
-    body_node_levels_[node_topology.level].push_back(mobod_index);
+    const SpanningForest::Mobod& mobod = forest().mobods(mobod_index);
+    body_node_levels_[mobod.level()].push_back(mobod_index);
   }
 
   // Creates BodyNodes:
   // This recursion order ensures that a BodyNode's parent is created before the
   // node itself, since BodyNode objects are in Depth First Traversal order.
-  for (MobodIndex mobod_index(0); mobod_index < topology_.num_mobods();
+  for (MobodIndex mobod_index(0); mobod_index < forest().num_mobods();
        ++mobod_index) {
     CreateBodyNode(mobod_index);
   }
 
   FinalizeModelInstances();
 
-  // For all floating bodies, route their future default poses queries through
-  // its joint representation.
+  // For each floating base body, transfer its default pose to its newly-added
+  // ephemeral floating joint and route its future default pose setting &
+  // querying through its joint representation.
   for (JointIndex i : GetJointIndices()) {
     auto& joint = joints_.get_mutable_element(i);
     const RigidBody<T>& body = joint.child_body();
-    if (body.is_floating()) {
+    if (body.is_floating_base_body()) {
+      DRAKE_DEMAND(joint.is_ephemeral());
       const auto [quaternion, translation] =
-          GetDefaultFreeBodyPoseAsQuaternionVec3Pair(body);
+          GetDefaultFloatingBaseBodyPoseAsQuaternionVec3Pair(body);
       joint.SetDefaultPosePair(quaternion, translation);
       default_body_poses_[body.index()] = joint.index();
     }
@@ -946,8 +948,7 @@ void MultibodyTree<T>::Finalize() {
   "ephemeral" elements. */
 
   /* Add the ephemeral Joints. */
-  for (JointOrdinal i(graph.num_user_joints()); i < ssize(graph.joints());
-       ++i) {
+  for (JointOrdinal i(graph.num_user_joints()); i < graph.num_joints(); ++i) {
     const LinkJointGraph::Joint& added_joint = graph.joints(i);
     DRAKE_DEMAND(added_joint.parent_link_index() == BodyIndex(0));
 
@@ -994,19 +995,19 @@ void MultibodyTree<T>::Finalize() {
 
 template <typename T>
 void MultibodyTree<T>::CreateBodyNode(MobodIndex mobod_index) {
-  const BodyNodeTopology& node_topology = topology_.get_body_node(mobod_index);
-  const BodyIndex body_index = node_topology.rigid_body;
+  const SpanningForest::Mobod& mobod = forest().mobods(mobod_index);
+  const LinkJointGraph::Link& active_link =
+      forest().links(mobod.link_ordinal());
+  const BodyIndex body_index = active_link.index();
 
-  const RigidBody<T>& body =
-      rigid_bodies_.get_element(node_topology.rigid_body);
+  const RigidBody<T>& body = rigid_bodies_.get_element(body_index);
 
   std::unique_ptr<BodyNode<T>> body_node;
-  const Mobilizer<T>* const mobilizer = mobilizers_[node_topology.index].get();
+  const Mobilizer<T>* const mobilizer = mobilizers_[mobod_index].get();
   if (body_index == world_index()) {
     body_node = std::make_unique<BodyNodeWorld<T>>(&world_body(), mobilizer);
   } else {
-    BodyNode<T>* parent_node =
-        body_nodes_[node_topology.parent_body_node].get();
+    BodyNode<T>* parent_node = body_nodes_[mobod.inboard()].get();
 
     // Only the mobilizer knows how to create a BodyNode with compile-time
     // fixed sizes.
@@ -1022,15 +1023,9 @@ void MultibodyTree<T>::CreateBodyNode(MobodIndex mobod_index) {
 template <typename T>
 void MultibodyTree<T>::FinalizeModelInstances() {
   // Add all of our mobilizers and joint actuators to the appropriate instance.
-  // The order of the mobilizers should match the order in which the bodies were
-  // added to the tree, which may not be the order in which the mobilizers were
-  // added, so we get the mobilizer through the BodyNode.
-  for (const auto& body_node : body_nodes_) {
-    if (body_node->get_num_mobilizer_positions() > 0 ||
-        body_node->get_num_mobilizer_velocities() > 0) {
-      model_instances_.get_mutable_element(body_node->model_instance())
-          .add_mobilizer(&body_node->get_mobilizer());
-    }
+  for (const auto& mobilizer : mobilizers_) {
+    model_instances_.get_mutable_element(mobilizer->model_instance())
+        .add_mobilizer(mobilizer.get());
   }
 
   // N.B. The result of the code below is that actuators are sorted by
@@ -1131,7 +1126,7 @@ RigidTransform<T> MultibodyTree<T>::GetFreeBodyPoseOrThrow(
 }
 
 template <typename T>
-void MultibodyTree<T>::SetDefaultFreeBodyPose(
+void MultibodyTree<T>::SetDefaultFloatingBaseBodyPose(
     const RigidBody<T>& body, const RigidTransform<double>& X_WB) {
   if (!default_body_poses_.contains(body.index()) ||
       std::holds_alternative<
@@ -1147,16 +1142,16 @@ void MultibodyTree<T>::SetDefaultFreeBodyPose(
 }
 
 template <typename T>
-RigidTransform<double> MultibodyTree<T>::GetDefaultFreeBodyPose(
+RigidTransform<double> MultibodyTree<T>::GetDefaultFloatingBaseBodyPose(
     const RigidBody<T>& body) const {
   const std::pair<Eigen::Quaternion<double>, Vector3<double>> pose =
-      GetDefaultFreeBodyPoseAsQuaternionVec3Pair(body);
+      GetDefaultFloatingBaseBodyPoseAsQuaternionVec3Pair(body);
   return RigidTransform<double>(pose.first, pose.second);
 }
 
 template <typename T>
 std::pair<Eigen::Quaternion<double>, Vector3<double>>
-MultibodyTree<T>::GetDefaultFreeBodyPoseAsQuaternionVec3Pair(
+MultibodyTree<T>::GetDefaultFloatingBaseBodyPoseAsQuaternionVec3Pair(
     const RigidBody<T>& body) const {
   if (!default_body_poses_.contains(body.index())) {
     return std::make_pair(Eigen::Quaternion<double>::Identity(),
@@ -1804,7 +1799,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
     for (MobodIndex mobod_index : body_node_levels_[level]) {
       const BodyNode<T>& node = *body_nodes_[mobod_index];
 
-      DRAKE_ASSERT(node.get_topology().level == level);
+      DRAKE_ASSERT(node.mobod().level() == level);
       DRAKE_ASSERT(node.mobod_index() == mobod_index);
 
       // Compute F_BMo_W for the body associated with this node and project it
@@ -3179,12 +3174,11 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
   for (size_t level = 1; level < path_to_world.size(); ++level) {
     const MobodIndex mobod_index = path_to_world[level];
     const BodyNode<T>& node = *body_nodes_[mobod_index];
-    const BodyNodeTopology& node_topology = node.get_topology();
-    const Mobilizer<T>& mobilizer = node.get_mobilizer();
-    const int start_index_in_v = node_topology.mobilizer_velocities_start_in_v;
-    const int start_index_in_q = node_topology.mobilizer_positions_start;
-    const int mobilizer_num_velocities = node_topology.num_mobilizer_velocities;
-    const int mobilizer_num_positions = node_topology.num_mobilizer_positions;
+    const SpanningForest::Mobod& mobod = node.mobod();
+    const int start_index_in_v = mobod.v_start();
+    const int start_index_in_q = mobod.q_start();
+    const int mobilizer_num_velocities = mobod.nv();
+    const int mobilizer_num_positions = mobod.nq();
 
     const int start_index = is_wrt_qdot ? start_index_in_q : start_index_in_v;
     const int mobilizer_jacobian_ncols =
@@ -3211,7 +3205,7 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
       //  right becomes a bottleneck.
       // Nplus is stack allocated above so this isn't a memory allocation.
       Nplus.resize(mobilizer_num_velocities, mobilizer_num_positions);
-      mobilizer.CalcNplusMatrix(context, &Nplus);
+      node.get_mobilizer().CalcNplusMatrix(context, &Nplus);
     }
 
     // The Jacobian angular velocity term is the same for all points Fpi since
@@ -4253,7 +4247,7 @@ std::optional<BodyIndex> MultibodyTree<T>::MaybeGetUniqueBaseBodyIndex(
   std::optional<BodyIndex> base_body_index{};
   for (const RigidBody<T>* body : rigid_bodies_.elements()) {
     if (body->model_instance() == model_instance &&
-        (topology_.get_rigid_body(body->index()).parent_body ==
+        (topology_.get_rigid_body_topology(body->index()).parent_body ==
          world_index())) {
       if (base_body_index.has_value()) {
         // More than one base body associated with this model.

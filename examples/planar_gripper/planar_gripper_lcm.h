@@ -22,8 +22,8 @@ namespace drake {
 namespace examples {
 namespace planar_gripper {
 
-using systems::OutputPort;
 using systems::InputPort;
+using systems::OutputPort;
 
 // By default the planar gripper has 3 fingers.
 constexpr int kGripperDefaultNumFingers = 3;
@@ -63,9 +63,8 @@ class GripperCommandDecoder : public systems::LeafSystem<double> {
   /// velocity) until a position message is received.  If this
   /// function is not called, the starting position will be the zero
   /// configuration.
-  void set_initial_position(
-      systems::Context<double>* context,
-      const Eigen::Ref<const VectorX<double>> x) const;
+  void set_initial_position(systems::Context<double>* context,
+                            const Eigen::Ref<const VectorX<double>> x) const;
 
   const systems::OutputPort<double>& get_state_output_port() const {
     DRAKE_DEMAND(state_output_port_ != nullptr);
@@ -79,10 +78,10 @@ class GripperCommandDecoder : public systems::LeafSystem<double> {
 
  private:
   void OutputStateCommand(const systems::Context<double>& context,
-                     systems::BasicVector<double>* output) const;
+                          systems::BasicVector<double>* output) const;
 
   void OutputTorqueCommand(const systems::Context<double>& context,
-                          systems::BasicVector<double>* output) const;
+                           systems::BasicVector<double>* output) const;
 
   /// Event handler of the periodic discrete state update.
   systems::EventStatus UpdateDiscreteState(
@@ -184,7 +183,7 @@ class GripperStatusDecoder : public systems::LeafSystem<double> {
 
  private:
   void OutputStateStatus(const systems::Context<double>& context,
-                    systems::BasicVector<double>* output) const;
+                         systems::BasicVector<double>* output) const;
 
   void OutputForceStatus(const systems::Context<double>& context,
                          systems::BasicVector<double>* output) const;

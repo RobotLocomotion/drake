@@ -11,7 +11,6 @@ import scipy.sparse
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import kDrakeAssertIsArmed, Parallelism
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
 from pydrake.forwarddiff import jacobian
 from pydrake.math import ge
@@ -21,6 +20,7 @@ from pydrake.solvers import (
     MathematicalProgramResult,
     OsqpSolver,
     PyFunctionConstraint,
+    PyFunctionCost,
     ScsSolver,
     SnoptSolver,
     SolverId,
@@ -858,33 +858,40 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_constraint_set_bounds(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
+        description = "PyFunctionConstraint"
 
         def constraint(x):
             return x[1] ** 2
-        binding = prog.AddConstraint(constraint, [0], [1], vars=x)
-        self.assertIsInstance(binding.evaluator(), PyFunctionConstraint)
-        np.testing.assert_array_equal(
-            binding.evaluator().lower_bound(), np.array([0.]))
-        np.testing.assert_array_equal(
-            binding.evaluator().upper_bound(), np.array([1.]))
-        # Test UpdateLowerBound()
-        binding.evaluator().UpdateLowerBound(new_lb=[-1.])
-        np.testing.assert_array_equal(
-            binding.evaluator().lower_bound(), np.array([-1.]))
-        np.testing.assert_array_equal(
-            binding.evaluator().upper_bound(), np.array([1.]))
-        # Test UpdateLowerBound()
-        binding.evaluator().UpdateUpperBound(new_ub=[2.])
-        np.testing.assert_array_equal(
-            binding.evaluator().lower_bound(), np.array([-1.]))
-        np.testing.assert_array_equal(
-            binding.evaluator().upper_bound(), np.array([2.]))
-        # Test set_bounds()
-        binding.evaluator().set_bounds(lower_bound=[-3.], upper_bound=[4.])
-        np.testing.assert_array_equal(
-            binding.evaluator().lower_bound(), np.array([-3.]))
-        np.testing.assert_array_equal(
-            binding.evaluator().upper_bound(), np.array([4.]))
+        binding = prog.AddConstraint(
+            constraint, [0], [1], vars=x, description=description)
+        py_constraint = PyFunctionConstraint(
+            num_vars=2, func=constraint, lb=[0], ub=[1],
+            description=description)
+        for evaluator in [binding.evaluator(), py_constraint]:
+            self.assertEqual(evaluator.get_description(), description)
+            self.assertIsInstance(binding.evaluator(), PyFunctionConstraint)
+            np.testing.assert_array_equal(
+                evaluator.lower_bound(), np.array([0.]))
+            np.testing.assert_array_equal(
+                evaluator.upper_bound(), np.array([1.]))
+            # Test UpdateLowerBound()
+            evaluator.UpdateLowerBound(new_lb=[-1.])
+            np.testing.assert_array_equal(
+                evaluator.lower_bound(), np.array([-1.]))
+            np.testing.assert_array_equal(
+                evaluator.upper_bound(), np.array([1.]))
+            # Test UpdateLowerBound()
+            evaluator.UpdateUpperBound(new_ub=[2.])
+            np.testing.assert_array_equal(
+                evaluator.lower_bound(), np.array([-1.]))
+            np.testing.assert_array_equal(
+                evaluator.upper_bound(), np.array([2.]))
+            # Test set_bounds()
+            evaluator.set_bounds(lower_bound=[-3.], upper_bound=[4.])
+            np.testing.assert_array_equal(
+                evaluator.lower_bound(), np.array([-3.]))
+            np.testing.assert_array_equal(
+                evaluator.upper_bound(), np.array([4.]))
 
     def test_constraint_gradient_sparsity(self):
         prog = mp.MathematicalProgram()
@@ -971,6 +978,20 @@ class TestMathematicalProgram(unittest.TestCase):
         U = SCALAR_TYPES[next_index % len(SCALAR_TYPES)]
         self.assertNotEqual(U, T)
         return U
+
+    def test_pycost_simple(self):
+        num_vars = 2
+        description = "PyFunctionCost"
+
+        def cost(x):
+            # L2-norm squared cost.
+            return np.sum(x.dot(x))
+
+        cost = PyFunctionCost(
+            num_vars=num_vars, func=cost, description=description)
+        self.assertEqual(cost.get_description(), description)
+        self.assertEqual(cost.num_vars(), num_vars)
+        self.assertEqual(cost.Eval([1.0, 1.0]), 2.0)
 
     def test_pycost_wrap_error(self):
         """Tests for checks using PyFunctionCost::Wrap."""
@@ -1117,6 +1138,17 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(len(prog.linear_costs()), 1)
         self.assertEqual(len(prog.lorentz_cone_constraints()), 1)
         self.assertEqual(prog.num_vars(), 3)
+
+    def test_add_l1norm_cost_in_epigraph_form(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+        s, linear_cost, linear_constraint = \
+            prog.AddL1NormCostInEpigraphForm(
+                A=np.array([[1, 2.], [3., 4]]),
+                b=np.array([1., 2.]), vars=x)
+        self.assertEqual(len(prog.linear_costs()), 1)
+        self.assertEqual(len(prog.linear_constraints()), 1)
+        self.assertEqual(prog.num_vars(), 4)
 
     def test_addcost_shared_ptr(self):
         # In particular, confirm that LinearCost ends up in linear_costs, etc.
@@ -1347,8 +1379,6 @@ class TestMathematicalProgram(unittest.TestCase):
             prog.SetSolverOption(solver, "india", 2)
             prog.SetSolverOption(solver, "sierra", "3")
             expected = {"foxtrot": 1.0, "india": 2, "sierra": "3"}
-            with catch_drake_warnings(expected_count=1):
-                self.assertDictEqual(prog.GetSolverOptions(solver), expected)
             old_options = prog.solver_options()
             self.assertEqual(old_options.options, {
                 gurobi_id.name(): expected,
@@ -1358,8 +1388,6 @@ class TestMathematicalProgram(unittest.TestCase):
             self.assertNotEqual(new_options, old_options)
             prog.SetSolverOptions(new_options)
             expected["india"] = 4
-            with catch_drake_warnings(expected_count=1):
-                self.assertDictEqual(prog.GetSolverOptions(solver), expected)
             self.assertEqual(old_options.options, {
                 gurobi_id.name(): expected,
             })
@@ -1391,19 +1419,6 @@ class TestMathematicalProgram(unittest.TestCase):
                 for key, value in expected_common.items()
             )
         })
-        with catch_drake_warnings(expected_count=1):
-            self.assertDictEqual(dut.GetOptions(solver_id), expected_dummy)
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(dut.common_solver_options(), expected_common)
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(dut.get_print_to_console(), True)
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(dut.get_print_file_name(), "print.log")
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(dut.get_standalone_reproduction_file_name(),
-                             "repro.txt")
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(dut.get_max_threads(), 4)
         self.assertTrue(dut == dut)
         self.assertFalse(dut != dut)
         copy.deepcopy(dut)

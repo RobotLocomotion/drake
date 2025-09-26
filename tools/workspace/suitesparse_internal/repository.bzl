@@ -6,8 +6,8 @@ def suitesparse_internal_repository(
     github_archive(
         name = name,
         repository = "DrTimothyAldenDavis/SuiteSparse",
-        commit = "v7.10.3",
-        sha256 = "09e7bcc8e5de0a5b55d2ae9fd6378d5f4dc1b85a933593339a0872b24e2cc102",  # noqa
+        commit = "v7.11.0",
+        sha256 = "93ed4c4e546a49fc75884c3a8b807d5af4a91e39d191fbbc60a07380b12a35d1",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

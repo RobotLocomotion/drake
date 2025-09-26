@@ -1221,7 +1221,7 @@ std::unordered_set<BodyIndex> MultibodyPlant<T>::GetFloatingBaseBodies() const {
   std::unordered_set<BodyIndex> floating_bodies;
   for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
-    if (body.is_floating()) floating_bodies.insert(body.index());
+    if (body.is_floating_base_body()) floating_bodies.insert(body.index());
   }
   return floating_bodies;
 }
@@ -1273,20 +1273,21 @@ void MultibodyPlant<T>::RegisterRigidBodyWithSceneGraph(
 }
 
 template <typename T>
-void MultibodyPlant<T>::SetFreeBodyPoseInWorldFrame(
+void MultibodyPlant<T>::SetFloatingBaseBodyPoseInWorldFrame(
     systems::Context<T>* context, const RigidBody<T>& body,
     const math::RigidTransform<T>& X_WB) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  DRAKE_THROW_UNLESS(body.is_floating());
+  DRAKE_THROW_UNLESS(body.is_floating_base_body());
   this->ValidateContext(context);
   internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context);
 }
 
 template <typename T>
-void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
+void MultibodyPlant<T>::SetFloatingBaseBodyPoseInAnchoredFrame(
     systems::Context<T>* context, const Frame<T>& frame_F,
     const RigidBody<T>& body, const math::RigidTransform<T>& X_FB) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(body.is_floating_base_body());
   this->ValidateContext(context);
 
   if (!internal_tree()
@@ -1297,13 +1298,15 @@ void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
                            "' must be anchored to the world frame.");
   }
 
-  // Pose of frame F in its parent body frame P.
+  // Pose of frame F in its parent body frame P (not state dependent).
   const RigidTransform<T>& X_PF = frame_F.EvalPoseInBodyFrame(*context);
   // Pose of frame F's parent body P in the world.
+  // TODO(sherm1) This shouldn't be state dependent since F is anchored, but
+  //  it currently is due to the way we evaluate poses.
   const RigidTransform<T>& X_WP = EvalBodyPoseInWorld(*context, frame_F.body());
-  // Pose of "body" B in the world frame.
+  // Pose of floating base body C's body frame in the world frame.
   const RigidTransform<T> X_WB = X_WP * X_PF * X_FB;
-  SetFreeBodyPoseInWorldFrame(context, body, X_WB);
+  SetFloatingBaseBodyPoseInWorldFrame(context, body, X_WB);
 }
 
 template <typename T>
@@ -1313,20 +1316,27 @@ void MultibodyPlant<T>::CalcSpatialAccelerationsFromVdot(
   this->ValidateContext(context);
   DRAKE_THROW_UNLESS(A_WB_array != nullptr);
   DRAKE_THROW_UNLESS(ssize(*A_WB_array) == num_bodies());
-  internal_tree().CalcSpatialAccelerationsFromVdot(
-      context, internal_tree().EvalPositionKinematics(context),
-      internal_tree().EvalVelocityKinematics(context), known_vdot, A_WB_array);
-  // Permute MobodIndex -> BodyIndex.
+  const internal::MultibodyTree<T>& multibody_tree = internal_tree();
+  const internal::SpanningForest& forest = multibody_tree.forest();
+
   // TODO(eric.cousineau): Remove dynamic allocations. Making this in-place
   //  still required dynamic allocation for recording permutation indices.
   //  Can change implementation once MultibodyTree becomes fully internal.
-  std::vector<SpatialAcceleration<T>> A_WB_array_mobod = *A_WB_array;
-  const internal::MultibodyTreeTopology& topology =
-      internal_tree().get_topology();
-  for (internal::MobodIndex mobod_index(1); mobod_index < topology.num_mobods();
-       ++mobod_index) {
-    const BodyIndex body_index = topology.get_body_node(mobod_index).rigid_body;
-    (*A_WB_array)[body_index] = A_WB_array_mobod[mobod_index];
+  std::vector<SpatialAcceleration<T>> A_WB_array_mobod(forest.num_mobods());
+  multibody_tree.CalcSpatialAccelerationsFromVdot(
+      context, multibody_tree.EvalPositionKinematics(context),
+      multibody_tree.EvalVelocityKinematics(context), known_vdot,
+      &A_WB_array_mobod);
+
+  // Permute MobodIndex -> BodyIndex.
+  for (const auto& mobod : forest.mobods()) {
+    // TODO(sherm1) Need to calculate accelerations (optionally?) for the
+    //  inactive links on a link composite following this mobod.
+    // Make sure there aren't any inactives for now.
+    DRAKE_DEMAND(ssize(mobod.follower_link_ordinals()) == 1);
+    const BodyIndex active_link_index =
+        forest.links(mobod.link_ordinal()).index();
+    (*A_WB_array)[active_link_index] = A_WB_array_mobod[mobod.index()];
   }
 }
 
@@ -1577,7 +1587,7 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   SetUpJointLimitsParameters();
   if (use_sampled_output_ports_) {
     auto cache = std::make_unique<AccelerationKinematicsCache<T>>(
-        internal_tree().get_topology());
+        internal_tree().forest());
     for (SpatialAcceleration<T>& A_WB : cache->get_mutable_A_WB_pool()) {
       A_WB.SetZero();
     }
@@ -1753,11 +1763,11 @@ void MultibodyPlant<T>::ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
 
   if (collision_filter_group_a.first == collision_filter_group_b.first) {
     scene_graph_->collision_filter_manager().Apply(
-        CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
+        CollisionFilterDeclaration(CollisionFilterScope::kAll)
             .ExcludeWithin(collision_filter_group_a.second));
   } else {
     scene_graph_->collision_filter_manager().Apply(
-        CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
+        CollisionFilterDeclaration(CollisionFilterScope::kAll)
             .ExcludeBetween(collision_filter_group_a.second,
                             collision_filter_group_b.second));
   }
@@ -1893,6 +1903,8 @@ std::vector<std::string> MultibodyPlant<T>::GetPositionNames(
 
   for (JointIndex joint_index : GetJointIndices()) {
     const Joint<T>& joint = get_joint(joint_index);
+    if (joint.num_positions() == 0) continue;  // Skip welds.
+
     const std::string prefix =
         add_model_instance_prefix
             ? fmt::format("{}_", GetModelInstanceName(joint.model_instance()))
@@ -1926,6 +1938,8 @@ std::vector<std::string> MultibodyPlant<T>::GetPositionNames(
 
   for (const auto& joint_index : joint_indices) {
     const Joint<T>& joint = get_joint(joint_index);
+    if (joint.num_positions() == 0) continue;  // Skip welds.
+
     // Sanity check: joint positions are in range.
     DRAKE_DEMAND(joint.position_start() >= position_offset);
     DRAKE_DEMAND(joint.position_start() + joint.num_positions() -
@@ -1956,6 +1970,8 @@ std::vector<std::string> MultibodyPlant<T>::GetVelocityNames(
 
   for (JointIndex joint_index : GetJointIndices()) {
     const Joint<T>& joint = get_joint(joint_index);
+    if (joint.num_positions() == 0) continue;  // Skip welds.
+
     const std::string prefix =
         add_model_instance_prefix
             ? fmt::format("{}_", GetModelInstanceName(joint.model_instance()))
@@ -1989,6 +2005,8 @@ std::vector<std::string> MultibodyPlant<T>::GetVelocityNames(
 
   for (const auto& joint_index : joint_indices) {
     const Joint<T>& joint = get_joint(joint_index);
+    if (joint.num_positions() == 0) continue;  // Skip welds.
+
     // Sanity check: joint velocities are in range.
     DRAKE_DEMAND(joint.velocity_start() >= velocity_offset);
     DRAKE_DEMAND(joint.velocity_start() + joint.num_velocities() -
@@ -3276,7 +3294,7 @@ systems::EventStatus MultibodyPlant<T>::CalcStepUnrestricted(
       next_state->get_mutable_discrete_state();
   DiscreteStepMemory::Data<T>& next_memory =
       next_state->template get_mutable_abstract_state<DiscreteStepMemory>(0)
-          .template Allocate<T>(internal_tree().get_topology());
+          .template Allocate<T>(internal_tree().forest());
   discrete_update_manager_->CalcDiscreteValues(context0, &next_discrete_state,
                                                &next_memory);
   next_memory.reaction_forces.resize(num_joints());

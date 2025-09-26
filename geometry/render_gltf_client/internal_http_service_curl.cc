@@ -68,22 +68,23 @@ int DebugCallback(CURL* /* handle */, curl_infotype type, char* data,
 
 // Used in logging curl data, returns a human friendly string.
 std::string CurlInfoTypeAsString(curl_infotype type) {
-  if (type == CURLINFO_TEXT)
+  if (type == CURLINFO_TEXT) {
     return "CURLINFO_TEXT";
-  else if (type == CURLINFO_HEADER_IN)
+  } else if (type == CURLINFO_HEADER_IN) {
     return "CURLINFO_HEADER_IN";
-  else if (type == CURLINFO_HEADER_OUT)
+  } else if (type == CURLINFO_HEADER_OUT) {
     return "CURLINFO_HEADER_OUT";
-  else if (type == CURLINFO_DATA_IN)
+  } else if (type == CURLINFO_DATA_IN) {
     return "CURLINFO_DATA_IN";
-  else if (type == CURLINFO_DATA_OUT)
+  } else if (type == CURLINFO_DATA_OUT) {
     return "CURLINFO_DATA_OUT";
-  else if (type == CURLINFO_SSL_DATA_IN)
+  } else if (type == CURLINFO_SSL_DATA_IN) {
     return "CURLINFO_SSL_DATA_IN";
-  else if (type == CURLINFO_SSL_DATA_OUT)
+  } else if (type == CURLINFO_SSL_DATA_OUT) {
     return "CURLINFO_SSL_DATA_OUT";
-  else if (type == CURLINFO_END)
+  } else if (type == CURLINFO_END) {
     return "CURLINFO_END";
+  }
   return fmt::format("UNKNOWN_CURLINFO_TYPE={}", fmt_streamed(type));
 }
 

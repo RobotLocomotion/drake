@@ -369,13 +369,19 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
 
   /// Returns frame A, which is the frame that is welded to link (body) L0 and
   /// attached to the bushing.
+  /// @throws std::exception if this element is not associated with a
+  ///   MultibodyPlant.
   const Frame<T>& frameA() const {
+    DRAKE_THROW_UNLESS(this->has_parent_tree());
     return this->get_parent_tree().get_frame(frameA_index_);
   }
 
   /// Returns frame C, which is the frame that is welded to link (body) L1 and
   /// attached to the bushing.
+  /// @throws std::exception if this element is not associated with a
+  ///   MultibodyPlant.
   const Frame<T>& frameC() const {
+    DRAKE_THROW_UNLESS(this->has_parent_tree());
     return this->get_parent_tree().get_frame(frameC_index_);
   }
 

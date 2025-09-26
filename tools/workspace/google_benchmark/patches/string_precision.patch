@@ -1,0 +1,16 @@
+Actually respect the requested human-readable precision.
+
+Reasoning for not upstreaming this patch: not sure if the bug is
+observable in their uncustomized build.
+
+--- src/string_util.cc
++++ src/string_util.cc
+@@ -55,6 +61,8 @@ void ToExponentAndMantissa(double val, double thresh, int precision,
+     for (size_t i = 0; i < arraysize(kBigSIUnits); ++i) {
+       scaled /= one_k;
+       if (scaled <= big_threshold) {
++        mantissa_stream << std::fixed;
++        mantissa_stream.precision(precision);
+         mantissa_stream << scaled;
+         *exponent = static_cast<int64_t>(i + 1);
+         *mantissa = mantissa_stream.str();

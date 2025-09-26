@@ -14,6 +14,7 @@
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_version.h"
 #include "drake/geometry/internal_frame.h"
+#include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
@@ -428,6 +429,21 @@ class SceneGraphInspector {
    if you already have a Mesh or Convex you can call Mesh::GetConvexHull() or
    Convex::GetConvexHull(), respectively. */
   const PolygonSurfaceMesh<double>* GetConvexHull(GeometryId geometry_id) const;
+
+  /** Returns the oriented bounding box (OBB) associated with the given
+   `geometry_id` in the geometry's frame, G. The OBB is defined in the
+   geometry's canonical frame such that it tightly bounds the geometry. For
+   primitive shapes, the OBB is computed analytically. For mesh-based shapes
+   (Mesh and Convex), the OBB is computed using the mesh vertices.
+   @param geometry_id   The identifier for the queried geometry.
+   @note If geometry_id refers to a deformable geometry, the OBB is computed
+         using the reference mesh. See QueryObject::ComputeObbInWorld() for
+         computing the OBB of the deformed mesh in the world frame.
+   @return The oriented bounding box (or `std::nullopt` if the geometry is an
+           HalfSpace and doesn't have a bounding box).
+   @throws std::exception if `geometry_id` does not map to a registered
+           geometry.  */
+  const std::optional<Obb>& GetObbInGeometryFrame(GeometryId geometry_id) const;
 
   /** Reports true if the two geometries with given ids `geometry_id1` and
    `geometry_id2`, define a collision pair that has been filtered out.

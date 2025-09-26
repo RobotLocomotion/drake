@@ -2,38 +2,6 @@
 title: Continuous Integration with GitHub Pull Requests
 ---
 
-When a new pull request is opened in the project and the author of the pull
-request is not a member of the RobotLocomotion GitHub organization, the Jenkins
-GitHub Pull Request Builder @drake-jenkins-bot will not automatically schedule
-builds.
-
-To allow the pull request to be tested, a member of the RobotLocomotion
-organization may comment:
-
-* ``@drake-jenkins-bot ok to test`` to accept this pull request for testing.
-* ``@drake-jenkins-bot test this please`` for a one time test run.
-
-If the build fails for other various reasons you can rebuild:
-
-* ``@drake-jenkins-bot retest this please`` to start a new build.
-
-You can also view the [Jenkins UI](https://drake-jenkins.csail.mit.edu/)
-directly.
-
-# Rebuilding via Reviewable
-
-When posting a ``@drake-jenkins-bot ... please`` comment in Reviewable,
-never use the large green "Publish" button in the upper right corner.
-
-Instead, write the bot comment in the "Review discussion" box immediately below
-the "File Matrix" widget **and** use the "single message send" button to post
-it, in the lower-right corner of the "Review discussion" box.
-
-![Jenkins Bot Reviewable Comment](/images/jenkins_bot_reviewable_comment.png)
-
-(For details, see
-[Reviewable#576](https://github.com/Reviewable/Reviewable/issues/576).)
-
 # Scheduling an On-Demand Build
 
 There are a number of Jenkins builds that do not normally run pre-merge, but do
@@ -53,22 +21,41 @@ where ``<job-name>`` is the name of an
 
 For example:
 
-* ``@drake-jenkins-bot mac-arm-sonoma-clang-bazel-experimental-release please``
+* ``@drake-jenkins-bot mac-arm-sequoia-clang-bazel-experimental-release please``
 * ``@drake-jenkins-bot linux-noble-clang-bazel-experimental-valgrind-memcheck please``
 
-A list of Jenkins bot commands for experimental builds that cover the full
+A list of Jenkins bot commands for experimental builds that covers the full
 set of continuous and nightly production jobs is available
 [here](https://github.com/RobotLocomotion/drake/blob/jenkins-jobs-experimental/request-jobs-experimental.txt).
 Both provisioned and unprovisioned jobs are listed.
 
+To rerun all regular builds on an open pull request (if the previous build(s)
+failed for various reasons), comment:
+
+* ``@drake-jenkins-bot retest this please``
+
+## Rebuilding via Reviewable
+
+When posting a ``@drake-jenkins-bot ... please`` comment in Reviewable,
+never use the large green "Publish" button in the upper right corner.
+
+Instead, write the bot comment in the "Review discussion" box immediately below
+the "File Matrix" widget **and** use the "single message send" button to post
+it, in the lower-right corner of the "Review discussion" box.
+
+![Jenkins Bot Reviewable Comment](/images/jenkins_bot_reviewable_comment.png)
+
+(For details, see
+[Reviewable#576](https://github.com/Reviewable/Reviewable/issues/576).)
+
 ## Scheduling Builds via the Jenkins User Interface
 
-Alternatively, to schedule a build of an open pull request in the
-``RobotLocomotion/drake`` repository:
+To schedule a build of an open pull request in the ``RobotLocomotion/drake``
+repository from the [Jenkins UI](https://drake-jenkins.csail.mit.edu/),
 
-1. **Log in** to [Jenkins](https://drake-jenkins.csail.mit.edu/) using GitHub
-   OAuth. (Make sure that you see your name the upper-right corner, *not* the
-   words "Log in".)
+1. **Sign in** to [Jenkins](https://drake-jenkins.csail.mit.edu/) using GitHub
+   OAuth. (Make sure that you see a profile picture in the upper-right corner,
+   *not* the words "Sign in".)
 2. Go to the list of
    [experimental builds](https://drake-jenkins.csail.mit.edu/view/Experimental/).
 3. Click on the specific build you want to schedule.
@@ -86,6 +73,20 @@ To help identify the on-demand build you want to run, you can consult the lists
 of [continuous](https://drake-jenkins.csail.mit.edu/view/Continuous/), and
 [nightly](https://drake-jenkins.csail.mit.edu/view/Nightly/)
 but you should not schedule continuous or nightly builds directly.
+
+## Testing Pull Requests from External Contributors
+
+When a new pull request is opened in the project and the author of the pull
+request is not a member of the RobotLocomotion GitHub organization, Jenkins
+will not automatically schedule builds. To test the pull request, a member
+of the RobotLocomotion organization should comment:
+
+* ``@drake-jenkins-bot test this please`` for a one time test run.
+* ``@drake-jenkins-bot retest this please`` to start a new build, if the
+previous build fails for various reasons.
+
+You can also view the [Jenkins UI](https://drake-jenkins.csail.mit.edu/)
+directly.
 
 ## Updating Installation Prerequisites
 
@@ -110,10 +111,11 @@ and ``new_release.py``). Again, it is expected that a given prerequisite will
 only appear in one of these lists.
 
 When updating prerequisites with these scripts, the normal experimental CI will
-most likely fail. To test new prerequisites on Linux, you should first request an
-unprovisioned experimental build, e.g.:
-
-* ``@drake-jenkins-bot linux-noble-unprovisioned-gcc-bazel-experimental-release please``
+most likely fail. To test new prerequisites on Linux, you should request
+unprovisioned experimental builds. A list of Jenkins bot commands for
+experimental unprovisioned builds that covers the full set of corresponding
+continuous and nightly production jobs (including provisioned) is available
+[here](https://github.com/RobotLocomotion/drake/blob/jenkins-jobs-experimental/request-jobs-unprovisioned.txt).
 
 Testing changes to the source distribution prerequisites for macOS is a work
 in progress as there are no longer unprovisioned builds.
@@ -132,7 +134,7 @@ or [debian package](/apt.html), comment on an open pull request using one or
 more of these commands:
 
 * ``@drake-jenkins-bot linux-noble-unprovisioned-gcc-cmake-experimental-packaging please``
-* ``@drake-jenkins-bot mac-arm-sonoma-clang-cmake-experimental-packaging please``
+* ``@drake-jenkins-bot mac-arm-sequoia-clang-cmake-experimental-packaging please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
 to schedule a build of one of the [Packaging](https://drake-jenkins.csail.mit.edu/view/Packaging/)
@@ -165,7 +167,7 @@ To schedule an "experimental" build of a [wheel package](/pip.html),
 comment on an open pull request using one or more of these commands:
 
 * ``@drake-jenkins-bot linux-noble-unprovisioned-gcc-wheel-experimental-release please``
-* ``@drake-jenkins-bot mac-arm-sonoma-clang-wheel-experimental-release please``
+* ``@drake-jenkins-bot mac-arm-sequoia-clang-wheel-experimental-release please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
 to schedule a build of one of the [Wheel](https://drake-jenkins.csail.mit.edu/view/Wheel/)
@@ -207,6 +209,16 @@ env/bin/pip install --upgrade pip
 env/bin/pip install <url-of-experimental-wheel>
 source env/bin/activate
 ```
+
+# Disabling Builds on Pull Requests
+
+For draft pull requests that may have frequent updates to the remote branch,
+it can be useful to disable the builds that run automatically. This can be done
+by adding the label ``status: defer ci``. Jobs will automatically be reported
+back to the pull request as failures, but won't run the actual build. Since
+these jobs are required to merge, this label will eventually need to be removed.
+Comment ``@drake-jenkins-bot retest this please`` after removing the label to
+trigger a re-run.
 
 # Testing via External Examples
 

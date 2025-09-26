@@ -1,5 +1,7 @@
 #include "drake/multibody/inverse_kinematics/add_multibody_plant_constraints.h"
 
+#include <utility>
+
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
 #include "drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"

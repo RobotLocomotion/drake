@@ -97,8 +97,7 @@ std::pair<MatrixX<double>, std::map<std::string, int>> ParseKeyframes(
  * @throw If `kNumJoints` does not exactly match plant.num_positions().
  */
 MatrixX<double> ReorderKeyframesForPlant(
-    const MultibodyPlant<double>& plant,
-    const MatrixX<double> keyframes,
+    const MultibodyPlant<double>& plant, const MatrixX<double> keyframes,
     std::map<std::string, int>* finger_joint_name_to_row_index_map);
 
 /// Returns the planar gripper frame G's transform w.r.t. the world frame W.

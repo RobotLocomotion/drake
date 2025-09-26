@@ -75,10 +75,8 @@ class DifferentialInverseKinematicsIntegrator
   @pre frame_E != frame_A.
   */
   DifferentialInverseKinematicsIntegrator(
-      const MultibodyPlant<double>& robot,
-      const Frame<double>& frame_A,
-      const Frame<double>& frame_E,
-      double time_step,
+      const MultibodyPlant<double>& robot, const Frame<double>& frame_A,
+      const Frame<double>& frame_E, double time_step,
       // Note: parameters last so they could be optional in the future.
       const DifferentialInverseKinematicsParameters& parameters,
       const systems::Context<double>* robot_context = nullptr,
@@ -108,8 +106,8 @@ class DifferentialInverseKinematicsIntegrator
   @pre frame_E != robot.world_frame().
   */
   DifferentialInverseKinematicsIntegrator(
-      const MultibodyPlant<double>& robot,
-      const Frame<double>& frame_E, double time_step,
+      const MultibodyPlant<double>& robot, const Frame<double>& frame_E,
+      double time_step,
       // Note: parameters last so they could be optional in the future.
       const DifferentialInverseKinematicsParameters& parameters,
       const systems::Context<double>* robot_context = nullptr,

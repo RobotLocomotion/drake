@@ -89,17 +89,20 @@ contains:
     * Source: A `drake-<version>-src.tar.gz` file and corresponding `.sha256`
     and `.sha512` files.
 
-2. https://github.com/RobotLocomotion/drake/releases/tag/v<version> contains
-`drake-<version>-src.tar.gz` and corresponding `.sha256` and `.sha512` files.
+2. The `*.deb` and corresponding `.sha256` and `.sha512`  files are in AWS
+[s3://drake-packages/drake/release](https://s3.console.aws.amazon.com/s3/buckets/drake-packages?region=us-east-1&prefix=drake/release/&showversions=false)
+for each supported configuration (e.g. jammy and noble) as
+`/drake-dev_<version>-1_amd64-<configuration>.deb`.
 
-3. [Dockerhub](https://hub.docker.com/r/robotlocomotion/drake/tags?ordering=last_updated&page=1)
+3. The [GitHub release](https://github.com/RobotLocomotion/drake/releases),
+found at `https://github.com/RobotLocomotion/drake/releases/tag/v<version>`,
+contains `drake-<version>-src.tar.gz` and corresponding `.sha256` and
+`.sha512` files.
+
+4. [Dockerhub](https://hub.docker.com/r/robotlocomotion/drake/tags?ordering=last_updated&page=1)
 has a plain `<version>` tag as well as a `<version>` tag for each supported
 configuration (e.g. jammy and noble).
 
-4. The `*.deb` and corresponding `.sha256` and `.sha512`  files are in AWS
-[s3://drake-packages/drake/release](https://s3.console.aws.amazon.com/s3/buckets/drake-packages?region=us-east-1&prefix=drake/release/&showversions=false)
-`/drake-dev_<version>-1_amd64-<configuration>.deb` for each supported
-configuration (e.g. jammy and noble).
 
 ## Run script for apt
 

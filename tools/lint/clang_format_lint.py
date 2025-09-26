@@ -4,6 +4,24 @@ import sys
 
 import tools.lint.clang_format as clang_format_lib
 
+# From https://bazel.build/reference/be/c-cpp#cc_library.srcs.
+# Keep this list in sync with cpplint.bzl.
+_SOURCE_EXTENSIONS = [source_ext for source_ext in """
+.c
+.cc
+.cpp
+.cxx
+.c++
+.C
+.h
+.hh
+.hpp
+.hxx
+.inc
+.inl
+.H
+""".split("\n") if len(source_ext)]
+
 
 def _is_cxx(filename):
     """Returns True only if filename is reasonable to clang-format."""
@@ -14,9 +32,7 @@ def _is_cxx(filename):
     if penultimate_ext == "cu":
         return False
 
-    # Per https://bazel.build/versions/master/docs/be/c-cpp.html#cc_library
-    return ext in [".c", ".cc", ".cpp", ".cxx", ".c++", ".C",
-                   ".h", ".hh", ".hpp", ".hxx", ".inc"]
+    return ext in _SOURCE_EXTENSIONS
 
 
 def _check_clang_format_idempotence(filename):

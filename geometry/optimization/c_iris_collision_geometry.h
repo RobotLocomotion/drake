@@ -34,6 +34,8 @@ enum class PlaneSide {
  For the detailed algorithm please refer to the paper
  Certified Polyhedral Decompositions of Collision-Free Configuration Space
  by Hongkai Dai*, Alexandre Amice*, Peter Werner, Annan Zhang and Russ Tedrake.
+
+ @ingroup planning_iris
  */
 class CIrisCollisionGeometry {
  public:

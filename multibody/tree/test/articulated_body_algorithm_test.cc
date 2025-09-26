@@ -1,3 +1,7 @@
+#include <limits>
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -79,11 +83,11 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   auto context = system.CreateDefaultContext();
 
   // Update cache.
-  PositionKinematicsCache<double> pc(tree.get_topology());
+  PositionKinematicsCache<double> pc(tree.forest());
   tree.CalcPositionKinematicsCache(*context, &pc);
 
   // Compute articulated body cache.
-  ArticulatedBodyInertiaCache<double> abc(tree.get_topology());
+  ArticulatedBodyInertiaCache<double> abc(tree.forest());
   tree.CalcArticulatedBodyInertiaCache(*context, &abc);
 
   // Get expected projected articulated body inertia of cylinder. Only the
@@ -196,11 +200,11 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
   MC_joint.set_translation(context.get(), 0.2);
 
   // Update cache.
-  PositionKinematicsCache<double> pc(tree.get_topology());
+  PositionKinematicsCache<double> pc(tree.forest());
   tree.CalcPositionKinematicsCache(*context, &pc);
 
   // Compute articulated body cache.
-  ArticulatedBodyInertiaCache<double> abc(tree.get_topology());
+  ArticulatedBodyInertiaCache<double> abc(tree.forest());
   tree.CalcArticulatedBodyInertiaCache(*context, &abc);
 
   // Find the rotation R_WC from World to the Cylinder frame.

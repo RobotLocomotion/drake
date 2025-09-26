@@ -2,13 +2,21 @@
  drake::geometry::optimization namespace. They can be found in the
  pydrake.geometry.optimization module. */
 
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+
+#include "drake/bindings/generated_docstrings/geometry_optimization.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/bindings/pydrake/geometry/optimization_pybind.h"
 #include "drake/bindings/pydrake/polynomial_types_pybind.h"
@@ -44,7 +52,8 @@ namespace {
 using namespace drake::geometry;
 // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
 using namespace drake::geometry::optimization;
-constexpr auto& doc = pydrake_doc.drake.geometry.optimization;
+constexpr auto& doc =
+    pydrake_doc_geometry_optimization.drake.geometry.optimization;
 
 // Definitions for cspace_separating_plane.h.
 void DefineCspaceSeparatingPlane(py::module m) {
@@ -657,12 +666,23 @@ void DefineIris(py::module m) {
       py::arg("query_object"), py::arg("reference_frame") = std::nullopt,
       doc.MakeIrisObstacles.doc);
 
-  m.def("IrisInConfigurationSpace",
+  m.def("IrisNp",
       py::overload_cast<const multibody::MultibodyPlant<double>&,
-          const systems::Context<double>&, const IrisOptions&>(
-          &IrisInConfigurationSpace),
+          const systems::Context<double>&, const IrisOptions&>(&IrisNp),
       py::arg("plant"), py::arg("context"), py::arg("options") = IrisOptions(),
-      doc.IrisInConfigurationSpace.doc);
+      doc.IrisNp.doc);
+
+// Deprecated 2025-12-01
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  m.def("IrisInConfigurationSpace",
+      WrapDeprecated(doc.IrisInConfigurationSpace.doc_deprecated,
+          py::overload_cast<const multibody::MultibodyPlant<double>&,
+              const systems::Context<double>&, const IrisOptions&>(
+              &IrisInConfigurationSpace)),
+      py::arg("plant"), py::arg("context"), py::arg("options") = IrisOptions(),
+      doc.IrisInConfigurationSpace.doc_deprecated);
+#pragma GCC diagnostic pop
 
   // TODO(#19597) Deprecate and remove these functions once Python
   // can natively handle the file I/O.

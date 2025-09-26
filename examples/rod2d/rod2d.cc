@@ -23,10 +23,11 @@ Rod2D<T>::Rod2D(SystemType system_type, double dt)
   // Verify that the simulation approach is either piecewise DAE or
   // compliant ODE.
   if (system_type == SystemType::kDiscretized) {
-    if (dt <= 0.0)
+    if (dt <= 0.0) {
       throw std::logic_error(
           "Discretization approach must be constructed using"
           " strictly positive step size.");
+    }
 
     // Discretization approach requires three position variables and
     // three velocity variables, all discrete, and periodic update.
@@ -36,10 +37,11 @@ Rod2D<T>::Rod2D(SystemType system_type, double dt)
     state_output_port_ =
         &this->DeclareStateOutputPort("state_output", state_index);
   } else {
-    if (dt != 0)
+    if (dt != 0) {
       throw std::logic_error(
           "Piecewise DAE and compliant approaches must be "
           "constructed using zero step size.");
+    }
 
     // Both piecewise DAE and compliant approach require six continuous
     // variables.
@@ -851,12 +853,13 @@ template <class T>
 T Rod2D<T>::CalcMuStribeck(const T& mu_s, const T& mu_d, const T& s) {
   DRAKE_ASSERT(mu_s >= 0 && mu_d >= 0 && s >= 0);
   T mu_stribeck;
-  if (s >= 3)
+  if (s >= 3) {
     mu_stribeck = mu_d;  // sliding
-  else if (s >= 1)
+  } else if (s >= 1) {
     mu_stribeck = mu_s - (mu_s - mu_d) * step5((s - 1) / 2);  // Stribeck
-  else
+  } else {
     mu_stribeck = mu_s * step5(s);  // 0 <= s < 1 (stiction)
+  }
   return mu_stribeck;
 }
 

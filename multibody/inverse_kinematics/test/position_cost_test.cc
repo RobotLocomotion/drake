@@ -1,6 +1,7 @@
 #include "drake/multibody/inverse_kinematics/position_cost.h"
 
 #include <limits>
+#include <memory>
 
 #include <gtest/gtest.h>
 
@@ -20,10 +21,9 @@ using math::RollPitchYaw;
 using systems::Context;
 
 template <typename T>
-auto ConstructTwoFreeBodiesCost(
-    const Eigen::Ref<const Vector3d>& p_AP,
-    const Eigen::Ref<const Vector3d>& p_BQ,
-    const Eigen::Ref<const Matrix3d>& C) {
+auto ConstructTwoFreeBodiesCost(const Eigen::Ref<const Vector3d>& p_AP,
+                                const Eigen::Ref<const Vector3d>& p_BQ,
+                                const Eigen::Ref<const Matrix3d>& C) {
   struct ReturnValues {
     std::unique_ptr<MultibodyPlant<T>> plant;
     std::unique_ptr<Context<T>> context;

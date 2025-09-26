@@ -3,6 +3,9 @@
 //
 // This program is a successor to Hongkai Dai's original benchmark; see #8482.
 
+#include <memory>
+#include <utility>
+
 #include <benchmark/benchmark.h>
 
 #include "drake/common/eigen_types.h"
@@ -15,10 +18,10 @@
 #include "drake/multibody/parsing/parser.h"
 #include "drake/tools/performance/fixture_common.h"
 
-using Eigen::MatrixXd;
 using drake::multibody::MultibodyPlant;
 using drake::systems::Context;
 using drake::systems::System;
+using Eigen::MatrixXd;
 
 namespace drake {
 namespace examples {
@@ -28,18 +31,14 @@ namespace {
 template <typename T>
 class FixtureBase : public benchmark::Fixture {
  public:
-  FixtureBase() {
-    tools::performance::AddMinMaxStatistics(this);
-  }
+  FixtureBase() { tools::performance::AddMinMaxStatistics(this); }
 
   void Populate(const System<T>& plant) {
     context_ = plant.CreateDefaultContext();
     x_ = context_->get_continuous_state_vector().CopyToVector();
   }
 
-  void InvalidateState() {
-    context_->NoteContinuousStateChange();
-  }
+  void InvalidateState() { context_->NoteContinuousStateChange(); }
 
  protected:
   std::unique_ptr<Context<T>> context_;
@@ -82,7 +81,7 @@ class MultibodyFixture : public FixtureBase<T> {
  public:
   void SetUp(benchmark::State&) override {
     auto double_plant = multibody::benchmarks::acrobot::MakeAcrobotPlant(
-            multibody::benchmarks::acrobot::AcrobotParameters(), true);
+        multibody::benchmarks::acrobot::AcrobotParameters(), true);
     if constexpr (std::is_same_v<T, double>) {
       plant_ = std::move(double_plant);
     } else {
@@ -110,9 +109,11 @@ BENCHMARK_F(MultibodyFixtureD, MultibodyDMassMatrix)(benchmark::State& state) {
   }
 }
 
+// clang-format off
 BENCHMARK_F(MultibodyFixtureAdx, MultibodyAdxMassMatrix)
     // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
-    (benchmark::State& state) {
+    (benchmark::State& state)  // clang-format on
+{
   MatrixX<AutoDiffXd> M(nv_, nv_);
   for (auto _ : state) {
     InvalidateState();
@@ -120,9 +121,11 @@ BENCHMARK_F(MultibodyFixtureAdx, MultibodyAdxMassMatrix)
   }
 }
 
+// clang-format off
 BENCHMARK_F(MultibodyFixtureD, MultibodyDMassMatrixViaInverseDynamics)
     // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
-    (benchmark::State& state) {
+    (benchmark::State& state)  // clang-format on
+{
   MatrixXd M(nv_, nv_);
   for (auto _ : state) {
     InvalidateState();
@@ -130,9 +133,11 @@ BENCHMARK_F(MultibodyFixtureD, MultibodyDMassMatrixViaInverseDynamics)
   }
 }
 
+// clang-format off
 BENCHMARK_F(MultibodyFixtureAdx, MultibodyAdxMassMatrixViaInverseDynamics)
     // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
-    (benchmark::State& state) {
+    (benchmark::State& state)  // clang-format on
+{
   MatrixX<AutoDiffXd> M(nv_, nv_);
   for (auto _ : state) {
     InvalidateState();

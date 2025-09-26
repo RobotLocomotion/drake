@@ -1,3 +1,4 @@
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
@@ -5,7 +6,6 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
-    "drake_cc_test",
 )
 load(
     "//tools/skylark:drake_py.bzl",
@@ -25,6 +25,17 @@ load(
 )
 
 package(default_visibility = ["//visibility:public"])
+
+# When this is set to True, rather than linking to MOSEK directly, Drake will
+# create (using implib.so) and link to a trampoline library that allows the
+# real library to be loaded on demand. This is intended for internal use only,
+# and more specifically, is only intended to be used when building wheels.
+#
+# See tools/workspace/mosek/package.BUILD.bazel for usage.
+bool_flag(
+    name = "mosek_lazy_load",
+    build_setting_default = False,
+)
 
 drake_cc_package_library(
     name = "solvers",
@@ -593,7 +604,7 @@ drake_cc_library(
     deps = [
         ":mathematical_program",
         ":solver_interface",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 
@@ -617,7 +628,7 @@ drake_cc_library(
         ":snopt_solver",
         ":solver_type_converter",
         "//common/test_utilities:eigen_matrix_compare",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 
@@ -658,7 +669,7 @@ drake_cc_library(
         ":mosek_solver",
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 
@@ -705,7 +716,7 @@ drake_cc_library(
         ":mathematical_program",
         ":mathematical_program_result",
         "//common/test_utilities:symbolic_test_util",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 
@@ -1015,6 +1026,7 @@ drake_cc_variant_library(
         ":mathematical_program",
     ],
     implementation_deps_enabled = [
+        "//common:scope_exit",
         "//math:eigen_sparse_triplet",
         "@osqp_internal//:osqp",
     ],
@@ -1295,7 +1307,7 @@ drake_cc_library(
     hdrs = ["test/csdp_test_examples.h"],
     deps = [
         ":mathematical_program",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 

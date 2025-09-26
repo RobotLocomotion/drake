@@ -1,5 +1,6 @@
 #include "drake/common/symbolic/trigonometric_polynomial.h"
 
+#include <unordered_map>
 #include <vector>
 
 #include <fmt/format.h>

@@ -1,5 +1,8 @@
 #include "drake/geometry/proximity/volume_mesh_refiner.h"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/memory_file.h"

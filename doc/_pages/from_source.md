@@ -28,13 +28,17 @@ officially supports when building from source:
      CMakeLists.txt and tools/workspace/cc/repository.bzl. -->
 <!-- The minimum Python version(s) should match those listed in both the root
      CMakeLists.txt and setup/python/pyproject.toml. -->
+<!-- The minimum CMake version across all platforms should match that listed
+     in the root CMakeLists.txt, and the version range should match that
+     listed in tools/install/libdrake/drake-config.cmake.in (and all
+     corresponding tests). -->
 
 | Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           | Java       |
 |------------------------------------|--------------|------------|-------|-------|------------------------------|------------|
-| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 8.2   | 3.22  | GCC 11 (default) or Clang 15 | OpenJDK 11 |
-| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12       | 8.2   | 3.28  | GCC 13 (default) or Clang 19 | OpenJDK 21 |
-| macOS Sonoma (14)                  | arm64        | 3.13       | 8.2   | 4.0   | Apple LLVM 16 (Xcode 16.2)   | OpenJDK 23 |
-| macOS Sequoia (15)                 | arm64        | 3.13       | 8.2   | 4.0   | Apple LLVM 17 (Xcode 16.4)   | OpenJDK 23 |
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 8.4   | 3.22  | GCC 11 (default) or Clang 15 | OpenJDK 11 |
+| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12       | 8.4   | 3.28  | GCC 13 (default) or Clang 19 | OpenJDK 21 |
+| macOS Sequoia (15)                 | arm64        | 3.13       | 8.4   | 4.1   | Apple LLVM 17 (Xcode 16.4)   | OpenJDK 23 |
+| macOS Tahoe (26) ⁽⁴⁾               | arm64        | TBD        | TBD   | TBD   | TBD                          | TBD        |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -55,7 +59,15 @@ maybe require extra setup. See the
 
 ⁽³⁾ Drake requires a compiler running in C++20 (or greater) mode.
 
+⁽⁴⁾ Tahoe support is in development; refer to
+[#23439](https://github.com/RobotLocomotion/drake/issues/23439) for details.
+
 # Building with CMake
+
+Drake's build rules are defined using Bazel `BUILD` files, but we provide a
+CMake wrapper for installing Drake. While this compiles and installs Drake by
+invoking Bazel under the hood, it does so according to CMake conventions
+and using the options provided via CMake.
 
 For sample projects that show how to import Drake as a CMake external project
 (either by building Drake from source, or by downloading a pre-compiled Drake
@@ -81,10 +93,51 @@ make install
 To change the build options, you can run one of the standard CMake GUIs (e.g.,
 `ccmake` or `cmake-gui`) or specify command-line options with `-D` to `cmake`.
 
+Important note: when compiling Drake with Clang 17 or newer on Linux, you must
+add `-fno-assume-unique-vtables` to your project's `CMAKE_CXX_FLAGS`, or else
+Drake's use of run-time type information and dynamic casts will not work correctly.
+
+## Native CMake Options Supported by Drake
+
+A selection of
+[CMake variables](https://cmake.org/cmake/help/latest/manual/cmake-variables.7.html)
+can be specified by the user to be parsed by Drake's CMake and passed to the
+Bazel build.
+
+* [`CMAKE_BUILD_TYPE`](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html)
+* [`CMAKE_(C|CXX)_COMPILER`](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
+* [`CMAKE_INSTALL_PREFIX`](https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html)
+
+Building and installing Drake also requires a working installation of Python.
+When `Python_EXECUTABLE` is specified, it uses the given path to the Python
+interpreter. Otherwise, it uses `find_package(Python)` to find the Python
+version supported by Drake on the host platform (falling back to finding any
+Python version at all if needed). See
+[`FindPython`](https://cmake.org/cmake/help/latest/module/FindPython.html)
+for further details.
+
 ## Drake-specific CMake Options
 
-These options can be set using `-DFOO=bar` on the CMake command line, or in one
-of the CMake GUIs.
+Drake also defines a number of CMake options to control different facets of
+the build.
+
+Adjusting installation:
+
+* `BUILD_SHARED_LIBS` (default `ON`). When `OFF`, installs a static `libdrake.a`
+  (as opposed to a shared `libdrake.so`). When `OFF`, it changes the default
+  values of `DRAKE_INSTALL_PYTHON` and `WITH_LCM_RUNTIME` to `OFF`, since these
+  tools are incompatible with the static installation. Explicitly specifying
+  incompatible option values will result in an error.
+* `DRAKE_INSTALL_JAVA` (default `ON`). When `OFF`, does not install Java-based
+  tools (currently only the Java lcmtypes). Setting to `OFF` might be helpful to
+  avoid depending on a JDK during the build.
+* `DRAKE_INSTALL_PYTHON` (default `ON`). When `OFF`, does not install
+  Python-based tools (`pydrake`, `pybind11` headers, tutorials, and Python
+  lcmtypes). Setting to `OFF` might be helpful to avoid spending time compiling
+  code that's not needed.
+  * Note that regardless of the `DRAKE_INSTALL_PYTHON` option, a working Python
+    interpreter is still required to build Drake.
+  * This option cannot be `ON` with `BUILD_SHARED_LIBS=OFF`.
 
 Adjusting open-source dependencies:
 
@@ -105,18 +158,33 @@ Adjusting open-source dependencies:
   user-provided `LAPACK::LAPACK` library instead of building from source.
   * This option is not available on macOS.
   * When `ON`, `WITH_USER_BLAS` must also be `ON`.
+* `WITH_USER_GLIB` (default `ON`). When `ON`, uses `pkg_search_module(GLib
+  glib-2.0)` to locate a user-provided GLib library instead of building from
+  source.
+  * This option is only available if pkg-config is at least version 1.0.
 * `WITH_USER_ZLIB` (default `ON`). When `ON`, uses `find_package(ZLIB)` to
   locate a user-provided `ZLIB::ZLIB` library instead of building from source.
   * Caveat: on macOS, for now this hardcodes `-lz`
     instead of calling `find_package`.
 * `WITH_CLARABEL` (default `ON`). When `ON`, enables the `ClarabelSolver`
-  in the build.
+  in the build. See `ClarabelSolver::available()` to retrieve this setting at
+  runtime.
 * `WITH_CLP` (default `ON`). When `ON`, enables the `ClpSolver` in the build.
+  See `ClpSolver::available()` to retrieve this setting at runtime.
 * `WITH_CSDP` (default `ON`). When `ON`, enables the `CsdpSolver` in the build.
+  See `CsdpSolver::available()` to retrieve this setting at runtime.
 * `WITH_IPOPT` (default `ON`). When `ON`, enables the `IpoptSolver` in the build.
+  See `IpoptSolver::available()` to retrieve this setting at runtime.
 * `WITH_NLOPT` (default `ON`). When `ON`, enables the `NloptSolver` in the build.
+  See `NloptSolver::available()` to retrieve this setting at runtime.
 * `WITH_OSQP` (default `ON`). When `ON`, enables the `OsqpSolver` in the build.
+  See `OsqpSolver::available()` to retrieve this setting at runtime.
 * `WITH_SCS` (default `ON`). When `ON`, enables the `ScsSolver` in the build.
+  See `ScsSolver::available()` to retrieve this setting at runtime.
+* `WITH_LCM_RUNTIME` (default `ON`). When `OFF`, the LGPL-licensed LCM runtime
+  library will be not installed alongside Drake. See  `DrakeLcm::available()` to
+  retrieve this setting at runtime.
+  * This option cannot be `ON` with `BUILD_SHARED_LIBS=OFF`.
 
 Adjusting closed-source (commercial) software dependencies:
 
@@ -147,9 +215,12 @@ Adjusting closed-source (commercial) software dependencies:
   * This option is only valid for MIT- or TRI-affiliated Drake developers.
   * This option is mutally exclusive with `WITH_SNOPT`.
 
-Important note: when compiling Drake with Clang 17 or newer on Linux, you must
-add `-fno-assume-unique-vtables` to your project's `CXXFLAGS`, or else Drake's
-use of run-time type information and dynamic casts will not work correctly.
+Adjusting installation methods (advanced):
+
+* `INSTALL_NAME_TOOL`. When specified, uses the path to the
+  `install_name_tool` program.
+  * This option is only available on macOS.
+* `INSTALL_STRIP_TOOL`. When specified, uses the path to the `strip` program.
 
 ## CMake Caveats
 

@@ -1,0 +1,97 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+    "drake_py_unittest",
+)
+load(":defs.bzl", "generate_pybind_documentation_header")
+
+drake_py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    deps = ["//tools/workspace:module_py"],
+)
+
+drake_py_library(
+    name = "libclang_setup_py",
+    srcs = ["libclang_setup.py"],
+    deps = [
+        ":module_py",
+        "@clang_cindex_python3_internal//:clang",
+    ],
+)
+
+drake_py_library(
+    name = "mkdoc_comment_py",
+    srcs = ["mkdoc_comment.py"],
+    deps = ["//doc/doxygen_cxx:system_doxygen"],
+)
+
+drake_py_unittest(
+    name = "mkdoc_comment_test",
+    deps = [
+        ":mkdoc_comment_py",
+    ],
+)
+
+drake_py_binary(
+    name = "mkdoc",
+    srcs = ["mkdoc.py"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":libclang_setup_py",
+        ":mkdoc_comment_py",
+        "@clang_cindex_python3_internal//:clang",
+    ],
+)
+
+drake_cc_library(
+    name = "sample_header",
+    testonly = True,
+    hdrs = ["test/sample_header.h"],
+    tags = ["nolint"],
+    deps = [
+        "//common",
+    ],
+)
+
+drake_cc_library(
+    name = "sample_header_documentation",
+    testonly = True,
+    hdrs = ["test/sample_header_documentation.h"],
+    tags = ["nolint"],
+)
+
+drake_cc_googletest(
+    name = "sample_header_documentation_cc_test",
+    deps = [
+        ":sample_header_documentation",
+    ],
+)
+
+drake_py_unittest(
+    name = "sample_header_documentation_py_test",
+    data = [
+        "test/sample_header_documentation.expected.h",
+        "test/sample_header_documentation.h",
+    ],
+)
+
+generate_pybind_documentation_header(
+    name = "generate_sample_header",
+    testonly = True,
+    out = "test/sample_header_documentation.h",
+    hdr_subdir = "drake/tools/workspace/mkdoc_internal/test",
+    root_name = "sample_header_doc",
+    targets = [
+        ":sample_header",
+    ],
+)
+
+add_lint_tests()

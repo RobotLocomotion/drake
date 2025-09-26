@@ -1,5 +1,9 @@
 #include "drake/solvers/solver_base.h"
 
+#include <memory>
+#include <string>
+#include <utility>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

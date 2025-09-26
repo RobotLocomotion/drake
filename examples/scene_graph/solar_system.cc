@@ -221,8 +221,8 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   // Luna's orbital frame Ol is at the center of Earth's geometry (E).
   // So, X_OeOl = X_OeE.
   const RigidTransformd& X_OeOl = X_OeE;
-  FrameId luna_id = scene_graph->RegisterFrame(
-      source_id_, planet_id, GeometryFrame("LunaOrbit"));
+  FrameId luna_id = scene_graph->RegisterFrame(source_id_, planet_id,
+                                               GeometryFrame("LunaOrbit"));
   body_ids_.push_back(luna_id);
   body_offset_.push_back(X_OeOl);
   const Vector3d luna_axis_Oe{1, 1, 1};
@@ -296,8 +296,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   // in a circular path.
   const double kMarsOrbitRadius = 5.0;
   const double kMarsSize = 0.24;
-  RigidTransformd X_OmM{
-      Translation3d{kMarsOrbitRadius, 0, -orrery_bottom}};
+  RigidTransformd X_OmM{Translation3d{kMarsOrbitRadius, 0, -orrery_bottom}};
   scene_graph->RegisterGeometry(
       source_id_, planet_id,
       MakeShape<Sphere>(X_OmM, "Mars", Vector4d(0.9, 0.1, 0, 1), kMarsSize));

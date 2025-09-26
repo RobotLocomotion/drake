@@ -36,6 +36,9 @@ CHUNK_SIZE = 65536
 def main(argv):
     transformed_metadata = []
     for key, value in read_repository_metadata().items():
+        rule_type = value['repository_rule_type']
+        if rule_type in ('alias', 'pkg_config'):
+            continue
         if 'downloads' in value:
             downloads = value['downloads']
         else:

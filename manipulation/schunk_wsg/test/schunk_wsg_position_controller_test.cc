@@ -1,6 +1,7 @@
 #include "drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h"
 
 #include <memory>
+#include <string>
 
 #include <gtest/gtest.h>
 

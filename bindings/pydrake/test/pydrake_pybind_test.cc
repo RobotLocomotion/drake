@@ -4,7 +4,9 @@
 /// `_pydrake_pybind_test_extra.py`.
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 
+#include <memory>
 #include <string>
+#include <vector>
 
 #include "pybind11/embed.h"
 #include "pybind11/eval.h"

@@ -2,7 +2,10 @@
 
 #include <filesystem>
 #include <memory>
+#include <set>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -435,6 +438,57 @@ GTEST_TEST(ProcessModelDirectivesTest, DefaultPositions) {
   EXPECT_EQ(
       plant.GetJointByName<RevoluteJoint>("ElbowJoint").get_angle(*context),
       0.2);
+}
+
+// Test that collision filter groups can contain both rigid and deformable
+// bodies.
+GTEST_TEST(ProcessModelDirectivesTest,
+           CollisionFilterGroupMixRigidAndDeformable) {
+  std::string kDmdYaml = R"""(
+directives:
+
+- add_model:
+    name: rigid
+    file: package://process_model_directives_test/simple_model.sdf
+
+- add_model:
+    name: deformable_1
+    file: package://process_model_directives_test/deformable_model.sdf
+
+- add_model:
+    name: deformable_2
+    file: package://process_model_directives_test/deformable_model.sdf
+
+- add_collision_filter_group:
+    name: rigid_and_deformable
+    members: [rigid::base, deformable_1::body]
+    ignored_collision_filter_groups: [rigid_and_deformable]
+
+- add_collision_filter_group:
+    name: deformable_and_deformable
+    members: [deformable_1::body, deformable_2::body]
+    ignored_collision_filter_groups: [deformable_and_deformable]
+)""";
+
+  ModelDirectives directives = LoadModelDirectivesFromString(kDmdYaml);
+
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.01);
+  auto parser = make_parser(&plant);
+  ProcessModelDirectives(directives, &plant, nullptr, parser.get());
+
+  // Make sure the plant is not finalized such that the Finalize() default
+  // filtering has not taken into effect yet. This guarantees that the
+  // collision filtering is applied due to the collision filter group parsing.
+  ASSERT_FALSE(plant.is_finalized());
+
+  std::set<CollisionPair> expected_filters = {
+      // From group 'rigid_and_deformable'.
+      {"rigid::collision", "deformable_1::body"},
+      // From group 'deformable_and_deformable'.
+      {"deformable_1::body", "deformable_2::body"},
+  };
+  VerifyCollisionFilters(scene_graph, expected_filters);
 }
 
 // Make sure we have good error messages.

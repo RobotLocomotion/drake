@@ -1,5 +1,7 @@
 #include "drake/geometry/scene_graph_config.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"

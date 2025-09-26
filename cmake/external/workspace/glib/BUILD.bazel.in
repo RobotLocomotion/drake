@@ -1,0 +1,20 @@
+# -*- bazel -*-
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+cc_library(
+    name = "glib",
+    srcs = glob(
+        ["lib/**"],
+        allow_empty = False,
+    ),
+    hdrs = [
+        "include/glib.h",
+        "include/glibconfig.h",
+    ] + glob(
+        ["include/glib/**"],
+        allow_empty = False,
+    ),
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+)

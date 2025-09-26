@@ -1,8 +1,11 @@
 #include "drake/lcm/drake_lcm.h"
 
 #include <chrono>
+#include <memory>
 #include <stdexcept>
+#include <string>
 #include <thread>
+#include <utility>
 
 #include "lcm/lcm-cpp.hpp"
 #include <gtest/gtest.h>
@@ -71,6 +74,7 @@ class DrakeLcmTest : public ::testing::Test {
 };
 
 TEST_F(DrakeLcmTest, DefaultUrlTest) {
+  EXPECT_TRUE(DrakeLcm::available());
   EXPECT_GT(dut_->get_lcm_url().size(), 0);
 }
 

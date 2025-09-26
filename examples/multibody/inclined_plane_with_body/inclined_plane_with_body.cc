@@ -1,5 +1,6 @@
 #include <iostream>
 #include <memory>
+#include <utility>
 
 #include <gflags/gflags.h>
 
@@ -57,8 +58,9 @@ DEFINE_double(bodyB_coef_kinetic_friction, 0.3,
               "coefficient of static friction is used in fixed-time step.");
 DEFINE_bool(is_inclined_plane_half_space, true,
             "Is inclined plane a half-space (true) or box (false).");
-DEFINE_string(bodyB_type, "sphere", "Valid body types are "
-              "'sphere', 'block', or 'block_with_4Spheres'");
+DEFINE_string(
+    bodyB_type, "sphere",
+    "Valid body types are 'sphere', 'block', or 'block_with_4Spheres'");
 DEFINE_string(contact_approximation, "tamsi",
               "Discrete contact approximation. Options are: 'tamsi', "
               "'sap', 'similar', 'lagged'");
@@ -77,8 +79,8 @@ int do_main() {
       multibody::AddMultibodyPlant(plant_config, &builder);
 
   // Set constants that are relevant whether body B is a sphere or block.
-  const double massB = 0.1;       // Body B's mass (kg).
-  const double gravity = 9.8;     // Earth's gravitational acceleration (m/s^2).
+  const double massB = 0.1;    // Body B's mass (kg).
+  const double gravity = 9.8;  // Earth's gravitational acceleration (m/s^2).
   const double inclined_plane_angle =
       FLAGS_inclined_plane_angle_degrees / 180 * M_PI;
 
@@ -97,12 +99,13 @@ int do_main() {
     const double LAz = radiusB;       // Inclined plane length in Az direction.
     const Vector3<double> LAxyz(LAx, LAy, LAz);
     const std::optional<Vector3<double>> inclined_plane_dimensions =
-        FLAGS_is_inclined_plane_half_space ? std::nullopt
+        FLAGS_is_inclined_plane_half_space
+            ? std::nullopt
             : std::optional<Vector3<double>>(LAxyz);
     benchmarks::inclined_plane::AddInclinedPlaneWithSphereToPlant(
         gravity, inclined_plane_angle, inclined_plane_dimensions,
-        coef_friction_inclined_plane, coef_friction_bodyB,
-        massB, radiusB, &plant);
+        coef_friction_inclined_plane, coef_friction_bodyB, massB, radiusB,
+        &plant);
   } else if (FLAGS_bodyB_type == "block" ||
              FLAGS_bodyB_type == "block_with_4Spheres") {
     // B's contacting surface can be modeled with 4 spheres or a single box.
@@ -117,13 +120,13 @@ int do_main() {
     const Vector3<double> block_dimensions(LBx, LBy, LBz);
     const Vector3<double> LAxyz(LAx, LAy, LAz);
     const std::optional<Vector3<double>> inclined_plane_dimensions =
-        FLAGS_is_inclined_plane_half_space ? std::nullopt
+        FLAGS_is_inclined_plane_half_space
+            ? std::nullopt
             : std::optional<Vector3<double>>(LAxyz);
     benchmarks::inclined_plane::AddInclinedPlaneWithBlockToPlant(
         gravity, inclined_plane_angle, inclined_plane_dimensions,
-        coef_friction_inclined_plane, coef_friction_bodyB,
-        massB, block_dimensions,
-        is_bodyB_block_with_4Spheres, &plant);
+        coef_friction_inclined_plane, coef_friction_bodyB, massB,
+        block_dimensions, is_bodyB_block_with_4Spheres, &plant);
   } else {
     std::cerr << "Invalid body_type '" << FLAGS_bodyB_type
               << "' (note that types are case sensitive)." << std::endl;
@@ -165,7 +168,7 @@ int do_main() {
       plant.GetBodyByName("BodyB");
   const Vector3<double> p_WoBo_W(-1.0, 0, 1.2);
   const math::RigidTransform<double> X_WB(p_WoBo_W);
-  plant.SetFreeBodyPoseInWorldFrame(&plant_context, bodyB, X_WB);
+  plant.SetFloatingBaseBodyPoseInWorldFrame(&plant_context, bodyB, X_WB);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
   systems::IntegratorBase<double>& integrator =

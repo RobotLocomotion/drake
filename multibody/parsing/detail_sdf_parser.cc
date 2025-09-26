@@ -1073,6 +1073,59 @@ bool IsDeformableLink(const sdf::Link& link) {
   return link.Element()->HasElement("drake:deformable_properties");
 }
 
+Eigen::Vector3d ParseVector3(const SDFormatDiagnostic& diagnostic,
+                             const sdf::ElementPtr node,
+                             const char* element_name) {
+  if (!node->HasElement(element_name)) {
+    std::string message =
+        fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
+                    element_name);
+    diagnostic.Error(node, message);
+    return Eigen::Vector3d::Zero();
+  }
+
+  auto value = node->Get<gz::math::Vector3d>(element_name);
+
+  return ToVector3(value);
+}
+
+// Structure to hold wall boundary condition data during parsing
+struct WallBoundaryCondition {
+  Eigen::Vector3d p_WQ;  // Position of point Q on the plane in world frame
+  Eigen::Vector3d n_W;   // Outward normal to the half space in world frame
+};
+
+// Helper function to parse wall boundary conditions from an element
+void ParseWallBoundaryConditions(
+    const sdf::ElementPtr element,
+    std::vector<WallBoundaryCondition>* boundary_conditions,
+    const SDFormatDiagnostic& diagnostic) {
+  for (sdf::ElementPtr wall_boundary_cond_element =
+           element->GetElement("drake:wall_boundary_condition");
+       wall_boundary_cond_element != nullptr;
+       wall_boundary_cond_element = wall_boundary_cond_element->GetNextElement(
+           "drake:wall_boundary_condition")) {
+    // Parse point_on_plane and outward_normal child tags.
+    const Eigen::Vector3d p_WQ = ParseVector3(
+        diagnostic, wall_boundary_cond_element, "drake:point_on_plane");
+    const Eigen::Vector3d n_W_raw = ParseVector3(
+        diagnostic, wall_boundary_cond_element, "drake:outward_normal");
+
+    // Validate normal vector is not zero.
+    if (!(n_W_raw.norm() > 1e-10)) {
+      diagnostic.Error(
+          wall_boundary_cond_element,
+          "Outward normal vector cannot be zero in <drake:outward_normal>");
+      continue;
+    }
+
+    WallBoundaryCondition boundary_cond;
+    boundary_cond.p_WQ = p_WQ;
+    boundary_cond.n_W = n_W_raw.normalized();
+    boundary_conditions->push_back(boundary_cond);
+  }
+}
+
 // Helper that loads `<drake:deformable_properties>` into a config.
 // @param[in] link         The SDF link to load the property for.
 // @param[in, out] config  On input, it's a default config. On output, it's the
@@ -1183,11 +1236,16 @@ bool AddDeformableLinkFromSpecification(const SDFormatDiagnostic& diag,
   // Supported child tags inside <link>.
   CheckSupportedElements(
       diag, link_element,
-      {"pose", "collision", "visual", "drake:deformable_properties"});
+      {"pose", "collision", "visual", "drake:deformable_properties",
+       "drake:wall_boundary_condition"});
 
   // Config
   fem::DeformableBodyConfig<double> config;
   LoadDeformableConfig(link, &config, diag);
+
+  // Wall boundary conditions
+  std::vector<WallBoundaryCondition> boundary_conditions;
+  ParseWallBoundaryConditions(link_element, &boundary_conditions, diag);
 
   ResolveFilename resolve_filename =
       [&package_map, &root_dir, &link](
@@ -1300,9 +1358,16 @@ bool AddDeformableLinkFromSpecification(const SDFormatDiagnostic& diag,
   // support primitive geometries, the resolution hint needs to be meaningfully
   // parsed.
   const double dummy_resolution_hint = 1.0;
-  deformable_model.RegisterDeformableBody(std::move(geometry_instance),
-                                          model_instance, config,
-                                          dummy_resolution_hint);
+  const DeformableBodyId body_id = deformable_model.RegisterDeformableBody(
+      std::move(geometry_instance), model_instance, config,
+      dummy_resolution_hint);
+
+  // Apply wall boundary conditions after body registration
+  for (const WallBoundaryCondition& boundary_cond : boundary_conditions) {
+    deformable_model.SetWallBoundaryCondition(body_id, boundary_cond.p_WQ,
+                                              boundary_cond.n_W);
+  }
+
   return true;
 }
 
@@ -1322,6 +1387,7 @@ std::optional<LinkInfo> AddRigidLinkFromSpecification(
   sdf::ElementPtr link_element = link.Element();
 
   CheckSupportedElements(diagnostic, link_element, supported_link_elements);
+
   CheckSupportedElementValue(diagnostic, link_element, "kinematic", "false");
   CheckSupportedElementValue(diagnostic, link_element, "gravity", "true");
 
@@ -1347,9 +1413,10 @@ std::optional<LinkInfo> AddRigidLinkFromSpecification(
   const RigidTransformd X_WL = X_WM * X_ML;
   link_info = LinkInfo{&body, X_WL};
 
-  // Set the initial pose of the free body (only use if the body is indeed
-  // floating).
-  plant->SetDefaultFreeBodyPose(body, X_WL);
+  // Provisionally record the preferred World pose of this link. This will
+  // be ignored unless this link turns out to be a floating base body,
+  // meaning that no user-defined joint connects it to a parent link.
+  plant->SetDefaultFloatingBaseBodyPose(body, X_WL);
 
   const std::set<std::string> supported_geometry_elements{
       "box",       "capsule", "cylinder", "drake:capsule", "drake:ellipsoid",
@@ -1483,22 +1550,6 @@ const Frame<double>& AddFrameFromSpecification(
       plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
           frame_spec.Name(), *parent_frame, X_PF));
   return frame;
-}
-
-Eigen::Vector3d ParseVector3(const SDFormatDiagnostic& diagnostic,
-                             const sdf::ElementPtr node,
-                             const char* element_name) {
-  if (!node->HasElement(element_name)) {
-    std::string message =
-        fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
-                    element_name);
-    diagnostic.Error(node, message);
-    return {};
-  }
-
-  auto value = node->Get<gz::math::Vector3d>(element_name);
-
-  return ToVector3(value);
 }
 
 bool ParseBoolean(const SDFormatDiagnostic& diagnostic,
@@ -1811,7 +1862,7 @@ const LinearBushingRollPitchYaw<double>* AddBushingFromSpecification(
 
   // Functor to read a vector valued child tag with tag name: `element_name`
   // e.g. <element_name>0 0 0</element_name>
-  // Throws an error if the tag does not exist.
+  // Reports an error if the tag does not exist.
   auto read_vector = [&diagnostic,
                       node](const char* element_name) -> Eigen::Vector3d {
     return ParseVector3(diagnostic, node, element_name);
@@ -1819,8 +1870,8 @@ const LinearBushingRollPitchYaw<double>* AddBushingFromSpecification(
 
   // Functor to read a child tag with tag name: `element_name` that specifies a
   // frame name, e.g. <element_name>frame_name</element_name>
-  // Throws an error if the tag does not exist or if the frame does not exist in
-  // the plant.
+  // Reports an error if the tag does not exist or if the frame does not exist
+  // in the plant.
   auto read_frame = [&diagnostic, node, model_instance,
                      plant](const char* element_name) -> const Frame<double>* {
     return ParseFrame(diagnostic, node, model_instance, plant, element_name);
@@ -1842,7 +1893,7 @@ std::optional<MultibodyConstraintId> AddBallConstraintFromSpecification(
 
   // Functor to read a vector valued child tag with tag name: `element_name`
   // e.g. <element_name>0 0 0</element_name>
-  // Throws an error if the tag does not exist.
+  // Reports an error if the tag does not exist.
   auto read_vector = [&diagnostic,
                       node](const char* element_name) -> Eigen::Vector3d {
     return ParseVector3(diagnostic, node, element_name);
@@ -1850,7 +1901,7 @@ std::optional<MultibodyConstraintId> AddBallConstraintFromSpecification(
 
   // Functor to read a child tag with tag name: `element_name` that specifies a
   // body name, e.g. <element_name>body_name</element_name>
-  // Throws an error if the tag does not exist or if the body does not exist in
+  // Reports an error if the tag does not exist or if the body does not exist in
   // the plant.
   auto read_body = [&diagnostic, node, model_instance, plant](
                        const char* element_name) -> const RigidBody<double>* {
@@ -1858,6 +1909,78 @@ std::optional<MultibodyConstraintId> AddBallConstraintFromSpecification(
   };
 
   return ParseBallConstraint(read_vector, read_body, plant);
+}
+
+std::optional<MultibodyConstraintId> AddTendonConstraintFromSpecification(
+    const SDFormatDiagnostic& diagnostic, const sdf::ElementPtr node,
+    ModelInstanceIndex model_instance, MultibodyPlant<double>* plant) {
+  const std::set<std::string> supported_tendon_constraint_elements{
+      "drake:tendon_constraint_joint",
+      "drake:tendon_constraint_offset",
+      "drake:tendon_constraint_lower_limit",
+      "drake:tendon_constraint_upper_limit",
+      "drake:tendon_constraint_stiffness",
+      "drake:tendon_constraint_damping",
+  };
+  CheckSupportedElements(diagnostic, node,
+                         supported_tendon_constraint_elements);
+
+  // Functor to read a scalar valued child tag with tag name: `element_name`
+  // e.g. <element_name>0</element_name>
+  // Reports an error if the tag does not exist.
+  auto read_double = [&diagnostic,
+                      node](const char* element_name) -> std::optional<double> {
+    return ParseDouble(diagnostic, node, element_name);
+  };
+
+  auto next_child_element = [](const ElementNode& data_element,
+                               const char* element_name) {
+    return std::get<sdf::ElementPtr>(data_element)
+        ->GetElementImpl(std::string(element_name));
+  };
+  auto next_sibling_element = [](const ElementNode& data_element,
+                                 const char* element_name) {
+    return std::get<sdf::ElementPtr>(data_element)
+        ->GetNextElement(std::string(element_name));
+  };
+  // Functor to read a string valued attribute with attribute name:
+  // `attribute_name` e.g. <element attribute_name="string"/>
+  // Reports an error if the attribute does not exist.
+  auto get_string_attribute = [&diagnostic](
+                                  const ElementNode& data_element,
+                                  const char* attribute_name) -> std::string {
+    auto element = std::get<sdf::ElementPtr>(data_element);
+    if (!element->HasAttribute(attribute_name)) {
+      std::string message =
+          fmt::format("The tag <{}> is missing the required attribute \"{}\"",
+                      element->GetName(), attribute_name);
+      diagnostic.Error(element, std::move(message));
+      return {};
+    }
+    return std::get<sdf::ElementPtr>(data_element)
+        ->Get<std::string>(attribute_name);
+  };
+  // Functor to read a double valued attribute with attribute name:
+  // `attribute_name` e.g. <element attribute_name="0.0"/>
+  // Reports an error if the attribute does not exist or is not a valid number.
+  auto get_double_attribute = [&diagnostic](
+                                  const ElementNode& data_element,
+                                  const char* attribute_name) -> double {
+    auto element = std::get<sdf::ElementPtr>(data_element);
+    if (!element->HasAttribute(attribute_name)) {
+      std::string message =
+          fmt::format("The tag <{}> is missing the required attribute \"{}\"",
+                      element->GetName(), attribute_name);
+      diagnostic.Error(element, std::move(message));
+      return {};
+    }
+    return std::get<sdf::ElementPtr>(data_element)->Get<double>(attribute_name);
+  };
+
+  return ParseTendonConstraint(
+      diagnostic.MakePolicyForNode(*node), model_instance, node, read_double,
+      next_child_element, next_sibling_element, get_string_attribute,
+      get_double_attribute, plant);
 }
 
 // Helper to determine if two links are welded together.
@@ -2062,6 +2185,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
       "drake:joint",
       "drake:linear_bushing_rpy",
       "drake:ball_constraint",
+      "drake:tendon_constraint",
       "drake:collision_filter_group",
       "frame",
       "include",
@@ -2220,6 +2344,17 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     }
   }
 
+  drake::log()->trace("sdf_parser: Add TendonConstraint");
+  if (model.Element()->HasElement("drake:tendon_constraint")) {
+    for (sdf::ElementPtr constraint_node =
+             model.Element()->GetElement("drake:tendon_constraint");
+         constraint_node; constraint_node = constraint_node->GetNextElement(
+                              "drake:tendon_constraint")) {
+      AddTendonConstraintFromSpecification(diagnostic, constraint_node,
+                                           model_instance, plant);
+    }
+  }
+
   if (model.Static()) {
     // Only weld / fixed joints are permissible.
     // TODO(eric.cousineau): Consider "freezing" non-weld joints, as is
@@ -2261,7 +2396,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
 // Helper function that computes the default pose of a Frame
 RigidTransformd GetDefaultFramePose(const MultibodyPlant<double>& plant,
                                     const Frame<double>& frame) {
-  const RigidTransformd X_WB = plant.GetDefaultFreeBodyPose(frame.body());
+  const RigidTransformd X_WB =
+      plant.GetDefaultFloatingBaseBodyPose(frame.body());
   const RigidTransformd X_WF = X_WB * frame.GetFixedPoseInBodyFrame();
   return X_WF;
 }
@@ -2277,7 +2413,7 @@ void AddBodiesToInterfaceModel(const MultibodyPlant<double>& plant,
                                const RigidTransformd& X_MW) {
   for (auto index : body_indices) {
     const auto& link = plant.get_body(index);
-    RigidTransformd X_ML = X_MW * plant.GetDefaultFreeBodyPose(link);
+    RigidTransformd X_ML = X_MW * plant.GetDefaultFloatingBaseBodyPose(link);
     interface_model->AddLink({link.name(), ToIgnitionPose3d(X_ML)});
   }
 }
@@ -2359,7 +2495,8 @@ sdf::InterfaceModelPtr ConvertToInterfaceModel(
           sdf::Errors inner_errors =
               graph.ResolveNestedFramePose(X_WL, interface_link.name());
           PropagateErrors(std::move(inner_errors), errors);
-          plant->SetDefaultFreeBodyPose(interface_link, ToRigidTransform(X_WL));
+          plant->SetDefaultFloatingBaseBodyPose(interface_link,
+                                                ToRigidTransform(X_WL));
         }
       };
 
