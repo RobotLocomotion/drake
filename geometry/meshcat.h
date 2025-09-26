@@ -19,6 +19,7 @@
 #include "drake/math/rigid_transform.h"
 // TODO(russt): Move point_cloud.h to a more central location.
 #include "drake/perception/point_cloud.h"
+#include "drake/planning/dev/voxel_collision_map.h"
 
 namespace drake {
 namespace geometry {
@@ -209,6 +210,41 @@ class Meshcat {
                  const perception::PointCloud& point_cloud,
                  double point_size = 0.001,
                  const Rgba& rgba = Rgba(.9, .9, .9, 1.));
+
+  /**
+  Sets the "object" at a given `path` in the scene tree to be a collection
+  of instances of the same `shape`.  Note that `path`="/foo" will always set an
+  object in the tree at "/foo/<object>".  See @ref meshcat_path.
+  Any objects previously set at this `path` will be replaced.
+  @param path a "/"-delimited string indicating the path in the scene tree. See
+              @ref meshcat_path "Meshcat paths" for the semantics.
+  @param shape is the shape common to all instances in the instanced mesh.
+  @param transforms is a vector of RigidTransformd specifying the pose of each
+                     instance in the instanced mesh.
+  @param rgba is the default color, which is only used if the shape does not
+              specify a material.
+  */
+  void SetObjectInstanced(std::string_view path,
+                          const Shape& shape,
+                          const std::vector<math::RigidTransformd>& transforms,
+                          const Rgba& rgba = Rgba(.9, .9, .9, 1.));
+
+  /** Sets the "object" at a given `path` in the scene tree to be
+  `voxel_collision_map`.  Note that `path`="/foo" will always set an object in
+  the tree at "/foo/<object>".  See @ref meshcat_path. Any objects previously
+  set at this `path` will be replaced.
+  @param path a "/"-delimited string indicating the path in the scene tree. See
+              @ref meshcat_path "Meshcat paths" for the semantics.
+  @param voxel_collision_map a planning::VoxelCollisionMap.
+  @param occupied_rgba The color to use for occupied voxels in the visualization.
+                       Defaults to solid red.
+  @param unknown_rgba The color to use for unknown voxels in the visualization. 
+                      Defaults to semi-transparent black.
+  */
+  void SetObject(std::string_view path,
+                 const planning::VoxelCollisionMap& voxel_collision_map,
+                 const Rgba& occupied_rgba = Rgba(1., 0., 0., 1.),
+                 const Rgba& unknown_rgba = Rgba(0., 0., 0., .2));
 
   /** Sets the "object" at `path` in the scene tree to a TriangleSurfaceMesh.
 

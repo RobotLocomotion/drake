@@ -80,7 +80,7 @@ class SphereRobotModelCollisionChecker;
 
 /// Container for all spheres belonging to a single body's collision model.
 /// API is generally equivalent to that of map<GeometryId, SphereSpecification>.
-/// Interator support is provided to enable easy iteration over the spheres.
+/// Iterator support is provided to enable easy iteration over the spheres.
 class BodySpheres {
  public:
   using const_iterator =
@@ -121,7 +121,7 @@ class BodySpheres {
   }
 
  private:
-  // SphereRobotModelCollisionChecker has priviledged access to mutate body
+  // SphereRobotModelCollisionChecker has privileged access to mutate body
   // spheres, particularly to allow in-place operations for performance.
   // Note: mutable operations Clear(), Emplace(...), and Erase(...) require that
   // the bounding sphere be recomputed by calling MaybeUpdateBoundingSphere().
