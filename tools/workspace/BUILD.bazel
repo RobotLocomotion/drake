@@ -154,7 +154,9 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "//tools/workspace/scs_internal:enabled": ["@scs_internal//:install"],
     "//conditions:default": [],
 }) + select({
-    "//tools/workspace/lcm:flag_with_lcm_runtime_true": ["@lcm//:install"],
+    "//tools/workspace/lcm_internal:flag_with_lcm_runtime_true": [
+        "//tools/workspace/lcm_internal:install",
+    ],
     "//conditions:default": [],
 })
 
