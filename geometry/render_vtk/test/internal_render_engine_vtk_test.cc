@@ -2358,7 +2358,7 @@ TEST_F(RenderEngineVtkTest, PbrMaterialSettingSurvivesCloning) {
 // The purpose of this test is two-fold:
 //   1. Provide a base-line image to validate the default values as visually
 //      reasonable.
-//   2. Show that all of the parameters effect the rendered result. Note: the
+//   2. Show that all of the parameters affect the rendered result. Note: the
 //      effects aren't predicted or tested in their specifics; just that changes
 //      in parameters lead to changes in images.
 //

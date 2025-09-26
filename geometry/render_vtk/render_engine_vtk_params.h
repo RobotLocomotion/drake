@@ -272,7 +272,7 @@ struct RenderEngineVtkParams {
   std::optional<double> exposure{};
 
   /** An optional SSAO (screen-space ambient occlusion) parameters set. When
-   specified, VTK enable screen-space ambient occlusion configured by the
+   specified, VTK enables screen-space ambient occlusion configured by the
    given parameters. */
   std::optional<SsaoParameter> ssao{};
 
