@@ -428,10 +428,16 @@ TEST_F(QuaternionFloatingMobilizerTest, MapVelocityToQDotAndViceVersa) {
       math::CalculateQuaternionDtConstraintViolation(q_unit, qrdot_nonUnit);
   EXPECT_TRUE(std::abs(is_zero_if_OK_qdot) < 16 * kTolerance);
 
-  // Verify that qdot_nonUnit = |qr_nonUnit| * qdot_unit.
+  // Verify qrdot_nonUnit = |qr_nonUnit| * qrdot_unit.
   const double s = q_nonUnit.norm();
   EXPECT_TRUE(CompareMatrices(qrdot_nonUnit, s * qrdot_unit, 16 * kTolerance,
                               MatrixCompareType::relative));
+
+  // Verify vr_from_qdot_nonUnit = vr_from_qdot_unit.
+  const Vector3<double> vr_from_qdot_nonUnit = v_from_qdot_nonUnit.head(3);
+  const Vector3<double> vr_from_qdot_unit = v_from_qdot_unit.head(3);
+  EXPECT_TRUE(CompareMatrices(vr_from_qdot_nonUnit, vr_from_qdot_unit,
+                              16 * kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(QuaternionFloatingMobilizerTest, MapAccelerationToQDDotAndViceVersa) {
