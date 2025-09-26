@@ -22,12 +22,12 @@ using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::PerceptionProperties;
 using geometry::Shape;
+using geometry::SsaoParameter;
 using geometry::render::ColorRenderCamera;
 using geometry::render::DepthRenderCamera;
 using geometry::render::LightParameter;
 using geometry::render::LightType;
 using geometry::render::RenderEngine;
-using geometry::render::SsaoParameter;
 using math::RigidTransformd;
 using systems::sensors::CameraInfo;
 using systems::sensors::Image;
@@ -416,7 +416,7 @@ void DoScalarIndependentDefinitions(py::module m) {
   }
 
   {
-    using Class = geometry::render::SsaoParameter;
+    using Class = geometry::SsaoParameter;
     constexpr auto& cls_doc = doc.SsaoParameter;
     py::class_<Class> cls(m, "SsaoParameter", cls_doc.doc);
     cls  // BR

@@ -964,19 +964,22 @@ void RenderEngineVtk::InitializePipelines() {
   vtkNew<vtkRenderPassCollection> full_passes;
   full_passes->AddItem(vtkNew<vtkLightsPass>());
   if (parameters_.ssao.has_value()) {
-    vtkNew<vtkCameraPass> ssao_camera_pass;
     vtkNew<vtkOpaquePass> opaque_pass;
+
+    vtkNew<vtkCameraPass> ssao_camera_pass;
     ssao_camera_pass->SetDelegatePass(opaque_pass);
 
     vtkNew<vtkSSAOPass> ssao_pass;
-    const auto& ssao_parameter = parameters_.ssao.value();
     ssao_pass->SetDelegatePass(ssao_camera_pass);
+
+    const auto& ssao_parameter = parameters_.ssao.value();
     ssao_pass->SetRadius(ssao_parameter.radius);
     ssao_pass->SetBias(ssao_parameter.bias);
     ssao_pass->SetKernelSize(ssao_parameter.sample_count);
     ssao_pass->SetIntensityScale(ssao_parameter.intensity_scale);
     ssao_pass->SetIntensityShift(ssao_parameter.intensity_shift);
     ssao_pass->SetBlur(ssao_parameter.blur);
+
     full_passes->AddItem(ssao_pass);
   } else {
     full_passes->AddItem(vtkNew<vtkOpaquePass>());

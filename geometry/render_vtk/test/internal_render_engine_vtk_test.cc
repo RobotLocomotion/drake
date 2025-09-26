@@ -106,7 +106,6 @@ using render::LightParameter;
 using render::RenderCameraCore;
 using render::RenderEngine;
 using render::RenderLabel;
-using render::SsaoParameter;
 using std::make_unique;
 using std::unique_ptr;
 using std::unordered_map;

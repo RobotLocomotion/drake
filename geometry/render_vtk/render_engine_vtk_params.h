@@ -14,7 +14,6 @@
 namespace drake {
 namespace geometry {
 
-namespace render {
 /** Screen-space ambient occlusion (SSAO) parameters.
 
  Ambient occlusion is a shading method used to calculate how exposed each point
@@ -110,7 +109,6 @@ struct SsaoParameter {
    emphasize the sampling noise. */
   bool blur{true};
 };
-}  // namespace render
 
 // TODO(SeanCurtis-TRI): When CubeMap is implemented, replace NullTexture with
 // CubeMap.
@@ -276,7 +274,7 @@ struct RenderEngineVtkParams {
   /** An optional SSAO (screen-space ambient occlusion) parameters set. When
    specified, VTK enable screen-space ambient occlusion configured by the
    given parameters. */
-  std::optional<render::SsaoParameter> ssao{};
+  std::optional<SsaoParameter> ssao{};
 
   /** If `true`, *all* lights that are *able* to cast shadows will do so.
 
