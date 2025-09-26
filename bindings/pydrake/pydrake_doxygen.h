@@ -252,19 +252,19 @@ Drake uses a modified version of `mkdoc.py` from `pybind11`, where `libclang`
 Python bindings are used to generate C++ docstrings accessible to the C++
 binding code.
 
-These docstrings are available within `constexpr struct ... pydrake_doc`
-as `const char*` values . When these are not available or not suitable for
-Python documentation, provide custom strings. If this custom string is long,
-consider placing them in a heredoc string.
+These docstrings are available within nested `constexpr struct` trees as
+`const char*` values. When these are not available or not suitable for Python
+documentation, provide custom strings. If this custom string is long, consider
+placing them in a heredoc string.
 
-An example of incorporating docstrings from `pydrake_doc`:
+An example of incorporating docstrings:
 
-```{.cc}
-    #include "drake/bindings/pydrake/documentation_pybind.h"
+@code{.cc}
+    #include "drake/bindings/generated_docstrings/math.h"
 
     PYBIND11_MODULE(math, m) {
       using namespace drake::math;
-      constexpr auto& doc = pydrake_doc.drake.math;
+      constexpr auto& doc = pydrake_doc_math.drake.math;
       using T = double;
       py::class_<RigidTransform<T>>(m, "RigidTransform", doc.RigidTransform.doc)
           .def(py::init(), doc.RigidTransform.ctor.doc_0args)
@@ -279,7 +279,7 @@ An example of incorporating docstrings from `pydrake_doc`:
               doc.RigidTransform.set_rotation.doc)
       ...
     }
-```
+@endcode
 
 An example of supplying custom strings:
 
@@ -310,7 +310,7 @@ and the docstring structures. Borrowing from above:
 
 To view the documentation rendered in Sphinx:
 
-    bazel run //doc/pydrake:serve_sphinx [-- --browser=false]
+    bazel run -- //doc/pydrake:build --serve [--browser=false]
 
 @note Drake's online Python documentation is generated on Ubuntu Noble, and it
 is suggested to preview documentation using this platform. Other platforms may
@@ -318,35 +318,26 @@ have slightly different generated documentation.
 
 To browse the generated documentation strings that are available for use (or
 especially, to find out the names for overloaded functions' documentation),
-generate and open the docstring header:
+re-generate and open the docstring header:
 
-    bazel build //bindings/pydrake:documentation_pybind.h
-    $EDITOR bazel-bin/bindings/pydrake/documentation_pybind.h
+    bazel run //bindings/generated_docstrings:regenerate
+    $EDITOR bazel-bin/bindings/generated_docstrings/SOME_FILE.h
 
 Search the comments for the symbol of interest, e.g.,
 `drake::math::RigidTransform::RigidTransform<T>`, and view the include file and
 line corresponding to the symbol that the docstring was pulled from.
 
-@note This file may be large, on the order of ~100K lines; be sure to use an
+@note This file may be large, on the order of ~10K lines; be sure to use an
 efficient editor!
-
-@note If you are debugging a certain file and want quicker generation and a
-smaller generated file, you can hack `mkdoc.py` to focus only on your include
-file of choice. As an example, debugging `mathematical_program.h`:
-```{.py}
-    ...
-    assert len(include_files) > 0  # Existing code.
-    include_files = ["drake/solvers/mathematical_program.h"]  # HACK
-```
-This may break the bindings themselves, and should only be used for inspecting
-the output.
 
 For more detail:
 
-- Each docstring is stored in `documentation_pybind.h` in the nested structure
-`pydrake_doc`.
+- Docstrings are stored in files named after the subdirectory where the original
+C++ header file lives, e.g., `multibody_tree.h` for `drake/multibody/tree` docs.
+- The constants sit within structures named `pydrake_doc_{directory_names}`,
+e.g., `pydrake_doc_multibody_tree` for `drake/multibody/tree` docs.
 - The docstring for a symbol without any overloads will be accessible via
-`pydrake_doc.drake.{namespace...}.{symbol}.doc`.
+`pydrake_doc_{directory_names}.drake.{namespace...}.{symbol}.doc`.
 - The docstring for an overloaded symbol will be `.doc_something` instead of
 just `.doc`, where the `_something` suffix conveys some information about the
 overload.  Browse the documentation_pybind.h (described above) for details.

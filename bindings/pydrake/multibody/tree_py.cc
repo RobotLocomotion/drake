@@ -8,6 +8,7 @@
 
 #include "pybind11/eval.h"
 
+#include "drake/bindings/generated_docstrings/multibody_tree.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
@@ -16,7 +17,6 @@
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
@@ -57,7 +57,7 @@ namespace {
 
 // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
 using namespace drake::multibody;
-constexpr auto& doc = pydrake_doc.drake.multibody;
+constexpr auto& doc = pydrake_doc_multibody_tree.drake.multibody;
 
 // Negative case for checking T::name().
 // https://stackoverflow.com/a/16000226/7829525

@@ -4,10 +4,10 @@
 
 #include "pybind11/eval.h"
 
+#include "drake/bindings/generated_docstrings/common_schema.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/submodules_py.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/common/schema/rotation.h"
@@ -21,7 +21,7 @@ namespace internal {
 void DefineModuleSchema(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::schema;
-  constexpr auto& doc = pydrake_doc.drake.schema;
+  constexpr auto& doc = pydrake_doc_common_schema.drake.schema;
 
   // Bindings for stochastic.h.
 

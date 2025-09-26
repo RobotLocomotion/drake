@@ -1,8 +1,8 @@
 #include "pybind11/eval.h"
 
+#include "drake/bindings/generated_docstrings/multibody_tree.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/multibody/tree_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/tree/geometry_spatial_inertia.h"
@@ -22,7 +22,7 @@ namespace {
 void DoScalarIndependentDefinitions(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  constexpr auto& doc = pydrake_doc.drake.multibody;
+  constexpr auto& doc = pydrake_doc_multibody_tree.drake.multibody;
 
   {
     m.def("CalcSpatialInertia",
@@ -42,7 +42,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  constexpr auto& doc = pydrake_doc.drake.multibody;
+  constexpr auto& doc = pydrake_doc_multibody_tree.drake.multibody;
 
   {
     using Class = RotationalInertia<T>;
