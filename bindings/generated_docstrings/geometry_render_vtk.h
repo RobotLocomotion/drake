@@ -417,8 +417,8 @@ and shadow maps.)""";
           // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:277
           const char* doc =
 R"""(An optional SSAO (screen-space ambient occlusion) parameters set. When
-specified, VTK enable screen-space ambient occlusion configured by the
-given parameters.)""";
+specified, VTK enables screen-space ambient occlusion configured by
+the given parameters.)""";
         } ssao;
         auto Serialize__fields() const {
           return std::array{
