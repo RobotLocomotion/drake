@@ -144,9 +144,12 @@ MODULE_SETTINGS = {
             "VTK_HAS_ISFINITE=1",
             "VTK_HAS_ISINF=1",
             "VTK_HAS_ISNAN=1",
+            "VTK_HAS_STD_CHARS_FORMAT=1",
+            "VTK_HAS_STD_FROM_CHARS_RESULT=1",
             "VTK_HAS_STD_ISFINITE=1",
             "VTK_HAS_STD_ISINF=1",
             "VTK_HAS_STD_ISNAN=1",
+            "VTK_HAS_STD_TO_CHARS_RESULT=1",
             "VTK_USE_64BIT_IDS=1",
             "VTK_USE_64BIT_TIMESTAMPS=1",
             # Threading.
@@ -519,6 +522,12 @@ MODULE_SETTINGS = {
             "//conditions:default": [
                 # On linux, we also want the EGL and GLX renderers.
                 "Rendering/OpenGL2/vtkEGLRenderWindow.cxx",
+                "Rendering/OpenGL2/Private/vtkEGLConfig.h",
+                "Rendering/OpenGL2/Private/vtkEGLConfig.cxx",
+                "Rendering/OpenGL2/Private/vtkEGLDefaultConfig.h",
+                "Rendering/OpenGL2/Private/vtkEGLDefaultConfig.cxx",
+                "Rendering/OpenGL2/Private/vtkEGLRenderWindowInternals.h",
+                "Rendering/OpenGL2/Private/vtkEGLRenderWindowInternals.cxx",
                 "Rendering/OpenGL2/vtkXOpenGLRenderWindow.cxx",
             ],
         }),
@@ -614,20 +623,6 @@ MODULE_SETTINGS = {
     # VTK's name mangling of these is a little bit weak (it just adds "vtk" to
     # the front, leaving them as public symbols); we might want to improve upon
     # that later on.
-    "VTK::doubleconversion": {
-        "cmake_undefines": [
-            "VTK_MODULE_USE_EXTERNAL_vtkdoubleconversion",
-        ],
-        "hdrs_content": {
-            "ThirdParty/doubleconversion/vtkdoubleconversion_export.h": """
-                #pragma once
-                #define VTKDOUBLECONVERSION_EXPORT
-            """,
-        },
-        "srcs_glob_extra": [
-            "ThirdParty/doubleconversion/**/*.cc",
-        ],
-    },
     "VTK::fast_float": {
         "cmake_undefines": [
             "VTK_MODULE_USE_EXTERNAL_vtkfast_float",
@@ -674,6 +669,28 @@ MODULE_SETTINGS = {
         "srcs_glob_extra": [
             "ThirdParty/pugixml/**/*.cpp",
         ],
+    },
+    "VTK::scn": {
+        "cmake_undefines": [
+            "VTK_MODULE_USE_EXTERNAL_VTK_scn",
+        ],
+        "includes_extra": [
+            "ThirdParty/scn/vtkscn/include",
+            "ThirdParty/scn/vtkscn/src",
+        ],
+        "srcs_glob_extra": [
+            "ThirdParty/scn/vtkscn/src/vtkscn/*.cpp",
+        ],
+        "hdrs_content": {
+            "ThirdParty/scn/vtkscn/include/vtkscn/scn_export.h": """
+#pragma once
+#define SCN_EXPORT
+#define SCN_NO_EXPORT
+#define SCN_DEPRECATED
+#define SCN_DEPRECATED_EXPORT
+#define SCN_DEPRECATED_NO_EXPORT
+            """,
+        },
     },
     "VTK::token": {
         "hdrs_glob_exclude": [

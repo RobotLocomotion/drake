@@ -184,8 +184,8 @@ def vtk_internal_repository(
         # TODO(jwnimmer-tri) Once there's a tagged release with support for
         # VTK_ABI_NAMESPACE, we should switch to an official version number
         # here. That probably means waiting for the VTK 10 release.
-        commit = "557befa04130f42d7287b86e5f9c6397117fd4d8",
-        sha256 = "2240f29d8a21f46388407d8ace20f51d00f35a5fb0c4b1fa10d6d7d6e597b4eb",  # noqa
+        commit = "00aaec1244ab20a5d900b0ad91186f747db7b146",
+        sha256 = "377d5176c410a565161839c1b704c94ff97f7fc37a67d7ade4a503b01dde6314",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             # Drake's conventions for VTK patches are:
@@ -201,8 +201,8 @@ def vtk_internal_repository(
             ":patches/upstream/io_geometry_gltf_default_scene.patch",
             ":patches/upstream/io_import_errors.patch",
             ":patches/upstream/rendering_core_vtkcomposite_exception.patch",
-            ":patches/upstream/rendering_opengl2_scaled_albedo_for_ibl.patch",
             ":patches/upstream/vtkpugixml_global_ctor.patch",
+            ":patches/common_core_fmt9.patch",
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_rm_cin_prompting.patch",
             ":patches/common_core_version.patch",
@@ -213,9 +213,9 @@ def vtk_internal_repository(
             ":patches/rendering_opengl2_no_factory.patch",
             ":patches/rendering_opengl2_no_global_display_counter.patch",
             ":patches/rendering_opengl2_preserve_direct_light_specular_reflections.patch",  # noqa
-            ":patches/vtkdoubleconversion_hidden.patch",
             ":patches/vtkfast_float_hidden.patch",
             ":patches/vtkpugixml_hidden.patch",
+            ":patches/vtkscn_hidden.patch",
             ":patches/vtksys_hidden.patch",
         ],
         settings_bzl = ":settings.bzl",

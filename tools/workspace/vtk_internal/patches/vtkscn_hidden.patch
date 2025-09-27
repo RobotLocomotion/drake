@@ -1,0 +1,13 @@
+[vtk] Use a custom hidden inline namespace for vtkscn
+
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
+
+--- ThirdParty/scn/vtkscn/include/vtkscn/fwd.h
++++ ThirdParty/scn/vtkscn/include/vtkscn/fwd.h
+@@ -946,5 +946,5 @@
+ #define SCN_DECLVAL(...)    static_cast<__VA_ARGS__ (*)()>(nullptr)()
+ 
+-#define SCN_BEGIN_NAMESPACE inline namespace v4 {
++#define SCN_BEGIN_NAMESPACE inline namespace drake_vendor __attribute__((visibility("hidden"))) {
+ #define SCN_END_NAMESPACE   }
+ 
