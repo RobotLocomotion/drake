@@ -11,13 +11,13 @@ package(default_visibility = ["//visibility:private"])
 
 # LCM is LGPL-licensed and therefore we must build it as a shared library.
 # Because our `vendor_namespace.patch` uses different symbol names, we'll also
-# name it `libdrake_lcm.so` instead of `liblcm.so`, which means we can't use the
-# upstream shared_library rule. The following targets create our own link of the
-# library, with the Bazel label `":shared_library"` (the compile commands are
-# re-used from upstream; only the linking step is changed.)
+# name it `libdrake_vendor_lcm.so` instead of `liblcm.so`, which means we can't
+# use the upstream shared_library rule. The following targets create our own
+# link of the library, with the Bazel label `":shared_library"` (the compile
+# commands are re-used from upstream; only the linking step is changed.)
 #
 # The "whole archive" annotates all of the object code as `alwayslink = True`,
-# so that we use the --whole-archive linker flag when creating libdrake_lcm.so.
+# so that we use the --whole-archive linker flag on libdrake_vendor_lcm.so.
 cc_whole_archive_library(
     name = "whole_archive",
     deps = ["@lcm_internal//lcm:lcm-shared"],
@@ -29,9 +29,9 @@ config_setting(
 )
 
 cc_binary(
-    name = "libdrake_lcm.so",
+    name = "libdrake_vendor_lcm.so",
     linkopts = select({
-        ":linux": ["-Wl,-soname,libdrake_lcm.so"],
+        ":linux": ["-Wl,-soname,libdrake_vendor_lcm.so"],
         "//conditions:default": [],
     }),
     linkshared = True,
@@ -45,7 +45,7 @@ cc_nolink_library(
 
 cc_library(
     name = "shared_library",
-    srcs = [":libdrake_lcm.so"],
+    srcs = [":libdrake_vendor_lcm.so"],
     visibility = ["//visibility:public"],
     deps = [":hdrs"],
 )
@@ -74,7 +74,7 @@ install_license(
 
 install(
     name = "install",
-    targets = [":libdrake_lcm.so"],
+    targets = [":libdrake_vendor_lcm.so"],
     visibility = ["//tools/workspace:__pkg__"],
     deps = [":install_license"],
 )
