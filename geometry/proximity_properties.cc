@@ -12,6 +12,9 @@ const char* const kFriction = "coulomb_friction";
 const char* const kHcDissipation = "hunt_crossley_dissipation";
 const char* const kRelaxationTime = "relaxation_time";
 const char* const kPointStiffness = "point_contact_stiffness";
+const char* const kSurfaceVelocityGroup = "surface_velocity";
+const char* const kSurfaceSpeed = "surface_speed";
+const char* const kSurfaceVelocityNormal = "surface_velocity_normal";
 
 const char* const kHydroGroup = "hydroelastic";
 const char* const kElastic = "hydroelastic_modulus";
