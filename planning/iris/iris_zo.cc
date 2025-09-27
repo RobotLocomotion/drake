@@ -171,18 +171,18 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
   double delta_min = internal::calc_delta_min(
       outer_delta_min,
       options.sampled_iris_options.max_iterations_separating_planes);
-  int N_max = internal::unadaptive_test_samples(
+  int N_test_max = internal::unadaptive_test_samples(
       options.sampled_iris_options.epsilon, delta_min,
       options.sampled_iris_options.tau);
+  int N_max = std::max(N_test_max, options.sampled_iris_options.num_particles);
 
   if (options.sampled_iris_options.verbose) {
     log()->info(
         "IrisZo finding region that is {} collision free with {} certainty "
-        "using {} particles.",
+        "using up to {} particles.",
         options.sampled_iris_options.epsilon,
-        1 - options.sampled_iris_options.delta,
-        options.sampled_iris_options.num_particles);
-    log()->info("IrisZo worst case test requires {} samples.", N_max);
+        1 - options.sampled_iris_options.delta, N_max);
+    log()->info("IrisZo worst case test requires {} samples.", N_test_max);
   }
 
   std::vector<Eigen::VectorXd> particles(
@@ -237,22 +237,24 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
       int k_squared = num_iterations_separating_planes + 1;
       k_squared *= k_squared;
       double delta_k = outer_delta * 6 / (M_PI * M_PI * k_squared);
-      int N_k = internal::unadaptive_test_samples(
+      int N_test = internal::unadaptive_test_samples(
           options.sampled_iris_options.epsilon, delta_k,
           options.sampled_iris_options.tau);
+      int N_samples_to_draw =
+          std::max(N_test, options.sampled_iris_options.num_particles);
 
       // TODO(cohnt): Switch to using a single large MatrixXd to avoid repeated
       // VectorXd heap allocations.
       internal::PopulateParticlesByUniformSampling(
-          P, N_k, options.sampled_iris_options.mixing_steps, &generators,
-          &particles);
+          P, N_samples_to_draw, options.sampled_iris_options.mixing_steps,
+          &generators, &particles);
 
       // Copy top slice of particles, applying thet parameterization function to
       // each one, due to collision checker only accepting vectors of
       // configurations.
       // TODO(cohnt): Make ambient_particles an Eigen::MatrixXd and don't
       // recreate it on each iteration.
-      std::vector<Eigen::VectorXd> ambient_particles(N_k);
+      std::vector<Eigen::VectorXd> ambient_particles(N_samples_to_draw);
       const auto apply_parameterization = [&particles, &ambient_particles,
                                            &options](const int thread_num,
                                                      const int64_t index) {
@@ -264,7 +266,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
 
       // TODO(cohnt): Rewrite as a StaticParallelForRangeLoop.
       StaticParallelForIndexLoop(DegreeOfParallelism(num_threads_to_use), 0,
-                                 N_k, apply_parameterization,
+                                 N_samples_to_draw, apply_parameterization,
                                  ParallelForBackend::BEST_AVAILABLE);
 
       for (int i = 0; i < ssize(ambient_particles); ++i) {
@@ -279,7 +281,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
       std::vector<uint8_t> particle_satisfies_additional_constraints =
           internal::CheckProgConstraintsParallel(
               options.sampled_iris_options.prog_with_additional_constraints,
-              particles, Parallelism(num_threads_to_use), constraints_tol, N_k);
+              particles, Parallelism(num_threads_to_use), constraints_tol,
+              N_samples_to_draw);
       DRAKE_ASSERT(particle_col_free.size() ==
                    particle_satisfies_additional_constraints.size());
 
@@ -296,20 +299,22 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
             particles_in_collision.push_back(particles[i]);
             ++number_particles_in_collision;
           }
-          ++number_particles_in_collision_unadaptive_test;
+          if (N_test > number_particles_in_collision_unadaptive_test) {
+            ++number_particles_in_collision_unadaptive_test;
+          }
         }
       }
       if (options.sampled_iris_options.verbose) {
-        log()->info("IrisZo N_k {}, N_col {}, thresh {}", N_k,
+        log()->info("IrisZo N_test {}, N_col {}, thresh {}", N_test,
                     number_particles_in_collision_unadaptive_test,
                     (1 - options.sampled_iris_options.tau) *
-                        options.sampled_iris_options.epsilon * N_k);
+                        options.sampled_iris_options.epsilon * N_test);
       }
 
       const bool probabilistic_test_passed =
           number_particles_in_collision_unadaptive_test <=
           (1 - options.sampled_iris_options.tau) *
-              options.sampled_iris_options.epsilon * N_k;
+              options.sampled_iris_options.epsilon * N_test;
 
       if (options.sampled_iris_options.verbose) {
         if (!options.sampled_iris_options.remove_all_collisions_possible &&
