@@ -50,6 +50,28 @@ class TestGeometryRender(unittest.TestCase):
         self.assertIn("spot", repr(light))
         copy.copy(light)
 
+    def test_ssao_param(self):
+        # A default constructor exists.
+        mut.SsaoParameter()
+
+        # The kwarg constructor also works.
+        params = mut.SsaoParameter(
+            radius=0.2,
+            bias=0.01,
+            sample_count=8,
+            intensity_scale=1.5,
+            intensity_shift=0.05,
+            blur=False)
+        self.assertEqual(params.radius, 0.2)
+        self.assertEqual(params.bias, 0.01)
+        self.assertEqual(params.sample_count, 8)
+        self.assertEqual(params.intensity_scale, 1.5)
+        self.assertEqual(params.intensity_shift, 0.05)
+        self.assertFalse(params.blur)
+
+        self.assertIn("bias", repr(params))
+        copy.copy(params)
+
     def test_equirectangular_map(self):
         # A default constructor exists.
         mut.EquirectangularMap()
