@@ -24,6 +24,8 @@ namespace {
 
 namespace fs = std::filesystem;
 
+using Eigen::Vector2d;
+using Eigen::Vector3d;
 using math::RigidTransformd;
 using std::unique_ptr;
 
@@ -443,7 +445,7 @@ GTEST_TEST(HalfSpaceTest, MakePose) {
     n << 1, 1, 1;
     n *= 1e-11;
     p << 0, 0, 0;
-    EXPECT_THROW(HalfSpace::MakePose(n, p), std::logic_error);
+    DRAKE_EXPECT_THROWS_MESSAGE(HalfSpace::MakePose(n, p), ".*norm >= 1e-10.*");
   }
 }
 
@@ -670,74 +672,59 @@ GTEST_TEST(ShapeTest, MeshAndConvexValidateScale) {
 // Confirms that shape parameters are validated. For the vector-based
 // constructors, we only provide a single invocation, relying on the idea that
 // it forwards construction to the validating constructor with individual
-// parameters.
+// parameters. We test the error message to confirm that the erroneous value
+// is part of the message. We don't worry about the *rest* of the message,
+// relying on DRAKE_THROW_UNLESS to do the right thing.
+//
+// We haven't included explicit tests for infinity or NaN.
 GTEST_TEST(ShapeTest, NumericalValidation) {
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Box(2, 0, 2), "Box width, depth, and height should all be > 0.+");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Box(3, 1, -1), "Box width, depth, and height should all be > 0.+");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Box(Vector3<double>{3, 1, -1}),
-      "Box width, depth, and height should all be > 0.+");
-  DRAKE_EXPECT_THROWS_MESSAGE(Box::MakeCube(0),
-                              "Box width, depth, and height should "
-                              "all be > 0.+");
+  DRAKE_EXPECT_THROWS_MESSAGE(Box(2, -1.5, 2), ".*failed. depth = -1.5.");
+  DRAKE_EXPECT_THROWS_MESSAGE(Box(3, 1, -1.5), ".*failed. height = -1.5.");
+  DRAKE_EXPECT_THROWS_MESSAGE(Box(Vector3d{-2.5, 1, 3}),
+                              ".*failed. width = -2.5.");
+  DRAKE_EXPECT_THROWS_MESSAGE(Box::MakeCube(-1.5), ".*failed. width = -1.5.");
 
-  DRAKE_EXPECT_THROWS_MESSAGE(Capsule(0, 1),
-                              "Capsule radius and length should both be > 0.+");
-  DRAKE_EXPECT_THROWS_MESSAGE(Capsule(0.5, -1),
-                              "Capsule radius and length should both be > 0.+");
-  DRAKE_EXPECT_THROWS_MESSAGE(Capsule(Vector2<double>{0.5, -1}),
-                              "Capsule radius and length should both be > 0.+");
+  DRAKE_EXPECT_THROWS_MESSAGE(Capsule(-0.5, 1), ".*failed. radius = -0.5.");
+  DRAKE_EXPECT_THROWS_MESSAGE(Capsule(0.5, -1.25), ".*failed. length = -1.25.");
+  DRAKE_EXPECT_THROWS_MESSAGE(Capsule(Vector2d{0.5, -1.75}),
+                              ".*failed. length = -1.75.");
 
-  DRAKE_EXPECT_THROWS_MESSAGE(Convex("bar", 0),
-                              "Convex .scale. cannot be < 1e-8.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Convex("bar", 0), ".*must have finite values >= 1e-8 on all axes.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       Convex(InMemoryMesh{MemoryFile("a", ".a", "a")}, 0),
-      "Convex .scale. cannot be < 1e-8.*");
+      ".*must have finite values >= 1e-8 on all axes.*");
   // Special case for negative scale.
   DRAKE_EXPECT_NO_THROW(Convex("foo", -1));
   DRAKE_EXPECT_NO_THROW(Convex(InMemoryMesh{MemoryFile("a", ".a", "a")}, -1));
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Cylinder(0, 1), "Cylinder radius and length should both be > 0.+");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Cylinder(0.5, -1), "Cylinder radius and length should both be > 0.+");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Cylinder(Vector2<double>{0.5, -1}),
-      "Cylinder radius and length should both be > 0.+");
+  DRAKE_EXPECT_THROWS_MESSAGE(Cylinder(-0.25, 1), ".*failed. radius = -0.25.");
+  DRAKE_EXPECT_THROWS_MESSAGE(Cylinder(0.5, -1.5), ".*failed. length = -1.5.");
+  DRAKE_EXPECT_THROWS_MESSAGE(Cylinder(Vector2d{0.5, -1.5}),
+                              ".*failed. length = -1.5.");
 
-  DRAKE_EXPECT_THROWS_MESSAGE(Ellipsoid(0, 1, 1),
-                              "Ellipsoid lengths of principal semi-axes a, b, "
-                              "and c should all be > 0.+");
-  DRAKE_EXPECT_THROWS_MESSAGE(Ellipsoid(1, 0, 1),
-                              "Ellipsoid lengths of principal semi-axes a, b, "
-                              "and c should all be > 0.+");
-  DRAKE_EXPECT_THROWS_MESSAGE(Ellipsoid(1, 1, 0),
-                              "Ellipsoid lengths of principal semi-axes a, b, "
-                              "and c should all be > 0.+");
-  DRAKE_EXPECT_THROWS_MESSAGE(Ellipsoid(Vector3<double>{1, 1, 0}),
-                              "Ellipsoid lengths of principal semi-axes a, b, "
-                              "and c should all be > 0.+");
+  DRAKE_EXPECT_THROWS_MESSAGE(Ellipsoid(0, 1, 1), ".*failed. a = 0.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(Ellipsoid(1, 0, 1), ".*failed. b = 0.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(Ellipsoid(1, 1, 0), ".*failed. c = 0.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(Ellipsoid(Vector3d{1, 1, 0}),
+                              ".*failed. c = 0.0.");
 
-  DRAKE_EXPECT_THROWS_MESSAGE(Mesh("foo", 1e-9),
-                              "Mesh .scale. cannot be < 1e-8.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(Mesh(InMemoryMesh{MemoryFile("a", ".a", "a")}, 0),
-                              "Mesh .scale. cannot be < 1e-8.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Mesh("foo", 1e-9), ".*must have finite values >= 1e-8 on all axes.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Mesh(InMemoryMesh{MemoryFile("a", ".a", "a")}, 0),
+      ".*must have finite values >= 1e-8 on all axes.*");
   // Special case for negative scale.
   DRAKE_EXPECT_NO_THROW(Mesh("foo", -1));
   DRAKE_EXPECT_NO_THROW(Mesh(InMemoryMesh{MemoryFile("a", ".a", "a")}, -1));
 
-  DRAKE_EXPECT_THROWS_MESSAGE(MeshcatCone(0, 1, 1),
-                              "MeshcatCone parameters .+ should all be > 0.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(MeshcatCone(1, 0, 1),
-                              "MeshcatCone parameters .+ should all be > 0.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(MeshcatCone(1, 1, 0),
-                              "MeshcatCone parameters .+ should all be > 0.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(MeshcatCone(Vector3<double>{1, 1, 0}),
-                              "MeshcatCone parameters .+ should all be > 0.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(MeshcatCone(0, 1, 1), ".*failed. height = 0.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(MeshcatCone(1, 0, 1), ".*failed. a = 0.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(MeshcatCone(1, 1, 0), ".*failed. b = 0.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(MeshcatCone(Vector3d{1, 1, 0}),
+                              ".*failed. b = 0.*");
 
-  DRAKE_EXPECT_THROWS_MESSAGE(Sphere(-0.5), "Sphere radius should be >= 0.+");
+  DRAKE_EXPECT_THROWS_MESSAGE(Sphere(-0.5), ".*failed. radius = -0.5.");
   DRAKE_EXPECT_NO_THROW(Sphere(0));  // Special case for 0 radius.
 }
 
