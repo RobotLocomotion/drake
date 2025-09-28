@@ -193,9 +193,14 @@ def _drake_dep_repositories_impl(module_ctx):
         "zlib",
     ]
     for name in ALIAS_REPOSITORIES:
+        actual = "@drake//tools/workspace/" + name
+        aliases = {name: actual}
+        if name == "glib":
+            # We provide @glib//glib to match bzlmod glib's package structure.
+            aliases.update({"//glib:glib": actual})
         alias_repository(
             name = name,
-            aliases = {name: "@drake//tools/workspace/" + name},
+            aliases = aliases,
         )
 
     # Deprecated 2026-01-01.

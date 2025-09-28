@@ -90,7 +90,7 @@ drake_cc_library(
         "//tools/workspace/lcm_internal:flag_with_lcm_runtime_true": [
             "//common:network_policy",
             "//tools/workspace/lcm_internal:shared_library",
-            "@glib",
+            "@glib//glib",
         ],
         "//conditions:default": [],
     }),
