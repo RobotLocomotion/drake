@@ -1,0 +1,37 @@
+In the Cook-Torrance BRDF, the diffuse illumination component uses a lambert
+factor. This factor is simply the albedo color divided by pi.
+
+This quantity can be seen in a number of descriptions of PBR, e.g.:
+
+  https://learnopengl.com/PBR/Theory
+     (look for the BRDF section)
+  https://google.github.io/filament/Filament.html#materialsystem/diffusebrdf
+
+The shader currently uses this lambertian diffuse factor for _direct_
+illumination (it can be seen in vtkOpenGLPolyDataMapper on lines 1131, 1189, and
+1292 of commit e43b7215c0). However, as referenced above, image-based lighting
+requires the same lambertian diffuse component (and this component is missing).
+See the following implementation examples:
+
+  https://learnopengl.com/PBR/IBL/Diffuse-irradiance
+    (the term c/π is the lambertian diffuse component)
+  https://google.github.io/filament/Filament.html#toc5.3.4.6
+    (shown in the implementation as Fd_lambert().)
+
+So, what we're doing is putting the diffuse lambert term into the image-based
+lighting diffuse component. This will have an affect of cutting albedo to
+1/3-ish (which is not the same as cutting full illumination to 1/3 of the
+original, because there is more that affects the final image than just this
+lambertian factor). Image-based diffuse effects will be dimmer.
+
+--- Rendering/OpenGL2/vtkOpenGLPolyDataMapper.cxx
++++ Rendering/OpenGL2/vtkOpenGLPolyDataMapper.cxx
+@@ -1394,7 +1394,7 @@ void vtkOpenGLPolyDataMapper::ReplaceShaderLight(
+                 "  vec3 specularBrdf = F0 * brdf.r + F90 * brdf.g;\n"
+                 "  vec3 iblSpecular = prefilteredSpecularColor * specularBrdf;\n"
+                 // no diffuse for metals
+-                "  vec3 iblDiffuse = (1.0 - F0) * (1.0 - metallic) * irradiance * albedo;\n"
++                "  vec3 iblDiffuse = (1.0 - F0) * (1.0 - metallic) * irradiance * DiffuseLambert(albedo);\n"
+                 "  vec3 color = iblDiffuse + iblSpecular;\n"
+                 "\n";
+ 
