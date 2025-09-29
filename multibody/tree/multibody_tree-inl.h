@@ -58,10 +58,6 @@ const FrameType<T>& MultibodyTree<T>::AddFrame(
   }
   DRAKE_DEMAND(frame->model_instance().is_valid());
   const FrameIndex frame_index(num_frames());
-  topology_.add_frame_topology(frame_index, frame->body().index());
-
-  // TODO(amcastro-tri): consider not depending on setting this pointer at
-  //  all. Consider also removing MultibodyElement altogether.
   frame->set_parent_tree(this, frame_index);
   FrameType<T>* result = frame.get();
   frames_.Add(std::move(frame));

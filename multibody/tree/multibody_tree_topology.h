@@ -16,29 +16,6 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// Data structure to store the topological information associated with a Frame.
-struct FrameTopology {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FrameTopology);
-
-  // Default construction to invalid configuration.
-  FrameTopology() {}
-
-  // Constructs a frame topology for a frame with index `frame_index`
-  // associated with a RigidBody with index `body_index`.
-  FrameTopology(FrameIndex frame_index, BodyIndex body_index)
-      : index(frame_index), rigid_body(body_index) {}
-
-  // Returns `true` if all members of `this` topology are exactly equal to the
-  // members of `other`.
-  bool operator==(const FrameTopology& other) const = default;
-
-  // Index in the MultibodyPlant.
-  FrameIndex index{0};
-
-  // Index of the RigidBody this physical frame attaches to.
-  BodyIndex rigid_body{0};
-};
-
 // Data structure to store the topological information associated with a
 // JointActuator.
 struct JointActuatorTopology {
@@ -73,21 +50,11 @@ class MultibodyTreeTopology {
   // members of `other`.
   bool operator==(const MultibodyTreeTopology& other) const;
 
-  // Returns the number of physical frames in the multibody tree.
-  int num_frames() const { return ssize(frame_topology_); }
-
   // Returns the number of joint actuators in the topology.
   int num_joint_actuators() const { return ssize(joint_actuator_topology_); }
 
   // Returns the number of levels in the forest topology.
   int forest_height() const { return forest_height_; }
-
-  // Returns a constant reference to the corresponding FrameTopology given the
-  // FrameIndex.
-  const FrameTopology& get_frame_topology(FrameIndex index) const {
-    DRAKE_ASSERT(index < num_frames());
-    return frame_topology_[index];
-  }
 
   // Returns a constant reference to the corresponding JointActuatorTopology
   // given a JointActuatorIndex.
@@ -144,14 +111,6 @@ class MultibodyTreeTopology {
     if (!tree_index.is_valid()) return false;  // World doesn't have a Tree.
     return num_tree_velocities(tree_index) > 0;
   }
-
-  // Creates and adds a new FrameTopology, associated with the given
-  // BodyIndex, to this MultibodyTreeTopology.
-  //
-  // @throws std::exception if FinalizeTopology() was already called on `this`
-  // topology.
-  // @pre the FrameIndex is the one for the next available slot
-  void add_frame_topology(FrameIndex, BodyIndex);
 
   // Creates and adds a new JointActuatorTopology for a joint with `num_dofs`
   // degrees of freedom.
@@ -216,7 +175,6 @@ class MultibodyTreeTopology {
   int forest_height_{-1};
 
   // Topological elements:
-  std::vector<FrameTopology> frame_topology_;
   std::vector<std::optional<JointActuatorTopology>> joint_actuator_topology_;
 
   // Total number of generalized positions and velocities in the MultibodyTree
