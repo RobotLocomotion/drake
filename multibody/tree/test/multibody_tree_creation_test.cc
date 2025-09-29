@@ -358,8 +358,6 @@ class TreeTopologyTests : public ::testing::Test {
                              const SpanningForest& forest) {
     const int kNumRigidBodies = 10;
 
-    EXPECT_EQ(topology.num_mobilizers(), kNumRigidBodies);
-    EXPECT_EQ(topology.num_mobods(), kNumRigidBodies);
     EXPECT_EQ(topology.forest_height(), 4);
 
     EXPECT_EQ(forest.num_links(), kNumRigidBodies);
@@ -507,7 +505,6 @@ TEST_F(TreeTopologyTests, Finalize) {
   const MultibodyTreeTopology& topology = model_->get_topology();
   const SpanningForest& forest = model_->forest();
 
-  EXPECT_EQ(topology.num_mobods(), 10);
   EXPECT_EQ(topology.forest_height(), 4);
 
   EXPECT_EQ(forest.num_mobods(), 10);
@@ -529,7 +526,6 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
   const MultibodyTreeTopology& topology = model_->get_topology();
   const SpanningForest& forest = model_->forest();
 
-  EXPECT_EQ(topology.num_mobods(), model_->num_bodies());
   EXPECT_EQ(topology.forest_height(), 4);
   EXPECT_EQ(topology.num_positions(), 7);
   EXPECT_EQ(topology.num_velocities(), 7);

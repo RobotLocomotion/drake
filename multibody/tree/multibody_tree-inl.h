@@ -109,10 +109,6 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
   // Sanity check that we are processing in the expected order.
   DRAKE_DEMAND(mobilizer->mobod().index() == num_mobilizers());
 
-  topology_.add_mobilizer_topology(mobilizer->mobod(),
-                                   mobilizer->inboard_frame().index(),
-                                   mobilizer->outboard_frame().index());
-
   if (!mobilizer->model_instance().is_valid()) {
     mobilizer->set_model_instance(default_model_instance());
   }

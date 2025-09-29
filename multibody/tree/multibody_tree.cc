@@ -760,8 +760,6 @@ void MultibodyTree<T>::CreateJointImplementations() {
     if (mobod.is_world()) {
       // No associated Joint but we do want a stub "weld" Mobilizer so that
       // Mobods, BodyNodes, and Mobilizers have identical numbering.
-      topology_.add_world_mobilizer_topology(mobod,
-                                             world_body().body_frame().index());
       auto dummy_weld = std::make_unique<internal::WeldMobilizer<T>>(
           mobod, world_frame(), world_frame());
       dummy_weld->set_model_instance(world_model_instance());
@@ -1445,7 +1443,7 @@ void MultibodyTree<T>::CalcSpatialInertiasInWorld(
     const systems::Context<T>& context,
     std::vector<SpatialInertia<T>>* M_B_W_all) const {
   DRAKE_THROW_UNLESS(M_B_W_all != nullptr);
-  DRAKE_THROW_UNLESS(ssize(*M_B_W_all) == topology_.num_mobods());
+  DRAKE_THROW_UNLESS(ssize(*M_B_W_all) == num_mobods());
 
   const FrameBodyPoseCache<T>& frame_body_pose_cache =
       EvalFrameBodyPoses(context);
@@ -1582,8 +1580,7 @@ void MultibodyTree<T>::CalcSpatialAccelerationBias(
   // TODO(joemasterjohn): Consider an optimization where we avoid computing
   //  `Ab_WB` for locked floating bodies.
   (*Ab_WB_all)[world_mobod_index()].SetNaN();
-  for (MobodIndex mobod_index(1); mobod_index < topology_.num_mobods();
-       ++mobod_index) {
+  for (MobodIndex mobod_index(1); mobod_index < num_mobods(); ++mobod_index) {
     const BodyNode<T>& node = *body_nodes_[mobod_index];
     node.CalcSpatialAccelerationBias(frame_body_pose_cache, positions, pc,
                                      velocities, vc, &*Ab_WB_all);
@@ -1596,7 +1593,7 @@ void MultibodyTree<T>::CalcArticulatedBodyForceBias(
     const ArticulatedBodyInertiaCache<T>& abic,
     std::vector<SpatialForce<T>>* Zb_Bo_W_all) const {
   DRAKE_THROW_UNLESS(Zb_Bo_W_all != nullptr);
-  DRAKE_THROW_UNLESS(ssize(*Zb_Bo_W_all) == topology_.num_mobods());
+  DRAKE_THROW_UNLESS(ssize(*Zb_Bo_W_all) == num_mobods());
   const std::vector<SpatialAcceleration<T>>& Ab_WB_cache =
       EvalSpatialAccelerationBiasCache(context);
 
@@ -1607,8 +1604,7 @@ void MultibodyTree<T>::CalcArticulatedBodyForceBias(
   // TODO(joemasterjohn): Consider an optimization to avoid computing `Zb_Bo_W`
   //  for locked floating bodies.
   (*Zb_Bo_W_all)[world_mobod_index()].SetNaN();
-  for (MobodIndex mobod_index(1); mobod_index < topology_.num_mobods();
-       ++mobod_index) {
+  for (MobodIndex mobod_index(1); mobod_index < num_mobods(); ++mobod_index) {
     const ArticulatedBodyInertia<T>& Pplus_PB_W =
         abic.get_Pplus_PB_W(mobod_index);
     const SpatialAcceleration<T>& Ab_WB = Ab_WB_cache[mobod_index];
@@ -1623,7 +1619,7 @@ void MultibodyTree<T>::CalcArticulatedBodyForceBias(
     const systems::Context<T>& context,
     std::vector<SpatialForce<T>>* Zb_Bo_W_all) const {
   DRAKE_THROW_UNLESS(Zb_Bo_W_all != nullptr);
-  DRAKE_THROW_UNLESS(ssize(*Zb_Bo_W_all) == topology_.num_mobods());
+  DRAKE_THROW_UNLESS(ssize(*Zb_Bo_W_all) == num_mobods());
   const ArticulatedBodyInertiaCache<T>& abic =
       EvalArticulatedBodyInertiaCache(context);
   CalcArticulatedBodyForceBias(context, abic, Zb_Bo_W_all);
@@ -1635,7 +1631,7 @@ void MultibodyTree<T>::CalcDynamicBiasForces(
     const systems::Context<T>& context,
     std::vector<SpatialForce<T>>* Fb_Bo_W_all) const {
   DRAKE_THROW_UNLESS(Fb_Bo_W_all != nullptr);
-  DRAKE_THROW_UNLESS(ssize(*Fb_Bo_W_all) == topology_.num_mobods());
+  DRAKE_THROW_UNLESS(ssize(*Fb_Bo_W_all) == num_mobods());
 
   const std::vector<SpatialInertia<T>>& spatial_inertia_in_world_cache =
       EvalSpatialInertiaInWorldCache(context);
@@ -1682,7 +1678,7 @@ void MultibodyTree<T>::CalcSpatialAccelerationsFromVdot(
     bool ignore_velocities,
     std::vector<SpatialAcceleration<T>>* A_WB_array) const {
   DRAKE_DEMAND(A_WB_array != nullptr);
-  DRAKE_DEMAND(ssize(*A_WB_array) == topology_.num_mobods());
+  DRAKE_DEMAND(ssize(*A_WB_array) == num_mobods());
 
   DRAKE_DEMAND(known_vdot.size() == topology_.num_velocities());
 
@@ -1980,8 +1976,8 @@ void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
   VectorX<T> vdot(nv);
   VectorX<T> tau(nv);
   // Auxiliary arrays used by inverse dynamics.
-  std::vector<SpatialAcceleration<T>> A_WB_array(topology_.num_mobods());
-  std::vector<SpatialForce<T>> F_BMo_W_array(topology_.num_mobods());
+  std::vector<SpatialAcceleration<T>> A_WB_array(num_mobods());
+  std::vector<SpatialForce<T>> F_BMo_W_array(num_mobods());
 
   // The mass matrix is only a function of configuration q. Therefore velocity
   // terms are not considered.
@@ -2058,8 +2054,8 @@ void MultibodyTree<T>::CalcBiasTerm(const systems::Context<T>& context,
   const int nv = num_velocities();
   const VectorX<T> vdot = VectorX<T>::Zero(nv);
   // Auxiliary arrays used by inverse dynamics.
-  std::vector<SpatialAcceleration<T>> A_WB_array(topology_.num_mobods());
-  std::vector<SpatialForce<T>> F_BMo_W_array(topology_.num_mobods());
+  std::vector<SpatialAcceleration<T>> A_WB_array(num_mobods());
+  std::vector<SpatialForce<T>> F_BMo_W_array(num_mobods());
   // TODO(amcastro-tri): provide specific API for when vdot = 0.
   CalcInverseDynamics(context, vdot, {}, VectorX<T>(), &A_WB_array,
                       &F_BMo_W_array, Cv);
@@ -2658,8 +2654,7 @@ void MultibodyTree<T>::CalcAcrossNodeJacobianWrtVExpressedInWorld(
 
   // TODO(joemasterjohn): Consider an optimization where we avoid computing
   //  `H_PB_W` for locked floating bodies.
-  for (MobodIndex mobod_index(1); mobod_index < topology_.num_mobods();
-       ++mobod_index) {
+  for (MobodIndex mobod_index(1); mobod_index < num_mobods(); ++mobod_index) {
     const BodyNode<T>& node = *body_nodes_[mobod_index];
 
     node.CalcAcrossNodeJacobianWrtVExpressedInWorld(

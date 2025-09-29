@@ -10,7 +10,6 @@ bool MultibodyTreeTopology::operator==(
   if (forest_height_ != other.forest_height_) return false;
 
   if (frame_topology_ != other.frame_topology_) return false;
-  if (mobilizer_topology_ != other.mobilizer_topology_) return false;
   if (joint_actuator_topology_ != other.joint_actuator_topology_) return false;
 
   if (num_positions_ != other.num_positions_) return false;
@@ -52,64 +51,6 @@ void MultibodyTreeTopology::add_frame_topology(FrameIndex frame_index,
   }
   DRAKE_DEMAND(frame_index == num_frames());
   frame_topology_.emplace_back(frame_index, body_index);
-}
-
-void MultibodyTreeTopology::add_mobilizer_topology(
-    const SpanningForest::Mobod& mobod, FrameIndex in_frame,
-    FrameIndex out_frame) {
-  if (is_valid()) {
-    throw std::logic_error(
-        "This MultibodyTreeTopology is finalized already. "
-        "Therefore adding more mobilizers is not allowed. "
-        "See documentation for Finalize() for details.");
-  }
-
-  const MobodIndex mobilizer_index(mobod.index());
-  DRAKE_DEMAND(mobilizer_index == num_mobilizers());
-
-  // Note: MultibodyTree double checks the mobilizer's frames belong to that
-  // tree. Therefore the validity of in_frame and out_frame is already
-  // guaranteed. We add the checks here for additional security.
-  DRAKE_THROW_UNLESS(in_frame < num_frames());
-  DRAKE_THROW_UNLESS(out_frame < num_frames());
-  if (in_frame == out_frame) {
-    throw std::runtime_error(
-        "Attempting to add a mobilizer between a frame and itself");
-  }
-  if (IsThereAMobilizerBetweenFrames(in_frame, out_frame)) {
-    throw std::runtime_error(fmt::format(
-        "This multibody tree already has a mobilizer connecting "
-        "inboard frame (index={}) and outboard frame (index={}). "
-        "More than one mobilizer between two frames is not allowed.",
-        in_frame, out_frame));
-  }
-  const BodyIndex inboard_body = frame_topology_[in_frame].rigid_body;
-  const BodyIndex outboard_body = frame_topology_[out_frame].rigid_body;
-  if (IsThereAMobilizerBetweenRigidBodies(inboard_body, outboard_body)) {
-    throw std::runtime_error(fmt::format(
-        "This multibody tree already has a mobilizer connecting "
-        "inboard rigid body (index={}) and outboard rigid body (index={}). "
-        "More than one mobilizer between two bodies is not allowed.",
-        inboard_body, outboard_body));
-  }
-
-  mobilizer_topology_.emplace_back(mobilizer_index, in_frame, out_frame,
-                                   inboard_body, outboard_body, mobod);
-}
-
-void MultibodyTreeTopology::add_world_mobilizer_topology(
-    const SpanningForest::Mobod& world_mobod, FrameIndex world_body_frame) {
-  DRAKE_DEMAND(world_mobod.is_world());
-  const BodyIndex world_body_index =
-      frame_topology_[world_body_frame].rigid_body;
-  DRAKE_DEMAND(world_body_index == BodyIndex(0));
-  DRAKE_DEMAND(mobilizer_topology_.empty());
-  // There is no inboard frame for this mobilizer. We'll use the World body
-  // frame and rigid body for both frames & bodies so we don't have to deal
-  // with invalid indices. No computation depends on those.
-  mobilizer_topology_.emplace_back(MobodIndex(0), world_body_frame,
-                                   world_body_frame, world_body_index,
-                                   world_body_index, world_mobod);
 }
 
 void MultibodyTreeTopology::add_joint_actuator_topology(
@@ -178,24 +119,6 @@ void MultibodyTreeTopology::FinalizeTopology(const LinkJointGraph& graph) {
   // We are done with a successful Finalize() and we mark it as so.
   // Do not add any more code after this!
   is_valid_ = true;
-}
-
-bool MultibodyTreeTopology::IsThereAMobilizerBetweenFrames(
-    FrameIndex frame1, FrameIndex frame2) const {
-  for (const auto& mobilizer_topology : mobilizer_topology_) {
-    if (mobilizer_topology.connects_frames(frame1, frame2)) return true;
-  }
-  return false;
-}
-
-// Returns `true` if there is _any_ mobilizer in the multibody tree
-// connecting the Links with indexes `body1` and `body2`.
-bool MultibodyTreeTopology::IsThereAMobilizerBetweenRigidBodies(
-    BodyIndex body1, BodyIndex body2) const {
-  for (const auto& mobilizer_topology : mobilizer_topology_) {
-    if (mobilizer_topology.connects_rigid_bodies(body1, body2)) return true;
-  }
-  return false;
 }
 
 // TODO(sherm1) Currently this copies from the graph and forest into the
