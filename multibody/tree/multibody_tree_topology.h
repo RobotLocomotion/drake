@@ -40,77 +40,6 @@ struct FrameTopology {
 };
 
 // Data structure to store the topological information associated with a
-// Mobilizer object. It stores:
-//
-// - Indexes to the inboard/outboard frames of this mobilizer.
-// - Indexes to the inboard/outboard rigid bodies of this mobilizer.
-// - Numbers of dofs admitted by this mobilizer.
-// - Indexing information to retrieve entries from the parent MultibodyTree
-//   Context.
-//
-// Additional information on topology classes is given in this file's
-// documentation at the top.
-struct MobilizerTopology {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MobilizerTopology);
-
-  // Constructs a MobilizerTopology from the corresponding Mobod, plus the
-  // connected RigidBodies and the Frame geometric information from the
-  // modeled Joint.
-  MobilizerTopology(MobodIndex mobilizer_index, FrameIndex in_frame,
-                    FrameIndex out_frame, BodyIndex in_body, BodyIndex out_body,
-                    const SpanningForest::Mobod& mobod)
-      : index(mobilizer_index),
-        inboard_frame(in_frame),
-        outboard_frame(out_frame),
-        inboard_body(in_body),
-        outboard_body(out_body),
-        num_positions(mobod.nq()),
-        positions_start(mobod.q_start()),
-        num_velocities(mobod.nv()),
-        velocities_start_in_v(mobod.v_start()) {}
-
-  // Returns `true` if all members of `this` topology are exactly equal to the
-  // members of `other`.
-  bool operator==(const MobilizerTopology& other) const = default;
-
-  // Returns `true` if this Mobilizer connects these Frames.
-  bool connects_frames(FrameIndex frame1, FrameIndex frame2) const {
-    return (inboard_frame == frame1 && outboard_frame == frame2) ||
-           (inboard_frame == frame2 && outboard_frame == frame1);
-  }
-
-  // Returns `true` if this Mobilizer connects this RigidBody pair.
-  bool connects_rigid_bodies(BodyIndex body1, BodyIndex body2) const {
-    return (inboard_body == body1 && outboard_body == body2) ||
-           (inboard_body == body2 && outboard_body == body1);
-  }
-
-  // Returns `true` if this Mobilizer is a weld.
-  bool is_weld_mobilizer() const { return num_velocities == 0; }
-
-  // Unique index in the set of Mobilizers. There will be a corresponding
-  // BodyNode with the same index.
-  MobodIndex index;
-
-  FrameIndex inboard_frame;
-  FrameIndex outboard_frame;
-  BodyIndex inboard_body;
-  BodyIndex outboard_body;
-
-  // Number of generalized coordinates granted by this mobilizer.
-  int num_positions{0};
-  // First entry in the q partition of the global array of states x = [q v z].
-  int positions_start{0};
-
-  // Number of generalized velocities granted by this mobilizer.
-  int num_velocities{0};
-  // Start index in a vector indexed like the v partition of states x, including
-  // generalized accelerations (which are the time derivatives of the
-  // generalized velocities) and generalized forces.
-  int velocities_start_in_v{0};
-};
-
-// Data structure to store the topological information associated with a
 // JointActuator.
 struct JointActuatorTopology {
   // Returns `true` if all members of `this` topology are exactly equal to the
@@ -147,15 +76,6 @@ class MultibodyTreeTopology {
   // Returns the number of physical frames in the multibody tree.
   int num_frames() const { return ssize(frame_topology_); }
 
-  // Returns the number of Mobilizers. This is always the same as the number
-  // of BodyNodes and the number of mobilized bodies in the SpanningForest.
-  int num_mobilizers() const { return ssize(mobilizer_topology_); }
-
-  // Returns the number of BodyNodes. These are generated 1:1 from the
-  // MobilizedBodies in the SpanningForest. If we combined welded Links,
-  // there will be more RigidBodies than BodyNodes.
-  int num_mobods() const { return num_mobilizers(); }
-
   // Returns the number of joint actuators in the topology.
   int num_joint_actuators() const { return ssize(joint_actuator_topology_); }
 
@@ -167,13 +87,6 @@ class MultibodyTreeTopology {
   const FrameTopology& get_frame_topology(FrameIndex index) const {
     DRAKE_ASSERT(index < num_frames());
     return frame_topology_[index];
-  }
-
-  // Returns a constant reference to the corresponding MobilizerTopology given a
-  // MobodIndex.
-  const MobilizerTopology& get_mobilizer_topology(MobodIndex index) const {
-    DRAKE_ASSERT(index < num_mobilizers());
-    return mobilizer_topology_[index];
   }
 
   // Returns a constant reference to the corresponding JointActuatorTopology
@@ -240,26 +153,6 @@ class MultibodyTreeTopology {
   // @pre the FrameIndex is the one for the next available slot
   void add_frame_topology(FrameIndex, BodyIndex);
 
-  // Creates and adds a new MobilizerTopology connecting the inboard and
-  // outboard multibody frames identified by indexes `in_frame` and
-  // `out_frame`, respectively. The created topology will reflect information
-  // provided in the given Mobod (including the index).
-  //
-  // @throws std::exception if either `in_frame` or `out_frame` do not
-  // index frame topologies in `this` %MultibodyTreeTopology.
-  // @throws std::exception if `in_frame == out_frame`.
-  // @throws std::exception if `in_frame` and `out_frame` already are
-  // connected by another mobilizer. More than one mobilizer between two frames
-  // is not allowed.
-  // @throws std::exception if FinalizeTopology() was already called on `this`
-  // topology.
-  // @pre the mobod's index is the one for the next available slot
-  void add_mobilizer_topology(const SpanningForest::Mobod& mobod,
-                              FrameIndex in_frame, FrameIndex out_frame);
-
-  void add_world_mobilizer_topology(const SpanningForest::Mobod& world_mobod,
-                                    FrameIndex world_body_frame);
-
   // Creates and adds a new JointActuatorTopology for a joint with `num_dofs`
   // degrees of freedom.
   //
@@ -311,16 +204,6 @@ class MultibodyTreeTopology {
   int num_actuated_dofs() const { return num_actuated_dofs_; }
 
  private:
-  // Returns `true` if there is _any_ mobilizer in the multibody tree
-  // connecting the frames with indexes `frame` and `frame2`.
-  bool IsThereAMobilizerBetweenFrames(FrameIndex frame1,
-                                      FrameIndex frame2) const;
-
-  // Returns `true` if there is _any_ mobilizer in the multibody tree
-  // connecting the Links with indexes `body1` and `body2`.
-  bool IsThereAMobilizerBetweenRigidBodies(BodyIndex body1,
-                                           BodyIndex body2) const;
-
   // Helper method to be used within FinalizeTopology() to obtain the
   // topological information that describes the multibody system as a "forest"
   // of trees.
@@ -334,7 +217,6 @@ class MultibodyTreeTopology {
 
   // Topological elements:
   std::vector<FrameTopology> frame_topology_;
-  std::vector<MobilizerTopology> mobilizer_topology_;
   std::vector<std::optional<JointActuatorTopology>> joint_actuator_topology_;
 
   // Total number of generalized positions and velocities in the MultibodyTree
