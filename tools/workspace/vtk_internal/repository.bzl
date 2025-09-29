@@ -184,8 +184,8 @@ def vtk_internal_repository(
         # TODO(jwnimmer-tri) Once there's a tagged release with support for
         # VTK_ABI_NAMESPACE, we should switch to an official version number
         # here. That probably means waiting for the VTK 10 release.
-        commit = "00aaec1244ab20a5d900b0ad91186f747db7b146",
-        sha256 = "377d5176c410a565161839c1b704c94ff97f7fc37a67d7ade4a503b01dde6314",  # noqa
+        commit = "b0531d2d7af8864031a1403182f77225f5992ce7",
+        sha256 = "71805b86ef25c4214f3d9aa51870ab4b912ed70e7096c8efc11d7c95ce6b71ca",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             # Drake's conventions for VTK patches are:
@@ -196,10 +196,6 @@ def vtk_internal_repository(
             #   edited (e.g., patching IO/Image is named io_image_{foo}.patch).
             # - Use alphabetical order within a directory when listing patches.
             ":patches/upstream/common_core_rm_iostream.patch",
-            ":patches/upstream/common_datamodel_vtkdatasetattributes_iterator.patch",  # noqa
-            ":patches/upstream/common_executionmodel_vtkalgorithm_ternary.patch",  # noqa
-            ":patches/upstream/io_geometry_gltf_default_scene.patch",
-            ":patches/upstream/io_import_errors.patch",
             ":patches/upstream/rendering_core_vtkcomposite_exception.patch",
             ":patches/upstream/vtkpugixml_global_ctor.patch",
             ":patches/common_core_fmt9.patch",
