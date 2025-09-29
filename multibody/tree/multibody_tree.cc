@@ -559,8 +559,6 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBodyImpl(
   DRAKE_DEMAND(body->model_instance().is_valid());
 
   const BodyIndex body_index(num_bodies());
-  const FrameIndex body_frame_index(num_frames());
-  topology_.add_frame_topology(body_frame_index, body_index);
 
   if (body_index == 0) {
     // We're adding the first RigidBody -- must be World!
@@ -574,14 +572,13 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBodyImpl(
     link_joint_graph_.AddLink(body->name(), body->model_instance());
   }
 
-  // TODO(amcastro-tri): consider not depending on setting this pointer at
-  //  all. Consider also removing MultibodyElement altogether.
   body->set_parent_tree(this, body_index);
   // MultibodyTree can access selected private methods in RigidBody through its
   // RigidBodyAttorney.
   // - Register body frame.
   Frame<T>* body_frame =
       &internal::RigidBodyAttorney<T>::get_mutable_body_frame(body.get());
+  const FrameIndex body_frame_index(num_frames());
   body_frame->set_parent_tree(this, body_frame_index);
   DRAKE_DEMAND(body_frame->name() == body->name());
   frames_.AddBorrowed(body_frame);

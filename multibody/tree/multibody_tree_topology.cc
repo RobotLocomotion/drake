@@ -9,7 +9,6 @@ bool MultibodyTreeTopology::operator==(
   if (is_valid_ != other.is_valid_) return false;
   if (forest_height_ != other.forest_height_) return false;
 
-  if (frame_topology_ != other.frame_topology_) return false;
   if (joint_actuator_topology_ != other.joint_actuator_topology_) return false;
 
   if (num_positions_ != other.num_positions_) return false;
@@ -39,18 +38,6 @@ const JointActuatorTopology& MultibodyTreeTopology::get_joint_actuator_topology(
   DRAKE_ASSERT(index < ssize(joint_actuator_topology_));
   DRAKE_DEMAND(joint_actuator_topology_[index].has_value());
   return *joint_actuator_topology_[index];
-}
-
-void MultibodyTreeTopology::add_frame_topology(FrameIndex frame_index,
-                                               BodyIndex body_index) {
-  if (is_valid()) {
-    throw std::logic_error(
-        "This MultibodyTreeTopology is finalized already. "
-        "Therefore adding more frames is not allowed. "
-        "See documentation for Finalize() for details.");
-  }
-  DRAKE_DEMAND(frame_index == num_frames());
-  frame_topology_.emplace_back(frame_index, body_index);
 }
 
 void MultibodyTreeTopology::add_joint_actuator_topology(
