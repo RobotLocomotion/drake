@@ -38,7 +38,7 @@ constexpr struct /* pydrake_doc_planning */ {
     struct /* planning */ {
       // Symbol: drake::planning::BodyShapeDescription
       struct /* BodyShapeDescription */ {
-        // Source: drake/planning/body_shape_description.h:26
+        // Source: drake/planning/body_shape_description.h
         const char* doc =
 R"""(BodyShapeDescription captures all the information necessary to
 describe a SceneGraph collision shape associated with a MultibodyPlant
@@ -54,7 +54,7 @@ When moved-from, this object models a "null" description and all of
 the getter functions will throw.)""";
         // Symbol: drake::planning::BodyShapeDescription::BodyShapeDescription
         struct /* ctor */ {
-          // Source: drake/planning/body_shape_description.h:33
+          // Source: drake/planning/body_shape_description.h
           const char* doc =
 R"""(Constructs a description with the given attributes. Does not check or
 enforce correctness; callers are responsible for providing consistent
@@ -62,28 +62,28 @@ input.)""";
         } ctor;
         // Symbol: drake::planning::BodyShapeDescription::body_name
         struct /* body_name */ {
-          // Source: drake/planning/body_shape_description.h:56
+          // Source: drake/planning/body_shape_description.h
           const char* doc =
 R"""(Returns:
     the body name passed at construction.)""";
         } body_name;
         // Symbol: drake::planning::BodyShapeDescription::model_instance_name
         struct /* model_instance_name */ {
-          // Source: drake/planning/body_shape_description.h:50
+          // Source: drake/planning/body_shape_description.h
           const char* doc =
 R"""(Returns:
     the model instance name passed at construction.)""";
         } model_instance_name;
         // Symbol: drake::planning::BodyShapeDescription::pose_in_body
         struct /* pose_in_body */ {
-          // Source: drake/planning/body_shape_description.h:44
+          // Source: drake/planning/body_shape_description.h
           const char* doc =
 R"""(Returns ``X_BS``:
     The pose passed at construction.)""";
         } pose_in_body;
         // Symbol: drake::planning::BodyShapeDescription::shape
         struct /* shape */ {
-          // Source: drake/planning/body_shape_description.h:38
+          // Source: drake/planning/body_shape_description.h
           const char* doc =
 R"""(Returns:
     the shape passed at construction.)""";
@@ -91,7 +91,7 @@ R"""(Returns:
       } BodyShapeDescription;
       // Symbol: drake::planning::CollisionChecker
       struct /* CollisionChecker */ {
-        // Source: drake/planning/collision_checker.h:189
+        // Source: drake/planning/collision_checker.h
         const char* doc =
 R"""(Interface for collision checkers to use.
 
@@ -237,7 +237,7 @@ meaningful benefit to attempting to do work in parallel (e.g., they
 must fully serialize on shared state).)""";
         // Symbol: drake::planning::CollisionChecker::AddCollisionShape
         struct /* AddCollisionShape */ {
-          // Source: drake/planning/collision_checker.h:367
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Requests the addition of a shape to a body, both given in
 ``description``. If added, the shape will belong to the named geometry
@@ -254,7 +254,7 @@ Returns:
         } AddCollisionShape;
         // Symbol: drake::planning::CollisionChecker::AddCollisionShapeToBody
         struct /* AddCollisionShapeToBody */ {
-          // Source: drake/planning/collision_checker.h:414
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Requests the addition of ``shape`` to the body A in the checker's
 model The added ``shape`` will belong to the named geometry group.
@@ -276,7 +276,7 @@ Returns:
         } AddCollisionShapeToBody;
         // Symbol: drake::planning::CollisionChecker::AddCollisionShapeToFrame
         struct /* AddCollisionShapeToFrame */ {
-          // Source: drake/planning/collision_checker.h:401
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Requests the addition of ``shape`` to the frame A in the checker's
 model. The added ``shape`` will belong to the named geometry group.
@@ -298,7 +298,7 @@ Returns:
         } AddCollisionShapeToFrame;
         // Symbol: drake::planning::CollisionChecker::AddCollisionShapes
         struct /* AddCollisionShapes */ {
-          // Source: drake/planning/collision_checker.h:378
+          // Source: drake/planning/collision_checker.h
           const char* doc_2args =
 R"""(Requests the addition of N shapes to N bodies, each given in the set
 of ``descriptions``. Each added shape will belong to the named
@@ -312,7 +312,7 @@ Parameter ``descriptions``:
 
 Returns:
     The total number of shapes in ``descriptions`` that got added.)""";
-          // Source: drake/planning/collision_checker.h:389
+          // Source: drake/planning/collision_checker.h
           const char* doc_1args =
 R"""(Requests the addition of a collection of shapes to bodies across
 multiple geometry groups. ``geometry_groups`` specifies a collection
@@ -328,7 +328,7 @@ Returns:
         } AddCollisionShapes;
         // Symbol: drake::planning::CollisionChecker::AddedShape
         struct /* AddedShape */ {
-          // Source: drake/planning/collision_checker.h:1226
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Representation of an "added" shape. These are shapes that get added to
 the model via the CollisionChecker's Shape API. They encode the id for
@@ -336,27 +336,27 @@ the added geometry and the index of the body (robot or environment) to
 which the geometry is affixed.)""";
           // Symbol: drake::planning::CollisionChecker::AddedShape::body_index
           struct /* body_index */ {
-            // Source: drake/planning/collision_checker.h:1232
+            // Source: drake/planning/collision_checker.h
             const char* doc =
 R"""(The index of the body the shape was added; could be robot or
 environment.)""";
           } body_index;
           // Symbol: drake::planning::CollisionChecker::AddedShape::description
           struct /* description */ {
-            // Source: drake/planning/collision_checker.h:1237
+            // Source: drake/planning/collision_checker.h
             const char* doc =
 R"""(The full body description. We have the invariant that ``body_index``
 has the body and model instance names recorded in the description.)""";
           } description;
           // Symbol: drake::planning::CollisionChecker::AddedShape::geometry_id
           struct /* geometry_id */ {
-            // Source: drake/planning/collision_checker.h:1228
+            // Source: drake/planning/collision_checker.h
             const char* doc = R"""(The id of the geometry.)""";
           } geometry_id;
         } AddedShape;
         // Symbol: drake::planning::CollisionChecker::AllocateContexts
         struct /* AllocateContexts */ {
-          // Source: drake/planning/collision_checker.h:1173
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Allocate the per-thread context pool, and discontinue mutable access
 to the robot model. This must be called and only be called as part of
@@ -367,7 +367,7 @@ Precondition:
         } AllocateContexts;
         // Symbol: drake::planning::CollisionChecker::CalcContextRobotClearance
         struct /* CalcContextRobotClearance */ {
-          // Source: drake/planning/collision_checker.h:1111
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Explicit Context-based version of CalcRobotClearance().
 
@@ -382,7 +382,7 @@ See also:
         } CalcContextRobotClearance;
         // Symbol: drake::planning::CollisionChecker::CalcRobotClearance
         struct /* CalcRobotClearance */ {
-          // Source: drake/planning/collision_checker.h:1103
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Calculates the distance, ϕ, and distance Jacobian, Jqᵣ_ϕ, for each
 potential collision whose distance is less than
@@ -414,7 +414,7 @@ See also:
         } CalcRobotClearance;
         // Symbol: drake::planning::CollisionChecker::CanEvaluateInParallel
         struct /* CanEvaluateInParallel */ {
-          // Source: drake/planning/collision_checker.h:1273
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Returns:
     true if this object SupportsParallelChecking() and more than one
@@ -422,7 +422,7 @@ R"""(Returns:
         } CanEvaluateInParallel;
         // Symbol: drake::planning::CollisionChecker::CheckConfigCollisionFree
         struct /* CheckConfigCollisionFree */ {
-          // Source: drake/planning/collision_checker.h:728
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Checks a single configuration for collision using the current thread's
 associated context.
@@ -444,7 +444,7 @@ See also:
         } CheckConfigCollisionFree;
         // Symbol: drake::planning::CollisionChecker::CheckConfigsCollisionFree
         struct /* CheckConfigsCollisionFree */ {
-          // Source: drake/planning/collision_checker.h:752
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Checks a vector of configurations for collision, evaluating in
 parallel when supported and enabled by ``parallelize``.
@@ -471,7 +471,7 @@ Raises:
         } CheckConfigsCollisionFree;
         // Symbol: drake::planning::CollisionChecker::CheckContextConfigCollisionFree
         struct /* CheckContextConfigCollisionFree */ {
-          // Source: drake/planning/collision_checker.h:736
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Explicit Context-based version of CheckConfigCollisionFree().
 
@@ -486,7 +486,7 @@ See also:
         } CheckContextConfigCollisionFree;
         // Symbol: drake::planning::CollisionChecker::CheckContextEdgeCollisionFree
         struct /* CheckContextEdgeCollisionFree */ {
-          // Source: drake/planning/collision_checker.h:991
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Explicit Context-based version of CheckEdgeCollisionFree().
 
@@ -501,7 +501,7 @@ See also:
         } CheckContextEdgeCollisionFree;
         // Symbol: drake::planning::CollisionChecker::CheckEdgeCollisionFree
         struct /* CheckEdgeCollisionFree */ {
-          // Source: drake/planning/collision_checker.h:983
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Checks a single configuration-to-configuration edge for collision,
 using the current thread's associated context.
@@ -526,7 +526,7 @@ See also:
         } CheckEdgeCollisionFree;
         // Symbol: drake::planning::CollisionChecker::CheckEdgeCollisionFreeParallel
         struct /* CheckEdgeCollisionFreeParallel */ {
-          // Source: drake/planning/collision_checker.h:1004
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Checks a single configuration-to-configuration edge for collision.
 Collision check is parallelized via OpenMP when supported. See
@@ -550,7 +550,7 @@ Raises:
         } CheckEdgeCollisionFreeParallel;
         // Symbol: drake::planning::CollisionChecker::CheckEdgesCollisionFree
         struct /* CheckEdgesCollisionFree */ {
-          // Source: drake/planning/collision_checker.h:1018
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Checks multiple configuration-to-configuration edges for collision.
 Collision checks are parallelized via OpenMP when supported and
@@ -572,7 +572,7 @@ Raises:
         } CheckEdgesCollisionFree;
         // Symbol: drake::planning::CollisionChecker::ClassifyBodyCollisions
         struct /* ClassifyBodyCollisions */ {
-          // Source: drake/planning/collision_checker.h:1138
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Classifies which robot bodies are in collision (and which type of
 collision) for the provided configuration ``q``, using the current
@@ -595,7 +595,7 @@ See also:
         } ClassifyBodyCollisions;
         // Symbol: drake::planning::CollisionChecker::ClassifyContextBodyCollisions
         struct /* ClassifyContextBodyCollisions */ {
-          // Source: drake/planning/collision_checker.h:1146
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Explicit Context-based version of ClassifyBodyCollisions().
 
@@ -610,12 +610,12 @@ See also:
         } ClassifyContextBodyCollisions;
         // Symbol: drake::planning::CollisionChecker::Clone
         struct /* Clone */ {
-          // Source: drake/planning/collision_checker.h:202
+          // Source: drake/planning/collision_checker.h
           const char* doc = R"""()""";
         } Clone;
         // Symbol: drake::planning::CollisionChecker::CollisionChecker
         struct /* ctor */ {
-          // Source: drake/planning/collision_checker.h:1162
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Derived classes declare upon construction whether they support
 parallel checking (see SupportsParallelChecking()). If a derived class
@@ -628,13 +628,13 @@ Raises:
 
 See also:
     CollisionCheckerParams.)""";
-          // Source: drake/planning/collision_checker.h:1166
+          // Source: drake/planning/collision_checker.h
           const char* doc_copy =
 R"""(To support Clone(), allow copying (but not move nor assign).)""";
         } ctor;
         // Symbol: drake::planning::CollisionChecker::ComputeConfigurationDistance
         struct /* ComputeConfigurationDistance */ {
-          // Source: drake/planning/collision_checker.h:906
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Computes configuration-space distance between the provided
 configurations ``q1`` and ``q2``, using the distance function
@@ -646,19 +646,19 @@ Raises:
         } ComputeConfigurationDistance;
         // Symbol: drake::planning::CollisionChecker::CreatePrototypeContext
         struct /* CreatePrototypeContext */ {
-          // Source: drake/planning/collision_checker.h:1177
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Collision checkers that use derived context types can override this
 implementation to allocate their context type instead.)""";
         } CreatePrototypeContext;
         // Symbol: drake::planning::CollisionChecker::CriticizePaddingMatrix
         struct /* CriticizePaddingMatrix */ {
-          // Source: drake/planning/collision_checker.h:1278
+          // Source: drake/planning/collision_checker.h
           const char* doc = R"""()""";
         } CriticizePaddingMatrix;
         // Symbol: drake::planning::CollisionChecker::DoAddCollisionShapeToBody
         struct /* DoAddCollisionShapeToBody */ {
-          // Source: drake/planning/collision_checker.h:1217
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Does the work of adding a shape to be rigidly affixed to the body.
 Derived checkers can choose to ignore the request, but must return
@@ -666,7 +666,7 @@ Derived checkers can choose to ignore the request, but must return
         } DoAddCollisionShapeToBody;
         // Symbol: drake::planning::CollisionChecker::DoCalcContextRobotClearance
         struct /* DoCalcContextRobotClearance */ {
-          // Source: drake/planning/collision_checker.h:1252
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Derived collision checkers are responsible for defining the reported
 measurements. But they must adhere to the characteristics documented
@@ -675,7 +675,7 @@ guarantees that ``influence_distance`` is finite and non-negative.)""";
         } DoCalcContextRobotClearance;
         // Symbol: drake::planning::CollisionChecker::DoCheckContextConfigCollisionFree
         struct /* DoCheckContextConfigCollisionFree */ {
-          // Source: drake/planning/collision_checker.h:1211
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Derived collision checkers are responsible for reporting the collision
 status of the configuration. CollisionChecker guarantees that the
@@ -684,7 +684,7 @@ supplied to the public method.)""";
         } DoCheckContextConfigCollisionFree;
         // Symbol: drake::planning::CollisionChecker::DoClassifyContextBodyCollisions
         struct /* DoClassifyContextBodyCollisions */ {
-          // Source: drake/planning/collision_checker.h:1261
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Derived collision checkers are responsible for choosing a collision
 type for each of the robot bodies. They should adhere to the semantics
@@ -694,14 +694,14 @@ configuration ``q`` supplied to the public method.)""";
         } DoClassifyContextBodyCollisions;
         // Symbol: drake::planning::CollisionChecker::DoClone
         struct /* DoClone */ {
-          // Source: drake/planning/collision_checker.h:1198
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Derived collision checkers implement can make use of the protected
 copy constructor to implement DoClone().)""";
         } DoClone;
         // Symbol: drake::planning::CollisionChecker::DoMaxContextNumDistances
         struct /* DoMaxContextNumDistances */ {
-          // Source: drake/planning/collision_checker.h:1266
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Derived collision checkers must implement the semantics documented for
 MaxNumDistances. CollisionChecker does nothing; it just calls this
@@ -709,7 +709,7 @@ method.)""";
         } DoMaxContextNumDistances;
         // Symbol: drake::planning::CollisionChecker::DoUpdateContextPositions
         struct /* DoUpdateContextPositions */ {
-          // Source: drake/planning/collision_checker.h:1204
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Derived collision checkers can do further work in this function in
 response to updates to the MultibodyPlant positions. CollisionChecker
@@ -718,7 +718,7 @@ positions are present in model_context->plant_context().)""";
         } DoUpdateContextPositions;
         // Symbol: drake::planning::CollisionChecker::GetAllAddedCollisionShapes
         struct /* GetAllAddedCollisionShapes */ {
-          // Source: drake/planning/collision_checker.h:423
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Gets all checker geometries currently added across the whole checker.
 
@@ -728,13 +728,13 @@ Returns:
         } GetAllAddedCollisionShapes;
         // Symbol: drake::planning::CollisionChecker::GetFilteredCollisionMatrix
         struct /* GetFilteredCollisionMatrix */ {
-          // Source: drake/planning/collision_checker.h:663
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Gets the "active" collision filter matrix.)""";
         } GetFilteredCollisionMatrix;
         // Symbol: drake::planning::CollisionChecker::GetLargestPadding
         struct /* GetLargestPadding */ {
-          // Source: drake/planning/collision_checker.h:574
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Gets the current largest collision padding across all (robot, *) body
 pairs. This excludes the meaningless zeros on the diagonal and
@@ -742,7 +742,7 @@ environment-environment pairs; the return value *can* be negative.)""";
         } GetLargestPadding;
         // Symbol: drake::planning::CollisionChecker::GetMutableSetupModel
         struct /* GetMutableSetupModel */ {
-          // Source: drake/planning/collision_checker.h:1188
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Returns:
     a mutable reference to the robot model.
@@ -752,7 +752,7 @@ Raises:
         } GetMutableSetupModel;
         // Symbol: drake::planning::CollisionChecker::GetNominalFilteredCollisionMatrix
         struct /* GetNominalFilteredCollisionMatrix */ {
-          // Source: drake/planning/collision_checker.h:658
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Returns the "nominal" collision filter matrix. The nominal matrix is
 initialized at construction time and represents the configuration of
@@ -776,24 +776,24 @@ SceneGraph instance will ever be in this configuration by accident.)""";
         } GetNominalFilteredCollisionMatrix;
         // Symbol: drake::planning::CollisionChecker::GetPaddingBetween
         struct /* GetPaddingBetween */ {
-          // Source: drake/planning/collision_checker.h:524
+          // Source: drake/planning/collision_checker.h
           const char* doc_2args_bodyA_index_bodyB_index =
 R"""(Gets the padding value for the pair of bodies specified. If the body
 indices are the same, zero will always be returned.
 
 Raises:
     RuntimeError if either body index is out of range.)""";
-          // Source: drake/planning/collision_checker.h:534
+          // Source: drake/planning/collision_checker.h
           const char* doc_2args_bodyA_bodyB = R"""(Overload that uses body references.)""";
         } GetPaddingBetween;
         // Symbol: drake::planning::CollisionChecker::GetPaddingMatrix
         struct /* GetPaddingMatrix */ {
-          // Source: drake/planning/collision_checker.h:554
+          // Source: drake/planning/collision_checker.h
           const char* doc = R"""(Gets the collision padding matrix.)""";
         } GetPaddingMatrix;
         // Symbol: drake::planning::CollisionChecker::GetZeroConfiguration
         struct /* GetZeroConfiguration */ {
-          // Source: drake/planning/collision_checker.h:248
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Returns:
     a generalized position vector, sized according to the full model,
@@ -806,7 +806,7 @@ Warning:
         } GetZeroConfiguration;
         // Symbol: drake::planning::CollisionChecker::InterpolateBetweenConfigurations
         struct /* InterpolateBetweenConfigurations */ {
-          // Source: drake/planning/collision_checker.h:948
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Interpolates between provided configurations ``q1`` and ``q2``.
 
@@ -827,19 +827,19 @@ See also:
         } InterpolateBetweenConfigurations;
         // Symbol: drake::planning::CollisionChecker::IsCollisionFilteredBetween
         struct /* IsCollisionFilteredBetween */ {
-          // Source: drake/planning/collision_checker.h:677
+          // Source: drake/planning/collision_checker.h
           const char* doc_2args_bodyA_index_bodyB_index =
 R"""(Checks if collision is filtered between the two bodies specified.
 Note: collision between two environment bodies is *always* filtered.
 
 Raises:
     RuntimeError if either body index is out of range.)""";
-          // Source: drake/planning/collision_checker.h:681
+          // Source: drake/planning/collision_checker.h
           const char* doc_2args_bodyA_bodyB = R"""(Overload that uses body references.)""";
         } IsCollisionFilteredBetween;
         // Symbol: drake::planning::CollisionChecker::IsInitialSetup
         struct /* IsInitialSetup */ {
-          // Source: drake/planning/collision_checker.h:1184
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Returns:
     true if called during initial setup (before AllocateContexts() is
@@ -847,14 +847,14 @@ R"""(Returns:
         } IsInitialSetup;
         // Symbol: drake::planning::CollisionChecker::IsPartOfRobot
         struct /* IsPartOfRobot */ {
-          // Source: drake/planning/collision_checker.h:239
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Returns:
     true if the indicated body is part of the robot.)""";
         } IsPartOfRobot;
         // Symbol: drake::planning::CollisionChecker::MakeStandaloneConfigurationDistanceFunction
         struct /* MakeStandaloneConfigurationDistanceFunction */ {
-          // Source: drake/planning/collision_checker.h:920
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Returns:
     a functor that captures this object, so it can be used like a free
@@ -872,7 +872,7 @@ Raises:
         } MakeStandaloneConfigurationDistanceFunction;
         // Symbol: drake::planning::CollisionChecker::MakeStandaloneConfigurationInterpolationFunction
         struct /* MakeStandaloneConfigurationInterpolationFunction */ {
-          // Source: drake/planning/collision_checker.h:963
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Returns:
     a functor that captures this object, so it can be used like a free
@@ -887,7 +887,7 @@ Warning:
         } MakeStandaloneConfigurationInterpolationFunction;
         // Symbol: drake::planning::CollisionChecker::MakeStandaloneModelContext
         struct /* MakeStandaloneModelContext */ {
-          // Source: drake/planning/collision_checker.h:311
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Make and track a CollisionCheckerContext. The returned context will
 participate in PerformOperationAgainstAllModelContexts() until it is
@@ -895,7 +895,7 @@ destroyed.)""";
         } MakeStandaloneModelContext;
         // Symbol: drake::planning::CollisionChecker::MaxContextNumDistances
         struct /* MaxContextNumDistances */ {
-          // Source: drake/planning/collision_checker.h:1125
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Explicit Context-based version of MaxNumDistances().
 
@@ -904,7 +904,7 @@ See also:
         } MaxContextNumDistances;
         // Symbol: drake::planning::CollisionChecker::MaxNumDistances
         struct /* MaxNumDistances */ {
-          // Source: drake/planning/collision_checker.h:1121
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Returns an upper bound on the number of distances returned by
 CalcRobotClearance(), using the current thread's associated context.
@@ -917,21 +917,21 @@ See also:
         } MaxNumDistances;
         // Symbol: drake::planning::CollisionChecker::MaybeGetUniformRobotEnvironmentPadding
         struct /* MaybeGetUniformRobotEnvironmentPadding */ {
-          // Source: drake/planning/collision_checker.h:515
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(If the padding between all robot bodies and environment bodies is the
 same, returns the common padding value. Returns nullopt otherwise.)""";
         } MaybeGetUniformRobotEnvironmentPadding;
         // Symbol: drake::planning::CollisionChecker::MaybeGetUniformRobotRobotPadding
         struct /* MaybeGetUniformRobotRobotPadding */ {
-          // Source: drake/planning/collision_checker.h:519
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(If the padding between all pairs of robot bodies is the same, returns
 the common padding value. Returns nullopt otherwise.)""";
         } MaybeGetUniformRobotRobotPadding;
         // Symbol: drake::planning::CollisionChecker::MeasureContextEdgeCollisionFree
         struct /* MeasureContextEdgeCollisionFree */ {
-          // Source: drake/planning/collision_checker.h:1038
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Explicit Context-based version of MeasureEdgeCollisionFree().
 
@@ -946,7 +946,7 @@ See also:
         } MeasureContextEdgeCollisionFree;
         // Symbol: drake::planning::CollisionChecker::MeasureEdgeCollisionFree
         struct /* MeasureEdgeCollisionFree */ {
-          // Source: drake/planning/collision_checker.h:1030
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Checks a single configuration-to-configuration edge for collision,
 using the current thread's associated context.
@@ -971,7 +971,7 @@ See also:
         } MeasureEdgeCollisionFree;
         // Symbol: drake::planning::CollisionChecker::MeasureEdgeCollisionFreeParallel
         struct /* MeasureEdgeCollisionFreeParallel */ {
-          // Source: drake/planning/collision_checker.h:1051
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Checks a single configuration-to-configuration edge for collision.
 Collision check is parallelized via OpenMP when supported. See
@@ -995,7 +995,7 @@ Raises:
         } MeasureEdgeCollisionFreeParallel;
         // Symbol: drake::planning::CollisionChecker::MeasureEdgesCollisionFree
         struct /* MeasureEdgesCollisionFree */ {
-          // Source: drake/planning/collision_checker.h:1065
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Checks multiple configuration-to-configuration edge for collision.
 Collision checks are parallelized via OpenMP when supported and
@@ -1017,7 +1017,7 @@ Raises:
         } MeasureEdgesCollisionFree;
         // Symbol: drake::planning::CollisionChecker::PerformOperationAgainstAllModelContexts
         struct /* PerformOperationAgainstAllModelContexts */ {
-          // Source: drake/planning/collision_checker.h:320
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Allows externally-provided operations that must be performed against
 all contexts in the per-thread context pool, and any standalone
@@ -1029,23 +1029,23 @@ mutating any of our standalone contexts when this function is called.)""";
         } PerformOperationAgainstAllModelContexts;
         // Symbol: drake::planning::CollisionChecker::RemoveAddedGeometries
         struct /* RemoveAddedGeometries */ {
-          // Source: drake/planning/collision_checker.h:1241
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Removes all of the given added shapes (if they exist) from the
 checker.)""";
         } RemoveAddedGeometries;
         // Symbol: drake::planning::CollisionChecker::RemoveAllAddedCollisionShapes
         struct /* RemoveAllAddedCollisionShapes */ {
-          // Source: drake/planning/collision_checker.h:429
+          // Source: drake/planning/collision_checker.h
           const char* doc_1args =
 R"""(Removes all added checker geometries which belong to the named group.)""";
-          // Source: drake/planning/collision_checker.h:432
+          // Source: drake/planning/collision_checker.h
           const char* doc_0args =
 R"""(Removes all added checker geometries from all geometry groups.)""";
         } RemoveAllAddedCollisionShapes;
         // Symbol: drake::planning::CollisionChecker::SetCollisionFilterMatrix
         struct /* SetCollisionFilterMatrix */ {
-          // Source: drake/planning/collision_checker.h:672
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Sets the "active" collision filter matrix
 
@@ -1059,7 +1059,7 @@ Raises:
         } SetCollisionFilterMatrix;
         // Symbol: drake::planning::CollisionChecker::SetCollisionFilteredBetween
         struct /* SetCollisionFilteredBetween */ {
-          // Source: drake/planning/collision_checker.h:693
+          // Source: drake/planning/collision_checker.h
           const char* doc_3args_bodyA_index_bodyB_index_filter_collision =
 R"""(Declares the body pair (bodyA, bodyB) to be filtered (or not) based on
 ``filter_collision``.
@@ -1075,12 +1075,12 @@ Raises:
 
 Raises:
     RuntimeError if both indices refer to environment bodies.)""";
-          // Source: drake/planning/collision_checker.h:698
+          // Source: drake/planning/collision_checker.h
           const char* doc_3args_bodyA_bodyB_filter_collision = R"""(Overload that uses body references.)""";
         } SetCollisionFilteredBetween;
         // Symbol: drake::planning::CollisionChecker::SetCollisionFilteredWithAllBodies
         struct /* SetCollisionFilteredWithAllBodies */ {
-          // Source: drake/planning/collision_checker.h:708
+          // Source: drake/planning/collision_checker.h
           const char* doc_1args_body_index =
 R"""(Declares that body pair (B, O) is filtered (for all bodies O in this
 checker's plant).
@@ -1090,12 +1090,12 @@ Raises:
 
 Raises:
     RuntimeError if ``body_index`` refers to an environment body.)""";
-          // Source: drake/planning/collision_checker.h:711
+          // Source: drake/planning/collision_checker.h
           const char* doc_1args_body = R"""(Overload that uses body references.)""";
         } SetCollisionFilteredWithAllBodies;
         // Symbol: drake::planning::CollisionChecker::SetConfigurationDistanceFunction
         struct /* SetConfigurationDistanceFunction */ {
-          // Source: drake/planning/collision_checker.h:899
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Sets the configuration distance function to ``distance_function``.
 
@@ -1116,7 +1116,7 @@ Note:
         } SetConfigurationDistanceFunction;
         // Symbol: drake::planning::CollisionChecker::SetConfigurationInterpolationFunction
         struct /* SetConfigurationInterpolationFunction */ {
-          // Source: drake/planning/collision_checker.h:939
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Sets the configuration interpolation function to
 ``interpolation_function``.
@@ -1147,7 +1147,7 @@ Note:
         } SetConfigurationInterpolationFunction;
         // Symbol: drake::planning::CollisionChecker::SetDistanceAndInterpolationProvider
         struct /* SetDistanceAndInterpolationProvider */ {
-          // Source: drake/planning/collision_checker.h:879
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Sets the distance and interpolation provider to use. Note that in case
 any of the (to-be-deprecated) separate distance and interpolation
@@ -1159,7 +1159,7 @@ Precondition:
         } SetDistanceAndInterpolationProvider;
         // Symbol: drake::planning::CollisionChecker::SetPaddingAllRobotEnvironmentPairs
         struct /* SetPaddingAllRobotEnvironmentPairs */ {
-          // Source: drake/planning/collision_checker.h:586
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Sets the padding for all (robot, environment) pairs.
 
@@ -1169,7 +1169,7 @@ Raises:
         } SetPaddingAllRobotEnvironmentPairs;
         // Symbol: drake::planning::CollisionChecker::SetPaddingAllRobotRobotPairs
         struct /* SetPaddingAllRobotRobotPairs */ {
-          // Source: drake/planning/collision_checker.h:591
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Sets the padding for all (robot, robot) pairs.
 
@@ -1179,7 +1179,7 @@ Raises:
         } SetPaddingAllRobotRobotPairs;
         // Symbol: drake::planning::CollisionChecker::SetPaddingBetween
         struct /* SetPaddingBetween */ {
-          // Source: drake/planning/collision_checker.h:543
+          // Source: drake/planning/collision_checker.h
           const char* doc_3args_bodyA_index_bodyB_index_padding =
 R"""(Sets the padding value for the pair of bodies specified.
 
@@ -1187,12 +1187,12 @@ Raises:
     RuntimeError if the collision_checker_padding_prereqs
     "configuration prerequisites" are not met or ``bodyA_index ==
     bodyB_index``.)""";
-          // Source: drake/planning/collision_checker.h:547
+          // Source: drake/planning/collision_checker.h
           const char* doc_3args_bodyA_bodyB_padding = R"""(Overload that uses body references.)""";
         } SetPaddingBetween;
         // Symbol: drake::planning::CollisionChecker::SetPaddingMatrix
         struct /* SetPaddingMatrix */ {
-          // Source: drake/planning/collision_checker.h:569
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Sets the collision padding matrix. Note that this matrix contains all
 padding data, both robot-robot "self" padding, and robot-environment
@@ -1211,7 +1211,7 @@ Raises:
         } SetPaddingMatrix;
         // Symbol: drake::planning::CollisionChecker::SetPaddingOneRobotBodyAllEnvironmentPairs
         struct /* SetPaddingOneRobotBodyAllEnvironmentPairs */ {
-          // Source: drake/planning/collision_checker.h:580
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Sets the environment collision padding for the provided robot body
 with respect to all environment bodies.
@@ -1222,7 +1222,7 @@ Raises:
         } SetPaddingOneRobotBodyAllEnvironmentPairs;
         // Symbol: drake::planning::CollisionChecker::SupportsParallelChecking
         struct /* SupportsParallelChecking */ {
-          // Source: drake/planning/collision_checker.h:1153
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Does the collision checker support true parallel collision checks?
 
@@ -1231,7 +1231,7 @@ Returns:
         } SupportsParallelChecking;
         // Symbol: drake::planning::CollisionChecker::UpdateCollisionFilters
         struct /* UpdateCollisionFilters */ {
-          // Source: drake/planning/collision_checker.h:1246
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Derived collision checkers can do further work in this function in
 response to changes in collision filters. This is called after any
@@ -1239,7 +1239,7 @@ changes are made to the collision filter matrix.)""";
         } UpdateCollisionFilters;
         // Symbol: drake::planning::CollisionChecker::UpdateContextPositions
         struct /* UpdateContextPositions */ {
-          // Source: drake/planning/collision_checker.h:300
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Explicit Context-based version of UpdatePositions().
 
@@ -1254,7 +1254,7 @@ See also:
         } UpdateContextPositions;
         // Symbol: drake::planning::CollisionChecker::UpdatePositions
         struct /* UpdatePositions */ {
-          // Source: drake/planning/collision_checker.h:290
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Updates the generalized positions ``q`` in the implicit context
 specified and returns a reference to the MultibodyPlant's now-updated
@@ -1273,18 +1273,18 @@ Raises:
         } UpdatePositions;
         // Symbol: drake::planning::CollisionChecker::distance_and_interpolation_provider
         struct /* distance_and_interpolation_provider */ {
-          // Source: drake/planning/collision_checker.h:883
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Gets the DistanceAndInterpolationProvider in use.)""";
         } distance_and_interpolation_provider;
         // Symbol: drake::planning::CollisionChecker::edge_step_size
         struct /* edge_step_size */ {
-          // Source: drake/planning/collision_checker.h:966
+          // Source: drake/planning/collision_checker.h
           const char* doc = R"""(Gets the current edge step size.)""";
         } edge_step_size;
         // Symbol: drake::planning::CollisionChecker::get_body
         struct /* get_body */ {
-          // Source: drake/planning/collision_checker.h:226
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Returns:
     a ``const`` body reference to a body in the full model's plant for
@@ -1292,14 +1292,14 @@ R"""(Returns:
         } get_body;
         // Symbol: drake::planning::CollisionChecker::model
         struct /* model */ {
-          // Source: drake/planning/collision_checker.h:210
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Returns:
     a ``const`` reference to the full model.)""";
         } model;
         // Symbol: drake::planning::CollisionChecker::model_context
         struct /* model_context */ {
-          // Source: drake/planning/collision_checker.h:267
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Accesses a collision checking context from within the implicit context
 pool owned by this collision checker.
@@ -1317,21 +1317,21 @@ See also:
         } model_context;
         // Symbol: drake::planning::CollisionChecker::num_allocated_contexts
         struct /* num_allocated_contexts */ {
-          // Source: drake/planning/collision_checker.h:258
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Returns:
     the number of internal (not standalone) per-thread contexts.)""";
         } num_allocated_contexts;
         // Symbol: drake::planning::CollisionChecker::plant
         struct /* plant */ {
-          // Source: drake/planning/collision_checker.h:220
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Returns:
     a `const reference to the full model's plant.)""";
         } plant;
         // Symbol: drake::planning::CollisionChecker::plant_context
         struct /* plant_context */ {
-          // Source: drake/planning/collision_checker.h:278
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Accesses a multibody plant sub-context context from within the
 implicit context pool owned by this collision checker.
@@ -1349,14 +1349,14 @@ See also:
         } plant_context;
         // Symbol: drake::planning::CollisionChecker::robot_model_instances
         struct /* robot_model_instances */ {
-          // Source: drake/planning/collision_checker.h:233
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Gets the set of model instances belonging to the robot. The returned
 vector has no duplicates and is in sorted order.)""";
         } robot_model_instances;
         // Symbol: drake::planning::CollisionChecker::set_edge_step_size
         struct /* set_edge_step_size */ {
-          // Source: drake/planning/collision_checker.h:970
+          // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Sets the edge step size to ``edge_step_size``.
 
@@ -1366,7 +1366,7 @@ Raises:
       } CollisionChecker;
       // Symbol: drake::planning::CollisionCheckerContext
       struct /* CollisionCheckerContext */ {
-        // Source: drake/planning/collision_checker_context.h:25
+        // Source: drake/planning/collision_checker_context.h
         const char* doc =
 R"""(This class represents the data necessary for CollisionChecker to
 operate safely across multiple threads in its ``const`` API. Instances
@@ -1383,76 +1383,76 @@ CollisionChecker::PerformOperationAgainstAllModelContexts(). Modifying
 the contained Drake Contexts directly is generally erroneous.)""";
         // Symbol: drake::planning::CollisionCheckerContext::Clone
         struct /* Clone */ {
-          // Source: drake/planning/collision_checker_context.h:44
+          // Source: drake/planning/collision_checker_context.h
           const char* doc = R"""()""";
         } Clone;
         // Symbol: drake::planning::CollisionCheckerContext::CollisionCheckerContext
         struct /* ctor */ {
-          // Source: drake/planning/collision_checker_context.h:40
+          // Source: drake/planning/collision_checker_context.h
           const char* doc =
 R"""(The resulting object stores an alias to ``model``; the passed model
 should have a lifetime greater than the constructed object.
 
 Precondition:
     model is not null.)""";
-          // Source: drake/planning/collision_checker_context.h:81
+          // Source: drake/planning/collision_checker_context.h
           const char* doc_copy =
 R"""(Derived classes can use this copy constructor to help implement their
 own DoClone() methods.)""";
         } ctor;
         // Symbol: drake::planning::CollisionCheckerContext::DoClone
         struct /* DoClone */ {
-          // Source: drake/planning/collision_checker_context.h:84
+          // Source: drake/planning/collision_checker_context.h
           const char* doc =
 R"""(Allow derived context types to implement additional clone behavior.)""";
         } DoClone;
         // Symbol: drake::planning::CollisionCheckerContext::GetQueryObject
         struct /* GetQueryObject */ {
-          // Source: drake/planning/collision_checker_context.h:62
+          // Source: drake/planning/collision_checker_context.h
           const char* doc =
 R"""(Gets the scene graph geometry query object.)""";
         } GetQueryObject;
         // Symbol: drake::planning::CollisionCheckerContext::model_context
         struct /* model_context */ {
-          // Source: drake/planning/collision_checker_context.h:47
+          // Source: drake/planning/collision_checker_context.h
           const char* doc = R"""(Gets the contained model context.)""";
         } model_context;
         // Symbol: drake::planning::CollisionCheckerContext::mutable_model_context
         struct /* mutable_model_context */ {
-          // Source: drake/planning/collision_checker_context.h:68
+          // Source: drake/planning/collision_checker_context.h
           const char* doc = R"""()""";
         } mutable_model_context;
         // Symbol: drake::planning::CollisionCheckerContext::mutable_plant_context
         struct /* mutable_plant_context */ {
-          // Source: drake/planning/collision_checker_context.h:71
+          // Source: drake/planning/collision_checker_context.h
           const char* doc = R"""()""";
         } mutable_plant_context;
         // Symbol: drake::planning::CollisionCheckerContext::mutable_scene_graph_context
         struct /* mutable_scene_graph_context */ {
-          // Source: drake/planning/collision_checker_context.h:74
+          // Source: drake/planning/collision_checker_context.h
           const char* doc = R"""()""";
         } mutable_scene_graph_context;
         // Symbol: drake::planning::CollisionCheckerContext::plant_context
         struct /* plant_context */ {
-          // Source: drake/planning/collision_checker_context.h:52
+          // Source: drake/planning/collision_checker_context.h
           const char* doc = R"""(Gets the contained plant context.)""";
         } plant_context;
         // Symbol: drake::planning::CollisionCheckerContext::scene_graph_context
         struct /* scene_graph_context */ {
-          // Source: drake/planning/collision_checker_context.h:57
+          // Source: drake/planning/collision_checker_context.h
           const char* doc = R"""(Gets the contained scene graph context.)""";
         } scene_graph_context;
       } CollisionCheckerContext;
       // Symbol: drake::planning::CollisionCheckerParams
       struct /* CollisionCheckerParams */ {
-        // Source: drake/planning/collision_checker_params.h:50
+        // Source: drake/planning/collision_checker_params.h
         const char* doc =
 R"""(A set of common constructor parameters for a CollisionChecker. Not all
 subclasses of CollisionChecker will necessarily support this
 configuration struct, but many do so.)""";
         // Symbol: drake::planning::CollisionCheckerParams::configuration_distance_function
         struct /* configuration_distance_function */ {
-          // Source: drake/planning/collision_checker_params.h:81
+          // Source: drake/planning/collision_checker_params.h
           const char* doc =
 R"""(Configuration (probably weighted) distance function.
 
@@ -1470,7 +1470,7 @@ Note:
         } configuration_distance_function;
         // Symbol: drake::planning::CollisionCheckerParams::distance_and_interpolation_provider
         struct /* distance_and_interpolation_provider */ {
-          // Source: drake/planning/collision_checker_params.h:62
+          // Source: drake/planning/collision_checker_params.h
           const char* doc =
 R"""(A DistanceAndInterpolationProvider to support configuration distance
 and interpolation operations.
@@ -1483,7 +1483,7 @@ Note:
         } distance_and_interpolation_provider;
         // Symbol: drake::planning::CollisionCheckerParams::edge_step_size
         struct /* edge_step_size */ {
-          // Source: drake/planning/collision_checker_params.h:89
+          // Source: drake/planning/collision_checker_params.h
           const char* doc =
 R"""(Step size for edge checking; in units compatible with the
 configuration distance function. Collision checking of edges q1->q2 is
@@ -1493,7 +1493,7 @@ be positive.)""";
         } edge_step_size;
         // Symbol: drake::planning::CollisionCheckerParams::env_collision_padding
         struct /* env_collision_padding */ {
-          // Source: drake/planning/collision_checker_params.h:95
+          // Source: drake/planning/collision_checker_params.h
           const char* doc =
 R"""(Additional padding to apply to all robot-environment collision
 queries. If distance between robot and environment is less than
@@ -1501,7 +1501,7 @@ padding, the checker reports a collision.)""";
         } env_collision_padding;
         // Symbol: drake::planning::CollisionCheckerParams::implicit_context_parallelism
         struct /* implicit_context_parallelism */ {
-          // Source: drake/planning/collision_checker_params.h:108
+          // Source: drake/planning/collision_checker_params.h
           const char* doc =
 R"""(Specify how many contexts should be allocated to support collision
 checker implicit context parallelism. Defaults to the maximum
@@ -1514,14 +1514,14 @@ See also:
         } implicit_context_parallelism;
         // Symbol: drake::planning::CollisionCheckerParams::model
         struct /* model */ {
-          // Source: drake/planning/collision_checker_params.h:53
+          // Source: drake/planning/collision_checker_params.h
           const char* doc =
 R"""(A RobotDiagram model of the robot and environment. Must not be
 nullptr.)""";
         } model;
         // Symbol: drake::planning::CollisionCheckerParams::robot_model_instances
         struct /* robot_model_instances */ {
-          // Source: drake/planning/collision_checker_params.h:68
+          // Source: drake/planning/collision_checker_params.h
           const char* doc =
 R"""(A vector of model instance indices that identify which model instances
 belong to the robot. The list must be non-empty and must not include
@@ -1529,7 +1529,7 @@ the world model instance.)""";
         } robot_model_instances;
         // Symbol: drake::planning::CollisionCheckerParams::self_collision_padding
         struct /* self_collision_padding */ {
-          // Source: drake/planning/collision_checker_params.h:101
+          // Source: drake/planning/collision_checker_params.h
           const char* doc =
 R"""(Additional padding to apply to all robot-robot self collision queries.
 If distance between robot and itself is less than padding, the checker
@@ -1538,7 +1538,7 @@ reports a collision.)""";
       } CollisionCheckerParams;
       // Symbol: drake::planning::ConfigurationDistanceFunction
       struct /* ConfigurationDistanceFunction */ {
-        // Source: drake/planning/collision_checker_params.h:26
+        // Source: drake/planning/collision_checker_params.h
         const char* doc =
 R"""(Configuration distance takes two configurations of the robot, q1 and
 q2, both as Eigen::VectorXd, and returns (potentially weighted)
@@ -1553,7 +1553,7 @@ for values of q that are valid for the CollisionChecker's plant.)""";
       } ConfigurationDistanceFunction;
       // Symbol: drake::planning::ConfigurationInterpolationFunction
       struct /* ConfigurationInterpolationFunction */ {
-        // Source: drake/planning/collision_checker_params.h:42
+        // Source: drake/planning/collision_checker_params.h
         const char* doc =
 R"""(Configuration interpolation function takes two configurations of the
 robot, q1, and q2, both as Eigen::VectorXd, plus a ratio, r, in [0, 1]
@@ -1571,7 +1571,7 @@ plant.)""";
       } ConfigurationInterpolationFunction;
       // Symbol: drake::planning::DistanceAndInterpolationProvider
       struct /* DistanceAndInterpolationProvider */ {
-        // Source: drake/planning/distance_and_interpolation_provider.h:49
+        // Source: drake/planning/distance_and_interpolation_provider.h
         const char* doc =
 R"""(This class represents the base interface for performing configuration
 distance and interpolation operations, used by CollisionChecker. See
@@ -1616,7 +1616,7 @@ To be valid, interpolation must satisfy the following conditions:
 for values of q, from, and to that are valid for the C-space in use.)""";
         // Symbol: drake::planning::DistanceAndInterpolationProvider::ComputeConfigurationDistance
         struct /* ComputeConfigurationDistance */ {
-          // Source: drake/planning/distance_and_interpolation_provider.h:60
+          // Source: drake/planning/distance_and_interpolation_provider.h
           const char* doc =
 R"""(Computes the configuration distance from the provided configuration
 ``from`` to the provided configuration ``to``. The returned distance
@@ -1630,12 +1630,12 @@ Raises:
         } ComputeConfigurationDistance;
         // Symbol: drake::planning::DistanceAndInterpolationProvider::DistanceAndInterpolationProvider
         struct /* ctor */ {
-          // Source: drake/planning/distance_and_interpolation_provider.h:51
+          // Source: drake/planning/distance_and_interpolation_provider.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::planning::DistanceAndInterpolationProvider::DoComputeConfigurationDistance
         struct /* DoComputeConfigurationDistance */ {
-          // Source: drake/planning/distance_and_interpolation_provider.h:80
+          // Source: drake/planning/distance_and_interpolation_provider.h
           const char* doc =
 R"""(Derived distance and interpolation providers must implement distance
 computation. The returned distance must be non-negative.
@@ -1647,7 +1647,7 @@ values.)""";
         } DoComputeConfigurationDistance;
         // Symbol: drake::planning::DistanceAndInterpolationProvider::DoInterpolateBetweenConfigurations
         struct /* DoInterpolateBetweenConfigurations */ {
-          // Source: drake/planning/distance_and_interpolation_provider.h:89
+          // Source: drake/planning/distance_and_interpolation_provider.h
           const char* doc =
 R"""(Derived distance and interpolation providers must implement
 interpolation. The returned configuration must be the same size as
@@ -1659,7 +1659,7 @@ values.)""";
         } DoInterpolateBetweenConfigurations;
         // Symbol: drake::planning::DistanceAndInterpolationProvider::InterpolateBetweenConfigurations
         struct /* InterpolateBetweenConfigurations */ {
-          // Source: drake/planning/distance_and_interpolation_provider.h:67
+          // Source: drake/planning/distance_and_interpolation_provider.h
           const char* doc =
 R"""(Returns the interpolated configuration between ``from`` and ``to`` at
 ``ratio``.
@@ -1676,7 +1676,7 @@ Raises:
       } DistanceAndInterpolationProvider;
       // Symbol: drake::planning::DofMask
       struct /* DofMask */ {
-        // Source: drake/planning/dof_mask.h:33
+        // Source: drake/planning/dof_mask.h
         const char* doc =
 R"""(A mask on the degrees of freedom (dofs) of a MultibodyPlant instance,
 partitioning the plant's dofs into "selected" and "unselected" dofs.
@@ -1698,18 +1698,18 @@ generally true for all joints (e.g., floating joints or roll-pitch-yaw
 ball joints).)""";
         // Symbol: drake::planning::DofMask::Complement
         struct /* Complement */ {
-          // Source: drake/planning/dof_mask.h:141
+          // Source: drake/planning/dof_mask.h
           const char* doc =
 R"""(Returns a new mask such that its selected dofs are ``this`` mask's
 unselected dofs and vice versa.)""";
         } Complement;
         // Symbol: drake::planning::DofMask::DofMask
         struct /* ctor */ {
-          // Source: drake/planning/dof_mask.h:49
+          // Source: drake/planning/dof_mask.h
           const char* doc_default =
 R"""(Default constructor; creates a mask with no dofs (size() = count() = 0
 ).)""";
-          // Source: drake/planning/dof_mask.h:58
+          // Source: drake/planning/dof_mask.h
           const char* doc_by_size =
 R"""(Full/empty constructor.
 
@@ -1718,16 +1718,16 @@ all dofs are either selected (``value = true``) or unselected.
 
 Precondition:
     size >= 0)""";
-          // Source: drake/planning/dof_mask.h:66
+          // Source: drake/planning/dof_mask.h
           const char* doc_init_list =
 R"""(Constructs a DofMask from an initializer list of bool.)""";
-          // Source: drake/planning/dof_mask.h:71
+          // Source: drake/planning/dof_mask.h
           const char* doc_vector_bool =
 R"""(Constructs a DofMask from a vector of bool.)""";
         } ctor;
         // Symbol: drake::planning::DofMask::GetColumnsFromMatrix
         struct /* GetColumnsFromMatrix */ {
-          // Source: drake/planning/dof_mask.h:205
+          // Source: drake/planning/dof_mask.h
           const char* doc_2args =
 R"""(Gets a subset of the *columns* of ``full_mat`` and writes them to
 ``output``. Similar to GetFromArray(), but instead of single scalar
@@ -1745,7 +1745,7 @@ Precondition:
 
 Precondition:
     ``full_mat.rows() = output->rows()``.)""";
-          // Source: drake/planning/dof_mask.h:211
+          // Source: drake/planning/dof_mask.h
           const char* doc_1args =
 R"""(Overload for GetColumnsFromMatrix() which returns the read values in a
 new matrix instead of writing to an output argument.
@@ -1755,7 +1755,7 @@ Precondition:
         } GetColumnsFromMatrix;
         // Symbol: drake::planning::DofMask::GetFromArray
         struct /* GetFromArray */ {
-          // Source: drake/planning/dof_mask.h:188
+          // Source: drake/planning/dof_mask.h
           const char* doc_2args =
 R"""(Gets a subset of the values in ``full_vec`` and writes them to
 ``output``. The values read from ``full_vec`` associated with the
@@ -1792,7 +1792,7 @@ Precondition:
 
 Precondition:
     ``output.size() == count()``.)""";
-          // Source: drake/planning/dof_mask.h:194
+          // Source: drake/planning/dof_mask.h
           const char* doc_1args =
 R"""(Overload for GetFromArray() which returns the read values in a new
 vector instead of writing to an output argument.
@@ -1802,7 +1802,7 @@ Precondition:
         } GetFromArray;
         // Symbol: drake::planning::DofMask::GetJoints
         struct /* GetJoints */ {
-          // Source: drake/planning/dof_mask.h:112
+          // Source: drake/planning/dof_mask.h
           const char* doc =
 R"""(Creates a collection of all of the joints implied by the selected dofs
 in ``this``. The returned joint indices are reported in increasing
@@ -1816,7 +1816,7 @@ Precondition:
         } GetJoints;
         // Symbol: drake::planning::DofMask::Intersect
         struct /* Intersect */ {
-          // Source: drake/planning/dof_mask.h:151
+          // Source: drake/planning/dof_mask.h
           const char* doc =
 R"""(Creates the intersection of ``this`` and ``other``. The result
 includes all selected dofs that are in both ``this`` and ``other``.
@@ -1826,7 +1826,7 @@ Precondition:
         } Intersect;
         // Symbol: drake::planning::DofMask::MakeFromModel
         struct /* MakeFromModel */ {
-          // Source: drake/planning/dof_mask.h:87
+          // Source: drake/planning/dof_mask.h
           const char* doc_2args_plant_model_index =
 R"""(Creates the DofMask associated with a model instance (indicated by
 ``model_index``) in ``plant``.
@@ -1834,7 +1834,7 @@ R"""(Creates the DofMask associated with a model instance (indicated by
 Raises:
     RuntimeError if ``plant`` doesn't satisfy the compatibility
     requirements for DofMask.)""";
-          // Source: drake/planning/dof_mask.h:95
+          // Source: drake/planning/dof_mask.h
           const char* doc_2args_plant_model_name =
 R"""(Creates the DofMask associated with the model instance (named by
 ``model_name``) in ``plant``.
@@ -1845,7 +1845,7 @@ Raises:
         } MakeFromModel;
         // Symbol: drake::planning::DofMask::SetInArray
         struct /* SetInArray */ {
-          // Source: drake/planning/dof_mask.h:235
+          // Source: drake/planning/dof_mask.h
           const char* doc =
 R"""(Sets the values given in ``vec`` into ``output``. This is the inverse
 of GetFromArray(). ``vec`` contains count() values and the iᵗʰ value
@@ -1886,7 +1886,7 @@ Precondition:
         } SetInArray;
         // Symbol: drake::planning::DofMask::Subtract
         struct /* Subtract */ {
-          // Source: drake/planning/dof_mask.h:156
+          // Source: drake/planning/dof_mask.h
           const char* doc =
 R"""(Creates the set difference of ``this`` and ``other``. The result
 includes only those selected dofs in ``this`` that are *not* in
@@ -1897,7 +1897,7 @@ Precondition:
         } Subtract;
         // Symbol: drake::planning::DofMask::Union
         struct /* Union */ {
-          // Source: drake/planning/dof_mask.h:146
+          // Source: drake/planning/dof_mask.h
           const char* doc =
 R"""(Creates the union of ``this`` and ``other``. The result includes all
 selected dofs in either ``this`` or ``other``.
@@ -1907,26 +1907,26 @@ Precondition:
         } Union;
         // Symbol: drake::planning::DofMask::count
         struct /* count */ {
-          // Source: drake/planning/dof_mask.h:106
+          // Source: drake/planning/dof_mask.h
           const char* doc =
 R"""(Reports this DofMask instance's number of *selected* dofs.)""";
         } count;
         // Symbol: drake::planning::DofMask::operator[]
         struct /* operator_array */ {
-          // Source: drake/planning/dof_mask.h:120
+          // Source: drake/planning/dof_mask.h
           const char* doc =
 R"""(Precondition:
     ``index`` is in the range [0, size()).)""";
         } operator_array;
         // Symbol: drake::planning::DofMask::size
         struct /* size */ {
-          // Source: drake/planning/dof_mask.h:103
+          // Source: drake/planning/dof_mask.h
           const char* doc =
 R"""(Reports this DofMask instance's total number of indexable dofs.)""";
         } size;
         // Symbol: drake::planning::DofMask::to_string
         struct /* to_string */ {
-          // Source: drake/planning/dof_mask.h:125
+          // Source: drake/planning/dof_mask.h
           const char* doc =
 R"""(The string representation of the mask -- it encodes the full mask size
 clearly indicating which dofs are selected and which are unselected.
@@ -1935,7 +1935,7 @@ The exact format is not guaranteed to remain fixed, but always clear.)""";
       } DofMask;
       // Symbol: drake::planning::EdgeMeasure
       struct /* EdgeMeasure */ {
-        // Source: drake/planning/edge_measure.h:40
+        // Source: drake/planning/edge_measure.h
         const char* doc =
 R"""(The measure of the distance of the edge from q1 to q2 and the portion
 of that is collision free.
@@ -1974,7 +1974,7 @@ Note:
     checker instance would satisfy that requirement.)""";
         // Symbol: drake::planning::EdgeMeasure::EdgeMeasure
         struct /* ctor */ {
-          // Source: drake/planning/edge_measure.h:46
+          // Source: drake/planning/edge_measure.h
           const char* doc =
 R"""(Precondition:
     ``0 ≤ distance``
@@ -1985,7 +1985,7 @@ Precondition:
         } ctor;
         // Symbol: drake::planning::EdgeMeasure::alpha
         struct /* alpha */ {
-          // Source: drake/planning/edge_measure.h:75
+          // Source: drake/planning/edge_measure.h
           const char* doc =
 R"""(Returns the value of alpha, if defined.
 
@@ -2004,24 +2004,24 @@ Precondition:
         } alpha;
         // Symbol: drake::planning::EdgeMeasure::alpha_or
         struct /* alpha_or */ {
-          // Source: drake/planning/edge_measure.h:81
+          // Source: drake/planning/edge_measure.h
           const char* doc =
 R"""(Returns the value of alpha, if defined, or the provided default value.)""";
         } alpha_or;
         // Symbol: drake::planning::EdgeMeasure::completely_free
         struct /* completely_free */ {
-          // Source: drake/planning/edge_measure.h:53
+          // Source: drake/planning/edge_measure.h
           const char* doc =
 R"""(Reports ``True`` if all samples were collision free.)""";
         } completely_free;
         // Symbol: drake::planning::EdgeMeasure::distance
         struct /* distance */ {
-          // Source: drake/planning/edge_measure.h:61
+          // Source: drake/planning/edge_measure.h
           const char* doc = R"""(Returns the edge distance.)""";
         } distance;
         // Symbol: drake::planning::EdgeMeasure::partially_free
         struct /* partially_free */ {
-          // Source: drake/planning/edge_measure.h:58
+          // Source: drake/planning/edge_measure.h
           const char* doc =
 R"""(Reports ``True`` if there's *any* portion of the edge (starting from
 q1) that is collision free. By implication, if completely_free()
@@ -2030,7 +2030,7 @@ reports ``True``, so will this.)""";
       } EdgeMeasure;
       // Symbol: drake::planning::JointLimits
       struct /* JointLimits */ {
-        // Source: drake/planning/joint_limits.h:15
+        // Source: drake/planning/joint_limits.h
         const char* doc =
 R"""(Wrapper type for position, velocity, and acceleration limits.
 
@@ -2040,7 +2040,7 @@ the ``require_finite_*`` constructor arguments.
 NaNs are rejected for all limits and tolerances.)""";
         // Symbol: drake::planning::JointLimits::CheckInAccelerationLimits
         struct /* CheckInAccelerationLimits */ {
-          // Source: drake/planning/joint_limits.h:133
+          // Source: drake/planning/joint_limits.h
           const char* doc =
 R"""(Checks if ``acceleration`` is within acceleration limits, relaxed
 outward by ``tolerance`` in both directions.
@@ -2057,7 +2057,7 @@ Raises:
         } CheckInAccelerationLimits;
         // Symbol: drake::planning::JointLimits::CheckInPositionLimits
         struct /* CheckInPositionLimits */ {
-          // Source: drake/planning/joint_limits.h:117
+          // Source: drake/planning/joint_limits.h
           const char* doc =
 R"""(Checks if ``position`` is within position limits, relaxed outward by
 ``tolerance`` in both directions.
@@ -2073,7 +2073,7 @@ Raises:
         } CheckInPositionLimits;
         // Symbol: drake::planning::JointLimits::CheckInVelocityLimits
         struct /* CheckInVelocityLimits */ {
-          // Source: drake/planning/joint_limits.h:125
+          // Source: drake/planning/joint_limits.h
           const char* doc =
 R"""(Checks if ``velocity`` is within velocity limits, relaxed outward by
 ``tolerance`` in both directions.
@@ -2089,7 +2089,7 @@ Raises:
         } CheckInVelocityLimits;
         // Symbol: drake::planning::JointLimits::JointLimits
         struct /* ctor */ {
-          // Source: drake/planning/joint_limits.h:27
+          // Source: drake/planning/joint_limits.h
           const char* doc_plant =
 R"""(Constructs a JointLimits using the position, velocity, and
 acceleration limits in the provided ``plant``.
@@ -2104,7 +2104,7 @@ Raises:
 
 Raises:
     RuntimeError if any limit value is NaN.)""";
-          // Source: drake/planning/joint_limits.h:44
+          // Source: drake/planning/joint_limits.h
           const char* doc_plant_select =
 R"""(Constructs a JointLimits using the position, velocity, and
 acceleration limits in the provided ``plant``, selecting only the dofs
@@ -2129,7 +2129,7 @@ Raises:
 
 Raises:
     RuntimeError if any limit value is NaN.)""";
-          // Source: drake/planning/joint_limits.h:60
+          // Source: drake/planning/joint_limits.h
           const char* doc_copy_select =
 R"""(Constructs a JointLimits using the position, velocity, and
 acceleration limits in the provided ``other``, selecting only the
@@ -2151,7 +2151,7 @@ Raises:
 
 Raises:
     RuntimeError if any limit value is NaN.)""";
-          // Source: drake/planning/joint_limits.h:75
+          // Source: drake/planning/joint_limits.h
           const char* doc_vectors =
 R"""(Constructs a JointLimits using the provided arguments.
 
@@ -2172,59 +2172,59 @@ Raises:
 
 Raises:
     RuntimeError if any limit value is NaN.)""";
-          // Source: drake/planning/joint_limits.h:86
+          // Source: drake/planning/joint_limits.h
           const char* doc =
 R"""(Constructs a JointLimits with 0-length vectors for all limits.)""";
         } ctor;
         // Symbol: drake::planning::JointLimits::acceleration_lower
         struct /* acceleration_lower */ {
-          // Source: drake/planning/joint_limits.h:104
+          // Source: drake/planning/joint_limits.h
           const char* doc = R"""()""";
         } acceleration_lower;
         // Symbol: drake::planning::JointLimits::acceleration_upper
         struct /* acceleration_upper */ {
-          // Source: drake/planning/joint_limits.h:108
+          // Source: drake/planning/joint_limits.h
           const char* doc = R"""()""";
         } acceleration_upper;
         // Symbol: drake::planning::JointLimits::num_accelerations
         struct /* num_accelerations */ {
-          // Source: drake/planning/joint_limits.h:94
+          // Source: drake/planning/joint_limits.h
           const char* doc = R"""()""";
         } num_accelerations;
         // Symbol: drake::planning::JointLimits::num_positions
         struct /* num_positions */ {
-          // Source: drake/planning/joint_limits.h:90
+          // Source: drake/planning/joint_limits.h
           const char* doc = R"""()""";
         } num_positions;
         // Symbol: drake::planning::JointLimits::num_velocities
         struct /* num_velocities */ {
-          // Source: drake/planning/joint_limits.h:92
+          // Source: drake/planning/joint_limits.h
           const char* doc = R"""()""";
         } num_velocities;
         // Symbol: drake::planning::JointLimits::position_lower
         struct /* position_lower */ {
-          // Source: drake/planning/joint_limits.h:96
+          // Source: drake/planning/joint_limits.h
           const char* doc = R"""()""";
         } position_lower;
         // Symbol: drake::planning::JointLimits::position_upper
         struct /* position_upper */ {
-          // Source: drake/planning/joint_limits.h:98
+          // Source: drake/planning/joint_limits.h
           const char* doc = R"""()""";
         } position_upper;
         // Symbol: drake::planning::JointLimits::velocity_lower
         struct /* velocity_lower */ {
-          // Source: drake/planning/joint_limits.h:100
+          // Source: drake/planning/joint_limits.h
           const char* doc = R"""()""";
         } velocity_lower;
         // Symbol: drake::planning::JointLimits::velocity_upper
         struct /* velocity_upper */ {
-          // Source: drake/planning/joint_limits.h:102
+          // Source: drake/planning/joint_limits.h
           const char* doc = R"""()""";
         } velocity_upper;
       } JointLimits;
       // Symbol: drake::planning::LinearDistanceAndInterpolationProvider
       struct /* LinearDistanceAndInterpolationProvider */ {
-        // Source: drake/planning/linear_distance_and_interpolation_provider.h:23
+        // Source: drake/planning/linear_distance_and_interpolation_provider.h
         const char* doc =
 R"""(This class represents a basic "linear" implementation of
 DistanceAndInterpolationProvider.
@@ -2237,7 +2237,7 @@ DoF and 1 for all other positions.
 linear interpolation for all other positions.)""";
         // Symbol: drake::planning::LinearDistanceAndInterpolationProvider::LinearDistanceAndInterpolationProvider
         struct /* ctor */ {
-          // Source: drake/planning/linear_distance_and_interpolation_provider.h:32
+          // Source: drake/planning/linear_distance_and_interpolation_provider.h
           const char* doc_2args_plant_joint_distance_weights =
 R"""(Constructs a LinearDistanceAndInterpolationProvider for the specified
 ``plant`` using the provided map of distance weights
@@ -2246,7 +2246,7 @@ positions.
 
 Precondition:
     all distance weights must be non-negative and finite.)""";
-          // Source: drake/planning/linear_distance_and_interpolation_provider.h:42
+          // Source: drake/planning/linear_distance_and_interpolation_provider.h
           const char* doc_2args_plant_distance_weights =
 R"""(Constructs a LinearDistanceAndInterpolationProvider for the specified
 ``plant`` with the provided distance weights ``distance_weights``.
@@ -2255,7 +2255,7 @@ Precondition:
     distance_weights must be the same size as plant.num_positions(),
     all weights must be non-negative and finite, and weights for
     quaternion DoF must be of the form (weight, 0, 0, 0).)""";
-          // Source: drake/planning/linear_distance_and_interpolation_provider.h:49
+          // Source: drake/planning/linear_distance_and_interpolation_provider.h
           const char* doc_1args_plant =
 R"""(Constructs a LinearDistanceAndInterpolationProvider for the specified
 ``plant`` with default distance weights (i.e. 1) for all positions.
@@ -2264,19 +2264,19 @@ weights.)""";
         } ctor;
         // Symbol: drake::planning::LinearDistanceAndInterpolationProvider::distance_weights
         struct /* distance_weights */ {
-          // Source: drake/planning/linear_distance_and_interpolation_provider.h:55
+          // Source: drake/planning/linear_distance_and_interpolation_provider.h
           const char* doc = R"""(Gets the distance weights.)""";
         } distance_weights;
         // Symbol: drake::planning::LinearDistanceAndInterpolationProvider::quaternion_dof_start_indices
         struct /* quaternion_dof_start_indices */ {
-          // Source: drake/planning/linear_distance_and_interpolation_provider.h:58
+          // Source: drake/planning/linear_distance_and_interpolation_provider.h
           const char* doc =
 R"""(Gets the start indices for quaternion DoF in the position vector.)""";
         } quaternion_dof_start_indices;
       } LinearDistanceAndInterpolationProvider;
       // Symbol: drake::planning::MakeBodyShapeDescription
       struct /* MakeBodyShapeDescription */ {
-        // Source: drake/planning/body_shape_description.h:77
+        // Source: drake/planning/body_shape_description.h
         const char* doc =
 R"""(Constructs a BodyShapeDescription by extracting the shape, pose, and
 names associated with the provided geometry_id.
@@ -2293,7 +2293,7 @@ Precondition:
       } MakeBodyShapeDescription;
       // Symbol: drake::planning::RobotClearance
       struct /* RobotClearance */ {
-        // Source: drake/planning/robot_clearance.h:65
+        // Source: drake/planning/robot_clearance.h
         const char* doc =
 R"""(A summary of the clearance -- a collection of distance measurements --
 between the robot and everything in the world. This data can be used
@@ -2348,39 +2348,39 @@ is still possible to evaluate the Jacobian at a configuration that
 represents a local optimum (zero-valued Jacobian).)""";
         // Symbol: drake::planning::RobotClearance::Append
         struct /* Append */ {
-          // Source: drake/planning/robot_clearance.h:123
+          // Source: drake/planning/robot_clearance.h
           const char* doc = R"""(Appends one measurement to this table.)""";
         } Append;
         // Symbol: drake::planning::RobotClearance::Reserve
         struct /* Reserve */ {
-          // Source: drake/planning/robot_clearance.h:120
+          // Source: drake/planning/robot_clearance.h
           const char* doc =
 R"""(Ensures this object has storage for at least ``size`` rows.)""";
         } Reserve;
         // Symbol: drake::planning::RobotClearance::RobotClearance
         struct /* ctor */ {
-          // Source: drake/planning/robot_clearance.h:70
+          // Source: drake/planning/robot_clearance.h
           const char* doc =
 R"""(Creates an empty clearance with size() == 0 and num_positions as
 given.)""";
         } ctor;
         // Symbol: drake::planning::RobotClearance::collision_types
         struct /* collision_types */ {
-          // Source: drake/planning/robot_clearance.h:95
+          // Source: drake/planning/robot_clearance.h
           const char* doc =
 R"""(Returns:
     the vector of body collision types.)""";
         } collision_types;
         // Symbol: drake::planning::RobotClearance::distances
         struct /* distances */ {
-          // Source: drake/planning/robot_clearance.h:100
+          // Source: drake/planning/robot_clearance.h
           const char* doc =
 R"""(Returns:
     the vector of distances (``ϕᴼ(R)``).)""";
         } distances;
         // Symbol: drake::planning::RobotClearance::jacobians
         struct /* jacobians */ {
-          // Source: drake/planning/robot_clearance.h:106
+          // Source: drake/planning/robot_clearance.h
           const char* doc =
 R"""(Returns:
     the vector of distance Jacobians (``Jqᵣ_ϕᴼ(R)``); the return type
@@ -2389,34 +2389,34 @@ R"""(Returns:
         } jacobians;
         // Symbol: drake::planning::RobotClearance::mutable_jacobians
         struct /* mutable_jacobians */ {
-          // Source: drake/planning/robot_clearance.h:113
+          // Source: drake/planning/robot_clearance.h
           const char* doc =
 R"""((Advanced) The mutable flavor of jacobians().)""";
         } mutable_jacobians;
         // Symbol: drake::planning::RobotClearance::num_positions
         struct /* num_positions */ {
-          // Source: drake/planning/robot_clearance.h:80
+          // Source: drake/planning/robot_clearance.h
           const char* doc =
 R"""(Returns:
     the number of positions (i.e., columns) in jacobians().)""";
         } num_positions;
         // Symbol: drake::planning::RobotClearance::other_indices
         struct /* other_indices */ {
-          // Source: drake/planning/robot_clearance.h:90
+          // Source: drake/planning/robot_clearance.h
           const char* doc =
 R"""(Returns:
     the vector of *other* body indices.)""";
         } other_indices;
         // Symbol: drake::planning::RobotClearance::robot_indices
         struct /* robot_indices */ {
-          // Source: drake/planning/robot_clearance.h:85
+          // Source: drake/planning/robot_clearance.h
           const char* doc =
 R"""(Returns:
     the vector of *robot* body indices.)""";
         } robot_indices;
         // Symbol: drake::planning::RobotClearance::size
         struct /* size */ {
-          // Source: drake/planning/robot_clearance.h:77
+          // Source: drake/planning/robot_clearance.h
           const char* doc =
 R"""(Returns:
     the number of distance measurements (rows in the table).)""";
@@ -2424,35 +2424,35 @@ R"""(Returns:
       } RobotClearance;
       // Symbol: drake::planning::RobotCollisionType
       struct /* RobotCollisionType */ {
-        // Source: drake/planning/robot_collision_type.h:13
+        // Source: drake/planning/robot_collision_type.h
         const char* doc =
 R"""(Enumerates these predicates (and their combinations): - is the robot
 in collision with itself? - is the robot in collision with something
 in the environment?)""";
         // Symbol: drake::planning::RobotCollisionType::kEnvironmentAndSelfCollision
         struct /* kEnvironmentAndSelfCollision */ {
-          // Source: drake/planning/robot_collision_type.h:17
+          // Source: drake/planning/robot_collision_type.h
           const char* doc = R"""()""";
         } kEnvironmentAndSelfCollision;
         // Symbol: drake::planning::RobotCollisionType::kEnvironmentCollision
         struct /* kEnvironmentCollision */ {
-          // Source: drake/planning/robot_collision_type.h:15
+          // Source: drake/planning/robot_collision_type.h
           const char* doc = R"""()""";
         } kEnvironmentCollision;
         // Symbol: drake::planning::RobotCollisionType::kNoCollision
         struct /* kNoCollision */ {
-          // Source: drake/planning/robot_collision_type.h:14
+          // Source: drake/planning/robot_collision_type.h
           const char* doc = R"""()""";
         } kNoCollision;
         // Symbol: drake::planning::RobotCollisionType::kSelfCollision
         struct /* kSelfCollision */ {
-          // Source: drake/planning/robot_collision_type.h:16
+          // Source: drake/planning/robot_collision_type.h
           const char* doc = R"""()""";
         } kSelfCollision;
       } RobotCollisionType;
       // Symbol: drake::planning::RobotDiagram
       struct /* RobotDiagram */ {
-        // Source: drake/planning/robot_diagram.h:50
+        // Source: drake/planning/robot_diagram.h
         const char* doc =
 R"""(Storage for a combined diagram, plant, and scene graph.
 
@@ -2490,12 +2490,12 @@ ports will be exported by default. In that case, you can use the
 builder to export any desired ports.)""";
         // Symbol: drake::planning::RobotDiagram::RobotDiagram<T>
         struct /* ctor */ {
-          // Source: drake/planning/robot_diagram.h:52
+          // Source: drake/planning/robot_diagram.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::planning::RobotDiagram::mutable_plant_context
         struct /* mutable_plant_context */ {
-          // Source: drake/planning/robot_diagram.h:81
+          // Source: drake/planning/robot_diagram.h
           const char* doc =
 R"""(Gets the contained plant's context (mutable) out of the given root
 context. Refer to drake::systems::System::GetMyContextFromRoot() to
@@ -2506,13 +2506,13 @@ Raises:
         } mutable_plant_context;
         // Symbol: drake::planning::RobotDiagram::mutable_scene_graph
         struct /* mutable_scene_graph */ {
-          // Source: drake/planning/robot_diagram.h:72
+          // Source: drake/planning/robot_diagram.h
           const char* doc =
 R"""(Gets the contained scene graph (mutable).)""";
         } mutable_scene_graph;
         // Symbol: drake::planning::RobotDiagram::mutable_scene_graph_context
         struct /* mutable_scene_graph_context */ {
-          // Source: drake/planning/robot_diagram.h:99
+          // Source: drake/planning/robot_diagram.h
           const char* doc =
 R"""(Gets the contained scene graph's context (mutable) out of the given
 root context. Refer to drake::systems::System::GetMyContextFromRoot()
@@ -2523,12 +2523,12 @@ Raises:
         } mutable_scene_graph_context;
         // Symbol: drake::planning::RobotDiagram::plant
         struct /* plant */ {
-          // Source: drake/planning/robot_diagram.h:69
+          // Source: drake/planning/robot_diagram.h
           const char* doc = R"""(Gets the contained plant (readonly).)""";
         } plant;
         // Symbol: drake::planning::RobotDiagram::plant_context
         struct /* plant_context */ {
-          // Source: drake/planning/robot_diagram.h:90
+          // Source: drake/planning/robot_diagram.h
           const char* doc =
 R"""(Gets the contained plant's context (readonly) out of the given root
 context. Refer to drake::systems::System::GetMyContextFromRoot() to
@@ -2539,13 +2539,13 @@ Raises:
         } plant_context;
         // Symbol: drake::planning::RobotDiagram::scene_graph
         struct /* scene_graph */ {
-          // Source: drake/planning/robot_diagram.h:75
+          // Source: drake/planning/robot_diagram.h
           const char* doc =
 R"""(Gets the contained scene graph (readonly).)""";
         } scene_graph;
         // Symbol: drake::planning::RobotDiagram::scene_graph_context
         struct /* scene_graph_context */ {
-          // Source: drake/planning/robot_diagram.h:108
+          // Source: drake/planning/robot_diagram.h
           const char* doc =
 R"""(Gets the contained scene graph's context (readonly) out of the given
 root context. Refer to drake::systems::System::GetMyContextFromRoot()
@@ -2557,7 +2557,7 @@ Raises:
       } RobotDiagram;
       // Symbol: drake::planning::RobotDiagramBuilder
       struct /* RobotDiagramBuilder */ {
-        // Source: drake/planning/robot_diagram_builder.h:41
+        // Source: drake/planning/robot_diagram_builder.h
         const char* doc =
 R"""(Storage for a combined diagram builder, plant, and scene graph. When T
 == double, a parser (and package map) is also available.
@@ -2567,7 +2567,7 @@ diagram, especially in C++ code where it simplifies object lifetime
 tracking and downcasting of the plant and scene graph references.)""";
         // Symbol: drake::planning::RobotDiagramBuilder::Build
         struct /* Build */ {
-          // Source: drake/planning/robot_diagram_builder.h:122
+          // Source: drake/planning/robot_diagram_builder.h
           const char* doc =
 R"""(Builds the diagram and returns the diagram plus plant and scene graph
 in a RobotDiagram. The plant will be finalized during this function,
@@ -2578,7 +2578,7 @@ Raises:
         } Build;
         // Symbol: drake::planning::RobotDiagramBuilder::BuildForPython
         struct /* BuildForPython */ {
-          // Source: drake/planning/robot_diagram_builder.h:128
+          // Source: drake/planning/robot_diagram_builder.h
           const char* doc =
 R"""((Internal use only) Performs all the actions of Build(). In addition,
 transfers ownership of both the built diagram and the internal builder
@@ -2589,13 +2589,13 @@ Raises:
         } BuildForPython;
         // Symbol: drake::planning::RobotDiagramBuilder::IsDiagramBuilt
         struct /* IsDiagramBuilt */ {
-          // Source: drake/planning/robot_diagram_builder.h:116
+          // Source: drake/planning/robot_diagram_builder.h
           const char* doc =
 R"""(Checks if the diagram has already been built.)""";
         } IsDiagramBuilt;
         // Symbol: drake::planning::RobotDiagramBuilder::RobotDiagramBuilder<type-parameter-0-0>
         struct /* ctor */ {
-          // Source: drake/planning/robot_diagram_builder.h:50
+          // Source: drake/planning/robot_diagram_builder.h
           const char* doc =
 R"""(Constructs with the specified time step for the contained plant.
 
@@ -2607,14 +2607,14 @@ Parameter ``time_step``:
         } ctor;
         // Symbol: drake::planning::RobotDiagramBuilder::builder
         struct /* builder */ {
-          // Source: drake/planning/robot_diagram_builder.h:57
+          // Source: drake/planning/robot_diagram_builder.h
           const char* doc_0args_nonconst =
 R"""(Gets the contained DiagramBuilder (mutable). Do not call Build() on
 the return value; instead, call Build() on this.
 
 Raises:
     exception when IsDiagramBuilt() already.)""";
-          // Source: drake/planning/robot_diagram_builder.h:64
+          // Source: drake/planning/robot_diagram_builder.h
           const char* doc_0args_const =
 R"""(Gets the contained DiagramBuilder (readonly).
 
@@ -2623,13 +2623,13 @@ Raises:
         } builder;
         // Symbol: drake::planning::RobotDiagramBuilder::parser
         struct /* parser */ {
-          // Source: drake/planning/robot_diagram_builder.h:73
+          // Source: drake/planning/robot_diagram_builder.h
           const char* doc_0args_nonconst =
 R"""(Gets the contained Parser (mutable).
 
 Raises:
     exception when IsDiagramBuilt() already.)""";
-          // Source: drake/planning/robot_diagram_builder.h:82
+          // Source: drake/planning/robot_diagram_builder.h
           const char* doc_0args_const =
 R"""(Gets the contained Parser (readonly).
 
@@ -2638,13 +2638,13 @@ Raises:
         } parser;
         // Symbol: drake::planning::RobotDiagramBuilder::plant
         struct /* plant */ {
-          // Source: drake/planning/robot_diagram_builder.h:89
+          // Source: drake/planning/robot_diagram_builder.h
           const char* doc_0args_nonconst =
 R"""(Gets the contained plant (mutable).
 
 Raises:
     exception when IsDiagramBuilt() already.)""";
-          // Source: drake/planning/robot_diagram_builder.h:96
+          // Source: drake/planning/robot_diagram_builder.h
           const char* doc_0args_const =
 R"""(Gets the contained plant (readonly).
 
@@ -2653,13 +2653,13 @@ Raises:
         } plant;
         // Symbol: drake::planning::RobotDiagramBuilder::scene_graph
         struct /* scene_graph */ {
-          // Source: drake/planning/robot_diagram_builder.h:103
+          // Source: drake/planning/robot_diagram_builder.h
           const char* doc_0args_nonconst =
 R"""(Gets the contained scene graph (mutable).
 
 Raises:
     exception when IsDiagramBuilt() already.)""";
-          // Source: drake/planning/robot_diagram_builder.h:110
+          // Source: drake/planning/robot_diagram_builder.h
           const char* doc_0args_const =
 R"""(Gets the contained scene graph (readonly).
 
@@ -2669,7 +2669,7 @@ Raises:
       } RobotDiagramBuilder;
       // Symbol: drake::planning::SceneGraphCollisionChecker
       struct /* SceneGraphCollisionChecker */ {
-        // Source: drake/planning/scene_graph_collision_checker.h:20
+        // Source: drake/planning/scene_graph_collision_checker.h
         const char* doc =
 R"""(An implementation of CollisionChecker that uses SceneGraph to provide
 collision checks. Its behavior and limitations are exactly those of
@@ -2677,14 +2677,14 @@ SceneGraph, e.g., in terms of what kinds of geometries can be
 collided.)""";
         // Symbol: drake::planning::SceneGraphCollisionChecker::SceneGraphCollisionChecker
         struct /* ctor */ {
-          // Source: drake/planning/scene_graph_collision_checker.h:29
+          // Source: drake/planning/scene_graph_collision_checker.h
           const char* doc =
 R"""(Creates a new checker with the given params.)""";
         } ctor;
       } SceneGraphCollisionChecker;
       // Symbol: drake::planning::SetInEnvironmentCollision
       struct /* SetInEnvironmentCollision */ {
-        // Source: drake/planning/robot_collision_type.h:23
+        // Source: drake/planning/robot_collision_type.h
         const char* doc =
 R"""(Returns:
     a RobotCollisionType where the environment-collision value is that
@@ -2693,7 +2693,7 @@ R"""(Returns:
       } SetInEnvironmentCollision;
       // Symbol: drake::planning::SetInSelfCollision
       struct /* SetInSelfCollision */ {
-        // Source: drake/planning/robot_collision_type.h:35
+        // Source: drake/planning/robot_collision_type.h
         const char* doc =
 R"""(Returns:
     a RobotCollisionType where the self-collision value is that
@@ -2702,7 +2702,7 @@ R"""(Returns:
       } SetInSelfCollision;
       // Symbol: drake::planning::UnimplementedCollisionChecker
       struct /* UnimplementedCollisionChecker */ {
-        // Source: drake/planning/unimplemented_collision_checker.h:18
+        // Source: drake/planning/unimplemented_collision_checker.h
         const char* doc =
 R"""(A concrete collision checker implementation that throws an exception
 for every virtual function hook. This might be useful for unit testing
@@ -2710,66 +2710,66 @@ or for deriving your own collision checker without providing for the
 full suite of operations.)""";
         // Symbol: drake::planning::UnimplementedCollisionChecker::DoAddCollisionShapeToBody
         struct /* DoAddCollisionShapeToBody */ {
-          // Source: drake/planning/unimplemented_collision_checker.h:50
+          // Source: drake/planning/unimplemented_collision_checker.h
           const char* doc = R"""()""";
         } DoAddCollisionShapeToBody;
         // Symbol: drake::planning::UnimplementedCollisionChecker::DoCalcContextRobotClearance
         struct /* DoCalcContextRobotClearance */ {
-          // Source: drake/planning/unimplemented_collision_checker.h:60
+          // Source: drake/planning/unimplemented_collision_checker.h
           const char* doc = R"""()""";
         } DoCalcContextRobotClearance;
         // Symbol: drake::planning::UnimplementedCollisionChecker::DoCheckContextConfigCollisionFree
         struct /* DoCheckContextConfigCollisionFree */ {
-          // Source: drake/planning/unimplemented_collision_checker.h:47
+          // Source: drake/planning/unimplemented_collision_checker.h
           const char* doc = R"""()""";
         } DoCheckContextConfigCollisionFree;
         // Symbol: drake::planning::UnimplementedCollisionChecker::DoClassifyContextBodyCollisions
         struct /* DoClassifyContextBodyCollisions */ {
-          // Source: drake/planning/unimplemented_collision_checker.h:63
+          // Source: drake/planning/unimplemented_collision_checker.h
           const char* doc = R"""()""";
         } DoClassifyContextBodyCollisions;
         // Symbol: drake::planning::UnimplementedCollisionChecker::DoClone
         struct /* DoClone */ {
-          // Source: drake/planning/unimplemented_collision_checker.h:42
+          // Source: drake/planning/unimplemented_collision_checker.h
           const char* doc = R"""()""";
         } DoClone;
         // Symbol: drake::planning::UnimplementedCollisionChecker::DoMaxContextNumDistances
         struct /* DoMaxContextNumDistances */ {
-          // Source: drake/planning/unimplemented_collision_checker.h:66
+          // Source: drake/planning/unimplemented_collision_checker.h
           const char* doc = R"""()""";
         } DoMaxContextNumDistances;
         // Symbol: drake::planning::UnimplementedCollisionChecker::DoUpdateContextPositions
         struct /* DoUpdateContextPositions */ {
-          // Source: drake/planning/unimplemented_collision_checker.h:44
+          // Source: drake/planning/unimplemented_collision_checker.h
           const char* doc = R"""()""";
         } DoUpdateContextPositions;
         // Symbol: drake::planning::UnimplementedCollisionChecker::RemoveAddedGeometries
         struct /* RemoveAddedGeometries */ {
-          // Source: drake/planning/unimplemented_collision_checker.h:55
+          // Source: drake/planning/unimplemented_collision_checker.h
           const char* doc = R"""()""";
         } RemoveAddedGeometries;
         // Symbol: drake::planning::UnimplementedCollisionChecker::UnimplementedCollisionChecker
         struct /* ctor */ {
-          // Source: drake/planning/unimplemented_collision_checker.h:23
+          // Source: drake/planning/unimplemented_collision_checker.h
           const char* doc =
 R"""(Constructs a checker.
 
 Parameter ``supports_parallel_checking``:
     will serve as the return value of the
     CollisionChecker::SupportsParallelChecking() function.)""";
-          // Source: drake/planning/unimplemented_collision_checker.h:29
+          // Source: drake/planning/unimplemented_collision_checker.h
           const char* doc_move =
 R"""(@name Does not allow copy, move, or assignment.)""";
         } ctor;
         // Symbol: drake::planning::UnimplementedCollisionChecker::UpdateCollisionFilters
         struct /* UpdateCollisionFilters */ {
-          // Source: drake/planning/unimplemented_collision_checker.h:58
+          // Source: drake/planning/unimplemented_collision_checker.h
           const char* doc = R"""()""";
         } UpdateCollisionFilters;
       } UnimplementedCollisionChecker;
       // Symbol: drake::planning::VisibilityGraph
       struct /* VisibilityGraph */ {
-        // Source: drake/planning/visibility_graph.h:34
+        // Source: drake/planning/visibility_graph.h
         const char* doc =
 R"""(Given some number of sampled points in the configuration space of
 ``checker`'s plant(), computes the "visibility graph" -- two `points``

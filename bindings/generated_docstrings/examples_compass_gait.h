@@ -27,7 +27,7 @@ constexpr struct /* pydrake_doc_examples_compass_gait */ {
       struct /* compass_gait */ {
         // Symbol: drake::examples::compass_gait::CompassGait
         struct /* CompassGait */ {
-          // Source: drake/examples/compass_gait/compass_gait.h:53
+          // Source: drake/examples/compass_gait/compass_gait.h
           const char* doc =
 R"""(Dynamical representation of the idealized hybrid dynamics of a
 "compass gait", as described in
@@ -67,15 +67,15 @@ Note: If the hip_torque input port is not connected, then the torque
 is taken to be zero.)""";
           // Symbol: drake::examples::compass_gait::CompassGait::CompassGait<T>
           struct /* ctor */ {
-            // Source: drake/examples/compass_gait/compass_gait.h:58
+            // Source: drake/examples/compass_gait/compass_gait.h
             const char* doc = R"""(Constructs the plant.)""";
-            // Source: drake/examples/compass_gait/compass_gait.h:62
+            // Source: drake/examples/compass_gait/compass_gait.h
             const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
           } ctor;
           // Symbol: drake::examples::compass_gait::CompassGait::DynamicsBiasTerm
           struct /* DynamicsBiasTerm */ {
-            // Source: drake/examples/compass_gait/compass_gait.h:119
+            // Source: drake/examples/compass_gait/compass_gait.h
             const char* doc =
 R"""(Manipulator equation of CompassGait: M(q)v̇ + bias(q,v) = 0.
 
@@ -84,17 +84,17 @@ Coriolis term and gravity term, i.e. bias = C(q,v)*v - τ_g(q).)""";
           } DynamicsBiasTerm;
           // Symbol: drake::examples::compass_gait::CompassGait::MassMatrix
           struct /* MassMatrix */ {
-            // Source: drake/examples/compass_gait/compass_gait.h:120
+            // Source: drake/examples/compass_gait/compass_gait.h
             const char* doc = R"""()""";
           } MassMatrix;
           // Symbol: drake::examples::compass_gait::CompassGait::get_continuous_state
           struct /* get_continuous_state */ {
-            // Source: drake/examples/compass_gait/compass_gait.h:78
+            // Source: drake/examples/compass_gait/compass_gait.h
             const char* doc = R"""(Returns the CompassGaitContinuousState.)""";
           } get_continuous_state;
           // Symbol: drake::examples::compass_gait::CompassGait::get_floating_base_state_output_port
           struct /* get_floating_base_state_output_port */ {
-            // Source: drake/examples/compass_gait/compass_gait.h:73
+            // Source: drake/examples/compass_gait/compass_gait.h
             const char* doc =
 R"""(Returns reference to the output port that provides the state in the
 floating-base coordinates (described via left leg xyz & rpy + hip
@@ -102,51 +102,51 @@ angle + derivatives).)""";
           } get_floating_base_state_output_port;
           // Symbol: drake::examples::compass_gait::CompassGait::get_minimal_state_output_port
           struct /* get_minimal_state_output_port */ {
-            // Source: drake/examples/compass_gait/compass_gait.h:66
+            // Source: drake/examples/compass_gait/compass_gait.h
             const char* doc =
 R"""(Returns reference to the output port that publishes only
 [theta_stance, theta_swing, thetatdot_stance, thetadot_swing].)""";
           } get_minimal_state_output_port;
           // Symbol: drake::examples::compass_gait::CompassGait::get_mutable_continuous_state
           struct /* get_mutable_continuous_state */ {
-            // Source: drake/examples/compass_gait/compass_gait.h:84
+            // Source: drake/examples/compass_gait/compass_gait.h
             const char* doc =
 R"""(Returns the mutable CompassGaitContinuousState.)""";
           } get_mutable_continuous_state;
           // Symbol: drake::examples::compass_gait::CompassGait::get_parameters
           struct /* get_parameters */ {
-            // Source: drake/examples/compass_gait/compass_gait.h:108
+            // Source: drake/examples/compass_gait/compass_gait.h
             const char* doc = R"""(Access the CompassGaitParams.)""";
           } get_parameters;
           // Symbol: drake::examples::compass_gait::CompassGait::get_toe_position
           struct /* get_toe_position */ {
-            // Source: drake/examples/compass_gait/compass_gait.h:90
+            // Source: drake/examples/compass_gait/compass_gait.h
             const char* doc = R"""()""";
           } get_toe_position;
           // Symbol: drake::examples::compass_gait::CompassGait::left_leg_is_stance
           struct /* left_leg_is_stance */ {
-            // Source: drake/examples/compass_gait/compass_gait.h:99
+            // Source: drake/examples/compass_gait/compass_gait.h
             const char* doc = R"""()""";
           } left_leg_is_stance;
           // Symbol: drake::examples::compass_gait::CompassGait::set_left_leg_is_stance
           struct /* set_left_leg_is_stance */ {
-            // Source: drake/examples/compass_gait/compass_gait.h:103
+            // Source: drake/examples/compass_gait/compass_gait.h
             const char* doc = R"""()""";
           } set_left_leg_is_stance;
           // Symbol: drake::examples::compass_gait::CompassGait::set_toe_position
           struct /* set_toe_position */ {
-            // Source: drake/examples/compass_gait/compass_gait.h:94
+            // Source: drake/examples/compass_gait/compass_gait.h
             const char* doc = R"""()""";
           } set_toe_position;
         } CompassGait;
         // Symbol: drake::examples::compass_gait::CompassGaitContinuousState
         struct /* CompassGaitContinuousState */ {
-          // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:49
+          // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
           const char* doc =
 R"""(Specializes BasicVector with specific getters and setters.)""";
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::CompassGaitContinuousState<T>
           struct /* ctor */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:59
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc =
 R"""(Default constructor. Sets all rows to their default value:
 
@@ -160,30 +160,30 @@ R"""(Default constructor. Sets all rows to their default value:
           } ctor;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::DoClone
           struct /* DoClone */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:100
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc = R"""()""";
           } DoClone;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::GetCoordinateNames
           struct /* GetCoordinateNames */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:201
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc =
 R"""(See CompassGaitContinuousStateIndices::GetCoordinateNames().)""";
           } GetCoordinateNames;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::IsValid
           struct /* IsValid */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:206
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc =
 R"""(Returns whether the current values of this vector are well-formed.)""";
           } IsValid;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::K
           struct /* K */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:52
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc =
 R"""(An abbreviation for our row index constants.)""";
           } K;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::Serialize
           struct /* Serialize */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:189
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc =
 R"""(Visit each field of this named vector, passing them (in order) to the
 given Archive. The archive can read and/or write to the vector values.
@@ -191,34 +191,34 @@ One common use of Serialize is the //common/yaml tools.)""";
           } Serialize;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::SetToNamedVariables
           struct /* SetToNamedVariables */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:93
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc =
 R"""(Create a symbolic::Variable for each element with the known variable
 name. This is only available for T == symbolic::Expression.)""";
           } SetToNamedVariables;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::set_stance
           struct /* set_stance */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:114
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc = R"""(Setter that matches stance().)""";
           } set_stance;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::set_stancedot
           struct /* set_stancedot */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:152
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc = R"""(Setter that matches stancedot().)""";
           } set_stancedot;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::set_swing
           struct /* set_swing */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:134
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc = R"""(Setter that matches swing().)""";
           } set_swing;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::set_swingdot
           struct /* set_swingdot */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:171
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc = R"""(Setter that matches swingdot().)""";
           } set_swingdot;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::stance
           struct /* stance */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:109
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc =
 R"""(The orientation of the stance leg, measured clockwise from the
 vertical axis.
@@ -228,7 +228,7 @@ Note:
           } stance;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::stancedot
           struct /* stancedot */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:147
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc =
 R"""(The angular velocity of the stance leg.
 
@@ -237,7 +237,7 @@ Note:
           } stancedot;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::swing
           struct /* swing */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:129
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc =
 R"""(The orientation of the swing leg, measured clockwise from the vertical
 axis.
@@ -247,7 +247,7 @@ Note:
           } swing;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::swingdot
           struct /* swingdot */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:166
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc =
 R"""(The angular velocity of the swing leg.
 
@@ -256,28 +256,28 @@ Note:
           } swingdot;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::with_stance
           struct /* with_stance */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:120
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc =
 R"""(Fluent setter that matches stance(). Returns a copy of ``this`` with
 stance set to a new value.)""";
           } with_stance;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::with_stancedot
           struct /* with_stancedot */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:158
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc =
 R"""(Fluent setter that matches stancedot(). Returns a copy of ``this``
 with stancedot set to a new value.)""";
           } with_stancedot;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::with_swing
           struct /* with_swing */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:140
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc =
 R"""(Fluent setter that matches swing(). Returns a copy of ``this`` with
 swing set to a new value.)""";
           } with_swing;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::with_swingdot
           struct /* with_swingdot */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:177
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc =
 R"""(Fluent setter that matches swingdot(). Returns a copy of ``this`` with
 swingdot set to a new value.)""";
@@ -285,12 +285,12 @@ swingdot set to a new value.)""";
         } CompassGaitContinuousState;
         // Symbol: drake::examples::compass_gait::CompassGaitContinuousStateIndices
         struct /* CompassGaitContinuousStateIndices */ {
-          // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:29
+          // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
           const char* doc =
 R"""(Describes the row indices of a CompassGaitContinuousState.)""";
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousStateIndices::GetCoordinateNames
           struct /* GetCoordinateNames */ {
-            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h:44
+            // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc =
 R"""(Returns a vector containing the names of each coordinate within this
 class. The indices within the returned vector matches that of this
@@ -301,7 +301,7 @@ name for ``BasicVector::GetAtIndex(i)``.)""";
         } CompassGaitContinuousStateIndices;
         // Symbol: drake::examples::compass_gait::CompassGaitGeometry
         struct /* CompassGaitGeometry */ {
-          // Source: drake/examples/compass_gait/compass_gait_geometry.h:24
+          // Source: drake/examples/compass_gait/compass_gait_geometry.h
           const char* doc =
 R"""(Expresses a CompassGait's geometry to a SceneGraph.
 
@@ -317,7 +317,7 @@ This class has no public constructor; instead use the AddToBuilder()
 static method to create and add it to a DiagramBuilder directly.)""";
           // Symbol: drake::examples::compass_gait::CompassGaitGeometry::AddToBuilder
           struct /* AddToBuilder */ {
-            // Source: drake/examples/compass_gait/compass_gait_geometry.h:40
+            // Source: drake/examples/compass_gait/compass_gait_geometry.h
             const char* doc_4args =
 R"""(Creates, adds, and connects a CompassGaitGeometry system into the
 given ``builder``. Both the ``floating_base_state_port.get_system()``
@@ -330,7 +330,7 @@ changes based on the leg length and the ration of leg mass to hip mass
 The ``scene_graph`` pointer is not retained by the CompassGaitGeometry
 system. The return value pointer is an alias of the new
 CompassGaitGeometry system that is owned by the ``builder``.)""";
-            // Source: drake/examples/compass_gait/compass_gait_geometry.h:54
+            // Source: drake/examples/compass_gait/compass_gait_geometry.h
             const char* doc_3args =
 R"""(Creates, adds, and connects a CompassGaitGeometry system into the
 given ``builder``. Both the ``floating_base_state_port.get_system()``
@@ -344,18 +344,18 @@ CompassGaitGeometry system that is owned by the ``builder``.)""";
           } AddToBuilder;
           // Symbol: drake::examples::compass_gait::CompassGaitGeometry::CompassGaitGeometry
           struct /* ctor */ {
-            // Source: drake/examples/compass_gait/compass_gait_geometry.h:26
+            // Source: drake/examples/compass_gait/compass_gait_geometry.h
             const char* doc = R"""()""";
           } ctor;
         } CompassGaitGeometry;
         // Symbol: drake::examples::compass_gait::CompassGaitParams
         struct /* CompassGaitParams */ {
-          // Source: drake/examples/compass_gait/compass_gait_params.h:50
+          // Source: drake/examples/compass_gait/compass_gait_params.h
           const char* doc =
 R"""(Specializes BasicVector with specific getters and setters.)""";
           // Symbol: drake::examples::compass_gait::CompassGaitParams::CompassGaitParams<T>
           struct /* ctor */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:62
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(Default constructor. Sets all rows to their default value:
 
@@ -373,35 +373,35 @@ R"""(Default constructor. Sets all rows to their default value:
           } ctor;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::DoClone
           struct /* DoClone */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:104
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc = R"""()""";
           } DoClone;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::GetCoordinateNames
           struct /* GetCoordinateNames */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:251
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(See CompassGaitParamsIndices::GetCoordinateNames().)""";
           } GetCoordinateNames;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::GetElementBounds
           struct /* GetElementBounds */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:275
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc = R"""()""";
           } GetElementBounds;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::IsValid
           struct /* IsValid */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:256
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(Returns whether the current values of this vector are well-formed.)""";
           } IsValid;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::K
           struct /* K */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:53
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(An abbreviation for our row index constants.)""";
           } K;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::Serialize
           struct /* Serialize */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:234
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(Visit each field of this named vector, passing them (in order) to the
 given Archive. The archive can read and/or write to the vector values.
@@ -409,14 +409,14 @@ One common use of Serialize is the //common/yaml tools.)""";
           } Serialize;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::SetToNamedVariables
           struct /* SetToNamedVariables */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:95
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(Create a symbolic::Variable for each element with the known variable
 name. This is only available for T == symbolic::Expression.)""";
           } SetToNamedVariables;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::center_of_mass_leg
           struct /* center_of_mass_leg */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:171
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(Distance from the hip to the center of mass of each leg.
 
@@ -428,7 +428,7 @@ Note:
           } center_of_mass_leg;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::gravity
           struct /* gravity */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:191
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(An approximate value for gravitational acceleration.
 
@@ -440,7 +440,7 @@ Note:
           } gravity;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::length_leg
           struct /* length_leg */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:151
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(The length of each leg.
 
@@ -452,7 +452,7 @@ Note:
           } length_leg;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::mass_hip
           struct /* mass_hip */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:113
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(Point mass at the hip.
 
@@ -464,7 +464,7 @@ Note:
           } mass_hip;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::mass_leg
           struct /* mass_leg */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:132
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(Mass of each leg (modeled as a point mass at the center of mass).
 
@@ -476,38 +476,38 @@ Note:
           } mass_leg;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::set_center_of_mass_leg
           struct /* set_center_of_mass_leg */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:176
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(Setter that matches center_of_mass_leg().)""";
           } set_center_of_mass_leg;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::set_gravity
           struct /* set_gravity */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:196
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc = R"""(Setter that matches gravity().)""";
           } set_gravity;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::set_length_leg
           struct /* set_length_leg */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:156
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc = R"""(Setter that matches length_leg().)""";
           } set_length_leg;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::set_mass_hip
           struct /* set_mass_hip */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:118
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc = R"""(Setter that matches mass_hip().)""";
           } set_mass_hip;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::set_mass_leg
           struct /* set_mass_leg */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:137
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc = R"""(Setter that matches mass_leg().)""";
           } set_mass_leg;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::set_slope
           struct /* set_slope */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:217
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc = R"""(Setter that matches slope().)""";
           } set_slope;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::slope
           struct /* slope */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:212
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(The angle of the ramp on which the compass gait is walking. Must have
 0 <= slope < PI/2 so that forward == downhill (an assumption used in
@@ -521,42 +521,42 @@ Note:
           } slope;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::with_center_of_mass_leg
           struct /* with_center_of_mass_leg */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:182
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(Fluent setter that matches center_of_mass_leg(). Returns a copy of
 ``this`` with center_of_mass_leg set to a new value.)""";
           } with_center_of_mass_leg;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::with_gravity
           struct /* with_gravity */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:202
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(Fluent setter that matches gravity(). Returns a copy of ``this`` with
 gravity set to a new value.)""";
           } with_gravity;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::with_length_leg
           struct /* with_length_leg */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:162
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(Fluent setter that matches length_leg(). Returns a copy of ``this``
 with length_leg set to a new value.)""";
           } with_length_leg;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::with_mass_hip
           struct /* with_mass_hip */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:124
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(Fluent setter that matches mass_hip(). Returns a copy of ``this`` with
 mass_hip set to a new value.)""";
           } with_mass_hip;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::with_mass_leg
           struct /* with_mass_leg */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:143
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(Fluent setter that matches mass_leg(). Returns a copy of ``this`` with
 mass_leg set to a new value.)""";
           } with_mass_leg;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::with_slope
           struct /* with_slope */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:223
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(Fluent setter that matches slope(). Returns a copy of ``this`` with
 slope set to a new value.)""";
@@ -564,12 +564,12 @@ slope set to a new value.)""";
         } CompassGaitParams;
         // Symbol: drake::examples::compass_gait::CompassGaitParamsIndices
         struct /* CompassGaitParamsIndices */ {
-          // Source: drake/examples/compass_gait/compass_gait_params.h:29
+          // Source: drake/examples/compass_gait/compass_gait_params.h
           const char* doc =
 R"""(Describes the row indices of a CompassGaitParams.)""";
           // Symbol: drake::examples::compass_gait::CompassGaitParamsIndices::GetCoordinateNames
           struct /* GetCoordinateNames */ {
-            // Source: drake/examples/compass_gait/compass_gait_params.h:45
+            // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
 R"""(Returns a vector containing the names of each coordinate within this
 class. The indices within the returned vector matches that of this

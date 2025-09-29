@@ -33,7 +33,7 @@ constexpr struct /* pydrake_doc_manipulation_schunk_wsg */ {
       struct /* schunk_wsg */ {
         // Symbol: drake::manipulation::schunk_wsg::ApplyDriverConfig
         struct /* ApplyDriverConfig */ {
-          // Source: drake/manipulation/schunk_wsg/schunk_wsg_driver_functions.h:19
+          // Source: drake/manipulation/schunk_wsg/schunk_wsg_driver_functions.h
           const char* doc =
 R"""(Wires up Drake systems between an LCM interface and the actuation
 input ports of a MultibodyPlant. This simulates the role that driver
@@ -41,7 +41,7 @@ software and robot firmware would take in real life.)""";
         } ApplyDriverConfig;
         // Symbol: drake::manipulation::schunk_wsg::BuildSchunkWsgControl
         struct /* BuildSchunkWsgControl */ {
-          // Source: drake/manipulation/schunk_wsg/build_schunk_wsg_control.h:19
+          // Source: drake/manipulation/schunk_wsg/build_schunk_wsg_control.h
           const char* doc =
 R"""(Builds (into ``builder)`` the WSG control and sensing systems for the
 wsg model in ``plant`` indicated by ``wsg_instance``; hooks those
@@ -51,42 +51,42 @@ gains.)""";
         } BuildSchunkWsgControl;
         // Symbol: drake::manipulation::schunk_wsg::ControlMode
         struct /* ControlMode */ {
-          // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h:11
+          // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h
           const char* doc = R"""()""";
           // Symbol: drake::manipulation::schunk_wsg::ControlMode::kForce
           struct /* kForce */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h:11
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h
             const char* doc = R"""()""";
           } kForce;
           // Symbol: drake::manipulation::schunk_wsg::ControlMode::kPosition
           struct /* kPosition */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h:11
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h
             const char* doc = R"""()""";
           } kPosition;
         } ControlMode;
         // Symbol: drake::manipulation::schunk_wsg::GetSchunkWsgOpenPosition
         struct /* GetSchunkWsgOpenPosition */ {
-          // Source: drake/manipulation/schunk_wsg/schunk_wsg_constants.h:41
+          // Source: drake/manipulation/schunk_wsg/schunk_wsg_constants.h
           const char* doc =
 R"""(Returns the position vector corresponding to the open position of the
 gripper.)""";
         } GetSchunkWsgOpenPosition;
         // Symbol: drake::manipulation::schunk_wsg::MakeMultibodyForceToWsgForceSystem
         struct /* MakeMultibodyForceToWsgForceSystem */ {
-          // Source: drake/manipulation/schunk_wsg/schunk_wsg_constants.h:102
+          // Source: drake/manipulation/schunk_wsg/schunk_wsg_constants.h
           const char* doc =
 R"""(Helper method to create a MultibodyForceToWsgForceSystem.)""";
         } MakeMultibodyForceToWsgForceSystem;
         // Symbol: drake::manipulation::schunk_wsg::MakeMultibodyStateToWsgStateSystem
         struct /* MakeMultibodyStateToWsgStateSystem */ {
-          // Source: drake/manipulation/schunk_wsg/schunk_wsg_constants.h:53
+          // Source: drake/manipulation/schunk_wsg/schunk_wsg_constants.h
           const char* doc =
 R"""(Extract the distance between the fingers (and its time derivative) out
 of the plant model which pretends the two fingers are independent.)""";
         } MakeMultibodyStateToWsgStateSystem;
         // Symbol: drake::manipulation::schunk_wsg::MultibodyForceToWsgForceSystem
         struct /* MultibodyForceToWsgForceSystem */ {
-          // Source: drake/manipulation/schunk_wsg/schunk_wsg_constants.h:75
+          // Source: drake/manipulation/schunk_wsg/schunk_wsg_constants.h
           const char* doc =
 R"""(Extract the gripper measured force from the generalized forces on the
 two fingers.
@@ -100,18 +100,18 @@ two fingers.
     - y0)""";
           // Symbol: drake::manipulation::schunk_wsg::MultibodyForceToWsgForceSystem::DoCalcVectorOutput
           struct /* DoCalcVectorOutput */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_constants.h:88
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_constants.h
             const char* doc = R"""()""";
           } DoCalcVectorOutput;
           // Symbol: drake::manipulation::schunk_wsg::MultibodyForceToWsgForceSystem::MultibodyForceToWsgForceSystem<T>
           struct /* ctor */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_constants.h:77
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_constants.h
             const char* doc = R"""()""";
           } ctor;
         } MultibodyForceToWsgForceSystem;
         // Symbol: drake::manipulation::schunk_wsg::SchunkWsgCommandReceiver
         struct /* SchunkWsgCommandReceiver */ {
-          // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h:38
+          // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h
           const char* doc =
 R"""(Handles the command for the Schunk WSG gripper from a
 LcmSubscriberSystem.
@@ -134,7 +134,7 @@ limit are scalars (BasicVector<double> of size 1).
     - force_limit)""";
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgCommandReceiver::SchunkWsgCommandReceiver
           struct /* ctor */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h:47
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h
             const char* doc =
 R"""(Parameter ``initial_position``:
     the commanded position to output if no LCM message has been
@@ -146,18 +146,18 @@ Parameter ``initial_force``:
           } ctor;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgCommandReceiver::get_force_limit_output_port
           struct /* get_force_limit_output_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h:54
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h
             const char* doc = R"""()""";
           } get_force_limit_output_port;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgCommandReceiver::get_position_output_port
           struct /* get_position_output_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h:50
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h
             const char* doc = R"""()""";
           } get_position_output_port;
         } SchunkWsgCommandReceiver;
         // Symbol: drake::manipulation::schunk_wsg::SchunkWsgCommandSender
         struct /* SchunkWsgCommandSender */ {
-          // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h:88
+          // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h
           const char* doc =
 R"""(Send lcmt_schunk_wsg_command messages for a Schunk WSG gripper. Has
 two input ports: one for the commanded finger position represented as
@@ -179,28 +179,28 @@ the ``default_force_limit`` value given at construction time will be
 used.)""";
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgCommandSender::SchunkWsgCommandSender
           struct /* ctor */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h:90
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgCommandSender::get_command_output_port
           struct /* get_command_output_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h:102
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h
             const char* doc = R"""()""";
           } get_command_output_port;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgCommandSender::get_force_limit_input_port
           struct /* get_force_limit_input_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h:98
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h
             const char* doc = R"""()""";
           } get_force_limit_input_port;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgCommandSender::get_position_input_port
           struct /* get_position_input_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h:94
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h
             const char* doc = R"""()""";
           } get_position_input_port;
         } SchunkWsgCommandSender;
         // Symbol: drake::manipulation::schunk_wsg::SchunkWsgController
         struct /* SchunkWsgController */ {
-          // Source: drake/manipulation/schunk_wsg/schunk_wsg_controller.h:29
+          // Source: drake/manipulation/schunk_wsg/schunk_wsg_controller.h
           const char* doc =
 R"""(This class implements a controller for a Schunk WSG gripper. It has
 two input ports: lcmt_schunk_wsg_command message and the current
@@ -222,13 +222,13 @@ command message).
     - force)""";
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgController::SchunkWsgController
           struct /* ctor */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_controller.h:31
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_controller.h
             const char* doc = R"""()""";
           } ctor;
         } SchunkWsgController;
         // Symbol: drake::manipulation::schunk_wsg::SchunkWsgDriver
         struct /* SchunkWsgDriver */ {
-          // Source: drake/manipulation/schunk_wsg/schunk_wsg_driver.h:20
+          // Source: drake/manipulation/schunk_wsg/schunk_wsg_driver.h
           const char* doc =
 R"""(This config struct specifies how to wire up Drake systems between an
 LCM interface and the actuation input ports of a MultibodyPlant. This
@@ -239,17 +239,17 @@ It creates an LCM publisher on the ``SCHUNK_WSG_STATUS`` channel and
 an LCM subscriber on the ``SCHUNK_WSG_COMMAND`` channel.)""";
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgDriver::Serialize
           struct /* Serialize */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_driver.h:29
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_driver.h
             const char* doc = R"""()""";
           } Serialize;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgDriver::lcm_bus
           struct /* lcm_bus */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_driver.h:26
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_driver.h
             const char* doc = R"""()""";
           } lcm_bus;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgDriver::pid_gains
           struct /* pid_gains */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_driver.h:24
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_driver.h
             const char* doc =
 R"""(Gains to apply to the the WSG fingers. The p term corresponds
 approximately to the elastic modulus of the belt, the d term to the
@@ -264,7 +264,7 @@ viscous friction of the geartrain. The i term is nonphysical.)""";
         } SchunkWsgDriver;
         // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPdController
         struct /* SchunkWsgPdController */ {
-          // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h:62
+          // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h
           const char* doc =
 R"""(This class implements a controller for a Schunk WSG gripper in
 position control mode. It assumes that the gripper is modeled in the
@@ -318,40 +318,40 @@ surrogate for the force measurement from the driver, f = abs(f₀-f₁)
 which, like the gripper itself, only reports a positive force.)""";
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPdController::SchunkWsgPdController
           struct /* ctor */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h:72
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h
             const char* doc =
 R"""(Initialize the controller. The gain parameters are set based limited
 tuning in simulation with a kuka picking up small objects.)""";
           } ctor;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPdController::get_desired_state_input_port
           struct /* get_desired_state_input_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h:77
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h
             const char* doc = R"""()""";
           } get_desired_state_input_port;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPdController::get_force_limit_input_port
           struct /* get_force_limit_input_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h:81
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h
             const char* doc = R"""()""";
           } get_force_limit_input_port;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPdController::get_generalized_force_output_port
           struct /* get_generalized_force_output_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h:89
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h
             const char* doc = R"""()""";
           } get_generalized_force_output_port;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPdController::get_grip_force_output_port
           struct /* get_grip_force_output_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h:93
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h
             const char* doc = R"""()""";
           } get_grip_force_output_port;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPdController::get_state_input_port
           struct /* get_state_input_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h:85
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h
             const char* doc = R"""()""";
           } get_state_input_port;
         } SchunkWsgPdController;
         // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPlainController
         struct /* SchunkWsgPlainController */ {
-          // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h:124
+          // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h
           const char* doc =
 R"""(This class implements a controller for a Schunk WSG gripper as a
 ``systems::Diagram``. The composition of this diagram is determined by
@@ -516,13 +516,13 @@ is ``kPosition``; the ``feed_forward_force`` port is present only when
 the control mode is ``kForce``.)""";
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPlainController::SchunkWsgPlainController
           struct /* ctor */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h:130
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h
             const char* doc =
 R"""(Specify control gains and mode. Mode defaults to position control.)""";
           } ctor;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPlainController::get_input_port_desired_state
           struct /* get_input_port_desired_state */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h:155
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h
             const char* doc =
 R"""(Returns the desired grip state input port.
 
@@ -532,12 +532,12 @@ Precondition:
           } get_input_port_desired_state;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPlainController::get_input_port_estimated_state
           struct /* get_input_port_estimated_state */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h:147
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h
             const char* doc = R"""()""";
           } get_input_port_estimated_state;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPlainController::get_input_port_feed_forward_force
           struct /* get_input_port_feed_forward_force */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h:137
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h
             const char* doc =
 R"""(Returns the feed-forward force input port.
 
@@ -547,18 +547,18 @@ Precondition:
           } get_input_port_feed_forward_force;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPlainController::get_input_port_max_force
           struct /* get_input_port_max_force */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h:142
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h
             const char* doc = R"""()""";
           } get_input_port_max_force;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPlainController::get_output_port_control
           struct /* get_output_port_control */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h:161
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h
             const char* doc = R"""()""";
           } get_output_port_control;
         } SchunkWsgPlainController;
         // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPositionController
         struct /* SchunkWsgPositionController */ {
-          // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h:142
+          // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h
           const char* doc =
 R"""(This class implements a controller for a Schunk WSG gripper in
 position control mode adding a discrete-derivative to estimate the
@@ -584,7 +584,7 @@ See also:
     SchunkWsgPdController)""";
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPositionController::SchunkWsgPositionController
           struct /* ctor */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h:150
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h
             const char* doc =
 R"""(Initialize the controller. The default ``time_step`` is set to match
 the update rate of the wsg firmware. The gain parameters are set based
@@ -595,33 +595,33 @@ See also:
           } ctor;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPositionController::get_desired_position_input_port
           struct /* get_desired_position_input_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h:157
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h
             const char* doc = R"""()""";
           } get_desired_position_input_port;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPositionController::get_force_limit_input_port
           struct /* get_force_limit_input_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h:161
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h
             const char* doc = R"""()""";
           } get_force_limit_input_port;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPositionController::get_generalized_force_output_port
           struct /* get_generalized_force_output_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h:169
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h
             const char* doc = R"""()""";
           } get_generalized_force_output_port;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPositionController::get_grip_force_output_port
           struct /* get_grip_force_output_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h:173
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h
             const char* doc = R"""()""";
           } get_grip_force_output_port;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPositionController::get_state_input_port
           struct /* get_state_input_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h:165
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h
             const char* doc = R"""()""";
           } get_state_input_port;
         } SchunkWsgPositionController;
         // Symbol: drake::manipulation::schunk_wsg::SchunkWsgStatusReceiver
         struct /* SchunkWsgStatusReceiver */ {
-          // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h:131
+          // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h
           const char* doc =
 R"""(Handles lcmt_schunk_wsg_status messages from a LcmSubscriberSystem.
 Has two output ports: one for the measured state of the gripper,
@@ -638,28 +638,28 @@ its corresponding velocity, and one for the measured force.
     - force)""";
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgStatusReceiver::SchunkWsgStatusReceiver
           struct /* ctor */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h:133
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgStatusReceiver::get_force_output_port
           struct /* get_force_output_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h:145
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h
             const char* doc = R"""()""";
           } get_force_output_port;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgStatusReceiver::get_state_output_port
           struct /* get_state_output_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h:141
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h
             const char* doc = R"""()""";
           } get_state_output_port;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgStatusReceiver::get_status_input_port
           struct /* get_status_input_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h:137
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h
             const char* doc = R"""()""";
           } get_status_input_port;
         } SchunkWsgStatusReceiver;
         // Symbol: drake::manipulation::schunk_wsg::SchunkWsgStatusSender
         struct /* SchunkWsgStatusSender */ {
-          // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h:179
+          // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h
           const char* doc =
 R"""(Sends lcmt_schunk_wsg_status messages for a Schunk WSG. This system
 has one input port for the current state of the WSG, and one optional
@@ -679,23 +679,23 @@ position and one velocity -- representing the distance between the
 fingers (positive implies non-penetration).)""";
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgStatusSender::SchunkWsgStatusSender
           struct /* ctor */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h:181
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgStatusSender::get_force_input_port
           struct /* get_force_input_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h:188
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h
             const char* doc = R"""()""";
           } get_force_input_port;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgStatusSender::get_state_input_port
           struct /* get_state_input_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h:183
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_lcm.h
             const char* doc = R"""()""";
           } get_state_input_port;
         } SchunkWsgStatusSender;
         // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGenerator
         struct /* SchunkWsgTrajectoryGenerator */ {
-          // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator.h:45
+          // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator.h
           const char* doc =
 R"""(This system defines input ports for the desired finger position
 represented as the desired distance between the fingers in meters and
@@ -724,7 +724,7 @@ Note that the ``force_limit`` input port and ``y1`` output port (max
 force) can be opted-out with a constructor argument.)""";
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator
           struct /* ctor */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator.h:55
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator.h
             const char* doc =
 R"""(Parameter ``input_size``:
     The size of the state input port to create (one reason this may
@@ -740,66 +740,66 @@ Parameter ``use_force_limit``:
           } ctor;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGenerator::get_desired_position_input_port
           struct /* get_desired_position_input_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator.h:58
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator.h
             const char* doc = R"""()""";
           } get_desired_position_input_port;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGenerator::get_force_limit_input_port
           struct /* get_force_limit_input_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator.h:63
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator.h
             const char* doc =
 R"""(Precondition:
     The constructor argument use_force_limit was set to true.)""";
           } get_force_limit_input_port;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGenerator::get_max_force_output_port
           struct /* get_max_force_output_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator.h:77
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator.h
             const char* doc =
 R"""(Precondition:
     The constructor argument use_force_limit was set to true.)""";
           } get_max_force_output_port;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGenerator::get_state_input_port
           struct /* get_state_input_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator.h:68
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator.h
             const char* doc = R"""()""";
           } get_state_input_port;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGenerator::get_target_output_port
           struct /* get_target_output_port */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator.h:72
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator.h
             const char* doc = R"""()""";
           } get_target_output_port;
         } SchunkWsgTrajectoryGenerator;
         // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector
         struct /* SchunkWsgTrajectoryGeneratorStateVector */ {
-          // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:49
+          // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
           const char* doc =
 R"""(Specializes BasicVector with specific getters and setters.)""";
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::DoClone
           struct /* DoClone */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:105
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc = R"""()""";
           } DoClone;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::GetCoordinateNames
           struct /* GetCoordinateNames */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:204
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc =
 R"""(See
 SchunkWsgTrajectoryGeneratorStateVectorIndices::GetCoordinateNames().)""";
           } GetCoordinateNames;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::IsValid
           struct /* IsValid */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:209
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc =
 R"""(Returns whether the current values of this vector are well-formed.)""";
           } IsValid;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::K
           struct /* K */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:53
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc =
 R"""(An abbreviation for our row index constants.)""";
           } K;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::SchunkWsgTrajectoryGeneratorStateVector<T>
           struct /* ctor */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:60
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc =
 R"""(Default constructor. Sets all rows to their default value:
 
@@ -813,7 +813,7 @@ R"""(Default constructor. Sets all rows to their default value:
           } ctor;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::Serialize
           struct /* Serialize */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:190
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc =
 R"""(Visit each field of this named vector, passing them (in order) to the
 given Archive. The archive can read and/or write to the vector values.
@@ -821,77 +821,77 @@ One common use of Serialize is the //common/yaml tools.)""";
           } Serialize;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::SetToNamedVariables
           struct /* SetToNamedVariables */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:97
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc =
 R"""(Create a symbolic::Variable for each element with the known variable
 name. This is only available for T == symbolic::Expression.)""";
           } SetToNamedVariables;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::last_position
           struct /* last_position */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:149
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc = R"""(last_position)""";
           } last_position;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::last_target_position
           struct /* last_target_position */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:113
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc = R"""(last_target_position)""";
           } last_target_position;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::max_force
           struct /* max_force */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:167
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc = R"""(max_force)""";
           } max_force;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::set_last_position
           struct /* set_last_position */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:154
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc = R"""(Setter that matches last_position().)""";
           } set_last_position;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::set_last_target_position
           struct /* set_last_target_position */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:118
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc =
 R"""(Setter that matches last_target_position().)""";
           } set_last_target_position;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::set_max_force
           struct /* set_max_force */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:172
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc = R"""(Setter that matches max_force().)""";
           } set_max_force;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::set_trajectory_start_time
           struct /* set_trajectory_start_time */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:136
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc =
 R"""(Setter that matches trajectory_start_time().)""";
           } set_trajectory_start_time;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::trajectory_start_time
           struct /* trajectory_start_time */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:131
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc = R"""(trajectory_start_time)""";
           } trajectory_start_time;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::with_last_position
           struct /* with_last_position */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:160
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc =
 R"""(Fluent setter that matches last_position(). Returns a copy of ``this``
 with last_position set to a new value.)""";
           } with_last_position;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::with_last_target_position
           struct /* with_last_target_position */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:125
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc =
 R"""(Fluent setter that matches last_target_position(). Returns a copy of
 ``this`` with last_target_position set to a new value.)""";
           } with_last_target_position;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::with_max_force
           struct /* with_max_force */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:178
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc =
 R"""(Fluent setter that matches max_force(). Returns a copy of ``this``
 with max_force set to a new value.)""";
           } with_max_force;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::with_trajectory_start_time
           struct /* with_trajectory_start_time */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:143
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc =
 R"""(Fluent setter that matches trajectory_start_time(). Returns a copy of
 ``this`` with trajectory_start_time set to a new value.)""";
@@ -899,13 +899,13 @@ R"""(Fluent setter that matches trajectory_start_time(). Returns a copy of
         } SchunkWsgTrajectoryGeneratorStateVector;
         // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVectorIndices
         struct /* SchunkWsgTrajectoryGeneratorStateVectorIndices */ {
-          // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:29
+          // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
           const char* doc =
 R"""(Describes the row indices of a
 SchunkWsgTrajectoryGeneratorStateVector.)""";
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVectorIndices::GetCoordinateNames
           struct /* GetCoordinateNames */ {
-            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h:44
+            // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc =
 R"""(Returns a vector containing the names of each coordinate within this
 class. The indices within the returned vector matches that of this

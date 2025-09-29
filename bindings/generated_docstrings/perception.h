@@ -25,7 +25,7 @@ constexpr struct /* pydrake_doc_perception */ {
     struct /* perception */ {
       // Symbol: drake::perception::Concatenate
       struct /* Concatenate */ {
-        // Source: drake/perception/point_cloud.h:373
+        // Source: drake/perception/point_cloud.h
         const char* doc =
 R"""(Returns a new point cloud that includes all of the points from the
 point clouds in ``clouds``. All of the ``clouds`` must have the same
@@ -39,7 +39,7 @@ Raises:
       } Concatenate;
       // Symbol: drake::perception::DepthImageToPointCloud
       struct /* DepthImageToPointCloud */ {
-        // Source: drake/perception/depth_image_to_point_cloud.h:48
+        // Source: drake/perception/depth_image_to_point_cloud.h
         const char* doc =
 R"""(Converts a depth image to a point cloud.
 
@@ -69,7 +69,7 @@ converted point will be (+Inf, +Inf, +Inf). Note that this matches the
 convention used by the Point Cloud Library (PCL).)""";
         // Symbol: drake::perception::DepthImageToPointCloud::Convert
         struct /* Convert */ {
-          // Source: drake/perception/depth_image_to_point_cloud.h:99
+          // Source: drake/perception/depth_image_to_point_cloud.h
           const char* doc =
 R"""(Converts a depth image to a point cloud using direct arguments instead
 of System input and output ports. The semantics are the same as
@@ -82,7 +82,7 @@ Parameter ``cloud``:
         } Convert;
         // Symbol: drake::perception::DepthImageToPointCloud::DepthImageToPointCloud
         struct /* ctor */ {
-          // Source: drake/perception/depth_image_to_point_cloud.h:61
+          // Source: drake/perception/depth_image_to_point_cloud.h
           const char* doc =
 R"""(Constructs the converter.
 
@@ -103,7 +103,7 @@ Parameter ``fields``:
         } ctor;
         // Symbol: drake::perception::DepthImageToPointCloud::camera_pose_input_port
         struct /* camera_pose_input_port */ {
-          // Source: drake/perception/depth_image_to_point_cloud.h:81
+          // Source: drake/perception/depth_image_to_point_cloud.h
           const char* doc =
 R"""(Returns the abstract valued input port that expects X_PC as a
 RigidTransformd. (This input port does not necessarily need to be
@@ -111,13 +111,13 @@ connected; refer to the class overview for details.))""";
         } camera_pose_input_port;
         // Symbol: drake::perception::DepthImageToPointCloud::color_image_input_port
         struct /* color_image_input_port */ {
-          // Source: drake/perception/depth_image_to_point_cloud.h:74
+          // Source: drake/perception/depth_image_to_point_cloud.h
           const char* doc =
 R"""(Returns the abstract valued input port that expects an ImageRgba8U.)""";
         } color_image_input_port;
         // Symbol: drake::perception::DepthImageToPointCloud::depth_image_input_port
         struct /* depth_image_input_port */ {
-          // Source: drake/perception/depth_image_to_point_cloud.h:69
+          // Source: drake/perception/depth_image_to_point_cloud.h
           const char* doc =
 R"""(Returns the abstract valued input port that expects either an
 ImageDepth16U or ImageDepth32F (depending on the constructor
@@ -125,7 +125,7 @@ argument).)""";
         } depth_image_input_port;
         // Symbol: drake::perception::DepthImageToPointCloud::point_cloud_output_port
         struct /* point_cloud_output_port */ {
-          // Source: drake/perception/depth_image_to_point_cloud.h:88
+          // Source: drake/perception/depth_image_to_point_cloud.h
           const char* doc =
 R"""(Returns the abstract valued output port that provides a PointCloud.
 Only the channels passed into the constructor argument "fields" are
@@ -134,7 +134,7 @@ present.)""";
       } DepthImageToPointCloud;
       // Symbol: drake::perception::PointCloud
       struct /* PointCloud */ {
-        // Source: drake/perception/point_cloud.h:65
+        // Source: drake/perception/point_cloud.h
         const char* doc =
 R"""(Implements a point cloud (with contiguous storage), whose main goal is
 to offer a convenient, synchronized interface to commonly used fields
@@ -189,12 +189,12 @@ Note:
     and Trends® in Robotics 4.1 (2015): 1-104.)""";
         // Symbol: drake::perception::PointCloud::C
         struct /* C */ {
-          // Source: drake/perception/point_cloud.h:71
+          // Source: drake/perception/point_cloud.h
           const char* doc = R"""(Color channel scalar type.)""";
         } C;
         // Symbol: drake::perception::PointCloud::Crop
         struct /* Crop */ {
-          // Source: drake/perception/point_cloud.h:310
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns a new point cloud containing only the points in ``this`` with
 xyz values within the axis-aligned bounding box defined by
@@ -208,12 +208,12 @@ Raises:
         } Crop;
         // Symbol: drake::perception::PointCloud::D
         struct /* D */ {
-          // Source: drake/perception/point_cloud.h:74
+          // Source: drake/perception/point_cloud.h
           const char* doc = R"""(Descriptor scalar type.)""";
         } D;
         // Symbol: drake::perception::PointCloud::EstimateNormals
         struct /* EstimateNormals */ {
-          // Source: drake/perception/point_cloud.h:356
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Estimates the normal vectors in ``this`` by fitting a plane at each
 point in the cloud using up to ``num_closest`` points within Euclidean
@@ -237,7 +237,7 @@ Raises:
         } EstimateNormals;
         // Symbol: drake::perception::PointCloud::Expand
         struct /* Expand */ {
-          // Source: drake/perception/point_cloud.h:264
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Adds ``add_size`` default-initialized points.
 
@@ -249,7 +249,7 @@ Parameter ``skip_initialization``:
         } Expand;
         // Symbol: drake::perception::PointCloud::FlipNormalsTowardPoint
         struct /* FlipNormalsTowardPoint */ {
-          // Source: drake/perception/point_cloud.h:318
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Changes the sign of the normals in ``this``, if necessary, so that
 each normal points toward the point ``P`` in the frame ``C`` in which
@@ -262,7 +262,7 @@ Raises:
         } FlipNormalsTowardPoint;
         // Symbol: drake::perception::PointCloud::HasExactFields
         struct /* HasExactFields */ {
-          // Source: drake/perception/point_cloud.h:292
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns if a point cloud has exactly a given set of fields.
 
@@ -271,23 +271,23 @@ See also:
         } HasExactFields;
         // Symbol: drake::perception::PointCloud::HasFields
         struct /* HasFields */ {
-          // Source: drake/perception/point_cloud.h:282
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns if a point cloud has a given set of fields.)""";
         } HasFields;
         // Symbol: drake::perception::PointCloud::IsDefaultValue
         struct /* IsDefaultValue */ {
-          // Source: drake/perception/point_cloud.h:79
+          // Source: drake/perception/point_cloud.h
           const char* doc = R"""()""";
         } IsDefaultValue;
         // Symbol: drake::perception::PointCloud::IsInvalidValue
         struct /* IsInvalidValue */ {
-          // Source: drake/perception/point_cloud.h:80
+          // Source: drake/perception/point_cloud.h
           const char* doc = R"""()""";
         } IsInvalidValue;
         // Symbol: drake::perception::PointCloud::PointCloud
         struct /* ctor */ {
-          // Source: drake/perception/point_cloud.h:91
+          // Source: drake/perception/point_cloud.h
           const char* doc_3args =
 R"""(Constructs a point cloud of a given ``new_size``, with the prescribed
 ``fields``. If ``kDescriptors`` is one of the fields, then
@@ -301,13 +301,13 @@ Parameter ``fields``:
 
 Parameter ``skip_initialize``:
     Do not default-initialize new values.)""";
-          // Source: drake/perception/point_cloud.h:96
+          // Source: drake/perception/point_cloud.h
           const char* doc_copy =
 R"""(Copies another point cloud's fields and data.)""";
-          // Source: drake/perception/point_cloud.h:99
+          // Source: drake/perception/point_cloud.h
           const char* doc_move =
 R"""(Takes ownership of another point cloud's data.)""";
-          // Source: drake/perception/point_cloud.h:108
+          // Source: drake/perception/point_cloud.h
           const char* doc_2args =
 R"""(Copies another point cloud's fields and data.
 
@@ -318,7 +318,7 @@ Parameter ``copy_fields``:
         } ctor;
         // Symbol: drake::perception::PointCloud::RequireExactFields
         struct /* RequireExactFields */ {
-          // Source: drake/perception/point_cloud.h:298
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Requires the exact given set of fields.
 
@@ -331,7 +331,7 @@ Raises:
         } RequireExactFields;
         // Symbol: drake::perception::PointCloud::RequireFields
         struct /* RequireFields */ {
-          // Source: drake/perception/point_cloud.h:288
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Requires a given set of fields.
 
@@ -343,7 +343,7 @@ Raises:
         } RequireFields;
         // Symbol: drake::perception::PointCloud::SetFields
         struct /* SetFields */ {
-          // Source: drake/perception/point_cloud.h:279
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Updates the point cloud to a given set of fields. In the case of
 introducing a new field, its container will be allocated with the
@@ -358,7 +358,7 @@ Parameter ``skip_initialize``:
         } SetFields;
         // Symbol: drake::perception::PointCloud::SetFrom
         struct /* SetFrom */ {
-          // Source: drake/perception/point_cloud.h:253
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Copies all points from another point cloud.
 
@@ -375,12 +375,12 @@ Parameter ``allow_resize``:
         } SetFrom;
         // Symbol: drake::perception::PointCloud::T
         struct /* T */ {
-          // Source: drake/perception/point_cloud.h:68
+          // Source: drake/perception/point_cloud.h
           const char* doc = R"""(Geometric scalar type.)""";
         } T;
         // Symbol: drake::perception::PointCloud::VoxelizedDownSample
         struct /* VoxelizedDownSample */ {
-          // Source: drake/perception/point_cloud.h:338
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns a down-sampled point cloud by grouping all xyzs in this cloud
 into a 3D grid with cells of dimension voxel_size. Each occupied voxel
@@ -400,7 +400,7 @@ Raises:
         } VoxelizedDownSample;
         // Symbol: drake::perception::PointCloud::descriptor
         struct /* descriptor */ {
-          // Source: drake/perception/point_cloud.h:231
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns access to a descriptor value.
 
@@ -409,12 +409,12 @@ Precondition:
         } descriptor;
         // Symbol: drake::perception::PointCloud::descriptor_type
         struct /* descriptor_type */ {
-          // Source: drake/perception/point_cloud.h:219
+          // Source: drake/perception/point_cloud.h
           const char* doc = R"""(Returns the descriptor type.)""";
         } descriptor_type;
         // Symbol: drake::perception::PointCloud::descriptors
         struct /* descriptors */ {
-          // Source: drake/perception/point_cloud.h:223
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns access to descriptor values.
 
@@ -423,39 +423,39 @@ Precondition:
         } descriptors;
         // Symbol: drake::perception::PointCloud::fields
         struct /* fields */ {
-          // Source: drake/perception/point_cloud.h:119
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns the fields provided by this point cloud.)""";
         } fields;
         // Symbol: drake::perception::PointCloud::has_descriptors
         struct /* has_descriptors */ {
-          // Source: drake/perception/point_cloud.h:213
+          // Source: drake/perception/point_cloud.h
           const char* doc_0args =
 R"""(Returns if this point cloud provides descriptor values.)""";
-          // Source: drake/perception/point_cloud.h:216
+          // Source: drake/perception/point_cloud.h
           const char* doc_1args =
 R"""(Returns if the point cloud provides a specific descriptor.)""";
         } has_descriptors;
         // Symbol: drake::perception::PointCloud::has_normals
         struct /* has_normals */ {
-          // Source: drake/perception/point_cloud.h:163
+          // Source: drake/perception/point_cloud.h
           const char* doc = R"""(Returns if this cloud provides normals.)""";
         } has_normals;
         // Symbol: drake::perception::PointCloud::has_rgbs
         struct /* has_rgbs */ {
-          // Source: drake/perception/point_cloud.h:189
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns if this cloud provides RGB colors.)""";
         } has_rgbs;
         // Symbol: drake::perception::PointCloud::has_xyzs
         struct /* has_xyzs */ {
-          // Source: drake/perception/point_cloud.h:139
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns if this cloud provides XYZ values.)""";
         } has_xyzs;
         // Symbol: drake::perception::PointCloud::mutable_descriptor
         struct /* mutable_descriptor */ {
-          // Source: drake/perception/point_cloud.h:235
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns mutable access to a descriptor value.
 
@@ -464,7 +464,7 @@ Precondition:
         } mutable_descriptor;
         // Symbol: drake::perception::PointCloud::mutable_descriptors
         struct /* mutable_descriptors */ {
-          // Source: drake/perception/point_cloud.h:227
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns mutable access to descriptor values.
 
@@ -473,7 +473,7 @@ Precondition:
         } mutable_descriptors;
         // Symbol: drake::perception::PointCloud::mutable_normal
         struct /* mutable_normal */ {
-          // Source: drake/perception/point_cloud.h:179
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns mutable access to a normal.
 
@@ -482,7 +482,7 @@ Precondition:
         } mutable_normal;
         // Symbol: drake::perception::PointCloud::mutable_normals
         struct /* mutable_normals */ {
-          // Source: drake/perception/point_cloud.h:171
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns mutable access to normals.
 
@@ -491,7 +491,7 @@ Precondition:
         } mutable_normals;
         // Symbol: drake::perception::PointCloud::mutable_rgb
         struct /* mutable_rgb */ {
-          // Source: drake/perception/point_cloud.h:205
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns mutable access to an RGB color.
 
@@ -500,7 +500,7 @@ Precondition:
         } mutable_rgb;
         // Symbol: drake::perception::PointCloud::mutable_rgbs
         struct /* mutable_rgbs */ {
-          // Source: drake/perception/point_cloud.h:197
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns mutable access to RGB colors.
 
@@ -509,7 +509,7 @@ Precondition:
         } mutable_rgbs;
         // Symbol: drake::perception::PointCloud::mutable_xyz
         struct /* mutable_xyz */ {
-          // Source: drake/perception/point_cloud.h:155
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns mutable access to an XYZ value.
 
@@ -518,7 +518,7 @@ Precondition:
         } mutable_xyz;
         // Symbol: drake::perception::PointCloud::mutable_xyzs
         struct /* mutable_xyzs */ {
-          // Source: drake/perception/point_cloud.h:147
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns mutable access to XYZ values.
 
@@ -527,7 +527,7 @@ Precondition:
         } mutable_xyzs;
         // Symbol: drake::perception::PointCloud::normal
         struct /* normal */ {
-          // Source: drake/perception/point_cloud.h:175
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns access to a normal.
 
@@ -536,7 +536,7 @@ Precondition:
         } normal;
         // Symbol: drake::perception::PointCloud::normals
         struct /* normals */ {
-          // Source: drake/perception/point_cloud.h:167
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns access to normals.
 
@@ -545,7 +545,7 @@ Precondition:
         } normals;
         // Symbol: drake::perception::PointCloud::resize
         struct /* resize */ {
-          // Source: drake/perception/point_cloud.h:133
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Conservative resize; will maintain existing data, and initialize new
 data to their invalid values.
@@ -561,7 +561,7 @@ Parameter ``skip_initialize``:
         } resize;
         // Symbol: drake::perception::PointCloud::rgb
         struct /* rgb */ {
-          // Source: drake/perception/point_cloud.h:201
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns access to an RGB color.
 
@@ -570,7 +570,7 @@ Precondition:
         } rgb;
         // Symbol: drake::perception::PointCloud::rgbs
         struct /* rgbs */ {
-          // Source: drake/perception/point_cloud.h:193
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns access to RGB colors.
 
@@ -579,13 +579,13 @@ Precondition:
         } rgbs;
         // Symbol: drake::perception::PointCloud::size
         struct /* size */ {
-          // Source: drake/perception/point_cloud.h:122
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns the number of points in this point cloud.)""";
         } size;
         // Symbol: drake::perception::PointCloud::xyz
         struct /* xyz */ {
-          // Source: drake/perception/point_cloud.h:151
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns access to an XYZ value.
 
@@ -594,7 +594,7 @@ Precondition:
         } xyz;
         // Symbol: drake::perception::PointCloud::xyzs
         struct /* xyzs */ {
-          // Source: drake/perception/point_cloud.h:143
+          // Source: drake/perception/point_cloud.h
           const char* doc =
 R"""(Returns access to XYZ values.
 
@@ -604,7 +604,7 @@ Precondition:
       } PointCloud;
       // Symbol: drake::perception::PointCloudToLcm
       struct /* PointCloudToLcm */ {
-        // Source: drake/perception/point_cloud_to_lcm.h:27
+        // Source: drake/perception/point_cloud_to_lcm.h
         const char* doc =
 R"""(Converts PointCloud inputs to lcmt_point_cloud output messages. The
 message can be transmitted to other processes using
@@ -625,7 +625,7 @@ Only the finite points from the cloud are copied into the message
 (too-close or too-far points from a depth sensor are omitted).)""";
         // Symbol: drake::perception::PointCloudToLcm::PointCloudToLcm
         struct /* ctor */ {
-          // Source: drake/perception/point_cloud_to_lcm.h:32
+          // Source: drake/perception/point_cloud_to_lcm.h
           const char* doc =
 R"""(Constructs a system that outputs messages using the given
 ``frame_name``.)""";
@@ -635,45 +635,45 @@ R"""(Constructs a system that outputs messages using the given
       struct /* pc_flags */ {
         // Symbol: drake::perception::pc_flags::BaseField
         struct /* BaseField */ {
-          // Source: drake/perception/point_cloud_flags.h:19
+          // Source: drake/perception/point_cloud_flags.h
           const char* doc =
 R"""(Indicates the data the point cloud stores.)""";
           // Symbol: drake::perception::pc_flags::BaseField::kInherit
           struct /* kInherit */ {
-            // Source: drake/perception/point_cloud_flags.h:23
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc =
 R"""(Inherit other fields. May imply an intersection of all compatible
 descriptors.)""";
           } kInherit;
           // Symbol: drake::perception::pc_flags::BaseField::kNone
           struct /* kNone */ {
-            // Source: drake/perception/point_cloud_flags.h:20
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc = R"""()""";
           } kNone;
           // Symbol: drake::perception::pc_flags::BaseField::kNormals
           struct /* kNormals */ {
-            // Source: drake/perception/point_cloud_flags.h:27
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc = R"""(Normals.)""";
           } kNormals;
           // Symbol: drake::perception::pc_flags::BaseField::kRGBs
           struct /* kRGBs */ {
-            // Source: drake/perception/point_cloud_flags.h:29
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc = R"""(RGB colors.)""";
           } kRGBs;
           // Symbol: drake::perception::pc_flags::BaseField::kXYZs
           struct /* kXYZs */ {
-            // Source: drake/perception/point_cloud_flags.h:25
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc = R"""(XYZ point in Cartesian space.)""";
           } kXYZs;
         } BaseField;
         // Symbol: drake::perception::pc_flags::BaseFieldT
         struct /* BaseFieldT */ {
-          // Source: drake/perception/point_cloud_flags.h:17
+          // Source: drake/perception/point_cloud_flags.h
           const char* doc = R"""()""";
         } BaseFieldT;
         // Symbol: drake::perception::pc_flags::DescriptorType
         struct /* DescriptorType */ {
-          // Source: drake/perception/point_cloud_flags.h:47
+          // Source: drake/perception/point_cloud_flags.h
           const char* doc =
 R"""(Describes an descriptor field with a name and the descriptor's size.
 
@@ -686,28 +686,28 @@ Note:
     often used in conjunction with other fields.)""";
           // Symbol: drake::perception::pc_flags::DescriptorType::DescriptorType
           struct /* ctor */ {
-            // Source: drake/perception/point_cloud_flags.h:49
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::perception::pc_flags::DescriptorType::name
           struct /* name */ {
-            // Source: drake/perception/point_cloud_flags.h:55
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc = R"""()""";
           } name;
           // Symbol: drake::perception::pc_flags::DescriptorType::operator!=
           struct /* operator_ne */ {
-            // Source: drake/perception/point_cloud_flags.h:59
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc = R"""()""";
           } operator_ne;
           // Symbol: drake::perception::pc_flags::DescriptorType::size
           struct /* size */ {
-            // Source: drake/perception/point_cloud_flags.h:54
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc = R"""()""";
           } size;
         } DescriptorType;
         // Symbol: drake::perception::pc_flags::Fields
         struct /* Fields */ {
-          // Source: drake/perception/point_cloud_flags.h:83
+          // Source: drake/perception/point_cloud_flags.h
           const char* doc =
 R"""(Allows combination of ``BaseField`` and ``DescriptorType`` for a
 ``PointCloud``. You may combine multiple ``BaseField`s, but you may
@@ -717,7 +717,7 @@ This provides the mechanism to use basic bit-mask operators (| &) to
 combine / intersect fields for convenience.)""";
           // Symbol: drake::perception::pc_flags::Fields::Fields
           struct /* ctor */ {
-            // Source: drake/perception/point_cloud_flags.h:89
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc =
 R"""(Raises:
     RuntimeError if ``base_fields`` is not composed of valid
@@ -725,59 +725,59 @@ R"""(Raises:
           } ctor;
           // Symbol: drake::perception::pc_flags::Fields::base_fields
           struct /* base_fields */ {
-            // Source: drake/perception/point_cloud_flags.h:105
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc = R"""(Returns the contained base fields.)""";
           } base_fields;
           // Symbol: drake::perception::pc_flags::Fields::contains
           struct /* contains */ {
-            // Source: drake/perception/point_cloud_flags.h:150
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc =
 R"""(Returns whether this set of fields contains (is a superset of)
 ``rhs``.)""";
           } contains;
           // Symbol: drake::perception::pc_flags::Fields::descriptor_type
           struct /* descriptor_type */ {
-            // Source: drake/perception/point_cloud_flags.h:111
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc = R"""(Returns the contained descriptor type.)""";
           } descriptor_type;
           // Symbol: drake::perception::pc_flags::Fields::empty
           struct /* empty */ {
-            // Source: drake/perception/point_cloud_flags.h:147
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc =
 R"""(Returns whether both value types (BaseField + DescriptorType) are
 none.)""";
           } empty;
           // Symbol: drake::perception::pc_flags::Fields::has_base_fields
           struct /* has_base_fields */ {
-            // Source: drake/perception/point_cloud_flags.h:108
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc =
 R"""(Returns whether there are any base fields contained by this set of
 fields.)""";
           } has_base_fields;
           // Symbol: drake::perception::pc_flags::Fields::has_descriptor
           struct /* has_descriptor */ {
-            // Source: drake/perception/point_cloud_flags.h:114
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc =
 R"""(Returns whether there is a descriptor contained by this set of fields.)""";
           } has_descriptor;
           // Symbol: drake::perception::pc_flags::Fields::operator!=
           struct /* operator_ne */ {
-            // Source: drake/perception/point_cloud_flags.h:157
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc = R"""()""";
           } operator_ne;
           // Symbol: drake::perception::pc_flags::Fields::operator&
           struct /* operator_band */ {
-            // Source: drake/perception/point_cloud_flags.h:144
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc = R"""(Provides intersection.)""";
           } operator_band;
           // Symbol: drake::perception::pc_flags::Fields::operator&=
           struct /* operator_iand */ {
-            // Source: drake/perception/point_cloud_flags.h:135
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc = R"""(Provides in-place intersection.)""";
           } operator_iand;
           // Symbol: drake::perception::pc_flags::Fields::operator|
           struct /* operator_bor */ {
-            // Source: drake/perception/point_cloud_flags.h:132
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc =
 R"""(Provides union.
 
@@ -786,7 +786,7 @@ See also:
           } operator_bor;
           // Symbol: drake::perception::pc_flags::Fields::operator|=
           struct /* operator_ior */ {
-            // Source: drake/perception/point_cloud_flags.h:119
+            // Source: drake/perception/point_cloud_flags.h
             const char* doc =
 R"""(Provides in-place union.
 
@@ -796,7 +796,7 @@ Raises:
         } Fields;
         // Symbol: drake::perception::pc_flags::operator|
         struct /* operator_bor */ {
-          // Source: drake/perception/point_cloud_flags.h:171
+          // Source: drake/perception/point_cloud_flags.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Makes operator| compatible for ``BaseField`` + ``DescriptorType``.
 

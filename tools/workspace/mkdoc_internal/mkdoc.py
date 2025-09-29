@@ -579,7 +579,7 @@ def print_symbols(f, name, node, level=0):
         delim = "\n"
         if "\n" not in comment and len(comment) < 40:
             delim = " "
-        iprint('  // Source: {}:{}'.format(symbol.include, symbol.line))
+        iprint('  // Source: {}'.format(symbol.include))
         iprint('  const char* {} ={}R"""({})""";'.format(
             doc_var, delim, comment.strip()))
 

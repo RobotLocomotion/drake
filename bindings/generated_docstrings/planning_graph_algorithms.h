@@ -29,7 +29,7 @@ constexpr struct /* pydrake_doc_planning_graph_algorithms */ {
       struct /* graph_algorithms */ {
         // Symbol: drake::planning::graph_algorithms::MaxCliqueSolverBase
         struct /* MaxCliqueSolverBase */ {
-          // Source: drake/planning/graph_algorithms/max_clique_solver_base.h:17
+          // Source: drake/planning/graph_algorithms/max_clique_solver_base.h
           const char* doc =
 R"""(The problem of finding the maximum clique in a graph is known to be
 NP-complete. This base class provides a unified interface for various
@@ -37,12 +37,12 @@ implementations of a solver for this problem which may be solved
 rigorously or via heuristics.)""";
           // Symbol: drake::planning::graph_algorithms::MaxCliqueSolverBase::MaxCliqueSolverBase
           struct /* ctor */ {
-            // Source: drake/planning/graph_algorithms/max_clique_solver_base.h:45
+            // Source: drake/planning/graph_algorithms/max_clique_solver_base.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::planning::graph_algorithms::MaxCliqueSolverBase::SolveMaxClique
           struct /* SolveMaxClique */ {
-            // Source: drake/planning/graph_algorithms/max_clique_solver_base.h:38
+            // Source: drake/planning/graph_algorithms/max_clique_solver_base.h
             const char* doc =
 R"""(Given the adjacency matrix of an undirected graph, find the maximum
 clique within the graph. A clique is a collection of vertices in a
@@ -66,7 +66,7 @@ Returns:
         } MaxCliqueSolverBase;
         // Symbol: drake::planning::graph_algorithms::MaxCliqueSolverViaGreedy
         struct /* MaxCliqueSolverViaGreedy */ {
-          // Source: drake/planning/graph_algorithms/max_clique_solver_via_greedy.h:21
+          // Source: drake/planning/graph_algorithms/max_clique_solver_via_greedy.h
           const char* doc =
 R"""(Approximately solves the maximum clique problem via a greedy
 heuristic. Vertices are greedily added to the clique based on their
@@ -77,13 +77,13 @@ added to the clique. Afterwards, new candidate list is updated and the
 previous two steps are repeated until no candidates are left.)""";
           // Symbol: drake::planning::graph_algorithms::MaxCliqueSolverViaGreedy::MaxCliqueSolverViaGreedy
           struct /* ctor */ {
-            // Source: drake/planning/graph_algorithms/max_clique_solver_via_greedy.h:23
+            // Source: drake/planning/graph_algorithms/max_clique_solver_via_greedy.h
             const char* doc = R"""()""";
           } ctor;
         } MaxCliqueSolverViaGreedy;
         // Symbol: drake::planning::graph_algorithms::MaxCliqueSolverViaMip
         struct /* MaxCliqueSolverViaMip */ {
-          // Source: drake/planning/graph_algorithms/max_clique_solver_via_mip.h:32
+          // Source: drake/planning/graph_algorithms/max_clique_solver_via_mip.h
           const char* doc =
 R"""(Solves the maximum clique problem to global optimality by solving the
 mixed-integer program
@@ -105,42 +105,42 @@ Raises:
     provided adjacency matrix.)""";
           // Symbol: drake::planning::graph_algorithms::MaxCliqueSolverViaMip::GetInitialGuess
           struct /* GetInitialGuess */ {
-            // Source: drake/planning/graph_algorithms/max_clique_solver_via_mip.h:52
+            // Source: drake/planning/graph_algorithms/max_clique_solver_via_mip.h
             const char* doc = R"""()""";
           } GetInitialGuess;
           // Symbol: drake::planning::graph_algorithms::MaxCliqueSolverViaMip::GetSolverOptions
           struct /* GetSolverOptions */ {
-            // Source: drake/planning/graph_algorithms/max_clique_solver_via_mip.h:44
+            // Source: drake/planning/graph_algorithms/max_clique_solver_via_mip.h
             const char* doc = R"""()""";
           } GetSolverOptions;
           // Symbol: drake::planning::graph_algorithms::MaxCliqueSolverViaMip::MaxCliqueSolverViaMip
           struct /* ctor */ {
-            // Source: drake/planning/graph_algorithms/max_clique_solver_via_mip.h:34
+            // Source: drake/planning/graph_algorithms/max_clique_solver_via_mip.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::planning::graph_algorithms::MaxCliqueSolverViaMip::SetInitialGuess
           struct /* SetInitialGuess */ {
-            // Source: drake/planning/graph_algorithms/max_clique_solver_via_mip.h:48
+            // Source: drake/planning/graph_algorithms/max_clique_solver_via_mip.h
             const char* doc = R"""()""";
           } SetInitialGuess;
           // Symbol: drake::planning::graph_algorithms::MaxCliqueSolverViaMip::SetSolverOptions
           struct /* SetSolverOptions */ {
-            // Source: drake/planning/graph_algorithms/max_clique_solver_via_mip.h:40
+            // Source: drake/planning/graph_algorithms/max_clique_solver_via_mip.h
             const char* doc = R"""()""";
           } SetSolverOptions;
         } MaxCliqueSolverViaMip;
         // Symbol: drake::planning::graph_algorithms::MinCliqueCoverSolverBase
         struct /* MinCliqueCoverSolverBase */ {
-          // Source: drake/planning/graph_algorithms/min_clique_cover_solver_base.h:14
+          // Source: drake/planning/graph_algorithms/min_clique_cover_solver_base.h
           const char* doc = R"""()""";
           // Symbol: drake::planning::graph_algorithms::MinCliqueCoverSolverBase::MinCliqueCoverSolverBase
           struct /* ctor */ {
-            // Source: drake/planning/graph_algorithms/min_clique_cover_solver_base.h:52
+            // Source: drake/planning/graph_algorithms/min_clique_cover_solver_base.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::planning::graph_algorithms::MinCliqueCoverSolverBase::SolveMinCliqueCover
           struct /* SolveMinCliqueCover */ {
-            // Source: drake/planning/graph_algorithms/min_clique_cover_solver_base.h:44
+            // Source: drake/planning/graph_algorithms/min_clique_cover_solver_base.h
             const char* doc =
 R"""(Given the adjacency matrix of an undirected graph, finds a
 (potentially approximate) minimum clique cover of the graph. A clique
@@ -177,7 +177,7 @@ may use randomized algorithms.)""";
         } MinCliqueCoverSolverBase;
         // Symbol: drake::planning::graph_algorithms::MinCliqueCoverSolverViaGreedy
         struct /* MinCliqueCoverSolverViaGreedy */ {
-          // Source: drake/planning/graph_algorithms/min_clique_cover_solver_via_greedy.h:27
+          // Source: drake/planning/graph_algorithms/min_clique_cover_solver_via_greedy.h
           const char* doc =
 R"""(Approximately solves the min clique cover problem via a greedy
 heuristic.
@@ -192,18 +192,18 @@ Note:
     a clique cover since not all vertices will be covered.)""";
           // Symbol: drake::planning::graph_algorithms::MinCliqueCoverSolverViaGreedy::MinCliqueCoverSolverViaGreedy
           struct /* ctor */ {
-            // Source: drake/planning/graph_algorithms/min_clique_cover_solver_via_greedy.h:32
+            // Source: drake/planning/graph_algorithms/min_clique_cover_solver_via_greedy.h
             const char* doc =
 R"""(Constructs using the given max clique solver.)""";
           } ctor;
           // Symbol: drake::planning::graph_algorithms::MinCliqueCoverSolverViaGreedy::get_min_clique_size
           struct /* get_min_clique_size */ {
-            // Source: drake/planning/graph_algorithms/min_clique_cover_solver_via_greedy.h:45
+            // Source: drake/planning/graph_algorithms/min_clique_cover_solver_via_greedy.h
             const char* doc = R"""()""";
           } get_min_clique_size;
           // Symbol: drake::planning::graph_algorithms::MinCliqueCoverSolverViaGreedy::set_min_clique_size
           struct /* set_min_clique_size */ {
-            // Source: drake/planning/graph_algorithms/min_clique_cover_solver_via_greedy.h:40
+            // Source: drake/planning/graph_algorithms/min_clique_cover_solver_via_greedy.h
             const char* doc =
 R"""(Set the minimum clique size. Throws if this is less than 1.
 

@@ -60,12 +60,12 @@ constexpr struct /* pydrake_doc_multibody_plant */ {
     struct /* multibody */ {
       // Symbol: drake::multibody::AddMultibodyPlant
       struct /* AddMultibodyPlant */ {
-        // Source: drake/multibody/plant/multibody_plant_config_functions.h:15
+        // Source: drake/multibody/plant/multibody_plant_config_functions.h
         const char* doc_2args =
 R"""(Adds a new MultibodyPlant and SceneGraph to the given ``builder``. The
 plant's settings such as ``time_step`` are set using the given
 ``config``.)""";
-        // Source: drake/multibody/plant/multibody_plant_config_functions.h:23
+        // Source: drake/multibody/plant/multibody_plant_config_functions.h
         const char* doc_3args =
 R"""(Adds a new MultibodyPlant and SceneGraph to the given ``builder``. The
 plant's settings such as ``time_step`` are set using the given
@@ -74,7 +74,7 @@ plant's settings such as ``time_step`` are set using the given
       } AddMultibodyPlant;
       // Symbol: drake::multibody::AddMultibodyPlantSceneGraph
       struct /* AddMultibodyPlantSceneGraph */ {
-        // Source: drake/multibody/plant/multibody_plant.h:6635
+        // Source: drake/multibody/plant/multibody_plant.h
         const char* doc_3args_systemsDiagramBuilder_double_stduniqueptr =
 R"""(Makes a new MultibodyPlant with discrete update period ``time_step``
 and adds it to a diagram builder together with the provided SceneGraph
@@ -102,7 +102,7 @@ Returns:
 
 Precondition:
     ``builder`` must be non-null.)""";
-        // Source: drake/multibody/plant/multibody_plant.h:6656
+        // Source: drake/multibody/plant/multibody_plant.h
         const char* doc_3args_systemsDiagramBuilder_stduniqueptr_stduniqueptr =
 R"""(Adds a MultibodyPlant and a SceneGraph instance to a diagram builder,
 connecting the geometry ports.
@@ -129,7 +129,7 @@ Precondition:
       } AddMultibodyPlantSceneGraph;
       // Symbol: drake::multibody::AddMultibodyPlantSceneGraphResult
       struct /* AddMultibodyPlantSceneGraphResult */ {
-        // Source: drake/multibody/plant/multibody_plant.h:6682
+        // Source: drake/multibody/plant/multibody_plant.h
         const char* doc =
 R"""(Temporary result from ``AddMultibodyPlantSceneGraph``. This cannot be
 constructed outside of this method.
@@ -139,40 +139,40 @@ Warning:
     lifetime of this object should be as short as possible.)""";
         // Symbol: drake::multibody::AddMultibodyPlantSceneGraphResult::AddMultibodyPlantSceneGraphResult<T>
         struct /* ctor */ {
-          // Source: drake/multibody/plant/multibody_plant.h:6711
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::multibody::AddMultibodyPlantSceneGraphResult::get
         struct /* get */ {
-          // Source: drake/multibody/plant/multibody_plant.h:6700
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc = R"""()""";
         } get;
         // Symbol: drake::multibody::AddMultibodyPlantSceneGraphResult::operator MultibodyPlant<type-parameter-0-0> &
         struct /* operator_MultibodyPlant_ */ {
-          // Source: drake/multibody/plant/multibody_plant.h:6687
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(For assignment to a plant reference (ignoring the scene graph).)""";
         } operator_MultibodyPlant_;
         // Symbol: drake::multibody::AddMultibodyPlantSceneGraphResult::operator tuple<MultibodyPlant<type-parameter-0-0> *&, SceneGraph<type-parameter-0-0> *&>
         struct /* operator_tuple */ {
-          // Source: drake/multibody/plant/multibody_plant.h:6690
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(For assignment to a std::tie of pointers.)""";
         } operator_tuple;
         // Symbol: drake::multibody::AddMultibodyPlantSceneGraphResult::plant
         struct /* plant */ {
-          // Source: drake/multibody/plant/multibody_plant.h:6683
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc = R"""()""";
         } plant;
         // Symbol: drake::multibody::AddMultibodyPlantSceneGraphResult::scene_graph
         struct /* scene_graph */ {
-          // Source: drake/multibody/plant/multibody_plant.h:6684
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc = R"""()""";
         } scene_graph;
       } AddMultibodyPlantSceneGraphResult;
       // Symbol: drake::multibody::ApplyMultibodyPlantConfig
       struct /* ApplyMultibodyPlantConfig */ {
-        // Source: drake/multibody/plant/multibody_plant_config_functions.h:35
+        // Source: drake/multibody/plant/multibody_plant_config_functions.h
         const char* doc =
 R"""(Applies settings given in ``config`` to an existing ``plant``. The
 ``time_step`` is the one value in ``config`` that cannot be updated --
@@ -187,7 +187,7 @@ Raises:
       } ApplyMultibodyPlantConfig;
       // Symbol: drake::multibody::BaseBodyJointType
       struct /* BaseBodyJointType */ {
-        // Source: drake/multibody/plant/multibody_plant.h:245
+        // Source: drake/multibody/plant/multibody_plant.h
         const char* doc =
 R"""(The kind of joint to be used to connect base bodies to world at
 Finalize(). See mbp_working_with_free_bodies "Working with free
@@ -197,23 +197,23 @@ See also:
     SetBaseBodyJointType() for details.)""";
         // Symbol: drake::multibody::BaseBodyJointType::kQuaternionFloatingJoint
         struct /* kQuaternionFloatingJoint */ {
-          // Source: drake/multibody/plant/multibody_plant.h:246
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc = R"""(6 dofs, unrestricted orientation.)""";
         } kQuaternionFloatingJoint;
         // Symbol: drake::multibody::BaseBodyJointType::kRpyFloatingJoint
         struct /* kRpyFloatingJoint */ {
-          // Source: drake/multibody/plant/multibody_plant.h:247
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc = R"""(6 dofs using 3 angles; has singularity.)""";
         } kRpyFloatingJoint;
         // Symbol: drake::multibody::BaseBodyJointType::kWeldJoint
         struct /* kWeldJoint */ {
-          // Source: drake/multibody/plant/multibody_plant.h:248
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc = R"""(0 dofs, fixed to World.)""";
         } kWeldJoint;
       } BaseBodyJointType;
       // Symbol: drake::multibody::CalcContactFrictionFromSurfaceProperties
       struct /* CalcContactFrictionFromSurfaceProperties */ {
-        // Source: drake/multibody/plant/coulomb_friction.h:123
+        // Source: drake/multibody/plant/coulomb_friction.h
         const char* doc =
 R"""(Given the surface properties of two different surfaces, this method
 computes the Coulomb's law coefficients of friction characterizing the
@@ -258,7 +258,7 @@ Returns:
       } CalcContactFrictionFromSurfaceProperties;
       // Symbol: drake::multibody::CalcDistanceAndTimeDerivative
       struct /* CalcDistanceAndTimeDerivative */ {
-        // Source: drake/multibody/plant/calc_distance_and_time_derivative.h:36
+        // Source: drake/multibody/plant/calc_distance_and_time_derivative.h
         const char* doc =
 R"""(Given a pair of geometries and the generalized position/velocity of
 the plant, compute the signed distance between the pair of geometries
@@ -281,25 +281,25 @@ Parameter ``context``:
       } CalcDistanceAndTimeDerivative;
       // Symbol: drake::multibody::ConnectContactResultsToDrakeVisualizer
       struct /* ConnectContactResultsToDrakeVisualizer */ {
-        // Source: drake/multibody/plant/contact_results_to_lcm.h:247
+        // Source: drake/multibody/plant/contact_results_to_lcm.h
         const char* doc_5args = R"""(MultibodyPlant-connecting overload.)""";
-        // Source: drake/multibody/plant/contact_results_to_lcm.h:256
+        // Source: drake/multibody/plant/contact_results_to_lcm.h
         const char* doc_6args = R"""(OutputPort-connecting overload.)""";
       } ConnectContactResultsToDrakeVisualizer;
       // Symbol: drake::multibody::ContactModel
       struct /* ContactModel */ {
-        // Source: drake/multibody/plant/multibody_plant.h:133
+        // Source: drake/multibody/plant/multibody_plant.h
         const char* doc = R"""(Enumeration for contact model options.)""";
         // Symbol: drake::multibody::ContactModel::kHydroelastic
         struct /* kHydroelastic */ {
-          // Source: drake/multibody/plant/multibody_plant.h:136
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Contact forces are computed using the Hydroelastic model. Contact
 between unsupported geometries will cause a runtime exception.)""";
         } kHydroelastic;
         // Symbol: drake::multibody::ContactModel::kHydroelasticWithFallback
         struct /* kHydroelasticWithFallback */ {
-          // Source: drake/multibody/plant/multibody_plant.h:147
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Contact forces are computed using the hydroelastic model, where
 possible. For most other unsupported colliding pairs, the point model
@@ -309,27 +309,27 @@ details.)""";
         } kHydroelasticWithFallback;
         // Symbol: drake::multibody::ContactModel::kHydroelasticsOnly
         struct /* kHydroelasticsOnly */ {
-          // Source: drake/multibody/plant/multibody_plant.h:150
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.)""";
         } kHydroelasticsOnly;
         // Symbol: drake::multibody::ContactModel::kPoint
         struct /* kPoint */ {
-          // Source: drake/multibody/plant/multibody_plant.h:140
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Contact forces are computed using a point contact model, see
 compliant_point_contact.)""";
         } kPoint;
         // Symbol: drake::multibody::ContactModel::kPointContactOnly
         struct /* kPointContactOnly */ {
-          // Source: drake/multibody/plant/multibody_plant.h:152
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.)""";
         } kPointContactOnly;
       } ContactModel;
       // Symbol: drake::multibody::ContactResults
       struct /* ContactResults */ {
-        // Source: drake/multibody/plant/contact_results.h:29
+        // Source: drake/multibody/plant/contact_results.h
         const char* doc =
 R"""(A container class storing the contact results information for each
 contact pair for a given state of the simulation.
@@ -337,9 +337,9 @@ contact pair for a given state of the simulation.
 This class is immutable, so can be efficiently copied and moved.)""";
         // Symbol: drake::multibody::ContactResults::ContactResults<T>
         struct /* ctor */ {
-          // Source: drake/multibody/plant/contact_results.h:34
+          // Source: drake/multibody/plant/contact_results.h
           const char* doc_0args = R"""(Constructs an empty ContactResults.)""";
-          // Source: drake/multibody/plant/contact_results.h:45
+          // Source: drake/multibody/plant/contact_results.h
           const char* doc_4args =
 R"""(Constructs a ContactResults with the given contact infos.
 
@@ -354,7 +354,7 @@ without any changes to this file.)""";
         } ctor;
         // Symbol: drake::multibody::ContactResults::SelectHydroelastic
         struct /* SelectHydroelastic */ {
-          // Source: drake/multibody/plant/contact_results.h:96
+          // Source: drake/multibody/plant/contact_results.h
           const char* doc =
 R"""(Returns a selective copy of this object. Only HydroelasticContactInfo
 instances satisfying the selection criterion are copied; all other
@@ -370,7 +370,7 @@ Note:
         } SelectHydroelastic;
         // Symbol: drake::multibody::ContactResults::deformable_contact_info
         struct /* deformable_contact_info */ {
-          // Source: drake/multibody/plant/contact_results.h:81
+          // Source: drake/multibody/plant/contact_results.h
           const char* doc =
 R"""(Retrieves the ith DeformableContactInfo instance. The input index i
 must be in the range [0, ``num_deformable_contacts()``) or this method
@@ -378,7 +378,7 @@ throws.)""";
         } deformable_contact_info;
         // Symbol: drake::multibody::ContactResults::hydroelastic_contact_info
         struct /* hydroelastic_contact_info */ {
-          // Source: drake/multibody/plant/contact_results.h:76
+          // Source: drake/multibody/plant/contact_results.h
           const char* doc =
 R"""(Retrieves the ith HydroelasticContactInfo instance. The input index i
 must be in the range [0, ``num_hydroelastic_contacts()``) or this
@@ -386,25 +386,25 @@ method throws.)""";
         } hydroelastic_contact_info;
         // Symbol: drake::multibody::ContactResults::num_deformable_contacts
         struct /* num_deformable_contacts */ {
-          // Source: drake/multibody/plant/contact_results.h:64
+          // Source: drake/multibody/plant/contact_results.h
           const char* doc =
 R"""(Returns the number of deformable contacts.)""";
         } num_deformable_contacts;
         // Symbol: drake::multibody::ContactResults::num_hydroelastic_contacts
         struct /* num_hydroelastic_contacts */ {
-          // Source: drake/multibody/plant/contact_results.h:59
+          // Source: drake/multibody/plant/contact_results.h
           const char* doc =
 R"""(Returns the number of hydroelastic contacts.)""";
         } num_hydroelastic_contacts;
         // Symbol: drake::multibody::ContactResults::num_point_pair_contacts
         struct /* num_point_pair_contacts */ {
-          // Source: drake/multibody/plant/contact_results.h:54
+          // Source: drake/multibody/plant/contact_results.h
           const char* doc =
 R"""(Returns the number of point pair contacts.)""";
         } num_point_pair_contacts;
         // Symbol: drake::multibody::ContactResults::plant
         struct /* plant */ {
-          // Source: drake/multibody/plant/contact_results.h:85
+          // Source: drake/multibody/plant/contact_results.h
           const char* doc =
 R"""(Returns the plant that produced these contact results. In most cases
 the result will be non-null, but default-constructed results might
@@ -412,7 +412,7 @@ have nulls.)""";
         } plant;
         // Symbol: drake::multibody::ContactResults::point_pair_contact_info
         struct /* point_pair_contact_info */ {
-          // Source: drake/multibody/plant/contact_results.h:71
+          // Source: drake/multibody/plant/contact_results.h
           const char* doc =
 R"""(Retrieves the ith PointPairContactInfo instance. The input index i
 must be in the range [0, ``num_point_pair_contacts()``) or this method
@@ -420,13 +420,13 @@ throws.)""";
         } point_pair_contact_info;
         // Symbol: drake::multibody::ContactResults::set_plant
         struct /* set_plant */ {
-          // Source: drake/multibody/plant/contact_results.h:103
+          // Source: drake/multibody/plant/contact_results.h
           const char* doc = R"""()""";
         } set_plant;
       } ContactResults;
       // Symbol: drake::multibody::ContactResultsToLcmSystem
       struct /* ContactResultsToLcmSystem */ {
-        // Source: drake/multibody/plant/contact_results_to_lcm.h:107
+        // Source: drake/multibody/plant/contact_results_to_lcm.h
         const char* doc =
 R"""(A System that encodes ContactResults into a
 lcmt_contact_results_for_viz message. It has a single input port with
@@ -481,7 +481,7 @@ converted.
     - y0)""";
         // Symbol: drake::multibody::ContactResultsToLcmSystem::ContactResultsToLcmSystem<T>
         struct /* ctor */ {
-          // Source: drake/multibody/plant/contact_results_to_lcm.h:117
+          // Source: drake/multibody/plant/contact_results_to_lcm.h
           const char* doc =
 R"""(Constructs an instance with *default* geometry names (e.g., "Id(7)").
 
@@ -494,23 +494,23 @@ Precondition:
 
 Precondition:
     The ``plant`` parameter is finalized.)""";
-          // Source: drake/multibody/plant/contact_results_to_lcm.h:121
+          // Source: drake/multibody/plant/contact_results_to_lcm.h
           const char* doc_copyconvert = R"""(Scalar-converting copy constructor.)""";
         } ctor;
         // Symbol: drake::multibody::ContactResultsToLcmSystem::get_contact_result_input_port
         struct /* get_contact_result_input_port */ {
-          // Source: drake/multibody/plant/contact_results_to_lcm.h:129
+          // Source: drake/multibody/plant/contact_results_to_lcm.h
           const char* doc = R"""()""";
         } get_contact_result_input_port;
         // Symbol: drake::multibody::ContactResultsToLcmSystem::get_lcm_message_output_port
         struct /* get_lcm_message_output_port */ {
-          // Source: drake/multibody/plant/contact_results_to_lcm.h:130
+          // Source: drake/multibody/plant/contact_results_to_lcm.h
           const char* doc = R"""()""";
         } get_lcm_message_output_port;
       } ContactResultsToLcmSystem;
       // Symbol: drake::multibody::CoulombFriction
       struct /* CoulombFriction */ {
-        // Source: drake/multibody/plant/coulomb_friction.h:62
+        // Source: drake/multibody/plant/coulomb_friction.h
         const char* doc =
 R"""(Parameters for Coulomb's Law of Friction, namely:
 
@@ -575,11 +575,11 @@ Notice that in this example, this new combination law model for tires,
 will have a different set of requirements from the ones stated above.)""";
         // Symbol: drake::multibody::CoulombFriction::CoulombFriction<T>
         struct /* ctor */ {
-          // Source: drake/multibody/plant/coulomb_friction.h:68
+          // Source: drake/multibody/plant/coulomb_friction.h
           const char* doc_0args =
 R"""(Default constructor for a frictionless surface, i.e. with zero static
 and dynamic coefficients of friction.)""";
-          // Source: drake/multibody/plant/coulomb_friction.h:74
+          // Source: drake/multibody/plant/coulomb_friction.h
           const char* doc_2args =
 R"""(Specifies both the static and dynamic friction coefficients for a
 given surface.
@@ -590,20 +590,20 @@ Raises:
         } ctor;
         // Symbol: drake::multibody::CoulombFriction::dynamic_friction
         struct /* dynamic_friction */ {
-          // Source: drake/multibody/plant/coulomb_friction.h:80
+          // Source: drake/multibody/plant/coulomb_friction.h
           const char* doc =
 R"""(Returns the coefficient of dynamic friction.)""";
         } dynamic_friction;
         // Symbol: drake::multibody::CoulombFriction::static_friction
         struct /* static_friction */ {
-          // Source: drake/multibody/plant/coulomb_friction.h:77
+          // Source: drake/multibody/plant/coulomb_friction.h
           const char* doc =
 R"""(Returns the coefficient of static friction.)""";
         } static_friction;
       } CoulombFriction;
       // Symbol: drake::multibody::DeformableContactInfo
       struct /* DeformableContactInfo */ {
-        // Source: drake/multibody/plant/deformable_contact_info.h:28
+        // Source: drake/multibody/plant/deformable_contact_info.h
         const char* doc =
 R"""(A class containing information regarding contact and contact response
 between two geometries belonging to a pair of bodies with at least one
@@ -624,7 +624,7 @@ Warning:
     time.)""";
         // Symbol: drake::multibody::DeformableContactInfo::DeformableContactInfo<T>
         struct /* ctor */ {
-          // Source: drake/multibody/plant/deformable_contact_info.h:40
+          // Source: drake/multibody/plant/deformable_contact_info.h
           const char* doc =
 R"""(Constructs a DeformableContactInfo.
 
@@ -646,7 +646,7 @@ Precondition:
         } ctor;
         // Symbol: drake::multibody::DeformableContactInfo::F_Ac_W
         struct /* F_Ac_W */ {
-          // Source: drake/multibody/plant/deformable_contact_info.h:61
+          // Source: drake/multibody/plant/deformable_contact_info.h
           const char* doc =
 R"""(Gets the spatial force applied on the deformable body associated with
 geometry A, at the centroid point C of the contact surface mesh, and
@@ -654,26 +654,26 @@ expressed in the world frame W.)""";
         } F_Ac_W;
         // Symbol: drake::multibody::DeformableContactInfo::contact_mesh
         struct /* contact_mesh */ {
-          // Source: drake/multibody/plant/deformable_contact_info.h:54
+          // Source: drake/multibody/plant/deformable_contact_info.h
           const char* doc =
 R"""(Returns a reference to the contact mesh expressed in the world frame.)""";
         } contact_mesh;
         // Symbol: drake::multibody::DeformableContactInfo::id_A
         struct /* id_A */ {
-          // Source: drake/multibody/plant/deformable_contact_info.h:48
+          // Source: drake/multibody/plant/deformable_contact_info.h
           const char* doc =
 R"""(The geometry id of geometry A, guaranteed to belong to a deformable
 body in contact.)""";
         } id_A;
         // Symbol: drake::multibody::DeformableContactInfo::id_B
         struct /* id_B */ {
-          // Source: drake/multibody/plant/deformable_contact_info.h:51
+          // Source: drake/multibody/plant/deformable_contact_info.h
           const char* doc = R"""(The geometry id of geometry B.)""";
         } id_B;
       } DeformableContactInfo;
       // Symbol: drake::multibody::DeformableModel
       struct /* DeformableModel */ {
-        // Source: drake/multibody/plant/deformable_model.h:42
+        // Source: drake/multibody/plant/deformable_model.h
         const char* doc =
 R"""(DeformableModel implements the interface in PhysicalModel and provides
 the functionalities to specify deformable bodies. Unlike rigid bodies,
@@ -689,7 +689,7 @@ Warning:
     time.)""";
         // Symbol: drake::multibody::DeformableModel::AddExternalForce
         struct /* AddExternalForce */ {
-          // Source: drake/multibody/plant/deformable_model.h:307
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Registers an external force density field that applies external force
 to all deformable bodies.
@@ -708,7 +708,7 @@ Raises:
         } AddExternalForce;
         // Symbol: drake::multibody::DeformableModel::AddFixedConstraint
         struct /* AddFixedConstraint */ {
-          // Source: drake/multibody/plant/deformable_model.h:161
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Defines a fixed constraint between a deformable body A and a rigid
 body B. Such a fixed constraint is modeled as distance holonomic
@@ -772,7 +772,7 @@ Raises:
         } AddFixedConstraint;
         // Symbol: drake::multibody::DeformableModel::DeformableModel<T>
         struct /* ctor */ {
-          // Source: drake/multibody/plant/deformable_model.h:56
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""((Internal only) Constructs a DeformableModel to be owned by the given
 MultibodyPlant. This constructor is only intended to be called
@@ -786,7 +786,7 @@ Precondition:
         } ctor;
         // Symbol: drake::multibody::DeformableModel::Disable
         struct /* Disable */ {
-          // Source: drake/multibody/plant/deformable_model.h:345
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Disables the deformable body with the given ``id`` in the given
 context. Disabling a deformable body sets its vertex velocities and
@@ -818,7 +818,7 @@ Raises:
         } Disable;
         // Symbol: drake::multibody::DeformableModel::Enable
         struct /* Enable */ {
-          // Source: drake/multibody/plant/deformable_model.h:355
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Enables the deformable body with the given ``id`` in the given
 context. Calling Enable() on a body which is already enabled has no
@@ -840,14 +840,14 @@ Raises:
         } Enable;
         // Symbol: drake::multibody::DeformableModel::GetBody
         struct /* GetBody */ {
-          // Source: drake/multibody/plant/deformable_model.h:397
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc_1args_id =
 R"""(Returns the deformable body with the given ``id``.
 
 Raises:
     RuntimeError if no deformable body with the given ``id`` has been
     registered in this model.)""";
-          // Source: drake/multibody/plant/deformable_model.h:411
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc_1args_index =
 R"""(Returns the deformable body with the given ``index``.
 
@@ -857,7 +857,7 @@ Raises:
         } GetBody;
         // Symbol: drake::multibody::DeformableModel::GetBodyByName
         struct /* GetBodyByName */ {
-          // Source: drake/multibody/plant/deformable_model.h:446
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc_1args =
 R"""(Returns the DeformableBody with the given name.
 
@@ -865,7 +865,7 @@ Raises:
     RuntimeError if there's no body with the given name or if more
     than one model instance contains a deformable body with the given
     name.)""";
-          // Source: drake/multibody/plant/deformable_model.h:452
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc_2args =
 R"""(Returns the DeformableBody with the given name from the given model
 instance.
@@ -876,14 +876,14 @@ Raises:
         } GetBodyByName;
         // Symbol: drake::multibody::DeformableModel::GetBodyId
         struct /* GetBodyId */ {
-          // Source: drake/multibody/plant/deformable_model.h:387
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc_1args_index =
 R"""(Returns the DeformableBodyId of the body with the given body index.
 
 Raises:
     RuntimeError if no deformable body with the given index has been
     registered in this model.)""";
-          // Source: drake/multibody/plant/deformable_model.h:392
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc_1args_geometry_id =
 R"""(Returns the DeformableBodyId associated with the given
 ``geometry_id``.
@@ -894,7 +894,7 @@ Raises:
         } GetBodyId;
         // Symbol: drake::multibody::DeformableModel::GetBodyIds
         struct /* GetBodyIds */ {
-          // Source: drake/multibody/plant/deformable_model.h:458
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Returns the DeformableIds of the bodies that belong to the given model
 instance. Returns the empty vector if no deformable bodies are
@@ -902,7 +902,7 @@ registered with the given model instance.)""";
         } GetBodyIds;
         // Symbol: drake::multibody::DeformableModel::GetBodyIndex
         struct /* GetBodyIndex */ {
-          // Source: drake/multibody/plant/deformable_model.h:463
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Returns the DeformableBodyIndex of the body with the given id.
 
@@ -911,7 +911,7 @@ Raises:
         } GetBodyIndex;
         // Symbol: drake::multibody::DeformableModel::GetDiscreteStateIndex
         struct /* GetDiscreteStateIndex */ {
-          // Source: drake/multibody/plant/deformable_model.h:171
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Returns the discrete state index of the deformable body identified by
 the given ``id``.
@@ -923,7 +923,7 @@ Raises:
         } GetDiscreteStateIndex;
         // Symbol: drake::multibody::DeformableModel::GetExternalForces
         struct /* GetExternalForces */ {
-          // Source: drake/multibody/plant/deformable_model.h:320
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Returns the force density fields acting on the deformable body with
 the given ``id``.
@@ -935,7 +935,7 @@ Raises:
         } GetExternalForces;
         // Symbol: drake::multibody::DeformableModel::GetFemModel
         struct /* GetFemModel */ {
-          // Source: drake/multibody/plant/deformable_model.h:372
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Returns the FemModel for the body with ``id``.
 
@@ -945,7 +945,7 @@ Raises:
         } GetFemModel;
         // Symbol: drake::multibody::DeformableModel::GetGeometryId
         struct /* GetGeometryId */ {
-          // Source: drake/multibody/plant/deformable_model.h:468
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Returns the GeometryId of the geometry associated with the body with
 the given ``id``.
@@ -955,7 +955,7 @@ Raises:
         } GetGeometryId;
         // Symbol: drake::multibody::DeformableModel::GetMutableBody
         struct /* GetMutableBody */ {
-          // Source: drake/multibody/plant/deformable_model.h:423
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Returns a mutable reference to the deformable body with the given
 ``id``.
@@ -966,7 +966,7 @@ Raises:
         } GetMutableBody;
         // Symbol: drake::multibody::DeformableModel::GetPositions
         struct /* GetPositions */ {
-          // Source: drake/multibody/plant/deformable_model.h:257
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Returns the matrix of vertex positions for the deformable body with
 the given ``id`` in the provided ``context``.
@@ -991,7 +991,7 @@ Raises:
         } GetPositions;
         // Symbol: drake::multibody::DeformableModel::GetPositionsAndVelocities
         struct /* GetPositionsAndVelocities */ {
-          // Source: drake/multibody/plant/deformable_model.h:296
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Returns the matrix of vertex positions and velocities for the
 deformable body with the given ``id`` in the provided ``context``. The
@@ -1019,7 +1019,7 @@ Raises:
         } GetPositionsAndVelocities;
         // Symbol: drake::multibody::DeformableModel::GetReferencePositions
         struct /* GetReferencePositions */ {
-          // Source: drake/multibody/plant/deformable_model.h:382
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Returns the reference positions of the vertices of the deformable body
 identified by the given ``id``. The reference positions are
@@ -1034,7 +1034,7 @@ Raises:
         } GetReferencePositions;
         // Symbol: drake::multibody::DeformableModel::GetVelocities
         struct /* GetVelocities */ {
-          // Source: drake/multibody/plant/deformable_model.h:276
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Returns the matrix of vertex velocities for the deformable body with
 the given ``id`` in the provided ``context``.
@@ -1060,11 +1060,11 @@ Raises:
         } GetVelocities;
         // Symbol: drake::multibody::DeformableModel::HasBodyNamed
         struct /* HasBodyNamed */ {
-          // Source: drake/multibody/plant/deformable_model.h:436
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc_1args =
 R"""(Returns true if and only if a deformable body with the given ``name``
 has been registered with this model.)""";
-          // Source: drake/multibody/plant/deformable_model.h:440
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc_2args =
 R"""(Returns true if and only if a deformable body with the given ``name``
 has been registered with this model under the given
@@ -1072,14 +1072,14 @@ has been registered with this model under the given
         } HasBodyNamed;
         // Symbol: drake::multibody::DeformableModel::HasConstraint
         struct /* HasConstraint */ {
-          // Source: drake/multibody/plant/deformable_model.h:472
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Returns the true if the deformable body with the given ``id`` has
 constraints associated with it.)""";
         } HasConstraint;
         // Symbol: drake::multibody::DeformableModel::RegisterDeformableBody
         struct /* RegisterDeformableBody */ {
-          // Source: drake/multibody/plant/deformable_model.h:93
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc_4args =
 R"""(Registers a deformable body in ``this`` DeformableModel with the given
 GeometryInstance. The body is represented in the world frame and
@@ -1123,14 +1123,14 @@ Raises:
 Raises:
     RuntimeError if Finalize() has been called on the multibody plant
     owning this deformable model.)""";
-          // Source: drake/multibody/plant/deformable_model.h:100
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc_3args =
 R"""(Registers a deformable body in ``this`` DeformableModel with the
 default model instance.)""";
         } RegisterDeformableBody;
         // Symbol: drake::multibody::DeformableModel::SetDefaultState
         struct /* SetDefaultState */ {
-          // Source: drake/multibody/plant/deformable_model.h:523
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""((Internal use only) Sets the default state for the deformable model.
 This should only be called by MultibodyPlant as a part of
@@ -1138,7 +1138,7 @@ MultibodyPlant::SetDefaultState().)""";
         } SetDefaultState;
         // Symbol: drake::multibody::DeformableModel::SetParallelism
         struct /* SetParallelism */ {
-          // Source: drake/multibody/plant/deformable_model.h:514
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""((Internal use only) Configures the parallelism that ``this``
 DeformableModel uses when opportunities for parallel computation
@@ -1146,7 +1146,7 @@ arises.)""";
         } SetParallelism;
         // Symbol: drake::multibody::DeformableModel::SetPositions
         struct /* SetPositions */ {
-          // Source: drake/multibody/plant/deformable_model.h:192
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Sets the vertex positions of the deformable body with the given ``id``
 in the provided ``context``.
@@ -1173,7 +1173,7 @@ Raises:
         } SetPositions;
         // Symbol: drake::multibody::DeformableModel::SetPositionsAndVelocities
         struct /* SetPositionsAndVelocities */ {
-          // Source: drake/multibody/plant/deformable_model.h:237
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Sets the vertex positions and velocities of the deformable body with
 the given ``id`` in the provided ``context``.
@@ -1204,7 +1204,7 @@ Raises:
         } SetPositionsAndVelocities;
         // Symbol: drake::multibody::DeformableModel::SetVelocities
         struct /* SetVelocities */ {
-          // Source: drake/multibody/plant/deformable_model.h:214
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Sets the vertex velocities of the deformable body with the given
 ``id`` in the provided ``context``.
@@ -1231,7 +1231,7 @@ Raises:
         } SetVelocities;
         // Symbol: drake::multibody::DeformableModel::SetWallBoundaryCondition
         struct /* SetWallBoundaryCondition */ {
-          // Source: drake/multibody/plant/deformable_model.h:121
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Sets wall boundary conditions for the body with the given ``id``. All
 vertices of the mesh of the deformable body whose reference positions
@@ -1263,7 +1263,7 @@ Raises:
         } SetWallBoundaryCondition;
         // Symbol: drake::multibody::DeformableModel::configuration_output_port_index
         struct /* configuration_output_port_index */ {
-          // Source: drake/multibody/plant/deformable_model.h:489
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""((Internal use only) Returns the output port index of the vertex
 positions port for all registered deformable bodies.
@@ -1274,7 +1274,7 @@ Raises:
         } configuration_output_port_index;
         // Symbol: drake::multibody::DeformableModel::integrator
         struct /* integrator */ {
-          // Source: drake/multibody/plant/deformable_model.h:479
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""((Internal use only) Returns the time integrator used to for all
 FemModels in this model.
@@ -1284,31 +1284,31 @@ Raises:
         } integrator;
         // Symbol: drake::multibody::DeformableModel::is_cloneable_to_autodiff
         struct /* is_cloneable_to_autodiff */ {
-          // Source: drake/multibody/plant/deformable_model.h:503
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Returns true if and only if this DeformableModel is empty.)""";
         } is_cloneable_to_autodiff;
         // Symbol: drake::multibody::DeformableModel::is_cloneable_to_double
         struct /* is_cloneable_to_double */ {
-          // Source: drake/multibody/plant/deformable_model.h:500
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc = R"""()""";
         } is_cloneable_to_double;
         // Symbol: drake::multibody::DeformableModel::is_cloneable_to_symbolic
         struct /* is_cloneable_to_symbolic */ {
-          // Source: drake/multibody/plant/deformable_model.h:506
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Returns true if and only if this DeformableModel is empty.)""";
         } is_cloneable_to_symbolic;
         // Symbol: drake::multibody::DeformableModel::is_empty
         struct /* is_empty */ {
-          // Source: drake/multibody/plant/deformable_model.h:496
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Returns true if there's no deformable body or external force
 registered to ``this`` DeformableModel.)""";
         } is_empty;
         // Symbol: drake::multibody::DeformableModel::is_enabled
         struct /* is_enabled */ {
-          // Source: drake/multibody/plant/deformable_model.h:363
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Returns:
     true if and only if the deformable body with the given id is
@@ -1324,14 +1324,14 @@ Raises:
         } is_enabled;
         // Symbol: drake::multibody::DeformableModel::num_bodies
         struct /* num_bodies */ {
-          // Source: drake/multibody/plant/deformable_model.h:62
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""(Returns the number of deformable bodies registered with this
 DeformableModel.)""";
         } num_bodies;
         // Symbol: drake::multibody::DeformableModel::parallelism
         struct /* parallelism */ {
-          // Source: drake/multibody/plant/deformable_model.h:518
+          // Source: drake/multibody/plant/deformable_model.h
           const char* doc =
 R"""((Internal use only) Returns the parallelism that ``this``
 DeformableModel uses when opportunities for parallel computation
@@ -1340,7 +1340,7 @@ arises.)""";
       } DeformableModel;
       // Symbol: drake::multibody::DiscreteContactApproximation
       struct /* DiscreteContactApproximation */ {
-        // Source: drake/multibody/plant/multibody_plant.h:229
+        // Source: drake/multibody/plant/multibody_plant.h
         const char* doc =
 R"""(The type of the contact approximation used for a discrete
 MultibodyPlant model.
@@ -1396,33 +1396,33 @@ References
   https://arxiv.org/abs/2312.03908)""";
         // Symbol: drake::multibody::DiscreteContactApproximation::kLagged
         struct /* kLagged */ {
-          // Source: drake/multibody/plant/multibody_plant.h:238
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Approximation in which the normal force is lagged in Coulomb's law,
 such that ‖γₜ‖ ≤ μ γₙ₀, [Castro et al., 2023].)""";
         } kLagged;
         // Symbol: drake::multibody::DiscreteContactApproximation::kSap
         struct /* kSap */ {
-          // Source: drake/multibody/plant/multibody_plant.h:233
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(SAP solver model approximation, see [Castro et al., 2022].)""";
         } kSap;
         // Symbol: drake::multibody::DiscreteContactApproximation::kSimilar
         struct /* kSimilar */ {
-          // Source: drake/multibody/plant/multibody_plant.h:235
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Similarity approximation found in [Castro et al., 2023].)""";
         } kSimilar;
         // Symbol: drake::multibody::DiscreteContactApproximation::kTamsi
         struct /* kTamsi */ {
-          // Source: drake/multibody/plant/multibody_plant.h:231
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(TAMSI solver approximation, see [Castro et al., 2019].)""";
         } kTamsi;
       } DiscreteContactApproximation;
       // Symbol: drake::multibody::DiscreteContactSolver
       struct /* DiscreteContactSolver */ {
-        // Source: drake/multibody/plant/multibody_plant.h:172
+        // Source: drake/multibody/plant/multibody_plant.h
         const char* doc =
 R"""(The type of the contact solver used for a discrete MultibodyPlant
 model.
@@ -1446,19 +1446,19 @@ References
   https://arxiv.org/abs/2110.10107.)""";
         // Symbol: drake::multibody::DiscreteContactSolver::kSap
         struct /* kSap */ {
-          // Source: drake/multibody/plant/multibody_plant.h:176
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc = R"""(SAP solver, see [Castro et al., 2022].)""";
         } kSap;
         // Symbol: drake::multibody::DiscreteContactSolver::kTamsi
         struct /* kTamsi */ {
-          // Source: drake/multibody/plant/multibody_plant.h:174
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(TAMSI solver, see [Castro et al., 2019].)""";
         } kTamsi;
       } DiscreteContactSolver;
       // Symbol: drake::multibody::DistanceConstraintParams
       struct /* DistanceConstraintParams */ {
-        // Source: drake/multibody/plant/distance_constraint_params.h:24
+        // Source: drake/multibody/plant/distance_constraint_params.h
         const char* doc =
 R"""(Parameters for a distance constraint. A distance constraint is modeled
 as a holonomic constraint. Distance constraints can be "soft", and are
@@ -1479,11 +1479,11 @@ Warning:
     to be strictly positive.)""";
         // Symbol: drake::multibody::DistanceConstraintParams::DistanceConstraintParams
         struct /* ctor */ {
-          // Source: drake/multibody/plant/distance_constraint_params.h:30
+          // Source: drake/multibody/plant/distance_constraint_params.h
           const char* doc_0args =
 R"""(Construction to an invalid set of parameters only meant to facilitate
 use with STL containers.)""";
-          // Source: drake/multibody/plant/distance_constraint_params.h:58
+          // Source: drake/multibody/plant/distance_constraint_params.h
           const char* doc_7args =
 R"""(Constructor for a set of valid parameters.
 
@@ -1537,62 +1537,62 @@ Raises:
         } ctor;
         // Symbol: drake::multibody::DistanceConstraintParams::bodyA
         struct /* bodyA */ {
-          // Source: drake/multibody/plant/distance_constraint_params.h:63
+          // Source: drake/multibody/plant/distance_constraint_params.h
           const char* doc = R"""(Index of body A.)""";
         } bodyA;
         // Symbol: drake::multibody::DistanceConstraintParams::bodyB
         struct /* bodyB */ {
-          // Source: drake/multibody/plant/distance_constraint_params.h:66
+          // Source: drake/multibody/plant/distance_constraint_params.h
           const char* doc = R"""(Index of body B.)""";
         } bodyB;
         // Symbol: drake::multibody::DistanceConstraintParams::damping
         struct /* damping */ {
-          // Source: drake/multibody/plant/distance_constraint_params.h:81
+          // Source: drake/multibody/plant/distance_constraint_params.h
           const char* doc =
 R"""(Constraint damping. See class documentation.)""";
         } damping;
         // Symbol: drake::multibody::DistanceConstraintParams::distance
         struct /* distance */ {
-          // Source: drake/multibody/plant/distance_constraint_params.h:75
+          // Source: drake/multibody/plant/distance_constraint_params.h
           const char* doc = R"""(The fixed length of the constraint.)""";
         } distance;
         // Symbol: drake::multibody::DistanceConstraintParams::p_AP
         struct /* p_AP */ {
-          // Source: drake/multibody/plant/distance_constraint_params.h:69
+          // Source: drake/multibody/plant/distance_constraint_params.h
           const char* doc = R"""(Position of point P in body A's frame.)""";
         } p_AP;
         // Symbol: drake::multibody::DistanceConstraintParams::p_BQ
         struct /* p_BQ */ {
-          // Source: drake/multibody/plant/distance_constraint_params.h:72
+          // Source: drake/multibody/plant/distance_constraint_params.h
           const char* doc = R"""(Position of point Q in body B's frame.)""";
         } p_BQ;
         // Symbol: drake::multibody::DistanceConstraintParams::stiffness
         struct /* stiffness */ {
-          // Source: drake/multibody/plant/distance_constraint_params.h:78
+          // Source: drake/multibody/plant/distance_constraint_params.h
           const char* doc =
 R"""(Constraint stiffness. See class documentation.)""";
         } stiffness;
       } DistanceConstraintParams;
       // Symbol: drake::multibody::ExternallyAppliedSpatialForce
       struct /* ExternallyAppliedSpatialForce */ {
-        // Source: drake/multibody/plant/externally_applied_spatial_force.h:11
+        // Source: drake/multibody/plant/externally_applied_spatial_force.h
         const char* doc = R"""()""";
         // Symbol: drake::multibody::ExternallyAppliedSpatialForce::F_Bq_W
         struct /* F_Bq_W */ {
-          // Source: drake/multibody/plant/externally_applied_spatial_force.h:21
+          // Source: drake/multibody/plant/externally_applied_spatial_force.h
           const char* doc =
 R"""(A spatial force applied to Body B at point Bq, expressed in the world
 frame.)""";
         } F_Bq_W;
         // Symbol: drake::multibody::ExternallyAppliedSpatialForce::body_index
         struct /* body_index */ {
-          // Source: drake/multibody/plant/externally_applied_spatial_force.h:13
+          // Source: drake/multibody/plant/externally_applied_spatial_force.h
           const char* doc =
 R"""(The index of the body that the force is to be applied to.)""";
         } body_index;
         // Symbol: drake::multibody::ExternallyAppliedSpatialForce::p_BoBq_B
         struct /* p_BoBq_B */ {
-          // Source: drake/multibody/plant/externally_applied_spatial_force.h:17
+          // Source: drake/multibody/plant/externally_applied_spatial_force.h
           const char* doc =
 R"""(A position vector from Body B's origin (Bo) to a point Bq (a point of
 B), expressed in B's frame.)""";
@@ -1600,7 +1600,7 @@ B), expressed in B's frame.)""";
       } ExternallyAppliedSpatialForce;
       // Symbol: drake::multibody::ExternallyAppliedSpatialForceMultiplexer
       struct /* ExternallyAppliedSpatialForceMultiplexer */ {
-        // Source: drake/multibody/plant/externally_applied_spatial_force_multiplexer.h:28
+        // Source: drake/multibody/plant/externally_applied_spatial_force_multiplexer.h
         const char* doc =
 R"""(Concatenates multiple std::vector<>'s of
 ExternallyAppliedSpatialForce<T>.
@@ -1616,20 +1616,20 @@ ExternallyAppliedSpatialForce<T>.
     - y0)""";
         // Symbol: drake::multibody::ExternallyAppliedSpatialForceMultiplexer::ExternallyAppliedSpatialForceMultiplexer<T>
         struct /* ctor */ {
-          // Source: drake/multibody/plant/externally_applied_spatial_force_multiplexer.h:37
+          // Source: drake/multibody/plant/externally_applied_spatial_force_multiplexer.h
           const char* doc =
 R"""(Constructor.
 
 Parameter ``num_inputs``:
     Number of input ports to be added.)""";
-          // Source: drake/multibody/plant/externally_applied_spatial_force_multiplexer.h:43
+          // Source: drake/multibody/plant/externally_applied_spatial_force_multiplexer.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
       } ExternallyAppliedSpatialForceMultiplexer;
       // Symbol: drake::multibody::HydroelasticContactInfo
       struct /* HydroelasticContactInfo */ {
-        // Source: drake/multibody/plant/hydroelastic_contact_info.h:36
+        // Source: drake/multibody/plant/hydroelastic_contact_info.h
         const char* doc =
 R"""(A class containing information regarding contact and contact response
 between two geometries attached to a pair of bodies. This class
@@ -1648,7 +1648,7 @@ When T = Expression, the class is specialized to not contain any
 member data, because ContactSurface doesn't support Expression.)""";
         // Symbol: drake::multibody::HydroelasticContactInfo::F_Ac_W
         struct /* F_Ac_W */ {
-          // Source: drake/multibody/plant/hydroelastic_contact_info.h:100
+          // Source: drake/multibody/plant/hydroelastic_contact_info.h
           const char* doc =
 R"""(Gets the spatial force applied on body A, at the centroid point C of
 the surface mesh M, and expressed in the world frame W. The position
@@ -1657,7 +1657,7 @@ with ``contact_surface().centroid()``.)""";
         } F_Ac_W;
         // Symbol: drake::multibody::HydroelasticContactInfo::HydroelasticContactInfo<T>
         struct /* ctor */ {
-          // Source: drake/multibody/plant/hydroelastic_contact_info.h:59
+          // Source: drake/multibody/plant/hydroelastic_contact_info.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Constructs this structure using the given contact surface and spatial
 force.
@@ -1687,7 +1687,7 @@ Parameter ``F_Ac_W``:
         } ctor;
         // Symbol: drake::multibody::HydroelasticContactInfo::contact_surface
         struct /* contact_surface */ {
-          // Source: drake/multibody/plant/hydroelastic_contact_info.h:92
+          // Source: drake/multibody/plant/hydroelastic_contact_info.h
           const char* doc =
 R"""(Returns a reference to the ContactSurface data structure. Note that
 the mesh and gradient vector fields are expressed in the world frame.)""";
@@ -1695,7 +1695,7 @@ the mesh and gradient vector fields are expressed in the world frame.)""";
       } HydroelasticContactInfo;
       // Symbol: drake::multibody::MultibodyPlant
       struct /* MultibodyPlant */ {
-        // Source: drake/multibody/plant/multibody_plant.h:979
+        // Source: drake/multibody/plant/multibody_plant.h
         const char* doc =
 R"""(MultibodyPlant is a Drake system framework representation (see
 systems::System) for the model of a physical system consisting of a
@@ -2552,7 +2552,7 @@ Minimal formulation of joint motion for biomechanisms.
 Nonlinear dynamics, 62(1), pp.291-303.)""";
         // Symbol: drake::multibody::MultibodyPlant::AddBallConstraint
         struct /* AddBallConstraint */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2060
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Defines a constraint such that point P affixed to body A is coincident
 at all times with point Q affixed to body B, effectively modeling a
@@ -2594,7 +2594,7 @@ Raises:
         } AddBallConstraint;
         // Symbol: drake::multibody::MultibodyPlant::AddCouplerConstraint
         struct /* AddCouplerConstraint */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1947
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Defines a holonomic constraint between two single-dof joints
 ``joint0`` and ``joint1`` with positions q₀ and q₁, respectively, such
@@ -2631,7 +2631,7 @@ Raises:
         } AddCouplerConstraint;
         // Symbol: drake::multibody::MultibodyPlant::AddDistanceConstraint
         struct /* AddDistanceConstraint */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2001
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Defines a distance constraint between a point P on a body A and a
 point Q on a body B.
@@ -2717,12 +2717,12 @@ Raises:
         } AddDistanceConstraint;
         // Symbol: drake::multibody::MultibodyPlant::AddDummyModel
         struct /* AddDummyModel */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2627
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc = R"""()""";
         } AddDummyModel;
         // Symbol: drake::multibody::MultibodyPlant::AddForceElement
         struct /* AddForceElement */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1636
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Adds a new force element model of type ``ForceElementType`` to
 ``this`` MultibodyPlant. The arguments to this method ``args`` are
@@ -2751,7 +2751,7 @@ See also:
         } AddForceElement;
         // Symbol: drake::multibody::MultibodyPlant::AddFrame
         struct /* AddFrame */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1458
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(This method adds a Frame of type ``FrameType<T>``. For more
 information, please see the corresponding constructor of
@@ -2769,11 +2769,11 @@ Returns:
         } AddFrame;
         // Symbol: drake::multibody::MultibodyPlant::AddJoint
         struct /* AddJoint */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1465
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(This method adds a Joint of type ``JointType`` between two bodies. For
 more information, see the below overload of ``AddJoint<>``.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1556
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_6args =
 R"""(This method adds a Joint of type ``JointType`` between two bodies. The
 two bodies connected by this Joint object are referred to as *parent*
@@ -2881,7 +2881,7 @@ See also:
         } AddJoint;
         // Symbol: drake::multibody::MultibodyPlant::AddJointActuator
         struct /* AddJointActuator */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1672
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Creates and adds a JointActuator model for an actuator acting on a
 given ``joint``. This method returns a constant reference to the
@@ -2929,7 +2929,7 @@ See also:
         } AddJointActuator;
         // Symbol: drake::multibody::MultibodyPlant::AddModelInstance
         struct /* AddModelInstance */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1691
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Creates a new model instance. Returns the index for the model
 instance.
@@ -2942,7 +2942,7 @@ Parameter ``name``:
         } AddModelInstance;
         // Symbol: drake::multibody::MultibodyPlant::AddRigidBody
         struct /* AddRigidBody */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1392
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_3args =
 R"""(Creates a rigid body with the provided name and spatial inertia. This
 method returns a constant reference to the body just added, which will
@@ -2985,7 +2985,7 @@ Parameter ``M_BBo_B``:
 Returns:
     A constant reference to the new RigidBody just added, which will
     remain valid for the lifetime of ``this`` MultibodyPlant.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1439
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Creates a rigid body with the provided name and spatial inertia. This
 method returns a constant reference to the body just added, which will
@@ -3033,7 +3033,7 @@ Raises:
         } AddRigidBody;
         // Symbol: drake::multibody::MultibodyPlant::AddTendonConstraint
         struct /* AddTendonConstraint */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2166
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Defines a set of unilateral constraints on the length of an abstract
 tendon defined as:
@@ -3165,7 +3165,7 @@ Raises:
         } AddTendonConstraint;
         // Symbol: drake::multibody::MultibodyPlant::AddWeldConstraint
         struct /* AddWeldConstraint */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2082
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Defines a constraint such that frame P affixed to body A is coincident
 at all times with frame Q affixed to body B, effectively modeling a
@@ -3203,7 +3203,7 @@ Raises:
         } AddWeldConstraint;
         // Symbol: drake::multibody::MultibodyPlant::CalcBiasCenterOfMassTranslationalAcceleration
         struct /* CalcBiasCenterOfMassTranslationalAcceleration */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5024
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_4args =
 R"""(For the system S of all bodies other than the world body, calculates
 a𝑠Bias_AScm_E, Scm's translational acceleration bias in frame A with
@@ -3254,7 +3254,7 @@ Note:
 Note:
     See bias_acceleration_functions "Bias acceleration functions" for
     theory and details.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:5059
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_5args =
 R"""(For the system S containing the selected model instances, calculates
 a𝑠Bias_AScm_E, Scm's translational acceleration bias in frame A with
@@ -3312,7 +3312,7 @@ Note:
         } CalcBiasCenterOfMassTranslationalAcceleration;
         // Symbol: drake::multibody::MultibodyPlant::CalcBiasSpatialAcceleration
         struct /* CalcBiasSpatialAcceleration */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4990
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(For one point Bp affixed/welded to a frame B, calculates A𝑠Bias_ABp,
 Bp's spatial acceleration bias in frame A with respect to "speeds" 𝑠,
@@ -3365,7 +3365,7 @@ Note:
         } CalcBiasSpatialAcceleration;
         // Symbol: drake::multibody::MultibodyPlant::CalcBiasTerm
         struct /* CalcBiasTerm */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4924
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Computes the bias term ``C(q, v) v`` containing Coriolis, centripetal,
 and gyroscopic effects in the multibody equations of motion:
@@ -3404,7 +3404,7 @@ Parameter ``Cv``:
         } CalcBiasTerm;
         // Symbol: drake::multibody::MultibodyPlant::CalcBiasTranslationalAcceleration
         struct /* CalcBiasTranslationalAcceleration */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4955
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(For each point Bi affixed/welded to a frame B, calculates a𝑠Bias_ABi,
 Bi's translational acceleration bias in frame A with respect to
@@ -3457,7 +3457,7 @@ Note:
         } CalcBiasTranslationalAcceleration;
         // Symbol: drake::multibody::MultibodyPlant::CalcCenterOfMassPositionInWorld
         struct /* CalcCenterOfMassPositionInWorld */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3880
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Calculates the position vector from the world origin Wo to the center
 of mass of all bodies in this MultibodyPlant, expressed in the world
@@ -3482,7 +3482,7 @@ Note:
     = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body, and pᵢ is Bᵢcm's position
     from Wo expressed in frame W (Bᵢcm is the center of mass of the
     iᵗʰ body).)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3901
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Calculates the position vector from the world origin Wo to the center
 of mass of all non-world bodies contained in model_instances,
@@ -3514,7 +3514,7 @@ Note:
         } CalcCenterOfMassPositionInWorld;
         // Symbol: drake::multibody::MultibodyPlant::CalcCenterOfMassTranslationalAccelerationInWorld
         struct /* CalcCenterOfMassTranslationalAccelerationInWorld */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3961
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(For the system S contained in this MultibodyPlant, calculates Scm's
 translational acceleration in the world frame W expressed in W, where
@@ -3544,7 +3544,7 @@ Note:
     context, this method performs an expensive forward dynamics
     computation, whereas once evaluated, successive calls to this
     method are inexpensive.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3986
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(For the system S containing the selected model instances, calculates
 Scm's translational acceleration in the world frame W expressed in W,
@@ -3582,7 +3582,7 @@ Note:
         } CalcCenterOfMassTranslationalAccelerationInWorld;
         // Symbol: drake::multibody::MultibodyPlant::CalcCenterOfMassTranslationalVelocityInWorld
         struct /* CalcCenterOfMassTranslationalVelocityInWorld */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3938
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Calculates system center of mass translational velocity in world frame
 W.
@@ -3604,7 +3604,7 @@ Note:
     The world_body() is ignored. v_WScm_W = ∑ (mᵢ vᵢ) / mₛ, where mₛ =
     ∑ mᵢ, mᵢ is the mass of the iᵗʰ body, and vᵢ is Bᵢcm's velocity in
     world W (Bᵢcm is the center of mass of the iᵗʰ body).)""";
-          // Source: drake/multibody/plant/multibody_plant.h:4008
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Calculates system center of mass translational velocity in world frame
 W.
@@ -3635,7 +3635,7 @@ Note:
         } CalcCenterOfMassTranslationalVelocityInWorld;
         // Symbol: drake::multibody::MultibodyPlant::CalcForceElementsContribution
         struct /* CalcForceElementsContribution */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4184
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Computes the combined force contribution of ForceElement objects in
 the model. A ForceElement can apply forces as a spatial force per body
@@ -3659,7 +3659,7 @@ Raises:
         } CalcForceElementsContribution;
         // Symbol: drake::multibody::MultibodyPlant::CalcFullSystemJacobian
         struct /* CalcFullSystemJacobian */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4598
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""((Internal use only) Evaluates the block system Jacobian, then uses it
 to fill in an equivalent full matrix of size 6n x m where n is the
@@ -3678,7 +3678,7 @@ See also:
         } CalcFullSystemJacobian;
         // Symbol: drake::multibody::MultibodyPlant::CalcGeneralizedForces
         struct /* CalcGeneralizedForces */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4244
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Computes the generalized forces result of a set of MultibodyForces
 applied to this model.
@@ -3731,7 +3731,7 @@ Raises:
         } CalcGeneralizedForces;
         // Symbol: drake::multibody::MultibodyPlant::CalcGravityGeneralizedForces
         struct /* CalcGravityGeneralizedForces */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4209
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Computes the generalized forces ``tau_g(q)`` due to gravity as a
 function of the generalized positions ``q`` stored in the input
@@ -3771,7 +3771,7 @@ Returns:
         } CalcGravityGeneralizedForces;
         // Symbol: drake::multibody::MultibodyPlant::CalcInverseDynamics
         struct /* CalcInverseDynamics */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4135
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Given the state of this model in ``context`` and a known vector of
 generalized accelerations ``vdot``, this method computes the set of
@@ -3834,7 +3834,7 @@ Returns:
         } CalcInverseDynamics;
         // Symbol: drake::multibody::MultibodyPlant::CalcJacobianAngularVelocity
         struct /* CalcJacobianAngularVelocity */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4688
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Calculates J𝑠_w_AB, a frame B's angular velocity Jacobian in a frame A
 with respect to "speeds" 𝑠.
@@ -3893,7 +3893,7 @@ Raises:
         } CalcJacobianAngularVelocity;
         // Symbol: drake::multibody::MultibodyPlant::CalcJacobianCenterOfMassTranslationalVelocity
         struct /* CalcJacobianCenterOfMassTranslationalVelocity */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4830
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_5args =
 R"""(Calculates J𝑠_v_AScm_E, point Scm's translational velocity Jacobian in
 frame A with respect to "speeds" 𝑠, expressed in frame E, where point
@@ -3934,7 +3934,7 @@ Raises:
 
 See also:
     See Jacobian_functions "Jacobian functions" for related functions.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:4869
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_6args =
 R"""(Calculates J𝑠_v_AScm_E, point Scm's translational velocity Jacobian in
 frame A with respect to "speeds" 𝑠, expressed in frame E, where point
@@ -3988,7 +3988,7 @@ See also:
         } CalcJacobianCenterOfMassTranslationalVelocity;
         // Symbol: drake::multibody::MultibodyPlant::CalcJacobianPositionVector
         struct /* CalcJacobianPositionVector */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4791
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(For each point Bi affixed/welded to a frame B, calculates Jq_p_AoBi,
 Bi's position vector Jacobian in frame A with respect to the
@@ -4069,7 +4069,7 @@ See also:
         } CalcJacobianPositionVector;
         // Symbol: drake::multibody::MultibodyPlant::CalcJacobianSpatialVelocity
         struct /* CalcJacobianSpatialVelocity */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4647
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(For one point Bp fixed/welded to a frame B, calculates J𝑠_V_ABp, Bp's
 spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
@@ -4159,7 +4159,7 @@ Raises:
         } CalcJacobianSpatialVelocity;
         // Symbol: drake::multibody::MultibodyPlant::CalcJacobianTranslationalVelocity
         struct /* CalcJacobianTranslationalVelocity */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4741
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(For each point Bi affixed/welded to a frame B, calculates J𝑠_v_ABi,
 Bi's translational velocity Jacobian in frame A with respect to
@@ -4252,7 +4252,7 @@ See also:
         } CalcJacobianTranslationalVelocity;
         // Symbol: drake::multibody::MultibodyPlant::CalcMassMatrix
         struct /* CalcMassMatrix */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4432
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Efficiently computes the mass matrix ``M(q)`` of the model. The
 generalized positions q are taken from the given ``context``. M
@@ -4284,7 +4284,7 @@ See also:
         } CalcMassMatrix;
         // Symbol: drake::multibody::MultibodyPlant::CalcMassMatrixViaInverseDynamics
         struct /* CalcMassMatrixViaInverseDynamics */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4403
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Computes the mass matrix ``M(q)`` of the model using a slow method
 (inverse dynamics). The generalized positions q are taken from the
@@ -4356,7 +4356,7 @@ See also:
         } CalcMassMatrixViaInverseDynamics;
         // Symbol: drake::multibody::MultibodyPlant::CalcPointsPositions
         struct /* CalcPointsPositions */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3834
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Given the positions ``p_BQi`` for a set of points ``Qi`` measured and
 expressed in a frame B, this method computes the positions
@@ -4396,7 +4396,7 @@ Note:
         } CalcPointsPositions;
         // Symbol: drake::multibody::MultibodyPlant::CalcRelativeRotationMatrix
         struct /* CalcRelativeRotationMatrix */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3797
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Calculates the rotation matrix ``R_AB`` relating frame A and frame B.
 
@@ -4415,7 +4415,7 @@ Returns ``R_AB``:
         } CalcRelativeRotationMatrix;
         // Symbol: drake::multibody::MultibodyPlant::CalcRelativeTransform
         struct /* CalcRelativeTransform */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3780
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Calculates the rigid transform (pose) ``X_AB`` relating frame A and
 frame B.
@@ -4435,7 +4435,7 @@ Returns ``X_AB``:
         } CalcRelativeTransform;
         // Symbol: drake::multibody::MultibodyPlant::CalcSpatialAccelerationsFromVdot
         struct /* CalcSpatialAccelerationsFromVdot */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4090
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Given the state of this model in ``context`` and a known vector of
 generalized accelerations ``known_vdot``, this method computes the
@@ -4459,7 +4459,7 @@ Raises:
         } CalcSpatialAccelerationsFromVdot;
         // Symbol: drake::multibody::MultibodyPlant::CalcSpatialInertia
         struct /* CalcSpatialInertia */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3922
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns M_SFo_F, the spatial inertia of a set S of bodies about point
 Fo (the origin of a frame F), expressed in frame F. You may regard
@@ -4488,7 +4488,7 @@ Note:
         } CalcSpatialInertia;
         // Symbol: drake::multibody::MultibodyPlant::CalcSpatialMomentumInWorldAboutPoint
         struct /* CalcSpatialMomentumInWorldAboutPoint */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4033
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(This method returns the spatial momentum of ``this`` MultibodyPlant in
 the world frame W, about a designated point P, expressed in the world
@@ -4526,7 +4526,7 @@ Note:
 .. raw:: html
 
     </details>)""";
-          // Source: drake/multibody/plant/multibody_plant.h:4066
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_3args =
 R"""(This method returns the spatial momentum of a set of model instances
 in the world frame W, about a designated point P, expressed in frame
@@ -4582,7 +4582,7 @@ Raises:
         } CalcSpatialMomentumInWorldAboutPoint;
         // Symbol: drake::multibody::MultibodyPlant::CalcTotalMass
         struct /* CalcTotalMass */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3849
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Calculates the total mass of all bodies in this MultibodyPlant.
 
@@ -4595,7 +4595,7 @@ Returns ``The``:
 Note:
     The mass of the world_body() does not contribute to the total
     mass.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3863
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Calculates the total mass of all bodies contained in model_instances.
 
@@ -4617,7 +4617,7 @@ Note:
         } CalcTotalMass;
         // Symbol: drake::multibody::MultibodyPlant::CollectRegisteredGeometries
         struct /* CollectRegisteredGeometries */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2445
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(For each of the provided ``bodies``, collects up all geometries that
 have been registered to that body. Intended to be used in conjunction
@@ -4660,7 +4660,7 @@ Raises:
         } CollectRegisteredGeometries;
         // Symbol: drake::multibody::MultibodyPlant::EvalBlockSystemJacobian
         struct /* EvalBlockSystemJacobian */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4580
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""((Internal use only) Returns the System Jacobian Jv_V_WB(q) in block
 form. Each block is dense and corresponds to one Tree of the as-built
@@ -4689,7 +4689,7 @@ See also:
         } EvalBlockSystemJacobian;
         // Symbol: drake::multibody::MultibodyPlant::EvalBodyPoseInWorld
         struct /* EvalBodyPoseInWorld */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3738
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Evaluate the pose ``X_WB`` of a body B in the world frame W.
 
@@ -4708,7 +4708,7 @@ Raises:
         } EvalBodyPoseInWorld;
         // Symbol: drake::multibody::MultibodyPlant::EvalBodySpatialAccelerationInWorld
         struct /* EvalBodySpatialAccelerationInWorld */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3767
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Evaluates A_WB, body B's spatial acceleration in the world frame W.
 
@@ -4734,7 +4734,7 @@ Note:
         } EvalBodySpatialAccelerationInWorld;
         // Symbol: drake::multibody::MultibodyPlant::EvalBodySpatialVelocityInWorld
         struct /* EvalBodySpatialVelocityInWorld */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3751
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Evaluates V_WB, body B's spatial velocity in the world frame W.
 
@@ -4754,7 +4754,7 @@ Raises:
         } EvalBodySpatialVelocityInWorld;
         // Symbol: drake::multibody::MultibodyPlant::EvalSceneGraphInspector
         struct /* EvalSceneGraphInspector */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2486
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the inspector from the ``context`` for the SceneGraph
 associated with this plant, via this plant's "geometry_query" input
@@ -4764,7 +4764,7 @@ port.))""";
         } EvalSceneGraphInspector;
         // Symbol: drake::multibody::MultibodyPlant::ExcludeCollisionGeometriesWithCollisionFilterGroupPair
         struct /* ExcludeCollisionGeometriesWithCollisionFilterGroupPair */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2412
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Excludes the collision geometries between two given collision filter
 groups.
@@ -4777,7 +4777,7 @@ Precondition:
         } ExcludeCollisionGeometriesWithCollisionFilterGroupPair;
         // Symbol: drake::multibody::MultibodyPlant::Finalize
         struct /* Finalize */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1775
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(This method must be called after all elements in the model (joints,
 bodies, force elements, constraints, etc.) are added and before any
@@ -4805,12 +4805,12 @@ Raises:
         } Finalize;
         // Symbol: drake::multibody::MultibodyPlant::FindSubgraphsOfWeldedBodies
         struct /* FindSubgraphsOfWeldedBodies */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5791
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc = R"""()""";
         } FindSubgraphsOfWeldedBodies;
         // Symbol: drake::multibody::MultibodyPlant::GetAccelerationLowerLimits
         struct /* GetAccelerationLowerLimits */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5690
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a vector of size ``num_velocities()`` containing the lower
 acceleration limits for every generalized velocity coordinate. These
@@ -4822,7 +4822,7 @@ Raises:
         } GetAccelerationLowerLimits;
         // Symbol: drake::multibody::MultibodyPlant::GetAccelerationUpperLimits
         struct /* GetAccelerationUpperLimits */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5697
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Upper limit analog of GetAccelerationsLowerLimits(), where any
 unbounded or unspecified limits will be +infinity.
@@ -4832,7 +4832,7 @@ See also:
         } GetAccelerationUpperLimits;
         // Symbol: drake::multibody::MultibodyPlant::GetActuatedJointIndices
         struct /* GetActuatedJointIndices */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5345
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a list of actuated joint indices associated with
 ``model_instance``.
@@ -4842,7 +4842,7 @@ Raises:
         } GetActuatedJointIndices;
         // Symbol: drake::multibody::MultibodyPlant::GetActuationFromArray
         struct /* GetActuationFromArray */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3227
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a vector of actuation values for ``model_instance`` from a
 vector ``u`` of actuation values for the entire plant model. Refer to
@@ -4863,7 +4863,7 @@ Raises:
         } GetActuationFromArray;
         // Symbol: drake::multibody::MultibodyPlant::GetActuatorNames
         struct /* GetActuatorNames */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3201
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns a list of string names corresponding to each element of the
 actuation vector. These strings take the form
@@ -4875,7 +4875,7 @@ The returned names are guaranteed to be unique if
 
 Raises:
     RuntimeError if the plant is not finalized.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3213
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Returns a list of string names corresponding to each element of the
 actuation vector. These strings take the form
@@ -4890,7 +4890,7 @@ Raises:
         } GetActuatorNames;
         // Symbol: drake::multibody::MultibodyPlant::GetBaseBodyJointType
         struct /* GetBaseBodyJointType */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1751
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the currently-set choice for base body joint type, either for
 the global setting or for a specific model instance if provided. If a
@@ -4906,7 +4906,7 @@ See also:
         } GetBaseBodyJointType;
         // Symbol: drake::multibody::MultibodyPlant::GetBodiesKinematicallyAffectedBy
         struct /* GetBodiesKinematicallyAffectedBy */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5272
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns all bodies whose kinematics are transitively affected by the
 given vector of Joints. This is a *kinematic* relationship rather than
@@ -4934,7 +4934,7 @@ Raises:
         } GetBodiesKinematicallyAffectedBy;
         // Symbol: drake::multibody::MultibodyPlant::GetBodiesWeldedTo
         struct /* GetBodiesWeldedTo */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5249
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns all bodies that are transitively welded, or rigidly affixed,
 to ``body``, per these two definitions:
@@ -4984,7 +4984,7 @@ Raises:
         } GetBodiesWeldedTo;
         // Symbol: drake::multibody::MultibodyPlant::GetBodyByName
         struct /* GetBodyByName */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5174
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns a constant reference to a body that is identified by the
 string ``name`` in ``this`` MultibodyPlant.
@@ -4998,7 +4998,7 @@ Raises:
 See also:
     HasBodyNamed() to query if there exists a body in ``this``
     MultibodyPlant with a given specified name.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:5183
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Returns a constant reference to the body that is uniquely identified
 by the string ``name`` and ``model_instance`` in ``this``
@@ -5013,7 +5013,7 @@ See also:
         } GetBodyByName;
         // Symbol: drake::multibody::MultibodyPlant::GetBodyFrameIdIfExists
         struct /* GetBodyFrameIdIfExists */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2458
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(If the body with ``body_index`` belongs to the called plant, it
 returns the geometry::FrameId associated with it. Otherwise, it
@@ -5021,7 +5021,7 @@ returns nullopt.)""";
         } GetBodyFrameIdIfExists;
         // Symbol: drake::multibody::MultibodyPlant::GetBodyFrameIdOrThrow
         struct /* GetBodyFrameIdOrThrow */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2472
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(If the body with ``body_index`` belongs to the called plant, it
 returns the geometry::FrameId associated with it. Otherwise this
@@ -5033,20 +5033,20 @@ Raises:
         } GetBodyFrameIdOrThrow;
         // Symbol: drake::multibody::MultibodyPlant::GetBodyFromFrameId
         struct /* GetBodyFromFrameId */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2450
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Given a geometry frame identifier, returns a pointer to the body
 associated with that id (nullptr if there is no such body).)""";
         } GetBodyFromFrameId;
         // Symbol: drake::multibody::MultibodyPlant::GetBodyIndices
         struct /* GetBodyIndices */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5189
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a list of body indices associated with ``model_instance``.)""";
         } GetBodyIndices;
         // Symbol: drake::multibody::MultibodyPlant::GetCollisionGeometriesForBody
         struct /* GetCollisionGeometriesForBody */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2405
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns an array of GeometryId's identifying the different contact
 geometries for ``body`` previously registered with a SceneGraph.
@@ -5061,7 +5061,7 @@ See also:
         } GetCollisionGeometriesForBody;
         // Symbol: drake::multibody::MultibodyPlant::GetConstraintActiveStatus
         struct /* GetConstraintActiveStatus */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1913
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the active status of the constraint given by ``id`` in
 ``context``.
@@ -5075,7 +5075,7 @@ Raises:
         } GetConstraintActiveStatus;
         // Symbol: drake::multibody::MultibodyPlant::GetConstraintIds
         struct /* GetConstraintIds */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1819
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a list of all constraint identifiers. The returned vector
 becomes invalid after any calls to Add*Constraint() or
@@ -5083,7 +5083,7 @@ RemoveConstraint().)""";
         } GetConstraintIds;
         // Symbol: drake::multibody::MultibodyPlant::GetDefaultContactSurfaceRepresentation
         struct /* GetDefaultContactSurfaceRepresentation */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2553
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Return the default value for contact representation, given the desired
 time step. Discrete systems default to use polygons; continuous
@@ -5091,7 +5091,7 @@ systems default to use triangles.)""";
         } GetDefaultContactSurfaceRepresentation;
         // Symbol: drake::multibody::MultibodyPlant::GetDefaultDistanceConstraintParams
         struct /* GetDefaultDistanceConstraintParams */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2012
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns all default distance constraint parameters, as registered via
 AddDistanceConstraint(). See GetDistanceConstraintParams() and
@@ -5100,7 +5100,7 @@ context.)""";
         } GetDefaultDistanceConstraintParams;
         // Symbol: drake::multibody::MultibodyPlant::GetDefaultFloatingBaseBodyPose
         struct /* GetDefaultFloatingBaseBodyPose */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3426
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Gets the provisional default pose of ``body`` as set by
 SetDefaultFloatingBaseBodyPose(). If no pose was specified for
@@ -5134,7 +5134,7 @@ Returns ``X_WB``:
         } GetDefaultFloatingBaseBodyPose;
         // Symbol: drake::multibody::MultibodyPlant::GetDefaultFreeBodyPose
         struct /* GetDefaultFreeBodyPose */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3705
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_deprecated =
 R"""((Deprecated.)
 
@@ -5144,14 +5144,14 @@ Deprecated:
         } GetDefaultFreeBodyPose;
         // Symbol: drake::multibody::MultibodyPlant::GetDefaultPositions
         struct /* GetDefaultPositions */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2941
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_0args =
 R"""(Gets the default positions for the plant, which can be changed via
 SetDefaultPositions().
 
 Raises:
     RuntimeError if the plant is not finalized.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2947
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Gets the default positions for the plant for a given model instance,
 which can be changed via SetDefaultPositions().
@@ -5162,11 +5162,11 @@ Raises:
         } GetDefaultPositions;
         // Symbol: drake::multibody::MultibodyPlant::GetDistanceConstraintParams
         struct /* GetDistanceConstraintParams */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2016
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns all distance constraint parameters currently stored in
 ``context``.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2021
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Returns a constant reference to the parameters for the distance
 constraint that corresponds to identifier ``id``.
@@ -5176,7 +5176,7 @@ Raises:
         } GetDistanceConstraintParams;
         // Symbol: drake::multibody::MultibodyPlant::GetEffortLowerLimits
         struct /* GetEffortLowerLimits */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5707
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a vector of size ``num_actuated_dofs()`` containing the lower
 effort limits for every actuator. Any unbounded or unspecified limits
@@ -5191,7 +5191,7 @@ Raises:
         } GetEffortLowerLimits;
         // Symbol: drake::multibody::MultibodyPlant::GetEffortUpperLimits
         struct /* GetEffortUpperLimits */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5718
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a vector of size ``num_actuated_dofs()`` containing the upper
 effort limits for every actuator. Any unbounded or unspecified limits
@@ -5206,7 +5206,7 @@ Raises:
         } GetEffortUpperLimits;
         // Symbol: drake::multibody::MultibodyPlant::GetFloatingBaseBodies
         struct /* GetFloatingBaseBodies */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3373
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the set of body indices corresponding to the floating base
 bodies in the model, in no particular order. See
@@ -5217,7 +5217,7 @@ Raises:
         } GetFloatingBaseBodies;
         // Symbol: drake::multibody::MultibodyPlant::GetForceElement
         struct /* GetForceElement */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5548
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a constant reference to a force element identified by its
 unique index in ``this`` MultibodyPlant. If the optional template
@@ -5235,7 +5235,7 @@ Raises:
         } GetForceElement;
         // Symbol: drake::multibody::MultibodyPlant::GetFrameByName
         struct /* GetFrameByName */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5415
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns a constant reference to a frame that is identified by the
 string ``name`` in ``this`` model.
@@ -5249,7 +5249,7 @@ Raises:
 See also:
     HasFrameNamed() to query if there exists a frame in ``this`` model
     with a given specified name.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:5426
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Returns a constant reference to the frame that is uniquely identified
 by the string ``name`` in ``model_instance``.
@@ -5266,13 +5266,13 @@ See also:
         } GetFrameByName;
         // Symbol: drake::multibody::MultibodyPlant::GetFrameIndices
         struct /* GetFrameIndices */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5432
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a list of frame indices associated with ``model_instance``.)""";
         } GetFrameIndices;
         // Symbol: drake::multibody::MultibodyPlant::GetFreeBodyPose
         struct /* GetFreeBodyPose */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3501
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(For any free body's 6-dof joint, gets the pose X_JpJc of the child
 frame Jc in its parent frame Jp.
@@ -5296,7 +5296,7 @@ Raises:
         } GetFreeBodyPose;
         // Symbol: drake::multibody::MultibodyPlant::GetJointActuatorByName
         struct /* GetJointActuatorByName */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5509
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns a constant reference to an actuator that is identified by the
 string ``name`` in ``this`` MultibodyPlant.
@@ -5311,7 +5311,7 @@ Raises:
 See also:
     HasJointActuatorNamed() to query if there exists an actuator in
     ``this`` MultibodyPlant with a given specified name.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:5519
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Returns a constant reference to the actuator that is uniquely
 identified by the string ``name`` and ``model_instance`` in ``this``
@@ -5329,12 +5329,12 @@ See also:
         } GetJointActuatorByName;
         // Symbol: drake::multibody::MultibodyPlant::GetJointActuatorIndices
         struct /* GetJointActuatorIndices */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5331
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_0args =
 R"""(Returns a list of all joint actuator indices. The vector is ordered by
 monotonically increasing JointActuatorIndex, but the indices will in
 general not be consecutive due to actuators that were removed.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:5338
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns a list of joint actuator indices associated with
 ``model_instance``. The vector is ordered by monotonically increasing
@@ -5345,7 +5345,7 @@ Raises:
         } GetJointActuatorIndices;
         // Symbol: drake::multibody::MultibodyPlant::GetJointByName
         struct /* GetJointByName */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5362
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a constant reference to a joint that is identified by the
 string ``name`` in ``this`` MultibodyPlant. If the optional template
@@ -5369,18 +5369,18 @@ See also:
         } GetJointByName;
         // Symbol: drake::multibody::MultibodyPlant::GetJointIndices
         struct /* GetJointIndices */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5318
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_0args =
 R"""(Returns a list of all joint indices. The vector is ordered by
 monotonically increasing JointIndex, but the indices will in general
 not be consecutive due to joints that were removed.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:5323
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns a list of joint indices associated with ``model_instance``.)""";
         } GetJointIndices;
         // Symbol: drake::multibody::MultibodyPlant::GetModelInstanceByName
         struct /* GetModelInstanceByName */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5604
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the index to the model instance that is uniquely identified by
 the string ``name`` in ``this`` MultibodyPlant.
@@ -5394,7 +5394,7 @@ See also:
         } GetModelInstanceByName;
         // Symbol: drake::multibody::MultibodyPlant::GetModelInstanceName
         struct /* GetModelInstanceName */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5588
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the name of a ``model_instance``.
 
@@ -5404,7 +5404,7 @@ Raises:
         } GetModelInstanceName;
         // Symbol: drake::multibody::MultibodyPlant::GetMutableJointByName
         struct /* GetMutableJointByName */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5372
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(A version of GetJointByName that returns a mutable reference.
 
@@ -5413,7 +5413,7 @@ See also:
         } GetMutableJointByName;
         // Symbol: drake::multibody::MultibodyPlant::GetMutableSceneGraphPreFinalize
         struct /* GetMutableSceneGraphPreFinalize */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5773
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""((Internal use only) Returns a mutable pointer to the SceneGraph that
 this plant is registered as a source for. This method can only be used
@@ -5425,7 +5425,7 @@ Raises:
         } GetMutableSceneGraphPreFinalize;
         // Symbol: drake::multibody::MultibodyPlant::GetPositionLowerLimits
         struct /* GetPositionLowerLimits */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5658
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a vector of size ``num_positions()`` containing the lower
 position limits for every generalized position coordinate. These
@@ -5437,7 +5437,7 @@ Raises:
         } GetPositionLowerLimits;
         // Symbol: drake::multibody::MultibodyPlant::GetPositionNames
         struct /* GetPositionNames */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3107
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Returns a list of string names corresponding to each element of the
 position vector. These strings take the form
@@ -5455,7 +5455,7 @@ The returned names are guaranteed to be unique if
 
 Raises:
     RuntimeError if the plant is not finalized.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3125
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_3args =
 R"""(Returns a list of string names corresponding to each element of the
 position vector. These strings take the form
@@ -5476,7 +5476,7 @@ Raises:
         } GetPositionNames;
         // Symbol: drake::multibody::MultibodyPlant::GetPositionUpperLimits
         struct /* GetPositionUpperLimits */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5665
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Upper limit analog of GetPositionLowerLimits(), where any unbounded or
 unspecified limits will be +infinity.
@@ -5486,7 +5486,7 @@ See also:
         } GetPositionUpperLimits;
         // Symbol: drake::multibody::MultibodyPlant::GetPositions
         struct /* GetPositions */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2851
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns a const vector reference to the vector of generalized
 positions q in a given Context.
@@ -5498,7 +5498,7 @@ Note:
 Raises:
     RuntimeError if ``context`` does not correspond to the Context for
     a multibody model.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2863
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Returns a vector containing the generalized positions q of a specified
 model instance in a given Context.
@@ -5511,7 +5511,7 @@ Note:
 Raises:
     RuntimeError if ``context`` does not correspond to the Context for
     a multibody model or ``model_instance`` is invalid.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2878
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_3args =
 R"""((Advanced) Populates output vector q_out with the generalized
 positions q of a specified model instance in a given Context.
@@ -5530,7 +5530,7 @@ Raises:
         } GetPositions;
         // Symbol: drake::multibody::MultibodyPlant::GetPositionsAndVelocities
         struct /* GetPositionsAndVelocities */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2773
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns a const vector reference ``[q; v]`` to the generalized
 positions q and generalized velocities v in a given Context.
@@ -5542,7 +5542,7 @@ Note:
 Raises:
     RuntimeError if ``context`` does not correspond to the Context for
     a multibody model.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2786
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Returns a vector ``[q; v]`` containing the generalized positions q and
 generalized velocities v of a specified model instance in a given
@@ -5556,7 +5556,7 @@ Note:
 Raises:
     RuntimeError if ``context`` does not correspond to the Context for
     a multibody model or ``model_instance`` is invalid.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2805
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_3args =
 R"""((Advanced) Populates output vector qv_out representing the generalized
 positions q and generalized velocities v of a specified model instance
@@ -5581,13 +5581,13 @@ Raises:
         } GetPositionsAndVelocities;
         // Symbol: drake::multibody::MultibodyPlant::GetPositionsFromArray
         struct /* GetPositionsFromArray */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3257
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Returns a vector of generalized positions for ``model_instance`` from
 a vector ``q_array`` of generalized positions for the entire model
 model. This method throws an exception if ``q`` is not of size
 MultibodyPlant::num_positions().)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3267
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_3args =
 R"""((Advanced) Populates output vector q_out and with the generalized
 positions for ``model_instance`` from a vector ``q`` of generalized
@@ -5596,7 +5596,7 @@ positions for the entire model. This method throws an exception if
         } GetPositionsFromArray;
         // Symbol: drake::multibody::MultibodyPlant::GetRigidBodyByName
         struct /* GetRigidBodyByName */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5202
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns a constant reference to a rigid body that is identified by the
 string ``name`` in ``this`` model.
@@ -5613,7 +5613,7 @@ Raises:
 See also:
     HasBodyNamed() to query if there exists a body in ``this`` model
     with a given specified name.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:5214
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Returns a constant reference to the rigid body that is uniquely
 identified by the string ``name`` in ``model_instance``.
@@ -5633,7 +5633,7 @@ See also:
         } GetRigidBodyByName;
         // Symbol: drake::multibody::MultibodyPlant::GetStateNames
         struct /* GetStateNames */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3175
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns a list of string names corresponding to each element of the
 multibody state vector. These strings take the form
@@ -5646,7 +5646,7 @@ The returned names are guaranteed to be unique if
 
 Raises:
     RuntimeError if the plant is not finalized.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3188
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Returns a list of string names corresponding to each element of the
 multibody state vector. These strings take the form
@@ -5662,7 +5662,7 @@ Raises:
         } GetStateNames;
         // Symbol: drake::multibody::MultibodyPlant::GetTopologyGraphvizString
         struct /* GetTopologyGraphvizString */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5613
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a Graphviz string describing the topology of this plant. To
 render the string, use the Graphviz tool, ``dot``.
@@ -5672,7 +5672,7 @@ Note: this method can be called either before or after ``Finalize()``.)""";
         } GetTopologyGraphvizString;
         // Symbol: drake::multibody::MultibodyPlant::GetUniqueFloatingBaseBodyOrThrow
         struct /* GetUniqueFloatingBaseBodyOrThrow */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3471
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(If there is a single base body in the model given by
 ``model_instance``, and that body is a floating base body, returns
@@ -5695,7 +5695,7 @@ See also:
         } GetUniqueFloatingBaseBodyOrThrow;
         // Symbol: drake::multibody::MultibodyPlant::GetUniqueFreeBaseBodyOrThrow
         struct /* GetUniqueFreeBaseBodyOrThrow */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3691
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_deprecated =
 R"""((Deprecated.)
 
@@ -5705,7 +5705,7 @@ Deprecated:
         } GetUniqueFreeBaseBodyOrThrow;
         // Symbol: drake::multibody::MultibodyPlant::GetVelocities
         struct /* GetVelocities */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2974
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns a const vector reference to the generalized velocities v in a
 given Context.
@@ -5717,7 +5717,7 @@ Note:
 Raises:
     RuntimeError if ``context`` does not correspond to the Context for
     a multibody model.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2986
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Returns a vector containing the generalized velocities v of a
 specified model instance in a given Context.
@@ -5730,7 +5730,7 @@ Note:
 Raises:
     RuntimeError if ``context`` does not correspond to the Context for
     a multibody model or ``model_instance`` is invalid.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3001
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_3args =
 R"""((Advanced) Populates output vector v_out with the generalized
 velocities v of a specified model instance in a given Context.
@@ -5749,13 +5749,13 @@ Raises:
         } GetVelocities;
         // Symbol: drake::multibody::MultibodyPlant::GetVelocitiesFromArray
         struct /* GetVelocitiesFromArray */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3289
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Returns a vector of generalized velocities for ``model_instance`` from
 a vector ``v`` of generalized velocities for the entire MultibodyPlant
 model. This method throws an exception if the input array is not of
 size MultibodyPlant::num_velocities().)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3299
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_3args =
 R"""((Advanced) Populates output vector v_out with the generalized
 velocities for ``model_instance`` from a vector ``v`` of generalized
@@ -5764,7 +5764,7 @@ velocities for the entire model. This method throws an exception if
         } GetVelocitiesFromArray;
         // Symbol: drake::multibody::MultibodyPlant::GetVelocityLowerLimits
         struct /* GetVelocityLowerLimits */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5674
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a vector of size ``num_velocities()`` containing the lower
 velocity limits for every generalized velocity coordinate. These
@@ -5776,7 +5776,7 @@ Raises:
         } GetVelocityLowerLimits;
         // Symbol: drake::multibody::MultibodyPlant::GetVelocityNames
         struct /* GetVelocityNames */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3143
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Returns a list of string names corresponding to each element of the
 velocity vector. These strings take the form
@@ -5794,7 +5794,7 @@ The returned names are guaranteed to be unique if
 
 Raises:
     RuntimeError if the plant is not finalized.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3161
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_3args =
 R"""(Returns a list of string names corresponding to each element of the
 velocity vector. These strings take the form
@@ -5815,7 +5815,7 @@ Raises:
         } GetVelocityNames;
         // Symbol: drake::multibody::MultibodyPlant::GetVelocityUpperLimits
         struct /* GetVelocityUpperLimits */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5681
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Upper limit analog of GetVelocitysLowerLimits(), where any unbounded
 or unspecified limits will be +infinity.
@@ -5825,7 +5825,7 @@ See also:
         } GetVelocityUpperLimits;
         // Symbol: drake::multibody::MultibodyPlant::GetVisualGeometriesForBody
         struct /* GetVisualGeometriesForBody */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2368
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns an array of GeometryId's identifying the different visual
 geometries for ``body`` previously registered with a SceneGraph.
@@ -5840,7 +5840,7 @@ See also:
         } GetVisualGeometriesForBody;
         // Symbol: drake::multibody::MultibodyPlant::HasBodyNamed
         struct /* HasBodyNamed */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5147
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns:
     ``True`` if a body named ``name`` was added to the MultibodyPlant.
@@ -5850,7 +5850,7 @@ See also:
 
 Raises:
     RuntimeError if the body name occurs in multiple model instances.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:5162
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Returns:
     ``True`` if a body named ``name`` was added to the MultibodyPlant
@@ -5864,7 +5864,7 @@ Raises:
         } HasBodyNamed;
         // Symbol: drake::multibody::MultibodyPlant::HasFrameNamed
         struct /* HasFrameNamed */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5396
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns:
     ``True`` if a frame named ``name`` was added to the model.
@@ -5874,7 +5874,7 @@ See also:
 
 Raises:
     RuntimeError if the frame name occurs in multiple model instances.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:5403
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Returns:
     ``True`` if a frame named ``name`` was added to
@@ -5888,7 +5888,7 @@ Raises:
         } HasFrameNamed;
         // Symbol: drake::multibody::MultibodyPlant::HasJointActuatorNamed
         struct /* HasJointActuatorNamed */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5489
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns:
     ``True`` if an actuator named ``name`` was added to this model.
@@ -5899,7 +5899,7 @@ See also:
 Raises:
     RuntimeError if the actuator name occurs in multiple model
     instances.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:5497
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Returns:
     ``True`` if an actuator named ``name`` was added to
@@ -5913,7 +5913,7 @@ Raises:
         } HasJointActuatorNamed;
         // Symbol: drake::multibody::MultibodyPlant::HasJointNamed
         struct /* HasJointNamed */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5296
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns:
     ``True`` if a joint named ``name`` was added to this model.
@@ -5923,7 +5923,7 @@ See also:
 
 Raises:
     RuntimeError if the joint name occurs in multiple model instances.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:5303
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Returns:
     ``True`` if a joint named ``name`` was added to
@@ -5937,7 +5937,7 @@ Raises:
         } HasJointNamed;
         // Symbol: drake::multibody::MultibodyPlant::HasModelInstanceNamed
         struct /* HasModelInstanceNamed */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5595
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns:
     ``True`` if a model instance named ``name`` was added to this
@@ -5948,7 +5948,7 @@ See also:
         } HasModelInstanceNamed;
         // Symbol: drake::multibody::MultibodyPlant::HasUniqueFloatingBaseBody
         struct /* HasUniqueFloatingBaseBody */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3484
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns true if there is a single base body in the model given by
 ``model_instance``, and that body is a floating base body.
@@ -5966,7 +5966,7 @@ See also:
         } HasUniqueFloatingBaseBody;
         // Symbol: drake::multibody::MultibodyPlant::HasUniqueFreeBaseBody
         struct /* HasUniqueFreeBaseBody */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3711
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_deprecated =
 R"""((Deprecated.)
 
@@ -5976,7 +5976,7 @@ Deprecated:
         } HasUniqueFreeBaseBody;
         // Symbol: drake::multibody::MultibodyPlant::IsAnchored
         struct /* IsAnchored */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5137
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns ``True`` if ``body`` is anchored (i.e. the kinematic path
 between ``body`` and the world only contains weld joints.)
@@ -5986,7 +5986,7 @@ Raises:
         } IsAnchored;
         // Symbol: drake::multibody::MultibodyPlant::IsVelocityEqualToQDot
         struct /* IsVelocityEqualToQDot */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4252
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns true iff the generalized velocity v is exactly the time
 derivative q̇ of the generalized coordinates q. In this case
@@ -5996,7 +5996,7 @@ joints.)""";
         } IsVelocityEqualToQDot;
         // Symbol: drake::multibody::MultibodyPlant::MakeActuationMatrix
         struct /* MakeActuationMatrix */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4503
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(This method creates an actuation matrix B mapping a vector of
 actuation values u into generalized forces ``tau_u = B * u``, where B
@@ -6016,7 +6016,7 @@ Warning:
         } MakeActuationMatrix;
         // Symbol: drake::multibody::MultibodyPlant::MakeActuationMatrixPseudoinverse
         struct /* MakeActuationMatrixPseudoinverse */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4510
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Creates the pseudoinverse of the actuation matrix B directly (without
 requiring an explicit inverse calculation). See MakeActuationMatrix().
@@ -6026,7 +6026,7 @@ the pseudoinverse is a true inverse.)""";
         } MakeActuationMatrixPseudoinverse;
         // Symbol: drake::multibody::MultibodyPlant::MakeActuatorSelectorMatrix
         struct /* MakeActuatorSelectorMatrix */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4484
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args_user_to_actuator_index_map =
 R"""(This method allows user to map a vector ``uₛ`` containing the
 actuation for a set of selected actuators into the vector u containing
@@ -6045,7 +6045,7 @@ concatenation of the values for each actuator in the order they appear
 in ``user_to_actuator_index_map``. The actuation value in the full
 vector of actuation values ``u`` for a particular actuator can be
 found at offset JointActuator::input_start().)""";
-          // Source: drake/multibody/plant/multibody_plant.h:4522
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args_user_to_joint_index_map =
 R"""(Alternative signature to build an actuation selector matrix ``Su``
 such that ``u = Su⋅uₛ``, where u is the vector of actuation values for
@@ -6062,7 +6062,7 @@ Raises:
         } MakeActuatorSelectorMatrix;
         // Symbol: drake::multibody::MultibodyPlant::MakeQDotToVelocityMap
         struct /* MakeQDotToVelocityMap */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4347
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the matrix ``N⁺(q)``, which maps ``v = N⁺(q)⋅q̇``, as
 described in MapQDotToVelocity(). Prefer calling MapQDotToVelocity()
@@ -6078,7 +6078,7 @@ See also:
         } MakeQDotToVelocityMap;
         // Symbol: drake::multibody::MultibodyPlant::MakeStateSelectorMatrix
         struct /* MakeStateSelectorMatrix */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4460
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(This method allows users to map the state of ``this`` model, x, into a
 vector of selected state xₛ with a given preferred ordering. The
@@ -6106,7 +6106,7 @@ Raises:
         } MakeStateSelectorMatrix;
         // Symbol: drake::multibody::MultibodyPlant::MakeVelocityToQDotMap
         struct /* MakeVelocityToQDotMap */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4331
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the matrix ``N(q)``, which maps ``q̇ = N(q)⋅v``, as described
 in MapVelocityToQDot(). Prefer calling MapVelocityToQDot() directly;
@@ -6124,7 +6124,7 @@ See also:
         } MakeVelocityToQDotMap;
         // Symbol: drake::multibody::MultibodyPlant::MapQDotToVelocity
         struct /* MapQDotToVelocity */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4312
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Transforms the time derivative ``qdot`` of the generalized positions
 vector ``q`` (stored in ``context``) to generalized velocities ``v``.
@@ -6157,7 +6157,7 @@ See also:
         } MapQDotToVelocity;
         // Symbol: drake::multibody::MultibodyPlant::MapVelocityToQDot
         struct /* MapVelocityToQDot */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4279
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Transforms generalized velocities v to time derivatives ``qdot`` of
 the generalized positions vector ``q`` (stored in ``context``). `v`
@@ -6186,7 +6186,7 @@ See also:
         } MapVelocityToQDot;
         // Symbol: drake::multibody::MultibodyPlant::MultibodyPlant<T>
         struct /* ctor */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1351
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(This constructor creates a plant with a single "world" body.
 Therefore, right after creation, num_bodies() returns one.
@@ -6228,13 +6228,13 @@ Warning:
 
 Raises:
     RuntimeError if ``time_step`` is negative.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1355
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::multibody::MultibodyPlant::NumBodiesWithName
         struct /* NumBodiesWithName */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5153
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns:
     The total number of bodies (across all model instances) with the
@@ -6242,7 +6242,7 @@ R"""(Returns:
         } NumBodiesWithName;
         // Symbol: drake::multibody::MultibodyPlant::RegisterAsSourceForSceneGraph
         struct /* RegisterAsSourceForSceneGraph */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2288
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Registers ``this`` plant to serve as a source for an instance of
 SceneGraph. This registration allows MultibodyPlant to register
@@ -6274,7 +6274,7 @@ Raises:
         } RegisterAsSourceForSceneGraph;
         // Symbol: drake::multibody::MultibodyPlant::RegisterCollisionGeometry
         struct /* RegisterCollisionGeometry */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2387
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_5args_body_X_BG_shape_name_properties =
 R"""(Registers geometry in a SceneGraph with a given geometry::Shape to be
 used for the contact modeling of a given ``body``. More than one
@@ -6297,13 +6297,13 @@ Parameter ``properties``:
 
 Raises:
     RuntimeError if called post-finalize.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2394
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_5args_body_X_BG_shape_name_coulomb_friction =
 R"""(Overload which specifies a single property: coulomb_friction.)""";
         } RegisterCollisionGeometry;
         // Symbol: drake::multibody::MultibodyPlant::RegisterVisualGeometry
         struct /* RegisterVisualGeometry */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2312
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_5args_body_X_BG_shape_name_properties =
 R"""(Registers geometry in a SceneGraph with a given geometry::Shape to be
 used for visualization of a given ``body``. The perception properties
@@ -6335,7 +6335,7 @@ Raises:
 
 Returns:
     the id for the registered geometry.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2339
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args_body_geometry_instance =
 R"""(Registers the given ``geometry_instance`` in a SceneGraph to be used
 for visualization of a given ``body``.
@@ -6366,7 +6366,7 @@ Raises:
 
 Returns:
     the id for the registered geometry.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2349
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_5args_body_X_BG_shape_name_diffuse_color =
 R"""(Overload for visual geometry registration. The following properties
 are set: - ("phong", "diffuse") = ``diffuse_color`` in both sets of
@@ -6374,7 +6374,7 @@ properties. - ("label", "id") in perception properties as documented
 above.
 
 See mbp_geometry "the overview" for more details.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2358
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_4args_body_X_BG_shape_name =
 R"""(Overload for visual geometry registration. The ("label", "id")
 property is set in the perception properties (as documented above).
@@ -6383,7 +6383,7 @@ See mbp_geometry "the overview" for more details.)""";
         } RegisterVisualGeometry;
         // Symbol: drake::multibody::MultibodyPlant::RemoveConstraint
         struct /* RemoveConstraint */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2180
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Removes the constraint ``id`` from the plant. Note that this will
 *not* remove constraints registered directly with DeformableModel.
@@ -6397,7 +6397,7 @@ Raises:
         } RemoveConstraint;
         // Symbol: drake::multibody::MultibodyPlant::RemoveJoint
         struct /* RemoveJoint */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1602
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Removes and deletes ``joint`` from this MultibodyPlant. Any existing
 references to ``joint`` will become invalid, and future calls to
@@ -6451,7 +6451,7 @@ Note:
         } RemoveJoint;
         // Symbol: drake::multibody::MultibodyPlant::RemoveJointActuator
         struct /* RemoveJointActuator */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1682
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Removes and deletes ``actuator`` from this MultibodyPlant. Any
 existing references to ``actuator`` will become invalid, and future
@@ -6466,7 +6466,7 @@ See also:
         } RemoveJointActuator;
         // Symbol: drake::multibody::MultibodyPlant::RenameModelInstance
         struct /* RenameModelInstance */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1704
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Renames an existing model instance.
 
@@ -6488,7 +6488,7 @@ Raises:
         } RenameModelInstance;
         // Symbol: drake::multibody::MultibodyPlant::SetActuationInArray
         struct /* SetActuationInArray */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3246
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Given actuation values ``u_instance`` for the actuators in
 ``model_instance``, this function updates the actuation vector u for
@@ -6512,7 +6512,7 @@ Raises:
         } SetActuationInArray;
         // Symbol: drake::multibody::MultibodyPlant::SetBaseBodyJointType
         struct /* SetBaseBodyJointType */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1738
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Sets the type of joint to be used by Finalize() to connect any
 otherwise unconnected bodies to World. Bodies connected by a joint to
@@ -6554,7 +6554,7 @@ Raises:
         } SetBaseBodyJointType;
         // Symbol: drake::multibody::MultibodyPlant::SetConstraintActiveStatus
         struct /* SetConstraintActiveStatus */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1921
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Sets the active status of the constraint given by ``id`` in
 ``context``.
@@ -6571,7 +6571,7 @@ Raises:
         } SetConstraintActiveStatus;
         // Symbol: drake::multibody::MultibodyPlant::SetDefaultFloatingBaseBodyPose
         struct /* SetDefaultFloatingBaseBodyPose */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3399
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Provisionally records a default World pose for ``body``, to be used in
 case ``body`` turns out to be a floating base body after Finalize().
@@ -6604,7 +6604,7 @@ Parameter ``X_WB``:
         } SetDefaultFloatingBaseBodyPose;
         // Symbol: drake::multibody::MultibodyPlant::SetDefaultFreeBodyPose
         struct /* SetDefaultFreeBodyPose */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3698
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_deprecated =
 R"""((Deprecated.)
 
@@ -6614,7 +6614,7 @@ Deprecated:
         } SetDefaultFreeBodyPose;
         // Symbol: drake::multibody::MultibodyPlant::SetDefaultPositions
         struct /* SetDefaultPositions */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2955
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Sets the default positions for the plant. Calls to
 CreateDefaultContext or SetDefaultContext/SetDefaultState will return
@@ -6624,7 +6624,7 @@ effects on the dynamics of the system.
 Raises:
     RuntimeError if the plant is not finalized, if q is not of size
     num_positions(), or ``q`` contains non-finite values.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2965
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Sets the default positions for the model instance. Calls to
 CreateDefaultContext or SetDefaultContext/SetDefaultState will return
@@ -6639,7 +6639,7 @@ Raises:
         } SetDefaultPositions;
         // Symbol: drake::multibody::MultibodyPlant::SetDefaultState
         struct /* SetDefaultState */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3068
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Sets ``state`` according to defaults set by the user for joints (e.g.
 RevoluteJoint::set_default_angle()) and free bodies
@@ -6651,7 +6651,7 @@ Raises:
         } SetDefaultState;
         // Symbol: drake::multibody::MultibodyPlant::SetDiscreteUpdateManager
         struct /* SetDiscreteUpdateManager */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2612
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(For use only by advanced developers wanting to try out their custom
 time stepping strategies, including contact resolution.
@@ -6683,7 +6683,7 @@ Raises:
         } SetDiscreteUpdateManager;
         // Symbol: drake::multibody::MultibodyPlant::SetDistanceConstraintParams
         struct /* SetDistanceConstraintParams */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2036
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Stores in ``context`` the parameters ``params`` for the distance
 constraint with identifier ``id``.
@@ -6707,7 +6707,7 @@ Raises:
         } SetDistanceConstraintParams;
         // Symbol: drake::multibody::MultibodyPlant::SetFloatingBaseBodyPoseInAnchoredFrame
         struct /* SetFloatingBaseBodyPoseInAnchoredFrame */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3457
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Updates ``context`` to store the World-frame pose of floating base
 body B, given its pose ``X_FB`` in an arbitrary anchored frame F.
@@ -6735,7 +6735,7 @@ Raises:
         } SetFloatingBaseBodyPoseInAnchoredFrame;
         // Symbol: drake::multibody::MultibodyPlant::SetFloatingBaseBodyPoseInWorldFrame
         struct /* SetFloatingBaseBodyPoseInWorldFrame */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3437
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Updates ``context`` to store the pose ``X_WB`` of a given floating
 base body B's body frame in the World frame W.
@@ -6750,7 +6750,7 @@ Raises:
         } SetFloatingBaseBodyPoseInWorldFrame;
         // Symbol: drake::multibody::MultibodyPlant::SetFreeBodyPose
         struct /* SetFreeBodyPose */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3518
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_3args =
 R"""(For any free body's 6-dof joint, sets ``context`` to store the pose
 X_JpJc of child frame Jc in its parent frame Jp.
@@ -6768,7 +6768,7 @@ Raises:
 
 Raises:
     RuntimeError if ``body`` is not a free body.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3527
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_4args =
 R"""((Advanced) Variant of SetFreeBodyPose() that writes to a given
 ``state`` rather than directly to the Context.
@@ -6778,7 +6778,7 @@ Precondition:
         } SetFreeBodyPose;
         // Symbol: drake::multibody::MultibodyPlant::SetFreeBodyPoseInAnchoredFrame
         struct /* SetFreeBodyPoseInAnchoredFrame */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3683
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_deprecated =
 R"""((Deprecated.)
 
@@ -6788,7 +6788,7 @@ Deprecated:
         } SetFreeBodyPoseInAnchoredFrame;
         // Symbol: drake::multibody::MultibodyPlant::SetFreeBodyPoseInWorldFrame
         struct /* SetFreeBodyPoseInWorldFrame */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3675
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_deprecated =
 R"""((Deprecated.)
 
@@ -6798,7 +6798,7 @@ Deprecated:
         } SetFreeBodyPoseInWorldFrame;
         // Symbol: drake::multibody::MultibodyPlant::SetFreeBodyRandomAnglesDistribution
         struct /* SetFreeBodyRandomAnglesDistribution */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3666
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(For any free body's 6-dof joint, sets the distribution used by
 SetRandomState() to populate the orientation of its child frame Jc
@@ -6841,7 +6841,7 @@ See also:
         } SetFreeBodyRandomAnglesDistribution;
         // Symbol: drake::multibody::MultibodyPlant::SetFreeBodyRandomRotationDistribution
         struct /* SetFreeBodyRandomRotationDistribution */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3611
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(For any free body's 6-dof joint, sets the distribution used by
 SetRandomState() to populate the orientation of its child frame Jc
@@ -6885,7 +6885,7 @@ See also:
         } SetFreeBodyRandomRotationDistribution;
         // Symbol: drake::multibody::MultibodyPlant::SetFreeBodyRandomRotationDistributionToUniform
         struct /* SetFreeBodyRandomRotationDistributionToUniform */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3639
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(For any free body's 6-dof joint, sets the distribution used by
 SetRandomState() to populate the orientation of its child frame Jc
@@ -6922,7 +6922,7 @@ See also:
         } SetFreeBodyRandomRotationDistributionToUniform;
         // Symbol: drake::multibody::MultibodyPlant::SetFreeBodyRandomTranslationDistribution
         struct /* SetFreeBodyRandomTranslationDistribution */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3578
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(For any free body's 6-dof joint, sets the distribution used by
 SetRandomState() to populate the x-y-z ``translation`` of its child
@@ -6945,7 +6945,7 @@ Raises:
         } SetFreeBodyRandomTranslationDistribution;
         // Symbol: drake::multibody::MultibodyPlant::SetFreeBodySpatialVelocity
         struct /* SetFreeBodySpatialVelocity */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3546
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_3args =
 R"""(For any free body's 6-dof joint, sets ``context`` to store the spatial
 velocity V_JpJc of child frame Jc in its parent frame Jp.
@@ -6963,7 +6963,7 @@ Raises:
 
 Raises:
     RuntimeError if ``body`` is not a free body.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3556
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_4args =
 R"""((Advanced) Variant of SetFreeBodySpatialVelocity() that writes to a
 given ``state`` rather than directly to the Context.
@@ -6973,7 +6973,7 @@ Precondition:
         } SetFreeBodySpatialVelocity;
         // Symbol: drake::multibody::MultibodyPlant::SetPositions
         struct /* SetPositions */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2891
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Sets the generalized positions q in a given Context from a given
 vector. Prefer this method over GetMutablePositions().
@@ -6983,7 +6983,7 @@ Raises:
     correspond to the Context for a multibody model, if the length of
     ``q`` is not equal to ``num_positions()``, or if ``q`` contains
     non-finite values.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2906
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_3args =
 R"""(Sets the generalized positions q for a particular model instance in a
 given Context from a given vector.
@@ -6994,7 +6994,7 @@ Raises:
     instance index is invalid, if the length of ``q_instance`` is not
     equal to ``num_positions(model_instance)``, or if ``q_instance``
     contains non-finite values.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2926
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_4args =
 R"""((Advanced) Sets the generalized positions q for a particular model
 instance in a given State from a given vector.
@@ -7014,7 +7014,7 @@ Precondition:
         } SetPositions;
         // Symbol: drake::multibody::MultibodyPlant::SetPositionsAndVelocities
         struct /* SetPositionsAndVelocities */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2819
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Sets generalized positions q and generalized velocities v in a given
 Context from a given vector [q; v]. Prefer this method over
@@ -7025,7 +7025,7 @@ Raises:
     correspond to the context for a multibody model, if the length of
     ``q_v`` is not equal to ``num_positions() + num_velocities()``, or
     if ``q_v`` contains non-finite values.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2835
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_3args =
 R"""(Sets generalized positions q and generalized velocities v from a given
 vector [q; v] for a specified model instance in a given Context.
@@ -7040,7 +7040,7 @@ Raises:
         } SetPositionsAndVelocities;
         // Symbol: drake::multibody::MultibodyPlant::SetPositionsInArray
         struct /* SetPositionsInArray */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3278
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Sets the vector of generalized positions for ``model_instance`` in
 ``q`` using ``q_instance``, leaving all other elements in the array
@@ -7050,7 +7050,7 @@ MultibodyPlant::num_positions() or ``q_instance`` is not of size
         } SetPositionsInArray;
         // Symbol: drake::multibody::MultibodyPlant::SetRandomState
         struct /* SetRandomState */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3084
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Assigns random values to all elements of the state, by drawing samples
 independently for each joint/free body (coming soon: and then solving
@@ -7063,7 +7063,7 @@ See also:
         } SetRandomState;
         // Symbol: drake::multibody::MultibodyPlant::SetUseSampledOutputPorts
         struct /* SetUseSampledOutputPorts */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1365
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""((Advanced) For a discrete-time plant, configures whether the output
 ports are sampled (the default) or live (opt-in). See
@@ -7079,7 +7079,7 @@ Raises:
         } SetUseSampledOutputPorts;
         // Symbol: drake::multibody::MultibodyPlant::SetVelocities
         struct /* SetVelocities */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3015
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_2args =
 R"""(Sets the generalized velocities v in a given Context from a given
 vector. Prefer this method over GetMutableVelocities().
@@ -7089,7 +7089,7 @@ Raises:
     not correspond to the context for a multibody model, if the length
     of ``v`` is not equal to ``num_velocities()``, or if ``v``
     contains non-finite values.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3030
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_3args =
 R"""(Sets the generalized velocities v for a particular model instance in a
 given Context from a given vector.
@@ -7100,7 +7100,7 @@ Raises:
     instance index is invalid, if the length of ``v_instance`` is not
     equal to ``num_velocities(model_instance)``, or if ``v_instance``
     contains non-finite values.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3050
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_4args =
 R"""((Advanced) Sets the generalized velocities v for a particular model
 instance in a given State from a given vector.
@@ -7120,7 +7120,7 @@ Precondition:
         } SetVelocities;
         // Symbol: drake::multibody::MultibodyPlant::SetVelocitiesInArray
         struct /* SetVelocitiesInArray */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3311
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Sets the vector of generalized velocities for ``model_instance`` in
 ``v`` using ``v_instance``, leaving all other elements in the array
@@ -7131,7 +7131,7 @@ contains non-finite values.)""";
         } SetVelocitiesInArray;
         // Symbol: drake::multibody::MultibodyPlant::WeldFrames
         struct /* WeldFrames */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1613
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Welds ``frame_on_parent_F`` and ``frame_on_child_M`` with relative
 pose ``X_FM``. That is, the pose of frame M in frame F is fixed, with
@@ -7148,7 +7148,7 @@ Raises:
         } WeldFrames;
         // Symbol: drake::multibody::MultibodyPlant::deformable_model
         struct /* deformable_model */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2637
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the DeformableModel owned by this plant.
 
@@ -7159,7 +7159,7 @@ Warning:
         } deformable_model;
         // Symbol: drake::multibody::MultibodyPlant::geometry_source_is_registered
         struct /* geometry_source_is_registered */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5754
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns ``True`` if ``this`` MultibodyPlant was registered with a
 SceneGraph. This method can be called at any time during the lifetime
@@ -7168,7 +7168,7 @@ a SceneGraph, either pre- or post-finalize, see Finalize().)""";
         } geometry_source_is_registered;
         // Symbol: drake::multibody::MultibodyPlant::get_actuation_input_port
         struct /* get_actuation_input_port */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1060
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_0args =
 R"""(Returns a constant reference to the input port for external actuation
 for all actuated dofs. This input port is a vector valued port and can
@@ -7182,7 +7182,7 @@ Precondition:
 
 Raises:
     RuntimeError if called before Finalize().)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1076
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns a constant reference to the input port for external actuation
 for a specific model instance. This is a vector valued port with
@@ -7207,14 +7207,14 @@ Raises:
         } get_actuation_input_port;
         // Symbol: drake::multibody::MultibodyPlant::get_adjacent_bodies_collision_filters
         struct /* get_adjacent_bodies_collision_filters */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2592
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns whether to apply collision filters to topologically adjacent
 bodies at Finalize() time.)""";
         } get_adjacent_bodies_collision_filters;
         // Symbol: drake::multibody::MultibodyPlant::get_applied_generalized_force_input_port
         struct /* get_applied_generalized_force_input_port */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1175
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a constant reference to the vector-valued input port for
 applied generalized forces, and the vector will be added directly into
@@ -7228,7 +7228,7 @@ Raises:
         } get_applied_generalized_force_input_port;
         // Symbol: drake::multibody::MultibodyPlant::get_applied_spatial_force_input_port
         struct /* get_applied_spatial_force_input_port */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1185
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a constant reference to the input port for applying spatial
 forces to bodies in the plant. The data type for the port is an
@@ -7237,14 +7237,14 @@ forces can be applied to any number of bodies in the plant.)""";
         } get_applied_spatial_force_input_port;
         // Symbol: drake::multibody::MultibodyPlant::get_ball_constraint_specs
         struct /* get_ball_constraint_specs */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1855
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""((Internal use only) Returns the ball constraint specification
 corresponding to ``id``
 
 Raises:
     if ``id`` is not a valid identifier for a ball constraint.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1890
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_0args =
 R"""((Internal use only) Returns a reference to all of the ball constraints
 in this plant as a map from MultibodyConstraintId to
@@ -7252,7 +7252,7 @@ BallConstraintSpec.)""";
         } get_ball_constraint_specs;
         // Symbol: drake::multibody::MultibodyPlant::get_body
         struct /* get_body */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5130
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a constant reference to the body with unique index
 ``body_index``.
@@ -7263,7 +7263,7 @@ Raises:
         } get_body;
         // Symbol: drake::multibody::MultibodyPlant::get_body_poses_output_port
         struct /* get_body_poses_output_port */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1011
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the output port of all body poses in the world frame. You can
 obtain the pose ``X_WB`` of a body B in the world frame W with:
@@ -7294,7 +7294,7 @@ Raises:
         } get_body_poses_output_port;
         // Symbol: drake::multibody::MultibodyPlant::get_body_spatial_accelerations_output_port
         struct /* get_body_spatial_accelerations_output_port */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1050
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the output port of all body spatial accelerations in the world
 frame. You can obtain the spatial acceleration ``A_WB`` of a body B
@@ -7332,7 +7332,7 @@ Raises:
         } get_body_spatial_accelerations_output_port;
         // Symbol: drake::multibody::MultibodyPlant::get_body_spatial_velocities_output_port
         struct /* get_body_spatial_velocities_output_port */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1027
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the output port of all body spatial velocities in the world
 frame. You can obtain the spatial velocity ``V_WB`` of a body B in the
@@ -7364,14 +7364,14 @@ Raises:
         } get_body_spatial_velocities_output_port;
         // Symbol: drake::multibody::MultibodyPlant::get_contact_model
         struct /* get_contact_model */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5724
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the model used for contact. See documentation for
 ContactModel.)""";
         } get_contact_model;
         // Symbol: drake::multibody::MultibodyPlant::get_contact_penalty_method_time_scale
         struct /* get_contact_penalty_method_time_scale */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2697
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a time-scale estimate ``tc`` based on the requested
 penetration allowance δ set with set_penetration_allowance(). For the
@@ -7396,7 +7396,7 @@ the smallest of the two time scales ``tc`` and ``tn``.)""";
         } get_contact_penalty_method_time_scale;
         // Symbol: drake::multibody::MultibodyPlant::get_contact_results_output_port
         struct /* get_contact_results_output_port */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1285
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a constant reference to the port that outputs ContactResults.
 
@@ -7410,21 +7410,21 @@ Raises:
         } get_contact_results_output_port;
         // Symbol: drake::multibody::MultibodyPlant::get_contact_surface_representation
         struct /* get_contact_surface_representation */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2576
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Gets the current representation of contact surfaces used by ``this``
 MultibodyPlant.)""";
         } get_contact_surface_representation;
         // Symbol: drake::multibody::MultibodyPlant::get_coupler_constraint_specs
         struct /* get_coupler_constraint_specs */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1846
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""((Internal use only) Returns the coupler constraint specification
 corresponding to ``id``
 
 Raises:
     if ``id`` is not a valid identifier for a coupler constraint.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1883
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_0args =
 R"""((Internal use only) Returns a reference to the all of the coupler
 constraints in this plant as a map from MultibodyConstraintId to
@@ -7432,7 +7432,7 @@ CouplerConstraintSpec.)""";
         } get_coupler_constraint_specs;
         // Symbol: drake::multibody::MultibodyPlant::get_deformable_body_configuration_output_port
         struct /* get_deformable_body_configuration_output_port */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1294
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the output port for vertex positions (configurations),
 measured and expressed in the World frame, of the deformable bodies in
@@ -7440,7 +7440,7 @@ measured and expressed in the World frame, of the deformable bodies in
         } get_deformable_body_configuration_output_port;
         // Symbol: drake::multibody::MultibodyPlant::get_desired_state_input_port
         struct /* get_desired_state_input_port */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1165
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(For models with PD controlled joint actuators, returns the port to
 provide the desired state for the given ``model_instance``. Refer to
@@ -7504,21 +7504,21 @@ desired states input values:
         } get_desired_state_input_port;
         // Symbol: drake::multibody::MultibodyPlant::get_discrete_contact_approximation
         struct /* get_discrete_contact_approximation */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2526
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns:
     the discrete contact solver approximation.)""";
         } get_discrete_contact_approximation;
         // Symbol: drake::multibody::MultibodyPlant::get_discrete_contact_solver
         struct /* get_discrete_contact_solver */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2507
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the contact solver type used for discrete MultibodyPlant
 models.)""";
         } get_discrete_contact_solver;
         // Symbol: drake::multibody::MultibodyPlant::get_force_element
         struct /* get_force_element */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5534
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a constant reference to the force element with unique index
 ``force_element_index``.
@@ -7529,7 +7529,7 @@ Raises:
         } get_force_element;
         // Symbol: drake::multibody::MultibodyPlant::get_frame
         struct /* get_frame */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5388
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a constant reference to the frame with unique index
 ``frame_index``.
@@ -7540,7 +7540,7 @@ Raises:
         } get_frame;
         // Symbol: drake::multibody::MultibodyPlant::get_generalized_acceleration_output_port
         struct /* get_generalized_acceleration_output_port */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1218
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_0args =
 R"""(Returns a constant reference to the output port for generalized
 accelerations v̇ of the model.
@@ -7555,7 +7555,7 @@ Precondition:
 
 Raises:
     RuntimeError if called before Finalize().)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1232
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns a constant reference to the output port for the generalized
 accelerations v̇ᵢ ⊆ v̇ for model instance i.
@@ -7576,7 +7576,7 @@ Raises:
         } get_generalized_acceleration_output_port;
         // Symbol: drake::multibody::MultibodyPlant::get_generalized_contact_forces_output_port
         struct /* get_generalized_contact_forces_output_port */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1246
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a constant reference to the output port of generalized contact
 forces for a specific model instance.
@@ -7597,14 +7597,14 @@ Raises:
         } get_generalized_contact_forces_output_port;
         // Symbol: drake::multibody::MultibodyPlant::get_geometry_pose_output_port
         struct /* get_geometry_pose_output_port */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1289
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the output port of frames' poses to communicate with a
 SceneGraph.)""";
         } get_geometry_pose_output_port;
         // Symbol: drake::multibody::MultibodyPlant::get_geometry_query_input_port
         struct /* get_geometry_query_input_port */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1192
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a constant reference to the input port used to perform
 geometric queries on a SceneGraph. See
@@ -7614,7 +7614,7 @@ collision geometry registration and connection with a SceneGraph.)""";
         } get_geometry_query_input_port;
         // Symbol: drake::multibody::MultibodyPlant::get_joint
         struct /* get_joint */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5288
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a constant reference to the joint with unique index
 ``joint_index``.
@@ -7625,7 +7625,7 @@ Raises:
         } get_joint;
         // Symbol: drake::multibody::MultibodyPlant::get_joint_actuator
         struct /* get_joint_actuator */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5471
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a constant reference to the joint actuator with unique index
 ``actuator_index``.
@@ -7636,7 +7636,7 @@ Raises:
         } get_joint_actuator;
         // Symbol: drake::multibody::MultibodyPlant::get_mutable_joint
         struct /* get_mutable_joint */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5311
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a mutable reference to the joint with unique index
 ``joint_index``.
@@ -7647,7 +7647,7 @@ Raises:
         } get_mutable_joint;
         // Symbol: drake::multibody::MultibodyPlant::get_mutable_joint_actuator
         struct /* get_mutable_joint_actuator */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5480
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a mutable reference to the joint actuator with unique index
 ``actuator_index``.
@@ -7658,7 +7658,7 @@ Raises:
         } get_mutable_joint_actuator;
         // Symbol: drake::multibody::MultibodyPlant::get_net_actuation_output_port
         struct /* get_net_actuation_output_port */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1095
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_0args =
 R"""(Returns a constant reference to the output port that reports actuation
 values applied through joint actuators. This output port is a vector
@@ -7681,7 +7681,7 @@ Precondition:
 
 Raises:
     RuntimeError if called before Finalize().)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1116
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns a constant reference to the output port that reports actuation
 values applied through joint actuators, for a specific model instance.
@@ -7711,7 +7711,7 @@ Raises:
         } get_net_actuation_output_port;
         // Symbol: drake::multibody::MultibodyPlant::get_reaction_forces_output_port
         struct /* get_reaction_forces_output_port */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1275
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the port for joint reaction forces. A Joint models the
 kinematical relationship which characterizes the possible relative
@@ -7744,7 +7744,7 @@ Raises:
         } get_reaction_forces_output_port;
         // Symbol: drake::multibody::MultibodyPlant::get_sap_near_rigid_threshold
         struct /* get_sap_near_rigid_threshold */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2547
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns:
     the SAP near rigid regime threshold.
@@ -7754,7 +7754,7 @@ See also:
         } get_sap_near_rigid_threshold;
         // Symbol: drake::multibody::MultibodyPlant::get_source_id
         struct /* get_source_id */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5747
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the unique id identifying ``this`` plant as a source for a
 SceneGraph. Returns ``nullopt`` if ``this`` plant did not register any
@@ -7767,7 +7767,7 @@ after that. Post-finalize calls will always return the same value.)""";
         } get_source_id;
         // Symbol: drake::multibody::MultibodyPlant::get_state_output_port
         struct /* get_state_output_port */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1198
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_0args =
 R"""(Returns a constant reference to the output port for the multibody
 state x = [q, v] of the model.
@@ -7777,7 +7777,7 @@ Precondition:
 
 Raises:
     RuntimeError if called before Finalize().)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1205
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns a constant reference to the output port for the state xᵢ = [qᵢ
 vᵢ] of model instance i. (Here qᵢ ⊆ q and vᵢ ⊆ v.)
@@ -7793,14 +7793,14 @@ Raises:
         } get_state_output_port;
         // Symbol: drake::multibody::MultibodyPlant::get_tendon_constraint_specs
         struct /* get_tendon_constraint_specs */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1873
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""((Internal use only) Returns the tendon constraint specification
 corresponding to ``id``
 
 Raises:
     if ``id`` is not a valid identifier for a tendon constraint.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1905
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_0args =
 R"""((Internal use only) Returns a reference to the all of the tendon
 constraints in this plant as a map from MultibodyConstraintId to
@@ -7808,14 +7808,14 @@ TendonConstraintSpec.)""";
         } get_tendon_constraint_specs;
         // Symbol: drake::multibody::MultibodyPlant::get_weld_constraint_specs
         struct /* get_weld_constraint_specs */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1864
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""((Internal use only) Returns the weld constraint specification
 corresponding to ``id``
 
 Raises:
     if ``id`` is not a valid identifier for a weld constraint.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1897
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_0args =
 R"""((Internal use only) Returns a reference to the all of the weld
 constraints in this plant as a map from MultibodyConstraintId to
@@ -7823,7 +7823,7 @@ WeldConstraintSpec.)""";
         } get_weld_constraint_specs;
         // Symbol: drake::multibody::MultibodyPlant::graph
         struct /* graph */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5782
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""((Internal use only) Provides access to the internal::LinkJointGraph.
 You can use graph().forest() to access the as-built
@@ -7831,27 +7831,27 @@ internal::SpanningForest if you've already called Finalize().)""";
         } graph;
         // Symbol: drake::multibody::MultibodyPlant::gravity_field
         struct /* gravity_field */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5568
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(An accessor to the current gravity field.)""";
         } gravity_field;
         // Symbol: drake::multibody::MultibodyPlant::has_body
         struct /* has_body */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5123
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns ``True`` if plant has a rigid body with unique index
 ``body_index``.)""";
         } has_body;
         // Symbol: drake::multibody::MultibodyPlant::has_joint
         struct /* has_joint */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5281
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns true if plant has a joint with unique index ``joint_index``.
 The value could be false if the joint was removed using RemoveJoint().)""";
         } has_joint;
         // Symbol: drake::multibody::MultibodyPlant::has_joint_actuator
         struct /* has_joint_actuator */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5463
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns true if plant has a joint actuator with unique index
 ``actuator_index``. The value could be false if the actuator was
@@ -7859,7 +7859,7 @@ removed using RemoveJointActuator().)""";
         } has_joint_actuator;
         // Symbol: drake::multibody::MultibodyPlant::has_sampled_output_ports
         struct /* has_sampled_output_ports */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5105
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""((Advanced) If ``this`` plant is continuous (i.e., is_discrete() is
 ``False``), returns false. If ``this`` plant is discrete, returns
@@ -7869,7 +7869,7 @@ ports). See output_port_sampling "Output port sampling" for details.)""";
         } has_sampled_output_ports;
         // Symbol: drake::multibody::MultibodyPlant::is_finalized
         struct /* is_finalized */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5098
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns ``True`` if this MultibodyPlant was finalized with a call to
 Finalize().
@@ -7879,7 +7879,7 @@ See also:
         } is_finalized;
         // Symbol: drake::multibody::MultibodyPlant::is_gravity_enabled
         struct /* is_gravity_enabled */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5557
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns:
     ``True`` iff gravity is enabled for ``model_instance``.
@@ -7892,7 +7892,7 @@ Raises:
         } is_gravity_enabled;
         // Symbol: drake::multibody::MultibodyPlant::mutable_deformable_model
         struct /* mutable_deformable_model */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2647
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a mutable reference to the DeformableModel owned by this
 plant.
@@ -7907,17 +7907,17 @@ Warning:
         } mutable_deformable_model;
         // Symbol: drake::multibody::MultibodyPlant::mutable_gravity_field
         struct /* mutable_gravity_field */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5575
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(A mutable accessor to the current gravity field.)""";
         } mutable_gravity_field;
         // Symbol: drake::multibody::MultibodyPlant::num_actuated_dofs
         struct /* num_actuated_dofs */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5450
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_0args =
 R"""(Returns the total number of actuated degrees of freedom. That is, the
 vector of actuation values u has this size. See AddJointActuator().)""";
-          // Source: drake/multibody/plant/multibody_plant.h:5456
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns the total number of actuated degrees of freedom for a specific
 model instance. That is, the vector of actuation values u has this
@@ -7928,13 +7928,13 @@ Raises:
         } num_actuated_dofs;
         // Symbol: drake::multibody::MultibodyPlant::num_actuators
         struct /* num_actuators */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5439
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_0args =
 R"""(Returns the number of joint actuators in the model.
 
 See also:
     AddJointActuator().)""";
-          // Source: drake/multibody/plant/multibody_plant.h:5443
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns the number of actuators for a specific model instance.
 
@@ -7943,13 +7943,13 @@ Raises:
         } num_actuators;
         // Symbol: drake::multibody::MultibodyPlant::num_ball_constraints
         struct /* num_ball_constraints */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1832
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the total number of ball constraints specified by the user.)""";
         } num_ball_constraints;
         // Symbol: drake::multibody::MultibodyPlant::num_bodies
         struct /* num_bodies */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5120
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the number of RigidBody elements in the model, including the
 "world" RigidBody, which is always part of the model.
@@ -7959,7 +7959,7 @@ See also:
         } num_bodies;
         // Symbol: drake::multibody::MultibodyPlant::num_collision_geometries
         struct /* num_collision_geometries */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5736
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the number of geometries registered for contact modeling. This
 method can be called at any time during the lifetime of ``this``
@@ -7968,26 +7968,26 @@ calls will always return the same value.)""";
         } num_collision_geometries;
         // Symbol: drake::multibody::MultibodyPlant::num_constraints
         struct /* num_constraints */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1811
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the total number of constraints specified by the user.)""";
         } num_constraints;
         // Symbol: drake::multibody::MultibodyPlant::num_coupler_constraints
         struct /* num_coupler_constraints */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1822
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the total number of coupler constraints specified by the user.)""";
         } num_coupler_constraints;
         // Symbol: drake::multibody::MultibodyPlant::num_distance_constraints
         struct /* num_distance_constraints */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1827
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the total number of distance constraints specified by the
 user.)""";
         } num_distance_constraints;
         // Symbol: drake::multibody::MultibodyPlant::num_force_elements
         struct /* num_force_elements */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5526
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the number of ForceElement objects.
 
@@ -7996,7 +7996,7 @@ See also:
         } num_force_elements;
         // Symbol: drake::multibody::MultibodyPlant::num_frames
         struct /* num_frames */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5383
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the number of Frame objects in this model. Frames include body
 frames associated with each of the bodies, including the *world* body.
@@ -8004,7 +8004,7 @@ This means the minimum number of frames is one.)""";
         } num_frames;
         // Symbol: drake::multibody::MultibodyPlant::num_joints
         struct /* num_joints */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5277
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the number of joints in the model.
 
@@ -8013,7 +8013,7 @@ See also:
         } num_joints;
         // Symbol: drake::multibody::MultibodyPlant::num_model_instances
         struct /* num_model_instances */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5581
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the number of model instances in the model.
 
@@ -8022,14 +8022,14 @@ See also:
         } num_model_instances;
         // Symbol: drake::multibody::MultibodyPlant::num_multibody_states
         struct /* num_multibody_states */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5642
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_0args =
 R"""(Returns the size of the multibody system state vector x = [q v]. This
 will be ``num_positions()`` plus ``num_velocities()``.
 
 Raises:
     RuntimeError if called pre-finalize.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:5649
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns the size of the multibody system state vector xᵢ = [qᵢ vᵢ] for
 model instance i. (Here qᵢ ⊆ q and vᵢ ⊆ v.) will be
@@ -8041,13 +8041,13 @@ Raises:
         } num_multibody_states;
         // Symbol: drake::multibody::MultibodyPlant::num_positions
         struct /* num_positions */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5617
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_0args =
 R"""(Returns the size of the generalized position vector q for this model.
 
 Raises:
     RuntimeError if called pre-finalize.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:5622
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns the size of the generalized position vector qᵢ for model
 instance i.
@@ -8057,19 +8057,19 @@ Raises:
         } num_positions;
         // Symbol: drake::multibody::MultibodyPlant::num_tendon_constraints
         struct /* num_tendon_constraints */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1839
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the total number of tendon constraints specified by the user.)""";
         } num_tendon_constraints;
         // Symbol: drake::multibody::MultibodyPlant::num_velocities
         struct /* num_velocities */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5628
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_0args =
 R"""(Returns the size of the generalized velocity vector v for this model.
 
 Raises:
     RuntimeError if called pre-finalize.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:5633
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
 R"""(Returns the size of the generalized velocity vector vᵢ for model
 instance i.
@@ -8079,7 +8079,7 @@ Raises:
         } num_velocities;
         // Symbol: drake::multibody::MultibodyPlant::num_visual_geometries
         struct /* num_visual_geometries */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5730
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the number of geometries registered for visualization. This
 method can be called at any time during the lifetime of ``this``
@@ -8088,18 +8088,18 @@ calls will always return the same value.)""";
         } num_visual_geometries;
         // Symbol: drake::multibody::MultibodyPlant::num_weld_constraints
         struct /* num_weld_constraints */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1835
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the total number of weld constraints specified by the user.)""";
         } num_weld_constraints;
         // Symbol: drake::multibody::MultibodyPlant::physical_models
         struct /* physical_models */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2632
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc = R"""()""";
         } physical_models;
         // Symbol: drake::multibody::MultibodyPlant::set_adjacent_bodies_collision_filters
         struct /* set_adjacent_bodies_collision_filters */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2585
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Sets whether to apply collision filters to topologically adjacent
 bodies at Finalize() time. Filters are applied when there exists a
@@ -8111,7 +8111,7 @@ Raises:
         } set_adjacent_bodies_collision_filters;
         // Symbol: drake::multibody::MultibodyPlant::set_contact_model
         struct /* set_contact_model */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2504
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Sets the contact model to be used by ``this`` MultibodyPlant, see
 ContactModel for available options. The default contact model is
@@ -8122,7 +8122,7 @@ Raises:
         } set_contact_model;
         // Symbol: drake::multibody::MultibodyPlant::set_contact_surface_representation
         struct /* set_contact_surface_representation */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2567
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Sets the representation of contact surfaces to be used by ``this``
 MultibodyPlant. See geometry::HydroelasticContactRepresentation for
@@ -8134,7 +8134,7 @@ Raises:
         } set_contact_surface_representation;
         // Symbol: drake::multibody::MultibodyPlant::set_discrete_contact_approximation
         struct /* set_discrete_contact_approximation */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2522
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Sets the discrete contact model approximation.
 
@@ -8157,7 +8157,7 @@ Raises:
         } set_discrete_contact_approximation;
         // Symbol: drake::multibody::MultibodyPlant::set_gravity_enabled
         struct /* set_gravity_enabled */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5565
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Sets is_gravity_enabled() for ``model_instance`` to ``is_enabled``.
 The effect of ``is_enabled = false`` is effectively equivalent to
@@ -8173,7 +8173,7 @@ Raises:
         } set_gravity_enabled;
         // Symbol: drake::multibody::MultibodyPlant::set_penetration_allowance
         struct /* set_penetration_allowance */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2671
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Sets a penetration allowance used to estimate the point contact
 stiffness and Hunt & Crossley dissipation parameters. Refer to the
@@ -8195,7 +8195,7 @@ Raises:
         } set_penetration_allowance;
         // Symbol: drake::multibody::MultibodyPlant::set_sap_near_rigid_threshold
         struct /* set_sap_near_rigid_threshold */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2541
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Non-negative dimensionless number typically in the range [0.0, 1.0],
 though larger values are allowed even if uncommon. This parameter
@@ -8217,7 +8217,7 @@ Raises:
         } set_sap_near_rigid_threshold;
         // Symbol: drake::multibody::MultibodyPlant::set_stiction_tolerance
         struct /* set_stiction_tolerance */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2737
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(**** Stribeck model of friction
 
@@ -8257,7 +8257,7 @@ Raises:
         } set_stiction_tolerance;
         // Symbol: drake::multibody::MultibodyPlant::stiction_tolerance
         struct /* stiction_tolerance */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2744
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns:
     the stiction tolerance parameter, in m/s.
@@ -8267,7 +8267,7 @@ See also:
         } stiction_tolerance;
         // Symbol: drake::multibody::MultibodyPlant::time_step
         struct /* time_step */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5093
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(The time step (or period) used to model ``this`` plant as a discrete
 system with periodic updates. Returns 0 (zero) if the plant is modeled
@@ -8280,20 +8280,20 @@ See also:
         } time_step;
         // Symbol: drake::multibody::MultibodyPlant::world_body
         struct /* world_body */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5108
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a constant reference to the *world* body.)""";
         } world_body;
         // Symbol: drake::multibody::MultibodyPlant::world_frame
         struct /* world_frame */ {
-          // Source: drake/multibody/plant/multibody_plant.h:5113
+          // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a constant reference to the *world* frame.)""";
         } world_frame;
       } MultibodyPlant;
       // Symbol: drake::multibody::MultibodyPlantConfig
       struct /* MultibodyPlantConfig */ {
-        // Source: drake/multibody/plant/multibody_plant_config.h:14
+        // Source: drake/multibody/plant/multibody_plant_config.h
         const char* doc =
 R"""(The set of configurable properties on a MultibodyPlant.
 
@@ -8301,21 +8301,21 @@ The field names and defaults here match MultibodyPlant's defaults
 exactly, with the exception of time_step.)""";
         // Symbol: drake::multibody::MultibodyPlantConfig::Serialize
         struct /* Serialize */ {
-          // Source: drake/multibody/plant/multibody_plant_config.h:18
+          // Source: drake/multibody/plant/multibody_plant_config.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::multibody::MultibodyPlantConfig::adjacent_bodies_collision_filters
         struct /* adjacent_bodies_collision_filters */ {
-          // Source: drake/multibody/plant/multibody_plant_config.h:97
+          // Source: drake/multibody/plant/multibody_plant_config.h
           const char* doc =
 R"""(Configures the
 MultibodyPlant::set_adjacent_bodies_collision_filters().)""";
         } adjacent_bodies_collision_filters;
         // Symbol: drake::multibody::MultibodyPlantConfig::contact_model
         struct /* contact_model */ {
-          // Source: drake/multibody/plant/multibody_plant_config.h:55
+          // Source: drake/multibody/plant/multibody_plant_config.h
           const char* doc =
 R"""(Configures the MultibodyPlant::set_contact_model(). Refer to
 drake::multibody::ContactModel for details. Valid strings are: -
@@ -8323,7 +8323,7 @@ drake::multibody::ContactModel for details. Valid strings are: -
         } contact_model;
         // Symbol: drake::multibody::MultibodyPlantConfig::contact_surface_representation
         struct /* contact_surface_representation */ {
-          // Source: drake/multibody/plant/multibody_plant_config.h:94
+          // Source: drake/multibody/plant/multibody_plant_config.h
           const char* doc =
 R"""(Configures the MultibodyPlant::set_contact_surface_representation().
 Refer to drake::geometry::HydroelasticContactRepresentation for
@@ -8335,7 +8335,7 @@ MultibodyPlant::GetDefaultContactSurfaceRepresentation().)""";
         } contact_surface_representation;
         // Symbol: drake::multibody::MultibodyPlantConfig::discrete_contact_approximation
         struct /* discrete_contact_approximation */ {
-          // Source: drake/multibody/plant/multibody_plant_config.h:67
+          // Source: drake/multibody/plant/multibody_plant_config.h
           const char* doc =
 R"""(Configures the MultibodyPlant::set_discrete_contact_approximation().
 Refer to drake::multibody::DiscreteContactApproximation for details.
@@ -8346,13 +8346,13 @@ references therein for further details.)""";
         } discrete_contact_approximation;
         // Symbol: drake::multibody::MultibodyPlantConfig::penetration_allowance
         struct /* penetration_allowance */ {
-          // Source: drake/multibody/plant/multibody_plant_config.h:44
+          // Source: drake/multibody/plant/multibody_plant_config.h
           const char* doc =
 R"""(Configures the MultibodyPlant::set_penetration_allowance().)""";
         } penetration_allowance;
         // Symbol: drake::multibody::MultibodyPlantConfig::sap_near_rigid_threshold
         struct /* sap_near_rigid_threshold */ {
-          // Source: drake/multibody/plant/multibody_plant_config.h:83
+          // Source: drake/multibody/plant/multibody_plant_config.h
           const char* doc =
 R"""(Non-negative dimensionless number typically in the range [0.0, 1.0],
 though larger values are allowed even if uncommon. This parameter
@@ -8369,13 +8369,13 @@ converge. For instance, set values in the range (1e-3, 1e-2).)""";
         } sap_near_rigid_threshold;
         // Symbol: drake::multibody::MultibodyPlantConfig::stiction_tolerance
         struct /* stiction_tolerance */ {
-          // Source: drake/multibody/plant/multibody_plant_config.h:47
+          // Source: drake/multibody/plant/multibody_plant_config.h
           const char* doc =
 R"""(Configures the MultibodyPlant::set_stiction_tolerance().)""";
         } stiction_tolerance;
         // Symbol: drake::multibody::MultibodyPlantConfig::time_step
         struct /* time_step */ {
-          // Source: drake/multibody/plant/multibody_plant_config.h:35
+          // Source: drake/multibody/plant/multibody_plant_config.h
           const char* doc =
 R"""(Configures the MultibodyPlant::MultibodyPlant() constructor time_step.
 
@@ -8386,7 +8386,7 @@ cases.)""";
         } time_step;
         // Symbol: drake::multibody::MultibodyPlantConfig::use_sampled_output_ports
         struct /* use_sampled_output_ports */ {
-          // Source: drake/multibody/plant/multibody_plant_config.h:39
+          // Source: drake/multibody/plant/multibody_plant_config.h
           const char* doc =
 R"""(Configures the MultibodyPlant::SetUseSampledOutputPorts(). Ignored
 when the time_step is zero.)""";
@@ -8407,7 +8407,7 @@ when the time_step is zero.)""";
       } MultibodyPlantConfig;
       // Symbol: drake::multibody::PhysicalModel
       struct /* PhysicalModel */ {
-        // Source: drake/multibody/plant/physical_model.h:57
+        // Source: drake/multibody/plant/physical_model.h
         const char* doc =
 R"""((Internal) PhysicalModel provides the functionalities to extend the
 type of physical model of MultibodyPlant. Developers can derive from
@@ -8428,17 +8428,17 @@ This class is for internal use only. Use derived concrete models (e.g.
 DeformableModel) instead.)""";
         // Symbol: drake::multibody::PhysicalModel::CloneToAutoDiffXd
         struct /* CloneToAutoDiffXd */ {
-          // Source: drake/multibody/plant/physical_model.h:174
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc = R"""()""";
         } CloneToAutoDiffXd;
         // Symbol: drake::multibody::PhysicalModel::CloneToDouble
         struct /* CloneToDouble */ {
-          // Source: drake/multibody/plant/physical_model.h:166
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc = R"""()""";
         } CloneToDouble;
         // Symbol: drake::multibody::PhysicalModel::CloneToScalar
         struct /* CloneToScalar */ {
-          // Source: drake/multibody/plant/physical_model.h:93
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc =
 R"""((Internal only) Creates a clone of ``this`` concrete PhysicalModel
 object with the scalar type ``ScalarType`` to be owned by the given
@@ -8465,27 +8465,27 @@ Note:
         } CloneToScalar;
         // Symbol: drake::multibody::PhysicalModel::CloneToSymbolic
         struct /* CloneToSymbolic */ {
-          // Source: drake/multibody/plant/physical_model.h:182
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc = R"""()""";
         } CloneToSymbolic;
         // Symbol: drake::multibody::PhysicalModel::DeclareAbstractOutputPort
         struct /* DeclareAbstractOutputPort */ {
-          // Source: drake/multibody/plant/physical_model.h:217
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc = R"""()""";
         } DeclareAbstractOutputPort;
         // Symbol: drake::multibody::PhysicalModel::DeclareAbstractParameter
         struct /* DeclareAbstractParameter */ {
-          // Source: drake/multibody/plant/physical_model.h:214
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc = R"""()""";
         } DeclareAbstractParameter;
         // Symbol: drake::multibody::PhysicalModel::DeclareDiscreteState
         struct /* DeclareDiscreteState */ {
-          // Source: drake/multibody/plant/physical_model.h:211
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc = R"""()""";
         } DeclareDiscreteState;
         // Symbol: drake::multibody::PhysicalModel::DeclareSceneGraphPorts
         struct /* DeclareSceneGraphPorts */ {
-          // Source: drake/multibody/plant/physical_model.h:135
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc =
 R"""((Internal only) Declares zero or more output ports in the owning
 MultibodyPlant to communicate with a SceneGraph.
@@ -8499,7 +8499,7 @@ Raises:
         } DeclareSceneGraphPorts;
         // Symbol: drake::multibody::PhysicalModel::DeclareSystemResources
         struct /* DeclareSystemResources */ {
-          // Source: drake/multibody/plant/physical_model.h:128
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc =
 R"""((Internal only) MultibodyPlant calls this from within Finalize() to
 declare additional system resources. This method is only meant to be
@@ -8508,27 +8508,27 @@ after call to this function.)""";
         } DeclareSystemResources;
         // Symbol: drake::multibody::PhysicalModel::DeclareVectorOutputPort
         struct /* DeclareVectorOutputPort */ {
-          // Source: drake/multibody/plant/physical_model.h:224
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc = R"""()""";
         } DeclareVectorOutputPort;
         // Symbol: drake::multibody::PhysicalModel::DoDeclareSceneGraphPorts
         struct /* DoDeclareSceneGraphPorts */ {
-          // Source: drake/multibody/plant/physical_model.h:191
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc = R"""()""";
         } DoDeclareSceneGraphPorts;
         // Symbol: drake::multibody::PhysicalModel::DoDeclareSystemResources
         struct /* DoDeclareSystemResources */ {
-          // Source: drake/multibody/plant/physical_model.h:187
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc = R"""()""";
         } DoDeclareSystemResources;
         // Symbol: drake::multibody::PhysicalModel::DoToPhysicalModelPointerVariant
         struct /* DoToPhysicalModelPointerVariant */ {
-          // Source: drake/multibody/plant/physical_model.h:158
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc = R"""()""";
         } DoToPhysicalModelPointerVariant;
         // Symbol: drake::multibody::PhysicalModel::PhysicalModel<T>
         struct /* ctor */ {
-          // Source: drake/multibody/plant/physical_model.h:70
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc =
 R"""(Constructs a PhysicalModel owned by the given ``owning_plant``. The
 lifespan of the ``owning_plant`` must outlast ``this`` PhysicalModel.
@@ -8541,17 +8541,17 @@ Precondition:
         } ctor;
         // Symbol: drake::multibody::PhysicalModel::ThrowIfSystemResourcesDeclared
         struct /* ThrowIfSystemResourcesDeclared */ {
-          // Source: drake/multibody/plant/physical_model.h:196
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc = R"""()""";
         } ThrowIfSystemResourcesDeclared;
         // Symbol: drake::multibody::PhysicalModel::ThrowIfSystemResourcesNotDeclared
         struct /* ThrowIfSystemResourcesNotDeclared */ {
-          // Source: drake/multibody/plant/physical_model.h:201
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc = R"""()""";
         } ThrowIfSystemResourcesNotDeclared;
         // Symbol: drake::multibody::PhysicalModel::ToPhysicalModelPointerVariant
         struct /* ToPhysicalModelPointerVariant */ {
-          // Source: drake/multibody/plant/physical_model.h:140
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc =
 R"""(Returns (a const pointer to) the specific model variant of ``this``
 PhysicalModel. Note that the variant contains a pointer to the
@@ -8560,26 +8560,26 @@ lifespan of this model.)""";
         } ToPhysicalModelPointerVariant;
         // Symbol: drake::multibody::PhysicalModel::internal_tree
         struct /* internal_tree */ {
-          // Source: drake/multibody/plant/physical_model.h:154
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc = R"""()""";
         } internal_tree;
         // Symbol: drake::multibody::PhysicalModel::is_cloneable_to_autodiff
         struct /* is_cloneable_to_autodiff */ {
-          // Source: drake/multibody/plant/physical_model.h:118
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc =
 R"""(Defaults to false. Derived classes that support making a clone that
 uses AutoDiffXd as a scalar type must override this to return true.)""";
         } is_cloneable_to_autodiff;
         // Symbol: drake::multibody::PhysicalModel::is_cloneable_to_double
         struct /* is_cloneable_to_double */ {
-          // Source: drake/multibody/plant/physical_model.h:114
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc =
 R"""(Defaults to false. Derived classes that support making a clone that
 uses double as a scalar type must override this to return true.)""";
         } is_cloneable_to_double;
         // Symbol: drake::multibody::PhysicalModel::is_cloneable_to_symbolic
         struct /* is_cloneable_to_symbolic */ {
-          // Source: drake/multibody/plant/physical_model.h:122
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc =
 R"""(Defaults to false. Derived classes that support making a clone that
 uses symbolic::Expression as a scalar type must override this to
@@ -8587,23 +8587,23 @@ return true.)""";
         } is_cloneable_to_symbolic;
         // Symbol: drake::multibody::PhysicalModel::mutable_plant
         struct /* mutable_plant */ {
-          // Source: drake/multibody/plant/physical_model.h:150
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc = R"""()""";
         } mutable_plant;
         // Symbol: drake::multibody::PhysicalModel::mutable_scene_graph
         struct /* mutable_scene_graph */ {
-          // Source: drake/multibody/plant/physical_model.h:206
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc = R"""()""";
         } mutable_scene_graph;
         // Symbol: drake::multibody::PhysicalModel::plant
         struct /* plant */ {
-          // Source: drake/multibody/plant/physical_model.h:145
+          // Source: drake/multibody/plant/physical_model.h
           const char* doc = R"""()""";
         } plant;
       } PhysicalModel;
       // Symbol: drake::multibody::PointPairContactInfo
       struct /* PointPairContactInfo */ {
-        // Source: drake/multibody/plant/point_pair_contact_info.h:29
+        // Source: drake/multibody/plant/point_pair_contact_info.h
         const char* doc =
 R"""(A class containing information regarding contact response between two
 bodies including:
@@ -8615,7 +8615,7 @@ bodies including:
 - Slip speed.)""";
         // Symbol: drake::multibody::PointPairContactInfo::PointPairContactInfo<T>
         struct /* ctor */ {
-          // Source: drake/multibody/plant/point_pair_contact_info.h:59
+          // Source: drake/multibody/plant/point_pair_contact_info.h
           const char* doc =
 R"""(Constructs the contact information for a given pair of two colliding
 bodies.
@@ -8660,33 +8660,33 @@ Precondition:
         } ctor;
         // Symbol: drake::multibody::PointPairContactInfo::bodyA_index
         struct /* bodyA_index */ {
-          // Source: drake/multibody/plant/point_pair_contact_info.h:65
+          // Source: drake/multibody/plant/point_pair_contact_info.h
           const char* doc =
 R"""(Returns the index of body A in the contact pair.)""";
         } bodyA_index;
         // Symbol: drake::multibody::PointPairContactInfo::bodyB_index
         struct /* bodyB_index */ {
-          // Source: drake/multibody/plant/point_pair_contact_info.h:68
+          // Source: drake/multibody/plant/point_pair_contact_info.h
           const char* doc =
 R"""(Returns the index of body B in the contact pair.)""";
         } bodyB_index;
         // Symbol: drake::multibody::PointPairContactInfo::contact_force
         struct /* contact_force */ {
-          // Source: drake/multibody/plant/point_pair_contact_info.h:72
+          // Source: drake/multibody/plant/point_pair_contact_info.h
           const char* doc =
 R"""(Returns the contact force ``f_Bc_W`` on B at contact point C expressed
 in the world frame W.)""";
         } contact_force;
         // Symbol: drake::multibody::PointPairContactInfo::contact_point
         struct /* contact_point */ {
-          // Source: drake/multibody/plant/point_pair_contact_info.h:75
+          // Source: drake/multibody/plant/point_pair_contact_info.h
           const char* doc =
 R"""(Returns the position ``p_WC`` of the contact point C in the world
 frame W.)""";
         } contact_point;
         // Symbol: drake::multibody::PointPairContactInfo::point_pair
         struct /* point_pair */ {
-          // Source: drake/multibody/plant/point_pair_contact_info.h:89
+          // Source: drake/multibody/plant/point_pair_contact_info.h
           const char* doc =
 R"""(Returns additional information for the geometric contact query for
 ``this`` pair as a PenetrationAsPointPair. The body containing
@@ -8696,7 +8696,7 @@ indexed by ``bodyB_index()``.)""";
         } point_pair;
         // Symbol: drake::multibody::PointPairContactInfo::separation_speed
         struct /* separation_speed */ {
-          // Source: drake/multibody/plant/point_pair_contact_info.h:83
+          // Source: drake/multibody/plant/point_pair_contact_info.h
           const char* doc =
 R"""(Returns the separation speed between body A and B along the normal
 direction (see PenetrationAsPointPair::nhat_BA_W) at the contact
@@ -8705,14 +8705,14 @@ direction.)""";
         } separation_speed;
         // Symbol: drake::multibody::PointPairContactInfo::slip_speed
         struct /* slip_speed */ {
-          // Source: drake/multibody/plant/point_pair_contact_info.h:78
+          // Source: drake/multibody/plant/point_pair_contact_info.h
           const char* doc =
 R"""(Returns the slip speed between body A and B at contact point C.)""";
         } slip_speed;
       } PointPairContactInfo;
       // Symbol: drake::multibody::Propeller
       struct /* Propeller */ {
-        // Source: drake/multibody/plant/propeller.h:82
+        // Source: drake/multibody/plant/propeller.h
         const char* doc =
 R"""(A System that connects to the MultibodyPlant in order to model the
 effects of one or more controlled propellers acting on a Body.
@@ -8748,25 +8748,25 @@ Note:
     coordinates.)""";
         // Symbol: drake::multibody::Propeller::Propeller<T>
         struct /* ctor */ {
-          // Source: drake/multibody/plant/propeller.h:88
+          // Source: drake/multibody/plant/propeller.h
           const char* doc_4args =
 R"""(Constructs a system describing a single propeller.
 
 See also:
     PropellerInfo for details on the arguments.)""";
-          // Source: drake/multibody/plant/propeller.h:95
+          // Source: drake/multibody/plant/propeller.h
           const char* doc_1args =
 R"""(Constructs a system describing multiple propellers.
 
 See also:
     PropellerInfo.)""";
-          // Source: drake/multibody/plant/propeller.h:99
+          // Source: drake/multibody/plant/propeller.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::multibody::Propeller::get_body_poses_input_port
         struct /* get_body_poses_input_port */ {
-          // Source: drake/multibody/plant/propeller.h:117
+          // Source: drake/multibody/plant/propeller.h
           const char* doc =
 R"""(Returns a reference to the body_poses input port. It is anticipated
 that this port will be connected the body_poses output port of a
@@ -8774,14 +8774,14 @@ MultibodyPlant.)""";
         } get_body_poses_input_port;
         // Symbol: drake::multibody::Propeller::get_command_input_port
         struct /* get_command_input_port */ {
-          // Source: drake/multibody/plant/propeller.h:110
+          // Source: drake/multibody/plant/propeller.h
           const char* doc =
 R"""(Returns a reference to the vector-valued input port for the propeller
 commands. It has size ``num_propellers()``.)""";
         } get_command_input_port;
         // Symbol: drake::multibody::Propeller::get_spatial_forces_output_port
         struct /* get_spatial_forces_output_port */ {
-          // Source: drake/multibody/plant/propeller.h:125
+          // Source: drake/multibody/plant/propeller.h
           const char* doc =
 R"""(Returns a reference to the spatial_forces output port. It is
 anticipated that this port will be connected to the
@@ -8790,32 +8790,32 @@ MultibodyPlant::get_applied_spatial_force_input_port()
         } get_spatial_forces_output_port;
         // Symbol: drake::multibody::Propeller::num_propellers
         struct /* num_propellers */ {
-          // Source: drake/multibody/plant/propeller.h:106
+          // Source: drake/multibody/plant/propeller.h
           const char* doc =
 R"""(Returns the number of propellers modeled by this system.)""";
         } num_propellers;
       } Propeller;
       // Symbol: drake::multibody::PropellerInfo
       struct /* PropellerInfo */ {
-        // Source: drake/multibody/plant/propeller.h:16
+        // Source: drake/multibody/plant/propeller.h
         const char* doc =
 R"""(Parameters that describe the kinematic frame and force-production
 properties of a single propeller.)""";
         // Symbol: drake::multibody::PropellerInfo::PropellerInfo
         struct /* ctor */ {
-          // Source: drake/multibody/plant/propeller.h:17
+          // Source: drake/multibody/plant/propeller.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::multibody::PropellerInfo::X_BP
         struct /* X_BP */ {
-          // Source: drake/multibody/plant/propeller.h:34
+          // Source: drake/multibody/plant/propeller.h
           const char* doc =
 R"""(Pose of the propeller frame P measured in the body frame B.
 $*Default:* is the identity matrix.)""";
         } X_BP;
         // Symbol: drake::multibody::PropellerInfo::body_index
         struct /* body_index */ {
-          // Source: drake/multibody/plant/propeller.h:30
+          // Source: drake/multibody/plant/propeller.h
           const char* doc =
 R"""(The BodyIndex of a RigidBody in the MultibodyPlant to which the
 propeller is attached. The spatial forces will be applied to this
@@ -8823,7 +8823,7 @@ body.)""";
         } body_index;
         // Symbol: drake::multibody::PropellerInfo::moment_ratio
         struct /* moment_ratio */ {
-          // Source: drake/multibody/plant/propeller.h:44
+          // Source: drake/multibody/plant/propeller.h
           const char* doc =
 R"""(The moment about the z axis (in frame P) of the spatial force will
 have magnitude ``moment_ratio*command`` in Newton-meters. The default
@@ -8831,7 +8831,7 @@ is 0, which makes the propeller a simple Cartesian force generator.)""";
         } moment_ratio;
         // Symbol: drake::multibody::PropellerInfo::thrust_ratio
         struct /* thrust_ratio */ {
-          // Source: drake/multibody/plant/propeller.h:39
+          // Source: drake/multibody/plant/propeller.h
           const char* doc =
 R"""(The z component (in frame P) of the spatial force will have magnitude
 ``thrust_ratio*command`` in Newtons. The default is 1 (command in
@@ -8841,26 +8841,26 @@ the resulting force.)""";
       } PropellerInfo;
       // Symbol: drake::multibody::SignedDistanceWithTimeDerivative
       struct /* SignedDistanceWithTimeDerivative */ {
-        // Source: drake/multibody/plant/calc_distance_and_time_derivative.h:14
+        // Source: drake/multibody/plant/calc_distance_and_time_derivative.h
         const char* doc =
 R"""(The struct containing the signed distance and its time derivative
 between a pair of geometries.)""";
         // Symbol: drake::multibody::SignedDistanceWithTimeDerivative::distance
         struct /* distance */ {
-          // Source: drake/multibody/plant/calc_distance_and_time_derivative.h:16
+          // Source: drake/multibody/plant/calc_distance_and_time_derivative.h
           const char* doc =
 R"""(The signed distance between the pair of geometry.)""";
         } distance;
         // Symbol: drake::multibody::SignedDistanceWithTimeDerivative::distance_time_derivative
         struct /* distance_time_derivative */ {
-          // Source: drake/multibody/plant/calc_distance_and_time_derivative.h:18
+          // Source: drake/multibody/plant/calc_distance_and_time_derivative.h
           const char* doc =
 R"""(The time derivative of the signed distance.)""";
         } distance_time_derivative;
       } SignedDistanceWithTimeDerivative;
       // Symbol: drake::multibody::TamsiSolver
       struct /* TamsiSolver */ {
-        // Source: drake/multibody/plant/tamsi_solver.h:513
+        // Source: drake/multibody/plant/tamsi_solver.h
         const char* doc =
 R"""(TamsiSolver uses the Transition-Aware Modified Semi-Implicit (TAMSI)
 method, castro_etal_2019 "[Castro et al., 2019]", to solve the
@@ -9304,7 +9304,7 @@ Authors:
     Drake team (see https://drake.mit.edu/credits).)""";
         // Symbol: drake::multibody::TamsiSolver::Clone
         struct /* Clone */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:538
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(Returns:
     a deep copy of this, with the problem data invalidated, i.e., one
@@ -9313,7 +9313,7 @@ R"""(Returns:
         } Clone;
         // Symbol: drake::multibody::TamsiSolver::ResizeIfNeeded
         struct /* ResizeIfNeeded */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:526
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(Change the working size of the solver to use ``nv`` generalized
 velocities. This can be used to either shrink or grow the workspaces.
@@ -9323,7 +9323,7 @@ Raises:
         } ResizeIfNeeded;
         // Symbol: drake::multibody::TamsiSolver::SetOneWayCoupledProblemData
         struct /* SetOneWayCoupledProblemData */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:590
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(Sets data for the problem to be solved as outlined by Eq. (3) in this
 class's documentation:
@@ -9391,7 +9391,7 @@ Raises:
         } SetOneWayCoupledProblemData;
         // Symbol: drake::multibody::TamsiSolver::SetTwoWayCoupledProblemData
         struct /* SetTwoWayCoupledProblemData */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:644
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(Sets the problem data to solve the problem outlined in Eq. (10) in
 this class's documentation using a two-way coupled approach:
@@ -9467,7 +9467,7 @@ Raises:
         } SetTwoWayCoupledProblemData;
         // Symbol: drake::multibody::TamsiSolver::SolveWithGuess
         struct /* SolveWithGuess */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:667
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(Given an initial guess ``v_guess``, this method uses a Newton-Raphson
 iteration to find a solution for the generalized velocities satisfying
@@ -9497,7 +9497,7 @@ Raises:
         } SolveWithGuess;
         // Symbol: drake::multibody::TamsiSolver::TamsiSolver<T>
         struct /* ctor */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:519
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(Instantiates a solver for a problem with ``nv`` generalized
 velocities.
@@ -9507,7 +9507,7 @@ Raises:
         } ctor;
         // Symbol: drake::multibody::TamsiSolver::get_friction_forces
         struct /* get_friction_forces */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:719
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(Returns a constant reference to the most recent vector of friction
 forces. These friction forces are defined in accordance to the
@@ -9516,35 +9516,35 @@ tangential velocities Jacobian Jₜ as documented in tamsi_class_intro
         } get_friction_forces;
         // Symbol: drake::multibody::TamsiSolver::get_generalized_contact_forces
         struct /* get_generalized_contact_forces */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:690
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(Returns a constant reference to the most recent vector of generalized
 contact forces, including both friction and normal forces.)""";
         } get_generalized_contact_forces;
         // Symbol: drake::multibody::TamsiSolver::get_generalized_friction_forces
         struct /* get_generalized_friction_forces */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:677
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(Returns a constant reference to the most recent vector of generalized
 friction forces.)""";
         } get_generalized_friction_forces;
         // Symbol: drake::multibody::TamsiSolver::get_generalized_velocities
         struct /* get_generalized_velocities */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:703
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(Returns a constant reference to the most recent vector of generalized
 velocities.)""";
         } get_generalized_velocities;
         // Symbol: drake::multibody::TamsiSolver::get_iteration_statistics
         struct /* get_iteration_statistics */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:727
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(Returns statistics recorded during the last call to SolveWithGuess().
 See IterationStats for details.)""";
         } get_iteration_statistics;
         // Symbol: drake::multibody::TamsiSolver::get_normal_forces
         struct /* get_normal_forces */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:711
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(Returns a constant reference to the most recent vector of (repulsive)
 forces in the normal direction. That is, the normal force is positive
@@ -9553,7 +9553,7 @@ zero, since contact forces can only be repulsive.)""";
         } get_normal_forces;
         // Symbol: drake::multibody::TamsiSolver::get_normal_velocities
         struct /* get_normal_velocities */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:684
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(Returns a constant reference to the most recent solution vector for
 normal separation velocities. This method returns an
@@ -9561,14 +9561,14 @@ normal separation velocities. This method returns an
         } get_normal_velocities;
         // Symbol: drake::multibody::TamsiSolver::get_solver_parameters
         struct /* get_solver_parameters */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:733
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(Returns the current set of parameters controlling the iteration
 process. See Parameters for details.)""";
         } get_solver_parameters;
         // Symbol: drake::multibody::TamsiSolver::get_tangential_velocities
         struct /* get_tangential_velocities */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:697
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(Returns a constant reference to the most recent vector of tangential
 forces. This method returns an ``Eigen::VectorBlock`` referencing a
@@ -9576,7 +9576,7 @@ vector of size ``nc``.)""";
         } get_tangential_velocities;
         // Symbol: drake::multibody::TamsiSolver::set_solver_parameters
         struct /* set_solver_parameters */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:739
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(Sets the parameters to be used by the solver. See Parameters for
 details.)""";
@@ -9584,31 +9584,31 @@ details.)""";
       } TamsiSolver;
       // Symbol: drake::multibody::TamsiSolverIterationStats
       struct /* TamsiSolverIterationStats */ {
-        // Source: drake/multibody/plant/tamsi_solver.h:237
+        // Source: drake/multibody/plant/tamsi_solver.h
         const char* doc =
 R"""(Struct used to store information about the iteration process performed
 by TamsiSolver.)""";
         // Symbol: drake::multibody::TamsiSolverIterationStats::Reset
         struct /* Reset */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:239
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""((Internal) Used by TamsiSolver to reset statistics.)""";
         } Reset;
         // Symbol: drake::multibody::TamsiSolverIterationStats::Update
         struct /* Update */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:247
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""((Internal) Used by TamsiSolver to update statistics.)""";
         } Update;
         // Symbol: drake::multibody::TamsiSolverIterationStats::num_iterations
         struct /* num_iterations */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:254
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(The number of iterations performed by the last TamsiSolver solve.)""";
         } num_iterations;
         // Symbol: drake::multibody::TamsiSolverIterationStats::residuals
         struct /* residuals */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:268
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""((Advanced) Residual in the tangential velocities, in m/s. The k-th
 entry in this vector corresponds to the residual for the k-th
@@ -9619,7 +9619,7 @@ the residual upon completion of the solver, i.e. vt_residual.)""";
         } residuals;
         // Symbol: drake::multibody::TamsiSolverIterationStats::vt_residual
         struct /* vt_residual */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:259
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(Returns the residual in the tangential velocities, in m/s. Upon
 convergence of the solver this value should be smaller than
@@ -9628,20 +9628,20 @@ Parameters::tolerance times Parameters::stiction_tolerance.)""";
       } TamsiSolverIterationStats;
       // Symbol: drake::multibody::TamsiSolverParameters
       struct /* TamsiSolverParameters */ {
-        // Source: drake/multibody/plant/tamsi_solver.h:188
+        // Source: drake/multibody/plant/tamsi_solver.h
         const char* doc =
 R"""(These are the parameters controlling the iteration process of the
 TamsiSolver solver.)""";
         // Symbol: drake::multibody::TamsiSolverParameters::max_iterations
         struct /* max_iterations */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:202
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(The maximum number of iterations allowed for the Newton-Raphson
 iterative solver.)""";
         } max_iterations;
         // Symbol: drake::multibody::TamsiSolverParameters::relative_tolerance
         struct /* relative_tolerance */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:216
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(The tolerance to monitor the convergence of the tangential velocities.
 This number specifies a tolerance relative to the value of the
@@ -9657,7 +9657,7 @@ level of convergence. Typical values lie within the 10⁻³ - 10⁻² range.)"""
         } relative_tolerance;
         // Symbol: drake::multibody::TamsiSolverParameters::stiction_tolerance
         struct /* stiction_tolerance */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:198
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(The stiction tolerance vₛ for the slip velocity in the regularized
 friction function, in m/s. Roughly, for an externally applied
@@ -9671,7 +9671,7 @@ velocities introduced by regularizing friction when in stiction.)""";
         } stiction_tolerance;
         // Symbol: drake::multibody::TamsiSolverParameters::theta_max
         struct /* theta_max */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:232
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""((Advanced) TamsiSolver limits large angular changes between tangential
 velocities at two successive iterations vₜᵏ⁺¹ and vₜᵏ. This change is
@@ -9691,19 +9691,19 @@ problems of interest.)""";
       } TamsiSolverParameters;
       // Symbol: drake::multibody::TamsiSolverResult
       struct /* TamsiSolverResult */ {
-        // Source: drake/multibody/plant/tamsi_solver.h:170
+        // Source: drake/multibody/plant/tamsi_solver.h
         const char* doc =
 R"""(The result from TamsiSolver::SolveWithGuess() used to report the
 success or failure of the solver.)""";
         // Symbol: drake::multibody::TamsiSolverResult::kAlphaSolverFailed
         struct /* kAlphaSolverFailed */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:183
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(Could not solve for the α coefficient for per-iteration angle change.)""";
         } kAlphaSolverFailed;
         // Symbol: drake::multibody::TamsiSolverResult::kLinearSolverFailed
         struct /* kLinearSolverFailed */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:180
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(The linear solver used within the Newton-Raphson loop failed. This
 might be caused by a divergent iteration that led to an invalid
@@ -9711,19 +9711,19 @@ Jacobian matrix.)""";
         } kLinearSolverFailed;
         // Symbol: drake::multibody::TamsiSolverResult::kMaxIterationsReached
         struct /* kMaxIterationsReached */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:175
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc =
 R"""(The maximum number of iterations was reached.)""";
         } kMaxIterationsReached;
         // Symbol: drake::multibody::TamsiSolverResult::kSuccess
         struct /* kSuccess */ {
-          // Source: drake/multibody/plant/tamsi_solver.h:172
+          // Source: drake/multibody/plant/tamsi_solver.h
           const char* doc = R"""(Successful computation.)""";
         } kSuccess;
       } TamsiSolverResult;
       // Symbol: drake::multibody::Wing
       struct /* Wing */ {
-        // Source: drake/multibody/plant/wing.h:68
+        // Source: drake/multibody/plant/wing.h
         const char* doc =
 R"""(A System that connects to the MultibodyPlant in order to model the
 simplified dynamics of an airfoil (or hydrofoil). Currently it only
@@ -9774,7 +9774,7 @@ expected that this output will be connected to the MultibodyPlant::get_applied_s
 "externally_applied_spatial_force input port" of the MultibodyPlant.)""";
         // Symbol: drake::multibody::Wing::AddToBuilder
         struct /* AddToBuilder */ {
-          // Source: drake/multibody/plant/wing.h:171
+          // Source: drake/multibody/plant/wing.h
           const char* doc =
 R"""(Helper method that constructs a Wing and connects the input and output
 ports to the MultibodyPlant.
@@ -9790,7 +9790,7 @@ See the Wing constructor for details on the remaining parameters.)""";
         } AddToBuilder;
         // Symbol: drake::multibody::Wing::Wing<T>
         struct /* ctor */ {
-          // Source: drake/multibody/plant/wing.h:91
+          // Source: drake/multibody/plant/wing.h
           const char* doc =
 R"""(Constructs a system describing a single wing using flat-plate
 aerodynamics as described in the class documentation.
@@ -9815,13 +9815,13 @@ Parameter ``fluid_density``:
     density of dry air at 20 deg Celsius at sea-level. This value is
     only used if the optional fluid_density input port is not
     connected.)""";
-          // Source: drake/multibody/plant/wing.h:98
+          // Source: drake/multibody/plant/wing.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::multibody::Wing::get_aerodynamic_center_output_port
         struct /* get_aerodynamic_center_output_port */ {
-          // Source: drake/multibody/plant/wing.h:158
+          // Source: drake/multibody/plant/wing.h
           const char* doc =
 R"""(Returns a 3-element position of the aerodynamic center of the wing in
 world coordinates. This output port does not depend on the optional
@@ -9834,7 +9834,7 @@ wind_velocity_at_└──────────┘aerodynamic_center aerodyna
         } get_aerodynamic_center_output_port;
         // Symbol: drake::multibody::Wing::get_body_poses_input_port
         struct /* get_body_poses_input_port */ {
-          // Source: drake/multibody/plant/wing.h:107
+          // Source: drake/multibody/plant/wing.h
           const char* doc =
 R"""(Returns a reference to the body_poses input port. It is anticipated
 that this port will be connected the body_poses output port of a
@@ -9842,7 +9842,7 @@ MultibodyPlant.)""";
         } get_body_poses_input_port;
         // Symbol: drake::multibody::Wing::get_body_spatial_velocities_input_port
         struct /* get_body_spatial_velocities_input_port */ {
-          // Source: drake/multibody/plant/wing.h:114
+          // Source: drake/multibody/plant/wing.h
           const char* doc =
 R"""(Returns a reference to the body_spatial_velocities input port. It is
 anticipated that this port will be connected the
@@ -9850,7 +9850,7 @@ body_spatial_velocities output port of a MultibodyPlant.)""";
         } get_body_spatial_velocities_input_port;
         // Symbol: drake::multibody::Wing::get_fluid_density_input_port
         struct /* get_fluid_density_input_port */ {
-          // Source: drake/multibody/plant/wing.h:132
+          // Source: drake/multibody/plant/wing.h
           const char* doc =
 R"""(Returns a reference to the optional fluid_density input port, which
 accepts a scalar vector in units kg/m^3. This port is provided to
@@ -9861,7 +9861,7 @@ default fluid density passed in the constructor.)""";
         } get_fluid_density_input_port;
         // Symbol: drake::multibody::Wing::get_spatial_force_output_port
         struct /* get_spatial_force_output_port */ {
-          // Source: drake/multibody/plant/wing.h:140
+          // Source: drake/multibody/plant/wing.h
           const char* doc =
 R"""(Returns a reference to the spatial_forces output port. It is
 anticipated that this port will be connected to the
@@ -9870,7 +9870,7 @@ MultibodyPlant::get_applied_spatial_force_input_port()
         } get_spatial_force_output_port;
         // Symbol: drake::multibody::Wing::get_wind_velocity_input_port
         struct /* get_wind_velocity_input_port */ {
-          // Source: drake/multibody/plant/wing.h:122
+          // Source: drake/multibody/plant/wing.h
           const char* doc =
 R"""(Returns a reference to the input port for the optional three-element
 BasicVector<T> representing the translational velocity of the wind in

@@ -28,7 +28,7 @@ constexpr struct /* pydrake_doc_multibody_meshcat */ {
       struct /* meshcat */ {
         // Symbol: drake::multibody::meshcat::ContactVisualizer
         struct /* ContactVisualizer */ {
-          // Source: drake/multibody/meshcat/contact_visualizer.h:52
+          // Source: drake/multibody/meshcat/contact_visualizer.h
           const char* doc =
 R"""(ContactVisualizer is a system that publishes a ContactResults to
 geometry::Meshcat; For point contact results, it draws double-sided
@@ -57,21 +57,21 @@ Warning:
     may generalize this in the future.)""";
           // Symbol: drake::multibody::meshcat::ContactVisualizer::AddToBuilder
           struct /* AddToBuilder */ {
-            // Source: drake/multibody/meshcat/contact_visualizer.h:96
+            // Source: drake/multibody/meshcat/contact_visualizer.h
             const char* doc_4args_builder_plant_meshcat_params =
 R"""(Adds a ContactVisualizer and connects it to the given MultibodyPlant's
 multibody::ContactResults-valued output port and
 geometry::QueryObject-valued output port. The ContactVisualizer's name
 (see systems::SystemBase::set_name) will be set to a sensible default
 value, unless the default name was already in use by another system.)""";
-            // Source: drake/multibody/meshcat/contact_visualizer.h:107
+            // Source: drake/multibody/meshcat/contact_visualizer.h
             const char* doc_5args_builder_contact_results_port_query_object_port_meshcat_params =
 R"""(Adds a ContactVisualizer and connects it to the given
 multibody::ContactResults-valued output port and the given
 geometry::QueryObject-valued output port. The ContactVisualizer's name
 (see systems::SystemBase::set_name) will be set to a sensible default
 value, unless the default name was already in use by another system.)""";
-            // Source: drake/multibody/meshcat/contact_visualizer.h:121
+            // Source: drake/multibody/meshcat/contact_visualizer.h
             const char* doc_4args_builder_contact_results_port_meshcat_params =
 R"""(Adds a ContactVisualizer and connects it to the given
 multibody::ContactResults-valued output port. The ContactVisualizer's
@@ -85,17 +85,17 @@ Warning:
           } AddToBuilder;
           // Symbol: drake::multibody::meshcat::ContactVisualizer::ContactVisualizer<T>
           struct /* ctor */ {
-            // Source: drake/multibody/meshcat/contact_visualizer.h:57
+            // Source: drake/multibody/meshcat/contact_visualizer.h
             const char* doc =
 R"""(Creates an instance of ContactVisualizer)""";
-            // Source: drake/multibody/meshcat/contact_visualizer.h:63
+            // Source: drake/multibody/meshcat/contact_visualizer.h
             const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion. It
 should only be used to convert *from* double *to* other scalar types.)""";
           } ctor;
           // Symbol: drake::multibody::meshcat::ContactVisualizer::Delete
           struct /* Delete */ {
-            // Source: drake/multibody/meshcat/contact_visualizer.h:73
+            // Source: drake/multibody/meshcat/contact_visualizer.h
             const char* doc =
 R"""(Calls geometry::Meshcat::Delete(std::string_view path), with the path
 set to ``prefix``. Since this visualizer will only ever add geometry
@@ -107,7 +107,7 @@ initialization.)""";
           } Delete;
           // Symbol: drake::multibody::meshcat::ContactVisualizer::contact_results_input_port
           struct /* contact_results_input_port */ {
-            // Source: drake/multibody/meshcat/contact_visualizer.h:79
+            // Source: drake/multibody/meshcat/contact_visualizer.h
             const char* doc =
 R"""(Returns the multibody::ContactResults-valued input port. It should be
 connected to MultibodyPlant's multibody::ContactResults-valued output
@@ -116,7 +116,7 @@ broadcast messages.)""";
           } contact_results_input_port;
           // Symbol: drake::multibody::meshcat::ContactVisualizer::query_object_input_port
           struct /* query_object_input_port */ {
-            // Source: drake/multibody/meshcat/contact_visualizer.h:86
+            // Source: drake/multibody/meshcat/contact_visualizer.h
             const char* doc =
 R"""(Returns the geometry::QueryObject-valued input port. It should be
 (optionally) connected to SceneGraph's get_query_output_port().
@@ -126,25 +126,25 @@ geometry.)""";
         } ContactVisualizer;
         // Symbol: drake::multibody::meshcat::ContactVisualizerParams
         struct /* ContactVisualizerParams */ {
-          // Source: drake/multibody/meshcat/contact_visualizer_params.h:13
+          // Source: drake/multibody/meshcat/contact_visualizer_params.h
           const char* doc =
 R"""(The set of parameters for configuring ContactVisualizer.)""";
           // Symbol: drake::multibody::meshcat::ContactVisualizerParams::Serialize
           struct /* Serialize */ {
-            // Source: drake/multibody/meshcat/contact_visualizer_params.h:17
+            // Source: drake/multibody/meshcat/contact_visualizer_params.h
             const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
           } Serialize;
           // Symbol: drake::multibody::meshcat::ContactVisualizerParams::color
           struct /* color */ {
-            // Source: drake/multibody/meshcat/contact_visualizer_params.h:38
+            // Source: drake/multibody/meshcat/contact_visualizer_params.h
             const char* doc =
 R"""(The color used to draw the point contact force arrows.)""";
           } color;
           // Symbol: drake::multibody::meshcat::ContactVisualizerParams::delete_on_initialization_event
           struct /* delete_on_initialization_event */ {
-            // Source: drake/multibody/meshcat/contact_visualizer_params.h:57
+            // Source: drake/multibody/meshcat/contact_visualizer_params.h
             const char* doc =
 R"""(Determines whether to send a Meshcat::Delete(prefix) message on an
 initialization event to remove any visualizations e.g. from a previous
@@ -153,7 +153,7 @@ events" for more information.)""";
           } delete_on_initialization_event;
           // Symbol: drake::multibody::meshcat::ContactVisualizerParams::force_threshold
           struct /* force_threshold */ {
-            // Source: drake/multibody/meshcat/contact_visualizer_params.h:63
+            // Source: drake/multibody/meshcat/contact_visualizer_params.h
             const char* doc =
 R"""(The threshold (in N) below which forces will no longer be drawn. The
 ContactVisualizer constructor enforces that this must be strictly
@@ -162,19 +162,19 @@ visualized.)""";
           } force_threshold;
           // Symbol: drake::multibody::meshcat::ContactVisualizerParams::hydro_force_color
           struct /* hydro_force_color */ {
-            // Source: drake/multibody/meshcat/contact_visualizer_params.h:41
+            // Source: drake/multibody/meshcat/contact_visualizer_params.h
             const char* doc =
 R"""(The color used to draw the hydroelastic contact force arrows.)""";
           } hydro_force_color;
           // Symbol: drake::multibody::meshcat::ContactVisualizerParams::hydro_moment_color
           struct /* hydro_moment_color */ {
-            // Source: drake/multibody/meshcat/contact_visualizer_params.h:44
+            // Source: drake/multibody/meshcat/contact_visualizer_params.h
             const char* doc =
 R"""(The color used to draw the hydroelastic contact moment arrows.)""";
           } hydro_moment_color;
           // Symbol: drake::multibody::meshcat::ContactVisualizerParams::moment_threshold
           struct /* moment_threshold */ {
-            // Source: drake/multibody/meshcat/contact_visualizer_params.h:69
+            // Source: drake/multibody/meshcat/contact_visualizer_params.h
             const char* doc =
 R"""(The threshold (in N⋅m) below which moments will no longer be drawn.
 The ContactVisualizer constructor enforces that this must be strictly
@@ -183,19 +183,19 @@ be visualized.)""";
           } moment_threshold;
           // Symbol: drake::multibody::meshcat::ContactVisualizerParams::newton_meters_per_meter
           struct /* newton_meters_per_meter */ {
-            // Source: drake/multibody/meshcat/contact_visualizer_params.h:75
+            // Source: drake/multibody/meshcat/contact_visualizer_params.h
             const char* doc =
 R"""(Sets the length scale of the moment vectors.)""";
           } newton_meters_per_meter;
           // Symbol: drake::multibody::meshcat::ContactVisualizerParams::newtons_per_meter
           struct /* newtons_per_meter */ {
-            // Source: drake/multibody/meshcat/contact_visualizer_params.h:72
+            // Source: drake/multibody/meshcat/contact_visualizer_params.h
             const char* doc =
 R"""(Sets the length scale of the force vectors.)""";
           } newtons_per_meter;
           // Symbol: drake::multibody::meshcat::ContactVisualizerParams::prefix
           struct /* prefix */ {
-            // Source: drake/multibody/meshcat/contact_visualizer_params.h:51
+            // Source: drake/multibody/meshcat/contact_visualizer_params.h
             const char* doc =
 R"""(A prefix to add to the path for all objects and transforms curated by
 the ContactVisualizer. It can be an absolute path or relative path. If
@@ -205,7 +205,7 @@ meshcat_path "Meshcat paths" for details.)""";
           } prefix;
           // Symbol: drake::multibody::meshcat::ContactVisualizerParams::publish_period
           struct /* publish_period */ {
-            // Source: drake/multibody/meshcat/contact_visualizer_params.h:35
+            // Source: drake/multibody/meshcat/contact_visualizer_params.h
             const char* doc =
 R"""(The duration (in simulation seconds) between attempts to update poses
 in the visualizer. (To help avoid small simulation time steps, we use
@@ -214,7 +214,7 @@ point; see drake#15021 for details.))""";
           } publish_period;
           // Symbol: drake::multibody::meshcat::ContactVisualizerParams::radius
           struct /* radius */ {
-            // Source: drake/multibody/meshcat/contact_visualizer_params.h:78
+            // Source: drake/multibody/meshcat/contact_visualizer_params.h
             const char* doc =
 R"""(The radius of cylinder geometry used in the force/moment vector.)""";
           } radius;
@@ -236,14 +236,14 @@ R"""(The radius of cylinder geometry used in the force/moment vector.)""";
         } ContactVisualizerParams;
         // Symbol: drake::multibody::meshcat::ContactVisualizerd
         struct /* ContactVisualizerd */ {
-          // Source: drake/multibody/meshcat/contact_visualizer.h:187
+          // Source: drake/multibody/meshcat/contact_visualizer.h
           const char* doc =
 R"""(A convenient alias for the ContactVisualizer class when using the
 ``double`` scalar type.)""";
         } ContactVisualizerd;
         // Symbol: drake::multibody::meshcat::JointSliders
         struct /* JointSliders */ {
-          // Source: drake/multibody/meshcat/joint_sliders.h:54
+          // Source: drake/multibody/meshcat/joint_sliders.h
           const char* doc =
 R"""(JointSliders adds slider bars to the Meshcat control panel for the
 joints of a MultibodyPlant. These might be useful for interactive or
@@ -267,7 +267,7 @@ systems::ZeroOrderHold system between the sliders and downstream
 calculations.)""";
           // Symbol: drake::multibody::meshcat::JointSliders::Delete
           struct /* Delete */ {
-            // Source: drake/multibody/meshcat/joint_sliders.h:111
+            // Source: drake/multibody/meshcat/joint_sliders.h
             const char* doc =
 R"""(Removes our sliders from the associated meshcat instance.
 
@@ -280,7 +280,7 @@ Warning:
           } Delete;
           // Symbol: drake::multibody::meshcat::JointSliders::JointSliders<T>
           struct /* ctor */ {
-            // Source: drake/multibody/meshcat/joint_sliders.h:92
+            // Source: drake/multibody/meshcat/joint_sliders.h
             const char* doc =
 R"""(Creates a meshcat slider for each joint in the given plant.
 
@@ -326,7 +326,7 @@ Parameter ``increment_keycodes``:
           } ctor;
           // Symbol: drake::multibody::meshcat::JointSliders::Run
           struct /* Run */ {
-            // Source: drake/multibody/meshcat/joint_sliders.h:140
+            // Source: drake/multibody/meshcat/joint_sliders.h
             const char* doc =
 R"""(Publishes the given Diagram (typically, to cause it to be visualized)
 whenever our sliders' values change. Blocks until the user clicks a
@@ -364,7 +364,7 @@ Precondition:
           } Run;
           // Symbol: drake::multibody::meshcat::JointSliders::SetPositions
           struct /* SetPositions */ {
-            // Source: drake/multibody/meshcat/joint_sliders.h:153
+            // Source: drake/multibody/meshcat/joint_sliders.h
             const char* doc =
 R"""(Sets our meshcat sliders to the values in ``q``.
 
@@ -386,7 +386,7 @@ Parameter ``q``:
       struct /* scalar_conversion */ {
         // Symbol: drake::systems::scalar_conversion::Traits
         struct /* Traits */ {
-          // Source: drake/multibody/meshcat/contact_visualizer.h:195
+          // Source: drake/multibody/meshcat/contact_visualizer.h
           const char* doc = R"""()""";
         } Traits;
       } scalar_conversion;

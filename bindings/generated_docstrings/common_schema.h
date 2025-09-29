@@ -24,36 +24,36 @@ constexpr struct /* pydrake_doc_common_schema */ {
     struct /* schema */ {
       // Symbol: drake::schema::Deterministic
       struct /* Deterministic */ {
-        // Source: drake/common/schema/stochastic.h:217
+        // Source: drake/common/schema/stochastic.h
         const char* doc = R"""(A single deterministic ``value``.)""";
         // Symbol: drake::schema::Deterministic::Deterministic
         struct /* ctor */ {
-          // Source: drake/common/schema/stochastic.h:219
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::schema::Deterministic::Mean
         struct /* Mean */ {
-          // Source: drake/common/schema/stochastic.h:227
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Mean;
         // Symbol: drake::schema::Deterministic::Sample
         struct /* Sample */ {
-          // Source: drake/common/schema/stochastic.h:226
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Sample;
         // Symbol: drake::schema::Deterministic::Serialize
         struct /* Serialize */ {
-          // Source: drake/common/schema/stochastic.h:231
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Serialize;
         // Symbol: drake::schema::Deterministic::ToSymbolic
         struct /* ToSymbolic */ {
-          // Source: drake/common/schema/stochastic.h:228
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } ToSymbolic;
         // Symbol: drake::schema::Deterministic::value
         struct /* value */ {
-          // Source: drake/common/schema/stochastic.h:235
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } value;
         auto Serialize__fields() const {
@@ -64,7 +64,7 @@ constexpr struct /* pydrake_doc_common_schema */ {
       } Deterministic;
       // Symbol: drake::schema::DeterministicVector
       struct /* DeterministicVector */ {
-        // Source: drake/common/schema/stochastic.h:366
+        // Source: drake/common/schema/stochastic.h
         const char* doc =
 R"""(A single deterministic vector ``value``.
 
@@ -72,32 +72,32 @@ Template parameter ``Size``:
     rows at compile time (max 6) or else Eigen::Dynamic.)""";
         // Symbol: drake::schema::DeterministicVector::DeterministicVector<Size>
         struct /* ctor */ {
-          // Source: drake/common/schema/stochastic.h:368
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::schema::DeterministicVector::Mean
         struct /* Mean */ {
-          // Source: drake/common/schema/stochastic.h:375
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Mean;
         // Symbol: drake::schema::DeterministicVector::Sample
         struct /* Sample */ {
-          // Source: drake/common/schema/stochastic.h:374
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Sample;
         // Symbol: drake::schema::DeterministicVector::Serialize
         struct /* Serialize */ {
-          // Source: drake/common/schema/stochastic.h:379
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Serialize;
         // Symbol: drake::schema::DeterministicVector::ToSymbolic
         struct /* ToSymbolic */ {
-          // Source: drake/common/schema/stochastic.h:376
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } ToSymbolic;
         // Symbol: drake::schema::DeterministicVector::value
         struct /* value */ {
-          // Source: drake/common/schema/stochastic.h:383
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } value;
         auto Serialize__fields() const {
@@ -108,7 +108,7 @@ Template parameter ``Size``:
       } DeterministicVector;
       // Symbol: drake::schema::Distribution
       struct /* Distribution */ {
-        // Source: drake/common/schema/stochastic.h:203
+        // Source: drake/common/schema/stochastic.h
         const char* doc =
 R"""(Base class for a single distribution, to be used with YAML archives.
 (See class DistributionVector for vector-valued distributions.)
@@ -118,34 +118,34 @@ details, especially the unusually public member fields of our
 subclasses.)""";
         // Symbol: drake::schema::Distribution::Distribution
         struct /* ctor */ {
-          // Source: drake/common/schema/stochastic.h:212
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::schema::Distribution::Mean
         struct /* Mean */ {
-          // Source: drake/common/schema/stochastic.h:208
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Mean;
         // Symbol: drake::schema::Distribution::Sample
         struct /* Sample */ {
-          // Source: drake/common/schema/stochastic.h:207
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Sample;
         // Symbol: drake::schema::Distribution::ToSymbolic
         struct /* ToSymbolic */ {
-          // Source: drake/common/schema/stochastic.h:209
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } ToSymbolic;
       } Distribution;
       // Symbol: drake::schema::DistributionVariant
       struct /* DistributionVariant */ {
-        // Source: drake/common/schema/stochastic.h:306
+        // Source: drake/common/schema/stochastic.h
         const char* doc =
 R"""(Variant over all kinds of distributions.)""";
       } DistributionVariant;
       // Symbol: drake::schema::DistributionVector
       struct /* DistributionVector */ {
-        // Source: drake/common/schema/stochastic.h:350
+        // Source: drake/common/schema/stochastic.h
         const char* doc =
 R"""(Base class for a vector of distributions, to be used with YAML
 archives. (See class Distribution for scalar-valued distributions.)
@@ -154,69 +154,69 @@ See implementing_serialize for implementation details, especially the
 unusually public member fields in our subclasses.)""";
         // Symbol: drake::schema::DistributionVector::DistributionVector
         struct /* ctor */ {
-          // Source: drake/common/schema/stochastic.h:359
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::schema::DistributionVector::Mean
         struct /* Mean */ {
-          // Source: drake/common/schema/stochastic.h:355
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Mean;
         // Symbol: drake::schema::DistributionVector::Sample
         struct /* Sample */ {
-          // Source: drake/common/schema/stochastic.h:354
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Sample;
         // Symbol: drake::schema::DistributionVector::ToSymbolic
         struct /* ToSymbolic */ {
-          // Source: drake/common/schema/stochastic.h:356
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } ToSymbolic;
       } DistributionVector;
       // Symbol: drake::schema::DistributionVectorVariantX
       struct /* DistributionVectorVariantX */ {
-        // Source: drake/common/schema/stochastic.h:485
+        // Source: drake/common/schema/stochastic.h
         const char* doc =
 R"""(DistributionVectorVariant that permits any vector size dynamically.)""";
       } DistributionVectorVariantX;
       // Symbol: drake::schema::Gaussian
       struct /* Gaussian */ {
-        // Source: drake/common/schema/stochastic.h:239
+        // Source: drake/common/schema/stochastic.h
         const char* doc =
 R"""(A gaussian distribution with ``mean`` and ``stddev``.)""";
         // Symbol: drake::schema::Gaussian::Gaussian
         struct /* ctor */ {
-          // Source: drake/common/schema/stochastic.h:241
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::schema::Gaussian::Mean
         struct /* Mean */ {
-          // Source: drake/common/schema/stochastic.h:248
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Mean;
         // Symbol: drake::schema::Gaussian::Sample
         struct /* Sample */ {
-          // Source: drake/common/schema/stochastic.h:247
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Sample;
         // Symbol: drake::schema::Gaussian::Serialize
         struct /* Serialize */ {
-          // Source: drake/common/schema/stochastic.h:252
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Serialize;
         // Symbol: drake::schema::Gaussian::ToSymbolic
         struct /* ToSymbolic */ {
-          // Source: drake/common/schema/stochastic.h:249
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } ToSymbolic;
         // Symbol: drake::schema::Gaussian::mean
         struct /* mean */ {
-          // Source: drake/common/schema/stochastic.h:257
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } mean;
         // Symbol: drake::schema::Gaussian::stddev
         struct /* stddev */ {
-          // Source: drake/common/schema/stochastic.h:258
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } stddev;
         auto Serialize__fields() const {
@@ -228,7 +228,7 @@ R"""(A gaussian distribution with ``mean`` and ``stddev``.)""";
       } Gaussian;
       // Symbol: drake::schema::GaussianVector
       struct /* GaussianVector */ {
-        // Source: drake/common/schema/stochastic.h:398
+        // Source: drake/common/schema/stochastic.h
         const char* doc =
 R"""(A gaussian distribution with vector ``mean`` and vector or scalar
 ``stddev``.
@@ -245,37 +245,37 @@ Template parameter ``Size``:
     rows at compile time (max 6) or else Eigen::Dynamic.)""";
         // Symbol: drake::schema::GaussianVector::GaussianVector<Size>
         struct /* ctor */ {
-          // Source: drake/common/schema/stochastic.h:400
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::schema::GaussianVector::Mean
         struct /* Mean */ {
-          // Source: drake/common/schema/stochastic.h:408
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Mean;
         // Symbol: drake::schema::GaussianVector::Sample
         struct /* Sample */ {
-          // Source: drake/common/schema/stochastic.h:407
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Sample;
         // Symbol: drake::schema::GaussianVector::Serialize
         struct /* Serialize */ {
-          // Source: drake/common/schema/stochastic.h:412
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Serialize;
         // Symbol: drake::schema::GaussianVector::ToSymbolic
         struct /* ToSymbolic */ {
-          // Source: drake/common/schema/stochastic.h:409
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } ToSymbolic;
         // Symbol: drake::schema::GaussianVector::mean
         struct /* mean */ {
-          // Source: drake/common/schema/stochastic.h:417
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } mean;
         // Symbol: drake::schema::GaussianVector::stddev
         struct /* stddev */ {
-          // Source: drake/common/schema/stochastic.h:418
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } stddev;
         auto Serialize__fields() const {
@@ -287,13 +287,13 @@ Template parameter ``Size``:
       } GaussianVector;
       // Symbol: drake::schema::GetDeterministicValue
       struct /* GetDeterministicValue */ {
-        // Source: drake/common/schema/stochastic.h:341
+        // Source: drake/common/schema/stochastic.h
         const char* doc_1args_var =
 R"""(If ``var`` is deterministic, retrieves its value.
 
 Raises:
     RuntimeError if ``var`` is not deterministic.)""";
-        // Source: drake/common/schema/stochastic.h:502
+        // Source: drake/common/schema/stochastic.h
         const char* doc_1args_constDistributionVectorVariant =
 R"""(If ``vec`` is deterministic, retrieves its value.
 
@@ -305,10 +305,10 @@ Template parameter ``Size``:
       } GetDeterministicValue;
       // Symbol: drake::schema::IsDeterministic
       struct /* IsDeterministic */ {
-        // Source: drake/common/schema/stochastic.h:337
+        // Source: drake/common/schema/stochastic.h
         const char* doc_1args_var =
 R"""(Returns true iff ``var`` is set to a deterministic value.)""";
-        // Source: drake/common/schema/stochastic.h:496
+        // Source: drake/common/schema/stochastic.h
         const char* doc_1args_constDistributionVectorVariant =
 R"""(Returns true iff all of `vec`'s elements are set to a deterministic
 value.
@@ -318,17 +318,17 @@ Template parameter ``Size``:
       } IsDeterministic;
       // Symbol: drake::schema::Mean
       struct /* Mean */ {
-        // Source: drake/common/schema/stochastic.h:317
+        // Source: drake/common/schema/stochastic.h
         const char* doc_1args_var =
 R"""(Like Distribution::Mean, but on a DistributionVariant instead.)""";
-        // Source: drake/common/schema/stochastic.h:329
+        // Source: drake/common/schema/stochastic.h
         const char* doc_1args_vec =
 R"""(Like Distribution::Mean, but elementwise over a collection of
 possibly-heterogenous DistributionVariant instead.)""";
       } Mean;
       // Symbol: drake::schema::Rotation
       struct /* Rotation */ {
-        // Source: drake/common/schema/rotation.h:25
+        // Source: drake/common/schema/rotation.h
         const char* doc =
 R"""(A specification for an SO(3) rotation, to be used for serialization
 purposes, e.g., to define stochastic scenarios. This structure
@@ -345,27 +345,27 @@ See implementing_serialize "Implementing Serialize" for implementation
 details, especially the unusually public member fields.)""";
         // Symbol: drake::schema::Rotation::AngleAxis
         struct /* AngleAxis */ {
-          // Source: drake/common/schema/rotation.h:62
+          // Source: drake/common/schema/rotation.h
           const char* doc =
 R"""(Rotation constructed from a fixed axis and an angle.)""";
           // Symbol: drake::schema::Rotation::AngleAxis::AngleAxis
           struct /* ctor */ {
-            // Source: drake/common/schema/rotation.h:63
+            // Source: drake/common/schema/rotation.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::schema::Rotation::AngleAxis::Serialize
           struct /* Serialize */ {
-            // Source: drake/common/schema/rotation.h:67
+            // Source: drake/common/schema/rotation.h
             const char* doc = R"""()""";
           } Serialize;
           // Symbol: drake::schema::Rotation::AngleAxis::angle_deg
           struct /* angle_deg */ {
-            // Source: drake/common/schema/rotation.h:72
+            // Source: drake/common/schema/rotation.h
             const char* doc = R"""()""";
           } angle_deg;
           // Symbol: drake::schema::Rotation::AngleAxis::axis
           struct /* axis */ {
-            // Source: drake/common/schema/rotation.h:73
+            // Source: drake/common/schema/rotation.h
             const char* doc = R"""()""";
           } axis;
           auto Serialize__fields() const {
@@ -377,7 +377,7 @@ R"""(Rotation constructed from a fixed axis and an angle.)""";
         } AngleAxis;
         // Symbol: drake::schema::Rotation::GetDeterministicValue
         struct /* GetDeterministicValue */ {
-          // Source: drake/common/schema/rotation.h:90
+          // Source: drake/common/schema/rotation.h
           const char* doc =
 R"""(If this is deterministic, retrieves its value.
 
@@ -386,52 +386,52 @@ Raises:
         } GetDeterministicValue;
         // Symbol: drake::schema::Rotation::Identity
         struct /* Identity */ {
-          // Source: drake/common/schema/rotation.h:39
+          // Source: drake/common/schema/rotation.h
           const char* doc = R"""(No-op rotation.)""";
           // Symbol: drake::schema::Rotation::Identity::Identity
           struct /* ctor */ {
-            // Source: drake/common/schema/rotation.h:40
+            // Source: drake/common/schema/rotation.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::schema::Rotation::Identity::Serialize
           struct /* Serialize */ {
-            // Source: drake/common/schema/rotation.h:44
+            // Source: drake/common/schema/rotation.h
             const char* doc = R"""()""";
           } Serialize;
         } Identity;
         // Symbol: drake::schema::Rotation::IsDeterministic
         struct /* IsDeterministic */ {
-          // Source: drake/common/schema/rotation.h:86
+          // Source: drake/common/schema/rotation.h
           const char* doc =
 R"""(Returns true iff this is fully deterministic.)""";
         } IsDeterministic;
         // Symbol: drake::schema::Rotation::Rotation
         struct /* ctor */ {
-          // Source: drake/common/schema/rotation.h:30
+          // Source: drake/common/schema/rotation.h
           const char* doc_0args = R"""(Constructs the Identity rotation.)""";
-          // Source: drake/common/schema/rotation.h:33
+          // Source: drake/common/schema/rotation.h
           const char* doc_1args =
 R"""(Constructs an Rpy rotation with the given value.)""";
         } ctor;
         // Symbol: drake::schema::Rotation::Rpy
         struct /* Rpy */ {
-          // Source: drake/common/schema/rotation.h:49
+          // Source: drake/common/schema/rotation.h
           const char* doc =
 R"""(A roll-pitch-yaw rotation, using the angle conventions of Drake's
 RollPitchYaw.)""";
           // Symbol: drake::schema::Rotation::Rpy::Rpy
           struct /* ctor */ {
-            // Source: drake/common/schema/rotation.h:50
+            // Source: drake/common/schema/rotation.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::schema::Rotation::Rpy::Serialize
           struct /* Serialize */ {
-            // Source: drake/common/schema/rotation.h:54
+            // Source: drake/common/schema/rotation.h
             const char* doc = R"""()""";
           } Serialize;
           // Symbol: drake::schema::Rotation::Rpy::deg
           struct /* deg */ {
-            // Source: drake/common/schema/rotation.h:58
+            // Source: drake/common/schema/rotation.h
             const char* doc = R"""()""";
           } deg;
           auto Serialize__fields() const {
@@ -442,19 +442,19 @@ RollPitchYaw.)""";
         } Rpy;
         // Symbol: drake::schema::Rotation::Sample
         struct /* Sample */ {
-          // Source: drake/common/schema/rotation.h:99
+          // Source: drake/common/schema/rotation.h
           const char* doc =
 R"""(Samples this Rotation. If this is deterministic, the result is the
 same as GetDeterministicValue.)""";
         } Sample;
         // Symbol: drake::schema::Rotation::Serialize
         struct /* Serialize */ {
-          // Source: drake/common/schema/rotation.h:107
+          // Source: drake/common/schema/rotation.h
           const char* doc = R"""()""";
         } Serialize;
         // Symbol: drake::schema::Rotation::ToSymbolic
         struct /* ToSymbolic */ {
-          // Source: drake/common/schema/rotation.h:95
+          // Source: drake/common/schema/rotation.h
           const char* doc =
 R"""(Returns the symbolic form of this rotation. If this is deterministic,
 the result will contain no variables. If this is random, the result
@@ -463,34 +463,34 @@ in use.)""";
         } ToSymbolic;
         // Symbol: drake::schema::Rotation::Uniform
         struct /* Uniform */ {
-          // Source: drake/common/schema/rotation.h:77
+          // Source: drake/common/schema/rotation.h
           const char* doc =
 R"""(Rotation sampled from a uniform distribution over SO(3).)""";
           // Symbol: drake::schema::Rotation::Uniform::Serialize
           struct /* Serialize */ {
-            // Source: drake/common/schema/rotation.h:82
+            // Source: drake/common/schema/rotation.h
             const char* doc = R"""()""";
           } Serialize;
           // Symbol: drake::schema::Rotation::Uniform::Uniform
           struct /* ctor */ {
-            // Source: drake/common/schema/rotation.h:78
+            // Source: drake/common/schema/rotation.h
             const char* doc = R"""()""";
           } ctor;
         } Uniform;
         // Symbol: drake::schema::Rotation::Variant
         struct /* Variant */ {
-          // Source: drake/common/schema/rotation.h:111
+          // Source: drake/common/schema/rotation.h
           const char* doc = R"""()""";
         } Variant;
         // Symbol: drake::schema::Rotation::set_rpy_deg
         struct /* set_rpy_deg */ {
-          // Source: drake/common/schema/rotation.h:102
+          // Source: drake/common/schema/rotation.h
           const char* doc =
 R"""(Sets this value to the given deterministic RPY, in degrees.)""";
         } set_rpy_deg;
         // Symbol: drake::schema::Rotation::value
         struct /* value */ {
-          // Source: drake/common/schema/rotation.h:112
+          // Source: drake/common/schema/rotation.h
           const char* doc = R"""()""";
         } value;
         auto Serialize__fields() const {
@@ -501,23 +501,23 @@ R"""(Sets this value to the given deterministic RPY, in degrees.)""";
       } Rotation;
       // Symbol: drake::schema::Sample
       struct /* Sample */ {
-        // Source: drake/common/schema/stochastic.h:313
+        // Source: drake/common/schema/stochastic.h
         const char* doc_2args_var_generator =
 R"""(Like Distribution::Sample, but on a DistributionVariant instead.)""";
-        // Source: drake/common/schema/stochastic.h:324
+        // Source: drake/common/schema/stochastic.h
         const char* doc_2args_vec_generator =
 R"""(Like Distribution::Sample, but elementwise over a collection of
 possibly-heterogenous DistributionVariant instead.)""";
       } Sample;
       // Symbol: drake::schema::ToDistribution
       struct /* ToDistribution */ {
-        // Source: drake/common/schema/stochastic.h:310
+        // Source: drake/common/schema/stochastic.h
         const char* doc =
 R"""(Copies the given variant into a Distribution base class.)""";
       } ToDistribution;
       // Symbol: drake::schema::ToDistributionVector
       struct /* ToDistributionVector */ {
-        // Source: drake/common/schema/stochastic.h:490
+        // Source: drake/common/schema/stochastic.h
         const char* doc =
 R"""(Copies the given variant into a DistributionVector base class.
 
@@ -526,17 +526,17 @@ Template parameter ``Size``:
       } ToDistributionVector;
       // Symbol: drake::schema::ToSymbolic
       struct /* ToSymbolic */ {
-        // Source: drake/common/schema/stochastic.h:320
+        // Source: drake/common/schema/stochastic.h
         const char* doc_1args_var =
 R"""(Like Distribution::ToSymbolic, but on a DistributionVariant instead.)""";
-        // Source: drake/common/schema/stochastic.h:333
+        // Source: drake/common/schema/stochastic.h
         const char* doc_1args_vec =
 R"""(Like Distribution::ToSymbolic, but elementwise over a collection of
 possibly-heterogenous DistributionVariant instead.)""";
       } ToSymbolic;
       // Symbol: drake::schema::Transform
       struct /* Transform */ {
-        // Source: drake/common/schema/transform.h:152
+        // Source: drake/common/schema/transform.h
         const char* doc =
 R"""(A specification for a 3d rotation and translation, optionally with
 respect to a base frame.
@@ -548,7 +548,7 @@ See implementing_serialize "Implementing Serialize" for implementation
 details, especially the unusually public member fields.)""";
         // Symbol: drake::schema::Transform::GetDeterministicValue
         struct /* GetDeterministicValue */ {
-          // Source: drake/common/schema/transform.h:172
+          // Source: drake/common/schema/transform.h
           const char* doc =
 R"""(If this is deterministic, retrieves its value.
 
@@ -557,13 +557,13 @@ Raises:
         } GetDeterministicValue;
         // Symbol: drake::schema::Transform::IsDeterministic
         struct /* IsDeterministic */ {
-          // Source: drake/common/schema/transform.h:168
+          // Source: drake/common/schema/transform.h
           const char* doc =
 R"""(Returns true iff this is fully deterministic.)""";
         } IsDeterministic;
         // Symbol: drake::schema::Transform::Mean
         struct /* Mean */ {
-          // Source: drake/common/schema/transform.h:185
+          // Source: drake/common/schema/transform.h
           const char* doc =
 R"""(Returns the mean of this rotation. If this is deterministic, the
 result is the same as GetDeterministicValue. If this is random, note
@@ -574,26 +574,26 @@ angles) may not necessarily match that measure on the returned value.)""";
         } Mean;
         // Symbol: drake::schema::Transform::Sample
         struct /* Sample */ {
-          // Source: drake/common/schema/transform.h:189
+          // Source: drake/common/schema/transform.h
           const char* doc =
 R"""(Samples this Transform. If this is deterministic, the result is the
 same as GetDeterministicValue.)""";
         } Sample;
         // Symbol: drake::schema::Transform::SampleAsTransform
         struct /* SampleAsTransform */ {
-          // Source: drake/common/schema/transform.h:193
+          // Source: drake/common/schema/transform.h
           const char* doc =
 R"""(Samples this Transform; the returned value is deterministic and has
 the same base frame.)""";
         } SampleAsTransform;
         // Symbol: drake::schema::Transform::Serialize
         struct /* Serialize */ {
-          // Source: drake/common/schema/transform.h:196
+          // Source: drake/common/schema/transform.h
           const char* doc = R"""()""";
         } Serialize;
         // Symbol: drake::schema::Transform::ToSymbolic
         struct /* ToSymbolic */ {
-          // Source: drake/common/schema/transform.h:177
+          // Source: drake/common/schema/transform.h
           const char* doc =
 R"""(Returns the symbolic form of this rotation. If this is deterministic,
 the result will contain no variables. If this is random, the result
@@ -602,33 +602,33 @@ in use.)""";
         } ToSymbolic;
         // Symbol: drake::schema::Transform::Transform
         struct /* ctor */ {
-          // Source: drake/common/schema/transform.h:157
+          // Source: drake/common/schema/transform.h
           const char* doc_0args = R"""(Constructs the Identity transform.)""";
-          // Source: drake/common/schema/transform.h:160
+          // Source: drake/common/schema/transform.h
           const char* doc_1args = R"""(Constructs the given transform.)""";
         } ctor;
         // Symbol: drake::schema::Transform::base_frame
         struct /* base_frame */ {
-          // Source: drake/common/schema/transform.h:204
+          // Source: drake/common/schema/transform.h
           const char* doc =
 R"""(An optional base frame name for this transform. When left unspecified,
 the default depends on the semantics of the enclosing struct.)""";
         } base_frame;
         // Symbol: drake::schema::Transform::rotation
         struct /* rotation */ {
-          // Source: drake/common/schema/transform.h:210
+          // Source: drake/common/schema/transform.h
           const char* doc =
 R"""(A variant that allows for several ways to specify a rotation.)""";
         } rotation;
         // Symbol: drake::schema::Transform::set_rotation_rpy_deg
         struct /* set_rotation_rpy_deg */ {
-          // Source: drake/common/schema/transform.h:163
+          // Source: drake/common/schema/transform.h
           const char* doc =
 R"""(Sets the rotation field to the given deterministic RPY, in degrees.)""";
         } set_rotation_rpy_deg;
         // Symbol: drake::schema::Transform::translation
         struct /* translation */ {
-          // Source: drake/common/schema/transform.h:207
+          // Source: drake/common/schema/transform.h
           const char* doc = R"""(A translation vector, in meters.)""";
         } translation;
         auto Serialize__fields() const {
@@ -641,42 +641,42 @@ R"""(Sets the rotation field to the given deterministic RPY, in degrees.)""";
       } Transform;
       // Symbol: drake::schema::Uniform
       struct /* Uniform */ {
-        // Source: drake/common/schema/stochastic.h:262
+        // Source: drake/common/schema/stochastic.h
         const char* doc =
 R"""(A uniform distribution with ``min`` inclusive and ``max`` exclusive.)""";
         // Symbol: drake::schema::Uniform::Mean
         struct /* Mean */ {
-          // Source: drake/common/schema/stochastic.h:271
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Mean;
         // Symbol: drake::schema::Uniform::Sample
         struct /* Sample */ {
-          // Source: drake/common/schema/stochastic.h:270
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Sample;
         // Symbol: drake::schema::Uniform::Serialize
         struct /* Serialize */ {
-          // Source: drake/common/schema/stochastic.h:275
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Serialize;
         // Symbol: drake::schema::Uniform::ToSymbolic
         struct /* ToSymbolic */ {
-          // Source: drake/common/schema/stochastic.h:272
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } ToSymbolic;
         // Symbol: drake::schema::Uniform::Uniform
         struct /* ctor */ {
-          // Source: drake/common/schema/stochastic.h:264
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::schema::Uniform::max
         struct /* max */ {
-          // Source: drake/common/schema/stochastic.h:281
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } max;
         // Symbol: drake::schema::Uniform::min
         struct /* min */ {
-          // Source: drake/common/schema/stochastic.h:280
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } min;
         auto Serialize__fields() const {
@@ -688,37 +688,37 @@ R"""(A uniform distribution with ``min`` inclusive and ``max`` exclusive.)""";
       } Uniform;
       // Symbol: drake::schema::UniformDiscrete
       struct /* UniformDiscrete */ {
-        // Source: drake/common/schema/stochastic.h:285
+        // Source: drake/common/schema/stochastic.h
         const char* doc =
 R"""(Chooses from among discrete ``values`` with equal probability.)""";
         // Symbol: drake::schema::UniformDiscrete::Mean
         struct /* Mean */ {
-          // Source: drake/common/schema/stochastic.h:294
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Mean;
         // Symbol: drake::schema::UniformDiscrete::Sample
         struct /* Sample */ {
-          // Source: drake/common/schema/stochastic.h:293
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Sample;
         // Symbol: drake::schema::UniformDiscrete::Serialize
         struct /* Serialize */ {
-          // Source: drake/common/schema/stochastic.h:298
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Serialize;
         // Symbol: drake::schema::UniformDiscrete::ToSymbolic
         struct /* ToSymbolic */ {
-          // Source: drake/common/schema/stochastic.h:295
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } ToSymbolic;
         // Symbol: drake::schema::UniformDiscrete::UniformDiscrete
         struct /* ctor */ {
-          // Source: drake/common/schema/stochastic.h:287
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::schema::UniformDiscrete::values
         struct /* values */ {
-          // Source: drake/common/schema/stochastic.h:302
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } values;
         auto Serialize__fields() const {
@@ -729,7 +729,7 @@ R"""(Chooses from among discrete ``values`` with equal probability.)""";
       } UniformDiscrete;
       // Symbol: drake::schema::UniformVector
       struct /* UniformVector */ {
-        // Source: drake/common/schema/stochastic.h:425
+        // Source: drake/common/schema/stochastic.h
         const char* doc =
 R"""(A uniform distribution with vector ``min`` inclusive and vector
 ``max`` exclusive.
@@ -738,37 +738,37 @@ Template parameter ``Size``:
     rows at compile time (max 6) or else Eigen::Dynamic.)""";
         // Symbol: drake::schema::UniformVector::Mean
         struct /* Mean */ {
-          // Source: drake/common/schema/stochastic.h:435
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Mean;
         // Symbol: drake::schema::UniformVector::Sample
         struct /* Sample */ {
-          // Source: drake/common/schema/stochastic.h:434
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Sample;
         // Symbol: drake::schema::UniformVector::Serialize
         struct /* Serialize */ {
-          // Source: drake/common/schema/stochastic.h:439
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } Serialize;
         // Symbol: drake::schema::UniformVector::ToSymbolic
         struct /* ToSymbolic */ {
-          // Source: drake/common/schema/stochastic.h:436
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } ToSymbolic;
         // Symbol: drake::schema::UniformVector::UniformVector<Size>
         struct /* ctor */ {
-          // Source: drake/common/schema/stochastic.h:427
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::schema::UniformVector::max
         struct /* max */ {
-          // Source: drake/common/schema/stochastic.h:445
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } max;
         // Symbol: drake::schema::UniformVector::min
         struct /* min */ {
-          // Source: drake/common/schema/stochastic.h:444
+          // Source: drake/common/schema/stochastic.h
           const char* doc = R"""()""";
         } min;
         auto Serialize__fields() const {

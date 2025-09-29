@@ -38,7 +38,7 @@ constexpr struct /* pydrake_doc_common_symbolic */ {
     struct /* symbolic */ {
       // Symbol: drake::symbolic::BasisElementGradedReverseLexOrder
       struct /* BasisElementGradedReverseLexOrder */ {
-        // Source: drake/common/symbolic/polynomial_basis_element.h:184
+        // Source: drake/common/symbolic/polynomial_basis_element.h
         const char* doc =
 R"""(Implements Graded reverse lexicographic order.
 
@@ -72,14 +72,14 @@ graded reverse lexicographical order in
 https://en.wikipedia.org/wiki/Monomial_order#Graded_reverse_lexicographic_order)""";
         // Symbol: drake::symbolic::BasisElementGradedReverseLexOrder::operator()
         struct /* operator_call */ {
-          // Source: drake/common/symbolic/polynomial_basis_element.h:186
+          // Source: drake/common/symbolic/polynomial_basis_element.h
           const char* doc =
 R"""(Returns true if m1 < m2 under the Graded reverse lexicographic order.)""";
         } operator_call;
       } BasisElementGradedReverseLexOrder;
       // Symbol: drake::symbolic::CalcMonomialBasisOrderUpToOne
       struct /* CalcMonomialBasisOrderUpToOne */ {
-        // Source: drake/common/symbolic/monomial_util.h:272
+        // Source: drake/common/symbolic/monomial_util.h
         const char* doc =
 R"""(Generates all the monomials of ``x``, such that the degree for x(i) is
 no larger than 1 for every x(i) in ``x``.
@@ -95,7 +95,7 @@ Parameter ``sort_monomial``:
       } CalcMonomialBasisOrderUpToOne;
       // Symbol: drake::symbolic::CalcPolynomialWLowerTriangularPart
       struct /* CalcPolynomialWLowerTriangularPart */ {
-        // Source: drake/common/symbolic/polynomial.h:755
+        // Source: drake/common/symbolic/polynomial.h
         const char* doc =
 R"""(Returns the polynomial m(x)ᵀ * Q * m(x), where m(x) is the monomial
 basis, and Q is the Gram matrix.
@@ -109,7 +109,7 @@ Parameter ``gram_lower``:
       } CalcPolynomialWLowerTriangularPart;
       // Symbol: drake::symbolic::ChebyshevBasisElement
       struct /* ChebyshevBasisElement */ {
-        // Source: drake/common/symbolic/chebyshev_basis_element.h:19
+        // Source: drake/common/symbolic/chebyshev_basis_element.h
         const char* doc =
 R"""(ChebyshevBasisElement represents an element of Chebyshev polynomial
 basis, written as the product of Chebyshev polynomials, in the form
@@ -117,23 +117,23 @@ Tₚ₀(x₀)Tₚ₁(x₁)...Tₚₙ(xₙ), where each Tₚᵢ(xᵢ) is a (univa
 Chebyshev polynomial of degree pᵢ.)""";
         // Symbol: drake::symbolic::ChebyshevBasisElement::ChebyshevBasisElement
         struct /* ctor */ {
-          // Source: drake/common/symbolic/chebyshev_basis_element.h:24
+          // Source: drake/common/symbolic/chebyshev_basis_element.h
           const char* doc_0args =
 R"""(Constructs a ChebyshevBasisElement equals to 1.)""";
-          // Source: drake/common/symbolic/chebyshev_basis_element.h:30
+          // Source: drake/common/symbolic/chebyshev_basis_element.h
           const char* doc_1args_var =
 R"""(Constructs a Chebyshev polynomial T₁(var).)""";
-          // Source: drake/common/symbolic/chebyshev_basis_element.h:33
+          // Source: drake/common/symbolic/chebyshev_basis_element.h
           const char* doc_2args_var_degree =
 R"""(Constructs a Chebyshev polynomial Tₙ(var) where n = degree.)""";
-          // Source: drake/common/symbolic/chebyshev_basis_element.h:38
+          // Source: drake/common/symbolic/chebyshev_basis_element.h
           const char* doc_1args_stdnullptrt =
 R"""(Constructs a default value 1. This overload is used by Eigen when
 EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.)""";
         } ctor;
         // Symbol: drake::symbolic::ChebyshevBasisElement::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/chebyshev_basis_element.h:64
+          // Source: drake/common/symbolic/chebyshev_basis_element.h
           const char* doc =
 R"""(Differentiates the ChebyshevBasisElement with respect to a variable.
 We use the fact that - If n is even dTₙ(x)/dx = 2n ∑ⱼ Tⱼ(x), j is odd
@@ -151,7 +151,7 @@ Parameter ``var``:
         } Differentiate;
         // Symbol: drake::symbolic::ChebyshevBasisElement::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/chebyshev_basis_element.h:100
+          // Source: drake/common/symbolic/chebyshev_basis_element.h
           const char* doc =
 R"""(Partially evaluates using a given environment ``env``. The evaluation
 result is of type pair<double, ChebyshevBasisElement>. The first
@@ -165,7 +165,7 @@ T₁(z) = 442*T₁(z), then we return the pair (442, T₁(z)).)""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ChebyshevBasisElement::Integrate
         struct /* Integrate */ {
-          // Source: drake/common/symbolic/chebyshev_basis_element.h:78
+          // Source: drake/common/symbolic/chebyshev_basis_element.h
           const char* doc =
 R"""(Integrates a ChebyshevBasisElement for a variable. We use the fact
 that ∫ Tₙ(x)dx = 1/(2n+2)Tₙ₊₁(x) − 1/(2n−2)Tₙ₋₁(x) A special case is ∫
@@ -183,7 +183,7 @@ Returns ``result``:
         } Integrate;
         // Symbol: drake::symbolic::ChebyshevBasisElement::MergeBasisElementInPlace
         struct /* MergeBasisElementInPlace */ {
-          // Source: drake/common/symbolic/chebyshev_basis_element.h:88
+          // Source: drake/common/symbolic/chebyshev_basis_element.h
           const char* doc =
 R"""(Merges this Chebyshev basis element with another Chebyshev basis
 element ``other`` by merging their var_to_degree_map. After merging,
@@ -194,14 +194,14 @@ T₁(x)T₃(y) and T₂(x)T₄(z) gets T₃(x)T₃(y)T₄(z).)""";
         } MergeBasisElementInPlace;
         // Symbol: drake::symbolic::ChebyshevBasisElement::operator<
         struct /* operator_lt */ {
-          // Source: drake/common/symbolic/chebyshev_basis_element.h:48
+          // Source: drake/common/symbolic/chebyshev_basis_element.h
           const char* doc =
 R"""(Compares two ChebyshevBasisElement in lexicographic order.)""";
         } operator_lt;
       } ChebyshevBasisElement;
       // Symbol: drake::symbolic::ChebyshevPolynomial
       struct /* ChebyshevPolynomial */ {
-        // Source: drake/common/symbolic/chebyshev_polynomial.h:27
+        // Source: drake/common/symbolic/chebyshev_polynomial.h
         const char* doc =
 R"""(Represents the Chebyshev polynomial of the first kind Tₙ(x). One
 definition of Chebyshev polynomial of the first kind is Tₙ(cos(θ)) =
@@ -210,7 +210,7 @@ cos(nθ) It can also be defined recursively as
 T₀(x) = 1 T₁(x) = x Tₙ₊₁(x) = 2xTₙ(x) − Tₙ₋₁(x))""";
         // Symbol: drake::symbolic::ChebyshevPolynomial::ChebyshevPolynomial
         struct /* ctor */ {
-          // Source: drake/common/symbolic/chebyshev_polynomial.h:37
+          // Source: drake/common/symbolic/chebyshev_polynomial.h
           const char* doc =
 R"""(Constructs a Chebyshev polynomial Tₙ(x)
 
@@ -225,7 +225,7 @@ Precondition:
         } ctor;
         // Symbol: drake::symbolic::ChebyshevPolynomial::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/chebyshev_polynomial.h:99
+          // Source: drake/common/symbolic/chebyshev_polynomial.h
           const char* doc =
 R"""(Computes the differentiation of a Chebyshev polynomial dTₙ(x)/dx =
 nUₙ₋₁(x) where Uₙ₋₁(x) is a Chebyshev polynomial of the second kind.
@@ -244,33 +244,33 @@ Returns ``chebyshev_coeff_pairs``:
         } Differentiate;
         // Symbol: drake::symbolic::ChebyshevPolynomial::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/chebyshev_polynomial.h:53
+          // Source: drake/common/symbolic/chebyshev_polynomial.h
           const char* doc =
 R"""(Evaluates this Chebyshev polynomial at ``var_val``.)""";
         } Evaluate;
         // Symbol: drake::symbolic::ChebyshevPolynomial::ToPolynomial
         struct /* ToPolynomial */ {
-          // Source: drake/common/symbolic/chebyshev_polynomial.h:48
+          // Source: drake/common/symbolic/chebyshev_polynomial.h
           const char* doc =
 R"""(Converts this Chebyshev polynomial to a polynomial with monomial
 basis.)""";
         } ToPolynomial;
         // Symbol: drake::symbolic::ChebyshevPolynomial::degree
         struct /* degree */ {
-          // Source: drake/common/symbolic/chebyshev_polynomial.h:43
+          // Source: drake/common/symbolic/chebyshev_polynomial.h
           const char* doc =
 R"""(Getter for the degree of the Chebyshev polynomial.)""";
         } degree;
         // Symbol: drake::symbolic::ChebyshevPolynomial::operator!=
         struct /* operator_ne */ {
-          // Source: drake/common/symbolic/chebyshev_polynomial.h:65
+          // Source: drake/common/symbolic/chebyshev_polynomial.h
           const char* doc =
 R"""(Checks if this and ``other`` do not represent the same Chebyshev
 polynomial.)""";
         } operator_ne;
         // Symbol: drake::symbolic::ChebyshevPolynomial::operator<
         struct /* operator_lt */ {
-          // Source: drake/common/symbolic/chebyshev_polynomial.h:80
+          // Source: drake/common/symbolic/chebyshev_polynomial.h
           const char* doc =
 R"""(Compare this to another Chebyshev polynomial, returns True if this is
 regarded as less than the other, otherwise returns false.
@@ -285,13 +285,13 @@ other.degree().)""";
         } operator_lt;
         // Symbol: drake::symbolic::ChebyshevPolynomial::var
         struct /* var */ {
-          // Source: drake/common/symbolic/chebyshev_polynomial.h:40
+          // Source: drake/common/symbolic/chebyshev_polynomial.h
           const char* doc = R"""(Getter for the variable.)""";
         } var;
       } ChebyshevPolynomial;
       // Symbol: drake::symbolic::CodeGen
       struct /* CodeGen */ {
-        // Source: drake/common/symbolic/codegen.h:115
+        // Source: drake/common/symbolic/codegen.h
         const char* doc_3args_function_name_parameters_e =
 R"""(For a given symbolic expression ``e``, generates two C functions,
 ``<function_name>`` and ``<function_name>_meta``. The generated
@@ -334,7 +334,7 @@ the following string.
 
 Note that in this example ``x`` and ``y`` are mapped to ``p[0]`` and
 ``p[1]`` respectively because we passed ``{x, y}`` to ``Codegen``.)""";
-        // Source: drake/common/symbolic/codegen.h:202
+        // Source: drake/common/symbolic/codegen.h
         const char* doc_3args_conststdstring_conststdvector_constEigenPlainObjectBase =
 R"""(For a given symbolic dense matrix ``M``, generates two C functions,
 ``<function_name>`` and ``<function_name>_meta``. The generated
@@ -423,7 +423,7 @@ would return the following:
 .. raw:: html
 
     </details>)""";
-        // Source: drake/common/symbolic/codegen.h:329
+        // Source: drake/common/symbolic/codegen.h
         const char* doc_3args_function_name_parameters_M =
 R"""(Please consider the following example which generates code for a 3x6
 sparse matrix.
@@ -536,17 +536,17 @@ using ``Eigen::Map``.
       } CodeGen;
       // Symbol: drake::symbolic::CodeGenVisitor
       struct /* CodeGenVisitor */ {
-        // Source: drake/common/symbolic/codegen.h:18
+        // Source: drake/common/symbolic/codegen.h
         const char* doc = R"""(Visitor class for code generation.)""";
         // Symbol: drake::symbolic::CodeGenVisitor::CodeGen
         struct /* CodeGen */ {
-          // Source: drake/common/symbolic/codegen.h:32
+          // Source: drake/common/symbolic/codegen.h
           const char* doc =
 R"""(Generates C expression for the expression ``e``.)""";
         } CodeGen;
         // Symbol: drake::symbolic::CodeGenVisitor::CodeGenVisitor
         struct /* ctor */ {
-          // Source: drake/common/symbolic/codegen.h:29
+          // Source: drake/common/symbolic/codegen.h
           const char* doc =
 R"""(Constructs an instance of this visitor class using the vector of
 variables, ``parameters``. This visitor will map a symbolic variable
@@ -555,13 +555,13 @@ in the given ``parameters``.)""";
         } ctor;
         // Symbol: drake::symbolic::CodeGenVisitor::IdToIndexMap
         struct /* IdToIndexMap */ {
-          // Source: drake/common/symbolic/codegen.h:20
+          // Source: drake/common/symbolic/codegen.h
           const char* doc = R"""()""";
         } IdToIndexMap;
       } CodeGenVisitor;
       // Symbol: drake::symbolic::ComputePolynomialBasisUpToDegree
       struct /* ComputePolynomialBasisUpToDegree */ {
-        // Source: drake/common/symbolic/polynomial_basis.h:117
+        // Source: drake/common/symbolic/polynomial_basis.h
         const char* doc =
 R"""(Returns all polynomial basis elements up to a given degree under the
 graded reverse lexicographic order.
@@ -588,7 +588,7 @@ Parameter ``degree_type``:
       } ComputePolynomialBasisUpToDegree;
       // Symbol: drake::symbolic::DecomposeAffineExpression
       struct /* DecomposeAffineExpression */ {
-        // Source: drake/common/symbolic/decompose.h:145
+        // Source: drake/common/symbolic/decompose.h
         const char* doc =
 R"""(Decomposes an affine combination ``e`` = c0 + c1 * v1 + ... cn * vn
 into the following:
@@ -632,7 +632,7 @@ Raises:
       } DecomposeAffineExpression;
       // Symbol: drake::symbolic::DecomposeAffineExpressions
       struct /* DecomposeAffineExpressions */ {
-        // Source: drake/common/symbolic/decompose.h:43
+        // Source: drake/common/symbolic/decompose.h
         const char* doc_4args_expressions_vars_M_v =
 R"""(Decomposes ``expressions`` into ``M`` * ``vars`` + ``v``.
 
@@ -644,7 +644,7 @@ Precondition:
 
 Precondition:
     v.rows() == expressions.rows().)""";
-        // Source: drake/common/symbolic/decompose.h:111
+        // Source: drake/common/symbolic/decompose.h
         const char* doc_4args_v_A_b_vars =
 R"""(Given a vector of affine expressions v, decompose it to :math:`v = A
 vars + b`
@@ -666,7 +666,7 @@ Raises:
       } DecomposeAffineExpressions;
       // Symbol: drake::symbolic::DecomposeL2NormExpression
       struct /* DecomposeL2NormExpression */ {
-        // Source: drake/common/symbolic/decompose.h:193
+        // Source: drake/common/symbolic/decompose.h
         const char* doc =
 R"""(Decomposes an L2 norm ``e`` = |Ax+b|₂ into A, b, and the variable
 vector x (or returns false if the decomposition is not possible).
@@ -697,7 +697,7 @@ Returns:
       } DecomposeL2NormExpression;
       // Symbol: drake::symbolic::DecomposeLinearExpressions
       struct /* DecomposeLinearExpressions */ {
-        // Source: drake/common/symbolic/decompose.h:33
+        // Source: drake/common/symbolic/decompose.h
         const char* doc =
 R"""(Decomposes ``expressions`` into ``M`` * ``vars``.
 
@@ -709,7 +709,7 @@ Precondition:
       } DecomposeLinearExpressions;
       // Symbol: drake::symbolic::DecomposeLumpedParameters
       struct /* DecomposeLumpedParameters */ {
-        // Source: drake/common/symbolic/decompose.h:168
+        // Source: drake/common/symbolic/decompose.h
         const char* doc =
 R"""(Given a vector of Expressions ``f`` and a list of ``parameters`` we
 define all additional variables in ``f`` to be a vector of
@@ -735,7 +735,7 @@ Returns:
       } DecomposeLumpedParameters;
       // Symbol: drake::symbolic::DecomposeQuadraticPolynomial
       struct /* DecomposeQuadraticPolynomial */ {
-        // Source: drake/common/symbolic/decompose.h:96
+        // Source: drake/common/symbolic/decompose.h
         const char* doc =
 R"""(Given a quadratic polynomial ``poly``, decomposes it into the form 0.5
 * x' Q * x + b' * x + c
@@ -765,7 +765,7 @@ Parameter ``c``:
       } DecomposeQuadraticPolynomial;
       // Symbol: drake::symbolic::Evaluate
       struct /* Evaluate */ {
-        // Source: drake/common/symbolic/polynomial.h:729
+        // Source: drake/common/symbolic/polynomial.h
         const char* doc_polynomial =
 R"""(Evaluates a matrix ``m`` of symbolic polynomials using ``env``.
 
@@ -777,7 +777,7 @@ Raises:
       } Evaluate;
       // Symbol: drake::symbolic::EvaluateChebyshevPolynomial
       struct /* EvaluateChebyshevPolynomial */ {
-        // Source: drake/common/symbolic/chebyshev_polynomial.h:125
+        // Source: drake/common/symbolic/chebyshev_polynomial.h
         const char* doc =
 R"""(Evaluates a Chebyshev polynomial at a given value.
 
@@ -789,7 +789,7 @@ Parameter ``degree``:
       } EvaluateChebyshevPolynomial;
       // Symbol: drake::symbolic::EvenDegreeMonomialBasis
       struct /* EvenDegreeMonomialBasis */ {
-        // Source: drake/common/symbolic/monomial_util.h:245
+        // Source: drake/common/symbolic/monomial_util.h
         const char* doc =
 R"""(Returns all even degree monomials up to a given degree under the
 graded reverse lexicographic order. A monomial has an even degree if
@@ -808,7 +808,7 @@ Precondition:
       } EvenDegreeMonomialBasis;
       // Symbol: drake::symbolic::ExtractAndAppendVariablesFromExpression
       struct /* ExtractAndAppendVariablesFromExpression */ {
-        // Source: drake/common/symbolic/decompose.h:59
+        // Source: drake/common/symbolic/decompose.h
         const char* doc =
 R"""(Given an expression ``e``, extracts all variables inside ``e``,
 appends these variables to ``vars`` if they are not included in
@@ -826,7 +826,7 @@ Parameter ``map_var_to_index``:
     is of the same size as ``vars``, and
     map_var_to_index[vars(i).get_id()] = i. This invariance holds for
     map_var_to_index both as the input and as the output.)""";
-        // Source: drake/common/symbolic/decompose.h:66
+        // Source: drake/common/symbolic/decompose.h
         const char* doc_deprecated =
 R"""((Deprecated.)
 
@@ -837,7 +837,7 @@ Deprecated:
       } ExtractAndAppendVariablesFromExpression;
       // Symbol: drake::symbolic::ExtractVariablesFromExpression
       struct /* ExtractVariablesFromExpression */ {
-        // Source: drake/common/symbolic/decompose.h:76
+        // Source: drake/common/symbolic/decompose.h
         const char* doc_1args_e =
 R"""(Given an expression ``e``, extracts all variables inside ``e``.
 
@@ -848,14 +848,14 @@ Returns ``pair``:
     pair.first is the variables in ``e``. pair.second is the mapping
     from the variable ID to the index in pair.first, such that
     pair.second[pair.first(i).get_id()] = i)""";
-        // Source: drake/common/symbolic/decompose.h:82
+        // Source: drake/common/symbolic/decompose.h
         const char* doc_1args_expressions =
 R"""(Overloads ExtractVariablesFromExpression but with a vector of
 expressions.)""";
       } ExtractVariablesFromExpression;
       // Symbol: drake::symbolic::GenericPolynomial
       struct /* GenericPolynomial */ {
-        // Source: drake/common/symbolic/generic_polynomial.h:35
+        // Source: drake/common/symbolic/generic_polynomial.h
         const char* doc =
 R"""(Represents symbolic generic polynomials using a given basis (for
 example, monomial basis, Chebyshev basis, etc). A generic symbolic
@@ -874,13 +874,13 @@ Template parameter ``BasisElement``:
     Must be a subclass of PolynomialBasisElement.)""";
         // Symbol: drake::symbolic::GenericPolynomial::AddProduct
         struct /* AddProduct */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:196
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc =
 R"""(Adds ``coeff`` * ``m`` to this generic polynomial.)""";
         } AddProduct;
         // Symbol: drake::symbolic::GenericPolynomial::CoefficientsAlmostEqual
         struct /* CoefficientsAlmostEqual */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:244
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc =
 R"""(Returns true if this polynomial and ``p`` are almost equal (the
 difference in the corresponding coefficients are all less than
@@ -888,14 +888,14 @@ difference in the corresponding coefficients are all less than
         } CoefficientsAlmostEqual;
         // Symbol: drake::symbolic::GenericPolynomial::Degree
         struct /* Degree */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:133
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc =
 R"""(Returns the highest degree of this generic polynomial in an
 indeterminate ``v``.)""";
         } Degree;
         // Symbol: drake::symbolic::GenericPolynomial::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:146
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc =
 R"""(Differentiates this generic polynomial with respect to the variable
 ``x``. Note that a variable ``x`` can be either a decision variable or
@@ -903,20 +903,20 @@ an indeterminate.)""";
         } Differentiate;
         // Symbol: drake::symbolic::GenericPolynomial::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:233
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc =
 R"""(Returns true if this and ``p`` are structurally equal.)""";
         } EqualTo;
         // Symbol: drake::symbolic::GenericPolynomial::EqualToAfterExpansion
         struct /* EqualToAfterExpansion */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:237
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc =
 R"""(Returns true if this generic polynomial and ``p`` are equal after
 expanding the coefficients.)""";
         } EqualToAfterExpansion;
         // Symbol: drake::symbolic::GenericPolynomial::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:177
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc =
 R"""(Evaluates this generic polynomial under a given environment ``env``.
 
@@ -926,14 +926,14 @@ Raises:
         } Evaluate;
         // Symbol: drake::symbolic::GenericPolynomial::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:183
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc_1args =
 R"""(Partially evaluates this generic polynomial using an environment
 ``env``.
 
 Raises:
     RuntimeError if NaN is detected during evaluation.)""";
-          // Source: drake/common/symbolic/generic_polynomial.h:192
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc_2args =
 R"""(Partially evaluates this generic polynomial by substituting ``var``
 with ``c``.
@@ -943,13 +943,13 @@ Raises:
         } EvaluatePartial;
         // Symbol: drake::symbolic::GenericPolynomial::GenericPolynomial<BasisElement>
         struct /* ctor */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:44
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc_0args = R"""(Constructs a zero polynomial.)""";
-          // Source: drake/common/symbolic/generic_polynomial.h:51
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc_1args_stdnullptrt =
 R"""(Constructs a default value. This overload is used by Eigen when
 EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.)""";
-          // Source: drake/common/symbolic/generic_polynomial.h:61
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc_1args_init =
 R"""(Constructs a generic polynomial from a map, basis_element →
 coefficient. For example
@@ -970,7 +970,7 @@ coefficient. For example
     </details>
 
 constructs a polynomial ax²+(a+b)x³.)""";
-          // Source: drake/common/symbolic/generic_polynomial.h:71
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc_1args_m =
 R"""(Constructs a generic polynomial from a single basis element ``m``.
 
@@ -978,14 +978,14 @@ Note:
     that all variables in ``m`` are considered as indeterminates.
     Namely the constructed generic polynomial contains the map with a
     single key ``m``, with the coefficient being 1.)""";
-          // Source: drake/common/symbolic/generic_polynomial.h:78
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc_1args_e =
 R"""(Constructs a polynomial from an expression ``e``. Note that all
 variables in ``e`` are considered as indeterminates.
 
 Raises:
     RuntimeError if ``e`` is not a polynomial.)""";
-          // Source: drake/common/symbolic/generic_polynomial.h:91
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc_2args_e_indeterminates =
 R"""(Constructs a polynomial from an expression ``e`` by decomposing it
 with respect to ``indeterminates``.
@@ -1002,7 +1002,7 @@ Raises:
         } ctor;
         // Symbol: drake::symbolic::GenericPolynomial::Jacobian
         struct /* Jacobian */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:155
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc =
 R"""(Computes the Jacobian matrix J of the generic polynomial with respect
 to ``vars``. J(0,i) contains ∂f/∂vars(i). ``vars`` should be an Eigen
@@ -1010,13 +1010,13 @@ column vector of symbolic variables.)""";
         } Jacobian;
         // Symbol: drake::symbolic::GenericPolynomial::MapType
         struct /* MapType */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:41
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc =
 R"""(Type of mapping from basis element to coefficient)""";
         } MapType;
         // Symbol: drake::symbolic::GenericPolynomial::RemoveTermsWithSmallCoefficients
         struct /* RemoveTermsWithSmallCoefficients */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:209
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc =
 R"""(Removes the terms whose absolute value of the coefficients are smaller
 than or equal to ``coefficient_tol``. For example, if the generic
@@ -1033,7 +1033,7 @@ Returns ``polynomial_cleaned``:
         } RemoveTermsWithSmallCoefficients;
         // Symbol: drake::symbolic::GenericPolynomial::SetIndeterminates
         struct /* SetIndeterminates */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:124
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc =
 R"""(Sets the indeterminates to ``new_indeterminates``.
 
@@ -1068,65 +1068,65 @@ polynomial (using the new indeterminates) from the expression.)""";
         } SetIndeterminates;
         // Symbol: drake::symbolic::GenericPolynomial::ToExpression
         struct /* ToExpression */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:139
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc =
 R"""(Returns an equivalent symbolic expression of this generic polynomial.)""";
         } ToExpression;
         // Symbol: drake::symbolic::GenericPolynomial::TotalDegree
         struct /* TotalDegree */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:136
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc =
 R"""(Returns the total degree of this generic polynomial.)""";
         } TotalDegree;
         // Symbol: drake::symbolic::GenericPolynomial::basis_element_to_coefficient_map
         struct /* basis_element_to_coefficient_map */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:127
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc =
 R"""(Returns the map from each basis element to its coefficient.)""";
         } basis_element_to_coefficient_map;
         // Symbol: drake::symbolic::GenericPolynomial::decision_variables
         struct /* decision_variables */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:99
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc =
 R"""(Returns the decision variables of this generic polynomial.)""";
         } decision_variables;
         // Symbol: drake::symbolic::GenericPolynomial::indeterminates
         struct /* indeterminates */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:94
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc =
 R"""(Returns the indeterminates of this generic polynomial.)""";
         } indeterminates;
         // Symbol: drake::symbolic::GenericPolynomial::operator!=
         struct /* operator_ne */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:255
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc =
 R"""(Returns a symbolic formula representing the condition where this
 polynomial and ``p`` are not the same.)""";
         } operator_ne;
         // Symbol: drake::symbolic::GenericPolynomial::operator*=
         struct /* operator_imul */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:223
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc = R"""()""";
         } operator_imul;
         // Symbol: drake::symbolic::GenericPolynomial::operator+=
         struct /* operator_iadd */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:211
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc = R"""()""";
         } operator_iadd;
         // Symbol: drake::symbolic::GenericPolynomial::operator-=
         struct /* operator_isub */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:217
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc = R"""()""";
         } operator_isub;
         // Symbol: drake::symbolic::GenericPolynomial::operator/=
         struct /* operator_idiv */ {
-          // Source: drake/common/symbolic/generic_polynomial.h:229
+          // Source: drake/common/symbolic/generic_polynomial.h
           const char* doc = R"""()""";
         } operator_idiv;
       } GenericPolynomial;
       // Symbol: drake::symbolic::GradedReverseLexOrder
       struct /* GradedReverseLexOrder */ {
-        // Source: drake/common/symbolic/monomial_util.h:46
+        // Source: drake/common/symbolic/monomial_util.h
         const char* doc =
 R"""(Implements Graded reverse lexicographic order.
 
@@ -1159,20 +1159,20 @@ graded reverse lexicographical order in
 https://en.wikipedia.org/wiki/Monomial_order#Graded_reverse_lexicographic_order)""";
         // Symbol: drake::symbolic::GradedReverseLexOrder::operator()
         struct /* operator_call */ {
-          // Source: drake/common/symbolic/monomial_util.h:48
+          // Source: drake/common/symbolic/monomial_util.h
           const char* doc =
 R"""(Returns true if m1 > m2 under the Graded reverse lexicographic order.)""";
         } operator_call;
       } GradedReverseLexOrder;
       // Symbol: drake::symbolic::IsAffine
       struct /* IsAffine */ {
-        // Source: drake/common/symbolic/decompose.h:22
+        // Source: drake/common/symbolic/decompose.h
         const char* doc_2args =
 R"""(Checks if every element in ``m`` is affine in ``vars``.
 
 Note:
     If ``m`` is an empty matrix, it returns true.)""";
-        // Source: drake/common/symbolic/decompose.h:27
+        // Source: drake/common/symbolic/decompose.h
         const char* doc_1args =
 R"""(Checks if every element in ``m`` is affine.
 
@@ -1181,7 +1181,7 @@ Note:
       } IsAffine;
       // Symbol: drake::symbolic::Jacobian
       struct /* Jacobian */ {
-        // Source: drake/common/symbolic/polynomial.h:739
+        // Source: drake/common/symbolic/polynomial.h
         const char* doc_polynomial =
 R"""(Computes the Jacobian matrix J of the vector function ``f`` with
 respect to ``vars``. J(i,j) contains ∂f(i)/∂vars(j).
@@ -1191,27 +1191,27 @@ Precondition:
       } Jacobian;
       // Symbol: drake::symbolic::MakeRuleRewriter
       struct /* MakeRuleRewriter */ {
-        // Source: drake/common/symbolic/simplification.h:55
+        // Source: drake/common/symbolic/simplification.h
         const char* doc =
 R"""(Constructs a rewriter based on a rewriting rule ``r``.)""";
       } MakeRuleRewriter;
       // Symbol: drake::symbolic::Monomial
       struct /* Monomial */ {
-        // Source: drake/common/symbolic/monomial.h:30
+        // Source: drake/common/symbolic/monomial.h
         const char* doc =
 R"""(Represents a monomial, a product of powers of variables with
 non-negative integer exponents. Note that it does not include the
 coefficient part of a monomial.)""";
         // Symbol: drake::symbolic::Monomial::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/monomial.h:80
+          // Source: drake/common/symbolic/monomial.h
           const char* doc_1args =
 R"""(Evaluates under a given environment ``env``.
 
 Raises:
     RuntimeError if there is a variable in this monomial whose
     assignment is not provided by ``env``.)""";
-          // Source: drake/common/symbolic/monomial.h:93
+          // Source: drake/common/symbolic/monomial.h
           const char* doc_2args =
 R"""(Evaluates the monomial for a batch of data. We return monomial_vals
 such that monomial_vals(j) is obtained by substituting ``vars(i)``
@@ -1233,7 +1233,7 @@ Raises:
         } Evaluate;
         // Symbol: drake::symbolic::Monomial::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/monomial.h:109
+          // Source: drake/common/symbolic/monomial.h
           const char* doc =
 R"""(Partially evaluates using a given environment ``env``. The evaluation
 result is of type pair<double, Monomial>. The first component (a
@@ -1250,26 +1250,26 @@ Example 2. Evaluate with a partial environment
         } EvaluatePartial;
         // Symbol: drake::symbolic::Monomial::GetVariables
         struct /* GetVariables */ {
-          // Source: drake/common/symbolic/monomial.h:71
+          // Source: drake/common/symbolic/monomial.h
           const char* doc =
 R"""(Returns the set of variables in this monomial.)""";
         } GetVariables;
         // Symbol: drake::symbolic::Monomial::Monomial
         struct /* ctor */ {
-          // Source: drake/common/symbolic/monomial.h:35
+          // Source: drake/common/symbolic/monomial.h
           const char* doc_0args =
 R"""(Constructs a monomial equal to 1. Namely the total degree is zero.)""";
-          // Source: drake/common/symbolic/monomial.h:39
+          // Source: drake/common/symbolic/monomial.h
           const char* doc_1args_stdnullptrt =
 R"""(Constructs a default value. This overload is used by Eigen when
 EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.)""";
-          // Source: drake/common/symbolic/monomial.h:43
+          // Source: drake/common/symbolic/monomial.h
           const char* doc_1args_powers =
 R"""(Constructs a monomial from ``powers``.
 
 Raises:
     RuntimeError if ``powers`` includes a negative exponent.)""";
-          // Source: drake/common/symbolic/monomial.h:50
+          // Source: drake/common/symbolic/monomial.h
           const char* doc_2args_vars_exponents =
 R"""(Constructs a monomial from a vector of variables ``vars`` and their
 corresponding integer exponents ``exponents``. For example,
@@ -1281,53 +1281,53 @@ Precondition:
 
 Raises:
     RuntimeError if ``exponents`` includes a negative integer.)""";
-          // Source: drake/common/symbolic/monomial.h:56
+          // Source: drake/common/symbolic/monomial.h
           const char* doc_1args_e =
 R"""(Converts an expression to a monomial if the expression is written as
 ∏ᵢpow(xᵢ, kᵢ), otherwise throws a runtime error.
 
 Precondition:
     is_polynomial(e) should be true.)""";
-          // Source: drake/common/symbolic/monomial.h:59
+          // Source: drake/common/symbolic/monomial.h
           const char* doc_1args_var = R"""(Constructs a monomial from ``var``.)""";
-          // Source: drake/common/symbolic/monomial.h:62
+          // Source: drake/common/symbolic/monomial.h
           const char* doc_2args_var_exponent =
 R"""(Constructs a monomial from ``var`` and ``exponent``.)""";
         } ctor;
         // Symbol: drake::symbolic::Monomial::ToExpression
         struct /* ToExpression */ {
-          // Source: drake/common/symbolic/monomial.h:112
+          // Source: drake/common/symbolic/monomial.h
           const char* doc =
 R"""(Returns a symbolic expression representing this monomial.)""";
         } ToExpression;
         // Symbol: drake::symbolic::Monomial::degree
         struct /* degree */ {
-          // Source: drake/common/symbolic/monomial.h:65
+          // Source: drake/common/symbolic/monomial.h
           const char* doc =
 R"""(Returns the degree of this monomial in a variable ``v``.)""";
         } degree;
         // Symbol: drake::symbolic::Monomial::get_powers
         struct /* get_powers */ {
-          // Source: drake/common/symbolic/monomial.h:75
+          // Source: drake/common/symbolic/monomial.h
           const char* doc =
 R"""(Returns the internal representation of Monomial, the map from a base
 (Variable) to its exponent (int).)""";
         } get_powers;
         // Symbol: drake::symbolic::Monomial::operator!=
         struct /* operator_ne */ {
-          // Source: drake/common/symbolic/monomial.h:120
+          // Source: drake/common/symbolic/monomial.h
           const char* doc =
 R"""(Checks if this monomial and ``m`` do not represent the same monomial.)""";
         } operator_ne;
         // Symbol: drake::symbolic::Monomial::operator*=
         struct /* operator_imul */ {
-          // Source: drake/common/symbolic/monomial.h:123
+          // Source: drake/common/symbolic/monomial.h
           const char* doc =
 R"""(Returns this monomial multiplied by ``m``.)""";
         } operator_imul;
         // Symbol: drake::symbolic::Monomial::pow_in_place
         struct /* pow_in_place */ {
-          // Source: drake/common/symbolic/monomial.h:127
+          // Source: drake/common/symbolic/monomial.h
           const char* doc =
 R"""(Returns this monomial raised to ``p``.
 
@@ -1336,14 +1336,14 @@ Raises:
         } pow_in_place;
         // Symbol: drake::symbolic::Monomial::total_degree
         struct /* total_degree */ {
-          // Source: drake/common/symbolic/monomial.h:68
+          // Source: drake/common/symbolic/monomial.h
           const char* doc =
 R"""(Returns the total degree of this monomial.)""";
         } total_degree;
       } Monomial;
       // Symbol: drake::symbolic::MonomialBasis
       struct /* MonomialBasis */ {
-        // Source: drake/common/symbolic/monomial_util.h:186
+        // Source: drake/common/symbolic/monomial_util.h
         const char* doc_2args_vars_degree =
 R"""(Returns all monomials up to a given degree under the graded reverse
 lexicographic order. Note that graded reverse lexicographic order uses
@@ -1357,7 +1357,7 @@ Precondition:
 
 Precondition:
     ``degree`` is a non-negative integer.)""";
-        // Source: drake/common/symbolic/monomial_util.h:206
+        // Source: drake/common/symbolic/monomial_util.h
         const char* doc_1args_constVariables =
 R"""(Returns all monomials up to a given degree under the graded reverse
 lexicographic order.
@@ -1373,7 +1373,7 @@ Precondition:
 
 Precondition:
     vars.size() == ``n``.)""";
-        // Source: drake/common/symbolic/monomial_util.h:231
+        // Source: drake/common/symbolic/monomial_util.h
         const char* doc_1args_variables_degree =
 R"""(Returns all the monomials (in graded reverse lexicographic order) such
 that the total degree for each set of variables is no larger than a
@@ -1400,7 +1400,7 @@ Precondition:
       } MonomialBasis;
       // Symbol: drake::symbolic::MonomialBasisElement
       struct /* MonomialBasisElement */ {
-        // Source: drake/common/symbolic/monomial_basis_element.h:26
+        // Source: drake/common/symbolic/monomial_basis_element.h
         const char* doc =
 R"""(MonomialBasisElement represents a monomial, a product of powers of
 variables with non-negative integer exponents. Note that it doesn't
@@ -1412,7 +1412,7 @@ motivation of this class, please see Drake github issue #13602 and
 #13803.)""";
         // Symbol: drake::symbolic::MonomialBasisElement::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/monomial_basis_element.h:111
+          // Source: drake/common/symbolic/monomial_basis_element.h
           const char* doc =
 R"""(Differentiates this MonomialBasisElement. Since dxⁿ/dx = nxⁿ⁻¹, we
 return the map from the MonomialBasisElement to its coefficient. So if
@@ -1422,7 +1422,7 @@ MonomialBasisElement, then returns an empty map.)""";
         } Differentiate;
         // Symbol: drake::symbolic::MonomialBasisElement::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/monomial_basis_element.h:90
+          // Source: drake/common/symbolic/monomial_basis_element.h
           const char* doc =
 R"""(Partially evaluates using a given environment ``env``. The evaluation
 result is of type pair<double, MonomialBasisElement>. The first
@@ -1439,7 +1439,7 @@ Example 2. Evaluate with a partial environment
         } EvaluatePartial;
         // Symbol: drake::symbolic::MonomialBasisElement::Integrate
         struct /* Integrate */ {
-          // Source: drake/common/symbolic/monomial_basis_element.h:122
+          // Source: drake/common/symbolic/monomial_basis_element.h
           const char* doc =
 R"""(Integrates this MonomialBasisElement on a variable. Since ∫ xⁿ dx = 1
 / (n+1) xⁿ⁺¹, we return the map from the MonomialBasisElement to its
@@ -1450,7 +1450,7 @@ x³y²dz = x³y²z, then we return (x³y²z → 1))""";
         } Integrate;
         // Symbol: drake::symbolic::MonomialBasisElement::MergeBasisElementInPlace
         struct /* MergeBasisElementInPlace */ {
-          // Source: drake/common/symbolic/monomial_basis_element.h:129
+          // Source: drake/common/symbolic/monomial_basis_element.h
           const char* doc =
 R"""(Merges this basis element with another basis element ``other`` by
 merging their var_to_degree_map. This is equivalent to multiplying
@@ -1459,24 +1459,24 @@ this monomial basis element in place with monomial basis element
         } MergeBasisElementInPlace;
         // Symbol: drake::symbolic::MonomialBasisElement::MonomialBasisElement
         struct /* ctor */ {
-          // Source: drake/common/symbolic/monomial_basis_element.h:31
+          // Source: drake/common/symbolic/monomial_basis_element.h
           const char* doc_0args =
 R"""(Constructs a monomial equal to 1. Namely the toal degree is zero.)""";
-          // Source: drake/common/symbolic/monomial_basis_element.h:36
+          // Source: drake/common/symbolic/monomial_basis_element.h
           const char* doc_1args_stdnullptrt =
 R"""(Constructs a default value. This overload is used by Eigen when
 EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.)""";
-          // Source: drake/common/symbolic/monomial_basis_element.h:41
+          // Source: drake/common/symbolic/monomial_basis_element.h
           const char* doc_1args_var_to_degree_map =
 R"""(Constructs a MonomialBasisElement from variable to degree map.)""";
-          // Source: drake/common/symbolic/monomial_basis_element.h:49
+          // Source: drake/common/symbolic/monomial_basis_element.h
           const char* doc_1args_e =
 R"""(Converts an expression to a monomial if the expression is written as
 ∏ᵢpow(xᵢ, kᵢ), otherwise throws a runtime error.
 
 Precondition:
     is_polynomial(e) should be true.)""";
-          // Source: drake/common/symbolic/monomial_basis_element.h:59
+          // Source: drake/common/symbolic/monomial_basis_element.h
           const char* doc_2args_vars_degrees =
 R"""(Constructs a Monomial from a vector of variables ``vars`` and their
 corresponding integer degrees ``degrees``. For example,
@@ -1489,18 +1489,18 @@ Precondition:
 
 Raises:
     RuntimeError if ``degrees`` includes a negative integer.)""";
-          // Source: drake/common/symbolic/monomial_basis_element.h:66
+          // Source: drake/common/symbolic/monomial_basis_element.h
           const char* doc_1args_var =
 R"""(Constructs a monomial basis element with only one variable, and the
 degree is 1.)""";
-          // Source: drake/common/symbolic/monomial_basis_element.h:72
+          // Source: drake/common/symbolic/monomial_basis_element.h
           const char* doc_2args_var_degree =
 R"""(Constructs a monomial basis element with only one variable, and the
 degree of that variable is given by ``degree``.)""";
         } ctor;
         // Symbol: drake::symbolic::MonomialBasisElement::ToBasis
         struct /* ToBasis */ {
-          // Source: drake/common/symbolic/monomial_basis_element.h:168
+          // Source: drake/common/symbolic/monomial_basis_element.h
           const char* doc =
 R"""(Converts this monomial to a weighted sum of basis elements of type
 BasisElement. We return the map from each BasisElement to its
@@ -1516,7 +1516,7 @@ Template parameter ``BasisElement``:
         } ToBasis;
         // Symbol: drake::symbolic::MonomialBasisElement::ToChebyshevBasis
         struct /* ToChebyshevBasis */ {
-          // Source: drake/common/symbolic/monomial_basis_element.h:155
+          // Source: drake/common/symbolic/monomial_basis_element.h
           const char* doc =
 R"""(Converts this monomial to Chebyshev polynomial basis. For example,
 
@@ -1530,13 +1530,13 @@ When this = x²y³, it returns {[T₂(x)T₃(y)⇒1/8], [T₂(x)T₁(y)⇒3/8],
         } ToChebyshevBasis;
         // Symbol: drake::symbolic::MonomialBasisElement::operator<
         struct /* operator_lt */ {
-          // Source: drake/common/symbolic/monomial_basis_element.h:101
+          // Source: drake/common/symbolic/monomial_basis_element.h
           const char* doc =
 R"""(Compares two MonomialBasisElement in lexicographic order.)""";
         } operator_lt;
         // Symbol: drake::symbolic::MonomialBasisElement::pow_in_place
         struct /* pow_in_place */ {
-          // Source: drake/common/symbolic/monomial_basis_element.h:96
+          // Source: drake/common/symbolic/monomial_basis_element.h
           const char* doc =
 R"""(Returns this monomial raised to ``p``.
 
@@ -1546,12 +1546,12 @@ Raises:
       } MonomialBasisElement;
       // Symbol: drake::symbolic::NChooseK
       struct /* NChooseK */ {
-        // Source: drake/common/symbolic/monomial_util.h:192
+        // Source: drake/common/symbolic/monomial_util.h
         const char* doc = R"""()""";
       } NChooseK;
       // Symbol: drake::symbolic::OddDegreeMonomialBasis
       struct /* OddDegreeMonomialBasis */ {
-        // Source: drake/common/symbolic/monomial_util.h:260
+        // Source: drake/common/symbolic/monomial_util.h
         const char* doc =
 R"""(Returns all odd degree monomials up to a given degree under the graded
 reverse lexicographic order. A monomial has an odd degree if its total
@@ -1570,14 +1570,14 @@ Precondition:
       } OddDegreeMonomialBasis;
       // Symbol: drake::symbolic::Pattern
       struct /* Pattern */ {
-        // Source: drake/common/symbolic/simplification.h:13
+        // Source: drake/common/symbolic/simplification.h
         const char* doc =
 R"""(A pattern is an expression which possibly includes variables which
 represent placeholders. It is used to construct a ``RewritingRule``.)""";
       } Pattern;
       // Symbol: drake::symbolic::Polynomial
       struct /* Polynomial */ {
-        // Source: drake/common/symbolic/polynomial.h:84
+        // Source: drake/common/symbolic/polynomial.h
         const char* doc =
 R"""(Represents symbolic polynomials. A symbolic polynomial keeps a mapping
 from a monomial of indeterminates to its coefficient in a symbolic
@@ -1607,13 +1607,13 @@ the variable ``v`` to the indeterminates of the p⊕v, then explicitly
 convert it to a monomial as p ⊕ symbolic::Monomial(v).)""";
         // Symbol: drake::symbolic::Polynomial::AddProduct
         struct /* AddProduct */ {
-          // Source: drake/common/symbolic/polynomial.h:250
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Adds ``coeff`` * ``m`` to this polynomial.)""";
         } AddProduct;
         // Symbol: drake::symbolic::Polynomial::CoefficientsAlmostEqual
         struct /* CoefficientsAlmostEqual */ {
-          // Source: drake/common/symbolic/polynomial.h:367
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Returns true if this polynomial and ``p`` are almost equal (the
 difference in the corresponding coefficients are all less than
@@ -1621,13 +1621,13 @@ difference in the corresponding coefficients are all less than
         } CoefficientsAlmostEqual;
         // Symbol: drake::symbolic::Polynomial::Degree
         struct /* Degree */ {
-          // Source: drake/common/symbolic/polynomial.h:146
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Returns the highest degree of this polynomial in a variable ``v``.)""";
         } Degree;
         // Symbol: drake::symbolic::Polynomial::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/polynomial.h:161
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Differentiates this polynomial with respect to the variable ``x``.
 Note that a variable ``x`` can be either a decision variable or an
@@ -1635,13 +1635,13 @@ indeterminate.)""";
         } Differentiate;
         // Symbol: drake::symbolic::Polynomial::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/polynomial.h:362
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Returns true if this polynomial and ``p`` are structurally equal.)""";
         } EqualTo;
         // Symbol: drake::symbolic::Polynomial::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/polynomial.h:197
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Evaluates this polynomial under a given environment ``env``.
 
@@ -1651,7 +1651,7 @@ Raises:
         } Evaluate;
         // Symbol: drake::symbolic::Polynomial::EvaluateIndeterminates
         struct /* EvaluateIndeterminates */ {
-          // Source: drake/common/symbolic/polynomial.h:217
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Evaluates the polynomial at a batch of indeterminates values.
 
@@ -1674,13 +1674,13 @@ Raises:
         } EvaluateIndeterminates;
         // Symbol: drake::symbolic::Polynomial::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/polynomial.h:201
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc_1args =
 R"""(Partially evaluates this polynomial using an environment ``env``.
 
 Raises:
     RuntimeError if NaN is detected during evaluation.)""";
-          // Source: drake/common/symbolic/polynomial.h:205
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc_2args =
 R"""(Partially evaluates this polynomial by substituting ``var`` with
 ``c``.
@@ -1690,7 +1690,7 @@ Raises:
         } EvaluatePartial;
         // Symbol: drake::symbolic::Polynomial::EvaluateWithAffineCoefficients
         struct /* EvaluateWithAffineCoefficients */ {
-          // Source: drake/common/symbolic/polynomial.h:243
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Evaluates the polynomial at a batch of indeterminate values. For a
 polynomial whose coefficients are affine expressions of decision
@@ -1730,7 +1730,7 @@ Raises:
         } EvaluateWithAffineCoefficients;
         // Symbol: drake::symbolic::Polynomial::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/polynomial.h:308
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Expands each coefficient expression and returns the expanded
 polynomial. If any coefficient is equal to 0 after expansion, then
@@ -1738,7 +1738,7 @@ remove that term from the returned polynomial.)""";
         } Expand;
         // Symbol: drake::symbolic::Polynomial::Integrate
         struct /* Integrate */ {
-          // Source: drake/common/symbolic/polynomial.h:185
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc_1args =
 R"""(Integrates this polynomial with respect to an indeterminate ``x``.
 Integration with respect to decision variables is not supported yet.
@@ -1747,7 +1747,7 @@ be added to the list of indeterminates.
 
 Raises:
     RuntimeError if ``x`` is a decision variable.)""";
-          // Source: drake/common/symbolic/polynomial.h:191
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc_3args =
 R"""(Computes the definite integrate of this polynomial with respect to the
 indeterminate ``x`` over the domain [a, b]. Integration with respect
@@ -1758,7 +1758,7 @@ Raises:
         } Integrate;
         // Symbol: drake::symbolic::Polynomial::IsEven
         struct /* IsEven */ {
-          // Source: drake/common/symbolic/polynomial.h:323
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Returns true if the polynomial is even, namely p(x) = p(-x). Meaning
 that the coefficient for all odd-degree monomials are 0. Returns false
@@ -1767,7 +1767,7 @@ an even number.)""";
         } IsEven;
         // Symbol: drake::symbolic::Polynomial::IsOdd
         struct /* IsOdd */ {
-          // Source: drake/common/symbolic/polynomial.h:328
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Returns true if the polynomial is odd, namely p(x) = -p(-x). Meaning
 that the coefficient for all even-degree monomials are 0. Returns
@@ -1776,45 +1776,45 @@ being an odd number.)""";
         } IsOdd;
         // Symbol: drake::symbolic::Polynomial::Jacobian
         struct /* Jacobian */ {
-          // Source: drake/common/symbolic/polynomial.h:167
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Computes the Jacobian matrix J of the polynomial with respect to
 ``vars``. J(0,i) contains ∂f/∂vars(i).)""";
         } Jacobian;
         // Symbol: drake::symbolic::Polynomial::MapType
         struct /* MapType */ {
-          // Source: drake/common/symbolic/polynomial.h:86
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc = R"""()""";
         } MapType;
         // Symbol: drake::symbolic::Polynomial::Polynomial
         struct /* ctor */ {
-          // Source: drake/common/symbolic/polynomial.h:89
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc_0args = R"""(Constructs a zero polynomial.)""";
-          // Source: drake/common/symbolic/polynomial.h:94
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc_1args_stdnullptrt =
 R"""(Constructs a default value. This overload is used by Eigen when
 EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.)""";
-          // Source: drake/common/symbolic/polynomial.h:97
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc_1args_map =
 R"""(Constructs a polynomial from a map, Monomial → Expression.)""";
-          // Source: drake/common/symbolic/polynomial.h:104
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc_1args_m =
 R"""(Constructs a polynomial from a monomial ``m``. Note that all variables
 in ``m`` are considered as indeterminates. Note that this implicit
 conversion is desirable to have a dot product of two
 Eigen::Vector<Monomial>s return a Polynomial.)""";
-          // Source: drake/common/symbolic/polynomial.h:108
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc_1args_v =
 R"""(Constructs a polynomial from a varaible ``v``. Note that v is
 considered an indeterminate.)""";
-          // Source: drake/common/symbolic/polynomial.h:113
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc_1args_e =
 R"""(Constructs a polynomial from an expression ``e``. Note that all
 variables in ``e`` are considered as indeterminates.
 
 Raises:
     RuntimeError if ``e`` is not a polynomial.)""";
-          // Source: drake/common/symbolic/polynomial.h:121
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc_2args_e_indeterminates =
 R"""(Constructs a polynomial from an expression ``e`` by decomposing it
 with respect to ``indeterminates``.
@@ -1828,7 +1828,7 @@ Raises:
         } ctor;
         // Symbol: drake::symbolic::Polynomial::RemoveTermsWithSmallCoefficients
         struct /* RemoveTermsWithSmallCoefficients */ {
-          // Source: drake/common/symbolic/polynomial.h:317
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Removes the terms whose absolute value of the coefficients are smaller
 than or equal to ``coefficient_tol``. For example, if the polynomial
@@ -1844,7 +1844,7 @@ Returns ``polynomial_cleaned``:
         } RemoveTermsWithSmallCoefficients;
         // Symbol: drake::symbolic::Polynomial::Roots
         struct /* Roots */ {
-          // Source: drake/common/symbolic/polynomial.h:335
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Returns the roots of a *univariate* polynomial with constant
 coefficients as a column vector. There is no specific guarantee on the
@@ -1856,7 +1856,7 @@ Raises:
         } Roots;
         // Symbol: drake::symbolic::Polynomial::SetIndeterminates
         struct /* SetIndeterminates */ {
-          // Source: drake/common/symbolic/polynomial.h:143
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Sets the indeterminates to ``new_indeterminates``. Changing the
 indeterminates would change ``monomial_to_coefficient_map()``, and
@@ -1885,7 +1885,7 @@ also potentially the degree of the polynomial. Here is an example.
         } SetIndeterminates;
         // Symbol: drake::symbolic::Polynomial::SubstituteAndExpand
         struct /* SubstituteAndExpand */ {
-          // Source: drake/common/symbolic/polynomial.h:300
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Substitutes the monomials of this polynomial with new polynomial
 expressions and expand the polynomial to the monomial basis. For
@@ -1931,42 +1931,42 @@ function.)""";
         } SubstituteAndExpand;
         // Symbol: drake::symbolic::Polynomial::SubstituteAndExpandCacheData
         struct /* SubstituteAndExpandCacheData */ {
-          // Source: drake/common/symbolic/polynomial.h:253
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(An encapsulated data type for use with the method SubstituteAndExpand.)""";
           // Symbol: drake::symbolic::Polynomial::SubstituteAndExpandCacheData::get_data
           struct /* get_data */ {
-            // Source: drake/common/symbolic/polynomial.h:255
+            // Source: drake/common/symbolic/polynomial.h
             const char* doc = R"""()""";
           } get_data;
         } SubstituteAndExpandCacheData;
         // Symbol: drake::symbolic::Polynomial::ToExpression
         struct /* ToExpression */ {
-          // Source: drake/common/symbolic/polynomial.h:157
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Returns an equivalent symbolic expression of this polynomial.)""";
         } ToExpression;
         // Symbol: drake::symbolic::Polynomial::TotalDegree
         struct /* TotalDegree */ {
-          // Source: drake/common/symbolic/polynomial.h:149
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Returns the total degree of this polynomial.)""";
         } TotalDegree;
         // Symbol: drake::symbolic::Polynomial::decision_variables
         struct /* decision_variables */ {
-          // Source: drake/common/symbolic/polynomial.h:127
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Returns the decision variables of this polynomial.)""";
         } decision_variables;
         // Symbol: drake::symbolic::Polynomial::indeterminates
         struct /* indeterminates */ {
-          // Source: drake/common/symbolic/polynomial.h:124
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Returns the indeterminates of this polynomial.)""";
         } indeterminates;
         // Symbol: drake::symbolic::Polynomial::monomial_to_coefficient_map
         struct /* monomial_to_coefficient_map */ {
-          // Source: drake/common/symbolic/polynomial.h:154
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Returns the mapping from a Monomial to its corresponding coefficient
 of this polynomial. We maintain the invariance that for any [monomial,
@@ -1975,14 +1975,14 @@ is false.)""";
         } monomial_to_coefficient_map;
         // Symbol: drake::symbolic::Polynomial::operator!=
         struct /* operator_ne */ {
-          // Source: drake/common/symbolic/polynomial.h:376
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Returns a symbolic formula representing the condition where this
 polynomial and ``p`` are not the same.)""";
         } operator_ne;
         // Symbol: drake::symbolic::Polynomial::operator*=
         struct /* operator_imul */ {
-          // Source: drake/common/symbolic/polynomial.h:359
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Depending on whether ``v`` is an indeterminate of this polynomial,
 this operation generates different results. Refer to
@@ -1991,7 +1991,7 @@ details.)""";
         } operator_imul;
         // Symbol: drake::symbolic::Polynomial::operator+=
         struct /* operator_iadd */ {
-          // Source: drake/common/symbolic/polynomial.h:343
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Depending on whether ``v`` is an indeterminate of this polynomial,
 this operation generates different results. Refer to
@@ -2000,7 +2000,7 @@ details.)""";
         } operator_iadd;
         // Symbol: drake::symbolic::Polynomial::operator-=
         struct /* operator_isub */ {
-          // Source: drake/common/symbolic/polynomial.h:351
+          // Source: drake/common/symbolic/polynomial.h
           const char* doc =
 R"""(Depending on whether ``v`` is an indeterminate of this polynomial,
 this operation generates different results. Refer to
@@ -2010,7 +2010,7 @@ details.)""";
       } Polynomial;
       // Symbol: drake::symbolic::PolynomialBasisElement
       struct /* PolynomialBasisElement */ {
-        // Source: drake/common/symbolic/polynomial_basis_element.h:42
+        // Source: drake/common/symbolic/polynomial_basis_element.h
         const char* doc =
 R"""(Each polynomial p(x) can be written as a linear combination of its
 basis elements p(x) = ∑ᵢ cᵢ * ϕᵢ(x), where ϕᵢ(x) is the i'th element
@@ -2044,12 +2044,12 @@ operator<. The function DoEvaluatePartial can be used when
 implementing EvaluatePartial)""";
         // Symbol: drake::symbolic::PolynomialBasisElement::DoEvaluatePartial
         struct /* DoEvaluatePartial */ {
-          // Source: drake/common/symbolic/polynomial_basis_element.h:123
+          // Source: drake/common/symbolic/polynomial_basis_element.h
           const char* doc = R"""()""";
         } DoEvaluatePartial;
         // Symbol: drake::symbolic::PolynomialBasisElement::DoMergeBasisElementInPlace
         struct /* DoMergeBasisElementInPlace */ {
-          // Source: drake/common/symbolic/polynomial_basis_element.h:137
+          // Source: drake/common/symbolic/polynomial_basis_element.h
           const char* doc =
 R"""(Merge this basis element with another basis element by merging their
 var_to_degree_map. After merging, the degree of each variable is
@@ -2059,12 +2059,12 @@ degree to be 0).)""";
         } DoMergeBasisElementInPlace;
         // Symbol: drake::symbolic::PolynomialBasisElement::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/polynomial_basis_element.h:118
+          // Source: drake/common/symbolic/polynomial_basis_element.h
           const char* doc = R"""()""";
         } EqualTo;
         // Symbol: drake::symbolic::PolynomialBasisElement::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/polynomial_basis_element.h:101
+          // Source: drake/common/symbolic/polynomial_basis_element.h
           const char* doc =
 R"""(Evaluates under a given environment ``env``.
 
@@ -2074,16 +2074,16 @@ Raises:
         } Evaluate;
         // Symbol: drake::symbolic::PolynomialBasisElement::GetVariables
         struct /* GetVariables */ {
-          // Source: drake/common/symbolic/polynomial_basis_element.h:94
+          // Source: drake/common/symbolic/polynomial_basis_element.h
           const char* doc = R"""()""";
         } GetVariables;
         // Symbol: drake::symbolic::PolynomialBasisElement::PolynomialBasisElement
         struct /* ctor */ {
-          // Source: drake/common/symbolic/polynomial_basis_element.h:50
+          // Source: drake/common/symbolic/polynomial_basis_element.h
           const char* doc_0args =
 R"""(Constructs a polynomial basis with empty var_to_degree map. This
 element should be interpreted as 1.)""";
-          // Source: drake/common/symbolic/polynomial_basis_element.h:58
+          // Source: drake/common/symbolic/polynomial_basis_element.h
           const char* doc_1args =
 R"""(Constructs a polynomial basis given the variable and the degree of
 that variable.
@@ -2093,7 +2093,7 @@ Raises:
 
 Note:
     we will ignore the variable with degree 0.)""";
-          // Source: drake/common/symbolic/polynomial_basis_element.h:67
+          // Source: drake/common/symbolic/polynomial_basis_element.h
           const char* doc_2args =
 R"""(Constructs a polynomial basis, such that it contains the
 variable-to-degree map vars(i)→degrees(i).
@@ -2106,12 +2106,12 @@ Raises:
         } ctor;
         // Symbol: drake::symbolic::PolynomialBasisElement::ToExpression
         struct /* ToExpression */ {
-          // Source: drake/common/symbolic/polynomial_basis_element.h:107
+          // Source: drake/common/symbolic/polynomial_basis_element.h
           const char* doc = R"""()""";
         } ToExpression;
         // Symbol: drake::symbolic::PolynomialBasisElement::degree
         struct /* degree */ {
-          // Source: drake/common/symbolic/polynomial_basis_element.h:92
+          // Source: drake/common/symbolic/polynomial_basis_element.h
           const char* doc =
 R"""(Returns the degree of this PolynomialBasisElement in a variable ``v``.
 If ``v`` is not a variable in this PolynomialBasisElement, then
@@ -2119,17 +2119,17 @@ returns 0.)""";
         } degree;
         // Symbol: drake::symbolic::PolynomialBasisElement::get_mutable_total_degree
         struct /* get_mutable_total_degree */ {
-          // Source: drake/common/symbolic/polynomial_basis_element.h:126
+          // Source: drake/common/symbolic/polynomial_basis_element.h
           const char* doc = R"""()""";
         } get_mutable_total_degree;
         // Symbol: drake::symbolic::PolynomialBasisElement::get_mutable_var_to_degree_map
         struct /* get_mutable_var_to_degree_map */ {
-          // Source: drake/common/symbolic/polynomial_basis_element.h:128
+          // Source: drake/common/symbolic/polynomial_basis_element.h
           const char* doc = R"""()""";
         } get_mutable_var_to_degree_map;
         // Symbol: drake::symbolic::PolynomialBasisElement::get_powers
         struct /* get_powers */ {
-          // Source: drake/common/symbolic/polynomial_basis_element.h:82
+          // Source: drake/common/symbolic/polynomial_basis_element.h
           const char* doc =
 R"""(Returns variable to degree map. TODO(hongkai.dai): this function is
 added because Monomial class has get_powers() function. We will remove
@@ -2137,7 +2137,7 @@ this get_powers() function when Monomial class is deprecated.)""";
         } get_powers;
         // Symbol: drake::symbolic::PolynomialBasisElement::lexicographical_compare
         struct /* lexicographical_compare */ {
-          // Source: drake/common/symbolic/polynomial_basis_element.h:115
+          // Source: drake/common/symbolic/polynomial_basis_element.h
           const char* doc =
 R"""(Compares two PolynomialBasisElement using lexicographical order. This
 function is meant to be called by the derived class, to compare two
@@ -2145,25 +2145,25 @@ polynomial basis of the same derived class.)""";
         } lexicographical_compare;
         // Symbol: drake::symbolic::PolynomialBasisElement::operator!=
         struct /* operator_ne */ {
-          // Source: drake/common/symbolic/polynomial_basis_element.h:105
+          // Source: drake/common/symbolic/polynomial_basis_element.h
           const char* doc = R"""()""";
         } operator_ne;
         // Symbol: drake::symbolic::PolynomialBasisElement::total_degree
         struct /* total_degree */ {
-          // Source: drake/common/symbolic/polynomial_basis_element.h:88
+          // Source: drake/common/symbolic/polynomial_basis_element.h
           const char* doc =
 R"""(Returns the total degree of a polynomial basis. This is the summation
 of the degree for each variable.)""";
         } total_degree;
         // Symbol: drake::symbolic::PolynomialBasisElement::var_to_degree_map
         struct /* var_to_degree_map */ {
-          // Source: drake/common/symbolic/polynomial_basis_element.h:72
+          // Source: drake/common/symbolic/polynomial_basis_element.h
           const char* doc = R"""()""";
         } var_to_degree_map;
       } PolynomialBasisElement;
       // Symbol: drake::symbolic::RationalFunction
       struct /* RationalFunction */ {
-        // Source: drake/common/symbolic/rational_function.h:26
+        // Source: drake/common/symbolic/rational_function.h
         const char* doc =
 R"""(Represents symbolic rational function. A function f(x) is a rational
 function, if f(x) = p(x) / q(x), where both p(x) and q(x) are
@@ -2183,13 +2183,13 @@ pn(x) / qn(x). This class's explicit structure facilitates this
 decomposition.)""";
         // Symbol: drake::symbolic::RationalFunction::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/rational_function.h:122
+          // Source: drake/common/symbolic/rational_function.h
           const char* doc =
 R"""(Returns true if this rational function and f are structurally equal.)""";
         } EqualTo;
         // Symbol: drake::symbolic::RationalFunction::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/rational_function.h:70
+          // Source: drake/common/symbolic/rational_function.h
           const char* doc =
 R"""(Evaluates this rational function under a given environment ``env``.
 
@@ -2199,10 +2199,10 @@ Raises:
         } Evaluate;
         // Symbol: drake::symbolic::RationalFunction::RationalFunction
         struct /* ctor */ {
-          // Source: drake/common/symbolic/rational_function.h:29
+          // Source: drake/common/symbolic/rational_function.h
           const char* doc_0args =
 R"""(Constructs a zero rational function 0 / 1.)""";
-          // Source: drake/common/symbolic/rational_function.h:42
+          // Source: drake/common/symbolic/rational_function.h
           const char* doc_2args_numerator_denominator =
 R"""(Constructs the rational function: numerator / denominator.
 
@@ -2219,21 +2219,21 @@ Precondition:
     None of the indeterminates in the numerator can be decision
     variables in the denominator; similarly none of the indeterminates
     in the denominator can be decision variables in the numerator.)""";
-          // Source: drake/common/symbolic/rational_function.h:49
+          // Source: drake/common/symbolic/rational_function.h
           const char* doc_1args_p =
 R"""(Constructs the rational function: p / 1. Note that we use 1 as the
 denominator.
 
 Parameter ``p``:
     The numerator of the rational function.)""";
-          // Source: drake/common/symbolic/rational_function.h:56
+          // Source: drake/common/symbolic/rational_function.h
           const char* doc_1args_m =
 R"""(Constructs the rational function: m / 1 for any type which can be cast
 to a monomial
 
 Parameter ``m``:
     The numerator of the rational function.)""";
-          // Source: drake/common/symbolic/rational_function.h:63
+          // Source: drake/common/symbolic/rational_function.h
           const char* doc_1args_c =
 R"""(Constructs the rational function: c / 1. Note that we use 1 as the
 denominator.
@@ -2243,63 +2243,63 @@ Parameter ``c``:
         } ctor;
         // Symbol: drake::symbolic::RationalFunction::SetIndeterminates
         struct /* SetIndeterminates */ {
-          // Source: drake/common/symbolic/rational_function.h:143
+          // Source: drake/common/symbolic/rational_function.h
           const char* doc =
 R"""(Sets the indeterminates of the numerator and denominator polynomials)""";
         } SetIndeterminates;
         // Symbol: drake::symbolic::RationalFunction::ToExpression
         struct /* ToExpression */ {
-          // Source: drake/common/symbolic/rational_function.h:140
+          // Source: drake/common/symbolic/rational_function.h
           const char* doc =
 R"""(Returns an equivalent symbolic expression of this rational function.)""";
         } ToExpression;
         // Symbol: drake::symbolic::RationalFunction::denominator
         struct /* denominator */ {
-          // Source: drake/common/symbolic/rational_function.h:78
+          // Source: drake/common/symbolic/rational_function.h
           const char* doc = R"""(Getter for the denominator.)""";
         } denominator;
         // Symbol: drake::symbolic::RationalFunction::numerator
         struct /* numerator */ {
-          // Source: drake/common/symbolic/rational_function.h:75
+          // Source: drake/common/symbolic/rational_function.h
           const char* doc = R"""(Getter for the numerator.)""";
         } numerator;
         // Symbol: drake::symbolic::RationalFunction::operator!=
         struct /* operator_ne */ {
-          // Source: drake/common/symbolic/rational_function.h:135
+          // Source: drake/common/symbolic/rational_function.h
           const char* doc =
 R"""(Returns a symbolic formula representing the condition where this
 rational function and ``f`` are not the same.)""";
         } operator_ne;
         // Symbol: drake::symbolic::RationalFunction::operator*=
         struct /* operator_imul */ {
-          // Source: drake/common/symbolic/rational_function.h:90
+          // Source: drake/common/symbolic/rational_function.h
           const char* doc = R"""()""";
         } operator_imul;
         // Symbol: drake::symbolic::RationalFunction::operator+=
         struct /* operator_iadd */ {
-          // Source: drake/common/symbolic/rational_function.h:80
+          // Source: drake/common/symbolic/rational_function.h
           const char* doc = R"""()""";
         } operator_iadd;
         // Symbol: drake::symbolic::RationalFunction::operator-=
         struct /* operator_isub */ {
-          // Source: drake/common/symbolic/rational_function.h:85
+          // Source: drake/common/symbolic/rational_function.h
           const char* doc = R"""()""";
         } operator_isub;
         // Symbol: drake::symbolic::RationalFunction::operator/=
         struct /* operator_idiv */ {
-          // Source: drake/common/symbolic/rational_function.h:100
+          // Source: drake/common/symbolic/rational_function.h
           const char* doc_1args_f =
 R"""(Raises:
     RuntimeError if the numerator of the divisor is structurally equal
     to zero. Note that this does not guarantee that the denominator of
     the result is not zero after expansion.)""";
-          // Source: drake/common/symbolic/rational_function.h:106
+          // Source: drake/common/symbolic/rational_function.h
           const char* doc_1args_p =
 R"""(Raises:
     RuntimeError if the divisor is structurally equal to zero. Note
     that this does not guarantee that the denominator of the result is
     not zero after expansion.)""";
-          // Source: drake/common/symbolic/rational_function.h:111
+          // Source: drake/common/symbolic/rational_function.h
           const char* doc_1args_c =
 R"""(Raises:
     RuntimeError if c is 0)""";
@@ -2307,7 +2307,7 @@ R"""(Raises:
       } RationalFunction;
       // Symbol: drake::symbolic::ReplaceBilinearTerms
       struct /* ReplaceBilinearTerms */ {
-        // Source: drake/common/symbolic/replace_bilinear_terms.h:32
+        // Source: drake/common/symbolic/replace_bilinear_terms.h
         const char* doc =
 R"""(Replaces all the bilinear product terms in the expression ``e``, with
 the corresponding terms in ``W``, where ``W`` represents the matrix x
@@ -2354,13 +2354,13 @@ Returns:
       } ReplaceBilinearTerms;
       // Symbol: drake::symbolic::Rewriter
       struct /* Rewriter */ {
-        // Source: drake/common/symbolic/simplification.h:52
+        // Source: drake/common/symbolic/simplification.h
         const char* doc =
 R"""(A ``Rewriter`` is a function from an Expression to an Expression.)""";
       } Rewriter;
       // Symbol: drake::symbolic::RewritingRule
       struct /* RewritingRule */ {
-        // Source: drake/common/symbolic/simplification.h:20
+        // Source: drake/common/symbolic/simplification.h
         const char* doc =
 R"""(A ``RewritingRule``, `lhs => rhs`, consists of two Patterns ``lhs``
 and ``rhs``. A rewriting rule instructs a rewriter how to transform a
@@ -2370,50 +2370,50 @@ is found, it applies the match result (substitution) to ``rhs``.
 Otherwise, the same expression ``e`` is returned.)""";
         // Symbol: drake::symbolic::RewritingRule::RewritingRule
         struct /* ctor */ {
-          // Source: drake/common/symbolic/simplification.h:23
+          // Source: drake/common/symbolic/simplification.h
           const char* doc =
 R"""(Constructs a rewriting rule ``lhs => rhs``.)""";
-          // Source: drake/common/symbolic/simplification.h:27
+          // Source: drake/common/symbolic/simplification.h
           const char* doc_copy = R"""(Default copy constructor.)""";
-          // Source: drake/common/symbolic/simplification.h:30
+          // Source: drake/common/symbolic/simplification.h
           const char* doc_move = R"""(Default move constructor.)""";
         } ctor;
         // Symbol: drake::symbolic::RewritingRule::lhs
         struct /* lhs */ {
-          // Source: drake/common/symbolic/simplification.h:42
+          // Source: drake/common/symbolic/simplification.h
           const char* doc =
 R"""(Returns the const reference of the LHS of the rewriting rule.)""";
         } lhs;
         // Symbol: drake::symbolic::RewritingRule::rhs
         struct /* rhs */ {
-          // Source: drake/common/symbolic/simplification.h:44
+          // Source: drake/common/symbolic/simplification.h
           const char* doc =
 R"""(Returns the const reference of the RHS of the rewriting rule.)""";
         } rhs;
       } RewritingRule;
       // Symbol: drake::symbolic::SinCos
       struct /* SinCos */ {
-        // Source: drake/common/symbolic/trigonometric_polynomial.h:26
+        // Source: drake/common/symbolic/trigonometric_polynomial.h
         const char* doc =
 R"""(Represents a pair of Variables corresponding to sin(q) and cos(q).)""";
         // Symbol: drake::symbolic::SinCos::SinCos
         struct /* ctor */ {
-          // Source: drake/common/symbolic/trigonometric_polynomial.h:27
+          // Source: drake/common/symbolic/trigonometric_polynomial.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::SinCos::c
         struct /* c */ {
-          // Source: drake/common/symbolic/trigonometric_polynomial.h:36
+          // Source: drake/common/symbolic/trigonometric_polynomial.h
           const char* doc = R"""(cos variable.)""";
         } c;
         // Symbol: drake::symbolic::SinCos::s
         struct /* s */ {
-          // Source: drake/common/symbolic/trigonometric_polynomial.h:34
+          // Source: drake/common/symbolic/trigonometric_polynomial.h
           const char* doc = R"""(sin variable.)""";
         } s;
         // Symbol: drake::symbolic::SinCos::type
         struct /* type */ {
-          // Source: drake/common/symbolic/trigonometric_polynomial.h:40
+          // Source: drake/common/symbolic/trigonometric_polynomial.h
           const char* doc =
 R"""(Allows a user to specify non-default substitutions, such as using
 half-angle formulas.)""";
@@ -2421,28 +2421,28 @@ half-angle formulas.)""";
       } SinCos;
       // Symbol: drake::symbolic::SinCosSubstitution
       struct /* SinCosSubstitution */ {
-        // Source: drake/common/symbolic/trigonometric_polynomial.h:43
+        // Source: drake/common/symbolic/trigonometric_polynomial.h
         const char* doc = R"""()""";
       } SinCosSubstitution;
       // Symbol: drake::symbolic::SinCosSubstitutionType
       struct /* SinCosSubstitutionType */ {
-        // Source: drake/common/symbolic/trigonometric_polynomial.h:14
+        // Source: drake/common/symbolic/trigonometric_polynomial.h
         const char* doc = R"""()""";
         // Symbol: drake::symbolic::SinCosSubstitutionType::kAngle
         struct /* kAngle */ {
-          // Source: drake/common/symbolic/trigonometric_polynomial.h:16
+          // Source: drake/common/symbolic/trigonometric_polynomial.h
           const char* doc = R"""(Substitutes s <=> sin(q), c <=> cos(q).)""";
         } kAngle;
         // Symbol: drake::symbolic::SinCosSubstitutionType::kHalfAnglePreferCos
         struct /* kHalfAnglePreferCos */ {
-          // Source: drake/common/symbolic/trigonometric_polynomial.h:22
+          // Source: drake/common/symbolic/trigonometric_polynomial.h
           const char* doc =
 R"""(Substitutes s <=> sin(q/2), c <=> cos(q/2), and prefers cos when the
 choice is ambiguous; e.g. cos(q) => 2c² - 1.)""";
         } kHalfAnglePreferCos;
         // Symbol: drake::symbolic::SinCosSubstitutionType::kHalfAnglePreferSin
         struct /* kHalfAnglePreferSin */ {
-          // Source: drake/common/symbolic/trigonometric_polynomial.h:19
+          // Source: drake/common/symbolic/trigonometric_polynomial.h
           const char* doc =
 R"""(Substitutes s <=> sin(q/2), c <=> cos(q/2), and prefers sin when the
 choice is ambiguous; e.g. cos(q) => 1 - 2s².)""";
@@ -2450,7 +2450,7 @@ choice is ambiguous; e.g. cos(q) => 1 - 2s².)""";
       } SinCosSubstitutionType;
       // Symbol: drake::symbolic::Substitute
       struct /* Substitute */ {
-        // Source: drake/common/symbolic/trigonometric_polynomial.h:72
+        // Source: drake/common/symbolic/trigonometric_polynomial.h
         const char* doc_sincos =
 R"""(Given a substitution map q => {s, c}, substitutes instances of sin(q)
 and cos(q) in ``e`` with ``s`` and ``c``, with partial support for
@@ -2490,13 +2490,13 @@ Raises:
     RuntimeError if a trigonometric function is not a trigonometric
     polynomial in ``q`` or if the ``e`` requires a trigonometric
     expansion that not supported yet.)""";
-        // Source: drake/common/symbolic/trigonometric_polynomial.h:77
+        // Source: drake/common/symbolic/trigonometric_polynomial.h
         const char* doc_sincos_matrix =
 R"""(Matrix version of sin/cos substitution.)""";
       } Substitute;
       // Symbol: drake::symbolic::SubstituteStereographicProjection
       struct /* SubstituteStereographicProjection */ {
-        // Source: drake/common/symbolic/trigonometric_polynomial.h:153
+        // Source: drake/common/symbolic/trigonometric_polynomial.h
         const char* doc =
 R"""(Substitutes the variables representing sine and cosine functions with
 their stereographic projection. We replace cosθᵢ with (1-tᵢ²)/(1+tᵢ²),
@@ -2554,29 +2554,29 @@ Returns:
       } SubstituteStereographicProjection;
       // Symbol: drake::symbolic::ToLatex
       struct /* ToLatex */ {
-        // Source: drake/common/symbolic/latex.h:20
+        // Source: drake/common/symbolic/latex.h
         const char* doc_expression =
 R"""(Generates a LaTeX string representation of ``e`` with floating point
 coefficients displayed using ``precision``.)""";
-        // Source: drake/common/symbolic/latex.h:25
+        // Source: drake/common/symbolic/latex.h
         const char* doc_formula =
 R"""(Generates a LaTeX string representation of ``f`` with floating point
 coefficients displayed using ``precision``.)""";
-        // Source: drake/common/symbolic/latex.h:32
+        // Source: drake/common/symbolic/latex.h
         const char* doc =
 R"""(Generates a Latex string representation of ``val`` displayed with
 ``precision``, with one exception. If the fractional part of ``val``
 is exactly zero, then ``val`` is represented perfectly as an integer,
 and is displayed without the trailing decimal point and zeros (in this
 case, the ``precision`` argument is ignored).)""";
-        // Source: drake/common/symbolic/latex.h:38
+        // Source: drake/common/symbolic/latex.h
         const char* doc_matrix =
 R"""(Generates a LaTeX string representation of ``M`` with floating point
 coefficients displayed using ``precision``.)""";
       } ToLatex;
       // Symbol: drake::symbolic::operator*
       struct /* operator_mul */ {
-        // Source: drake/common/symbolic/chebyshev_basis_element.h:131
+        // Source: drake/common/symbolic/chebyshev_basis_element.h
         const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Returns the product of two Chebyshev basis elements. Since Tₘ(x) *
 Tₙ(x) = 0.5 (Tₘ₊ₙ(x) + Tₘ₋ₙ(x)) if m >= n, the product of Chebyshev
@@ -2592,38 +2592,38 @@ Returns:
       } operator_mul;
       // Symbol: drake::symbolic::operator+
       struct /* operator_add */ {
-        // Source: drake/common/symbolic/generic_polynomial.h:299
+        // Source: drake/common/symbolic/generic_polynomial.h
         const char* doc = R"""()""";
       } operator_add;
       // Symbol: drake::symbolic::operator-
       struct /* operator_sub */ {
-        // Source: drake/common/symbolic/polynomial.h:405
+        // Source: drake/common/symbolic/polynomial.h
         const char* doc = R"""(Unary minus operation for polynomial.)""";
       } operator_sub;
       // Symbol: drake::symbolic::operator/
       struct /* operator_div */ {
-        // Source: drake/common/symbolic/generic_polynomial.h:477
+        // Source: drake/common/symbolic/generic_polynomial.h
         const char* doc_2args_GenericPolynomial_double = R"""(Returns ``p / v``.)""";
-        // Source: drake/common/symbolic/rational_function.h:182
+        // Source: drake/common/symbolic/rational_function.h
         const char* doc_2args_f1_f2 =
 R"""(Raises:
     RuntimeError if the numerator of the divisor is structurally equal
     to zero. Note that this does not guarantee that the denominator of
     the result is not zero after expansion.)""";
-        // Source: drake/common/symbolic/rational_function.h:188
+        // Source: drake/common/symbolic/rational_function.h
         const char* doc_2args_f_p =
 R"""(Raises:
     RuntimeError if the divisor is structurally equal to zero. Note
     that this does not guarantee that the denominator of the result is
     not zero after expansion.)""";
-        // Source: drake/common/symbolic/rational_function.h:198
+        // Source: drake/common/symbolic/rational_function.h
         const char* doc_2args_f_c =
 R"""(Raises:
     RuntimeError if c is 0)""";
       } operator_div;
       // Symbol: drake::symbolic::pow
       struct /* pow */ {
-        // Source: drake/common/symbolic/generic_polynomial.h:487
+        // Source: drake/common/symbolic/generic_polynomial.h
         const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Returns polynomial ``raised`` to ``n``.
 

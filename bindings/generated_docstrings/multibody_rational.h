@@ -23,7 +23,7 @@ constexpr struct /* pydrake_doc_multibody_rational */ {
     struct /* multibody */ {
       // Symbol: drake::multibody::RationalForwardKinematics
       struct /* RationalForwardKinematics */ {
-        // Source: drake/multibody/rational/rational_forward_kinematics.h:55
+        // Source: drake/multibody/rational/rational_forward_kinematics.h
         const char* doc =
 R"""(For certain robots (whose joint transforms are algebraic functions of
 joint variables, for example revolute/prismatic/floating-base joints),
@@ -62,7 +62,7 @@ vector of variables, such that the robot body pose is written as an
 algebraic function (rational function) of s.)""";
         // Symbol: drake::multibody::RationalForwardKinematics::CalcBodyPoseAsMultilinearPolynomial
         struct /* CalcBodyPoseAsMultilinearPolynomial */ {
-          // Source: drake/multibody/rational/rational_forward_kinematics.h:94
+          // Source: drake/multibody/rational/rational_forward_kinematics.h
           const char* doc =
 R"""(Computes the pose X_AB as a multilinear polynomial function. The
 indeterminates of the polynomials are cos_delta() and sin_delta(). To
@@ -87,7 +87,7 @@ Returns:
         } CalcBodyPoseAsMultilinearPolynomial;
         // Symbol: drake::multibody::RationalForwardKinematics::ComputeQValue
         struct /* ComputeQValue */ {
-          // Source: drake/multibody/rational/rational_forward_kinematics.h:161
+          // Source: drake/multibody/rational/rational_forward_kinematics.h
           const char* doc =
 R"""(Computes values of q from s_val and q_star_val, while handling the
 index matching between q and s (we don't guarantee that s(i) is
@@ -95,7 +95,7 @@ computed from q(i)).)""";
         } ComputeQValue;
         // Symbol: drake::multibody::RationalForwardKinematics::ComputeSValue
         struct /* ComputeSValue */ {
-          // Source: drake/multibody/rational/rational_forward_kinematics.h:117
+          // Source: drake/multibody/rational/rational_forward_kinematics.h
           const char* doc =
 R"""(Computes values of s from q_val and q_star_val, while handling the
 index matching between q and s (we don't guarantee that s(i) is
@@ -108,7 +108,7 @@ Parameter ``angles_wrap_to_inf``:
         } ComputeSValue;
         // Symbol: drake::multibody::RationalForwardKinematics::ConvertMultilinearPolynomialToRationalFunction
         struct /* ConvertMultilinearPolynomialToRationalFunction */ {
-          // Source: drake/multibody/rational/rational_forward_kinematics.h:104
+          // Source: drake/multibody/rational/rational_forward_kinematics.h
           const char* doc =
 R"""(Given a polynomial whose indeterminates are cos_delta() and
 sin_delta() (typically this polynomial is obtained from calling
@@ -117,7 +117,7 @@ rational function with indeterminates s().)""";
         } ConvertMultilinearPolynomialToRationalFunction;
         // Symbol: drake::multibody::RationalForwardKinematics::Pose
         struct /* Pose */ {
-          // Source: drake/multibody/rational/rational_forward_kinematics.h:70
+          // Source: drake/multibody/rational/rational_forward_kinematics.h
           const char* doc =
 R"""(This is a proxy for math::RigidTransform. It captures the rigid pose
 of one frame w.r.t another.
@@ -128,18 +128,18 @@ Template parameter ``T``:
     symbolic::RationalFunction.)""";
           // Symbol: drake::multibody::RationalForwardKinematics::Pose::position
           struct /* position */ {
-            // Source: drake/multibody/rational/rational_forward_kinematics.h:74
+            // Source: drake/multibody/rational/rational_forward_kinematics.h
             const char* doc = R"""()""";
           } position;
           // Symbol: drake::multibody::RationalForwardKinematics::Pose::rotation
           struct /* rotation */ {
-            // Source: drake/multibody/rational/rational_forward_kinematics.h:75
+            // Source: drake/multibody/rational/rational_forward_kinematics.h
             const char* doc = R"""()""";
           } rotation;
         } Pose;
         // Symbol: drake::multibody::RationalForwardKinematics::RationalForwardKinematics
         struct /* ctor */ {
-          // Source: drake/multibody/rational/rational_forward_kinematics.h:62
+          // Source: drake/multibody/rational/rational_forward_kinematics.h
           const char* doc =
 R"""(Parameter ``plant``:
     The plant for which we compute forward kinematics. ``plant``
@@ -147,7 +147,7 @@ R"""(Parameter ``plant``:
         } ctor;
         // Symbol: drake::multibody::RationalForwardKinematics::map_mobilizer_to_s_index
         struct /* map_mobilizer_to_s_index */ {
-          // Source: drake/multibody/rational/rational_forward_kinematics.h:198
+          // Source: drake/multibody/rational/rational_forward_kinematics.h
           const char* doc =
 R"""(map_mobilizer_to_s_index_[mobilizer_index] returns the starting index
 of the mobilizer's variable in s_ (the variable will be contiguous in
@@ -156,12 +156,12 @@ in s_ (like the weld joint), then the s index is set to -1.)""";
         } map_mobilizer_to_s_index;
         // Symbol: drake::multibody::RationalForwardKinematics::plant
         struct /* plant */ {
-          // Source: drake/multibody/rational/rational_forward_kinematics.h:187
+          // Source: drake/multibody/rational/rational_forward_kinematics.h
           const char* doc = R"""()""";
         } plant;
         // Symbol: drake::multibody::RationalForwardKinematics::s
         struct /* s */ {
-          // Source: drake/multibody/rational/rational_forward_kinematics.h:189
+          // Source: drake/multibody/rational/rational_forward_kinematics.h
           const char* doc = R"""()""";
         } s;
       } RationalForwardKinematics;

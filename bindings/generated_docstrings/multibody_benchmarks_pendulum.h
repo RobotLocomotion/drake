@@ -26,7 +26,7 @@ constexpr struct /* pydrake_doc_multibody_benchmarks_pendulum */ {
         struct /* pendulum */ {
           // Symbol: drake::multibody::benchmarks::pendulum::MakePendulumPlant
           struct /* MakePendulumPlant */ {
-            // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h:97
+            // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h
             const char* doc =
 R"""(This method makes a MultibodyPlant model of an idealized pendulum with
 a point mass at the end of a massless rigid rod. The pendulum
@@ -56,7 +56,7 @@ Parameter ``scene_graph``:
           } MakePendulumPlant;
           // Symbol: drake::multibody::benchmarks::pendulum::PendulumParameters
           struct /* PendulumParameters */ {
-            // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h:21
+            // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h
             const char* doc =
 R"""(This class is used to store the numerical parameters defining the
 model of a simple pendulum with the method MakePendulumPlant(). Refer
@@ -65,7 +65,7 @@ details on the parameters stored by this class and their default
 values.)""";
             // Symbol: drake::multibody::benchmarks::pendulum::PendulumParameters::PendulumParameters
             struct /* ctor */ {
-              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h:36
+              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h
               const char* doc =
 R"""(Constructor used to initialize the physical parameters for a simple
 pendulum model.
@@ -85,47 +85,47 @@ Parameter ``gravity``:
             } ctor;
             // Symbol: drake::multibody::benchmarks::pendulum::PendulumParameters::actuator_name
             struct /* actuator_name */ {
-              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h:53
+              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h
               const char* doc = R"""()""";
             } actuator_name;
             // Symbol: drake::multibody::benchmarks::pendulum::PendulumParameters::body_name
             struct /* body_name */ {
-              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h:51
+              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h
               const char* doc = R"""()""";
             } body_name;
             // Symbol: drake::multibody::benchmarks::pendulum::PendulumParameters::damping
             struct /* damping */ {
-              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h:43
+              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h
               const char* doc = R"""()""";
             } damping;
             // Symbol: drake::multibody::benchmarks::pendulum::PendulumParameters::g
             struct /* g */ {
-              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h:44
+              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h
               const char* doc = R"""()""";
             } g;
             // Symbol: drake::multibody::benchmarks::pendulum::PendulumParameters::l
             struct /* l */ {
-              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h:42
+              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h
               const char* doc = R"""()""";
             } l;
             // Symbol: drake::multibody::benchmarks::pendulum::PendulumParameters::m
             struct /* m */ {
-              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h:41
+              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h
               const char* doc = R"""()""";
             } m;
             // Symbol: drake::multibody::benchmarks::pendulum::PendulumParameters::massless_rod_radius
             struct /* massless_rod_radius */ {
-              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h:48
+              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h
               const char* doc = R"""()""";
             } massless_rod_radius;
             // Symbol: drake::multibody::benchmarks::pendulum::PendulumParameters::pin_joint_name
             struct /* pin_joint_name */ {
-              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h:52
+              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h
               const char* doc = R"""()""";
             } pin_joint_name;
             // Symbol: drake::multibody::benchmarks::pendulum::PendulumParameters::point_mass_radius
             struct /* point_mass_radius */ {
-              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h:46
+              // Source: drake/multibody/benchmarks/pendulum/make_pendulum_plant.h
               const char* doc = R"""()""";
             } point_mass_radius;
           } PendulumParameters;

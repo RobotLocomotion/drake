@@ -57,7 +57,7 @@ constexpr struct /* pydrake_doc_math */ {
     struct /* math */ {
       // Symbol: drake::math::AreAutoDiffVecXdEqual
       struct /* AreAutoDiffVecXdEqual */ {
-        // Source: drake/math/autodiff_gradient.h:274
+        // Source: drake/math/autodiff_gradient.h
         const char* doc =
 R"""(Determines if a and b are equal. a equals to b if they have the same
 value and gradients. TODO(hongkai.dai) implement and use
@@ -65,7 +65,7 @@ std::equal_to<> for comparing Eigen vector of AutoDiffXd.)""";
       } AreAutoDiffVecXdEqual;
       // Symbol: drake::math::AreQuaternionsEqualForOrientation
       struct /* AreQuaternionsEqualForOrientation */ {
-        // Source: drake/math/quaternion.h:164
+        // Source: drake/math/quaternion.h
         const char* doc =
 R"""(This function tests whether two quaternions represent the same
 orientation. This function converts each quaternion to its canonical
@@ -91,7 +91,7 @@ Returns:
       } AreQuaternionsEqualForOrientation;
       // Symbol: drake::math::BalanceQuadraticForms
       struct /* BalanceQuadraticForms */ {
-        // Source: drake/math/quadratic_form.h:145
+        // Source: drake/math/quadratic_form.h
         const char* doc =
 R"""(Given two quadratic forms, x'Sx > 0 and x'Px, (with P symmetric and
 full rank), finds a change of variables x = Ty, which simultaneously
@@ -136,7 +136,7 @@ Automat. Contr., vol. 26, no. 1, pp. 17–32, Feb. 1981.)""";
       } BalanceQuadraticForms;
       // Symbol: drake::math::BarycentricMesh
       struct /* BarycentricMesh */ {
-        // Source: drake/math/barycentric.h:27
+        // Source: drake/math/barycentric.h
         const char* doc =
 R"""(Represents a multi-linear function (from vector inputs to vector
 outputs) by interpolating between points on a mesh using (triangular)
@@ -147,12 +147,12 @@ Remi Munos and Andrew Moore, "Barycentric Interpolators for Continuous
 Space and Time Reinforcement Learning", NIPS 1998)""";
         // Symbol: drake::math::BarycentricMesh::BarycentricMesh<T>
         struct /* ctor */ {
-          // Source: drake/math/barycentric.h:57
+          // Source: drake/math/barycentric.h
           const char* doc = R"""(Constructs the mesh.)""";
         } ctor;
         // Symbol: drake::math::BarycentricMesh::Coordinates
         struct /* Coordinates */ {
-          // Source: drake/math/barycentric.h:53
+          // Source: drake/math/barycentric.h
           const char* doc =
 R"""(The mesh is represented by a std::set (to ensure uniqueness and
 provide logarithmic lookups) of coordinates in each input dimension.
@@ -161,7 +161,7 @@ gradients, etc w/ respect to them).)""";
         } Coordinates;
         // Symbol: drake::math::BarycentricMesh::Eval
         struct /* Eval */ {
-          // Source: drake/math/barycentric.h:114
+          // Source: drake/math/barycentric.h
           const char* doc_3args =
 R"""(Evaluates the function at the ``input`` values, by interpolating
 between the values at ``mesh_values``. Inputs that are outside the
@@ -183,13 +183,13 @@ Parameter ``input``:
 
 Parameter ``output``:
     is the interpolated vector of length num_outputs)""";
-          // Source: drake/math/barycentric.h:119
+          // Source: drake/math/barycentric.h
           const char* doc_2args =
 R"""(Returns the function evaluated at ``input``.)""";
         } Eval;
         // Symbol: drake::math::BarycentricMesh::EvalBarycentricWeights
         struct /* EvalBarycentricWeights */ {
-          // Source: drake/math/barycentric.h:95
+          // Source: drake/math/barycentric.h
           const char* doc =
 R"""(Writes the mesh indices used for interpolation to ``mesh_indices``,
 and the interpolating coefficients to ``weights``. Inputs that are
@@ -209,7 +209,7 @@ Parameter ``weights``:
         } EvalBarycentricWeights;
         // Symbol: drake::math::BarycentricMesh::EvalWithMixedScalars
         struct /* EvalWithMixedScalars */ {
-          // Source: drake/math/barycentric.h:129
+          // Source: drake/math/barycentric.h
           const char* doc_3args =
 R"""(Performs Eval, but with the possibility of the values on the mesh
 having a different scalar type than the values defining the mesh
@@ -221,18 +221,18 @@ Template parameter ``ValueT``:
 
 See also:
     Eval)""";
-          // Source: drake/math/barycentric.h:150
+          // Source: drake/math/barycentric.h
           const char* doc_2args =
 R"""(Returns the function evaluated at ``input``.)""";
         } EvalWithMixedScalars;
         // Symbol: drake::math::BarycentricMesh::MeshGrid
         struct /* MeshGrid */ {
-          // Source: drake/math/barycentric.h:54
+          // Source: drake/math/barycentric.h
           const char* doc = R"""()""";
         } MeshGrid;
         // Symbol: drake::math::BarycentricMesh::MeshValuesFrom
         struct /* MeshValuesFrom */ {
-          // Source: drake/math/barycentric.h:166
+          // Source: drake/math/barycentric.h
           const char* doc =
 R"""(Evaluates ``vector_func`` at all input mesh points and extracts the
 mesh value matrix that should be used to approximate the function with
@@ -254,23 +254,23 @@ this barycentric interpolation.
         } MeshValuesFrom;
         // Symbol: drake::math::BarycentricMesh::get_all_mesh_points
         struct /* get_all_mesh_points */ {
-          // Source: drake/math/barycentric.h:83
+          // Source: drake/math/barycentric.h
           const char* doc =
 R"""(Returns a matrix with all of the mesh points, one per column.)""";
         } get_all_mesh_points;
         // Symbol: drake::math::BarycentricMesh::get_input_grid
         struct /* get_input_grid */ {
-          // Source: drake/math/barycentric.h:60
+          // Source: drake/math/barycentric.h
           const char* doc = R"""()""";
         } get_input_grid;
         // Symbol: drake::math::BarycentricMesh::get_input_size
         struct /* get_input_size */ {
-          // Source: drake/math/barycentric.h:61
+          // Source: drake/math/barycentric.h
           const char* doc = R"""()""";
         } get_input_size;
         // Symbol: drake::math::BarycentricMesh::get_mesh_point
         struct /* get_mesh_point */ {
-          // Source: drake/math/barycentric.h:75
+          // Source: drake/math/barycentric.h
           const char* doc_2args =
 R"""(Writes the position of a mesh point in the input space referenced by
 its scalar index to ``point``.
@@ -280,7 +280,7 @@ Parameter ``index``:
 
 Parameter ``point``:
     is set to the num_inputs-by-1 location of the mesh point.)""";
-          // Source: drake/math/barycentric.h:80
+          // Source: drake/math/barycentric.h
           const char* doc_1args =
 R"""(Returns the position of a mesh point in the input space referenced by
 its scalar index to ``point``.
@@ -290,18 +290,18 @@ Parameter ``index``:
         } get_mesh_point;
         // Symbol: drake::math::BarycentricMesh::get_num_interpolants
         struct /* get_num_interpolants */ {
-          // Source: drake/math/barycentric.h:69
+          // Source: drake/math/barycentric.h
           const char* doc = R"""()""";
         } get_num_interpolants;
         // Symbol: drake::math::BarycentricMesh::get_num_mesh_points
         struct /* get_num_mesh_points */ {
-          // Source: drake/math/barycentric.h:62
+          // Source: drake/math/barycentric.h
           const char* doc = R"""()""";
         } get_num_mesh_points;
       } BarycentricMesh;
       // Symbol: drake::math::BinomialCoefficient
       struct /* BinomialCoefficient */ {
-        // Source: drake/math/binomial_coefficient.h:11
+        // Source: drake/math/binomial_coefficient.h
         const char* doc =
 R"""(Computes the binomial coefficient ``n``-choose-``k`` efficiently using
 a dynamic programming recursion.
@@ -312,7 +312,7 @@ Precondition:
       } BinomialCoefficient;
       // Symbol: drake::math::BsplineBasis
       struct /* BsplineBasis */ {
-        // Source: drake/math/bspline_basis.h:35
+        // Source: drake/math/bspline_basis.h
         const char* doc =
 R"""(Given a set of non-descending breakpoints t₀ ≤ t₁ ≤ ⋅⋅⋅ ≤ tₘ, a
 B-spline basis of order k is a set of n + 1 (where n = m - k)
@@ -337,7 +337,7 @@ Patrikalakis et al. [1].
 [1] https://web.mit.edu/hyperbook/Patrikalakis-Maekawa-Cho/node15.html)""";
         // Symbol: drake::math::BsplineBasis::BsplineBasis<T>
         struct /* ctor */ {
-          // Source: drake/math/bspline_basis.h:44
+          // Source: drake/math/bspline_basis.h
           const char* doc_2args =
 R"""(Constructs a B-spline basis with the specified ``order`` and
 ``knots``.
@@ -347,7 +347,7 @@ Precondition:
 
 Raises:
     RuntimeError if knots.size() < 2 * order.)""";
-          // Source: drake/math/bspline_basis.h:51
+          // Source: drake/math/bspline_basis.h
           const char* doc_5args =
 R"""(Constructs a B-spline basis with the specified ``order``,
 `num_basis_functions`, ``initial_parameter_value``,
@@ -362,7 +362,7 @@ Precondition:
         } ctor;
         // Symbol: drake::math::BsplineBasis::ComputeActiveBasisFunctionIndices
         struct /* ComputeActiveBasisFunctionIndices */ {
-          // Source: drake/math/bspline_basis.h:115
+          // Source: drake/math/bspline_basis.h
           const char* doc_1args_parameter_interval =
 R"""(Returns the indices of the basis functions which may evaluate to
 non-zero values for some parameter value in ``parameter_interval``;
@@ -377,7 +377,7 @@ Precondition:
 
 Precondition:
     parameter_interval[1] ≤ final_parameter_value())""";
-          // Source: drake/math/bspline_basis.h:123
+          // Source: drake/math/bspline_basis.h
           const char* doc_1args_parameter_value =
 R"""(Returns the indices of the basis functions which may evaluate to
 non-zero values for ``parameter_value``; all other basis functions are
@@ -391,14 +391,14 @@ Precondition:
         } ComputeActiveBasisFunctionIndices;
         // Symbol: drake::math::BsplineBasis::EvaluateBasisFunctionI
         struct /* EvaluateBasisFunctionI */ {
-          // Source: drake/math/bspline_basis.h:196
+          // Source: drake/math/bspline_basis.h
           const char* doc =
 R"""(Returns the value of the ``i``-th basis function evaluated at
 ``parameter_value``.)""";
         } EvaluateBasisFunctionI;
         // Symbol: drake::math::BsplineBasis::EvaluateCurve
         struct /* EvaluateCurve */ {
-          // Source: drake/math/bspline_basis.h:135
+          // Source: drake/math/bspline_basis.h
           const char* doc =
 R"""(Evaluates the B-spline curve defined by ``this`` and
 ``control_points`` at the given ``parameter_value``.
@@ -421,7 +421,7 @@ Precondition:
         } EvaluateCurve;
         // Symbol: drake::math::BsplineBasis::EvaluateLinearInControlPoints
         struct /* EvaluateLinearInControlPoints */ {
-          // Source: drake/math/bspline_basis.h:192
+          // Source: drake/math/bspline_basis.h
           const char* doc =
 R"""(Returns the vector, M, such that
 
@@ -449,7 +449,7 @@ Precondition:
         } EvaluateLinearInControlPoints;
         // Symbol: drake::math::BsplineBasis::FindContainingInterval
         struct /* FindContainingInterval */ {
-          // Source: drake/math/bspline_basis.h:107
+          // Source: drake/math/bspline_basis.h
           const char* doc =
 R"""(For a ``parameter_value`` = t, the interval that contains it is the
 pair of knot values [tᵢ, tᵢ₊₁] for the greatest i such that tᵢ ≤ t and
@@ -463,7 +463,7 @@ Precondition:
         } FindContainingInterval;
         // Symbol: drake::math::BsplineBasis::Serialize
         struct /* Serialize */ {
-          // Source: drake/math/bspline_basis.h:213
+          // Source: drake/math/bspline_basis.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background. This method is only available when T =
@@ -471,54 +471,54 @@ double.)""";
         } Serialize;
         // Symbol: drake::math::BsplineBasis::degree
         struct /* degree */ {
-          // Source: drake/math/bspline_basis.h:82
+          // Source: drake/math/bspline_basis.h
           const char* doc =
 R"""(The degree of the piecewise polynomials comprising this B-spline basis
 (k - 1 in the class description).)""";
         } degree;
         // Symbol: drake::math::BsplineBasis::final_parameter_value
         struct /* final_parameter_value */ {
-          // Source: drake/math/bspline_basis.h:98
+          // Source: drake/math/bspline_basis.h
           const char* doc =
 R"""(The maximum allowable parameter value for B-spline curves using this
 basis (tₙ₊₁ in the class description).)""";
         } final_parameter_value;
         // Symbol: drake::math::BsplineBasis::initial_parameter_value
         struct /* initial_parameter_value */ {
-          // Source: drake/math/bspline_basis.h:94
+          // Source: drake/math/bspline_basis.h
           const char* doc =
 R"""(The minimum allowable parameter value for B-spline curves using this
 basis (tₖ₋₁ in the class description).)""";
         } initial_parameter_value;
         // Symbol: drake::math::BsplineBasis::knots
         struct /* knots */ {
-          // Source: drake/math/bspline_basis.h:90
+          // Source: drake/math/bspline_basis.h
           const char* doc =
 R"""(The knot vector of this B-spline basis (the vector (t₀, t₁, ..., tₘ)'
 in the class description).)""";
         } knots;
         // Symbol: drake::math::BsplineBasis::num_basis_functions
         struct /* num_basis_functions */ {
-          // Source: drake/math/bspline_basis.h:86
+          // Source: drake/math/bspline_basis.h
           const char* doc =
 R"""(The number of basis functions in this B-spline basis (n + 1 in the
 class description).)""";
         } num_basis_functions;
         // Symbol: drake::math::BsplineBasis::operator!=
         struct /* operator_ne */ {
-          // Source: drake/math/bspline_basis.h:200
+          // Source: drake/math/bspline_basis.h
           const char* doc = R"""()""";
         } operator_ne;
         // Symbol: drake::math::BsplineBasis::order
         struct /* order */ {
-          // Source: drake/math/bspline_basis.h:78
+          // Source: drake/math/bspline_basis.h
           const char* doc =
 R"""(The order of this B-spline basis (k in the class description).)""";
         } order;
       } BsplineBasis;
       // Symbol: drake::math::CalculateAngularVelocityExpressedInBFromQuaternionDt
       struct /* CalculateAngularVelocityExpressedInBFromQuaternionDt */ {
-        // Source: drake/math/quaternion.h:221
+        // Source: drake/math/quaternion.h
         const char* doc =
 R"""(This function calculates angular velocity from a quaternion and its
 time- derivative. Algorithm from [Kane, 1983] Section 1.13, Pages
@@ -541,7 +541,7 @@ Returns ``w_AB_B``:
       } CalculateAngularVelocityExpressedInBFromQuaternionDt;
       // Symbol: drake::math::CalculateQuaternionDtConstraintViolation
       struct /* CalculateQuaternionDtConstraintViolation */ {
-        // Source: drake/math/quaternion.h:254
+        // Source: drake/math/quaternion.h
         const char* doc =
 R"""(This function calculates how well a quaternion and its time-derivative
 satisfy the quaternion time-derivative constraint specified in [Kane,
@@ -568,7 +568,7 @@ Returns ``quaternionDt_constraint_violation``:
       } CalculateQuaternionDtConstraintViolation;
       // Symbol: drake::math::CalculateQuaternionDtFromAngularVelocityExpressedInB
       struct /* CalculateQuaternionDtFromAngularVelocityExpressedInB */ {
-        // Source: drake/math/quaternion.h:190
+        // Source: drake/math/quaternion.h
         const char* doc =
 R"""(This function calculates a quaternion's time-derivative from its
 quaternion and angular velocity. Algorithm from [Kane, 1983] Section
@@ -591,7 +591,7 @@ Returns ``quatDt``:
       } CalculateQuaternionDtFromAngularVelocityExpressedInB;
       // Symbol: drake::math::CalculateReflectedGrayCodes
       struct /* CalculateReflectedGrayCodes */ {
-        // Source: drake/math/gray_code.h:34
+        // Source: drake/math/gray_code.h
         const char* doc =
 R"""(Returns a matrix whose i'th row is the Gray code for integer i.
 
@@ -607,7 +607,7 @@ Returns:
       } CalculateReflectedGrayCodes;
       // Symbol: drake::math::ClosestQuaternion
       struct /* ClosestQuaternion */ {
-        // Source: drake/math/quaternion.h:32
+        // Source: drake/math/quaternion.h
         const char* doc =
 R"""(Returns a unit quaternion that represents the same orientation as
 ``quat2``, and has the "shortest" geodesic distance on the unit sphere
@@ -615,7 +615,7 @@ to ``quat1``.)""";
       } ClosestQuaternion;
       // Symbol: drake::math::ComputeNumericalGradient
       struct /* ComputeNumericalGradient */ {
-        // Source: drake/math/compute_numerical_gradient.h:94
+        // Source: drake/math/compute_numerical_gradient.h
         const char* doc =
 R"""(Compute the gradient of a function f(x) through numerical difference.
 
@@ -683,7 +683,7 @@ Examples:
       } ComputeNumericalGradient;
       // Symbol: drake::math::ContinuousAlgebraicRiccatiEquation
       struct /* ContinuousAlgebraicRiccatiEquation */ {
-        // Source: drake/math/continuous_algebraic_riccati_equation.h:29
+        // Source: drake/math/continuous_algebraic_riccati_equation.h
         const char* doc_4args_A_B_Q_R =
 R"""(Computes the unique stabilizing solution S to the continuous-time
 algebraic Riccati equation:
@@ -719,14 +719,14 @@ Note:
 
 Based on the Matrix Sign Function method outlined in this paper:
 http://www.engr.iupui.edu/~skoskie/ECE684/Riccati_algorithms.pdf)""";
-        // Source: drake/math/continuous_algebraic_riccati_equation.h:38
+        // Source: drake/math/continuous_algebraic_riccati_equation.h
         const char* doc_4args_A_B_Q_R_cholesky =
 R"""(This is functionally the same as ContinuousAlgebraicRiccatiEquation(A,
 B, Q, R). The Cholesky decomposition of R is passed in instead of R.)""";
       } ContinuousAlgebraicRiccatiEquation;
       // Symbol: drake::math::ConvertTimeDerivativeToOtherFrame
       struct /* ConvertTimeDerivativeToOtherFrame */ {
-        // Source: drake/math/convert_time_derivative.h:34
+        // Source: drake/math/convert_time_derivative.h
         const char* doc =
 R"""(Given ᴮd/dt(v) (the time derivative in frame B of an arbitrary 3D
 vector v) and given ᴬωᴮ (frame B's angular velocity in another frame
@@ -767,7 +767,7 @@ Simulation.)""";
       } ConvertTimeDerivativeToOtherFrame;
       // Symbol: drake::math::DecomposePSDmatrixIntoXtransposeTimesX
       struct /* DecomposePSDmatrixIntoXtransposeTimesX */ {
-        // Source: drake/math/quadratic_form.h:31
+        // Source: drake/math/quadratic_form.h
         const char* doc =
 R"""(For a symmetric positive semidefinite matrix Y, decompose it into XᵀX,
 where the number of rows in X equals to the rank of Y. Notice that
@@ -807,7 +807,7 @@ Note:
       } DecomposePSDmatrixIntoXtransposeTimesX;
       // Symbol: drake::math::DecomposePositiveQuadraticForm
       struct /* DecomposePositiveQuadraticForm */ {
-        // Source: drake/math/quadratic_form.h:101
+        // Source: drake/math/quadratic_form.h
         const char* doc =
 R"""(Rewrite a quadratic form xᵀQx + bᵀx + c to (Rx+d)ᵀ(Rx+d) where
 
@@ -960,7 +960,7 @@ Raises:
       } DecomposePositiveQuadraticForm;
       // Symbol: drake::math::DifferentiableNorm
       struct /* DifferentiableNorm */ {
-        // Source: drake/math/differentiable_norm.h:17
+        // Source: drake/math/differentiable_norm.h
         const char* doc =
 R"""(The 2-norm function |x| is not differentiable at x=0 (its gradient is
 x/|x|, which has a division-by-zero problem). On the other hand, x=0
@@ -969,7 +969,7 @@ is almost 0, and returns the original gradient, x/|x|, otherwise.)""";
       } DifferentiableNorm;
       // Symbol: drake::math::DiscardGradient
       struct /* DiscardGradient */ {
-        // Source: drake/math/autodiff.h:96
+        // Source: drake/math/autodiff.h
         const char* doc =
 R"""(``B = DiscardGradient(A)`` enables casting from a matrix of
 AutoDiffScalars to AutoDiffScalar::Scalar type, explicitly throwing
@@ -991,7 +991,7 @@ See also:
       } DiscardGradient;
       // Symbol: drake::math::DiscardZeroGradient
       struct /* DiscardZeroGradient */ {
-        // Source: drake/math/autodiff_gradient.h:225
+        // Source: drake/math/autodiff_gradient.h
         const char* doc =
 R"""(``B = DiscardZeroGradient(A, precision)`` enables casting from a
 matrix of AutoDiffScalars to AutoDiffScalar::Scalar type, but first
@@ -1020,7 +1020,7 @@ See also:
       } DiscardZeroGradient;
       // Symbol: drake::math::DiscreteAlgebraicRiccatiEquation
       struct /* DiscreteAlgebraicRiccatiEquation */ {
-        // Source: drake/math/discrete_algebraic_riccati_equation.h:19
+        // Source: drake/math/discrete_algebraic_riccati_equation.h
         const char* doc_4args =
 R"""(Computes the unique stabilizing solution X to the discrete-time
 algebraic Riccati equation:
@@ -1038,7 +1038,7 @@ Raises:
 
 Raises:
     RuntimeError if (A, C) isn't a detectable pair where Q = CᵀC.)""";
-        // Source: drake/math/discrete_algebraic_riccati_equation.h:71
+        // Source: drake/math/discrete_algebraic_riccati_equation.h
         const char* doc_5args =
 R"""(Computes the unique stabilizing solution X to the discrete-time
 algebraic Riccati equation:
@@ -1122,7 +1122,7 @@ Raises:
       } DiscreteAlgebraicRiccatiEquation;
       // Symbol: drake::math::EigenToStdVector
       struct /* EigenToStdVector */ {
-        // Source: drake/math/matrix_util.h:183
+        // Source: drake/math/matrix_util.h
         const char* doc =
 R"""(Converts a MatrixX<T> into a std::vector<MatrixX<T>>, taking each
 column of the m-by-n matrix ``mat`` into an m-by-1 element of the
@@ -1130,7 +1130,7 @@ returned std::vector.)""";
       } EigenToStdVector;
       // Symbol: drake::math::ExtractGradient
       struct /* ExtractGradient */ {
-        // Source: drake/math/autodiff_gradient.h:125
+        // Source: drake/math/autodiff_gradient.h
         const char* doc =
 R"""(Returns the ``derivatives()`` portion from a matrix of AutoDiffScalar
 entries. (Each entry contains a value and derivatives.)
@@ -1169,7 +1169,7 @@ Raises:
       } ExtractGradient;
       // Symbol: drake::math::ExtractPrincipalSubmatrix
       struct /* ExtractPrincipalSubmatrix */ {
-        // Source: drake/math/matrix_util.h:214
+        // Source: drake/math/matrix_util.h
         const char* doc =
 R"""(Extracts the principal submatrix from the ordered set of indices. The
 indices must be in monotonically increasing order and non-empty. This
@@ -1179,7 +1179,7 @@ and columns.)""";
       } ExtractPrincipalSubmatrix;
       // Symbol: drake::math::ExtractValue
       struct /* ExtractValue */ {
-        // Source: drake/math/autodiff.h:72
+        // Source: drake/math/autodiff.h
         const char* doc =
 R"""(Returns the ``value()`` portion from a matrix of AutoDiffScalar
 entries. (Each entry contains a value and some derivatives.)
@@ -1213,7 +1213,7 @@ See also:
       } ExtractValue;
       // Symbol: drake::math::GeneratePythonCsc
       struct /* GeneratePythonCsc */ {
-        // Source: drake/math/matrix_util.h:263
+        // Source: drake/math/matrix_util.h
         const char* doc =
 R"""(Returns the python statement to construct scipy.sparse matrix. The
 generated code will call sparse.csc_matrix() directly (please make
@@ -1231,7 +1231,7 @@ Returns:
       } GeneratePythonCsc;
       // Symbol: drake::math::GetDerivativeSize
       struct /* GetDerivativeSize */ {
-        // Source: drake/math/autodiff_gradient.h:250
+        // Source: drake/math/autodiff_gradient.h
         const char* doc =
 R"""(Given a matrix of AutoDiffScalars, returns the size of the
 derivatives.
@@ -1242,7 +1242,7 @@ Raises:
       } GetDerivativeSize;
       // Symbol: drake::math::GetLinearSolver
       struct /* GetLinearSolver */ {
-        // Source: drake/math/linear_solve.h:405
+        // Source: drake/math/linear_solve.h
         const char* doc =
 R"""(Get the linear solver for a matrix A. If A has scalar type of double
 or symbolic::Expressions, then the returned linear solver will have
@@ -1252,40 +1252,40 @@ get_linear_solver for more details.)""";
       } GetLinearSolver;
       // Symbol: drake::math::GetSubMatrixGradientArray
       struct /* GetSubMatrixGradientArray */ {
-        // Source: drake/math/gradient_util.h:63
+        // Source: drake/math/gradient_util.h
         const char* doc = R"""()""";
         // Symbol: drake::math::GetSubMatrixGradientArray::type
         struct /* type */ {
-          // Source: drake/math/gradient_util.h:68
+          // Source: drake/math/gradient_util.h
           const char* doc = R"""()""";
         } type;
       } GetSubMatrixGradientArray;
       // Symbol: drake::math::GetSubMatrixGradientSingleElement
       struct /* GetSubMatrixGradientSingleElement */ {
-        // Source: drake/math/gradient_util.h:75
+        // Source: drake/math/gradient_util.h
         const char* doc = R"""()""";
         // Symbol: drake::math::GetSubMatrixGradientSingleElement::type
         struct /* type */ {
-          // Source: drake/math/gradient_util.h:80
+          // Source: drake/math/gradient_util.h
           const char* doc = R"""()""";
         } type;
       } GetSubMatrixGradientSingleElement;
       // Symbol: drake::math::Gradient
       struct /* Gradient */ {
-        // Source: drake/math/gradient.h:15
+        // Source: drake/math/gradient.h
         const char* doc =
 R"""(Recursively defined template specifying a matrix type of the correct
 size for a gradient of a matrix function with respect to ``nq``
 variables, of any order.)""";
         // Symbol: drake::math::Gradient::type
         struct /* type */ {
-          // Source: drake/math/gradient.h:23
+          // Source: drake/math/gradient.h
           const char* doc = R"""()""";
         } type;
       } Gradient;
       // Symbol: drake::math::GrayCodeToInteger
       struct /* GrayCodeToInteger */ {
-        // Source: drake/math/gray_code.h:59
+        // Source: drake/math/gray_code.h
         const char* doc =
 R"""(Converts the Gray code to an integer. For example (0, 0) -> 0 (0, 1)
 -> 1 (1, 1) -> 2 (1, 0) -> 3
@@ -1298,19 +1298,19 @@ Returns:
       } GrayCodeToInteger;
       // Symbol: drake::math::GrayCodesMatrix
       struct /* GrayCodesMatrix */ {
-        // Source: drake/math/gray_code.h:14
+        // Source: drake/math/gray_code.h
         const char* doc =
 R"""(GrayCodesMatrix::type returns an Eigen matrix of integers. The size of
 this matrix is determined by the number of digits in the Gray code.)""";
         // Symbol: drake::math::GrayCodesMatrix::type
         struct /* type */ {
-          // Source: drake/math/gray_code.h:18
+          // Source: drake/math/gray_code.h
           const char* doc = R"""()""";
         } type;
       } GrayCodesMatrix;
       // Symbol: drake::math::HopfCoordinateToQuaternion
       struct /* HopfCoordinateToQuaternion */ {
-        // Source: drake/math/hopf_coordinate.h:34
+        // Source: drake/math/hopf_coordinate.h
         const char* doc =
 R"""(Transforms Hopf coordinates to a quaternion w, x, y, z as w =
 cos(θ/2)cos(ψ/2) x = cos(θ/2)sin(ψ/2) y = sin(θ/2)cos(φ+ψ/2) z =
@@ -1329,7 +1329,7 @@ Parameter ``psi``:
       } HopfCoordinateToQuaternion;
       // Symbol: drake::math::InitializeAutoDiff
       struct /* InitializeAutoDiff */ {
-        // Source: drake/math/autodiff.h:196
+        // Source: drake/math/autodiff.h
         const char* doc_just_value =
 R"""(Initializes a single AutoDiff matrix given the corresponding value
 matrix.
@@ -1361,7 +1361,7 @@ deriv_num_start in derivative vector corresponds to matrix(0, 0)).
     $Returns ``auto_diff_matrix``:
 
 The result as described above.)""";
-        // Source: drake/math/autodiff_gradient.h:198
+        // Source: drake/math/autodiff_gradient.h
         const char* doc_value_and_gradient =
 R"""(Returns an AutoDiff matrix given a matrix of values and a gradient
 matrix.
@@ -1380,7 +1380,7 @@ Returns ``auto_diff_matrix``:
       } InitializeAutoDiff;
       // Symbol: drake::math::InitializeAutoDiffTuple
       struct /* InitializeAutoDiffTuple */ {
-        // Source: drake/math/autodiff.h:225
+        // Source: drake/math/autodiff.h
         const char* doc =
 R"""(Given a series of Eigen matrices, creates a tuple of corresponding
 AutoDiff matrices with values equal to the input matrices and properly
@@ -1408,7 +1408,7 @@ Returns:
       } InitializeAutoDiffTuple;
       // Symbol: drake::math::IsBothQuaternionAndQuaternionDtOK
       struct /* IsBothQuaternionAndQuaternionDtOK */ {
-        // Source: drake/math/quaternion.h:305
+        // Source: drake/math/quaternion.h
         const char* doc =
 R"""(This function tests if a quaternion satisfies the time-derivative
 constraint specified in [Kane, 1983] Section 1.13, equation 13, page
@@ -1439,7 +1439,7 @@ Returns:
       } IsBothQuaternionAndQuaternionDtOK;
       // Symbol: drake::math::IsPositiveDefinite
       struct /* IsPositiveDefinite */ {
-        // Source: drake/math/matrix_util.h:159
+        // Source: drake/math/matrix_util.h
         const char* doc =
 R"""(Checks if a matrix is symmetric (with tolerance ``symmetry_tolerance``
 -- see IsSymmetric) and has all eigenvalues greater than
@@ -1453,7 +1453,7 @@ max(1, max_abs_eigenvalue).)""";
       } IsPositiveDefinite;
       // Symbol: drake::math::IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB
       struct /* IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB */ {
-        // Source: drake/math/quaternion.h:335
+        // Source: drake/math/quaternion.h
         const char* doc =
 R"""(This function tests if a quaternion and a quaternion's time derivative
 can calculate and match an angular velocity to within a tolerance.
@@ -1484,7 +1484,7 @@ Returns:
       } IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB;
       // Symbol: drake::math::IsQuaternionValid
       struct /* IsQuaternionValid */ {
-        // Source: drake/math/quaternion.h:279
+        // Source: drake/math/quaternion.h
         const char* doc =
 R"""(This function tests if a quaternion satisfies the quaternion
 constraint specified in [Kane, 1983] Section 1.3, equation 4, page 12,
@@ -1510,11 +1510,11 @@ Returns:
       } IsQuaternionValid;
       // Symbol: drake::math::IsSymmetric
       struct /* IsSymmetric */ {
-        // Source: drake/math/matrix_util.h:24
+        // Source: drake/math/matrix_util.h
         const char* doc_1args =
 R"""(Determines if a matrix is symmetric. If std::equal_to<>()(matrix(i,
 j), matrix(j, i)) is true for all i, j, then the matrix is symmetric.)""";
-        // Source: drake/math/matrix_util.h:44
+        // Source: drake/math/matrix_util.h
         const char* doc_2args =
 R"""(Determines if a matrix is symmetric based on whether the difference
 between matrix(i, j) and matrix(j, i) is smaller than ``precision``
@@ -1523,7 +1523,7 @@ entries is not allowed.)""";
       } IsSymmetric;
       // Symbol: drake::math::KnotVectorType
       struct /* KnotVectorType */ {
-        // Source: drake/math/knot_vector_type.h:14
+        // Source: drake/math/knot_vector_type.h
         const char* doc =
 R"""(Enum representing types of knot vectors. "Uniform" refers to the
 spacing between the knots. "Clamped" indicates that the first and last
@@ -1533,18 +1533,18 @@ Reference:
 http://web.mit.edu/hyperbook/Patrikalakis-Maekawa-Cho/node17.html)""";
         // Symbol: drake::math::KnotVectorType::kClampedUniform
         struct /* kClampedUniform */ {
-          // Source: drake/math/knot_vector_type.h:14
+          // Source: drake/math/knot_vector_type.h
           const char* doc = R"""()""";
         } kClampedUniform;
         // Symbol: drake::math::KnotVectorType::kUniform
         struct /* kUniform */ {
-          // Source: drake/math/knot_vector_type.h:14
+          // Source: drake/math/knot_vector_type.h
           const char* doc = R"""()""";
         } kUniform;
       } KnotVectorType;
       // Symbol: drake::math::LinearSolver
       struct /* LinearSolver */ {
-        // Source: drake/math/linear_solve.h:556
+        // Source: drake/math/linear_solve.h
         const char* doc =
 R"""(Solves a linear system of equations A*x=b. Depending on the scalar
 types of A and b, the scalar type of x is summarized in this table. |
@@ -1593,24 +1593,24 @@ Here is the example code
     </details>)""";
         // Symbol: drake::math::LinearSolver::LinearSolver<LinearSolverType, DerivedA>
         struct /* ctor */ {
-          // Source: drake/math/linear_solve.h:579
+          // Source: drake/math/linear_solve.h
           const char* doc =
 R"""(Default constructor. Constructs an empty linear solver.)""";
         } ctor;
         // Symbol: drake::math::LinearSolver::Solve
         struct /* Solve */ {
-          // Source: drake/math/linear_solve.h:593
+          // Source: drake/math/linear_solve.h
           const char* doc =
 R"""(Solves system A*x = b. Return type is as described in the table above.)""";
         } Solve;
         // Symbol: drake::math::LinearSolver::SolverType
         struct /* SolverType */ {
-          // Source: drake/math/linear_solve.h:558
+          // Source: drake/math/linear_solve.h
           const char* doc = R"""()""";
         } SolverType;
         // Symbol: drake::math::LinearSolver::eigen_linear_solver
         struct /* eigen_linear_solver */ {
-          // Source: drake/math/linear_solve.h:631
+          // Source: drake/math/linear_solve.h
           const char* doc =
 R"""(Getter for the Eigen linear solver. The scalar type in the Eigen
 linear solver depends on the scalar type in A matrix, as shown in this
@@ -1630,27 +1630,27 @@ Eigen linear solver.)""";
       } LinearSolver;
       // Symbol: drake::math::MatGradMult
       struct /* MatGradMult */ {
-        // Source: drake/math/gradient_util.h:44
+        // Source: drake/math/gradient_util.h
         const char* doc = R"""()""";
         // Symbol: drake::math::MatGradMult::type
         struct /* type */ {
-          // Source: drake/math/gradient_util.h:54
+          // Source: drake/math/gradient_util.h
           const char* doc = R"""()""";
         } type;
       } MatGradMult;
       // Symbol: drake::math::MatGradMultMat
       struct /* MatGradMultMat */ {
-        // Source: drake/math/gradient_util.h:28
+        // Source: drake/math/gradient_util.h
         const char* doc = R"""()""";
         // Symbol: drake::math::MatGradMultMat::type
         struct /* type */ {
-          // Source: drake/math/gradient_util.h:37
+          // Source: drake/math/gradient_util.h
           const char* doc = R"""()""";
         } type;
       } MatGradMultMat;
       // Symbol: drake::math::NormalizeVector
       struct /* NormalizeVector */ {
-        // Source: drake/math/normalize_vector.h:24
+        // Source: drake/math/normalize_vector.h
         const char* doc =
 R"""(Computes the normalized vector, optionally with its gradient and
 second derivative.
@@ -1674,34 +1674,34 @@ Parameter ``ddx_norm``:
       } NormalizeVector;
       // Symbol: drake::math::NumericalGradientMethod
       struct /* NumericalGradientMethod */ {
-        // Source: drake/math/compute_numerical_gradient.h:10
+        // Source: drake/math/compute_numerical_gradient.h
         const char* doc = R"""()""";
         // Symbol: drake::math::NumericalGradientMethod::kBackward
         struct /* kBackward */ {
-          // Source: drake/math/compute_numerical_gradient.h:12
+          // Source: drake/math/compute_numerical_gradient.h
           const char* doc =
 R"""(Compute the gradient as (f(x) - f(x - Δx)) / Δx, with Δx > 0)""";
         } kBackward;
         // Symbol: drake::math::NumericalGradientMethod::kCentral
         struct /* kCentral */ {
-          // Source: drake/math/compute_numerical_gradient.h:13
+          // Source: drake/math/compute_numerical_gradient.h
           const char* doc =
 R"""(Compute the gradient as (f(x + Δx) - f(x - Δx)) / (2Δx), with Δx > 0)""";
         } kCentral;
         // Symbol: drake::math::NumericalGradientMethod::kForward
         struct /* kForward */ {
-          // Source: drake/math/compute_numerical_gradient.h:11
+          // Source: drake/math/compute_numerical_gradient.h
           const char* doc =
 R"""(Compute the gradient as (f(x + Δx) - f(x)) / Δx, with Δx > 0)""";
         } kForward;
       } NumericalGradientMethod;
       // Symbol: drake::math::NumericalGradientOption
       struct /* NumericalGradientOption */ {
-        // Source: drake/math/compute_numerical_gradient.h:17
+        // Source: drake/math/compute_numerical_gradient.h
         const char* doc = R"""()""";
         // Symbol: drake::math::NumericalGradientOption::NumericalGradientOption
         struct /* ctor */ {
-          // Source: drake/math/compute_numerical_gradient.h:24
+          // Source: drake/math/compute_numerical_gradient.h
           const char* doc =
 R"""(Parameter ``function_accuracy``:
     The accuracy of evaluating function f(x). For double-valued
@@ -1710,18 +1710,18 @@ R"""(Parameter ``function_accuracy``:
         } ctor;
         // Symbol: drake::math::NumericalGradientOption::method
         struct /* method */ {
-          // Source: drake/math/compute_numerical_gradient.h:32
+          // Source: drake/math/compute_numerical_gradient.h
           const char* doc = R"""()""";
         } method;
         // Symbol: drake::math::NumericalGradientOption::perturbation_size
         struct /* perturbation_size */ {
-          // Source: drake/math/compute_numerical_gradient.h:34
+          // Source: drake/math/compute_numerical_gradient.h
           const char* doc = R"""()""";
         } perturbation_size;
       } NumericalGradientOption;
       // Symbol: drake::math::ProjectMatToRotMatWithAxis
       struct /* ProjectMatToRotMatWithAxis */ {
-        // Source: drake/math/rotation_matrix.h:1247
+        // Source: drake/math/rotation_matrix.h
         const char* doc =
 R"""(Projects an approximate 3 x 3 rotation matrix M onto an orthonormal
 matrix R so that R is a rotation matrix associated with a angle-axis
@@ -1848,7 +1848,7 @@ See also:
       } ProjectMatToRotMatWithAxis;
       // Symbol: drake::math::QuaternionToCanonicalForm
       struct /* QuaternionToCanonicalForm */ {
-        // Source: drake/math/quaternion.h:142
+        // Source: drake/math/quaternion.h
         const char* doc =
 R"""(This function returns a quaternion in its "canonical form" meaning
 that it returns a quaternion [w, x, y, z] with a non-negative w. For
@@ -1869,7 +1869,7 @@ Returns:
       } QuaternionToCanonicalForm;
       // Symbol: drake::math::QuaternionToHopfCoordinate
       struct /* QuaternionToHopfCoordinate */ {
-        // Source: drake/math/hopf_coordinate.h:63
+        // Source: drake/math/hopf_coordinate.h
         const char* doc =
 R"""(Convert a unit-length quaternion (w, x, y, z) (with the requirement w
 >= 0) to Hopf coordinate as ψ = 2*atan2(x, w) φ = mod(atan2(z, y) -
@@ -1886,7 +1886,7 @@ Returns:
       } QuaternionToHopfCoordinate;
       // Symbol: drake::math::RealContinuousLyapunovEquation
       struct /* RealContinuousLyapunovEquation */ {
-        // Source: drake/math/continuous_lyapunov_equation.h:55
+        // Source: drake/math/continuous_lyapunov_equation.h
         const char* doc =
 R"""(Parameter ``A``:
     A user defined real square matrix.
@@ -1938,7 +1938,7 @@ AX + XB = C," Comm. of the ACM, Vol. 15, No. 9, 1972.
       } RealContinuousLyapunovEquation;
       // Symbol: drake::math::RealDiscreteLyapunovEquation
       struct /* RealDiscreteLyapunovEquation */ {
-        // Source: drake/math/discrete_lyapunov_equation.h:56
+        // Source: drake/math/discrete_lyapunov_equation.h
         const char* doc =
 R"""(Parameter ``A``:
     A user defined real square matrix.
@@ -1990,7 +1990,7 @@ IEEE® Trans. Auto. Contr., AC-22, pp. 883-885, 1977.
       } RealDiscreteLyapunovEquation;
       // Symbol: drake::math::RigidTransform
       struct /* RigidTransform */ {
-        // Source: drake/math/rigid_transform.h:73
+        // Source: drake/math/rigid_transform.h
         const char* doc =
 R"""(This class represents a proper rigid transform between two frames
 which can be regarded in two ways. A rigid transform describes the
@@ -2057,7 +2057,7 @@ Authors:
     Drake team (see https://drake.mit.edu/credits).)""";
         // Symbol: drake::math::RigidTransform::ApplyAxialRotation
         struct /* ApplyAxialRotation */ {
-          // Source: drake/math/rigid_transform.h:379
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""((Internal use only) Given an axial rotation transform arX_BC (just an
 axial rotation and no translation), uses it to efficiently re-express
@@ -2081,13 +2081,13 @@ Precondition:
         } ApplyAxialRotation;
         // Symbol: drake::math::RigidTransform::GetAsIsometry3
         struct /* GetAsIsometry3 */ {
-          // Source: drake/math/rigid_transform.h:676
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(Returns the isometry in ℜ³ that is equivalent to a RigidTransform.)""";
         } GetAsIsometry3;
         // Symbol: drake::math::RigidTransform::GetAsMatrix34
         struct /* GetAsMatrix34 */ {
-          // Source: drake/math/rigid_transform.h:668
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(Returns the 3x4 matrix associated with this RigidTransform, i.e.,
 X_AB.
@@ -2109,7 +2109,7 @@ X_AB.
         } GetAsMatrix34;
         // Symbol: drake::math::RigidTransform::GetAsMatrix4
         struct /* GetAsMatrix4 */ {
-          // Source: drake/math/rigid_transform.h:654
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(Returns the 4x4 matrix associated with this RigidTransform, i.e.,
 X_AB.
@@ -2133,7 +2133,7 @@ X_AB.
         } GetAsMatrix4;
         // Symbol: drake::math::RigidTransform::GetMaximumAbsoluteDifference
         struct /* GetMaximumAbsoluteDifference */ {
-          // Source: drake/math/rigid_transform.h:777
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(Computes the infinity norm of ``this`` - `other` (i.e., the maximum
 absolute value of the difference between the elements of ``this`` and
@@ -2147,7 +2147,7 @@ Returns:
         } GetMaximumAbsoluteDifference;
         // Symbol: drake::math::RigidTransform::GetMaximumAbsoluteTranslationDifference
         struct /* GetMaximumAbsoluteTranslationDifference */ {
-          // Source: drake/math/rigid_transform.h:787
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(Returns the maximum absolute value of the difference in the position
 vectors (translation) in ``this`` and ``other``. In other words,
@@ -2159,7 +2159,7 @@ Parameter ``other``:
         } GetMaximumAbsoluteTranslationDifference;
         // Symbol: drake::math::RigidTransform::Identity
         struct /* Identity */ {
-          // Source: drake/math/rigid_transform.h:599
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(Returns the identity RigidTransform (corresponds to coincident
 frames).
@@ -2172,7 +2172,7 @@ Returns:
         } Identity;
         // Symbol: drake::math::RigidTransform::InvertAndCompose
         struct /* InvertAndCompose */ {
-          // Source: drake/math/rigid_transform.h:761
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(Calculates the product of ``this`` inverted and another
 RigidTransform. If you consider ``this`` to be the transform X_AB, and
@@ -2196,7 +2196,7 @@ Note:
         } InvertAndCompose;
         // Symbol: drake::math::RigidTransform::IsExactlyEqualTo
         struct /* IsExactlyEqualTo */ {
-          // Source: drake/math/rigid_transform.h:713
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(Returns true if ``this`` is exactly equal to ``other``.
 
@@ -2209,7 +2209,7 @@ Returns:
         } IsExactlyEqualTo;
         // Symbol: drake::math::RigidTransform::IsExactlyIdentity
         struct /* IsExactlyIdentity */ {
-          // Source: drake/math/rigid_transform.h:689
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(Returns ``True`` if ``this`` is exactly the identity RigidTransform.
 
@@ -2218,7 +2218,7 @@ See also:
         } IsExactlyIdentity;
         // Symbol: drake::math::RigidTransform::IsNearlyEqualTo
         struct /* IsNearlyEqualTo */ {
-          // Source: drake/math/rigid_transform.h:727
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(Compares each element of ``this`` to the corresponding element of
 ``other`` to check if they are the same to within a specified
@@ -2241,7 +2241,7 @@ Note:
         } IsNearlyEqualTo;
         // Symbol: drake::math::RigidTransform::IsNearlyIdentity
         struct /* IsNearlyIdentity */ {
-          // Source: drake/math/rigid_transform.h:703
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(Returns true if ``this`` is within tolerance of the identity
 RigidTransform.
@@ -2263,7 +2263,7 @@ See also:
         } IsNearlyIdentity;
         // Symbol: drake::math::RigidTransform::MakeAxialRotation
         struct /* MakeAxialRotation */ {
-          // Source: drake/math/rigid_transform.h:361
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""((Internal use only) Creates an axial rotation transform arX_AB
 consisting of only an axial rotation of ``theta`` radians about x, y,
@@ -2285,7 +2285,7 @@ See also:
         } MakeAxialRotation;
         // Symbol: drake::math::RigidTransform::MakeUnchecked
         struct /* MakeUnchecked */ {
-          // Source: drake/math/rigid_transform.h:266
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""((Advanced) Constructs a RigidTransform from a 3x4 matrix, without any
 validity checks nor orthogonalization.
@@ -2312,7 +2312,7 @@ Parameter ``pose``:
         } MakeUnchecked;
         // Symbol: drake::math::RigidTransform::PostMultiplyByAxialRotation
         struct /* PostMultiplyByAxialRotation */ {
-          // Source: drake/math/rigid_transform.h:444
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""((Internal use only) With ``this`` a general transform X_AB, and given
 an axial rotation transform arX_BC, efficiently calculates ``X_AC =
@@ -2336,7 +2336,7 @@ Precondition:
         } PostMultiplyByAxialRotation;
         // Symbol: drake::math::RigidTransform::PostMultiplyByAxialTranslation
         struct /* PostMultiplyByAxialTranslation */ {
-          // Source: drake/math/rigid_transform.h:489
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""((Internal use only) Composes ``this`` general transform X_AB with a
 given axial translation transform atX_BC to efficiently calculate
@@ -2358,7 +2358,7 @@ Precondition:
         } PostMultiplyByAxialTranslation;
         // Symbol: drake::math::RigidTransform::PostMultiplyByRotation
         struct /* PostMultiplyByRotation */ {
-          // Source: drake/math/rigid_transform.h:549
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""((Internal use only) Composes ``this`` general transform X_AB with a
 given rotation-only transform rX_BC to efficiently calculate ``X_AC =
@@ -2375,7 +2375,7 @@ Precondition:
         } PostMultiplyByRotation;
         // Symbol: drake::math::RigidTransform::PostMultiplyByTranslation
         struct /* PostMultiplyByTranslation */ {
-          // Source: drake/math/rigid_transform.h:563
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""((Internal use only) Composes ``this`` general transform X_AB with a
 given translation-only transform tX_BC to efficiently calculate ``X_AC
@@ -2392,7 +2392,7 @@ Precondition:
         } PostMultiplyByTranslation;
         // Symbol: drake::math::RigidTransform::PreMultiplyByAxialRotation
         struct /* PreMultiplyByAxialRotation */ {
-          // Source: drake/math/rigid_transform.h:466
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""((Internal use only) With ``this`` a general transform X_BC, and given
 an axial rotation transform arX_AB, efficiently calculates ``X_AC =
@@ -2416,7 +2416,7 @@ Precondition:
         } PreMultiplyByAxialRotation;
         // Symbol: drake::math::RigidTransform::PreMultiplyByAxialTranslation
         struct /* PreMultiplyByAxialTranslation */ {
-          // Source: drake/math/rigid_transform.h:511
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""((Internal use only) With ``this`` a general transform X_BC, and given
 an axial translation transform atX_AB, efficiently calculates ``X_AC =
@@ -2437,13 +2437,13 @@ Precondition:
         } PreMultiplyByAxialTranslation;
         // Symbol: drake::math::RigidTransform::RigidTransform<type-parameter-0-0>
         struct /* ctor */ {
-          // Source: drake/math/rigid_transform.h:81
+          // Source: drake/math/rigid_transform.h
           const char* doc_0args =
 R"""(Constructs the RigidTransform that corresponds to aligning the two
 frames so unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is
 coincident with Bo. Hence, the constructed RigidTransform contains an
 identity RotationMatrix and a zero position vector.)""";
-          // Source: drake/math/rigid_transform.h:90
+          // Source: drake/math/rigid_transform.h
           const char* doc_2args_R_p =
 R"""(Constructs a RigidTransform from a rotation matrix and a position
 vector.
@@ -2455,7 +2455,7 @@ Parameter ``p``:
     position vector from frame A's origin to frame B's origin,
     expressed in frame A. In monogram notation p is denoted
     ``p_AoBo_A``.)""";
-          // Source: drake/math/rigid_transform.h:99
+          // Source: drake/math/rigid_transform.h
           const char* doc_2args_rpy_p =
 R"""(Constructs a RigidTransform from a RollPitchYaw and a position vector.
 
@@ -2472,7 +2472,7 @@ Parameter ``p``:
     position vector from frame A's origin to frame B's origin,
     expressed in frame A. In monogram notation p is denoted
     ``p_AoBo_A``.)""";
-          // Source: drake/math/rigid_transform.h:110
+          // Source: drake/math/rigid_transform.h
           const char* doc_2args_quaternion_p =
 R"""(Constructs a RigidTransform from a Quaternion and a position vector.
 
@@ -2491,7 +2491,7 @@ Raises:
 
 See also:
     RotationMatrix::RotationMatrix(const Eigen::Quaternion<T>&))""";
-          // Source: drake/math/rigid_transform.h:122
+          // Source: drake/math/rigid_transform.h
           const char* doc_2args_theta_lambda_p =
 R"""(Constructs a RigidTransform from an AngleAxis and a position vector.
 
@@ -2511,14 +2511,14 @@ Raises:
 
 See also:
     RotationMatrix::RotationMatrix(const Eigen::AngleAxis<T>&))""";
-          // Source: drake/math/rigid_transform.h:128
+          // Source: drake/math/rigid_transform.h
           const char* doc_1args_R =
 R"""(Constructs a RigidTransform with a given RotationMatrix and a zero
 position vector.
 
 Parameter ``R``:
     rotation matrix relating frames A and B (e.g., ``R_AB``).)""";
-          // Source: drake/math/rigid_transform.h:136
+          // Source: drake/math/rigid_transform.h
           const char* doc_1args_p =
 R"""(Constructs a RigidTransform that contains an identity RotationMatrix
 and a given position vector ``p``.
@@ -2527,7 +2527,7 @@ Parameter ``p``:
     position vector from frame A's origin to frame B's origin,
     expressed in frame A. In monogram notation p is denoted
     ``p_AoBo_A``.)""";
-          // Source: drake/math/rigid_transform.h:147
+          // Source: drake/math/rigid_transform.h
           const char* doc_1args_translation =
 R"""(Constructs a RigidTransform that contains an identity RotationMatrix
 and the position vector underlying the given ``translation``.
@@ -2544,7 +2544,7 @@ Note:
 Note:
     This constructor provides an implicit conversion from Translation
     to RigidTransform.)""";
-          // Source: drake/math/rigid_transform.h:160
+          // Source: drake/math/rigid_transform.h
           const char* doc_1args_pose =
 R"""(Constructs a RigidTransform from an Eigen Isometry3.
 
@@ -2562,7 +2562,7 @@ Note:
     No attempt is made to orthogonalize the 3x3 rotation matrix part
     of ``pose``. As needed, use
     RotationMatrix::ProjectToRotationMatrix().)""";
-          // Source: drake/math/rigid_transform.h:229
+          // Source: drake/math/rigid_transform.h
           const char* doc_1args_constEigenMatrixBase =
 R"""(Constructs a RigidTransform from an appropriate Eigen **expression**.
 
@@ -2611,7 +2611,7 @@ Note:
         } ctor;
         // Symbol: drake::math::RigidTransform::SetFromIsometry3
         struct /* SetFromIsometry3 */ {
-          // Source: drake/math/rigid_transform.h:291
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(Sets ``this`` RigidTransform from an Eigen Isometry3.
 
@@ -2632,7 +2632,7 @@ Note:
         } SetFromIsometry3;
         // Symbol: drake::math::RigidTransform::SetIdentity
         struct /* SetIdentity */ {
-          // Source: drake/math/rigid_transform.h:682
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(Sets ``this`` RigidTransform so it corresponds to aligning the two
 frames so unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is
@@ -2641,7 +2641,7 @@ identity matrix and a zero position vector.)""";
         } SetIdentity;
         // Symbol: drake::math::RigidTransform::UpdateAxialRotation
         struct /* UpdateAxialRotation */ {
-          // Source: drake/math/rigid_transform.h:400
+          // Source: drake/math/rigid_transform.h
           const char* doc_2args =
 R"""((Internal use only) Given a new rotation angle θ, updates the axial
 rotation transform arX_BC to represent the new rotation angle. We
@@ -2663,7 +2663,7 @@ See also:
 
 Precondition:
     arX_BC is an special_xform_def "Axial rotation transform".)""";
-          // Source: drake/math/rigid_transform.h:423
+          // Source: drake/math/rigid_transform.h
           const char* doc_3args =
 R"""((Internal use only) Given sin(θ) and cos(θ), where θ is a new rotation
 angle, updates the axial rotation transform arX_BC to represent the
@@ -2695,7 +2695,7 @@ Precondition:
         } UpdateAxialRotation;
         // Symbol: drake::math::RigidTransform::UpdateAxialTranslation
         struct /* UpdateAxialTranslation */ {
-          // Source: drake/math/rigid_transform.h:536
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""((Internal use only) Given a new ``distance``, updates the axial
 translation transform atX_BC to represent the new translation by that
@@ -2717,7 +2717,7 @@ Precondition:
         } UpdateAxialTranslation;
         // Symbol: drake::math::RigidTransform::cast
         struct /* cast */ {
-          // Source: drake/math/rigid_transform.h:586
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(Creates a RigidTransform templatized on a scalar type U from a
 RigidTransform templatized on scalar type T. For example,
@@ -2749,7 +2749,7 @@ Note:
         } cast;
         // Symbol: drake::math::RigidTransform::inverse
         struct /* inverse */ {
-          // Source: drake/math/rigid_transform.h:739
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(Returns X_BA = X_AB⁻¹, the inverse of ``this`` RigidTransform.
 
@@ -2767,12 +2767,12 @@ Note:
         } inverse;
         // Symbol: drake::math::RigidTransform::operator*
         struct /* operator_mul */ {
-          // Source: drake/math/rigid_transform.h:810
+          // Source: drake/math/rigid_transform.h
           const char* doc_1args_other =
 R"""(Multiplies ``this`` RigidTransform ``X_AB`` by the ``other``
 RigidTransform ``X_BC`` and returns the RigidTransform ``X_AC = X_AB *
 X_BC``.)""";
-          // Source: drake/math/rigid_transform.h:825
+          // Source: drake/math/rigid_transform.h
           const char* doc_1args_X_BBq =
 R"""(Multiplies ``this`` RigidTransform ``X_AB`` by the translation-only
 transform ``X_BBq`` and returns the RigidTransform ``X_ABq = X_AB *
@@ -2782,7 +2782,7 @@ Note:
     The rotation matrix in the returned RigidTransform ``X_ABq`` is
     equal to the rotation matrix in ``X_AB``. `X_ABq` and ``X_AB``
     only differ by origin location.)""";
-          // Source: drake/math/rigid_transform.h:849
+          // Source: drake/math/rigid_transform.h
           const char* doc_1args_p_BoQ_B =
 R"""(Multiplies ``this`` RigidTransform ``X_AB`` by the position vector
 ``p_BoQ_B`` which is from Bo (B's origin) to an arbitrary point Q.
@@ -2792,7 +2792,7 @@ Parameter ``p_BoQ_B``:
 
 Returns ``p_AoQ_A``:
     position vector from Ao to Q, expressed in frame A.)""";
-          // Source: drake/math/rigid_transform.h:864
+          // Source: drake/math/rigid_transform.h
           const char* doc_1args_vec_B =
 R"""(Multiplies ``this`` RigidTransform ``X_AB`` by the 4-element vector
 ``vec_B``, equivalent to ``X_AB.GetAsMatrix4() * vec_B``.
@@ -2812,7 +2812,7 @@ Returns ``vec_A``:
 
 Raises:
     RuntimeError if the 4ᵗʰ element of vec_B is not 0 or 1.)""";
-          // Source: drake/math/rigid_transform.h:899
+          // Source: drake/math/rigid_transform.h
           const char* doc_1args_constEigenMatrixBase =
 R"""(Multiplies ``this`` RigidTransform ``X_AB`` by the n position vectors
 ``p_BoQ1_B`` ... `p_BoQn_B`, where ``p_BoQi_B`` is the iᵗʰ position
@@ -2858,7 +2858,7 @@ Note:
         } operator_mul;
         // Symbol: drake::math::RigidTransform::operator*=
         struct /* operator_imul */ {
-          // Source: drake/math/rigid_transform.h:798
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(In-place multiply of ``this`` RigidTransform ``X_AB`` by ``other``
 RigidTransform ``X_BC``.
@@ -2872,7 +2872,7 @@ Returns:
         } operator_imul;
         // Symbol: drake::math::RigidTransform::rotation
         struct /* rotation */ {
-          // Source: drake/math/rigid_transform.h:607
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(Returns R_AB, the rotation matrix portion of ``this`` RigidTransform.
 
@@ -2881,7 +2881,7 @@ Returns ``R_AB``:
         } rotation;
         // Symbol: drake::math::RigidTransform::set
         struct /* set */ {
-          // Source: drake/math/rigid_transform.h:278
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(Sets ``this`` RigidTransform from a RotationMatrix and a position
 vector.
@@ -2896,13 +2896,13 @@ Parameter ``p``:
         } set;
         // Symbol: drake::math::RigidTransform::set_rotation
         struct /* set_rotation */ {
-          // Source: drake/math/rigid_transform.h:611
+          // Source: drake/math/rigid_transform.h
           const char* doc_1args_R =
 R"""(Sets the RotationMatrix portion of ``this`` RigidTransform.
 
 Parameter ``R``:
     rotation matrix relating frames A and B (e.g., ``R_AB``).)""";
-          // Source: drake/math/rigid_transform.h:617
+          // Source: drake/math/rigid_transform.h
           const char* doc_1args_rpy =
 R"""(Sets the rotation part of ``this`` RigidTransform from a RollPitchYaw.
 
@@ -2912,7 +2912,7 @@ Parameter ``rpy``:
 See also:
     RotationMatrix::RotationMatrix(const RollPitchYaw<T>&) which
     describes the parameter, preconditions, etc.)""";
-          // Source: drake/math/rigid_transform.h:625
+          // Source: drake/math/rigid_transform.h
           const char* doc_1args_quaternion =
 R"""(Sets the rotation part of ``this`` RigidTransform from a Quaternion.
 
@@ -2922,7 +2922,7 @@ Parameter ``quaternion``:
 See also:
     RotationMatrix::RotationMatrix(const Eigen::Quaternion<T>&) which
     describes the parameter, preconditions, exception conditions, etc.)""";
-          // Source: drake/math/rigid_transform.h:633
+          // Source: drake/math/rigid_transform.h
           const char* doc_1args_theta_lambda =
 R"""(Sets the rotation part of ``this`` RigidTransform from an AngleAxis.
 
@@ -2935,7 +2935,7 @@ See also:
         } set_rotation;
         // Symbol: drake::math::RigidTransform::set_translation
         struct /* set_translation */ {
-          // Source: drake/math/rigid_transform.h:644
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(Sets the position vector portion of ``this`` RigidTransform.
 
@@ -2946,7 +2946,7 @@ Parameter ``p``:
         } set_translation;
         // Symbol: drake::math::RigidTransform::translation
         struct /* translation */ {
-          // Source: drake/math/rigid_transform.h:639
+          // Source: drake/math/rigid_transform.h
           const char* doc =
 R"""(Returns ``p_AoBo_A``, the position vector portion of ``this``
 RigidTransform, i.e., position vector from Ao (frame A's origin) to Bo
@@ -2955,13 +2955,13 @@ RigidTransform, i.e., position vector from Ao (frame A's origin) to Bo
       } RigidTransform;
       // Symbol: drake::math::RigidTransformd
       struct /* RigidTransformd */ {
-        // Source: drake/math/rigid_transform.h:1030
+        // Source: drake/math/rigid_transform.h
         const char* doc =
 R"""(Abbreviation (alias/typedef) for a RigidTransform double scalar type.)""";
       } RigidTransformd;
       // Symbol: drake::math::RollPitchYaw
       struct /* RollPitchYaw */ {
-        // Source: drake/math/roll_pitch_yaw.h:59
+        // Source: drake/math/roll_pitch_yaw.h
         const char* doc =
 R"""(This class represents the orientation between two arbitrary frames A
 and D associated with a Space-fixed (extrinsic) X-Y-Z rotation by
@@ -3018,7 +3018,7 @@ Note:
     sequence.)""";
         // Symbol: drake::math::RollPitchYaw::CalcAngularVelocityInChildFromRpyDt
         struct /* CalcAngularVelocityInChildFromRpyDt */ {
-          // Source: drake/math/roll_pitch_yaw.h:289
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Calculates angular velocity from ``this`` RollPitchYaw whose
 roll-pitch-yaw angles ``[r; p; y]`` relate the orientation of two
@@ -3051,7 +3051,7 @@ Returns:
         } CalcAngularVelocityInChildFromRpyDt;
         // Symbol: drake::math::RollPitchYaw::CalcAngularVelocityInParentFromRpyDt
         struct /* CalcAngularVelocityInParentFromRpyDt */ {
-          // Source: drake/math/roll_pitch_yaw.h:267
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Calculates angular velocity from ``this`` RollPitchYaw whose
 roll-pitch-yaw angles ``[r; p; y]`` relate the orientation of two
@@ -3085,7 +3085,7 @@ Returns:
         } CalcAngularVelocityInParentFromRpyDt;
         // Symbol: drake::math::RollPitchYaw::CalcMatrixRelatingRpyDtToAngularVelocityInChild
         struct /* CalcMatrixRelatingRpyDtToAngularVelocityInChild */ {
-          // Source: drake/math/roll_pitch_yaw.h:378
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(For ``this`` RollPitchYaw with roll-pitch-yaw angles [r; p; y] which
 relate the orientation of two generic frames A and D, returns the 3x3
@@ -3125,7 +3125,7 @@ See also:
         } CalcMatrixRelatingRpyDtToAngularVelocityInChild;
         // Symbol: drake::math::RollPitchYaw::CalcMatrixRelatingRpyDtToAngularVelocityInParent
         struct /* CalcMatrixRelatingRpyDtToAngularVelocityInParent */ {
-          // Source: drake/math/roll_pitch_yaw.h:355
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(For ``this`` RollPitchYaw with roll-pitch-yaw angles [r; p; y] which
 relate the orientation of two generic frames A and D, returns the 3x3
@@ -3165,7 +3165,7 @@ See also:
         } CalcMatrixRelatingRpyDtToAngularVelocityInParent;
         // Symbol: drake::math::RollPitchYaw::CalcRotationMatrixDt
         struct /* CalcRotationMatrixDt */ {
-          // Source: drake/math/roll_pitch_yaw.h:252
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Forms Ṙ, the ordinary derivative of the RotationMatrix ``R`` with
 respect to an independent variable ``t`` (`t` usually denotes time)
@@ -3185,7 +3185,7 @@ Returns:
         } CalcRotationMatrixDt;
         // Symbol: drake::math::RollPitchYaw::CalcRpyDDtFromAngularAccelInChild
         struct /* CalcRpyDDtFromAngularAccelInChild */ {
-          // Source: drake/math/roll_pitch_yaw.h:411
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Uses angular acceleration to compute the 2ⁿᵈ time-derivative of
 ``this`` RollPitchYaw whose angles ``[r; p; y]`` orient two generic
@@ -3214,7 +3214,7 @@ Note:
         } CalcRpyDDtFromAngularAccelInChild;
         // Symbol: drake::math::RollPitchYaw::CalcRpyDDtFromRpyDtAndAngularAccelInParent
         struct /* CalcRpyDDtFromRpyDtAndAngularAccelInParent */ {
-          // Source: drake/math/roll_pitch_yaw.h:396
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Uses angular acceleration to compute the 2ⁿᵈ time-derivative of
 ``this`` RollPitchYaw whose angles ``[r; p; y]`` orient two generic
@@ -3243,7 +3243,7 @@ Note:
         } CalcRpyDDtFromRpyDtAndAngularAccelInParent;
         // Symbol: drake::math::RollPitchYaw::CalcRpyDtFromAngularVelocityInChild
         struct /* CalcRpyDtFromAngularVelocityInChild */ {
-          // Source: drake/math/roll_pitch_yaw.h:326
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Uses angular velocity to compute the 1ˢᵗ time-derivative of ``this``
 RollPitchYaw whose angles ``[r; p; y]`` orient two generic frames A
@@ -3269,7 +3269,7 @@ See also:
         } CalcRpyDtFromAngularVelocityInChild;
         // Symbol: drake::math::RollPitchYaw::CalcRpyDtFromAngularVelocityInParent
         struct /* CalcRpyDtFromAngularVelocityInParent */ {
-          // Source: drake/math/roll_pitch_yaw.h:306
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Uses angular velocity to compute the 1ˢᵗ time-derivative of ``this``
 RollPitchYaw whose angles ``[r; p; y]`` orient two generic frames A
@@ -3295,7 +3295,7 @@ See also:
         } CalcRpyDtFromAngularVelocityInParent;
         // Symbol: drake::math::RollPitchYaw::DoesCosPitchAngleViolateGimbalLockTolerance
         struct /* DoesCosPitchAngleViolateGimbalLockTolerance */ {
-          // Source: drake/math/roll_pitch_yaw.h:211
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Returns true if the pitch-angle ``p`` is close to gimbal-lock, which
 means ``cos(p) ≈ 0`` or ``p ≈ (n*π + π/2)`` where ``n = 0, ±1, ±2,
@@ -3311,7 +3311,7 @@ Note:
         } DoesCosPitchAngleViolateGimbalLockTolerance;
         // Symbol: drake::math::RollPitchYaw::DoesPitchAngleViolateGimbalLockTolerance
         struct /* DoesPitchAngleViolateGimbalLockTolerance */ {
-          // Source: drake/math/roll_pitch_yaw.h:223
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Returns true if the pitch-angle ``p`` is within an internally-defined
 tolerance of gimbal-lock. In other words, this method returns true if
@@ -3327,7 +3327,7 @@ See also:
         } DoesPitchAngleViolateGimbalLockTolerance;
         // Symbol: drake::math::RollPitchYaw::GimbalLockPitchAngleTolerance
         struct /* GimbalLockPitchAngleTolerance */ {
-          // Source: drake/math/roll_pitch_yaw.h:231
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Returns the internally-defined allowable closeness (in radians) of the
 pitch angle ``p`` to gimbal-lock, i.e., the allowable proximity of
@@ -3335,7 +3335,7 @@ pitch angle ``p`` to gimbal-lock, i.e., the allowable proximity of
         } GimbalLockPitchAngleTolerance;
         // Symbol: drake::math::RollPitchYaw::IsNearlyEqualTo
         struct /* IsNearlyEqualTo */ {
-          // Source: drake/math/roll_pitch_yaw.h:179
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Compares each element of ``this`` to the corresponding element of
 ``other`` to check if they are the same to within a specified
@@ -3353,7 +3353,7 @@ Returns:
         } IsNearlyEqualTo;
         // Symbol: drake::math::RollPitchYaw::IsNearlySameOrientation
         struct /* IsNearlySameOrientation */ {
-          // Source: drake/math/roll_pitch_yaw.h:191
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Compares each element of the RotationMatrix R1 produced by ``this`` to
 the corresponding element of the RotationMatrix R2 produced by
@@ -3371,14 +3371,14 @@ Returns:
         } IsNearlySameOrientation;
         // Symbol: drake::math::RollPitchYaw::IsRollPitchYawInCanonicalRange
         struct /* IsRollPitchYawInCanonicalRange */ {
-          // Source: drake/math/roll_pitch_yaw.h:196
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Returns true if roll-pitch-yaw angles ``[r, p, y]`` are in the range
 ``-π <= r <= π``, `-π/2 <= p <= π/2`, ``-π <= y <= π``.)""";
         } IsRollPitchYawInCanonicalRange;
         // Symbol: drake::math::RollPitchYaw::IsValid
         struct /* IsValid */ {
-          // Source: drake/math/roll_pitch_yaw.h:238
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Returns true if ``rpy`` contains valid roll, pitch, yaw angles.
 
@@ -3390,7 +3390,7 @@ Note:
         } IsValid;
         // Symbol: drake::math::RollPitchYaw::RollPitchYaw<T>
         struct /* ctor */ {
-          // Source: drake/math/roll_pitch_yaw.h:66
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc_1args_rpy =
 R"""(Constructs a RollPitchYaw from a 3x1 array of angles.
 
@@ -3399,7 +3399,7 @@ Parameter ``rpy``:
 
 Raises:
     RuntimeError in debug builds if !IsValid(rpy).)""";
-          // Source: drake/math/roll_pitch_yaw.h:74
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc_3args_roll_pitch_yaw =
 R"""(Constructs a RollPitchYaw from roll, pitch, yaw angles (radian units).
 
@@ -3415,7 +3415,7 @@ Parameter ``yaw``:
 Raises:
     RuntimeError in debug builds if !IsValid(Vector3<T>(roll, pitch,
     yaw)).)""";
-          // Source: drake/math/roll_pitch_yaw.h:84
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc_1args_R =
 R"""(Uses a RotationMatrix to construct a RollPitchYaw with roll-pitch-yaw
 angles ``[r, p, y]`` in the range ``-π <= r <= π``, `-π/2 <= p <=
@@ -3428,7 +3428,7 @@ Note:
     This new high-accuracy algorithm avoids numerical round-off issues
     encountered by some algorithms when pitch is within 1E-6 of π/2 or
     -π/2.)""";
-          // Source: drake/math/roll_pitch_yaw.h:95
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc_1args_quaternion =
 R"""(Uses a Quaternion to construct a RollPitchYaw with roll-pitch-yaw
 angles ``[r, p, y]`` in the range ``-π <= r <= π``, `-π/2 <= p <=
@@ -3447,7 +3447,7 @@ Raises:
         } ctor;
         // Symbol: drake::math::RollPitchYaw::SetFromQuaternion
         struct /* SetFromQuaternion */ {
-          // Source: drake/math/roll_pitch_yaw.h:123
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Uses a Quaternion to set ``this`` RollPitchYaw with roll-pitch-yaw
 angles ``[r, p, y]`` in the range ``-π <= r <= π``, `-π/2 <= p <=
@@ -3466,7 +3466,7 @@ Raises:
         } SetFromQuaternion;
         // Symbol: drake::math::RollPitchYaw::SetFromRotationMatrix
         struct /* SetFromRotationMatrix */ {
-          // Source: drake/math/roll_pitch_yaw.h:134
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Uses a high-accuracy efficient algorithm to set the roll-pitch-yaw
 angles ``[r, p, y]`` that underlie ``this`` @RollPitchYaw, even when
@@ -3485,7 +3485,7 @@ Note:
         } SetFromRotationMatrix;
         // Symbol: drake::math::RollPitchYaw::ToMatrix3ViaRotationMatrix
         struct /* ToMatrix3ViaRotationMatrix */ {
-          // Source: drake/math/roll_pitch_yaw.h:169
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Returns the 3x3 matrix representation of the RotationMatrix that
 corresponds to ``this`` RollPitchYaw. This is a convenient "sugar"
@@ -3493,31 +3493,31 @@ method that is exactly equivalent to RotationMatrix(rpy).ToMatrix3().)""";
         } ToMatrix3ViaRotationMatrix;
         // Symbol: drake::math::RollPitchYaw::ToQuaternion
         struct /* ToQuaternion */ {
-          // Source: drake/math/roll_pitch_yaw.h:161
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Returns a quaternion representation of ``this`` RollPitchYaw.)""";
         } ToQuaternion;
         // Symbol: drake::math::RollPitchYaw::ToRotationMatrix
         struct /* ToRotationMatrix */ {
-          // Source: drake/math/roll_pitch_yaw.h:164
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Returns the RotationMatrix representation of ``this`` RollPitchYaw.)""";
         } ToRotationMatrix;
         // Symbol: drake::math::RollPitchYaw::pitch_angle
         struct /* pitch_angle */ {
-          // Source: drake/math/roll_pitch_yaw.h:143
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Returns the pitch-angle underlying ``this`` RollPitchYaw.)""";
         } pitch_angle;
         // Symbol: drake::math::RollPitchYaw::roll_angle
         struct /* roll_angle */ {
-          // Source: drake/math/roll_pitch_yaw.h:140
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Returns the roll-angle underlying ``this`` RollPitchYaw.)""";
         } roll_angle;
         // Symbol: drake::math::RollPitchYaw::set
         struct /* set */ {
-          // Source: drake/math/roll_pitch_yaw.h:102
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc_1args =
 R"""(Sets ``this`` RollPitchYaw from a 3x1 array of angles.
 
@@ -3526,7 +3526,7 @@ Parameter ``rpy``:
 
 Raises:
     RuntimeError in debug builds if !IsValid(rpy).)""";
-          // Source: drake/math/roll_pitch_yaw.h:112
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc_3args =
 R"""(Sets ``this`` RollPitchYaw from roll, pitch, yaw angles (units of
 radians).
@@ -3546,7 +3546,7 @@ Raises:
         } set;
         // Symbol: drake::math::RollPitchYaw::set_pitch_angle
         struct /* set_pitch_angle */ {
-          // Source: drake/math/roll_pitch_yaw.h:154
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Set the pitch-angle underlying ``this`` RollPitchYaw.
 
@@ -3555,7 +3555,7 @@ Parameter ``p``:
         } set_pitch_angle;
         // Symbol: drake::math::RollPitchYaw::set_roll_angle
         struct /* set_roll_angle */ {
-          // Source: drake/math/roll_pitch_yaw.h:150
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Set the roll-angle underlying ``this`` RollPitchYaw.
 
@@ -3564,7 +3564,7 @@ Parameter ``r``:
         } set_roll_angle;
         // Symbol: drake::math::RollPitchYaw::set_yaw_angle
         struct /* set_yaw_angle */ {
-          // Source: drake/math/roll_pitch_yaw.h:158
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Set the yaw-angle underlying ``this`` RollPitchYaw.
 
@@ -3573,26 +3573,26 @@ Parameter ``y``:
         } set_yaw_angle;
         // Symbol: drake::math::RollPitchYaw::vector
         struct /* vector */ {
-          // Source: drake/math/roll_pitch_yaw.h:137
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Returns the Vector3 underlying ``this`` RollPitchYaw.)""";
         } vector;
         // Symbol: drake::math::RollPitchYaw::yaw_angle
         struct /* yaw_angle */ {
-          // Source: drake/math/roll_pitch_yaw.h:146
+          // Source: drake/math/roll_pitch_yaw.h
           const char* doc =
 R"""(Returns the yaw-angle underlying ``this`` RollPitchYaw.)""";
         } yaw_angle;
       } RollPitchYaw;
       // Symbol: drake::math::RollPitchYawd
       struct /* RollPitchYawd */ {
-        // Source: drake/math/roll_pitch_yaw.h:571
+        // Source: drake/math/roll_pitch_yaw.h
         const char* doc =
 R"""(Abbreviation (alias/typedef) for a RollPitchYaw double scalar type.)""";
       } RollPitchYawd;
       // Symbol: drake::math::RotationMatrix
       struct /* RotationMatrix */ {
-        // Source: drake/math/rotation_matrix.h:58
+        // Source: drake/math/rotation_matrix.h
         const char* doc =
 R"""(This class represents a 3x3 rotation matrix between two arbitrary
 frames A and B and helps ensure users create valid rotation matrices.
@@ -3627,7 +3627,7 @@ Authors:
     Drake team (see https://drake.mit.edu/credits).)""";
         // Symbol: drake::math::RotationMatrix::ApplyAxialRotation
         struct /* ApplyAxialRotation */ {
-          // Source: drake/math/rotation_matrix.h:399
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""((Internal use only) Given an axial rotation about a coordinate axis
 (x, y, or z), uses it to efficiently re-express a vector. This takes
@@ -3651,7 +3651,7 @@ Precondition:
         } ApplyAxialRotation;
         // Symbol: drake::math::RotationMatrix::GetMaximumAbsoluteDifference
         struct /* GetMaximumAbsoluteDifference */ {
-          // Source: drake/math/rotation_matrix.h:828
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Computes the infinity norm of ``this`` - `other` (i.e., the maximum
 absolute value of the difference between the elements of ``this`` and
@@ -3665,7 +3665,7 @@ Returns:
         } GetMaximumAbsoluteDifference;
         // Symbol: drake::math::RotationMatrix::GetMeasureOfOrthonormality
         struct /* GetMeasureOfOrthonormality */ {
-          // Source: drake/math/rotation_matrix.h:749
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Returns how close the matrix R is to being a 3x3 orthonormal matrix by
 computing ``‖R ⋅ Rᵀ - I‖∞`` (i.e., the maximum absolute value of the
@@ -3680,12 +3680,12 @@ Returns:
         } GetMeasureOfOrthonormality;
         // Symbol: drake::math::RotationMatrix::Identity
         struct /* Identity */ {
-          // Source: drake/math/rotation_matrix.h:585
+          // Source: drake/math/rotation_matrix.h
           const char* doc = R"""()""";
         } Identity;
         // Symbol: drake::math::RotationMatrix::InvertAndCompose
         struct /* InvertAndCompose */ {
-          // Source: drake/math/rotation_matrix.h:699
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Calculates the product of ``this`` inverted and another
 RotationMatrix. If you consider ``this`` to be the rotation matrix
@@ -3708,7 +3708,7 @@ Note:
         } InvertAndCompose;
         // Symbol: drake::math::RotationMatrix::IsAxialRotationOrThrow
         struct /* IsAxialRotationOrThrow */ {
-          // Source: drake/math/rotation_matrix.h:541
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""((Internal use only) Throws an exception if ``this`` RotationMatrix is
 not an axial rotation about the indicated axis. See axial_rotation_def
@@ -3728,7 +3728,7 @@ Note:
         } IsAxialRotationOrThrow;
         // Symbol: drake::math::RotationMatrix::IsExactlyEqualTo
         struct /* IsExactlyEqualTo */ {
-          // Source: drake/math/rotation_matrix.h:820
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Compares each element of ``this`` to the corresponding element of
 ``other`` to check if they are exactly the same.
@@ -3745,7 +3745,7 @@ See also:
         } IsExactlyEqualTo;
         // Symbol: drake::math::RotationMatrix::IsExactlyIdentity
         struct /* IsExactlyIdentity */ {
-          // Source: drake/math/rotation_matrix.h:789
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Returns ``True`` if ``this`` is exactly equal to the identity matrix.
 
@@ -3754,7 +3754,7 @@ See also:
         } IsExactlyIdentity;
         // Symbol: drake::math::RotationMatrix::IsNearlyEqualTo
         struct /* IsNearlyEqualTo */ {
-          // Source: drake/math/rotation_matrix.h:809
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Compares each element of ``this`` to the corresponding element of
 ``other`` to check if they are the same to within a specified
@@ -3775,7 +3775,7 @@ See also:
         } IsNearlyEqualTo;
         // Symbol: drake::math::RotationMatrix::IsNearlyIdentity
         struct /* IsNearlyIdentity */ {
-          // Source: drake/math/rotation_matrix.h:797
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Returns true if ``this`` is within tolerance of the identity
 RigidTransform.
@@ -3789,7 +3789,7 @@ See also:
         } IsNearlyIdentity;
         // Symbol: drake::math::RotationMatrix::IsOrthonormal
         struct /* IsOrthonormal */ {
-          // Source: drake/math/rotation_matrix.h:760
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Tests if a generic Matrix3 has orthonormal vectors to within the
 threshold specified by ``tolerance``.
@@ -3806,7 +3806,7 @@ Returns:
         } IsOrthonormal;
         // Symbol: drake::math::RotationMatrix::IsValid
         struct /* IsValid */ {
-          // Source: drake/math/rotation_matrix.h:770
+          // Source: drake/math/rotation_matrix.h
           const char* doc_2args =
 R"""(Tests if a generic Matrix3 seems to be a proper orthonormal rotation
 matrix to within the threshold specified by ``tolerance``.
@@ -3821,7 +3821,7 @@ Parameter ``tolerance``:
 
 Returns:
     ``True`` if R is a valid rotation matrix.)""";
-          // Source: drake/math/rotation_matrix.h:778
+          // Source: drake/math/rotation_matrix.h
           const char* doc_1args =
 R"""(Tests if a generic Matrix3 is a proper orthonormal rotation matrix to
 within the threshold of get_internal_tolerance_for_orthonormality().
@@ -3831,7 +3831,7 @@ Parameter ``R``:
 
 Returns:
     ``True`` if R is a valid rotation matrix.)""";
-          // Source: drake/math/rotation_matrix.h:785
+          // Source: drake/math/rotation_matrix.h
           const char* doc_0args =
 R"""(Tests if ``this`` rotation matrix R is a proper orthonormal rotation
 matrix to within the threshold of
@@ -3842,7 +3842,7 @@ Returns:
         } IsValid;
         // Symbol: drake::math::RotationMatrix::MakeAxialRotation
         struct /* MakeAxialRotation */ {
-          // Source: drake/math/rotation_matrix.h:379
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""((Internal use only) Creates an axial rotation aR_AB consisting of a
 rotation of ``theta`` radians about x, y, or z. Of the 9 entries in
@@ -3864,7 +3864,7 @@ See also:
         } MakeAxialRotation;
         // Symbol: drake::math::RotationMatrix::MakeClosestRotationToIdentityFromUnitZ
         struct /* MakeClosestRotationToIdentityFromUnitZ */ {
-          // Source: drake/math/rotation_matrix.h:309
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Creates a 3D right-handed orthonormal basis B from a given unit vector
 u_A, returned as a rotation matrix R_AB. It consists of orthogonal
@@ -3884,7 +3884,7 @@ Returns ``R_AB``:
         } MakeClosestRotationToIdentityFromUnitZ;
         // Symbol: drake::math::RotationMatrix::MakeFromOneUnitVector
         struct /* MakeFromOneUnitVector */ {
-          // Source: drake/math/rotation_matrix.h:297
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""((Advanced) Creates a right-handed orthonormal basis B from a given
 unit vector u_A, returned as a rotation matrix R_AB.
@@ -3915,7 +3915,7 @@ Returns ``R_AB``:
         } MakeFromOneUnitVector;
         // Symbol: drake::math::RotationMatrix::MakeFromOneVector
         struct /* MakeFromOneVector */ {
-          // Source: drake/math/rotation_matrix.h:278
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Creates a 3D right-handed orthonormal basis B from a given vector b_A,
 returned as a rotation matrix R_AB. It consists of orthogonal unit
@@ -3948,7 +3948,7 @@ Returns ``R_AB``:
         } MakeFromOneVector;
         // Symbol: drake::math::RotationMatrix::MakeFromOrthonormalColumns
         struct /* MakeFromOrthonormalColumns */ {
-          // Source: drake/math/rotation_matrix.h:193
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""((Advanced) Makes the RotationMatrix ``R_AB`` from right-handed
 orthogonal unit vectors ``Bx``, `By`, ``Bz`` so the columns of
@@ -3979,7 +3979,7 @@ Note:
         } MakeFromOrthonormalColumns;
         // Symbol: drake::math::RotationMatrix::MakeFromOrthonormalRows
         struct /* MakeFromOrthonormalRows */ {
-          // Source: drake/math/rotation_matrix.h:214
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""((Advanced) Makes the RotationMatrix ``R_AB`` from right-handed
 orthogonal unit vectors ``Ax``, `Ay`, ``Az`` so the rows of ``R_AB``
@@ -4010,7 +4010,7 @@ Note:
         } MakeFromOrthonormalRows;
         // Symbol: drake::math::RotationMatrix::MakeUnchecked
         struct /* MakeUnchecked */ {
-          // Source: drake/math/rotation_matrix.h:174
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""((Advanced) Makes a RotationMatrix from a Matrix3. No check is
 performed to test whether or not the parameter R is a valid rotation
@@ -4018,7 +4018,7 @@ matrix.)""";
         } MakeUnchecked;
         // Symbol: drake::math::RotationMatrix::MakeXRotation
         struct /* MakeXRotation */ {
-          // Source: drake/math/rotation_matrix.h:234
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Makes the RotationMatrix ``R_AB`` associated with rotating a frame B
 relative to a frame A by an angle ``theta`` about unit vector ``Ax =
@@ -4054,7 +4054,7 @@ Note:
         } MakeXRotation;
         // Symbol: drake::math::RotationMatrix::MakeYRotation
         struct /* MakeYRotation */ {
-          // Source: drake/math/rotation_matrix.h:248
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Makes the RotationMatrix ``R_AB`` associated with rotating a frame B
 relative to a frame A by an angle ``theta`` about unit vector ``Ay =
@@ -4090,7 +4090,7 @@ Note:
         } MakeYRotation;
         // Symbol: drake::math::RotationMatrix::MakeZRotation
         struct /* MakeZRotation */ {
-          // Source: drake/math/rotation_matrix.h:262
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Makes the RotationMatrix ``R_AB`` associated with rotating a frame B
 relative to a frame A by an angle ``theta`` about unit vector ``Az =
@@ -4126,7 +4126,7 @@ Note:
         } MakeZRotation;
         // Symbol: drake::math::RotationMatrix::PostMultiplyByAxialRotation
         struct /* PostMultiplyByAxialRotation */ {
-          // Source: drake/math/rotation_matrix.h:479
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""((Internal use only) With ``this`` a general rotation R_AB, and given
 an axial rotation aR_BC, efficiently forms R_AC = R_AB * aR_BC. This
@@ -4151,7 +4151,7 @@ Precondition:
         } PostMultiplyByAxialRotation;
         // Symbol: drake::math::RotationMatrix::PreMultiplyByAxialRotation
         struct /* PreMultiplyByAxialRotation */ {
-          // Source: drake/math/rotation_matrix.h:509
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""((Internal use only) With ``this`` a general rotation R_BC, and given
 an axial rotation aR_AB, efficiently forms R_AC = aR_AB * R_BC. This
@@ -4176,7 +4176,7 @@ Precondition:
         } PreMultiplyByAxialRotation;
         // Symbol: drake::math::RotationMatrix::ProjectToRotationMatrix
         struct /* ProjectToRotationMatrix */ {
-          // Source: drake/math/rotation_matrix.h:864
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Given an approximate rotation matrix M, finds the RotationMatrix R
 closest to M. Closeness is measured with a matrix-2 norm (or
@@ -4226,11 +4226,11 @@ https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-241j-d
         } ProjectToRotationMatrix;
         // Symbol: drake::math::RotationMatrix::RotationMatrix<type-parameter-0-0>
         struct /* ctor */ {
-          // Source: drake/math/rotation_matrix.h:64
+          // Source: drake/math/rotation_matrix.h
           const char* doc_0args =
 R"""(Constructs a 3x3 identity RotationMatrix -- which corresponds to
 aligning two frames (so that unit vectors Ax = Bx, Ay = By, Az = Bz).)""";
-          // Source: drake/math/rotation_matrix.h:69
+          // Source: drake/math/rotation_matrix.h
           const char* doc_1args_R =
 R"""(Constructs a RotationMatrix from a Matrix3.
 
@@ -4239,7 +4239,7 @@ Parameter ``R``:
 
 Raises:
     RuntimeError in debug builds if R fails IsValid(R).)""";
-          // Source: drake/math/rotation_matrix.h:79
+          // Source: drake/math/rotation_matrix.h
           const char* doc_1args_quaternion =
 R"""(Constructs a RotationMatrix from an Eigen::Quaternion.
 
@@ -4257,7 +4257,7 @@ Note:
     This method has the effect of normalizing its ``quaternion``
     argument, without the inefficiency of the square-root associated
     with normalization.)""";
-          // Source: drake/math/rotation_matrix.h:104
+          // Source: drake/math/rotation_matrix.h
           const char* doc_1args_theta_lambda =
 R"""(Constructs a RotationMatrix from an Eigen::AngleAxis.
 
@@ -4272,7 +4272,7 @@ Raises:
     built from ``theta_lambda`` fails IsValid(R). For example, an
     exception is thrown if ``lambda`` is zero or contains a NaN or
     infinity.)""";
-          // Source: drake/math/rotation_matrix.h:170
+          // Source: drake/math/rotation_matrix.h
           const char* doc_1args_rpy =
 R"""(Constructs a RotationMatrix from an RollPitchYaw. In other words,
 makes the RotationMatrix for a Space-fixed (extrinsic) X-Y-Z rotation
@@ -4334,7 +4334,7 @@ Note:
     Vice-versa, there are high-accuracy RollPitchYaw
     constructor/methods that form a RollPitchYaw from a rotation
     matrix.)""";
-          // Source: drake/math/rotation_matrix.h:932
+          // Source: drake/math/rotation_matrix.h
           const char* doc_1args_internalDoNotInitializeMemberFields =
 R"""((Internal use only) Constructs a RotationMatrix without initializing
 the underlying 3x3 matrix. For use by RigidTransform and
@@ -4342,7 +4342,7 @@ RotationMatrix only.)""";
         } ctor;
         // Symbol: drake::math::RotationMatrix::ToAngleAxis
         struct /* ToAngleAxis */ {
-          // Source: drake/math/rotation_matrix.h:925
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Returns an AngleAxis ``theta_lambda`` containing an angle ``theta``
 and unit vector (axis direction) ``lambda`` that represents ``this``
@@ -4360,13 +4360,13 @@ Returns:
         } ToAngleAxis;
         // Symbol: drake::math::RotationMatrix::ToQuaternion
         struct /* ToQuaternion */ {
-          // Source: drake/math/rotation_matrix.h:892
+          // Source: drake/math/rotation_matrix.h
           const char* doc_0args =
 R"""(Returns a quaternion q that represents ``this`` RotationMatrix. Since
 the quaternion ``q`` and ``-q`` represent the same RotationMatrix,
 this method chooses to return a canonical quaternion, i.e., with q(0)
 >= 0.)""";
-          // Source: drake/math/rotation_matrix.h:902
+          // Source: drake/math/rotation_matrix.h
           const char* doc_1args =
 R"""(Returns a unit quaternion q associated with the 3x3 matrix M. Since
 the quaternion ``q`` and ``-q`` represent the same RotationMatrix,
@@ -4386,13 +4386,13 @@ Raises:
         } ToQuaternion;
         // Symbol: drake::math::RotationMatrix::ToQuaternionAsVector4
         struct /* ToQuaternionAsVector4 */ {
-          // Source: drake/math/rotation_matrix.h:907
+          // Source: drake/math/rotation_matrix.h
           const char* doc_0args =
 R"""(Utility method to return the Vector4 associated with ToQuaternion().
 
 See also:
     ToQuaternion().)""";
-          // Source: drake/math/rotation_matrix.h:914
+          // Source: drake/math/rotation_matrix.h
           const char* doc_1args =
 R"""(Utility method to return the Vector4 associated with ToQuaternion(M).
 
@@ -4404,7 +4404,7 @@ See also:
         } ToQuaternionAsVector4;
         // Symbol: drake::math::RotationMatrix::ToRollPitchYaw
         struct /* ToRollPitchYaw */ {
-          // Source: drake/math/rotation_matrix.h:887
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Returns a RollPitchYaw that represents ``this`` RotationMatrix, with
 roll-pitch-yaw angles ``[r, p, y]`` in the range ``-π <= r <= π``,
@@ -4417,7 +4417,7 @@ Note:
         } ToRollPitchYaw;
         // Symbol: drake::math::RotationMatrix::UpdateAxialRotation
         struct /* UpdateAxialRotation */ {
-          // Source: drake/math/rotation_matrix.h:430
+          // Source: drake/math/rotation_matrix.h
           const char* doc_2args =
 R"""((Internal use only) Given a new rotation angle θ, updates the axial
 rotation aR_BC to represent the new rotation angle. We expect that
@@ -4441,7 +4441,7 @@ See also:
 Precondition:
     aR_BC is an axial_rotation_def "axial rotation matrix" about the
     given ``axis``.)""";
-          // Source: drake/math/rotation_matrix.h:453
+          // Source: drake/math/rotation_matrix.h
           const char* doc_3args =
 R"""((Internal use only) Given sin(θ) and cos(θ), where θ is a new rotation
 angle, updates the axial rotation aR_BC to represent the new rotation
@@ -4474,7 +4474,7 @@ Precondition:
         } UpdateAxialRotation;
         // Symbol: drake::math::RotationMatrix::cast
         struct /* cast */ {
-          // Source: drake/math/rotation_matrix.h:558
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Creates a RotationMatrix templatized on a scalar type U from a
 RotationMatrix templatized on scalar type T. For example,
@@ -4506,7 +4506,7 @@ Note:
         } cast;
         // Symbol: drake::math::RotationMatrix::col
         struct /* col */ {
-          // Source: drake/math/rotation_matrix.h:643
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Returns ``this`` rotation matrix's iᵗʰ column (i = 0, 1, 2). For
 ``this`` rotation matrix R_AB (which relates right-handed sets of
@@ -4532,7 +4532,7 @@ Note:
         } col;
         // Symbol: drake::math::RotationMatrix::get_internal_tolerance_for_orthonormality
         struct /* get_internal_tolerance_for_orthonormality */ {
-          // Source: drake/math/rotation_matrix.h:878
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Returns an internal tolerance that checks rotation matrix
 orthonormality.
@@ -4550,12 +4550,12 @@ Note:
         } get_internal_tolerance_for_orthonormality;
         // Symbol: drake::math::RotationMatrix::inverse
         struct /* inverse */ {
-          // Source: drake/math/rotation_matrix.h:593
+          // Source: drake/math/rotation_matrix.h
           const char* doc = R"""()""";
         } inverse;
         // Symbol: drake::math::RotationMatrix::matrix
         struct /* matrix */ {
-          // Source: drake/math/rotation_matrix.h:606
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Returns the Matrix3 underlying a RotationMatrix.
 
@@ -4564,7 +4564,7 @@ See also:
         } matrix;
         // Symbol: drake::math::RotationMatrix::operator*
         struct /* operator_mul */ {
-          // Source: drake/math/rotation_matrix.h:678
+          // Source: drake/math/rotation_matrix.h
           const char* doc_1args_other =
 R"""(Calculates ``this`` rotation matrix ``R_AB`` multiplied by ``other``
 rotation matrix ``R_BC``, returning the composition ``R_AB * R_BC``.
@@ -4580,7 +4580,7 @@ Note:
     It is possible (albeit improbable) to create an invalid rotation
     matrix by accumulating round-off error with a large number of
     multiplies.)""";
-          // Source: drake/math/rotation_matrix.h:715
+          // Source: drake/math/rotation_matrix.h
           const char* doc_1args_v_B =
 R"""(Calculates ``this`` rotation matrix ``R_AB`` multiplied by an
 arbitrary Vector3 expressed in the B frame.
@@ -4590,7 +4590,7 @@ Parameter ``v_B``:
 
 Returns:
     3x1 vector ``v_A = R_AB * v_B``.)""";
-          // Source: drake/math/rotation_matrix.h:735
+          // Source: drake/math/rotation_matrix.h
           const char* doc_1args_constEigenMatrixBase =
 R"""(Multiplies ``this`` RotationMatrix ``R_AB`` by the n vectors ``v1``,
 ... `vn`, where each vector has 3 elements and is expressed in frame
@@ -4624,7 +4624,7 @@ Returns ``v_A``:
         } operator_mul;
         // Symbol: drake::math::RotationMatrix::operator*=
         struct /* operator_imul */ {
-          // Source: drake/math/rotation_matrix.h:658
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(In-place multiply of ``this`` rotation matrix ``R_AB`` by ``other``
 rotation matrix ``R_BC``. On return, ``this`` is set to equal ``R_AB *
@@ -4643,7 +4643,7 @@ Note:
         } operator_imul;
         // Symbol: drake::math::RotationMatrix::row
         struct /* row */ {
-          // Source: drake/math/rotation_matrix.h:621
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Returns ``this`` rotation matrix's iᵗʰ row (i = 0, 1, 2). For ``this``
 rotation matrix R_AB (which relates right-handed sets of orthogonal
@@ -4669,7 +4669,7 @@ Note:
         } row;
         // Symbol: drake::math::RotationMatrix::set
         struct /* set */ {
-          // Source: drake/math/rotation_matrix.h:578
+          // Source: drake/math/rotation_matrix.h
           const char* doc =
 R"""(Sets ``this`` RotationMatrix from a Matrix3.
 
@@ -4681,19 +4681,19 @@ Raises:
         } set;
         // Symbol: drake::math::RotationMatrix::transpose
         struct /* transpose */ {
-          // Source: drake/math/rotation_matrix.h:600
+          // Source: drake/math/rotation_matrix.h
           const char* doc = R"""()""";
         } transpose;
       } RotationMatrix;
       // Symbol: drake::math::RotationMatrixd
       struct /* RotationMatrixd */ {
-        // Source: drake/math/rotation_matrix.h:1198
+        // Source: drake/math/rotation_matrix.h
         const char* doc =
 R"""(Abbreviation (alias/typedef) for a RotationMatrix double scalar type.)""";
       } RotationMatrixd;
       // Symbol: drake::math::SoftOverMax
       struct /* SoftOverMax */ {
-        // Source: drake/math/soft_min_max.h:19
+        // Source: drake/math/soft_min_max.h
         const char* doc =
 R"""(Computes a smooth over approximation of max function, namely
 SoftOverMax(x) >= max(x). Mathematically we compute this as (log (∑ᵢ
@@ -4717,7 +4717,7 @@ Raises:
       } SoftOverMax;
       // Symbol: drake::math::SoftOverMin
       struct /* SoftOverMin */ {
-        // Source: drake/math/soft_min_max.h:48
+        // Source: drake/math/soft_min_max.h
         const char* doc =
 R"""(Computes a smooth over approximation of min function, namely
 SoftOverMin(x) >= min(x). Mathematically we compute this as ∑ᵢ
@@ -4741,7 +4741,7 @@ Raises:
       } SoftOverMin;
       // Symbol: drake::math::SoftUnderMax
       struct /* SoftUnderMax */ {
-        // Source: drake/math/soft_min_max.h:33
+        // Source: drake/math/soft_min_max.h
         const char* doc =
 R"""(Computes a smooth under approximation of max function, namely
 SoftUnderMax(x) <= max(x). Mathematically we compute this as ∑ᵢ
@@ -4765,7 +4765,7 @@ Raises:
       } SoftUnderMax;
       // Symbol: drake::math::SoftUnderMin
       struct /* SoftUnderMin */ {
-        // Source: drake/math/soft_min_max.h:61
+        // Source: drake/math/soft_min_max.h
         const char* doc =
 R"""(Computes a smooth under approximation of min function, namely
 SoftUnderMin(x) <= min(x). Mathematically we compute this as -(log (∑ᵢ
@@ -4789,7 +4789,7 @@ Raises:
       } SoftUnderMin;
       // Symbol: drake::math::SolveLinearSystem
       struct /* SolveLinearSystem */ {
-        // Source: drake/math/linear_solve.h:105
+        // Source: drake/math/linear_solve.h
         const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Specialized when A and b are both double or symbolic::Expression
 matrices. See linear_solve_given_solver for more details. Note that
@@ -4799,7 +4799,7 @@ overloaded function, where A is a matrix of AutoDiffScalar.)""";
       } SolveLinearSystem;
       // Symbol: drake::math::SparseMatrixToRowColumnValueVectors
       struct /* SparseMatrixToRowColumnValueVectors */ {
-        // Source: drake/math/eigen_sparse_triplet.h:63
+        // Source: drake/math/eigen_sparse_triplet.h
         const char* doc =
 R"""(For a sparse matrix, return the row indices, the column indices, and
 value of the non-zero entries. For example, the matrix
@@ -4827,7 +4827,7 @@ Parameter ``val``:
       } SparseMatrixToRowColumnValueVectors;
       // Symbol: drake::math::SparseMatrixToTriplets
       struct /* SparseMatrixToTriplets */ {
-        // Source: drake/math/eigen_sparse_triplet.h:18
+        // Source: drake/math/eigen_sparse_triplet.h
         const char* doc =
 R"""(For a sparse matrix, return a vector of triplets, such that we can
 reconstruct the matrix using setFromTriplet function
@@ -4842,7 +4842,7 @@ Returns:
       } SparseMatrixToTriplets;
       // Symbol: drake::math::StdVectorToEigen
       struct /* StdVectorToEigen */ {
-        // Source: drake/math/matrix_util.h:198
+        // Source: drake/math/matrix_util.h
         const char* doc =
 R"""(Converts a std::vector<MatrixX<T>> into a MatrixX<T>, composing each
 element of ``vec`` into a column of the returned matrix.
@@ -4853,7 +4853,7 @@ Precondition:
       } StdVectorToEigen;
       // Symbol: drake::math::ToLowerTriangularColumnsFromMatrix
       struct /* ToLowerTriangularColumnsFromMatrix */ {
-        // Source: drake/math/matrix_util.h:134
+        // Source: drake/math/matrix_util.h
         const char* doc =
 R"""(Given a square matrix, extract the lower triangular part as a stacked
 column vector. This is a particularly useful operation when
@@ -4861,12 +4861,12 @@ vectorizing symmetric matrices.)""";
       } ToLowerTriangularColumnsFromMatrix;
       // Symbol: drake::math::ToSymmetricMatrixFromLowerTriangularColumns
       struct /* ToSymmetricMatrixFromLowerTriangularColumns */ {
-        // Source: drake/math/matrix_util.h:98
+        // Source: drake/math/matrix_util.h
         const char* doc_dynamic_size =
 R"""(Given a column vector containing the stacked columns of the lower
 triangular part of a square matrix, returning a symmetric matrix whose
 lower triangular part is the same as the original matrix.)""";
-        // Source: drake/math/matrix_util.h:118
+        // Source: drake/math/matrix_util.h
         const char* doc =
 R"""(Given a column vector containing the stacked columns of the lower
 triangular part of a square matrix, returning a symmetric matrix whose
@@ -4877,7 +4877,7 @@ Template parameter ``rows``:
       } ToSymmetricMatrixFromLowerTriangularColumns;
       // Symbol: drake::math::UniformPtsOnSphereFibonacci
       struct /* UniformPtsOnSphereFibonacci */ {
-        // Source: drake/math/evenly_distributed_pts_on_sphere.h:17
+        // Source: drake/math/evenly_distributed_pts_on_sphere.h
         const char* doc =
 R"""(Deterministically generates approximate evenly distributed points on a
 unit sphere. This method uses Fibonacci number. For the detailed math,
@@ -4897,7 +4897,7 @@ Precondition:
       } UniformPtsOnSphereFibonacci;
       // Symbol: drake::math::UniformlyRandomAngleAxis
       struct /* UniformlyRandomAngleAxis */ {
-        // Source: drake/math/random_rotation.h:45
+        // Source: drake/math/random_rotation.h
         const char* doc =
 R"""(Generates a rotation (in the axis-angle representation) that rotates a
 point on the unit sphere to another point on the unit sphere with a
@@ -4905,7 +4905,7 @@ uniform distribution over the sphere.)""";
       } UniformlyRandomAngleAxis;
       // Symbol: drake::math::UniformlyRandomQuaternion
       struct /* UniformlyRandomQuaternion */ {
-        // Source: drake/math/random_rotation.h:24
+        // Source: drake/math/random_rotation.h
         const char* doc =
 R"""(Generates a rotation (in the quaternion representation) that rotates a
 point on the unit sphere to another point on the unit sphere with a
@@ -4916,7 +4916,7 @@ Graphics Gems III, pages 124-132. Academic, New York, 1992.)""";
       } UniformlyRandomQuaternion;
       // Symbol: drake::math::UniformlyRandomRPY
       struct /* UniformlyRandomRPY */ {
-        // Source: drake/math/random_rotation.h:67
+        // Source: drake/math/random_rotation.h
         const char* doc =
 R"""(Generates a rotation (in the roll-pitch-yaw representation) that
 rotates a point on the unit sphere to another point on the unit sphere
@@ -4924,7 +4924,7 @@ with a uniform distribution over the sphere.)""";
       } UniformlyRandomRPY;
       // Symbol: drake::math::UniformlyRandomRotationMatrix
       struct /* UniformlyRandomRotationMatrix */ {
-        // Source: drake/math/random_rotation.h:56
+        // Source: drake/math/random_rotation.h
         const char* doc =
 R"""(Generates a rotation (in the rotation matrix representation) that
 rotates a point on the unit sphere to another point on the unit sphere
@@ -4932,12 +4932,12 @@ with a uniform distribution over the sphere.)""";
       } UniformlyRandomRotationMatrix;
       // Symbol: drake::math::VectorToSkewSymmetric
       struct /* VectorToSkewSymmetric */ {
-        // Source: drake/math/cross_product.h:11
+        // Source: drake/math/cross_product.h
         const char* doc = R"""()""";
       } VectorToSkewSymmetric;
       // Symbol: drake::math::dquat2rotmat
       struct /* dquat2rotmat */ {
-        // Source: drake/math/rotation_conversion_gradient.h:21
+        // Source: drake/math/rotation_conversion_gradient.h
         const char* doc =
 R"""(Computes the gradient of the function that converts a unit length
 quaternion to a rotation matrix.
@@ -4950,7 +4950,7 @@ Returns:
       } dquat2rotmat;
       // Symbol: drake::math::drotmat2quat
       struct /* drotmat2quat */ {
-        // Source: drake/math/rotation_conversion_gradient.h:114
+        // Source: drake/math/rotation_conversion_gradient.h
         const char* doc =
 R"""(Computes the gradient of the function that converts rotation matrix to
 quaternion.
@@ -4969,7 +4969,7 @@ Returns:
       } drotmat2quat;
       // Symbol: drake::math::drotmat2rpy
       struct /* drotmat2rpy */ {
-        // Source: drake/math/rotation_conversion_gradient.h:56
+        // Source: drake/math/rotation_conversion_gradient.h
         const char* doc =
 R"""(Computes the gradient of the function that converts a rotation matrix
 to body-fixed z-y'-x'' Euler angles.
@@ -4987,12 +4987,12 @@ Returns:
       } drotmat2rpy;
       // Symbol: drake::math::getSubMatrixGradient
       struct /* getSubMatrixGradient */ {
-        // Source: drake/math/gradient_util.h:176
+        // Source: drake/math/gradient_util.h
         const char* doc = R"""()""";
       } getSubMatrixGradient;
       // Symbol: drake::math::hessian
       struct /* hessian */ {
-        // Source: drake/math/jacobian.h:162
+        // Source: drake/math/jacobian.h
         const char* doc =
 R"""(Computes a matrix of AutoDiffScalars from which the value, Jacobian,
 and Hessian of a function
@@ -5023,12 +5023,12 @@ Returns:
       } hessian;
       // Symbol: drake::math::intRange
       struct /* intRange */ {
-        // Source: drake/math/gradient_util.h:16
+        // Source: drake/math/gradient_util.h
         const char* doc = R"""()""";
       } intRange;
       // Symbol: drake::math::is_quaternion_in_canonical_form
       struct /* is_quaternion_in_canonical_form */ {
-        // Source: drake/math/quaternion.h:125
+        // Source: drake/math/quaternion.h
         const char* doc =
 R"""(This function tests whether a quaternion is in "canonical form"
 meaning that it tests whether the quaternion [w, x, y, z] has a
@@ -5047,7 +5047,7 @@ Returns:
       } is_quaternion_in_canonical_form;
       // Symbol: drake::math::jacobian
       struct /* jacobian */ {
-        // Source: drake/math/jacobian.h:56
+        // Source: drake/math/jacobian.h
         const char* doc =
 R"""(Computes a matrix of AutoDiffScalars from which both the value and the
 Jacobian of a function
@@ -5101,52 +5101,52 @@ Returns:
       } jacobian;
       // Symbol: drake::math::matGradMult
       struct /* matGradMult */ {
-        // Source: drake/math/gradient_util.h:142
+        // Source: drake/math/gradient_util.h
         const char* doc = R"""()""";
       } matGradMult;
       // Symbol: drake::math::matGradMultMat
       struct /* matGradMultMat */ {
-        // Source: drake/math/gradient_util.h:106
+        // Source: drake/math/gradient_util.h
         const char* doc = R"""()""";
       } matGradMultMat;
       // Symbol: drake::math::quatConjugate
       struct /* quatConjugate */ {
-        // Source: drake/math/quaternion.h:44
+        // Source: drake/math/quaternion.h
         const char* doc = R"""()""";
       } quatConjugate;
       // Symbol: drake::math::quatDiff
       struct /* quatDiff */ {
-        // Source: drake/math/quaternion.h:93
+        // Source: drake/math/quaternion.h
         const char* doc = R"""()""";
       } quatDiff;
       // Symbol: drake::math::quatDiffAxisInvar
       struct /* quatDiffAxisInvar */ {
-        // Source: drake/math/quaternion.h:102
+        // Source: drake/math/quaternion.h
         const char* doc = R"""()""";
       } quatDiffAxisInvar;
       // Symbol: drake::math::quatProduct
       struct /* quatProduct */ {
-        // Source: drake/math/quaternion.h:55
+        // Source: drake/math/quaternion.h
         const char* doc = R"""()""";
       } quatProduct;
       // Symbol: drake::math::quatRotateVec
       struct /* quatRotateVec */ {
-        // Source: drake/math/quaternion.h:75
+        // Source: drake/math/quaternion.h
         const char* doc = R"""()""";
       } quatRotateVec;
       // Symbol: drake::math::setSubMatrixGradient
       struct /* setSubMatrixGradient */ {
-        // Source: drake/math/gradient_util.h:238
+        // Source: drake/math/gradient_util.h
         const char* doc = R"""()""";
       } setSubMatrixGradient;
       // Symbol: drake::math::transposeGrad
       struct /* transposeGrad */ {
-        // Source: drake/math/gradient_util.h:89
+        // Source: drake/math/gradient_util.h
         const char* doc = R"""()""";
       } transposeGrad;
       // Symbol: drake::math::wrap_to
       struct /* wrap_to */ {
-        // Source: drake/math/wrap_to.h:19
+        // Source: drake/math/wrap_to.h
         const char* doc =
 R"""(For variables that are meant to be periodic, (e.g. over a 2π
 interval), wraps ``value`` into the interval ``[low, high)``.

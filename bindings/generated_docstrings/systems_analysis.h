@@ -51,7 +51,7 @@ constexpr struct /* pydrake_doc_systems_analysis */ {
     struct /* systems */ {
       // Symbol: drake::systems::AntiderivativeFunction
       struct /* AntiderivativeFunction */ {
-        // Source: drake/systems/analysis/antiderivative_function.h:51
+        // Source: drake/systems/analysis/antiderivative_function.h
         const char* doc =
 R"""(A thin wrapper of the ScalarInitialValueProblem class that, in concert
 with Drake's ODE initial value problem solvers ("integrators"),
@@ -86,7 +86,7 @@ For further insight into its use, consider the following examples.
   𝐤 ≜ [l] and evaluating F(u; 𝐤) at u = N yields the result.)""";
         // Symbol: drake::systems::AntiderivativeFunction::AntiderivativeFunction<T>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/antiderivative_function.h:68
+          // Source: drake/systems/analysis/antiderivative_function.h
           const char* doc =
 R"""(Constructs the antiderivative function of the given
 ``integrable_function``, parameterized with ``k``.
@@ -100,7 +100,7 @@ Parameter ``k``:
         } ctor;
         // Symbol: drake::systems::AntiderivativeFunction::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/systems/analysis/antiderivative_function.h:79
+          // Source: drake/systems/analysis/antiderivative_function.h
           const char* doc =
 R"""(Evaluates the definite integral F(u; 𝐤) = ∫ᵥᵘ f(x; 𝐤) dx from the
 lower integration bound ``v`` to ``u`` using the parameter vector 𝐤
@@ -120,7 +120,7 @@ Raises:
         } Evaluate;
         // Symbol: drake::systems::AntiderivativeFunction::IntegrableFunction
         struct /* IntegrableFunction */ {
-          // Source: drake/systems/analysis/antiderivative_function.h:60
+          // Source: drake/systems/analysis/antiderivative_function.h
           const char* doc =
 R"""(Scalar integrable function f(x; 𝐤) type.
 
@@ -135,7 +135,7 @@ Returns:
         } IntegrableFunction;
         // Symbol: drake::systems::AntiderivativeFunction::MakeDenseEvalFunction
         struct /* MakeDenseEvalFunction */ {
-          // Source: drake/systems/analysis/antiderivative_function.h:102
+          // Source: drake/systems/analysis/antiderivative_function.h
           const char* doc =
 R"""(Evaluates and yields an approximation of the definite integral F(u; 𝐤)
 = ∫ᵥᵘ f(x; 𝐤) dx for v ≤ u ≤ w, i.e. the closed interval that goes
@@ -170,19 +170,19 @@ Raises:
         } MakeDenseEvalFunction;
         // Symbol: drake::systems::AntiderivativeFunction::get_integrator
         struct /* get_integrator */ {
-          // Source: drake/systems/analysis/antiderivative_function.h:127
+          // Source: drake/systems/analysis/antiderivative_function.h
           const char* doc =
 R"""(Gets a reference to the internal integrator instance.)""";
         } get_integrator;
         // Symbol: drake::systems::AntiderivativeFunction::get_mutable_integrator
         struct /* get_mutable_integrator */ {
-          // Source: drake/systems/analysis/antiderivative_function.h:132
+          // Source: drake/systems/analysis/antiderivative_function.h
           const char* doc =
 R"""(Gets a mutable reference to the internal integrator instance.)""";
         } get_mutable_integrator;
         // Symbol: drake::systems::AntiderivativeFunction::reset_integrator
         struct /* reset_integrator */ {
-          // Source: drake/systems/analysis/antiderivative_function.h:121
+          // Source: drake/systems/analysis/antiderivative_function.h
           const char* doc =
 R"""(Resets the internal integrator instance.
 
@@ -221,7 +221,7 @@ Warning:
       } AntiderivativeFunction;
       // Symbol: drake::systems::ApplySimulatorConfig
       struct /* ApplySimulatorConfig */ {
-        // Source: drake/systems/analysis/simulator_config_functions.h:60
+        // Source: drake/systems/analysis/simulator_config_functions.h
         const char* doc_config_sim =
 R"""(Modifies the ``simulator`` based on the given ``config``. (Always
 replaces the Integrator with a new one; be careful not to keep old
@@ -237,7 +237,7 @@ Parameter ``simulator``:
       } ApplySimulatorConfig;
       // Symbol: drake::systems::BatchEvalTimeDerivatives
       struct /* BatchEvalTimeDerivatives */ {
-        // Source: drake/systems/analysis/batch_eval.h:88
+        // Source: drake/systems/analysis/batch_eval.h
         const char* doc =
 R"""(Evaluates the time derivatives of a ``system`` at many times, states,
 and inputs.
@@ -291,7 +291,7 @@ Raises:
       } BatchEvalTimeDerivatives;
       // Symbol: drake::systems::BatchEvalUniquePeriodicDiscreteUpdate
       struct /* BatchEvalUniquePeriodicDiscreteUpdate */ {
-        // Source: drake/systems/analysis/batch_eval.h:48
+        // Source: drake/systems/analysis/batch_eval.h
         const char* doc =
 R"""(Evaluates the dynamics of a difference equation ``system`` at many
 times, states, and inputs. See
@@ -356,7 +356,7 @@ Raises:
       } BatchEvalUniquePeriodicDiscreteUpdate;
       // Symbol: drake::systems::BogackiShampine3Integrator
       struct /* BogackiShampine3Integrator */ {
-        // Source: drake/systems/analysis/bogacki_shampine3_integrator.h:37
+        // Source: drake/systems/analysis/bogacki_shampine3_integrator.h
         const char* doc =
 R"""(A third-order, four-stage, first-same-as-last (FSAL) Runge-Kutta
 integrator with a second order error estimate.
@@ -391,25 +391,25 @@ control.
 formulas", Appl. Math. Letters, 2 (4): 321–325, 1989.)""";
         // Symbol: drake::systems::BogackiShampine3Integrator::BogackiShampine3Integrator<T>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/bogacki_shampine3_integrator.h:39
+          // Source: drake/systems/analysis/bogacki_shampine3_integrator.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::systems::BogackiShampine3Integrator::get_error_estimate_order
         struct /* get_error_estimate_order */ {
-          // Source: drake/systems/analysis/bogacki_shampine3_integrator.h:59
+          // Source: drake/systems/analysis/bogacki_shampine3_integrator.h
           const char* doc =
 R"""(The order of the asymptotic term in the error estimate.)""";
         } get_error_estimate_order;
         // Symbol: drake::systems::BogackiShampine3Integrator::supports_error_estimation
         struct /* supports_error_estimation */ {
-          // Source: drake/systems/analysis/bogacki_shampine3_integrator.h:56
+          // Source: drake/systems/analysis/bogacki_shampine3_integrator.h
           const char* doc =
 R"""(The integrator supports error estimation.)""";
         } supports_error_estimation;
       } BogackiShampine3Integrator;
       // Symbol: drake::systems::CreateIntegratorFromConfig
       struct /* CreateIntegratorFromConfig */ {
-        // Source: drake/systems/analysis/simulator_config_functions.h:95
+        // Source: drake/systems/analysis/simulator_config_functions.h
         const char* doc =
 R"""(Create an integrator according to the given configuration.
 
@@ -433,7 +433,7 @@ Raises:
       } CreateIntegratorFromConfig;
       // Symbol: drake::systems::DenseOutput
       struct /* DenseOutput */ {
-        // Source: drake/systems/analysis/dense_output.h:45
+        // Source: drake/systems/analysis/dense_output.h
         const char* doc =
 R"""(An interface for dense output of ODE solutions, to efficiently
 approximate them at arbitrarily many points when solving them
@@ -472,22 +472,22 @@ Warning:
                  Springer, 1993.)""";
         // Symbol: drake::systems::DenseOutput::DenseOutput<T>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/dense_output.h:47
+          // Source: drake/systems/analysis/dense_output.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::systems::DenseOutput::DoEvaluate
         struct /* DoEvaluate */ {
-          // Source: drake/systems/analysis/dense_output.h:121
+          // Source: drake/systems/analysis/dense_output.h
           const char* doc = R"""()""";
         } DoEvaluate;
         // Symbol: drake::systems::DenseOutput::DoEvaluateNth
         struct /* DoEvaluateNth */ {
-          // Source: drake/systems/analysis/dense_output.h:127
+          // Source: drake/systems/analysis/dense_output.h
           const char* doc = R"""()""";
         } DoEvaluateNth;
         // Symbol: drake::systems::DenseOutput::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/systems/analysis/dense_output.h:58
+          // Source: drake/systems/analysis/dense_output.h
           const char* doc =
 R"""(Evaluates the output at the given time ``t``.
 
@@ -509,7 +509,7 @@ Raises:
         } Evaluate;
         // Symbol: drake::systems::DenseOutput::EvaluateNth
         struct /* EvaluateNth */ {
-          // Source: drake/systems/analysis/dense_output.h:80
+          // Source: drake/systems/analysis/dense_output.h
           const char* doc =
 R"""(Evaluates the output value's `n`th scalar element (0-indexed) at the
 given time ``t``.
@@ -546,42 +546,42 @@ Raises:
         } EvaluateNth;
         // Symbol: drake::systems::DenseOutput::ThrowIfNthElementIsInvalid
         struct /* ThrowIfNthElementIsInvalid */ {
-          // Source: drake/systems/analysis/dense_output.h:158
+          // Source: drake/systems/analysis/dense_output.h
           const char* doc = R"""()""";
         } ThrowIfNthElementIsInvalid;
         // Symbol: drake::systems::DenseOutput::ThrowIfOutputIsEmpty
         struct /* ThrowIfOutputIsEmpty */ {
-          // Source: drake/systems/analysis/dense_output.h:146
+          // Source: drake/systems/analysis/dense_output.h
           const char* doc = R"""()""";
         } ThrowIfOutputIsEmpty;
         // Symbol: drake::systems::DenseOutput::ThrowIfTimeIsInvalid
         struct /* ThrowIfTimeIsInvalid */ {
-          // Source: drake/systems/analysis/dense_output.h:171
+          // Source: drake/systems/analysis/dense_output.h
           const char* doc = R"""()""";
         } ThrowIfTimeIsInvalid;
         // Symbol: drake::systems::DenseOutput::do_end_time
         struct /* do_end_time */ {
-          // Source: drake/systems/analysis/dense_output.h:141
+          // Source: drake/systems/analysis/dense_output.h
           const char* doc = R"""()""";
         } do_end_time;
         // Symbol: drake::systems::DenseOutput::do_is_empty
         struct /* do_is_empty */ {
-          // Source: drake/systems/analysis/dense_output.h:132
+          // Source: drake/systems/analysis/dense_output.h
           const char* doc = R"""()""";
         } do_is_empty;
         // Symbol: drake::systems::DenseOutput::do_size
         struct /* do_size */ {
-          // Source: drake/systems/analysis/dense_output.h:135
+          // Source: drake/systems/analysis/dense_output.h
           const char* doc = R"""()""";
         } do_size;
         // Symbol: drake::systems::DenseOutput::do_start_time
         struct /* do_start_time */ {
-          // Source: drake/systems/analysis/dense_output.h:138
+          // Source: drake/systems/analysis/dense_output.h
           const char* doc = R"""()""";
         } do_start_time;
         // Symbol: drake::systems::DenseOutput::end_time
         struct /* end_time */ {
-          // Source: drake/systems/analysis/dense_output.h:112
+          // Source: drake/systems/analysis/dense_output.h
           const char* doc =
 R"""(Returns output's end time, or in other words, the newest time ``t``
 that it can be evaluated at e.g. via Evaluate().
@@ -594,13 +594,13 @@ Raises:
         } end_time;
         // Symbol: drake::systems::DenseOutput::is_empty
         struct /* is_empty */ {
-          // Source: drake/systems/analysis/dense_output.h:97
+          // Source: drake/systems/analysis/dense_output.h
           const char* doc =
 R"""(Checks whether the output is empty or not.)""";
         } is_empty;
         // Symbol: drake::systems::DenseOutput::size
         struct /* size */ {
-          // Source: drake/systems/analysis/dense_output.h:91
+          // Source: drake/systems/analysis/dense_output.h
           const char* doc =
 R"""(Returns the output size (i.e. the number of elements in an output
 value).
@@ -613,7 +613,7 @@ Raises:
         } size;
         // Symbol: drake::systems::DenseOutput::start_time
         struct /* start_time */ {
-          // Source: drake/systems/analysis/dense_output.h:103
+          // Source: drake/systems/analysis/dense_output.h
           const char* doc =
 R"""(Returns output's start time, or in other words, the oldest time ``t``
 that it can be evaluated at e.g. via Evaluate().
@@ -627,7 +627,7 @@ Raises:
       } DenseOutput;
       // Symbol: drake::systems::DiscreteTimeApproximation
       struct /* DiscreteTimeApproximation */ {
-        // Source: drake/systems/analysis/discrete_time_approximation.h:26
+        // Source: drake/systems/analysis/discrete_time_approximation.h
         const char* doc_2args_constLinearSystem_double =
 R"""(Converts a continuous-time linear system to a discrete-time linear
 system using the zero-order hold method.
@@ -644,7 +644,7 @@ Returns:
 Raises:
     if the ``linear_system`` is not continuous or ``time_period`` <=
     0.)""";
-        // Source: drake/systems/analysis/discrete_time_approximation.h:42
+        // Source: drake/systems/analysis/discrete_time_approximation.h
         const char* doc_2args_constAffineSystem_double =
 R"""(Converts a continuous-time affine system to a discrete-time affine
 system using the zero-order hold method.
@@ -661,7 +661,7 @@ Returns:
 Raises:
     if the ``affine_system`` is not continuous or ``time_period`` <=
     0.)""";
-        // Source: drake/systems/analysis/discrete_time_approximation.h:67
+        // Source: drake/systems/analysis/discrete_time_approximation.h
         const char* doc_3args_constSystem_double_SimulatorConfig =
 R"""(Converts a general continuous-time system :math:`\dot{x} =
 f(t,x(t),u(t))` to a discrete-time system with zero-order hold on the
@@ -693,7 +693,7 @@ Raises:
       } DiscreteTimeApproximation;
       // Symbol: drake::systems::ExplicitEulerIntegrator
       struct /* ExplicitEulerIntegrator */ {
-        // Source: drake/systems/analysis/explicit_euler_integrator.h:23
+        // Source: drake/systems/analysis/explicit_euler_integrator.h
         const char* doc =
 R"""(A first-order, explicit Euler integrator. State is updated in the
 following manner:
@@ -712,7 +712,7 @@ following manner:
     </details>)""";
         // Symbol: drake::systems::ExplicitEulerIntegrator::ExplicitEulerIntegrator<T>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/explicit_euler_integrator.h:40
+          // Source: drake/systems/analysis/explicit_euler_integrator.h
           const char* doc =
 R"""(Constructs a fixed-step integrator for a given system using the given
 context for initial conditions.
@@ -733,20 +733,20 @@ See also:
         } ctor;
         // Symbol: drake::systems::ExplicitEulerIntegrator::get_error_estimate_order
         struct /* get_error_estimate_order */ {
-          // Source: drake/systems/analysis/explicit_euler_integrator.h:52
+          // Source: drake/systems/analysis/explicit_euler_integrator.h
           const char* doc =
 R"""(Integrator does not provide an error estimate.)""";
         } get_error_estimate_order;
         // Symbol: drake::systems::ExplicitEulerIntegrator::supports_error_estimation
         struct /* supports_error_estimation */ {
-          // Source: drake/systems/analysis/explicit_euler_integrator.h:49
+          // Source: drake/systems/analysis/explicit_euler_integrator.h
           const char* doc =
 R"""(Explicit Euler integrator does not support error estimation.)""";
         } supports_error_estimation;
       } ExplicitEulerIntegrator;
       // Symbol: drake::systems::ExtractSimulatorConfig
       struct /* ExtractSimulatorConfig */ {
-        // Source: drake/systems/analysis/simulator_config_functions.h:76
+        // Source: drake/systems/analysis/simulator_config_functions.h
         const char* doc =
 R"""(Reports the simulator's current configuration, including the
 configuration of the integrator. The start_time of the extracted
@@ -761,14 +761,14 @@ gradients.)""";
       } ExtractSimulatorConfig;
       // Symbol: drake::systems::GetIntegrationSchemes
       struct /* GetIntegrationSchemes */ {
-        // Source: drake/systems/analysis/simulator_config_functions.h:46
+        // Source: drake/systems/analysis/simulator_config_functions.h
         const char* doc =
 R"""(Returns the allowed string values for the ``scheme`` parameter in
 ResetIntegratorFromFlags() and SimulatorConfig::integration_scheme.)""";
       } GetIntegrationSchemes;
       // Symbol: drake::systems::HermitianDenseOutput
       struct /* HermitianDenseOutput */ {
-        // Source: drake/systems/analysis/hermitian_dense_output.h:83
+        // Source: drake/systems/analysis/hermitian_dense_output.h
         const char* doc =
 R"""(A StepwiseDenseOutput class implementation using Hermitian
 interpolators, and therefore a *continuous extension* of the solution
@@ -797,28 +797,28 @@ respectively.
                  Springer, 1993.)""";
         // Symbol: drake::systems::HermitianDenseOutput::Consolidate
         struct /* Consolidate */ {
-          // Source: drake/systems/analysis/hermitian_dense_output.h:278
+          // Source: drake/systems/analysis/hermitian_dense_output.h
           const char* doc = R"""()""";
         } Consolidate;
         // Symbol: drake::systems::HermitianDenseOutput::DoEvaluate
         struct /* DoEvaluate */ {
-          // Source: drake/systems/analysis/hermitian_dense_output.h:296
+          // Source: drake/systems/analysis/hermitian_dense_output.h
           const char* doc = R"""()""";
         } DoEvaluate;
         // Symbol: drake::systems::HermitianDenseOutput::DoEvaluateNth
         struct /* DoEvaluateNth */ {
-          // Source: drake/systems/analysis/hermitian_dense_output.h:302
+          // Source: drake/systems/analysis/hermitian_dense_output.h
           const char* doc = R"""()""";
         } DoEvaluateNth;
         // Symbol: drake::systems::HermitianDenseOutput::HermitianDenseOutput<T>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/hermitian_dense_output.h:230
+          // Source: drake/systems/analysis/hermitian_dense_output.h
           const char* doc =
 R"""(Initialize the DenseOutput with an existing trajectory.)""";
         } ctor;
         // Symbol: drake::systems::HermitianDenseOutput::IntegrationStep
         struct /* IntegrationStep */ {
-          // Source: drake/systems/analysis/hermitian_dense_output.h:100
+          // Source: drake/systems/analysis/hermitian_dense_output.h
           const char* doc =
 R"""(An integration step representation class, holding just enough for
 Hermitian interpolation: three (3) related sets containing step times
@@ -837,7 +837,7 @@ Note:
     matrices.)""";
           // Symbol: drake::systems::HermitianDenseOutput::IntegrationStep::Extend
           struct /* Extend */ {
-            // Source: drake/systems/analysis/hermitian_dense_output.h:148
+            // Source: drake/systems/analysis/hermitian_dense_output.h
             const char* doc =
 R"""(Extends the step forward in time from column matrices.
 
@@ -869,9 +869,9 @@ each other's dimension.)""";
           } Extend;
           // Symbol: drake::systems::HermitianDenseOutput::IntegrationStep::IntegrationStep
           struct /* ctor */ {
-            // Source: drake/systems/analysis/hermitian_dense_output.h:104
+            // Source: drake/systems/analysis/hermitian_dense_output.h
             const char* doc_0args = R"""(Constructs an empty step.)""";
-            // Source: drake/systems/analysis/hermitian_dense_output.h:121
+            // Source: drake/systems/analysis/hermitian_dense_output.h
             const char* doc_3args =
 R"""(Constructs a zero length step (i.e. a step containing a single time,
 state and state derivative triplet) from column matrices.
@@ -896,7 +896,7 @@ do not match each other's dimension.)""";
           } ctor;
           // Symbol: drake::systems::HermitianDenseOutput::IntegrationStep::end_time
           struct /* end_time */ {
-            // Source: drake/systems/analysis/hermitian_dense_output.h:165
+            // Source: drake/systems/analysis/hermitian_dense_output.h
             const char* doc =
 R"""(Returns step end time tᵢ (that of the first time, state and state
 derivative triplet), which may coincide with its start time t₀ (that
@@ -905,31 +905,31 @@ zero length (that is, it contains a single triplet).)""";
           } end_time;
           // Symbol: drake::systems::HermitianDenseOutput::IntegrationStep::get_state_derivatives
           struct /* get_state_derivatives */ {
-            // Source: drake/systems/analysis/hermitian_dense_output.h:178
+            // Source: drake/systems/analysis/hermitian_dense_output.h
             const char* doc =
 R"""(Gets step state derivatives {d𝐱/dt₀, ..., d𝐱/dtᵢ₋₁, d𝐱/dtᵢ} as column
 matrices.)""";
           } get_state_derivatives;
           // Symbol: drake::systems::HermitianDenseOutput::IntegrationStep::get_states
           struct /* get_states */ {
-            // Source: drake/systems/analysis/hermitian_dense_output.h:174
+            // Source: drake/systems/analysis/hermitian_dense_output.h
             const char* doc =
 R"""(Returns step states {𝐱₀, ..., 𝐱ᵢ₋₁, 𝐱ᵢ} as column matrices.)""";
           } get_states;
           // Symbol: drake::systems::HermitianDenseOutput::IntegrationStep::get_times
           struct /* get_times */ {
-            // Source: drake/systems/analysis/hermitian_dense_output.h:171
+            // Source: drake/systems/analysis/hermitian_dense_output.h
             const char* doc = R"""(Returns step times {t₀, ..., tᵢ₋₁, tᵢ}.)""";
           } get_times;
           // Symbol: drake::systems::HermitianDenseOutput::IntegrationStep::size
           struct /* size */ {
-            // Source: drake/systems/analysis/hermitian_dense_output.h:168
+            // Source: drake/systems/analysis/hermitian_dense_output.h
             const char* doc =
 R"""(Returns the step state 𝐱 size (i.e. dimension).)""";
           } size;
           // Symbol: drake::systems::HermitianDenseOutput::IntegrationStep::start_time
           struct /* start_time */ {
-            // Source: drake/systems/analysis/hermitian_dense_output.h:159
+            // Source: drake/systems/analysis/hermitian_dense_output.h
             const char* doc =
 R"""(Returns step start time t₀ (that of the first time, state and state
 derivative triplet), which may coincide with its end time tᵢ (that of
@@ -939,12 +939,12 @@ zero length (that is, it contains a single triplet).)""";
         } IntegrationStep;
         // Symbol: drake::systems::HermitianDenseOutput::Rollback
         struct /* Rollback */ {
-          // Source: drake/systems/analysis/hermitian_dense_output.h:271
+          // Source: drake/systems/analysis/hermitian_dense_output.h
           const char* doc = R"""()""";
         } Rollback;
         // Symbol: drake::systems::HermitianDenseOutput::Update
         struct /* Update */ {
-          // Source: drake/systems/analysis/hermitian_dense_output.h:266
+          // Source: drake/systems/analysis/hermitian_dense_output.h
           const char* doc =
 R"""(Update output with the given ``step``.
 
@@ -966,28 +966,28 @@ dimensions.)""";
         } Update;
         // Symbol: drake::systems::HermitianDenseOutput::do_end_time
         struct /* do_end_time */ {
-          // Source: drake/systems/analysis/hermitian_dense_output.h:310
+          // Source: drake/systems/analysis/hermitian_dense_output.h
           const char* doc = R"""()""";
         } do_end_time;
         // Symbol: drake::systems::HermitianDenseOutput::do_is_empty
         struct /* do_is_empty */ {
-          // Source: drake/systems/analysis/hermitian_dense_output.h:306
+          // Source: drake/systems/analysis/hermitian_dense_output.h
           const char* doc = R"""()""";
         } do_is_empty;
         // Symbol: drake::systems::HermitianDenseOutput::do_size
         struct /* do_size */ {
-          // Source: drake/systems/analysis/hermitian_dense_output.h:308
+          // Source: drake/systems/analysis/hermitian_dense_output.h
           const char* doc = R"""()""";
         } do_size;
         // Symbol: drake::systems::HermitianDenseOutput::do_start_time
         struct /* do_start_time */ {
-          // Source: drake/systems/analysis/hermitian_dense_output.h:312
+          // Source: drake/systems/analysis/hermitian_dense_output.h
           const char* doc = R"""()""";
         } do_start_time;
       } HermitianDenseOutput;
       // Symbol: drake::systems::ImplicitEulerIntegrator
       struct /* ImplicitEulerIntegrator */ {
-        // Source: drake/systems/analysis/implicit_euler_integrator.h:114
+        // Source: drake/systems/analysis/implicit_euler_integrator.h
         const char* doc =
 R"""(A first-order, fully implicit integrator with second order error
 estimation.
@@ -1131,12 +1131,12 @@ See also:
     implicit integration methods in general.)""";
         // Symbol: drake::systems::ImplicitEulerIntegrator::ImplicitEulerIntegrator<T>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/implicit_euler_integrator.h:116
+          // Source: drake/systems/analysis/implicit_euler_integrator.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::systems::ImplicitEulerIntegrator::get_error_estimate_order
         struct /* get_error_estimate_order */ {
-          // Source: drake/systems/analysis/implicit_euler_integrator.h:277
+          // Source: drake/systems/analysis/implicit_euler_integrator.h
           const char* doc =
 R"""(Returns the asymptotic order of the difference between the large and
 small steps (from which the error estimate is computed), which is 2.
@@ -1279,7 +1279,7 @@ first term on the RHS matches ``ε`` (Eq. (21)),
         } get_error_estimate_order;
         // Symbol: drake::systems::ImplicitEulerIntegrator::get_use_implicit_trapezoid_error_estimation
         struct /* get_use_implicit_trapezoid_error_estimation */ {
-          // Source: drake/systems/analysis/implicit_euler_integrator.h:293
+          // Source: drake/systems/analysis/implicit_euler_integrator.h
           const char* doc =
 R"""(Returns true if the integrator will use implicit trapezoid for error
 estimation; otherwise it indicates the integrator will use step
@@ -1287,7 +1287,7 @@ doubling for error estimation.)""";
         } get_use_implicit_trapezoid_error_estimation;
         // Symbol: drake::systems::ImplicitEulerIntegrator::set_use_implicit_trapezoid_error_estimation
         struct /* set_use_implicit_trapezoid_error_estimation */ {
-          // Source: drake/systems/analysis/implicit_euler_integrator.h:284
+          // Source: drake/systems/analysis/implicit_euler_integrator.h
           const char* doc =
 R"""(Set this to true to use implicit trapezoid for error estimation;
 otherwise this integrator will use step doubling for error estimation.
@@ -1295,24 +1295,24 @@ By default this integrator will use step doubling.)""";
         } set_use_implicit_trapezoid_error_estimation;
         // Symbol: drake::systems::ImplicitEulerIntegrator::supports_error_estimation
         struct /* supports_error_estimation */ {
-          // Source: drake/systems/analysis/implicit_euler_integrator.h:127
+          // Source: drake/systems/analysis/implicit_euler_integrator.h
           const char* doc =
 R"""(Returns true, because this integrator supports error estimation.)""";
         } supports_error_estimation;
       } ImplicitEulerIntegrator;
       // Symbol: drake::systems::ImplicitIntegrator
       struct /* ImplicitIntegrator */ {
-        // Source: drake/systems/analysis/implicit_integrator.h:23
+        // Source: drake/systems/analysis/implicit_integrator.h
         const char* doc =
 R"""(An abstract class providing methods shared by implicit integrators.)""";
         // Symbol: drake::systems::ImplicitIntegrator::CalcJacobian
         struct /* CalcJacobian */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:424
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
         } CalcJacobian;
         // Symbol: drake::systems::ImplicitIntegrator::CheckNewtonConvergence
         struct /* CheckNewtonConvergence */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:372
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Checks a Newton-Raphson iteration process for convergence. The logic
 is based on the description on p. 121 from [Hairer, 1996] E. Hairer
@@ -1345,62 +1345,62 @@ Returns:
         } CheckNewtonConvergence;
         // Symbol: drake::systems::ImplicitIntegrator::ComputeAutoDiffJacobian
         struct /* ComputeAutoDiffJacobian */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:463
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
         } ComputeAutoDiffJacobian;
         // Symbol: drake::systems::ImplicitIntegrator::ComputeCentralDiffJacobian
         struct /* ComputeCentralDiffJacobian */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:450
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
         } ComputeCentralDiffJacobian;
         // Symbol: drake::systems::ImplicitIntegrator::ComputeForwardDiffJacobian
         struct /* ComputeForwardDiffJacobian */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:436
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
         } ComputeForwardDiffJacobian;
         // Symbol: drake::systems::ImplicitIntegrator::ConvergenceStatus
         struct /* ConvergenceStatus */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:347
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
           // Symbol: drake::systems::ImplicitIntegrator::ConvergenceStatus::kConverged
           struct /* kConverged */ {
-            // Source: drake/systems/analysis/implicit_integrator.h:349
+            // Source: drake/systems/analysis/implicit_integrator.h
             const char* doc = R"""()""";
           } kConverged;
           // Symbol: drake::systems::ImplicitIntegrator::ConvergenceStatus::kDiverged
           struct /* kDiverged */ {
-            // Source: drake/systems/analysis/implicit_integrator.h:348
+            // Source: drake/systems/analysis/implicit_integrator.h
             const char* doc = R"""()""";
           } kDiverged;
           // Symbol: drake::systems::ImplicitIntegrator::ConvergenceStatus::kNotConverged
           struct /* kNotConverged */ {
-            // Source: drake/systems/analysis/implicit_integrator.h:350
+            // Source: drake/systems/analysis/implicit_integrator.h
             const char* doc = R"""()""";
           } kNotConverged;
         } ConvergenceStatus;
         // Symbol: drake::systems::ImplicitIntegrator::DoImplicitIntegratorClone
         struct /* DoImplicitIntegratorClone */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:399
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""(@copydoc IntegratorBase::DoClone())""";
         } DoImplicitIntegratorClone;
         // Symbol: drake::systems::ImplicitIntegrator::DoImplicitIntegratorReset
         struct /* DoImplicitIntegratorReset */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:385
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""(@copydoc IntegratorBase::DoReset())""";
         } DoImplicitIntegratorReset;
         // Symbol: drake::systems::ImplicitIntegrator::DoImplicitIntegratorStep
         struct /* DoImplicitIntegratorStep */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:468
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""(@copydoc IntegratorBase::DoStep())""";
         } DoImplicitIntegratorStep;
         // Symbol: drake::systems::ImplicitIntegrator::DoReset
         struct /* DoReset */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:414
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
         } DoReset;
         // Symbol: drake::systems::ImplicitIntegrator::DoResetCachedJacobianRelatedMatrices
         struct /* DoResetCachedJacobianRelatedMatrices */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:390
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Resets any cached Jacobian or iteration matrices owned by child
 classes. This is called when the user changes the Jacobian computation
@@ -1408,7 +1408,7 @@ scheme; the child class should use this to reset its cached matrices.)""";
         } DoResetCachedJacobianRelatedMatrices;
         // Symbol: drake::systems::ImplicitIntegrator::DoResetImplicitIntegratorStatistics
         struct /* DoResetImplicitIntegratorStatistics */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:382
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Resets any statistics particular to a specific implicit integrator.
 The default implementation of this function does nothing. If your
@@ -1417,12 +1417,12 @@ method and reset them there.)""";
         } DoResetImplicitIntegratorStatistics;
         // Symbol: drake::systems::ImplicitIntegrator::DoResetStatistics
         struct /* DoResetStatistics */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:413
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
         } DoResetStatistics;
         // Symbol: drake::systems::ImplicitIntegrator::FreshenMatricesIfFullNewton
         struct /* FreshenMatricesIfFullNewton */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:300
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Computes necessary matrices (Jacobian and iteration matrix) for full
 Newton-Raphson (NR) iterations, if full Newton-Raphson method is
@@ -1450,12 +1450,12 @@ Postcondition:
         } FreshenMatricesIfFullNewton;
         // Symbol: drake::systems::ImplicitIntegrator::ImplicitIntegrator<T>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:27
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::systems::ImplicitIntegrator::IsBadJacobian
         struct /* IsBadJacobian */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:396
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Checks to see whether a Jacobian matrix is "bad" (has any NaN or Inf
 values) and needs to be recomputed. A divergent Newton-Raphson
@@ -1465,7 +1465,7 @@ dimension.)""";
         } IsBadJacobian;
         // Symbol: drake::systems::ImplicitIntegrator::IsUpdateZero
         struct /* IsUpdateZero */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:319
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Checks whether a proposed update is effectively zero, indicating that
 the Newton-Raphson process converged.
@@ -1489,7 +1489,7 @@ Returns:
         } IsUpdateZero;
         // Symbol: drake::systems::ImplicitIntegrator::IterationMatrix
         struct /* IterationMatrix */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:218
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(A class for storing the factorization of an iteration matrix and using
 it to solve linear systems of equations. This class exists simply
@@ -1499,7 +1499,7 @@ factorizations like this frees the implementer of these kinds of
 details.)""";
           // Symbol: drake::systems::ImplicitIntegrator::IterationMatrix::SetAndFactorIterationMatrix
           struct /* SetAndFactorIterationMatrix */ {
-            // Source: drake/systems/analysis/implicit_integrator.h:223
+            // Source: drake/systems/analysis/implicit_integrator.h
             const char* doc =
 R"""(Factors a dense matrix (the iteration matrix) using LU factorization,
 which should be faster than the QR factorization used in the
@@ -1507,7 +1507,7 @@ specialized template method for AutoDiffXd below.)""";
           } SetAndFactorIterationMatrix;
           // Symbol: drake::systems::ImplicitIntegrator::IterationMatrix::Solve
           struct /* Solve */ {
-            // Source: drake/systems/analysis/implicit_integrator.h:228
+            // Source: drake/systems/analysis/implicit_integrator.h
             const char* doc =
 R"""(Solves a linear system Ax = b for x using the iteration matrix (A)
 factored using LU decomposition.
@@ -1517,34 +1517,34 @@ See also:
           } Solve;
           // Symbol: drake::systems::ImplicitIntegrator::IterationMatrix::matrix_factored
           struct /* matrix_factored */ {
-            // Source: drake/systems/analysis/implicit_integrator.h:231
+            // Source: drake/systems/analysis/implicit_integrator.h
             const char* doc =
 R"""(Returns whether the iteration matrix has been set and factored.)""";
           } matrix_factored;
         } IterationMatrix;
         // Symbol: drake::systems::ImplicitIntegrator::JacobianComputationScheme
         struct /* JacobianComputationScheme */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:46
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
           // Symbol: drake::systems::ImplicitIntegrator::JacobianComputationScheme::kAutomatic
           struct /* kAutomatic */ {
-            // Source: drake/systems/analysis/implicit_integrator.h:54
+            // Source: drake/systems/analysis/implicit_integrator.h
             const char* doc = R"""(Automatic differentiation.)""";
           } kAutomatic;
           // Symbol: drake::systems::ImplicitIntegrator::JacobianComputationScheme::kCentralDifference
           struct /* kCentralDifference */ {
-            // Source: drake/systems/analysis/implicit_integrator.h:51
+            // Source: drake/systems/analysis/implicit_integrator.h
             const char* doc = R"""(Central differencing.)""";
           } kCentralDifference;
           // Symbol: drake::systems::ImplicitIntegrator::JacobianComputationScheme::kForwardDifference
           struct /* kForwardDifference */ {
-            // Source: drake/systems/analysis/implicit_integrator.h:48
+            // Source: drake/systems/analysis/implicit_integrator.h
             const char* doc = R"""(Forward differencing.)""";
           } kForwardDifference;
         } JacobianComputationScheme;
         // Symbol: drake::systems::ImplicitIntegrator::MaybeFreshenMatrices
         struct /* MaybeFreshenMatrices */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:280
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Computes necessary matrices (Jacobian and iteration matrix) for
 Newton-Raphson (NR) iterations, as necessary. This method has been
@@ -1596,37 +1596,37 @@ Postcondition:
         } MaybeFreshenMatrices;
         // Symbol: drake::systems::ImplicitIntegrator::do_get_num_error_estimator_derivative_evaluations
         struct /* do_get_num_error_estimator_derivative_evaluations */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:404
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
         } do_get_num_error_estimator_derivative_evaluations;
         // Symbol: drake::systems::ImplicitIntegrator::do_get_num_error_estimator_derivative_evaluations_for_jacobian
         struct /* do_get_num_error_estimator_derivative_evaluations_for_jacobian */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:406
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
         } do_get_num_error_estimator_derivative_evaluations_for_jacobian;
         // Symbol: drake::systems::ImplicitIntegrator::do_get_num_error_estimator_iteration_matrix_factorizations
         struct /* do_get_num_error_estimator_iteration_matrix_factorizations */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:410
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
         } do_get_num_error_estimator_iteration_matrix_factorizations;
         // Symbol: drake::systems::ImplicitIntegrator::do_get_num_error_estimator_jacobian_evaluations
         struct /* do_get_num_error_estimator_jacobian_evaluations */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:409
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
         } do_get_num_error_estimator_jacobian_evaluations;
         // Symbol: drake::systems::ImplicitIntegrator::do_get_num_error_estimator_newton_raphson_iterations
         struct /* do_get_num_error_estimator_newton_raphson_iterations */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:407
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
         } do_get_num_error_estimator_newton_raphson_iterations;
         // Symbol: drake::systems::ImplicitIntegrator::do_get_num_newton_raphson_iterations
         struct /* do_get_num_newton_raphson_iterations */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:403
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
         } do_get_num_newton_raphson_iterations;
         // Symbol: drake::systems::ImplicitIntegrator::do_max_newton_raphson_iterations
         struct /* do_max_newton_raphson_iterations */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:211
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Derived classes can override this method to change the number of
 Newton-Raphson iterations (10 by default) to take before the
@@ -1634,17 +1634,17 @@ Newton-Raphson process decides that convergence will not be attained.)""";
         } do_max_newton_raphson_iterations;
         // Symbol: drake::systems::ImplicitIntegrator::get_jacobian_computation_scheme
         struct /* get_jacobian_computation_scheme */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:123
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
         } get_jacobian_computation_scheme;
         // Symbol: drake::systems::ImplicitIntegrator::get_mutable_jacobian
         struct /* get_mutable_jacobian */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:412
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
         } get_mutable_jacobian;
         // Symbol: drake::systems::ImplicitIntegrator::get_num_derivative_evaluations_for_jacobian
         struct /* get_num_derivative_evaluations_for_jacobian */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:138
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Gets the number of ODE function evaluations (calls to
 EvalTimeDerivatives()) *used only for computing the Jacobian matrices*
@@ -1654,7 +1654,7 @@ during error estimation processes.)""";
         } get_num_derivative_evaluations_for_jacobian;
         // Symbol: drake::systems::ImplicitIntegrator::get_num_error_estimator_derivative_evaluations
         struct /* get_num_error_estimator_derivative_evaluations */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:169
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Gets the number of ODE function evaluations (calls to
 EvalTimeDerivatives()) *used only for the error estimation process*
@@ -1663,7 +1663,7 @@ needed to compute Jacobian matrices.)""";
         } get_num_error_estimator_derivative_evaluations;
         // Symbol: drake::systems::ImplicitIntegrator::get_num_error_estimator_derivative_evaluations_for_jacobian
         struct /* get_num_error_estimator_derivative_evaluations_for_jacobian */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:182
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(@name Error-estimation statistics functions. The functions return
 statistics specific to the error estimation process. Gets the number
@@ -1673,7 +1673,7 @@ estimation process* since the last call to ResetStatistics().)""";
         } get_num_error_estimator_derivative_evaluations_for_jacobian;
         // Symbol: drake::systems::ImplicitIntegrator::get_num_error_estimator_iteration_matrix_factorizations
         struct /* get_num_error_estimator_iteration_matrix_factorizations */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:202
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Gets the number of factorizations of the iteration matrix *used only
 during the error estimation process* since the last call to
@@ -1681,14 +1681,14 @@ ResetStatistics().)""";
         } get_num_error_estimator_iteration_matrix_factorizations;
         // Symbol: drake::systems::ImplicitIntegrator::get_num_error_estimator_jacobian_evaluations
         struct /* get_num_error_estimator_jacobian_evaluations */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:195
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Gets the number of Jacobian matrix computations *used only during the
 error estimation process* since the last call to ResetStatistics().)""";
         } get_num_error_estimator_jacobian_evaluations;
         // Symbol: drake::systems::ImplicitIntegrator::get_num_error_estimator_newton_raphson_iterations
         struct /* get_num_error_estimator_newton_raphson_iterations */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:189
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Gets the number of iterations *used in the Newton-Raphson nonlinear
 systems of equation solving process for the error estimation process*
@@ -1696,7 +1696,7 @@ since the last call to ResetStatistics().)""";
         } get_num_error_estimator_newton_raphson_iterations;
         // Symbol: drake::systems::ImplicitIntegrator::get_num_iteration_matrix_factorizations
         struct /* get_num_iteration_matrix_factorizations */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:161
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Gets the number of factorizations of the iteration matrix since the
 last call to ResetStatistics(). This count includes those
@@ -1704,7 +1704,7 @@ refactorizations necessary during error estimation processes.)""";
         } get_num_iteration_matrix_factorizations;
         // Symbol: drake::systems::ImplicitIntegrator::get_num_jacobian_evaluations
         struct /* get_num_jacobian_evaluations */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:146
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Gets the number of Jacobian computations (i.e., the number of times
 that the Jacobian matrix was reformed) since the last call to
@@ -1713,7 +1713,7 @@ during error estimation processes.)""";
         } get_num_jacobian_evaluations;
         // Symbol: drake::systems::ImplicitIntegrator::get_num_newton_raphson_iterations
         struct /* get_num_newton_raphson_iterations */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:154
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Gets the number of iterations used in the Newton-Raphson nonlinear
 systems of equation solving process since the last call to
@@ -1722,7 +1722,7 @@ used during error estimation processes.)""";
         } get_num_newton_raphson_iterations;
         // Symbol: drake::systems::ImplicitIntegrator::get_reuse
         struct /* get_reuse */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:97
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Gets whether the integrator attempts to reuse Jacobian matrices and
 iteration matrix factorizations.
@@ -1735,7 +1735,7 @@ Note:
         } get_reuse;
         // Symbol: drake::systems::ImplicitIntegrator::get_use_full_newton
         struct /* get_use_full_newton */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:108
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Gets whether this method is operating in "full Newton" mode.
 
@@ -1744,22 +1744,22 @@ See also:
         } get_use_full_newton;
         // Symbol: drake::systems::ImplicitIntegrator::increment_jacobian_computation_derivative_evaluations
         struct /* increment_jacobian_computation_derivative_evaluations */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:474
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
         } increment_jacobian_computation_derivative_evaluations;
         // Symbol: drake::systems::ImplicitIntegrator::increment_jacobian_evaluations
         struct /* increment_jacobian_evaluations */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:478
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
         } increment_jacobian_evaluations;
         // Symbol: drake::systems::ImplicitIntegrator::increment_num_iter_factorizations
         struct /* increment_num_iter_factorizations */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:472
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
         } increment_num_iter_factorizations;
         // Symbol: drake::systems::ImplicitIntegrator::max_newton_raphson_iterations
         struct /* max_newton_raphson_iterations */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:42
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(The maximum number of Newton-Raphson iterations to take before the
 Newton-Raphson process decides that convergence will not be attained.
@@ -1775,7 +1775,7 @@ quasi-Newton approach.)""";
         } max_newton_raphson_iterations;
         // Symbol: drake::systems::ImplicitIntegrator::set_jacobian_computation_scheme
         struct /* set_jacobian_computation_scheme */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:114
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Sets the Jacobian computation scheme. This function can be safely
 called at any time (i.e., the integrator need not be re-initialized
@@ -1787,12 +1787,12 @@ Note:
         } set_jacobian_computation_scheme;
         // Symbol: drake::systems::ImplicitIntegrator::set_jacobian_is_fresh
         struct /* set_jacobian_is_fresh */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:480
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc = R"""()""";
         } set_jacobian_is_fresh;
         // Symbol: drake::systems::ImplicitIntegrator::set_reuse
         struct /* set_reuse */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:91
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Sets whether the integrator attempts to reuse Jacobian matrices and
 iteration matrix factorizations (default is ``True``). Forming
@@ -1815,7 +1815,7 @@ See also:
         } set_reuse;
         // Symbol: drake::systems::ImplicitIntegrator::set_use_full_newton
         struct /* set_use_full_newton */ {
-          // Source: drake/systems/analysis/implicit_integrator.h:104
+          // Source: drake/systems/analysis/implicit_integrator.h
           const char* doc =
 R"""(Sets whether the method operates in "full Newton" mode, in which case
 Jacobian and iteration matrices are freshly computed on every
@@ -1828,7 +1828,7 @@ See also:
       } ImplicitIntegrator;
       // Symbol: drake::systems::InitialValueProblem
       struct /* InitialValueProblem */ {
-        // Source: drake/systems/analysis/initial_value_problem.h:59
+        // Source: drake/systems/analysis/initial_value_problem.h
         const char* doc =
 R"""(A general initial value problem (or IVP) representation class, that
 allows evaluating the 𝐱(t; 𝐤) solution function to the given ODE d𝐱/dt
@@ -1871,7 +1871,7 @@ For further insight into its use, consider the following examples:
   𝐤 ≜ [m, μ], 𝐱₀ ≜ 𝐯₀, d𝐱/dt = f(t, 𝐱; 𝐤) = (𝐅(t) - k₂ * 𝐱) / k₁.)""";
         // Symbol: drake::systems::InitialValueProblem::DenseSolve
         struct /* DenseSolve */ {
-          // Source: drake/systems/analysis/initial_value_problem.h:114
+          // Source: drake/systems/analysis/initial_value_problem.h
           const char* doc =
 R"""(Solves and yields an approximation of the IVP solution x(t; 𝐤) for the
 closed time interval between the given initial time ``t0`` and the
@@ -1903,7 +1903,7 @@ Raises:
         } DenseSolve;
         // Symbol: drake::systems::InitialValueProblem::InitialValueProblem<T>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/initial_value_problem.h:86
+          // Source: drake/systems/analysis/initial_value_problem.h
           const char* doc =
 R"""(Constructs an IVP described by the given ``ode_function``, using
 ``x0`` as initial conditions, and parameterized with ``k``.
@@ -1920,7 +1920,7 @@ Parameter ``k``:
         } ctor;
         // Symbol: drake::systems::InitialValueProblem::OdeFunction
         struct /* OdeFunction */ {
-          // Source: drake/systems/analysis/initial_value_problem.h:76
+          // Source: drake/systems/analysis/initial_value_problem.h
           const char* doc =
 R"""(General ODE system d𝐱/dt = f(t, 𝐱; 𝐤) function type.
 
@@ -1938,7 +1938,7 @@ Returns:
         } OdeFunction;
         // Symbol: drake::systems::InitialValueProblem::Solve
         struct /* Solve */ {
-          // Source: drake/systems/analysis/initial_value_problem.h:94
+          // Source: drake/systems/analysis/initial_value_problem.h
           const char* doc =
 R"""(Solves the IVP from the initial time ``t0`` up to time ``tf``, using
 the initial state vector 𝐱₀ and parameter vector 𝐤 provided in the
@@ -1949,19 +1949,19 @@ Raises:
         } Solve;
         // Symbol: drake::systems::InitialValueProblem::get_integrator
         struct /* get_integrator */ {
-          // Source: drake/systems/analysis/initial_value_problem.h:141
+          // Source: drake/systems/analysis/initial_value_problem.h
           const char* doc =
 R"""(Gets a reference to the internal integrator instance.)""";
         } get_integrator;
         // Symbol: drake::systems::InitialValueProblem::get_mutable_integrator
         struct /* get_mutable_integrator */ {
-          // Source: drake/systems/analysis/initial_value_problem.h:147
+          // Source: drake/systems/analysis/initial_value_problem.h
           const char* doc =
 R"""(Gets a mutable reference to the internal integrator instance.)""";
         } get_mutable_integrator;
         // Symbol: drake::systems::InitialValueProblem::reset_integrator
         struct /* reset_integrator */ {
-          // Source: drake/systems/analysis/initial_value_problem.h:133
+          // Source: drake/systems/analysis/initial_value_problem.h
           const char* doc =
 R"""(Resets the internal integrator instance by in-place construction of
 the given integrator type.
@@ -2001,7 +2001,7 @@ Warning:
       } InitialValueProblem;
       // Symbol: drake::systems::InitializeParams
       struct /* InitializeParams */ {
-        // Source: drake/systems/analysis/simulator.h:38
+        // Source: drake/systems/analysis/simulator.h
         const char* doc =
 R"""(Parameters for fine control of simulator initialization.
 
@@ -2009,14 +2009,14 @@ See also:
     Simulator<T>::Initialize().)""";
         // Symbol: drake::systems::InitializeParams::Serialize
         struct /* Serialize */ {
-          // Source: drake/systems/analysis/simulator.h:42
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::systems::InitializeParams::suppress_initialization_events
         struct /* suppress_initialization_events */ {
-          // Source: drake/systems/analysis/simulator.h:48
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Whether to trigger initialization events. Events are triggered by
 default; it may be useful to suppress them when reusing a simulator.)""";
@@ -2029,7 +2029,7 @@ default; it may be useful to suppress them when reusing a simulator.)""";
       } InitializeParams;
       // Symbol: drake::systems::IntegratorBase
       struct /* IntegratorBase */ {
-        // Source: drake/systems/analysis/integrator_base.h:124
+        // Source: drake/systems/analysis/integrator_base.h
         const char* doc =
 R"""(An abstract class for an integrator for ODEs and DAEs as represented
 by a Drake System. Integrators solve initial value problems of the
@@ -2056,7 +2056,7 @@ Drake's subclasses of IntegratorBase<T> should follow the naming
 pattern ``FooIntegrator<T>`` by convention.)""";
         // Symbol: drake::systems::IntegratorBase::CalcAdjustedStepSize
         struct /* CalcAdjustedStepSize */ {
-          // Source: drake/systems/analysis/integrator_base.h:1445
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Calculates adjusted integrator step sizes toward keeping state
 variables within error bounds on the next integration step. Note that
@@ -2092,7 +2092,7 @@ Returns:
         } CalcAdjustedStepSize;
         // Symbol: drake::systems::IntegratorBase::CalcStateChangeNorm
         struct /* CalcStateChangeNorm */ {
-          // Source: drake/systems/analysis/integrator_base.h:1415
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Computes the infinity norm of a change in continuous state. We use the
 infinity norm to capture the idea that, by providing accuracy
@@ -2104,7 +2104,7 @@ Returns:
         } CalcStateChangeNorm;
         // Symbol: drake::systems::IntegratorBase::Clone
         struct /* Clone */ {
-          // Source: drake/systems/analysis/integrator_base.h:1336
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Returns a copy of this integrator with reset statistics, reinitialized
 internal integrator states, and a cloned system context.
@@ -2118,7 +2118,7 @@ Note:
         } Clone;
         // Symbol: drake::systems::IntegratorBase::DoClone
         struct /* DoClone */ {
-          // Source: drake/systems/analysis/integrator_base.h:1468
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Derived classes must implement this method to return a copy of
 themselves as an IntegratorBase instance. The returned object must
@@ -2128,7 +2128,7 @@ parent class.)""";
         } DoClone;
         // Symbol: drake::systems::IntegratorBase::DoDenseStep
         struct /* DoDenseStep */ {
-          // Source: drake/systems/analysis/integrator_base.h:1519
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Calls DoStep(h) while recording the resulting step in the dense
 output. If the current dense output is already non-empty, then the
@@ -2150,7 +2150,7 @@ See also:
         } DoDenseStep;
         // Symbol: drake::systems::IntegratorBase::DoInitialize
         struct /* DoInitialize */ {
-          // Source: drake/systems/analysis/integrator_base.h:1454
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Derived classes can override this method to perform special
 initialization. This method is called during the Initialize() method.
@@ -2158,14 +2158,14 @@ This default method does nothing.)""";
         } DoInitialize;
         // Symbol: drake::systems::IntegratorBase::DoReset
         struct /* DoReset */ {
-          // Source: drake/systems/analysis/integrator_base.h:1460
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Derived classes can override this method to perform routines when
 Reset() is called. This default method does nothing.)""";
         } DoReset;
         // Symbol: drake::systems::IntegratorBase::DoResetStatistics
         struct /* DoResetStatistics */ {
-          // Source: drake/systems/analysis/integrator_base.h:1346
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Resets any statistics particular to a specific integrator. The default
 implementation of this function does nothing. If your integrator
@@ -2174,7 +2174,7 @@ reset them there.)""";
         } DoResetStatistics;
         // Symbol: drake::systems::IntegratorBase::DoStep
         struct /* DoStep */ {
-          // Source: drake/systems/analysis/integrator_base.h:1501
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Derived classes must implement this method to (1) integrate the
 continuous portion of this system forward by a single step of size
@@ -2206,12 +2206,12 @@ Warning:
         } DoStep;
         // Symbol: drake::systems::IntegratorBase::EvalTimeDerivatives
         struct /* EvalTimeDerivatives */ {
-          // Source: drake/systems/analysis/integrator_base.h:1353
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc_1args =
 R"""(Evaluates the derivative function and updates call statistics.
 Subclasses should call this function rather than calling
 system.EvalTimeDerivatives() directly.)""";
-          // Source: drake/systems/analysis/integrator_base.h:1365
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc_2args =
 R"""(Evaluates the derivative function (and updates call statistics).
 Subclasses should call this function rather than calling
@@ -2221,7 +2221,7 @@ derivative function evaluations.)""";
         } EvalTimeDerivatives;
         // Symbol: drake::systems::IntegratorBase::Initialize
         struct /* Initialize */ {
-          // Source: drake/systems/analysis/integrator_base.h:905
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(An integrator must be initialized before being used. The pointer to
 the context must be set before Initialize() is called (or an
@@ -2244,7 +2244,7 @@ See also:
         } Initialize;
         // Symbol: drake::systems::IntegratorBase::IntegrateNoFurtherThanTime
         struct /* IntegrateNoFurtherThanTime */ {
-          // Source: drake/systems/analysis/integrator_base.h:987
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""((Internal use only) Integrates the system forward in time by a single
 step with step size subject to integration error tolerances (assuming
@@ -2291,7 +2291,7 @@ a single step forward.)""";
         } IntegrateNoFurtherThanTime;
         // Symbol: drake::systems::IntegratorBase::IntegrateWithMultipleStepsToTime
         struct /* IntegrateWithMultipleStepsToTime */ {
-          // Source: drake/systems/analysis/integrator_base.h:1015
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Stepping function for integrators operating outside of Simulator that
 advances the continuous state exactly to ``t_final``. This method is
@@ -2328,7 +2328,7 @@ Simulator - Supports fixed step and variable step integration schemes
         } IntegrateWithMultipleStepsToTime;
         // Symbol: drake::systems::IntegratorBase::IntegrateWithSingleFixedStepToTime
         struct /* IntegrateWithSingleFixedStepToTime */ {
-          // Source: drake/systems/analysis/integrator_base.h:1062
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Stepping function for integrators operating outside of Simulator that
 advances the continuous state *using a single step* to ``t_target``.
@@ -2379,7 +2379,7 @@ integrator convergence)
         } IntegrateWithSingleFixedStepToTime;
         // Symbol: drake::systems::IntegratorBase::IntegratorBase<T>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/integrator_base.h:169
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Maintains references to the system being integrated and the context
 used to specify the initial conditions for that system (if any).
@@ -2398,14 +2398,14 @@ Parameter ``context``:
         } ctor;
         // Symbol: drake::systems::IntegratorBase::Reset
         struct /* Reset */ {
-          // Source: drake/systems/analysis/integrator_base.h:856
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Resets the integrator to initial values, i.e., default construction
 values.)""";
         } Reset;
         // Symbol: drake::systems::IntegratorBase::ResetStatistics
         struct /* ResetStatistics */ {
-          // Source: drake/systems/analysis/integrator_base.h:1112
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(@name Integrator statistics methods These methods allow the caller to
 manipulate and query integrator statistics. Generally speaking, the
@@ -2418,7 +2418,7 @@ post construction or immediately after ``Initialize()``.)""";
         } ResetStatistics;
         // Symbol: drake::systems::IntegratorBase::StartDenseIntegration
         struct /* StartDenseIntegration */ {
-          // Source: drake/systems/analysis/integrator_base.h:1255
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Starts dense integration, allocating a new dense output for this
 integrator to use.
@@ -2441,7 +2441,7 @@ Warning:
         } StartDenseIntegration;
         // Symbol: drake::systems::IntegratorBase::StepOnceErrorControlledAtMost
         struct /* StepOnceErrorControlledAtMost */ {
-          // Source: drake/systems/analysis/integrator_base.h:1406
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Default code for advancing the continuous state of the system by a
 single step of ``h_max`` (or smaller, depending on error control).
@@ -2471,7 +2471,7 @@ Returns:
         } StepOnceErrorControlledAtMost;
         // Symbol: drake::systems::IntegratorBase::StepResult
         struct /* StepResult */ {
-          // Source: drake/systems/analysis/integrator_base.h:140
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Status returned by IntegrateNoFurtherThanTime(). When a step is
 successful, it will return an indication of what caused it to stop
@@ -2485,45 +2485,45 @@ Note:
     after a publish time.)""";
           // Symbol: drake::systems::IntegratorBase::StepResult::kReachedBoundaryTime
           struct /* kReachedBoundaryTime */ {
-            // Source: drake/systems/analysis/integrator_base.h:150
+            // Source: drake/systems/analysis/integrator_base.h
             const char* doc =
 R"""(Reached the desired integration time without reaching an update time.)""";
           } kReachedBoundaryTime;
           // Symbol: drake::systems::IntegratorBase::StepResult::kReachedPublishTime
           struct /* kReachedPublishTime */ {
-            // Source: drake/systems/analysis/integrator_base.h:142
+            // Source: drake/systems/analysis/integrator_base.h
             const char* doc =
 R"""(Indicates a publish time has been reached but not an update time.)""";
           } kReachedPublishTime;
           // Symbol: drake::systems::IntegratorBase::StepResult::kReachedStepLimit
           struct /* kReachedStepLimit */ {
-            // Source: drake/systems/analysis/integrator_base.h:153
+            // Source: drake/systems/analysis/integrator_base.h
             const char* doc =
 R"""(Took maximum number of steps without finishing integrating over the
 interval.)""";
           } kReachedStepLimit;
           // Symbol: drake::systems::IntegratorBase::StepResult::kReachedUpdateTime
           struct /* kReachedUpdateTime */ {
-            // Source: drake/systems/analysis/integrator_base.h:146
+            // Source: drake/systems/analysis/integrator_base.h
             const char* doc =
 R"""(Indicates that integration terminated at an update time.)""";
           } kReachedUpdateTime;
           // Symbol: drake::systems::IntegratorBase::StepResult::kReachedZeroCrossing
           struct /* kReachedZeroCrossing */ {
-            // Source: drake/systems/analysis/integrator_base.h:144
+            // Source: drake/systems/analysis/integrator_base.h
             const char* doc =
 R"""(Localized an event; this is the *before* state (interpolated).)""";
           } kReachedZeroCrossing;
           // Symbol: drake::systems::IntegratorBase::StepResult::kTimeHasAdvanced
           struct /* kTimeHasAdvanced */ {
-            // Source: drake/systems/analysis/integrator_base.h:148
+            // Source: drake/systems/analysis/integrator_base.h
             const char* doc =
 R"""(User requested control whenever an internal step is successful.)""";
           } kTimeHasAdvanced;
         } StepResult;
         // Symbol: drake::systems::IntegratorBase::StopDenseIntegration
         struct /* StopDenseIntegration */ {
-          // Source: drake/systems/analysis/integrator_base.h:1296
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Stops dense integration, yielding ownership of the current dense
 output to the caller.
@@ -2552,7 +2552,7 @@ Raises:
         } StopDenseIntegration;
         // Symbol: drake::systems::IntegratorBase::add_derivative_evaluations
         struct /* add_derivative_evaluations */ {
-          // Source: drake/systems/analysis/integrator_base.h:1195
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Manually increments the statistic for the number of ODE evaluations.
 
@@ -2565,7 +2565,7 @@ Warning:
         } add_derivative_evaluations;
         // Symbol: drake::systems::IntegratorBase::get_accuracy_in_use
         struct /* get_accuracy_in_use */ {
-          // Source: drake/systems/analysis/integrator_base.h:243
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Gets the accuracy in use by the integrator. This number may differ
 from the target accuracy if, for example, the user has requested an
@@ -2574,13 +2574,13 @@ integrator.)""";
         } get_accuracy_in_use;
         // Symbol: drake::systems::IntegratorBase::get_actual_initial_step_size_taken
         struct /* get_actual_initial_step_size_taken */ {
-          // Source: drake/systems/analysis/integrator_base.h:1160
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(The actual size of the successful first step.)""";
         } get_actual_initial_step_size_taken;
         // Symbol: drake::systems::IntegratorBase::get_context
         struct /* get_context */ {
-          // Source: drake/systems/analysis/integrator_base.h:1203
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Returns a const reference to the internally-maintained Context holding
 the most recent state in the trajectory. This is suitable for
@@ -2588,7 +2588,7 @@ publishing or extracting information about this trajectory step.)""";
         } get_context;
         // Symbol: drake::systems::IntegratorBase::get_dense_output
         struct /* get_dense_output */ {
-          // Source: drake/systems/analysis/integrator_base.h:1275
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Returns a const pointer to the integrator's current
 PiecewisePolynomial instance, holding a representation of the
@@ -2598,7 +2598,7 @@ if any (may be nullptr).)""";
         } get_dense_output;
         // Symbol: drake::systems::IntegratorBase::get_error_estimate
         struct /* get_error_estimate */ {
-          // Source: drake/systems/analysis/integrator_base.h:303
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Gets the error estimate (used only for integrators that support error
 estimation). If the integrator does not support error estimation,
@@ -2606,7 +2606,7 @@ nullptr is returned.)""";
         } get_error_estimate;
         // Symbol: drake::systems::IntegratorBase::get_error_estimate_order
         struct /* get_error_estimate_order */ {
-          // Source: drake/systems/analysis/integrator_base.h:296
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Derived classes must override this function to return the order of the
 asymptotic term in the integrator's error estimate. An error estimator
@@ -2658,7 +2658,7 @@ class implementation should return 0.)""";
         } get_error_estimate_order;
         // Symbol: drake::systems::IntegratorBase::get_fixed_step_mode
         struct /* get_fixed_step_mode */ {
-          // Source: drake/systems/analysis/integrator_base.h:338
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Gets whether an integrator is running in fixed step mode. If the
 integrator does not support error estimation, this function will
@@ -2669,7 +2669,7 @@ See also:
         } get_fixed_step_mode;
         // Symbol: drake::systems::IntegratorBase::get_generalized_state_weight_vector
         struct /* get_generalized_state_weight_vector */ {
-          // Source: drake/systems/analysis/integrator_base.h:546
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(@name Methods for weighting state variable errors \ (in the context of
 error control) @anchor weighting-state-errors This group of methods
@@ -2898,7 +2898,7 @@ integrators that support error estimation.)""";
         } get_generalized_state_weight_vector;
         // Symbol: drake::systems::IntegratorBase::get_ideal_next_step_size
         struct /* get_ideal_next_step_size */ {
-          // Source: drake/systems/analysis/integrator_base.h:313
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Return the step size the integrator would like to take next, based
 primarily on the integrator's accuracy prediction. This value will not
@@ -2907,7 +2907,7 @@ NaN will be returned.)""";
         } get_ideal_next_step_size;
         // Symbol: drake::systems::IntegratorBase::get_initial_step_size_target
         struct /* get_initial_step_size_target */ {
-          // Source: drake/systems/analysis/integrator_base.h:675
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Gets the target size of the first integration step. You can find out
 what step size was *actually* used for the first integration step with
@@ -2918,14 +2918,14 @@ See also:
         } get_initial_step_size_target;
         // Symbol: drake::systems::IntegratorBase::get_largest_step_size_taken
         struct /* get_largest_step_size_taken */ {
-          // Source: drake/systems/analysis/integrator_base.h:1178
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(The size of the largest step taken since the last Initialize() or
 ResetStatistics() call.)""";
         } get_largest_step_size_taken;
         // Symbol: drake::systems::IntegratorBase::get_maximum_step_size
         struct /* get_maximum_step_size */ {
-          // Source: drake/systems/analysis/integrator_base.h:711
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Gets the maximum step size that may be taken by this integrator. This
 is a soft maximum: the integrator may stretch it by as much as 1% to
@@ -2936,7 +2936,7 @@ See also:
         } get_maximum_step_size;
         // Symbol: drake::systems::IntegratorBase::get_misc_state_weight_vector
         struct /* get_misc_state_weight_vector */ {
-          // Source: drake/systems/analysis/integrator_base.h:573
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Gets the weighting vector (equivalent to a diagonal matrix) for
 weighting errors in miscellaneous continuous state variables ``z``.
@@ -2944,14 +2944,14 @@ Only used for integrators that support error estimation.)""";
         } get_misc_state_weight_vector;
         // Symbol: drake::systems::IntegratorBase::get_mutable_context
         struct /* get_mutable_context */ {
-          // Source: drake/systems/analysis/integrator_base.h:1209
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Returns a mutable pointer to the internally-maintained Context holding
 the most recent state in the trajectory.)""";
         } get_mutable_context;
         // Symbol: drake::systems::IntegratorBase::get_mutable_dense_output
         struct /* get_mutable_dense_output */ {
-          // Source: drake/systems/analysis/integrator_base.h:1477
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Returns a mutable pointer to the internally-maintained
 PiecewisePolynomial instance, holding a representation of the
@@ -2962,7 +2962,7 @@ nullptr).)""";
         } get_mutable_dense_output;
         // Symbol: drake::systems::IntegratorBase::get_mutable_error_estimate
         struct /* get_mutable_error_estimate */ {
-          // Source: drake/systems/analysis/integrator_base.h:1562
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Gets an error estimate of the state variables recorded by the last
 call to StepOnceFixedSize(). If the integrator does not support error
@@ -2970,7 +2970,7 @@ estimation, this function will return nullptr.)""";
         } get_mutable_error_estimate;
         // Symbol: drake::systems::IntegratorBase::get_mutable_generalized_state_weight_vector
         struct /* get_mutable_generalized_state_weight_vector */ {
-          // Source: drake/systems/analysis/integrator_base.h:563
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Gets a mutable weighting vector (equivalent to a diagonal matrix)
 applied to weighting both generalized coordinate and velocity state
@@ -2985,7 +2985,7 @@ be thrown when the integrator is initialized.)""";
         } get_mutable_generalized_state_weight_vector;
         // Symbol: drake::systems::IntegratorBase::get_mutable_misc_state_weight_vector
         struct /* get_mutable_misc_state_weight_vector */ {
-          // Source: drake/systems/analysis/integrator_base.h:588
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Gets a mutable weighting vector (equivalent to a diagonal matrix) for
 weighting errors in miscellaneous continuous state variables ``z``.
@@ -3000,7 +3000,7 @@ initialized.)""";
         } get_mutable_misc_state_weight_vector;
         // Symbol: drake::systems::IntegratorBase::get_num_derivative_evaluations
         struct /* get_num_derivative_evaluations */ {
-          // Source: drake/systems/analysis/integrator_base.h:1155
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Returns the number of ODE function evaluations (calls to
 CalcTimeDerivatives()) since the last call to ResetStatistics() or
@@ -3012,7 +3012,7 @@ exhibit little cost (due to results being cached).)""";
         } get_num_derivative_evaluations;
         // Symbol: drake::systems::IntegratorBase::get_num_step_shrinkages_from_error_control
         struct /* get_num_step_shrinkages_from_error_control */ {
-          // Source: drake/systems/analysis/integrator_base.h:1142
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Gets the number of step size shrinkages due to failure to meet
 targeted error tolerances, since the last call to ResetStatistics or
@@ -3020,7 +3020,7 @@ Initialize().)""";
         } get_num_step_shrinkages_from_error_control;
         // Symbol: drake::systems::IntegratorBase::get_num_step_shrinkages_from_substep_failures
         struct /* get_num_step_shrinkages_from_substep_failures */ {
-          // Source: drake/systems/analysis/integrator_base.h:1136
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Gets the number of step size shrinkages due to sub-step failures
 (e.g., integrator convergence failures) since the last call to
@@ -3028,14 +3028,14 @@ ResetStatistics() or Initialize().)""";
         } get_num_step_shrinkages_from_substep_failures;
         // Symbol: drake::systems::IntegratorBase::get_num_steps_taken
         struct /* get_num_steps_taken */ {
-          // Source: drake/systems/analysis/integrator_base.h:1186
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(The number of integration steps taken since the last Initialize() or
 ResetStatistics() call.)""";
         } get_num_steps_taken;
         // Symbol: drake::systems::IntegratorBase::get_num_substep_failures
         struct /* get_num_substep_failures */ {
-          // Source: drake/systems/analysis/integrator_base.h:1129
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Gets the number of failed sub-steps (implying one or more step size
 reductions was required to permit solving the necessary nonlinear
@@ -3043,14 +3043,14 @@ system of equations).)""";
         } get_num_substep_failures;
         // Symbol: drake::systems::IntegratorBase::get_previous_integration_step_size
         struct /* get_previous_integration_step_size */ {
-          // Source: drake/systems/analysis/integrator_base.h:1317
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Gets the size of the last (previous) integration step. If no
 integration steps have been taken, value will be NaN.)""";
         } get_previous_integration_step_size;
         // Symbol: drake::systems::IntegratorBase::get_requested_minimum_step_size
         struct /* get_requested_minimum_step_size */ {
-          // Source: drake/systems/analysis/integrator_base.h:810
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Gets the requested minimum step size ``h_min`` for this integrator.
 
@@ -3062,7 +3062,7 @@ See also:
         } get_requested_minimum_step_size;
         // Symbol: drake::systems::IntegratorBase::get_smallest_adapted_step_size_taken
         struct /* get_smallest_adapted_step_size_taken */ {
-          // Source: drake/systems/analysis/integrator_base.h:1170
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(The size of the smallest step taken *as the result of a controlled
 integration step adjustment* since the last Initialize() or
@@ -3071,7 +3071,7 @@ error estimation.)""";
         } get_smallest_adapted_step_size_taken;
         // Symbol: drake::systems::IntegratorBase::get_stretch_factor
         struct /* get_stretch_factor */ {
-          // Source: drake/systems/analysis/integrator_base.h:721
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Gets the stretch factor (> 1), which is multiplied by the maximum
 (typically user-designated) integration step size to obtain the amount
@@ -3084,14 +3084,14 @@ See also:
         } get_stretch_factor;
         // Symbol: drake::systems::IntegratorBase::get_system
         struct /* get_system */ {
-          // Source: drake/systems/analysis/integrator_base.h:1308
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Gets a constant reference to the system that is being integrated (and
 was provided to the constructor of the integrator).)""";
         } get_system;
         // Symbol: drake::systems::IntegratorBase::get_target_accuracy
         struct /* get_target_accuracy */ {
-          // Source: drake/systems/analysis/integrator_base.h:236
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Gets the target accuracy.
 
@@ -3100,7 +3100,7 @@ See also:
         } get_target_accuracy;
         // Symbol: drake::systems::IntegratorBase::get_throw_on_minimum_step_size_violation
         struct /* get_throw_on_minimum_step_size_violation */ {
-          // Source: drake/systems/analysis/integrator_base.h:831
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Reports the current setting of the
 throw_on_minimum_step_size_violation flag.
@@ -3110,7 +3110,7 @@ See also:
         } get_throw_on_minimum_step_size_violation;
         // Symbol: drake::systems::IntegratorBase::get_working_minimum_step_size
         struct /* get_working_minimum_step_size */ {
-          // Source: drake/systems/analysis/integrator_base.h:841
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Gets the current value of the working minimum step size ``h_work(t)``
 for this integrator, which may vary with the current time t as stored
@@ -3119,13 +3119,13 @@ more detail.)""";
         } get_working_minimum_step_size;
         // Symbol: drake::systems::IntegratorBase::is_initialized
         struct /* is_initialized */ {
-          // Source: drake/systems/analysis/integrator_base.h:1311
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Indicates whether the integrator has been initialized.)""";
         } is_initialized;
         // Symbol: drake::systems::IntegratorBase::request_initial_step_size_target
         struct /* request_initial_step_size_target */ {
-          // Source: drake/systems/analysis/integrator_base.h:659
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Request that the first attempted integration step have a particular
 size. If no request is made, the integrator will estimate a suitable
@@ -3142,7 +3142,7 @@ Raises:
         } request_initial_step_size_target;
         // Symbol: drake::systems::IntegratorBase::reset_context
         struct /* reset_context */ {
-          // Source: drake/systems/analysis/integrator_base.h:1220
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Replace the pointer to the internally-maintained Context with a
 different one. This is useful for supplying a new set of initial
@@ -3156,7 +3156,7 @@ Parameter ``context``:
         } reset_context;
         // Symbol: drake::systems::IntegratorBase::set_accuracy_in_use
         struct /* set_accuracy_in_use */ {
-          // Source: drake/systems/analysis/integrator_base.h:1384
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Sets the working ("in use") accuracy for this integrator. The working
 accuracy may not be equivalent to the target accuracy when the latter
@@ -3170,12 +3170,12 @@ See also:
         } set_accuracy_in_use;
         // Symbol: drake::systems::IntegratorBase::set_actual_initial_step_size_taken
         struct /* set_actual_initial_step_size_taken */ {
-          // Source: drake/systems/analysis/integrator_base.h:1565
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc = R"""()""";
         } set_actual_initial_step_size_taken;
         // Symbol: drake::systems::IntegratorBase::set_fixed_step_mode
         struct /* set_fixed_step_mode */ {
-          // Source: drake/systems/analysis/integrator_base.h:327
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Sets an integrator with error control to fixed step mode. If the
 integrator runs in fixed step mode, it will always take the maximum
@@ -3195,17 +3195,17 @@ Raises:
         } set_fixed_step_mode;
         // Symbol: drake::systems::IntegratorBase::set_ideal_next_step_size
         struct /* set_ideal_next_step_size */ {
-          // Source: drake/systems/analysis/integrator_base.h:1581
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc = R"""()""";
         } set_ideal_next_step_size;
         // Symbol: drake::systems::IntegratorBase::set_largest_step_size_taken
         struct /* set_largest_step_size_taken */ {
-          // Source: drake/systems/analysis/integrator_base.h:1578
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc = R"""()""";
         } set_largest_step_size_taken;
         // Symbol: drake::systems::IntegratorBase::set_maximum_step_size
         struct /* set_maximum_step_size */ {
-          // Source: drake/systems/analysis/integrator_base.h:699
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(@anchor integrator-maxstep @name Methods related to maximum
 integration step size
@@ -3225,7 +3225,7 @@ Warning:
         } set_maximum_step_size;
         // Symbol: drake::systems::IntegratorBase::set_requested_minimum_step_size
         struct /* set_requested_minimum_step_size */ {
-          // Source: drake/systems/analysis/integrator_base.h:800
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Sets the requested minimum step size ``h_min`` that may be taken by
 this integrator. No step smaller than this will be taken except under
@@ -3246,14 +3246,14 @@ See also:
         } set_requested_minimum_step_size;
         // Symbol: drake::systems::IntegratorBase::set_smallest_adapted_step_size_taken
         struct /* set_smallest_adapted_step_size_taken */ {
-          // Source: drake/systems/analysis/integrator_base.h:1573
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Sets the size of the smallest-step-taken statistic as the result of a
 controlled integration step adjustment.)""";
         } set_smallest_adapted_step_size_taken;
         // Symbol: drake::systems::IntegratorBase::set_target_accuracy
         struct /* set_target_accuracy */ {
-          // Source: drake/systems/analysis/integrator_base.h:222
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(@anchor integrator-accuracy @name Methods for getting and setting
 integrator accuracy The precise meaning of *accuracy* is a complicated
@@ -3296,7 +3296,7 @@ Raises:
         } set_target_accuracy;
         // Symbol: drake::systems::IntegratorBase::set_throw_on_minimum_step_size_violation
         struct /* set_throw_on_minimum_step_size_violation */ {
-          // Source: drake/systems/analysis/integrator_base.h:822
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(Sets whether the integrator should throw a RuntimeError when the
 integrator's step size selection algorithm determines that it must
@@ -3307,7 +3307,7 @@ situations. See integrator-minstep "this section" for more detail.)""";
         } set_throw_on_minimum_step_size_violation;
         // Symbol: drake::systems::IntegratorBase::supports_error_estimation
         struct /* supports_error_estimation */ {
-          // Source: drake/systems/analysis/integrator_base.h:267
+          // Source: drake/systems/analysis/integrator_base.h
           const char* doc =
 R"""(@anchor error-estimation-and-control @name Methods related to error
 estimation and control Established methods for integrating ordinary
@@ -3329,7 +3329,7 @@ will be unused.)""";
       } IntegratorBase;
       // Symbol: drake::systems::IsScalarTypeSupportedByIntegrator
       struct /* IsScalarTypeSupportedByIntegrator */ {
-        // Source: drake/systems/analysis/simulator_config_functions.h:107
+        // Source: drake/systems/analysis/simulator_config_functions.h
         const char* doc =
 R"""(Reports if an integration scheme supports the scalar type T.
 
@@ -3342,7 +3342,7 @@ Raises:
       } IsScalarTypeSupportedByIntegrator;
       // Symbol: drake::systems::PrintSimulatorStatistics
       struct /* PrintSimulatorStatistics */ {
-        // Source: drake/systems/analysis/simulator_print_stats.h:13
+        // Source: drake/systems/analysis/simulator_print_stats.h
         const char* doc =
 R"""(This method outputs to stdout relevant simulation statistics for a
 simulator that advanced the state of a system forward in time.
@@ -3352,7 +3352,7 @@ Parameter ``simulator``:
       } PrintSimulatorStatistics;
       // Symbol: drake::systems::RadauIntegrator
       struct /* RadauIntegrator */ {
-        // Source: drake/systems/analysis/radau_integrator.h:64
+        // Source: drake/systems/analysis/radau_integrator.h
         const char* doc =
 R"""(A selectable order (third- or first-order), fully implicit integrator
 with error estimation.
@@ -3407,12 +3407,12 @@ Note:
     for more info.)""";
         // Symbol: drake::systems::RadauIntegrator::RadauIntegrator<T, num_stages>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/radau_integrator.h:69
+          // Source: drake/systems/analysis/radau_integrator.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::systems::RadauIntegrator::get_error_estimate_order
         struct /* get_error_estimate_order */ {
-          // Source: drake/systems/analysis/radau_integrator.h:83
+          // Source: drake/systems/analysis/radau_integrator.h
           const char* doc =
 R"""(This integrator uses embedded second order methods to compute
 estimates of the local truncation error. The order of the asymptotic
@@ -3423,13 +3423,13 @@ O(h²).)""";
         } get_error_estimate_order;
         // Symbol: drake::systems::RadauIntegrator::supports_error_estimation
         struct /* supports_error_estimation */ {
-          // Source: drake/systems/analysis/radau_integrator.h:76
+          // Source: drake/systems/analysis/radau_integrator.h
           const char* doc = R"""()""";
         } supports_error_estimation;
       } RadauIntegrator;
       // Symbol: drake::systems::ResetIntegratorFromFlags
       struct /* ResetIntegratorFromFlags */ {
-        // Source: drake/systems/analysis/simulator_config_functions.h:38
+        // Source: drake/systems/analysis/simulator_config_functions.h
         const char* doc =
 R"""(Resets the integrator used to advanced the continuous time dynamics of
 the system associated with ``simulator`` according to the given
@@ -3452,12 +3452,12 @@ Returns:
       } ResetIntegratorFromFlags;
       // Symbol: drake::systems::RungeKutta2Integrator
       struct /* RungeKutta2Integrator */ {
-        // Source: drake/systems/analysis/runge_kutta2_integrator.h:18
+        // Source: drake/systems/analysis/runge_kutta2_integrator.h
         const char* doc =
 R"""(A second-order, explicit Runge Kutta integrator.)""";
         // Symbol: drake::systems::RungeKutta2Integrator::RungeKutta2Integrator<T>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/runge_kutta2_integrator.h:35
+          // Source: drake/systems/analysis/runge_kutta2_integrator.h
           const char* doc =
 R"""(Constructs fixed-step integrator for a given system using the given
 context for initial conditions.
@@ -3478,20 +3478,20 @@ See also:
         } ctor;
         // Symbol: drake::systems::RungeKutta2Integrator::get_error_estimate_order
         struct /* get_error_estimate_order */ {
-          // Source: drake/systems/analysis/runge_kutta2_integrator.h:48
+          // Source: drake/systems/analysis/runge_kutta2_integrator.h
           const char* doc =
 R"""(Integrator does not provide an error estimate.)""";
         } get_error_estimate_order;
         // Symbol: drake::systems::RungeKutta2Integrator::supports_error_estimation
         struct /* supports_error_estimation */ {
-          // Source: drake/systems/analysis/runge_kutta2_integrator.h:45
+          // Source: drake/systems/analysis/runge_kutta2_integrator.h
           const char* doc =
 R"""(The RK2 integrator does not support error estimation.)""";
         } supports_error_estimation;
       } RungeKutta2Integrator;
       // Symbol: drake::systems::RungeKutta3Integrator
       struct /* RungeKutta3Integrator */ {
-        // Source: drake/systems/analysis/runge_kutta3_integrator.h:54
+        // Source: drake/systems/analysis/runge_kutta3_integrator.h
         const char* doc =
 R"""(A third-order Runge Kutta integrator with a third order error
 estimate.
@@ -3541,25 +3541,25 @@ evaluation at the end of the last step."
   rev. ed. Springer, 1993. p. 166.)""";
         // Symbol: drake::systems::RungeKutta3Integrator::RungeKutta3Integrator<T>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/runge_kutta3_integrator.h:56
+          // Source: drake/systems/analysis/runge_kutta3_integrator.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::systems::RungeKutta3Integrator::get_error_estimate_order
         struct /* get_error_estimate_order */ {
-          // Source: drake/systems/analysis/runge_kutta3_integrator.h:75
+          // Source: drake/systems/analysis/runge_kutta3_integrator.h
           const char* doc =
 R"""(This integrator provides third order error estimates.)""";
         } get_error_estimate_order;
         // Symbol: drake::systems::RungeKutta3Integrator::supports_error_estimation
         struct /* supports_error_estimation */ {
-          // Source: drake/systems/analysis/runge_kutta3_integrator.h:72
+          // Source: drake/systems/analysis/runge_kutta3_integrator.h
           const char* doc =
 R"""(The integrator supports error estimation.)""";
         } supports_error_estimation;
       } RungeKutta3Integrator;
       // Symbol: drake::systems::RungeKutta5Integrator
       struct /* RungeKutta5Integrator */ {
-        // Source: drake/systems/analysis/runge_kutta5_integrator.h:49
+        // Source: drake/systems/analysis/runge_kutta5_integrator.h
         const char* doc =
 R"""(A fifth-order, seven-stage, first-same-as-last (FSAL) Runge Kutta
 integrator with a fourth order error estimate.
@@ -3603,25 +3603,25 @@ Runge-Kutta formulae", Journal of Computational and Applied Mathematics,
 rev. ed. Springer, 1993. pp. 178-9.)""";
         // Symbol: drake::systems::RungeKutta5Integrator::RungeKutta5Integrator<T>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/runge_kutta5_integrator.h:51
+          // Source: drake/systems/analysis/runge_kutta5_integrator.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::systems::RungeKutta5Integrator::get_error_estimate_order
         struct /* get_error_estimate_order */ {
-          // Source: drake/systems/analysis/runge_kutta5_integrator.h:74
+          // Source: drake/systems/analysis/runge_kutta5_integrator.h
           const char* doc =
 R"""(The order of the asymptotic term in the error estimate.)""";
         } get_error_estimate_order;
         // Symbol: drake::systems::RungeKutta5Integrator::supports_error_estimation
         struct /* supports_error_estimation */ {
-          // Source: drake/systems/analysis/runge_kutta5_integrator.h:71
+          // Source: drake/systems/analysis/runge_kutta5_integrator.h
           const char* doc =
 R"""(The integrator supports error estimation.)""";
         } supports_error_estimation;
       } RungeKutta5Integrator;
       // Symbol: drake::systems::ScalarDenseOutput
       struct /* ScalarDenseOutput */ {
-        // Source: drake/systems/analysis/scalar_dense_output.h:18
+        // Source: drake/systems/analysis/scalar_dense_output.h
         const char* doc =
 R"""(A DenseOutput class interface extension to deal with scalar ODE
 solutions. A ScalarDenseOutput instance is also a DenseOutput instance
@@ -3630,17 +3630,17 @@ value can evaluated in both scalar and vectorial form (via
 EvaluateScalar() and Evaluate(), respectively).)""";
         // Symbol: drake::systems::ScalarDenseOutput::DoEvaluate
         struct /* DoEvaluate */ {
-          // Source: drake/systems/analysis/scalar_dense_output.h:40
+          // Source: drake/systems/analysis/scalar_dense_output.h
           const char* doc = R"""()""";
         } DoEvaluate;
         // Symbol: drake::systems::ScalarDenseOutput::DoEvaluateScalar
         struct /* DoEvaluateScalar */ {
-          // Source: drake/systems/analysis/scalar_dense_output.h:47
+          // Source: drake/systems/analysis/scalar_dense_output.h
           const char* doc = R"""()""";
         } DoEvaluateScalar;
         // Symbol: drake::systems::ScalarDenseOutput::EvaluateScalar
         struct /* EvaluateScalar */ {
-          // Source: drake/systems/analysis/scalar_dense_output.h:31
+          // Source: drake/systems/analysis/scalar_dense_output.h
           const char* doc =
 R"""(Evaluates output at the given time ``t``.
 
@@ -3662,18 +3662,18 @@ Raises:
         } EvaluateScalar;
         // Symbol: drake::systems::ScalarDenseOutput::ScalarDenseOutput<T>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/scalar_dense_output.h:20
+          // Source: drake/systems/analysis/scalar_dense_output.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::systems::ScalarDenseOutput::do_size
         struct /* do_size */ {
-          // Source: drake/systems/analysis/scalar_dense_output.h:44
+          // Source: drake/systems/analysis/scalar_dense_output.h
           const char* doc = R"""()""";
         } do_size;
       } ScalarDenseOutput;
       // Symbol: drake::systems::ScalarInitialValueProblem
       struct /* ScalarInitialValueProblem */ {
-        // Source: drake/systems/analysis/scalar_initial_value_problem.h:51
+        // Source: drake/systems/analysis/scalar_initial_value_problem.h
         const char* doc =
 R"""(A thin wrapper of the InitialValueProblem class to provide a simple
 interface when solving scalar initial value problems i.e. when
@@ -3710,7 +3710,7 @@ scalar IVPs:
   x₀ ≜ Q₀, dx/dt = f(t, x; 𝐤) = (E(t) - x / 𝐤₂) / 𝐤₁.)""";
         // Symbol: drake::systems::ScalarInitialValueProblem::DenseSolve
         struct /* DenseSolve */ {
-          // Source: drake/systems/analysis/scalar_initial_value_problem.h:99
+          // Source: drake/systems/analysis/scalar_initial_value_problem.h
           const char* doc =
 R"""(Solves and yields an approximation of the IVP solution x(t; 𝐤) for the
 closed time interval between the initial time ``t0`` and the final
@@ -3742,7 +3742,7 @@ Raises:
         } DenseSolve;
         // Symbol: drake::systems::ScalarInitialValueProblem::ScalarInitialValueProblem<T>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/scalar_initial_value_problem.h:70
+          // Source: drake/systems/analysis/scalar_initial_value_problem.h
           const char* doc =
 R"""(Constructs a scalar IVP described by the given
 ``scalar_ode_function``, using given ``x0`` as initial conditions, and
@@ -3760,7 +3760,7 @@ Parameter ``k``:
         } ctor;
         // Symbol: drake::systems::ScalarInitialValueProblem::ScalarOdeFunction
         struct /* ScalarOdeFunction */ {
-          // Source: drake/systems/analysis/scalar_initial_value_problem.h:61
+          // Source: drake/systems/analysis/scalar_initial_value_problem.h
           const char* doc =
 R"""(Scalar ODE dx/dt = f(t, x; 𝐤) function type.
 
@@ -3778,7 +3778,7 @@ Returns:
         } ScalarOdeFunction;
         // Symbol: drake::systems::ScalarInitialValueProblem::Solve
         struct /* Solve */ {
-          // Source: drake/systems/analysis/scalar_initial_value_problem.h:77
+          // Source: drake/systems/analysis/scalar_initial_value_problem.h
           const char* doc =
 R"""(Solves the IVP from time ``t0`` up to time ``tf``, using the initial
 state 𝐱₀ and parameter vector 𝐤 provided in the constructor.
@@ -3788,19 +3788,19 @@ Raises:
         } Solve;
         // Symbol: drake::systems::ScalarInitialValueProblem::get_integrator
         struct /* get_integrator */ {
-          // Source: drake/systems/analysis/scalar_initial_value_problem.h:125
+          // Source: drake/systems/analysis/scalar_initial_value_problem.h
           const char* doc =
 R"""(Gets a reference to the internal integrator instance.)""";
         } get_integrator;
         // Symbol: drake::systems::ScalarInitialValueProblem::get_mutable_integrator
         struct /* get_mutable_integrator */ {
-          // Source: drake/systems/analysis/scalar_initial_value_problem.h:130
+          // Source: drake/systems/analysis/scalar_initial_value_problem.h
           const char* doc =
 R"""(Gets a mutable reference to the internal integrator instance.)""";
         } get_mutable_integrator;
         // Symbol: drake::systems::ScalarInitialValueProblem::reset_integrator
         struct /* reset_integrator */ {
-          // Source: drake/systems/analysis/scalar_initial_value_problem.h:119
+          // Source: drake/systems/analysis/scalar_initial_value_problem.h
           const char* doc =
 R"""(Resets the internal integrator instance by in-place construction of
 the given integrator type.
@@ -3840,18 +3840,18 @@ Warning:
       } ScalarInitialValueProblem;
       // Symbol: drake::systems::ScalarViewDenseOutput
       struct /* ScalarViewDenseOutput */ {
-        // Source: drake/systems/analysis/scalar_view_dense_output.h:22
+        // Source: drake/systems/analysis/scalar_view_dense_output.h
         const char* doc =
 R"""(A ScalarDenseOutput class implementation that wraps a DenseOutput
 class instance and behaves as a view to one of its elements.)""";
         // Symbol: drake::systems::ScalarViewDenseOutput::DoEvaluateScalar
         struct /* DoEvaluateScalar */ {
-          // Source: drake/systems/analysis/scalar_view_dense_output.h:52
+          // Source: drake/systems/analysis/scalar_view_dense_output.h
           const char* doc = R"""()""";
         } DoEvaluateScalar;
         // Symbol: drake::systems::ScalarViewDenseOutput::ScalarViewDenseOutput<T>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/scalar_view_dense_output.h:34
+          // Source: drake/systems/analysis/scalar_view_dense_output.h
           const char* doc =
 R"""(Constructs a view of another DenseOutput instance.
 
@@ -3870,39 +3870,39 @@ Raises:
         } ctor;
         // Symbol: drake::systems::ScalarViewDenseOutput::base_output_
         struct /* base_output_ */ {
-          // Source: drake/systems/analysis/scalar_view_dense_output.h:63
+          // Source: drake/systems/analysis/scalar_view_dense_output.h
           const char* doc = R"""()""";
         } base_output_;
         // Symbol: drake::systems::ScalarViewDenseOutput::do_end_time
         struct /* do_end_time */ {
-          // Source: drake/systems/analysis/scalar_view_dense_output.h:60
+          // Source: drake/systems/analysis/scalar_view_dense_output.h
           const char* doc = R"""()""";
         } do_end_time;
         // Symbol: drake::systems::ScalarViewDenseOutput::do_is_empty
         struct /* do_is_empty */ {
-          // Source: drake/systems/analysis/scalar_view_dense_output.h:56
+          // Source: drake/systems/analysis/scalar_view_dense_output.h
           const char* doc = R"""()""";
         } do_is_empty;
         // Symbol: drake::systems::ScalarViewDenseOutput::do_start_time
         struct /* do_start_time */ {
-          // Source: drake/systems/analysis/scalar_view_dense_output.h:58
+          // Source: drake/systems/analysis/scalar_view_dense_output.h
           const char* doc = R"""()""";
         } do_start_time;
         // Symbol: drake::systems::ScalarViewDenseOutput::get_base_output
         struct /* get_base_output */ {
-          // Source: drake/systems/analysis/scalar_view_dense_output.h:49
+          // Source: drake/systems/analysis/scalar_view_dense_output.h
           const char* doc =
 R"""(Returns the base dense output upon which the view operates.)""";
         } get_base_output;
         // Symbol: drake::systems::ScalarViewDenseOutput::n_
         struct /* n_ */ {
-          // Source: drake/systems/analysis/scalar_view_dense_output.h:66
+          // Source: drake/systems/analysis/scalar_view_dense_output.h
           const char* doc = R"""()""";
         } n_;
       } ScalarViewDenseOutput;
       // Symbol: drake::systems::SemiExplicitEulerIntegrator
       struct /* SemiExplicitEulerIntegrator */ {
-        // Source: drake/systems/analysis/semi_explicit_euler_integrator.h:70
+        // Source: drake/systems/analysis/semi_explicit_euler_integrator.h
         const char* doc =
 R"""(A first-order, semi-explicit Euler integrator. State is updated in the
 following manner:
@@ -3970,7 +3970,7 @@ occurring simultaneously.
                       Impact. SIAM Review, 42:1, 2000.)""";
         // Symbol: drake::systems::SemiExplicitEulerIntegrator::SemiExplicitEulerIntegrator<T>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/semi_explicit_euler_integrator.h:89
+          // Source: drake/systems/analysis/semi_explicit_euler_integrator.h
           const char* doc =
 R"""(Constructs a fixed-step integrator for a given system using the given
 context for initial conditions.
@@ -3991,21 +3991,21 @@ See also:
         } ctor;
         // Symbol: drake::systems::SemiExplicitEulerIntegrator::get_error_estimate_order
         struct /* get_error_estimate_order */ {
-          // Source: drake/systems/analysis/semi_explicit_euler_integrator.h:101
+          // Source: drake/systems/analysis/semi_explicit_euler_integrator.h
           const char* doc =
 R"""(Gets the error estimate order (returns zero, since error estimation is
 not provided).)""";
         } get_error_estimate_order;
         // Symbol: drake::systems::SemiExplicitEulerIntegrator::supports_error_estimation
         struct /* supports_error_estimation */ {
-          // Source: drake/systems/analysis/semi_explicit_euler_integrator.h:106
+          // Source: drake/systems/analysis/semi_explicit_euler_integrator.h
           const char* doc =
 R"""(Integrator does not support accuracy estimation.)""";
         } supports_error_estimation;
       } SemiExplicitEulerIntegrator;
       // Symbol: drake::systems::Simulator
       struct /* Simulator */ {
-        // Source: drake/systems/analysis/simulator.h:250
+        // Source: drake/systems/analysis/simulator.h
         const char* doc =
 R"""(A class for advancing the state of hybrid dynamic systems, represented
 by ``System<T>`` objects, forward in time. Starting with an initial
@@ -4227,7 +4227,7 @@ Optionally, initialization events can be suppressed. This can be
 useful when reusing the simulator over the same system and time span.)""";
         // Symbol: drake::systems::Simulator::AdvancePendingEvents
         struct /* AdvancePendingEvents */ {
-          // Source: drake/systems/analysis/simulator.h:399
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""((Advanced) Handles discrete and abstract state update events that are
 pending from the previous AdvanceTo() call, without advancing time.
@@ -4260,7 +4260,7 @@ See also:
         } AdvancePendingEvents;
         // Symbol: drake::systems::Simulator::AdvanceTo
         struct /* AdvanceTo */ {
-          // Source: drake/systems/analysis/simulator.h:374
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Advances the System's trajectory until ``boundary_time`` is reached in
 the Context or some other termination condition occurs.
@@ -4307,7 +4307,7 @@ See also:
         } AdvanceTo;
         // Symbol: drake::systems::Simulator::GetCurrentWitnessTimeIsolation
         struct /* GetCurrentWitnessTimeIsolation */ {
-          // Source: drake/systems/analysis/simulator.h:751
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Gets the length of the interval used for witness function time
 isolation. The length of the interval is computed differently,
@@ -4344,7 +4344,7 @@ Raises:
         } GetCurrentWitnessTimeIsolation;
         // Symbol: drake::systems::Simulator::Initialize
         struct /* Initialize */ {
-          // Source: drake/systems/analysis/simulator.h:341
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Prepares the Simulator for a simulation. In order, the sequence of
 actions taken here is: - The active integrator's Initialize() method
@@ -4412,19 +4412,19 @@ See also:
         } Initialize;
         // Symbol: drake::systems::Simulator::MakeWithSharedContext
         struct /* MakeWithSharedContext */ {
-          // Source: drake/systems/analysis/simulator.h:284
+          // Source: drake/systems/analysis/simulator.h
           const char* doc = R"""()""";
         } MakeWithSharedContext;
         // Symbol: drake::systems::Simulator::ResetStatistics
         struct /* ResetStatistics */ {
-          // Source: drake/systems/analysis/simulator.h:637
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Forget accumulated statistics. Statistics are reset to the values they
 have post construction or immediately after ``Initialize()``.)""";
         } ResetStatistics;
         // Symbol: drake::systems::Simulator::Simulator<T>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/simulator.h:266
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Create a Simulator that can advance a given System through time to
 produce a trajectory consisting of a sequence of Context values. The
@@ -4441,7 +4441,7 @@ otherwise the Simulator will obtain a default Context from ``system``.)""";
         } ctor;
         // Symbol: drake::systems::Simulator::clear_monitor
         struct /* clear_monitor */ {
-          // Source: drake/systems/analysis/simulator.h:482
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Removes the monitoring function if there is one.
 
@@ -4450,7 +4450,7 @@ See also:
         } clear_monitor;
         // Symbol: drake::systems::Simulator::get_actual_realtime_rate
         struct /* get_actual_realtime_rate */ {
-          // Source: drake/systems/analysis/simulator.h:544
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Return the rate that simulated time has progressed relative to real
 time. A return of 1 means the simulation just matched real time, 2
@@ -4487,7 +4487,7 @@ See also:
         } get_actual_realtime_rate;
         // Symbol: drake::systems::Simulator::get_context
         struct /* get_context */ {
-          // Source: drake/systems/analysis/simulator.h:589
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Returns a const reference to the internally-maintained Context holding
 the most recent step in the trajectory. This is suitable for
@@ -4496,14 +4496,14 @@ not call this method if there is no Context.)""";
         } get_context;
         // Symbol: drake::systems::Simulator::get_integrator
         struct /* get_integrator */ {
-          // Source: drake/systems/analysis/simulator.h:669
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Gets a reference to the integrator used to advance the continuous
 aspects of the system.)""";
         } get_integrator;
         // Symbol: drake::systems::Simulator::get_monitor
         struct /* get_monitor */ {
-          // Source: drake/systems/analysis/simulator.h:486
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Obtains a reference to the monitoring function, which may be empty.
 
@@ -4512,7 +4512,7 @@ See also:
         } get_monitor;
         // Symbol: drake::systems::Simulator::get_mutable_context
         struct /* get_mutable_context */ {
-          // Source: drake/systems/analysis/simulator.h:599
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Returns a mutable reference to the internally-maintained Context
 holding the most recent step in the trajectory. This is suitable for
@@ -4523,14 +4523,14 @@ Context.)""";
         } get_mutable_context;
         // Symbol: drake::systems::Simulator::get_mutable_integrator
         struct /* get_mutable_integrator */ {
-          // Source: drake/systems/analysis/simulator.h:673
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Gets a reference to the mutable integrator used to advance the
 continuous state of the system.)""";
         } get_mutable_integrator;
         // Symbol: drake::systems::Simulator::get_num_discrete_updates
         struct /* get_num_discrete_updates */ {
-          // Source: drake/systems/analysis/simulator.h:656
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Gets the number of effective discrete variable update dispatcher calls
 since the last Initialize() or ResetStatistics() call. A dispatch is
@@ -4540,7 +4540,7 @@ dispatcher call may handle multiple discrete update events.)""";
         } get_num_discrete_updates;
         // Symbol: drake::systems::Simulator::get_num_publishes
         struct /* get_num_publishes */ {
-          // Source: drake/systems/analysis/simulator.h:649
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Gets the number of effective publish dispatcher calls made since the
 last Initialize() or ResetStatistics() call. A dispatch is ineffective
@@ -4550,7 +4550,7 @@ handle multiple publish events.)""";
         } get_num_publishes;
         // Symbol: drake::systems::Simulator::get_num_steps_taken
         struct /* get_num_steps_taken */ {
-          // Source: drake/systems/analysis/simulator.h:642
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Gets the number of steps since the last Initialize() or
 ResetStatistics() call. (We're not counting the Initialize() 0-length
@@ -4559,7 +4559,7 @@ steps.)""";
         } get_num_steps_taken;
         // Symbol: drake::systems::Simulator::get_num_unrestricted_updates
         struct /* get_num_unrestricted_updates */ {
-          // Source: drake/systems/analysis/simulator.h:663
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Gets the number of effective unrestricted update dispatcher calls
 since the last Initialize() or ResetStatistics() call. A dispatch is
@@ -4569,14 +4569,14 @@ single dispatcher call may handle multiple unrestricted update events.)""";
         } get_num_unrestricted_updates;
         // Symbol: drake::systems::Simulator::get_publish_every_time_step
         struct /* get_publish_every_time_step */ {
-          // Source: drake/systems/analysis/simulator.h:583
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Returns true if the set_publish_every_time_step() option has been
 enabled. By default, returns false.)""";
         } get_publish_every_time_step;
         // Symbol: drake::systems::Simulator::get_system
         struct /* get_system */ {
-          // Source: drake/systems/analysis/simulator.h:755
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Gets a constant reference to the system.
 
@@ -4585,7 +4585,7 @@ Note:
         } get_system;
         // Symbol: drake::systems::Simulator::get_target_realtime_rate
         struct /* get_target_realtime_rate */ {
-          // Source: drake/systems/analysis/simulator.h:523
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Return the real time rate target currently in effect. The default is
 zero, meaning the Simulator runs as fast as possible. You can change
@@ -4593,7 +4593,7 @@ the target with set_target_realtime_rate().)""";
         } get_target_realtime_rate;
         // Symbol: drake::systems::Simulator::has_context
         struct /* has_context */ {
-          // Source: drake/systems/analysis/simulator.h:606
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Returns ``True`` if this Simulator has an internally-maintained
 Context. This is always true unless ``reset_context()`` has been
@@ -4601,7 +4601,7 @@ called.)""";
         } has_context;
         // Symbol: drake::systems::Simulator::reset_context
         struct /* reset_context */ {
-          // Source: drake/systems/analysis/simulator.h:614
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Replace the internally-maintained Context with a different one. This
 is useful for supplying a new set of initial conditions. You should
@@ -4613,12 +4613,12 @@ Parameter ``context``:
         } reset_context;
         // Symbol: drake::systems::Simulator::reset_context_from_shared
         struct /* reset_context_from_shared */ {
-          // Source: drake/systems/analysis/simulator.h:632
+          // Source: drake/systems/analysis/simulator.h
           const char* doc = R"""()""";
         } reset_context_from_shared;
         // Symbol: drake::systems::Simulator::reset_integrator
         struct /* reset_integrator */ {
-          // Source: drake/systems/analysis/simulator.h:685
+          // Source: drake/systems/analysis/simulator.h
           const char* doc_0args =
 R"""(Resets the integrator with a new one using factory construction.
 
@@ -4642,7 +4642,7 @@ Note:
     Integrator needs a constructor of the form Integrator(const
     System&, Context*); this constructor is usually associated with
     error-controlled integrators.)""";
-          // Source: drake/systems/analysis/simulator.h:710
+          // Source: drake/systems/analysis/simulator.h
           const char* doc_1args =
 R"""(Resets the integrator with a new one using factory construction and a
 maximum step size argument (which is required for constructing
@@ -4673,7 +4673,7 @@ Note:
         } reset_integrator;
         // Symbol: drake::systems::Simulator::set_monitor
         struct /* set_monitor */ {
-          // Source: drake/systems/analysis/simulator.h:476
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Provides a monitoring function that will be invoked at the end of
 every step. (See the Simulator class documentation for a precise
@@ -4788,7 +4788,7 @@ Note:
         } set_monitor;
         // Symbol: drake::systems::Simulator::set_publish_at_initialization
         struct /* set_publish_at_initialization */ {
-          // Source: drake/systems/analysis/simulator.h:577
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""((To be deprecated) Prefer using initialization or per-step publish
 events instead.
@@ -4808,7 +4808,7 @@ See also:
         } set_publish_at_initialization;
         // Symbol: drake::systems::Simulator::set_publish_every_time_step
         struct /* set_publish_every_time_step */ {
-          // Source: drake/systems/analysis/simulator.h:563
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""((To be deprecated) Prefer using per-step publish events instead.
 
@@ -4834,7 +4834,7 @@ See also:
         } set_publish_every_time_step;
         // Symbol: drake::systems::Simulator::set_target_realtime_rate
         struct /* set_target_realtime_rate */ {
-          // Source: drake/systems/analysis/simulator.h:516
+          // Source: drake/systems/analysis/simulator.h
           const char* doc =
 R"""(Slow the simulation down to *approximately* synchronize with real time
 when it would otherwise run too fast. Normally the Simulator takes
@@ -4866,33 +4866,33 @@ Parameter ``realtime_rate``:
       } Simulator;
       // Symbol: drake::systems::SimulatorConfig
       struct /* SimulatorConfig */ {
-        // Source: drake/systems/analysis/simulator_config.h:14
+        // Source: drake/systems/analysis/simulator_config.h
         const char* doc =
 R"""(The set of all configurable properties on a Simulator and
 IntegratorBase.)""";
         // Symbol: drake::systems::SimulatorConfig::Serialize
         struct /* Serialize */ {
-          // Source: drake/systems/analysis/simulator_config.h:18
+          // Source: drake/systems/analysis/simulator_config.h
           const char* doc = R"""()""";
         } Serialize;
         // Symbol: drake::systems::SimulatorConfig::accuracy
         struct /* accuracy */ {
-          // Source: drake/systems/analysis/simulator_config.h:30
+          // Source: drake/systems/analysis/simulator_config.h
           const char* doc = R"""()""";
         } accuracy;
         // Symbol: drake::systems::SimulatorConfig::integration_scheme
         struct /* integration_scheme */ {
-          // Source: drake/systems/analysis/simulator_config.h:28
+          // Source: drake/systems/analysis/simulator_config.h
           const char* doc = R"""()""";
         } integration_scheme;
         // Symbol: drake::systems::SimulatorConfig::max_step_size
         struct /* max_step_size */ {
-          // Source: drake/systems/analysis/simulator_config.h:29
+          // Source: drake/systems/analysis/simulator_config.h
           const char* doc = R"""()""";
         } max_step_size;
         // Symbol: drake::systems::SimulatorConfig::publish_every_time_step
         struct /* publish_every_time_step */ {
-          // Source: drake/systems/analysis/simulator_config.h:39
+          // Source: drake/systems/analysis/simulator_config.h
           const char* doc =
 R"""(Sets Simulator::set_publish_at_initialization() in addition to
 Simulator::set_publish_every_time_step() when applied by
@@ -4900,19 +4900,19 @@ ApplySimulatorConfig().)""";
         } publish_every_time_step;
         // Symbol: drake::systems::SimulatorConfig::start_time
         struct /* start_time */ {
-          // Source: drake/systems/analysis/simulator_config.h:34
+          // Source: drake/systems/analysis/simulator_config.h
           const char* doc =
 R"""(Starting time of the simulation. We will set the context time to
 ``start_time`` at the beginning of the simulation.)""";
         } start_time;
         // Symbol: drake::systems::SimulatorConfig::target_realtime_rate
         struct /* target_realtime_rate */ {
-          // Source: drake/systems/analysis/simulator_config.h:35
+          // Source: drake/systems/analysis/simulator_config.h
           const char* doc = R"""()""";
         } target_realtime_rate;
         // Symbol: drake::systems::SimulatorConfig::use_error_control
         struct /* use_error_control */ {
-          // Source: drake/systems/analysis/simulator_config.h:31
+          // Source: drake/systems/analysis/simulator_config.h
           const char* doc = R"""()""";
         } use_error_control;
         auto Serialize__fields() const {
@@ -4929,7 +4929,7 @@ R"""(Starting time of the simulation. We will set the context time to
       } SimulatorConfig;
       // Symbol: drake::systems::SimulatorStatus
       struct /* SimulatorStatus */ {
-        // Source: drake/systems/analysis/simulator_status.h:25
+        // Source: drake/systems/analysis/simulator_status.h
         const char* doc =
 R"""(Holds the status return value from a call to Simulator::AdvanceTo()
 and related methods. The argument t to AdvanceTo(t) is called the
@@ -4945,13 +4945,13 @@ subsystem that detected the condition and a human-friendly message
 from that subsystem that hopefully explains what happened.)""";
         // Symbol: drake::systems::SimulatorStatus::FormatMessage
         struct /* FormatMessage */ {
-          // Source: drake/systems/analysis/simulator_status.h:70
+          // Source: drake/systems/analysis/simulator_status.h
           const char* doc =
 R"""(Returns a human-readable message explaining the return result.)""";
         } FormatMessage;
         // Symbol: drake::systems::SimulatorStatus::IsIdenticalStatus
         struct /* IsIdenticalStatus */ {
-          // Source: drake/systems/analysis/simulator_status.h:103
+          // Source: drake/systems/analysis/simulator_status.h
           const char* doc =
 R"""(Returns true if the ``other`` status contains exactly the same
 information as ``this`` status. This is likely only useful for unit
@@ -4959,11 +4959,11 @@ testing of SimulatorStatus.)""";
         } IsIdenticalStatus;
         // Symbol: drake::systems::SimulatorStatus::ReturnReason
         struct /* ReturnReason */ {
-          // Source: drake/systems/analysis/simulator_status.h:29
+          // Source: drake/systems/analysis/simulator_status.h
           const char* doc = R"""()""";
           // Symbol: drake::systems::SimulatorStatus::ReturnReason::kEventHandlerFailed
           struct /* kEventHandlerFailed */ {
-            // Source: drake/systems/analysis/simulator_status.h:41
+            // Source: drake/systems/analysis/simulator_status.h
             const char* doc =
 R"""(An event handler or monitor function returned with a "failed"
 EventStatus (has message with details). For AdvanceTo() the return
@@ -4971,7 +4971,7 @@ time may be earlier than the boundary time.)""";
           } kEventHandlerFailed;
           // Symbol: drake::systems::SimulatorStatus::ReturnReason::kReachedBoundaryTime
           struct /* kReachedBoundaryTime */ {
-            // Source: drake/systems/analysis/simulator_status.h:33
+            // Source: drake/systems/analysis/simulator_status.h
             const char* doc =
 R"""(This is the normal return: no termination or error condition was
 encountered before reaching the boundary time. There is no message and
@@ -4979,7 +4979,7 @@ no saved System.)""";
           } kReachedBoundaryTime;
           // Symbol: drake::systems::SimulatorStatus::ReturnReason::kReachedTerminationCondition
           struct /* kReachedTerminationCondition */ {
-            // Source: drake/systems/analysis/simulator_status.h:37
+            // Source: drake/systems/analysis/simulator_status.h
             const char* doc =
 R"""(An event handler or monitor function returned with a "reached
 termination condition" EventStatus (has message with details). For
@@ -4988,14 +4988,14 @@ AdvanceTo() the return time may be earlier than the boundary time.)""";
         } ReturnReason;
         // Symbol: drake::systems::SimulatorStatus::SetEventHandlerFailed
         struct /* SetEventHandlerFailed */ {
-          // Source: drake/systems/analysis/simulator_status.h:64
+          // Source: drake/systems/analysis/simulator_status.h
           const char* doc =
 R"""(Sets this status to "event handler failed" with the early-termination
 time and a message explaining why.)""";
         } SetEventHandlerFailed;
         // Symbol: drake::systems::SimulatorStatus::SetReachedBoundaryTime
         struct /* SetReachedBoundaryTime */ {
-          // Source: drake/systems/analysis/simulator_status.h:47
+          // Source: drake/systems/analysis/simulator_status.h
           const char* doc =
 R"""(Sets this status to "reached boundary time" with no message and with
 the final time set to the boundary time (this is the same as the
@@ -5003,19 +5003,19 @@ post-construction default).)""";
         } SetReachedBoundaryTime;
         // Symbol: drake::systems::SimulatorStatus::SetReachedTermination
         struct /* SetReachedTermination */ {
-          // Source: drake/systems/analysis/simulator_status.h:56
+          // Source: drake/systems/analysis/simulator_status.h
           const char* doc =
 R"""(Sets this status to "reached termination" with the early-termination
 time and a message explaining why.)""";
         } SetReachedTermination;
         // Symbol: drake::systems::SimulatorStatus::SimulatorStatus
         struct /* ctor */ {
-          // Source: drake/systems/analysis/simulator_status.h:27
+          // Source: drake/systems/analysis/simulator_status.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::systems::SimulatorStatus::boundary_time
         struct /* boundary_time */ {
-          // Source: drake/systems/analysis/simulator_status.h:79
+          // Source: drake/systems/analysis/simulator_status.h
           const char* doc =
 R"""(Returns the maximum time we could have reached with this call; whether
 we actually got there depends on the status. This is the time supplied
@@ -5024,7 +5024,7 @@ advance time, that is, Initialize() and AdvancePendingEvents().)""";
         } boundary_time;
         // Symbol: drake::systems::SimulatorStatus::message
         struct /* message */ {
-          // Source: drake/systems/analysis/simulator_status.h:98
+          // Source: drake/systems/analysis/simulator_status.h
           const char* doc =
 R"""(For termination or error conditions, returns a human-readable message
 explaining what happened. This is the message from the subsystem that
@@ -5033,13 +5033,13 @@ and also includes this message.)""";
         } message;
         // Symbol: drake::systems::SimulatorStatus::reason
         struct /* reason */ {
-          // Source: drake/systems/analysis/simulator_status.h:87
+          // Source: drake/systems/analysis/simulator_status.h
           const char* doc =
 R"""(Returns the reason that a Simulator call returned.)""";
         } reason;
         // Symbol: drake::systems::SimulatorStatus::return_time
         struct /* return_time */ {
-          // Source: drake/systems/analysis/simulator_status.h:84
+          // Source: drake/systems/analysis/simulator_status.h
           const char* doc =
 R"""(Returns the time that was actually reached. This will be
 boundary_time() if succeeded() returns true. Otherwise it is the time
@@ -5048,13 +5048,13 @@ earlier than boundary_time().)""";
         } return_time;
         // Symbol: drake::systems::SimulatorStatus::succeeded
         struct /* succeeded */ {
-          // Source: drake/systems/analysis/simulator_status.h:73
+          // Source: drake/systems/analysis/simulator_status.h
           const char* doc =
 R"""(Returns true if we reached the boundary time with no surprises.)""";
         } succeeded;
         // Symbol: drake::systems::SimulatorStatus::system
         struct /* system */ {
-          // Source: drake/systems/analysis/simulator_status.h:92
+          // Source: drake/systems/analysis/simulator_status.h
           const char* doc =
 R"""(Optionally, returns the subsystem to which the status and contained
 message should be attributed. May be nullptr in which case the status
@@ -5063,7 +5063,7 @@ should be attributed to the System as a whole.)""";
       } SimulatorStatus;
       // Symbol: drake::systems::StepwiseDenseOutput
       struct /* StepwiseDenseOutput */ {
-        // Source: drake/systems/analysis/stepwise_dense_output.h:26
+        // Source: drake/systems/analysis/stepwise_dense_output.h
         const char* doc =
 R"""(A DenseOutput class interface extension, geared towards step-wise
 construction procedures. Outputs of this kind are to be built
@@ -5081,7 +5081,7 @@ representation for evaluation. As such, evaluation is bound to succeed
 only after consolidation.)""";
         // Symbol: drake::systems::StepwiseDenseOutput::Consolidate
         struct /* Consolidate */ {
-          // Source: drake/systems/analysis/stepwise_dense_output.h:52
+          // Source: drake/systems/analysis/stepwise_dense_output.h
           const char* doc =
 R"""(Consolidates latest updates.
 
@@ -5108,7 +5108,7 @@ Raises:
         } Consolidate;
         // Symbol: drake::systems::StepwiseDenseOutput::Rollback
         struct /* Rollback */ {
-          // Source: drake/systems/analysis/stepwise_dense_output.h:37
+          // Source: drake/systems/analysis/stepwise_dense_output.h
           const char* doc =
 R"""(Rolls back (drops) the last update.
 
@@ -5124,13 +5124,13 @@ Raises:
         } Rollback;
         // Symbol: drake::systems::StepwiseDenseOutput::StepwiseDenseOutput<T>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/stepwise_dense_output.h:28
+          // Source: drake/systems/analysis/stepwise_dense_output.h
           const char* doc = R"""()""";
         } ctor;
       } StepwiseDenseOutput;
       // Symbol: drake::systems::VelocityImplicitEulerIntegrator
       struct /* VelocityImplicitEulerIntegrator */ {
-        // Source: drake/systems/analysis/velocity_implicit_euler_integrator.h:134
+        // Source: drake/systems/analysis/velocity_implicit_euler_integrator.h
         const char* doc =
 R"""(A first-order, fully implicit integrator optimized for second-order
 systems, with a second-order error estimate.
@@ -5259,12 +5259,12 @@ See also:
     the "implicit Euler" integration method.)""";
         // Symbol: drake::systems::VelocityImplicitEulerIntegrator::VelocityImplicitEulerIntegrator<T>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/velocity_implicit_euler_integrator.h:136
+          // Source: drake/systems/analysis/velocity_implicit_euler_integrator.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::systems::VelocityImplicitEulerIntegrator::get_error_estimate_order
         struct /* get_error_estimate_order */ {
-          // Source: drake/systems/analysis/velocity_implicit_euler_integrator.h:292
+          // Source: drake/systems/analysis/velocity_implicit_euler_integrator.h
           const char* doc =
 R"""(Returns the asymptotic order of the difference between the large and
 small steps (from which the error estimate is computed), which is 2.
@@ -5402,7 +5402,7 @@ first term on the RHS matches ``ε`` (Eq. (21)),
         } get_error_estimate_order;
         // Symbol: drake::systems::VelocityImplicitEulerIntegrator::supports_error_estimation
         struct /* supports_error_estimation */ {
-          // Source: drake/systems/analysis/velocity_implicit_euler_integrator.h:147
+          // Source: drake/systems/analysis/velocity_implicit_euler_integrator.h
           const char* doc =
 R"""(Returns true, because this integrator supports error estimation.)""";
         } supports_error_estimation;
@@ -5411,7 +5411,7 @@ R"""(Returns true, because this integrator supports error estimation.)""";
       struct /* analysis */ {
         // Symbol: drake::systems::analysis::MonteCarloSimulation
         struct /* MonteCarloSimulation */ {
-          // Source: drake/systems/analysis/monte_carlo.h:164
+          // Source: drake/systems/analysis/monte_carlo.h
           const char* doc =
 R"""(Generates samples of a scalar random variable output by running many
 random simulations drawn from independent samples of the distributions
@@ -5477,7 +5477,7 @@ thread.
         } MonteCarloSimulation;
         // Symbol: drake::systems::analysis::RandomSimulation
         struct /* RandomSimulation */ {
-          // Source: drake/systems/analysis/monte_carlo.h:85
+          // Source: drake/systems/analysis/monte_carlo.h
           const char* doc =
 R"""(Run a deterministic simulation of a (stochastic) System using the
 ``generator`` to instantiate all "random" quantities.
@@ -5533,7 +5533,7 @@ Returns:
         } RandomSimulation;
         // Symbol: drake::systems::analysis::RandomSimulationResult
         struct /* RandomSimulationResult */ {
-          // Source: drake/systems/analysis/monte_carlo.h:102
+          // Source: drake/systems/analysis/monte_carlo.h
           const char* doc =
 R"""(A snapshot of the generator used to produce the random simulation.
 Use, e.g.,
@@ -5559,23 +5559,23 @@ may advance the state of the generator and make it no longer capable
 of reproducing the simulation.)""";
           // Symbol: drake::systems::analysis::RandomSimulationResult::RandomSimulationResult
           struct /* ctor */ {
-            // Source: drake/systems/analysis/monte_carlo.h:103
+            // Source: drake/systems/analysis/monte_carlo.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::systems::analysis::RandomSimulationResult::generator_snapshot
           struct /* generator_snapshot */ {
-            // Source: drake/systems/analysis/monte_carlo.h:109
+            // Source: drake/systems/analysis/monte_carlo.h
             const char* doc = R"""()""";
           } generator_snapshot;
           // Symbol: drake::systems::analysis::RandomSimulationResult::output
           struct /* output */ {
-            // Source: drake/systems/analysis/monte_carlo.h:110
+            // Source: drake/systems/analysis/monte_carlo.h
             const char* doc = R"""()""";
           } output;
         } RandomSimulationResult;
         // Symbol: drake::systems::analysis::RandomSimulatorFactory
         struct /* RandomSimulatorFactory */ {
-          // Source: drake/systems/analysis/monte_carlo.h:29
+          // Source: drake/systems/analysis/monte_carlo.h
           const char* doc =
 R"""(Defines a factory method that constructs a Simulator (with an owned
 System) using the supplied RandomGenerator as the only source of
@@ -5594,7 +5594,7 @@ unique_ptr version of the constructor) is one convenient solution.)""";
         } RandomSimulatorFactory;
         // Symbol: drake::systems::analysis::RegionOfAttraction
         struct /* RegionOfAttraction */ {
-          // Source: drake/systems/analysis/region_of_attraction.h:106
+          // Source: drake/systems/analysis/region_of_attraction.h
           const char* doc =
 R"""(Estimates the region of attraction of the time-invariant ``system`` at
 the fixed point defined by ``context``.
@@ -5642,25 +5642,25 @@ well.)""";
         } RegionOfAttraction;
         // Symbol: drake::systems::analysis::RegionOfAttractionOptions
         struct /* RegionOfAttractionOptions */ {
-          // Source: drake/systems/analysis/region_of_attraction.h:20
+          // Source: drake/systems/analysis/region_of_attraction.h
           const char* doc =
 R"""(Consolidates the many possible options to be passed to the region of
 attraction algorithm.)""";
           // Symbol: drake::systems::analysis::RegionOfAttractionOptions::RegionOfAttractionOptions
           struct /* ctor */ {
-            // Source: drake/systems/analysis/region_of_attraction.h:21
+            // Source: drake/systems/analysis/region_of_attraction.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::systems::analysis::RegionOfAttractionOptions::Serialize
           struct /* Serialize */ {
-            // Source: drake/systems/analysis/region_of_attraction.h:26
+            // Source: drake/systems/analysis/region_of_attraction.h
             const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
           } Serialize;
           // Symbol: drake::systems::analysis::RegionOfAttractionOptions::lyapunov_candidate
           struct /* lyapunov_candidate */ {
-            // Source: drake/systems/analysis/region_of_attraction.h:38
+            // Source: drake/systems/analysis/region_of_attraction.h
             const char* doc =
 R"""(A candidate Lyapunov function using the symbolic Variables named x0,
 x1, ..., where the order matches the continuous state vector of the
@@ -5668,20 +5668,20 @@ system being evaluated (or the vector state_variables).)""";
           } lyapunov_candidate;
           // Symbol: drake::systems::analysis::RegionOfAttractionOptions::solver_id
           struct /* solver_id */ {
-            // Source: drake/systems/analysis/region_of_attraction.h:62
+            // Source: drake/systems/analysis/region_of_attraction.h
             const char* doc =
 R"""(If not std::nullopt, then we will solve the optimization problem using
 the specified solver; otherwise Drake will choose a solver.)""";
           } solver_id;
           // Symbol: drake::systems::analysis::RegionOfAttractionOptions::solver_options
           struct /* solver_options */ {
-            // Source: drake/systems/analysis/region_of_attraction.h:65
+            // Source: drake/systems/analysis/region_of_attraction.h
             const char* doc =
 R"""(The solver options used in the optimization problem.)""";
           } solver_options;
           // Symbol: drake::systems::analysis::RegionOfAttractionOptions::state_variables
           struct /* state_variables */ {
-            // Source: drake/systems/analysis/region_of_attraction.h:45
+            // Source: drake/systems/analysis/region_of_attraction.h
             const char* doc =
 R"""(If non-empty, a list of Variable that associates the variable name
 with the elements of the System's continuous state vector. Must be
@@ -5690,7 +5690,7 @@ in the system.)""";
           } state_variables;
           // Symbol: drake::systems::analysis::RegionOfAttractionOptions::use_implicit_dynamics
           struct /* use_implicit_dynamics */ {
-            // Source: drake/systems/analysis/region_of_attraction.h:57
+            // Source: drake/systems/analysis/region_of_attraction.h
             const char* doc =
 R"""(If true, the system dynamics will be evaluated using
 CalcImplicitTimeDerivativesResidual instead of CalcTimeDerivatives to
@@ -5715,7 +5715,7 @@ more details.)""";
         } RegionOfAttractionOptions;
         // Symbol: drake::systems::analysis::SampleBasedLyapunovAnalysis
         struct /* SampleBasedLyapunovAnalysis */ {
-          // Source: drake/systems/analysis/lyapunov.h:57
+          // Source: drake/systems/analysis/lyapunov.h
           const char* doc =
 R"""(Sets up a linear program to search for the coefficients of a Lyapunov
 function that satisfies the Lyapunov conditions at a set of sample
@@ -5763,7 +5763,7 @@ Returns:
         } SampleBasedLyapunovAnalysis;
         // Symbol: drake::systems::analysis::ScalarSystemFunction
         struct /* ScalarSystemFunction */ {
-          // Source: drake/systems/analysis/monte_carlo.h:44
+          // Source: drake/systems/analysis/monte_carlo.h
           const char* doc =
 R"""(Defines an arbitrary scalar function of the Context. This is used in
 the RandomSimulation and MonteCarloSimulation tools below as a way of

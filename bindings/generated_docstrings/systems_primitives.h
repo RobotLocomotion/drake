@@ -57,7 +57,7 @@ constexpr struct /* pydrake_doc_systems_primitives */ {
     struct /* systems */ {
       // Symbol: drake::systems::AddRandomInputs
       struct /* AddRandomInputs */ {
-        // Source: drake/systems/primitives/random_source.h:134
+        // Source: drake/systems/primitives/random_source.h
         const char* doc =
 R"""(For each subsystem input port in ``builder`` that is (a) not yet
 connected and (b) labeled as random in the InputPort, this method will
@@ -75,7 +75,7 @@ See also:
       } AddRandomInputs;
       // Symbol: drake::systems::Adder
       struct /* Adder */ {
-        // Source: drake/systems/primitives/adder.h:26
+        // Source: drake/systems/primitives/adder.h
         const char* doc =
 R"""(An adder for arbitrarily many inputs of equal size.
 
@@ -90,7 +90,7 @@ R"""(An adder for arbitrarily many inputs of equal size.
     - sum)""";
         // Symbol: drake::systems::Adder::Adder<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/adder.h:33
+          // Source: drake/systems/primitives/adder.h
           const char* doc =
 R"""(Construct an Adder System.
 
@@ -99,14 +99,14 @@ Parameter ``num_inputs``:
 
 Parameter ``size``:
     number of elements in each input and output signal.)""";
-          // Source: drake/systems/primitives/adder.h:37
+          // Source: drake/systems/primitives/adder.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
       } Adder;
       // Symbol: drake::systems::AffineSystem
       struct /* AffineSystem */ {
-        // Source: drake/systems/primitives/affine_system.h:188
+        // Source: drake/systems/primitives/affine_system.h
         const char* doc =
 R"""(A discrete OR continuous affine system (with constant coefficients).
 
@@ -142,16 +142,16 @@ See also:
     MatrixGain)""";
         // Symbol: drake::systems::AffineSystem::A
         struct /* A */ {
-          // Source: drake/systems/primitives/affine_system.h:239
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc_0args = R"""(@name Helper getter methods.)""";
-          // Source: drake/systems/primitives/affine_system.h:250
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc_1args =
 R"""(@name Implementations of TimeVaryingAffineSystem<T>'s pure virtual
 methods.)""";
         } A;
         // Symbol: drake::systems::AffineSystem::AffineSystem<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/affine_system.h:212
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc_7args =
 R"""(Constructs an Affine system with a fixed set of coefficient matrices
 ``A``, `B`,``C``, and ``D`` as well as fixed initial velocity offset
@@ -171,10 +171,10 @@ Parameter ``time_period``:
     0.0
 
 Subclasses must use the protected constructor, not this one.)""";
-          // Source: drake/systems/primitives/affine_system.h:223
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
-          // Source: drake/systems/primitives/affine_system.h:273
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc_8args =
 R"""(Constructor that specifies scalar-type conversion support.
 
@@ -186,22 +186,22 @@ Parameter ``converter``:
         } ctor;
         // Symbol: drake::systems::AffineSystem::B
         struct /* B */ {
-          // Source: drake/systems/primitives/affine_system.h:240
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc = R"""()""";
         } B;
         // Symbol: drake::systems::AffineSystem::C
         struct /* C */ {
-          // Source: drake/systems/primitives/affine_system.h:242
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc = R"""()""";
         } C;
         // Symbol: drake::systems::AffineSystem::D
         struct /* D */ {
-          // Source: drake/systems/primitives/affine_system.h:243
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc = R"""()""";
         } D;
         // Symbol: drake::systems::AffineSystem::MakeAffineSystem
         struct /* MakeAffineSystem */ {
-          // Source: drake/systems/primitives/affine_system.h:230
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc =
 R"""(Creates a unique pointer to AffineSystem<T> by decomposing
 ``dynamics`` and ``outputs`` using ``state_vars`` and ``input_vars``.
@@ -212,25 +212,25 @@ Raises:
         } MakeAffineSystem;
         // Symbol: drake::systems::AffineSystem::UpdateCoefficients
         struct /* UpdateCoefficients */ {
-          // Source: drake/systems/primitives/affine_system.h:260
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc =
 R"""(Updates the coefficients of the affine system. The new coefficients
 must have the same size as existing coefficients.)""";
         } UpdateCoefficients;
         // Symbol: drake::systems::AffineSystem::f0
         struct /* f0 */ {
-          // Source: drake/systems/primitives/affine_system.h:241
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc = R"""()""";
         } f0;
         // Symbol: drake::systems::AffineSystem::y0
         struct /* y0 */ {
-          // Source: drake/systems/primitives/affine_system.h:244
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc = R"""()""";
         } y0;
       } AffineSystem;
       // Symbol: drake::systems::BarycentricMeshSystem
       struct /* BarycentricMeshSystem */ {
-        // Source: drake/systems/primitives/barycentric_system.h:32
+        // Source: drake/systems/primitives/barycentric_system.h
         const char* doc =
 R"""(A (stateless) vector system implemented as a multi-linear
 (barycentric) interpolation on a mesh over the inputs.
@@ -251,7 +251,7 @@ See also:
     math::BarycentricMesh)""";
         // Symbol: drake::systems::BarycentricMeshSystem::BarycentricMeshSystem<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/barycentric_system.h:43
+          // Source: drake/systems/primitives/barycentric_system.h
           const char* doc =
 R"""(Constructs the system from a mesh and the associated mesh values.
 ``output_values`` is a matrix with each column representing the value
@@ -261,19 +261,19 @@ mesh.MeshValuesFrom(function) is one useful tool for creating it.)""";
         } ctor;
         // Symbol: drake::systems::BarycentricMeshSystem::get_mesh
         struct /* get_mesh */ {
-          // Source: drake/systems/primitives/barycentric_system.h:47
+          // Source: drake/systems/primitives/barycentric_system.h
           const char* doc = R"""(Returns a reference to the mesh.)""";
         } get_mesh;
         // Symbol: drake::systems::BarycentricMeshSystem::get_output_values
         struct /* get_output_values */ {
-          // Source: drake/systems/primitives/barycentric_system.h:50
+          // Source: drake/systems/primitives/barycentric_system.h
           const char* doc =
 R"""(Returns a reference to the output values.)""";
         } get_output_values;
       } BarycentricMeshSystem;
       // Symbol: drake::systems::BusCreator
       struct /* BusCreator */ {
-        // Source: drake/systems/primitives/bus_creator.h:36
+        // Source: drake/systems/primitives/bus_creator.h
         const char* doc =
 R"""(This system packs values from heterogeneous input ports into a single
 output port of type BusValue.
@@ -298,18 +298,18 @@ See also:
     BusSelector, BusValue)""";
         // Symbol: drake::systems::BusCreator::BusCreator<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/bus_creator.h:42
+          // Source: drake/systems/primitives/bus_creator.h
           const char* doc =
 R"""(Constructs a BusCreator with no inputs, and the given output port
 name. Use DeclareAbstractInputPort() and DeclareVectorInputPort() to
 add ports.)""";
-          // Source: drake/systems/primitives/bus_creator.h:47
+          // Source: drake/systems/primitives/bus_creator.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::BusCreator::DeclareAbstractInputPort
         struct /* DeclareAbstractInputPort */ {
-          // Source: drake/systems/primitives/bus_creator.h:59
+          // Source: drake/systems/primitives/bus_creator.h
           const char* doc =
 R"""(Declares an abstract input port with the given attributes. The port
 name will also be used as the name of this signal in the BusValue
@@ -317,7 +317,7 @@ output port.)""";
         } DeclareAbstractInputPort;
         // Symbol: drake::systems::BusCreator::DeclareVectorInputPort
         struct /* DeclareVectorInputPort */ {
-          // Source: drake/systems/primitives/bus_creator.h:54
+          // Source: drake/systems/primitives/bus_creator.h
           const char* doc =
 R"""(Declares a vector input port with the given attributes. The port name
 will also be used as the name of this signal in the BusValue output
@@ -327,7 +327,7 @@ port. The type of the signal on the output bus will be
       } BusCreator;
       // Symbol: drake::systems::BusSelector
       struct /* BusSelector */ {
-        // Source: drake/systems/primitives/bus_selector.h:46
+        // Source: drake/systems/primitives/bus_selector.h
         const char* doc =
 R"""(This system unpacks values from a single input port of type BusValue
 onto heterogeneous output ports, where each output port's value comes
@@ -364,18 +364,18 @@ See also:
     BusCreator, BusValue)""";
         // Symbol: drake::systems::BusSelector::BusSelector<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/bus_selector.h:52
+          // Source: drake/systems/primitives/bus_selector.h
           const char* doc =
 R"""(Constructs a BusSelector with the given input port name, and no
 outputs. Use DeclareVectorOutputPort() and DeclareAbstractOutputPort()
 to add ports.)""";
-          // Source: drake/systems/primitives/bus_selector.h:57
+          // Source: drake/systems/primitives/bus_selector.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::BusSelector::DeclareAbstractOutputPort
         struct /* DeclareAbstractOutputPort */ {
-          // Source: drake/systems/primitives/bus_selector.h:70
+          // Source: drake/systems/primitives/bus_selector.h
           const char* doc =
 R"""(Declares an abstract output port with the given attributes. The port
 name will also be used as the name of the signal to find in the
@@ -383,7 +383,7 @@ BusValue input port.)""";
         } DeclareAbstractOutputPort;
         // Symbol: drake::systems::BusSelector::DeclareVectorOutputPort
         struct /* DeclareVectorOutputPort */ {
-          // Source: drake/systems/primitives/bus_selector.h:64
+          // Source: drake/systems/primitives/bus_selector.h
           const char* doc =
 R"""(Declares a vector output port with the given attributes. The port name
 will also be used as the name of the signal to find in the BusValue
@@ -393,7 +393,7 @@ input port. The type of the signal on the input bus must be
       } BusSelector;
       // Symbol: drake::systems::ConstantValueSource
       struct /* ConstantValueSource */ {
-        // Source: drake/systems/primitives/constant_value_source.h:23
+        // Source: drake/systems/primitives/constant_value_source.h
         const char* doc =
 R"""(A source block that always outputs a constant value.
 
@@ -404,18 +404,18 @@ R"""(A source block that always outputs a constant value.
     - y0)""";
         // Symbol: drake::systems::ConstantValueSource::ConstantValueSource<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/constant_value_source.h:28
+          // Source: drake/systems/primitives/constant_value_source.h
           const char* doc =
 R"""(Parameter ``value``:
     The constant value to emit, which is copied by this system.)""";
-          // Source: drake/systems/primitives/constant_value_source.h:32
+          // Source: drake/systems/primitives/constant_value_source.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
       } ConstantValueSource;
       // Symbol: drake::systems::ConstantVectorSource
       struct /* ConstantVectorSource */ {
-        // Source: drake/systems/primitives/constant_vector_source.h:25
+        // Source: drake/systems/primitives/constant_vector_source.h
         const char* doc =
 R"""(A source block with a constant output port at all times. The value of
 the output port is a parameter of the system (see Parameters).
@@ -427,7 +427,7 @@ the output port is a parameter of the system (see Parameters).
     - y0)""";
         // Symbol: drake::systems::ConstantVectorSource::ConstantVectorSource<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/constant_vector_source.h:33
+          // Source: drake/systems/primitives/constant_vector_source.h
           const char* doc =
 R"""(Constructs a system with a vector output that is constant and equals
 the supplied ``source_value`` at all times.
@@ -435,20 +435,20 @@ the supplied ``source_value`` at all times.
 Parameter ``source_value``:
     the constant value of the output so that ``y = source_value`` at
     all times.)""";
-          // Source: drake/systems/primitives/constant_vector_source.h:55
+          // Source: drake/systems/primitives/constant_vector_source.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::ConstantVectorSource::get_mutable_source_value
         struct /* get_mutable_source_value */ {
-          // Source: drake/systems/primitives/constant_vector_source.h:65
+          // Source: drake/systems/primitives/constant_vector_source.h
           const char* doc =
 R"""(Return a mutable reference to the source value of this block in the
 given ``context``.)""";
         } get_mutable_source_value;
         // Symbol: drake::systems::ConstantVectorSource::get_source_value
         struct /* get_source_value */ {
-          // Source: drake/systems/primitives/constant_vector_source.h:61
+          // Source: drake/systems/primitives/constant_vector_source.h
           const char* doc =
 R"""(Return a read-only reference to the source value of this block in the
 given ``context``.)""";
@@ -456,13 +456,13 @@ given ``context``.)""";
       } ConstantVectorSource;
       // Symbol: drake::systems::ControllabilityMatrix
       struct /* ControllabilityMatrix */ {
-        // Source: drake/systems/primitives/linear_system.h:262
+        // Source: drake/systems/primitives/linear_system.h
         const char* doc =
 R"""(Returns the controllability matrix: R = [B, AB, ..., A^{n-1}B].)""";
       } ControllabilityMatrix;
       // Symbol: drake::systems::Demultiplexer
       struct /* Demultiplexer */ {
-        // Source: drake/systems/primitives/demultiplexer.h:30
+        // Source: drake/systems/primitives/demultiplexer.h
         const char* doc =
 R"""(This system splits a vector valued signal on its input into multiple
 outputs.
@@ -480,7 +480,7 @@ The input to this system directly feeds through to its output.
     - y(N-1))""";
         // Symbol: drake::systems::Demultiplexer::Demultiplexer<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/demultiplexer.h:57
+          // Source: drake/systems/primitives/demultiplexer.h
           const char* doc_1args =
 R"""(Constructs Demultiplexer with one vector valued output ports with
 sizes specified as the vector ``output_ports_sizes``. The number of
@@ -511,7 +511,7 @@ Parameter ``output_ports_sizes``:
     is determined by the length of ``output_ports_sizes``. The
     accumulative value of the all the values in ``output_ports_sizes``
     will be the size of the input port.)""";
-          // Source: drake/systems/primitives/demultiplexer.h:79
+          // Source: drake/systems/primitives/demultiplexer.h
           const char* doc_2args =
 R"""(Constructs Demultiplexer with one vector valued input port of size
 ``size`` and vector valued output ports of size ``output_ports_size``.
@@ -538,19 +538,19 @@ Parameter ``size``:
 Parameter ``output_ports_size``:
     The size of the output ports. ``size`` must be a multiple of
     ``output_ports_size``.)""";
-          // Source: drake/systems/primitives/demultiplexer.h:83
+          // Source: drake/systems/primitives/demultiplexer.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::Demultiplexer::get_output_ports_sizes
         struct /* get_output_ports_sizes */ {
-          // Source: drake/systems/primitives/demultiplexer.h:85
+          // Source: drake/systems/primitives/demultiplexer.h
           const char* doc = R"""()""";
         } get_output_ports_sizes;
       } Demultiplexer;
       // Symbol: drake::systems::DiscreteDerivative
       struct /* DiscreteDerivative */ {
-        // Source: drake/systems/primitives/discrete_derivative.h:56
+        // Source: drake/systems/primitives/discrete_derivative.h
         const char* doc =
 R"""(System that outputs the discrete-time derivative of its input: y(t) =
 (u[n] - u[n-1])/h, where n = floor(t/h), where h is the time period.
@@ -617,34 +617,34 @@ Note:
     - dudt)""";
         // Symbol: drake::systems::DiscreteDerivative::DiscreteDerivative<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/discrete_derivative.h:65
+          // Source: drake/systems/primitives/discrete_derivative.h
           const char* doc =
 R"""(Constructor taking ``num_inputs``, the size of the vector to be
 differentiated, and ``time_step``, the sampling interval. If
 ``suppress_initial_transient`` is true (the default), then the output
 will be zero for the first two time steps (see the class documentation
 for details and exceptions).)""";
-          // Source: drake/systems/primitives/discrete_derivative.h:70
+          // Source: drake/systems/primitives/discrete_derivative.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::DiscreteDerivative::set_input_history
         struct /* set_input_history */ {
-          // Source: drake/systems/primitives/discrete_derivative.h:79
+          // Source: drake/systems/primitives/discrete_derivative.h
           const char* doc_3args_state_u_n_u_n_minus_1 =
 R"""(Sets the input history so that the initial output is fully specified.
 This is useful during initialization to avoid large derivative outputs
 if u[0] ≠ 0. ``u_n`` and @ u_n_minus_1 must be the same size as the
 input/output ports. If suppress_initial_transient() is true, then also
 sets x₂ to be >= 2 to disable the suppression for this ``state``.)""";
-          // Source: drake/systems/primitives/discrete_derivative.h:88
+          // Source: drake/systems/primitives/discrete_derivative.h
           const char* doc_3args_context_u_n_u_n_minus_1 =
 R"""(Sets the input history so that the initial output is fully specified.
 This is useful during initialization to avoid large derivative outputs
 if u[0] ≠ 0. ``u_n`` and @ u_n_minus_1 must be the same size as the
 input/output ports. If suppress_initial_transient() is true, then also
 sets x₂ to be >= 2 to disable the suppression for this ``context``.)""";
-          // Source: drake/systems/primitives/discrete_derivative.h:102
+          // Source: drake/systems/primitives/discrete_derivative.h
           const char* doc_2args_context_u =
 R"""(Convenience method that sets the entire input history to a constant
 vector value (x₀ = x₁ = u,resulting in a derivative = 0). This is
@@ -655,19 +655,19 @@ disable the suppression for this ``context``.)""";
         } set_input_history;
         // Symbol: drake::systems::DiscreteDerivative::suppress_initial_transient
         struct /* suppress_initial_transient */ {
-          // Source: drake/systems/primitives/discrete_derivative.h:111
+          // Source: drake/systems/primitives/discrete_derivative.h
           const char* doc =
 R"""(Returns the ``suppress_initial_transient`` passed to the constructor.)""";
         } suppress_initial_transient;
         // Symbol: drake::systems::DiscreteDerivative::time_step
         struct /* time_step */ {
-          // Source: drake/systems/primitives/discrete_derivative.h:108
+          // Source: drake/systems/primitives/discrete_derivative.h
           const char* doc = R"""()""";
         } time_step;
       } DiscreteDerivative;
       // Symbol: drake::systems::DiscreteTimeDelay
       struct /* DiscreteTimeDelay */ {
-        // Source: drake/systems/primitives/discrete_time_delay.h:52
+        // Source: drake/systems/primitives/discrete_time_delay.h
         const char* doc =
 R"""(A discrete time delay block with input u, which is vector-valued
 (discrete or continuous) or abstract, and output delayed_u which is
@@ -716,23 +716,23 @@ Note:
     system does not interpolate.)""";
         // Symbol: drake::systems::DiscreteTimeDelay::DiscreteTimeDelay<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/discrete_time_delay.h:59
+          // Source: drake/systems/primitives/discrete_time_delay.h
           const char* doc_3args_update_sec_delay_time_steps_vector_size =
 R"""(Constructs a DiscreteTimeDelay system updating every ``update_sec``
 and delaying a vector-valued input of size ``vector_size`` for
 ``delay_time_steps`` number of updates.)""";
-          // Source: drake/systems/primitives/discrete_time_delay.h:65
+          // Source: drake/systems/primitives/discrete_time_delay.h
           const char* doc_3args_update_sec_delay_time_steps_abstract_model_value =
 R"""(Constructs a DiscreteTimeDelay system updating every ``update_sec``
 and delaying an abstract-valued input of type ``abstract_model_value``
 for ``delay_time_steps`` number of updates.)""";
-          // Source: drake/systems/primitives/discrete_time_delay.h:73
+          // Source: drake/systems/primitives/discrete_time_delay.h
           const char* doc_copyconvert =
 R"""(Scalar-type converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::DiscreteTimeDelay::SaveInputToBuffer
         struct /* SaveInputToBuffer */ {
-          // Source: drake/systems/primitives/discrete_time_delay.h:80
+          // Source: drake/systems/primitives/discrete_time_delay.h
           const char* doc =
 R"""((Advanced) Manually samples the input port and updates the state of
 the block, sliding the delay buffer forward and placing the sampled
@@ -742,7 +742,7 @@ for testing.)""";
       } DiscreteTimeDelay;
       // Symbol: drake::systems::DiscreteTimeIntegrator
       struct /* DiscreteTimeIntegrator */ {
-        // Source: drake/systems/primitives/discrete_time_integrator.h:36
+        // Source: drake/systems/primitives/discrete_time_integrator.h
         const char* doc =
 R"""(A discrete-time integrator for a vector input, using explicit Euler
 integration.
@@ -778,7 +778,7 @@ context. The output at time ``t`` is ``xₙ`` where ``n = ceil(t/h)``.
 See discrete_systems.)""";
         // Symbol: drake::systems::DiscreteTimeIntegrator::DiscreteTimeIntegrator<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/discrete_time_integrator.h:44
+          // Source: drake/systems/primitives/discrete_time_integrator.h
           const char* doc =
 R"""(Constructs an DiscreteTimeIntegrator system.
 
@@ -790,27 +790,27 @@ Parameter ``time_step``:
 
 Precondition:
     size > 0. time_step > 0.)""";
-          // Source: drake/systems/primitives/discrete_time_integrator.h:48
+          // Source: drake/systems/primitives/discrete_time_integrator.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::DiscreteTimeIntegrator::set_integral_value
         struct /* set_integral_value */ {
-          // Source: drake/systems/primitives/discrete_time_integrator.h:54
+          // Source: drake/systems/primitives/discrete_time_integrator.h
           const char* doc =
 R"""(Sets the value of the integral modifying the state in the context.
 ``value`` must be a column vector of the appropriate size.)""";
         } set_integral_value;
         // Symbol: drake::systems::DiscreteTimeIntegrator::time_step
         struct /* time_step */ {
-          // Source: drake/systems/primitives/discrete_time_integrator.h:58
+          // Source: drake/systems/primitives/discrete_time_integrator.h
           const char* doc =
 R"""(Returns the time_step used by the integrator.)""";
         } time_step;
       } DiscreteTimeIntegrator;
       // Symbol: drake::systems::FirstOrderLowPassFilter
       struct /* FirstOrderLowPassFilter */ {
-        // Source: drake/systems/primitives/first_order_low_pass_filter.h:42
+        // Source: drake/systems/primitives/first_order_low_pass_filter.h
         const char* doc =
 R"""(An element-wise first order low pass filter system that filters the
 i-th input uᵢ into the i-th output zᵢ. This system has one continuous
@@ -877,7 +877,7 @@ low frequencies.
     - y0)""";
         // Symbol: drake::systems::FirstOrderLowPassFilter::FirstOrderLowPassFilter<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/first_order_low_pass_filter.h:52
+          // Source: drake/systems/primitives/first_order_low_pass_filter.h
           const char* doc_2args =
 R"""(Constructs a FirstOrderLowPassFilter system that filters all input
 signals with the same time constant, i.e. τᵢ = τ, ∀ i.
@@ -887,7 +887,7 @@ Parameter ``time_constant``:
 
 Parameter ``size``:
     number of elements in the signal to be processed.)""";
-          // Source: drake/systems/primitives/first_order_low_pass_filter.h:60
+          // Source: drake/systems/primitives/first_order_low_pass_filter.h
           const char* doc_1args =
 R"""(Constructs a FirstOrderLowPassFilter so that the i-th component of the
 input signal vector is low pass filtered with a time constant given in
@@ -896,13 +896,13 @@ the i-th component τᵢ of the input ``time_constants`` vector.
 Parameter ``time_constants``:
     Vector of time constants. Each entry in this vector must be
     positive.)""";
-          // Source: drake/systems/primitives/first_order_low_pass_filter.h:64
+          // Source: drake/systems/primitives/first_order_low_pass_filter.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::FirstOrderLowPassFilter::get_time_constant
         struct /* get_time_constant */ {
-          // Source: drake/systems/primitives/first_order_low_pass_filter.h:70
+          // Source: drake/systems/primitives/first_order_low_pass_filter.h
           const char* doc =
 R"""(Returns the time constant of the filter for filters that have the same
 time constant τ for all signals. This method aborts if called on
@@ -913,13 +913,13 @@ See also:
         } get_time_constant;
         // Symbol: drake::systems::FirstOrderLowPassFilter::get_time_constants_vector
         struct /* get_time_constants_vector */ {
-          // Source: drake/systems/primitives/first_order_low_pass_filter.h:73
+          // Source: drake/systems/primitives/first_order_low_pass_filter.h
           const char* doc =
 R"""(Returns the vector of time constants for ``this`` filter.)""";
         } get_time_constants_vector;
         // Symbol: drake::systems::FirstOrderLowPassFilter::set_initial_output_value
         struct /* set_initial_output_value */ {
-          // Source: drake/systems/primitives/first_order_low_pass_filter.h:78
+          // Source: drake/systems/primitives/first_order_low_pass_filter.h
           const char* doc =
 R"""(Sets the initial conditions on the output value of the filtered
 signal.
@@ -933,7 +933,7 @@ Parameter ``z0``:
       } FirstOrderLowPassFilter;
       // Symbol: drake::systems::FirstOrderTaylorApproximation
       struct /* FirstOrderTaylorApproximation */ {
-        // Source: drake/systems/primitives/linear_system.h:253
+        // Source: drake/systems/primitives/linear_system.h
         const char* doc =
 R"""(A first-order Taylor series approximation to a ``system`` in the
 neighborhood of an arbitrary point. When Taylor-expanding a system at
@@ -1003,7 +1003,7 @@ Note:
       } FirstOrderTaylorApproximation;
       // Symbol: drake::systems::Gain
       struct /* Gain */ {
-        // Source: drake/systems/primitives/gain.h:26
+        // Source: drake/systems/primitives/gain.h
         const char* doc =
 R"""(An element-wise gain block with input ``u`` and output ``y = k * u``
 with ``k`` a constant vector. The input to this system directly feeds
@@ -1018,7 +1018,7 @@ through to its output.
     - y0)""";
         // Symbol: drake::systems::Gain::Gain<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/gain.h:35
+          // Source: drake/systems/primitives/gain.h
           const char* doc_2args =
 R"""(Constructs a Gain system where the same gain is applied to every input
 value.
@@ -1028,7 +1028,7 @@ Parameter ``k``:
 
 Parameter ``size``:
     number of elements in the signal to be processed.)""";
-          // Source: drake/systems/primitives/gain.h:42
+          // Source: drake/systems/primitives/gain.h
           const char* doc_1args =
 R"""(Constructs a Gain system where different gains can be applied to each
 input value.
@@ -1036,13 +1036,13 @@ input value.
 Parameter ``k``:
     the gain vector constants so that ``y_i = k_i * u_i`` where
     subscript ``i`` indicates the i-th element of the vector.)""";
-          // Source: drake/systems/primitives/gain.h:46
+          // Source: drake/systems/primitives/gain.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::Gain::get_gain
         struct /* get_gain */ {
-          // Source: drake/systems/primitives/gain.h:52
+          // Source: drake/systems/primitives/gain.h
           const char* doc =
 R"""(Returns the gain constant. This method should only be called if the
 gain can be represented as a scalar value, i.e., every element in the
@@ -1051,13 +1051,13 @@ be represented as a single scalar value.)""";
         } get_gain;
         // Symbol: drake::systems::Gain::get_gain_vector
         struct /* get_gain_vector */ {
-          // Source: drake/systems/primitives/gain.h:55
+          // Source: drake/systems/primitives/gain.h
           const char* doc = R"""(Returns the gain vector constant.)""";
         } get_gain_vector;
       } Gain;
       // Symbol: drake::systems::Integrator
       struct /* Integrator */ {
-        // Source: drake/systems/primitives/integrator.h:23
+        // Source: drake/systems/primitives/integrator.h
         const char* doc =
 R"""(A continuous-time integrator for a vector input.
 
@@ -1070,14 +1070,14 @@ R"""(A continuous-time integrator for a vector input.
     - y0)""";
         // Symbol: drake::systems::Integrator::Integrator<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/integrator.h:29
+          // Source: drake/systems/primitives/integrator.h
           const char* doc_1args_size =
 R"""(Constructs an Integrator system. The initial output value will be
 zero.
 
 Parameter ``size``:
     number of elements in the signal to be processed.)""";
-          // Source: drake/systems/primitives/integrator.h:35
+          // Source: drake/systems/primitives/integrator.h
           const char* doc_1args_initial_value =
 R"""(Constructs an Integrator system with a particular initial output
 value. The size of both input and output are inferred from the given
@@ -1085,13 +1085,13 @@ value. The size of both input and output are inferred from the given
 
 Parameter ``initial_value``:
     the initial output value.)""";
-          // Source: drake/systems/primitives/integrator.h:39
+          // Source: drake/systems/primitives/integrator.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::Integrator::set_default_integral_value
         struct /* set_default_integral_value */ {
-          // Source: drake/systems/primitives/integrator.h:51
+          // Source: drake/systems/primitives/integrator.h
           const char* doc =
 R"""(Sets the initial value of the integral state variable that will be
 present in a subsequently-created Context. Overrides any value that
@@ -1108,7 +1108,7 @@ Raises:
         } set_default_integral_value;
         // Symbol: drake::systems::Integrator::set_integral_value
         struct /* set_integral_value */ {
-          // Source: drake/systems/primitives/integrator.h:58
+          // Source: drake/systems/primitives/integrator.h
           const char* doc =
 R"""(Sets the value of the integral modifying the state in the context.
 ``value`` must be a column vector of the appropriate size.
@@ -1123,31 +1123,31 @@ Raises:
       } Integrator;
       // Symbol: drake::systems::IsControllable
       struct /* IsControllable */ {
-        // Source: drake/systems/primitives/linear_system.h:266
+        // Source: drake/systems/primitives/linear_system.h
         const char* doc =
 R"""(Returns true iff the controllability matrix is full row rank.)""";
       } IsControllable;
       // Symbol: drake::systems::IsDetectable
       struct /* IsDetectable */ {
-        // Source: drake/systems/primitives/linear_system.h:285
+        // Source: drake/systems/primitives/linear_system.h
         const char* doc =
 R"""(Returns true iff the system is detectable.)""";
       } IsDetectable;
       // Symbol: drake::systems::IsObservable
       struct /* IsObservable */ {
-        // Source: drake/systems/primitives/linear_system.h:275
+        // Source: drake/systems/primitives/linear_system.h
         const char* doc =
 R"""(Returns true iff the observability matrix is full column rank.)""";
       } IsObservable;
       // Symbol: drake::systems::IsStabilizable
       struct /* IsStabilizable */ {
-        // Source: drake/systems/primitives/linear_system.h:280
+        // Source: drake/systems/primitives/linear_system.h
         const char* doc =
 R"""(Returns true iff the system is stabilizable.)""";
       } IsStabilizable;
       // Symbol: drake::systems::LinearSystem
       struct /* LinearSystem */ {
-        // Source: drake/systems/primitives/linear_system.h:44
+        // Source: drake/systems/primitives/linear_system.h
         const char* doc =
 R"""(A discrete OR continuous linear system.
 
@@ -1183,7 +1183,7 @@ See also:
     MatrixGain)""";
         // Symbol: drake::systems::LinearSystem::LinearSystem<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/linear_system.h:62
+          // Source: drake/systems/primitives/linear_system.h
           const char* doc_5args =
 R"""(Constructs a LinearSystem with a fixed set of coefficient matrices
 ``A``, `B`,``C``, and ``D``. The coefficient matrices must obey the
@@ -1196,10 +1196,10 @@ Empty matrices are treated as zero matrices with the appropriate
 number of rows and columns.
 
 Subclasses must use the protected constructor, not this one.)""";
-          // Source: drake/systems/primitives/linear_system.h:71
+          // Source: drake/systems/primitives/linear_system.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
-          // Source: drake/systems/primitives/linear_system.h:91
+          // Source: drake/systems/primitives/linear_system.h
           const char* doc_6args =
 R"""(Constructor that specifies scalar-type conversion support.
 
@@ -1211,7 +1211,7 @@ Parameter ``converter``:
         } ctor;
         // Symbol: drake::systems::LinearSystem::MakeLinearSystem
         struct /* MakeLinearSystem */ {
-          // Source: drake/systems/primitives/linear_system.h:78
+          // Source: drake/systems/primitives/linear_system.h
           const char* doc =
 R"""(Creates a unique pointer to LinearSystem<T> by decomposing
 ``dynamics`` and ``outputs`` using ``state_vars`` and ``input_vars``.
@@ -1223,7 +1223,7 @@ Raises:
       } LinearSystem;
       // Symbol: drake::systems::LinearTransformDensity
       struct /* LinearTransformDensity */ {
-        // Source: drake/systems/primitives/linear_transform_density.h:47
+        // Source: drake/systems/primitives/linear_transform_density.h
         const char* doc =
 R"""(Performs linear transformation on the random signal w_in as w_out =
 A*w_in + b. The user can obtain the probability density of w_out. When
@@ -1260,7 +1260,7 @@ See also:
     stochastic_systems)""";
         // Symbol: drake::systems::LinearTransformDensity::CalcDensity
         struct /* CalcDensity */ {
-          // Source: drake/systems/primitives/linear_transform_density.h:121
+          // Source: drake/systems/primitives/linear_transform_density.h
           const char* doc =
 R"""(Compute the density (pdf) of a sampled output w_out.
 
@@ -1276,7 +1276,7 @@ Raises:
         } CalcDensity;
         // Symbol: drake::systems::LinearTransformDensity::FixConstantA
         struct /* FixConstantA */ {
-          // Source: drake/systems/primitives/linear_transform_density.h:97
+          // Source: drake/systems/primitives/linear_transform_density.h
           const char* doc =
 R"""(Fix the input port ``A`` to a constant value in a given context.
 
@@ -1289,7 +1289,7 @@ Parameter ``A``:
         } FixConstantA;
         // Symbol: drake::systems::LinearTransformDensity::FixConstantB
         struct /* FixConstantB */ {
-          // Source: drake/systems/primitives/linear_transform_density.h:106
+          // Source: drake/systems/primitives/linear_transform_density.h
           const char* doc =
 R"""(Fix the input port ``b`` to a constant value in a given context.
 
@@ -1302,7 +1302,7 @@ Parameter ``b``:
         } FixConstantB;
         // Symbol: drake::systems::LinearTransformDensity::LinearTransformDensity<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/linear_transform_density.h:58
+          // Source: drake/systems/primitives/linear_transform_density.h
           const char* doc =
 R"""(Parameter ``distribution``:
     The random input w_in should satisfy this distribution.
@@ -1316,44 +1316,44 @@ Parameter ``output_size``:
 Note:
     The matrix A will have ``output_size`` columns and ``input_size``
     rows. The vector b will have ``output_size`` columns.)""";
-          // Source: drake/systems/primitives/linear_transform_density.h:63
+          // Source: drake/systems/primitives/linear_transform_density.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::LinearTransformDensity::get_distribution
         struct /* get_distribution */ {
-          // Source: drake/systems/primitives/linear_transform_density.h:89
+          // Source: drake/systems/primitives/linear_transform_density.h
           const char* doc = R"""(Gets the random distribution type.)""";
         } get_distribution;
         // Symbol: drake::systems::LinearTransformDensity::get_input_port_A
         struct /* get_input_port_A */ {
-          // Source: drake/systems/primitives/linear_transform_density.h:71
+          // Source: drake/systems/primitives/linear_transform_density.h
           const char* doc = R"""(Gets the input port for A.)""";
         } get_input_port_A;
         // Symbol: drake::systems::LinearTransformDensity::get_input_port_b
         struct /* get_input_port_b */ {
-          // Source: drake/systems/primitives/linear_transform_density.h:76
+          // Source: drake/systems/primitives/linear_transform_density.h
           const char* doc = R"""(Gets the input port for b.)""";
         } get_input_port_b;
         // Symbol: drake::systems::LinearTransformDensity::get_input_port_w_in
         struct /* get_input_port_w_in */ {
-          // Source: drake/systems/primitives/linear_transform_density.h:66
+          // Source: drake/systems/primitives/linear_transform_density.h
           const char* doc = R"""(Gets the input port for w_in.)""";
         } get_input_port_w_in;
         // Symbol: drake::systems::LinearTransformDensity::get_output_port_w_out
         struct /* get_output_port_w_out */ {
-          // Source: drake/systems/primitives/linear_transform_density.h:80
+          // Source: drake/systems/primitives/linear_transform_density.h
           const char* doc = R"""()""";
         } get_output_port_w_out;
         // Symbol: drake::systems::LinearTransformDensity::get_output_port_w_out_density
         struct /* get_output_port_w_out_density */ {
-          // Source: drake/systems/primitives/linear_transform_density.h:84
+          // Source: drake/systems/primitives/linear_transform_density.h
           const char* doc = R"""()""";
         } get_output_port_w_out_density;
       } LinearTransformDensity;
       // Symbol: drake::systems::Linearize
       struct /* Linearize */ {
-        // Source: drake/systems/primitives/linear_system.h:197
+        // Source: drake/systems/primitives/linear_system.h
         const char* doc =
 R"""(Takes the first-order Taylor expansion of a System around a nominal
 operating point (defined by the Context).
@@ -1420,7 +1420,7 @@ Note:
       } Linearize;
       // Symbol: drake::systems::LogVectorOutput
       struct /* LogVectorOutput */ {
-        // Source: drake/systems/primitives/vector_log_sink.h:152
+        // Source: drake/systems/primitives/vector_log_sink.h
         const char* doc_3args =
 R"""(LogVectorOutput provides a convenience function for adding a
 VectorLogSink, initialized to the correct size, and connected to an
@@ -1441,7 +1441,7 @@ Parameter ``publish_period``:
 
 Precondition:
     publish_period is non-negative.)""";
-        // Source: drake/systems/primitives/vector_log_sink.h:177
+        // Source: drake/systems/primitives/vector_log_sink.h
         const char* doc_4args =
 R"""(LogVectorOutput provides a convenience function for adding a
 VectorLogSink, initialized to the correct size, and connected to an
@@ -1473,7 +1473,7 @@ Precondition:
       } LogVectorOutput;
       // Symbol: drake::systems::MatrixGain
       struct /* MatrixGain */ {
-        // Source: drake/systems/primitives/matrix_gain.h:32
+        // Source: drake/systems/primitives/matrix_gain.h
         const char* doc =
 R"""(A system that specializes LinearSystem by setting coefficient matrices
 ``A``, `B`, and ``C`` to all be zero. Thus, the only non-zero
@@ -1493,21 +1493,21 @@ See also:
     LinearSystem)""";
         // Symbol: drake::systems::MatrixGain::MatrixGain<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/matrix_gain.h:38
+          // Source: drake/systems/primitives/matrix_gain.h
           const char* doc_1args_size =
 R"""(A constructor where the gain matrix ``D`` is a square identity matrix
 of size ``size``.)""";
-          // Source: drake/systems/primitives/matrix_gain.h:41
+          // Source: drake/systems/primitives/matrix_gain.h
           const char* doc_1args_D =
 R"""(A constructor where the gain matrix ``D`` is ``D``.)""";
-          // Source: drake/systems/primitives/matrix_gain.h:45
+          // Source: drake/systems/primitives/matrix_gain.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
       } MatrixGain;
       // Symbol: drake::systems::MultilayerPerceptron
       struct /* MultilayerPerceptron */ {
-        // Source: drake/systems/primitives/multilayer_perceptron.h:58
+        // Source: drake/systems/primitives/multilayer_perceptron.h
         const char* doc =
 R"""(The MultilayerPerceptron (MLP) is one of the most common forms of
 neural networks used in reinforcement learning (RL) today. This
@@ -1539,7 +1539,7 @@ for simulation.
     - y)""";
         // Symbol: drake::systems::MultilayerPerceptron::Backpropagation
         struct /* Backpropagation */ {
-          // Source: drake/systems/primitives/multilayer_perceptron.h:239
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc =
 R"""(Implements the Backpropagation algorithm for the MLP to compute the
 gradients of a scalar loss function with respect to the network
@@ -1571,7 +1571,7 @@ It uses analytical gradients; AutoDiffXd is not required.)""";
         } Backpropagation;
         // Symbol: drake::systems::MultilayerPerceptron::BackpropagationMeanSquaredError
         struct /* BackpropagationMeanSquaredError */ {
-          // Source: drake/systems/primitives/multilayer_perceptron.h:247
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc =
 R"""(Calls Backpropagation with the mean-squared error loss function: loss
 = 1/N ∑ᵢ |yᵢ−yᵢᵈ|², where yᵈ is the desired values for y. See
@@ -1579,7 +1579,7 @@ Backpropagation for details.)""";
         } BackpropagationMeanSquaredError;
         // Symbol: drake::systems::MultilayerPerceptron::BatchOutput
         struct /* BatchOutput */ {
-          // Source: drake/systems/primitives/multilayer_perceptron.h:270
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc =
 R"""(Evaluates the batch output for the MLP with a batch input vector. Each
 column of ``X`` represents an input, and each column of ``Y`` will be
@@ -1603,41 +1603,41 @@ Raises:
         } BatchOutput;
         // Symbol: drake::systems::MultilayerPerceptron::GetBiases
         struct /* GetBiases */ {
-          // Source: drake/systems/primitives/multilayer_perceptron.h:177
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc_context =
 R"""(Returns the biases used in the mapping from ``layer`` to ``layer+1``.)""";
-          // Source: drake/systems/primitives/multilayer_perceptron.h:201
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc_vector =
 R"""(Returns the biases in ``params`` used in the mapping from ``layer`` to
 ``layer+1``.)""";
         } GetBiases;
         // Symbol: drake::systems::MultilayerPerceptron::GetMutableParameters
         struct /* GetMutableParameters */ {
-          // Source: drake/systems/primitives/multilayer_perceptron.h:162
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc =
 R"""(Returns a mutable reference to all of the parameters (weights and
 biases) as a single vector.)""";
         } GetMutableParameters;
         // Symbol: drake::systems::MultilayerPerceptron::GetParameters
         struct /* GetParameters */ {
-          // Source: drake/systems/primitives/multilayer_perceptron.h:158
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc =
 R"""(Returns a reference to all of the parameters (weights and biases) as a
 single vector. Use GetWeights and GetBiases to extract the components.)""";
         } GetParameters;
         // Symbol: drake::systems::MultilayerPerceptron::GetWeights
         struct /* GetWeights */ {
-          // Source: drake/systems/primitives/multilayer_perceptron.h:172
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc_context =
 R"""(Returns the weights used in the mapping from ``layer`` to ``layer+1``.)""";
-          // Source: drake/systems/primitives/multilayer_perceptron.h:195
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc_vector =
 R"""(Returns the weights in ``params`` used in the mapping from ``layer``
 to ``layer+1``.)""";
         } GetWeights;
         // Symbol: drake::systems::MultilayerPerceptron::MultilayerPerceptron<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/multilayer_perceptron.h:73
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc_single_activation =
 R"""(Constructs the MLP with the same activation type for every layer
 (except the output).
@@ -1651,7 +1651,7 @@ Parameter ``layers``:
 Parameter ``activation_type``:
     specifies an activation function, σ(), used in *every* hidden
     layer of the network. kIdentity will be used for the output.)""";
-          // Source: drake/systems/primitives/multilayer_perceptron.h:88
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc_vector_activation =
 R"""(Constructs the MLP with an activation_type specified for each
 non-input layer.
@@ -1667,7 +1667,7 @@ Parameter ``activation_types``:
     layer of the network (including the last layer).
 
 ``activation_types`` should have one less element than ``layers``.)""";
-          // Source: drake/systems/primitives/multilayer_perceptron.h:122
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc_sin_cos_features =
 R"""(Constructs the MLP with an additional option to transform the input
 vector so that the function is periodic in 2π.
@@ -1695,37 +1695,37 @@ Parameter ``activation_types``:
 
 ``activation_types`` should have the same number of elements as
 ``remaining_layers``.)""";
-          // Source: drake/systems/primitives/multilayer_perceptron.h:129
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::MultilayerPerceptron::ScalarLossFunction
         struct /* ScalarLossFunction */ {
-          // Source: drake/systems/primitives/multilayer_perceptron.h:216
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc =
 R"""(Helper function signature for Backpropagation().)""";
         } ScalarLossFunction;
         // Symbol: drake::systems::MultilayerPerceptron::SetBiases
         struct /* SetBiases */ {
-          // Source: drake/systems/primitives/multilayer_perceptron.h:189
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc_context =
 R"""(Sets the biases in the ``context`` used in the mapping from ``layer``
 to ``layer+1``.)""";
-          // Source: drake/systems/primitives/multilayer_perceptron.h:212
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc_vector =
 R"""(Sets the biases in ``params`` used in the mapping from ``layer`` to
 ``layer+1``.)""";
         } SetBiases;
         // Symbol: drake::systems::MultilayerPerceptron::SetParameters
         struct /* SetParameters */ {
-          // Source: drake/systems/primitives/multilayer_perceptron.h:167
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc =
 R"""(Sets all of the parameters in the network (weights and biases) using a
 single vector. Use SetWeights and SetBiases to extract the components.)""";
         } SetParameters;
         // Symbol: drake::systems::MultilayerPerceptron::SetRandomParameters
         struct /* SetRandomParameters */ {
-          // Source: drake/systems/primitives/multilayer_perceptron.h:139
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc =
 R"""(Sets all of the parameters (all weights and biases) in the
 ``parameters`` using the "LeCun initialization": a uniform
@@ -1738,30 +1738,30 @@ System<T>::SetDefaultContext will set all weights and biases to zero.)""";
         } SetRandomParameters;
         // Symbol: drake::systems::MultilayerPerceptron::SetWeights
         struct /* SetWeights */ {
-          // Source: drake/systems/primitives/multilayer_perceptron.h:183
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc_context =
 R"""(Sets the weights in the ``context`` used in the mapping from ``layer``
 to ``layer+1``.)""";
-          // Source: drake/systems/primitives/multilayer_perceptron.h:207
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc_vector =
 R"""(Sets the weights in ``params`` used in the mapping from ``layer`` to
 ``layer+1``.)""";
         } SetWeights;
         // Symbol: drake::systems::MultilayerPerceptron::activation_type
         struct /* activation_type */ {
-          // Source: drake/systems/primitives/multilayer_perceptron.h:150
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc =
 R"""(Returns the type of the activation function, σ(), used in the MLP.)""";
         } activation_type;
         // Symbol: drake::systems::MultilayerPerceptron::layers
         struct /* layers */ {
-          // Source: drake/systems/primitives/multilayer_perceptron.h:147
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc =
 R"""(Returns the number of elements in each layer of the network.)""";
         } layers;
         // Symbol: drake::systems::MultilayerPerceptron::num_parameters
         struct /* num_parameters */ {
-          // Source: drake/systems/primitives/multilayer_perceptron.h:144
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc =
 R"""(Returns the total number of parameters in the network, including all
 weights and biases.)""";
@@ -1769,7 +1769,7 @@ weights and biases.)""";
       } MultilayerPerceptron;
       // Symbol: drake::systems::Multiplexer
       struct /* Multiplexer */ {
-        // Source: drake/systems/primitives/multiplexer.h:28
+        // Source: drake/systems/primitives/multiplexer.h
         const char* doc =
 R"""(This system combines multiple vector-valued inputs into a
 vector-valued output. The input to this system directly feeds through
@@ -1786,7 +1786,7 @@ to its output.
     - y0)""";
         // Symbol: drake::systems::Multiplexer::Multiplexer<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/multiplexer.h:44
+          // Source: drake/systems/primitives/multiplexer.h
           const char* doc_1args_num_scalar_inputs =
 R"""(Constructs a Multiplexer with ``num_scalar_inputs`` scalar-valued
 input ports, and one vector-valued output port of size
@@ -1801,7 +1801,7 @@ input ports, and one vector-valued output port of size
     - u(num_scalar_inputs - 1)
     output_ports:
     - y0)""";
-          // Source: drake/systems/primitives/multiplexer.h:59
+          // Source: drake/systems/primitives/multiplexer.h
           const char* doc_1args_input_sizes =
 R"""(Constructs a Multiplexer with ``input_sizes.size()`` vector-valued
 input ports where the i-th input has size ``input_sizes[i]``, and one
@@ -1816,7 +1816,7 @@ vector- valued output port of size ``sum(input_sizes)``.
     - u(input_sizes.size() - 1)
     output_ports:
     - y0)""";
-          // Source: drake/systems/primitives/multiplexer.h:68
+          // Source: drake/systems/primitives/multiplexer.h
           const char* doc_1args_model_vector =
 R"""(Constructs a Multiplexer with model_vector.size() scalar-valued inputs
 and one vector-valued output port whose size equals the size of
@@ -1826,20 +1826,20 @@ and one vector-valued output port whose size equals the size of
 Note:
     Objects created using this constructor overload do not support
     system scalar conversion. See system_scalar_conversion.)""";
-          // Source: drake/systems/primitives/multiplexer.h:72
+          // Source: drake/systems/primitives/multiplexer.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
       } Multiplexer;
       // Symbol: drake::systems::ObservabilityMatrix
       struct /* ObservabilityMatrix */ {
-        // Source: drake/systems/primitives/linear_system.h:271
+        // Source: drake/systems/primitives/linear_system.h
         const char* doc =
 R"""(Returns the observability matrix: O = [ C; CA; ...; CA^{n-1} ].)""";
       } ObservabilityMatrix;
       // Symbol: drake::systems::PassThrough
       struct /* PassThrough */ {
-        // Source: drake/systems/primitives/pass_through.h:43
+        // Source: drake/systems/primitives/pass_through.h
         const char* doc =
 R"""(A pass through system with input ``u`` and output ``y = u``. This is
 mathematically equivalent to a Gain system with its gain equal to one.
@@ -1870,14 +1870,14 @@ can be found at https://github.com/RobotLocomotion/drake/pull/3132.
     - y)""";
         // Symbol: drake::systems::PassThrough::PassThrough<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/pass_through.h:50
+          // Source: drake/systems/primitives/pass_through.h
           const char* doc_1args_vector_size =
 R"""(Constructs a pass-through system.
 
 Parameter ``vector_size``:
     number of elements in the signal to be processed. When no input is
     connected, the output will be a vector of all zeros.)""";
-          // Source: drake/systems/primitives/pass_through.h:56
+          // Source: drake/systems/primitives/pass_through.h
           const char* doc_1args_value =
 R"""(Constructs a pass-through system with vector-valued input/output
 ports.
@@ -1885,7 +1885,7 @@ ports.
 Parameter ``value``:
     The model value, which defines the size of the ports and serves as
     the default when no input is connected.)""";
-          // Source: drake/systems/primitives/pass_through.h:62
+          // Source: drake/systems/primitives/pass_through.h
           const char* doc_1args_abstract_model_value =
 R"""(Constructs a pass-through system with abstract-valued input/output
 ports.
@@ -1893,40 +1893,40 @@ ports.
 Parameter ``abstract_model_value``:
     A model value, which defines the type of the ports and serves as
     the default when no input is connected.)""";
-          // Source: drake/systems/primitives/pass_through.h:68
+          // Source: drake/systems/primitives/pass_through.h
           const char* doc_copyconvert =
 R"""(Scalar-type converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::PassThrough::get_input_port
         struct /* get_input_port */ {
-          // Source: drake/systems/primitives/pass_through.h:76
+          // Source: drake/systems/primitives/pass_through.h
           const char* doc = R"""(Returns the sole input port.)""";
         } get_input_port;
       } PassThrough;
       // Symbol: drake::systems::PerceptronActivationType
       struct /* PerceptronActivationType */ {
-        // Source: drake/systems/primitives/multilayer_perceptron.h:12
+        // Source: drake/systems/primitives/multilayer_perceptron.h
         const char* doc =
 R"""(Specifies one of the common activation functions in a neural network.)""";
         // Symbol: drake::systems::PerceptronActivationType::kIdentity
         struct /* kIdentity */ {
-          // Source: drake/systems/primitives/multilayer_perceptron.h:13
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc = R"""()""";
         } kIdentity;
         // Symbol: drake::systems::PerceptronActivationType::kReLU
         struct /* kReLU */ {
-          // Source: drake/systems/primitives/multilayer_perceptron.h:14
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc = R"""()""";
         } kReLU;
         // Symbol: drake::systems::PerceptronActivationType::kTanh
         struct /* kTanh */ {
-          // Source: drake/systems/primitives/multilayer_perceptron.h:15
+          // Source: drake/systems/primitives/multilayer_perceptron.h
           const char* doc = R"""()""";
         } kTanh;
       } PerceptronActivationType;
       // Symbol: drake::systems::PortSwitch
       struct /* PortSwitch */ {
-        // Source: drake/systems/primitives/port_switch.h:42
+        // Source: drake/systems/primitives/port_switch.h
         const char* doc =
 R"""(A simple system that passes through the value from just one of its
 input ports to the output. All inputs (except for the port_selector)
@@ -1953,7 +1953,7 @@ be evaluated via other connections.
     - value)""";
         // Symbol: drake::systems::PortSwitch::DeclareInputPort
         struct /* DeclareInputPort */ {
-          // Source: drake/systems/primitives/port_switch.h:90
+          // Source: drake/systems/primitives/port_switch.h
           const char* doc =
 R"""(Declares a new input port to the switch with port name ``name``. The
 type of this port is already defined by the type of the output port.
@@ -1961,18 +1961,18 @@ This must be called before any Context is allocated.)""";
         } DeclareInputPort;
         // Symbol: drake::systems::PortSwitch::PortSwitch<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/port_switch.h:49
+          // Source: drake/systems/primitives/port_switch.h
           const char* doc =
 R"""(Constructs a vector-valued PortSwitch. All input ports declared via
 DeclareInputPort() will be vector-valued ports of size
 ``vector_size``, which must be greater than zero.)""";
-          // Source: drake/systems/primitives/port_switch.h:79
+          // Source: drake/systems/primitives/port_switch.h
           const char* doc_copyconvert =
 R"""(Scalar-type converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::PortSwitch::get_port_selector_input_port
         struct /* get_port_selector_input_port */ {
-          // Source: drake/systems/primitives/port_switch.h:83
+          // Source: drake/systems/primitives/port_switch.h
           const char* doc =
 R"""(Returns the port-selector input port, which is an abstract-valued port
 of type InputPortIndex.)""";
@@ -1980,7 +1980,7 @@ of type InputPortIndex.)""";
       } PortSwitch;
       // Symbol: drake::systems::RandomSource
       struct /* RandomSource */ {
-        // Source: drake/systems/primitives/random_source.h:74
+        // Source: drake/systems/primitives/random_source.h
         const char* doc =
 R"""(A source block which generates random numbers at a fixed sampling
 interval, with a zero-order hold between samples. For continuous-time
@@ -2045,7 +2045,7 @@ See also:
     stochastic_systems)""";
         // Symbol: drake::systems::RandomSource::RandomSource<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/random_source.h:85
+          // Source: drake/systems/primitives/random_source.h
           const char* doc =
 R"""(Constructs the RandomSource system.
 
@@ -2060,31 +2060,31 @@ Parameter ``sampling_interval_sec``:
         } ctor;
         // Symbol: drake::systems::RandomSource::Seed
         struct /* Seed */ {
-          // Source: drake/systems/primitives/random_source.h:79
+          // Source: drake/systems/primitives/random_source.h
           const char* doc = R"""(An integer type for a random seed.)""";
         } Seed;
         // Symbol: drake::systems::RandomSource::get_distribution
         struct /* get_distribution */ {
-          // Source: drake/systems/primitives/random_source.h:94
+          // Source: drake/systems/primitives/random_source.h
           const char* doc =
 R"""(Returns the ``distribution`` given at construction.)""";
         } get_distribution;
         // Symbol: drake::systems::RandomSource::get_fixed_seed
         struct /* get_fixed_seed */ {
-          // Source: drake/systems/primitives/random_source.h:101
+          // Source: drake/systems/primitives/random_source.h
           const char* doc =
 R"""(Gets this system's fixed random seed (or else nullopt when the seed is
 not fixed). Refer to the class overview documentation for details.)""";
         } get_fixed_seed;
         // Symbol: drake::systems::RandomSource::get_seed
         struct /* get_seed */ {
-          // Source: drake/systems/primitives/random_source.h:97
+          // Source: drake/systems/primitives/random_source.h
           const char* doc =
 R"""(Returns the value of the ``seed`` parameter in the given context.)""";
         } get_seed;
         // Symbol: drake::systems::RandomSource::set_fixed_seed
         struct /* set_fixed_seed */ {
-          // Source: drake/systems/primitives/random_source.h:105
+          // Source: drake/systems/primitives/random_source.h
           const char* doc =
 R"""(Sets (or clears) this system's fixed random seed. Refer to the class
 overview documentation for details.)""";
@@ -2092,7 +2092,7 @@ overview documentation for details.)""";
       } RandomSource;
       // Symbol: drake::systems::Saturation
       struct /* Saturation */ {
-        // Source: drake/systems/primitives/saturation.h:51
+        // Source: drake/systems/primitives/saturation.h
         const char* doc =
 R"""(An element-wise hard saturation block with inputs signal ``u``,
 saturation values :math:`u_{min}` and/or :math:`u_{max}`, and output
@@ -2135,7 +2135,7 @@ Ports show in <span style="color:gray">gray</span> may be absent,
 depending on how the system is constructed.)""";
         // Symbol: drake::systems::Saturation::Saturation<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/saturation.h:76
+          // Source: drake/systems/primitives/saturation.h
           const char* doc_1args =
 R"""(Constructs a variable Saturation system where the upper and lower
 values are represented by vectors of identical size and can be
@@ -2159,7 +2159,7 @@ Parameter ``input_size``:
 
 Please consult this class's description for the requirements of
 ``u_min`` and ``u_max`` to be supplied via the corresponding ports.)""";
-          // Source: drake/systems/primitives/saturation.h:95
+          // Source: drake/systems/primitives/saturation.h
           const char* doc_2args =
 R"""(Constructs a constant Saturation system where the upper and lower
 values are represented by vectors of identical size supplied via this
@@ -2181,34 +2181,34 @@ Parameter ``max_value``:
 
 Please consult this class's description for the requirements of
 ``min_value`` and ``max_value``.)""";
-          // Source: drake/systems/primitives/saturation.h:99
+          // Source: drake/systems/primitives/saturation.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::Saturation::get_input_port
         struct /* get_input_port */ {
-          // Source: drake/systems/primitives/saturation.h:102
+          // Source: drake/systems/primitives/saturation.h
           const char* doc = R"""(Returns the input port.)""";
         } get_input_port;
         // Symbol: drake::systems::Saturation::get_max_value_port
         struct /* get_max_value_port */ {
-          // Source: drake/systems/primitives/saturation.h:113
+          // Source: drake/systems/primitives/saturation.h
           const char* doc = R"""(Returns the max value port.)""";
         } get_max_value_port;
         // Symbol: drake::systems::Saturation::get_min_value_port
         struct /* get_min_value_port */ {
-          // Source: drake/systems/primitives/saturation.h:107
+          // Source: drake/systems/primitives/saturation.h
           const char* doc = R"""(Returns the min value port.)""";
         } get_min_value_port;
         // Symbol: drake::systems::Saturation::get_size
         struct /* get_size */ {
-          // Source: drake/systems/primitives/saturation.h:119
+          // Source: drake/systems/primitives/saturation.h
           const char* doc = R"""(Returns the size.)""";
         } get_size;
       } Saturation;
       // Symbol: drake::systems::Selector
       struct /* Selector */ {
-        // Source: drake/systems/primitives/selector.h:129
+        // Source: drake/systems/primitives/selector.h
         const char* doc =
 R"""(This system combines multiple vector-valued inputs into multiple
 vector- valued outputs. It operates at the level of individual
@@ -2233,40 +2233,40 @@ The port names shown in the figure above are the defaults. Custom
 names may be specified in the SelectorParams.)""";
         // Symbol: drake::systems::Selector::Selector<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/selector.h:134
+          // Source: drake/systems/primitives/selector.h
           const char* doc =
 R"""(Constructs a Selector with the given parameters.)""";
-          // Source: drake/systems/primitives/selector.h:141
+          // Source: drake/systems/primitives/selector.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
       } Selector;
       // Symbol: drake::systems::SelectorParams
       struct /* SelectorParams */ {
-        // Source: drake/systems/primitives/selector.h:22
+        // Source: drake/systems/primitives/selector.h
         const char* doc =
 R"""(The constructor arguments for a Selector.)""";
         // Symbol: drake::systems::SelectorParams::InputPortParams
         struct /* InputPortParams */ {
-          // Source: drake/systems/primitives/selector.h:24
+          // Source: drake/systems/primitives/selector.h
           const char* doc = R"""(Helper struct for ``inputs``.)""";
           // Symbol: drake::systems::SelectorParams::InputPortParams::Serialize
           struct /* Serialize */ {
-            // Source: drake/systems/primitives/selector.h:28
+            // Source: drake/systems/primitives/selector.h
             const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
           } Serialize;
           // Symbol: drake::systems::SelectorParams::InputPortParams::name
           struct /* name */ {
-            // Source: drake/systems/primitives/selector.h:35
+            // Source: drake/systems/primitives/selector.h
             const char* doc =
 R"""((Optional) Specifies a name for the port. When given, the name must be
 a valid port name. When unset, the port will use kDefaultName.)""";
           } name;
           // Symbol: drake::systems::SelectorParams::InputPortParams::size
           struct /* size */ {
-            // Source: drake/systems/primitives/selector.h:38
+            // Source: drake/systems/primitives/selector.h
             const char* doc =
 R"""(Specifies the size of the port, which must be non-negative.)""";
           } size;
@@ -2279,25 +2279,25 @@ R"""(Specifies the size of the port, which must be non-negative.)""";
         } InputPortParams;
         // Symbol: drake::systems::SelectorParams::OutputPortParams
         struct /* OutputPortParams */ {
-          // Source: drake/systems/primitives/selector.h:60
+          // Source: drake/systems/primitives/selector.h
           const char* doc = R"""(Helper struct for ``outputs``.)""";
           // Symbol: drake::systems::SelectorParams::OutputPortParams::Serialize
           struct /* Serialize */ {
-            // Source: drake/systems/primitives/selector.h:64
+            // Source: drake/systems/primitives/selector.h
             const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
           } Serialize;
           // Symbol: drake::systems::SelectorParams::OutputPortParams::name
           struct /* name */ {
-            // Source: drake/systems/primitives/selector.h:71
+            // Source: drake/systems/primitives/selector.h
             const char* doc =
 R"""((Optional) Specifies a name for the port. When given, the name must be
 a valid port name. When unset, the port will use kDefaultName.)""";
           } name;
           // Symbol: drake::systems::SelectorParams::OutputPortParams::selections
           struct /* selections */ {
-            // Source: drake/systems/primitives/selector.h:85
+            // Source: drake/systems/primitives/selector.h
             const char* doc =
 R"""(Specifies the values for the output port elements, and by implication
 the port's size. The port will have size ``selections.size()``, and
@@ -2325,26 +2325,26 @@ necessary, connect a ConstantVectorSource to an input port.))""";
         } OutputPortParams;
         // Symbol: drake::systems::SelectorParams::OutputSelection
         struct /* OutputSelection */ {
-          // Source: drake/systems/primitives/selector.h:42
+          // Source: drake/systems/primitives/selector.h
           const char* doc =
 R"""(Helper struct for ``output_selections``.)""";
           // Symbol: drake::systems::SelectorParams::OutputSelection::Serialize
           struct /* Serialize */ {
-            // Source: drake/systems/primitives/selector.h:46
+            // Source: drake/systems/primitives/selector.h
             const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
           } Serialize;
           // Symbol: drake::systems::SelectorParams::OutputSelection::input_offset
           struct /* input_offset */ {
-            // Source: drake/systems/primitives/selector.h:56
+            // Source: drake/systems/primitives/selector.h
             const char* doc =
 R"""(The element offset within the given input port to use for this single
 output element.)""";
           } input_offset;
           // Symbol: drake::systems::SelectorParams::OutputSelection::input_port_index
           struct /* input_port_index */ {
-            // Source: drake/systems/primitives/selector.h:52
+            // Source: drake/systems/primitives/selector.h
             const char* doc =
 R"""(The input port to use for this single output element.)""";
           } input_port_index;
@@ -2357,21 +2357,21 @@ R"""(The input port to use for this single output element.)""";
         } OutputSelection;
         // Symbol: drake::systems::SelectorParams::Serialize
         struct /* Serialize */ {
-          // Source: drake/systems/primitives/selector.h:91
+          // Source: drake/systems/primitives/selector.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::systems::SelectorParams::inputs
         struct /* inputs */ {
-          // Source: drake/systems/primitives/selector.h:98
+          // Source: drake/systems/primitives/selector.h
           const char* doc =
 R"""(Specifies details of the input ports, and by implication the total
 number of input ports. There will be ``inputs.size()`` ports in total.)""";
         } inputs;
         // Symbol: drake::systems::SelectorParams::outputs
         struct /* outputs */ {
-          // Source: drake/systems/primitives/selector.h:102
+          // Source: drake/systems/primitives/selector.h
           const char* doc =
 R"""(Specifies details of the output ports, and by implication the total
 number of output ports. There will be ``outputs.size()`` ports in
@@ -2386,7 +2386,7 @@ total.)""";
       } SelectorParams;
       // Symbol: drake::systems::SharedPointerSystem
       struct /* SharedPointerSystem */ {
-        // Source: drake/systems/primitives/shared_pointer_system.h:26
+        // Source: drake/systems/primitives/shared_pointer_system.h
         const char* doc =
 R"""(SharedPointerSystem holds a single ``shared_ptr`` that will be
 released at System deletion time (i.e., the end of a Diagram
@@ -2399,7 +2399,7 @@ count for the contained object. The contained object will not be
 scalar-converted, so should not depend on ``T``.)""";
         // Symbol: drake::systems::SharedPointerSystem::AddToBuilder
         struct /* AddToBuilder */ {
-          // Source: drake/systems/primitives/shared_pointer_system.h:66
+          // Source: drake/systems/primitives/shared_pointer_system.h
           const char* doc =
 R"""(Creates a system holding the given value and adds it to the builder.
 The value is allowed to be ``nullptr``. Returns an alias to the value
@@ -2419,7 +2419,7 @@ Precondition:
         } AddToBuilder;
         // Symbol: drake::systems::SharedPointerSystem::SharedPointerSystem<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/shared_pointer_system.h:37
+          // Source: drake/systems/primitives/shared_pointer_system.h
           const char* doc =
 R"""(Creates a system holding the given value. The value is allowed to be
 ``nullptr``.
@@ -2431,13 +2431,13 @@ Note:
 Template parameter ``Held``:
     The type used to store the given value. Calls to get<>() must
     provide the same type for retrieval.)""";
-          // Source: drake/systems/primitives/shared_pointer_system.h:53
+          // Source: drake/systems/primitives/shared_pointer_system.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::SharedPointerSystem::get
         struct /* get */ {
-          // Source: drake/systems/primitives/shared_pointer_system.h:96
+          // Source: drake/systems/primitives/shared_pointer_system.h
           const char* doc =
 R"""((Advanced) Retrieves an alias to the stored value. Returns ``nullptr``
 in case ``nullptr`` was passed in as the ``value_to_hold``.
@@ -2451,7 +2451,7 @@ Raises:
       } SharedPointerSystem;
       // Symbol: drake::systems::Sine
       struct /* Sine */ {
-        // Source: drake/systems/primitives/sine.h:41
+        // Source: drake/systems/primitives/sine.h
         const char* doc =
 R"""(A sine system which outputs ``y = a * sin(f * t + p)`` and first and
 second derivatives w.r.t. the time parameter ``t``. The block
@@ -2482,7 +2482,7 @@ Port ``y0`` emits the value ``y``; port ``y1`` emits the first
 derivative; port ``y2`` emits the second derivative.)""";
         // Symbol: drake::systems::Sine::Sine<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/sine.h:55
+          // Source: drake/systems/primitives/sine.h
           const char* doc_5args =
 R"""(Constructs a Sine system where the amplitude, frequency, and phase is
 applied to every input.
@@ -2503,7 +2503,7 @@ Parameter ``is_time_based``:
     indicates whether to use the simulation time as the source for the
     sine wave time variable, or use an external source, in which case
     an input port of size ``size`` is created.)""";
-          // Source: drake/systems/primitives/sine.h:67
+          // Source: drake/systems/primitives/sine.h
           const char* doc_4args =
 R"""(Constructs a Sine system where different amplitudes, frequencies, and
 phases can be applied to each sine wave.
@@ -2521,13 +2521,13 @@ Parameter ``is_time_based``:
     indicates whether to use the simulation time as the source for the
     sine wave time variable, or use an external source, in which case
     an input port is created.)""";
-          // Source: drake/systems/primitives/sine.h:73
+          // Source: drake/systems/primitives/sine.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::Sine::amplitude
         struct /* amplitude */ {
-          // Source: drake/systems/primitives/sine.h:79
+          // Source: drake/systems/primitives/sine.h
           const char* doc =
 R"""(Returns the amplitude constant. This method should only be called if
 the amplitude can be represented as a scalar value, i.e., every
@@ -2536,12 +2536,12 @@ amplitude cannot be represented as a single scalar value.)""";
         } amplitude;
         // Symbol: drake::systems::Sine::amplitude_vector
         struct /* amplitude_vector */ {
-          // Source: drake/systems/primitives/sine.h:99
+          // Source: drake/systems/primitives/sine.h
           const char* doc = R"""(Returns the amplitude vector constant.)""";
         } amplitude_vector;
         // Symbol: drake::systems::Sine::frequency
         struct /* frequency */ {
-          // Source: drake/systems/primitives/sine.h:85
+          // Source: drake/systems/primitives/sine.h
           const char* doc =
 R"""(Returns the frequency constant. This method should only be called if
 the frequency can be represented as a scalar value, i.e., every
@@ -2550,12 +2550,12 @@ frequency cannot be represented as a single scalar value.)""";
         } frequency;
         // Symbol: drake::systems::Sine::frequency_vector
         struct /* frequency_vector */ {
-          // Source: drake/systems/primitives/sine.h:102
+          // Source: drake/systems/primitives/sine.h
           const char* doc = R"""(Returns the frequency vector constant.)""";
         } frequency_vector;
         // Symbol: drake::systems::Sine::is_time_based
         struct /* is_time_based */ {
-          // Source: drake/systems/primitives/sine.h:96
+          // Source: drake/systems/primitives/sine.h
           const char* doc =
 R"""(Returns a boolean indicting whether to use simulation time as the
 source of values for the time variable or an external source. Returns
@@ -2564,7 +2564,7 @@ otherwise.)""";
         } is_time_based;
         // Symbol: drake::systems::Sine::phase
         struct /* phase */ {
-          // Source: drake/systems/primitives/sine.h:91
+          // Source: drake/systems/primitives/sine.h
           const char* doc =
 R"""(Returns the phase constant. This method should only be called if the
 phase can be represented as a scalar value, i.e., every element in the
@@ -2573,13 +2573,13 @@ represented as a single scalar value.)""";
         } phase;
         // Symbol: drake::systems::Sine::phase_vector
         struct /* phase_vector */ {
-          // Source: drake/systems/primitives/sine.h:105
+          // Source: drake/systems/primitives/sine.h
           const char* doc = R"""(Returns the phase vector constant.)""";
         } phase_vector;
       } Sine;
       // Symbol: drake::systems::SparseMatrixGain
       struct /* SparseMatrixGain */ {
-        // Source: drake/systems/primitives/sparse_matrix_gain.h:41
+        // Source: drake/systems/primitives/sparse_matrix_gain.h
         const char* doc =
 R"""(A variant of MatrixGain which supports multiplication by SparseMatrix,
 ``D``. Specifically, given an input signal ``u`` and a state ``x``,
@@ -2603,27 +2603,27 @@ See also:
     MatrixGain)""";
         // Symbol: drake::systems::SparseMatrixGain::D
         struct /* D */ {
-          // Source: drake/systems/primitives/sparse_matrix_gain.h:55
+          // Source: drake/systems/primitives/sparse_matrix_gain.h
           const char* doc = R"""(Getter for the gain matrix ``D``.)""";
         } D;
         // Symbol: drake::systems::SparseMatrixGain::SparseMatrixGain<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/sparse_matrix_gain.h:46
+          // Source: drake/systems/primitives/sparse_matrix_gain.h
           const char* doc =
 R"""(A constructor where the gain matrix ``D`` is ``D``.)""";
-          // Source: drake/systems/primitives/sparse_matrix_gain.h:50
+          // Source: drake/systems/primitives/sparse_matrix_gain.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::SparseMatrixGain::set_D
         struct /* set_D */ {
-          // Source: drake/systems/primitives/sparse_matrix_gain.h:61
+          // Source: drake/systems/primitives/sparse_matrix_gain.h
           const char* doc = R"""(Setter for the gain matrix ``D``.)""";
         } set_D;
       } SparseMatrixGain;
       // Symbol: drake::systems::StateInterpolatorWithDiscreteDerivative
       struct /* StateInterpolatorWithDiscreteDerivative */ {
-        // Source: drake/systems/primitives/discrete_derivative.h:151
+        // Source: drake/systems/primitives/discrete_derivative.h
         const char* doc =
 R"""(Supports the common pattern of combining a (feed-through) position
 with a velocity estimated with the DiscreteDerivative into a single
@@ -2658,7 +2658,7 @@ the velocities are equal to the time derivative of the positions.
     - state)""";
         // Symbol: drake::systems::StateInterpolatorWithDiscreteDerivative::StateInterpolatorWithDiscreteDerivative<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/discrete_derivative.h:160
+          // Source: drake/systems/primitives/discrete_derivative.h
           const char* doc =
 R"""(Constructor taking ``num_positions``, the size of the position vector
 to be differentiated, and ``time_step``, the sampling interval. If
@@ -2668,7 +2668,7 @@ DiscreteDerivative class documentation for details and exceptions).)""";
         } ctor;
         // Symbol: drake::systems::StateInterpolatorWithDiscreteDerivative::set_initial_position
         struct /* set_initial_position */ {
-          // Source: drake/systems/primitives/discrete_derivative.h:175
+          // Source: drake/systems/primitives/discrete_derivative.h
           const char* doc_2args_state_position =
 R"""(Convenience method that sets the entire position history for the
 discrete-time derivative to a constant vector value (resulting in
@@ -2680,7 +2680,7 @@ also disables the suppression for this ``state``.
 Warning:
     This only changes the position history used for the velocity half
     of the output port; it has no effect on the feedthrough position.)""";
-          // Source: drake/systems/primitives/discrete_derivative.h:198
+          // Source: drake/systems/primitives/discrete_derivative.h
           const char* doc_2args_context_position =
 R"""(Convenience method that sets the entire position history for the
 discrete-time derivative to a constant vector value (resulting in
@@ -2695,7 +2695,7 @@ Warning:
         } set_initial_position;
         // Symbol: drake::systems::StateInterpolatorWithDiscreteDerivative::set_initial_state
         struct /* set_initial_state */ {
-          // Source: drake/systems/primitives/discrete_derivative.h:186
+          // Source: drake/systems/primitives/discrete_derivative.h
           const char* doc_3args_state_position_velocity =
 R"""(Convenience method that sets the entire position history for the
 discrete-time derivative as if the most recent input was ``position``,
@@ -2708,7 +2708,7 @@ suppression for this ``state``.
 Warning:
     This only changes the position history used for the velocity half
     of the output port; it has no effect on the feedthrough position.)""";
-          // Source: drake/systems/primitives/discrete_derivative.h:214
+          // Source: drake/systems/primitives/discrete_derivative.h
           const char* doc_3args_context_position_velocity =
 R"""(Convenience method that sets the entire position history for the
 discrete-time derivative as if the most recent input was ``position``,
@@ -2724,14 +2724,14 @@ Warning:
         } set_initial_state;
         // Symbol: drake::systems::StateInterpolatorWithDiscreteDerivative::suppress_initial_transient
         struct /* suppress_initial_transient */ {
-          // Source: drake/systems/primitives/discrete_derivative.h:165
+          // Source: drake/systems/primitives/discrete_derivative.h
           const char* doc =
 R"""(Returns the ``suppress_initial_transient`` passed to the constructor.)""";
         } suppress_initial_transient;
       } StateInterpolatorWithDiscreteDerivative;
       // Symbol: drake::systems::SymbolicVectorSystem
       struct /* SymbolicVectorSystem */ {
-        // Source: drake/systems/primitives/symbolic_vector_system.h:51
+        // Source: drake/systems/primitives/symbolic_vector_system.h
         const char* doc =
 R"""(A LeafSystem that is defined by vectors of symbolic::Expression
 representing the dynamics and output. The resulting system has only
@@ -2777,7 +2777,7 @@ Either port ``u0`` or port ``y0`` may be absent, depending on the
 values supplied at construction.)""";
         // Symbol: drake::systems::SymbolicVectorSystem::SymbolicVectorSystem<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/symbolic_vector_system.h:86
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc_7args =
 R"""(Construct the SymbolicVectorSystem.
 
@@ -2818,7 +2818,7 @@ Parameter ``time_period``:
     derivatives. time_period > 0.0 implies the state variables will be
     declared as discrete state and the dynamics will be implemented as
     a dicraete variable update.)""";
-          // Source: drake/systems/primitives/symbolic_vector_system.h:123
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc_6args =
 R"""(Construct the SymbolicVectorSystem.
 
@@ -2853,18 +2853,18 @@ Parameter ``time_period``:
     derivatives. time_period > 0.0 implies the state variables will be
     declared as discrete state and the dynamics will be implemented as
     a dicraete variable update.)""";
-          // Source: drake/systems/primitives/symbolic_vector_system.h:137
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::SymbolicVectorSystem::dynamics
         struct /* dynamics */ {
-          // Source: drake/systems/primitives/symbolic_vector_system.h:155
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc = R"""()""";
         } dynamics;
         // Symbol: drake::systems::SymbolicVectorSystem::dynamics_for_variable
         struct /* dynamics_for_variable */ {
-          // Source: drake/systems/primitives/symbolic_vector_system.h:163
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc =
 R"""(Returns the dynamics for the variable ``var``. That is, it returns the
 scalar expression corresponding to either ``\dot{var}`` (continuous
@@ -2876,33 +2876,33 @@ Raises:
         } dynamics_for_variable;
         // Symbol: drake::systems::SymbolicVectorSystem::input_vars
         struct /* input_vars */ {
-          // Source: drake/systems/primitives/symbolic_vector_system.h:151
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc = R"""()""";
         } input_vars;
         // Symbol: drake::systems::SymbolicVectorSystem::output
         struct /* output */ {
-          // Source: drake/systems/primitives/symbolic_vector_system.h:176
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc = R"""()""";
         } output;
         // Symbol: drake::systems::SymbolicVectorSystem::parameter_vars
         struct /* parameter_vars */ {
-          // Source: drake/systems/primitives/symbolic_vector_system.h:152
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc = R"""()""";
         } parameter_vars;
         // Symbol: drake::systems::SymbolicVectorSystem::state_vars
         struct /* state_vars */ {
-          // Source: drake/systems/primitives/symbolic_vector_system.h:150
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc = R"""()""";
         } state_vars;
         // Symbol: drake::systems::SymbolicVectorSystem::time_var
         struct /* time_var */ {
-          // Source: drake/systems/primitives/symbolic_vector_system.h:147
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc = R"""(@name Accessor methods.)""";
         } time_var;
       } SymbolicVectorSystem;
       // Symbol: drake::systems::SymbolicVectorSystemBuilder
       struct /* SymbolicVectorSystemBuilder */ {
-        // Source: drake/systems/primitives/symbolic_vector_system.h:238
+        // Source: drake/systems/primitives/symbolic_vector_system.h
         const char* doc =
 R"""(Builder design pattern to help with all of the optional arguments in
 the constructor of SymbolicVectorSystem.
@@ -2930,14 +2930,14 @@ See also:
     SymbolicVectorSystem)""";
         // Symbol: drake::systems::SymbolicVectorSystemBuilder::Build
         struct /* Build */ {
-          // Source: drake/systems/primitives/symbolic_vector_system.h:371
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc =
 R"""(Dispatches to the SymbolicVectorSystem constructor with our
 accumulated arguments.)""";
         } Build;
         // Symbol: drake::systems::SymbolicVectorSystemBuilder::LinearizeDynamics
         struct /* LinearizeDynamics */ {
-          // Source: drake/systems/primitives/symbolic_vector_system.h:357
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc =
 R"""(Linearizes the system dynamics around ``(x0, u0)`` using the
 first-order Taylor Series expansion.
@@ -2958,18 +2958,18 @@ Note:
         } LinearizeDynamics;
         // Symbol: drake::systems::SymbolicVectorSystemBuilder::SymbolicVectorSystemBuilder
         struct /* ctor */ {
-          // Source: drake/systems/primitives/symbolic_vector_system.h:240
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::systems::SymbolicVectorSystemBuilder::dynamics
         struct /* dynamics */ {
-          // Source: drake/systems/primitives/symbolic_vector_system.h:309
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Sets the dynamics method (scalar version).)""";
         } dynamics;
         // Symbol: drake::systems::SymbolicVectorSystemBuilder::dynamics_for_variable
         struct /* dynamics_for_variable */ {
-          // Source: drake/systems/primitives/symbolic_vector_system.h:397
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc =
 R"""(Returns the dynamics for the variable ``var``. That is, it returns the
 scalar expression corresponding to either ``\dot{var}`` (continuous
@@ -2981,48 +2981,48 @@ Raises:
         } dynamics_for_variable;
         // Symbol: drake::systems::SymbolicVectorSystemBuilder::input
         struct /* input */ {
-          // Source: drake/systems/primitives/symbolic_vector_system.h:271
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Sets the input variable (scalar version).)""";
         } input;
         // Symbol: drake::systems::SymbolicVectorSystemBuilder::output
         struct /* output */ {
-          // Source: drake/systems/primitives/symbolic_vector_system.h:328
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Sets the output method (scalar version).)""";
         } output;
         // Symbol: drake::systems::SymbolicVectorSystemBuilder::parameter
         struct /* parameter */ {
-          // Source: drake/systems/primitives/symbolic_vector_system.h:290
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Sets the parameter variable (scalar version).)""";
         } parameter;
         // Symbol: drake::systems::SymbolicVectorSystemBuilder::state
         struct /* state */ {
-          // Source: drake/systems/primitives/symbolic_vector_system.h:251
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Sets the state variable (scalar version).)""";
         } state;
         // Symbol: drake::systems::SymbolicVectorSystemBuilder::time
         struct /* time */ {
-          // Source: drake/systems/primitives/symbolic_vector_system.h:245
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc_1args = R"""(Sets the time variable.)""";
-          // Source: drake/systems/primitives/symbolic_vector_system.h:380
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc_0args =
 R"""(@name Accessor methods. Returns the time variable if exists.)""";
         } time;
         // Symbol: drake::systems::SymbolicVectorSystemBuilder::time_period
         struct /* time_period */ {
-          // Source: drake/systems/primitives/symbolic_vector_system.h:362
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc_1args =
 R"""(Sets the time period (0 is continuous time).)""";
-          // Source: drake/systems/primitives/symbolic_vector_system.h:412
+          // Source: drake/systems/primitives/symbolic_vector_system.h
           const char* doc_0args = R"""(Returns the time period.)""";
         } time_period;
       } SymbolicVectorSystemBuilder;
       // Symbol: drake::systems::TimeVaryingAffineSystem
       struct /* TimeVaryingAffineSystem */ {
-        // Source: drake/systems/primitives/affine_system.h:46
+        // Source: drake/systems/primitives/affine_system.h
         const char* doc =
 R"""(Base class for a discrete- or continuous-time, time-varying affine
 system, with potentially time-varying coefficients.
@@ -3063,7 +3063,7 @@ See also:
     AffineSystem)""";
         // Symbol: drake::systems::TimeVaryingAffineSystem::A
         struct /* A */ {
-          // Source: drake/systems/primitives/affine_system.h:62
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc =
 R"""(@name Methods To Be Implemented by Subclasses
 
@@ -3073,17 +3073,17 @@ specified in the constructor.)""";
         } A;
         // Symbol: drake::systems::TimeVaryingAffineSystem::B
         struct /* B */ {
-          // Source: drake/systems/primitives/affine_system.h:63
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc = R"""()""";
         } B;
         // Symbol: drake::systems::TimeVaryingAffineSystem::C
         struct /* C */ {
-          // Source: drake/systems/primitives/affine_system.h:65
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc = R"""()""";
         } C;
         // Symbol: drake::systems::TimeVaryingAffineSystem::CalcDiscreteUpdate
         struct /* CalcDiscreteUpdate */ {
-          // Source: drake/systems/primitives/affine_system.h:131
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc =
 R"""(Computes
 
@@ -3096,7 +3096,7 @@ reasons.)""";
         } CalcDiscreteUpdate;
         // Symbol: drake::systems::TimeVaryingAffineSystem::CalcOutputY
         struct /* CalcOutputY */ {
-          // Source: drake/systems/primitives/affine_system.h:118
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc =
 R"""(Computes
 
@@ -3107,19 +3107,19 @@ checks. Derived classes may override this for performance reasons.)""";
         } CalcOutputY;
         // Symbol: drake::systems::TimeVaryingAffineSystem::ConfigureDefaultAndRandomStateFrom
         struct /* ConfigureDefaultAndRandomStateFrom */ {
-          // Source: drake/systems/primitives/affine_system.h:112
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc =
 R"""(Helper method. Derived classes should call this from the
 scalar-converting copy constructor.)""";
         } ConfigureDefaultAndRandomStateFrom;
         // Symbol: drake::systems::TimeVaryingAffineSystem::D
         struct /* D */ {
-          // Source: drake/systems/primitives/affine_system.h:66
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc = R"""()""";
         } D;
         // Symbol: drake::systems::TimeVaryingAffineSystem::DoCalcTimeDerivatives
         struct /* DoCalcTimeDerivatives */ {
-          // Source: drake/systems/primitives/affine_system.h:124
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc =
 R"""(Computes
 
@@ -3130,17 +3130,17 @@ checks. Derived classes may override this for performance reasons.)""";
         } DoCalcTimeDerivatives;
         // Symbol: drake::systems::TimeVaryingAffineSystem::SetDefaultState
         struct /* SetDefaultState */ {
-          // Source: drake/systems/primitives/affine_system.h:135
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc = R"""(Sets the initial conditions.)""";
         } SetDefaultState;
         // Symbol: drake::systems::TimeVaryingAffineSystem::SetRandomState
         struct /* SetRandomState */ {
-          // Source: drake/systems/primitives/affine_system.h:139
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc = R"""(Sets the random initial conditions.)""";
         } SetRandomState;
         // Symbol: drake::systems::TimeVaryingAffineSystem::TimeVaryingAffineSystem<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/affine_system.h:106
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc =
 R"""(Constructor.
 
@@ -3164,14 +3164,14 @@ Parameter ``time_period``:
         } ctor;
         // Symbol: drake::systems::TimeVaryingAffineSystem::configure_default_state
         struct /* configure_default_state */ {
-          // Source: drake/systems/primitives/affine_system.h:72
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc =
 R"""(Configures the value that will be assigned to the state vector in
 ``SetDefaultContext``. `x0` must be a vector of length ``num_states``.)""";
         } configure_default_state;
         // Symbol: drake::systems::TimeVaryingAffineSystem::configure_random_state
         struct /* configure_random_state */ {
-          // Source: drake/systems/primitives/affine_system.h:79
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc =
 R"""(Configures the Gaussian distribution over state vectors used in the
 ``SetRandomContext`` methods. The mean of the distribution will be the
@@ -3184,12 +3184,12 @@ See also:
         } configure_random_state;
         // Symbol: drake::systems::TimeVaryingAffineSystem::f0
         struct /* f0 */ {
-          // Source: drake/systems/primitives/affine_system.h:64
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc = R"""()""";
         } f0;
         // Symbol: drake::systems::TimeVaryingAffineSystem::get_default_state
         struct /* get_default_state */ {
-          // Source: drake/systems/primitives/affine_system.h:83
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc =
 R"""(Returns the configured default state.
 
@@ -3198,51 +3198,51 @@ See also:
         } get_default_state;
         // Symbol: drake::systems::TimeVaryingAffineSystem::get_input_port
         struct /* get_input_port */ {
-          // Source: drake/systems/primitives/affine_system.h:51
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc =
 R"""(Returns the input port containing the externally applied input.)""";
         } get_input_port;
         // Symbol: drake::systems::TimeVaryingAffineSystem::get_output_port
         struct /* get_output_port */ {
-          // Source: drake/systems/primitives/affine_system.h:54
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc =
 R"""(Returns the output port containing the output state.)""";
         } get_output_port;
         // Symbol: drake::systems::TimeVaryingAffineSystem::get_random_state_covariance
         struct /* get_random_state_covariance */ {
-          // Source: drake/systems/primitives/affine_system.h:86
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc =
 R"""(Returns the configured random state covariance.)""";
         } get_random_state_covariance;
         // Symbol: drake::systems::TimeVaryingAffineSystem::num_inputs
         struct /* num_inputs */ {
-          // Source: drake/systems/primitives/affine_system.h:92
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc = R"""()""";
         } num_inputs;
         // Symbol: drake::systems::TimeVaryingAffineSystem::num_outputs
         struct /* num_outputs */ {
-          // Source: drake/systems/primitives/affine_system.h:93
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc = R"""()""";
         } num_outputs;
         // Symbol: drake::systems::TimeVaryingAffineSystem::num_states
         struct /* num_states */ {
-          // Source: drake/systems/primitives/affine_system.h:91
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc = R"""()""";
         } num_states;
         // Symbol: drake::systems::TimeVaryingAffineSystem::time_period
         struct /* time_period */ {
-          // Source: drake/systems/primitives/affine_system.h:90
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc = R"""()""";
         } time_period;
         // Symbol: drake::systems::TimeVaryingAffineSystem::y0
         struct /* y0 */ {
-          // Source: drake/systems/primitives/affine_system.h:67
+          // Source: drake/systems/primitives/affine_system.h
           const char* doc = R"""()""";
         } y0;
       } TimeVaryingAffineSystem;
       // Symbol: drake::systems::TimeVaryingLinearSystem
       struct /* TimeVaryingLinearSystem */ {
-        // Source: drake/systems/primitives/linear_system.h:121
+        // Source: drake/systems/primitives/linear_system.h
         const char* doc =
 R"""(Base class for a discrete or continuous linear time-varying (LTV)
 system.
@@ -3270,7 +3270,7 @@ both with the output:
 .. math:: y(t) = C(t) x(t) + D(t) u(t).)""";
         // Symbol: drake::systems::TimeVaryingLinearSystem::TimeVaryingLinearSystem<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/linear_system.h:136
+          // Source: drake/systems/primitives/linear_system.h
           const char* doc =
 R"""(Constructor.
 
@@ -3295,7 +3295,7 @@ Parameter ``time_period``:
       } TimeVaryingLinearSystem;
       // Symbol: drake::systems::TrajectoryAffineSystem
       struct /* TrajectoryAffineSystem */ {
-        // Source: drake/systems/primitives/trajectory_affine_system.h:28
+        // Source: drake/systems/primitives/trajectory_affine_system.h
         const char* doc =
 R"""(A continuous- or discrete-time Affine Time-Varying system with system
 matrices described by trajectories.
@@ -3309,29 +3309,29 @@ matrices described by trajectories.
     - y0)""";
         // Symbol: drake::systems::TrajectoryAffineSystem::A
         struct /* A */ {
-          // Source: drake/systems/primitives/trajectory_affine_system.h:51
+          // Source: drake/systems/primitives/trajectory_affine_system.h
           const char* doc =
 R"""(@name Implementations of TimeVaryingAffineSystem<T>'s pure virtual
 methods.)""";
         } A;
         // Symbol: drake::systems::TrajectoryAffineSystem::B
         struct /* B */ {
-          // Source: drake/systems/primitives/trajectory_affine_system.h:54
+          // Source: drake/systems/primitives/trajectory_affine_system.h
           const char* doc = R"""()""";
         } B;
         // Symbol: drake::systems::TrajectoryAffineSystem::C
         struct /* C */ {
-          // Source: drake/systems/primitives/trajectory_affine_system.h:60
+          // Source: drake/systems/primitives/trajectory_affine_system.h
           const char* doc = R"""()""";
         } C;
         // Symbol: drake::systems::TrajectoryAffineSystem::D
         struct /* D */ {
-          // Source: drake/systems/primitives/trajectory_affine_system.h:63
+          // Source: drake/systems/primitives/trajectory_affine_system.h
           const char* doc = R"""()""";
         } D;
         // Symbol: drake::systems::TrajectoryAffineSystem::TrajectoryAffineSystem<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/trajectory_affine_system.h:36
+          // Source: drake/systems/primitives/trajectory_affine_system.h
           const char* doc =
 R"""(Constructs a TrajectoryAffineSystem from trajectories of matrices.
 
@@ -3339,24 +3339,24 @@ Parameter ``time_period``:
     Defines the period of the discrete time system; use
     time_period=0.0 to denote a continuous time system. $*Default:*
     0.0)""";
-          // Source: drake/systems/primitives/trajectory_affine_system.h:46
+          // Source: drake/systems/primitives/trajectory_affine_system.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::TrajectoryAffineSystem::f0
         struct /* f0 */ {
-          // Source: drake/systems/primitives/trajectory_affine_system.h:57
+          // Source: drake/systems/primitives/trajectory_affine_system.h
           const char* doc = R"""()""";
         } f0;
         // Symbol: drake::systems::TrajectoryAffineSystem::y0
         struct /* y0 */ {
-          // Source: drake/systems/primitives/trajectory_affine_system.h:66
+          // Source: drake/systems/primitives/trajectory_affine_system.h
           const char* doc = R"""()""";
         } y0;
       } TrajectoryAffineSystem;
       // Symbol: drake::systems::TrajectoryLinearSystem
       struct /* TrajectoryLinearSystem */ {
-        // Source: drake/systems/primitives/trajectory_linear_system.h:28
+        // Source: drake/systems/primitives/trajectory_linear_system.h
         const char* doc =
 R"""(A continuous- or discrete-time Linear Time-Varying system with system
 matrices described by trajectories.
@@ -3370,29 +3370,29 @@ matrices described by trajectories.
     - y0)""";
         // Symbol: drake::systems::TrajectoryLinearSystem::A
         struct /* A */ {
-          // Source: drake/systems/primitives/trajectory_linear_system.h:50
+          // Source: drake/systems/primitives/trajectory_linear_system.h
           const char* doc =
 R"""(@name Implementations of PiecewisePolynomialLinearSystem<T>'s pure
 virtual methods.)""";
         } A;
         // Symbol: drake::systems::TrajectoryLinearSystem::B
         struct /* B */ {
-          // Source: drake/systems/primitives/trajectory_linear_system.h:53
+          // Source: drake/systems/primitives/trajectory_linear_system.h
           const char* doc = R"""()""";
         } B;
         // Symbol: drake::systems::TrajectoryLinearSystem::C
         struct /* C */ {
-          // Source: drake/systems/primitives/trajectory_linear_system.h:56
+          // Source: drake/systems/primitives/trajectory_linear_system.h
           const char* doc = R"""()""";
         } C;
         // Symbol: drake::systems::TrajectoryLinearSystem::D
         struct /* D */ {
-          // Source: drake/systems/primitives/trajectory_linear_system.h:59
+          // Source: drake/systems/primitives/trajectory_linear_system.h
           const char* doc = R"""()""";
         } D;
         // Symbol: drake::systems::TrajectoryLinearSystem::TrajectoryLinearSystem<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/trajectory_linear_system.h:37
+          // Source: drake/systems/primitives/trajectory_linear_system.h
           const char* doc =
 R"""(Constructs a PiecewisePolynomialLinearSystem from a
 LinearTimeVaryingData structure.
@@ -3401,14 +3401,14 @@ Parameter ``time_period``:
     Defines the period of the discrete time system; use
     time_period=0.0 to denote a continuous time system. $*Default:*
     0.0)""";
-          // Source: drake/systems/primitives/trajectory_linear_system.h:45
+          // Source: drake/systems/primitives/trajectory_linear_system.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
       } TrajectoryLinearSystem;
       // Symbol: drake::systems::TrajectorySource
       struct /* TrajectorySource */ {
-        // Source: drake/systems/primitives/trajectory_source.h:37
+        // Source: drake/systems/primitives/trajectory_source.h
         const char* doc =
 R"""(Given a Trajectory, this System provides an output port with the value
 of the trajectory evaluated at the current time.
@@ -3430,7 +3430,7 @@ must call UpdateTrajectory() with an updated Trajectory<T> in order to
 fully enable scalar-type support on the trajectory parameters/values.)""";
         // Symbol: drake::systems::TrajectorySource::TrajectorySource<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/trajectory_source.h:49
+          // Source: drake/systems/primitives/trajectory_source.h
           const char* doc =
 R"""(Parameter ``trajectory``:
     Trajectory used by the system.
@@ -3450,7 +3450,7 @@ Precondition:
         } ctor;
         // Symbol: drake::systems::TrajectorySource::UpdateTrajectory
         struct /* UpdateTrajectory */ {
-          // Source: drake/systems/primitives/trajectory_source.h:61
+          // Source: drake/systems/primitives/trajectory_source.h
           const char* doc =
 R"""(Updates the stored trajectory. ``trajectory`` must have the same
 number of rows as the trajectory passed to the constructor.)""";
@@ -3458,7 +3458,7 @@ number of rows as the trajectory passed to the constructor.)""";
       } TrajectorySource;
       // Symbol: drake::systems::TransferFunction
       struct /* TransferFunction */ {
-        // Source: drake/systems/primitives/transfer_function.h:30
+        // Source: drake/systems/primitives/transfer_function.h
         const char* doc =
 R"""(Represents a linear-time-invariant (LTI) system in transfer function
 form, e.g. complex rational functions corresponding to the Laplace
@@ -3504,24 +3504,24 @@ Systems framework, you must convert it to state-space form,
 represented by LinearSystem.)""";
         // Symbol: drake::systems::TransferFunction::H
         struct /* H */ {
-          // Source: drake/systems/primitives/transfer_function.h:58
+          // Source: drake/systems/primitives/transfer_function.h
           const char* doc = R"""(Returns the transfer function matrix.)""";
         } H;
         // Symbol: drake::systems::TransferFunction::TransferFunction
         struct /* ctor */ {
-          // Source: drake/systems/primitives/transfer_function.h:32
+          // Source: drake/systems/primitives/transfer_function.h
           const char* doc_was_unable_to_choose_unambiguous_names = R"""()""";
         } ctor;
         // Symbol: drake::systems::TransferFunction::s
         struct /* s */ {
-          // Source: drake/systems/primitives/transfer_function.h:65
+          // Source: drake/systems/primitives/transfer_function.h
           const char* doc =
 R"""(Returns a symbolic::RationalFunction ``s`` which can be used to build
 a continuous-time transfer function symbolically.)""";
         } s;
         // Symbol: drake::systems::TransferFunction::s_var
         struct /* s_var */ {
-          // Source: drake/systems/primitives/transfer_function.h:72
+          // Source: drake/systems/primitives/transfer_function.h
           const char* doc =
 R"""(Returns the singleton symbolic::Variable denoting the complex
 frequency (σ+jω) used in the Laplace transform for continuous-time
@@ -3529,19 +3529,19 @@ transfer functions.)""";
         } s_var;
         // Symbol: drake::systems::TransferFunction::time_step
         struct /* time_step */ {
-          // Source: drake/systems/primitives/transfer_function.h:61
+          // Source: drake/systems/primitives/transfer_function.h
           const char* doc = R"""(Returns the time step.)""";
         } time_step;
         // Symbol: drake::systems::TransferFunction::z
         struct /* z */ {
-          // Source: drake/systems/primitives/transfer_function.h:76
+          // Source: drake/systems/primitives/transfer_function.h
           const char* doc =
 R"""(Returns a symbolic::RationalFunction ``s`` which can be used to build
 a discrete-time transfer function symbolically.)""";
         } z;
         // Symbol: drake::systems::TransferFunction::z_var
         struct /* z_var */ {
-          // Source: drake/systems/primitives/transfer_function.h:82
+          // Source: drake/systems/primitives/transfer_function.h
           const char* doc =
 R"""(Returns the singleton symbolic::Variable denoting the complex
 frequency (σ+jω) used in the Z transform for discrete-time transfer
@@ -3550,7 +3550,7 @@ functions.)""";
       } TransferFunction;
       // Symbol: drake::systems::VectorLog
       struct /* VectorLog */ {
-        // Source: drake/systems/primitives/vector_log.h:27
+        // Source: drake/systems/primitives/vector_log.h
         const char* doc =
 R"""(This utility class serves as an in-memory cache of time-dependent
 vector values. Note that this is a standalone class, not a Drake
@@ -3567,7 +3567,7 @@ times passed to AddData() need not be increasing in order of
 insertion, values are allowed to be infinite, NaN, etc.)""";
         // Symbol: drake::systems::VectorLog::AddData
         struct /* AddData */ {
-          // Source: drake/systems/primitives/vector_log.h:89
+          // Source: drake/systems/primitives/vector_log.h
           const char* doc =
 R"""(Adds a ``sample`` to the data set with the associated ``time`` value.
 The new sample and time are added to the end of the log. No
@@ -3581,12 +3581,12 @@ Parameter ``sample``:
         } AddData;
         // Symbol: drake::systems::VectorLog::Clear
         struct /* Clear */ {
-          // Source: drake/systems/primitives/vector_log.h:74
+          // Source: drake/systems/primitives/vector_log.h
           const char* doc = R"""(Clears the logged data.)""";
         } Clear;
         // Symbol: drake::systems::VectorLog::Reserve
         struct /* Reserve */ {
-          // Source: drake/systems/primitives/vector_log.h:71
+          // Source: drake/systems/primitives/vector_log.h
           const char* doc =
 R"""(Reserve storage for at least ``capacity`` samples. At construction,
 there will be at least ``kDefaultCapacity``; use this method to
@@ -3594,7 +3594,7 @@ reserve more.)""";
         } Reserve;
         // Symbol: drake::systems::VectorLog::VectorLog<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/vector_log.h:41
+          // Source: drake/systems/primitives/vector_log.h
           const char* doc =
 R"""(Constructs the vector log.
 
@@ -3603,7 +3603,7 @@ Parameter ``input_size``:
         } ctor;
         // Symbol: drake::systems::VectorLog::data
         struct /* data */ {
-          // Source: drake/systems/primitives/vector_log.h:63
+          // Source: drake/systems/primitives/vector_log.h
           const char* doc =
 R"""(Accesses the logged data.
 
@@ -3612,26 +3612,26 @@ compiler can assume aligned access to the data.)""";
         } data;
         // Symbol: drake::systems::VectorLog::get_input_size
         struct /* get_input_size */ {
-          // Source: drake/systems/primitives/vector_log.h:44
+          // Source: drake/systems/primitives/vector_log.h
           const char* doc =
 R"""(Reports the size of the log's input vector.)""";
         } get_input_size;
         // Symbol: drake::systems::VectorLog::num_samples
         struct /* num_samples */ {
-          // Source: drake/systems/primitives/vector_log.h:47
+          // Source: drake/systems/primitives/vector_log.h
           const char* doc =
 R"""(Returns the number of samples taken since construction or last
 Clear().)""";
         } num_samples;
         // Symbol: drake::systems::VectorLog::sample_times
         struct /* sample_times */ {
-          // Source: drake/systems/primitives/vector_log.h:52
+          // Source: drake/systems/primitives/vector_log.h
           const char* doc = R"""(Accesses the logged time stamps.)""";
         } sample_times;
       } VectorLog;
       // Symbol: drake::systems::VectorLogSink
       struct /* VectorLogSink */ {
-        // Source: drake/systems/primitives/vector_log_sink.h:58
+        // Source: drake/systems/primitives/vector_log_sink.h
         const char* doc =
 R"""(A discrete sink block which logs its vector-valued input to
 per-context memory. This data is then retrievable outside of System
@@ -3673,7 +3673,7 @@ See also:
     - data)""";
         // Symbol: drake::systems::VectorLogSink::FindLog
         struct /* FindLog */ {
-          // Source: drake/systems/primitives/vector_log_sink.h:113
+          // Source: drake/systems/primitives/vector_log_sink.h
           const char* doc =
 R"""(Access the log within a containing root context.
 
@@ -3683,7 +3683,7 @@ Raises:
         } FindLog;
         // Symbol: drake::systems::VectorLogSink::FindMutableLog
         struct /* FindMutableLog */ {
-          // Source: drake/systems/primitives/vector_log_sink.h:118
+          // Source: drake/systems/primitives/vector_log_sink.h
           const char* doc =
 R"""(Access the log as a mutable object within a containing root context.
 
@@ -3693,7 +3693,7 @@ Raises:
         } FindMutableLog;
         // Symbol: drake::systems::VectorLogSink::GetLog
         struct /* GetLog */ {
-          // Source: drake/systems/primitives/vector_log_sink.h:104
+          // Source: drake/systems/primitives/vector_log_sink.h
           const char* doc =
 R"""(Access the log within this component's context.
 
@@ -3702,7 +3702,7 @@ Raises:
         } GetLog;
         // Symbol: drake::systems::VectorLogSink::GetMutableLog
         struct /* GetMutableLog */ {
-          // Source: drake/systems/primitives/vector_log_sink.h:108
+          // Source: drake/systems/primitives/vector_log_sink.h
           const char* doc =
 R"""(Access the log as a mutable object within this component's context.
 
@@ -3711,7 +3711,7 @@ Raises:
         } GetMutableLog;
         // Symbol: drake::systems::VectorLogSink::VectorLogSink<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/vector_log_sink.h:78
+          // Source: drake/systems/primitives/vector_log_sink.h
           const char* doc_2args =
 R"""(Constructs the vector log sink.
 
@@ -3734,7 +3734,7 @@ Precondition:
 See also:
     LogVectorOutput() helper function for a convenient way to add
     logging.)""";
-          // Source: drake/systems/primitives/vector_log_sink.h:95
+          // Source: drake/systems/primitives/vector_log_sink.h
           const char* doc_3args =
 R"""(Constructs the vector log sink with a specified set of publish
 triggers.
@@ -3763,14 +3763,14 @@ Precondition:
 See also:
     LogVectorOutput() helper function for a convenient way to add
     logging.)""";
-          // Source: drake/systems/primitives/vector_log_sink.h:100
+          // Source: drake/systems/primitives/vector_log_sink.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
       } VectorLogSink;
       // Symbol: drake::systems::WrapToSystem
       struct /* WrapToSystem */ {
-        // Source: drake/systems/primitives/wrap_to_system.h:31
+        // Source: drake/systems/primitives/wrap_to_system.h
         const char* doc =
 R"""(An element-wise wrapping block that transforms the specified indices
 of the input signal ``u`` into the interval ``[low, high)``.
@@ -3801,7 +3801,7 @@ desired interval.
     - y0)""";
         // Symbol: drake::systems::WrapToSystem::WrapToSystem<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/wrap_to_system.h:38
+          // Source: drake/systems/primitives/wrap_to_system.h
           const char* doc =
 R"""(Constructs a system to pass through a fixed-size input vector to the
 output. Additional calls to set_interval() are required to produce any
@@ -3809,12 +3809,12 @@ wrapping behavior.)""";
         } ctor;
         // Symbol: drake::systems::WrapToSystem::get_size
         struct /* get_size */ {
-          // Source: drake/systems/primitives/wrap_to_system.h:47
+          // Source: drake/systems/primitives/wrap_to_system.h
           const char* doc = R"""(Returns the size.)""";
         } get_size;
         // Symbol: drake::systems::WrapToSystem::set_interval
         struct /* set_interval */ {
-          // Source: drake/systems/primitives/wrap_to_system.h:44
+          // Source: drake/systems/primitives/wrap_to_system.h
           const char* doc =
 R"""(Sets the system to wrap the ``index`` element of the input vector to
 the interval ``[low, high)``. If this method is called multiple times
@@ -3824,7 +3824,7 @@ and ``high`` should be finite, and low < high.)""";
       } WrapToSystem;
       // Symbol: drake::systems::ZeroOrderHold
       struct /* ZeroOrderHold */ {
-        // Source: drake/systems/primitives/zero_order_hold.h:51
+        // Source: drake/systems/primitives/zero_order_hold.h
         const char* doc =
 R"""(A zero order hold block with input u, which may be vector-valued
 (discrete or continuous) or abstract, and discrete output y, where the
@@ -3876,7 +3876,7 @@ Note:
     not supported since AbstractValue does not support it.)""";
         // Symbol: drake::systems::ZeroOrderHold::LatchInputPortToState
         struct /* LatchInputPortToState */ {
-          // Source: drake/systems/primitives/zero_order_hold.h:93
+          // Source: drake/systems/primitives/zero_order_hold.h
           const char* doc =
 R"""((Advanced) Manually sample the input port and copy ("latch") the value
 into the state. This emulates an update event and is mostly useful for
@@ -3884,7 +3884,7 @@ testing.)""";
         } LatchInputPortToState;
         // Symbol: drake::systems::ZeroOrderHold::SetVectorState
         struct /* SetVectorState */ {
-          // Source: drake/systems/primitives/zero_order_hold.h:87
+          // Source: drake/systems/primitives/zero_order_hold.h
           const char* doc =
 R"""(Sets the value of the state by modifying it in the context. ``value``
 must be a column vector of the appropriate size. This can only be used
@@ -3892,31 +3892,31 @@ to initialize a vector-valued state.)""";
         } SetVectorState;
         // Symbol: drake::systems::ZeroOrderHold::ZeroOrderHold<T>
         struct /* ctor */ {
-          // Source: drake/systems/primitives/zero_order_hold.h:59
+          // Source: drake/systems/primitives/zero_order_hold.h
           const char* doc_3args_period_sec_vector_size_offset_sec =
 R"""(Constructs a ZeroOrderHold system with the given ``period_sec``, over
 a vector-valued input of size ``vector_size``. The default initial
 value for this system will be zero. The first update occurs at
 t=offset_sec, which must be >= 0.)""";
-          // Source: drake/systems/primitives/zero_order_hold.h:66
+          // Source: drake/systems/primitives/zero_order_hold.h
           const char* doc_3args_period_sec_abstract_model_value_offset_sec =
 R"""(Constructs a ZeroOrderHold system with the given ``period_sec``, over
 a abstract-valued input ``abstract_model_value``. The default initial
 value for this system will be ``abstract_model_value``. The first
 update occurs at t=offset_sec, which must be >= 0.)""";
-          // Source: drake/systems/primitives/zero_order_hold.h:74
+          // Source: drake/systems/primitives/zero_order_hold.h
           const char* doc_copyconvert =
 R"""(Scalar-type converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::systems::ZeroOrderHold::offset
         struct /* offset */ {
-          // Source: drake/systems/primitives/zero_order_hold.h:82
+          // Source: drake/systems/primitives/zero_order_hold.h
           const char* doc =
 R"""(Reports the first update time of this hold (in seconds).)""";
         } offset;
         // Symbol: drake::systems::ZeroOrderHold::period
         struct /* period */ {
-          // Source: drake/systems/primitives/zero_order_hold.h:79
+          // Source: drake/systems/primitives/zero_order_hold.h
           const char* doc =
 R"""(Reports the period of this hold (in seconds).)""";
         } period;
@@ -3925,7 +3925,7 @@ R"""(Reports the period of this hold (in seconds).)""";
       struct /* scalar_conversion */ {
         // Symbol: drake::systems::scalar_conversion::Traits
         struct /* Traits */ {
-          // Source: drake/systems/primitives/trajectory_source.h:96
+          // Source: drake/systems/primitives/trajectory_source.h
           const char* doc =
 R"""(Spells out the supported scalar conversions for TrajectorySource.)""";
         } Traits;

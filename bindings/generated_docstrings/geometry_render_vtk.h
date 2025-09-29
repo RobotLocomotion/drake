@@ -23,25 +23,25 @@ constexpr struct /* pydrake_doc_geometry_render_vtk */ {
     struct /* geometry */ {
       // Symbol: drake::geometry::EnvironmentMap
       struct /* EnvironmentMap */ {
-        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:43
+        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
         const char* doc = R"""()""";
         // Symbol: drake::geometry::EnvironmentMap::Serialize
         struct /* Serialize */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:47
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::geometry::EnvironmentMap::skybox
         struct /* skybox */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:54
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
           const char* doc =
 R"""(If true, the environment map will be rendered in a sky box. If false,
 it won't be visible in the background, but it will illuminate objects.)""";
         } skybox;
         // Symbol: drake::geometry::EnvironmentMap::texture
         struct /* texture */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:72
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
           const char* doc =
 R"""(The texture to use for the environment map. If none is defined, there
 is no environment map.
@@ -84,18 +84,18 @@ Note:
       } EnvironmentMap;
       // Symbol: drake::geometry::EquirectangularMap
       struct /* EquirectangularMap */ {
-        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:29
+        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
         const char* doc = R"""()""";
         // Symbol: drake::geometry::EquirectangularMap::Serialize
         struct /* Serialize */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:33
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::geometry::EquirectangularMap::path
         struct /* path */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:40
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
           const char* doc = R"""(The path to the map file.)""";
         } path;
         auto Serialize__fields() const {
@@ -106,21 +106,21 @@ Serialization" for background.)""";
       } EquirectangularMap;
       // Symbol: drake::geometry::GltfExtension
       struct /* GltfExtension */ {
-        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:78
+        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
         const char* doc =
 R"""(Specifies how to deal with glTF "extensions" (non-standard
 capabilities).
 https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#specifying-extensions)""";
         // Symbol: drake::geometry::GltfExtension::Serialize
         struct /* Serialize */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:82
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::geometry::GltfExtension::warn_unimplemented
         struct /* warn_unimplemented */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:90
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
           const char* doc =
 R"""(Whether to log a warning when this extension is used (i.e., is listed
 in ``extensionsUsed``) but isn't implemented by the render engine. By
@@ -135,7 +135,7 @@ can configure specific extensions to be quiet.)""";
       } GltfExtension;
       // Symbol: drake::geometry::MakeRenderEngineVtk
       struct /* MakeRenderEngineVtk */ {
-        // Source: drake/geometry/render_vtk/factory.h:87
+        // Source: drake/geometry/render_vtk/factory.h
         const char* doc =
 R"""(Constructs a RenderEngine implementation which uses a VTK-based OpenGL
 renderer.
@@ -216,13 +216,13 @@ e.g., render label validation).)""";
       } MakeRenderEngineVtk;
       // Symbol: drake::geometry::NullTexture
       struct /* NullTexture */ {
-        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:22
+        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
         const char* doc =
 R"""((Internal use only) A place holder indicating that no texture has been
 provided for environment map (and, therefore, no environment map).)""";
         // Symbol: drake::geometry::NullTexture::Serialize
         struct /* Serialize */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:26
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
@@ -230,19 +230,19 @@ Serialization" for background.)""";
       } NullTexture;
       // Symbol: drake::geometry::RenderEngineVtkParams
       struct /* RenderEngineVtkParams */ {
-        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:94
+        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
         const char* doc =
 R"""(Construction parameters for the RenderEngineVtk.)""";
         // Symbol: drake::geometry::RenderEngineVtkParams::Serialize
         struct /* Serialize */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:98
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::geometry::RenderEngineVtkParams::backend
         struct /* backend */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:258
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
           const char* doc =
 R"""(Controls which graphics library will be used to perform the rendering.
 
@@ -268,7 +268,7 @@ support this display.)""";
         } backend;
         // Symbol: drake::geometry::RenderEngineVtkParams::cast_shadows
         struct /* cast_shadows */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:205
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
           const char* doc =
 R"""(If ``True``, *all* lights that are *able* to cast shadows will do so.
 
@@ -295,7 +295,7 @@ basis.)""";
         } cast_shadows;
         // Symbol: drake::geometry::RenderEngineVtkParams::default_clear_color
         struct /* default_clear_color */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:119
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
           const char* doc =
 R"""(The rgb color to which the color buffer is cleared (each channel in
 the range [0, 1]). The default value (in byte values) would be [204,
@@ -303,7 +303,7 @@ the range [0, 1]). The default value (in byte values) would be [204,
         } default_clear_color;
         // Symbol: drake::geometry::RenderEngineVtkParams::default_diffuse
         struct /* default_diffuse */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:114
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
           const char* doc =
 R"""(The (optional) rgba color to apply to the (phong, diffuse) property
 when none is otherwise specified. Note: currently the alpha channel is
@@ -311,7 +311,7 @@ unused by RenderEngineVtk.)""";
         } default_diffuse;
         // Symbol: drake::geometry::RenderEngineVtkParams::environment_map
         struct /* environment_map */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:138
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
           const char* doc =
 R"""(An optional environment map. When providing the environment map, the
 render engine will be configured for physically-based rendering (PBR);
@@ -326,7 +326,7 @@ to combine with the environment map.)""";
         } environment_map;
         // Symbol: drake::geometry::RenderEngineVtkParams::exposure
         struct /* exposure */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:175
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
           const char* doc =
 R"""(Exposure is an aspect of "tone mapping" (as described in `VTK's
 description of its PBR capabilities
@@ -367,7 +367,7 @@ value if it seems "washed out".)""";
         } exposure;
         // Symbol: drake::geometry::RenderEngineVtkParams::force_to_pbr
         struct /* force_to_pbr */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:228
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
           const char* doc =
 R"""(RenderEngineVtk can use one of two illumination models: Phong or
 Physically based rendering (PBR). It defaults to Phong. However, it
@@ -384,14 +384,14 @@ rendered images even if literally nothing else changes.)""";
         } force_to_pbr;
         // Symbol: drake::geometry::RenderEngineVtkParams::gltf_extensions
         struct /* gltf_extensions */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:232
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
           const char* doc =
 R"""(Map from the name of a glTF extension (e.g., "KHR_materials_sheen") to
 render engine settings related to that extension.)""";
         } gltf_extensions;
         // Symbol: drake::geometry::RenderEngineVtkParams::lights
         struct /* lights */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:127
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
           const char* doc =
 R"""(Lights in the scene. If no lights are defined, a single directional
 light, fixed to the camera frame, is used.
@@ -402,7 +402,7 @@ attenuation values have no effect on VTK *directional* lights.)""";
         } lights;
         // Symbol: drake::geometry::RenderEngineVtkParams::shadow_map_size
         struct /* shadow_map_size */ {
-          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h:214
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
           const char* doc =
 R"""(The size of texture map (in pixels) to use for shadow maps. Note: this
 is a *global* setting. All shadow casting lights will use a map of the

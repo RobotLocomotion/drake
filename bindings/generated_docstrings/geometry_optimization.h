@@ -48,7 +48,7 @@ constexpr struct /* pydrake_doc_geometry_optimization */ {
       struct /* optimization */ {
         // Symbol: drake::geometry::optimization::AffineBall
         struct /* AffineBall */ {
-          // Source: drake/geometry/optimization/affine_ball.h:32
+          // Source: drake/geometry/optimization/affine_ball.h
           const char* doc =
 R"""(Implements an ellipsoidal convex set represented as an affine scaling
 of the unit ball {Bu + center | |u|₂ ≤ 1}. B must be a square matrix.
@@ -67,10 +67,10 @@ An AffineBall can never be empty -- it always contains its center.
 This includes the zero-dimensional case.)""";
           // Symbol: drake::geometry::optimization::AffineBall::AffineBall
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/affine_ball.h:37
+            // Source: drake/geometry/optimization/affine_ball.h
             const char* doc_0args =
 R"""(Constructs a default (zero-dimensional, nonempty) set.)""";
-            // Source: drake/geometry/optimization/affine_ball.h:45
+            // Source: drake/geometry/optimization/affine_ball.h
             const char* doc_2args =
 R"""(Constructs the ellipsoid from a transformation matrix B and
 translation center. B describes the linear transformation that is
@@ -83,7 +83,7 @@ Precondition:
 
 Precondition:
     B.cols() == center.size().)""";
-            // Source: drake/geometry/optimization/affine_ball.h:50
+            // Source: drake/geometry/optimization/affine_ball.h
             const char* doc_1args =
 R"""(Constructs an AffineBall from a Hyperellipsoid.
 
@@ -92,13 +92,13 @@ Precondition:
           } ctor;
           // Symbol: drake::geometry::optimization::AffineBall::B
           struct /* B */ {
-            // Source: drake/geometry/optimization/affine_ball.h:55
+            // Source: drake/geometry/optimization/affine_ball.h
             const char* doc =
 R"""(Returns the affine transformation matrix B.)""";
           } B;
           // Symbol: drake::geometry::optimization::AffineBall::MakeAffineBallFromLineSegment
           struct /* MakeAffineBallFromLineSegment */ {
-            // Source: drake/geometry/optimization/affine_ball.h:106
+            // Source: drake/geometry/optimization/affine_ball.h
             const char* doc =
 R"""(Constructs an affine ball such that its main diameter is the line
 segment from ``x_1`` to ``x_2``, and the length of all other diameters
@@ -115,7 +115,7 @@ Raises:
           } MakeAffineBallFromLineSegment;
           // Symbol: drake::geometry::optimization::AffineBall::MakeAxisAligned
           struct /* MakeAxisAligned */ {
-            // Source: drake/geometry/optimization/affine_ball.h:65
+            // Source: drake/geometry/optimization/affine_ball.h
             const char* doc =
 R"""(Constructs an axis-aligned AffineBall with the implicit form
 (x₀-c₀)²/r₀² + (x₁-c₁)²/r₁² + ... + (x_N - c_N)²/r_N² ≤ 1, where c is
@@ -129,7 +129,7 @@ Precondition:
           } MakeAxisAligned;
           // Symbol: drake::geometry::optimization::AffineBall::MakeHypersphere
           struct /* MakeHypersphere */ {
-            // Source: drake/geometry/optimization/affine_ball.h:71
+            // Source: drake/geometry/optimization/affine_ball.h
             const char* doc =
 R"""(Constructs a hypersphere with ``radius`` and ``center``.
 
@@ -138,7 +138,7 @@ Precondition:
           } MakeHypersphere;
           // Symbol: drake::geometry::optimization::AffineBall::MakeUnitBall
           struct /* MakeUnitBall */ {
-            // Source: drake/geometry/optimization/affine_ball.h:76
+            // Source: drake/geometry/optimization/affine_ball.h
             const char* doc =
 R"""(Constructs the L₂-norm unit ball in ``dim`` dimensions, {x | |x|₂ <= 1
 }.
@@ -148,7 +148,7 @@ Precondition:
           } MakeUnitBall;
           // Symbol: drake::geometry::optimization::AffineBall::MinimumVolumeCircumscribedEllipsoid
           struct /* MinimumVolumeCircumscribedEllipsoid */ {
-            // Source: drake/geometry/optimization/affine_ball.h:97
+            // Source: drake/geometry/optimization/affine_ball.h
             const char* doc =
 R"""(Constructs the minimum-volume ellipsoid which contains all of the
 given points. This is commonly referred to as the outer Löwner-John
@@ -186,20 +186,20 @@ Precondition:
           } MinimumVolumeCircumscribedEllipsoid;
           // Symbol: drake::geometry::optimization::AffineBall::Serialize
           struct /* Serialize */ {
-            // Source: drake/geometry/optimization/affine_ball.h:114
+            // Source: drake/geometry/optimization/affine_ball.h
             const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
           } Serialize;
           // Symbol: drake::geometry::optimization::AffineBall::center
           struct /* center */ {
-            // Source: drake/geometry/optimization/affine_ball.h:58
+            // Source: drake/geometry/optimization/affine_ball.h
             const char* doc = R"""(Returns the center of the ellipsoid.)""";
           } center;
         } AffineBall;
         // Symbol: drake::geometry::optimization::AffineSubspace
         struct /* AffineSubspace */ {
-          // Source: drake/geometry/optimization/affine_subspace.h:30
+          // Source: drake/geometry/optimization/affine_subspace.h
           const char* doc =
 R"""(An affine subspace (also known as a "flat", a "linear variety", or a
 "linear manifold") is a vector subspace of some Euclidean space,
@@ -218,7 +218,7 @@ flat. An affine subspace is bounded if it is a point, which is when
 the basis has zero columns.)""";
           // Symbol: drake::geometry::optimization::AffineSubspace::AffineDimension
           struct /* AffineDimension */ {
-            // Source: drake/geometry/optimization/affine_subspace.h:103
+            // Source: drake/geometry/optimization/affine_subspace.h
             const char* doc =
 R"""(Returns the affine dimension of this set. For an affine subspace, this
 is simply the number of columns in the basis_ matrix. A point will
@@ -226,10 +226,10 @@ have affine dimension zero.)""";
           } AffineDimension;
           // Symbol: drake::geometry::optimization::AffineSubspace::AffineSubspace
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/affine_subspace.h:35
+            // Source: drake/geometry/optimization/affine_subspace.h
             const char* doc_0args =
 R"""(Constructs a default (zero-dimensional, nonempty) affine subspace.)""";
-            // Source: drake/geometry/optimization/affine_subspace.h:42
+            // Source: drake/geometry/optimization/affine_subspace.h
             const char* doc_2args_basis_translation =
 R"""(Constructs the affine subspace from an n-by-m matrix describing the
 basis, where n is the ambient dimension, and m is the dimension of the
@@ -239,7 +239,7 @@ linearly independent.
 
 Precondition:
     basis.rows() == translation.size().)""";
-            // Source: drake/geometry/optimization/affine_subspace.h:79
+            // Source: drake/geometry/optimization/affine_subspace.h
             const char* doc_2args_set_tol =
 R"""(Constructs an affine subspace as the affine hull of another convex
 set. The generic approach is to find a feasible point in the set, and
@@ -284,7 +284,7 @@ computation.)""";
           } ctor;
           // Symbol: drake::geometry::optimization::AffineSubspace::ContainedIn
           struct /* ContainedIn */ {
-            // Source: drake/geometry/optimization/affine_subspace.h:137
+            // Source: drake/geometry/optimization/affine_subspace.h
             const char* doc =
 R"""(Returns ``True`` if ``this`` AffineSubspace is contained in ``other``.
 This is computed by checking if ``translation()`` is in ``other`` and
@@ -296,28 +296,28 @@ your space and the scale of your basis vectors.))""";
           } ContainedIn;
           // Symbol: drake::geometry::optimization::AffineSubspace::IsNearlyEqualTo
           struct /* IsNearlyEqualTo */ {
-            // Source: drake/geometry/optimization/affine_subspace.h:141
+            // Source: drake/geometry/optimization/affine_subspace.h
             const char* doc =
 R"""(Returns true if the two AffineSubspaces describe the same set, by
 checking that each set is contained in the other.)""";
           } IsNearlyEqualTo;
           // Symbol: drake::geometry::optimization::AffineSubspace::OrthogonalComplementBasis
           struct /* OrthogonalComplementBasis */ {
-            // Source: drake/geometry/optimization/affine_subspace.h:145
+            // Source: drake/geometry/optimization/affine_subspace.h
             const char* doc =
 R"""(Returns an orthonormal basis of the vector subspace which is
 orthogonal to this AffineSubspace.)""";
           } OrthogonalComplementBasis;
           // Symbol: drake::geometry::optimization::AffineSubspace::Serialize
           struct /* Serialize */ {
-            // Source: drake/geometry/optimization/affine_subspace.h:94
+            // Source: drake/geometry/optimization/affine_subspace.h
             const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
           } Serialize;
           // Symbol: drake::geometry::optimization::AffineSubspace::ToGlobalCoordinates
           struct /* ToGlobalCoordinates */ {
-            // Source: drake/geometry/optimization/affine_subspace.h:127
+            // Source: drake/geometry/optimization/affine_subspace.h
             const char* doc =
 R"""(Given a point y in the basis of the AffineSubspace, with the zero
 point at translation_, returns the coordinates of y in the standard
@@ -333,7 +333,7 @@ Precondition:
           } ToGlobalCoordinates;
           // Symbol: drake::geometry::optimization::AffineSubspace::ToLocalCoordinates
           struct /* ToLocalCoordinates */ {
-            // Source: drake/geometry/optimization/affine_subspace.h:115
+            // Source: drake/geometry/optimization/affine_subspace.h
             const char* doc =
 R"""(Given a point x in the standard basis of the ambient space, returns
 the coordinates of x in the basis of the AffineSubspace, with the zero
@@ -351,21 +351,21 @@ Precondition:
           } ToLocalCoordinates;
           // Symbol: drake::geometry::optimization::AffineSubspace::basis
           struct /* basis */ {
-            // Source: drake/geometry/optimization/affine_subspace.h:86
+            // Source: drake/geometry/optimization/affine_subspace.h
             const char* doc =
 R"""(Returns the basis in an n-by-m matrix, where n is the ambient
 dimension, and m is the number of vectors in the basis.)""";
           } basis;
           // Symbol: drake::geometry::optimization::AffineSubspace::translation
           struct /* translation */ {
-            // Source: drake/geometry/optimization/affine_subspace.h:89
+            // Source: drake/geometry/optimization/affine_subspace.h
             const char* doc =
 R"""(Returns the translation as a length n vector.)""";
           } translation;
         } AffineSubspace;
         // Symbol: drake::geometry::optimization::CIrisCollisionGeometry
         struct /* CIrisCollisionGeometry */ {
-          // Source: drake/geometry/optimization/c_iris_collision_geometry.h:40
+          // Source: drake/geometry/optimization/c_iris_collision_geometry.h
           const char* doc =
 R"""(This class contains the necessary information about the collision
 geometry used in C-IRIS. Most notably it transcribes the geometric
@@ -376,7 +376,7 @@ Configuration Space by Hongkai Dai*, Alexandre Amice*, Peter Werner,
 Annan Zhang and Russ Tedrake.)""";
           // Symbol: drake::geometry::optimization::CIrisCollisionGeometry::CIrisCollisionGeometry
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/c_iris_collision_geometry.h:51
+            // Source: drake/geometry/optimization/c_iris_collision_geometry.h
             const char* doc =
 R"""(Parameter ``geometry``:
     The actual geometry object. ``geometry`` must outlive this
@@ -393,7 +393,7 @@ Parameter ``X_BG``:
           } ctor;
           // Symbol: drake::geometry::optimization::CIrisCollisionGeometry::OnPlaneSide
           struct /* OnPlaneSide */ {
-            // Source: drake/geometry/optimization/c_iris_collision_geometry.h:104
+            // Source: drake/geometry/optimization/c_iris_collision_geometry.h
             const char* doc =
 R"""(Impose the constraint that the geometry is on a given side of the
 plane {x | aᵀx+b=0}.
@@ -448,66 +448,66 @@ Precondition:
           } OnPlaneSide;
           // Symbol: drake::geometry::optimization::CIrisCollisionGeometry::X_BG
           struct /* X_BG */ {
-            // Source: drake/geometry/optimization/c_iris_collision_geometry.h:60
+            // Source: drake/geometry/optimization/c_iris_collision_geometry.h
             const char* doc = R"""()""";
           } X_BG;
           // Symbol: drake::geometry::optimization::CIrisCollisionGeometry::body_index
           struct /* body_index */ {
-            // Source: drake/geometry/optimization/c_iris_collision_geometry.h:56
+            // Source: drake/geometry/optimization/c_iris_collision_geometry.h
             const char* doc = R"""()""";
           } body_index;
           // Symbol: drake::geometry::optimization::CIrisCollisionGeometry::geometry
           struct /* geometry */ {
-            // Source: drake/geometry/optimization/c_iris_collision_geometry.h:54
+            // Source: drake/geometry/optimization/c_iris_collision_geometry.h
             const char* doc = R"""()""";
           } geometry;
           // Symbol: drake::geometry::optimization::CIrisCollisionGeometry::id
           struct /* id */ {
-            // Source: drake/geometry/optimization/c_iris_collision_geometry.h:58
+            // Source: drake/geometry/optimization/c_iris_collision_geometry.h
             const char* doc = R"""()""";
           } id;
           // Symbol: drake::geometry::optimization::CIrisCollisionGeometry::num_rationals
           struct /* num_rationals */ {
-            // Source: drake/geometry/optimization/c_iris_collision_geometry.h:118
+            // Source: drake/geometry/optimization/c_iris_collision_geometry.h
             const char* doc =
 R"""(Returns the number of rationals in the condition "this geometry is on
 one side of the plane.")""";
           } num_rationals;
           // Symbol: drake::geometry::optimization::CIrisCollisionGeometry::type
           struct /* type */ {
-            // Source: drake/geometry/optimization/c_iris_collision_geometry.h:112
+            // Source: drake/geometry/optimization/c_iris_collision_geometry.h
             const char* doc = R"""()""";
           } type;
         } CIrisCollisionGeometry;
         // Symbol: drake::geometry::optimization::CIrisGeometryType
         struct /* CIrisGeometryType */ {
-          // Source: drake/geometry/optimization/c_iris_collision_geometry.h:18
+          // Source: drake/geometry/optimization/c_iris_collision_geometry.h
           const char* doc =
 R"""(The supported type of geometries in C-IRIS.)""";
           // Symbol: drake::geometry::optimization::CIrisGeometryType::kCapsule
           struct /* kCapsule */ {
-            // Source: drake/geometry/optimization/c_iris_collision_geometry.h:22
+            // Source: drake/geometry/optimization/c_iris_collision_geometry.h
             const char* doc = R"""()""";
           } kCapsule;
           // Symbol: drake::geometry::optimization::CIrisGeometryType::kCylinder
           struct /* kCylinder */ {
-            // Source: drake/geometry/optimization/c_iris_collision_geometry.h:21
+            // Source: drake/geometry/optimization/c_iris_collision_geometry.h
             const char* doc = R"""()""";
           } kCylinder;
           // Symbol: drake::geometry::optimization::CIrisGeometryType::kPolytope
           struct /* kPolytope */ {
-            // Source: drake/geometry/optimization/c_iris_collision_geometry.h:20
+            // Source: drake/geometry/optimization/c_iris_collision_geometry.h
             const char* doc = R"""()""";
           } kPolytope;
           // Symbol: drake::geometry::optimization::CIrisGeometryType::kSphere
           struct /* kSphere */ {
-            // Source: drake/geometry/optimization/c_iris_collision_geometry.h:19
+            // Source: drake/geometry/optimization/c_iris_collision_geometry.h
             const char* doc = R"""()""";
           } kSphere;
         } CIrisGeometryType;
         // Symbol: drake::geometry::optimization::CSpaceSeparatingPlane
         struct /* CSpaceSeparatingPlane */ {
-          // Source: drake/geometry/optimization/cspace_separating_plane.h:45
+          // Source: drake/geometry/optimization/cspace_separating_plane.h
           const char* doc =
 R"""(Wraps the information that a pair of collision geometries are
 separated by a plane. One collision geometry is on the "positive" side
@@ -519,59 +519,59 @@ Template parameter ``T``:
     The type of decision_variables. T= symbolic::Variable or double.)""";
           // Symbol: drake::geometry::optimization::CSpaceSeparatingPlane::CSpaceSeparatingPlane<T>
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/cspace_separating_plane.h:47
+            // Source: drake/geometry/optimization/cspace_separating_plane.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::geometry::optimization::CSpaceSeparatingPlane::a
           struct /* a */ {
-            // Source: drake/geometry/optimization/cspace_separating_plane.h:75
+            // Source: drake/geometry/optimization/cspace_separating_plane.h
             const char* doc = R"""()""";
           } a;
           // Symbol: drake::geometry::optimization::CSpaceSeparatingPlane::b
           struct /* b */ {
-            // Source: drake/geometry/optimization/cspace_separating_plane.h:76
+            // Source: drake/geometry/optimization/cspace_separating_plane.h
             const char* doc = R"""()""";
           } b;
           // Symbol: drake::geometry::optimization::CSpaceSeparatingPlane::decision_variables
           struct /* decision_variables */ {
-            // Source: drake/geometry/optimization/cspace_separating_plane.h:81
+            // Source: drake/geometry/optimization/cspace_separating_plane.h
             const char* doc = R"""()""";
           } decision_variables;
           // Symbol: drake::geometry::optimization::CSpaceSeparatingPlane::expressed_body
           struct /* expressed_body */ {
-            // Source: drake/geometry/optimization/cspace_separating_plane.h:79
+            // Source: drake/geometry/optimization/cspace_separating_plane.h
             const char* doc = R"""()""";
           } expressed_body;
           // Symbol: drake::geometry::optimization::CSpaceSeparatingPlane::geometry
           struct /* geometry */ {
-            // Source: drake/geometry/optimization/cspace_separating_plane.h:64
+            // Source: drake/geometry/optimization/cspace_separating_plane.h
             const char* doc =
 R"""(Return the geometry on the specified side.)""";
           } geometry;
           // Symbol: drake::geometry::optimization::CSpaceSeparatingPlane::geometry_pair
           struct /* geometry_pair */ {
-            // Source: drake/geometry/optimization/cspace_separating_plane.h:70
+            // Source: drake/geometry/optimization/cspace_separating_plane.h
             const char* doc = R"""()""";
           } geometry_pair;
           // Symbol: drake::geometry::optimization::CSpaceSeparatingPlane::negative_side_geometry
           struct /* negative_side_geometry */ {
-            // Source: drake/geometry/optimization/cspace_separating_plane.h:78
+            // Source: drake/geometry/optimization/cspace_separating_plane.h
             const char* doc = R"""()""";
           } negative_side_geometry;
           // Symbol: drake::geometry::optimization::CSpaceSeparatingPlane::plane_degree
           struct /* plane_degree */ {
-            // Source: drake/geometry/optimization/cspace_separating_plane.h:80
+            // Source: drake/geometry/optimization/cspace_separating_plane.h
             const char* doc = R"""()""";
           } plane_degree;
           // Symbol: drake::geometry::optimization::CSpaceSeparatingPlane::positive_side_geometry
           struct /* positive_side_geometry */ {
-            // Source: drake/geometry/optimization/cspace_separating_plane.h:77
+            // Source: drake/geometry/optimization/cspace_separating_plane.h
             const char* doc = R"""()""";
           } positive_side_geometry;
         } CSpaceSeparatingPlane;
         // Symbol: drake::geometry::optimization::CalcPlane
         struct /* CalcPlane */ {
-          // Source: drake/geometry/optimization/cspace_separating_plane.h:113
+          // Source: drake/geometry/optimization/cspace_separating_plane.h
           const char* doc =
 R"""(Computes the parameters a, b in the plane { x | aᵀx+b=0 }. a and b are
 both polynomials of ``vars_for_plane``. The coefficients of these
@@ -586,7 +586,7 @@ Template parameter ``D``:
         } CalcPlane;
         // Symbol: drake::geometry::optimization::CartesianProduct
         struct /* CartesianProduct */ {
-          // Source: drake/geometry/optimization/cartesian_product.h:32
+          // Source: drake/geometry/optimization/cartesian_product.h
           const char* doc =
 R"""(The Cartesian product of convex sets is a convex set: S = X₁ × X₂ × ⋯
 × Xₙ = {(x₁, x₂, ..., xₙ) | x₁ ∈ X₁, x₂ ∈ X₂, ..., xₙ ∈ Xₙ}.
@@ -605,30 +605,30 @@ Otherwise, if any set in the cartesian product is empty, the whole
 product is empty.)""";
           // Symbol: drake::geometry::optimization::CartesianProduct::A
           struct /* A */ {
-            // Source: drake/geometry/optimization/cartesian_product.h:78
+            // Source: drake/geometry/optimization/cartesian_product.h
             const char* doc =
 R"""(Returns a copy of the matrix A if it has been set, or nullopt
 otherwise.)""";
           } A;
           // Symbol: drake::geometry::optimization::CartesianProduct::CartesianProduct
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/cartesian_product.h:37
+            // Source: drake/geometry/optimization/cartesian_product.h
             const char* doc_0args =
 R"""(Constructs a default (zero-dimensional, nonempty) set.)""";
-            // Source: drake/geometry/optimization/cartesian_product.h:40
+            // Source: drake/geometry/optimization/cartesian_product.h
             const char* doc_1args_sets =
 R"""(Constructs the product from a vector of convex sets.)""";
-            // Source: drake/geometry/optimization/cartesian_product.h:43
+            // Source: drake/geometry/optimization/cartesian_product.h
             const char* doc_2args_setA_setB =
 R"""(Constructs the product from a pair of convex sets.)""";
-            // Source: drake/geometry/optimization/cartesian_product.h:48
+            // Source: drake/geometry/optimization/cartesian_product.h
             const char* doc_3args_sets_A_b =
 R"""(Constructs the product of convex sets in the transformed coordinates:
 {x | y = Ax + b, y ∈ Y₁ × Y₂ × ⋯ × Yₙ}.
 
 Raises:
     RuntimeError when ``A`` is not full column rank.)""";
-            // Source: drake/geometry/optimization/cartesian_product.h:63
+            // Source: drake/geometry/optimization/cartesian_product.h
             const char* doc_3args_query_object_geometry_id_reference_frame =
 R"""(Constructs a CartesianProduct from a SceneGraph geometry and pose in
 the ``reference_frame`` frame, obtained via the QueryObject. If
@@ -647,28 +647,28 @@ Raises:
           } ctor;
           // Symbol: drake::geometry::optimization::CartesianProduct::b
           struct /* b */ {
-            // Source: drake/geometry/optimization/cartesian_product.h:82
+            // Source: drake/geometry/optimization/cartesian_product.h
             const char* doc =
 R"""(Returns a copy of the vector b if it has been set, or nullopt
 otherwise.)""";
           } b;
           // Symbol: drake::geometry::optimization::CartesianProduct::factor
           struct /* factor */ {
-            // Source: drake/geometry/optimization/cartesian_product.h:74
+            // Source: drake/geometry/optimization/cartesian_product.h
             const char* doc =
 R"""(Returns a reference to the ConvexSet defining the ``index`` factor in
 the product.)""";
           } factor;
           // Symbol: drake::geometry::optimization::CartesianProduct::num_factors
           struct /* num_factors */ {
-            // Source: drake/geometry/optimization/cartesian_product.h:70
+            // Source: drake/geometry/optimization/cartesian_product.h
             const char* doc =
 R"""(The number of factors (or sets) used in the product.)""";
           } num_factors;
         } CartesianProduct;
         // Symbol: drake::geometry::optimization::CheckIfSatisfiesConvexityRadius
         struct /* CheckIfSatisfiesConvexityRadius */ {
-          // Source: drake/geometry/optimization/geodesic_convexity.h:88
+          // Source: drake/geometry/optimization/geodesic_convexity.h
           const char* doc =
 R"""(Given a convex set, and a list of indices corresponding to continuous
 revolute joints, checks whether or not the set satisfies the convexity
@@ -685,7 +685,7 @@ Raises:
         } CheckIfSatisfiesConvexityRadius;
         // Symbol: drake::geometry::optimization::ComputePairwiseIntersections
         struct /* ComputePairwiseIntersections */ {
-          // Source: drake/geometry/optimization/geodesic_convexity.h:163
+          // Source: drake/geometry/optimization/geodesic_convexity.h
           const char* doc_5args_convex_sets_A_convex_sets_B_continuous_revolute_joints_preprocess_bbox_parallelism =
 R"""(Computes the pairwise intersections between two lists of convex sets,
 returning a list of edges, and a list of their corresponding offsets.
@@ -731,7 +731,7 @@ Raises:
 
 Raises:
     if ``convex_sets_A`` or ``convex_sets_B`` are empty.)""";
-          // Source: drake/geometry/optimization/geodesic_convexity.h:185
+          // Source: drake/geometry/optimization/geodesic_convexity.h
           const char* doc_6args_convex_sets_A_convex_sets_B_continuous_revolute_joints_bboxes_A_bboxes_B_parallelism =
 R"""(Overload of ``ComputePairwiseIntersections`` allowing the user to
 supply axis- aligned bounding boxes if they're known a priori, to save
@@ -760,7 +760,7 @@ Raises:
 Raises:
     if not all entries of ``convex_sets_A``, `convex_sets_B`,
     ``bboxes_A``, and ``bboxes_B`` have the same ambient dimension.)""";
-          // Source: drake/geometry/optimization/geodesic_convexity.h:212
+          // Source: drake/geometry/optimization/geodesic_convexity.h
           const char* doc_4args_convex_sets_continuous_revolute_joints_preprocess_bbox_parallelism =
 R"""(Convenience overload to compute pairwise intersections within a list
 of convex sets. Equivalent to calling
@@ -792,7 +792,7 @@ Raises:
 
 Raises:
     if ``convex_sets`` is empty.)""";
-          // Source: drake/geometry/optimization/geodesic_convexity.h:230
+          // Source: drake/geometry/optimization/geodesic_convexity.h
           const char* doc_4args_convex_sets_continuous_revolute_joints_bboxes_parallelism =
 R"""(Overload of ``ComputePairwiseIntersections`` allowing the user to
 supply axis- aligned bounding boxes if they're known a priori, to save
@@ -816,7 +816,7 @@ Raises:
         } ComputePairwiseIntersections;
         // Symbol: drake::geometry::optimization::ConvexHull
         struct /* ConvexHull */ {
-          // Source: drake/geometry/optimization/convex_hull.h:20
+          // Source: drake/geometry/optimization/convex_hull.h
           const char* doc =
 R"""(Implements the convex hull of a set of convex sets. The convex hull of
 multiple sets is defined as the smallest convex set that contains all
@@ -825,7 +825,7 @@ hull is the set of all convex combinations of points in the sets, i.e.
 {∑ᵢ λᵢ xᵢ | xᵢ ∈ Xᵢ, λᵢ ≥ 0, ∑ᵢ λᵢ = 1}.)""";
           // Symbol: drake::geometry::optimization::ConvexHull::ConvexHull
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/convex_hull.h:34
+            // Source: drake/geometry/optimization/convex_hull.h
             const char* doc =
 R"""(Constructs the convex hull from a vector of convex sets.
 
@@ -845,27 +845,27 @@ Warning:
           } ctor;
           // Symbol: drake::geometry::optimization::ConvexHull::element
           struct /* element */ {
-            // Source: drake/geometry/optimization/convex_hull.h:52
+            // Source: drake/geometry/optimization/convex_hull.h
             const char* doc =
 R"""(Returns a reference to the convex set at the given index (including
 empty sets).)""";
           } element;
           // Symbol: drake::geometry::optimization::ConvexHull::empty_sets_removed
           struct /* empty_sets_removed */ {
-            // Source: drake/geometry/optimization/convex_hull.h:48
+            // Source: drake/geometry/optimization/convex_hull.h
             const char* doc =
 R"""(Returns true if ``this`` was constructed with remove_empty_sets=true.)""";
           } empty_sets_removed;
           // Symbol: drake::geometry::optimization::ConvexHull::num_elements
           struct /* num_elements */ {
-            // Source: drake/geometry/optimization/convex_hull.h:56
+            // Source: drake/geometry/optimization/convex_hull.h
             const char* doc =
 R"""(Returns the number of convex sets defining the convex hull (including
 empty sets).)""";
           } num_elements;
           // Symbol: drake::geometry::optimization::ConvexHull::participating_sets
           struct /* participating_sets */ {
-            // Source: drake/geometry/optimization/convex_hull.h:45
+            // Source: drake/geometry/optimization/convex_hull.h
             const char* doc =
 R"""(Returns the participating sets in the convex hull. If the constructor
 was called with remove_empty_sets=false, this function will return the
@@ -873,18 +873,18 @@ original sets, including potentially empty sets.)""";
           } participating_sets;
           // Symbol: drake::geometry::optimization::ConvexHull::sets
           struct /* sets */ {
-            // Source: drake/geometry/optimization/convex_hull.h:40
+            // Source: drake/geometry/optimization/convex_hull.h
             const char* doc = R"""(Returns the participating convex sets.)""";
           } sets;
         } ConvexHull;
         // Symbol: drake::geometry::optimization::ConvexSet
         struct /* ConvexSet */ {
-          // Source: drake/geometry/optimization/convex_set.h:72
+          // Source: drake/geometry/optimization/convex_set.h
           const char* doc =
 R"""(Abstract base class for defining a convex set.)""";
           // Symbol: drake::geometry::optimization::ConvexSet::AddPointInNonnegativeScalingConstraints
           struct /* AddPointInNonnegativeScalingConstraints */ {
-            // Source: drake/geometry/optimization/convex_set.h:213
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc_3args =
 R"""(Let S be this convex set. When S is bounded, this method adds the
 convex constraints to imply
@@ -914,7 +914,7 @@ equivalent to x ∈ t S, but for t = 0, we have only x ∈ rec(S).
 
 Raises:
     RuntimeError if ambient_dimension() == 0)""";
-            // Source: drake/geometry/optimization/convex_set.h:239
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc_7args =
 R"""(Let S be this convex set. When S is bounded, this method adds the
 convex constraints to imply
@@ -964,7 +964,7 @@ Raises:
           } AddPointInNonnegativeScalingConstraints;
           // Symbol: drake::geometry::optimization::ConvexSet::AddPointInSetConstraints
           struct /* AddPointInSetConstraints */ {
-            // Source: drake/geometry/optimization/convex_set.h:193
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Adds a constraint to an existing MathematicalProgram enforcing that
 the point defined by vars is inside the set.
@@ -983,7 +983,7 @@ Raises:
           } AddPointInSetConstraints;
           // Symbol: drake::geometry::optimization::ConvexSet::AffineHullShortcut
           struct /* AffineHullShortcut */ {
-            // Source: drake/geometry/optimization/convex_set.h:486
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(When there is a more efficient strategy to compute the affine hull of
 this set, returns affine hull as an AffineSubspace. When no efficient
@@ -997,7 +997,7 @@ the AffineSubspace as its runtime type.)""";
           } AffineHullShortcut;
           // Symbol: drake::geometry::optimization::ConvexSet::CalcVolume
           struct /* CalcVolume */ {
-            // Source: drake/geometry/optimization/convex_set.h:265
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Computes the exact volume for the convex set.
 
@@ -1013,7 +1013,7 @@ Raises:
           } CalcVolume;
           // Symbol: drake::geometry::optimization::ConvexSet::CalcVolumeViaSampling
           struct /* CalcVolumeViaSampling */ {
-            // Source: drake/geometry/optimization/convex_set.h:288
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Calculates an estimate of the volume of the convex set using sampling
 and performing Monte Carlo integration.
@@ -1056,12 +1056,12 @@ Raises:
           } CalcVolumeViaSampling;
           // Symbol: drake::geometry::optimization::ConvexSet::Clone
           struct /* Clone */ {
-            // Source: drake/geometry/optimization/convex_set.h:77
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc = R"""(Creates a unique deep copy of this set.)""";
           } Clone;
           // Symbol: drake::geometry::optimization::ConvexSet::ConvexSet
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/convex_set.h:313
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(For use by derived classes to construct a ConvexSet.
 
@@ -1071,7 +1071,7 @@ Parameter ``has_exact_volume``:
           } ctor;
           // Symbol: drake::geometry::optimization::ConvexSet::DoAddPointInNonnegativeScalingConstraints
           struct /* DoAddPointInNonnegativeScalingConstraints */ {
-            // Source: drake/geometry/optimization/convex_set.h:431
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc_3args =
 R"""(Non-virtual interface implementation for
 AddPointInNonnegativeScalingConstraints().
@@ -1081,7 +1081,7 @@ Precondition:
 
 Precondition:
     ambient_dimension() > 0)""";
-            // Source: drake/geometry/optimization/convex_set.h:447
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc_7args =
 R"""(Non-virtual interface implementation for
 AddPointInNonnegativeScalingConstraints(). Subclasses must override to
@@ -1106,7 +1106,7 @@ Precondition:
           } DoAddPointInNonnegativeScalingConstraints;
           // Symbol: drake::geometry::optimization::ConvexSet::DoAddPointInSetConstraints
           struct /* DoAddPointInSetConstraints */ {
-            // Source: drake/geometry/optimization/convex_set.h:422
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Non-virtual interface implementation for AddPointInSetConstraints().
 
@@ -1118,7 +1118,7 @@ Precondition:
           } DoAddPointInSetConstraints;
           // Symbol: drake::geometry::optimization::ConvexSet::DoAffineHullShortcut
           struct /* DoAffineHullShortcut */ {
-            // Source: drake/geometry/optimization/convex_set.h:491
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(NVI implementation of DoAffineHullShortcut, which trivially returns
 null. Derived classes that have efficient algorithms should override
@@ -1126,7 +1126,7 @@ this method.)""";
           } DoAffineHullShortcut;
           // Symbol: drake::geometry::optimization::ConvexSet::DoCalcVolume
           struct /* DoCalcVolume */ {
-            // Source: drake/geometry/optimization/convex_set.h:462
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Non-virtual interface implementation for CalcVolume(). This will
 *only* be called if has_exact_volume() returns true and
@@ -1134,13 +1134,13 @@ ambient_dimension() > 0)""";
           } DoCalcVolume;
           // Symbol: drake::geometry::optimization::ConvexSet::DoClone
           struct /* DoClone */ {
-            // Source: drake/geometry/optimization/convex_set.h:324
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Non-virtual interface implementation for Clone().)""";
           } DoClone;
           // Symbol: drake::geometry::optimization::ConvexSet::DoIsBoundedShortcut
           struct /* DoIsBoundedShortcut */ {
-            // Source: drake/geometry/optimization/convex_set.h:330
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Non-virtual interface implementation for DoIsBoundedShortcut().
 Trivially returns std::nullopt. This allows a derived class to
@@ -1152,7 +1152,7 @@ Precondition:
           } DoIsBoundedShortcut;
           // Symbol: drake::geometry::optimization::ConvexSet::DoIsBoundedShortcutParallel
           struct /* DoIsBoundedShortcutParallel */ {
-            // Source: drake/geometry/optimization/convex_set.h:339
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Non-virtual interface implementation for
 DoIsBoundedShortcutParallel(). Trivially returns std::nullopt. This
@@ -1165,7 +1165,7 @@ Precondition:
           } DoIsBoundedShortcutParallel;
           // Symbol: drake::geometry::optimization::ConvexSet::DoIsEmpty
           struct /* DoIsEmpty */ {
-            // Source: drake/geometry/optimization/convex_set.h:377
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Non-virtual interface implementation for IsEmpty(). The default
 implementation solves a feasibility optimization problem, but derived
@@ -1176,7 +1176,7 @@ their derived implementation of DoIsEmpty.)""";
           } DoIsEmpty;
           // Symbol: drake::geometry::optimization::ConvexSet::DoMaybeGetFeasiblePoint
           struct /* DoMaybeGetFeasiblePoint */ {
-            // Source: drake/geometry/optimization/convex_set.h:388
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Non-virtual interface implementation for MaybeGetFeasiblePoint(). The
 default implementation solves a feasibility optimization problem, but
@@ -1185,7 +1185,7 @@ implementation.)""";
           } DoMaybeGetFeasiblePoint;
           // Symbol: drake::geometry::optimization::ConvexSet::DoMaybeGetPoint
           struct /* DoMaybeGetPoint */ {
-            // Source: drake/geometry/optimization/convex_set.h:383
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Non-virtual interface implementation for MaybeGetPoint(). The default
 implementation returns nullopt. Sets that can model a single point
@@ -1196,7 +1196,7 @@ Precondition:
           } DoMaybeGetPoint;
           // Symbol: drake::geometry::optimization::ConvexSet::DoPointInSet
           struct /* DoPointInSet */ {
-            // Source: drake/geometry/optimization/convex_set.h:393
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Non-virtual interface implementation for PointInSet().
 
@@ -1208,7 +1208,7 @@ Precondition:
           } DoPointInSet;
           // Symbol: drake::geometry::optimization::ConvexSet::DoPointInSetShortcut
           struct /* DoPointInSetShortcut */ {
-            // Source: drake/geometry/optimization/convex_set.h:410
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(A non-virtual interface implementation for PointInSet() that should be
 used when the PointInSet() can be computed more efficiently than
@@ -1229,7 +1229,7 @@ possible.)""";
           } DoPointInSetShortcut;
           // Symbol: drake::geometry::optimization::ConvexSet::DoProjectionShortcut
           struct /* DoProjectionShortcut */ {
-            // Source: drake/geometry/optimization/convex_set.h:367
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Non-virtual interface implementation for DoProjectionShortcut().
 
@@ -1264,7 +1264,7 @@ Precondition:
           } DoProjectionShortcut;
           // Symbol: drake::geometry::optimization::ConvexSet::DoToShapeWithPose
           struct /* DoToShapeWithPose */ {
-            // Source: drake/geometry/optimization/convex_set.h:458
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Non-virtual interface implementation for ToShapeWithPose().
 
@@ -1273,7 +1273,7 @@ Precondition:
           } DoToShapeWithPose;
           // Symbol: drake::geometry::optimization::ConvexSet::HandleZeroAmbientDimensionConstraints
           struct /* HandleZeroAmbientDimensionConstraints */ {
-            // Source: drake/geometry/optimization/convex_set.h:474
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Instances of subclasses such as CartesianProduct and MinkowskiSum can
 have constituent sets with zero ambient dimension, which much be
@@ -1289,7 +1289,7 @@ DoAddPointInNonnegativeScalingConstraints).)""";
           } HandleZeroAmbientDimensionConstraints;
           // Symbol: drake::geometry::optimization::ConvexSet::IntersectsWith
           struct /* IntersectsWith */ {
-            // Source: drake/geometry/optimization/convex_set.h:90
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Returns true iff the intersection between ``this`` and ``other`` is
 non-empty.
@@ -1300,7 +1300,7 @@ Raises:
           } IntersectsWith;
           // Symbol: drake::geometry::optimization::ConvexSet::IsBounded
           struct /* IsBounded */ {
-            // Source: drake/geometry/optimization/convex_set.h:105
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Returns true iff the set is bounded, e.g., there exists an
 element-wise finite lower and upper bound for the set. Note: for some
@@ -1320,7 +1320,7 @@ Parameter ``parallelism``:
           } IsBounded;
           // Symbol: drake::geometry::optimization::ConvexSet::IsEmpty
           struct /* IsEmpty */ {
-            // Source: drake/geometry/optimization/convex_set.h:131
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Returns true iff the set is empty. Note: for some derived classes,
 this check is trivial, but for others, it can require solving a
@@ -1337,14 +1337,14 @@ subclass is VPolytope.)""";
           } IsEmpty;
           // Symbol: drake::geometry::optimization::ConvexSet::MaybeGetFeasiblePoint
           struct /* MaybeGetFeasiblePoint */ {
-            // Source: drake/geometry/optimization/convex_set.h:151
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Returns a feasible point within this convex set if it is nonempty, and
 nullopt otherwise.)""";
           } MaybeGetFeasiblePoint;
           // Symbol: drake::geometry::optimization::ConvexSet::MaybeGetPoint
           struct /* MaybeGetPoint */ {
-            // Source: drake/geometry/optimization/convex_set.h:138
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(If this set trivially contains exactly one point, returns the value of
 that point. Otherwise, returns nullopt. By "trivially", we mean that
@@ -1355,7 +1355,7 @@ to call.)""";
           } MaybeGetPoint;
           // Symbol: drake::geometry::optimization::ConvexSet::PointInSet
           struct /* PointInSet */ {
-            // Source: drake/geometry/optimization/convex_set.h:169
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Returns true iff the point x is contained in the set. If the ambient
 dimension is zero, then if the set is nonempty, the point is trivially
@@ -1364,7 +1364,7 @@ set.)""";
           } PointInSet;
           // Symbol: drake::geometry::optimization::ConvexSet::Projection
           struct /* Projection */ {
-            // Source: drake/geometry/optimization/convex_set.h:296
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Computes in the L₂ norm the distance and the nearest point in this
 convex set to every column of ``points``. If this set is empty, we
@@ -1378,13 +1378,13 @@ Raises:
           } Projection;
           // Symbol: drake::geometry::optimization::ConvexSet::Serialize
           struct /* Serialize */ {
-            // Source: drake/geometry/optimization/convex_set.h:317
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Implements non-virtual base class serialization.)""";
           } Serialize;
           // Symbol: drake::geometry::optimization::ConvexSet::ToShapeWithPose
           struct /* ToShapeWithPose */ {
-            // Source: drake/geometry/optimization/convex_set.h:251
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Constructs a Shape and a pose of the set in the world frame for use in
 the SceneGraph geometry ecosystem.
@@ -1395,7 +1395,7 @@ Raises:
           } ToShapeWithPose;
           // Symbol: drake::geometry::optimization::ConvexSet::ambient_dimension
           struct /* ambient_dimension */ {
-            // Source: drake/geometry/optimization/convex_set.h:85
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Returns the dimension of the vector space in which the elements of
 this set are evaluated. Contrast this with the ``affine dimension``:
@@ -1407,7 +1407,7 @@ is the dimension of ``x``, but the affine dimension of the set is
           } ambient_dimension;
           // Symbol: drake::geometry::optimization::ConvexSet::has_exact_volume
           struct /* has_exact_volume */ {
-            // Source: drake/geometry/optimization/convex_set.h:305
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Returns true if the exact volume can be computed for this convex set
 instance.
@@ -1422,21 +1422,21 @@ Note:
         } ConvexSet;
         // Symbol: drake::geometry::optimization::ConvexSets
         struct /* ConvexSets */ {
-          // Source: drake/geometry/optimization/convex_set.h:531
+          // Source: drake/geometry/optimization/convex_set.h
           const char* doc =
 R"""(Provides the recommended container for passing a collection of
 ConvexSet instances.)""";
         } ConvexSets;
         // Symbol: drake::geometry::optimization::CspaceFreeBox
         struct /* CspaceFreeBox */ {
-          // Source: drake/geometry/optimization/cspace_free_box.h:25
+          // Source: drake/geometry/optimization/cspace_free_box.h
           const char* doc =
 R"""(This class tries to find large axis-aligned bounding boxes in the
 configuration space, such that all configurations in the boxes are
 collision free. Note that we don't guarantee to find the largest box.)""";
           // Symbol: drake::geometry::optimization::CspaceFreeBox::CspaceFreeBox
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/cspace_free_box.h:162
+            // Source: drake/geometry/optimization/cspace_free_box.h
             const char* doc =
 R"""(Parameter ``plant``:
     The plant for which we compute the C-space free boxes. It must
@@ -1457,7 +1457,7 @@ Note:
           } ctor;
           // Symbol: drake::geometry::optimization::CspaceFreeBox::FindSeparationCertificateGivenBox
           struct /* FindSeparationCertificateGivenBox */ {
-            // Source: drake/geometry/optimization/cspace_free_box.h:184
+            // Source: drake/geometry/optimization/cspace_free_box.h
             const char* doc =
 R"""(Finds the certificates that the C-space box {q | q_box_lower <= q <=
 q_box_upper} is collision free.
@@ -1487,7 +1487,7 @@ Returns ``success``:
           } FindSeparationCertificateGivenBox;
           // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparatingPlaneLagrangians
           struct /* SeparatingPlaneLagrangians */ {
-            // Source: drake/geometry/optimization/cspace_free_box.h:42
+            // Source: drake/geometry/optimization/cspace_free_box.h
             const char* doc =
 R"""(When searching for the separating plane, we want to certify that the
 numerator of a rational is non-negative in the C-space box q_box_lower
@@ -1497,44 +1497,44 @@ multipliers for the polytopic constraint s - s_box_lower >= 0,
 s_box_upper - s >= 0.)""";
             // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparatingPlaneLagrangians::GetSolution
             struct /* GetSolution */ {
-              // Source: drake/geometry/optimization/cspace_free_box.h:54
+              // Source: drake/geometry/optimization/cspace_free_box.h
               const char* doc =
 R"""(Substitutes the decision variables in each Lagrangians with its value
 in result, returns the substitution result.)""";
             } GetSolution;
             // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparatingPlaneLagrangians::SeparatingPlaneLagrangians
             struct /* ctor */ {
-              // Source: drake/geometry/optimization/cspace_free_box.h:44
+              // Source: drake/geometry/optimization/cspace_free_box.h
               const char* doc = R"""()""";
             } ctor;
             // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparatingPlaneLagrangians::mutable_s_box_lower
             struct /* mutable_s_box_lower */ {
-              // Source: drake/geometry/optimization/cspace_free_box.h:63
+              // Source: drake/geometry/optimization/cspace_free_box.h
               const char* doc =
 R"""(The Lagrangians for s - s_box_lower >= 0.)""";
             } mutable_s_box_lower;
             // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparatingPlaneLagrangians::mutable_s_box_upper
             struct /* mutable_s_box_upper */ {
-              // Source: drake/geometry/optimization/cspace_free_box.h:73
+              // Source: drake/geometry/optimization/cspace_free_box.h
               const char* doc =
 R"""(The Lagrangians for s_box_upper - s >= 0.)""";
             } mutable_s_box_upper;
             // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparatingPlaneLagrangians::s_box_lower
             struct /* s_box_lower */ {
-              // Source: drake/geometry/optimization/cspace_free_box.h:58
+              // Source: drake/geometry/optimization/cspace_free_box.h
               const char* doc =
 R"""(The Lagrangians for s - s_box_lower >= 0.)""";
             } s_box_lower;
             // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparatingPlaneLagrangians::s_box_upper
             struct /* s_box_upper */ {
-              // Source: drake/geometry/optimization/cspace_free_box.h:68
+              // Source: drake/geometry/optimization/cspace_free_box.h
               const char* doc =
 R"""(The Lagrangians for s_box_upper - s >= 0.)""";
             } s_box_upper;
           } SeparatingPlaneLagrangians;
           // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparationCertificate
           struct /* SeparationCertificate */ {
-            // Source: drake/geometry/optimization/cspace_free_box.h:118
+            // Source: drake/geometry/optimization/cspace_free_box.h
             const char* doc =
 R"""(This struct stores the necessary information to search for the
 separating plane for the polytopic C-space box q_box_lower <= q <=
@@ -1546,48 +1546,48 @@ C-space box. We impose the condition numerator_i(s) - λ_lower(s)ᵀ * (s
 λ_upper(s) are sos.)""";
             // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparationCertificate::GetSolution
             struct /* GetSolution */ {
-              // Source: drake/geometry/optimization/cspace_free_box.h:123
+              // Source: drake/geometry/optimization/cspace_free_box.h
               const char* doc = R"""()""";
             } GetSolution;
             // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparationCertificate::SeparationCertificate
             struct /* ctor */ {
-              // Source: drake/geometry/optimization/cspace_free_box.h:119
+              // Source: drake/geometry/optimization/cspace_free_box.h
               const char* doc = R"""()""";
             } ctor;
             // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparationCertificate::mutable_lagrangians
             struct /* mutable_lagrangians */ {
-              // Source: drake/geometry/optimization/cspace_free_box.h:129
+              // Source: drake/geometry/optimization/cspace_free_box.h
               const char* doc = R"""()""";
             } mutable_lagrangians;
             // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparationCertificate::negative_side_rational_lagrangians
             struct /* negative_side_rational_lagrangians */ {
-              // Source: drake/geometry/optimization/cspace_free_box.h:140
+              // Source: drake/geometry/optimization/cspace_free_box.h
               const char* doc = R"""()""";
             } negative_side_rational_lagrangians;
             // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparationCertificate::positive_side_rational_lagrangians
             struct /* positive_side_rational_lagrangians */ {
-              // Source: drake/geometry/optimization/cspace_free_box.h:137
+              // Source: drake/geometry/optimization/cspace_free_box.h
               const char* doc = R"""()""";
             } positive_side_rational_lagrangians;
           } SeparationCertificate;
           // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparationCertificateProgram
           struct /* SeparationCertificateProgram */ {
-            // Source: drake/geometry/optimization/cspace_free_box.h:143
+            // Source: drake/geometry/optimization/cspace_free_box.h
             const char* doc = R"""()""";
             // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparationCertificateProgram::SeparationCertificateProgram
             struct /* ctor */ {
-              // Source: drake/geometry/optimization/cspace_free_box.h:144
+              // Source: drake/geometry/optimization/cspace_free_box.h
               const char* doc = R"""()""";
             } ctor;
             // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparationCertificateProgram::certificate
             struct /* certificate */ {
-              // Source: drake/geometry/optimization/cspace_free_box.h:148
+              // Source: drake/geometry/optimization/cspace_free_box.h
               const char* doc = R"""()""";
             } certificate;
           } SeparationCertificateProgram;
           // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparationCertificateResult
           struct /* SeparationCertificateResult */ {
-            // Source: drake/geometry/optimization/cspace_free_box.h:91
+            // Source: drake/geometry/optimization/cspace_free_box.h
             const char* doc =
 R"""(We certify that a pair of geometries is collision free in the C-space
 box {q | q_box_lower<=q<=q_box_upper} by finding the separating plane
@@ -1596,29 +1596,29 @@ that the separating plane {x | aᵀx+b=0 } separates the two geometries
 in separating_planes()[plane_index] in the C-space box.)""";
             // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparationCertificateResult::SeparationCertificateResult
             struct /* ctor */ {
-              // Source: drake/geometry/optimization/cspace_free_box.h:92
+              // Source: drake/geometry/optimization/cspace_free_box.h
               const char* doc = R"""()""";
             } ctor;
             // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparationCertificateResult::lagrangians
             struct /* lagrangians */ {
-              // Source: drake/geometry/optimization/cspace_free_box.h:96
+              // Source: drake/geometry/optimization/cspace_free_box.h
               const char* doc = R"""()""";
             } lagrangians;
             // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparationCertificateResult::negative_side_rational_lagrangians
             struct /* negative_side_rational_lagrangians */ {
-              // Source: drake/geometry/optimization/cspace_free_box.h:104
+              // Source: drake/geometry/optimization/cspace_free_box.h
               const char* doc = R"""()""";
             } negative_side_rational_lagrangians;
             // Symbol: drake::geometry::optimization::CspaceFreeBox::SeparationCertificateResult::positive_side_rational_lagrangians
             struct /* positive_side_rational_lagrangians */ {
-              // Source: drake/geometry/optimization/cspace_free_box.h:103
+              // Source: drake/geometry/optimization/cspace_free_box.h
               const char* doc = R"""()""";
             } positive_side_rational_lagrangians;
           } SeparationCertificateResult;
         } CspaceFreeBox;
         // Symbol: drake::geometry::optimization::CspaceFreePolytope
         struct /* CspaceFreePolytope */ {
-          // Source: drake/geometry/optimization/cspace_free_polytope.h:45
+          // Source: drake/geometry/optimization/cspace_free_polytope.h
           const char* doc =
 R"""(This class tries to find large convex polytopes in the
 tangential-configuration space, such that all configurations in the
@@ -1637,18 +1637,18 @@ Configuration Space for Robot Manipulators by Alexandre Amice*,
 Hongkai Dai*, Peter Werner, Annan Zhang and Russ Tedrake.)""";
           // Symbol: drake::geometry::optimization::CspaceFreePolytope::AddCspacePolytopeContainment
           struct /* AddCspacePolytopeContainment */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope.h:226
+            // Source: drake/geometry/optimization/cspace_free_polytope.h
             const char* doc =
 R"""(Adds the constraint that each column of s_inner_pts is in the polytope
 {s | C*s<=d}.)""";
           } AddCspacePolytopeContainment;
           // Symbol: drake::geometry::optimization::CspaceFreePolytope::BilinearAlternationOptions
           struct /* BilinearAlternationOptions */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope.h:349
+            // Source: drake/geometry/optimization/cspace_free_polytope.h
             const char* doc = R"""(Options for bilinear alternation.)""";
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::BilinearAlternationOptions::convergence_tol
             struct /* convergence_tol */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:358
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc =
 R"""(When the change of the cost function between two consecutive
 iterations in bilinear alternation is no larger than this number, stop
@@ -1656,7 +1656,7 @@ the bilinear alternation. Must be non-negative.)""";
             } convergence_tol;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::BilinearAlternationOptions::ellipsoid_scaling
             struct /* ellipsoid_scaling */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:367
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc =
 R"""(After finding the maximal inscribed ellipsoid in C-space polytope {s |
 C*s<=d, s_lower<=s<=s_upper}, we scale this ellipsoid by
@@ -1666,17 +1666,17 @@ Must be strictly positive and no greater than 1.)""";
             } ellipsoid_scaling;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::BilinearAlternationOptions::find_lagrangian_options
             struct /* find_lagrangian_options */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:360
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } find_lagrangian_options;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::BilinearAlternationOptions::find_polytope_options
             struct /* find_polytope_options */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:359
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } find_polytope_options;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::BilinearAlternationOptions::max_iter
             struct /* max_iter */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:353
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc =
 R"""(The maximum number of bilinear alternation iterations. Must be
 non-negative.)""";
@@ -1684,7 +1684,7 @@ non-negative.)""";
           } BilinearAlternationOptions;
           // Symbol: drake::geometry::optimization::CspaceFreePolytope::BinarySearch
           struct /* BinarySearch */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope.h:415
+            // Source: drake/geometry/optimization/cspace_free_polytope.h
             const char* doc =
 R"""(Binary search on d such that the C-space polytope {s | C*s<=d,
 s_lower<=s<=s_upper} is collision free. We scale the polytope {s |
@@ -1696,11 +1696,11 @@ Precondition:
           } BinarySearch;
           // Symbol: drake::geometry::optimization::CspaceFreePolytope::BinarySearchOptions
           struct /* BinarySearchOptions */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope.h:390
+            // Source: drake/geometry/optimization/cspace_free_polytope.h
             const char* doc = R"""(Options for binary search.)""";
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::BinarySearchOptions::convergence_tol
             struct /* convergence_tol */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:404
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc =
 R"""(When the gap between the upper bound and the lower bound of the
 scaling factor is below this ``convergence_tol``, stops the binary
@@ -1708,33 +1708,33 @@ search. Must be strictly positive.)""";
             } convergence_tol;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::BinarySearchOptions::find_lagrangian_options
             struct /* find_lagrangian_options */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:406
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } find_lagrangian_options;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::BinarySearchOptions::max_iter
             struct /* max_iter */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:399
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc =
 R"""(The maximal number of iterations in binary search. Must be
 non-negative.)""";
             } max_iter;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::BinarySearchOptions::scale_max
             struct /* scale_max */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:393
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc =
 R"""(The maximal value of the scaling factor. Must be finite and no less
 than scale_min.)""";
             } scale_max;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::BinarySearchOptions::scale_min
             struct /* scale_min */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:396
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc =
 R"""(The minimal value of the scaling factor. Must be non-negative.)""";
             } scale_min;
           } BinarySearchOptions;
           // Symbol: drake::geometry::optimization::CspaceFreePolytope::CspaceFreePolytope
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope.h:64
+            // Source: drake/geometry/optimization/cspace_free_polytope.h
             const char* doc =
 R"""(Parameter ``plant``:
     The plant for which we compute the C-space free polytopes. It must
@@ -1758,7 +1758,7 @@ Note:
           } ctor;
           // Symbol: drake::geometry::optimization::CspaceFreePolytope::EllipsoidMarginCost
           struct /* EllipsoidMarginCost */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope.h:236
+            // Source: drake/geometry/optimization/cspace_free_polytope.h
             const char* doc =
 R"""(The cost used when fixing the Lagrangian multiplier and search for C
 and d in the C-space polytope {s | C*s <=d, s_lower<=s<=s_upper}. We
@@ -1766,7 +1766,7 @@ denote δᵢ as the margin between the i'th face C.row(i)<=d(i) to the
 inscribed ellipsoid.)""";
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::EllipsoidMarginCost::kGeometricMean
             struct /* kGeometricMean */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:241
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc =
 R"""(Maximize the geometric mean power(∏ᵢ (δᵢ + ε), 1/n) where n is
 C.rows(),
@@ -1774,33 +1774,33 @@ C.rows(),
             } kGeometricMean;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::EllipsoidMarginCost::kSum
             struct /* kSum */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:238
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""(Maximize ∑ᵢδᵢ)""";
             } kSum;
           } EllipsoidMarginCost;
           // Symbol: drake::geometry::optimization::CspaceFreePolytope::FindPolytopeGivenLagrangianOptions
           struct /* FindPolytopeGivenLagrangianOptions */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope.h:247
+            // Source: drake/geometry/optimization/cspace_free_polytope.h
             const char* doc =
 R"""(Options for finding polytope with given Lagrangians.)""";
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::FindPolytopeGivenLagrangianOptions::FindPolytopeGivenLagrangianOptions
             struct /* ctor */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:248
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } ctor;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::FindPolytopeGivenLagrangianOptions::backoff_scale
             struct /* backoff_scale */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:252
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } backoff_scale;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::FindPolytopeGivenLagrangianOptions::ellipsoid_margin_cost
             struct /* ellipsoid_margin_cost */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:280
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""(Type of cost on the ellipsoid margin)""";
             } ellipsoid_margin_cost;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::FindPolytopeGivenLagrangianOptions::ellipsoid_margin_epsilon
             struct /* ellipsoid_margin_epsilon */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:259
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc =
 R"""(We will maximize the cost ∏ᵢ (δᵢ + ε) where δᵢ is the margin from each
 face of the polytope {s | Cs<=d} to the inscribed ellipsoid, ε is
@@ -1809,7 +1809,7 @@ ellipsoid_margin_epsilon, a small positive constant to make sure δᵢ +
             } ellipsoid_margin_epsilon;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::FindPolytopeGivenLagrangianOptions::s_inner_pts
             struct /* s_inner_pts */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:270
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc =
 R"""(We can constrain the C-space polytope {s | C*s<=d,
 s_lower<=s<=s_upper} to contain some sampled s. Each column of
@@ -1817,7 +1817,7 @@ s_inner_pts is a sample of s.)""";
             } s_inner_pts;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::FindPolytopeGivenLagrangianOptions::search_s_bounds_lagrangians
             struct /* search_s_bounds_lagrangians */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:277
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc =
 R"""(If set to true, then we will also search for the Lagrangian
 multipliers for the constraint s_lower <= s <= s_upper; otherwise we
@@ -1826,19 +1826,19 @@ C-space polytope {s | C*s<=d, s_lower<=s<=s_upper}.)""";
             } search_s_bounds_lagrangians;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::FindPolytopeGivenLagrangianOptions::solver_id
             struct /* solver_id */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:262
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""(ID for the solver)""";
             } solver_id;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::FindPolytopeGivenLagrangianOptions::solver_options
             struct /* solver_options */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:265
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc =
 R"""(options for solving the MathematicalProgram)""";
             } solver_options;
           } FindPolytopeGivenLagrangianOptions;
           // Symbol: drake::geometry::optimization::CspaceFreePolytope::FindSeparationCertificateGivenPolytope
           struct /* FindSeparationCertificateGivenPolytope */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope.h:214
+            // Source: drake/geometry/optimization/cspace_free_polytope.h
             const char* doc =
 R"""(Finds the certificates that the C-space polytope {s | C*s<=d, s_lower
 <= s <= s_upper} is collision free.
@@ -1867,17 +1867,17 @@ Returns ``success``:
           } FindSeparationCertificateGivenPolytope;
           // Symbol: drake::geometry::optimization::CspaceFreePolytope::FindSeparationCertificateGivenPolytopeOptions
           struct /* FindSeparationCertificateGivenPolytopeOptions */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope.h:189
+            // Source: drake/geometry/optimization/cspace_free_polytope.h
             const char* doc = R"""()""";
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::FindSeparationCertificateGivenPolytopeOptions::ignore_redundant_C
             struct /* ignore_redundant_C */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:195
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } ignore_redundant_C;
           } FindSeparationCertificateGivenPolytopeOptions;
           // Symbol: drake::geometry::optimization::CspaceFreePolytope::InitializePolytopeSearchProgram
           struct /* InitializePolytopeSearchProgram */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope.h:441
+            // Source: drake/geometry/optimization/cspace_free_polytope.h
             const char* doc =
 R"""(Constructs a program to search for the C-space polytope {s | C*s<=d,
 s_lower<=s<=s_upper} such that this polytope is collision free. This
@@ -1908,7 +1908,7 @@ Parameter ``new_certificates``:
           } InitializePolytopeSearchProgram;
           // Symbol: drake::geometry::optimization::CspaceFreePolytope::MakeIsGeometrySeparableProgram
           struct /* MakeIsGeometrySeparableProgram */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope.h:458
+            // Source: drake/geometry/optimization/cspace_free_polytope.h
             const char* doc =
 R"""(Constructs the MathematicalProgram which searches for a separation
 certificate for a pair of geometries for a C-space polytope. Search
@@ -1921,51 +1921,51 @@ Raises:
           } MakeIsGeometrySeparableProgram;
           // Symbol: drake::geometry::optimization::CspaceFreePolytope::SearchResult
           struct /* SearchResult */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope.h:285
+            // Source: drake/geometry/optimization/cspace_free_polytope.h
             const char* doc =
 R"""(Result on searching the C-space polytope and separating planes.)""";
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SearchResult::C
             struct /* C */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:291
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } C;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SearchResult::SearchResult
             struct /* ctor */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:287
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } ctor;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SearchResult::a
             struct /* a */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:301
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc =
 R"""(Each plane index is mapped to a vector of polynomials.)""";
             } a;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SearchResult::b
             struct /* b */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:306
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc =
 R"""(Each plane index is mapped to a polynomial,)""";
             } b;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SearchResult::certified_polytope
             struct /* certified_polytope */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:295
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } certified_polytope;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SearchResult::d
             struct /* d */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:293
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } d;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SearchResult::num_iter
             struct /* num_iter */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:312
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc =
 R"""(The number of iterations taken to search for the result.)""";
             } num_iter;
           } SearchResult;
           // Symbol: drake::geometry::optimization::CspaceFreePolytope::SearchWithBilinearAlternation
           struct /* SearchWithBilinearAlternation */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope.h:383
+            // Source: drake/geometry/optimization/cspace_free_polytope.h
             const char* doc =
 R"""(Search for a collision-free C-space polytope. {s | C*s<=d,
 s_lower<=s<=s_upper} through bilinear alternation. The goal is to
@@ -1992,7 +1992,7 @@ Returns ``results``:
           } SearchWithBilinearAlternation;
           // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparatingPlaneLagrangians
           struct /* SeparatingPlaneLagrangians */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope.h:79
+            // Source: drake/geometry/optimization/cspace_free_polytope.h
             const char* doc =
 R"""(When searching for the separating plane, we want to certify that the
 numerator of a rational is non-negative in the C-space region C*s<=d,
@@ -2001,50 +2001,50 @@ introduce Lagrangian multipliers for the polytopic constraint d-C*s >=
 0, s - s_lower >= 0, s_upper - s >= 0.)""";
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparatingPlaneLagrangians::GetSolution
             struct /* GetSolution */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:91
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc =
 R"""(Substitutes the decision variables in each Lagrangians with its value
 in result, returns the substitution result.)""";
             } GetSolution;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparatingPlaneLagrangians::SeparatingPlaneLagrangians
             struct /* ctor */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:81
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } ctor;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparatingPlaneLagrangians::mutable_polytope
             struct /* mutable_polytope */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:98
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""(The Lagrangians for d - C*s >= 0.)""";
             } mutable_polytope;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparatingPlaneLagrangians::mutable_s_lower
             struct /* mutable_s_lower */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:104
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""(The Lagrangians for s - s_lower >= 0.)""";
             } mutable_s_lower;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparatingPlaneLagrangians::mutable_s_upper
             struct /* mutable_s_upper */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:110
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""(The Lagrangians for s_upper - s >= 0.)""";
             } mutable_s_upper;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparatingPlaneLagrangians::polytope
             struct /* polytope */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:95
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""(The Lagrangians for d - C*s >= 0.)""";
             } polytope;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparatingPlaneLagrangians::s_lower
             struct /* s_lower */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:101
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""(The Lagrangians for s - s_lower >= 0.)""";
             } s_lower;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparatingPlaneLagrangians::s_upper
             struct /* s_upper */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:107
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""(The Lagrangians for s_upper - s >= 0.)""";
             } s_upper;
           } SeparatingPlaneLagrangians;
           // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparationCertificate
           struct /* SeparationCertificate */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope.h:155
+            // Source: drake/geometry/optimization/cspace_free_polytope.h
             const char* doc =
 R"""(This struct stores the necessary information to search for the
 separating plane for the polytopic C-space region C*s <= d, s_lower <=
@@ -2056,48 +2056,48 @@ this C-space region. We impose the condition numerator_i(s) - λ(s)ᵀ *
 is sos λ(s) are sos, λ_lower(s) are sos, λ_upper(s) are sos.)""";
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparationCertificate::GetSolution
             struct /* GetSolution */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:160
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } GetSolution;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparationCertificate::SeparationCertificate
             struct /* ctor */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:156
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } ctor;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparationCertificate::mutable_lagrangians
             struct /* mutable_lagrangians */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:166
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } mutable_lagrangians;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparationCertificate::negative_side_rational_lagrangians
             struct /* negative_side_rational_lagrangians */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:178
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } negative_side_rational_lagrangians;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparationCertificate::positive_side_rational_lagrangians
             struct /* positive_side_rational_lagrangians */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:175
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } positive_side_rational_lagrangians;
           } SeparationCertificate;
           // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparationCertificateProgram
           struct /* SeparationCertificateProgram */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope.h:181
+            // Source: drake/geometry/optimization/cspace_free_polytope.h
             const char* doc = R"""()""";
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparationCertificateProgram::SeparationCertificateProgram
             struct /* ctor */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:182
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } ctor;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparationCertificateProgram::certificate
             struct /* certificate */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:186
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } certificate;
           } SeparationCertificateProgram;
           // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparationCertificateResult
           struct /* SeparationCertificateResult */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope.h:128
+            // Source: drake/geometry/optimization/cspace_free_polytope.h
             const char* doc =
 R"""(We certify that a pair of geometries is collision free in the C-space
 region {s | Cs<=d, s_lower<=s<=s_upper} by finding the separating
@@ -2107,28 +2107,28 @@ two geometries in separating_planes()[plane_index] in the C-space
 polytope.)""";
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparationCertificateResult::SeparationCertificateResult
             struct /* ctor */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:129
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } ctor;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparationCertificateResult::lagrangians
             struct /* lagrangians */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:133
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } lagrangians;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparationCertificateResult::negative_side_rational_lagrangians
             struct /* negative_side_rational_lagrangians */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:141
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } negative_side_rational_lagrangians;
             // Symbol: drake::geometry::optimization::CspaceFreePolytope::SeparationCertificateResult::positive_side_rational_lagrangians
             struct /* positive_side_rational_lagrangians */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope.h:140
+              // Source: drake/geometry/optimization/cspace_free_polytope.h
               const char* doc = R"""()""";
             } positive_side_rational_lagrangians;
           } SeparationCertificateResult;
           // Symbol: drake::geometry::optimization::CspaceFreePolytope::SolveSeparationCertificateProgram
           struct /* SolveSeparationCertificateProgram */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope.h:470
+            // Source: drake/geometry/optimization/cspace_free_polytope.h
             const char* doc =
 R"""(Solves a SeparationCertificateProgram with the given options
 
@@ -2140,20 +2140,20 @@ Returns:
         } CspaceFreePolytope;
         // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase
         struct /* CspaceFreePolytopeBase */ {
-          // Source: drake/geometry/optimization/cspace_free_polytope_base.h:33
+          // Source: drake/geometry/optimization/cspace_free_polytope_base.h
           const char* doc =
 R"""(This virtual class is the base of CspaceFreePolytope and
 CspaceFreeBox. We take the common functionality between these concrete
 derived class to this shared parent class.)""";
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::CalcSBoundsPolynomial
           struct /* CalcSBoundsPolynomial */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:148
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc =
 R"""(Computes s-s_lower and s_upper - s as polynomials of s.)""";
           } CalcSBoundsPolynomial;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::CspaceFreePolytopeBase
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:140
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc =
 R"""(Constructor. We put the constructor in protected method to make sure
 that the user cannot instantiate a CspaceFreePolytopeBase instance.
@@ -2163,7 +2163,7 @@ Precondition:
           } ctor;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::GetGramVarSizeForPolytopeSearchProgram
           struct /* GetGramVarSizeForPolytopeSearchProgram */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:245
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc =
 R"""(Get the total size of all the decision variables for the Gram
 matrices, so as to search for the polytope with given Lagrangian
@@ -2183,43 +2183,43 @@ Parameter ``count_gram_per_rational``:
           } GetGramVarSizeForPolytopeSearchProgram;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::GetSForPlane
           struct /* GetSForPlane */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:209
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc =
 R"""(Returns a vector of s variable used in a(s), b(s), which parameterize
 the separating plane {x | a(s)ᵀx+b(s) = 0}.)""";
           } GetSForPlane;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::GetSeparatingPlaneIndex
           struct /* GetSeparatingPlaneIndex */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:156
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc =
 R"""(Returns the index of the plane which will separate the geometry pair.
 Returns -1 if the pair is not in map_geometries_to_separating_planes_.)""";
           } GetSeparatingPlaneIndex;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::IgnoredCollisionPairs
           struct /* IgnoredCollisionPairs */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:37
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc = R"""()""";
           } IgnoredCollisionPairs;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::Options
           struct /* Options */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:43
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc =
 R"""(Optional argument for constructing CspaceFreePolytopeBase)""";
             // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::Options::Options
             struct /* ctor */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope_base.h:44
+              // Source: drake/geometry/optimization/cspace_free_polytope_base.h
               const char* doc = R"""()""";
             } ctor;
             // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::Options::Serialize
             struct /* Serialize */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope_base.h:49
+              // Source: drake/geometry/optimization/cspace_free_polytope_base.h
               const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
             } Serialize;
             // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::Options::with_cross_y
             struct /* with_cross_y */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope_base.h:92
+              // Source: drake/geometry/optimization/cspace_free_polytope_base.h
               const char* doc =
 R"""(For non-polytopic collision geometries, we will impose a matrix-sos
 constraint X(s) being psd, with a slack indeterminates y, such that
@@ -2299,27 +2299,27 @@ problems, but possibly able to certify a larger C-space polytope.)""";
           } Options;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::SForPlane
           struct /* SForPlane */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:129
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc =
 R"""(When we set up the separating plane {x | a(s)ᵀx + b(s) = 0} between a
 pair of geometries, we need to determine which s are used in a(s) and
 b(s).)""";
             // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::SForPlane::kAll
             struct /* kAll */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope_base.h:130
+              // Source: drake/geometry/optimization/cspace_free_polytope_base.h
               const char* doc =
 R"""(Use all s in the robot tangent-configuration space.)""";
             } kAll;
             // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::SForPlane::kOnChain
             struct /* kOnChain */ {
-              // Source: drake/geometry/optimization/cspace_free_polytope_base.h:131
+              // Source: drake/geometry/optimization/cspace_free_polytope_base.h
               const char* doc =
 R"""(Use s on the kinematics chain between the pair of geometries.)""";
             } kOnChain;
           } SForPlane;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::SolveCertificationForEachPlaneInParallel
           struct /* SolveCertificationForEachPlaneInParallel */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:229
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc =
 R"""(For each pair of geometries, solve the certification problem to find
 their separation plane in parallel.
@@ -2350,17 +2350,17 @@ Parameter ``terminate_at_failure``:
           } SolveCertificationForEachPlaneInParallel;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::get_s_set
           struct /* get_s_set */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:159
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc = R"""()""";
           } get_s_set;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::link_geometries
           struct /* link_geometries */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:168
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc = R"""()""";
           } link_geometries;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::map_body_pair_to_s_on_chain
           struct /* map_body_pair_to_s_on_chain */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:202
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc =
 R"""(For a pair of bodies body_pair, returns the indices of all s on the
 kinematics chain from body_pair.first() to body_pair.second(). For
@@ -2372,7 +2372,7 @@ chain between bodyA and bodyB.)""";
           } map_body_pair_to_s_on_chain;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::map_body_to_monomial_basis_array
           struct /* map_body_to_monomial_basis_array */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:185
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc =
 R"""(Maps a pair of body (body1, body2) to an array of monomial basis
 ``monomial_basis_array``. monomial_basis_array[0] contains all the
@@ -2383,7 +2383,7 @@ monomial_basis_array[0])""";
           } map_body_to_monomial_basis_array;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::map_geometries_to_separating_planes
           struct /* map_geometries_to_separating_planes */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:108
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc =
 R"""(separating_planes()[map_geometries_to_separating_planes.at(geometry1_id,
 geometry2_id)] is the separating plane that separates geometry 1 and
@@ -2391,36 +2391,36 @@ geometry 2.)""";
           } map_geometries_to_separating_planes;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::plane_order
           struct /* plane_order */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:172
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc = R"""()""";
           } plane_order;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::rational_forward_kin
           struct /* rational_forward_kin */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:98
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc =
 R"""(Getter for the rational forward kinematics object that computes the
 forward kinematics as rational functions.)""";
           } rational_forward_kin;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::scene_graph
           struct /* scene_graph */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:161
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc = R"""()""";
           } scene_graph;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::separating_planes
           struct /* separating_planes */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:114
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc =
 R"""(All the separating planes between each pair of geometries.)""";
           } separating_planes;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::with_cross_y
           struct /* with_cross_y */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:190
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc =
 R"""(Check Options::with_cross_y for more details.)""";
           } with_cross_y;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::y_slack
           struct /* y_slack */ {
-            // Source: drake/geometry/optimization/cspace_free_polytope_base.h:121
+            // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc =
 R"""(Get the slack variable used for non-polytopic collision geometries.
 Check Options class for more details.)""";
@@ -2428,7 +2428,7 @@ Check Options class for more details.)""";
         } CspaceFreePolytopeBase;
         // Symbol: drake::geometry::optimization::DistanceToHalfspace
         struct /* DistanceToHalfspace */ {
-          // Source: drake/geometry/optimization/c_iris_collision_geometry.h:135
+          // Source: drake/geometry/optimization/c_iris_collision_geometry.h
           const char* doc =
 R"""(Computes the signed distance from ``collision_geometry`` to the half
 space ℋ, where ℋ = {x | aᵀx+b >= 0} if
@@ -2444,74 +2444,74 @@ Note:
         } DistanceToHalfspace;
         // Symbol: drake::geometry::optimization::FindSeparationCertificateOptions
         struct /* FindSeparationCertificateOptions */ {
-          // Source: drake/geometry/optimization/cspace_free_structs.h:49
+          // Source: drake/geometry/optimization/cspace_free_structs.h
           const char* doc = R"""()""";
           // Symbol: drake::geometry::optimization::FindSeparationCertificateOptions::FindSeparationCertificateOptions
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:50
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::geometry::optimization::FindSeparationCertificateOptions::parallelism
           struct /* parallelism */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:56
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc = R"""()""";
           } parallelism;
           // Symbol: drake::geometry::optimization::FindSeparationCertificateOptions::solver_id
           struct /* solver_id */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:63
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc = R"""()""";
           } solver_id;
           // Symbol: drake::geometry::optimization::FindSeparationCertificateOptions::solver_options
           struct /* solver_options */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:69
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc = R"""()""";
           } solver_options;
           // Symbol: drake::geometry::optimization::FindSeparationCertificateOptions::terminate_at_failure
           struct /* terminate_at_failure */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:66
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc = R"""()""";
           } terminate_at_failure;
           // Symbol: drake::geometry::optimization::FindSeparationCertificateOptions::verbose
           struct /* verbose */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:60
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc = R"""()""";
           } verbose;
         } FindSeparationCertificateOptions;
         // Symbol: drake::geometry::optimization::GcsGraphvizOptions
         struct /* GcsGraphvizOptions */ {
-          // Source: drake/geometry/optimization/graph_of_convex_sets.h:137
+          // Source: drake/geometry/optimization/graph_of_convex_sets.h
           const char* doc = R"""()""";
           // Symbol: drake::geometry::optimization::GcsGraphvizOptions::Serialize
           struct /* Serialize */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:141
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
           } Serialize;
           // Symbol: drake::geometry::optimization::GcsGraphvizOptions::precision
           struct /* precision */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:174
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Sets the floating point precision (how many digits are generated) of
 the annotations.)""";
           } precision;
           // Symbol: drake::geometry::optimization::GcsGraphvizOptions::scientific
           struct /* scientific */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:170
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Sets the floating point formatting to scientific (if true) or fixed
 (if false).)""";
           } scientific;
           // Symbol: drake::geometry::optimization::GcsGraphvizOptions::show_costs
           struct /* show_costs */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:166
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Determines whether the cost value results are shown. This will show
 both edge and vertex costs.)""";
           } show_costs;
           // Symbol: drake::geometry::optimization::GcsGraphvizOptions::show_flows
           struct /* show_flows */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:162
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Determines whether the flow value results are shown. The flow values
 are shown both with a numeric value and through the transparency value
@@ -2520,14 +2520,14 @@ invisible edge, and a flow of 1.0 will display as a fully black edge.)""";
           } show_flows;
           // Symbol: drake::geometry::optimization::GcsGraphvizOptions::show_slacks
           struct /* show_slacks */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:152
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Determines whether the values of the intermediate (slack) variables
 are also displayed in the graph.)""";
           } show_slacks;
           // Symbol: drake::geometry::optimization::GcsGraphvizOptions::show_vars
           struct /* show_vars */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:156
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Determines whether the solution values for decision variables in each
 set are shown.)""";
@@ -2545,7 +2545,7 @@ set are shown.)""";
         } GcsGraphvizOptions;
         // Symbol: drake::geometry::optimization::GetVertices
         struct /* GetVertices */ {
-          // Source: drake/geometry/optimization/vpolytope.h:168
+          // Source: drake/geometry/optimization/vpolytope.h
           const char* doc =
 R"""(Obtains all the vertices stored in the convex object.
 
@@ -2556,7 +2556,7 @@ Returns ``vertices``:
         } GetVertices;
         // Symbol: drake::geometry::optimization::GraphOfConvexSets
         struct /* GraphOfConvexSets */ {
-          // Source: drake/geometry/optimization/graph_of_convex_sets.h:231
+          // Source: drake/geometry/optimization/graph_of_convex_sets.h
           const char* doc =
 R"""(GraphOfConvexSets (GCS) implements the design pattern and optimization
 problems first introduced in the paper "Shortest Paths in Graphs of
@@ -2618,7 +2618,7 @@ very large or infinite graphs, by deriving from
 ImplicitGraphOfConvexSets.)""";
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::AddEdge
           struct /* AddEdge */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:698
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Adds an edge to the graph from Vertex ``u`` to Vertex ``v``. The
 vertex references must refer to valid vertices in this graph. If
@@ -2630,7 +2630,7 @@ Raises:
           } AddEdge;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::AddEdgeFromTemplate
           struct /* AddEdgeFromTemplate */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:711
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Adds an edge to the graph from Vertex ``u`` to Vertex ``v`` (and
 assigns a new unique EdgeId), by taking the name, costs, and
@@ -2652,7 +2652,7 @@ Raises:
           } AddEdgeFromTemplate;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::AddVertex
           struct /* AddVertex */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:682
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Adds a vertex to the graph. A copy of ``set`` is cloned and stored
 inside the graph. If ``name`` is empty then a default name will be
@@ -2660,7 +2660,7 @@ provided.)""";
           } AddVertex;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::AddVertexFromTemplate
           struct /* AddVertexFromTemplate */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:689
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Adds a new vertex to the graph (and assigns a new unique VertexId) by
 taking the name, costs, and constraints (but not any edges) from
@@ -2670,13 +2670,13 @@ Vertex from another GCS instance into ``this``.)""";
           } AddVertexFromTemplate;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::ClearAllPhiConstraints
           struct /* ClearAllPhiConstraints */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:771
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Removes all constraints added to any edge with AddPhiConstraint.)""";
           } ClearAllPhiConstraints;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::Clone
           struct /* Clone */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:678
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Returns a deep copy of this graph.
 
@@ -2686,14 +2686,14 @@ Raises:
           } Clone;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge
           struct /* Edge */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:435
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(An edge in the graph connects between vertex ``u`` and vertex ``v``.
 The edge also holds a list of cost and constraints associated with the
 continuous variables.)""";
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge::AddConstraint
             struct /* AddConstraint */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:560
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_formula =
 R"""(Adds a constraint to this edge.
 
@@ -2714,7 +2714,7 @@ Raises:
 
 Raises:
     RuntimeError if no transcription is specified.)""";
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:578
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_binding =
 R"""(Adds a constraint to this edge.
 
@@ -2738,7 +2738,7 @@ Raises:
             } AddConstraint;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge::AddCost
             struct /* AddCost */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:515
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_expression =
 R"""(Adds a cost to this edge, described by a symbolic::Expression ``e``
 containing *only* elements of xu() and xv() as variables. For
@@ -2780,7 +2780,7 @@ Raises:
 
 Raises:
     RuntimeError if no transcription is specified.)""";
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:542
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_binding =
 R"""(Adds a cost to this edge. ``binding`` must contain *only* elements of
 xu() and xv() as variables. For technical reasons relating to being
@@ -2825,7 +2825,7 @@ Raises:
             } AddCost;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge::AddPhiConstraint
             struct /* AddPhiConstraint */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:588
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Adds a constraint on the binary variable associated with this edge.
 
@@ -2836,18 +2836,18 @@ Note:
             } AddPhiConstraint;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge::ClearPhiConstraints
             struct /* ClearPhiConstraints */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:591
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Removes any constraints added with AddPhiConstraint.)""";
             } ClearPhiConstraints;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge::Edge
             struct /* ctor */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:437
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc = R"""()""";
             } ctor;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge::GetConstraints
             struct /* GetConstraints */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:608
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns constraints on this edge.
 
@@ -2860,7 +2860,7 @@ Raises:
             } GetConstraints;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge::GetCosts
             struct /* GetCosts */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:598
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns costs on this edge.
 
@@ -2873,11 +2873,11 @@ Raises:
             } GetCosts;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge::GetSolutionCost
             struct /* GetSolutionCost */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:615
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_1args =
 R"""(Returns the sum of the costs associated with this edge in ``result``,
 or std::nullopt if no solution for this edge is available.)""";
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:621
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_2args =
 R"""(Returns the cost associated with the ``cost`` binding on this edge in
 ``result``, or std::nullopt if no solution for this edge is available.
@@ -2887,7 +2887,7 @@ Raises:
             } GetSolutionCost;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge::GetSolutionPhiXu
             struct /* GetSolutionPhiXu */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:633
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns the vector value of the slack variables associated with ϕxᵤ in
 ``result``, or std::nullopt if no solution for this edge is available.
@@ -2901,7 +2901,7 @@ for all non-zero-flow edges.)""";
             } GetSolutionPhiXu;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge::GetSolutionPhiXv
             struct /* GetSolutionPhiXv */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:639
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns the vector value of the slack variables associated with ϕxᵥ in
 ``result``, or std::nullopt if no solution for this edge is available.
@@ -2909,7 +2909,7 @@ See GetSolutionPhiXu() for more details.)""";
             } GetSolutionPhiXv;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge::NewSlackVariables
             struct /* NewSlackVariables */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:492
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Creates continuous slack variables for this edge, appending them to an
 internal vector of existing slack variables. These slack variables can
@@ -2918,19 +2918,19 @@ modeling more complex costs and constraints.)""";
             } NewSlackVariables;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge::id
             struct /* id */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:442
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns the unique identifier associated with this Edge.)""";
             } id;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge::name
             struct /* name */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:445
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns the string name associated with this edge.)""";
             } name;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge::phi
             struct /* phi */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:467
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns the binary variable associated with this edge. It can be used
 to determine whether this edge was active in the solution to an
@@ -2939,29 +2939,29 @@ MathematicalProgramResult.)""";
             } phi;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge::u
             struct /* u */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:449
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_0args_const =
 R"""(Returns a const reference to the "left" Vertex that this edge connects
 to.)""";
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:453
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_0args_nonconst =
 R"""(Returns a mutable reference to the "left" Vertex that this edge
 connects to.)""";
             } u;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge::v
             struct /* v */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:457
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_0args_const =
 R"""(Returns a const reference to the "right" Vertex that this edge
 connects to.)""";
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:461
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_0args_nonconst =
 R"""(Returns a mutable reference to the "right" Vertex that this edge
 connects to.)""";
             } v;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge::xu
             struct /* xu */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:476
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns the continuous decision variables associated with vertex
 ``u``. This can be used for constructing symbolic::Expression costs
@@ -2972,7 +2972,7 @@ not be what you want.)""";
             } xu;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge::xv
             struct /* xv */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:485
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns the continuous decision variables associated with vertex
 ``v``. This can be used for constructing symbolic::Expression costs
@@ -2984,25 +2984,25 @@ not be what you want.)""";
           } Edge;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::EdgeId
           struct /* EdgeId */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:252
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc = R"""()""";
           } EdgeId;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edges
           struct /* Edges */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:758
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Returns mutable pointers to the edges stored in the graph.)""";
           } Edges;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::GetEdgeByName
           struct /* GetEdgeByName */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:723
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Returns the first edge (by the order added to ``this``) with the given
 name, or nullptr if no such edge exists.)""";
           } GetEdgeByName;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::GetGraphvizString
           struct /* GetGraphvizString */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:782
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Returns a Graphviz string describing the graph vertices and edges. If
 ``result`` is supplied, then the graph will be annotated with the
@@ -3021,21 +3021,21 @@ Parameter ``active_path``:
           } GetGraphvizString;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::GetMutableEdgeByName
           struct /* GetMutableEdgeByName */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:727
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Returns the first edge (by the order added to ``this``) with the given
 name, or nullptr if no such edge exists.)""";
           } GetMutableEdgeByName;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::GetMutableVertexByName
           struct /* GetMutableVertexByName */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:719
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Returns the first vertex (by the order added to ``this``) with the
 given name, or nullptr if no such vertex exists.)""";
           } GetMutableVertexByName;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::GetSolutionPath
           struct /* GetSolutionPath */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:825
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Extracts a path from ``source`` to ``target`` described by the
 ``result`` returned by SolveShortestPath(), via depth-first search
@@ -3054,28 +3054,28 @@ Raises:
           } GetSolutionPath;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::GetVertexByName
           struct /* GetVertexByName */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:715
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Returns the first vertex (by the order added to ``this``) with the
 given name, or nullptr if no such vertex exists.)""";
           } GetVertexByName;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::GraphOfConvexSets
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:245
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc = R"""(Constructs an empty graph.)""";
           } ctor;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::IsValid
           struct /* IsValid */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:755
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc_vertex =
 R"""(Returns true iff ``v`` is registered as a vertex with ``this``.)""";
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:768
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc_edge =
 R"""(Returns true iff ``e`` is registered as an edge with ``this``.)""";
           } IsValid;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::RemoveEdge
           struct /* RemoveEdge */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:739
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Removes edge ``edge`` from the graph.
 
@@ -3084,7 +3084,7 @@ Precondition:
           } RemoveEdge;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::RemoveVertex
           struct /* RemoveVertex */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:734
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Removes vertex ``vertex`` from the graph as well as any edges from or
 to the vertex. Runtime is O(nₑ) where nₑ is the number of edges
@@ -3095,7 +3095,7 @@ Precondition:
           } RemoveVertex;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::SamplePaths
           struct /* SamplePaths */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:851
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc_flows =
 R"""(Samples a collection of unique paths from ``source`` to ``target``,
 where the flow values (the relaxed binary variables associated with
@@ -3129,7 +3129,7 @@ Returns:
 
 Raises:
     RuntimeError if options.max_rounded_path < 1.)""";
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:874
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc_result =
 R"""(Samples a collection of unique paths from ``source`` to ``target``,
 where the flow values (the relaxed binary variables associated with
@@ -3161,7 +3161,7 @@ Raises:
           } SamplePaths;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::SolveConvexRestriction
           struct /* SolveConvexRestriction */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:901
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(The non-convexity in a GCS problem comes from the binary variables
 (phi) associated with the edges being active or inactive in the
@@ -3191,7 +3191,7 @@ Raises:
           } SolveConvexRestriction;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::SolveShortestPath
           struct /* SolveShortestPath */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:809
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Formulates and solves the mixed-integer convex formulation of the
 shortest path problem on the graph, as discussed in detail in
@@ -3225,38 +3225,38 @@ Raises:
           } SolveShortestPath;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::Transcription
           struct /* Transcription */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:237
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Specify the transcription of the optimization problem to which a
 constraint or cost should be added, or from which they should be
 retrieved.)""";
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Transcription::kMIP
             struct /* kMIP */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:238
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(The mixed integer formulation of the GCS problem.)""";
             } kMIP;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Transcription::kRelaxation
             struct /* kRelaxation */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:239
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc = R"""(The relaxation of the GCS problem.)""";
             } kRelaxation;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Transcription::kRestriction
             struct /* kRestriction */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:240
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(The restrction of the GCS problem where the path is fixed.)""";
             } kRestriction;
           } Transcription;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::Vertex
           struct /* Vertex */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:256
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Each vertex in the graph has a corresponding ConvexSet, and a
 std::string name.)""";
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Vertex::AddConstraint
             struct /* AddConstraint */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:340
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_formula =
 R"""(Adds a constraint to this vertex.
 
@@ -3275,7 +3275,7 @@ Raises:
 
 Raises:
     RuntimeError if no transcription is specified.)""";
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:355
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_binding =
 R"""(Adds a constraint to this vertex.
 
@@ -3297,7 +3297,7 @@ Raises:
             } AddConstraint;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Vertex::AddCost
             struct /* AddCost */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:299
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_expression =
 R"""(Adds a cost to this vertex, described by a symbolic::Expression ``e``
 containing *only* elements of x() as variables. For technical reasons
@@ -3339,7 +3339,7 @@ Raises:
 
 Raises:
     RuntimeError if no transcription is specified.)""";
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:325
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_binding =
 R"""(Adds a cost to this vertex. ``binding`` must contain *only* elements
 of x() as variables. For technical reasons relating to being able to
@@ -3383,7 +3383,7 @@ Raises:
             } AddCost;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Vertex::GetConstraints
             struct /* GetConstraints */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:376
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns constraints on this vertex.
 
@@ -3396,7 +3396,7 @@ Raises:
             } GetConstraints;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Vertex::GetCosts
             struct /* GetCosts */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:366
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns costs on this vertex.
 
@@ -3409,7 +3409,7 @@ Raises:
             } GetCosts;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Vertex::GetSolution
             struct /* GetSolution */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:396
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns the solution of x() in ``result``, or std::nullopt if no
 solution for this vertex is available. std::nullopt can happen if the
@@ -3417,12 +3417,12 @@ vertex is deactivated (e.g. not in the shorest path) in the solution.)""";
             } GetSolution;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Vertex::GetSolutionCost
             struct /* GetSolutionCost */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:383
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_1args =
 R"""(Returns the sum of the costs associated with this vertex in
 ``result``, or std::nullopt if no solution for this vertex is
 available.)""";
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:389
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_2args =
 R"""(Returns the cost associated with the ``cost`` binding on this vertex
 in ``result``, or std::nullopt if no solution for this vertex is
@@ -3433,45 +3433,45 @@ Raises:
             } GetSolutionCost;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Vertex::Vertex
             struct /* ctor */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:258
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc = R"""()""";
             } ctor;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Vertex::ambient_dimension
             struct /* ambient_dimension */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:266
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns the ambient dimension of the ConvexSet.)""";
             } ambient_dimension;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Vertex::id
             struct /* id */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:263
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns the unique identifier associated with this Vertex.)""";
             } id;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Vertex::incoming_edges
             struct /* incoming_edges */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:399
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc = R"""()""";
             } incoming_edges;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Vertex::name
             struct /* name */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:269
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc = R"""(Returns the name of the vertex.)""";
             } name;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Vertex::outgoing_edges
             struct /* outgoing_edges */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:400
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc = R"""()""";
             } outgoing_edges;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Vertex::set
             struct /* set */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:277
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns a const reference to the underlying ConvexSet.)""";
             } set;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Vertex::x
             struct /* x */ {
-              // Source: drake/geometry/optimization/graph_of_convex_sets.h:274
+              // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns a decision variable corresponding to an element of the
 ConvexSet, which can be used for constructing symbolic::Expression
@@ -3480,33 +3480,33 @@ costs and constraints.)""";
           } Vertex;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::VertexId
           struct /* VertexId */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:251
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc = R"""()""";
           } VertexId;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::Vertices
           struct /* Vertices */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:745
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Returns mutable pointers to the vertices stored in the graph.)""";
           } Vertices;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::num_edges
           struct /* num_edges */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:742
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc = R"""()""";
           } num_edges;
           // Symbol: drake::geometry::optimization::GraphOfConvexSets::num_vertices
           struct /* num_vertices */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:741
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc = R"""()""";
           } num_vertices;
         } GraphOfConvexSets;
         // Symbol: drake::geometry::optimization::GraphOfConvexSetsOptions
         struct /* GraphOfConvexSetsOptions */ {
-          // Source: drake/geometry/optimization/graph_of_convex_sets.h:26
+          // Source: drake/geometry/optimization/graph_of_convex_sets.h
           const char* doc = R"""()""";
           // Symbol: drake::geometry::optimization::GraphOfConvexSetsOptions::Serialize
           struct /* Serialize */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:31
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background. Note: This only serializes options that
@@ -3514,7 +3514,7 @@ are YAML built-in types.)""";
           } Serialize;
           // Symbol: drake::geometry::optimization::GraphOfConvexSetsOptions::convex_relaxation
           struct /* convex_relaxation */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:50
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Flag to solve the relaxed version of the problem. As discussed in the
 paper, we know that this relaxation cannot solve the original NP-hard
@@ -3524,7 +3524,7 @@ each GCS method is free to choose an appropriate default.)""";
           } convex_relaxation;
           // Symbol: drake::geometry::optimization::GraphOfConvexSetsOptions::flow_tolerance
           struct /* flow_tolerance */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:76
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Tolerance for ignoring flow along a given edge during random rounding.
 If convex_relaxation is false or max_rounded_paths is less than or
@@ -3532,7 +3532,7 @@ equal to zero, this option is ignored.)""";
           } flow_tolerance;
           // Symbol: drake::geometry::optimization::GraphOfConvexSetsOptions::max_rounded_paths
           struct /* max_rounded_paths */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:57
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Maximum number of distinct paths to compare during random rounding;
 only the lowest cost path is returned. If convex_relaxation is false
@@ -3542,7 +3542,7 @@ appropriate default.)""";
           } max_rounded_paths;
           // Symbol: drake::geometry::optimization::GraphOfConvexSetsOptions::max_rounding_trials
           struct /* max_rounding_trials */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:71
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Maximum number of trials to find a novel path during random rounding.
 If convex_relaxation is false or max_rounded_paths is less than or
@@ -3550,7 +3550,7 @@ equal to zero, this option is ignored.)""";
           } max_rounding_trials;
           // Symbol: drake::geometry::optimization::GraphOfConvexSetsOptions::parallelism
           struct /* parallelism */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:134
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Some steps in GCS can be parallelized. This is the maximum number of
 threads used in all places in the algorithm.
@@ -3562,7 +3562,7 @@ Note:
           } parallelism;
           // Symbol: drake::geometry::optimization::GraphOfConvexSetsOptions::preprocessing
           struct /* preprocessing */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:66
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Performs a preprocessing step to remove edges that cannot lie on the
 path from source to target. In most cases, preprocessing causes a net
@@ -3574,7 +3574,7 @@ choose an appropriate default.)""";
           } preprocessing;
           // Symbol: drake::geometry::optimization::GraphOfConvexSetsOptions::preprocessing_solver
           struct /* preprocessing_solver */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:107
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Optimizer to be used in the preprocessing stage of GCS, which is
 performed when SolveShortestPath is called when the ``preprocessing``
@@ -3586,7 +3586,7 @@ solvers::SolverInterface::Solve() method will throw.)""";
           } preprocessing_solver;
           // Symbol: drake::geometry::optimization::GraphOfConvexSetsOptions::preprocessing_solver_options
           struct /* preprocessing_solver_options */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:126
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Optional solver options to be used by preprocessing_solver in the
 preprocessing stage of GCS, which is used in SolveShortestPath. If
@@ -3597,7 +3597,7 @@ preprocessing optimizations.)""";
           } preprocessing_solver_options;
           // Symbol: drake::geometry::optimization::GraphOfConvexSetsOptions::restriction_solver
           struct /* restriction_solver */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:99
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Optimizer to be used in SolveConvexRestriction(), which is also called
 during the rounding stage of SolveShortestPath() given the relaxation.
@@ -3609,7 +3609,7 @@ will throw.)""";
           } restriction_solver;
           // Symbol: drake::geometry::optimization::GraphOfConvexSetsOptions::restriction_solver_options
           struct /* restriction_solver_options */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:118
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Optional solver options to be used in SolveConvexRestriction(), which
 is also used during the rounding stage of SolveShortestPath() given
@@ -3620,7 +3620,7 @@ during rounding.)""";
           } restriction_solver_options;
           // Symbol: drake::geometry::optimization::GraphOfConvexSetsOptions::rounding_seed
           struct /* rounding_seed */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:80
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Random seed to use for random rounding. If convex_relaxation is false
 or max_rounded_paths is less than or equal to zero, this option is
@@ -3628,7 +3628,7 @@ ignored.)""";
           } rounding_seed;
           // Symbol: drake::geometry::optimization::GraphOfConvexSetsOptions::solver
           struct /* solver */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:91
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Optimizer to be used to solve the MIP, the relaxation of the shortest
 path optimization problem and the convex restriction if no
@@ -3639,7 +3639,7 @@ solvers::SolverInterface::Solve() method will throw.)""";
           } solver;
           // Symbol: drake::geometry::optimization::GraphOfConvexSetsOptions::solver_options
           struct /* solver_options */ {
-            // Source: drake/geometry/optimization/graph_of_convex_sets.h:110
+            // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Options passed to the solver when solving the generated problem.)""";
           } solver_options;
@@ -3663,7 +3663,7 @@ R"""(Options passed to the solver when solving the generated problem.)""";
         } GraphOfConvexSetsOptions;
         // Symbol: drake::geometry::optimization::HPolyhedron
         struct /* HPolyhedron */ {
-          // Source: drake/geometry/optimization/hpolyhedron.h:25
+          // Source: drake/geometry/optimization/hpolyhedron.h
           const char* doc =
 R"""(Implements a polyhedral convex set using the half-space
 representation: ``{x| A x ≤ b}``. Note: This set may be unbounded.
@@ -3671,13 +3671,13 @@ representation: ``{x| A x ≤ b}``. Note: This set may be unbounded.
 By convention, we treat a zero-dimensional HPolyhedron as nonempty.)""";
           // Symbol: drake::geometry::optimization::HPolyhedron::A
           struct /* A */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:69
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc =
 R"""(Returns the half-space representation matrix A.)""";
           } A;
           // Symbol: drake::geometry::optimization::HPolyhedron::CartesianPower
           struct /* CartesianPower */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:254
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc =
 R"""(Returns the ``n``-ary Cartesian power of ``this``. The n-ary Cartesian
 power of a set H is the set H ⨉ H ⨉ ... ⨉ H, where H is repeated n
@@ -3685,13 +3685,13 @@ times.)""";
           } CartesianPower;
           // Symbol: drake::geometry::optimization::HPolyhedron::CartesianProduct
           struct /* CartesianProduct */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:250
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc =
 R"""(Returns the Cartesian product of ``this`` and ``other``.)""";
           } CartesianProduct;
           // Symbol: drake::geometry::optimization::HPolyhedron::ChebyshevCenter
           struct /* ChebyshevCenter */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:228
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc =
 R"""(Solves a linear program to compute the center of the largest inscribed
 ball in the polyhedron. This is often the recommended way to find some
@@ -3730,7 +3730,7 @@ Raises:
           } ChebyshevCenter;
           // Symbol: drake::geometry::optimization::HPolyhedron::ContainedIn
           struct /* ContainedIn */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:92
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc =
 R"""(Returns true iff this HPolyhedron is entirely contained in the
 HPolyhedron other. This is done by checking whether every inequality
@@ -3745,7 +3745,7 @@ Parameter ``tol``:
           } ContainedIn;
           // Symbol: drake::geometry::optimization::HPolyhedron::FindRedundant
           struct /* FindRedundant */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:115
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc =
 R"""(Finds the redundant inequalities in this polyhedron. Returns a set ℑ,
 such that if we remove the rows of A * x <= b in ℑ, the remaining
@@ -3758,16 +3758,16 @@ redundant rows.)""";
           } FindRedundant;
           // Symbol: drake::geometry::optimization::HPolyhedron::HPolyhedron
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:30
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc_0args =
 R"""(Constructs a default (zero-dimensional, nonempty) polyhedron.)""";
-            // Source: drake/geometry/optimization/hpolyhedron.h:34
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc_2args_A_b =
 R"""(Constructs the polyhedron.
 
 Precondition:
     A.rows() == b.size().)""";
-            // Source: drake/geometry/optimization/hpolyhedron.h:41
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc_3args_query_object_geometry_id_reference_frame =
 R"""(Constructs a new HPolyhedron from a SceneGraph geometry and pose in
 the ``reference_frame`` frame, obtained via the QueryObject. If
@@ -3776,7 +3776,7 @@ in the world frame.
 
 Raises:
     RuntimeError the geometry is not a convex polytope.)""";
-            // Source: drake/geometry/optimization/hpolyhedron.h:52
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc_2args_vpoly_tol =
 R"""(Constructs a new HPolyedron from a VPolytope object. This function
 will use qhull. If the VPolytope is empty, then the HPolyhedron will
@@ -3788,7 +3788,7 @@ tolerance can be used with commercial solvers (e.g. Gurobi and Mosek).
 
 Raises:
     RuntimeError if vpoly is empty and zero dimensional.)""";
-            // Source: drake/geometry/optimization/hpolyhedron.h:60
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc_1args_prog =
 R"""(Constructs a new HPolyhedron describing the feasible set of a linear
 program ``prog``. The ``i`th dimension in this representation
@@ -3802,7 +3802,7 @@ Raises:
           } ctor;
           // Symbol: drake::geometry::optimization::HPolyhedron::Intersection
           struct /* Intersection */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:103
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc =
 R"""(Constructs the intersection of two HPolyhedron by adding the rows of
 inequalities from ``other``. If ``check_for_redundancy`` is true then
@@ -3815,14 +3815,14 @@ tol means it is less likely to remove a constraint.)""";
           } Intersection;
           // Symbol: drake::geometry::optimization::HPolyhedron::MakeBox
           struct /* MakeBox */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:303
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc =
 R"""(Constructs a polyhedron as an axis-aligned box from the lower and
 upper corners.)""";
           } MakeBox;
           // Symbol: drake::geometry::optimization::HPolyhedron::MakeL1Ball
           struct /* MakeL1Ball */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:313
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc =
 R"""(Constructs the L1-norm unit ball in ``dim`` dimensions, {x | |x|₁ <= 1
 }. This set is also known as the cross-polytope and is described by
@@ -3830,7 +3830,7 @@ the 2ᵈⁱᵐ signed unit vectors.)""";
           } MakeL1Ball;
           // Symbol: drake::geometry::optimization::HPolyhedron::MakeUnitBox
           struct /* MakeUnitBox */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:308
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc =
 R"""(Constructs the L∞-norm unit box in ``dim`` dimensions, {x | |x|∞ <= 1
 }. This is an axis-aligned box, centered at the origin, with edge
@@ -3838,7 +3838,7 @@ length 2.)""";
           } MakeUnitBox;
           // Symbol: drake::geometry::optimization::HPolyhedron::MaximumVolumeInscribedAffineTransformation
           struct /* MaximumVolumeInscribedAffineTransformation */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:188
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc =
 R"""(Solves a semi-definite program to compute the maximum-volume affine
 transformation of ``this``, subject to being a subset of
@@ -3877,7 +3877,7 @@ Raises:
           } MaximumVolumeInscribedAffineTransformation;
           // Symbol: drake::geometry::optimization::HPolyhedron::MaximumVolumeInscribedEllipsoid
           struct /* MaximumVolumeInscribedEllipsoid */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:205
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc =
 R"""(Solves a semi-definite program to compute the inscribed ellipsoid.
 This is also known as the inner Löwner-John ellipsoid. From Section
@@ -3909,7 +3909,7 @@ Raises:
           } MaximumVolumeInscribedEllipsoid;
           // Symbol: drake::geometry::optimization::HPolyhedron::PontryaginDifference
           struct /* PontryaginDifference */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:261
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc =
 R"""(Returns the Pontryagin (Minkowski) Difference of ``this`` and
 ``other``. This is the set A ⊖ B = { a|a+ B ⊆ A }. The result is an
@@ -3920,7 +3920,7 @@ dimension. This method may throw a runtime error if ``this`` or
           } PontryaginDifference;
           // Symbol: drake::geometry::optimization::HPolyhedron::ReduceInequalities
           struct /* ReduceInequalities */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:125
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc =
 R"""(Reduces some (not necessarily all) redundant inequalities in the
 HPolyhedron. This is not guaranteed to give the minimal representation
@@ -3936,7 +3936,7 @@ Parameter ``tol``:
           } ReduceInequalities;
           // Symbol: drake::geometry::optimization::HPolyhedron::Scale
           struct /* Scale */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:246
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc =
 R"""(Results a new HPolyhedron that is a scaled version of ``this``, by
 scaling the distance from each face to the ``center`` by a factor of
@@ -3959,14 +3959,14 @@ Precondition:
           } Scale;
           // Symbol: drake::geometry::optimization::HPolyhedron::Serialize
           struct /* Serialize */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:318
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
           } Serialize;
           // Symbol: drake::geometry::optimization::HPolyhedron::SimplifyByIncrementalFaceTranslation
           struct /* SimplifyByIncrementalFaceTranslation */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:161
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc =
 R"""(Returns an inner approximation of ``this``, aiming to use fewer faces.
 Proceeds by incrementally translating faces inward and removing other
@@ -4032,7 +4032,7 @@ Precondition:
           } SimplifyByIncrementalFaceTranslation;
           // Symbol: drake::geometry::optimization::HPolyhedron::UniformSample
           struct /* UniformSample */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:285
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc_5args =
 R"""(Draw an (approximately) uniform sample from the set using the hit and
 run Markov-chain Monte-Carlo strategy described in
@@ -4061,7 +4061,7 @@ Precondition:
 
 Raises:
     RuntimeError if previous_sample is not in the set.)""";
-            // Source: drake/geometry/optimization/hpolyhedron.h:295
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc_4args =
 R"""(Variant of UniformSample that uses the ChebyshevCenter() as the
 previous_sample as a feasible point to start the Markov chain
@@ -4069,14 +4069,14 @@ sampling.)""";
           } UniformSample;
           // Symbol: drake::geometry::optimization::HPolyhedron::b
           struct /* b */ {
-            // Source: drake/geometry/optimization/hpolyhedron.h:72
+            // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc =
 R"""(Returns the half-space representation vector b.)""";
           } b;
         } HPolyhedron;
         // Symbol: drake::geometry::optimization::Hyperellipsoid
         struct /* Hyperellipsoid */ {
-          // Source: drake/geometry/optimization/hyperellipsoid.h:33
+          // Source: drake/geometry/optimization/hyperellipsoid.h
           const char* doc =
 R"""(Implements an ellipsoidal convex set represented by the quadratic form
 ``{x | (x-center)ᵀAᵀA(x-center) ≤ 1}``. Note that ``A`` need not be
@@ -4097,21 +4097,21 @@ A hyperellipsoid can never be empty -- it always contains its center.
 This includes the zero-dimensional case.)""";
           // Symbol: drake::geometry::optimization::Hyperellipsoid::A
           struct /* A */ {
-            // Source: drake/geometry/optimization/hyperellipsoid.h:61
+            // Source: drake/geometry/optimization/hyperellipsoid.h
             const char* doc = R"""(Returns the quadratic form matrix A.)""";
           } A;
           // Symbol: drake::geometry::optimization::Hyperellipsoid::Hyperellipsoid
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/hyperellipsoid.h:38
+            // Source: drake/geometry/optimization/hyperellipsoid.h
             const char* doc_0args =
 R"""(Constructs a default (zero-dimensional, nonempty) set.)""";
-            // Source: drake/geometry/optimization/hyperellipsoid.h:42
+            // Source: drake/geometry/optimization/hyperellipsoid.h
             const char* doc_2args =
 R"""(Constructs the ellipsoid.
 
 Precondition:
     A.cols() == center.size().)""";
-            // Source: drake/geometry/optimization/hyperellipsoid.h:50
+            // Source: drake/geometry/optimization/hyperellipsoid.h
             const char* doc_3args =
 R"""(Constructs a Hyperellipsoid from a SceneGraph geometry and pose in the
 ``reference_frame`` frame, obtained via the QueryObject. If
@@ -4121,7 +4121,7 @@ in the world frame.
 Raises:
     RuntimeError if geometry_id does not represent a shape that can be
     described as an Hyperellipsoid.)""";
-            // Source: drake/geometry/optimization/hyperellipsoid.h:56
+            // Source: drake/geometry/optimization/hyperellipsoid.h
             const char* doc_1args =
 R"""(Constructs a Hyperellipsoid from an AffineBall.
 
@@ -4130,7 +4130,7 @@ Precondition:
           } ctor;
           // Symbol: drake::geometry::optimization::Hyperellipsoid::MakeAxisAligned
           struct /* MakeAxisAligned */ {
-            // Source: drake/geometry/optimization/hyperellipsoid.h:102
+            // Source: drake/geometry/optimization/hyperellipsoid.h
             const char* doc =
 R"""(Constructs the an axis-aligned Hyperellipsoid with the implicit form
 (x₀-c₀)²/r₀² + (x₁-c₁)²/r₁² + ... + (x_N - c_N)²/r_N² ≤ 1, where c is
@@ -4138,20 +4138,20 @@ shorthand for ``center`` and r is shorthand for ``radius``.)""";
           } MakeAxisAligned;
           // Symbol: drake::geometry::optimization::Hyperellipsoid::MakeHypersphere
           struct /* MakeHypersphere */ {
-            // Source: drake/geometry/optimization/hyperellipsoid.h:107
+            // Source: drake/geometry/optimization/hyperellipsoid.h
             const char* doc =
 R"""(Constructs a hypersphere with ``radius`` and ``center``.)""";
           } MakeHypersphere;
           // Symbol: drake::geometry::optimization::Hyperellipsoid::MakeUnitBall
           struct /* MakeUnitBall */ {
-            // Source: drake/geometry/optimization/hyperellipsoid.h:111
+            // Source: drake/geometry/optimization/hyperellipsoid.h
             const char* doc =
 R"""(Constructs the L₂-norm unit ball in ``dim`` dimensions, {x | |x|₂ <= 1
 }.)""";
           } MakeUnitBall;
           // Symbol: drake::geometry::optimization::Hyperellipsoid::MinimumUniformScalingToTouch
           struct /* MinimumUniformScalingToTouch */ {
-            // Source: drake/geometry/optimization/hyperellipsoid.h:74
+            // Source: drake/geometry/optimization/hyperellipsoid.h
             const char* doc =
 R"""(Computes the smallest uniform scaling of this ellipsoid for which it
 still intersects ``other``. √ minₓ (x-center)ᵀAᵀA(x-center) s.t. x ∈
@@ -4172,7 +4172,7 @@ Raises:
           } MinimumUniformScalingToTouch;
           // Symbol: drake::geometry::optimization::Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid
           struct /* MinimumVolumeCircumscribedEllipsoid */ {
-            // Source: drake/geometry/optimization/hyperellipsoid.h:131
+            // Source: drake/geometry/optimization/hyperellipsoid.h
             const char* doc =
 R"""(Constructs the minimum-volume ellipsoid which contains all of the
 ``points``. This is commonly referred to as the outer Löwner-John
@@ -4204,7 +4204,7 @@ Raises:
           } MinimumVolumeCircumscribedEllipsoid;
           // Symbol: drake::geometry::optimization::Hyperellipsoid::Scale
           struct /* Scale */ {
-            // Source: drake/geometry/optimization/hyperellipsoid.h:84
+            // Source: drake/geometry/optimization/hyperellipsoid.h
             const char* doc =
 R"""(Results a new Hyperellipsoid that is a scaled version of ``this``
 about the center. Any point on the boundary of the ellipsoid, x, is
@@ -4217,40 +4217,40 @@ Precondition:
           } Scale;
           // Symbol: drake::geometry::optimization::Hyperellipsoid::Serialize
           struct /* Serialize */ {
-            // Source: drake/geometry/optimization/hyperellipsoid.h:137
+            // Source: drake/geometry/optimization/hyperellipsoid.h
             const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
           } Serialize;
           // Symbol: drake::geometry::optimization::Hyperellipsoid::Volume
           struct /* Volume */ {
-            // Source: drake/geometry/optimization/hyperellipsoid.h:146
+            // Source: drake/geometry/optimization/hyperellipsoid.h
             const char* doc =
 R"""(Computes the volume for the hyperellipsoid set.)""";
           } Volume;
           // Symbol: drake::geometry::optimization::Hyperellipsoid::center
           struct /* center */ {
-            // Source: drake/geometry/optimization/hyperellipsoid.h:64
+            // Source: drake/geometry/optimization/hyperellipsoid.h
             const char* doc = R"""(Returns the center of the ellipsoid.)""";
           } center;
         } Hyperellipsoid;
         // Symbol: drake::geometry::optimization::Hyperrectangle
         struct /* Hyperrectangle */ {
-          // Source: drake/geometry/optimization/hyperrectangle.h:21
+          // Source: drake/geometry/optimization/hyperrectangle.h
           const char* doc =
 R"""(Axis-aligned hyperrectangle in Rᵈ defined by its lower bounds and
 upper bounds as {x| lb ≤ x ≤ ub})""";
           // Symbol: drake::geometry::optimization::Hyperrectangle::Center
           struct /* Center */ {
-            // Source: drake/geometry/optimization/hyperrectangle.h:47
+            // Source: drake/geometry/optimization/hyperrectangle.h
             const char* doc = R"""(Get the center of the hyperrectangle.)""";
           } Center;
           // Symbol: drake::geometry::optimization::Hyperrectangle::Hyperrectangle
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/hyperrectangle.h:26
+            // Source: drake/geometry/optimization/hyperrectangle.h
             const char* doc_0args =
 R"""(Constructs a default (zero-dimensional, nonempty) hyperrectangle.)""";
-            // Source: drake/geometry/optimization/hyperrectangle.h:32
+            // Source: drake/geometry/optimization/hyperrectangle.h
             const char* doc_2args =
 R"""(Constructs a hyperrectangle from its lower and upper bounds.
 
@@ -4265,20 +4265,20 @@ Precondition:
           } ctor;
           // Symbol: drake::geometry::optimization::Hyperrectangle::MakeHPolyhedron
           struct /* MakeHPolyhedron */ {
-            // Source: drake/geometry/optimization/hyperrectangle.h:50
+            // Source: drake/geometry/optimization/hyperrectangle.h
             const char* doc =
 R"""(Helper to convert this hyperrectangle to an HPolyhedron.)""";
           } MakeHPolyhedron;
           // Symbol: drake::geometry::optimization::Hyperrectangle::MaybeCalcAxisAlignedBoundingBox
           struct /* MaybeCalcAxisAlignedBoundingBox */ {
-            // Source: drake/geometry/optimization/hyperrectangle.h:61
+            // Source: drake/geometry/optimization/hyperrectangle.h
             const char* doc =
 R"""(Returns the minimum axis-aligned bounding box of a convex set, for
 sets with finite volume. (std::nullopt otherwise).)""";
           } MaybeCalcAxisAlignedBoundingBox;
           // Symbol: drake::geometry::optimization::Hyperrectangle::MaybeGetIntersection
           struct /* MaybeGetIntersection */ {
-            // Source: drake/geometry/optimization/hyperrectangle.h:56
+            // Source: drake/geometry/optimization/hyperrectangle.h
             const char* doc =
 R"""(Constructs the intersection of two Hyperrectangle by taking the
 pointwise maximum of the lower bounds and the pointwise minimums of
@@ -4289,32 +4289,32 @@ Precondition:
           } MaybeGetIntersection;
           // Symbol: drake::geometry::optimization::Hyperrectangle::Serialize
           struct /* Serialize */ {
-            // Source: drake/geometry/optimization/hyperrectangle.h:67
+            // Source: drake/geometry/optimization/hyperrectangle.h
             const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
           } Serialize;
           // Symbol: drake::geometry::optimization::Hyperrectangle::UniformSample
           struct /* UniformSample */ {
-            // Source: drake/geometry/optimization/hyperrectangle.h:44
+            // Source: drake/geometry/optimization/hyperrectangle.h
             const char* doc = R"""(Draws a uniform sample from the set.)""";
           } UniformSample;
           // Symbol: drake::geometry::optimization::Hyperrectangle::lb
           struct /* lb */ {
-            // Source: drake/geometry/optimization/hyperrectangle.h:38
+            // Source: drake/geometry/optimization/hyperrectangle.h
             const char* doc =
 R"""(Get the lower bounds of the hyperrectangle.)""";
           } lb;
           // Symbol: drake::geometry::optimization::Hyperrectangle::ub
           struct /* ub */ {
-            // Source: drake/geometry/optimization/hyperrectangle.h:41
+            // Source: drake/geometry/optimization/hyperrectangle.h
             const char* doc =
 R"""(Get the upper bounds of the hyperrectangle.)""";
           } ub;
         } Hyperrectangle;
         // Symbol: drake::geometry::optimization::ImplicitGraphOfConvexSets
         struct /* ImplicitGraphOfConvexSets */ {
-          // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h:23
+          // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h
           const char* doc =
 R"""(A base class to define the interface to an implicit graph of convex
 sets.
@@ -4328,7 +4328,7 @@ Warning:
     time.)""";
           // Symbol: drake::geometry::optimization::ImplicitGraphOfConvexSets::Expand
           struct /* Expand */ {
-            // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h:72
+            // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h
             const char* doc =
 R"""(Expands a vertex ``v`` by adding its outgoing edges (and the vertices
 that they point to) to the mutable_gcs(), calling
@@ -4339,7 +4339,7 @@ will only be called once for each ``v``.)""";
           } Expand;
           // Symbol: drake::geometry::optimization::ImplicitGraphOfConvexSets::ExpandRecursively
           struct /* ExpandRecursively */ {
-            // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h:52
+            // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h
             const char* doc =
 R"""(Makes repeated recursive calls to Successors() until no new vertices
 will be added to the graph, or ``max_successor_calls`` has been
@@ -4353,12 +4353,12 @@ Raises:
           } ExpandRecursively;
           // Symbol: drake::geometry::optimization::ImplicitGraphOfConvexSets::ImplicitGraphOfConvexSets
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h:60
+            // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h
             const char* doc = R"""(Constructs the (empty) implicit GCS.)""";
           } ctor;
           // Symbol: drake::geometry::optimization::ImplicitGraphOfConvexSets::Successors
           struct /* Successors */ {
-            // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h:41
+            // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h
             const char* doc =
 R"""(Returns the outgoing edges from ``v``, which defines the "successors"
 of ``v`` in the common notation of implicit graph search. The internal
@@ -4375,36 +4375,36 @@ Raises:
           } Successors;
           // Symbol: drake::geometry::optimization::ImplicitGraphOfConvexSets::gcs
           struct /* gcs */ {
-            // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h:56
+            // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h
             const char* doc = R"""()""";
           } gcs;
           // Symbol: drake::geometry::optimization::ImplicitGraphOfConvexSets::mutable_gcs
           struct /* mutable_gcs */ {
-            // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h:64
+            // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h
             const char* doc = R"""()""";
           } mutable_gcs;
         } ImplicitGraphOfConvexSets;
         // Symbol: drake::geometry::optimization::ImplicitGraphOfConvexSetsFromExplicit
         struct /* ImplicitGraphOfConvexSetsFromExplicit */ {
-          // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h:84
+          // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h
           const char* doc =
 R"""(Provides an implicit GCS interface given an explicit GCS. Vertices and
 edges are cloned into the implicit GCS as they are expanded.)""";
           // Symbol: drake::geometry::optimization::ImplicitGraphOfConvexSetsFromExplicit::Expand
           struct /* Expand */ {
-            // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h:103
+            // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h
             const char* doc = R"""()""";
           } Expand;
           // Symbol: drake::geometry::optimization::ImplicitGraphOfConvexSetsFromExplicit::ImplicitGraphOfConvexSetsFromExplicit
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h:91
+            // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h
             const char* doc =
 R"""(Constructs an implicit GCS from an explicit GCS. ``gcs`` must remain
 valid for the lifetime of this object.)""";
           } ctor;
           // Symbol: drake::geometry::optimization::ImplicitGraphOfConvexSetsFromExplicit::ImplicitVertexFromExplicit
           struct /* ImplicitVertexFromExplicit */ {
-            // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h:99
+            // Source: drake/geometry/optimization/implicit_graph_of_convex_sets.h
             const char* doc =
 R"""(Looks up the implicit vertex corresponding to ``v``. If ``v`` is not
 already in the implicit GCS, it is added.
@@ -4416,7 +4416,7 @@ Raises:
         } ImplicitGraphOfConvexSetsFromExplicit;
         // Symbol: drake::geometry::optimization::Intersection
         struct /* Intersection */ {
-          // Source: drake/geometry/optimization/intersection.h:23
+          // Source: drake/geometry/optimization/intersection.h
           const char* doc =
 R"""(A convex set that represents the intersection of multiple sets: S = X₁
 ∩ X₂ ∩ ... ∩ Xₙ = {x | x ∈ X₁, x ∈ X₂, ..., x ∈ Xₙ}
@@ -4427,33 +4427,33 @@ zero-dimensional case, which we treat as being {0}, the unique
 zero-dimensional vector space.)""";
           // Symbol: drake::geometry::optimization::Intersection::Intersection
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/intersection.h:28
+            // Source: drake/geometry/optimization/intersection.h
             const char* doc_0args =
 R"""(Constructs a default (zero-dimensional, nonempty) set.)""";
-            // Source: drake/geometry/optimization/intersection.h:31
+            // Source: drake/geometry/optimization/intersection.h
             const char* doc_1args =
 R"""(Constructs the intersection from a vector of convex sets.)""";
-            // Source: drake/geometry/optimization/intersection.h:34
+            // Source: drake/geometry/optimization/intersection.h
             const char* doc_2args =
 R"""(Constructs the intersection from a pair of convex sets.)""";
           } ctor;
           // Symbol: drake::geometry::optimization::Intersection::element
           struct /* element */ {
-            // Source: drake/geometry/optimization/intersection.h:43
+            // Source: drake/geometry/optimization/intersection.h
             const char* doc =
 R"""(Returns a reference to the ConvexSet defining the ``index`` element in
 the intersection.)""";
           } element;
           // Symbol: drake::geometry::optimization::Intersection::num_elements
           struct /* num_elements */ {
-            // Source: drake/geometry/optimization/intersection.h:39
+            // Source: drake/geometry/optimization/intersection.h
             const char* doc =
 R"""(The number of elements (or sets) used in the intersection.)""";
           } num_elements;
         } Intersection;
         // Symbol: drake::geometry::optimization::Iris
         struct /* Iris */ {
-          // Source: drake/geometry/optimization/iris.h:224
+          // Source: drake/geometry/optimization/iris.h
           const char* doc =
 R"""(The IRIS (Iterative Region Inflation by Semidefinite programming)
 algorithm, as described in
@@ -4500,7 +4500,7 @@ Note:
         } Iris;
         // Symbol: drake::geometry::optimization::IrisInConfigurationSpace
         struct /* IrisInConfigurationSpace */ {
-          // Source: drake/geometry/optimization/iris.h:282
+          // Source: drake/geometry/optimization/iris.h
           const char* doc_deprecated =
 R"""((Deprecated.)
 
@@ -4510,7 +4510,7 @@ Deprecated:
         } IrisInConfigurationSpace;
         // Symbol: drake::geometry::optimization::IrisNp
         struct /* IrisNp */ {
-          // Source: drake/geometry/optimization/iris.h:277
+          // Source: drake/geometry/optimization/iris.h
           const char* doc =
 R"""(A variation of the Iris (Iterative Region Inflation by Semidefinite
 programming) algorithm which finds collision-free regions in the
@@ -4559,12 +4559,12 @@ Raises:
         } IrisNp;
         // Symbol: drake::geometry::optimization::IrisOptions
         struct /* IrisOptions */ {
-          // Source: drake/geometry/optimization/iris.h:25
+          // Source: drake/geometry/optimization/iris.h
           const char* doc =
 R"""(Configuration options for the IRIS algorithm.)""";
           // Symbol: drake::geometry::optimization::IrisOptions::Serialize
           struct /* Serialize */ {
-            // Source: drake/geometry/optimization/iris.h:30
+            // Source: drake/geometry/optimization/iris.h
             const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background. Note: This only serializes options that
@@ -4572,7 +4572,7 @@ are YAML built-in types.)""";
           } Serialize;
           // Symbol: drake::geometry::optimization::IrisOptions::bounding_region
           struct /* bounding_region */ {
-            // Source: drake/geometry/optimization/iris.h:98
+            // Source: drake/geometry/optimization/iris.h
             const char* doc =
 R"""(Optionally allows the caller to restrict the space within which IRIS
 regions are allowed to grow. By default, IRIS regions are bounded by
@@ -4583,7 +4583,7 @@ the domain and ``bounding_region``.)""";
           } bounding_region;
           // Symbol: drake::geometry::optimization::IrisOptions::configuration_obstacles
           struct /* configuration_obstacles */ {
-            // Source: drake/geometry/optimization/iris.h:85
+            // Source: drake/geometry/optimization/iris.h
             const char* doc =
 R"""(For IrisNp, it can be beneficial to not only specify task-space
 obstacles (passed in through the plant) but also obstacles that are
@@ -4592,7 +4592,7 @@ used to pass in such configuration space obstacles.)""";
           } configuration_obstacles;
           // Symbol: drake::geometry::optimization::IrisOptions::configuration_space_margin
           struct /* configuration_space_margin */ {
-            // Source: drake/geometry/optimization/iris.h:71
+            // Source: drake/geometry/optimization/iris.h
             const char* doc =
 R"""(For IrisNp, we retreat by this margin from each C-space obstacle in
 order to avoid the possibility of requiring an infinite number of
@@ -4600,7 +4600,7 @@ faces to approximate a curved boundary.)""";
           } configuration_space_margin;
           // Symbol: drake::geometry::optimization::IrisOptions::convexity_radius_stepback
           struct /* convexity_radius_stepback */ {
-            // Source: drake/geometry/optimization/iris.h:185
+            // Source: drake/geometry/optimization/iris.h
             const char* doc =
 R"""(Artificial joint limits are added to continuous revolute joints and
 planar joints with an unbounded revolute degree-of-freedom on a
@@ -4614,12 +4614,12 @@ throws if this value is not smaller than π/2.)""";
           } convexity_radius_stepback;
           // Symbol: drake::geometry::optimization::IrisOptions::iteration_limit
           struct /* iteration_limit */ {
-            // Source: drake/geometry/optimization/iris.h:53
+            // Source: drake/geometry/optimization/iris.h
             const char* doc = R"""(Maximum number of iterations.)""";
           } iteration_limit;
           // Symbol: drake::geometry::optimization::IrisOptions::meshcat
           struct /* meshcat */ {
-            // Source: drake/geometry/optimization/iris.h:142
+            // Source: drake/geometry/optimization/iris.h
             const char* doc =
 R"""(Passing a meshcat instance may enable debugging visualizations; this
 currently only happens in IrisNp and when the configuration space is
@@ -4627,7 +4627,7 @@ currently only happens in IrisNp and when the configuration space is
           } meshcat;
           // Symbol: drake::geometry::optimization::IrisOptions::mixing_steps
           struct /* mixing_steps */ {
-            // Source: drake/geometry/optimization/iris.h:172
+            // Source: drake/geometry/optimization/iris.h
             const char* doc =
 R"""(The ``mixing_steps`` parameters is passed to
 HPolyhedron::UniformSample to control the total number of hit-and-run
@@ -4635,7 +4635,7 @@ steps taken for each new random sample.)""";
           } mixing_steps;
           // Symbol: drake::geometry::optimization::IrisOptions::num_additional_constraint_infeasible_samples
           struct /* num_additional_constraint_infeasible_samples */ {
-            // Source: drake/geometry/optimization/iris.h:132
+            // Source: drake/geometry/optimization/iris.h
             const char* doc =
 R"""(For each constraint in ``prog_with_additional_constraints``, IRIS will
 search for a counter-example by formulating a (likely nonconvex)
@@ -4647,7 +4647,7 @@ requested before moving on to the next constraint.)""";
           } num_additional_constraint_infeasible_samples;
           // Symbol: drake::geometry::optimization::IrisOptions::num_collision_infeasible_samples
           struct /* num_collision_infeasible_samples */ {
-            // Source: drake/geometry/optimization/iris.h:79
+            // Source: drake/geometry/optimization/iris.h
             const char* doc =
 R"""(For each possible collision, IRIS will search for a counter-example by
 formulating a (likely nonconvex) optimization problem. The initial
@@ -4659,7 +4659,7 @@ next constraint.)""";
           } num_collision_infeasible_samples;
           // Symbol: drake::geometry::optimization::IrisOptions::prog_with_additional_constraints
           struct /* prog_with_additional_constraints */ {
-            // Source: drake/geometry/optimization/iris.h:123
+            // Source: drake/geometry/optimization/iris.h
             const char* doc =
 R"""(By default, IrisNp certifies regions for collision avoidance
 constraints and joint limits. This option can be used to pass
@@ -4679,7 +4679,7 @@ into this option.)""";
           } prog_with_additional_constraints;
           // Symbol: drake::geometry::optimization::IrisOptions::random_seed
           struct /* random_seed */ {
-            // Source: drake/geometry/optimization/iris.h:137
+            // Source: drake/geometry/optimization/iris.h
             const char* doc =
 R"""(The only randomization in IRIS is the random sampling done to find
 counter-examples for the additional constraints using in IrisNp. Use
@@ -4687,7 +4687,7 @@ this option to set the initial seed.)""";
           } random_seed;
           // Symbol: drake::geometry::optimization::IrisOptions::relative_termination_threshold
           struct /* relative_termination_threshold */ {
-            // Source: drake/geometry/optimization/iris.h:63
+            // Source: drake/geometry/optimization/iris.h
             const char* doc =
 R"""(IRIS will terminate if the change in the *volume* of the
 hyperellipsoid between iterations is less that this percent of the
@@ -4696,7 +4696,7 @@ setting to a negative value.)""";
           } relative_termination_threshold;
           // Symbol: drake::geometry::optimization::IrisOptions::require_sample_point_is_contained
           struct /* require_sample_point_is_contained */ {
-            // Source: drake/geometry/optimization/iris.h:50
+            // Source: drake/geometry/optimization/iris.h
             const char* doc =
 R"""(The initial polytope is guaranteed to contain the point if that point
 is collision-free. However, the IRIS alternation objectives do not
@@ -4708,13 +4708,13 @@ contain the point.)""";
           } require_sample_point_is_contained;
           // Symbol: drake::geometry::optimization::IrisOptions::solver_options
           struct /* solver_options */ {
-            // Source: drake/geometry/optimization/iris.h:175
+            // Source: drake/geometry/optimization/iris.h
             const char* doc =
 R"""(The SolverOptions used in the optimization program.)""";
           } solver_options;
           // Symbol: drake::geometry::optimization::IrisOptions::starting_ellipse
           struct /* starting_ellipse */ {
-            // Source: drake/geometry/optimization/iris.h:90
+            // Source: drake/geometry/optimization/iris.h
             const char* doc =
 R"""(The initial hyperellipsoid that IRIS will use for calculating
 hyperplanes in the first iteration. If no hyperellipsoid is provided,
@@ -4722,7 +4722,7 @@ a small hypershpere centered at the given sample will be used.)""";
           } starting_ellipse;
           // Symbol: drake::geometry::optimization::IrisOptions::termination_func
           struct /* termination_func */ {
-            // Source: drake/geometry/optimization/iris.h:167
+            // Source: drake/geometry/optimization/iris.h
             const char* doc =
 R"""(A user-defined termination function to determine whether the
 iterations should stop. This function is called after computing each
@@ -4760,7 +4760,7 @@ desired points, in a similar way to how
           } termination_func;
           // Symbol: drake::geometry::optimization::IrisOptions::termination_threshold
           struct /* termination_threshold */ {
-            // Source: drake/geometry/optimization/iris.h:58
+            // Source: drake/geometry/optimization/iris.h
             const char* doc =
 R"""(IRIS will terminate if the change in the *volume* of the
 hyperellipsoid between iterations is less that this threshold. This
@@ -4768,7 +4768,7 @@ termination condition can be disabled by setting to a negative value.)""";
           } termination_threshold;
           // Symbol: drake::geometry::optimization::IrisOptions::verify_domain_boundedness
           struct /* verify_domain_boundedness */ {
-            // Source: drake/geometry/optimization/iris.h:106
+            // Source: drake/geometry/optimization/iris.h
             const char* doc =
 R"""(If the user knows the intersection of bounding_region and the domain
 (for IRIS) or plant joint limits (for IrisNp) is bounded, setting this
@@ -4802,14 +4802,14 @@ unbounded, this will lead to undefined behavior.)""";
         } IrisOptions;
         // Symbol: drake::geometry::optimization::IrisRegions
         struct /* IrisRegions */ {
-          // Source: drake/geometry/optimization/iris.h:310
+          // Source: drake/geometry/optimization/iris.h
           const char* doc =
 R"""(Defines a standardized representation for (named) IrisRegions, which
 can be serialized in both C++ and Python.)""";
         } IrisRegions;
         // Symbol: drake::geometry::optimization::MakeConvexSets
         struct /* MakeConvexSets */ {
-          // Source: drake/geometry/optimization/convex_set.h:537
+          // Source: drake/geometry/optimization/convex_set.h
           const char* doc =
 R"""(Helper function that allows the ConvexSets to be initialized from
 arguments containing ConvexSet references, or unique_ptr<ConvexSet>
@@ -4818,7 +4818,7 @@ ConvexSets::value_type.)""";
         } MakeConvexSets;
         // Symbol: drake::geometry::optimization::MakeIrisObstacles
         struct /* MakeIrisObstacles */ {
-          // Source: drake/geometry/optimization/iris.h:243
+          // Source: drake/geometry/optimization/iris.h
           const char* doc =
 R"""(Constructs ConvexSet representations of obstacles for IRIS in 3D using
 the geometry from a SceneGraph QueryObject. All geometry in the scene
@@ -4834,7 +4834,7 @@ IRIS algorithm.)""";
         } MakeIrisObstacles;
         // Symbol: drake::geometry::optimization::MinkowskiSum
         struct /* MinkowskiSum */ {
-          // Source: drake/geometry/optimization/minkowski_sum.h:24
+          // Source: drake/geometry/optimization/minkowski_sum.h
           const char* doc =
 R"""(A convex set that represents the Minkowski sum of multiple sets: S =
 X₁ ⨁ X₂ ⨁ ... ⨁ Xₙ = {x₁ + x₂ + ... + xₙ | x₁ ∈ X₁, x₂ ∈ X₂, ..., xₙ ∈
@@ -4845,16 +4845,16 @@ when we have sets_.size() == 0) is treated as the singleton {0}, which
 is nonempty. This includes the zero-dimensional case.)""";
           // Symbol: drake::geometry::optimization::MinkowskiSum::MinkowskiSum
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/minkowski_sum.h:29
+            // Source: drake/geometry/optimization/minkowski_sum.h
             const char* doc_0args =
 R"""(Constructs a default (zero-dimensional, nonempty) set.)""";
-            // Source: drake/geometry/optimization/minkowski_sum.h:32
+            // Source: drake/geometry/optimization/minkowski_sum.h
             const char* doc_1args =
 R"""(Constructs the sum from a vector of convex sets.)""";
-            // Source: drake/geometry/optimization/minkowski_sum.h:35
+            // Source: drake/geometry/optimization/minkowski_sum.h
             const char* doc_2args =
 R"""(Constructs the sum from a pair of convex sets.)""";
-            // Source: drake/geometry/optimization/minkowski_sum.h:47
+            // Source: drake/geometry/optimization/minkowski_sum.h
             const char* doc_3args =
 R"""(Constructs a MinkowskiSum from a SceneGraph geometry and pose in the
 ``reference_frame`` frame, obtained via the QueryObject. If
@@ -4872,13 +4872,13 @@ Raises:
           } ctor;
           // Symbol: drake::geometry::optimization::MinkowskiSum::num_terms
           struct /* num_terms */ {
-            // Source: drake/geometry/optimization/minkowski_sum.h:53
+            // Source: drake/geometry/optimization/minkowski_sum.h
             const char* doc =
 R"""(The number of terms (or sets) used in the sum.)""";
           } num_terms;
           // Symbol: drake::geometry::optimization::MinkowskiSum::term
           struct /* term */ {
-            // Source: drake/geometry/optimization/minkowski_sum.h:57
+            // Source: drake/geometry/optimization/minkowski_sum.h
             const char* doc =
 R"""(Returns a reference to the ConvexSet defining the ``index`` term in
 the sum.)""";
@@ -4886,7 +4886,7 @@ the sum.)""";
         } MinkowskiSum;
         // Symbol: drake::geometry::optimization::PartitionConvexSet
         struct /* PartitionConvexSet */ {
-          // Source: drake/geometry/optimization/geodesic_convexity.h:108
+          // Source: drake/geometry/optimization/geodesic_convexity.h
           const char* doc_3args_convex_set_continuous_revolute_joints_epsilon =
 R"""(Partitions a convex set into (smaller) convex sets whose union is the
 original set and that each respect the convexity radius as in
@@ -4916,7 +4916,7 @@ Raises:
     RuntimeError if continuous_revolute_joints has repeated entries,
     or if any entry is outside the interval [0,
     convex_set.ambient_dimension()).)""";
-          // Source: drake/geometry/optimization/geodesic_convexity.h:128
+          // Source: drake/geometry/optimization/geodesic_convexity.h
           const char* doc_3args_convex_sets_continuous_revolute_joints_epsilon =
 R"""(Function overload to take in a list of convex sets, and partition all
 so as to respect the convexity radius. Every set must be bounded and
@@ -4941,55 +4941,55 @@ Raises:
         } PartitionConvexSet;
         // Symbol: drake::geometry::optimization::PlaneSeparatesGeometries
         struct /* PlaneSeparatesGeometries */ {
-          // Source: drake/geometry/optimization/cspace_free_structs.h:25
+          // Source: drake/geometry/optimization/cspace_free_structs.h
           const char* doc =
 R"""(Contains the information to enforce a pair of geometries are separated
 by a plane. The conditions are that certain rational functions should
 be always positive.)""";
           // Symbol: drake::geometry::optimization::PlaneSeparatesGeometries::PlaneSeparatesGeometries
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:26
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::geometry::optimization::PlaneSeparatesGeometries::negative_side_rationals
           struct /* negative_side_rationals */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:45
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc = R"""()""";
           } negative_side_rationals;
           // Symbol: drake::geometry::optimization::PlaneSeparatesGeometries::plane_index
           struct /* plane_index */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:46
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc = R"""()""";
           } plane_index;
           // Symbol: drake::geometry::optimization::PlaneSeparatesGeometries::positive_side_rationals
           struct /* positive_side_rationals */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:44
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc = R"""()""";
           } positive_side_rationals;
           // Symbol: drake::geometry::optimization::PlaneSeparatesGeometries::rationals
           struct /* rationals */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:39
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc = R"""()""";
           } rationals;
         } PlaneSeparatesGeometries;
         // Symbol: drake::geometry::optimization::PlaneSide
         struct /* PlaneSide */ {
-          // Source: drake/geometry/optimization/c_iris_collision_geometry.h:25
+          // Source: drake/geometry/optimization/c_iris_collision_geometry.h
           const char* doc = R"""()""";
           // Symbol: drake::geometry::optimization::PlaneSide::kNegative
           struct /* kNegative */ {
-            // Source: drake/geometry/optimization/c_iris_collision_geometry.h:27
+            // Source: drake/geometry/optimization/c_iris_collision_geometry.h
             const char* doc = R"""()""";
           } kNegative;
           // Symbol: drake::geometry::optimization::PlaneSide::kPositive
           struct /* kPositive */ {
-            // Source: drake/geometry/optimization/c_iris_collision_geometry.h:26
+            // Source: drake/geometry/optimization/c_iris_collision_geometry.h
             const char* doc = R"""()""";
           } kPositive;
         } PlaneSide;
         // Symbol: drake::geometry::optimization::Point
         struct /* Point */ {
-          // Source: drake/geometry/optimization/point.h:20
+          // Source: drake/geometry/optimization/point.h
           const char* doc =
 R"""(A convex set that contains exactly one element. Also known as a
 singleton or unit set.
@@ -4997,12 +4997,12 @@ singleton or unit set.
 This set is always nonempty, even in the zero-dimensional case.)""";
           // Symbol: drake::geometry::optimization::Point::Point
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/point.h:25
+            // Source: drake/geometry/optimization/point.h
             const char* doc_0args =
 R"""(Constructs a default (zero-dimensional, nonempty) set.)""";
-            // Source: drake/geometry/optimization/point.h:28
+            // Source: drake/geometry/optimization/point.h
             const char* doc_1args = R"""(Constructs a Point.)""";
-            // Source: drake/geometry/optimization/point.h:35
+            // Source: drake/geometry/optimization/point.h
             const char* doc_4args =
 R"""(Constructs a Point from a SceneGraph geometry and pose in the
 ``reference_frame`` frame, obtained via the QueryObject. If
@@ -5015,7 +5015,7 @@ Raises:
           } ctor;
           // Symbol: drake::geometry::optimization::Point::set_x
           struct /* set_x */ {
-            // Source: drake/geometry/optimization/point.h:49
+            // Source: drake/geometry/optimization/point.h
             const char* doc =
 R"""(Changes the element ``x`` describing the set.
 
@@ -5024,37 +5024,37 @@ Precondition:
           } set_x;
           // Symbol: drake::geometry::optimization::Point::x
           struct /* x */ {
-            // Source: drake/geometry/optimization/point.h:45
+            // Source: drake/geometry/optimization/point.h
             const char* doc = R"""(Retrieves the point.)""";
           } x;
         } Point;
         // Symbol: drake::geometry::optimization::SampledVolume
         struct /* SampledVolume */ {
-          // Source: drake/geometry/optimization/convex_set.h:58
+          // Source: drake/geometry/optimization/convex_set.h
           const char* doc =
 R"""(The result of a volume calculation from CalcVolumeViaSampling().)""";
           // Symbol: drake::geometry::optimization::SampledVolume::num_samples
           struct /* num_samples */ {
-            // Source: drake/geometry/optimization/convex_set.h:67
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(The number of samples used to compute the volume estimate.)""";
           } num_samples;
           // Symbol: drake::geometry::optimization::SampledVolume::rel_accuracy
           struct /* rel_accuracy */ {
-            // Source: drake/geometry/optimization/convex_set.h:64
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(An upper bound for the relative accuracy of the volume estimate. When
 not evaluated, this value is NaN.)""";
           } rel_accuracy;
           // Symbol: drake::geometry::optimization::SampledVolume::volume
           struct /* volume */ {
-            // Source: drake/geometry/optimization/convex_set.h:60
+            // Source: drake/geometry/optimization/convex_set.h
             const char* doc = R"""(The estimated volume of the set.)""";
           } volume;
         } SampledVolume;
         // Symbol: drake::geometry::optimization::SeparatingPlaneOrder
         struct /* SeparatingPlaneOrder */ {
-          // Source: drake/geometry/optimization/cspace_separating_plane.h:26
+          // Source: drake/geometry/optimization/cspace_separating_plane.h
           const char* doc =
 R"""(The separating plane aᵀx + b ≥ δ, aᵀx + b ≤ −δ has parameters a and b.
 These parameterize a polynomial function of ``s_for_plane`` with the
@@ -5064,27 +5064,27 @@ RationalForwardKinematics class or the paper above on the meaning of
 s.)""";
           // Symbol: drake::geometry::optimization::SeparatingPlaneOrder::kAffine
           struct /* kAffine */ {
-            // Source: drake/geometry/optimization/cspace_separating_plane.h:27
+            // Source: drake/geometry/optimization/cspace_separating_plane.h
             const char* doc = R"""(a and b are affine functions of s.)""";
           } kAffine;
         } SeparatingPlaneOrder;
         // Symbol: drake::geometry::optimization::SeparationCertificateProgramBase
         struct /* SeparationCertificateProgramBase */ {
-          // Source: drake/geometry/optimization/cspace_free_structs.h:102
+          // Source: drake/geometry/optimization/cspace_free_structs.h
           const char* doc = R"""()""";
           // Symbol: drake::geometry::optimization::SeparationCertificateProgramBase::SeparationCertificateProgramBase
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:103
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::geometry::optimization::SeparationCertificateProgramBase::plane_index
           struct /* plane_index */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:110
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc = R"""()""";
           } plane_index;
           // Symbol: drake::geometry::optimization::SeparationCertificateProgramBase::prog
           struct /* prog */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:108
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc =
 R"""(The program that stores all the constraints to search for the
 separating plane and Lagrangian multipliers as certificate.)""";
@@ -5092,7 +5092,7 @@ separating plane and Lagrangian multipliers as certificate.)""";
         } SeparationCertificateProgramBase;
         // Symbol: drake::geometry::optimization::SeparationCertificateResultBase
         struct /* SeparationCertificateResultBase */ {
-          // Source: drake/geometry/optimization/cspace_free_structs.h:80
+          // Source: drake/geometry/optimization/cspace_free_structs.h
           const char* doc =
 R"""(We certify that a pair of geometries is collision free by finding the
 separating plane over a range of configuration. The Lagrangian
@@ -5103,38 +5103,38 @@ plane separates the two geometries in separating_planes()[plane_index]
 in the C-space region.)""";
           // Symbol: drake::geometry::optimization::SeparationCertificateResultBase::SeparationCertificateResultBase
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:81
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::geometry::optimization::SeparationCertificateResultBase::a
           struct /* a */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:86
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc = R"""(The separating plane is { x | aᵀx+b=0 })""";
           } a;
           // Symbol: drake::geometry::optimization::SeparationCertificateResultBase::b
           struct /* b */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:87
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc = R"""()""";
           } b;
           // Symbol: drake::geometry::optimization::SeparationCertificateResultBase::plane_decision_var_vals
           struct /* plane_decision_var_vals */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:90
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc = R"""()""";
           } plane_decision_var_vals;
           // Symbol: drake::geometry::optimization::SeparationCertificateResultBase::plane_index
           struct /* plane_index */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:84
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc = R"""()""";
           } plane_index;
           // Symbol: drake::geometry::optimization::SeparationCertificateResultBase::result
           struct /* result */ {
-            // Source: drake/geometry/optimization/cspace_free_structs.h:93
+            // Source: drake/geometry/optimization/cspace_free_structs.h
             const char* doc = R"""()""";
           } result;
         } SeparationCertificateResultBase;
         // Symbol: drake::geometry::optimization::SetEdgeContainmentTerminationCondition
         struct /* SetEdgeContainmentTerminationCondition */ {
-          // Source: drake/geometry/optimization/iris.h:301
+          // Source: drake/geometry/optimization/iris.h
           const char* doc =
 R"""(Modifies the ``iris_options`` to facilitate finding a region that
 contains the edge between x_1 and x_2. It sets
@@ -5154,7 +5154,7 @@ Raises:
         } SetEdgeContainmentTerminationCondition;
         // Symbol: drake::geometry::optimization::Spectrahedron
         struct /* Spectrahedron */ {
-          // Source: drake/geometry/optimization/spectrahedron.h:22
+          // Source: drake/geometry/optimization/spectrahedron.h
           const char* doc =
 R"""(Implements a spectrahedron (the feasible set of a semidefinite
 program). The ambient dimension of the set is N(N+1)/2; the number of
@@ -5164,10 +5164,10 @@ By convention, a zero-dimensional spectrahedron is considered
 nonempty.)""";
           // Symbol: drake::geometry::optimization::Spectrahedron::Spectrahedron
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/spectrahedron.h:27
+            // Source: drake/geometry/optimization/spectrahedron.h
             const char* doc_0args =
 R"""(Default constructor (yields the zero-dimensional nonempty set).)""";
-            // Source: drake/geometry/optimization/spectrahedron.h:32
+            // Source: drake/geometry/optimization/spectrahedron.h
             const char* doc_1args =
 R"""(Constructs the spectrahedron from a MathematicalProgram.
 
@@ -5177,7 +5177,7 @@ Raises:
           } ctor;
           // Symbol: drake::geometry::optimization::Spectrahedron::supported_attributes
           struct /* supported_attributes */ {
-            // Source: drake/geometry/optimization/spectrahedron.h:37
+            // Source: drake/geometry/optimization/spectrahedron.h
             const char* doc =
 R"""(Returns the list of solvers::ProgramAttributes supported by this
 class.)""";
@@ -5185,19 +5185,19 @@ class.)""";
         } Spectrahedron;
         // Symbol: drake::geometry::optimization::ToPlaneDegree
         struct /* ToPlaneDegree */ {
-          // Source: drake/geometry/optimization/cspace_separating_plane.h:34
+          // Source: drake/geometry/optimization/cspace_separating_plane.h
           const char* doc =
 R"""(Convert SeparatingPlaneOrder to an integer degree.)""";
         } ToPlaneDegree;
         // Symbol: drake::geometry::optimization::ToPlaneOrder
         struct /* ToPlaneOrder */ {
-          // Source: drake/geometry/optimization/cspace_separating_plane.h:31
+          // Source: drake/geometry/optimization/cspace_separating_plane.h
           const char* doc =
 R"""(Convert an integer degree to the SeparatingPlaneOrder)""";
         } ToPlaneOrder;
         // Symbol: drake::geometry::optimization::VPolytope
         struct /* VPolytope */ {
-          // Source: drake/geometry/optimization/vpolytope.h:35
+          // Source: drake/geometry/optimization/vpolytope.h
           const char* doc =
 R"""(A polytope described using the vertex representation. The set is
 defined as the convex hull of the vertices. The vertices are not
@@ -5216,7 +5216,7 @@ as having one or more copies of 0 in the zero-dimensional vector space
 as no points in {0}, which is empty.)""";
           // Symbol: drake::geometry::optimization::VPolytope::GetMinimalRepresentation
           struct /* GetMinimalRepresentation */ {
-            // Source: drake/geometry/optimization/vpolytope.h:75
+            // Source: drake/geometry/optimization/vpolytope.h
             const char* doc =
 R"""(Creates a new VPolytope whose vertices are guaranteed to be minimal,
 i.e., if we remove any point from its vertices, then the convex hull
@@ -5230,14 +5230,14 @@ the affine hull.)""";
           } GetMinimalRepresentation;
           // Symbol: drake::geometry::optimization::VPolytope::MakeBox
           struct /* MakeBox */ {
-            // Source: drake/geometry/optimization/vpolytope.h:89
+            // Source: drake/geometry/optimization/vpolytope.h
             const char* doc =
 R"""(Constructs a polyhedron as an axis-aligned box from the lower and
 upper corners.)""";
           } MakeBox;
           // Symbol: drake::geometry::optimization::VPolytope::MakeUnitBox
           struct /* MakeUnitBox */ {
-            // Source: drake/geometry/optimization/vpolytope.h:94
+            // Source: drake/geometry/optimization/vpolytope.h
             const char* doc =
 R"""(Constructs the L∞-norm unit box in ``dim`` dimensions, {x | |x|∞ <= 1
 }. This is an axis-aligned box, centered at the origin, with edge
@@ -5245,7 +5245,7 @@ length 2.)""";
           } MakeUnitBox;
           // Symbol: drake::geometry::optimization::VPolytope::ToShapeConvex
           struct /* ToShapeConvex */ {
-            // Source: drake/geometry/optimization/vpolytope.h:105
+            // Source: drake/geometry/optimization/vpolytope.h
             const char* doc =
 R"""(Creates a geometry::Convex shape using the vertices of this VPolytope.
 The convex_label is passed as the 'label' of the Convex object.
@@ -5255,17 +5255,17 @@ Precondition:
           } ToShapeConvex;
           // Symbol: drake::geometry::optimization::VPolytope::VPolytope
           struct /* ctor */ {
-            // Source: drake/geometry/optimization/vpolytope.h:41
+            // Source: drake/geometry/optimization/vpolytope.h
             const char* doc =
 R"""(Constructs a set with no vertices in the zero-dimensional space, which
 is empty (by convention).)""";
-            // Source: drake/geometry/optimization/vpolytope.h:47
+            // Source: drake/geometry/optimization/vpolytope.h
             const char* doc_vertices =
 R"""(Constructs the polytope from a d-by-n matrix, where d is the ambient
 dimension, and n is the number of vertices. The vertices do not have
 to be ordered, nor minimal (they can contain points inside their
 convex hull).)""";
-            // Source: drake/geometry/optimization/vpolytope.h:58
+            // Source: drake/geometry/optimization/vpolytope.h
             const char* doc_hpolyhedron =
 R"""(Constructs the polytope from a bounded polyhedron (using Qhull). If
 the HPolyhedron is not full-dimensional, we perform computations in a
@@ -5278,13 +5278,13 @@ used with commercial solvers (e.g. Gurobi and Mosek).
 Raises:
     RuntimeError if H is unbounded or if Qhull terminates with an
     error.)""";
-            // Source: drake/geometry/optimization/vpolytope.h:62
+            // Source: drake/geometry/optimization/vpolytope.h
             const char* doc_scenegraph =
 R"""(Constructs the polytope from a SceneGraph geometry.)""";
           } ctor;
           // Symbol: drake::geometry::optimization::VPolytope::WriteObj
           struct /* WriteObj */ {
-            // Source: drake/geometry/optimization/vpolytope.h:100
+            // Source: drake/geometry/optimization/vpolytope.h
             const char* doc =
 R"""(Uses qhull to compute the Delaunay triangulation and then writes the
 vertices and faces to ``filename`` in the Wavefront Obj format. Note
@@ -5296,7 +5296,7 @@ Precondition:
           } WriteObj;
           // Symbol: drake::geometry::optimization::VPolytope::vertices
           struct /* vertices */ {
-            // Source: drake/geometry/optimization/vpolytope.h:85
+            // Source: drake/geometry/optimization/vpolytope.h
             const char* doc =
 R"""(Returns the vertices in a d-by-n matrix, where d is the ambient
 dimension, and n is the number of vertices.)""";

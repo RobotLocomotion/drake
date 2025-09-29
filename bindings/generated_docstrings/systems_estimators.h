@@ -25,7 +25,7 @@ constexpr struct /* pydrake_doc_systems_estimators */ {
       struct /* estimators */ {
         // Symbol: drake::systems::estimators::DiscreteTimeSteadyStateKalmanFilter
         struct /* DiscreteTimeSteadyStateKalmanFilter */ {
-          // Source: drake/systems/estimators/kalman_filter.h:72
+          // Source: drake/systems/estimators/kalman_filter.h
           const char* doc =
 R"""(Computes the optimal observer gain, L, for the discrete-time linear
 system defined by
@@ -69,7 +69,7 @@ Raises:
         } DiscreteTimeSteadyStateKalmanFilter;
         // Symbol: drake::systems::estimators::LuenbergerObserver
         struct /* LuenbergerObserver */ {
-          // Source: drake/systems/estimators/luenberger_observer.h:44
+          // Source: drake/systems/estimators/luenberger_observer.h
           const char* doc =
 R"""(A simple state observer for a continuous-time dynamical system of the
 form:
@@ -109,13 +109,13 @@ The output of the observer system is :math:`\hat{x}[n+1]`.
     - estimated_state)""";
           // Symbol: drake::systems::estimators::LuenbergerObserver::L
           struct /* L */ {
-            // Source: drake/systems/estimators/luenberger_observer.h:96
+            // Source: drake/systems/estimators/luenberger_observer.h
             const char* doc =
 R"""(Provides access via the short-hand name, L, too.)""";
           } L;
           // Symbol: drake::systems::estimators::LuenbergerObserver::LuenbergerObserver<T>
           struct /* ctor */ {
-            // Source: drake/systems/estimators/luenberger_observer.h:60
+            // Source: drake/systems/estimators/luenberger_observer.h
             const char* doc =
 R"""(Constructs the observer.
 
@@ -137,28 +137,28 @@ Precondition:
           } ctor;
           // Symbol: drake::systems::estimators::LuenbergerObserver::get_estimated_state_output_port
           struct /* get_estimated_state_output_port */ {
-            // Source: drake/systems/estimators/luenberger_observer.h:88
+            // Source: drake/systems/estimators/luenberger_observer.h
             const char* doc = R"""()""";
           } get_estimated_state_output_port;
           // Symbol: drake::systems::estimators::LuenbergerObserver::get_observed_system_input_input_port
           struct /* get_observed_system_input_input_port */ {
-            // Source: drake/systems/estimators/luenberger_observer.h:78
+            // Source: drake/systems/estimators/luenberger_observer.h
             const char* doc = R"""()""";
           } get_observed_system_input_input_port;
           // Symbol: drake::systems::estimators::LuenbergerObserver::get_observed_system_output_input_port
           struct /* get_observed_system_output_input_port */ {
-            // Source: drake/systems/estimators/luenberger_observer.h:83
+            // Source: drake/systems/estimators/luenberger_observer.h
             const char* doc = R"""()""";
           } get_observed_system_output_input_port;
           // Symbol: drake::systems::estimators::LuenbergerObserver::observer_gain
           struct /* observer_gain */ {
-            // Source: drake/systems/estimators/luenberger_observer.h:93
+            // Source: drake/systems/estimators/luenberger_observer.h
             const char* doc = R"""(Provides access to the observer gain.)""";
           } observer_gain;
         } LuenbergerObserver;
         // Symbol: drake::systems::estimators::SteadyStateKalmanFilter
         struct /* SteadyStateKalmanFilter */ {
-          // Source: drake/systems/estimators/kalman_filter.h:40
+          // Source: drake/systems/estimators/kalman_filter.h
           const char* doc_ACWV =
 R"""(Computes the optimal observer gain, L, for the continuous-time linear
 system defined by
@@ -198,7 +198,7 @@ Returns:
 
 Raises:
     RuntimeError if V is not positive definite.)""";
-          // Source: drake/systems/estimators/kalman_filter.h:92
+          // Source: drake/systems/estimators/kalman_filter.h
           const char* doc_linear_system =
 R"""(Creates a Luenberger observer system using the optimal steady-state
 Kalman filter gain matrix, L, as described in SteadyStateKalmanFilter
@@ -220,7 +220,7 @@ Returns:
 
 Raises:
     RuntimeError if V is not positive definite.)""";
-          // Source: drake/systems/estimators/kalman_filter.h:126
+          // Source: drake/systems/estimators/kalman_filter.h
           const char* doc_system =
 R"""(Creates a Luenberger observer system using the steady-state Kalman
 filter observer gain.

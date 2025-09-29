@@ -26,7 +26,7 @@ constexpr struct /* pydrake_doc_multibody_benchmarks_inclined_plane */ {
         struct /* inclined_plane */ {
           // Symbol: drake::multibody::benchmarks::inclined_plane::AddInclinedPlaneAndGravityToPlant
           struct /* AddInclinedPlaneAndGravityToPlant */ {
-            // Source: drake/multibody/benchmarks/inclined_plane/inclined_plane_plant.h:49
+            // Source: drake/multibody/benchmarks/inclined_plane/inclined_plane_plant.h
             const char* doc =
 R"""(Creates an inclined plane A and adds it to an existing plant.
 
@@ -35,7 +35,7 @@ See also:
           } AddInclinedPlaneAndGravityToPlant;
           // Symbol: drake::multibody::benchmarks::inclined_plane::AddInclinedPlaneWithBlockToPlant
           struct /* AddInclinedPlaneWithBlockToPlant */ {
-            // Source: drake/multibody/benchmarks/inclined_plane/inclined_plane_plant.h:64
+            // Source: drake/multibody/benchmarks/inclined_plane/inclined_plane_plant.h
             const char* doc =
 R"""(Creates an inclined plane A and a uniform-density block (body B),
 optionally with 4 spheres welded to it, and adds them to an existing
@@ -56,7 +56,7 @@ See also:
           } AddInclinedPlaneWithBlockToPlant;
           // Symbol: drake::multibody::benchmarks::inclined_plane::AddInclinedPlaneWithSphereToPlant
           struct /* AddInclinedPlaneWithSphereToPlant */ {
-            // Source: drake/multibody/benchmarks/inclined_plane/inclined_plane_plant.h:78
+            // Source: drake/multibody/benchmarks/inclined_plane/inclined_plane_plant.h
             const char* doc =
 R"""(Creates an inclined plane A and a uniform-density sphere (body B) and
 adds them to an existing plant.

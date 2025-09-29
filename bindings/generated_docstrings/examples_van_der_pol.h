@@ -24,7 +24,7 @@ constexpr struct /* pydrake_doc_examples_van_der_pol */ {
       struct /* van_der_pol */ {
         // Symbol: drake::examples::van_der_pol::VanDerPolOscillator
         struct /* VanDerPolOscillator */ {
-          // Source: drake/examples/van_der_pol/van_der_pol.h:32
+          // Source: drake/examples/van_der_pol/van_der_pol.h
           const char* doc =
 R"""(van der Pol oscillator
 
@@ -46,7 +46,7 @@ coming soon).
     - y1)""";
           // Symbol: drake::examples::van_der_pol::VanDerPolOscillator::CalcLimitCycle
           struct /* CalcLimitCycle */ {
-            // Source: drake/examples/van_der_pol/van_der_pol.h:61
+            // Source: drake/examples/van_der_pol/van_der_pol.h
             const char* doc =
 R"""(Returns a 2-row matrix containing the result of simulating the
 oscillator with the default mu=1 from (approximately) one point on the
@@ -55,21 +55,21 @@ the second row is q̇.)""";
           } CalcLimitCycle;
           // Symbol: drake::examples::van_der_pol::VanDerPolOscillator::VanDerPolOscillator<T>
           struct /* ctor */ {
-            // Source: drake/examples/van_der_pol/van_der_pol.h:37
+            // Source: drake/examples/van_der_pol/van_der_pol.h
             const char* doc = R"""(Constructs a default oscillator.)""";
-            // Source: drake/examples/van_der_pol/van_der_pol.h:41
+            // Source: drake/examples/van_der_pol/van_der_pol.h
             const char* doc_copyconvert = R"""(Scalar-converting copy constructor.)""";
           } ctor;
           // Symbol: drake::examples::van_der_pol::VanDerPolOscillator::get_full_state_output_port
           struct /* get_full_state_output_port */ {
-            // Source: drake/examples/van_der_pol/van_der_pol.h:51
+            // Source: drake/examples/van_der_pol/van_der_pol.h
             const char* doc =
 R"""(Returns the output port containing the full state. This is provided
 primarily as a tool for debugging/visualization.)""";
           } get_full_state_output_port;
           // Symbol: drake::examples::van_der_pol::VanDerPolOscillator::get_position_output_port
           struct /* get_position_output_port */ {
-            // Source: drake/examples/van_der_pol/van_der_pol.h:45
+            // Source: drake/examples/van_der_pol/van_der_pol.h
             const char* doc =
 R"""(Returns the output port containing the output configuration (only).)""";
           } get_position_output_port;
