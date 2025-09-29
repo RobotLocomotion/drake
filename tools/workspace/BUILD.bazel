@@ -71,6 +71,21 @@ drake_py_test(
     deps = [":module_py"],
 )
 
+drake_py_test(
+    name = "bzlmod_sync_test",
+    srcs = ["bzlmod_sync_test.py"],
+    allow_import_unittest = True,
+    data = [
+        "//:MODULE.bazel",
+        "//:cmake/MODULE.bazel.in",
+    ],
+    tags = ["lint"],
+    deps = [
+        ":module_py",
+        "@rules_python//python/runfiles",
+    ],
+)
+
 drake_py_binary(
     name = "cmake_configure_file",
     srcs = ["cmake_configure_file.py"],
