@@ -1,6 +1,5 @@
 # -*- bazel -*-
 
-load("@drake//tools/install:install.bzl", "install")
 load("@drake//tools/skylark:cc.bzl", "cc_binary", "cc_library")
 load("@drake//tools/skylark:java.bzl", "java_binary", "java_library")
 load("@drake//tools/skylark:py.bzl", "py_library")
@@ -9,6 +8,10 @@ load(
     "generate_export_header",
 )
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
+
+# TODO(jwnimmer-tri) Nothing in this file is used by Drake anymore, but is kept
+# around for backwards compatibility. The @lcm repository will be deprecated for
+# removal soon.
 
 licenses([
     "notice",  # BSD-3-Clause
@@ -268,15 +271,5 @@ java_binary(
     main_class = "lcm.spy.Spy",
     runtime_deps = [
         ":lcm-java",
-    ],
-)
-
-install(
-    name = "install",
-    targets = [
-        ":libdrake_lcm.so",
-    ],
-    docs = [
-        "COPYING",
     ],
 )

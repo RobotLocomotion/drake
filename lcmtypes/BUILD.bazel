@@ -1,30 +1,50 @@
+load(
+    "@lcm_internal//lcm-bazel:lcm_cc_library_srcs.bzl",
+    "lcm_cc_library_srcs",
+)
+load(
+    "@lcm_internal//lcm-bazel:lcm_java_library_srcs.bzl",
+    "lcm_java_library_srcs",
+)
+load(
+    "@lcm_internal//lcm-bazel:lcm_library.bzl",
+    "lcm_library",
+)
+load(
+    "@lcm_internal//lcm-bazel:lcm_py_library_srcs.bzl",
+    "lcm_py_library_srcs",
+)
 load("//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:cc.bzl",
+    "cc_library",
+)
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
-    "drake_transitive_installed_hdrs_filegroup",
-)
-load(
-    "//tools/skylark:drake_lcm.bzl",
-    "drake_lcm_cc_library",
-    "drake_lcm_java_library",
-    "drake_lcm_py_library",
+    "drake_installed_headers",
 )
 load(
     "//tools/skylark:drake_py.bzl",
-    "drake_py_library",
     "drake_py_test",
 )
 load(
     "//tools/skylark:java.bzl",
     "java_binary",
+    "java_library",
+)
+load(
+    "//tools/skylark:py.bzl",
+    "py_library",
 )
 load("//tools/workspace:generate_file.bzl", "generate_file")
 load(":defs.bzl", "ALL_LCM_SRCS")
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
+
+# === Message sources (*.lcm files) ===
 
 # Search for all *.lcm files.
 _GLOB_ALL_LCM_SRCS = sorted(glob(["*.lcm"]))
@@ -59,28 +79,48 @@ _EXTRA_ALL = [
     ),
 )
 
-drake_lcm_cc_library(
+lcm_library(
+    name = "messages",
+    srcs = ALL_LCM_SRCS,
+    lcm_package = "drake",
+    visibility = ["//visibility:public"],
+)
+
+# === C++ ===
+
+lcm_cc_library_srcs(
+    name = "messages_cc_srcs",
+    src = ":messages",
+    # For C++ (only), we use an improved, Drake-specific lcm-gen.
+    lcmgen = "//tools/lcm_gen",
+)
+
+cc_library(
     name = "lcmtypes_drake_cc",
-    lcm_package = "drake",
-    lcm_srcs = ALL_LCM_SRCS,
+    srcs = [":messages_cc_srcs"],
+    includes = ["."],
+    visibility = ["//visibility:public"],
 )
 
-drake_lcm_py_library(
-    name = "lcmtypes_drake_py",
-    lcm_package = "drake",
-    lcm_srcs = ALL_LCM_SRCS,
-    deps = [
-        "//:module_py",
+drake_installed_headers(
+    name = "lcmtypes_drake_cc.installed_headers",
+    hdrs = [
+        "drake/{}.h".format(lcm_src[:-len(".lcm")])
+        for lcm_src in ALL_LCM_SRCS
     ],
+    tags = ["nolint"],
+    visibility = ["//visibility:public"],
+    deps = [],
 )
 
-drake_lcm_java_library(
-    name = "lcmtypes_drake_java",
-    lcm_package = "drake",
-    lcm_srcs = ALL_LCM_SRCS,
+install(
+    name = "install_lcmtypes_cc",
+    hdrs = [":messages_cc_srcs"],
+    hdr_dest = "include",
 )
 
-# This should list every LCM type that is known to Drake.
+# === C++ deprecation (remove on 2026-06-01) ===
+
 LCMTYPES_CC = [
     ":acrobot",
     ":allegro",
@@ -117,46 +157,23 @@ LCMTYPES_CC = [
     for colon_name in LCMTYPES_CC
 ]
 
-# This rule should list every LCM type that is known to Drake or its external
-# dependencies.
-java_binary(
-    name = "drake-lcm-spy",
-    main_class = "lcm.spy.Spy",
-    visibility = ["//visibility:private"],
-    runtime_deps = [
-        ":lcmtypes_drake_java",
-    ],
+# === Python ===
+
+lcm_py_library_srcs(
+    name = "messages_py_srcs",
+    src = ":messages",
 )
 
-drake_transitive_installed_hdrs_filegroup(
-    name = "lcmtypes_drake_cc_headers",
-    visibility = ["//visibility:private"],
-    deps = [":lcmtypes_drake_cc"],
-)
-
-install(
-    name = "install_lcmtypes_cc",
-    hdrs = [":lcmtypes_drake_cc_headers"],
-    hdr_dest = "include",
-    visibility = ["//visibility:private"],
+py_library(
+    name = "lcmtypes_drake_py",
+    srcs = [":messages_py_srcs"],
+    imports = ["."],
+    visibility = ["//visibility:public"],
 )
 
 install(
     name = "install_lcmtypes_python",
     targets = [":lcmtypes_drake_py"],
-    visibility = ["//visibility:private"],
-)
-
-install(
-    name = "install_lcmtypes_java",
-    targets = [":lcmtypes_drake_java"],
-    rename = {"share/java/liblcmtypes_drake_java.jar": "lcmtypes_drake.jar"},
-    visibility = ["//visibility:private"],
-)
-
-config_setting(
-    name = "flag_install_java_true",
-    flag_values = {"//tools/flags:install_java": "True"},
 )
 
 config_setting(
@@ -166,8 +183,44 @@ config_setting(
     },
 )
 
+# === Java ===
+
+lcm_java_library_srcs(
+    name = "messages_java_srcs",
+    src = ":messages",
+)
+
+java_library(
+    name = "lcmtypes_drake_java",
+    srcs = [":messages_java_srcs"],
+    visibility = ["//visibility:public"],
+    deps = ["@lcm_internal//lcm-java"],
+)
+
+install(
+    name = "install_lcmtypes_java",
+    targets = [":lcmtypes_drake_java"],
+    rename = {"share/java/liblcmtypes_drake_java.jar": "lcmtypes_drake.jar"},
+)
+
+config_setting(
+    name = "flag_install_java_true",
+    flag_values = {"//tools/flags:install_java": "True"},
+)
+
+java_binary(
+    name = "drake-lcm-spy",
+    main_class = "lcm.spy.Spy",
+    runtime_deps = [
+        ":lcmtypes_drake_java",
+    ],
+)
+
+# === Install logic (with opt-outs) ===
+
 install(
     name = "install",
+    visibility = ["//:__pkg__"],
     deps = [
         ":install_lcmtypes_cc",
     ] + select({
@@ -183,7 +236,7 @@ install(
     }),
 )
 
-# === test/ ===
+# === Tests ===
 
 drake_py_test(
     name = "nested_types_test",

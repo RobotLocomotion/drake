@@ -1,9 +1,9 @@
 #include <string>
 
+#include "drake/bindings/generated_docstrings/planning_iris.h"
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -16,7 +16,7 @@ namespace {
 void DefinePlanningCommonSampledIrisOptions(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
-  constexpr auto& doc = pydrake_doc.drake.planning;
+  constexpr auto& doc = pydrake_doc_planning_iris.drake.planning;
 
   // CommonSampledIrisOptions
   const auto& cls_doc = doc.CommonSampledIrisOptions;
@@ -161,7 +161,7 @@ Func WrapParameterizationFunc(
 void DefinePlanningIrisParameterizationFunction(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
-  constexpr auto& doc = pydrake_doc.drake.planning;
+  constexpr auto& doc = pydrake_doc_planning_iris.drake.planning;
 
   // IrisParameterizationFunction
   const auto& cls_doc = doc.IrisParameterizationFunction;

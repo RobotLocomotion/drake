@@ -1,0 +1,119 @@
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_cc.bzl", "drake_cc_googletest")
+load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_test")
+load(":tools/defs.bzl", "generate_docstrings")
+
+# List of the subdirectories we need docstrings for.
+_SUBDIRS = [
+    "common",
+    "common/schema",
+    "common/symbolic",
+    "common/symbolic/expression",
+    "common/trajectories",
+    "examples/acrobot",
+    "examples/compass_gait",
+    "examples/pendulum",
+    "examples/quadrotor",
+    "examples/rimless_wheel",
+    "examples/van_der_pol",
+    "geometry",
+    "geometry/optimization",
+    "geometry/proximity",
+    "geometry/query_results",
+    "geometry/render",
+    "geometry/render_gl",
+    "geometry/render_gltf_client",
+    "geometry/render_vtk",
+    "lcm",
+    "manipulation/kuka_iiwa",
+    "manipulation/schunk_wsg",
+    "manipulation/util",
+    "math",
+    "multibody/benchmarks/acrobot",
+    "multibody/benchmarks/free_body",
+    "multibody/benchmarks/inclined_plane",
+    "multibody/benchmarks/kuka_iiwa_robot",
+    "multibody/benchmarks/mass_damper_spring",
+    "multibody/benchmarks/pendulum",
+    "multibody/fem",
+    "multibody/inverse_kinematics",
+    "multibody/math",
+    "multibody/meshcat",
+    "multibody/optimization",
+    "multibody/parsing",
+    "multibody/plant",
+    "multibody/rational",
+    "multibody/tree",
+    "perception",
+    "planning",
+    "planning/graph_algorithms",
+    "planning/iris",
+    "planning/locomotion",
+    "planning/trajectory_optimization",
+    "solvers",
+    "systems/analysis",
+    "systems/controllers",
+    "systems/estimators",
+    "systems/framework",
+    "systems/lcm",
+    "systems/optimization",
+    "systems/primitives",
+    "systems/rendering",
+    "systems/sensors",
+    "visualization",
+]
+
+# List of the committed filenames.
+_FILENAMES = [
+    subdir.replace("/", "_") + ".h"
+    for subdir in _SUBDIRS
+]
+
+# List of the generated filenames.
+_FILENAMES_GEN = [
+    "gen/" + filename
+    for filename in _FILENAMES
+]
+
+# Generate a docstring file for each of the _SUBDIRS. These rules create the
+# _FILENAMES_GEN generated files.
+[
+    generate_docstrings(subdir = subdir)
+    for subdir in _SUBDIRS
+]
+
+# Used by :regenerate (below) to know what to copy.
+write_file(
+    name = "gen_filenames.txt",
+    out = "filenames.txt",
+    content = _FILENAMES,
+)
+
+# Provide a rule that refreshes the generated files.
+drake_py_binary(
+    name = "regenerate",
+    srcs = ["tools/regenerate.py"],
+    data = [":filenames.txt"] + _FILENAMES_GEN,
+    deps = ["@rules_python//python/runfiles"],
+)
+
+# Complain if the committed docstrings differ from the reference docstrings.
+drake_py_test(
+    name = "diff_test",
+    args = _FILENAMES,
+    data = _FILENAMES + _FILENAMES_GEN,
+    tags = ["lint"],
+    deps = ["@rules_python//python/runfiles"],
+)
+
+drake_cc_googletest(
+    name = "documentation_pybind_test",
+    deps = [
+        ":math",
+    ],
+)
+
+add_lint_tests(
+    bazel_lint_extra_srcs = ["tools/defs.bzl"],
+)

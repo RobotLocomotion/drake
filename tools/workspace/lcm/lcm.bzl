@@ -7,6 +7,10 @@ load(
     "drake_generate_include_header",
 )
 
+# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
+# backwards compatibility. It will be deprecated for removal along with the
+# entire @lcm repository soon enough.
+
 def _lcm_aggregate_hdr(
         lcm_package,
         name,

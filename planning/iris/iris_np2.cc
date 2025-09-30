@@ -555,7 +555,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   if (options.sampled_iris_options.verbose) {
     log()->info(
         "IrisNp2 finding region that is {} collision free with {} certainty ",
-        options.sampled_iris_options.epsilon,
+        1 - options.sampled_iris_options.epsilon,
         1 - options.sampled_iris_options.delta);
     log()->info("IrisNp2 worst case test requires {} samples.", N_max);
   }
@@ -599,9 +599,6 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           options.sampled_iris_options.tau);
 
       particles.resize(N_k);  // Entries will be overwritten.
-
-      // TODO(rhjiang): Implement the ray sampling strategy, and expose it as an
-      // option to the user.
       internal::PopulateParticlesByUniformSampling(
           P_candidate, N_k, options.sampled_iris_options.mixing_steps,
           &generators, &particles);

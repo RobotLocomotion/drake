@@ -8,7 +8,6 @@ load(
 )
 load(
     "//tools/skylark:drake_py.bzl",
-    "drake_py_test",
     "drake_py_unittest",
 )
 
@@ -69,7 +68,7 @@ drake_cc_library(
 drake_cc_library(
     name = "drake_lcm",
     srcs = select({
-        "//tools/workspace/lcm:flag_with_lcm_runtime_true": [
+        "//tools/workspace/lcm_internal:flag_with_lcm_runtime_true": [
             "drake_lcm.cc",
         ],
         "//conditions:default": [
@@ -88,10 +87,10 @@ drake_cc_library(
         "//common:essential",
     ],
     implementation_deps = select({
-        "//tools/workspace/lcm:flag_with_lcm_runtime_true": [
+        "//tools/workspace/lcm_internal:flag_with_lcm_runtime_true": [
             "//common:network_policy",
+            "//tools/workspace/lcm_internal:shared_library",
             "@glib",
-            "@lcm",
         ],
         "//conditions:default": [],
     }),
@@ -100,7 +99,7 @@ drake_cc_library(
 drake_cc_library(
     name = "lcm_log",
     srcs = select({
-        "//tools/workspace/lcm:flag_with_lcm_runtime_true": [
+        "//tools/workspace/lcm_internal:flag_with_lcm_runtime_true": [
             "drake_lcm_log.cc",
         ],
         "//conditions:default": [
@@ -118,9 +117,9 @@ drake_cc_library(
         "//common:essential",
     ],
     implementation_deps = select({
-        "//tools/workspace/lcm:flag_with_lcm_runtime_true": [
+        "//tools/workspace/lcm_internal:flag_with_lcm_runtime_true": [
             "//common:string_container",
-            "@lcm",
+            "//tools/workspace/lcm_internal:shared_library",
         ],
         "//conditions:default": [
             "//common:unused",
@@ -176,7 +175,7 @@ drake_cc_googletest(
         ":drake_lcm",
         ":lcmt_drake_signal_utils",
         "//common/test_utilities:expect_throws_message",
-        "@lcm",
+        "//tools/workspace/lcm_internal:shared_library",
     ],
 )
 
@@ -217,7 +216,7 @@ drake_cc_googletest(
     deps = [
         ":drake_lcm",
         ":lcmt_drake_signal_utils",
-        "@lcm",
+        "//tools/workspace/lcm_internal:shared_library",
     ],
 )
 
@@ -257,13 +256,6 @@ drake_cc_googletest(
     deps = [
         ":lcmt_drake_signal_utils",
     ],
-)
-
-drake_py_test(
-    name = "import_lcm_test",
-    # TODO(jwnimmer-tri) Port this to drake_py_unittest.
-    allow_import_unittest = True,
-    deps = ["@lcm//:lcm-python"],
 )
 
 add_lint_tests(

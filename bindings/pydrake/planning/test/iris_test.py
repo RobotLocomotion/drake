@@ -241,3 +241,46 @@ class TestIrisNp2(unittest.TestCase):
                              options=options)
         test_point_shifted = inverse_parameterization(test_point)
         self.assertTrue(region.PointInSet(test_point_shifted))
+
+
+class TestOptionsPrinting(unittest.TestCase):
+    skip_fields = [
+        "parameterization",  # a function
+        "solver",  # a solver object
+    ]
+
+    def get_options_fields(self, options, skip):
+        return [x for x in dir(options)
+                if not x.startswith("_") and x not in skip]
+
+    def check_fields(self, options, fields, printed):
+        for field in fields:
+            substring = f"{field}={str(getattr(options, field))}"
+            self.assertTrue(substring in printed, substring)
+
+    def check_sampled_iris_options(self, options, printed):
+        fields = self.get_options_fields(options, skip=[
+            "containment_points",  # a matrix
+            "prog_with_additional_constraints",  # a program
+        ])
+        self.check_fields(options, fields, printed)
+
+    def test_options_zo(self):
+        options = mut.IrisZoOptions()
+        printed = repr(options)
+        fields = self.get_options_fields(options, skip=self.skip_fields)
+        self.check_fields(options, fields, printed)
+
+        self.check_sampled_iris_options(options.sampled_iris_options, printed)
+
+    def test_options_np2(self):
+        options = mut.IrisNp2Options()
+        printed = repr(options)
+        fields = self.get_options_fields(options, skip=self.skip_fields)
+        self.check_fields(options, fields, printed)
+
+        # Check ray_sampler_options.
+        fields = self.get_options_fields(options.ray_sampler_options, skip=[])
+        self.check_fields(options.ray_sampler_options, fields, printed)
+
+        self.check_sampled_iris_options(options.sampled_iris_options, printed)

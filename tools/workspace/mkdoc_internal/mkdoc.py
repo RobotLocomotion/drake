@@ -579,7 +579,7 @@ def print_symbols(f, name, node, level=0):
         delim = "\n"
         if "\n" not in comment and len(comment) < 40:
             delim = " "
-        iprint('  // Source: {}:{}'.format(symbol.include, symbol.line))
+        iprint('  // Source: {}'.format(symbol.include))
         iprint('  const char* {} ={}R"""({})""";'.format(
             doc_var, delim, comment.strip()))
 
@@ -707,7 +707,6 @@ def main():
     include_files = []
     # Create mapping from filename to include file.
     include_file_map = FileDict()
-    used_ignore_patterns = set()
     for filename in filenames:
         for include_path in include_paths:
             prefix = include_path + "/"
@@ -720,15 +719,11 @@ def main():
                     filename))
         for p in ignore_patterns:
             if fnmatch(include_file, p):
-                used_ignore_patterns.add(p)
                 break
         else:
             include_files.append(include_file)
             include_file_map[filename] = include_file
     assert len(include_files) > 0
-    unused_ignore_patterns = set(ignore_patterns) - used_ignore_patterns
-    if unused_ignore_patterns:
-        print(f"Unused ignore patterns: {unused_ignore_patterns}")
     # Generate the glue include file, which will include all relevant include
     # files, and parse. Use a tempdir that is relative to the output file for
     # usage with Bazel.

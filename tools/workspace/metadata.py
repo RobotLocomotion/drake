@@ -111,7 +111,7 @@ def read_repository_metadata(repositories=None):
         if expect_to_find and not found:
             logging.warn(f"Missing metadata for {apparent_name}")
         elif not expect_to_find and found:
-            logging.warn(f"Unexpectedly found metadata for {name}")
+            logging.warn(f"Unexpectedly found metadata for {apparent_name}")
 
     # Add 'magic' metadata for repositories that don't/can't generate it the
     # usual way.

@@ -36,9 +36,10 @@ struct TypeConversionExample {
 // Wrapper for TypeConversionExample.
 struct wrapper_type_conversion_exaple {
   using Type = TypeConversionExample;
-  static constexpr auto original_name = py::detail::_("TypeConversionExample");
+  static constexpr auto original_name =
+      py::detail::const_name("TypeConversionExample");
   using WrappedType = std::string;
-  static constexpr auto wrapped_name = py::detail::_("str");
+  static constexpr auto wrapped_name = py::detail::const_name("str");
 
   static TypeConversionExample unwrap(const std::string& value) {
     return TypeConversionExample{value};

@@ -21,7 +21,7 @@ where ``<job-name>`` is the name of an
 
 For example:
 
-* ``@drake-jenkins-bot mac-arm-sonoma-clang-bazel-experimental-release please``
+* ``@drake-jenkins-bot mac-arm-sequoia-clang-bazel-experimental-release please``
 * ``@drake-jenkins-bot linux-noble-clang-bazel-experimental-valgrind-memcheck please``
 
 A list of Jenkins bot commands for experimental builds that covers the full
@@ -134,7 +134,7 @@ or [debian package](/apt.html), comment on an open pull request using one or
 more of these commands:
 
 * ``@drake-jenkins-bot linux-noble-unprovisioned-gcc-cmake-experimental-packaging please``
-* ``@drake-jenkins-bot mac-arm-sonoma-clang-cmake-experimental-packaging please``
+* ``@drake-jenkins-bot mac-arm-sequoia-clang-cmake-experimental-packaging please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
 to schedule a build of one of the [Packaging](https://drake-jenkins.csail.mit.edu/view/Packaging/)
@@ -167,7 +167,7 @@ To schedule an "experimental" build of a [wheel package](/pip.html),
 comment on an open pull request using one or more of these commands:
 
 * ``@drake-jenkins-bot linux-noble-unprovisioned-gcc-wheel-experimental-release please``
-* ``@drake-jenkins-bot mac-arm-sonoma-clang-wheel-experimental-release please``
+* ``@drake-jenkins-bot mac-arm-sequoia-clang-wheel-experimental-release please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
 to schedule a build of one of the [Wheel](https://drake-jenkins.csail.mit.edu/view/Wheel/)

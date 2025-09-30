@@ -1,0 +1,30 @@
+[lcm] Add Drake-specific compiler flags
+
+Reasoning for not upstreaming this patch: upstream should fix the code
+to not have warnings in the first place, rather than suppressing them.
+
+--- lcm-bazel/private/copts.bzl
++++ lcm-bazel/private/copts.bzl
+@@ -6,5 +6,8 @@ WARNINGS_COPTS = select({
+         "-Wno-unused-parameter",
+         "-Wno-format-zero-length",
+         "-Wno-stringop-truncation",
++        # Additional Drake-specific options.
++        "-w",
++        "-std=gnu11",
+     ],
+ })
+
+--- lcm-logger/BUILD.bazel
++++ lcm-logger/BUILD.bazel
+@@ -12,6 +12,10 @@ cc_binary(
+         "glib_util.h",
+         "lcm_logger.c",
+     ],
++    copts = [
++        # Drake-specific options.
++        "-w"
++    ],
+     visibility = ["//visibility:public"],
+     deps = [
+         "//lcm:lcm-static",

@@ -1,5 +1,5 @@
+#include "drake/bindings/generated_docstrings/planning_iris.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -12,7 +12,7 @@ namespace internal {
 void DefinePlanningIrisNp2(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
-  constexpr auto& doc = pydrake_doc.drake.planning;
+  constexpr auto& doc = pydrake_doc_planning_iris.drake.planning;
 
   // RaySamplerOptions
   const auto& ray_sampler_options_doc = doc.RaySamplerOptions;
@@ -27,7 +27,17 @@ void DefinePlanningIrisNp2(py::module m) {
           ray_sampler_options_doc.ray_search_num_steps.doc)
       .def_readwrite("num_particles_to_walk_towards",
           &RaySamplerOptions::num_particles_to_walk_towards,
-          ray_sampler_options_doc.num_particles_to_walk_towards.doc);
+          ray_sampler_options_doc.num_particles_to_walk_towards.doc)
+      .def("__repr__", [](const RaySamplerOptions& self) {
+        return py::str(
+            "RaySamplerOptions("
+            "only_walk_toward_collisions={}, "
+            "ray_search_num_steps={}, "
+            "num_particles_to_walk_towards={}, "
+            ")")
+            .format(self.only_walk_toward_collisions, self.ray_search_num_steps,
+                self.num_particles_to_walk_towards);
+      });
 
   // IrisNp2Options
   const auto& cls_doc = doc.IrisNp2Options;
@@ -49,10 +59,12 @@ void DefinePlanningIrisNp2(py::module m) {
         return py::str(
             "IrisNp2Options("
             "sampled_iris_options={}, "
+            "sampling_strategy={}, "
+            "ray_sampler_options={}, "
             "add_hyperplane_if_solve_fails={}, "
             ")")
-            .format(
-                self.sampled_iris_options, self.add_hyperplane_if_solve_fails);
+            .format(self.sampled_iris_options, self.sampling_strategy,
+                self.ray_sampler_options, self.add_hyperplane_if_solve_fails);
       });
 
   DefReadWriteKeepAlive(
