@@ -116,7 +116,9 @@ R"""(Number of mixing steps used for hit-and-run sampling.)""";
         struct /* num_particles */ {
           // Source: drake/planning/iris/iris_common.h
           const char* doc =
-R"""(Number of particles used to estimate the closest collision.)""";
+R"""(Minimum number of particles drawn per inner iteration. Some or all of
+these particles, depending on the other algorithm settings, will be
+used to find the closest collisions.)""";
         } num_particles;
         // Symbol: drake::planning::CommonSampledIrisOptions::parallelism
         struct /* parallelism */ {
