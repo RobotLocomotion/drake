@@ -16,6 +16,7 @@ _REPOSITORIES_WITH_NO_METADATA = [
     "bazel_skylib",
     "bazel_tools",
     "buildifier_prebuilt",
+    "crate",
     "gflags",
     "google_benchmark",
     "googletest",
