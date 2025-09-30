@@ -9,8 +9,6 @@ bool MultibodyTreeTopology::operator==(
   if (is_valid_ != other.is_valid_) return false;
   if (forest_height_ != other.forest_height_) return false;
 
-  if (joint_actuator_topology_ != other.joint_actuator_topology_) return false;
-
   if (num_positions_ != other.num_positions_) return false;
   if (num_velocities_ != other.num_velocities_) return false;
   if (num_states_ != other.num_states_) return false;
@@ -32,55 +30,6 @@ bool MultibodyTreeTopology::operator==(
 }
 
 MultibodyTreeTopology::~MultibodyTreeTopology() = default;
-
-const JointActuatorTopology& MultibodyTreeTopology::get_joint_actuator_topology(
-    JointActuatorIndex index) const {
-  DRAKE_ASSERT(index < ssize(joint_actuator_topology_));
-  DRAKE_DEMAND(joint_actuator_topology_[index].has_value());
-  return *joint_actuator_topology_[index];
-}
-
-void MultibodyTreeTopology::add_joint_actuator_topology(
-    JointActuatorIndex joint_actuator_index, int num_dofs) {
-  DRAKE_DEMAND(joint_actuator_index == num_joint_actuators());
-  DRAKE_DEMAND(num_dofs > 0);
-  if (is_valid()) {
-    throw std::logic_error(
-        "This MultibodyTreeTopology is finalized already. "
-        "Therefore adding more joint actuators is not allowed. "
-        "See documentation for Finalize() for details.");
-  }
-  const int actuator_dof_start = num_actuated_dofs();
-  joint_actuator_topology_.push_back(
-      JointActuatorTopology{.index = joint_actuator_index,
-                            .actuator_dof_start = actuator_dof_start,
-                            .num_dofs = num_dofs});
-  num_actuated_dofs_ += num_dofs;
-}
-
-void MultibodyTreeTopology::RemoveJointActuatorTopology(
-    JointActuatorIndex actuator_index) {
-  DRAKE_DEMAND(actuator_index < ssize(joint_actuator_topology_));
-  DRAKE_THROW_UNLESS(!is_valid());
-  DRAKE_THROW_UNLESS(joint_actuator_topology_[actuator_index].has_value());
-
-  // Reduce the total number of actuated dofs.
-  const int num_dofs = (*joint_actuator_topology_[actuator_index]).num_dofs;
-  DRAKE_DEMAND(num_actuated_dofs_ >= num_dofs);
-  num_actuated_dofs_ -= num_dofs;
-
-  // Mark the actuator as "removed".
-  joint_actuator_topology_[actuator_index] = std::nullopt;
-
-  // Update the actuator_dof_start for all joint actuators that come after
-  // the one we just removed.
-  for (JointActuatorIndex i(actuator_index);
-       i < ssize(joint_actuator_topology_); ++i) {
-    if (joint_actuator_topology_[i].has_value()) {
-      (*joint_actuator_topology_[i]).actuator_dof_start -= num_dofs;
-    }
-  }
-}
 
 // TODO(sherm1) For historical reasons we're extracting information from the
 //  Forest and distributing it but we should work directly from the Forest

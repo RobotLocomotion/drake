@@ -546,7 +546,7 @@ class MultibodyTree {
   }
 
   // See MultibodyPlant method.
-  int num_actuated_dofs() const { return topology_.num_actuated_dofs(); }
+  int num_actuated_dofs() const { return num_actuated_dofs_; }
 
   // See MultibodyPlant method.
   int num_actuators(ModelInstanceIndex model_instance) const {
@@ -2851,6 +2851,9 @@ class MultibodyTree {
   std::vector<std::unique_ptr<ForceElement<T>>> force_elements_;
   ElementCollection<T, JointActuator, JointActuatorIndex> actuators_;
 
+  // This is accumulated as actuators are added.
+  int num_actuated_dofs_{0};
+
   // This is the internal representation of user-defined model instances.
   ElementCollection<T, internal::ModelInstance, ModelInstanceIndex>
       model_instances_;
@@ -2880,13 +2883,14 @@ class MultibodyTree {
   std::unordered_map<JointIndex, MobodIndex> joint_to_mobilizer_;
 
   // Maps the default body poses of all floating bodies AND bodies touched by
-  // MultibodyPlant::SetDefaultFreeBodyPose(). During Finalize(), the default
-  // pose of a floating body is converted to the joint index of the floating
-  // joint connecting the world and the body. Post-finalize and the default
-  // poses of such floating bodies can (and should) be retrieved via the joints'
-  // default positions. The poses are stored as a quaternion-translation pair to
-  // match the default positions stored in the quaternion floating joints
-  // without any numerical conversions and thereby avoiding roundoff errors and
+  // MultibodyPlant::SetDefaultFloatingBaseBodyPose(). During Finalize(), the
+  // default pose of a floating base body is converted to the joint index of the
+  // ephemeral (automatically added) floating joint connecting the world frame
+  // and the body frame. Post-finalize, the default poses of such floating
+  // base bodies can (and should) be retrieved via the joints' default
+  // positions. The poses are stored as a quaternion-translation pair to match
+  // the default positions stored in the quaternion floating joints without
+  // any numerical conversions and thereby avoiding roundoff errors and
   // surprising discrepancies pre and post finalize.
   std::unordered_map<
       BodyIndex, std::variant<JointIndex, std::pair<Eigen::Quaternion<double>,

@@ -4202,9 +4202,8 @@ Note:
           const char* doc =
 R"""(Returns the index to the first element for this joint actuator /
 within the vector of actuation inputs for the full multibody / system.
-
-Raises:
-    RuntimeError if the MultibodyTree model is not finalized.)""";
+Returns -1 if this JointActuator hasn't been added to a
+MultibodyPlant.)""";
         } input_start;
         // Symbol: drake::multibody::JointActuator::joint
         struct /* joint */ {
@@ -4225,10 +4224,8 @@ Raises:
         struct /* num_inputs */ {
           // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
-R"""(Returns the number of inputs associated with this actuator.
-
-Raises:
-    RuntimeError if the MultibodyTree model is not finalized.)""";
+R"""(Returns the number of inputs associated with this actuator. This is
+always the number of degrees of freedom of the actuated joint.)""";
         } num_inputs;
         // Symbol: drake::multibody::JointActuator::rotor_inertia
         struct /* rotor_inertia */ {
@@ -4272,6 +4269,11 @@ Raises:
     RuntimeError if ``u.size() !=
     this->GetParentPlant().num_actuated_dofs()``.)""";
         } set_actuation_vector;
+        // Symbol: drake::multibody::JointActuator::set_actuator_dof_start
+        struct /* set_actuator_dof_start */ {
+          // Source: drake/multibody/tree/joint_actuator.h
+          const char* doc = R"""()""";
+        } set_actuator_dof_start;
         // Symbol: drake::multibody::JointActuator::set_controller_gains
         struct /* set_controller_gains */ {
           // Source: drake/multibody/tree/joint_actuator.h

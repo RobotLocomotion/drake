@@ -16,25 +16,6 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// Data structure to store the topological information associated with a
-// JointActuator.
-struct JointActuatorTopology {
-  // Returns `true` if all members of `this` topology are exactly equal to the
-  // members of `other`.
-  bool operator==(const JointActuatorTopology& other) const = default;
-
-  // Unique index in the MultibodyTree.
-  JointActuatorIndex index{0};
-  // For an actuator in a MultibodyTree model, this dof start index corresponds
-  // to the first entry in the global array u containing all actuation values
-  // for the entire model. Actuator dof start indexes are assigned in the order
-  // actuators are added to the model, that is, in the order of
-  // JointActuatorIndex.
-  int actuator_dof_start{-1};
-  // The number of dofs actuated by this actuator.
-  int num_dofs{-1};
-};
-
 // Data structure to store the topological information associated with an
 // entire SpanningForest of a MultibodyPlant.
 class MultibodyTreeTopology {
@@ -50,16 +31,8 @@ class MultibodyTreeTopology {
   // members of `other`.
   bool operator==(const MultibodyTreeTopology& other) const;
 
-  // Returns the number of joint actuators in the topology.
-  int num_joint_actuators() const { return ssize(joint_actuator_topology_); }
-
   // Returns the number of levels in the forest topology.
   int forest_height() const { return forest_height_; }
-
-  // Returns a constant reference to the corresponding JointActuatorTopology
-  // given a JointActuatorIndex.
-  const JointActuatorTopology& get_joint_actuator_topology(
-      JointActuatorIndex index) const;
 
   // Returns the number of trees in the "forest" topology of the entire system.
   // We refer to as "tree" a subgraph in the topology having a tree structure
@@ -112,22 +85,6 @@ class MultibodyTreeTopology {
     return num_tree_velocities(tree_index) > 0;
   }
 
-  // Creates and adds a new JointActuatorTopology for a joint with `num_dofs`
-  // degrees of freedom.
-  //
-  // @throws std::exception if FinalizeTopology() was already called on `this`
-  // topology.
-  // @pre the given index is the one for the next available slot
-  void add_joint_actuator_topology(JointActuatorIndex actuator_index,
-                                   int num_dofs);
-
-  // Removes `actuator_index` from the list of joint actuators. The
-  // `actuator_dof_start` will be modified if necessary for other actuators.
-  // @throws std::exception if called post-Finalize.
-  // @throws std::exception if the actuator with the index `actuator_index` has
-  // already been removed.
-  void RemoveJointActuatorTopology(JointActuatorIndex actuator_index);
-
   // This method must be called by MultibodyTree::Finalize() after all
   // topological elements in the plant (rigid bodies, joints, constraints) were
   // added and a suitable SpanningForest built.
@@ -175,7 +132,6 @@ class MultibodyTreeTopology {
   int forest_height_{-1};
 
   // Topological elements:
-  std::vector<std::optional<JointActuatorTopology>> joint_actuator_topology_;
 
   // Total number of generalized positions and velocities in the MultibodyTree
   // model.
