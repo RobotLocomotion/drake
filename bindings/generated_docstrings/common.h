@@ -82,7 +82,7 @@ constexpr struct /* pydrake_doc_common */ {
   struct /* drake */ {
     // Symbol: drake::AbstractValue
     struct /* AbstractValue */ {
-      // Source: drake/common/value.h:66
+      // Source: drake/common/value.h
       const char* doc =
 R"""(A fully type-erased container class. An AbstractValue stores an object
 of some type T (where T is declared during at construction time) that
@@ -101,17 +101,17 @@ builds have extra checks that will trigger.)
 User-defined classes with additional features may inherit from Value.)""";
       // Symbol: drake::AbstractValue::AbstractValue
       struct /* ctor */ {
-        // Source: drake/common/value.h:68
+        // Source: drake/common/value.h
         const char* doc = R"""()""";
       } ctor;
       // Symbol: drake::AbstractValue::Clone
       struct /* Clone */ {
-        // Source: drake/common/value.h:130
+        // Source: drake/common/value.h
         const char* doc = R"""(Returns a copy of this AbstractValue.)""";
       } Clone;
       // Symbol: drake::AbstractValue::GetNiceTypeName
       struct /* GetNiceTypeName */ {
-        // Source: drake/common/value.h:149
+        // Source: drake/common/value.h
         const char* doc =
 R"""(Returns a human-readable name for the underlying type T. This may be
 slow but is useful for error messages. If T is polymorphic, this
@@ -119,13 +119,13 @@ returns the typeid of the most-derived type of the contained object.)""";
       } GetNiceTypeName;
       // Symbol: drake::AbstractValue::Make
       struct /* Make */ {
-        // Source: drake/common/value.h:82
+        // Source: drake/common/value.h
         const char* doc =
 R"""(Returns an AbstractValue containing the given ``value``.)""";
       } Make;
       // Symbol: drake::AbstractValue::SetFrom
       struct /* SetFrom */ {
-        // Source: drake/common/value.h:135
+        // Source: drake/common/value.h
         const char* doc =
 R"""(Copies the value in ``other`` to this value. If other is not
 compatible with this object, a RuntimeError will be thrown with a
@@ -133,17 +133,17 @@ helpful error message.)""";
       } SetFrom;
       // Symbol: drake::AbstractValue::Wrap
       struct /* Wrap */ {
-        // Source: drake/common/value.h:156
+        // Source: drake/common/value.h
         const char* doc = R"""()""";
         // Symbol: drake::AbstractValue::Wrap::value
         struct /* value */ {
-          // Source: drake/common/value.h:157
+          // Source: drake/common/value.h
           const char* doc = R"""()""";
         } value;
       } Wrap;
       // Symbol: drake::AbstractValue::get_mutable_value
       struct /* get_mutable_value */ {
-        // Source: drake/common/value.h:100
+        // Source: drake/common/value.h
         const char* doc =
 R"""(Returns the value wrapped in this AbstractValue as mutable reference.
 The reference remains valid only until this object is set or
@@ -156,7 +156,7 @@ Template parameter ``T``:
       } get_mutable_value;
       // Symbol: drake::AbstractValue::get_value
       struct /* get_value */ {
-        // Source: drake/common/value.h:90
+        // Source: drake/common/value.h
         const char* doc =
 R"""(Returns the value wrapped in this AbstractValue as a const reference.
 The reference remains valid only until this object is set or
@@ -169,7 +169,7 @@ Template parameter ``T``:
       } get_value;
       // Symbol: drake::AbstractValue::maybe_get_mutable_value
       struct /* maybe_get_mutable_value */ {
-        // Source: drake/common/value.h:127
+        // Source: drake/common/value.h
         const char* doc =
 R"""(Returns the mutable value wrapped in this AbstractValue, if T matches
 the originally declared type of this AbstractValue.
@@ -181,7 +181,7 @@ Template parameter ``T``:
       } maybe_get_mutable_value;
       // Symbol: drake::AbstractValue::maybe_get_value
       struct /* maybe_get_value */ {
-        // Source: drake/common/value.h:119
+        // Source: drake/common/value.h
         const char* doc =
 R"""(Returns the value wrapped in this AbstractValue, if T matches the
 originally declared type of this AbstractValue.
@@ -193,7 +193,7 @@ Template parameter ``T``:
       } maybe_get_value;
       // Symbol: drake::AbstractValue::set_value
       struct /* set_value */ {
-        // Source: drake/common/value.h:109
+        // Source: drake/common/value.h
         const char* doc =
 R"""(Sets the value wrapped in this AbstractValue.
 
@@ -204,7 +204,7 @@ Template parameter ``T``:
       } set_value;
       // Symbol: drake::AbstractValue::static_type_info
       struct /* static_type_info */ {
-        // Source: drake/common/value.h:144
+        // Source: drake/common/value.h
         const char* doc =
 R"""(Returns typeid(T) for this Value<T> object. If T is polymorphic, this
 does NOT reflect the typeid of the most-derived type of the contained
@@ -212,7 +212,7 @@ object; the result is always the base type T.)""";
       } static_type_info;
       // Symbol: drake::AbstractValue::type_info
       struct /* type_info */ {
-        // Source: drake/common/value.h:139
+        // Source: drake/common/value.h
         const char* doc =
 R"""(Returns typeid of the contained object of type T. If T is polymorphic,
 this returns the typeid of the most-derived type of the contained
@@ -221,20 +221,20 @@ object.)""";
     } AbstractValue;
     // Symbol: drake::AutoDiffVecXd
     struct /* AutoDiffVecXd */ {
-      // Source: drake/common/eigen_autodiff_types.h:36
+      // Source: drake/common/eigen_autodiff_types.h
       const char* doc =
 R"""(A dynamic-sized vector of autodiff variables, each with a
 dynamic-sized vector of partials.)""";
     } AutoDiffVecXd;
     // Symbol: drake::AutoDiffXd
     struct /* AutoDiffXd */ {
-      // Source: drake/common/eigen_autodiff_types.h:22
+      // Source: drake/common/eigen_autodiff_types.h
       const char* doc =
 R"""(An autodiff variable with a dynamic number of partials.)""";
     } AutoDiffXd;
     // Symbol: drake::CalcProbabilityDensity
     struct /* CalcProbabilityDensity */ {
-      // Source: drake/common/random.h:79
+      // Source: drake/common/random.h
       const char* doc =
 R"""(Calculates the density (probability density function) of the
 multivariate distribution.
@@ -251,13 +251,13 @@ compiler might have problem to deduce the scalar type automatically.)""";
     } CalcProbabilityDensity;
     // Symbol: drake::DefaultHash
     struct /* DefaultHash */ {
-      // Source: drake/common/hash.h:274
+      // Source: drake/common/hash.h
       const char* doc =
 R"""(The default hashing functor, akin to std::hash.)""";
     } DefaultHash;
     // Symbol: drake::DefaultHasher
     struct /* DefaultHasher */ {
-      // Source: drake/common/hash.h:271
+      // Source: drake/common/hash.h
       const char* doc =
 R"""(The default HashAlgorithm concept implementation across Drake. This is
 guaranteed to have a result_type of size_t to be compatible with
@@ -265,7 +265,7 @@ std::hash.)""";
     } DefaultHasher;
     // Symbol: drake::DelegatingHasher
     struct /* DelegatingHasher */ {
-      // Source: drake/common/hash.h:280
+      // Source: drake/common/hash.h
       const char* doc =
 R"""(An adapter that forwards the HashAlgorithm::operator(data, length)
 function concept into a runtime-provided std::function of the same
@@ -274,26 +274,26 @@ implementation through into non-templated code, such as with an Impl
 or Cell pattern.)""";
       // Symbol: drake::DelegatingHasher::DelegatingHasher
       struct /* ctor */ {
-        // Source: drake/common/hash.h:285
+        // Source: drake/common/hash.h
         const char* doc =
 R"""(Create a delegating hasher that calls the given ``func``.)""";
       } ctor;
       // Symbol: drake::DelegatingHasher::Func
       struct /* Func */ {
-        // Source: drake/common/hash.h:282
+        // Source: drake/common/hash.h
         const char* doc =
 R"""(A std::function whose signature matches HashAlgorithm::operator().)""";
       } Func;
       // Symbol: drake::DelegatingHasher::operator()
       struct /* operator_call */ {
-        // Source: drake/common/hash.h:291
+        // Source: drake/common/hash.h
         const char* doc =
 R"""(Append [data, data + length) bytes into the wrapped algorithm.)""";
       } operator_call;
     } DelegatingHasher;
     // Symbol: drake::EigenMapView
     struct /* EigenMapView */ {
-      // Source: drake/common/eigen_types.h:224
+      // Source: drake/common/eigen_types.h
       const char* doc =
 R"""(Given a random access container (like std::vector, std::array, or C
 array), returns an Eigen::Map view into that container. Because this
@@ -306,7 +306,7 @@ to interrogate the size and return a fixed-size Map, instead.)""";
     } EigenMapView;
     // Symbol: drake::EigenPtr
     struct /* EigenPtr */ {
-      // Source: drake/common/eigen_types.h:298
+      // Source: drake/common/eigen_types.h
       const char* doc =
 R"""(This wrapper class provides a way to write non-template functions
 taking raw pointers to Eigen objects as parameters while limiting the
@@ -394,39 +394,39 @@ Note:
     documentation</a>.)""";
       // Symbol: drake::EigenPtr::EigenPtr<PlainObjectType>
       struct /* ctor */ {
-        // Source: drake/common/eigen_types.h:302
+        // Source: drake/common/eigen_types.h
         const char* doc_0args = R"""()""";
-        // Source: drake/common/eigen_types.h:306
+        // Source: drake/common/eigen_types.h
         const char* doc_1args_stdnullptrt = R"""(Overload for ``nullptr``.)""";
-        // Source: drake/common/eigen_types.h:309
+        // Source: drake/common/eigen_types.h
         const char* doc_copy =
 R"""(Copy constructor results in a *reference* to the given matrix type.)""";
-        // Source: drake/common/eigen_types.h:315
+        // Source: drake/common/eigen_types.h
         const char* doc_1args_PlainObjectTypeIn =
 R"""(Constructs with a reference to another matrix type. May be
 ``nullptr``.)""";
-        // Source: drake/common/eigen_types.h:324
+        // Source: drake/common/eigen_types.h
         const char* doc_1args_constEigenPtr = R"""(Constructs from another EigenPtr.)""";
       } ctor;
       // Symbol: drake::EigenPtr::RefType
       struct /* RefType */ {
-        // Source: drake/common/eigen_types.h:300
+        // Source: drake/common/eigen_types.h
         const char* doc = R"""()""";
       } RefType;
       // Symbol: drake::EigenPtr::operator bool
       struct /* operator_bool */ {
-        // Source: drake/common/eigen_types.h:348
+        // Source: drake/common/eigen_types.h
         const char* doc =
 R"""(Returns whether or not this contains a valid reference.)""";
       } operator_bool;
       // Symbol: drake::EigenPtr::operator!=
       struct /* operator_ne */ {
-        // Source: drake/common/eigen_types.h:352
+        // Source: drake/common/eigen_types.h
         const char* doc = R"""()""";
       } operator_ne;
       // Symbol: drake::EigenPtr::operator*
       struct /* operator_mul */ {
-        // Source: drake/common/eigen_types.h:342
+        // Source: drake/common/eigen_types.h
         const char* doc =
 R"""(Precondition:
     The pointer is not null (enforced in Debug builds only).)""";
@@ -434,7 +434,7 @@ R"""(Precondition:
     } EigenPtr;
     // Symbol: drake::ExtractDoubleOrThrow
     struct /* ExtractDoubleOrThrow */ {
-      // Source: drake/common/autodiff_overloads.h:161
+      // Source: drake/common/autodiff_overloads.h
       const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Returns the autodiff scalar's value() as a double. Never throws.
 Overloads ExtractDoubleOrThrow from common/extract_double.h.
@@ -444,13 +444,13 @@ See also:
     } ExtractDoubleOrThrow;
     // Symbol: drake::FileSource
     struct /* FileSource */ {
-      // Source: drake/common/file_source.h:13
+      // Source: drake/common/file_source.h
       const char* doc =
 R"""(Represents a file. The file can be on-disk or in-memory.)""";
     } FileSource;
     // Symbol: drake::FindResource
     struct /* FindResource */ {
-      // Source: drake/common/find_resource.h:96
+      // Source: drake/common/find_resource.h
       const char* doc =
 R"""((Advanced) Attempts to locate a Drake resource named by the given
 ``resource_path``. The ``resource_path`` refers to the relative path
@@ -476,7 +476,7 @@ unavailable, then returns an error result.)""";
     } FindResource;
     // Symbol: drake::FindResourceOrThrow
     struct /* FindResourceOrThrow */ {
-      // Source: drake/common/find_resource.h:108
+      // Source: drake/common/find_resource.h
       const char* doc =
 R"""((Advanced) Convenient wrapper for querying FindResource(resource_path)
 followed by FindResourceResult::get_absolute_path_or_throw().
@@ -492,7 +492,7 @@ PackageMap.)""";
     } FindResourceOrThrow;
     // Symbol: drake::FindResourceResult
     struct /* FindResourceResult */ {
-      // Source: drake/common/find_resource.h:22
+      // Source: drake/common/find_resource.h
       const char* doc =
 R"""(Models the outcome of drake::FindResource. After a call to
 FindResource, typical calling code would use
@@ -506,45 +506,45 @@ get_absolute_path() or get_error_message() will contain a value.
 (Similarly, exactly one of them will not contain a value.))""";
       // Symbol: drake::FindResourceResult::FindResourceResult
       struct /* ctor */ {
-        // Source: drake/common/find_resource.h:24
+        // Source: drake/common/find_resource.h
         const char* doc = R"""()""";
       } ctor;
       // Symbol: drake::FindResourceResult::get_absolute_path
       struct /* get_absolute_path */ {
-        // Source: drake/common/find_resource.h:27
+        // Source: drake/common/find_resource.h
         const char* doc =
 R"""(Returns the absolute path to the resource, iff the resource was found.)""";
       } get_absolute_path;
       // Symbol: drake::FindResourceResult::get_absolute_path_or_throw
       struct /* get_absolute_path_or_throw */ {
-        // Source: drake/common/find_resource.h:31
+        // Source: drake/common/find_resource.h
         const char* doc =
 R"""(Either returns the get_absolute_path() iff the resource was found, or
 else throws RuntimeError.)""";
       } get_absolute_path_or_throw;
       // Symbol: drake::FindResourceResult::get_error_message
       struct /* get_error_message */ {
-        // Source: drake/common/find_resource.h:35
+        // Source: drake/common/find_resource.h
         const char* doc =
 R"""(Returns the error message, iff the resource was not found. The string
 will never be empty; only the optional can be empty.)""";
       } get_error_message;
       // Symbol: drake::FindResourceResult::get_resource_path
       struct /* get_resource_path */ {
-        // Source: drake/common/find_resource.h:39
+        // Source: drake/common/find_resource.h
         const char* doc =
 R"""(Returns the resource_path asked of FindResource. (This may be empty
 only in the make_empty() case.))""";
       } get_resource_path;
       // Symbol: drake::FindResourceResult::make_empty
       struct /* make_empty */ {
-        // Source: drake/common/find_resource.h:55
+        // Source: drake/common/find_resource.h
         const char* doc =
 R"""(Returns an empty error result (no requested resource).)""";
       } make_empty;
       // Symbol: drake::FindResourceResult::make_error
       struct /* make_error */ {
-        // Source: drake/common/find_resource.h:51
+        // Source: drake/common/find_resource.h
         const char* doc =
 R"""(Returns an error result (the requested resource was NOT found).
 
@@ -556,7 +556,7 @@ Parameter ``resource_path``:
       } make_error;
       // Symbol: drake::FindResourceResult::make_success
       struct /* make_success */ {
-        // Source: drake/common/find_resource.h:45
+        // Source: drake/common/find_resource.h
         const char* doc =
 R"""(Returns a success result (the requested resource was found).
 
@@ -572,7 +572,7 @@ Parameter ``absolute_path``:
     } FindResourceResult;
     // Symbol: drake::FindRunfile
     struct /* FindRunfile */ {
-      // Source: drake/common/find_runfiles.h:62
+      // Source: drake/common/find_runfiles.h
       const char* doc =
 R"""((Advanced.) Returns the absolute path to the given ``resource_path``
 from Bazel runfiles, or else an error message when not found. When
@@ -609,7 +609,7 @@ Parameter ``source_repository``:
     } FindRunfile;
     // Symbol: drake::GetScopedSingleton
     struct /* GetScopedSingleton */ {
-      // Source: drake/common/scoped_singleton.h:25
+      // Source: drake/common/scoped_singleton.h
       const char* doc =
 R"""(Provides thread-safe, global-safe access to a shared resource. When
 all references are gone, the resource will be freed due to using a
@@ -631,7 +631,7 @@ Note:
     } GetScopedSingleton;
     // Symbol: drake::HasRunfiles
     struct /* HasRunfiles */ {
-      // Source: drake/common/find_runfiles.h:26
+      // Source: drake/common/find_runfiles.h
       const char* doc =
 R"""((Advanced.) Returns true iff this process has Bazel runfiles
 available. For both C++ and Python programs, and no matter what
@@ -641,7 +641,7 @@ true when running ``bazel-bin/pkg/program`` or ``bazel test
     } HasRunfiles;
     // Symbol: drake::Identifier
     struct /* Identifier */ {
-      // Source: drake/common/identifier.h:142
+      // Source: drake/common/identifier.h
       const char* doc =
 R"""(A simple identifier class.
 
@@ -808,14 +808,14 @@ Template parameter ``Tag``:
     from another.)""";
       // Symbol: drake::Identifier::Identifier<Tag>
       struct /* ctor */ {
-        // Source: drake/common/identifier.h:148
+        // Source: drake/common/identifier.h
         const char* doc =
 R"""(Default constructor; the result is an *invalid* identifier. This only
 exists to satisfy demands of working with various container classes.)""";
       } ctor;
       // Symbol: drake::Identifier::get_new_id
       struct /* get_new_id */ {
-        // Source: drake/common/identifier.h:188
+        // Source: drake/common/identifier.h
         const char* doc =
 R"""(Generates a new identifier for this id type. This new identifier will
 be different from all previous identifiers created. This method does
@@ -824,7 +824,7 @@ invocations. This method is guaranteed to be thread safe.)""";
       } get_new_id;
       // Symbol: drake::Identifier::get_value
       struct /* get_value */ {
-        // Source: drake/common/identifier.h:153
+        // Source: drake/common/identifier.h
         const char* doc =
 R"""(Extracts the underlying representation from the identifier. This is
 considered invalid for invalid ids and is strictly enforced in Debug
@@ -832,7 +832,7 @@ builds.)""";
       } get_value;
       // Symbol: drake::Identifier::is_same_as_valid_id
       struct /* is_same_as_valid_id */ {
-        // Source: drake/common/identifier.h:218
+        // Source: drake/common/identifier.h
         const char* doc =
 R"""((Internal use only) Compares this possibly-invalid Identifier with one
 that is known to be valid and returns ``False`` if they don't match.
@@ -844,12 +844,12 @@ equality.)""";
       } is_same_as_valid_id;
       // Symbol: drake::Identifier::is_valid
       struct /* is_valid */ {
-        // Source: drake/common/identifier.h:161
+        // Source: drake/common/identifier.h
         const char* doc = R"""(Reports if the id is valid.)""";
       } is_valid;
       // Symbol: drake::Identifier::operator!=
       struct /* operator_ne */ {
-        // Source: drake/common/identifier.h:173
+        // Source: drake/common/identifier.h
         const char* doc =
 R"""(Compares one identifier with another of the same type for inequality.
 This is considered invalid for invalid ids and is strictly enforced in
@@ -857,7 +857,7 @@ Debug builds.)""";
       } operator_ne;
       // Symbol: drake::Identifier::operator<
       struct /* operator_lt */ {
-        // Source: drake/common/identifier.h:180
+        // Source: drake/common/identifier.h
         const char* doc =
 R"""(Compare two identifiers in order to define a total ordering among
 identifiers. This makes identifiers compatible with data structures
@@ -866,7 +866,7 @@ which require total ordering (e.g., std::set).)""";
     } Identifier;
     // Symbol: drake::IsApproxEqualAbsTolWithPermutedColumns
     struct /* IsApproxEqualAbsTolWithPermutedColumns */ {
-      // Source: drake/common/is_approx_equal_abstol.h:36
+      // Source: drake/common/is_approx_equal_abstol.h
       const char* doc =
 R"""(Returns true if and only if a simple greedy search reveals a
 permutation of the columns of m2 to make the matrix equal to m1 to
@@ -898,7 +898,7 @@ m2(j) is the only match possible for a later column of m1.)""";
     } IsApproxEqualAbsTolWithPermutedColumns;
     // Symbol: drake::LoadedLibraryPath
     struct /* LoadedLibraryPath */ {
-      // Source: drake/common/find_loaded_library.h:11
+      // Source: drake/common/find_loaded_library.h
       const char* doc =
 R"""(This function returns the absolute path of the library with the name
 ``library_name`` if that library was loaded in the current running
@@ -906,7 +906,7 @@ process. Otherwise it returns an empty optional.)""";
     } LoadedLibraryPath;
     // Symbol: drake::MakeNameValue
     struct /* MakeNameValue */ {
-      // Source: drake/common/name_value.h:55
+      // Source: drake/common/name_value.h
       const char* doc =
 R"""((Advanced) Creates a NameValue. The conventional method for calling
 this function is the DRAKE_NVP sugar macro below.
@@ -915,7 +915,7 @@ Both pointers are aliased for the lifetime of the return value.)""";
     } MakeNameValue;
     // Symbol: drake::MakeSortedPair
     struct /* MakeSortedPair */ {
-      // Source: drake/common/sorted_pair.h:170
+      // Source: drake/common/sorted_pair.h
       const char* doc =
 R"""(A convenience wrapper for creating a sorted pair from two objects.
 
@@ -930,34 +930,34 @@ Returns:
     } MakeSortedPair;
     // Symbol: drake::ManualTimer
     struct /* ManualTimer */ {
-      // Source: drake/common/timer.h:49
+      // Source: drake/common/timer.h
       const char* doc =
 R"""(Implementation of timing for use with unit tests that control time
 manually.)""";
       // Symbol: drake::ManualTimer::ManualTimer
       struct /* ctor */ {
-        // Source: drake/common/timer.h:51
+        // Source: drake/common/timer.h
         const char* doc = R"""()""";
       } ctor;
       // Symbol: drake::ManualTimer::Start
       struct /* Start */ {
-        // Source: drake/common/timer.h:54
+        // Source: drake/common/timer.h
         const char* doc = R"""()""";
       } Start;
       // Symbol: drake::ManualTimer::Tick
       struct /* Tick */ {
-        // Source: drake/common/timer.h:55
+        // Source: drake/common/timer.h
         const char* doc = R"""()""";
       } Tick;
       // Symbol: drake::ManualTimer::set_tick
       struct /* set_tick */ {
-        // Source: drake/common/timer.h:58
+        // Source: drake/common/timer.h
         const char* doc = R"""(Sets the return value of Tick().)""";
       } set_tick;
     } ManualTimer;
     // Symbol: drake::MaybeGetDrakePath
     struct /* MaybeGetDrakePath */ {
-      // Source: drake/common/drake_path.h:16
+      // Source: drake/common/drake_path.h
       const char* doc =
 R"""((Advanced) Returns the fully-qualified path to the first folder
 containing Drake resources as located by FindResource, or nullopt if
@@ -972,11 +972,11 @@ removed.)""";
     } MaybeGetDrakePath;
     // Symbol: drake::MemoryFile
     struct /* MemoryFile */ {
-      // Source: drake/common/memory_file.h:17
+      // Source: drake/common/memory_file.h
       const char* doc = R"""(A virtual file, stored in memory.)""";
       // Symbol: drake::MemoryFile::Make
       struct /* Make */ {
-        // Source: drake/common/memory_file.h:26
+        // Source: drake/common/memory_file.h
         const char* doc =
 R"""(Creates an instance of MemoryFile from the file located at the given
 ``path``. The filename_hint() will be the stringified path. Making a
@@ -988,12 +988,12 @@ Raises:
       } Make;
       // Symbol: drake::MemoryFile::MemoryFile
       struct /* ctor */ {
-        // Source: drake/common/memory_file.h:30
+        // Source: drake/common/memory_file.h
         const char* doc_0args =
 R"""(Default constructor with no contents, checksum, or filename hint. In
 this case, the ``checksum`` will be the checksum of the empty
 contents.)""";
-        // Source: drake/common/memory_file.h:49
+        // Source: drake/common/memory_file.h
         const char* doc_3args =
 R"""(Constructs a new file from the given ``contents``.
 
@@ -1026,7 +1026,7 @@ Raises:
       } ctor;
       // Symbol: drake::MemoryFile::Serialize
       struct /* Serialize */ {
-        // Source: drake/common/memory_file.h:102
+        // Source: drake/common/memory_file.h
         const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.
@@ -1069,12 +1069,12 @@ This is an example of memory file test contents.)""";
       } Serialize;
       // Symbol: drake::MemoryFile::contents
       struct /* contents */ {
-        // Source: drake/common/memory_file.h:55
+        // Source: drake/common/memory_file.h
         const char* doc = R"""(Returns the file's contents.)""";
       } contents;
       // Symbol: drake::MemoryFile::extension
       struct /* extension */ {
-        // Source: drake/common/memory_file.h:60
+        // Source: drake/common/memory_file.h
         const char* doc =
 R"""(Returns the extension (as passed to the constructor). When not empty,
 it will always be reported with a leading period and all lower case
@@ -1082,19 +1082,19 @@ characters.)""";
       } extension;
       // Symbol: drake::MemoryFile::filename_hint
       struct /* filename_hint */ {
-        // Source: drake/common/memory_file.h:66
+        // Source: drake/common/memory_file.h
         const char* doc =
 R"""(Returns the notional "filename" for this file`.)""";
       } filename_hint;
       // Symbol: drake::MemoryFile::sha256
       struct /* sha256 */ {
-        // Source: drake/common/memory_file.h:63
+        // Source: drake/common/memory_file.h
         const char* doc =
 R"""(Returns the checksum of ``this`` instance's ``contents()``.)""";
       } sha256;
       // Symbol: drake::MemoryFile::to_string
       struct /* to_string */ {
-        // Source: drake/common/memory_file.h:71
+        // Source: drake/common/memory_file.h
         const char* doc =
 R"""(Returns a string representation. Note: the file contents will be
 limited to ``contents_limit`` number of characters. To include the
@@ -1103,7 +1103,7 @@ full contents, pass any number less than or equal to zero.)""";
     } MemoryFile;
     // Symbol: drake::NameValue
     struct /* NameValue */ {
-      // Source: drake/common/name_value.h:23
+      // Source: drake/common/name_value.h
       const char* doc =
 R"""((Advanced) A basic implementation of the Name-Value Pair concept as
 used in the Serialize / Archive pattern.
@@ -1121,7 +1121,7 @@ href="https://www.boost.org/doc/libs/release/libs/serialization/doc/wrappers.htm
 Name-Value Pairs</a> documentation for background.)""";
       // Symbol: drake::NameValue::NameValue<T>
       struct /* ctor */ {
-        // Source: drake/common/name_value.h:33
+        // Source: drake/common/name_value.h
         const char* doc =
 R"""((Advanced) Constructs a NameValue. Prefer DRAKE_NVP instead of this
 constructor. Both pointers are aliased and must remain valid for the
@@ -1129,23 +1129,23 @@ lifetime of this object. Neither pointer can be nullptr.)""";
       } ctor;
       // Symbol: drake::NameValue::name
       struct /* name */ {
-        // Source: drake/common/name_value.h:41
+        // Source: drake/common/name_value.h
         const char* doc = R"""()""";
       } name;
       // Symbol: drake::NameValue::value
       struct /* value */ {
-        // Source: drake/common/name_value.h:42
+        // Source: drake/common/name_value.h
         const char* doc = R"""()""";
       } value;
       // Symbol: drake::NameValue::value_type
       struct /* value_type */ {
-        // Source: drake/common/name_value.h:28
+        // Source: drake/common/name_value.h
         const char* doc = R"""(Type of the referenced value.)""";
       } value_type;
     } NameValue;
     // Symbol: drake::NiceTypeName
     struct /* NiceTypeName */ {
-      // Source: drake/common/nice_type_name.h:44
+      // Source: drake/common/nice_type_name.h
       const char* doc =
 R"""(Obtains canonicalized, platform-independent, human-readable names for
 arbitrarily-complicated C++ types.
@@ -1193,7 +1193,7 @@ This class exists only to group type name-related static methods;
 don't try to construct an object of this type.)""";
       // Symbol: drake::NiceTypeName::Canonicalize
       struct /* Canonicalize */ {
-        // Source: drake/common/nice_type_name.h:95
+        // Source: drake/common/nice_type_name.h
         const char* doc =
 R"""(Given a compiler-dependent demangled type name string as returned by
 Demangle(), attempts to form a canonicalized representation that will
@@ -1204,7 +1204,7 @@ human-friendly type name that is the same on any platform.)""";
       } Canonicalize;
       // Symbol: drake::NiceTypeName::Demangle
       struct /* Demangle */ {
-        // Source: drake/common/nice_type_name.h:87
+        // Source: drake/common/nice_type_name.h
         const char* doc =
 R"""(Using the algorithm appropriate to the current compiler, demangles a
 type name as returned by ``typeid(T).name()``, with the result
@@ -1216,14 +1216,14 @@ See also:
       } Demangle;
       // Symbol: drake::NiceTypeName::Get
       struct /* Get */ {
-        // Source: drake/common/nice_type_name.h:51
+        // Source: drake/common/nice_type_name.h
         const char* doc_0args =
 R"""(Returns a nicely demangled and canonicalized type name that is the
 same on all platforms, using Canonicalize(). This is calculated on the
 fly so is expensive whenever called, though very reasonable for use in
 error messages. For repeated or performance-sensitive uses, see
 GetFromStorage().)""";
-        // Source: drake/common/nice_type_name.h:72
+        // Source: drake/common/nice_type_name.h
         const char* doc_1args_constT =
 R"""(Returns the type name of the most-derived type of an object of type T,
 typically but not necessarily polymorphic. This must be calculated on
@@ -1231,7 +1231,7 @@ the fly so is expensive whenever called, though very reasonable for
 use in error messages. For non-polymorphic types this produces the
 same result as would ``Get<decltype(thing)>()`` but for polymorphic
 types the results will differ.)""";
-        // Source: drake/common/nice_type_name.h:79
+        // Source: drake/common/nice_type_name.h
         const char* doc_1args_info =
 R"""(Returns the nicely demangled and canonicalized type name of ``info``.
 This must be calculated on the fly so is expensive whenever called,
@@ -1239,7 +1239,7 @@ though very reasonable for use in error messages.)""";
       } Get;
       // Symbol: drake::NiceTypeName::GetFromStorage
       struct /* GetFromStorage */ {
-        // Source: drake/common/nice_type_name.h:60
+        // Source: drake/common/nice_type_name.h
         const char* doc =
 R"""(Like Get<T>() but only computed once per process for a given type
 ``T``. The returned reference will not be deleted even at program
@@ -1248,7 +1248,7 @@ destructors that may be invoked during program tear-down.)""";
       } GetFromStorage;
       // Symbol: drake::NiceTypeName::RemoveNamespaces
       struct /* RemoveNamespaces */ {
-        // Source: drake/common/nice_type_name.h:105
+        // Source: drake/common/nice_type_name.h
         const char* doc =
 R"""(Given a canonical type name that may include leading namespaces,
 attempts to remove those namespaces. For example,
@@ -1263,7 +1263,7 @@ treated as one, even if it is really a class. So
     } NiceTypeName;
     // Symbol: drake::Parallelism
     struct /* Parallelism */ {
-      // Source: drake/common/parallelism.h:55
+      // Source: drake/common/parallelism.h
       const char* doc =
 R"""(Specifies a desired degree of parallelism for a parallelized
 operation.
@@ -1316,14 +1316,14 @@ N`` attribute in the ``BUILD.bazel`` file to declare a different
 value.)""";
       // Symbol: drake::Parallelism::Max
       struct /* Max */ {
-        // Source: drake/common/parallelism.h:67
+        // Source: drake/common/parallelism.h
         const char* doc =
 R"""(Constructs a Parallelism with the maximum number of threads. Refer to
 the class overview documentation for how to configure the maximum.)""";
       } Max;
       // Symbol: drake::Parallelism::None
       struct /* None */ {
-        // Source: drake/common/parallelism.h:63
+        // Source: drake/common/parallelism.h
         const char* doc =
 R"""(Constructs a Parallelism with no parallelism (i.e., num_threads=1).
 Python note: This function is not bound in pydrake (due to its name);
@@ -1332,16 +1332,16 @@ instead, use the default constructor (or pass either ``1`` or
       } None;
       // Symbol: drake::Parallelism::Parallelism
       struct /* ctor */ {
-        // Source: drake/common/parallelism.h:70
+        // Source: drake/common/parallelism.h
         const char* doc_0args =
 R"""(Default constructs with no parallelism (i.e., num_threads=1).)""";
-        // Source: drake/common/parallelism.h:75
+        // Source: drake/common/parallelism.h
         const char* doc_1args_parallelize =
 R"""(Constructs a Parallelism with either no parallelism (i.e.,
 num_threads=1) or the maximum number of threads (Max()), as selected
 by ``parallelize``. This constructor allows for implicit conversion,
 for convenience.)""";
-        // Source: drake/common/parallelism.h:86
+        // Source: drake/common/parallelism.h
         const char* doc_1args_num_threads =
 R"""(Constructs with the provided number of threads ``num_threads``.
 
@@ -1356,14 +1356,14 @@ Note:
       } ctor;
       // Symbol: drake::Parallelism::num_threads
       struct /* num_threads */ {
-        // Source: drake/common/parallelism.h:91
+        // Source: drake/common/parallelism.h
         const char* doc =
 R"""(Returns the degree of parallelism. The result will always be >= 1.)""";
       } num_threads;
     } Parallelism;
     // Symbol: drake::Polynomial
     struct /* Polynomial */ {
-      // Source: drake/common/polynomial.h:45
+      // Source: drake/common/polynomial.h
       const char* doc =
 R"""(A scalar multi-variate polynomial, modeled after the msspoly in
 spotless.
@@ -1389,7 +1389,7 @@ divided by scalars (of T) because Polynomials are not closed under
 division.)""";
       // Symbol: drake::Polynomial::CoefficientsAlmostEqual
       struct /* CoefficientsAlmostEqual */ {
-        // Source: drake/common/polynomial.h:399
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(Checks if a Polynomial is approximately equal to this one.
 
@@ -1404,7 +1404,7 @@ coefficients less than ``tol``.)""";
       } CoefficientsAlmostEqual;
       // Symbol: drake::Polynomial::Derivative
       struct /* Derivative */ {
-        // Source: drake/common/polynomial.h:296
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(Takes the derivative of this (univariate) Polynomial.
 
@@ -1419,7 +1419,7 @@ Polynomial.)""";
       } Derivative;
       // Symbol: drake::Polynomial::EvaluateMultivariate
       struct /* EvaluateMultivariate */ {
-        // Source: drake/common/polynomial.h:251
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(Evaluate a multivariate Polynomial at a specific point.
 
@@ -1435,7 +1435,7 @@ CoefficientsType or RealScalar))""";
       } EvaluateMultivariate;
       // Symbol: drake::Polynomial::EvaluatePartial
       struct /* EvaluatePartial */ {
-        // Source: drake/common/polynomial.h:278
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(Substitute values for some but not necessarily all variables of a
 Polynomial.
@@ -1448,7 +1448,7 @@ replaced with its value and constants appropriately combined.)""";
       } EvaluatePartial;
       // Symbol: drake::Polynomial::EvaluateUnivariate
       struct /* EvaluateUnivariate */ {
-        // Source: drake/common/polynomial.h:205
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(Evaluate a univariate Polynomial at a specific point.
 
@@ -1471,7 +1471,7 @@ Precondition:
       } EvaluateUnivariate;
       // Symbol: drake::Polynomial::FromExpression
       struct /* FromExpression */ {
-        // Source: drake/common/polynomial.h:409
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(Constructs a Polynomial representing the symbolic expression ``e``.
 Note that the ID of a variable is preserved in this translation.
@@ -1484,7 +1484,7 @@ Precondition:
       } FromExpression;
       // Symbol: drake::Polynomial::GetCoefficients
       struct /* GetCoefficients */ {
-        // Source: drake/common/polynomial.h:184
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(Returns the vector of the coefficients of the polynomial in the order
 of powers of the variable - the [i]th element is the coefficient of
@@ -1495,7 +1495,7 @@ Raises:
       } GetCoefficients;
       // Symbol: drake::Polynomial::GetDegree
       struct /* GetDegree */ {
-        // Source: drake/common/polynomial.h:167
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(Returns the highest degree of any Monomial in this Polynomial.
 
@@ -1504,37 +1504,37 @@ each of its terms.)""";
       } GetDegree;
       // Symbol: drake::Polynomial::GetMonomials
       struct /* GetMonomials */ {
-        // Source: drake/common/polynomial.h:176
+        // Source: drake/common/polynomial.h
         const char* doc = R"""()""";
       } GetMonomials;
       // Symbol: drake::Polynomial::GetNumberOfCoefficients
       struct /* GetNumberOfCoefficients */ {
-        // Source: drake/common/polynomial.h:161
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(Returns the number of unique Monomials (and thus the number of
 coefficients) in this Polynomial.)""";
       } GetNumberOfCoefficients;
       // Symbol: drake::Polynomial::GetSimpleVariable
       struct /* GetSimpleVariable */ {
-        // Source: drake/common/polynomial.h:174
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(If the polynomial is "simple" -- e.g. just a single term with
 coefficient 1 -- then returns that variable; otherwise returns 0.)""";
       } GetSimpleVariable;
       // Symbol: drake::Polynomial::GetVariables
       struct /* GetVariables */ {
-        // Source: drake/common/polynomial.h:187
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(Returns a set of all of the variables present in this Polynomial.)""";
       } GetVariables;
       // Symbol: drake::Polynomial::IdToVariableName
       struct /* IdToVariableName */ {
-        // Source: drake/common/polynomial.h:461
+        // Source: drake/common/polynomial.h
         const char* doc = R"""()""";
       } IdToVariableName;
       // Symbol: drake::Polynomial::Integral
       struct /* Integral */ {
-        // Source: drake/common/polynomial.h:308
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(Takes the integral of this (univariate, non-constant) Polynomial.
 
@@ -1550,79 +1550,79 @@ term (zeroth-order coefficient) of the resulting Polynomial.)""";
       } Integral;
       // Symbol: drake::Polynomial::IsAffine
       struct /* IsAffine */ {
-        // Source: drake/common/polynomial.h:170
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(Returns true iff this is a sum of terms of degree 1, plus a constant.)""";
       } IsAffine;
       // Symbol: drake::Polynomial::IsValidVariableName
       struct /* IsValidVariableName */ {
-        // Source: drake/common/polynomial.h:457
+        // Source: drake/common/polynomial.h
         const char* doc = R"""(Variable name/ID conversion facility.)""";
       } IsValidVariableName;
       // Symbol: drake::Polynomial::Monomial
       struct /* Monomial */ {
-        // Source: drake/common/polynomial.h:82
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(An additive atom of a Polynomial: The product of any number of Terms
 and a coefficient.)""";
         // Symbol: drake::Polynomial::Monomial::Factor
         struct /* Factor */ {
-          // Source: drake/common/polynomial.h:104
+          // Source: drake/common/polynomial.h
           const char* doc =
 R"""(Factors this by other; returns 0 iff other does not divide this.)""";
         } Factor;
         // Symbol: drake::Polynomial::Monomial::GetDegree
         struct /* GetDegree */ {
-          // Source: drake/common/polynomial.h:98
+          // Source: drake/common/polynomial.h
           const char* doc = R"""()""";
         } GetDegree;
         // Symbol: drake::Polynomial::Monomial::GetDegreeOf
         struct /* GetDegreeOf */ {
-          // Source: drake/common/polynomial.h:99
+          // Source: drake/common/polynomial.h
           const char* doc = R"""()""";
         } GetDegreeOf;
         // Symbol: drake::Polynomial::Monomial::HasSameExponents
         struct /* HasSameExponents */ {
-          // Source: drake/common/polynomial.h:100
+          // Source: drake/common/polynomial.h
           const char* doc = R"""()""";
         } HasSameExponents;
         // Symbol: drake::Polynomial::Monomial::HasVariable
         struct /* HasVariable */ {
-          // Source: drake/common/polynomial.h:101
+          // Source: drake/common/polynomial.h
           const char* doc = R"""()""";
         } HasVariable;
         // Symbol: drake::Polynomial::Monomial::coefficient
         struct /* coefficient */ {
-          // Source: drake/common/polynomial.h:84
+          // Source: drake/common/polynomial.h
           const char* doc = R"""()""";
         } coefficient;
         // Symbol: drake::Polynomial::Monomial::operator<
         struct /* operator_lt */ {
-          // Source: drake/common/polynomial.h:93
+          // Source: drake/common/polynomial.h
           const char* doc =
 R"""(A comparison to allow std::lexicographical_compare on this class; does
 not reflect any sort of mathematical total order.)""";
         } operator_lt;
         // Symbol: drake::Polynomial::Monomial::terms
         struct /* terms */ {
-          // Source: drake/common/polynomial.h:85
+          // Source: drake/common/polynomial.h
           const char* doc = R"""()""";
         } terms;
       } Monomial;
       // Symbol: drake::Polynomial::Polynomial<T>
       struct /* ctor */ {
-        // Source: drake/common/polynomial.h:108
+        // Source: drake/common/polynomial.h
         const char* doc_0args = R"""(Construct the vacuous polynomial, "0".)""";
-        // Source: drake/common/polynomial.h:114
+        // Source: drake/common/polynomial.h
         const char* doc_1args_scalar =
 R"""(Construct a Polynomial of a single constant. e.g. "5".)""";
-        // Source: drake/common/polynomial.h:117
+        // Source: drake/common/polynomial.h
         const char* doc_2args_coeff_terms =
 R"""(Construct a Polynomial consisting of a single Monomial, e.g. "5xy**3".)""";
-        // Source: drake/common/polynomial.h:120
+        // Source: drake/common/polynomial.h
         const char* doc_2args_start_finish =
 R"""(Construct a Polynomial from a sequence of Monomials.)""";
-        // Source: drake/common/polynomial.h:134
+        // Source: drake/common/polynomial.h
         const char* doc_1args_conststdenableift =
 R"""(Constructs a polynomial consisting of a single Monomial of the
 variable named ``varname1``.
@@ -1635,14 +1635,14 @@ Note:
     would be compiler errors for ``Polynomial<T>(0)`` as the following
     candidates are ambiguous: - Polynomial(const T& scalar) -
     Polynomial(const std::string& varname, const unsigned int num = 1))""";
-        // Source: drake/common/polynomial.h:143
+        // Source: drake/common/polynomial.h
         const char* doc_2args_varname_num =
 R"""(Construct a polynomial consisting of a single Monomial of the variable
 named varname + num.)""";
-        // Source: drake/common/polynomial.h:146
+        // Source: drake/common/polynomial.h
         const char* doc_2args_coeff_v =
 R"""(Construct a single Monomial of the given coefficient and variable.)""";
-        // Source: drake/common/polynomial.h:152
+        // Source: drake/common/polynomial.h
         const char* doc_1args_constEigenMatrixBase =
 R"""(A constructor for univariate polynomials: takes a vector of
 coefficients for the x**0, x**1, x**2, x**3... Monomials. All terms
@@ -1650,7 +1650,7 @@ are always added, even if a coefficient is zero.)""";
       } ctor;
       // Symbol: drake::Polynomial::PowerType
       struct /* PowerType */ {
-        // Source: drake/common/polynomial.h:52
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(This should be 'unsigned int' but MSVC considers a call to
 std::pow(..., unsigned int) ambiguous because it won't cast unsigned
@@ -1658,27 +1658,27 @@ int to int.)""";
       } PowerType;
       // Symbol: drake::Polynomial::Product
       struct /* Product */ {
-        // Source: drake/common/polynomial.h:58
+        // Source: drake/common/polynomial.h
         const char* doc = R"""()""";
         // Symbol: drake::Polynomial::Product::type
         struct /* type */ {
-          // Source: drake/common/polynomial.h:59
+          // Source: drake/common/polynomial.h
           const char* doc = R"""()""";
         } type;
       } Product;
       // Symbol: drake::Polynomial::RealScalar
       struct /* RealScalar */ {
-        // Source: drake/common/polynomial.h:53
+        // Source: drake/common/polynomial.h
         const char* doc = R"""()""";
       } RealScalar;
       // Symbol: drake::Polynomial::RootType
       struct /* RootType */ {
-        // Source: drake/common/polynomial.h:54
+        // Source: drake/common/polynomial.h
         const char* doc = R"""()""";
       } RootType;
       // Symbol: drake::Polynomial::Roots
       struct /* Roots */ {
-        // Source: drake/common/polynomial.h:387
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(Returns the roots of this (univariate) Polynomial.
 
@@ -1690,103 +1690,103 @@ Raises:
       } Roots;
       // Symbol: drake::Polynomial::RootsType
       struct /* RootsType */ {
-        // Source: drake/common/polynomial.h:55
+        // Source: drake/common/polynomial.h
         const char* doc = R"""()""";
       } RootsType;
       // Symbol: drake::Polynomial::Subs
       struct /* Subs */ {
-        // Source: drake/common/polynomial.h:281
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(Replaces all instances of variable orig with replacement.)""";
       } Subs;
       // Symbol: drake::Polynomial::Substitute
       struct /* Substitute */ {
-        // Source: drake/common/polynomial.h:284
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(Replaces all instances of variable orig with replacement.)""";
       } Substitute;
       // Symbol: drake::Polynomial::Term
       struct /* Term */ {
-        // Source: drake/common/polynomial.h:63
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(An individual variable raised to an integer power; e.g. x**2.)""";
         // Symbol: drake::Polynomial::Term::operator<
         struct /* operator_lt */ {
-          // Source: drake/common/polynomial.h:74
+          // Source: drake/common/polynomial.h
           const char* doc =
 R"""(A comparison to allow std::lexicographical_compare on this class; does
 not reflect any sort of mathematical total order.)""";
         } operator_lt;
         // Symbol: drake::Polynomial::Term::power
         struct /* power */ {
-          // Source: drake/common/polynomial.h:66
+          // Source: drake/common/polynomial.h
           const char* doc = R"""()""";
         } power;
         // Symbol: drake::Polynomial::Term::var
         struct /* var */ {
-          // Source: drake/common/polynomial.h:65
+          // Source: drake/common/polynomial.h
           const char* doc = R"""()""";
         } var;
       } Term;
       // Symbol: drake::Polynomial::VarType
       struct /* VarType */ {
-        // Source: drake/common/polynomial.h:49
+        // Source: drake/common/polynomial.h
         const char* doc = R"""()""";
       } VarType;
       // Symbol: drake::Polynomial::VariableNameToId
       struct /* VariableNameToId */ {
-        // Source: drake/common/polynomial.h:459
+        // Source: drake/common/polynomial.h
         const char* doc = R"""()""";
       } VariableNameToId;
       // Symbol: drake::Polynomial::is_univariate
       struct /* is_univariate */ {
-        // Source: drake/common/polynomial.h:311
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(Returns true if this is a univariate polynomial)""";
       } is_univariate;
       // Symbol: drake::Polynomial::operator*
       struct /* operator_mul */ {
-        // Source: drake/common/polynomial.h:335
+        // Source: drake/common/polynomial.h
         const char* doc = R"""()""";
       } operator_mul;
       // Symbol: drake::Polynomial::operator*=
       struct /* operator_imul */ {
-        // Source: drake/common/polynomial.h:319
+        // Source: drake/common/polynomial.h
         const char* doc = R"""()""";
       } operator_imul;
       // Symbol: drake::Polynomial::operator+
       struct /* operator_add */ {
-        // Source: drake/common/polynomial.h:329
+        // Source: drake/common/polynomial.h
         const char* doc = R"""()""";
       } operator_add;
       // Symbol: drake::Polynomial::operator+=
       struct /* operator_iadd */ {
-        // Source: drake/common/polynomial.h:315
+        // Source: drake/common/polynomial.h
         const char* doc = R"""()""";
       } operator_iadd;
       // Symbol: drake::Polynomial::operator-
       struct /* operator_sub */ {
-        // Source: drake/common/polynomial.h:331
+        // Source: drake/common/polynomial.h
         const char* doc = R"""()""";
       } operator_sub;
       // Symbol: drake::Polynomial::operator-=
       struct /* operator_isub */ {
-        // Source: drake/common/polynomial.h:317
+        // Source: drake/common/polynomial.h
         const char* doc = R"""()""";
       } operator_isub;
       // Symbol: drake::Polynomial::operator/
       struct /* operator_div */ {
-        // Source: drake/common/polynomial.h:372
+        // Source: drake/common/polynomial.h
         const char* doc = R"""()""";
       } operator_div;
       // Symbol: drake::Polynomial::operator/=
       struct /* operator_idiv */ {
-        // Source: drake/common/polynomial.h:327
+        // Source: drake/common/polynomial.h
         const char* doc = R"""()""";
       } operator_idiv;
       // Symbol: drake::Polynomial::operator<
       struct /* operator_lt */ {
-        // Source: drake/common/polynomial.h:376
+        // Source: drake/common/polynomial.h
         const char* doc =
 R"""(A comparison to allow std::lexicographical_compare on this class; does
 not reflect any sort of mathematical total order.)""";
@@ -1794,37 +1794,37 @@ not reflect any sort of mathematical total order.)""";
     } Polynomial;
     // Symbol: drake::Polynomiald
     struct /* Polynomiald */ {
-      // Source: drake/common/polynomial.h:519
+      // Source: drake/common/polynomial.h
       const char* doc = R"""()""";
     } Polynomiald;
     // Symbol: drake::RandomDistribution
     struct /* RandomDistribution */ {
-      // Source: drake/common/random.h:58
+      // Source: drake/common/random.h
       const char* doc =
 R"""(Drake supports explicit reasoning about a few carefully chosen random
 distributions.)""";
       // Symbol: drake::RandomDistribution::kExponential
       struct /* kExponential */ {
-        // Source: drake/common/random.h:63
+        // Source: drake/common/random.h
         const char* doc =
 R"""(Vector elements are independent and drawn from an)""";
       } kExponential;
       // Symbol: drake::RandomDistribution::kGaussian
       struct /* kGaussian */ {
-        // Source: drake/common/random.h:61
+        // Source: drake/common/random.h
         const char* doc =
 R"""(Vector elements are independent and drawn from a)""";
       } kGaussian;
       // Symbol: drake::RandomDistribution::kUniform
       struct /* kUniform */ {
-        // Source: drake/common/random.h:59
+        // Source: drake/common/random.h
         const char* doc =
 R"""(Vector elements are independent and uniformly distributed)""";
       } kUniform;
     } RandomDistribution;
     // Symbol: drake::RandomGenerator
     struct /* RandomGenerator */ {
-      // Source: drake/common/random.h:20
+      // Source: drake/common/random.h
       const char* doc =
 R"""(Defines Drake's canonical implementation of the
 UniformRandomBitGenerator C++ concept (as well as a few conventional
@@ -1834,39 +1834,39 @@ information, see
 https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine)""";
       // Symbol: drake::RandomGenerator::RandomGenerator
       struct /* ctor */ {
-        // Source: drake/common/random.h:29
+        // Source: drake/common/random.h
         const char* doc_0args =
 R"""(Creates a generator using the ``default_seed``. Actual creation of the
 generator is deferred until first use so this constructor is fast and
 does not allocate any heap memory.)""";
-        // Source: drake/common/random.h:32
+        // Source: drake/common/random.h
         const char* doc_1args =
 R"""(Creates a generator using given ``seed``.)""";
       } ctor;
       // Symbol: drake::RandomGenerator::max
       struct /* max */ {
-        // Source: drake/common/random.h:35
+        // Source: drake/common/random.h
         const char* doc = R"""()""";
       } max;
       // Symbol: drake::RandomGenerator::min
       struct /* min */ {
-        // Source: drake/common/random.h:34
+        // Source: drake/common/random.h
         const char* doc = R"""()""";
       } min;
       // Symbol: drake::RandomGenerator::operator()
       struct /* operator_call */ {
-        // Source: drake/common/random.h:38
+        // Source: drake/common/random.h
         const char* doc = R"""(Generates a pseudo-random value.)""";
       } operator_call;
       // Symbol: drake::RandomGenerator::result_type
       struct /* result_type */ {
-        // Source: drake/common/random.h:24
+        // Source: drake/common/random.h
         const char* doc = R"""()""";
       } result_type;
     } RandomGenerator;
     // Symbol: drake::ReadFile
     struct /* ReadFile */ {
-      // Source: drake/common/find_resource.h:131
+      // Source: drake/common/find_resource.h
       const char* doc =
 R"""(Returns the content of the file at the given path, or nullopt if it
 cannot be read. Note that the path is a filesystem path, not a
@@ -1874,7 +1874,7 @@ cannot be read. Note that the path is a filesystem path, not a
     } ReadFile;
     // Symbol: drake::ReadFileOrThrow
     struct /* ReadFileOrThrow */ {
-      // Source: drake/common/find_resource.h:135
+      // Source: drake/common/find_resource.h
       const char* doc =
 R"""(Returns the content of the file at the given path, or throws if it
 cannot be read. Note that the path is a filesystem path, not a
@@ -1882,25 +1882,25 @@ cannot be read. Note that the path is a filesystem path, not a
     } ReadFileOrThrow;
     // Symbol: drake::RlocationOrError
     struct /* RlocationOrError */ {
-      // Source: drake/common/find_runfiles.h:30
+      // Source: drake/common/find_runfiles.h
       const char* doc =
 R"""((Advanced.) The return type of FindRunfile(). Exactly one of the two
 strings is non-empty.)""";
       // Symbol: drake::RlocationOrError::abspath
       struct /* abspath */ {
-        // Source: drake/common/find_runfiles.h:32
+        // Source: drake/common/find_runfiles.h
         const char* doc =
 R"""(The absolute path to the resource_path runfile.)""";
       } abspath;
       // Symbol: drake::RlocationOrError::error
       struct /* error */ {
-        // Source: drake/common/find_runfiles.h:34
+        // Source: drake/common/find_runfiles.h
         const char* doc = R"""(The error message.)""";
       } error;
     } RlocationOrError;
     // Symbol: drake::ScopeExit
     struct /* ScopeExit */ {
-      // Source: drake/common/scope_exit.h:32
+      // Source: drake/common/scope_exit.h
       const char* doc =
 R"""(Helper class to create a scope exit guard -- an object that when
 destroyed runs ``func``. This is useful to apply RAII to third-party
@@ -1934,13 +1934,13 @@ Here, the allocation of ``foo`` will always be free'd no matter
 whether ``some_function`` returns normally or via an exception.)""";
       // Symbol: drake::ScopeExit::Disarm
       struct /* Disarm */ {
-        // Source: drake/common/scope_exit.h:52
+        // Source: drake/common/scope_exit.h
         const char* doc =
 R"""(Disarms this guard, so that the destructor has no effect.)""";
       } Disarm;
       // Symbol: drake::ScopeExit::ScopeExit
       struct /* ctor */ {
-        // Source: drake/common/scope_exit.h:39
+        // Source: drake/common/scope_exit.h
         const char* doc =
 R"""(Creates a resource that will call ``func`` when destroyed. Note that
 ``func()`` should not throw an exception, since it will typically be
@@ -1949,7 +1949,7 @@ invoked during stack unwinding.)""";
     } ScopeExit;
     // Symbol: drake::Sha256
     struct /* Sha256 */ {
-      // Source: drake/common/sha256.h:19
+      // Source: drake/common/sha256.h
       const char* doc =
 R"""(Represents a SHA-256 cryptographic checksum. See also
 https://en.wikipedia.org/wiki/SHA-2.
@@ -1958,10 +1958,10 @@ This class is not bound in pydrake, because Python programmers should
 prefer using https://docs.python.org/3/library/hashlib.html instead.)""";
       // Symbol: drake::Sha256::Checksum
       struct /* Checksum */ {
-        // Source: drake/common/sha256.h:28
+        // Source: drake/common/sha256.h
         const char* doc_1args_data =
 R"""(Computes the checksum of the given ``data`` buffer.)""";
-        // Source: drake/common/sha256.h:33
+        // Source: drake/common/sha256.h
         const char* doc_1args_stream =
 R"""(Computes the checksum of the given ``stream``. Does not check for
 istream errors; that is the responsibility of the caller.
@@ -1971,38 +1971,38 @@ Precondition:
       } Checksum;
       // Symbol: drake::Sha256::Parse
       struct /* Parse */ {
-        // Source: drake/common/sha256.h:37
+        // Source: drake/common/sha256.h
         const char* doc =
 R"""(Parses the 64-character ASCII hex representation of a SHA-256
 checksum. Returns std::nullopt if the argument is an invalid checksum.)""";
       } Parse;
       // Symbol: drake::Sha256::Sha256
       struct /* ctor */ {
-        // Source: drake/common/sha256.h:25
+        // Source: drake/common/sha256.h
         const char* doc =
 R"""(Constructs an all-zero checksum. Note that this is NOT the same as the
 checksum of empty (zero-sized) data.)""";
       } ctor;
       // Symbol: drake::Sha256::operator!=
       struct /* operator_ne */ {
-        // Source: drake/common/sha256.h:44
+        // Source: drake/common/sha256.h
         const char* doc = R"""()""";
       } operator_ne;
       // Symbol: drake::Sha256::operator<
       struct /* operator_lt */ {
-        // Source: drake/common/sha256.h:45
+        // Source: drake/common/sha256.h
         const char* doc = R"""()""";
       } operator_lt;
       // Symbol: drake::Sha256::to_string
       struct /* to_string */ {
-        // Source: drake/common/sha256.h:40
+        // Source: drake/common/sha256.h
         const char* doc =
 R"""(Returns the 64-character ASCII hex representation of this checksum.)""";
       } to_string;
     } Sha256;
     // Symbol: drake::SortedPair
     struct /* SortedPair */ {
-      // Source: drake/common/sorted_pair.h:34
+      // Source: drake/common/sorted_pair.h
       const char* doc =
 R"""(This class is similar to the std::pair class. However, this class uses
 a pair of homogeneous types (std::pair can use heterogeneous types)
@@ -2023,78 +2023,78 @@ Template parameter ``T``:
     A template type that provides ``operator<``.)""";
       // Symbol: drake::SortedPair::SortedPair<T>
       struct /* SortedPair */ {
-        // Source: drake/common/sorted_pair.h:46
+        // Source: drake/common/sorted_pair.h
         const char* doc_was_unable_to_choose_unambiguous_names = R"""()""";
       } SortedPair;
       // Symbol: drake::SortedPair::Swap
       struct /* Swap */ {
-        // Source: drake/common/sorted_pair.h:96
+        // Source: drake/common/sorted_pair.h
         const char* doc = R"""(Swaps ``this`` and ``t``.)""";
       } Swap;
       // Symbol: drake::SortedPair::first
       struct /* first */ {
-        // Source: drake/common/sorted_pair.h:90
+        // Source: drake/common/sorted_pair.h
         const char* doc =
 R"""(Gets the first (according to ``operator<``) of the objects.)""";
       } first;
       // Symbol: drake::SortedPair::get
       struct /* get */ {
-        // Source: drake/common/sorted_pair.h:113
+        // Source: drake/common/sorted_pair.h
         const char* doc = R"""()""";
       } get;
       // Symbol: drake::SortedPair::second
       struct /* second */ {
-        // Source: drake/common/sorted_pair.h:93
+        // Source: drake/common/sorted_pair.h
         const char* doc =
 R"""(Gets the second (according to ``operator<``) of the objects.)""";
       } second;
       // Symbol: drake::SortedPair::set
       struct /* set */ {
-        // Source: drake/common/sorted_pair.h:81
+        // Source: drake/common/sorted_pair.h
         const char* doc = R"""(Resets the stored objects.)""";
       } set;
     } SortedPair;
     // Symbol: drake::SteadyTimer
     struct /* SteadyTimer */ {
-      // Source: drake/common/timer.h:35
+      // Source: drake/common/timer.h
       const char* doc =
 R"""(Implementation of timing utility that uses monotonic
 std::chrono::steady_clock.)""";
       // Symbol: drake::SteadyTimer::Start
       struct /* Start */ {
-        // Source: drake/common/timer.h:40
+        // Source: drake/common/timer.h
         const char* doc = R"""()""";
       } Start;
       // Symbol: drake::SteadyTimer::SteadyTimer
       struct /* ctor */ {
-        // Source: drake/common/timer.h:37
+        // Source: drake/common/timer.h
         const char* doc = R"""()""";
       } ctor;
       // Symbol: drake::SteadyTimer::Tick
       struct /* Tick */ {
-        // Source: drake/common/timer.h:41
+        // Source: drake/common/timer.h
         const char* doc = R"""()""";
       } Tick;
     } SteadyTimer;
     // Symbol: drake::StrideX
     struct /* StrideX */ {
-      // Source: drake/common/eigen_types.h:151
+      // Source: drake/common/eigen_types.h
       const char* doc = R"""(A fully dynamic Eigen stride.)""";
     } StrideX;
     // Symbol: drake::Timer
     struct /* Timer */ {
-      // Source: drake/common/timer.h:14
+      // Source: drake/common/timer.h
       const char* doc = R"""(Abstract base class for timing utility.)""";
       // Symbol: drake::Timer::Start
       struct /* Start */ {
-        // Source: drake/common/timer.h:22
+        // Source: drake/common/timer.h
         const char* doc =
 R"""(Begins timing. Call Start every time you want to reset the timer to
 zero.)""";
       } Start;
       // Symbol: drake::Timer::Tick
       struct /* Tick */ {
-        // Source: drake/common/timer.h:27
+        // Source: drake/common/timer.h
         const char* doc =
 R"""(Obtains a timer measurement in seconds. Call this repeatedly to get
 multiple measurements.
@@ -2104,29 +2104,29 @@ Returns:
       } Tick;
       // Symbol: drake::Timer::Timer
       struct /* ctor */ {
-        // Source: drake/common/timer.h:17
+        // Source: drake/common/timer.h
         const char* doc =
 R"""(Properly implemented Timers must start timing upon construction.)""";
       } ctor;
     } Timer;
     // Symbol: drake::ToleranceType
     struct /* ToleranceType */ {
-      // Source: drake/common/constants.h:5
+      // Source: drake/common/constants.h
       const char* doc = R"""()""";
       // Symbol: drake::ToleranceType::kAbsolute
       struct /* kAbsolute */ {
-        // Source: drake/common/constants.h:5
+        // Source: drake/common/constants.h
         const char* doc = R"""()""";
       } kAbsolute;
       // Symbol: drake::ToleranceType::kRelative
       struct /* kRelative */ {
-        // Source: drake/common/constants.h:5
+        // Source: drake/common/constants.h
         const char* doc = R"""()""";
       } kRelative;
     } ToleranceType;
     // Symbol: drake::TypeSafeIndex
     struct /* TypeSafeIndex */ {
-      // Source: drake/common/type_safe_index.h:151
+      // Source: drake/common/type_safe_index.h
       const char* doc =
 R"""(A type-safe non-negative index class.
 
@@ -2334,139 +2334,139 @@ Template parameter ``Tag``:
     not be a defined class.)""";
       // Symbol: drake::TypeSafeIndex::TypeSafeIndex<Tag>
       struct /* ctor */ {
-        // Source: drake/common/type_safe_index.h:158
+        // Source: drake/common/type_safe_index.h
         const char* doc_0args =
 R"""(Default constructor; the result is an *invalid* index. This only
 exists to serve applications which require a default constructor.)""";
-        // Source: drake/common/type_safe_index.h:163
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_index =
 R"""(Construction from a non-negative ``int`` value. The value must lie in
 the range of [0, 2³¹). Constructor only promises to test validity in
 Debug build.)""";
-        // Source: drake/common/type_safe_index.h:172
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_constTypeSafeIndex =
 R"""(Disallow construction from another index type.)""";
       } ctor;
       // Symbol: drake::TypeSafeIndex::is_valid
       struct /* is_valid */ {
-        // Source: drake/common/type_safe_index.h:205
+        // Source: drake/common/type_safe_index.h
         const char* doc =
 R"""(Reports if the index is valid--the only operation on an invalid index
 that doesn't throw an exception in Debug builds.)""";
       } is_valid;
       // Symbol: drake::TypeSafeIndex::operator int
       struct /* operator_int */ {
-        // Source: drake/common/type_safe_index.h:198
+        // Source: drake/common/type_safe_index.h
         const char* doc = R"""(Implicit conversion-to-int operator.)""";
       } operator_int;
       // Symbol: drake::TypeSafeIndex::operator!=
       struct /* operator_ne */ {
-        // Source: drake/common/type_safe_index.h:379
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_other =
 R"""(Allow inequality test with indices of this tag.)""";
-        // Source: drake/common/type_safe_index.h:390
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_constU =
 R"""(Allow inequality test with unsigned integers.)""";
-        // Source: drake/common/type_safe_index.h:398
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_constTypeSafeIndex =
 R"""(Prevent inequality test with indices of other tags.)""";
       } operator_ne;
       // Symbol: drake::TypeSafeIndex::operator++
       struct /* operator_inc */ {
-        // Source: drake/common/type_safe_index.h:219
+        // Source: drake/common/type_safe_index.h
         const char* doc_0args = R"""(Prefix increment operator.)""";
-        // Source: drake/common/type_safe_index.h:229
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args = R"""(Postfix increment operator.)""";
       } operator_inc;
       // Symbol: drake::TypeSafeIndex::operator+=
       struct /* operator_iadd */ {
-        // Source: drake/common/type_safe_index.h:269
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_i =
 R"""(Addition assignment operator. In Debug builds, this method asserts
 that the resulting index is non-negative.)""";
-        // Source: drake/common/type_safe_index.h:281
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_other =
 R"""(Allow addition for indices with the same tag.)""";
-        // Source: drake/common/type_safe_index.h:298
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_constTypeSafeIndex =
 R"""(Prevent addition for indices of different tags.)""";
       } operator_iadd;
       // Symbol: drake::TypeSafeIndex::operator--
       struct /* operator_dec */ {
-        // Source: drake/common/type_safe_index.h:241
+        // Source: drake/common/type_safe_index.h
         const char* doc_0args =
 R"""(Prefix decrement operator. In Debug builds, this method asserts that
 the resulting index is non-negative.)""";
-        // Source: drake/common/type_safe_index.h:253
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args =
 R"""(Postfix decrement operator. In Debug builds, this method asserts that
 the resulting index is non-negative.)""";
       } operator_dec;
       // Symbol: drake::TypeSafeIndex::operator-=
       struct /* operator_isub */ {
-        // Source: drake/common/type_safe_index.h:303
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_i =
 R"""(Subtraction assignment operator. In Debug builds, this method asserts
 that the resulting index is non-negative.)""";
-        // Source: drake/common/type_safe_index.h:315
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_other =
 R"""(Allow subtraction for indices with the same tag.)""";
-        // Source: drake/common/type_safe_index.h:332
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_constTypeSafeIndex =
 R"""(Prevent subtraction for indices of different tags.)""";
       } operator_isub;
       // Symbol: drake::TypeSafeIndex::operator<
       struct /* operator_lt */ {
-        // Source: drake/common/type_safe_index.h:401
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_other =
 R"""(Allow less than test with indices of this tag.)""";
-        // Source: drake/common/type_safe_index.h:411
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_constU =
 R"""(Allow less than test with unsigned integers.)""";
-        // Source: drake/common/type_safe_index.h:419
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_constTypeSafeIndex =
 R"""(Prevent less than test with indices of other tags.)""";
       } operator_lt;
       // Symbol: drake::TypeSafeIndex::operator<=
       struct /* operator_le */ {
-        // Source: drake/common/type_safe_index.h:422
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_other =
 R"""(Allow less than or equals test with indices of this tag.)""";
-        // Source: drake/common/type_safe_index.h:433
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_constU =
 R"""(Allow less than or equals test with unsigned integers.)""";
-        // Source: drake/common/type_safe_index.h:441
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_constTypeSafeIndex =
 R"""(Prevent less than or equals test with indices of other tags.)""";
       } operator_le;
       // Symbol: drake::TypeSafeIndex::operator>
       struct /* operator_gt */ {
-        // Source: drake/common/type_safe_index.h:444
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_other =
 R"""(Allow greater than test with indices of this tag.)""";
-        // Source: drake/common/type_safe_index.h:454
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_constU =
 R"""(Allow greater than test with unsigned integers.)""";
-        // Source: drake/common/type_safe_index.h:462
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_constTypeSafeIndex =
 R"""(Prevent greater than test with indices of other tags.)""";
       } operator_gt;
       // Symbol: drake::TypeSafeIndex::operator>=
       struct /* operator_ge */ {
-        // Source: drake/common/type_safe_index.h:465
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_other =
 R"""(Allow greater than or equals test with indices of this tag.)""";
-        // Source: drake/common/type_safe_index.h:476
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_constU =
 R"""(Allow greater than or equals test with unsigned integers.)""";
-        // Source: drake/common/type_safe_index.h:484
+        // Source: drake/common/type_safe_index.h
         const char* doc_1args_constTypeSafeIndex =
 R"""(Prevent greater than or equals test with indices of other tags.)""";
       } operator_ge;
     } TypeSafeIndex;
     // Symbol: drake::Value
     struct /* Value */ {
-      // Source: drake/common/value.h:199
+      // Source: drake/common/value.h
       const char* doc =
 R"""(A container class for an arbitrary type T (with some restrictions).
 This class inherits from AbstractValue and therefore at runtime can be
@@ -2502,69 +2502,69 @@ Template parameter ``T``:
     array, nor have const, volatile, or reference qualifiers.)""";
       // Symbol: drake::Value::Clone
       struct /* Clone */ {
-        // Source: drake/common/value.h:257
+        // Source: drake/common/value.h
         const char* doc = R"""()""";
       } Clone;
       // Symbol: drake::Value::SetFrom
       struct /* SetFrom */ {
-        // Source: drake/common/value.h:258
+        // Source: drake/common/value.h
         const char* doc = R"""()""";
       } SetFrom;
       // Symbol: drake::Value::Value<T>
       struct /* ctor */ {
-        // Source: drake/common/value.h:201
+        // Source: drake/common/value.h
         const char* doc_was_unable_to_choose_unambiguous_names = R"""()""";
       } ctor;
       // Symbol: drake::Value::get_mutable_value
       struct /* get_mutable_value */ {
-        // Source: drake/common/value.h:251
+        // Source: drake/common/value.h
         const char* doc =
 R"""(Returns a mutable reference to the stored value. The reference remains
 valid only until this object is set or destroyed.)""";
       } get_mutable_value;
       // Symbol: drake::Value::get_value
       struct /* get_value */ {
-        // Source: drake/common/value.h:247
+        // Source: drake/common/value.h
         const char* doc =
 R"""(Returns a const reference to the stored value. The reference remains
 valid only until this object is set or destroyed.)""";
       } get_value;
       // Symbol: drake::Value::set_value
       struct /* set_value */ {
-        // Source: drake/common/value.h:254
+        // Source: drake/common/value.h
         const char* doc =
 R"""(Replaces the stored value with a new one.)""";
       } set_value;
       // Symbol: drake::Value::static_type_info
       struct /* static_type_info */ {
-        // Source: drake/common/value.h:260
+        // Source: drake/common/value.h
         const char* doc = R"""()""";
       } static_type_info;
       // Symbol: drake::Value::type_info
       struct /* type_info */ {
-        // Source: drake/common/value.h:259
+        // Source: drake/common/value.h
         const char* doc = R"""()""";
       } type_info;
     } Value;
     // Symbol: drake::Vector1d
     struct /* Vector1d */ {
-      // Source: drake/common/eigen_types.h:35
+      // Source: drake/common/eigen_types.h
       const char* doc = R"""(A column vector of size 1 of doubles.)""";
     } Vector1d;
     // Symbol: drake::Vector6d
     struct /* Vector6d */ {
-      // Source: drake/common/eigen_types.h:54
+      // Source: drake/common/eigen_types.h
       const char* doc = R"""(A column vector of size 6 of doubles.)""";
     } Vector6d;
     // Symbol: drake::VectorXPoly
     struct /* VectorXPoly */ {
-      // Source: drake/common/polynomial.h:522
+      // Source: drake/common/polynomial.h
       const char* doc =
 R"""(A column vector of polynomials; used in several optimization classes.)""";
     } VectorXPoly;
     // Symbol: drake::all
     struct /* all */ {
-      // Source: drake/common/drake_bool.h:39
+      // Source: drake/common/drake_bool.h
       const char* doc =
 R"""(Checks truth for all elements in matrix ``m``. This is identical to
 ``Eigen::DenseBase::all()``, except this function allows for lazy
@@ -2573,14 +2573,14 @@ hold. An empty matrix returns true.)""";
     } all;
     // Symbol: drake::all_of
     struct /* all_of */ {
-      // Source: drake/common/drake_bool.h:53
+      // Source: drake/common/drake_bool.h
       const char* doc =
 R"""(Checks if unary predicate ``pred`` holds for all elements in the
 matrix ``m``. An empty matrix returns true.)""";
     } all_of;
     // Symbol: drake::any
     struct /* any */ {
-      // Source: drake/common/drake_bool.h:65
+      // Source: drake/common/drake_bool.h
       const char* doc =
 R"""(Checks truth for at least one element in matrix ``m``. This is
 identical to ``Eigen::DenseBase::any()``, except this function allows
@@ -2589,7 +2589,7 @@ does not hold. An empty matrix returns false.)""";
     } any;
     // Symbol: drake::any_of
     struct /* any_of */ {
-      // Source: drake/common/drake_bool.h:79
+      // Source: drake/common/drake_bool.h
       const char* doc =
 R"""(Checks if unary predicate ``pred`` holds for at least one element in
 the matrix ``m``. An empty matrix returns false.)""";
@@ -2598,22 +2598,22 @@ the matrix ``m``. An empty matrix returns false.)""";
     struct /* assert */ {
       // Symbol: drake::assert::ConditionTraits
       struct /* ConditionTraits */ {
-        // Source: drake/common/drake_assert.h:103
+        // Source: drake/common/drake_assert.h
         const char* doc = R"""()""";
         // Symbol: drake::assert::ConditionTraits::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/drake_assert.h:105
+          // Source: drake/common/drake_assert.h
           const char* doc = R"""()""";
         } Evaluate;
       } ConditionTraits;
     } assert;
     // Symbol: drake::cond
     struct /* cond */ {
-      // Source: drake/common/autodiff_overloads.h:217
+      // Source: drake/common/autodiff_overloads.h
       const char* doc_3args =
 R"""(Provides special case of cond expression for Eigen::AutoDiffScalar
 type.)""";
-      // Source: drake/common/cond.h:35
+      // Source: drake/common/cond.h
       const char* doc_1args =
 R"""(@name cond Constructs conditional expression (similar to Lisp's cond).
 
@@ -2649,7 +2649,7 @@ Note:
     } cond;
     // Symbol: drake::copyable_unique_ptr
     struct /* copyable_unique_ptr */ {
-      // Source: drake/common/copyable_unique_ptr.h:105
+      // Source: drake/common/copyable_unique_ptr.h
       const char* doc =
 R"""(A smart pointer with deep copy semantics.
 
@@ -2755,44 +2755,44 @@ Template parameter ``T``:
     defined above. May be an abstract or concrete type.)""";
       // Symbol: drake::copyable_unique_ptr::copyable_unique_ptr<T>
       struct /* ctor */ {
-        // Source: drake/common/copyable_unique_ptr.h:113
+        // Source: drake/common/copyable_unique_ptr.h
         const char* doc_0args =
 R"""(Default constructor stores a ``nullptr``. No heap allocation is
 performed. The empty() method will return true when called on a
 default-constructed copyable_unique_ptr.)""";
-        // Source: drake/common/copyable_unique_ptr.h:117
+        // Source: drake/common/copyable_unique_ptr.h
         const char* doc_1args_raw =
 R"""(Given a raw pointer to a writable heap-allocated object, take over
 ownership of that object. No copying occurs.)""";
-        // Source: drake/common/copyable_unique_ptr.h:121
+        // Source: drake/common/copyable_unique_ptr.h
         const char* doc_1args_value =
 R"""(Constructs a unique instance of T as a copy of the provided model
 value.)""";
-        // Source: drake/common/copyable_unique_ptr.h:128
+        // Source: drake/common/copyable_unique_ptr.h
         const char* doc_copy =
 R"""(Copy constructor is deep; the new copyable_unique_ptr object contains
 a new copy of the object in the source, created via the source
 object's copy constructor or ``Clone()`` method. If the source
 container is empty this one will be empty also.)""";
-        // Source: drake/common/copyable_unique_ptr.h:137
+        // Source: drake/common/copyable_unique_ptr.h
         const char* doc_1args_conststduniqueptr =
 R"""(Copy constructor from a standard ``unique_ptr`` of *compatible* type.
 The copy is deep; the new copyable_unique_ptr object contains a new
 copy of the object in the source, created via the source object's copy
 constructor or ``Clone()`` method. If the source container is empty
 this one will be empty also.)""";
-        // Source: drake/common/copyable_unique_ptr.h:143
+        // Source: drake/common/copyable_unique_ptr.h
         const char* doc_move =
 R"""(Move constructor is very fast and leaves the source empty. Ownership
 is transferred from the source to the new copyable_unique_ptr. If the
 source was empty this one will be empty also. No heap activity occurs.)""";
-        // Source: drake/common/copyable_unique_ptr.h:150
+        // Source: drake/common/copyable_unique_ptr.h
         const char* doc_1args_u_ptr =
 R"""(Move constructor from a standard ``unique_ptr``. The move is very fast
 and leaves the source empty. Ownership is transferred from the source
 to the new copyable_unique_ptr. If the source was empty this one will
 be empty also. No heap activity occurs.)""";
-        // Source: drake/common/copyable_unique_ptr.h:158
+        // Source: drake/common/copyable_unique_ptr.h
         const char* doc_1args_stduniqueptr =
 R"""(Move construction from a compatible standard ``unique_ptr``. Type
 ``U*`` must be implicitly convertible to type ``T*``. Ownership is
@@ -2801,7 +2801,7 @@ source was empty this one will be empty also. No heap activity occurs.)""";
       } ctor;
       // Symbol: drake::copyable_unique_ptr::empty
       struct /* empty */ {
-        // Source: drake/common/copyable_unique_ptr.h:279
+        // Source: drake/common/copyable_unique_ptr.h
         const char* doc =
 R"""(Return true if this container is empty, which is the state the
 container is in immediately after default construction and various
@@ -2809,7 +2809,7 @@ other operations.)""";
       } empty;
       // Symbol: drake::copyable_unique_ptr::get
       struct /* get */ {
-        // Source: drake/common/copyable_unique_ptr.h:285
+        // Source: drake/common/copyable_unique_ptr.h
         const char* doc =
 R"""(Return a const pointer to the contained object if any, or ``nullptr``.
 Note that this is different than ``%get()`` for the standard smart
@@ -2818,7 +2818,7 @@ get_mutable() here for that purpose.)""";
       } get;
       // Symbol: drake::copyable_unique_ptr::get_mutable
       struct /* get_mutable */ {
-        // Source: drake/common/copyable_unique_ptr.h:297
+        // Source: drake/common/copyable_unique_ptr.h
         const char* doc =
 R"""(Return a writable pointer to the contained object if any, or
 ``nullptr``. Note that you need write access to this container in
@@ -2831,7 +2831,7 @@ Warning:
       } get_mutable;
       // Symbol: drake::copyable_unique_ptr::operator*
       struct /* operator_mul */ {
-        // Source: drake/common/copyable_unique_ptr.h:321
+        // Source: drake/common/copyable_unique_ptr.h
         const char* doc_0args_const =
 R"""(Return a const reference to the contained object. Note that this is
 different from ``std::unique_ptr::operator*()`` which would return a
@@ -2849,7 +2849,7 @@ Warning:
 
 Precondition:
     ``this != nullptr`` reports ``True``.)""";
-        // Source: drake/common/copyable_unique_ptr.h:342
+        // Source: drake/common/copyable_unique_ptr.h
         const char* doc_0args_nonconst =
 R"""(Return a writable reference to the contained object (if T is itself
 not const). Note that you need write access to this container in order
@@ -2872,7 +2872,7 @@ Precondition:
     } copyable_unique_ptr;
     // Symbol: drake::dummy_value
     struct /* dummy_value */ {
-      // Source: drake/common/dummy_value.h:17
+      // Source: drake/common/dummy_value.h
       const char* doc =
 R"""(Provides a "dummy" value for a ScalarType -- a value that is unlikely
 to be mistaken for a purposefully-computed value, useful for
@@ -2885,13 +2885,13 @@ quiet_NaN is unavailable.
 See autodiff_overloads.h to use this with Eigen's AutoDiffScalar.)""";
       // Symbol: drake::dummy_value::get
       struct /* get */ {
-        // Source: drake/common/dummy_value.h:18
+        // Source: drake/common/dummy_value.h
         const char* doc = R"""()""";
       } get;
     } dummy_value;
     // Symbol: drake::dynamic_pointer_cast
     struct /* dynamic_pointer_cast */ {
-      // Source: drake/common/pointer_cast.h:38
+      // Source: drake/common/pointer_cast.h
       const char* doc =
 R"""(Casts the object owned by the std::unique_ptr ``other`` from type
 ``U`` to ``T``; if the cast fails, returns nullptr. Casting is
@@ -2910,7 +2910,7 @@ Note that this function only supports default deleters.)""";
     } dynamic_pointer_cast;
     // Symbol: drake::dynamic_pointer_cast_or_throw
     struct /* dynamic_pointer_cast_or_throw */ {
-      // Source: drake/common/pointer_cast.h:58
+      // Source: drake/common/pointer_cast.h
       const char* doc_1args_stduniqueptr =
 R"""(Casts the object owned by the std::unique_ptr ``other`` from type
 ``U`` to ``T``; if ``other`` is nullptr or the cast fails, throws a
@@ -2923,7 +2923,7 @@ Raises:
     RuntimeError if the cast fails.
 
 Note that this function only supports default deleters.)""";
-      // Source: drake/common/pointer_cast.h:84
+      // Source: drake/common/pointer_cast.h
       const char* doc_1args_U =
 R"""(Casts the pointer ``other`` from type ``U`` to ``T`` using
 ``dynamic_cast``. The result is never nullptr.
@@ -2936,7 +2936,7 @@ Raises:
     } dynamic_pointer_cast_or_throw;
     // Symbol: drake::fmt_debug_string
     struct /* fmt_debug_string */ {
-      // Source: drake/common/fmt.h:50
+      // Source: drake/common/fmt.h
       const char* doc =
 R"""(Returns ``fmt::("{:?}", x)``, i.e, using fmt's "debug string format";
 see https://fmt.dev docs for the '?' presentation type for details. We
@@ -2947,7 +2947,7 @@ correctly.)""";
     } fmt_debug_string;
     // Symbol: drake::fmt_eigen
     struct /* fmt_eigen */ {
-      // Source: drake/common/fmt_eigen.h:56
+      // Source: drake/common/fmt_eigen.h
       const char* doc =
 R"""(When passing an Eigen::Matrix to fmt, use this wrapper function to
 instruct fmt to use Drake's custom formatter for Eigen types.
@@ -2989,7 +2989,7 @@ Note:
     } fmt_eigen;
     // Symbol: drake::fmt_floating_point
     struct /* fmt_floating_point */ {
-      // Source: drake/common/fmt.h:37
+      // Source: drake/common/fmt.h
       const char* doc =
 R"""(Returns ``fmt::to_string(x)`` but always with at least one digit after
 the decimal point. Different versions of fmt disagree on whether to
@@ -2998,7 +2998,7 @@ numbers.)""";
     } fmt_floating_point;
     // Symbol: drake::fmt_runtime
     struct /* fmt_runtime */ {
-      // Source: drake/common/fmt.h:18
+      // Source: drake/common/fmt.h
       const char* doc =
 R"""(When using fmt >= 8, this is an alias for <a
 href="https://fmt.dev/latest/api.html#compile-time-format-string-checks">fmt::runtime</a>.
@@ -3006,7 +3006,7 @@ When using fmt < 8, this is a no-op.)""";
     } fmt_runtime;
     // Symbol: drake::fmt_streamed
     struct /* fmt_streamed */ {
-      // Source: drake/common/fmt_ostream.h:23
+      // Source: drake/common/fmt_ostream.h
       const char* doc =
 R"""(When using fmt >= 9, this is an alias for <a
 href="https://fmt.dev/latest/api.html#ostream-api">fmt::streamed</a>.
@@ -3020,26 +3020,26 @@ understand where you are required to use this wrapper.)""";
     } fmt_streamed;
     // Symbol: drake::hash_append
     struct /* hash_append */ {
-      // Source: drake/common/hash.h:78
+      // Source: drake/common/hash.h
       const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Provides hash_append for integral constants.)""";
     } hash_append;
     // Symbol: drake::hash_append_range
     struct /* hash_append_range */ {
-      // Source: drake/common/hash.h:194
+      // Source: drake/common/hash.h
       const char* doc =
 R"""(Provides hash_append for a range, as given by two iterators.)""";
     } hash_append_range;
     // Symbol: drake::if_then_else
     struct /* if_then_else */ {
-      // Source: drake/common/autodiff_overloads.h:201
+      // Source: drake/common/autodiff_overloads.h
       const char* doc_3args_bool_constEigenAutoDiffScalar_constEigenAutoDiffScalar =
 R"""(Provides if-then-else expression for Eigen::AutoDiffScalar type. To
 support Eigen's generic expressions, we use casting to the plain
 object after applying Eigen::internal::remove_all. It is based on the
 Eigen's implementation of min/max function for AutoDiffScalar type
 (https://bitbucket.org/eigen/eigen/src/10a1de58614569c9250df88bdfc6402024687bc6/unsupported/Eigen/src/AutoDiff/AutoDiffScalar.h?at=default&fileviewer=file-view-default#AutoDiffScalar.h-546).)""";
-      // Source: drake/common/double_overloads.h:17
+      // Source: drake/common/double_overloads.h
       const char* doc_3args_f_cond_v_then_v_else =
 R"""(The semantics is similar but not exactly the same as C++'s conditional
 expression constructed by its ternary operator, @c ?:. In
@@ -3047,7 +3047,7 @@ expression constructed by its ternary operator, @c ?:. In
 ``v_else`` are evaluated regardless of the evaluation of ``f_cond``.
 In contrast, only one of ``v_then`` or ``v_else`` is evaluated in
 C++'s conditional expression ``f_cond ? v_then : v_else``.)""";
-      // Source: drake/common/drake_bool.h:109
+      // Source: drake/common/drake_bool.h
       const char* doc_3args_constboolean_constEigenMatrix_constEigenMatrix =
 R"""(Overloads if_then_else for Eigen vectors of ``m_then`` and ``m_else``
 values with with a single ``f_cond`` condition to toggle them all at
@@ -3055,7 +3055,7 @@ once.)""";
     } if_then_else;
     // Symbol: drake::is_approx_equal_abstol
     struct /* is_approx_equal_abstol */ {
-      // Source: drake/common/is_approx_equal_abstol.h:13
+      // Source: drake/common/is_approx_equal_abstol.h
       const char* doc =
 R"""(Returns true if and only if the two matrices are equal to within a
 certain absolute elementwise ``tolerance``. Special values
@@ -3065,46 +3065,46 @@ certain absolute elementwise ``tolerance``. Special values
     struct /* is_cloneable_internal */ {
       // Symbol: drake::is_cloneable_internal::is_cloneable_helper
       struct /* is_cloneable_helper */ {
-        // Source: drake/common/is_cloneable.h:14
+        // Source: drake/common/is_cloneable.h
         const char* doc = R"""()""";
       } is_cloneable_helper;
     } is_cloneable_internal;
     // Symbol: drake::is_eigen_nonvector_of
     struct /* is_eigen_nonvector_of */ {
-      // Source: drake/common/eigen_types.h:208
+      // Source: drake/common/eigen_types.h
       const char* doc = R"""()""";
     } is_eigen_nonvector_of;
     // Symbol: drake::is_eigen_scalar_same
     struct /* is_eigen_scalar_same */ {
-      // Source: drake/common/eigen_types.h:176
+      // Source: drake/common/eigen_types.h
       const char* doc = R"""()""";
     } is_eigen_scalar_same;
     // Symbol: drake::is_eigen_type
     struct /* is_eigen_type */ {
-      // Source: drake/common/eigen_types.h:170
+      // Source: drake/common/eigen_types.h
       const char* doc = R"""()""";
     } is_eigen_type;
     // Symbol: drake::is_eigen_vector
     struct /* is_eigen_vector */ {
-      // Source: drake/common/eigen_types.h:185
+      // Source: drake/common/eigen_types.h
       const char* doc = R"""()""";
     } is_eigen_vector;
     // Symbol: drake::is_eigen_vector_of
     struct /* is_eigen_vector_of */ {
-      // Source: drake/common/eigen_types.h:193
+      // Source: drake/common/eigen_types.h
       const char* doc = R"""()""";
     } is_eigen_vector_of;
     // Symbol: drake::is_less_than_comparable_internal
     struct /* is_less_than_comparable_internal */ {
       // Symbol: drake::is_less_than_comparable_internal::is_less_than_comparable_helper
       struct /* is_less_than_comparable_helper */ {
-        // Source: drake/common/is_less_than_comparable.h:15
+        // Source: drake/common/is_less_than_comparable.h
         const char* doc = R"""()""";
       } is_less_than_comparable_helper;
     } is_less_than_comparable_internal;
     // Symbol: drake::log
     struct /* log */ {
-      // Source: drake/common/text_logging.h:160
+      // Source: drake/common/text_logging.h
       const char* doc =
 R"""(Retrieve an instance of a logger to use for logging; for example:
 
@@ -3127,7 +3127,7 @@ See the text_logging.h documentation for a short tutorial.)""";
     struct /* logging */ {
       // Symbol: drake::logging::Warn
       struct /* Warn */ {
-        // Source: drake/common/text_logging.h:187
+        // Source: drake/common/text_logging.h
         const char* doc =
 R"""(When constructed, logs a message (at "warn" severity); the destructor
 is guaranteed to be trivial. This is useful for declaring an instance
@@ -3157,13 +3157,13 @@ For example:
     </details>)""";
         // Symbol: drake::logging::Warn::Warn
         struct /* Warn */ {
-          // Source: drake/common/text_logging.h:189
+          // Source: drake/common/text_logging.h
           const char* doc = R"""()""";
         } Warn;
       } Warn;
       // Symbol: drake::logging::get_dist_sink
       struct /* get_dist_sink */ {
-        // Source: drake/common/text_logging.h:169
+        // Source: drake/common/text_logging.h
         const char* doc =
 R"""((Advanced) Retrieves the default sink for all Drake logs. When spdlog
 is enabled, the return value can be cast to
@@ -3173,14 +3173,14 @@ stderr. When spdlog is disabled, the return value is an empty class.)""";
       } get_dist_sink;
       // Symbol: drake::logging::logger
       struct /* logger */ {
-        // Source: drake/common/text_logging.h:100
+        // Source: drake/common/text_logging.h
         const char* doc =
 R"""(The drake::logging::logger class provides text logging methods. See
 the text_logging.h documentation for a short tutorial.)""";
       } logger;
       // Symbol: drake::logging::set_log_level
       struct /* set_log_level */ {
-        // Source: drake/common/text_logging.h:203
+        // Source: drake/common/text_logging.h
         const char* doc =
 R"""(Sets the log threshold used by Drake's C++ code.
 
@@ -3195,7 +3195,7 @@ Returns:
       } set_log_level;
       // Symbol: drake::logging::set_log_pattern
       struct /* set_log_pattern */ {
-        // Source: drake/common/text_logging.h:214
+        // Source: drake/common/text_logging.h
         const char* doc =
 R"""(Invokes ``drake::log()->set_pattern(pattern)``.
 
@@ -3206,73 +3206,73 @@ Parameter ``pattern``:
     } logging;
     // Symbol: drake::never_destroyed
     struct /* never_destroyed */ {
-      // Source: drake/common/never_destroyed.h:81
+      // Source: drake/common/never_destroyed.h
       const char* doc = R"""()""";
       // Symbol: drake::never_destroyed::access
       struct /* access */ {
-        // Source: drake/common/never_destroyed.h:96
+        // Source: drake/common/never_destroyed.h
         const char* doc = R"""(Returns the underlying T reference.)""";
       } access;
       // Symbol: drake::never_destroyed::never_destroyed<T>
       struct /* ctor */ {
-        // Source: drake/common/never_destroyed.h:87
+        // Source: drake/common/never_destroyed.h
         const char* doc =
 R"""(Passes the constructor arguments along to T using perfect forwarding.)""";
       } ctor;
     } never_destroyed;
     // Symbol: drake::none
     struct /* none */ {
-      // Source: drake/common/drake_bool.h:88
+      // Source: drake/common/drake_bool.h
       const char* doc =
 R"""(Checks that no elements of ``m`` are true. An empty matrix returns
 true.)""";
     } none;
     // Symbol: drake::none_of
     struct /* none_of */ {
-      // Source: drake/common/drake_bool.h:99
+      // Source: drake/common/drake_bool.h
       const char* doc =
 R"""(Checks if unary predicate ``pred`` holds for no elements in the matrix
 ``m``. An empty matrix returns true.)""";
     } none_of;
     // Symbol: drake::operator!=
     struct /* operator_ne */ {
-      // Source: drake/common/sorted_pair.h:143
+      // Source: drake/common/sorted_pair.h
       const char* doc =
 R"""(Determine whether two SortedPair objects are not equal using
 ``operator==``.)""";
     } operator_ne;
     // Symbol: drake::operator<
     struct /* operator_lt */ {
-      // Source: drake/common/sorted_pair.h:137
+      // Source: drake/common/sorted_pair.h
       const char* doc =
 R"""(Compares two pairs using lexicographic ordering.)""";
     } operator_lt;
     // Symbol: drake::operator<=
     struct /* operator_le */ {
-      // Source: drake/common/sorted_pair.h:155
+      // Source: drake/common/sorted_pair.h
       const char* doc =
 R"""(Determines whether ``x <= y`` using ``operator<``.)""";
     } operator_le;
     // Symbol: drake::operator>
     struct /* operator_gt */ {
-      // Source: drake/common/sorted_pair.h:149
+      // Source: drake/common/sorted_pair.h
       const char* doc =
 R"""(Determines whether ``x > y`` using ``operator<``.)""";
     } operator_gt;
     // Symbol: drake::operator>=
     struct /* operator_ge */ {
-      // Source: drake/common/sorted_pair.h:161
+      // Source: drake/common/sorted_pair.h
       const char* doc =
 R"""(Determines whether ``x >= y`` using ``operator<``.)""";
     } operator_ge;
     // Symbol: drake::pow
     struct /* pow */ {
-      // Source: drake/common/polynomial.h:488
+      // Source: drake/common/polynomial.h
       const char* doc = R"""(Provides power function for Polynomial.)""";
     } pow;
     // Symbol: drake::reset_after_move
     struct /* reset_after_move */ {
-      // Source: drake/common/reset_after_move.h:49
+      // Source: drake/common/reset_after_move.h
       const char* doc =
 R"""(Type wrapper that performs value-initialization on the wrapped type,
 and guarantees that when moving from this type that the donor object
@@ -3330,27 +3330,27 @@ See also:
     reset_on_copy)""";
       // Symbol: drake::reset_after_move::operator const type-parameter-0-0 &
       struct /* operator_const_T0_ */ {
-        // Source: drake/common/reset_after_move.h:89
+        // Source: drake/common/reset_after_move.h
         const char* doc = R"""()""";
       } operator_const_T0_;
       // Symbol: drake::reset_after_move::operator type-parameter-0-0 &
       struct /* operator_T0_ */ {
-        // Source: drake/common/reset_after_move.h:88
+        // Source: drake/common/reset_after_move.h
         const char* doc = R"""()""";
       } operator_T0_;
       // Symbol: drake::reset_after_move::operator*
       struct /* operator_mul */ {
-        // Source: drake/common/reset_after_move.h:103
+        // Source: drake/common/reset_after_move.h
         const char* doc = R"""()""";
       } operator_mul;
       // Symbol: drake::reset_after_move::reset_after_move<T>
       struct /* ctor */ {
-        // Source: drake/common/reset_after_move.h:53
+        // Source: drake/common/reset_after_move.h
         const char* doc_0args =
 R"""(Constructs a reset_after_move<T> with a value-initialized wrapped
 value. See
 http://en.cppreference.com/w/cpp/language/value_initialization.)""";
-        // Source: drake/common/reset_after_move.h:59
+        // Source: drake/common/reset_after_move.h
         const char* doc_1args =
 R"""(Constructs a reset_after_move<T> with the given wrapped value. This is
 an implicit conversion, so that reset_after_move<T> behaves more like
@@ -3358,13 +3358,13 @@ the unwrapped type.)""";
       } ctor;
       // Symbol: drake::reset_after_move::value
       struct /* value */ {
-        // Source: drake/common/reset_after_move.h:110
+        // Source: drake/common/reset_after_move.h
         const char* doc = R"""()""";
       } value;
     } reset_after_move;
     // Symbol: drake::reset_on_copy
     struct /* reset_on_copy */ {
-      // Source: drake/common/reset_on_copy.h:80
+      // Source: drake/common/reset_on_copy.h
       const char* doc =
 R"""(Type wrapper that performs value-initialization on copy construction
 or assignment.
@@ -3447,29 +3447,29 @@ See also:
     reset_after_move)""";
       // Symbol: drake::reset_on_copy::operator const type-parameter-0-0 &
       struct /* operator_const_T0_ */ {
-        // Source: drake/common/reset_on_copy.h:152
+        // Source: drake/common/reset_on_copy.h
         const char* doc = R"""()""";
       } operator_const_T0_;
       // Symbol: drake::reset_on_copy::operator type-parameter-0-0 &
       struct /* operator_T0_ */ {
-        // Source: drake/common/reset_on_copy.h:151
+        // Source: drake/common/reset_on_copy.h
         const char* doc = R"""()""";
       } operator_T0_;
       // Symbol: drake::reset_on_copy::operator*
       struct /* operator_mul */ {
-        // Source: drake/common/reset_on_copy.h:167
+        // Source: drake/common/reset_on_copy.h
         const char* doc = R"""()""";
       } operator_mul;
       // Symbol: drake::reset_on_copy::reset_on_copy<T>
       struct /* ctor */ {
-        // Source: drake/common/reset_on_copy.h:87
+        // Source: drake/common/reset_on_copy.h
         const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Constructs a reset_on_copy with a value-initialized wrapped value.)""";
       } ctor;
     } reset_on_copy;
     // Symbol: drake::scalar_predicate
     struct /* scalar_predicate */ {
-      // Source: drake/common/drake_bool.h:19
+      // Source: drake/common/drake_bool.h
       const char* doc =
 R"""(A traits struct that describes the return type of predicates over a
 scalar type (named ``T``). For example, a predicate that evaluates
@@ -3480,13 +3480,13 @@ scalar types are permitted to specialize this template for their
 needs.)""";
       // Symbol: drake::scalar_predicate::type
       struct /* type */ {
-        // Source: drake/common/drake_bool.h:21
+        // Source: drake/common/drake_bool.h
         const char* doc = R"""(The return type of predicates over T.)""";
       } type;
     } scalar_predicate;
     // Symbol: drake::static_pointer_cast
     struct /* static_pointer_cast */ {
-      // Source: drake/common/pointer_cast.h:20
+      // Source: drake/common/pointer_cast.h
       const char* doc =
 R"""(Casts the object owned by the std::unique_ptr ``other`` from type
 ``U`` to ``T``; no runtime type checking is performed.
@@ -3498,7 +3498,7 @@ Note that this function only supports default deleters.)""";
     } static_pointer_cast;
     // Symbol: drake::string_multiset
     struct /* string_multiset */ {
-      // Source: drake/common/string_set.h:19
+      // Source: drake/common/string_set.h
       const char* doc =
 R"""(Like ``std::multiset<std::string>``, but with better defaults than the
 plain ``std::multiset<std::string>`` spelling. We need
@@ -3508,7 +3508,7 @@ without copying them to a ``std::string``.)""";
     } string_multiset;
     // Symbol: drake::string_set
     struct /* string_set */ {
-      // Source: drake/common/string_set.h:13
+      // Source: drake/common/string_set.h
       const char* doc =
 R"""(Like ``std::set<std::string>``, but with better defaults than the
 plain ``std::set<std::string>`` spelling. We need ``std::less<void>``
@@ -3518,7 +3518,7 @@ char*`` can be used as lookup keys without copying them to a
     } string_set;
     // Symbol: drake::string_unordered_multiset
     struct /* string_unordered_multiset */ {
-      // Source: drake/common/string_unordered_set.h:22
+      // Source: drake/common/string_unordered_set.h
       const char* doc =
 R"""(Like ``std::unordered_multiset<std::string>``, but with better
 defaults than the plain ``std::unordered_multiset<std::string>``
@@ -3528,7 +3528,7 @@ without copying them to a ``std::string``.)""";
     } string_unordered_multiset;
     // Symbol: drake::string_unordered_set
     struct /* string_unordered_set */ {
-      // Source: drake/common/string_unordered_set.h:15
+      // Source: drake/common/string_unordered_set.h
       const char* doc =
 R"""(Like ``std::unordered_set<std::string>``, but with better defaults
 than the plain ``std::unordered_set<std::string>`` spelling. We need
@@ -3538,7 +3538,7 @@ a ``std::string``.)""";
     } string_unordered_set;
     // Symbol: drake::temp_directory
     struct /* temp_directory */ {
-      // Source: drake/common/temp_directory.h:25
+      // Source: drake/common/temp_directory.h
       const char* doc =
 R"""(Returns a directory location suitable for temporary files. The
 directory will be called ${parent}/robotlocomotion_drake_XXXXXX where
@@ -3562,9 +3562,9 @@ Raises:
     } temp_directory;
     // Symbol: drake::to_string
     struct /* to_string */ {
-      // Source: drake/common/file_source.h:16
+      // Source: drake/common/file_source.h
       const char* doc_1args_source = R"""(Returns a string representation.)""";
-      // Source: drake/common/identifier.h:245
+      // Source: drake/common/identifier.h
       const char* doc_1args_constdrakeIdentifier =
 R"""(Enables use of identifiers with to_string. It requires ADL to work.
 So, it should be invoked as: ``to_string(id);`` and should be preceded
@@ -3572,7 +3572,7 @@ by ``using std::to_string``.)""";
     } to_string;
     // Symbol: drake::uhash
     struct /* uhash */ {
-      // Source: drake/common/hash.h:226
+      // Source: drake/common/hash.h
       const char* doc =
 R"""(A hashing functor, somewhat like ``std::hash``. Given an item of type
 ``T``, applies hash_append to it, directing the bytes to append into
@@ -3580,18 +3580,18 @@ the given ``HashAlgorithm``, and then finally returning the
 algorithm's result.)""";
       // Symbol: drake::uhash::operator()
       struct /* operator_call */ {
-        // Source: drake/common/hash.h:230
+        // Source: drake/common/hash.h
         const char* doc = R"""()""";
       } operator_call;
       // Symbol: drake::uhash::result_type
       struct /* result_type */ {
-        // Source: drake/common/hash.h:227
+        // Source: drake/common/hash.h
         const char* doc = R"""()""";
       } result_type;
     } uhash;
     // Symbol: drake::unused
     struct /* unused */ {
-      // Source: drake/common/unused.h:51
+      // Source: drake/common/unused.h
       const char* doc =
 R"""(Documents the argument(s) as unused, placating GCC's
 -Wunused-parameter warning. This can be called within function bodies

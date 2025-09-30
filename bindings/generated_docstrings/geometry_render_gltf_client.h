@@ -23,7 +23,7 @@ constexpr struct /* pydrake_doc_geometry_render_gltf_client */ {
     struct /* geometry */ {
       // Symbol: drake::geometry::MakeRenderEngineGltfClient
       struct /* MakeRenderEngineGltfClient */ {
-        // Source: drake/geometry/render_gltf_client/factory.h:73
+        // Source: drake/geometry/render_gltf_client/factory.h
         const char* doc =
 R"""(Constructs a RenderEngine implementation which generates <a
 href="https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html">glTF
@@ -116,13 +116,13 @@ https://curl.se/libcurl/c/curl_global_cleanup.html)""";
       } MakeRenderEngineGltfClient;
       // Symbol: drake::geometry::RenderEngineGltfClientParams
       struct /* RenderEngineGltfClientParams */ {
-        // Source: drake/geometry/render_gltf_client/render_engine_gltf_client_params.h:14
+        // Source: drake/geometry/render_gltf_client/render_engine_gltf_client_params.h
         const char* doc =
 R"""(Construction parameters for the MakeRenderEngineGltfClient() to create
 a client as part of the render_engine_gltf_client_server_api.)""";
         // Symbol: drake::geometry::RenderEngineGltfClientParams::GetUrl
         struct /* GetUrl */ {
-          // Source: drake/geometry/render_gltf_client/render_engine_gltf_client_params.h:56
+          // Source: drake/geometry/render_gltf_client/render_engine_gltf_client_params.h
           const char* doc =
 R"""(Returns the post-processed full url used for client-server
 communication. The full url is constructed as
@@ -132,20 +132,20 @@ removed.)""";
         } GetUrl;
         // Symbol: drake::geometry::RenderEngineGltfClientParams::Serialize
         struct /* Serialize */ {
-          // Source: drake/geometry/render_gltf_client/render_engine_gltf_client_params.h:18
+          // Source: drake/geometry/render_gltf_client/render_engine_gltf_client_params.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::geometry::RenderEngineGltfClientParams::base_url
         struct /* base_url */ {
-          // Source: drake/geometry/render_gltf_client/render_engine_gltf_client_params.h:27
+          // Source: drake/geometry/render_gltf_client/render_engine_gltf_client_params.h
           const char* doc =
 R"""(The base url of the server communicate with. See GetUrl() for details.)""";
         } base_url;
         // Symbol: drake::geometry::RenderEngineGltfClientParams::cleanup
         struct /* cleanup */ {
-          // Source: drake/geometry/render_gltf_client/render_engine_gltf_client_params.h:50
+          // Source: drake/geometry/render_gltf_client/render_engine_gltf_client_params.h
           const char* doc =
 R"""(Whether or not the client should cleanup files generated / retrieved
 from the server. By default (``cleanup=true``), after a server image
@@ -161,14 +161,14 @@ parent directory described by drake::temp_directory().)""";
         } cleanup;
         // Symbol: drake::geometry::RenderEngineGltfClientParams::render_endpoint
         struct /* render_endpoint */ {
-          // Source: drake/geometry/render_gltf_client/render_engine_gltf_client_params.h:31
+          // Source: drake/geometry/render_gltf_client/render_engine_gltf_client_params.h
           const char* doc =
 R"""((Advanced) The server endpoint to retrieve renderings from. See
 GetUrl() for details.)""";
         } render_endpoint;
         // Symbol: drake::geometry::RenderEngineGltfClientParams::verbose
         struct /* verbose */ {
-          // Source: drake/geometry/render_gltf_client/render_engine_gltf_client_params.h:38
+          // Source: drake/geometry/render_gltf_client/render_engine_gltf_client_params.h
           const char* doc =
 R"""(Whether or not the client should log information about which files are
 being generated, as well as any information about HTTP communications

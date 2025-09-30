@@ -27,13 +27,13 @@ constexpr struct /* pydrake_doc_lcm */ {
     struct /* lcm */ {
       // Symbol: drake::lcm::AreLcmMessagesEqual
       struct /* AreLcmMessagesEqual */ {
-        // Source: drake/lcm/lcm_messages.h:52
+        // Source: drake/lcm/lcm_messages.h
         const char* doc =
 R"""(Compares two LCM messages of the same type to see if they are equal.)""";
       } AreLcmMessagesEqual;
       // Symbol: drake::lcm::DecodeLcmMessage
       struct /* DecodeLcmMessage */ {
-        // Source: drake/lcm/lcm_messages.h:39
+        // Source: drake/lcm/lcm_messages.h
         const char* doc =
 R"""(Decodes an LCM message from a series of bytes.
 
@@ -42,7 +42,7 @@ Raises:
       } DecodeLcmMessage;
       // Symbol: drake::lcm::DrakeLcm
       struct /* DrakeLcm */ {
-        // Source: drake/lcm/drake_lcm.h:24
+        // Source: drake/lcm/drake_lcm.h
         const char* doc =
 R"""(A wrapper around a *real* LCM instance.
 
@@ -54,45 +54,45 @@ For network issues on macOS, see
 https://drake.mit.edu/troubleshooting.html#lcm-macos.)""";
         // Symbol: drake::lcm::DrakeLcm::DrakeLcm
         struct /* ctor */ {
-          // Source: drake/lcm/drake_lcm.h:32
+          // Source: drake/lcm/drake_lcm.h
           const char* doc_0args =
 R"""(Constructs using LCM's default URL (either the default hard-coded URL,
 or else LCM_DEFAULT_URL environment variable if it is set).)""";
-          // Source: drake/lcm/drake_lcm.h:38
+          // Source: drake/lcm/drake_lcm.h
           const char* doc_1args_lcm_url =
 R"""(Constructs using the given URL. If empty, it will use the default URL
 as per the no-argument constructor.)""";
-          // Source: drake/lcm/drake_lcm.h:43
+          // Source: drake/lcm/drake_lcm.h
           const char* doc_1args_params = R"""(Constructs using the given parameters.)""";
         } ctor;
         // Symbol: drake::lcm::DrakeLcm::HandleSubscriptions
         struct /* HandleSubscriptions */ {
-          // Source: drake/lcm/drake_lcm.h:59
+          // Source: drake/lcm/drake_lcm.h
           const char* doc = R"""()""";
         } HandleSubscriptions;
         // Symbol: drake::lcm::DrakeLcm::Publish
         struct /* Publish */ {
-          // Source: drake/lcm/drake_lcm.h:50
+          // Source: drake/lcm/drake_lcm.h
           const char* doc = R"""()""";
         } Publish;
         // Symbol: drake::lcm::DrakeLcm::Subscribe
         struct /* Subscribe */ {
-          // Source: drake/lcm/drake_lcm.h:53
+          // Source: drake/lcm/drake_lcm.h
           const char* doc = R"""()""";
         } Subscribe;
         // Symbol: drake::lcm::DrakeLcm::SubscribeAllChannels
         struct /* SubscribeAllChannels */ {
-          // Source: drake/lcm/drake_lcm.h:57
+          // Source: drake/lcm/drake_lcm.h
           const char* doc = R"""()""";
         } SubscribeAllChannels;
         // Symbol: drake::lcm::DrakeLcm::SubscribeMultichannel
         struct /* SubscribeMultichannel */ {
-          // Source: drake/lcm/drake_lcm.h:55
+          // Source: drake/lcm/drake_lcm.h
           const char* doc = R"""()""";
         } SubscribeMultichannel;
         // Symbol: drake::lcm::DrakeLcm::available
         struct /* available */ {
-          // Source: drake/lcm/drake_lcm.h:65
+          // Source: drake/lcm/drake_lcm.h
           const char* doc =
 R"""(Returns true if the LCM runtime library is enabled in this build of
 Drake. When false, functions that require the runtime (e.g.,
@@ -101,13 +101,13 @@ HandleSubscriptions and Publish) will throw an error. See
         } available;
         // Symbol: drake::lcm::DrakeLcm::get_lcm_url
         struct /* get_lcm_url */ {
-          // Source: drake/lcm/drake_lcm.h:52
+          // Source: drake/lcm/drake_lcm.h
           const char* doc = R"""()""";
         } get_lcm_url;
       } DrakeLcm;
       // Symbol: drake::lcm::DrakeLcmBase
       struct /* DrakeLcmBase */ {
-        // Source: drake/lcm/drake_lcm_base.h:17
+        // Source: drake/lcm/drake_lcm_base.h
         const char* doc =
 R"""(A concrete subclass of DrakeInterface that throws for all functions
 except the constructor and destructor. This is useful for subclasses
@@ -115,43 +115,43 @@ that only wish to implement a subset of the DrakeLcmInterface
 features.)""";
         // Symbol: drake::lcm::DrakeLcmBase::DrakeLcmBase
         struct /* ctor */ {
-          // Source: drake/lcm/drake_lcm_base.h:19
+          // Source: drake/lcm/drake_lcm_base.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::lcm::DrakeLcmBase::HandleSubscriptions
         struct /* HandleSubscriptions */ {
-          // Source: drake/lcm/drake_lcm_base.h:30
+          // Source: drake/lcm/drake_lcm_base.h
           const char* doc = R"""()""";
         } HandleSubscriptions;
         // Symbol: drake::lcm::DrakeLcmBase::Publish
         struct /* Publish */ {
-          // Source: drake/lcm/drake_lcm_base.h:22
+          // Source: drake/lcm/drake_lcm_base.h
           const char* doc = R"""()""";
         } Publish;
         // Symbol: drake::lcm::DrakeLcmBase::Subscribe
         struct /* Subscribe */ {
-          // Source: drake/lcm/drake_lcm_base.h:24
+          // Source: drake/lcm/drake_lcm_base.h
           const char* doc = R"""()""";
         } Subscribe;
         // Symbol: drake::lcm::DrakeLcmBase::SubscribeAllChannels
         struct /* SubscribeAllChannels */ {
-          // Source: drake/lcm/drake_lcm_base.h:28
+          // Source: drake/lcm/drake_lcm_base.h
           const char* doc = R"""()""";
         } SubscribeAllChannels;
         // Symbol: drake::lcm::DrakeLcmBase::SubscribeMultichannel
         struct /* SubscribeMultichannel */ {
-          // Source: drake/lcm/drake_lcm_base.h:26
+          // Source: drake/lcm/drake_lcm_base.h
           const char* doc = R"""()""";
         } SubscribeMultichannel;
         // Symbol: drake::lcm::DrakeLcmBase::get_lcm_url
         struct /* get_lcm_url */ {
-          // Source: drake/lcm/drake_lcm_base.h:21
+          // Source: drake/lcm/drake_lcm_base.h
           const char* doc = R"""()""";
         } get_lcm_url;
       } DrakeLcmBase;
       // Symbol: drake::lcm::DrakeLcmInterface
       struct /* DrakeLcmInterface */ {
-        // Source: drake/lcm/drake_lcm_interface.h:43
+        // Source: drake/lcm/drake_lcm_interface.h
         const char* doc =
 R"""(A pure virtual interface that enables LCM to be mocked.
 
@@ -165,12 +165,12 @@ notice. Users should not call this interface directly, but rather use
 drake::lcm::Publish() or drake::lcm::Subscribe() instead.)""";
         // Symbol: drake::lcm::DrakeLcmInterface::DrakeLcmInterface
         struct /* ctor */ {
-          // Source: drake/lcm/drake_lcm_interface.h:45
+          // Source: drake/lcm/drake_lcm_interface.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::lcm::DrakeLcmInterface::HandleSubscriptions
         struct /* HandleSubscriptions */ {
-          // Source: drake/lcm/drake_lcm_interface.h:143
+          // Source: drake/lcm/drake_lcm_interface.h
           const char* doc =
 R"""(Invokes the HandlerFunction callbacks for all subscriptions' pending
 messages. If ``timeout_millis`` is >0, blocks for up to that long
@@ -184,7 +184,7 @@ Raises:
         } HandleSubscriptions;
         // Symbol: drake::lcm::DrakeLcmInterface::HandlerFunction
         struct /* HandlerFunction */ {
-          // Source: drake/lcm/drake_lcm_interface.h:57
+          // Source: drake/lcm/drake_lcm_interface.h
           const char* doc =
 R"""(A callback used by DrakeLcmInterface::Subscribe(), with arguments: -
 ``message_buffer`` A pointer to the byte vector that is the serial
@@ -196,14 +196,14 @@ called from C functions.)""";
         } HandlerFunction;
         // Symbol: drake::lcm::DrakeLcmInterface::MultichannelHandlerFunction
         struct /* MultichannelHandlerFunction */ {
-          // Source: drake/lcm/drake_lcm_interface.h:63
+          // Source: drake/lcm/drake_lcm_interface.h
           const char* doc =
 R"""(A callback used by DrakeLcmInterface::SubscribeMultipleChannels (which
 therefore needs the receiving channel passed in).)""";
         } MultichannelHandlerFunction;
         // Symbol: drake::lcm::DrakeLcmInterface::Publish
         struct /* Publish */ {
-          // Source: drake/lcm/drake_lcm_interface.h:96
+          // Source: drake/lcm/drake_lcm_interface.h
           const char* doc =
 R"""(Most users should use the drake::lcm::Publish() free function, instead
 of this interface method.
@@ -227,7 +227,7 @@ Parameter ``time_sec``:
         } Publish;
         // Symbol: drake::lcm::DrakeLcmInterface::Subscribe
         struct /* Subscribe */ {
-          // Source: drake/lcm/drake_lcm_interface.h:117
+          // Source: drake/lcm/drake_lcm_interface.h
           const char* doc =
 R"""(Most users should use the drake::lcm::Subscribe() free function or the
 drake::lcm::Subscriber wrapper class, instead of this interface
@@ -251,14 +251,14 @@ Returns:
         } Subscribe;
         // Symbol: drake::lcm::DrakeLcmInterface::SubscribeAllChannels
         struct /* SubscribeAllChannels */ {
-          // Source: drake/lcm/drake_lcm_interface.h:133
+          // Source: drake/lcm/drake_lcm_interface.h
           const char* doc =
 R"""(Subscribe to all channels; this is useful for logging and redirecting
 LCM traffic without regard to its content.)""";
         } SubscribeAllChannels;
         // Symbol: drake::lcm::DrakeLcmInterface::SubscribeMultichannel
         struct /* SubscribeMultichannel */ {
-          // Source: drake/lcm/drake_lcm_interface.h:126
+          // Source: drake/lcm/drake_lcm_interface.h
           const char* doc =
 R"""(Subscribes to all channels whose name matches the given regular
 expression. The ``regex`` is treated as an anchored "match" not a
@@ -269,7 +269,7 @@ only patterns that have identical semantics in all grammars, e.g.,
         } SubscribeMultichannel;
         // Symbol: drake::lcm::DrakeLcmInterface::get_lcm_url
         struct /* get_lcm_url */ {
-          // Source: drake/lcm/drake_lcm_interface.h:77
+          // Source: drake/lcm/drake_lcm_interface.h
           const char* doc =
 R"""(Returns a URL describing the transport of this LCM interface.
 
@@ -284,7 +284,7 @@ RFC(s).)""";
       } DrakeLcmInterface;
       // Symbol: drake::lcm::DrakeLcmLog
       struct /* DrakeLcmLog */ {
-        // Source: drake/lcm/drake_lcm_log.h:23
+        // Source: drake/lcm/drake_lcm_log.h
         const char* doc =
 R"""(A LCM interface for logging LCM messages to a file or playing back
 from a existing log. Note the user is responsible for offsetting the
@@ -295,7 +295,7 @@ message arrival time, the user needs to offset those timestamps
 properly to match and the clock used for playback.)""";
         // Symbol: drake::lcm::DrakeLcmLog::DispatchMessageAndAdvanceLog
         struct /* DispatchMessageAndAdvanceLog */ {
-          // Source: drake/lcm/drake_lcm_log.h:118
+          // Source: drake/lcm/drake_lcm_log.h
           const char* doc =
 R"""(Let ``MSG`` be the next message event in the log, if ``current_time``
 matches ``MSG`'s timestamp, for every DrakeLcmMessageHandlerInterface
@@ -310,7 +310,7 @@ Raises:
         } DispatchMessageAndAdvanceLog;
         // Symbol: drake::lcm::DrakeLcmLog::DrakeLcmLog
         struct /* ctor */ {
-          // Source: drake/lcm/drake_lcm_log.h:42
+          // Source: drake/lcm/drake_lcm_log.h
           const char* doc =
 R"""(Constructs a DrakeLcmLog.
 
@@ -335,7 +335,7 @@ Raises:
         } ctor;
         // Symbol: drake::lcm::DrakeLcmLog::GetNextMessageTime
         struct /* GetNextMessageTime */ {
-          // Source: drake/lcm/drake_lcm_log.h:105
+          // Source: drake/lcm/drake_lcm_log.h
           const char* doc =
 R"""(Returns the time in seconds for the next logged message's occurrence
 time or infinity if there are no more messages in the current log.
@@ -346,13 +346,13 @@ Raises:
         } GetNextMessageTime;
         // Symbol: drake::lcm::DrakeLcmLog::HandleSubscriptions
         struct /* HandleSubscriptions */ {
-          // Source: drake/lcm/drake_lcm_log.h:96
+          // Source: drake/lcm/drake_lcm_log.h
           const char* doc =
 R"""(This is a no-op for Read mode, and an exception in Write mode.)""";
         } HandleSubscriptions;
         // Symbol: drake::lcm::DrakeLcmLog::Publish
         struct /* Publish */ {
-          // Source: drake/lcm/drake_lcm_log.h:62
+          // Source: drake/lcm/drake_lcm_log.h
           const char* doc =
 R"""(Writes an entry occurred at ``timestamp`` with content ``data`` to the
 log file. The current implementation blocks until writing is done.
@@ -380,7 +380,7 @@ Raises:
         } Publish;
         // Symbol: drake::lcm::DrakeLcmLog::Subscribe
         struct /* Subscribe */ {
-          // Source: drake/lcm/drake_lcm_log.h:74
+          // Source: drake/lcm/drake_lcm_log.h
           const char* doc =
 R"""(Subscribes ``handler`` to ``channel``. Multiple handlers can subscribe
 to the same channel.
@@ -394,7 +394,7 @@ Returns:
         } Subscribe;
         // Symbol: drake::lcm::DrakeLcmLog::SubscribeAllChannels
         struct /* SubscribeAllChannels */ {
-          // Source: drake/lcm/drake_lcm_log.h:90
+          // Source: drake/lcm/drake_lcm_log.h
           const char* doc =
 R"""(Subscribe to all channels; this is useful for logging and redirecting
 LCM traffic without regard to its content.
@@ -408,14 +408,14 @@ Returns:
         } SubscribeAllChannels;
         // Symbol: drake::lcm::DrakeLcmLog::SubscribeMultichannel
         struct /* SubscribeMultichannel */ {
-          // Source: drake/lcm/drake_lcm_log.h:78
+          // Source: drake/lcm/drake_lcm_log.h
           const char* doc =
 R"""(This function is not yet supported for LCM logs, and will always
 throw.)""";
         } SubscribeMultichannel;
         // Symbol: drake::lcm::DrakeLcmLog::available
         struct /* available */ {
-          // Source: drake/lcm/drake_lcm_log.h:148
+          // Source: drake/lcm/drake_lcm_log.h
           const char* doc =
 R"""(Returns true if the LCM runtime library is enabled in this build of
 Drake. When false, functions that require the runtime (which at the
@@ -424,25 +424,25 @@ error. See ``//tools/flags:with_lcm_runtime``.)""";
         } available;
         // Symbol: drake::lcm::DrakeLcmLog::get_lcm_url
         struct /* get_lcm_url */ {
-          // Source: drake/lcm/drake_lcm_log.h:141
+          // Source: drake/lcm/drake_lcm_log.h
           const char* doc = R"""()""";
         } get_lcm_url;
         // Symbol: drake::lcm::DrakeLcmLog::is_write
         struct /* is_write */ {
-          // Source: drake/lcm/drake_lcm_log.h:123
+          // Source: drake/lcm/drake_lcm_log.h
           const char* doc =
 R"""(Returns true if this instance is constructed in write-only mode.)""";
         } is_write;
         // Symbol: drake::lcm::DrakeLcmLog::second_to_timestamp
         struct /* second_to_timestamp */ {
-          // Source: drake/lcm/drake_lcm_log.h:137
+          // Source: drake/lcm/drake_lcm_log.h
           const char* doc =
 R"""(Converts time (in seconds) relative to the starting time passed to the
 constructor to a timestamp in microseconds.)""";
         } second_to_timestamp;
         // Symbol: drake::lcm::DrakeLcmLog::timestamp_to_second
         struct /* timestamp_to_second */ {
-          // Source: drake/lcm/drake_lcm_log.h:129
+          // Source: drake/lcm/drake_lcm_log.h
           const char* doc =
 R"""(Converts ``timestamp`` (in microseconds) to time (in seconds) relative
 to the starting time passed to the constructor.)""";
@@ -450,19 +450,19 @@ to the starting time passed to the constructor.)""";
       } DrakeLcmLog;
       // Symbol: drake::lcm::DrakeLcmParams
       struct /* DrakeLcmParams */ {
-        // Source: drake/lcm/drake_lcm_params.h:12
+        // Source: drake/lcm/drake_lcm_params.h
         const char* doc =
 R"""(The set of parameters for configuring DrakeLcm.)""";
         // Symbol: drake::lcm::DrakeLcmParams::Serialize
         struct /* Serialize */ {
-          // Source: drake/lcm/drake_lcm_params.h:16
+          // Source: drake/lcm/drake_lcm_params.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::lcm::DrakeLcmParams::channel_suffix
         struct /* channel_suffix */ {
-          // Source: drake/lcm/drake_lcm_params.h:43
+          // Source: drake/lcm/drake_lcm_params.h
           const char* doc =
 R"""(The custom LCM channel name suffix for this DrakeLcm instance
 (optional).
@@ -487,7 +487,7 @@ the *unadaorned* channel name as its first argument (e.g., "FOO" or
         } channel_suffix;
         // Symbol: drake::lcm::DrakeLcmParams::defer_initialization
         struct /* defer_initialization */ {
-          // Source: drake/lcm/drake_lcm_params.h:50
+          // Source: drake/lcm/drake_lcm_params.h
           const char* doc =
 R"""((Advanced) Controls whether or not LCM's background receive thread
 will be launched immediately during the constructor (when false) or
@@ -497,7 +497,7 @@ the construction time and first use.)""";
         } defer_initialization;
         // Symbol: drake::lcm::DrakeLcmParams::lcm_url
         struct /* lcm_url */ {
-          // Source: drake/lcm/drake_lcm_params.h:24
+          // Source: drake/lcm/drake_lcm_params.h
           const char* doc =
 R"""(The URL for DrakeLcm communication. If empty, DrakeLcm will use the
 default URL per the DrakeLcm::DrakeLcm() no-argument constructor.)""";
@@ -512,7 +512,7 @@ default URL per the DrakeLcm::DrakeLcm() no-argument constructor.)""";
       } DrakeLcmParams;
       // Symbol: drake::lcm::DrakeSubscriptionInterface
       struct /* DrakeSubscriptionInterface */ {
-        // Source: drake/lcm/drake_lcm_interface.h:176
+        // Source: drake/lcm/drake_lcm_interface.h
         const char* doc =
 R"""(A helper class returned by DrakeLcmInterface::Subscribe() that allows
 for (possibly automatic) unsubscription and/or queue capacity control.
@@ -535,12 +535,12 @@ unsubscription, set it to ``True``. Which choice is active by default
 is specified by whatever method returns this object.)""";
         // Symbol: drake::lcm::DrakeSubscriptionInterface::DrakeSubscriptionInterface
         struct /* ctor */ {
-          // Source: drake/lcm/drake_lcm_interface.h:178
+          // Source: drake/lcm/drake_lcm_interface.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::lcm::DrakeSubscriptionInterface::set_queue_capacity
         struct /* set_queue_capacity */ {
-          // Source: drake/lcm/drake_lcm_interface.h:196
+          // Source: drake/lcm/drake_lcm_interface.h
           const char* doc =
 R"""(Sets this subscription's queue depth to store messages between calls
 to DrakeLcmInterface::HandleSubscriptions. When the queue becomes
@@ -553,7 +553,7 @@ Warning:
         } set_queue_capacity;
         // Symbol: drake::lcm::DrakeSubscriptionInterface::set_unsubscribe_on_delete
         struct /* set_unsubscribe_on_delete */ {
-          // Source: drake/lcm/drake_lcm_interface.h:186
+          // Source: drake/lcm/drake_lcm_interface.h
           const char* doc =
 R"""(Sets whether or not the subscription on DrakeLcmInterface will be
 terminated when this object is deleted. It is permitted to call this
@@ -562,13 +562,13 @@ method many times, with a new ``enabled`` value each time.)""";
       } DrakeSubscriptionInterface;
       // Symbol: drake::lcm::EncodeLcmMessage
       struct /* EncodeLcmMessage */ {
-        // Source: drake/lcm/lcm_messages.h:21
+        // Source: drake/lcm/lcm_messages.h
         const char* doc =
 R"""(Encodes an LCM message to a series of bytes.)""";
       } EncodeLcmMessage;
       // Symbol: drake::lcm::LcmHandleSubscriptionsUntil
       struct /* LcmHandleSubscriptionsUntil */ {
-        // Source: drake/lcm/drake_lcm_interface.h:349
+        // Source: drake/lcm/drake_lcm_interface.h
         const char* doc =
 R"""(Convenience function that repeatedly calls
 ``lcm->HandleSubscriptions()`` with a timeout value of
@@ -577,7 +577,7 @@ total number of messages handled.)""";
       } LcmHandleSubscriptionsUntil;
       // Symbol: drake::lcm::Publish
       struct /* Publish */ {
-        // Source: drake/lcm/drake_lcm_interface.h:217
+        // Source: drake/lcm/drake_lcm_interface.h
         const char* doc =
 R"""(Publishes an LCM message on channel ``channel``.
 
@@ -597,7 +597,7 @@ Parameter ``time_sec``:
       } Publish;
       // Symbol: drake::lcm::Subscribe
       struct /* Subscribe */ {
-        // Source: drake/lcm/drake_lcm_interface.h:250
+        // Source: drake/lcm/drake_lcm_interface.h
         const char* doc =
 R"""(Subscribes to an LCM channel named ``channel`` and decodes messages of
 type ``Message``. See also drake::lcm::Subscriber for a simple way to
@@ -630,7 +630,7 @@ Note:
       } Subscribe;
       // Symbol: drake::lcm::Subscriber
       struct /* Subscriber */ {
-        // Source: drake/lcm/drake_lcm_interface.h:289
+        // Source: drake/lcm/drake_lcm_interface.h
         const char* doc =
 R"""(Subscribes to and stores a copy of the most recent message on a given
 channel, for some ``Message`` type. All copies of a given Subscriber
@@ -640,7 +640,7 @@ where the governing DrakeLcmInterface::HandleSubscriptions is called
 from the same thread that owns all copies of this object.)""";
         // Symbol: drake::lcm::Subscriber::Subscriber<Message>
         struct /* ctor */ {
-          // Source: drake/lcm/drake_lcm_interface.h:301
+          // Source: drake/lcm/drake_lcm_interface.h
           const char* doc =
 R"""(Subscribes to the (non-empty) ``channel`` on the given (non-null)
 ``lcm`` instance. The ``lcm`` pointer is only used during
@@ -650,19 +650,19 @@ message is received, ``on_error`` handler is invoked; when
         } ctor;
         // Symbol: drake::lcm::Subscriber::clear
         struct /* clear */ {
-          // Source: drake/lcm/drake_lcm_interface.h:327
+          // Source: drake/lcm/drake_lcm_interface.h
           const char* doc =
 R"""(Clears all data (sets the message and count to all zeros).)""";
         } clear;
         // Symbol: drake::lcm::Subscriber::count
         struct /* count */ {
-          // Source: drake/lcm/drake_lcm_interface.h:323
+          // Source: drake/lcm/drake_lcm_interface.h
           const char* doc =
 R"""(Returns the total number of received messages.)""";
         } count;
         // Symbol: drake::lcm::Subscriber::message
         struct /* message */ {
-          // Source: drake/lcm/drake_lcm_interface.h:319
+          // Source: drake/lcm/drake_lcm_interface.h
           const char* doc =
 R"""(Returns the most recently received message, or a value-initialized
 (zeros) message otherwise.)""";

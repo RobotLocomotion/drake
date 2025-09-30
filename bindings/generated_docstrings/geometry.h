@@ -61,7 +61,7 @@ constexpr struct /* pydrake_doc_geometry */ {
     struct /* geometry */ {
       // Symbol: drake::geometry::AddCompliantHydroelasticProperties
       struct /* AddCompliantHydroelasticProperties */ {
-        // Source: drake/geometry/proximity_properties.h:164
+        // Source: drake/geometry/proximity_properties.h
         const char* doc =
 R"""(Adds properties to the given set of proximity properties sufficient to
 cause the associated geometry to generate a compliant hydroelastic
@@ -93,7 +93,7 @@ Precondition:
       } AddCompliantHydroelasticProperties;
       // Symbol: drake::geometry::AddCompliantHydroelasticPropertiesForHalfSpace
       struct /* AddCompliantHydroelasticPropertiesForHalfSpace */ {
-        // Source: drake/geometry/proximity_properties.h:182
+        // Source: drake/geometry/proximity_properties.h
         const char* doc =
 R"""(Compliant half spaces are handled as a special case; they do not get
 tessellated. Instead, they are treated as infinite slabs with a finite
@@ -120,7 +120,7 @@ Precondition:
       } AddCompliantHydroelasticPropertiesForHalfSpace;
       // Symbol: drake::geometry::AddContactMaterial
       struct /* AddContactMaterial */ {
-        // Source: drake/geometry/proximity_properties.h:118
+        // Source: drake/geometry/proximity_properties.h
         const char* doc =
 R"""(AddContactMaterial() adds general contact material properties to the
 given set of proximity ``properties``. These are the properties
@@ -140,7 +140,7 @@ Precondition:
       } AddContactMaterial;
       // Symbol: drake::geometry::AddRigidHydroelasticProperties
       struct /* AddRigidHydroelasticProperties */ {
-        // Source: drake/geometry/proximity_properties.h:137
+        // Source: drake/geometry/proximity_properties.h
         const char* doc_2args =
 R"""(Adds properties to the given set of proximity properties sufficient to
 cause the associated geometry to generate a rigid hydroelastic
@@ -162,7 +162,7 @@ Raises:
 
 Precondition:
     0 < ``resolution_hint`` < ∞ and ``properties`` is not nullptr.)""";
-        // Source: drake/geometry/proximity_properties.h:143
+        // Source: drake/geometry/proximity_properties.h
         const char* doc_1args =
 R"""(Overload, intended for shapes that don't get tessellated in their
 hydroelastic representation (e.g., HalfSpace and Mesh). See
@@ -170,14 +170,14 @@ hug_properties.)""";
       } AddRigidHydroelasticProperties;
       // Symbol: drake::geometry::Box
       struct /* Box */ {
-        // Source: drake/geometry/shape_specification.h:153
+        // Source: drake/geometry/shape_specification.h
         const char* doc =
 R"""(Definition of a box. The box is centered on the origin of its
 canonical frame with its dimensions aligned with the frame's axes. The
 size of the box is given by three sizes.)""";
         // Symbol: drake::geometry::Box::Box
         struct /* ctor */ {
-          // Source: drake/geometry/shape_specification.h:161
+          // Source: drake/geometry/shape_specification.h
           const char* doc_3args =
 R"""(Constructs a box with the given ``width``, `depth`, and ``height``,
 which specify the box's dimension along the canonical x-, y-, and
@@ -185,7 +185,7 @@ z-axes, respectively.
 
 Raises:
     RuntimeError if any measure is not finite positive.)""";
-          // Source: drake/geometry/shape_specification.h:166
+          // Source: drake/geometry/shape_specification.h
           const char* doc_1args =
 R"""(Constructs a box with a vector of measures: width, depth, and height
 -- the box's dimensions along the canonical x-, y-, and z-axes,
@@ -196,7 +196,7 @@ Raises:
         } ctor;
         // Symbol: drake::geometry::Box::MakeCube
         struct /* MakeCube */ {
-          // Source: drake/geometry/shape_specification.h:173
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Constructs a cube with the given ``edge_size`` for its width, depth,
 and height.
@@ -206,31 +206,31 @@ Raises:
         } MakeCube;
         // Symbol: drake::geometry::Box::depth
         struct /* depth */ {
-          // Source: drake/geometry/shape_specification.h:179
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Returns the box's dimension along the y axis.)""";
         } depth;
         // Symbol: drake::geometry::Box::height
         struct /* height */ {
-          // Source: drake/geometry/shape_specification.h:182
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Returns the box's dimension along the z axis.)""";
         } height;
         // Symbol: drake::geometry::Box::size
         struct /* size */ {
-          // Source: drake/geometry/shape_specification.h:185
+          // Source: drake/geometry/shape_specification.h
           const char* doc = R"""(Returns the box's dimensions.)""";
         } size;
         // Symbol: drake::geometry::Box::width
         struct /* width */ {
-          // Source: drake/geometry/shape_specification.h:176
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Returns the box's dimension along the x axis.)""";
         } width;
       } Box;
       // Symbol: drake::geometry::CalcVolume
       struct /* CalcVolume */ {
-        // Source: drake/geometry/shape_specification.h:782
+        // Source: drake/geometry/shape_specification.h
         const char* doc =
 R"""(Calculates the volume (in meters^3) for the Shape. For convex and mesh
 geometries, the algorithm only supports ".obj" files and only produces
@@ -243,7 +243,7 @@ Raises:
       } CalcVolume;
       // Symbol: drake::geometry::Capsule
       struct /* Capsule */ {
-        // Source: drake/geometry/shape_specification.h:204
+        // Source: drake/geometry/shape_specification.h
         const char* doc =
 R"""(Definition of a capsule. The capsule can be thought of as a cylinder
 with spherical caps attached. The capsule's length refers to the
@@ -255,13 +255,13 @@ C, centered on the frame origin and with the length of the capsule
 parallel with the frame's z-axis.)""";
         // Symbol: drake::geometry::Capsule::Capsule
         struct /* ctor */ {
-          // Source: drake/geometry/shape_specification.h:211
+          // Source: drake/geometry/shape_specification.h
           const char* doc_2args =
 R"""(Constructs a capsule with the given ``radius`` and ``length``.
 
 Raises:
     RuntimeError if any measure is not finite positive.)""";
-          // Source: drake/geometry/shape_specification.h:215
+          // Source: drake/geometry/shape_specification.h
           const char* doc_1args =
 R"""(Constructs a capsule with a vector of measures: radius and length.
 
@@ -270,18 +270,18 @@ Raises:
         } ctor;
         // Symbol: drake::geometry::Capsule::length
         struct /* length */ {
-          // Source: drake/geometry/shape_specification.h:220
+          // Source: drake/geometry/shape_specification.h
           const char* doc = R"""()""";
         } length;
         // Symbol: drake::geometry::Capsule::radius
         struct /* radius */ {
-          // Source: drake/geometry/shape_specification.h:219
+          // Source: drake/geometry/shape_specification.h
           const char* doc = R"""()""";
         } radius;
       } Capsule;
       // Symbol: drake::geometry::CollisionFilterDeclaration
       struct /* CollisionFilterDeclaration */ {
-        // Source: drake/geometry/collision_filter_declaration.h:59
+        // Source: drake/geometry/collision_filter_declaration.h
         const char* doc =
 R"""(Class for articulating changes to the configuration of SceneGraph's
 "collision filters"; collision filters limit the scope of various
@@ -323,7 +323,7 @@ effect of an earlier statement. The full declaration is evaluated by
 CollisionFilterManager::Apply().)""";
         // Symbol: drake::geometry::CollisionFilterDeclaration::AllowBetween
         struct /* AllowBetween */ {
-          // Source: drake/geometry/collision_filter_declaration.h:96
+          // Source: drake/geometry/collision_filter_declaration.h
           const char* doc =
 R"""(Allows geometry pairs in proximity evaluation by updating the
 candidate pair set ``C ← C ⋃ P*``, where ``P = {(a, b)}, ∀ a ∈ A, b ∈
@@ -339,7 +339,7 @@ filters between members of the *same* set (e.g., ``(aᵢ, aⱼ)`` or
         } AllowBetween;
         // Symbol: drake::geometry::CollisionFilterDeclaration::AllowWithin
         struct /* AllowWithin */ {
-          // Source: drake/geometry/collision_filter_declaration.h:108
+          // Source: drake/geometry/collision_filter_declaration.h
           const char* doc =
 R"""(Allows geometry pairs in proximity evaluation by updating the
 candidate pair set ``C ← C ⋃ P*``, where ``P = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈
@@ -350,12 +350,12 @@ CollisionFilterManager for details on those invariants).)""";
         } AllowWithin;
         // Symbol: drake::geometry::CollisionFilterDeclaration::CollisionFilterDeclaration
         struct /* ctor */ {
-          // Source: drake/geometry/collision_filter_declaration.h:61
+          // Source: drake/geometry/collision_filter_declaration.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::geometry::CollisionFilterDeclaration::ExcludeBetween
         struct /* ExcludeBetween */ {
-          // Source: drake/geometry/collision_filter_declaration.h:133
+          // Source: drake/geometry/collision_filter_declaration.h
           const char* doc =
 R"""(Excludes geometry pairs from proximity evaluation by updating the
 candidate pair set ``C ← C - P``, where ``P = {(a, b)}, ∀ a ∈ A, b ∈
@@ -364,7 +364,7 @@ the input sets of geometries ``set_A`` and ``set_B``, respectively.)""";
         } ExcludeBetween;
         // Symbol: drake::geometry::CollisionFilterDeclaration::ExcludeWithin
         struct /* ExcludeWithin */ {
-          // Source: drake/geometry/collision_filter_declaration.h:143
+          // Source: drake/geometry/collision_filter_declaration.h
           const char* doc =
 R"""(Excludes geometry pairs from proximity evaluation by updating the
 candidate pair set ``C ← C - P``, where ``P = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈
@@ -374,7 +374,7 @@ geometries.)""";
       } CollisionFilterDeclaration;
       // Symbol: drake::geometry::CollisionFilterManager
       struct /* CollisionFilterManager */ {
-        // Source: drake/geometry/collision_filter_manager.h:170
+        // Source: drake/geometry/collision_filter_manager.h
         const char* doc =
 R"""(Class for configuring "collision filters"; collision filters limit the
 scope of various proximity queries.
@@ -537,7 +537,7 @@ Attempting to change the persistent configuration when there are
 active transient declarations in the history will throw an exception.)""";
         // Symbol: drake::geometry::CollisionFilterManager::Apply
         struct /* Apply */ {
-          // Source: drake/geometry/collision_filter_manager.h:188
+          // Source: drake/geometry/collision_filter_manager.h
           const char* doc =
 R"""(Applies the given ``declaration`` to the geometry state managed by
 ``this`` instance.
@@ -557,7 +557,7 @@ Raises:
         } Apply;
         // Symbol: drake::geometry::CollisionFilterManager::ApplyTransient
         struct /* ApplyTransient */ {
-          // Source: drake/geometry/collision_filter_manager.h:211
+          // Source: drake/geometry/collision_filter_manager.h
           const char* doc =
 R"""(Applies the declaration as the newest *transient* modification to the
 collision filter configuration. The declaration must be considered
@@ -565,19 +565,19 @@ collision filter configuration. The declaration must be considered
         } ApplyTransient;
         // Symbol: drake::geometry::CollisionFilterManager::CollisionFilterManager
         struct /* ctor */ {
-          // Source: drake/geometry/collision_filter_manager.h:172
+          // Source: drake/geometry/collision_filter_manager.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::geometry::CollisionFilterManager::IsActive
         struct /* IsActive */ {
-          // Source: drake/geometry/collision_filter_manager.h:232
+          // Source: drake/geometry/collision_filter_manager.h
           const char* doc =
 R"""(Reports if the transient collision filter declaration indicated by the
 given ``filter_id`` is part of the history.)""";
         } IsActive;
         // Symbol: drake::geometry::CollisionFilterManager::RemoveDeclaration
         struct /* RemoveDeclaration */ {
-          // Source: drake/geometry/collision_filter_manager.h:221
+          // Source: drake/geometry/collision_filter_manager.h
           const char* doc =
 R"""(Attempts to remove the transient declaration from the history for the
 declaration associated with the given ``filter_id``.
@@ -592,26 +592,26 @@ Returns:
         } RemoveDeclaration;
         // Symbol: drake::geometry::CollisionFilterManager::has_transient_history
         struct /* has_transient_history */ {
-          // Source: drake/geometry/collision_filter_manager.h:226
+          // Source: drake/geometry/collision_filter_manager.h
           const char* doc =
 R"""(Reports if there are any active transient filter declarations.)""";
         } has_transient_history;
       } CollisionFilterManager;
       // Symbol: drake::geometry::CollisionFilterScope
       struct /* CollisionFilterScope */ {
-        // Source: drake/geometry/collision_filter_declaration.h:21
+        // Source: drake/geometry/collision_filter_declaration.h
         const char* doc =
 R"""(Enum that defines the scope of the geometries that are affected by the
 collision filtering mechanism.)""";
         // Symbol: drake::geometry::CollisionFilterScope::kAll
         struct /* kAll */ {
-          // Source: drake/geometry/collision_filter_declaration.h:23
+          // Source: drake/geometry/collision_filter_declaration.h
           const char* doc =
 R"""(All geometries are considered when collision filters are applied.)""";
         } kAll;
         // Symbol: drake::geometry::CollisionFilterScope::kOmitDeformable
         struct /* kOmitDeformable */ {
-          // Source: drake/geometry/collision_filter_declaration.h:28
+          // Source: drake/geometry/collision_filter_declaration.h
           const char* doc =
 R"""(Deformable geometries are omitted when applying collision filters.
 That means that all deformable geometries are not affected by the
@@ -621,7 +621,7 @@ GeometrySet when the filter is declared.)""";
       } CollisionFilterScope;
       // Symbol: drake::geometry::Convex
       struct /* Convex */ {
-        // Source: drake/geometry/shape_specification.h:247
+        // Source: drake/geometry/shape_specification.h
         const char* doc =
 R"""(Definition of a *convex* surface mesh.
 
@@ -641,7 +641,7 @@ parsed. Upon loading it in SceneGraph it can be scaled around the
 origin of C by a given ``scale`` amount.)""";
         // Symbol: drake::geometry::Convex::Convex
         struct /* ctor */ {
-          // Source: drake/geometry/shape_specification.h:266
+          // Source: drake/geometry/shape_specification.h
           const char* doc_2args_filename_scale =
 R"""(Constructs a convex shape specification from the file located at the
 given file path. Optionally uniformly scaled by the given scale
@@ -662,10 +662,10 @@ Raises:
     recognise that scale is a convenience tool for "tweaking" models.
     8 orders of magnitude should be plenty without considering
     revisiting the model itself.)""";
-          // Source: drake/geometry/shape_specification.h:269
+          // Source: drake/geometry/shape_specification.h
           const char* doc_2args_filename_scale3 =
 R"""(File variant that allows for specification of non-uniform scale.)""";
-          // Source: drake/geometry/shape_specification.h:283
+          // Source: drake/geometry/shape_specification.h
           const char* doc_2args_mesh_data_scale =
 R"""(Constructs a convex shape specification from the contents of a
 Drake-supported mesh file type.
@@ -683,11 +683,11 @@ Parameter ``mesh_data``:
 
 Parameter ``scale``:
     An optional scale to coordinates.)""";
-          // Source: drake/geometry/shape_specification.h:287
+          // Source: drake/geometry/shape_specification.h
           const char* doc_2args_mesh_data_scale3 =
 R"""(Mesh-contents variant that allows for specification of non-uniform
 scale.)""";
-          // Source: drake/geometry/shape_specification.h:293
+          // Source: drake/geometry/shape_specification.h
           const char* doc_2args_source_scale =
 R"""(Constructs a convex shape specification from the given ``source``.
 
@@ -696,11 +696,11 @@ Parameter ``source``:
 
 Parameter ``scale``:
     An optional scale to coordinates.)""";
-          // Source: drake/geometry/shape_specification.h:297
+          // Source: drake/geometry/shape_specification.h
           const char* doc_2args_source_scale3 =
 R"""(Mesh-source variant that allows for specification of non-uniform
 scale.)""";
-          // Source: drake/geometry/shape_specification.h:313
+          // Source: drake/geometry/shape_specification.h
           const char* doc_3args_points_label_scale =
 R"""(Constructs an in-memory convex shape specification from the given
 points.
@@ -725,13 +725,13 @@ Raises:
 
 Raises:
     RuntimeError if |scale| < 1e-8.)""";
-          // Source: drake/geometry/shape_specification.h:317
+          // Source: drake/geometry/shape_specification.h
           const char* doc_3args_points_label_scale3 =
 R"""(Point variant that allows for specification of non-uniform scale.)""";
         } ctor;
         // Symbol: drake::geometry::Convex::GetConvexHull
         struct /* GetConvexHull */ {
-          // Source: drake/geometry/shape_specification.h:355
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Reports the convex hull of the named mesh.
 
@@ -746,7 +746,7 @@ Raises:
         } GetConvexHull;
         // Symbol: drake::geometry::Convex::extension
         struct /* extension */ {
-          // Source: drake/geometry/shape_specification.h:337
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Returns the extension of the underlying input mesh -- all lower case
 and including the dot. If ``this`` is constructed from a file path,
@@ -760,7 +760,7 @@ extension of the MemoryFile passed to the constructor.)""";
         } extension;
         // Symbol: drake::geometry::Convex::scale
         struct /* scale */ {
-          // Source: drake/geometry/shape_specification.h:341
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Returns a single scale representing the *uniform* scale factor.
 
@@ -769,13 +769,13 @@ Raises:
         } scale;
         // Symbol: drake::geometry::Convex::scale3
         struct /* scale3 */ {
-          // Source: drake/geometry/shape_specification.h:344
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Returns general scale factors for this mesh.)""";
         } scale3;
         // Symbol: drake::geometry::Convex::source
         struct /* source */ {
-          // Source: drake/geometry/shape_specification.h:327
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Returns the source for this specification's mesh data. When working
 with Convex, this API should only be used for introspection. The
@@ -787,19 +787,19 @@ GetConvexHull().)""";
       } Convex;
       // Symbol: drake::geometry::Cylinder
       struct /* Cylinder */ {
-        // Source: drake/geometry/shape_specification.h:372
+        // Source: drake/geometry/shape_specification.h
         const char* doc =
 R"""(Definition of a cylinder. It is centered in its canonical frame with
 the length of the cylinder parallel with the frame's z-axis.)""";
         // Symbol: drake::geometry::Cylinder::Cylinder
         struct /* ctor */ {
-          // Source: drake/geometry/shape_specification.h:378
+          // Source: drake/geometry/shape_specification.h
           const char* doc_2args =
 R"""(Constructs a cylinder with the given ``radius`` and ``length``.
 
 Raises:
     RuntimeError if any measure is not finite positive.)""";
-          // Source: drake/geometry/shape_specification.h:382
+          // Source: drake/geometry/shape_specification.h
           const char* doc_1args =
 R"""(Constructs a cylinder with a vector of measures: radius and length.
 
@@ -808,18 +808,18 @@ Raises:
         } ctor;
         // Symbol: drake::geometry::Cylinder::length
         struct /* length */ {
-          // Source: drake/geometry/shape_specification.h:387
+          // Source: drake/geometry/shape_specification.h
           const char* doc = R"""()""";
         } length;
         // Symbol: drake::geometry::Cylinder::radius
         struct /* radius */ {
-          // Source: drake/geometry/shape_specification.h:386
+          // Source: drake/geometry/shape_specification.h
           const char* doc = R"""()""";
         } radius;
       } Cylinder;
       // Symbol: drake::geometry::DefaultProximityProperties
       struct /* DefaultProximityProperties */ {
-        // Source: drake/geometry/scene_graph_config.h:15
+        // Source: drake/geometry/scene_graph_config.h
         const char* doc =
 R"""(These properties will be used as defaults when the geometry as added
 via API calls or parsed from model files doesn't say anything more
@@ -830,19 +830,19 @@ See also:
     subsections therein.)""";
         // Symbol: drake::geometry::DefaultProximityProperties::Serialize
         struct /* Serialize */ {
-          // Source: drake/geometry/scene_graph_config.h:19
+          // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::geometry::DefaultProximityProperties::ValidateOrThrow
         struct /* ValidateOrThrow */ {
-          // Source: drake/geometry/scene_graph_config.h:159
+          // Source: drake/geometry/scene_graph_config.h
           const char* doc = R"""(Throws if the values are inconsistent.)""";
         } ValidateOrThrow;
         // Symbol: drake::geometry::DefaultProximityProperties::compliance_type
         struct /* compliance_type */ {
-          // Source: drake/geometry/scene_graph_config.h:49
+          // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(@name Hydroelastic Contact Properties
 
@@ -869,7 +869,7 @@ See also:
         } compliance_type;
         // Symbol: drake::geometry::DefaultProximityProperties::dynamic_friction
         struct /* dynamic_friction */ {
-          // Source: drake/geometry/scene_graph_config.h:110
+          // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(@name General Contact Properties
 
@@ -884,7 +884,7 @@ See also:
         } dynamic_friction;
         // Symbol: drake::geometry::DefaultProximityProperties::hunt_crossley_dissipation
         struct /* hunt_crossley_dissipation */ {
-          // Source: drake/geometry/scene_graph_config.h:128
+          // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(Controls energy dissipation from contact, for contact approximations
 other than* multibody::DiscreteContactApproximation::kSap. Units are
@@ -904,13 +904,13 @@ parameters specific to your model.)""";
         } hunt_crossley_dissipation;
         // Symbol: drake::geometry::DefaultProximityProperties::hydroelastic_modulus
         struct /* hydroelastic_modulus */ {
-          // Source: drake/geometry/scene_graph_config.h:52
+          // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(A measure of material stiffness, in units of Pascals.)""";
         } hydroelastic_modulus;
         // Symbol: drake::geometry::DefaultProximityProperties::margin
         struct /* margin */ {
-          // Source: drake/geometry/scene_graph_config.h:98
+          // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""((Advanced) Specifies a thin layer of thickness "margin" (in meters)
 around each geometry. Two bodies with margins δ₁ and δ₂ are considered
@@ -949,7 +949,7 @@ Note:
         } margin;
         // Symbol: drake::geometry::DefaultProximityProperties::point_stiffness
         struct /* point_stiffness */ {
-          // Source: drake/geometry/scene_graph_config.h:155
+          // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(A measure of material stiffness, in units of Newtons per meter.
 
@@ -966,14 +966,14 @@ parameters specific to your model.)""";
         } point_stiffness;
         // Symbol: drake::geometry::DefaultProximityProperties::relaxation_time
         struct /* relaxation_time */ {
-          // Source: drake/geometry/scene_graph_config.h:132
+          // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(Controls energy damping from contact, *only for*
 multibody::DiscreteContactApproximation::kSap. Units are seconds.)""";
         } relaxation_time;
         // Symbol: drake::geometry::DefaultProximityProperties::resolution_hint
         struct /* resolution_hint */ {
-          // Source: drake/geometry/scene_graph_config.h:63
+          // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(Controls how finely primitive geometries are tessellated, units of
 meters.
@@ -987,14 +987,14 @@ appropriate for contact with a compliant gripper.)""";
         } resolution_hint;
         // Symbol: drake::geometry::DefaultProximityProperties::slab_thickness
         struct /* slab_thickness */ {
-          // Source: drake/geometry/scene_graph_config.h:67
+          // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(For a halfspace, the thickness of compliant material to model, in
 units of meters.)""";
         } slab_thickness;
         // Symbol: drake::geometry::DefaultProximityProperties::static_friction
         struct /* static_friction */ {
-          // Source: drake/geometry/scene_graph_config.h:112
+          // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(See also:
     dynamic_friction.)""";
@@ -1016,7 +1016,7 @@ R"""(See also:
       } DefaultProximityProperties;
       // Symbol: drake::geometry::DrakeVisualizer
       struct /* DrakeVisualizer */ {
-        // Source: drake/geometry/drake_visualizer.h:150
+        // Source: drake/geometry/drake_visualizer.h
         const char* doc =
 R"""(A system that publishes LCM messages representing the current state of
 a SceneGraph instance (whose QueryObject-valued output port is
@@ -1126,13 +1126,13 @@ converted from one scalar type to another if the DrakeVisualizer
 the system otherwise will throw an exception.)""";
         // Symbol: drake::geometry::DrakeVisualizer::AddToBuilder
         struct /* AddToBuilder */ {
-          // Source: drake/geometry/drake_visualizer.h:203
+          // Source: drake/geometry/drake_visualizer.h
           const char* doc_4args_builder_scene_graph_lcm_params =
 R"""(Connects the newly added DrakeVisualizer to the given SceneGraph's
 QueryObject-valued output port. The DrakeVisualizer's name (see
 systems::SystemBase::set_name) will be set to a sensible default
 value, unless the default name was already in use by another system.)""";
-          // Source: drake/geometry/drake_visualizer.h:212
+          // Source: drake/geometry/drake_visualizer.h
           const char* doc_4args_builder_query_object_port_lcm_params =
 R"""(Connects the newly added DrakeVisualizer to the given
 QueryObject-valued output port. The DrakeVisualizer's name (see
@@ -1141,7 +1141,7 @@ value, unless the default name was already in use by another system.)""";
         } AddToBuilder;
         // Symbol: drake::geometry::DrakeVisualizer::DispatchLoadMessage
         struct /* DispatchLoadMessage */ {
-          // Source: drake/geometry/drake_visualizer.h:229
+          // Source: drake/geometry/drake_visualizer.h
           const char* doc =
 R"""((Advanced) Dispatches a load message built on the *model* geometry for
 the given SceneGraph instance. This should be used sparingly. When we
@@ -1154,7 +1154,7 @@ Precondition:
         } DispatchLoadMessage;
         // Symbol: drake::geometry::DrakeVisualizer::DrakeVisualizer<T>
         struct /* ctor */ {
-          // Source: drake/geometry/drake_visualizer.h:162
+          // Source: drake/geometry/drake_visualizer.h
           const char* doc =
 R"""(Creates an instance of DrakeVisualizer.
 
@@ -1171,7 +1171,7 @@ Raises:
 
 Raises:
     RuntimeError if ``params.role == Role::kUnassigned``.)""";
-          // Source: drake/geometry/drake_visualizer.h:170
+          // Source: drake/geometry/drake_visualizer.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion. It
 should only be used to convert *from* double *to* other scalar types.
@@ -1182,7 +1182,7 @@ Raises:
         } ctor;
         // Symbol: drake::geometry::DrakeVisualizer::query_object_input_port
         struct /* query_object_input_port */ {
-          // Source: drake/geometry/drake_visualizer.h:177
+          // Source: drake/geometry/drake_visualizer.h
           const char* doc =
 R"""(Returns the QueryObject-valued input port. It should be connected to
 SceneGraph's QueryObject-valued output port. Failure to do so will
@@ -1191,25 +1191,25 @@ cause a runtime error when attempting to broadcast messages.)""";
       } DrakeVisualizer;
       // Symbol: drake::geometry::DrakeVisualizerParams
       struct /* DrakeVisualizerParams */ {
-        // Source: drake/geometry/drake_visualizer_params.h:11
+        // Source: drake/geometry/drake_visualizer_params.h
         const char* doc =
 R"""(The set of parameters for configuring DrakeVisualizer.)""";
         // Symbol: drake::geometry::DrakeVisualizerParams::Serialize
         struct /* Serialize */ {
-          // Source: drake/geometry/drake_visualizer_params.h:15
+          // Source: drake/geometry/drake_visualizer_params.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::geometry::DrakeVisualizerParams::default_color
         struct /* default_color */ {
-          // Source: drake/geometry/drake_visualizer_params.h:33
+          // Source: drake/geometry/drake_visualizer_params.h
           const char* doc =
 R"""(The color to apply to any geometry that hasn't defined one.)""";
         } default_color;
         // Symbol: drake::geometry::DrakeVisualizerParams::publish_period
         struct /* publish_period */ {
-          // Source: drake/geometry/drake_visualizer_params.h:27
+          // Source: drake/geometry/drake_visualizer_params.h
           const char* doc =
 R"""(The duration (in seconds) between published LCM messages that update
 the poses of the scene's geometry. (To help avoid small simulation
@@ -1218,13 +1218,13 @@ in binary floating point; see drake#15021 for details.))""";
         } publish_period;
         // Symbol: drake::geometry::DrakeVisualizerParams::role
         struct /* role */ {
-          // Source: drake/geometry/drake_visualizer_params.h:30
+          // Source: drake/geometry/drake_visualizer_params.h
           const char* doc =
 R"""(The role of the geometries to be sent to the visualizer.)""";
         } role;
         // Symbol: drake::geometry::DrakeVisualizerParams::show_hydroelastic
         struct /* show_hydroelastic */ {
-          // Source: drake/geometry/drake_visualizer_params.h:49
+          // Source: drake/geometry/drake_visualizer_params.h
           const char* doc =
 R"""(When using the hydroelastic contact model, collision geometries that
 are *declared* as geometric primitives are frequently represented by
@@ -1244,7 +1244,7 @@ associated with them.)""";
         } show_hydroelastic;
         // Symbol: drake::geometry::DrakeVisualizerParams::use_role_channel_suffix
         struct /* use_role_channel_suffix */ {
-          // Source: drake/geometry/drake_visualizer_params.h:54
+          // Source: drake/geometry/drake_visualizer_params.h
           const char* doc =
 R"""(Setting this to ``True`` will cause LCM channel names to have a suffix
 appended, allowing simultaneous transmission of multiple geometry
@@ -1263,14 +1263,14 @@ details.)""";
       } DrakeVisualizerParams;
       // Symbol: drake::geometry::DrakeVisualizerd
       struct /* DrakeVisualizerd */ {
-        // Source: drake/geometry/drake_visualizer.h:341
+        // Source: drake/geometry/drake_visualizer.h
         const char* doc =
 R"""(A convenient alias for the DrakeVisualizer class when using the
 ``double`` scalar type.)""";
       } DrakeVisualizerd;
       // Symbol: drake::geometry::Ellipsoid
       struct /* Ellipsoid */ {
-        // Source: drake/geometry/shape_specification.h:409
+        // Source: drake/geometry/shape_specification.h
         const char* doc =
 R"""(Definition of an ellipsoid. It is centered on the origin of its
 canonical frame with its dimensions aligned with the frame's axes. The
@@ -1282,7 +1282,7 @@ where a,b,c are the lengths of the principal semi-axes of the
 ellipsoid. The bounding box of the ellipsoid is [-a,a]x[-b,b]x[-c,c].)""";
         // Symbol: drake::geometry::Ellipsoid::Ellipsoid
         struct /* ctor */ {
-          // Source: drake/geometry/shape_specification.h:417
+          // Source: drake/geometry/shape_specification.h
           const char* doc_3args =
 R"""(Constructs an ellipsoid with the given lengths of its principal
 semi-axes, with a, b, and c measured along the x-, y-, and z- axes of
@@ -1290,7 +1290,7 @@ the canonical frame, respectively.
 
 Raises:
     RuntimeError if any measure is not finite positive.)""";
-          // Source: drake/geometry/shape_specification.h:423
+          // Source: drake/geometry/shape_specification.h
           const char* doc_1args =
 R"""(Constructs an ellipsoid with a vector of measures: the lengths of its
 principal semi-axes, with a, b, and c measured along the x-, y-, and
@@ -1301,41 +1301,41 @@ Raises:
         } ctor;
         // Symbol: drake::geometry::Ellipsoid::a
         struct /* a */ {
-          // Source: drake/geometry/shape_specification.h:427
+          // Source: drake/geometry/shape_specification.h
           const char* doc = R"""()""";
         } a;
         // Symbol: drake::geometry::Ellipsoid::b
         struct /* b */ {
-          // Source: drake/geometry/shape_specification.h:428
+          // Source: drake/geometry/shape_specification.h
           const char* doc = R"""()""";
         } b;
         // Symbol: drake::geometry::Ellipsoid::c
         struct /* c */ {
-          // Source: drake/geometry/shape_specification.h:429
+          // Source: drake/geometry/shape_specification.h
           const char* doc = R"""()""";
         } c;
       } Ellipsoid;
       // Symbol: drake::geometry::FilterId
       struct /* FilterId */ {
-        // Source: drake/geometry/geometry_ids.h:15
+        // Source: drake/geometry/geometry_ids.h
         const char* doc =
 R"""(Type used to identify transient collision filter declarations in
 SceneGraph.)""";
       } FilterId;
       // Symbol: drake::geometry::FrameId
       struct /* FrameId */ {
-        // Source: drake/geometry/geometry_ids.h:21
+        // Source: drake/geometry/geometry_ids.h
         const char* doc =
 R"""(Type used to identify geometry frames in SceneGraph.)""";
       } FrameId;
       // Symbol: drake::geometry::FrameIdSet
       struct /* FrameIdSet */ {
-        // Source: drake/geometry/geometry_state.h:177
+        // Source: drake/geometry/geometry_state.h
         const char* doc = R"""(Collection of unique frame ids.)""";
       } FrameIdSet;
       // Symbol: drake::geometry::GeometryFrame
       struct /* GeometryFrame */ {
-        // Source: drake/geometry/geometry_frame.h:27
+        // Source: drake/geometry/geometry_frame.h
         const char* doc =
 R"""(This simple class carries the definition of a frame used in the
 SceneGraph. To register moving frames with SceneGraph (see
@@ -1356,7 +1356,7 @@ See also:
     SceneGraph)""";
         // Symbol: drake::geometry::GeometryFrame::GeometryFrame
         struct /* ctor */ {
-          // Source: drake/geometry/geometry_frame.h:36
+          // Source: drake/geometry/geometry_frame.h
           const char* doc =
 R"""(Constructor.
 
@@ -1369,12 +1369,12 @@ Parameter ``frame_group_id``:
         } ctor;
         // Symbol: drake::geometry::GeometryFrame::frame_group
         struct /* frame_group */ {
-          // Source: drake/geometry/geometry_frame.h:47
+          // Source: drake/geometry/geometry_frame.h
           const char* doc = R"""()""";
         } frame_group;
         // Symbol: drake::geometry::GeometryFrame::id
         struct /* id */ {
-          // Source: drake/geometry/geometry_frame.h:43
+          // Source: drake/geometry/geometry_frame.h
           const char* doc =
 R"""(Returns the globally unique id for this geometry specification. Every
 instantiation of FrameInstance will contain a unique id value. The id
@@ -1384,34 +1384,34 @@ representation as well.)""";
         } id;
         // Symbol: drake::geometry::GeometryFrame::name
         struct /* name */ {
-          // Source: drake/geometry/geometry_frame.h:45
+          // Source: drake/geometry/geometry_frame.h
           const char* doc = R"""()""";
         } name;
       } GeometryFrame;
       // Symbol: drake::geometry::GeometryId
       struct /* GeometryId */ {
-        // Source: drake/geometry/geometry_ids.h:24
+        // Source: drake/geometry/geometry_ids.h
         const char* doc =
 R"""(Type used to identify geometry instances in SceneGraph.)""";
         // Symbol: drake::geometry::GeometryId::GeometryId
         struct /* ctor */ {
-          // Source: drake/geometry/geometry_ids.h:28
+          // Source: drake/geometry/geometry_ids.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::geometry::GeometryId::get_new_id
         struct /* get_new_id */ {
-          // Source: drake/geometry/geometry_ids.h:32
+          // Source: drake/geometry/geometry_ids.h
           const char* doc = R"""()""";
         } get_new_id;
       } GeometryId;
       // Symbol: drake::geometry::GeometryIdSet
       struct /* GeometryIdSet */ {
-        // Source: drake/geometry/geometry_state.h:179
+        // Source: drake/geometry/geometry_state.h
         const char* doc = R"""(Collection of unique geometry ids.)""";
       } GeometryIdSet;
       // Symbol: drake::geometry::GeometryInstance
       struct /* GeometryInstance */ {
-        // Source: drake/geometry/geometry_instance.h:81
+        // Source: drake/geometry/geometry_instance.h
         const char* doc =
 R"""(A geometry instance combines a geometry definition (i.e., a shape of
 some sort), a pose (relative to a parent "frame" P), material
@@ -1490,7 +1490,7 @@ Querying the instance of its name will return this *canonicalized*
 name.)""";
         // Symbol: drake::geometry::GeometryInstance::GeometryInstance
         struct /* ctor */ {
-          // Source: drake/geometry/geometry_instance.h:91
+          // Source: drake/geometry/geometry_instance.h
           const char* doc =
 R"""(Constructs a geometry instance specification.
 
@@ -1508,7 +1508,7 @@ Raises:
         } ctor;
         // Symbol: drake::geometry::GeometryInstance::id
         struct /* id */ {
-          // Source: drake/geometry/geometry_instance.h:105
+          // Source: drake/geometry/geometry_instance.h
           const char* doc =
 R"""(Returns the globally unique id for this geometry specification. Every
 instantiation of GeometryInstance will contain a unique id value. The
@@ -1518,35 +1518,35 @@ registered representation as well.)""";
         } id;
         // Symbol: drake::geometry::GeometryInstance::illustration_properties
         struct /* illustration_properties */ {
-          // Source: drake/geometry/geometry_instance.h:171
+          // Source: drake/geometry/geometry_instance.h
           const char* doc =
 R"""(Returns a pointer to the geometry's const illustration properties (if
 they are defined). Nullptr otherwise.)""";
         } illustration_properties;
         // Symbol: drake::geometry::GeometryInstance::mutable_illustration_properties
         struct /* mutable_illustration_properties */ {
-          // Source: drake/geometry/geometry_instance.h:164
+          // Source: drake/geometry/geometry_instance.h
           const char* doc =
 R"""(Returns a pointer to the geometry's mutable illustration properties
 (if they are defined). Nullptr otherwise.)""";
         } mutable_illustration_properties;
         // Symbol: drake::geometry::GeometryInstance::mutable_perception_properties
         struct /* mutable_perception_properties */ {
-          // Source: drake/geometry/geometry_instance.h:178
+          // Source: drake/geometry/geometry_instance.h
           const char* doc =
 R"""(Returns a pointer to the geometry's mutable perception properties (if
 they are defined). Nullptr otherwise.)""";
         } mutable_perception_properties;
         // Symbol: drake::geometry::GeometryInstance::mutable_proximity_properties
         struct /* mutable_proximity_properties */ {
-          // Source: drake/geometry/geometry_instance.h:150
+          // Source: drake/geometry/geometry_instance.h
           const char* doc =
 R"""(Returns a pointer to the geometry's mutable proximity properties (if
 they are defined). Nullptr otherwise.)""";
         } mutable_proximity_properties;
         // Symbol: drake::geometry::GeometryInstance::name
         struct /* name */ {
-          // Source: drake/geometry/geometry_instance.h:127
+          // Source: drake/geometry/geometry_instance.h
           const char* doc =
 R"""(Returns the *canonicalized* name for the instance.
 
@@ -1555,27 +1555,27 @@ See also:
         } name;
         // Symbol: drake::geometry::GeometryInstance::perception_properties
         struct /* perception_properties */ {
-          // Source: drake/geometry/geometry_instance.h:185
+          // Source: drake/geometry/geometry_instance.h
           const char* doc =
 R"""(Returns a pointer to the geometry's const perception properties (if
 they are defined). Nullptr otherwise.)""";
         } perception_properties;
         // Symbol: drake::geometry::GeometryInstance::pose
         struct /* pose */ {
-          // Source: drake/geometry/geometry_instance.h:108
+          // Source: drake/geometry/geometry_instance.h
           const char* doc =
 R"""(Returns the instance geometry's pose in its parent frame.)""";
         } pose;
         // Symbol: drake::geometry::GeometryInstance::proximity_properties
         struct /* proximity_properties */ {
-          // Source: drake/geometry/geometry_instance.h:157
+          // Source: drake/geometry/geometry_instance.h
           const char* doc =
 R"""(Returns a pointer to the geometry's const proximity properties (if
 they are defined). Nullptr otherwise.)""";
         } proximity_properties;
         // Symbol: drake::geometry::GeometryInstance::release_shape
         struct /* release_shape */ {
-          // Source: drake/geometry/geometry_instance.h:123
+          // Source: drake/geometry/geometry_instance.h
           const char* doc =
 R"""((Advanced) Transfers ownership of this geometry instance's underlying
 shape specification to the caller.
@@ -1585,13 +1585,13 @@ Precondition:
         } release_shape;
         // Symbol: drake::geometry::GeometryInstance::set_illustration_properties
         struct /* set_illustration_properties */ {
-          // Source: drake/geometry/geometry_instance.h:139
+          // Source: drake/geometry/geometry_instance.h
           const char* doc =
 R"""(Sets the illustration properties for the given instance.)""";
         } set_illustration_properties;
         // Symbol: drake::geometry::GeometryInstance::set_name
         struct /* set_name */ {
-          // Source: drake/geometry/geometry_instance.h:131
+          // Source: drake/geometry/geometry_instance.h
           const char* doc =
 R"""(Sets the *canonicalized* name for the instance.
 
@@ -1600,25 +1600,25 @@ See also:
         } set_name;
         // Symbol: drake::geometry::GeometryInstance::set_perception_properties
         struct /* set_perception_properties */ {
-          // Source: drake/geometry/geometry_instance.h:144
+          // Source: drake/geometry/geometry_instance.h
           const char* doc =
 R"""(Sets the perception properties for the given instance.)""";
         } set_perception_properties;
         // Symbol: drake::geometry::GeometryInstance::set_pose
         struct /* set_pose */ {
-          // Source: drake/geometry/geometry_instance.h:111
+          // Source: drake/geometry/geometry_instance.h
           const char* doc =
 R"""(Sets the pose of this instance in its parent's frame.)""";
         } set_pose;
         // Symbol: drake::geometry::GeometryInstance::set_proximity_properties
         struct /* set_proximity_properties */ {
-          // Source: drake/geometry/geometry_instance.h:134
+          // Source: drake/geometry/geometry_instance.h
           const char* doc =
 R"""(Sets the proximity properties for the given instance.)""";
         } set_proximity_properties;
         // Symbol: drake::geometry::GeometryInstance::shape
         struct /* shape */ {
-          // Source: drake/geometry/geometry_instance.h:115
+          // Source: drake/geometry/geometry_instance.h
           const char* doc =
 R"""(Returns the underlying shape specification for this geometry instance.
 
@@ -1628,7 +1628,7 @@ Precondition:
       } GeometryInstance;
       // Symbol: drake::geometry::GeometryProperties
       struct /* GeometryProperties */ {
-        // Source: drake/geometry/geometry_properties.h:226
+        // Source: drake/geometry/geometry_properties.h
         const char* doc =
 R"""(The base class for defining a set of geometry properties.
 
@@ -1908,7 +1908,7 @@ work with AbstractValue.
     </details>)""";
         // Symbol: drake::geometry::GeometryProperties::AddProperty
         struct /* AddProperty */ {
-          // Source: drake/geometry/geometry_properties.h:260
+          // Source: drake/geometry/geometry_properties.h
           const char* doc =
 R"""(Adds the named property (``group_name``, `name`) with the given
 ``value``. Adds the group if it doesn't already exist.
@@ -1931,7 +1931,7 @@ Template parameter ``ValueType``:
         } AddProperty;
         // Symbol: drake::geometry::GeometryProperties::AddPropertyAbstract
         struct /* AddPropertyAbstract */ {
-          // Source: drake/geometry/geometry_properties.h:293
+          // Source: drake/geometry/geometry_properties.h
           const char* doc =
 R"""(Adds the named property (``group_name``, `name`) with the given
 type-erased ``value``. Adds the group if it doesn't already exist.
@@ -1950,19 +1950,19 @@ Raises:
         } AddPropertyAbstract;
         // Symbol: drake::geometry::GeometryProperties::GeometryProperties
         struct /* ctor */ {
-          // Source: drake/geometry/geometry_properties.h:443
+          // Source: drake/geometry/geometry_properties.h
           const char* doc =
 R"""(Constructs a property set with the default group. Only invoked by
 final subclasses.)""";
         } ctor;
         // Symbol: drake::geometry::GeometryProperties::GetGroupNames
         struct /* GetGroupNames */ {
-          // Source: drake/geometry/geometry_properties.h:248
+          // Source: drake/geometry/geometry_properties.h
           const char* doc = R"""(Returns all of the defined group names.)""";
         } GetGroupNames;
         // Symbol: drake::geometry::GeometryProperties::GetPropertiesInGroup
         struct /* GetPropertiesInGroup */ {
-          // Source: drake/geometry/geometry_properties.h:245
+          // Source: drake/geometry/geometry_properties.h
           const char* doc =
 R"""(Retrieves the indicated property group. The returned group is valid
 for as long as this instance.
@@ -1972,7 +1972,7 @@ Raises:
         } GetPropertiesInGroup;
         // Symbol: drake::geometry::GeometryProperties::GetProperty
         struct /* GetProperty */ {
-          // Source: drake/geometry/geometry_properties.h:333
+          // Source: drake/geometry/geometry_properties.h
           const char* doc =
 R"""(Retrieves the typed value for the property (``group_name``, `name`)
 from this set of properties.
@@ -1996,7 +1996,7 @@ Returns:
         } GetProperty;
         // Symbol: drake::geometry::GeometryProperties::GetPropertyAbstract
         struct /* GetPropertyAbstract */ {
-          // Source: drake/geometry/geometry_properties.h:353
+          // Source: drake/geometry/geometry_properties.h
           const char* doc =
 R"""(Retrieves the type-erased value for the property (``group_name``,
 `name`) from this set of properties.
@@ -2013,7 +2013,7 @@ Raises:
         } GetPropertyAbstract;
         // Symbol: drake::geometry::GeometryProperties::GetPropertyOrDefault
         struct /* GetPropertyOrDefault */ {
-          // Source: drake/geometry/geometry_properties.h:381
+          // Source: drake/geometry/geometry_properties.h
           const char* doc =
 R"""(Retrieves the typed value for the property (``group_name``, `name`)
 from the set of properties (if it exists), otherwise returns the given
@@ -2058,19 +2058,19 @@ Raises:
         } GetPropertyOrDefault;
         // Symbol: drake::geometry::GeometryProperties::Group
         struct /* Group */ {
-          // Source: drake/geometry/geometry_properties.h:231
+          // Source: drake/geometry/geometry_properties.h
           const char* doc =
 R"""(The properties for a single group as a property name-value map.)""";
         } Group;
         // Symbol: drake::geometry::GeometryProperties::HasGroup
         struct /* HasGroup */ {
-          // Source: drake/geometry/geometry_properties.h:235
+          // Source: drake/geometry/geometry_properties.h
           const char* doc =
 R"""(Reports if the given named group is part of this property set.)""";
         } HasGroup;
         // Symbol: drake::geometry::GeometryProperties::HasProperty
         struct /* HasProperty */ {
-          // Source: drake/geometry/geometry_properties.h:316
+          // Source: drake/geometry/geometry_properties.h
           const char* doc =
 R"""(Reports if the property (``group_name``, `name`) exists in the group.
 
@@ -2086,7 +2086,7 @@ Returns:
         } HasProperty;
         // Symbol: drake::geometry::GeometryProperties::RemoveProperty
         struct /* RemoveProperty */ {
-          // Source: drake/geometry/geometry_properties.h:413
+          // Source: drake/geometry/geometry_properties.h
           const char* doc =
 R"""(Removes the (``group_name``, `name`) property (if it exists). Upon
 completion the property will not be in the set.
@@ -2096,7 +2096,7 @@ Returns:
         } RemoveProperty;
         // Symbol: drake::geometry::GeometryProperties::UpdateProperty
         struct /* UpdateProperty */ {
-          // Source: drake/geometry/geometry_properties.h:281
+          // Source: drake/geometry/geometry_properties.h
           const char* doc =
 R"""(Updates the named property (``group_name``, `name`) with the given
 ``value``. If the property doesn't already exist, it is equivalent to
@@ -2121,7 +2121,7 @@ Template parameter ``ValueType``:
         } UpdateProperty;
         // Symbol: drake::geometry::GeometryProperties::UpdatePropertyAbstract
         struct /* UpdatePropertyAbstract */ {
-          // Source: drake/geometry/geometry_properties.h:305
+          // Source: drake/geometry/geometry_properties.h
           const char* doc =
 R"""(Updates the named property (``group_name``, `name`) with the given
 type-erased ``value``. If the property doesn't already exist, it is
@@ -2143,7 +2143,7 @@ Raises:
         } UpdatePropertyAbstract;
         // Symbol: drake::geometry::GeometryProperties::default_group_name
         struct /* default_group_name */ {
-          // Source: drake/geometry/geometry_properties.h:405
+          // Source: drake/geometry/geometry_properties.h
           const char* doc =
 R"""(Returns the default group name. There is no guarantee as to *what*
 string corresponds to the default group. Therefore it should always be
@@ -2151,14 +2151,14 @@ accessed via this method.)""";
         } default_group_name;
         // Symbol: drake::geometry::GeometryProperties::num_groups
         struct /* num_groups */ {
-          // Source: drake/geometry/geometry_properties.h:240
+          // Source: drake/geometry/geometry_properties.h
           const char* doc =
 R"""(Reports the number of property groups in this set.)""";
         } num_groups;
       } GeometryProperties;
       // Symbol: drake::geometry::GeometrySet
       struct /* GeometrySet */ {
-        // Source: drake/geometry/geometry_set.h:36
+        // Source: drake/geometry/geometry_set.h
         const char* doc =
 R"""(The GeometrySet, as its name implies, is a convenience class for
 defining a set of geometries. What makes it unique from a simple
@@ -2185,18 +2185,18 @@ geometry(f₀) ⋃ ... ⋃ geometry(fₙ)` (where ``geometry(f)`` is the set
 of geometries rigidly affixed to frame f).)""";
         // Symbol: drake::geometry::GeometrySet::Add
         struct /* Add */ {
-          // Source: drake/geometry/geometry_set.h:200
+          // Source: drake/geometry/geometry_set.h
           const char* doc = R"""()""";
         } Add;
         // Symbol: drake::geometry::GeometrySet::GeometrySet
         struct /* ctor */ {
-          // Source: drake/geometry/geometry_set.h:38
+          // Source: drake/geometry/geometry_set.h
           const char* doc = R"""()""";
         } ctor;
       } GeometrySet;
       // Symbol: drake::geometry::GeometryState
       struct /* GeometryState */ {
-        // Source: drake/geometry/geometry_state.h:198
+        // Source: drake/geometry/geometry_state.h
         const char* doc =
 R"""(The context-dependent state of SceneGraph. This serves as an
 AbstractValue in the context. SceneGraph's time-dependent state
@@ -2209,18 +2209,18 @@ Note:
     This is intended as an internal class only.)""";
         // Symbol: drake::geometry::GeometryState::AddRenderer
         struct /* AddRenderer */ {
-          // Source: drake/geometry/geometry_state.h:672
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraph::AddRenderer().)""";
         } AddRenderer;
         // Symbol: drake::geometry::GeometryState::ApplyProximityDefaults
         struct /* ApplyProximityDefaults */ {
-          // Source: drake/geometry/geometry_state.h:736
+          // Source: drake/geometry/geometry_state.h
           const char* doc_1args =
 R"""(Applies the default proximity values in ``defaults`` to the proximity
 properties of every currently registered geometry that has a proximity
 role. For detailed semantics, see the 2-argument overload.)""";
-          // Source: drake/geometry/geometry_state.h:745
+          // Source: drake/geometry/geometry_state.h
           const char* doc_2args =
 R"""(Applies the default proximity values in ``defaults`` to the proximity
 properties of the geometry with the given geometry_id as appropriate.
@@ -2233,135 +2233,135 @@ Precondition:
         } ApplyProximityDefaults;
         // Symbol: drake::geometry::GeometryState::AssignRole
         struct /* AssignRole */ {
-          // Source: drake/geometry/geometry_state.h:508
+          // Source: drake/geometry/geometry_state.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Implementation of SceneGraph::AssignRole(SourceId, GeometryId,
 ProximityProperties) "SceneGraph::AssignRole()".)""";
         } AssignRole;
         // Symbol: drake::geometry::GeometryState::BelongsToSource
         struct /* BelongsToSource */ {
-          // Source: drake/geometry/geometry_state.h:304
+          // Source: drake/geometry/geometry_state.h
           const char* doc_2args_frame_id_source_id =
 R"""(Implementation of SceneGraphInspector::BelongsToSource(FrameId,
 SourceId) const.)""";
-          // Source: drake/geometry/geometry_state.h:348
+          // Source: drake/geometry/geometry_state.h
           const char* doc_2args_geometry_id_source_id =
 R"""(Implementation of SceneGraphInspector::BelongsToSource(GeometryId,
 SourceId) const.)""";
         } BelongsToSource;
         // Symbol: drake::geometry::GeometryState::ChangeShape
         struct /* ChangeShape */ {
-          // Source: drake/geometry/geometry_state.h:483
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraph::ChangeShape().)""";
         } ChangeShape;
         // Symbol: drake::geometry::GeometryState::CollisionFiltered
         struct /* CollisionFiltered */ {
-          // Source: drake/geometry/geometry_state.h:403
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::CollisionFiltered().)""";
         } CollisionFiltered;
         // Symbol: drake::geometry::GeometryState::ComputeAabbInWorld
         struct /* ComputeAabbInWorld */ {
-          // Source: drake/geometry/geometry_state.h:422
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of QueryObject::ComputeAabbInWorld(GeometryId).)""";
         } ComputeAabbInWorld;
         // Symbol: drake::geometry::GeometryState::ComputeContactSurfaces
         struct /* ComputeContactSurfaces */ {
-          // Source: drake/geometry/geometry_state.h:584
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of QueryObject::ComputeContactSurfaces().)""";
         } ComputeContactSurfaces;
         // Symbol: drake::geometry::GeometryState::ComputeContactSurfacesWithFallback
         struct /* ComputeContactSurfacesWithFallback */ {
-          // Source: drake/geometry/geometry_state.h:593
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of QueryObject::ComputeContactSurfacesWithFallback().)""";
         } ComputeContactSurfacesWithFallback;
         // Symbol: drake::geometry::GeometryState::ComputeDeformableContact
         struct /* ComputeDeformableContact */ {
-          // Source: drake/geometry/geometry_state.h:606
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of QueryObject::ComputeDeformableContact().)""";
         } ComputeDeformableContact;
         // Symbol: drake::geometry::GeometryState::ComputeObbInWorld
         struct /* ComputeObbInWorld */ {
-          // Source: drake/geometry/geometry_state.h:425
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of QueryObject::ComputeObbInWorld(GeometryId).)""";
         } ComputeObbInWorld;
         // Symbol: drake::geometry::GeometryState::ComputePointPairPenetration
         struct /* ComputePointPairPenetration */ {
-          // Source: drake/geometry/geometry_state.h:575
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of QueryObject::ComputePointPairPenetration().)""";
         } ComputePointPairPenetration;
         // Symbol: drake::geometry::GeometryState::ComputeSignedDistanceGeometryToPoint
         struct /* ComputeSignedDistanceGeometryToPoint */ {
-          // Source: drake/geometry/geometry_state.h:661
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of QueryObject::ComputeSignedDistanceGeometryToPoint().)""";
         } ComputeSignedDistanceGeometryToPoint;
         // Symbol: drake::geometry::GeometryState::ComputeSignedDistancePairClosestPoints
         struct /* ComputeSignedDistancePairClosestPoints */ {
-          // Source: drake/geometry/geometry_state.h:650
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of
 QueryObject::ComputeSignedDistancePairClosestPoints().)""";
         } ComputeSignedDistancePairClosestPoints;
         // Symbol: drake::geometry::GeometryState::ComputeSignedDistancePairwiseClosestPoints
         struct /* ComputeSignedDistancePairwiseClosestPoints */ {
-          // Source: drake/geometry/geometry_state.h:642
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of
 QueryObject::ComputeSignedDistancePairwiseClosestPoints().)""";
         } ComputeSignedDistancePairwiseClosestPoints;
         // Symbol: drake::geometry::GeometryState::ComputeSignedDistanceToPoint
         struct /* ComputeSignedDistanceToPoint */ {
-          // Source: drake/geometry/geometry_state.h:654
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of QueryObject::ComputeSignedDistanceToPoint().)""";
         } ComputeSignedDistanceToPoint;
         // Symbol: drake::geometry::GeometryState::FindCollisionCandidates
         struct /* FindCollisionCandidates */ {
-          // Source: drake/geometry/geometry_state.h:612
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of QueryObject::FindCollisionCandidates().)""";
         } FindCollisionCandidates;
         // Symbol: drake::geometry::GeometryState::FrameIdRange
         struct /* FrameIdRange */ {
-          // Source: drake/geometry/geometry_state.h:204
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(An object that represents the range of FrameId values in the state. It
 is used in range-based for loops to iterate through registered frames.)""";
         } FrameIdRange;
         // Symbol: drake::geometry::GeometryState::FramesForSource
         struct /* FramesForSource */ {
-          // Source: drake/geometry/geometry_state.h:295
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::FramesForSource().)""";
         } FramesForSource;
         // Symbol: drake::geometry::GeometryState::GeometryState<T>
         struct /* ctor */ {
-          // Source: drake/geometry/geometry_state.h:207
+          // Source: drake/geometry/geometry_state.h
           const char* doc = R"""(Default constructor.)""";
         } ctor;
         // Symbol: drake::geometry::GeometryState::GetAllDeformableGeometryIds
         struct /* GetAllDeformableGeometryIds */ {
-          // Source: drake/geometry/geometry_state.h:394
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::GetAllDeformableGeometryIds().)""";
         } GetAllDeformableGeometryIds;
         // Symbol: drake::geometry::GeometryState::GetAllGeometryIds
         struct /* GetAllGeometryIds */ {
-          // Source: drake/geometry/geometry_state.h:242
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::GetAllGeometryIds().)""";
         } GetAllGeometryIds;
         // Symbol: drake::geometry::GeometryState::GetAllSourceIds
         struct /* GetAllSourceIds */ {
-          // Source: drake/geometry/geometry_state.h:283
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Returns all of the source ids in the scene graph. The order is
 guaranteed to be stable and consistent. The first element is the
@@ -2369,152 +2369,152 @@ SceneGraph-internal source.)""";
         } GetAllSourceIds;
         // Symbol: drake::geometry::GeometryState::GetCollisionCandidates
         struct /* GetCollisionCandidates */ {
-          // Source: drake/geometry/geometry_state.h:270
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::GetCollisionCandidates().)""";
         } GetCollisionCandidates;
         // Symbol: drake::geometry::GeometryState::GetConvexHull
         struct /* GetConvexHull */ {
-          // Source: drake/geometry/geometry_state.h:397
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::GetConvexHull().)""";
         } GetConvexHull;
         // Symbol: drake::geometry::GeometryState::GetDrivenMeshConfigurationsInWorld
         struct /* GetDrivenMeshConfigurationsInWorld */ {
-          // Source: drake/geometry/geometry_state.h:434
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of QueryObject::GetDrivenMeshConfigurationsInWorld().)""";
         } GetDrivenMeshConfigurationsInWorld;
         // Symbol: drake::geometry::GeometryState::GetDrivenRenderMeshes
         struct /* GetDrivenRenderMeshes */ {
-          // Source: drake/geometry/geometry_state.h:387
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::GetDrivenRenderMeshes().)""";
         } GetDrivenRenderMeshes;
         // Symbol: drake::geometry::GeometryState::GetFrameGroup
         struct /* GetFrameGroup */ {
-          // Source: drake/geometry/geometry_state.h:317
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::GetFrameGroup().)""";
         } GetFrameGroup;
         // Symbol: drake::geometry::GeometryState::GetFrameId
         struct /* GetFrameId */ {
-          // Source: drake/geometry/geometry_state.h:355
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::GetFrameId().)""";
         } GetFrameId;
         // Symbol: drake::geometry::GeometryState::GetGeometries
         struct /* GetGeometries */ {
-          // Source: drake/geometry/geometry_state.h:327
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::GetGeometries.)""";
         } GetGeometries;
         // Symbol: drake::geometry::GeometryState::GetGeometryIdByName
         struct /* GetGeometryIdByName */ {
-          // Source: drake/geometry/geometry_state.h:338
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::GetGeometryIdByName().)""";
         } GetGeometryIdByName;
         // Symbol: drake::geometry::GeometryState::GetGeometryIds
         struct /* GetGeometryIds */ {
-          // Source: drake/geometry/geometry_state.h:245
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::GetGeometryIds().)""";
         } GetGeometryIds;
         // Symbol: drake::geometry::GeometryState::GetIllustrationProperties
         struct /* GetIllustrationProperties */ {
-          // Source: drake/geometry/geometry_state.h:377
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::GetIllustrationProperties().)""";
         } GetIllustrationProperties;
         // Symbol: drake::geometry::GeometryState::GetName
         struct /* GetName */ {
-          // Source: drake/geometry/geometry_state.h:289
+          // Source: drake/geometry/geometry_state.h
           const char* doc_1args_id =
 R"""(Implementation of SceneGraphInspector::GetName().)""";
-          // Source: drake/geometry/geometry_state.h:311
+          // Source: drake/geometry/geometry_state.h
           const char* doc_1args_frame_id =
 R"""(Implementation of SceneGraphInspector::GetName(FrameId) const.)""";
-          // Source: drake/geometry/geometry_state.h:358
+          // Source: drake/geometry/geometry_state.h
           const char* doc_1args_geometry_id =
 R"""(Implementation of SceneGraphInspector::GetName(GeometryId) const.)""";
         } GetName;
         // Symbol: drake::geometry::GeometryState::GetObbInGeometryFrame
         struct /* GetObbInGeometryFrame */ {
-          // Source: drake/geometry/geometry_state.h:400
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::GetObbInGeometryFrame().)""";
         } GetObbInGeometryFrame;
         // Symbol: drake::geometry::GeometryState::GetOwningSourceName
         struct /* GetOwningSourceName */ {
-          // Source: drake/geometry/geometry_state.h:308
+          // Source: drake/geometry/geometry_state.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Implementation of SceneGraphInspector::GetOwningSourceName(FrameId)
 const.)""";
         } GetOwningSourceName;
         // Symbol: drake::geometry::GeometryState::GetParentFrame
         struct /* GetParentFrame */ {
-          // Source: drake/geometry/geometry_state.h:314
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::GetParentFrame(FrameId) const.)""";
         } GetParentFrame;
         // Symbol: drake::geometry::GeometryState::GetPerceptionProperties
         struct /* GetPerceptionProperties */ {
-          // Source: drake/geometry/geometry_state.h:380
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::GetPerceptionProperties().)""";
         } GetPerceptionProperties;
         // Symbol: drake::geometry::GeometryState::GetPoseInFrame
         struct /* GetPoseInFrame */ {
-          // Source: drake/geometry/geometry_state.h:364
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::X_FG().)""";
         } GetPoseInFrame;
         // Symbol: drake::geometry::GeometryState::GetProximityProperties
         struct /* GetProximityProperties */ {
-          // Source: drake/geometry/geometry_state.h:374
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::GetProximityProperties().)""";
         } GetProximityProperties;
         // Symbol: drake::geometry::GeometryState::GetReferenceMesh
         struct /* GetReferenceMesh */ {
-          // Source: drake/geometry/geometry_state.h:383
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::GetReferenceMesh().)""";
         } GetReferenceMesh;
         // Symbol: drake::geometry::GeometryState::GetRenderEngineByName
         struct /* GetRenderEngineByName */ {
-          // Source: drake/geometry/geometry_state.h:684
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of QueryObject::GetRenderEngineByName.)""";
         } GetRenderEngineByName;
         // Symbol: drake::geometry::GeometryState::GetShape
         struct /* GetShape */ {
-          // Source: drake/geometry/geometry_state.h:361
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Support for SceneGraphInspector::Reify().)""";
         } GetShape;
         // Symbol: drake::geometry::GeometryState::HasCollisions
         struct /* HasCollisions */ {
-          // Source: drake/geometry/geometry_state.h:617
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of QueryObject::HasCollisions().)""";
         } HasCollisions;
         // Symbol: drake::geometry::GeometryState::HasRenderer
         struct /* HasRenderer */ {
-          // Source: drake/geometry/geometry_state.h:679
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraph::HasRenderer().)""";
         } HasRenderer;
         // Symbol: drake::geometry::GeometryState::IsDeformableGeometry
         struct /* IsDeformableGeometry */ {
-          // Source: drake/geometry/geometry_state.h:391
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::IsDeformableGeometry().)""";
         } IsDeformableGeometry;
         // Symbol: drake::geometry::GeometryState::IsValidGeometryName
         struct /* IsValidGeometryName */ {
-          // Source: drake/geometry/geometry_state.h:502
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Reports whether the canonicalized version of the given candidate
 geometry name is considered valid. This tests the requirements
@@ -2542,62 +2542,62 @@ Raises:
         } IsValidGeometryName;
         // Symbol: drake::geometry::GeometryState::NumAnchoredGeometries
         struct /* NumAnchoredGeometries */ {
-          // Source: drake/geometry/geometry_state.h:267
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::NumAnchoredGeometries().)""";
         } NumAnchoredGeometries;
         // Symbol: drake::geometry::GeometryState::NumDeformableGeometries
         struct /* NumDeformableGeometries */ {
-          // Source: drake/geometry/geometry_state.h:264
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Returns the total number of registered deformable geometries. All
 deformable geometries are dynamic and *not* anchored.)""";
         } NumDeformableGeometries;
         // Symbol: drake::geometry::GeometryState::NumDeformableGeometriesWithRole
         struct /* NumDeformableGeometriesWithRole */ {
-          // Source: drake/geometry/geometry_state.h:253
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of
 SceneGraphInspector::NumDeformableGeometriesWithRole().)""";
         } NumDeformableGeometriesWithRole;
         // Symbol: drake::geometry::GeometryState::NumDynamicGeometries
         struct /* NumDynamicGeometries */ {
-          // Source: drake/geometry/geometry_state.h:256
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::NumDynamicGeometries().)""";
         } NumDynamicGeometries;
         // Symbol: drake::geometry::GeometryState::NumDynamicNonDeformableGeometries
         struct /* NumDynamicNonDeformableGeometries */ {
-          // Source: drake/geometry/geometry_state.h:260
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Returns the total number of registered dynamic non-deformable
 geometries.)""";
         } NumDynamicNonDeformableGeometries;
         // Symbol: drake::geometry::GeometryState::NumFramesForSource
         struct /* NumFramesForSource */ {
-          // Source: drake/geometry/geometry_state.h:292
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::NumFramesForSource().)""";
         } NumFramesForSource;
         // Symbol: drake::geometry::GeometryState::NumGeometriesForFrame
         struct /* NumGeometriesForFrame */ {
-          // Source: drake/geometry/geometry_state.h:320
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::NumGeometriesForFrame().)""";
         } NumGeometriesForFrame;
         // Symbol: drake::geometry::GeometryState::NumGeometriesForFrameWithRole
         struct /* NumGeometriesForFrameWithRole */ {
-          // Source: drake/geometry/geometry_state.h:324
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of
 SceneGraphInspector::NumGeometriesForFrameWithRole().)""";
         } NumGeometriesForFrameWithRole;
         // Symbol: drake::geometry::GeometryState::NumGeometriesWithRole
         struct /* NumGeometriesWithRole */ {
-          // Source: drake/geometry/geometry_state.h:249
+          // Source: drake/geometry/geometry_state.h
           const char* doc_1args =
 R"""(Implementation of SceneGraphInspector::NumGeometriesWithRole().)""";
-          // Source: drake/geometry/geometry_state.h:335
+          // Source: drake/geometry/geometry_state.h
           const char* doc_2args =
 R"""(Reports the number of child geometries for this frame that have the
 indicated role assigned. This only includes the immediate child
@@ -2608,29 +2608,29 @@ Raises:
         } NumGeometriesWithRole;
         // Symbol: drake::geometry::GeometryState::RegisterAnchoredGeometry
         struct /* RegisterAnchoredGeometry */ {
-          // Source: drake/geometry/geometry_state.h:471
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraph::RegisterAnchoredGeometry().)""";
         } RegisterAnchoredGeometry;
         // Symbol: drake::geometry::GeometryState::RegisterDeformableGeometry
         struct /* RegisterDeformableGeometry */ {
-          // Source: drake/geometry/geometry_state.h:475
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraph::RegisterDeformableGeometry())""";
         } RegisterDeformableGeometry;
         // Symbol: drake::geometry::GeometryState::RegisterFrame
         struct /* RegisterFrame */ {
-          // Source: drake/geometry/geometry_state.h:450
+          // Source: drake/geometry/geometry_state.h
           const char* doc_2args =
 R"""(Implementation of SceneGraph::RegisterFrame().)""";
-          // Source: drake/geometry/geometry_state.h:458
+          // Source: drake/geometry/geometry_state.h
           const char* doc_3args =
 R"""(Implementation of SceneGraph::RegisterFrame(SourceId,FrameId,const
 GeometryFrame&) "SceneGraph::RegisterFrame()" with parent FrameId.)""";
         } RegisterFrame;
         // Symbol: drake::geometry::GeometryState::RegisterGeometry
         struct /* RegisterGeometry */ {
-          // Source: drake/geometry/geometry_state.h:465
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraph::RegisterGeometry(SourceId,FrameId,
 std::unique_ptr<GeometryInstance>) "SceneGraph::RegisterGeometry()"
@@ -2638,7 +2638,7 @@ with parent FrameId.)""";
         } RegisterGeometry;
         // Symbol: drake::geometry::GeometryState::RegisterNewSource
         struct /* RegisterNewSource */ {
-          // Source: drake/geometry/geometry_state.h:447
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraph::RegisterSource(). The default logic is
 to define name as "Source_##" where the number is the value of the
@@ -2646,13 +2646,13 @@ returned SourceId.)""";
         } RegisterNewSource;
         // Symbol: drake::geometry::GeometryState::RegisteredRendererNames
         struct /* RegisteredRendererNames */ {
-          // Source: drake/geometry/geometry_state.h:696
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraph::RegisteredRendererNames().)""";
         } RegisteredRendererNames;
         // Symbol: drake::geometry::GeometryState::RemoveFromRenderer
         struct /* RemoveFromRenderer */ {
-          // Source: drake/geometry/geometry_state.h:553
+          // Source: drake/geometry/geometry_state.h
           const char* doc_3args_renderer_name_source_id_frame_id =
 R"""(For every geometry directly registered to the frame with the given
 ``frame_id``, if it has been added to the renderer with the given
@@ -2667,7 +2667,7 @@ Raises:
     ``frame_id`` does not belong to ``source_id`` (unless ``frame_id``
     is the world frame id), or d) the context has already been
     allocated.)""";
-          // Source: drake/geometry/geometry_state.h:565
+          // Source: drake/geometry/geometry_state.h
           const char* doc_3args_renderer_name_source_id_geometry_id =
 R"""(Removes the geometry with the given ``geometry_id`` from the renderer
 with the given ``renderer_name``, *if* it has previously been added.
@@ -2683,42 +2683,42 @@ Raises:
         } RemoveFromRenderer;
         // Symbol: drake::geometry::GeometryState::RemoveGeometry
         struct /* RemoveGeometry */ {
-          // Source: drake/geometry/geometry_state.h:488
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraph::RemoveGeometry().)""";
         } RemoveGeometry;
         // Symbol: drake::geometry::GeometryState::RemoveRenderer
         struct /* RemoveRenderer */ {
-          // Source: drake/geometry/geometry_state.h:676
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraph::RemoveRenderer().)""";
         } RemoveRenderer;
         // Symbol: drake::geometry::GeometryState::RemoveRole
         struct /* RemoveRole */ {
-          // Source: drake/geometry/geometry_state.h:529
+          // Source: drake/geometry/geometry_state.h
           const char* doc_3args_source_id_frame_id_role =
 R"""(Implementation of SceneGraph::RemoveRole(SourceId, FrameId, Role)
 "SceneGraph::RemoveRole()".)""";
-          // Source: drake/geometry/geometry_state.h:534
+          // Source: drake/geometry/geometry_state.h
           const char* doc_3args_source_id_geometry_id_role =
 R"""(Implementation of SceneGraph::RemoveRole(SourceId, GeometryId, Role)
 "SceneGraph::RemoveRole()".)""";
         } RemoveRole;
         // Symbol: drake::geometry::GeometryState::RenameFrame
         struct /* RenameFrame */ {
-          // Source: drake/geometry/geometry_state.h:453
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraph::RenameFrame().)""";
         } RenameFrame;
         // Symbol: drake::geometry::GeometryState::RenameGeometry
         struct /* RenameGeometry */ {
-          // Source: drake/geometry/geometry_state.h:480
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraph::RenameGeometry().)""";
         } RenameGeometry;
         // Symbol: drake::geometry::GeometryState::RenderColorImage
         struct /* RenderColorImage */ {
-          // Source: drake/geometry/geometry_state.h:700
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of QueryObject::RenderColorImage().
 
@@ -2727,7 +2727,7 @@ Precondition:
         } RenderColorImage;
         // Symbol: drake::geometry::GeometryState::RenderDepthImage
         struct /* RenderDepthImage */ {
-          // Source: drake/geometry/geometry_state.h:706
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of QueryObject::RenderDepthImage().
 
@@ -2736,7 +2736,7 @@ Precondition:
         } RenderDepthImage;
         // Symbol: drake::geometry::GeometryState::RenderLabelImage
         struct /* RenderLabelImage */ {
-          // Source: drake/geometry/geometry_state.h:712
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of QueryObject::RenderLabelImage().
 
@@ -2745,19 +2745,19 @@ Precondition:
         } RenderLabelImage;
         // Symbol: drake::geometry::GeometryState::RendererCount
         struct /* RendererCount */ {
-          // Source: drake/geometry/geometry_state.h:693
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraph::RendererCount().)""";
         } RendererCount;
         // Symbol: drake::geometry::GeometryState::SourceIsRegistered
         struct /* SourceIsRegistered */ {
-          // Source: drake/geometry/geometry_state.h:286
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::SourceIsRegistered().)""";
         } SourceIsRegistered;
         // Symbol: drake::geometry::GeometryState::ToAutoDiffXd
         struct /* ToAutoDiffXd */ {
-          // Source: drake/geometry/geometry_state.h:725
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Returns a deep copy of this state using the AutoDiffXd scalar with all
 scalar values initialized from the current values. If this is invoked
@@ -2766,71 +2766,71 @@ cloning the instance.)""";
         } ToAutoDiffXd;
         // Symbol: drake::geometry::GeometryState::collision_filter_manager
         struct /* collision_filter_manager */ {
-          // Source: drake/geometry/geometry_state.h:624
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraph::collision_filter_manager().)""";
         } collision_filter_manager;
         // Symbol: drake::geometry::GeometryState::geometry_version
         struct /* geometry_version */ {
-          // Source: drake/geometry/geometry_state.h:273
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::GetGeometryVersion().)""";
         } geometry_version;
         // Symbol: drake::geometry::GeometryState::get_configurations_in_world
         struct /* get_configurations_in_world */ {
-          // Source: drake/geometry/geometry_state.h:431
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of QueryObject::GetConfigurationsInWorld().)""";
         } get_configurations_in_world;
         // Symbol: drake::geometry::GeometryState::get_frame_ids
         struct /* get_frame_ids */ {
-          // Source: drake/geometry/geometry_state.h:234
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::GetAllFrameIds().)""";
         } get_frame_ids;
         // Symbol: drake::geometry::GeometryState::get_num_frames
         struct /* get_num_frames */ {
-          // Source: drake/geometry/geometry_state.h:231
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::num_frames().)""";
         } get_num_frames;
         // Symbol: drake::geometry::GeometryState::get_num_geometries
         struct /* get_num_geometries */ {
-          // Source: drake/geometry/geometry_state.h:237
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::num_geometries().)""";
         } get_num_geometries;
         // Symbol: drake::geometry::GeometryState::get_num_sources
         struct /* get_num_sources */ {
-          // Source: drake/geometry/geometry_state.h:226
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::num_sources().)""";
         } get_num_sources;
         // Symbol: drake::geometry::GeometryState::get_pose_in_parent
         struct /* get_pose_in_parent */ {
-          // Source: drake/geometry/geometry_state.h:428
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of QueryObject::GetPoseInParent().)""";
         } get_pose_in_parent;
         // Symbol: drake::geometry::GeometryState::get_pose_in_world
         struct /* get_pose_in_world */ {
-          // Source: drake/geometry/geometry_state.h:415
+          // Source: drake/geometry/geometry_state.h
           const char* doc_1args_frame_id =
 R"""(Implementation of QueryObject::GetPoseInWorld(FrameId).)""";
-          // Source: drake/geometry/geometry_state.h:418
+          // Source: drake/geometry/geometry_state.h
           const char* doc_1args_geometry_id =
 R"""(Implementation of QueryObject::GetPoseInWorld(GeometryId).)""";
         } get_pose_in_world;
         // Symbol: drake::geometry::GeometryState::maybe_get_hydroelastic_mesh
         struct /* maybe_get_hydroelastic_mesh */ {
-          // Source: drake/geometry/geometry_state.h:371
+          // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of SceneGraphInspector::maybe_get_hydroelastic_mesh().)""";
         } maybe_get_hydroelastic_mesh;
       } GeometryState;
       // Symbol: drake::geometry::GeometryVersion
       struct /* GeometryVersion */ {
-        // Source: drake/geometry/geometry_version.h:31
+        // Source: drake/geometry/geometry_version.h
         const char* doc =
 R"""(A version numbering class that reports revisions of SceneGraph's
 geometric data.
@@ -2865,14 +2865,14 @@ role of the geometries may have changed. For example:
     </details>)""";
         // Symbol: drake::geometry::GeometryVersion::GeometryVersion
         struct /* ctor */ {
-          // Source: drake/geometry/geometry_version.h:37
+          // Source: drake/geometry/geometry_version.h
           const char* doc =
 R"""(Constructs a default-initialized instance; guaranteed to be different
 from every other instance.)""";
         } ctor;
         // Symbol: drake::geometry::GeometryVersion::IsSameAs
         struct /* IsSameAs */ {
-          // Source: drake/geometry/geometry_version.h:41
+          // Source: drake/geometry/geometry_version.h
           const char* doc =
 R"""(Returns true if ``this`` GeometryVersion has the same ``role`` version
 as the ``other`` GeometryVersion.)""";
@@ -2880,7 +2880,7 @@ as the ``other`` GeometryVersion.)""";
       } GeometryVersion;
       // Symbol: drake::geometry::HalfSpace
       struct /* HalfSpace */ {
-        // Source: drake/geometry/shape_specification.h:447
+        // Source: drake/geometry/shape_specification.h
         const char* doc =
 R"""(Definition of a half space. In its canonical frame, the plane defining
 the boundary of the half space is that frame's z = 0 plane. By
@@ -2890,12 +2890,12 @@ penetrating the half space if there exists a point on the test shape
 that lies on the side of the plane opposite the normal.)""";
         // Symbol: drake::geometry::HalfSpace::HalfSpace
         struct /* ctor */ {
-          // Source: drake/geometry/shape_specification.h:449
+          // Source: drake/geometry/shape_specification.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::geometry::HalfSpace::MakePose
         struct /* MakePose */ {
-          // Source: drake/geometry/shape_specification.h:469
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Creates the pose of a canonical half space in frame F. The half
 space's normal is aligned to the positive z-axis of its canonical
@@ -2923,7 +2923,7 @@ Raises:
       } HalfSpace;
       // Symbol: drake::geometry::IllustrationProperties
       struct /* IllustrationProperties */ {
-        // Source: drake/geometry/geometry_roles.h:192
+        // Source: drake/geometry/geometry_roles.h
         const char* doc =
 R"""(The set of properties for geometry used in an "illustration" role.
 
@@ -2931,13 +2931,13 @@ Examples of functionality that depends on the illustration role: -
 drake_visualizer_role_consumer "drake::geometry::DrakeVisualizer")""";
         // Symbol: drake::geometry::IllustrationProperties::IllustrationProperties
         struct /* ctor */ {
-          // Source: drake/geometry/geometry_roles.h:194
+          // Source: drake/geometry/geometry_roles.h
           const char* doc = R"""()""";
         } ctor;
       } IllustrationProperties;
       // Symbol: drake::geometry::InMemoryMesh
       struct /* InMemoryMesh */ {
-        // Source: drake/geometry/in_memory_mesh.h:23
+        // Source: drake/geometry/in_memory_mesh.h
         const char* doc =
 R"""(Representation of a mesh file stored in memory. At a minimum it
 includes the contents of a mesh file. If that mesh file makes
@@ -2952,26 +2952,26 @@ to provide the supporting files may or may not lead to errors; it
 depends on the context in which the mesh data is used.)""";
         // Symbol: drake::geometry::InMemoryMesh::mesh_file
         struct /* mesh_file */ {
-          // Source: drake/geometry/in_memory_mesh.h:26
+          // Source: drake/geometry/in_memory_mesh.h
           const char* doc =
 R"""(The main mesh file's contents (e.g., a .obj or .gltf file, but not a
 .mtl or .bin).)""";
         } mesh_file;
         // Symbol: drake::geometry::InMemoryMesh::supporting_files
         struct /* supporting_files */ {
-          // Source: drake/geometry/in_memory_mesh.h:29
+          // Source: drake/geometry/in_memory_mesh.h
           const char* doc =
 R"""(The optional collection of supporting files.)""";
         } supporting_files;
         // Symbol: drake::geometry::InMemoryMesh::to_string
         struct /* to_string */ {
-          // Source: drake/geometry/in_memory_mesh.h:32
+          // Source: drake/geometry/in_memory_mesh.h
           const char* doc = R"""(Returns a string representation.)""";
         } to_string;
       } InMemoryMesh;
       // Symbol: drake::geometry::KinematicsVector
       struct /* KinematicsVector */ {
-        // Source: drake/geometry/kinematics_vector.h:97
+        // Source: drake/geometry/kinematics_vector.h
         const char* doc =
 R"""(A KinematicsVector is a container class used to report kinematics data
 for registered frames and geometries (keyed by unique
@@ -3071,33 +3071,33 @@ KinematicsVector<GeometryId, VectorX<Scalar>> |
 double/AutoDiffXd/Expression)""";
         // Symbol: drake::geometry::KinematicsVector::IsFinite
         struct /* IsFinite */ {
-          // Source: drake/geometry/kinematics_vector.h:147
+          // Source: drake/geometry/kinematics_vector.h
           const char* doc = R"""(Reports if *all* values are finite.)""";
         } IsFinite;
         // Symbol: drake::geometry::KinematicsVector::KinematicsVector<Id, KinematicsValue>
         struct /* ctor */ {
-          // Source: drake/geometry/kinematics_vector.h:102
+          // Source: drake/geometry/kinematics_vector.h
           const char* doc_0args = R"""(Initializes the vector with no data .)""";
-          // Source: drake/geometry/kinematics_vector.h:106
+          // Source: drake/geometry/kinematics_vector.h
           const char* doc_1args =
 R"""(Initializes the vector using the given the keys and their
 corresponding kinematics values.)""";
         } ctor;
         // Symbol: drake::geometry::KinematicsVector::clear
         struct /* clear */ {
-          // Source: drake/geometry/kinematics_vector.h:116
+          // Source: drake/geometry/kinematics_vector.h
           const char* doc =
 R"""(Clears all values, resetting the size to zero.)""";
         } clear;
         // Symbol: drake::geometry::KinematicsVector::has_id
         struct /* has_id */ {
-          // Source: drake/geometry/kinematics_vector.h:132
+          // Source: drake/geometry/kinematics_vector.h
           const char* doc =
 R"""(Reports true if the given id is a member of this data.)""";
         } has_id;
         // Symbol: drake::geometry::KinematicsVector::ids
         struct /* ids */ {
-          // Source: drake/geometry/kinematics_vector.h:144
+          // Source: drake/geometry/kinematics_vector.h
           const char* doc =
 R"""(Provides a range object for all of the existing ids in the vector.
 This is intended to be used as:
@@ -3121,18 +3121,18 @@ This is intended to be used as:
         } ids;
         // Symbol: drake::geometry::KinematicsVector::set_value
         struct /* set_value */ {
-          // Source: drake/geometry/kinematics_vector.h:119
+          // Source: drake/geometry/kinematics_vector.h
           const char* doc =
 R"""(Sets the kinematics ``value`` for the given ``id``.)""";
         } set_value;
         // Symbol: drake::geometry::KinematicsVector::size
         struct /* size */ {
-          // Source: drake/geometry/kinematics_vector.h:122
+          // Source: drake/geometry/kinematics_vector.h
           const char* doc = R"""(Returns number of ids().)""";
         } size;
         // Symbol: drake::geometry::KinematicsVector::value
         struct /* value */ {
-          // Source: drake/geometry/kinematics_vector.h:129
+          // Source: drake/geometry/kinematics_vector.h
           const char* doc =
 R"""(Returns the value associated with the given ``id``.
 
@@ -3142,14 +3142,14 @@ Raises:
       } KinematicsVector;
       // Symbol: drake::geometry::MakePhongIllustrationProperties
       struct /* MakePhongIllustrationProperties */ {
-        // Source: drake/geometry/geometry_roles.h:238
+        // Source: drake/geometry/geometry_roles.h
         const char* doc =
 R"""(Constructs an IllustrationProperties instance compatible with a simple
 "phong" material using only the given ``diffuse`` color.)""";
       } MakePhongIllustrationProperties;
       // Symbol: drake::geometry::Mesh
       struct /* Mesh */ {
-        // Source: drake/geometry/shape_specification.h:525
+        // Source: drake/geometry/shape_specification.h
         const char* doc =
 R"""(Definition of a general (possibly non-convex) mesh.
 
@@ -3198,7 +3198,7 @@ tetrahedra in a volume mesh (i.e., a perturbation of the original
 vertex index list ``[0 1 2 3]`` to ``[2 1 0 3]``).)""";
         // Symbol: drake::geometry::Mesh::GetConvexHull
         struct /* GetConvexHull */ {
-          // Source: drake/geometry/shape_specification.h:609
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Reports the convex hull of the named mesh.
 
@@ -3213,7 +3213,7 @@ Raises:
         } GetConvexHull;
         // Symbol: drake::geometry::Mesh::Mesh
         struct /* ctor */ {
-          // Source: drake/geometry/shape_specification.h:546
+          // Source: drake/geometry/shape_specification.h
           const char* doc_2args_filename_scale =
 R"""(Constructs a mesh shape specification from the mesh file located at
 the given file path. Optionally uniformly scaled by the given scale
@@ -3237,10 +3237,10 @@ Raises:
     recognise that scale is a convenience tool for "tweaking" models.
     8 orders of magnitude should be plenty without considering
     revisiting the model itself.)""";
-          // Source: drake/geometry/shape_specification.h:549
+          // Source: drake/geometry/shape_specification.h
           const char* doc_2args_filename_scale3 =
 R"""(Mesh-file variant that allows for specification of non-uniform scale.)""";
-          // Source: drake/geometry/shape_specification.h:562
+          // Source: drake/geometry/shape_specification.h
           const char* doc_2args_mesh_data_scale =
 R"""(Constructs a mesh shape specification from the contents of a
 Drake-supported mesh file type.
@@ -3257,11 +3257,11 @@ Parameter ``mesh_data``:
 
 Parameter ``scale``:
     An optional scale to coordinates.)""";
-          // Source: drake/geometry/shape_specification.h:566
+          // Source: drake/geometry/shape_specification.h
           const char* doc_2args_mesh_data_scale3 =
 R"""(Mesh-contents variant that allows for specification of non-uniform
 scale.)""";
-          // Source: drake/geometry/shape_specification.h:572
+          // Source: drake/geometry/shape_specification.h
           const char* doc_2args_source_scale =
 R"""(Constructs a mesh shape specification from the given ``source``.
 
@@ -3270,14 +3270,14 @@ Parameter ``source``:
 
 Parameter ``scale``:
     An optional scale to coordinates.)""";
-          // Source: drake/geometry/shape_specification.h:576
+          // Source: drake/geometry/shape_specification.h
           const char* doc_2args_source_scale3 =
 R"""(Mesh-source variant that allows for specification of non-uniform
 scale.)""";
         } ctor;
         // Symbol: drake::geometry::Mesh::extension
         struct /* extension */ {
-          // Source: drake/geometry/shape_specification.h:591
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Returns the extension of the mesh type -- all lower case and including
 the dot. If ``this`` is constructed from a file path, the extension is
@@ -3290,7 +3290,7 @@ extension of the MemoryFile passed to the constructor.)""";
         } extension;
         // Symbol: drake::geometry::Mesh::scale
         struct /* scale */ {
-          // Source: drake/geometry/shape_specification.h:595
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Returns a single scale representing the *uniform* scale factor.
 
@@ -3299,20 +3299,20 @@ Raises:
         } scale;
         // Symbol: drake::geometry::Mesh::scale3
         struct /* scale3 */ {
-          // Source: drake/geometry/shape_specification.h:598
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Returns general scale factors for this mesh.)""";
         } scale3;
         // Symbol: drake::geometry::Mesh::source
         struct /* source */ {
-          // Source: drake/geometry/shape_specification.h:581
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Returns the source for this specification's mesh data.)""";
         } source;
       } Mesh;
       // Symbol: drake::geometry::MeshSource
       struct /* MeshSource */ {
-        // Source: drake/geometry/mesh_source.h:18
+        // Source: drake/geometry/mesh_source.h
         const char* doc =
 R"""(Provides a general abstraction to the definition of a mesh. A mesh
 definition can come from disk or memory. APIs that support both can
@@ -3320,17 +3320,17 @@ take as specification an instance of MeshSource to communicate that
 ability.)""";
         // Symbol: drake::geometry::MeshSource::MeshSource
         struct /* ctor */ {
-          // Source: drake/geometry/mesh_source.h:27
+          // Source: drake/geometry/mesh_source.h
           const char* doc_1args_path =
 R"""(Constructs from a file path. Note: the path will not be validated in
 any way (existence, availability, naming an actual mesh file, etc.).
 Validation occurs where the MeshSource's path is *used*.)""";
-          // Source: drake/geometry/mesh_source.h:31
+          // Source: drake/geometry/mesh_source.h
           const char* doc_1args_mesh = R"""(Constructs from an in-memory mesh.)""";
         } ctor;
         // Symbol: drake::geometry::MeshSource::description
         struct /* description */ {
-          // Source: drake/geometry/mesh_source.h:50
+          // Source: drake/geometry/mesh_source.h
           const char* doc =
 R"""(Provides a source-agnostic description of the mesh. If is_path() is
 true, it is the path. If is_in_memory() is true, it is the
@@ -3340,7 +3340,7 @@ communicate that; the empty string will *never* be returned.)""";
         } description;
         // Symbol: drake::geometry::MeshSource::extension
         struct /* extension */ {
-          // Source: drake/geometry/mesh_source.h:60
+          // Source: drake/geometry/mesh_source.h
           const char* doc =
 R"""(Returns the extension of the mesh type -- all lower case and including
 the dot. If is_path() is ``True``, the extension is extracted from the
@@ -3353,7 +3353,7 @@ MemoryFile.)""";
         } extension;
         // Symbol: drake::geometry::MeshSource::in_memory
         struct /* in_memory */ {
-          // Source: drake/geometry/mesh_source.h:70
+          // Source: drake/geometry/mesh_source.h
           const char* doc =
 R"""(Returns the source's in-memory mesh data.
 
@@ -3362,19 +3362,19 @@ Precondition:
         } in_memory;
         // Symbol: drake::geometry::MeshSource::is_in_memory
         struct /* is_in_memory */ {
-          // Source: drake/geometry/mesh_source.h:41
+          // Source: drake/geometry/mesh_source.h
           const char* doc =
 R"""(Reports ``True`` if this source contains an in-memory mesh definition.)""";
         } is_in_memory;
         // Symbol: drake::geometry::MeshSource::is_path
         struct /* is_path */ {
-          // Source: drake/geometry/mesh_source.h:36
+          // Source: drake/geometry/mesh_source.h
           const char* doc =
 R"""(Reports ``True`` if this source is a filesystem path.)""";
         } is_path;
         // Symbol: drake::geometry::MeshSource::path
         struct /* path */ {
-          // Source: drake/geometry/mesh_source.h:64
+          // Source: drake/geometry/mesh_source.h
           const char* doc =
 R"""(Returns the source's file path.
 
@@ -3384,7 +3384,7 @@ Precondition:
       } MeshSource;
       // Symbol: drake::geometry::Meshcat
       struct /* Meshcat */ {
-        // Source: drake/geometry/meshcat.h:137
+        // Source: drake/geometry/meshcat.h
         const char* doc =
 R"""(Provides an interface to Meshcat
 (https://github.com/meshcat-dev/meshcat).
@@ -3500,7 +3500,7 @@ See allow_network "DRAKE_ALLOW_NETWORK" for an environment variable
 option to deny Meshcat entirely.)""";
         // Symbol: drake::geometry::Meshcat::AddButton
         struct /* AddButton */ {
-          // Source: drake/geometry/meshcat.h:761
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Adds a button with the label ``name`` to the meshcat browser controls
 GUI. If the optional ``keycode`` is set to a javascript string key
@@ -3521,7 +3521,7 @@ Raises:
         } AddButton;
         // Symbol: drake::geometry::Meshcat::AddSlider
         struct /* AddSlider */ {
-          // Source: drake/geometry/meshcat.h:792
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Adds a slider with the label ``name`` to the meshcat browser controls
 GUI. The slider range is given by [`min`, ``max`]. `step`` is the
@@ -3545,14 +3545,14 @@ Raises:
         } AddSlider;
         // Symbol: drake::geometry::Meshcat::Delete
         struct /* Delete */ {
-          // Source: drake/geometry/meshcat.h:553
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Deletes the object at the given ``path`` as well as all of its
 children. See meshcat_path for the detailed semantics of deletion.)""";
         } Delete;
         // Symbol: drake::geometry::Meshcat::DeleteAddedControls
         struct /* DeleteAddedControls */ {
-          // Source: drake/geometry/meshcat.h:820
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Removes all buttons and sliders from the GUI that have been registered
 by this Meshcat instance. It does *not* clear the default GUI elements
@@ -3560,7 +3560,7 @@ set in the meshcat browser (e.g. for cameras and lights).)""";
         } DeleteAddedControls;
         // Symbol: drake::geometry::Meshcat::DeleteButton
         struct /* DeleteButton */ {
-          // Source: drake/geometry/meshcat.h:776
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Removes the button ``name`` from the GUI.
 
@@ -3573,7 +3573,7 @@ Raises:
         } DeleteButton;
         // Symbol: drake::geometry::Meshcat::DeleteRecording
         struct /* DeleteRecording */ {
-          // Source: drake/geometry/meshcat.h:938
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Deletes the current animation holding the recorded frames. Animation
 options (autoplay, repetitions, etc) will also be reset, and any
@@ -3582,7 +3582,7 @@ invalid. This does not* currently remove the animation from Meshcat.)""";
         } DeleteRecording;
         // Symbol: drake::geometry::Meshcat::DeleteSlider
         struct /* DeleteSlider */ {
-          // Source: drake/geometry/meshcat.h:815
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Removes the slider ``name`` from the GUI.
 
@@ -3595,7 +3595,7 @@ Raises:
         } DeleteSlider;
         // Symbol: drake::geometry::Meshcat::Flush
         struct /* Flush */ {
-          // Source: drake/geometry/meshcat.h:175
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Blocks the calling thread until all buffered data in the websocket
 thread has been sent to any connected clients. This can be especially
@@ -3605,19 +3605,19 @@ does not get far ahead of the visualization.)""";
         } Flush;
         // Symbol: drake::geometry::Meshcat::Gamepad
         struct /* Gamepad */ {
-          // Source: drake/geometry/meshcat.h:823
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Status of a gamepad obtained from the Meshcat javascript client.)""";
           // Symbol: drake::geometry::Meshcat::Gamepad::Serialize
           struct /* Serialize */ {
-            // Source: drake/geometry/meshcat.h:827
+            // Source: drake/geometry/meshcat.h
             const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
           } Serialize;
           // Symbol: drake::geometry::Meshcat::Gamepad::axes
           struct /* axes */ {
-            // Source: drake/geometry/meshcat.h:866
+            // Source: drake/geometry/meshcat.h
             const char* doc =
 R"""(An array of floating point values representing e.g. analog
 thumbsticks. Each entry in the array is a floating point value in the
@@ -3635,7 +3635,7 @@ for applying a deadzone to these values.)""";
           } axes;
           // Symbol: drake::geometry::Meshcat::Gamepad::button_values
           struct /* button_values */ {
-            // Source: drake/geometry/meshcat.h:849
+            // Source: drake/geometry/meshcat.h
             const char* doc =
 R"""(An array of floating point values representing analog buttons, such as
 the triggers on many modern gamepads. The values are normalized to the
@@ -3647,7 +3647,7 @@ standard mapping of gamepad buttons to this vector.)""";
           } button_values;
           // Symbol: drake::geometry::Meshcat::Gamepad::index
           struct /* index */ {
-            // Source: drake/geometry/meshcat.h:839
+            // Source: drake/geometry/meshcat.h
             const char* doc =
 R"""(An an integer that is auto-incremented to be unique for each device
 currently connected to the system. If ``index.has_value() == false``,
@@ -3664,7 +3664,7 @@ browser.)""";
         } Gamepad;
         // Symbol: drake::geometry::Meshcat::GetButtonClicks
         struct /* GetButtonClicks */ {
-          // Source: drake/geometry/meshcat.h:767
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Returns the number of times the button ``name`` has been clicked in
 the GUI, from the time that it was added to ``this``. If multiple
@@ -3676,12 +3676,12 @@ Raises:
         } GetButtonClicks;
         // Symbol: drake::geometry::Meshcat::GetButtonNames
         struct /* GetButtonNames */ {
-          // Source: drake/geometry/meshcat.h:770
+          // Source: drake/geometry/meshcat.h
           const char* doc = R"""(Returns the names of all buttons.)""";
         } GetButtonNames;
         // Symbol: drake::geometry::Meshcat::GetGamepad
         struct /* GetGamepad */ {
-          // Source: drake/geometry/meshcat.h:892
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Returns the status from the most recently updated gamepad data in the
 Meshcat. See Gamepad for details on the returned values.
@@ -3711,28 +3711,28 @@ https://beej.us/blog/data/javascript-gamepad/.)""";
         } GetGamepad;
         // Symbol: drake::geometry::Meshcat::GetNumActiveConnections
         struct /* GetNumActiveConnections */ {
-          // Source: drake/geometry/meshcat.h:168
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""((Advanced) Returns the number of currently-open websocket connections.)""";
         } GetNumActiveConnections;
         // Symbol: drake::geometry::Meshcat::GetPackedObject
         struct /* GetPackedObject */ {
-          // Source: drake/geometry/meshcat.h:969
+          // Source: drake/geometry/meshcat.h
           const char* doc = R"""()""";
         } GetPackedObject;
         // Symbol: drake::geometry::Meshcat::GetPackedProperty
         struct /* GetPackedProperty */ {
-          // Source: drake/geometry/meshcat.h:979
+          // Source: drake/geometry/meshcat.h
           const char* doc = R"""()""";
         } GetPackedProperty;
         // Symbol: drake::geometry::Meshcat::GetPackedTransform
         struct /* GetPackedTransform */ {
-          // Source: drake/geometry/meshcat.h:974
+          // Source: drake/geometry/meshcat.h
           const char* doc = R"""()""";
         } GetPackedTransform;
         // Symbol: drake::geometry::Meshcat::GetRealtimeRate
         struct /* GetRealtimeRate */ {
-          // Source: drake/geometry/meshcat.h:636
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Gets the realtime rate that was last broadcast by this instance
 (typically, the value displayed in the meshcat visualizer stats
@@ -3740,18 +3740,18 @@ chart). See SetRealtimeRate().)""";
         } GetRealtimeRate;
         // Symbol: drake::geometry::Meshcat::GetSimulationTime
         struct /* GetSimulationTime */ {
-          // Source: drake/geometry/meshcat.h:626
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Gets the last time value passed to SetSimulationTime().)""";
         } GetSimulationTime;
         // Symbol: drake::geometry::Meshcat::GetSliderNames
         struct /* GetSliderNames */ {
-          // Source: drake/geometry/meshcat.h:809
+          // Source: drake/geometry/meshcat.h
           const char* doc = R"""(Returns the names of all sliders.)""";
         } GetSliderNames;
         // Symbol: drake::geometry::Meshcat::GetSliderValue
         struct /* GetSliderValue */ {
-          // Source: drake/geometry/meshcat.h:806
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Gets the current ``value`` of the slider ``name``.
 
@@ -3760,7 +3760,7 @@ Raises:
         } GetSliderValue;
         // Symbol: drake::geometry::Meshcat::GetTrackedCameraPose
         struct /* GetTrackedCameraPose */ {
-          // Source: drake/geometry/meshcat.h:504
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Returns the most recently received camera pose.
 
@@ -3790,27 +3790,27 @@ connected.
         } GetTrackedCameraPose;
         // Symbol: drake::geometry::Meshcat::HasPath
         struct /* HasPath */ {
-          // Source: drake/geometry/meshcat.h:964
+          // Source: drake/geometry/meshcat.h
           const char* doc = R"""()""";
         } HasPath;
         // Symbol: drake::geometry::Meshcat::InjectMockTimer
         struct /* InjectMockTimer */ {
-          // Source: drake/geometry/meshcat.h:1004
+          // Source: drake/geometry/meshcat.h
           const char* doc = R"""()""";
         } InjectMockTimer;
         // Symbol: drake::geometry::Meshcat::InjectWebsocketMessage
         struct /* InjectWebsocketMessage */ {
-          // Source: drake/geometry/meshcat.h:989
+          // Source: drake/geometry/meshcat.h
           const char* doc = R"""()""";
         } InjectWebsocketMessage;
         // Symbol: drake::geometry::Meshcat::InjectWebsocketThreadFault
         struct /* InjectWebsocketThreadFault */ {
-          // Source: drake/geometry/meshcat.h:996
+          // Source: drake/geometry/meshcat.h
           const char* doc = R"""()""";
         } InjectWebsocketThreadFault;
         // Symbol: drake::geometry::Meshcat::Meshcat
         struct /* ctor */ {
-          // Source: drake/geometry/meshcat.h:150
+          // Source: drake/geometry/meshcat.h
           const char* doc_1args_port =
 R"""(Constructs the Meshcat instance on ``port``. If no port is specified,
 it will listen on the first available port starting at 7000 (up to
@@ -3822,56 +3822,56 @@ Precondition:
 
 Raises:
     RuntimeError if no requested ``port`` is available.)""";
-          // Source: drake/geometry/meshcat.h:153
+          // Source: drake/geometry/meshcat.h
           const char* doc_1args_params =
 R"""(Constructs the Meshcat instance using the given ``params``.)""";
         } ctor;
         // Symbol: drake::geometry::Meshcat::OrthographicCamera
         struct /* OrthographicCamera */ {
-          // Source: drake/geometry/meshcat.h:389
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Properties for an orthographic camera in three.js:
 https://threejs.org/docs/#api/en/cameras/OrthographicCamera)""";
           // Symbol: drake::geometry::Meshcat::OrthographicCamera::Serialize
           struct /* Serialize */ {
-            // Source: drake/geometry/meshcat.h:393
+            // Source: drake/geometry/meshcat.h
             const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
           } Serialize;
           // Symbol: drake::geometry::Meshcat::OrthographicCamera::bottom
           struct /* bottom */ {
-            // Source: drake/geometry/meshcat.h:406
+            // Source: drake/geometry/meshcat.h
             const char* doc = R"""(Camera frustum bottom plane.)""";
           } bottom;
           // Symbol: drake::geometry::Meshcat::OrthographicCamera::far
           struct /* far */ {
-            // Source: drake/geometry/meshcat.h:408
+            // Source: drake/geometry/meshcat.h
             const char* doc = R"""(Camera frustum far plane.)""";
           } far;
           // Symbol: drake::geometry::Meshcat::OrthographicCamera::left
           struct /* left */ {
-            // Source: drake/geometry/meshcat.h:403
+            // Source: drake/geometry/meshcat.h
             const char* doc = R"""(Camera frustum left plane.)""";
           } left;
           // Symbol: drake::geometry::Meshcat::OrthographicCamera::near
           struct /* near */ {
-            // Source: drake/geometry/meshcat.h:407
+            // Source: drake/geometry/meshcat.h
             const char* doc = R"""(Camera frustum near plane.)""";
           } near;
           // Symbol: drake::geometry::Meshcat::OrthographicCamera::right
           struct /* right */ {
-            // Source: drake/geometry/meshcat.h:404
+            // Source: drake/geometry/meshcat.h
             const char* doc = R"""(Camera frustum right plane.)""";
           } right;
           // Symbol: drake::geometry::Meshcat::OrthographicCamera::top
           struct /* top */ {
-            // Source: drake/geometry/meshcat.h:405
+            // Source: drake/geometry/meshcat.h
             const char* doc = R"""(Camera frustum top plane.)""";
           } top;
           // Symbol: drake::geometry::Meshcat::OrthographicCamera::zoom
           struct /* zoom */ {
-            // Source: drake/geometry/meshcat.h:409
+            // Source: drake/geometry/meshcat.h
             const char* doc = R"""(The zoom factor of the camera.)""";
           } zoom;
           auto Serialize__fields() const {
@@ -3888,40 +3888,40 @@ Serialization" for background.)""";
         } OrthographicCamera;
         // Symbol: drake::geometry::Meshcat::PerspectiveCamera
         struct /* PerspectiveCamera */ {
-          // Source: drake/geometry/meshcat.h:359
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Properties for a perspective camera in three.js:
 https://threejs.org/docs/#api/en/cameras/PerspectiveCamera)""";
           // Symbol: drake::geometry::Meshcat::PerspectiveCamera::Serialize
           struct /* Serialize */ {
-            // Source: drake/geometry/meshcat.h:363
+            // Source: drake/geometry/meshcat.h
             const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
           } Serialize;
           // Symbol: drake::geometry::Meshcat::PerspectiveCamera::aspect
           struct /* aspect */ {
-            // Source: drake/geometry/meshcat.h:372
+            // Source: drake/geometry/meshcat.h
             const char* doc = R"""(Camera frustum aspect ratio.)""";
           } aspect;
           // Symbol: drake::geometry::Meshcat::PerspectiveCamera::far
           struct /* far */ {
-            // Source: drake/geometry/meshcat.h:374
+            // Source: drake/geometry/meshcat.h
             const char* doc = R"""(Camera frustum far plane.)""";
           } far;
           // Symbol: drake::geometry::Meshcat::PerspectiveCamera::fov
           struct /* fov */ {
-            // Source: drake/geometry/meshcat.h:371
+            // Source: drake/geometry/meshcat.h
             const char* doc = R"""(Camera frustum vertical field of view.)""";
           } fov;
           // Symbol: drake::geometry::Meshcat::PerspectiveCamera::near
           struct /* near */ {
-            // Source: drake/geometry/meshcat.h:373
+            // Source: drake/geometry/meshcat.h
             const char* doc = R"""(Camera frustum near plane.)""";
           } near;
           // Symbol: drake::geometry::Meshcat::PerspectiveCamera::zoom
           struct /* zoom */ {
-            // Source: drake/geometry/meshcat.h:375
+            // Source: drake/geometry/meshcat.h
             const char* doc = R"""(The zoom factor of the camera.)""";
           } zoom;
           auto Serialize__fields() const {
@@ -3936,7 +3936,7 @@ Serialization" for background.)""";
         } PerspectiveCamera;
         // Symbol: drake::geometry::Meshcat::PlotSurface
         struct /* PlotSurface */ {
-          // Source: drake/geometry/meshcat.h:345
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Sets the "object" at ``path`` to be a triangle surface mesh
 representing a 3D surface, via an API that roughly follows
@@ -4005,7 +4005,7 @@ Precondition:
         } PlotSurface;
         // Symbol: drake::geometry::Meshcat::PublishRecording
         struct /* PublishRecording */ {
-          // Source: drake/geometry/meshcat.h:932
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Sends the recording to Meshcat as an animation. The published
 animation only includes transforms and properties; the objects that
@@ -4014,14 +4014,14 @@ Publish()).)""";
         } PublishRecording;
         // Symbol: drake::geometry::Meshcat::ResetRenderMode
         struct /* ResetRenderMode */ {
-          // Source: drake/geometry/meshcat.h:436
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Resets the default camera, camera target, background, grid lines, and
 axes to their default settings.)""";
         } ResetRenderMode;
         // Symbol: drake::geometry::Meshcat::Set2dRenderMode
         struct /* Set2dRenderMode */ {
-          // Source: drake/geometry/meshcat.h:429
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Applies a number of settings to make Meshcat act as a 2D renderer. The
 camera is set to an orthographic camera with ``X_WC`` specifying the
@@ -4034,7 +4034,7 @@ properties to false.)""";
         } Set2dRenderMode;
         // Symbol: drake::geometry::Meshcat::SetAnimation
         struct /* SetAnimation */ {
-          // Source: drake/geometry/meshcat.h:730
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Sets the MeshcatAnimation, which creates a slider interface element to
 play/pause/rewind through a series of animation frames in the
@@ -4046,12 +4046,12 @@ SetAnimation() with the recording.)""";
         } SetAnimation;
         // Symbol: drake::geometry::Meshcat::SetCamera
         struct /* SetCamera */ {
-          // Source: drake/geometry/meshcat.h:384
+          // Source: drake/geometry/meshcat.h
           const char* doc_perspective =
 R"""(Sets the Meshcat object on ``path`` to a perspective camera. We
 provide a default value of ``path`` corresponding to the default
 camera object in Meshcat.)""";
-          // Source: drake/geometry/meshcat.h:418
+          // Source: drake/geometry/meshcat.h
           const char* doc_orthographic =
 R"""(Sets the Meshcat object on ``path`` to an orthographic camera. We
 provide a default value of ``path`` corresponding to the default
@@ -4059,7 +4059,7 @@ camera object in Meshcat.)""";
         } SetCamera;
         // Symbol: drake::geometry::Meshcat::SetCameraPose
         struct /* SetCameraPose */ {
-          // Source: drake/geometry/meshcat.h:473
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(A convenience function for positioning the camera and its view target
 in the world frame. The camera is placed at ``camera_in_world`` and
@@ -4089,7 +4089,7 @@ Parameter ``target_in_world``:
         } SetCameraPose;
         // Symbol: drake::geometry::Meshcat::SetCameraTarget
         struct /* SetCameraTarget */ {
-          // Source: drake/geometry/meshcat.h:452
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Positions the camera's view target point T to the location in
 ``target_in_world`` (`p_WT`).
@@ -4107,7 +4107,7 @@ Parameter ``target_in_world``:
         } SetCameraTarget;
         // Symbol: drake::geometry::Meshcat::SetEnvironmentMap
         struct /* SetEnvironmentMap */ {
-          // Source: drake/geometry/meshcat.h:720
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Sets the *environment* texture. For objects with physically-based
 rendering (PBR) material properties (e.g., metallic surfaces), this
@@ -4132,7 +4132,7 @@ Precondition:
         } SetEnvironmentMap;
         // Symbol: drake::geometry::Meshcat::SetLine
         struct /* SetLine */ {
-          // Source: drake/geometry/meshcat.h:241
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Sets the "object" at ``path`` in the scene tree to a piecewise-linear
 interpolation between the ``vertices``.
@@ -4154,7 +4154,7 @@ Parameter ``rgba``:
         } SetLine;
         // Symbol: drake::geometry::Meshcat::SetLineSegments
         struct /* SetLineSegments */ {
-          // Source: drake/geometry/meshcat.h:261
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Sets the "object" at ``path`` in the scene tree to a number of line
 segments.
@@ -4183,7 +4183,7 @@ Raises:
         } SetLineSegments;
         // Symbol: drake::geometry::Meshcat::SetObject
         struct /* SetObject */ {
-          // Source: drake/geometry/meshcat.h:190
+          // Source: drake/geometry/meshcat.h
           const char* doc_shape =
 R"""(Sets the 3D object at a given ``path`` in the scene tree. Note that
 ``path`="/foo" will always set an object in the tree at
@@ -4204,7 +4204,7 @@ Note:
     If ``shape`` is a mesh, the file referred to can be either an .obj
     file or an *embedded* .gltf file (it has all geometry data and
     texture data contained within the single .gltf file).)""";
-          // Source: drake/geometry/meshcat.h:208
+          // Source: drake/geometry/meshcat.h
           const char* doc_cloud =
 R"""(Sets the "object" at a given ``path`` in the scene tree to be
 ``point_cloud``. Note that ``path`="/foo" will always set an object in
@@ -4225,7 +4225,7 @@ Parameter ``point_size``:
 Parameter ``rgba``:
     is the default color, which is only used if
     ``point_cloud.has_rgbs() == false``.)""";
-          // Source: drake/geometry/meshcat.h:226
+          // Source: drake/geometry/meshcat.h
           const char* doc_triangle_surface_mesh =
 R"""(Sets the "object" at ``path`` in the scene tree to a
 TriangleSurfaceMesh.
@@ -4251,7 +4251,7 @@ Parameter ``wireframe_line_width``:
         } SetObject;
         // Symbol: drake::geometry::Meshcat::SetProperty
         struct /* SetProperty */ {
-          // Source: drake/geometry/meshcat.h:658
+          // Source: drake/geometry/meshcat.h
           const char* doc_bool =
 R"""(Sets a single named property of the object at the given path. For
 example,
@@ -4287,7 +4287,7 @@ Parameter ``time_in_recording``:
     to publishing the property to any meshcat browsers immediately,
     this transform is saved to the current animation at
     ``time_in_recording``.)""";
-          // Source: drake/geometry/meshcat.h:679
+          // Source: drake/geometry/meshcat.h
           const char* doc_double =
 R"""(Sets a single named property of the object at the given path. For
 example,
@@ -4322,7 +4322,7 @@ Parameter ``time_in_recording``:
     (optional) the time at which this property should be applied, if
     Meshcat is current recording (see StartRecording()). If Meshcat is
     not currently recording, then this value is simply ignored.)""";
-          // Source: drake/geometry/meshcat.h:700
+          // Source: drake/geometry/meshcat.h
           const char* doc_vector_double =
 R"""(Sets a single named property of the object at the given path. For
 example,
@@ -4360,7 +4360,7 @@ Parameter ``time_in_recording``:
         } SetProperty;
         // Symbol: drake::geometry::Meshcat::SetRealtimeRate
         struct /* SetRealtimeRate */ {
-          // Source: drake/geometry/meshcat.h:631
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Immediately broadcasts the given realtime rate to all connected
 clients.
@@ -4371,7 +4371,7 @@ Parameter ``rate``:
         } SetRealtimeRate;
         // Symbol: drake::geometry::Meshcat::SetSimulationTime
         struct /* SetSimulationTime */ {
-          // Source: drake/geometry/meshcat.h:623
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Updates Meshcat's knowledge of simulation time. Changes to simulation
 time *may* trigger a realtime rate message to the meshcat visualizer
@@ -4419,7 +4419,7 @@ See also:
         } SetSimulationTime;
         // Symbol: drake::geometry::Meshcat::SetSliderValue
         struct /* SetSliderValue */ {
-          // Source: drake/geometry/meshcat.h:802
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Sets the current ``value`` of the slider ``name``. `value` will be
 truncated to the slider range and rounded to the nearest increment
@@ -4434,7 +4434,7 @@ Raises:
         } SetSliderValue;
         // Symbol: drake::geometry::Meshcat::SetTransform
         struct /* SetTransform */ {
-          // Source: drake/geometry/meshcat.h:526
+          // Source: drake/geometry/meshcat.h
           const char* doc_RigidTransform =
 R"""(Set the RigidTransform for a given path in the scene tree relative to
 its parent path. An object's pose is the concatenation of all of the
@@ -4453,7 +4453,7 @@ Parameter ``time_in_recording``:
     to publishing the transform to any meshcat browsers immediately,
     this transform is saved to the current animation at
     ``time_in_recording``.)""";
-          // Source: drake/geometry/meshcat.h:548
+          // Source: drake/geometry/meshcat.h
           const char* doc_matrix =
 R"""(Set the homogeneous transform for a given path in the scene tree
 relative to its parent path. An object's pose is the concatenation of
@@ -4476,7 +4476,7 @@ issue #18095.)""";
         } SetTransform;
         // Symbol: drake::geometry::Meshcat::SetTriangleColorMesh
         struct /* SetTriangleColorMesh */ {
-          // Source: drake/geometry/meshcat.h:307
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Sets the "object" at ``path`` in the scene tree to a triangular mesh
 with per-vertex coloring.
@@ -4507,7 +4507,7 @@ Parameter ``wireframe_line_width``:
         } SetTriangleColorMesh;
         // Symbol: drake::geometry::Meshcat::SetTriangleMesh
         struct /* SetTriangleMesh */ {
-          // Source: drake/geometry/meshcat.h:282
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Sets the "object" at ``path`` in the scene tree to a triangular mesh.
 
@@ -4536,27 +4536,27 @@ Parameter ``wireframe_line_width``:
         } SetTriangleMesh;
         // Symbol: drake::geometry::Meshcat::SideOfFaceToRender
         struct /* SideOfFaceToRender */ {
-          // Source: drake/geometry/meshcat.h:143
+          // Source: drake/geometry/meshcat.h
           const char* doc = R"""()""";
           // Symbol: drake::geometry::Meshcat::SideOfFaceToRender::kBackSide
           struct /* kBackSide */ {
-            // Source: drake/geometry/meshcat.h:143
+            // Source: drake/geometry/meshcat.h
             const char* doc = R"""()""";
           } kBackSide;
           // Symbol: drake::geometry::Meshcat::SideOfFaceToRender::kDoubleSide
           struct /* kDoubleSide */ {
-            // Source: drake/geometry/meshcat.h:143
+            // Source: drake/geometry/meshcat.h
             const char* doc = R"""()""";
           } kDoubleSide;
           // Symbol: drake::geometry::Meshcat::SideOfFaceToRender::kFrontSide
           struct /* kFrontSide */ {
-            // Source: drake/geometry/meshcat.h:143
+            // Source: drake/geometry/meshcat.h
             const char* doc = R"""()""";
           } kFrontSide;
         } SideOfFaceToRender;
         // Symbol: drake::geometry::Meshcat::StartRecording
         struct /* StartRecording */ {
-          // Source: drake/geometry/meshcat.h:922
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Sets a flag indicating that subsequent calls to SetTransform and
 SetProperty should also be "recorded" into a MeshcatAnimation when
@@ -4575,7 +4575,7 @@ Parameter ``set_visualizations_while_recording``:
         } StartRecording;
         // Symbol: drake::geometry::Meshcat::StaticHtml
         struct /* StaticHtml */ {
-          // Source: drake/geometry/meshcat.h:906
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Returns an HTML string that can be saved to a file for a snapshot of
 the visualizer and its contents. The HTML can be viewed in the browser
@@ -4592,14 +4592,14 @@ You can also use your browser to download this file, by typing
         } StaticHtml;
         // Symbol: drake::geometry::Meshcat::StopRecording
         struct /* StopRecording */ {
-          // Source: drake/geometry/meshcat.h:927
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Sets a flag to pause/stop recording. When stopped, publish events will
 not add frames to the animation.)""";
         } StopRecording;
         // Symbol: drake::geometry::Meshcat::get_mutable_recording
         struct /* get_mutable_recording */ {
-          // Source: drake/geometry/meshcat.h:950
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Returns a mutable reference to this Meshcat's MeshcatAnimation object.
 This can be used to set animation properties (like autoplay, the loop
@@ -4609,7 +4609,7 @@ called.)""";
         } get_mutable_recording;
         // Symbol: drake::geometry::Meshcat::get_recording
         struct /* get_recording */ {
-          // Source: drake/geometry/meshcat.h:944
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Returns a const reference to this Meshcat's MeshcatAnimation object.
 This can be used to check animation properties (e.g., autoplay). The
@@ -4618,18 +4618,18 @@ until DeleteRecording() is called.)""";
         } get_recording;
         // Symbol: drake::geometry::Meshcat::port
         struct /* port */ {
-          // Source: drake/geometry/meshcat.h:161
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""(Returns the port on localhost listening for http connections.)""";
         } port;
         // Symbol: drake::geometry::Meshcat::web_url
         struct /* web_url */ {
-          // Source: drake/geometry/meshcat.h:158
+          // Source: drake/geometry/meshcat.h
           const char* doc = R"""(Returns the hosted http URL.)""";
         } web_url;
         // Symbol: drake::geometry::Meshcat::ws_url
         struct /* ws_url */ {
-          // Source: drake/geometry/meshcat.h:165
+          // Source: drake/geometry/meshcat.h
           const char* doc =
 R"""((Advanced) Returns the ws:// URL for direct connection to the
 websocket interface. Most users should connect via a browser opened to
@@ -4638,7 +4638,7 @@ web_url().)""";
       } Meshcat;
       // Symbol: drake::geometry::MeshcatAnimation
       struct /* MeshcatAnimation */ {
-        // Source: drake/geometry/meshcat_animation.h:28
+        // Source: drake/geometry/meshcat_animation.h
         const char* doc =
 R"""(An interface for recording/playback animations in Meshcat. Use
 Meshcat::SetAnimation to publish a MeshcatAnimation to the visualizer.
@@ -4651,23 +4651,23 @@ animation to make the object appear or disappear at a particular
 frame.)""";
         // Symbol: drake::geometry::MeshcatAnimation::LoopMode
         struct /* LoopMode */ {
-          // Source: drake/geometry/meshcat_animation.h:56
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc = R"""()""";
           // Symbol: drake::geometry::MeshcatAnimation::LoopMode::kLoopOnce
           struct /* kLoopOnce */ {
-            // Source: drake/geometry/meshcat_animation.h:58
+            // Source: drake/geometry/meshcat_animation.h
             const char* doc = R"""(Plays the clip once.)""";
           } kLoopOnce;
           // Symbol: drake::geometry::MeshcatAnimation::LoopMode::kLoopPingPong
           struct /* kLoopPingPong */ {
-            // Source: drake/geometry/meshcat_animation.h:66
+            // Source: drake/geometry/meshcat_animation.h
             const char* doc =
 R"""(Plays the clip with the chosen number of repetitions, alternately
 playing forward and backward.)""";
           } kLoopPingPong;
           // Symbol: drake::geometry::MeshcatAnimation::LoopMode::kLoopRepeat
           struct /* kLoopRepeat */ {
-            // Source: drake/geometry/meshcat_animation.h:62
+            // Source: drake/geometry/meshcat_animation.h
             const char* doc =
 R"""(Plays the clip with the chosen number of repetitions, each time
 jumping from the end of the clip directly to its beginning.)""";
@@ -4675,7 +4675,7 @@ jumping from the end of the clip directly to its beginning.)""";
         } LoopMode;
         // Symbol: drake::geometry::MeshcatAnimation::MeshcatAnimation
         struct /* ctor */ {
-          // Source: drake/geometry/meshcat_animation.h:35
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc =
 R"""(Constructs the animation object.
 
@@ -4685,7 +4685,7 @@ Parameter ``frames_per_second``:
         } ctor;
         // Symbol: drake::geometry::MeshcatAnimation::SetProperty
         struct /* SetProperty */ {
-          // Source: drake/geometry/meshcat_animation.h:135
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc_bool =
 R"""(Sets a single named property of the object at the given ``path`` at
 the specified ``frame`` in the animation.
@@ -4710,7 +4710,7 @@ Parameter ``value``:
 Raises:
     RuntimeError if this path/property has already been set with a
     different type.)""";
-          // Source: drake/geometry/meshcat_animation.h:151
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc_double =
 R"""(Sets a single named property of the object at the given ``path`` at
 the specified ``frame`` in the animation.
@@ -4735,7 +4735,7 @@ Parameter ``value``:
 Raises:
     RuntimeError if this path/property has already been set with a
     different type.)""";
-          // Source: drake/geometry/meshcat_animation.h:167
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc_vector_double =
 R"""(Sets a single named property of the object at the given ``path`` at
 the specified ``frame`` in the animation.
@@ -4763,7 +4763,7 @@ Raises:
         } SetProperty;
         // Symbol: drake::geometry::MeshcatAnimation::SetTransform
         struct /* SetTransform */ {
-          // Source: drake/geometry/meshcat_animation.h:119
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc =
 R"""(Set the RigidTransform at ``frame`` in the animation for a given
 ``path`` in the the scene tree.
@@ -4788,17 +4788,17 @@ Raises:
         } SetTransform;
         // Symbol: drake::geometry::MeshcatAnimation::autoplay
         struct /* autoplay */ {
-          // Source: drake/geometry/meshcat_animation.h:71
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc = R"""()""";
         } autoplay;
         // Symbol: drake::geometry::MeshcatAnimation::clamp_when_finished
         struct /* clamp_when_finished */ {
-          // Source: drake/geometry/meshcat_animation.h:74
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc = R"""()""";
         } clamp_when_finished;
         // Symbol: drake::geometry::MeshcatAnimation::frame
         struct /* frame */ {
-          // Source: drake/geometry/meshcat_animation.h:46
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc =
 R"""(Uses the frame rate to convert from time to the frame number, using
 std::floor.
@@ -4808,13 +4808,13 @@ Precondition:
         } frame;
         // Symbol: drake::geometry::MeshcatAnimation::frames_per_second
         struct /* frames_per_second */ {
-          // Source: drake/geometry/meshcat_animation.h:40
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc =
 R"""(Returns the frame rate at which the animation will be played back.)""";
         } frames_per_second;
         // Symbol: drake::geometry::MeshcatAnimation::get_javascript_type
         struct /* get_javascript_type */ {
-          // Source: drake/geometry/meshcat_animation.h:192
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc =
 R"""(Returns the javascript type for a particular path/property, or the
 empty string if nothing has been set. This method is intended
@@ -4822,7 +4822,7 @@ primarily for testing.)""";
         } get_javascript_type;
         // Symbol: drake::geometry::MeshcatAnimation::get_key_frame
         struct /* get_key_frame */ {
-          // Source: drake/geometry/meshcat_animation.h:186
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc =
 R"""(Returns the value information for a particular path/property at a
 particular frame if a value of type T has been set, otherwise returns
@@ -4833,17 +4833,17 @@ Template parameter ``T``:
         } get_key_frame;
         // Symbol: drake::geometry::MeshcatAnimation::loop_mode
         struct /* loop_mode */ {
-          // Source: drake/geometry/meshcat_animation.h:72
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc = R"""()""";
         } loop_mode;
         // Symbol: drake::geometry::MeshcatAnimation::repetitions
         struct /* repetitions */ {
-          // Source: drake/geometry/meshcat_animation.h:73
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc = R"""()""";
         } repetitions;
         // Symbol: drake::geometry::MeshcatAnimation::set_autoplay
         struct /* set_autoplay */ {
-          // Source: drake/geometry/meshcat_animation.h:85
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc =
 R"""(Set the behavior when the animation is first sent to the visualizer.
 The animation will play immediately iff ``play`` is true. The default
@@ -4851,7 +4851,7 @@ is true.)""";
         } set_autoplay;
         // Symbol: drake::geometry::MeshcatAnimation::set_clamp_when_finished
         struct /* set_clamp_when_finished */ {
-          // Source: drake/geometry/meshcat_animation.h:105
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc =
 R"""(Sets the behavior at the end of the animation. If true, then the
 animation will automatically be paused on its last frame. If false,
@@ -4862,7 +4862,7 @@ only an effect if its last loop has really finished).)""";
         } set_clamp_when_finished;
         // Symbol: drake::geometry::MeshcatAnimation::set_loop_mode
         struct /* set_loop_mode */ {
-          // Source: drake/geometry/meshcat_animation.h:89
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc =
 R"""(Sets the loop behavior on play.
 
@@ -4871,7 +4871,7 @@ See also:
         } set_loop_mode;
         // Symbol: drake::geometry::MeshcatAnimation::set_repetitions
         struct /* set_repetitions */ {
-          // Source: drake/geometry/meshcat_animation.h:94
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc =
 R"""(Sets the number of repetitions of the animation each time it is
 played. This number has no effect when the loop mode is set to
@@ -4880,7 +4880,7 @@ value is 1.)""";
         } set_repetitions;
         // Symbol: drake::geometry::MeshcatAnimation::set_start_time
         struct /* set_start_time */ {
-          // Source: drake/geometry/meshcat_animation.h:81
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc =
 R"""(Set the start time of the animation. This is only for convenience; it
 is used in the frame() method to allow callers to look up the frame
@@ -4890,13 +4890,13 @@ previously been set. The default is zero.)""";
         } set_start_time;
         // Symbol: drake::geometry::MeshcatAnimation::start_time
         struct /* start_time */ {
-          // Source: drake/geometry/meshcat_animation.h:70
+          // Source: drake/geometry/meshcat_animation.h
           const char* doc = R"""()""";
         } start_time;
       } MeshcatAnimation;
       // Symbol: drake::geometry::MeshcatCone
       struct /* MeshcatCone */ {
-        // Source: drake/geometry/shape_specification.h:639
+        // Source: drake/geometry/shape_specification.h
         const char* doc =
 R"""(Definition of a cone. Its point is at the origin, its height extends
 in the direction of the frame's +z axis. Or, more formally: a finite
@@ -4911,13 +4911,13 @@ This shape is currently only supported by Meshcat. It will not appear
 in any renderings, proximity queries, or other visualizers.)""";
         // Symbol: drake::geometry::MeshcatCone::MeshcatCone
         struct /* ctor */ {
-          // Source: drake/geometry/shape_specification.h:645
+          // Source: drake/geometry/shape_specification.h
           const char* doc_3args =
 R"""(Constructs the parameterized cone.
 
 Raises:
     RuntimeError if any measure is not finite positive.)""";
-          // Source: drake/geometry/shape_specification.h:650
+          // Source: drake/geometry/shape_specification.h
           const char* doc_1args =
 R"""(Constructs a cone with a vector of measures: height and principal
 semi-axes.
@@ -4927,52 +4927,52 @@ Raises:
         } ctor;
         // Symbol: drake::geometry::MeshcatCone::a
         struct /* a */ {
-          // Source: drake/geometry/shape_specification.h:655
+          // Source: drake/geometry/shape_specification.h
           const char* doc = R"""()""";
         } a;
         // Symbol: drake::geometry::MeshcatCone::b
         struct /* b */ {
-          // Source: drake/geometry/shape_specification.h:656
+          // Source: drake/geometry/shape_specification.h
           const char* doc = R"""()""";
         } b;
         // Symbol: drake::geometry::MeshcatCone::height
         struct /* height */ {
-          // Source: drake/geometry/shape_specification.h:654
+          // Source: drake/geometry/shape_specification.h
           const char* doc = R"""()""";
         } height;
       } MeshcatCone;
       // Symbol: drake::geometry::MeshcatParams
       struct /* MeshcatParams */ {
-        // Source: drake/geometry/meshcat_params.h:14
+        // Source: drake/geometry/meshcat_params.h
         const char* doc =
 R"""(The set of parameters for configuring Meshcat.)""";
         // Symbol: drake::geometry::MeshcatParams::PropertyTuple
         struct /* PropertyTuple */ {
-          // Source: drake/geometry/meshcat_params.h:57
+          // Source: drake/geometry/meshcat_params.h
           const char* doc =
 R"""(A helper struct for the ``initial_properties`` params. The members
 follow the same semantics as calls to Meshcat::SetProperty(path,
 property, value).)""";
           // Symbol: drake::geometry::MeshcatParams::PropertyTuple::Serialize
           struct /* Serialize */ {
-            // Source: drake/geometry/meshcat_params.h:61
+            // Source: drake/geometry/meshcat_params.h
             const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
           } Serialize;
           // Symbol: drake::geometry::MeshcatParams::PropertyTuple::path
           struct /* path */ {
-            // Source: drake/geometry/meshcat_params.h:67
+            // Source: drake/geometry/meshcat_params.h
             const char* doc = R"""()""";
           } path;
           // Symbol: drake::geometry::MeshcatParams::PropertyTuple::property
           struct /* property */ {
-            // Source: drake/geometry/meshcat_params.h:68
+            // Source: drake/geometry/meshcat_params.h
             const char* doc = R"""()""";
           } property;
           // Symbol: drake::geometry::MeshcatParams::PropertyTuple::value
           struct /* value */ {
-            // Source: drake/geometry/meshcat_params.h:69
+            // Source: drake/geometry/meshcat_params.h
             const char* doc = R"""()""";
           } value;
           auto Serialize__fields() const {
@@ -4985,14 +4985,14 @@ Serialization" for background.)""";
         } PropertyTuple;
         // Symbol: drake::geometry::MeshcatParams::Serialize
         struct /* Serialize */ {
-          // Source: drake/geometry/meshcat_params.h:18
+          // Source: drake/geometry/meshcat_params.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::geometry::MeshcatParams::host
         struct /* host */ {
-          // Source: drake/geometry/meshcat_params.h:30
+          // Source: drake/geometry/meshcat_params.h
           const char* doc =
 R"""(Meshcat will listen only on the given hostname (e.g., "localhost"). If
 "*" is specified, then it will listen on all interfaces. If empty, an
@@ -5000,7 +5000,7 @@ appropriate default value will be chosen (currently "*").)""";
         } host;
         // Symbol: drake::geometry::MeshcatParams::initial_properties
         struct /* initial_properties */ {
-          // Source: drake/geometry/meshcat_params.h:80
+          // Source: drake/geometry/meshcat_params.h
           const char* doc =
 R"""(Configures the initial conditions for Meshcat. These properties will
 be applied immediately during construction. This can be used to change
@@ -5014,7 +5014,7 @@ will take care of it.)""";
         } initial_properties;
         // Symbol: drake::geometry::MeshcatParams::port
         struct /* port */ {
-          // Source: drake/geometry/meshcat_params.h:36
+          // Source: drake/geometry/meshcat_params.h
           const char* doc =
 R"""(Meshcat will listen on the given http ``port``. If no port is
 specified, then it will listen on the first available port starting at
@@ -5026,7 +5026,7 @@ Precondition:
         } port;
         // Symbol: drake::geometry::MeshcatParams::realtime_rate_period
         struct /* realtime_rate_period */ {
-          // Source: drake/geometry/meshcat_params.h:94
+          // Source: drake/geometry/meshcat_params.h
           const char* doc =
 R"""(The minimum period of wall clock time (in seconds) between updates to
 the broadcast realtime rate. If the period is too short, the reported
@@ -5038,7 +5038,7 @@ period. See Meshcat::SetSimulationTime() for details.)""";
         } realtime_rate_period;
         // Symbol: drake::geometry::MeshcatParams::show_stats_plot
         struct /* show_stats_plot */ {
-          // Source: drake/geometry/meshcat_params.h:85
+          // Source: drake/geometry/meshcat_params.h
           const char* doc =
 R"""(Determines whether or not to display the stats plot widget in the
 Meshcat user interface. This plot including realtime rate and WebGL
@@ -5046,7 +5046,7 @@ render statistics.)""";
         } show_stats_plot;
         // Symbol: drake::geometry::MeshcatParams::web_url_pattern
         struct /* web_url_pattern */ {
-          // Source: drake/geometry/meshcat_params.h:53
+          // Source: drake/geometry/meshcat_params.h
           const char* doc =
 R"""(The ``web_url_pattern`` may be used to change the web_url() (and
 therefore the ws_url()) reported by Meshcat. This may be useful in
@@ -5076,7 +5076,7 @@ for "all interfaces".)""";
       } MeshcatParams;
       // Symbol: drake::geometry::MeshcatPointCloudVisualizer
       struct /* MeshcatPointCloudVisualizer */ {
-        // Source: drake/geometry/meshcat_point_cloud_visualizer.h:33
+        // Source: drake/geometry/meshcat_point_cloud_visualizer.h
         const char* doc =
 R"""(MeshcatPointCloudVisualizer is a systems::LeafSystem that publishes a
 perception::PointCloud from its input port to Meshcat.
@@ -5095,14 +5095,14 @@ not connected, then we set ``X_ParentCloud`` to the identity
 transform.)""";
         // Symbol: drake::geometry::MeshcatPointCloudVisualizer::Delete
         struct /* Delete */ {
-          // Source: drake/geometry/meshcat_point_cloud_visualizer.h:69
+          // Source: drake/geometry/meshcat_point_cloud_visualizer.h
           const char* doc =
 R"""(Calls Meshcat::Delete(path), where ``path`` is the value passed in the
 constructor.)""";
         } Delete;
         // Symbol: drake::geometry::MeshcatPointCloudVisualizer::MeshcatPointCloudVisualizer<T>
         struct /* ctor */ {
-          // Source: drake/geometry/meshcat_point_cloud_visualizer.h:44
+          // Source: drake/geometry/meshcat_point_cloud_visualizer.h
           const char* doc =
 R"""(Creates an instance of MeshcatPointCloudVisualizer
 
@@ -5115,33 +5115,33 @@ Parameter ``path``:
 Parameter ``publish_period``:
     is the duration (in simulation seconds) between updates sent to
     the visualizer. It must be non-negative.)""";
-          // Source: drake/geometry/meshcat_point_cloud_visualizer.h:52
+          // Source: drake/geometry/meshcat_point_cloud_visualizer.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion. It
 should only be used to convert *from* double *to* other scalar types.)""";
         } ctor;
         // Symbol: drake::geometry::MeshcatPointCloudVisualizer::cloud_input_port
         struct /* cloud_input_port */ {
-          // Source: drake/geometry/meshcat_point_cloud_visualizer.h:72
+          // Source: drake/geometry/meshcat_point_cloud_visualizer.h
           const char* doc =
 R"""(Returns the RigidTransform-valued input port.)""";
         } cloud_input_port;
         // Symbol: drake::geometry::MeshcatPointCloudVisualizer::pose_input_port
         struct /* pose_input_port */ {
-          // Source: drake/geometry/meshcat_point_cloud_visualizer.h:77
+          // Source: drake/geometry/meshcat_point_cloud_visualizer.h
           const char* doc =
 R"""(Returns the PointCloud-valued input port.)""";
         } pose_input_port;
         // Symbol: drake::geometry::MeshcatPointCloudVisualizer::set_default_rgba
         struct /* set_default_rgba */ {
-          // Source: drake/geometry/meshcat_point_cloud_visualizer.h:65
+          // Source: drake/geometry/meshcat_point_cloud_visualizer.h
           const char* doc =
 R"""(Sets the default color, which is applied to all points only if
 ``has_rgbs() == false`` for the cloud on the input port.)""";
         } set_default_rgba;
         // Symbol: drake::geometry::MeshcatPointCloudVisualizer::set_point_size
         struct /* set_point_size */ {
-          // Source: drake/geometry/meshcat_point_cloud_visualizer.h:61
+          // Source: drake/geometry/meshcat_point_cloud_visualizer.h
           const char* doc =
 R"""(Sets the size of each point in the cloud. The default is 0.001. The
 units are undocumented in threejs
@@ -5151,14 +5151,14 @@ but we believe they are in meters.)""";
       } MeshcatPointCloudVisualizer;
       // Symbol: drake::geometry::MeshcatPointCloudVisualizerd
       struct /* MeshcatPointCloudVisualizerd */ {
-        // Source: drake/geometry/meshcat_point_cloud_visualizer.h:119
+        // Source: drake/geometry/meshcat_point_cloud_visualizer.h
         const char* doc =
 R"""(A convenient alias for the MeshcatPointCloudVisualizer class when
 using the ``double`` scalar type.)""";
       } MeshcatPointCloudVisualizerd;
       // Symbol: drake::geometry::MeshcatVisualizer
       struct /* MeshcatVisualizer */ {
-        // Source: drake/geometry/meshcat_visualizer.h:51
+        // Source: drake/geometry/meshcat_visualizer.h
         const char* doc =
 R"""(A system wrapper for Meshcat that publishes the current state of a
 SceneGraph instance (whose QueryObject-valued output port is connected
@@ -5193,7 +5193,7 @@ Instances of MeshcatVisualizer created by scalar-conversion will
 publish to the same Meshcat instance.)""";
         // Symbol: drake::geometry::MeshcatVisualizer::AddToBuilder
         struct /* AddToBuilder */ {
-          // Source: drake/geometry/meshcat_visualizer.h:118
+          // Source: drake/geometry/meshcat_visualizer.h
           const char* doc_4args_builder_scene_graph_meshcat_params =
 R"""(Adds a MeshcatVisualizer and connects it to the given SceneGraph's
 QueryObject-valued output port. See
@@ -5201,7 +5201,7 @@ MeshcatVisualizer::MeshcatVisualizer(MeshcatVisualizer*,
 MeshcatVisualizerParams) for details. The MeshcatVisualizer's name
 (see systems::SystemBase::set_name) will be set to a sensible default
 value, unless the default name was already in use by another system.)""";
-          // Source: drake/geometry/meshcat_visualizer.h:128
+          // Source: drake/geometry/meshcat_visualizer.h
           const char* doc_4args_builder_query_object_port_meshcat_params =
 R"""(Adds a MeshcatVisualizer and connects it to the given
 QueryObject-valued output port. See
@@ -5212,7 +5212,7 @@ value, unless the default name was already in use by another system.)""";
         } AddToBuilder;
         // Symbol: drake::geometry::MeshcatVisualizer::Delete
         struct /* Delete */ {
-          // Source: drake/geometry/meshcat_visualizer.h:79
+          // Source: drake/geometry/meshcat_visualizer.h
           const char* doc =
 R"""(Calls Meshcat::Delete(std::string path), with the path set to
 MeshcatVisualizerParams::prefix. Since this visualizer will only ever
@@ -5224,7 +5224,7 @@ this should be called on initialization.)""";
         } Delete;
         // Symbol: drake::geometry::MeshcatVisualizer::DeleteRecording
         struct /* DeleteRecording */ {
-          // Source: drake/geometry/meshcat_visualizer.h:97
+          // Source: drake/geometry/meshcat_visualizer.h
           const char* doc =
 R"""(Convenience function that calls Meshcat::DeleteRecording on the
 underlying Meshcat object; refer to Meshcat::DeleteRecording for full
@@ -5232,7 +5232,7 @@ documentation.)""";
         } DeleteRecording;
         // Symbol: drake::geometry::MeshcatVisualizer::MeshcatVisualizer<T>
         struct /* ctor */ {
-          // Source: drake/geometry/meshcat_visualizer.h:62
+          // Source: drake/geometry/meshcat_visualizer.h
           const char* doc =
 R"""(Creates an instance of MeshcatVisualizer.
 
@@ -5248,14 +5248,14 @@ Raises:
 
 Raises:
     RuntimeError if ``params.role == Role::kUnassigned``.)""";
-          // Source: drake/geometry/meshcat_visualizer.h:69
+          // Source: drake/geometry/meshcat_visualizer.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion. It
 should only be used to convert *from* double *to* other scalar types.)""";
         } ctor;
         // Symbol: drake::geometry::MeshcatVisualizer::PublishRecording
         struct /* PublishRecording */ {
-          // Source: drake/geometry/meshcat_visualizer.h:93
+          // Source: drake/geometry/meshcat_visualizer.h
           const char* doc =
 R"""(Convenience function that calls Meshcat::PublishRecording on the
 underlying Meshcat object; refer to Meshcat::PublishRecording for full
@@ -5263,7 +5263,7 @@ documentation.)""";
         } PublishRecording;
         // Symbol: drake::geometry::MeshcatVisualizer::StartRecording
         struct /* StartRecording */ {
-          // Source: drake/geometry/meshcat_visualizer.h:84
+          // Source: drake/geometry/meshcat_visualizer.h
           const char* doc =
 R"""(Convenience function that calls Meshcat::StartRecording on the
 underlying Meshcat object, with ``frames_per_second = 1 /
@@ -5272,7 +5272,7 @@ documentation.)""";
         } StartRecording;
         // Symbol: drake::geometry::MeshcatVisualizer::StopRecording
         struct /* StopRecording */ {
-          // Source: drake/geometry/meshcat_visualizer.h:88
+          // Source: drake/geometry/meshcat_visualizer.h
           const char* doc =
 R"""(Convenience function that calls Meshcat::StopRecording on the
 underlying Meshcat object; refer to Meshcat::StopRecording for full
@@ -5280,7 +5280,7 @@ documentation.)""";
         } StopRecording;
         // Symbol: drake::geometry::MeshcatVisualizer::get_mutable_recording
         struct /* get_mutable_recording */ {
-          // Source: drake/geometry/meshcat_visualizer.h:102
+          // Source: drake/geometry/meshcat_visualizer.h
           const char* doc =
 R"""(Convenience function that calls Meshcat::get_mutable_recording on the
 underlying Meshcat object; refer to Meshcat::get_mutable_recording for
@@ -5288,7 +5288,7 @@ full documentation.)""";
         } get_mutable_recording;
         // Symbol: drake::geometry::MeshcatVisualizer::query_object_input_port
         struct /* query_object_input_port */ {
-          // Source: drake/geometry/meshcat_visualizer.h:107
+          // Source: drake/geometry/meshcat_visualizer.h
           const char* doc =
 R"""(Returns the QueryObject-valued input port. It should be connected to
 SceneGraph's QueryObject-valued output port. Failure to do so will
@@ -5297,25 +5297,25 @@ cause a runtime error when attempting to broadcast messages.)""";
       } MeshcatVisualizer;
       // Symbol: drake::geometry::MeshcatVisualizerParams
       struct /* MeshcatVisualizerParams */ {
-        // Source: drake/geometry/meshcat_visualizer_params.h:13
+        // Source: drake/geometry/meshcat_visualizer_params.h
         const char* doc =
 R"""(The set of parameters for configuring MeshcatVisualizer.)""";
         // Symbol: drake::geometry::MeshcatVisualizerParams::Serialize
         struct /* Serialize */ {
-          // Source: drake/geometry/meshcat_visualizer_params.h:17
+          // Source: drake/geometry/meshcat_visualizer_params.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::geometry::MeshcatVisualizerParams::default_color
         struct /* default_color */ {
-          // Source: drake/geometry/meshcat_visualizer_params.h:40
+          // Source: drake/geometry/meshcat_visualizer_params.h
           const char* doc =
 R"""(The color to apply to any geometry that hasn't defined one.)""";
         } default_color;
         // Symbol: drake::geometry::MeshcatVisualizerParams::delete_on_initialization_event
         struct /* delete_on_initialization_event */ {
-          // Source: drake/geometry/meshcat_visualizer_params.h:53
+          // Source: drake/geometry/meshcat_visualizer_params.h
           const char* doc =
 R"""(Determines whether to send a Meshcat::Delete(prefix) message on an
 initialization event to remove any visualizations e.g. from a previous
@@ -5324,13 +5324,13 @@ events" for more information.)""";
         } delete_on_initialization_event;
         // Symbol: drake::geometry::MeshcatVisualizerParams::enable_alpha_slider
         struct /* enable_alpha_slider */ {
-          // Source: drake/geometry/meshcat_visualizer_params.h:56
+          // Source: drake/geometry/meshcat_visualizer_params.h
           const char* doc =
 R"""(Determines whether to enable the alpha slider for geometry display.)""";
         } enable_alpha_slider;
         // Symbol: drake::geometry::MeshcatVisualizerParams::include_unspecified_accepting
         struct /* include_unspecified_accepting */ {
-          // Source: drake/geometry/meshcat_visualizer_params.h:90
+          // Source: drake/geometry/meshcat_visualizer_params.h
           const char* doc =
 R"""((Advanced) For a given geometry, if the GeometryProperties for our
 ``role`` has the property ``(meshcat, accepting)`` then the visualizer
@@ -5340,7 +5340,7 @@ only if ``include_unspecified_accepting`` is true.)""";
         } include_unspecified_accepting;
         // Symbol: drake::geometry::MeshcatVisualizerParams::initial_alpha_slider_value
         struct /* initial_alpha_slider_value */ {
-          // Source: drake/geometry/meshcat_visualizer_params.h:62
+          // Source: drake/geometry/meshcat_visualizer_params.h
           const char* doc =
 R"""(Initial alpha slider value. This value should lie in the range [0, 1].
 Furthermore, the slider value is *quantized* which means the value
@@ -5349,7 +5349,7 @@ by the slider implementation.)""";
         } initial_alpha_slider_value;
         // Symbol: drake::geometry::MeshcatVisualizerParams::prefix
         struct /* prefix */ {
-          // Source: drake/geometry/meshcat_visualizer_params.h:47
+          // Source: drake/geometry/meshcat_visualizer_params.h
           const char* doc =
 R"""(A prefix to add to the path for all objects and transforms curated by
 the MeshcatVisualizer. It can be an absolute path or relative path. If
@@ -5359,7 +5359,7 @@ based on the standard path semantics in Meshcat. See meshcat_path
         } prefix;
         // Symbol: drake::geometry::MeshcatVisualizerParams::publish_period
         struct /* publish_period */ {
-          // Source: drake/geometry/meshcat_visualizer_params.h:34
+          // Source: drake/geometry/meshcat_visualizer_params.h
           const char* doc =
 R"""(The duration (in simulation seconds) between attempts to update poses
 in the visualizer. (To help avoid small simulation time steps, we use
@@ -5368,13 +5368,13 @@ point; see drake#15021 for details.))""";
         } publish_period;
         // Symbol: drake::geometry::MeshcatVisualizerParams::role
         struct /* role */ {
-          // Source: drake/geometry/meshcat_visualizer_params.h:37
+          // Source: drake/geometry/meshcat_visualizer_params.h
           const char* doc =
 R"""(The role of the geometries to be sent to the visualizer.)""";
         } role;
         // Symbol: drake::geometry::MeshcatVisualizerParams::show_hydroelastic
         struct /* show_hydroelastic */ {
-          // Source: drake/geometry/meshcat_visualizer_params.h:83
+          // Source: drake/geometry/meshcat_visualizer_params.h
           const char* doc =
 R"""(When using the hydroelastic contact model, collision geometries that
 are *declared* as geometric primitives are frequently represented by
@@ -5397,7 +5397,7 @@ This option is ignored by MeshcatVisualizer<T> when T is not
         } show_hydroelastic;
         // Symbol: drake::geometry::MeshcatVisualizerParams::visible_by_default
         struct /* visible_by_default */ {
-          // Source: drake/geometry/meshcat_visualizer_params.h:65
+          // Source: drake/geometry/meshcat_visualizer_params.h
           const char* doc =
 R"""(Determines whether our meshcat path should be default to being
 visible.)""";
@@ -5419,14 +5419,14 @@ visible.)""";
       } MeshcatVisualizerParams;
       // Symbol: drake::geometry::MeshcatVisualizerd
       struct /* MeshcatVisualizerd */ {
-        // Source: drake/geometry/meshcat_visualizer.h:205
+        // Source: drake/geometry/meshcat_visualizer.h
         const char* doc =
 R"""(A convenient alias for the MeshcatVisualizer class when using the
 ``double`` scalar type.)""";
       } MeshcatVisualizerd;
       // Symbol: drake::geometry::PerceptionProperties
       struct /* PerceptionProperties */ {
-        // Source: drake/geometry/geometry_roles.h:179
+        // Source: drake/geometry/geometry_roles.h
         const char* doc =
 R"""(The set of properties for geometry used in a "perception" role.
 
@@ -5434,26 +5434,26 @@ Examples of functionality that depends on the perception role: -
 render::RenderEngineVtk)""";
         // Symbol: drake::geometry::PerceptionProperties::PerceptionProperties
         struct /* ctor */ {
-          // Source: drake/geometry/geometry_roles.h:181
+          // Source: drake/geometry/geometry_roles.h
           const char* doc = R"""()""";
         } ctor;
       } PerceptionProperties;
       // Symbol: drake::geometry::ProximityProperties
       struct /* ProximityProperties */ {
-        // Source: drake/geometry/geometry_roles.h:166
+        // Source: drake/geometry/geometry_roles.h
         const char* doc =
 R"""(The set of properties for geometry used in a *proximity* role.
 
 Examples of functionality that depends on the proximity role:)""";
         // Symbol: drake::geometry::ProximityProperties::ProximityProperties
         struct /* ctor */ {
-          // Source: drake/geometry/geometry_roles.h:168
+          // Source: drake/geometry/geometry_roles.h
           const char* doc = R"""()""";
         } ctor;
       } ProximityProperties;
       // Symbol: drake::geometry::QueryObject
       struct /* QueryObject */ {
-        // Source: drake/geometry/query_object.h:114
+        // Source: drake/geometry/query_object.h
         const char* doc =
 R"""(The QueryObject serves as a mechanism to perform geometry queries on
 the world's geometry. The SceneGraph has an abstract-valued port that
@@ -5544,7 +5544,7 @@ report no more than 1e-14 error across all supportable geometry pairs
 and scalars. At that point, the table will simply disappear.)""";
         // Symbol: drake::geometry::QueryObject::ComputeAabbInWorld
         struct /* ComputeAabbInWorld */ {
-          // Source: drake/geometry/query_object.h:202
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Reports the axis-aligned bounding box of the geometry indicated by
 ``geometry_id`` in the world frame. Returns std::nullopt if the
@@ -5556,7 +5556,7 @@ Raises:
         } ComputeAabbInWorld;
         // Symbol: drake::geometry::QueryObject::ComputeContactSurfaces
         struct /* ComputeContactSurfaces */ {
-          // Source: drake/geometry/query_object.h:411
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Reports pairwise intersections and characterizes each non-empty
 intersection as a ContactSurface for hydroelastic contact model. The
@@ -5629,7 +5629,7 @@ Returns:
         } ComputeContactSurfaces;
         // Symbol: drake::geometry::QueryObject::ComputeContactSurfacesWithFallback
         struct /* ComputeContactSurfacesWithFallback */ {
-          // Source: drake/geometry/query_object.h:450
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Reports pairwise intersections and characterizes each non-empty
 intersection as a ContactSurface *where possible* and as a
@@ -5679,7 +5679,7 @@ Note:
         } ComputeContactSurfacesWithFallback;
         // Symbol: drake::geometry::QueryObject::ComputeDeformableContact
         struct /* ComputeDeformableContact */ {
-          // Source: drake/geometry/query_object.h:466
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Reports contact information among all deformable geometries. It
 includes contacts between two deformable geometries or contacts
@@ -5700,7 +5700,7 @@ Warning:
         } ComputeDeformableContact;
         // Symbol: drake::geometry::QueryObject::ComputeObbInWorld
         struct /* ComputeObbInWorld */ {
-          // Source: drake/geometry/query_object.h:212
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Reports the oriented bounding box of the geometry indicated by
 ``geometry_id`` in the world frame. Returns std::nullopt if the
@@ -5717,7 +5717,7 @@ Raises:
         } ComputeObbInWorld;
         // Symbol: drake::geometry::QueryObject::ComputePointPairPenetration
         struct /* ComputePointPairPenetration */ {
-          // Source: drake/geometry/query_object.h:326
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Computes the penetrations across all pairs of geometries in the world
 with the penetrations characterized by pairs of points (see
@@ -5818,7 +5818,7 @@ Raises:
         } ComputePointPairPenetration;
         // Symbol: drake::geometry::QueryObject::ComputeSignedDistanceGeometryToPoint
         struct /* ComputeSignedDistanceGeometryToPoint */ {
-          // Source: drake/geometry/query_object.h:878
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(A variant of ComputeSignedDistanceToPoint(). Instead of finding
 distances to all geometries, provides the distance to only the
@@ -5849,7 +5849,7 @@ Raises:
         } ComputeSignedDistanceGeometryToPoint;
         // Symbol: drake::geometry::QueryObject::ComputeSignedDistancePairClosestPoints
         struct /* ComputeSignedDistancePairClosestPoints */ {
-          // Source: drake/geometry/query_object.h:723
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(A variant of ComputeSignedDistancePairwiseClosestPoints() which
 computes the signed distance (and witnesses) between a specific pair
@@ -5880,7 +5880,7 @@ Warning:
         } ComputeSignedDistancePairClosestPoints;
         // Symbol: drake::geometry::QueryObject::ComputeSignedDistancePairwiseClosestPoints
         struct /* ComputeSignedDistancePairwiseClosestPoints */ {
-          // Source: drake/geometry/query_object.h:696
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Computes the signed distance together with the nearest points across
 all pairs of geometries in the world. Reports both the separating
@@ -6056,7 +6056,7 @@ Warning:
         } ComputeSignedDistancePairwiseClosestPoints;
         // Symbol: drake::geometry::QueryObject::ComputeSignedDistanceToPoint
         struct /* ComputeSignedDistanceToPoint */ {
-          // Source: drake/geometry/query_object.h:856
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Computes the signed distances and gradients to a query point from each
 geometry in the scene.
@@ -6202,7 +6202,7 @@ Raises:
         } ComputeSignedDistanceToPoint;
         // Symbol: drake::geometry::QueryObject::FindCollisionCandidates
         struct /* FindCollisionCandidates */ {
-          // Source: drake/geometry/query_object.h:478
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Applies a conservative culling mechanism to create a subset of all
 possible geometry pairs based on non-zero intersections. A geometry
@@ -6218,7 +6218,7 @@ Returns:
         } FindCollisionCandidates;
         // Symbol: drake::geometry::QueryObject::GetConfigurationsInWorld
         struct /* GetConfigurationsInWorld */ {
-          // Source: drake/geometry/query_object.h:181
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Reports the configuration of the deformable geometry indicated by
 ``deformable_geometry_id`` relative to the world frame.
@@ -6232,7 +6232,7 @@ Raises:
         } GetConfigurationsInWorld;
         // Symbol: drake::geometry::QueryObject::GetDrivenMeshConfigurationsInWorld
         struct /* GetDrivenMeshConfigurationsInWorld */ {
-          // Source: drake/geometry/query_object.h:194
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Reports the configurations of the driven meshes associated with the
 given role for the deformable geometry indicated by
@@ -6251,7 +6251,7 @@ Warning:
         } GetDrivenMeshConfigurationsInWorld;
         // Symbol: drake::geometry::QueryObject::GetPoseInParent
         struct /* GetPoseInParent */ {
-          // Source: drake/geometry/query_object.h:162
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Reports the position of the frame indicated by ``frame_id`` relative
 to its parent frame. If the frame was registered with the world frame
@@ -6263,14 +6263,14 @@ Raises:
         } GetPoseInParent;
         // Symbol: drake::geometry::QueryObject::GetPoseInWorld
         struct /* GetPoseInWorld */ {
-          // Source: drake/geometry/query_object.h:156
+          // Source: drake/geometry/query_object.h
           const char* doc_1args_frame_id =
 R"""(Reports the position of the frame indicated by ``frame_id`` relative
 to the world frame.
 
 Raises:
     RuntimeError if the frame ``frame_id`` is not valid.)""";
-          // Source: drake/geometry/query_object.h:174
+          // Source: drake/geometry/query_object.h
           const char* doc_1args_geometry_id =
 R"""(Reports the position of the frame of the rigid geometry indicated by
 ``geometry_id`` relative to the world frame (X_WG).
@@ -6290,14 +6290,14 @@ Raises:
         } GetPoseInWorld;
         // Symbol: drake::geometry::QueryObject::GetRenderEngineByName
         struct /* GetRenderEngineByName */ {
-          // Source: drake/geometry/query_object.h:937
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Returns the named render engine, if it exists. The RenderEngine is
 guaranteed to be up to date w.r.t. the poses and data in the context.)""";
         } GetRenderEngineByName;
         // Symbol: drake::geometry::QueryObject::HasCollisions
         struct /* HasCollisions */ {
-          // Source: drake/geometry/query_object.h:484
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Reports true if there are *any* collisions between unfiltered pairs in
 the world.
@@ -6308,13 +6308,13 @@ Warning:
         } HasCollisions;
         // Symbol: drake::geometry::QueryObject::QueryObject<T>
         struct /* ctor */ {
-          // Source: drake/geometry/query_object.h:117
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Constructs a default QueryObject (all pointers are null).)""";
         } ctor;
         // Symbol: drake::geometry::QueryObject::RenderColorImage
         struct /* RenderColorImage */ {
-          // Source: drake/geometry/query_object.h:905
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Renders an RGB image for the given ``camera`` posed with respect to
 the indicated parent frame P.
@@ -6333,7 +6333,7 @@ Parameter ``color_image_out``:
         } RenderColorImage;
         // Symbol: drake::geometry::QueryObject::RenderDepthImage
         struct /* RenderDepthImage */ {
-          // Source: drake/geometry/query_object.h:920
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Renders a depth image for the given ``camera`` posed with respect to
 the indicated parent frame P.
@@ -6356,7 +6356,7 @@ Parameter ``depth_image_out``:
         } RenderDepthImage;
         // Symbol: drake::geometry::QueryObject::RenderLabelImage
         struct /* RenderLabelImage */ {
-          // Source: drake/geometry/query_object.h:931
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Renders a label image for the given ``camera`` posed with respect to
 the indicated parent frame P.
@@ -6375,7 +6375,7 @@ Parameter ``label_image_out``:
         } RenderLabelImage;
         // Symbol: drake::geometry::QueryObject::inspector
         struct /* inspector */ {
-          // Source: drake/geometry/query_object.h:142
+          // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Provides an inspector for the topological structure of the underlying
 scene graph data (see SceneGraphInspector for details).)""";
@@ -6383,7 +6383,7 @@ scene graph data (see SceneGraphInspector for details).)""";
       } QueryObject;
       // Symbol: drake::geometry::ReadGltfToMemory
       struct /* ReadGltfToMemory */ {
-        // Source: drake/geometry/read_gltf_to_memory.h:17
+        // Source: drake/geometry/read_gltf_to_memory.h
         const char* doc =
 R"""(Given a file path to a .gltf file, loads the .gltf file contents into
 memory. All named .bin and image files are loaded into its supporting
@@ -6395,12 +6395,12 @@ to their accessibility or even their existence.)""";
       } ReadGltfToMemory;
       // Symbol: drake::geometry::Rgba
       struct /* Rgba */ {
-        // Source: drake/geometry/rgba.h:15
+        // Source: drake/geometry/rgba.h
         const char* doc =
 R"""(Defines RGBA (red, green, blue, alpha) values on the range [0, 1].)""";
         // Symbol: drake::geometry::Rgba::AlmostEqual
         struct /* AlmostEqual */ {
-          // Source: drake/geometry/rgba.h:64
+          // Source: drake/geometry/rgba.h
           const char* doc =
 R"""(Reports if two Rgba values are equal within a given absolute
 ``tolerance``. They are "equal" so long as the difference in no single
@@ -6408,10 +6408,10 @@ channel is larger than the specified ``tolerance``.)""";
         } AlmostEqual;
         // Symbol: drake::geometry::Rgba::Rgba
         struct /* ctor */ {
-          // Source: drake/geometry/rgba.h:20
+          // Source: drake/geometry/rgba.h
           const char* doc_0args =
 R"""(Default constructor produces fully opaque white.)""";
-          // Source: drake/geometry/rgba.h:24
+          // Source: drake/geometry/rgba.h
           const char* doc_4args =
 R"""(Constructs with given (r, g, b, a) values.
 
@@ -6420,7 +6420,7 @@ Precondition:
         } ctor;
         // Symbol: drake::geometry::Rgba::Serialize
         struct /* Serialize */ {
-          // Source: drake/geometry/rgba.h:133
+          // Source: drake/geometry/rgba.h
           const char* doc =
 R"""(Passes this object to an Archive.
 
@@ -6474,27 +6474,27 @@ Refer to yaml_serialization "YAML Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::geometry::Rgba::a
         struct /* a */ {
-          // Source: drake/geometry/rgba.h:36
+          // Source: drake/geometry/rgba.h
           const char* doc = R"""(Alpha.)""";
         } a;
         // Symbol: drake::geometry::Rgba::b
         struct /* b */ {
-          // Source: drake/geometry/rgba.h:33
+          // Source: drake/geometry/rgba.h
           const char* doc = R"""(Blue.)""";
         } b;
         // Symbol: drake::geometry::Rgba::g
         struct /* g */ {
-          // Source: drake/geometry/rgba.h:30
+          // Source: drake/geometry/rgba.h
           const char* doc = R"""(Green.)""";
         } g;
         // Symbol: drake::geometry::Rgba::operator!=
         struct /* operator_ne */ {
-          // Source: drake/geometry/rgba.h:73
+          // Source: drake/geometry/rgba.h
           const char* doc = R"""()""";
         } operator_ne;
         // Symbol: drake::geometry::Rgba::operator*
         struct /* operator_mul */ {
-          // Source: drake/geometry/rgba.h:78
+          // Source: drake/geometry/rgba.h
           const char* doc =
 R"""(Computes the element-wise product of two rgba colors. This type of
 calculation is frequently used to modulate one color with another
@@ -6502,17 +6502,17 @@ calculation is frequently used to modulate one color with another
         } operator_mul;
         // Symbol: drake::geometry::Rgba::r
         struct /* r */ {
-          // Source: drake/geometry/rgba.h:27
+          // Source: drake/geometry/rgba.h
           const char* doc = R"""(Red.)""";
         } r;
         // Symbol: drake::geometry::Rgba::rgba
         struct /* rgba */ {
-          // Source: drake/geometry/rgba.h:39
+          // Source: drake/geometry/rgba.h
           const char* doc = R"""(Returns all four elements in order.)""";
         } rgba;
         // Symbol: drake::geometry::Rgba::scale_rgb
         struct /* scale_rgb */ {
-          // Source: drake/geometry/rgba.h:86
+          // Source: drake/geometry/rgba.h
           const char* doc =
 R"""(Computes a new Rgba color by multiplying the color channels (rgb) by
 the given scalar ``scalar``. All resultant channel values saturate at
@@ -6523,13 +6523,13 @@ Precondition:
         } scale_rgb;
         // Symbol: drake::geometry::Rgba::set
         struct /* set */ {
-          // Source: drake/geometry/rgba.h:43
+          // Source: drake/geometry/rgba.h
           const char* doc_4args =
 R"""(Sets (r, g, b, a) values.
 
 Raises:
     RuntimeError if any values are outside of the range [0, 1].)""";
-          // Source: drake/geometry/rgba.h:50
+          // Source: drake/geometry/rgba.h
           const char* doc_1args =
 R"""(Sets an (r, g, b, a) from a vector.
 
@@ -6541,7 +6541,7 @@ Raises:
         } set;
         // Symbol: drake::geometry::Rgba::update
         struct /* update */ {
-          // Source: drake/geometry/rgba.h:55
+          // Source: drake/geometry/rgba.h
           const char* doc =
 R"""(Updates individual (r, g, b, a) values; any values not provided will
 remain unchanged.
@@ -6552,53 +6552,53 @@ Raises:
       } Rgba;
       // Symbol: drake::geometry::Role
       struct /* Role */ {
-        // Source: drake/geometry/geometry_roles.h:201
+        // Source: drake/geometry/geometry_roles.h
         const char* doc =
 R"""(General enumeration for indicating geometry role.)""";
         // Symbol: drake::geometry::Role::kIllustration
         struct /* kIllustration */ {
-          // Source: drake/geometry/geometry_roles.h:205
+          // Source: drake/geometry/geometry_roles.h
           const char* doc = R"""()""";
         } kIllustration;
         // Symbol: drake::geometry::Role::kPerception
         struct /* kPerception */ {
-          // Source: drake/geometry/geometry_roles.h:206
+          // Source: drake/geometry/geometry_roles.h
           const char* doc = R"""()""";
         } kPerception;
         // Symbol: drake::geometry::Role::kProximity
         struct /* kProximity */ {
-          // Source: drake/geometry/geometry_roles.h:204
+          // Source: drake/geometry/geometry_roles.h
           const char* doc = R"""()""";
         } kProximity;
         // Symbol: drake::geometry::Role::kUnassigned
         struct /* kUnassigned */ {
-          // Source: drake/geometry/geometry_roles.h:203
+          // Source: drake/geometry/geometry_roles.h
           const char* doc = R"""()""";
         } kUnassigned;
       } Role;
       // Symbol: drake::geometry::RoleAssign
       struct /* RoleAssign */ {
-        // Source: drake/geometry/geometry_roles.h:213
+        // Source: drake/geometry/geometry_roles.h
         const char* doc =
 R"""(The operations that can be performed on the given properties when
 assigning roles to geometry.)""";
         // Symbol: drake::geometry::RoleAssign::kNew
         struct /* kNew */ {
-          // Source: drake/geometry/geometry_roles.h:214
+          // Source: drake/geometry/geometry_roles.h
           const char* doc =
 R"""(Assign the properties to a geometry that doesn't already have the
 role.)""";
         } kNew;
         // Symbol: drake::geometry::RoleAssign::kReplace
         struct /* kReplace */ {
-          // Source: drake/geometry/geometry_roles.h:216
+          // Source: drake/geometry/geometry_roles.h
           const char* doc =
 R"""(Replace the existing role properties completely.)""";
         } kReplace;
       } RoleAssign;
       // Symbol: drake::geometry::SceneGraph
       struct /* SceneGraph */ {
-        // Source: drake/geometry/scene_graph.h:311
+        // Source: drake/geometry/scene_graph.h
         const char* doc =
 R"""(SceneGraph serves as the nexus for all geometry (and geometry-based
 operations) in a Diagram. Through SceneGraph, other systems that
@@ -6885,7 +6885,7 @@ cause it to thrash whatever components depends on geometry version.
 The system should *clearly* document this fact.)""";
         // Symbol: drake::geometry::SceneGraph::AddRenderer
         struct /* AddRenderer */ {
-          // Source: drake/geometry/scene_graph.h:720
+          // Source: drake/geometry/scene_graph.h
           const char* doc_2args =
 R"""(Adds a new render engine to this SceneGraph. The render engine's name
 should be referenced in the render::ColorRenderCamera
@@ -6929,7 +6929,7 @@ Parameter ``renderer``:
 
 Raises:
     RuntimeError if the name is not unique.)""";
-          // Source: drake/geometry/scene_graph.h:725
+          // Source: drake/geometry/scene_graph.h
           const char* doc_3args =
 R"""(systems::Context-modifying variant of AddRenderer(). Rather than
 modifying SceneGraph's model, it modifies the copy of the model stored
@@ -6937,18 +6937,18 @@ in the provided context.)""";
         } AddRenderer;
         // Symbol: drake::geometry::SceneGraph::AssignRole
         struct /* AssignRole */ {
-          // Source: drake/geometry/scene_graph.h:899
+          // Source: drake/geometry/scene_graph.h
           const char* doc_proximity_direct =
 R"""(Assigns the proximity role to the geometry indicated by
 ``geometry_id``. Modifies the proximity version (see
 scene_graph_versioning).)""";
-          // Source: drake/geometry/scene_graph.h:910
+          // Source: drake/geometry/scene_graph.h
           const char* doc_proximity_context =
 R"""(systems::Context-modifying variant of
 AssignRole(SourceId,GeometryId,ProximityProperties) "AssignRole()" for
 proximity properties. Rather than modifying SceneGraph's model, it
 modifies the copy of the model stored in the provided context.)""";
-          // Source: drake/geometry/scene_graph.h:928
+          // Source: drake/geometry/scene_graph.h
           const char* doc_perception_direct =
 R"""(Assigns the perception role to the geometry indicated by
 ``geometry_id``.
@@ -6962,13 +6962,13 @@ no property is defined (or an empty set is given), then the default
 behavior of all renderers attempting to reify it will be restored.
 Modifies the perception version if the geometry is added to any
 renderer (see scene_graph_versioning).)""";
-          // Source: drake/geometry/scene_graph.h:939
+          // Source: drake/geometry/scene_graph.h
           const char* doc_perception_context =
 R"""(systems::Context-modifying variant of
 AssignRole(SourceId,GeometryId,PerceptionProperties) "AssignRole()"
 for perception properties. Rather than modifying SceneGraph's model,
 it modifies the copy of the model stored in the provided context.)""";
-          // Source: drake/geometry/scene_graph.h:955
+          // Source: drake/geometry/scene_graph.h
           const char* doc_illustration_direct =
 R"""(Assigns the illustration role to the geometry indicated by
 ``geometry_id``. Modifies the illustration version (see
@@ -6982,7 +6982,7 @@ Warning:
     how a geometry appears. If changing a geometry's illustration
     properties doesn't seem to be affecting the visualization,
     retrigger its initialization action.)""";
-          // Source: drake/geometry/scene_graph.h:979
+          // Source: drake/geometry/scene_graph.h
           const char* doc_illustration_context =
 R"""(systems::Context-modifying variant of
 AssignRole(SourceId,GeometryId,IllustrationProperties) "AssignRole()"
@@ -7008,7 +7008,7 @@ Warning:
         } AssignRole;
         // Symbol: drake::geometry::SceneGraph::ChangeShape
         struct /* ChangeShape */ {
-          // Source: drake/geometry/scene_graph.h:645
+          // Source: drake/geometry/scene_graph.h
           const char* doc_model =
 R"""(Changes the ``shape`` of the geometry indicated by the given
 ``geometry_id``.
@@ -7040,7 +7040,7 @@ Raises:
     registered source, b) the ``geometry_id`` does not map to a valid
     geometry, c) the ``geometry_id`` maps to a geometry that does not
     belong to the indicated source, or d) the geometry is deformable.)""";
-          // Source: drake/geometry/scene_graph.h:654
+          // Source: drake/geometry/scene_graph.h
           const char* doc_context =
 R"""(systems::Context-modifying variant of ChangeShape(). Rather than
 modifying SceneGraph's model, it modifies the copy of the model stored
@@ -7048,7 +7048,7 @@ in the provided context.)""";
         } ChangeShape;
         // Symbol: drake::geometry::SceneGraph::GetRendererParameterYaml
         struct /* GetRendererParameterYaml */ {
-          // Source: drake/geometry/scene_graph.h:787
+          // Source: drake/geometry/scene_graph.h
           const char* doc_1args =
 R"""(Creates a Yaml-formatted string representing the named engine's
 parameters. The YAML will be prefixed with the paramater type's name,
@@ -7058,7 +7058,7 @@ RenderEngineVtkParams: default_diffuse: [1, 1, 1] ...
 
 If no registered engine has the given ``name``, the returned string is
 empty.)""";
-          // Source: drake/geometry/scene_graph.h:792
+          // Source: drake/geometry/scene_graph.h
           const char* doc_2args =
 R"""(systems::Context-query variant of GetRendererParameterYaml(). Rather
 than querying SceneGraph's model, it queries the copy of the model
@@ -7066,7 +7066,7 @@ stored in the provided context.)""";
         } GetRendererParameterYaml;
         // Symbol: drake::geometry::SceneGraph::GetRendererTypeName
         struct /* GetRendererTypeName */ {
-          // Source: drake/geometry/scene_graph.h:770
+          // Source: drake/geometry/scene_graph.h
           const char* doc_1args =
 R"""(Reports the type name for the RenderEngine registered with the given
 ``name``.
@@ -7075,7 +7075,7 @@ Returns:
     the name of the RenderEngine's most derived type (as produced by
     NiceTypeName::Get()). An empty string if there is no RenderEngine
     registered with the given ``name``.)""";
-          // Source: drake/geometry/scene_graph.h:775
+          // Source: drake/geometry/scene_graph.h
           const char* doc_2args =
 R"""(systems::Context-query variant of GetRendererTypeName(). Rather than
 querying SceneGraph's model, it queries the copy of the model stored
@@ -7083,11 +7083,11 @@ in the provided context.)""";
         } GetRendererTypeName;
         // Symbol: drake::geometry::SceneGraph::HasRenderer
         struct /* HasRenderer */ {
-          // Source: drake/geometry/scene_graph.h:756
+          // Source: drake/geometry/scene_graph.h
           const char* doc_1args =
 R"""(Reports true if this SceneGraph has a renderer registered with the
 given name.)""";
-          // Source: drake/geometry/scene_graph.h:761
+          // Source: drake/geometry/scene_graph.h
           const char* doc_2args =
 R"""(systems::Context-query variant of HasRenderer(). Rather than querying
 SceneGraph's model, it queries the copy of the model stored in the
@@ -7095,7 +7095,7 @@ provided context.)""";
         } HasRenderer;
         // Symbol: drake::geometry::SceneGraph::RegisterAnchoredGeometry
         struct /* RegisterAnchoredGeometry */ {
-          // Source: drake/geometry/scene_graph.h:555
+          // Source: drake/geometry/scene_graph.h
           const char* doc =
 R"""(Registers a new *anchored* geometry G for this source. This hangs
 geometry G from the world frame (W). Its pose is defined in that frame
@@ -7125,7 +7125,7 @@ Raises:
         } RegisterAnchoredGeometry;
         // Symbol: drake::geometry::SceneGraph::RegisterDeformableGeometry
         struct /* RegisterDeformableGeometry */ {
-          // Source: drake/geometry/scene_graph.h:592
+          // Source: drake/geometry/scene_graph.h
           const char* doc_4args =
 R"""(Registers a new deformable geometry G for this source. This registers
 geometry G on a frame F (indicated by ``frame_id``). The registered
@@ -7172,7 +7172,7 @@ Raises:
     registered source, b) frame_id != world_frame_id(), c) the
     ``geometry`` is equal to ``nullptr``, d) the geometry's name
     doesn't satisfy the requirements outlined in GeometryInstance.)""";
-          // Source: drake/geometry/scene_graph.h:601
+          // Source: drake/geometry/scene_graph.h
           const char* doc_5args =
 R"""(systems::Context-modifying variant of RegisterDeformableGeometry().
 Rather than modifying SceneGraph's model, it modifies the copy of the
@@ -7185,7 +7185,7 @@ Warning:
         } RegisterDeformableGeometry;
         // Symbol: drake::geometry::SceneGraph::RegisterFrame
         struct /* RegisterFrame */ {
-          // Source: drake/geometry/scene_graph.h:460
+          // Source: drake/geometry/scene_graph.h
           const char* doc_2args =
 R"""(Registers a new frame F for this source. This hangs frame F on the
 world frame (W). Its pose is defined relative to the world frame (i.e,
@@ -7208,7 +7208,7 @@ Raises:
     registered source, b) ``frame`` has an id that has already been
     registered, or c) there is already a frame with the same name
     registered for the source.)""";
-          // Source: drake/geometry/scene_graph.h:482
+          // Source: drake/geometry/scene_graph.h
           const char* doc_3args =
 R"""(Registers a new frame F for this source. This hangs frame F on another
 previously registered frame P (indicated by ``parent_id``). The pose
@@ -7239,7 +7239,7 @@ Raises:
         } RegisterFrame;
         // Symbol: drake::geometry::SceneGraph::RegisterGeometry
         struct /* RegisterGeometry */ {
-          // Source: drake/geometry/scene_graph.h:523
+          // Source: drake/geometry/scene_graph.h
           const char* doc_3args =
 R"""(Registers a new rigid geometry G for this source. This hangs geometry
 G on a previously registered frame F (indicated by ``frame_id``). The
@@ -7272,7 +7272,7 @@ Raises:
     source, c) the ``geometry`` is equal to ``nullptr``, or d) the
     geometry's name doesn't satisfy the requirements outlined in
     GeometryInstance.)""";
-          // Source: drake/geometry/scene_graph.h:531
+          // Source: drake/geometry/scene_graph.h
           const char* doc_4args =
 R"""(systems::Context-modifying variant of RegisterGeometry(). Rather than
 modifying SceneGraph's model, it modifies the copy of the model stored
@@ -7280,7 +7280,7 @@ in the provided context.)""";
         } RegisterGeometry;
         // Symbol: drake::geometry::SceneGraph::RegisterSource
         struct /* RegisterSource */ {
-          // Source: drake/geometry/scene_graph.h:380
+          // Source: drake/geometry/scene_graph.h
           const char* doc =
 R"""(Registers a new, named source to the geometry system. The caller must
 save the returned SourceId; it is the token by which all other
@@ -7308,10 +7308,10 @@ Raises:
         } RegisterSource;
         // Symbol: drake::geometry::SceneGraph::RegisteredRendererNames
         struct /* RegisteredRendererNames */ {
-          // Source: drake/geometry/scene_graph.h:804
+          // Source: drake/geometry/scene_graph.h
           const char* doc_0args =
 R"""(Reports the names of all registered renderers.)""";
-          // Source: drake/geometry/scene_graph.h:809
+          // Source: drake/geometry/scene_graph.h
           const char* doc_1args =
 R"""(systems::Context-query variant of RegisteredRendererNames(). Rather
 than querying SceneGraph's model, it queries the copy of the model
@@ -7319,7 +7319,7 @@ stored in the provided context.)""";
         } RegisteredRendererNames;
         // Symbol: drake::geometry::SceneGraph::RemoveGeometry
         struct /* RemoveGeometry */ {
-          // Source: drake/geometry/scene_graph.h:678
+          // Source: drake/geometry/scene_graph.h
           const char* doc_2args =
 R"""(Removes the given geometry G (indicated by ``geometry_id``) from the
 given source's registered geometries. All registered geometries
@@ -7342,7 +7342,7 @@ Raises:
     registered source, b) the ``geometry_id`` does not map to a valid
     geometry, or c) the ``geometry_id`` maps to a geometry that does
     not belong to the indicated source.)""";
-          // Source: drake/geometry/scene_graph.h:684
+          // Source: drake/geometry/scene_graph.h
           const char* doc_3args =
 R"""(systems::Context-modifying variant of RemoveGeometry(). Rather than
 modifying SceneGraph's model, it modifies the copy of the model stored
@@ -7350,7 +7350,7 @@ in the provided context.)""";
         } RemoveGeometry;
         // Symbol: drake::geometry::SceneGraph::RemoveRenderer
         struct /* RemoveRenderer */ {
-          // Source: drake/geometry/scene_graph.h:746
+          // Source: drake/geometry/scene_graph.h
           const char* doc_1args =
 R"""(Removes an existing renderer from this SceneGraph
 
@@ -7360,7 +7360,7 @@ Parameter ``name``:
 Raises:
     RuntimeError if this SceneGraph doesn't have a renderer with the
     specified name.)""";
-          // Source: drake/geometry/scene_graph.h:751
+          // Source: drake/geometry/scene_graph.h
           const char* doc_2args =
 R"""(systems::Context-modifying variant of RemoveRenderer(). Rather than
 modifying SceneGraph's model, it modifies the copy of the model stored
@@ -7368,7 +7368,7 @@ in the provided context.)""";
         } RemoveRenderer;
         // Symbol: drake::geometry::SceneGraph::RemoveRole
         struct /* RemoveRole */ {
-          // Source: drake/geometry/scene_graph.h:997
+          // Source: drake/geometry/scene_graph.h
           const char* doc_frame_direct =
 R"""(Removes the indicated ``role`` from any geometry directly registered
 to the frame indicated by ``frame_id`` (if the geometry has the role).
@@ -7385,13 +7385,13 @@ Raises:
     ``frame_id`` does not belong to ``source_id`` (unless ``frame_id``
     is the world frame id), or d) the context has already been
     allocated.)""";
-          // Source: drake/geometry/scene_graph.h:1005
+          // Source: drake/geometry/scene_graph.h
           const char* doc_frame_context =
 R"""(systems::Context-modifying variant of
 RemoveRole(SourceId,FrameId,Role) "RemoveRole()" for frames. Rather
 than modifying SceneGraph's model, it modifies the copy of the model
 stored in the provided context.)""";
-          // Source: drake/geometry/scene_graph.h:1022
+          // Source: drake/geometry/scene_graph.h
           const char* doc_geometry_direct =
 R"""(Removes the indicated ``role`` from the geometry indicated by
 ``geometry_id``. Potentially modifies the proximity, perception, or
@@ -7407,7 +7407,7 @@ Raises:
     source, b) ``geometry_id`` does not map to a registered geometry,
     c) ``geometry_id`` does not belong to ``source_id``, or d) the
     context has already been allocated.)""";
-          // Source: drake/geometry/scene_graph.h:1030
+          // Source: drake/geometry/scene_graph.h
           const char* doc_geometry_context =
 R"""(systems::Context-modifying variant of
 RemoveRole(SourceId,GeometryId,Role) "RemoveRole()" for individual
@@ -7416,7 +7416,7 @@ copy of the model stored in the provided context.)""";
         } RemoveRole;
         // Symbol: drake::geometry::SceneGraph::RenameFrame
         struct /* RenameFrame */ {
-          // Source: drake/geometry/scene_graph.h:496
+          // Source: drake/geometry/scene_graph.h
           const char* doc =
 R"""(Renames the frame to ``name``.
 
@@ -7437,7 +7437,7 @@ Raises:
         } RenameFrame;
         // Symbol: drake::geometry::SceneGraph::RenameGeometry
         struct /* RenameGeometry */ {
-          // Source: drake/geometry/scene_graph.h:617
+          // Source: drake/geometry/scene_graph.h
           const char* doc =
 R"""(Renames the geometry to ``name``.
 
@@ -7458,10 +7458,10 @@ Raises:
         } RenameGeometry;
         // Symbol: drake::geometry::SceneGraph::RendererCount
         struct /* RendererCount */ {
-          // Source: drake/geometry/scene_graph.h:796
+          // Source: drake/geometry/scene_graph.h
           const char* doc_0args =
 R"""(Reports the number of renderers registered to this SceneGraph.)""";
-          // Source: drake/geometry/scene_graph.h:801
+          // Source: drake/geometry/scene_graph.h
           const char* doc_1args =
 R"""(systems::Context-query variant of RendererCount(). Rather than
 querying SceneGraph's model, it queries the copy of the model stored
@@ -7469,19 +7469,19 @@ in the provided context.)""";
         } RendererCount;
         // Symbol: drake::geometry::SceneGraph::SceneGraph<T>
         struct /* ctor */ {
-          // Source: drake/geometry/scene_graph.h:316
+          // Source: drake/geometry/scene_graph.h
           const char* doc_0args =
 R"""(Constructs a default (empty) scene graph.)""";
-          // Source: drake/geometry/scene_graph.h:319
+          // Source: drake/geometry/scene_graph.h
           const char* doc_1args =
 R"""(Constructs an empty scene graph with the provided configuration.)""";
-          // Source: drake/geometry/scene_graph.h:323
+          // Source: drake/geometry/scene_graph.h
           const char* doc_copyconvert =
 R"""(Constructor used for scalar conversions.)""";
         } ctor;
         // Symbol: drake::geometry::SceneGraph::SourceIsRegistered
         struct /* SourceIsRegistered */ {
-          // Source: drake/geometry/scene_graph.h:384
+          // Source: drake/geometry/scene_graph.h
           const char* doc =
 R"""(Reports if the given source id is registered.
 
@@ -7490,11 +7490,11 @@ Parameter ``id``:
         } SourceIsRegistered;
         // Symbol: drake::geometry::SceneGraph::collision_filter_manager
         struct /* collision_filter_manager */ {
-          // Source: drake/geometry/scene_graph.h:1082
+          // Source: drake/geometry/scene_graph.h
           const char* doc_0args =
 R"""(Returns the collision filter manager for this SceneGraph instance's
 model*.)""";
-          // Source: drake/geometry/scene_graph.h:1086
+          // Source: drake/geometry/scene_graph.h
           const char* doc_1args =
 R"""(Returns the collision filter manager for data stored in ``context``.
 The context must remain alive for at least as long as the returned
@@ -7502,11 +7502,11 @@ manager.)""";
         } collision_filter_manager;
         // Symbol: drake::geometry::SceneGraph::get_config
         struct /* get_config */ {
-          // Source: drake/geometry/scene_graph.h:336
+          // Source: drake/geometry/scene_graph.h
           const char* doc_0args =
 R"""(Returns:
     the current configuration.)""";
-          // Source: drake/geometry/scene_graph.h:343
+          // Source: drake/geometry/scene_graph.h
           const char* doc_1args =
 R"""(Returns:
     the scene graph configuration from the given context. Note: there
@@ -7517,14 +7517,14 @@ R"""(Returns:
         } get_config;
         // Symbol: drake::geometry::SceneGraph::get_query_output_port
         struct /* get_query_output_port */ {
-          // Source: drake/geometry/scene_graph.h:400
+          // Source: drake/geometry/scene_graph.h
           const char* doc =
 R"""(Returns the output port which produces the QueryObject for performing
 geometric queries.)""";
         } get_query_output_port;
         // Symbol: drake::geometry::SceneGraph::get_source_configuration_port
         struct /* get_source_configuration_port */ {
-          // Source: drake/geometry/scene_graph.h:396
+          // Source: drake/geometry/scene_graph.h
           const char* doc =
 R"""(Given a valid source ``id``, returns a *configuration* input port
 associated with that ``id``. This port is used to communicate
@@ -7535,7 +7535,7 @@ Raises:
         } get_source_configuration_port;
         // Symbol: drake::geometry::SceneGraph::get_source_pose_port
         struct /* get_source_pose_port */ {
-          // Source: drake/geometry/scene_graph.h:390
+          // Source: drake/geometry/scene_graph.h
           const char* doc =
 R"""(Given a valid source ``id``, returns a *pose* input port associated
 with that ``id``. This port is used to communicate *pose* data for
@@ -7546,42 +7546,42 @@ Raises:
         } get_source_pose_port;
         // Symbol: drake::geometry::SceneGraph::model_inspector
         struct /* model_inspector */ {
-          // Source: drake/geometry/scene_graph.h:1041
+          // Source: drake/geometry/scene_graph.h
           const char* doc =
 R"""(Returns an inspector on the system's *model* scene graph data.)""";
         } model_inspector;
         // Symbol: drake::geometry::SceneGraph::set_config
         struct /* set_config */ {
-          // Source: drake/geometry/scene_graph.h:333
+          // Source: drake/geometry/scene_graph.h
           const char* doc = R"""(Sets the configuration.)""";
         } set_config;
         // Symbol: drake::geometry::SceneGraph::world_frame_id
         struct /* world_frame_id */ {
-          // Source: drake/geometry/scene_graph.h:1036
+          // Source: drake/geometry/scene_graph.h
           const char* doc =
 R"""(Reports the identifier for the world frame.)""";
         } world_frame_id;
       } SceneGraph;
       // Symbol: drake::geometry::SceneGraphConfig
       struct /* SceneGraphConfig */ {
-        // Source: drake/geometry/scene_graph_config.h:163
+        // Source: drake/geometry/scene_graph_config.h
         const char* doc =
 R"""(The set of configurable properties on a SceneGraph.)""";
         // Symbol: drake::geometry::SceneGraphConfig::Serialize
         struct /* Serialize */ {
-          // Source: drake/geometry/scene_graph_config.h:167
+          // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::geometry::SceneGraphConfig::ValidateOrThrow
         struct /* ValidateOrThrow */ {
-          // Source: drake/geometry/scene_graph_config.h:176
+          // Source: drake/geometry/scene_graph_config.h
           const char* doc = R"""(Throws if the values are inconsistent.)""";
         } ValidateOrThrow;
         // Symbol: drake::geometry::SceneGraphConfig::default_proximity_properties
         struct /* default_proximity_properties */ {
-          // Source: drake/geometry/scene_graph_config.h:173
+          // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(Provides SceneGraph-wide contact material values to use when none have
 been otherwise specified.)""";
@@ -7594,7 +7594,7 @@ been otherwise specified.)""";
       } SceneGraphConfig;
       // Symbol: drake::geometry::SceneGraphInspector
       struct /* SceneGraphInspector */ {
-        // Source: drake/geometry/scene_graph_inspector.h:70
+        // Source: drake/geometry/scene_graph_inspector.h
         const char* doc =
 R"""(The SceneGraphInspector serves as a mechanism to query the topological
 structure of a SceneGraph instance. The topological structure consists
@@ -7634,7 +7634,7 @@ Template parameter ``T``:
     queries (or their results) depend on the scalar.)""";
         // Symbol: drake::geometry::SceneGraphInspector::BelongsToSource
         struct /* BelongsToSource */ {
-          // Source: drake/geometry/scene_graph_inspector.h:207
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc_2args_frame_id_source_id =
 R"""(Reports if the frame with given ``frame_id`` was registered to the
 source with the given ``source_id``.
@@ -7651,7 +7651,7 @@ Returns:
 Raises:
     RuntimeError If ``frame_id`` does not map to a registered frame or
     ``source_id`` does not map to a registered source.)""";
-          // Source: drake/geometry/scene_graph_inspector.h:285
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc_2args_geometry_id_source_id =
 R"""(Reports if the given geometry id was registered to the source with the
 given source id.
@@ -7671,7 +7671,7 @@ Raises:
         } BelongsToSource;
         // Symbol: drake::geometry::SceneGraphInspector::CloneGeometryInstance
         struct /* CloneGeometryInstance */ {
-          // Source: drake/geometry/scene_graph_inspector.h:463
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Obtains a new GeometryInstance that copies the geometry indicated by
 the given ``geometry_id``.
@@ -7688,7 +7688,7 @@ Raises:
         } CloneGeometryInstance;
         // Symbol: drake::geometry::SceneGraphInspector::CollisionFiltered
         struct /* CollisionFiltered */ {
-          // Source: drake/geometry/scene_graph_inspector.h:453
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports true if the two geometries with given ids ``geometry_id1`` and
 ``geometry_id2``, define a collision pair that has been filtered out.
@@ -7699,7 +7699,7 @@ Raises:
         } CollisionFiltered;
         // Symbol: drake::geometry::SceneGraphInspector::FramesForSource
         struct /* FramesForSource */ {
-          // Source: drake/geometry/scene_graph_inspector.h:192
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports the ids of all of the frames registered to the source with the
 given source ``source_id``.
@@ -7709,14 +7709,14 @@ Raises:
         } FramesForSource;
         // Symbol: drake::geometry::SceneGraphInspector::GetAllDeformableGeometryIds
         struct /* GetAllDeformableGeometryIds */ {
-          // Source: drake/geometry/scene_graph_inspector.h:424
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Returns all geometry ids that correspond to deformable geometries. The
 order is guaranteed to be stable and consistent.)""";
         } GetAllDeformableGeometryIds;
         // Symbol: drake::geometry::SceneGraphInspector::GetAllFrameIds
         struct /* GetAllFrameIds */ {
-          // Source: drake/geometry/scene_graph_inspector.h:99
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Returns all of the frame ids in the scene graph. The order is
 guaranteed to be stable and consistent. The ids include the world
@@ -7724,7 +7724,7 @@ frame's id.)""";
         } GetAllFrameIds;
         // Symbol: drake::geometry::SceneGraphInspector::GetAllGeometryIds
         struct /* GetAllGeometryIds */ {
-          // Source: drake/geometry/scene_graph_inspector.h:113
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Returns the set of all ids for registered geometries. The order is
 guaranteed to be stable and consistent.
@@ -7734,7 +7734,7 @@ Parameter ``role``:
         } GetAllGeometryIds;
         // Symbol: drake::geometry::SceneGraphInspector::GetAllSourceIds
         struct /* GetAllSourceIds */ {
-          // Source: drake/geometry/scene_graph_inspector.h:95
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Returns all of the source ids in the scene graph. The order is
 guaranteed to be stable and consistent. The first element is the
@@ -7742,7 +7742,7 @@ SceneGraph-internal source.)""";
         } GetAllSourceIds;
         // Symbol: drake::geometry::SceneGraphInspector::GetCollisionCandidates
         struct /* GetCollisionCandidates */ {
-          // Source: drake/geometry/scene_graph_inspector.h:164
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Returns all pairs of geometries that are candidates for collision (in
 no particular order). See CollisionFilterDeclaration and
@@ -7756,7 +7756,7 @@ QueryObject::ComputePointPairPenetration().)""";
         } GetCollisionCandidates;
         // Symbol: drake::geometry::SceneGraphInspector::GetConvexHull
         struct /* GetConvexHull */ {
-          // Source: drake/geometry/scene_graph_inspector.h:431
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Returns the convex hull (a polytope) associated with the given
 ``geometry_id``, if it exists. Basic primitive shapes don't have
@@ -7766,7 +7766,7 @@ Mesh::GetConvexHull() or Convex::GetConvexHull(), respectively.)""";
         } GetConvexHull;
         // Symbol: drake::geometry::SceneGraphInspector::GetDrivenRenderMeshes
         struct /* GetDrivenRenderMeshes */ {
-          // Source: drake/geometry/scene_graph_inspector.h:413
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Returns the render mesh representation of the driven meshes associated
 with the given ``role`` of the geometry with the given
@@ -7790,7 +7790,7 @@ Warning:
         } GetDrivenRenderMeshes;
         // Symbol: drake::geometry::SceneGraphInspector::GetFrameGroup
         struct /* GetFrameGroup */ {
-          // Source: drake/geometry/scene_graph_inspector.h:228
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports the frame group for the frame with the given ``frame_id``.
 
@@ -7800,7 +7800,7 @@ Raises:
         } GetFrameGroup;
         // Symbol: drake::geometry::SceneGraphInspector::GetFrameId
         struct /* GetFrameId */ {
-          // Source: drake/geometry/scene_graph_inspector.h:297
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports the id of the frame to which the given geometry with the given
 ``geometry_id`` is registered.
@@ -7811,7 +7811,7 @@ Raises:
         } GetFrameId;
         // Symbol: drake::geometry::SceneGraphInspector::GetGeometries
         struct /* GetGeometries */ {
-          // Source: drake/geometry/scene_graph_inspector.h:253
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Returns geometry ids that have been registered directly to the frame
 indicated by ``frame_id``. If a ``role`` is provided, only geometries
@@ -7834,7 +7834,7 @@ Raises:
         } GetGeometries;
         // Symbol: drake::geometry::SceneGraphInspector::GetGeometryIdByName
         struct /* GetGeometryIdByName */ {
-          // Source: drake/geometry/scene_graph_inspector.h:269
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports the id of the geometry with the given ``name`` and ``role``,
 attached to the frame with the given frame ``frame_id``.
@@ -7860,7 +7860,7 @@ Raises:
         } GetGeometryIdByName;
         // Symbol: drake::geometry::SceneGraphInspector::GetGeometryIds
         struct /* GetGeometryIds */ {
-          // Source: drake/geometry/scene_graph_inspector.h:134
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Returns the geometry ids that are *implied* by the given GeometrySet
 and ``role``. Remember that a GeometrySet can reference a FrameId in
@@ -7890,7 +7890,7 @@ Warning:
         } GetGeometryIds;
         // Symbol: drake::geometry::SceneGraphInspector::GetIllustrationProperties
         struct /* GetIllustrationProperties */ {
-          // Source: drake/geometry/scene_graph_inspector.h:375
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Returns a pointer to the const illustration properties of the geometry
 with the given ``geometry_id``.
@@ -7908,19 +7908,19 @@ Raises:
         } GetIllustrationProperties;
         // Symbol: drake::geometry::SceneGraphInspector::GetName
         struct /* GetName */ {
-          // Source: drake/geometry/scene_graph_inspector.h:180
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc_1args_source_id =
 R"""(Reports the name for the source with the given ``source_id``.
 
 Raises:
     RuntimeError if ``source_id`` does not map to a registered source.)""";
-          // Source: drake/geometry/scene_graph_inspector.h:218
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc_1args_frame_id =
 R"""(Reports the name of the frame with the given ``frame_id``.
 
 Raises:
     RuntimeError if ``frame_id`` does not map to a registered frame.)""";
-          // Source: drake/geometry/scene_graph_inspector.h:304
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc_1args_geometry_id =
 R"""(Reports the stored, canonical name of the geometry with the given
 ``geometry_id`` (see canonicalized_geometry_names "GeometryInstance"
@@ -7932,7 +7932,7 @@ Raises:
         } GetName;
         // Symbol: drake::geometry::SceneGraphInspector::GetObbInGeometryFrame
         struct /* GetObbInGeometryFrame */ {
-          // Source: drake/geometry/scene_graph_inspector.h:446
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Returns the oriented bounding box (OBB) associated with the given
 ``geometry_id`` in the geometry's frame, G. The OBB is defined in the
@@ -7959,14 +7959,14 @@ Raises:
         } GetObbInGeometryFrame;
         // Symbol: drake::geometry::SceneGraphInspector::GetOwningSourceName
         struct /* GetOwningSourceName */ {
-          // Source: drake/geometry/scene_graph_inspector.h:213
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc_1args_frame_id =
 R"""(Reports the *name* of the geometry source that registered the frame
 with the given ``frame_id``.
 
 Raises:
     RuntimeError If ``frame_id`` does not map to a registered frame.)""";
-          // Source: drake/geometry/scene_graph_inspector.h:291
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc_1args_geometry_id =
 R"""(Reports the *name* of the geometry source that registered the geometry
 with the given ``geometry_id``.
@@ -7977,7 +7977,7 @@ Raises:
         } GetOwningSourceName;
         // Symbol: drake::geometry::SceneGraphInspector::GetParentFrame
         struct /* GetParentFrame */ {
-          // Source: drake/geometry/scene_graph_inspector.h:223
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports the FrameId of the parent of ``frame_id``.
 
@@ -7986,7 +7986,7 @@ Raises:
         } GetParentFrame;
         // Symbol: drake::geometry::SceneGraphInspector::GetPerceptionProperties
         struct /* GetPerceptionProperties */ {
-          // Source: drake/geometry/scene_graph_inspector.h:385
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Returns a pointer to the const perception properties of the geometry
 with the given ``geometry_id``.
@@ -8004,7 +8004,7 @@ Raises:
         } GetPerceptionProperties;
         // Symbol: drake::geometry::SceneGraphInspector::GetPoseInFrame
         struct /* GetPoseInFrame */ {
-          // Source: drake/geometry/scene_graph_inspector.h:316
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports the pose of the geometry G with the given ``geometry_id`` in
 its registered frame F.
@@ -8019,7 +8019,7 @@ Raises:
         } GetPoseInFrame;
         // Symbol: drake::geometry::SceneGraphInspector::GetProperties
         struct /* GetProperties */ {
-          // Source: drake/geometry/scene_graph_inspector.h:355
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Return a pointer to the const properties indicated by ``role`` of the
 geometry with the given ``geometry_id``.
@@ -8040,7 +8040,7 @@ Raises:
         } GetProperties;
         // Symbol: drake::geometry::SceneGraphInspector::GetProximityProperties
         struct /* GetProximityProperties */ {
-          // Source: drake/geometry/scene_graph_inspector.h:365
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Returns a pointer to the const proximity properties of the geometry
 with the given ``geometry_id``.
@@ -8058,7 +8058,7 @@ Raises:
         } GetProximityProperties;
         // Symbol: drake::geometry::SceneGraphInspector::GetReferenceMesh
         struct /* GetReferenceMesh */ {
-          // Source: drake/geometry/scene_graph_inspector.h:398
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Returns the reference mesh of the geometry with the given
 ``geometry_id``, measured and expressed in the geometry's frame, G.
@@ -8081,7 +8081,7 @@ Raises:
         } GetReferenceMesh;
         // Symbol: drake::geometry::SceneGraphInspector::GetShape
         struct /* GetShape */ {
-          // Source: drake/geometry/scene_graph_inspector.h:309
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Returns the shape specified for the geometry with the given
 ``geometry_id``. In order to extract the details of the shape, it
@@ -8089,7 +8089,7 @@ should be passed through an implementation of a ShapeReifier.)""";
         } GetShape;
         // Symbol: drake::geometry::SceneGraphInspector::IsDeformableGeometry
         struct /* IsDeformableGeometry */ {
-          // Source: drake/geometry/scene_graph_inspector.h:420
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Returns true if the geometry with the given ``geometry_id`` is
 deformable.
@@ -8103,7 +8103,7 @@ Raises:
         } IsDeformableGeometry;
         // Symbol: drake::geometry::SceneGraphInspector::NumAnchoredGeometries
         struct /* NumAnchoredGeometries */ {
-          // Source: drake/geometry/scene_graph_inspector.h:153
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports the total number of *anchored* non-deformable geometries. This
 should provide the same answer as calling NumGeometriesForFrame() with
@@ -8111,21 +8111,21 @@ the world frame id.)""";
         } NumAnchoredGeometries;
         // Symbol: drake::geometry::SceneGraphInspector::NumDeformableGeometriesWithRole
         struct /* NumDeformableGeometriesWithRole */ {
-          // Source: drake/geometry/scene_graph_inspector.h:144
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports the *total* number of *deformable* geometries in the scene
 graph with the indicated role.)""";
         } NumDeformableGeometriesWithRole;
         // Symbol: drake::geometry::SceneGraphInspector::NumDynamicGeometries
         struct /* NumDynamicGeometries */ {
-          // Source: drake/geometry/scene_graph_inspector.h:148
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports the total number of *dynamic* geometries in the scene graph.
 This include all deformable geometries.)""";
         } NumDynamicGeometries;
         // Symbol: drake::geometry::SceneGraphInspector::NumFramesForSource
         struct /* NumFramesForSource */ {
-          // Source: drake/geometry/scene_graph_inspector.h:186
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports the number of frames registered to the source with the given
 ``source_id``.
@@ -8135,7 +8135,7 @@ Raises:
         } NumFramesForSource;
         // Symbol: drake::geometry::SceneGraphInspector::NumGeometriesForFrame
         struct /* NumGeometriesForFrame */ {
-          // Source: drake/geometry/scene_graph_inspector.h:235
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports the number of geometries affixed to the frame with the given
 ``frame_id``. This count does *not* include geometries attached to
@@ -8146,7 +8146,7 @@ Raises:
         } NumGeometriesForFrame;
         // Symbol: drake::geometry::SceneGraphInspector::NumGeometriesForFrameWithRole
         struct /* NumGeometriesForFrameWithRole */ {
-          // Source: drake/geometry/scene_graph_inspector.h:242
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports the total number of geometries with the given ``role``
 directly registered to the frame with the given ``frame_id``. This
@@ -8158,26 +8158,26 @@ Raises:
         } NumGeometriesForFrameWithRole;
         // Symbol: drake::geometry::SceneGraphInspector::NumGeometriesWithRole
         struct /* NumGeometriesWithRole */ {
-          // Source: drake/geometry/scene_graph_inspector.h:140
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports the *total* number of geometries in the scene graph with the
 indicated role.)""";
         } NumGeometriesWithRole;
         // Symbol: drake::geometry::SceneGraphInspector::SceneGraphInspector<T>
         struct /* ctor */ {
-          // Source: drake/geometry/scene_graph_inspector.h:72
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::geometry::SceneGraphInspector::SourceIsRegistered
         struct /* SourceIsRegistered */ {
-          // Source: drake/geometry/scene_graph_inspector.h:176
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports ``True`` if the given ``source_id`` maps to a registered
 source.)""";
         } SourceIsRegistered;
         // Symbol: drake::geometry::SceneGraphInspector::geometry_version
         struct /* geometry_version */ {
-          // Source: drake/geometry/scene_graph_inspector.h:169
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Returns the geometry version that can be used to detect changes to the
 geometry data associated with geometry roles. The reference returned
@@ -8186,7 +8186,7 @@ copied.)""";
         } geometry_version;
         // Symbol: drake::geometry::SceneGraphInspector::maybe_get_hydroelastic_mesh
         struct /* maybe_get_hydroelastic_mesh */ {
-          // Source: drake/geometry/scene_graph_inspector.h:345
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Returns the *mesh* used to represent this geometry in hydroelastic
 contact calculations, if it exists. Most primitives (sphere, cylinder,
@@ -8228,20 +8228,20 @@ Returns:
         } maybe_get_hydroelastic_mesh;
         // Symbol: drake::geometry::SceneGraphInspector::num_frames
         struct /* num_frames */ {
-          // Source: drake/geometry/scene_graph_inspector.h:90
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports the *total* number of frames registered in the scene graph
 (including the world frame).)""";
         } num_frames;
         // Symbol: drake::geometry::SceneGraphInspector::num_geometries
         struct /* num_geometries */ {
-          // Source: drake/geometry/scene_graph_inspector.h:108
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports the *total* number of geometries in the scene graph.)""";
         } num_geometries;
         // Symbol: drake::geometry::SceneGraphInspector::num_sources
         struct /* num_sources */ {
-          // Source: drake/geometry/scene_graph_inspector.h:86
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports the number of registered sources -- whether they have
 registered frames/geometries or not. This will always be at least 1;
@@ -8249,13 +8249,13 @@ the SceneGraph itself counts as a source.)""";
         } num_sources;
         // Symbol: drake::geometry::SceneGraphInspector::world_frame_id
         struct /* world_frame_id */ {
-          // Source: drake/geometry/scene_graph_inspector.h:102
+          // Source: drake/geometry/scene_graph_inspector.h
           const char* doc = R"""(Reports the id for the world frame.)""";
         } world_frame_id;
       } SceneGraphInspector;
       // Symbol: drake::geometry::Shape
       struct /* Shape */ {
-        // Source: drake/geometry/shape_specification.h:62
+        // Source: drake/geometry/shape_specification.h
         const char* doc =
 R"""(The abstract base class for all shape specifications. Concrete
 subclasses exist for specific shapes (e.g., Box, Mesh, etc.).
@@ -8270,22 +8270,22 @@ extensions. All Shape classes must be defined within Drake directly
 (and in this h/cc file pair in particular).)""";
         // Symbol: drake::geometry::Shape::Clone
         struct /* Clone */ {
-          // Source: drake/geometry/shape_specification.h:72
+          // Source: drake/geometry/shape_specification.h
           const char* doc = R"""(Creates a unique copy of this shape.)""";
         } Clone;
         // Symbol: drake::geometry::Shape::DoClone
         struct /* DoClone */ {
-          // Source: drake/geometry/shape_specification.h:126
+          // Source: drake/geometry/shape_specification.h
           const char* doc = R"""((Internal use only) NVI for Clone().)""";
         } DoClone;
         // Symbol: drake::geometry::Shape::DoReify
         struct /* DoReify */ {
-          // Source: drake/geometry/shape_specification.h:123
+          // Source: drake/geometry/shape_specification.h
           const char* doc = R"""((Internal use only) NVI for Reify().)""";
         } DoReify;
         // Symbol: drake::geometry::Shape::Reify
         struct /* Reify */ {
-          // Source: drake/geometry/shape_specification.h:69
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Causes this description to be reified in the given ``reifier``. Each
 concrete subclass must invoke the single, matching method on the
@@ -8294,23 +8294,23 @@ to consume.)""";
         } Reify;
         // Symbol: drake::geometry::Shape::Shape
         struct /* ctor */ {
-          // Source: drake/geometry/shape_specification.h:110
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""((Internal use only) Constructor for use by derived classes. All
 subclasses of Shape must be marked ``final``.)""";
-          // Source: drake/geometry/shape_specification.h:114
+          // Source: drake/geometry/shape_specification.h
           const char* doc_copy =
 R"""((Internal use only) For derived classes.)""";
         } ctor;
         // Symbol: drake::geometry::Shape::VariantShapeConstPtr
         struct /* VariantShapeConstPtr */ {
-          // Source: drake/geometry/shape_specification.h:135
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""((Internal use only) All concrete subclasses, as const pointers.)""";
         } VariantShapeConstPtr;
         // Symbol: drake::geometry::Shape::Visit
         struct /* Visit */ {
-          // Source: drake/geometry/shape_specification.h:91
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Calls the given ``visitor`` function with ``*this`` as the sole
 argument, but with ``*this`` downcast to be the shape's concrete
@@ -8328,38 +8328,38 @@ code, e.g., check the implementation of CalcVolume() for one example.)""";
         } Visit;
         // Symbol: drake::geometry::Shape::do_to_string
         struct /* do_to_string */ {
-          // Source: drake/geometry/shape_specification.h:132
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""((Internal use only) NVI for to_string().)""";
         } do_to_string;
         // Symbol: drake::geometry::Shape::do_type_name
         struct /* do_type_name */ {
-          // Source: drake/geometry/shape_specification.h:129
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""((Internal use only) NVI for type_name().)""";
         } do_type_name;
         // Symbol: drake::geometry::Shape::get_variant_this
         struct /* get_variant_this */ {
-          // Source: drake/geometry/shape_specification.h:147
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""((Internal use only) NVI-like helper function for Visit().)""";
         } get_variant_this;
         // Symbol: drake::geometry::Shape::to_string
         struct /* to_string */ {
-          // Source: drake/geometry/shape_specification.h:78
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Returns a string representation of this shape.)""";
         } to_string;
         // Symbol: drake::geometry::Shape::type_name
         struct /* type_name */ {
-          // Source: drake/geometry/shape_specification.h:75
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Returns the (unqualified) type name of this Shape, e.g., "Box".)""";
         } type_name;
       } Shape;
       // Symbol: drake::geometry::ShapeReifier
       struct /* ShapeReifier */ {
-        // Source: drake/geometry/shape_specification.h:744
+        // Source: drake/geometry/shape_specification.h
         const char* doc =
 R"""(The interface for converting shape descriptions to real shapes. Any
 entity that consumes shape descriptions *must* implement this
@@ -8431,7 +8431,7 @@ invoked Shape::Reify() it is in a position to provide exactly the data
 the shape implementations require.)""";
         // Symbol: drake::geometry::ShapeReifier::DefaultImplementGeometry
         struct /* DefaultImplementGeometry */ {
-          // Source: drake/geometry/shape_specification.h:766
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(The default implementation of ImplementGeometry(): it throws an
 exception using ThrowUnsupportedGeometry(). The purpose of this
@@ -8441,17 +8441,17 @@ implementation boilerplate.)""";
         } DefaultImplementGeometry;
         // Symbol: drake::geometry::ShapeReifier::ImplementGeometry
         struct /* ImplementGeometry */ {
-          // Source: drake/geometry/shape_specification.h:748
+          // Source: drake/geometry/shape_specification.h
           const char* doc = R"""()""";
         } ImplementGeometry;
         // Symbol: drake::geometry::ShapeReifier::ShapeReifier
         struct /* ctor */ {
-          // Source: drake/geometry/shape_specification.h:759
+          // Source: drake/geometry/shape_specification.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::geometry::ShapeReifier::ThrowUnsupportedGeometry
         struct /* ThrowUnsupportedGeometry */ {
-          // Source: drake/geometry/shape_specification.h:771
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Derived ShapeReifiers can replace the default message for unsupported
 geometries by overriding this method. The name of the unsupported
@@ -8460,19 +8460,19 @@ shape type is given as the single parameter.)""";
       } ShapeReifier;
       // Symbol: drake::geometry::SourceId
       struct /* SourceId */ {
-        // Source: drake/geometry/geometry_ids.h:18
+        // Source: drake/geometry/geometry_ids.h
         const char* doc =
 R"""(Type used to identify geometry sources in SceneGraph.)""";
       } SourceId;
       // Symbol: drake::geometry::Sphere
       struct /* Sphere */ {
-        // Source: drake/geometry/shape_specification.h:672
+        // Source: drake/geometry/shape_specification.h
         const char* doc =
 R"""(Definition of sphere. It is centered in its canonical frame with the
 given radius.)""";
         // Symbol: drake::geometry::Sphere::Sphere
         struct /* ctor */ {
-          // Source: drake/geometry/shape_specification.h:679
+          // Source: drake/geometry/shape_specification.h
           const char* doc =
 R"""(Constructs a sphere with the given ``radius``.
 
@@ -8482,13 +8482,13 @@ Raises:
         } ctor;
         // Symbol: drake::geometry::Sphere::radius
         struct /* radius */ {
-          // Source: drake/geometry/shape_specification.h:683
+          // Source: drake/geometry/shape_specification.h
           const char* doc = R"""()""";
         } radius;
       } Sphere;
       // Symbol: drake::geometry::to_string
       struct /* to_string */ {
-        // Source: drake/geometry/geometry_roles.h:225
+        // Source: drake/geometry/geometry_roles.h
         const char* doc = R"""()""";
       } to_string;
     } geometry;
@@ -8498,7 +8498,7 @@ Raises:
       struct /* scalar_conversion */ {
         // Symbol: drake::systems::scalar_conversion::Traits
         struct /* Traits */ {
-          // Source: drake/geometry/drake_visualizer.h:350
+          // Source: drake/geometry/drake_visualizer.h
           const char* doc = R"""()""";
         } Traits;
       } scalar_conversion;

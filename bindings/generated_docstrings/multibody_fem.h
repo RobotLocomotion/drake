@@ -55,7 +55,7 @@ constexpr struct /* pydrake_doc_multibody_fem */ {
     struct /* multibody */ {
       // Symbol: drake::multibody::ForceDensityFieldBase
       struct /* ForceDensityFieldBase */ {
-        // Source: drake/multibody/fem/force_density_field_base.h:36
+        // Source: drake/multibody/fem/force_density_field_base.h
         const char* doc =
 R"""(The ForceDensityFieldBase class is an abstract base class that
 represents a force density field affecting deformable bodies in a
@@ -67,58 +67,58 @@ class, inherit from ForceDensityField instead of directly inheriting
 from ForceDensityFieldBase.)""";
         // Symbol: drake::multibody::ForceDensityFieldBase::Clone
         struct /* Clone */ {
-          // Source: drake/multibody/fem/force_density_field_base.h:48
+          // Source: drake/multibody/fem/force_density_field_base.h
           const char* doc =
 R"""(Returns an identical copy of ``this`` ForceDensityFieldBase.)""";
         } Clone;
         // Symbol: drake::multibody::ForceDensityFieldBase::DoClone
         struct /* DoClone */ {
-          // Source: drake/multibody/fem/force_density_field_base.h:64
+          // Source: drake/multibody/fem/force_density_field_base.h
           const char* doc =
 R"""(Derived classes must override this function to implement the NVI
 Clone().)""";
         } DoClone;
         // Symbol: drake::multibody::ForceDensityFieldBase::DoEvaluateAt
         struct /* DoEvaluateAt */ {
-          // Source: drake/multibody/fem/force_density_field_base.h:59
+          // Source: drake/multibody/fem/force_density_field_base.h
           const char* doc =
 R"""(Derived classes must override this function to provide a threadsafe
 implemention to the NVI EvaluateAt().)""";
         } DoEvaluateAt;
         // Symbol: drake::multibody::ForceDensityFieldBase::EvaluateAt
         struct /* EvaluateAt */ {
-          // Source: drake/multibody/fem/force_density_field_base.h:42
+          // Source: drake/multibody/fem/force_density_field_base.h
           const char* doc =
 R"""(Evaluates the force density [N/m³] with the given ``context`` of the
 owning MultibodyPlant and a position in world, ``p_WQ``.)""";
         } EvaluateAt;
         // Symbol: drake::multibody::ForceDensityFieldBase::ForceDensityFieldBase<T>
         struct /* ctor */ {
-          // Source: drake/multibody/fem/force_density_field_base.h:55
+          // Source: drake/multibody/fem/force_density_field_base.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::multibody::ForceDensityFieldBase::density_type
         struct /* density_type */ {
-          // Source: drake/multibody/fem/force_density_field_base.h:52
+          // Source: drake/multibody/fem/force_density_field_base.h
           const char* doc = R"""()""";
         } density_type;
       } ForceDensityFieldBase;
       // Symbol: drake::multibody::ForceDensityType
       struct /* ForceDensityType */ {
-        // Source: drake/multibody/fem/force_density_field_base.h:17
+        // Source: drake/multibody/fem/force_density_field_base.h
         const char* doc =
 R"""((Advanced) Enum for the type of force density in
 ForceDensityFieldBase.)""";
         // Symbol: drake::multibody::ForceDensityType::kPerCurrentVolume
         struct /* kPerCurrentVolume */ {
-          // Source: drake/multibody/fem/force_density_field_base.h:20
+          // Source: drake/multibody/fem/force_density_field_base.h
           const char* doc =
 R"""(ForceDensityFieldBase::EvaluateAt() returns the force per unit of
 *current* (deformed) configuration volume.)""";
         } kPerCurrentVolume;
         // Symbol: drake::multibody::ForceDensityType::kPerReferenceVolume
         struct /* kPerReferenceVolume */ {
-          // Source: drake/multibody/fem/force_density_field_base.h:24
+          // Source: drake/multibody/fem/force_density_field_base.h
           const char* doc =
 R"""(ForceDensityFieldBase::EvaluateAt() returns the force per unit of
 *reference* configuration volume where the reference undeformed
@@ -129,7 +129,7 @@ configuration is defined by the input mesh provided by the user.)""";
       struct /* fem */ {
         // Symbol: drake::multibody::fem::DampingModel
         struct /* DampingModel */ {
-          // Source: drake/multibody/fem/damping_model.h:25
+          // Source: drake/multibody/fem/damping_model.h
           const char* doc =
 R"""(A viscous Rayleigh damping model in which the damping matrix D is a
 linear combination of mass and stiffness matrices, as, D = αM + βK
@@ -148,7 +148,7 @@ values for ζ (e.g 0 ≤ ζ < 0.05). Thereafter calculate the associated
 numerical values of α and β.)""";
           // Symbol: drake::multibody::fem::DampingModel::DampingModel<T>
           struct /* ctor */ {
-            // Source: drake/multibody/fem/damping_model.h:33
+            // Source: drake/multibody/fem/damping_model.h
             const char* doc =
 R"""(Constructs a Rayleigh damping model by storing the mass coefficient α
 and the stiffness coefficient β that appears in the damping matrix D =
@@ -160,18 +160,18 @@ Raises:
           } ctor;
           // Symbol: drake::multibody::fem::DampingModel::mass_coeff_alpha
           struct /* mass_coeff_alpha */ {
-            // Source: drake/multibody/fem/damping_model.h:35
+            // Source: drake/multibody/fem/damping_model.h
             const char* doc = R"""()""";
           } mass_coeff_alpha;
           // Symbol: drake::multibody::fem::DampingModel::stiffness_coeff_beta
           struct /* stiffness_coeff_beta */ {
-            // Source: drake/multibody/fem/damping_model.h:36
+            // Source: drake/multibody/fem/damping_model.h
             const char* doc = R"""()""";
           } stiffness_coeff_beta;
         } DampingModel;
         // Symbol: drake::multibody::fem::DeformableBodyConfig
         struct /* DeformableBodyConfig */ {
-          // Source: drake/multibody/fem/deformable_body_config.h:72
+          // Source: drake/multibody/fem/deformable_body_config.h
           const char* doc =
 R"""(DeformableBodyConfig stores the physical parameters for a deformable
 body. A default constructed configuration approximately represents a
@@ -196,88 +196,88 @@ relationship of the body, see MaterialModel. Default to
 MaterialModel::kCorotated.)""";
           // Symbol: drake::multibody::fem::DeformableBodyConfig::DeformableBodyConfig<T>
           struct /* ctor */ {
-            // Source: drake/multibody/fem/deformable_body_config.h:74
+            // Source: drake/multibody/fem/deformable_body_config.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::multibody::fem::DeformableBodyConfig::mass_damping_coefficient
           struct /* mass_damping_coefficient */ {
-            // Source: drake/multibody/fem/deformable_body_config.h:117
+            // Source: drake/multibody/fem/deformable_body_config.h
             const char* doc =
 R"""(Returns the mass damping coefficient. See DampingModel.)""";
           } mass_damping_coefficient;
           // Symbol: drake::multibody::fem::DeformableBodyConfig::mass_density
           struct /* mass_density */ {
-            // Source: drake/multibody/fem/deformable_body_config.h:125
+            // Source: drake/multibody/fem/deformable_body_config.h
             const char* doc =
 R"""(Returns the mass density, with unit of kg/m³.)""";
           } mass_density;
           // Symbol: drake::multibody::fem::DeformableBodyConfig::material_model
           struct /* material_model */ {
-            // Source: drake/multibody/fem/deformable_body_config.h:127
+            // Source: drake/multibody/fem/deformable_body_config.h
             const char* doc =
 R"""(Returns the constitutive model of the material.)""";
           } material_model;
           // Symbol: drake::multibody::fem::DeformableBodyConfig::poissons_ratio
           struct /* poissons_ratio */ {
-            // Source: drake/multibody/fem/deformable_body_config.h:115
+            // Source: drake/multibody/fem/deformable_body_config.h
             const char* doc = R"""(Returns the Poisson's ratio, unitless.)""";
           } poissons_ratio;
           // Symbol: drake::multibody::fem::DeformableBodyConfig::set_mass_damping_coefficient
           struct /* set_mass_damping_coefficient */ {
-            // Source: drake/multibody/fem/deformable_body_config.h:91
+            // Source: drake/multibody/fem/deformable_body_config.h
             const char* doc =
 R"""(Precondition:
     mass_damping_coefficient >= 0.)""";
           } set_mass_damping_coefficient;
           // Symbol: drake::multibody::fem::DeformableBodyConfig::set_mass_density
           struct /* set_mass_density */ {
-            // Source: drake/multibody/fem/deformable_body_config.h:103
+            // Source: drake/multibody/fem/deformable_body_config.h
             const char* doc =
 R"""(Precondition:
     mass_density > 0.)""";
           } set_mass_density;
           // Symbol: drake::multibody::fem::DeformableBodyConfig::set_material_model
           struct /* set_material_model */ {
-            // Source: drake/multibody/fem/deformable_body_config.h:108
+            // Source: drake/multibody/fem/deformable_body_config.h
             const char* doc = R"""()""";
           } set_material_model;
           // Symbol: drake::multibody::fem::DeformableBodyConfig::set_poissons_ratio
           struct /* set_poissons_ratio */ {
-            // Source: drake/multibody/fem/deformable_body_config.h:85
+            // Source: drake/multibody/fem/deformable_body_config.h
             const char* doc =
 R"""(Precondition:
     -1 < poissons_ratio < 0.5.)""";
           } set_poissons_ratio;
           // Symbol: drake::multibody::fem::DeformableBodyConfig::set_stiffness_damping_coefficient
           struct /* set_stiffness_damping_coefficient */ {
-            // Source: drake/multibody/fem/deformable_body_config.h:97
+            // Source: drake/multibody/fem/deformable_body_config.h
             const char* doc =
 R"""(Precondition:
     stiffness_damping_coefficient >= 0.)""";
           } set_stiffness_damping_coefficient;
           // Symbol: drake::multibody::fem::DeformableBodyConfig::set_youngs_modulus
           struct /* set_youngs_modulus */ {
-            // Source: drake/multibody/fem/deformable_body_config.h:79
+            // Source: drake/multibody/fem/deformable_body_config.h
             const char* doc =
 R"""(Precondition:
     youngs_modulus > 0.)""";
           } set_youngs_modulus;
           // Symbol: drake::multibody::fem::DeformableBodyConfig::stiffness_damping_coefficient
           struct /* stiffness_damping_coefficient */ {
-            // Source: drake/multibody/fem/deformable_body_config.h:121
+            // Source: drake/multibody/fem/deformable_body_config.h
             const char* doc =
 R"""(Returns the stiffness damping coefficient. See DampingModel.)""";
           } stiffness_damping_coefficient;
           // Symbol: drake::multibody::fem::DeformableBodyConfig::youngs_modulus
           struct /* youngs_modulus */ {
-            // Source: drake/multibody/fem/deformable_body_config.h:113
+            // Source: drake/multibody/fem/deformable_body_config.h
             const char* doc =
 R"""(Returns the Young's modulus, with unit of N/m².)""";
           } youngs_modulus;
         } DeformableBodyConfig;
         // Symbol: drake::multibody::fem::FemModel
         struct /* FemModel */ {
-          // Source: drake/multibody/fem/fem_model.h:81
+          // Source: drake/multibody/fem/fem_model.h
           const char* doc =
 R"""(FemModel calculates the components of the spatially discretized FEM
 equations for dynamic elasticity problems. Typically, in dynamic
@@ -335,7 +335,7 @@ Computing: Computer Graphics, Animation, Computational Photography,
 and Imaging 1.1 (2015): 1-69.)""";
           // Symbol: drake::multibody::fem::FemModel::ApplyBoundaryCondition
           struct /* ApplyBoundaryCondition */ {
-            // Source: drake/multibody/fem/fem_model.h:222
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(Applies boundary condition set for this FemModel to the input
 ``state``. No-op if no boundary condition is set.
@@ -348,14 +348,14 @@ Raises:
           } ApplyBoundaryCondition;
           // Symbol: drake::multibody::fem::FemModel::Builder
           struct /* Builder */ {
-            // Source: drake/multibody/fem/fem_model.h:87
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(Builder that builds the FemModel. Each concrete FemModel must define
 its own builder, subclassing this class, to add new elements to the
 model.)""";
             // Symbol: drake::multibody::fem::FemModel::Builder::Build
             struct /* Build */ {
-              // Source: drake/multibody/fem/fem_model.h:96
+              // Source: drake/multibody/fem/fem_model.h
               const char* doc =
 R"""(Adds the FEM elements described by calls to this builder to this
 associated FemModel. The builder is left in an invalid state after
@@ -363,7 +363,7 @@ Build() is invoked, and should thus be discarded and not reused again.)""";
             } Build;
             // Symbol: drake::multibody::fem::FemModel::Builder::Builder
             struct /* ctor */ {
-              // Source: drake/multibody/fem/fem_model.h:106
+              // Source: drake/multibody/fem/fem_model.h
               const char* doc =
 R"""(Constructs a new builder that builds into the given ``model``.
 
@@ -376,7 +376,7 @@ Note:
             } ctor;
             // Symbol: drake::multibody::fem::FemModel::Builder::DoBuild
             struct /* DoBuild */ {
-              // Source: drake/multibody/fem/fem_model.h:113
+              // Source: drake/multibody/fem/fem_model.h
               const char* doc =
 R"""(Derived builders must provide implementations for this function to add
 the FEM elements described by calls to the builder to the associated
@@ -384,14 +384,14 @@ FemModel.)""";
             } DoBuild;
             // Symbol: drake::multibody::fem::FemModel::Builder::ThrowIfBuilt
             struct /* ThrowIfBuilt */ {
-              // Source: drake/multibody/fem/fem_model.h:100
+              // Source: drake/multibody/fem/fem_model.h
               const char* doc =
 R"""(Throws an exception if Build() has been called on this Builder.)""";
             } ThrowIfBuilt;
           } Builder;
           // Symbol: drake::multibody::fem::FemModel::CalcCenterOfMassPositionInWorld
           struct /* CalcCenterOfMassPositionInWorld */ {
-            // Source: drake/multibody/fem/fem_model.h:180
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(Calculates the position vector from the world origin Wo to the center
 of mass of all bodies in this FemModel S, expressed in the world frame
@@ -410,7 +410,7 @@ Raises:
           } CalcCenterOfMassPositionInWorld;
           // Symbol: drake::multibody::fem::FemModel::CalcCenterOfMassTranslationalVelocityInWorld
           struct /* CalcCenterOfMassTranslationalVelocityInWorld */ {
-            // Source: drake/multibody/fem/fem_model.h:188
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(Calculates system center of mass translational velocity in world frame
 W.
@@ -427,7 +427,7 @@ Raises:
           } CalcCenterOfMassTranslationalVelocityInWorld;
           // Symbol: drake::multibody::fem::FemModel::CalcEffectiveAngularVelocity
           struct /* CalcEffectiveAngularVelocity */ {
-            // Source: drake/multibody/fem/fem_model.h:208
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(Using an angular momentum analogy, calculates an "effective" angular
 velocity for this FemModel S, measured and expressed in the world
@@ -456,7 +456,7 @@ Raises:
           } CalcEffectiveAngularVelocity;
           // Symbol: drake::multibody::fem::FemModel::CalcResidual
           struct /* CalcResidual */ {
-            // Source: drake/multibody/fem/fem_model.h:147
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(Calculates the residual G(x, v, a) (see class doc) evaluated at the
 given FEM state using the given ``plant_data``. The residual for
@@ -472,7 +472,7 @@ Raises:
           } CalcResidual;
           // Symbol: drake::multibody::fem::FemModel::CalcTangentMatrix
           struct /* CalcTangentMatrix */ {
-            // Source: drake/multibody/fem/fem_model.h:169
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(Calculates an approximated tangent matrix evaluated at the given FEM
 state. The tangent matrix is given by a weighted sum of stiffness
@@ -512,19 +512,19 @@ Raises:
           } CalcTangentMatrix;
           // Symbol: drake::multibody::fem::FemModel::Clone
           struct /* Clone */ {
-            // Source: drake/multibody/fem/fem_model.h:124
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc = R"""()""";
           } Clone;
           // Symbol: drake::multibody::fem::FemModel::DeclareCacheEntries
           struct /* DeclareCacheEntries */ {
-            // Source: drake/multibody/fem/fem_model.h:337
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(Derived classes should override this method to declare cache entries
 in the given ``fem_state_system``.)""";
           } DeclareCacheEntries;
           // Symbol: drake::multibody::fem::FemModel::DoCalcCenterOfMassPositionInWorld
           struct /* DoCalcCenterOfMassPositionInWorld */ {
-            // Source: drake/multibody/fem/fem_model.h:309
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(FemModelImpl must override this method to provide an implementation
 for the NVI CalcCenterOfMassPositionInWorld(). The input ``fem_state``
@@ -532,7 +532,7 @@ is guaranteed to be compatible with ``this`` FEM model.)""";
           } DoCalcCenterOfMassPositionInWorld;
           // Symbol: drake::multibody::fem::FemModel::DoCalcCenterOfMassTranslationalVelocityInWorld
           struct /* DoCalcCenterOfMassTranslationalVelocityInWorld */ {
-            // Source: drake/multibody/fem/fem_model.h:315
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(FemModelImpl must override this method to provide an implementation
 for the NVI CalcCenterOfMassTranslationalVelocityInWorld(). The input
@@ -540,7 +540,7 @@ for the NVI CalcCenterOfMassTranslationalVelocityInWorld(). The input
           } DoCalcCenterOfMassTranslationalVelocityInWorld;
           // Symbol: drake::multibody::fem::FemModel::DoCalcEffectiveAngularVelocity
           struct /* DoCalcEffectiveAngularVelocity */ {
-            // Source: drake/multibody/fem/fem_model.h:321
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(FemModelImpl must override this method to provide an implementation
 for the NVI CalcEffectiveAngularVelocity(). The input ``fem_state`` is
@@ -548,7 +548,7 @@ guaranteed to be compatible with ``this`` FEM model.)""";
           } DoCalcEffectiveAngularVelocity;
           // Symbol: drake::multibody::fem::FemModel::DoCalcResidual
           struct /* DoCalcResidual */ {
-            // Source: drake/multibody/fem/fem_model.h:293
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(FemModelImpl must override this method to provide an implementation
 for the NVI CalcResidual(). The input ``fem_state`` is guaranteed to
@@ -557,7 +557,7 @@ guaranteed to be non-null and properly sized.)""";
           } DoCalcResidual;
           // Symbol: drake::multibody::fem::FemModel::DoCalcTangentMatrix
           struct /* DoCalcTangentMatrix */ {
-            // Source: drake/multibody/fem/fem_model.h:301
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(FemModelImpl must override this method to provide an implementation
 for the NVI CalcTangentMatrix(). The input ``fem_state`` is guaranteed
@@ -566,21 +566,21 @@ to be compatible with ``this`` FEM model, and the input
           } DoCalcTangentMatrix;
           // Symbol: drake::multibody::fem::FemModel::DoClone
           struct /* DoClone */ {
-            // Source: drake/multibody/fem/fem_model.h:284
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(FemModelImpl must override this method to provide an implementation to
 make a deep copy of the concrete FemModel.)""";
           } DoClone;
           // Symbol: drake::multibody::fem::FemModel::DoMakeTangentMatrix
           struct /* DoMakeTangentMatrix */ {
-            // Source: drake/multibody/fem/fem_model.h:328
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(FemModelImpl must override this method to provide an implementation
 for the NVI MakeTangentMatrix().)""";
           } DoMakeTangentMatrix;
           // Symbol: drake::multibody::fem::FemModel::FemModel<T>
           struct /* ctor */ {
-            // Source: drake/multibody/fem/fem_model.h:280
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(Constructs an empty FEM model.
 
@@ -589,19 +589,19 @@ Precondition:
           } ctor;
           // Symbol: drake::multibody::fem::FemModel::MakeFemState
           struct /* MakeFemState */ {
-            // Source: drake/multibody/fem/fem_model.h:138
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(Creates a default FemState compatible with this model.)""";
           } MakeFemState;
           // Symbol: drake::multibody::fem::FemModel::MakeReferencePositions
           struct /* MakeReferencePositions */ {
-            // Source: drake/multibody/fem/fem_model.h:287
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(Returns the reference positions of this model.)""";
           } MakeReferencePositions;
           // Symbol: drake::multibody::fem::FemModel::MakeTangentMatrix
           struct /* MakeTangentMatrix */ {
-            // Source: drake/multibody/fem/fem_model.h:216
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(Creates a symmetric block sparse matrix that has the sparsity pattern
 of the tangent matrix of this FEM model. In particular, the size of
@@ -613,7 +613,7 @@ Raises:
           } MakeTangentMatrix;
           // Symbol: drake::multibody::fem::FemModel::SetDirichletBoundaryCondition
           struct /* SetDirichletBoundaryCondition */ {
-            // Source: drake/multibody/fem/fem_model.h:230
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(Sets the Dirichlet boundary condition that this model is subject to.
 If dirichlet_bc specifies the boundary condition for a node for which
@@ -622,14 +622,14 @@ be used.)""";
           } SetDirichletBoundaryCondition;
           // Symbol: drake::multibody::fem::FemModel::ThrowIfModelStateIncompatible
           struct /* ThrowIfModelStateIncompatible */ {
-            // Source: drake/multibody/fem/fem_model.h:259
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""((Internal use only) Throws RuntimeError to report a mismatch between
 the FEM model and state that were passed to API method ``func``.)""";
           } ThrowIfModelStateIncompatible;
           // Symbol: drake::multibody::fem::FemModel::UpdateFemStateSystem
           struct /* UpdateFemStateSystem */ {
-            // Source: drake/multibody/fem/fem_model.h:333
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(Updates the system that manages the states and the cache entries of
 this FEM model. Must be called before calling MakeFemState() after the
@@ -637,115 +637,115 @@ FEM model changes (e.g. adding new elements).)""";
           } UpdateFemStateSystem;
           // Symbol: drake::multibody::fem::FemModel::dirichlet_boundary_condition
           struct /* dirichlet_boundary_condition */ {
-            // Source: drake/multibody/fem/fem_model.h:236
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(Returns the Dirichlet boundary condition that this model is subject
 to.)""";
           } dirichlet_boundary_condition;
           // Symbol: drake::multibody::fem::FemModel::do_is_linear
           struct /* do_is_linear */ {
-            // Source: drake/multibody/fem/fem_model.h:342
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(Derived classes should override this method to indicate if the model
 is linear.)""";
           } do_is_linear;
           // Symbol: drake::multibody::fem::FemModel::fem_state_system
           struct /* fem_state_system */ {
-            // Source: drake/multibody/fem/fem_model.h:346
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(Returns the FemStateSystem that manages the states and cache entries
 in this FemModel.)""";
           } fem_state_system;
           // Symbol: drake::multibody::fem::FemModel::get_total_mass
           struct /* get_total_mass */ {
-            // Source: drake/multibody/fem/fem_model.h:275
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc = R"""(Returns the total mass of the system.)""";
           } get_total_mass;
           // Symbol: drake::multibody::fem::FemModel::is_compatible_with
           struct /* is_compatible_with */ {
-            // Source: drake/multibody/fem/fem_model.h:247
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(Returns true if the given FEM state is compatible with ``this`` FEM
 model.)""";
           } is_compatible_with;
           // Symbol: drake::multibody::fem::FemModel::is_linear
           struct /* is_linear */ {
-            // Source: drake/multibody/fem/fem_model.h:243
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(Returns true the equation G(x, v, a) = 0 (see class documentation)
 corresponding to this FemModel is linear.)""";
           } is_linear;
           // Symbol: drake::multibody::fem::FemModel::num_dofs
           struct /* num_dofs */ {
-            // Source: drake/multibody/fem/fem_model.h:132
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(The number of degrees of freedom in this model.)""";
           } num_dofs;
           // Symbol: drake::multibody::fem::FemModel::num_elements
           struct /* num_elements */ {
-            // Source: drake/multibody/fem/fem_model.h:135
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(The number of FEM elements in this model.)""";
           } num_elements;
           // Symbol: drake::multibody::fem::FemModel::num_nodes
           struct /* num_nodes */ {
-            // Source: drake/multibody/fem/fem_model.h:129
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""(The number of nodes that are associated with this model.)""";
           } num_nodes;
           // Symbol: drake::multibody::fem::FemModel::parallelism
           struct /* parallelism */ {
-            // Source: drake/multibody/fem/fem_model.h:272
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""((Internal use only) Returns the parallelism that ``this`` FemModel
 uses when opportunities for parallel computation arises.)""";
           } parallelism;
           // Symbol: drake::multibody::fem::FemModel::set_parallelism
           struct /* set_parallelism */ {
-            // Source: drake/multibody/fem/fem_model.h:268
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc =
 R"""((Internal use only) Configures the parallelism that ``this`` FemModel
 uses when opportunities for parallel computation arises.)""";
           } set_parallelism;
           // Symbol: drake::multibody::fem::FemModel::tangent_matrix_weights
           struct /* tangent_matrix_weights */ {
-            // Source: drake/multibody/fem/fem_model.h:253
+            // Source: drake/multibody/fem/fem_model.h
             const char* doc = R"""()""";
           } tangent_matrix_weights;
         } FemModel;
         // Symbol: drake::multibody::fem::FemModelId
         struct /* FemModelId */ {
-          // Source: drake/multibody/fem/fem_indexes.h:14
+          // Source: drake/multibody/fem/fem_indexes.h
           const char* doc = R"""(Type used to identify FEM models.)""";
         } FemModelId;
         // Symbol: drake::multibody::fem::FemNodeIndex
         struct /* FemNodeIndex */ {
-          // Source: drake/multibody/fem/fem_indexes.h:11
+          // Source: drake/multibody/fem/fem_indexes.h
           const char* doc = R"""(Type used to index FEM nodes.)""";
         } FemNodeIndex;
         // Symbol: drake::multibody::fem::FemPlantData
         struct /* FemPlantData */ {
-          // Source: drake/multibody/fem/fem_plant_data.h:19
+          // Source: drake/multibody/fem/fem_plant_data.h
           const char* doc = R"""()""";
           // Symbol: drake::multibody::fem::FemPlantData::FemPlantData<T>
           struct /* ctor */ {
-            // Source: drake/multibody/fem/fem_plant_data.h:21
+            // Source: drake/multibody/fem/fem_plant_data.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::multibody::fem::FemPlantData::force_density_fields
           struct /* force_density_fields */ {
-            // Source: drake/multibody/fem/fem_plant_data.h:29
+            // Source: drake/multibody/fem/fem_plant_data.h
             const char* doc = R"""()""";
           } force_density_fields;
           // Symbol: drake::multibody::fem::FemPlantData::plant_context
           struct /* plant_context */ {
-            // Source: drake/multibody/fem/fem_plant_data.h:28
+            // Source: drake/multibody/fem/fem_plant_data.h
             const char* doc = R"""()""";
           } plant_context;
         } FemPlantData;
         // Symbol: drake::multibody::fem::FemState
         struct /* FemState */ {
-          // Source: drake/multibody/fem/fem_state.h:28
+          // Source: drake/multibody/fem/fem_state.h
           const char* doc =
 R"""(FemState provides access to private workspace FEM state and
 per-element state-dependent data. FemState comes in two flavors, an
@@ -760,13 +760,13 @@ persist. It is advisable to acquire it for evaluation in a limited
 scope (e.g., in a calc method of a cache entry) and then discard it.)""";
           // Symbol: drake::multibody::fem::FemState::Clone
           struct /* Clone */ {
-            // Source: drake/multibody/fem/fem_state.h:101
+            // Source: drake/multibody/fem/fem_state.h
             const char* doc =
 R"""(Returns an identical copy of ``this`` FemState.)""";
           } Clone;
           // Symbol: drake::multibody::fem::FemState::CopyFrom
           struct /* CopyFrom */ {
-            // Source: drake/multibody/fem/fem_state.h:83
+            // Source: drake/multibody/fem/fem_state.h
             const char* doc =
 R"""(Makes ``this`` FemState an exact copy of the given ``other`` FemState.
 
@@ -780,7 +780,7 @@ Raises:
           } CopyFrom;
           // Symbol: drake::multibody::fem::FemState::EvalElementData
           struct /* EvalElementData */ {
-            // Source: drake/multibody/fem/fem_state.h:53
+            // Source: drake/multibody/fem/fem_state.h
             const char* doc =
 R"""(Returns an std::vector of per-element data in ``this`` FemState.
 
@@ -796,7 +796,7 @@ Raises:
           } EvalElementData;
           // Symbol: drake::multibody::fem::FemState::FemState<T>
           struct /* ctor */ {
-            // Source: drake/multibody/fem/fem_state.h:36
+            // Source: drake/multibody/fem/fem_state.h
             const char* doc_1args =
 R"""(Creates an "owned" version of FemState that allocates and accesses
 states and cached data using the provided ``system``. The FemState
@@ -804,7 +804,7 @@ created with this constructor owns the states and data.
 
 Precondition:
     system != nullptr.)""";
-            // Source: drake/multibody/fem/fem_state.h:44
+            // Source: drake/multibody/fem/fem_state.h
             const char* doc_2args =
 R"""(Creates a "shared" version of FemState that accesses states and cached
 data in the given ``context``. The FemState created with this
@@ -821,12 +821,12 @@ Precondition:
           } ctor;
           // Symbol: drake::multibody::fem::FemState::GetAccelerations
           struct /* GetAccelerations */ {
-            // Source: drake/multibody/fem/fem_state.h:71
+            // Source: drake/multibody/fem/fem_state.h
             const char* doc = R"""()""";
           } GetAccelerations;
           // Symbol: drake::multibody::fem::FemState::GetPositions
           struct /* GetPositions */ {
-            // Source: drake/multibody/fem/fem_state.h:68
+            // Source: drake/multibody/fem/fem_state.h
             const char* doc =
 R"""(@name Getters and setters for the FEM states The FEM states include
 positions, time step positions (the positions at the previous time
@@ -837,61 +837,61 @@ NewmarkScheme.)""";
           } GetPositions;
           // Symbol: drake::multibody::fem::FemState::GetPreviousStepPositions
           struct /* GetPreviousStepPositions */ {
-            // Source: drake/multibody/fem/fem_state.h:69
+            // Source: drake/multibody/fem/fem_state.h
             const char* doc = R"""()""";
           } GetPreviousStepPositions;
           // Symbol: drake::multibody::fem::FemState::GetVelocities
           struct /* GetVelocities */ {
-            // Source: drake/multibody/fem/fem_state.h:70
+            // Source: drake/multibody/fem/fem_state.h
             const char* doc = R"""()""";
           } GetVelocities;
           // Symbol: drake::multibody::fem::FemState::SetAccelerations
           struct /* SetAccelerations */ {
-            // Source: drake/multibody/fem/fem_state.h:75
+            // Source: drake/multibody/fem/fem_state.h
             const char* doc = R"""()""";
           } SetAccelerations;
           // Symbol: drake::multibody::fem::FemState::SetPositions
           struct /* SetPositions */ {
-            // Source: drake/multibody/fem/fem_state.h:72
+            // Source: drake/multibody/fem/fem_state.h
             const char* doc = R"""()""";
           } SetPositions;
           // Symbol: drake::multibody::fem::FemState::SetTimeStepPositions
           struct /* SetTimeStepPositions */ {
-            // Source: drake/multibody/fem/fem_state.h:73
+            // Source: drake/multibody/fem/fem_state.h
             const char* doc = R"""()""";
           } SetTimeStepPositions;
           // Symbol: drake::multibody::fem::FemState::SetVelocities
           struct /* SetVelocities */ {
-            // Source: drake/multibody/fem/fem_state.h:74
+            // Source: drake/multibody/fem/fem_state.h
             const char* doc = R"""()""";
           } SetVelocities;
           // Symbol: drake::multibody::fem::FemState::is_created_from_system
           struct /* is_created_from_system */ {
-            // Source: drake/multibody/fem/fem_state.h:96
+            // Source: drake/multibody/fem/fem_state.h
             const char* doc =
 R"""(Returns true if this FemState is constructed from the given system.)""";
           } is_created_from_system;
           // Symbol: drake::multibody::fem::FemState::num_dofs
           struct /* num_dofs */ {
-            // Source: drake/multibody/fem/fem_state.h:86
+            // Source: drake/multibody/fem/fem_state.h
             const char* doc =
 R"""(Returns the number of degrees of freedom in the FEM model and state.)""";
           } num_dofs;
           // Symbol: drake::multibody::fem::FemState::num_nodes
           struct /* num_nodes */ {
-            // Source: drake/multibody/fem/fem_state.h:93
+            // Source: drake/multibody/fem/fem_state.h
             const char* doc =
 R"""(Returns the number of nodes in the FEM model.)""";
           } num_nodes;
         } FemState;
         // Symbol: drake::multibody::fem::MaterialModel
         struct /* MaterialModel */ {
-          // Source: drake/multibody/fem/deformable_body_config.h:15
+          // Source: drake/multibody/fem/deformable_body_config.h
           const char* doc =
 R"""(Types of material models for the deformable body.)""";
           // Symbol: drake::multibody::fem::MaterialModel::kCorotated
           struct /* kCorotated */ {
-            // Source: drake/multibody/fem/deformable_body_config.h:29
+            // Source: drake/multibody/fem/deformable_body_config.h
             const char* doc =
 R"""(Corotational model. More computationally expensive. Recommended when
 capturing large rotation velocity is important.
@@ -902,7 +902,7 @@ SIGGRAPH/Eurographics conference on Computer Animation. 2012.)""";
           } kCorotated;
           // Symbol: drake::multibody::fem::MaterialModel::kLinear
           struct /* kLinear */ {
-            // Source: drake/multibody/fem/deformable_body_config.h:44
+            // Source: drake/multibody/fem/deformable_body_config.h
             const char* doc =
 R"""(Linear elasticity model (rarely used). Less computationally expensive
 than other models but leads to artifacts when large rotational
@@ -910,7 +910,7 @@ deformations occur.)""";
           } kLinear;
           // Symbol: drake::multibody::fem::MaterialModel::kLinearCorotated
           struct /* kLinearCorotated */ {
-            // Source: drake/multibody/fem/deformable_body_config.h:22
+            // Source: drake/multibody/fem/deformable_body_config.h
             const char* doc =
 R"""(Linear corotational model as described in [Han et al., 2023]. It
 provides a combination of accuracy, robustness, and speed. Recommended
@@ -921,7 +921,7 @@ between Rigid and Deformable Bodies." arXiv preprint arXiv:2303.08912
           } kLinearCorotated;
           // Symbol: drake::multibody::fem::MaterialModel::kNeoHookean
           struct /* kNeoHookean */ {
-            // Source: drake/multibody/fem/deformable_body_config.h:40
+            // Source: drake/multibody/fem/deformable_body_config.h
             const char* doc =
 R"""(Neohookean model. More computationally expensive. Recommended when
 capturing large rotation velocity is important. There are subtle

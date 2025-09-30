@@ -32,7 +32,7 @@ constexpr struct /* pydrake_doc_systems_controllers */ {
       struct /* controllers */ {
         // Symbol: drake::systems::controllers::DiscreteTimeLinearQuadraticRegulator
         struct /* DiscreteTimeLinearQuadraticRegulator */ {
-          // Source: drake/systems/controllers/linear_quadratic_regulator.h:73
+          // Source: drake/systems/controllers/linear_quadratic_regulator.h
           const char* doc =
 R"""(Computes the optimal feedback controller, u=-Kx, and the optimal
 cost-to-go J = x'Sx for the problem:
@@ -69,18 +69,18 @@ Raises:
         } DiscreteTimeLinearQuadraticRegulator;
         // Symbol: drake::systems::controllers::DynamicProgrammingOptions
         struct /* DynamicProgrammingOptions */ {
-          // Source: drake/systems/controllers/dynamic_programming.h:21
+          // Source: drake/systems/controllers/dynamic_programming.h
           const char* doc =
 R"""(Consolidates the many possible options to be passed to the dynamic
 programming algorithms.)""";
           // Symbol: drake::systems::controllers::DynamicProgrammingOptions::DynamicProgrammingOptions
           struct /* ctor */ {
-            // Source: drake/systems/controllers/dynamic_programming.h:22
+            // Source: drake/systems/controllers/dynamic_programming.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::systems::controllers::DynamicProgrammingOptions::PeriodicBoundaryCondition
           struct /* PeriodicBoundaryCondition */ {
-            // Source: drake/systems/controllers/dynamic_programming.h:33
+            // Source: drake/systems/controllers/dynamic_programming.h
             const char* doc =
 R"""(For algorithms that rely on approximations of the state-dynamics (as
 in FittedValueIteration), this is a list of state dimensions for which
@@ -89,28 +89,28 @@ that all values are in the range [low, high). The classic example is
 for angles that are wrapped around at 2π.)""";
             // Symbol: drake::systems::controllers::DynamicProgrammingOptions::PeriodicBoundaryCondition::PeriodicBoundaryCondition
             struct /* ctor */ {
-              // Source: drake/systems/controllers/dynamic_programming.h:34
+              // Source: drake/systems/controllers/dynamic_programming.h
               const char* doc = R"""()""";
             } ctor;
             // Symbol: drake::systems::controllers::DynamicProgrammingOptions::PeriodicBoundaryCondition::high
             struct /* high */ {
-              // Source: drake/systems/controllers/dynamic_programming.h:37
+              // Source: drake/systems/controllers/dynamic_programming.h
               const char* doc = R"""()""";
             } high;
             // Symbol: drake::systems::controllers::DynamicProgrammingOptions::PeriodicBoundaryCondition::low
             struct /* low */ {
-              // Source: drake/systems/controllers/dynamic_programming.h:36
+              // Source: drake/systems/controllers/dynamic_programming.h
               const char* doc = R"""()""";
             } low;
             // Symbol: drake::systems::controllers::DynamicProgrammingOptions::PeriodicBoundaryCondition::state_index
             struct /* state_index */ {
-              // Source: drake/systems/controllers/dynamic_programming.h:35
+              // Source: drake/systems/controllers/dynamic_programming.h
               const char* doc = R"""()""";
             } state_index;
           } PeriodicBoundaryCondition;
           // Symbol: drake::systems::controllers::DynamicProgrammingOptions::assume_non_continuous_states_are_fixed
           struct /* assume_non_continuous_states_are_fixed */ {
-            // Source: drake/systems/controllers/dynamic_programming.h:68
+            // Source: drake/systems/controllers/dynamic_programming.h
             const char* doc =
 R"""((Advanced) Boolean which, if true, allows this algorithm to optimize
 without considering the dynamics of any non-continuous states. This is
@@ -121,7 +121,7 @@ dynamics of the continuous states. $*Default:* false.)""";
           } assume_non_continuous_states_are_fixed;
           // Symbol: drake::systems::controllers::DynamicProgrammingOptions::convergence_tol
           struct /* convergence_tol */ {
-            // Source: drake/systems/controllers/dynamic_programming.h:44
+            // Source: drake/systems/controllers/dynamic_programming.h
             const char* doc =
 R"""(Value iteration methods converge when the value function stops
 changing (typically evaluated with the l∞ norm). This value sets that
@@ -129,7 +129,7 @@ threshold.)""";
           } convergence_tol;
           // Symbol: drake::systems::controllers::DynamicProgrammingOptions::discount_factor
           struct /* discount_factor */ {
-            // Source: drake/systems/controllers/dynamic_programming.h:26
+            // Source: drake/systems/controllers/dynamic_programming.h
             const char* doc =
 R"""(A value between (0,1] that discounts future rewards.
 
@@ -138,7 +138,7 @@ See also:
           } discount_factor;
           // Symbol: drake::systems::controllers::DynamicProgrammingOptions::input_port_index
           struct /* input_port_index */ {
-            // Source: drake/systems/controllers/dynamic_programming.h:59
+            // Source: drake/systems/controllers/dynamic_programming.h
             const char* doc =
 R"""(For systems with multiple input ports, we must specify which input
 port is being used in the control design.
@@ -148,12 +148,12 @@ See also:
           } input_port_index;
           // Symbol: drake::systems::controllers::DynamicProgrammingOptions::periodic_boundary_conditions
           struct /* periodic_boundary_conditions */ {
-            // Source: drake/systems/controllers/dynamic_programming.h:39
+            // Source: drake/systems/controllers/dynamic_programming.h
             const char* doc = R"""()""";
           } periodic_boundary_conditions;
           // Symbol: drake::systems::controllers::DynamicProgrammingOptions::visualization_callback
           struct /* visualization_callback */ {
-            // Source: drake/systems/controllers/dynamic_programming.h:55
+            // Source: drake/systems/controllers/dynamic_programming.h
             const char* doc =
 R"""(If callable, this method is invoked during each major iteration of the
 dynamic programming algorithm, in order to facilitate e.g. graphical
@@ -166,7 +166,7 @@ Note:
         } DynamicProgrammingOptions;
         // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulator
         struct /* FiniteHorizonLinearQuadraticRegulator */ {
-          // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:187
+          // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
           const char* doc =
 R"""(If ``system`` is a continuous-time system, then solves the
 differential Riccati equation to compute the optimal controller and
@@ -248,18 +248,18 @@ Note:
         } FiniteHorizonLinearQuadraticRegulator;
         // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorOptions
         struct /* FiniteHorizonLinearQuadraticRegulatorOptions */ {
-          // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:20
+          // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
           const char* doc =
 R"""(A structure to facilitate passing the myriad of optional arguments to
 the FiniteHorizonLinearQuadraticRegulator algorithms.)""";
           // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorOptions::FiniteHorizonLinearQuadraticRegulatorOptions
           struct /* ctor */ {
-            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:21
+            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorOptions::N
           struct /* N */ {
-            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:33
+            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
             const char* doc =
 R"""(A num_states x num_inputs matrix that describes the running cost
 2(x-xd(t))'N(u-ud(t)). If unset, then N will be set to the zero
@@ -267,7 +267,7 @@ matrix.)""";
           } N;
           // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorOptions::Qf
           struct /* Qf */ {
-            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:27
+            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
             const char* doc =
 R"""(A num_states x num_states positive semi-definite matrix which
 specified the cost at the final time. If unset, then Qf will be set to
@@ -275,7 +275,7 @@ the zero matrix.)""";
           } Qf;
           // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorOptions::input_port_index
           struct /* input_port_index */ {
-            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:71
+            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
             const char* doc =
 R"""(For systems with multiple input ports, we must specify which input
 port is being used in the control design.
@@ -285,7 +285,7 @@ See also:
           } input_port_index;
           // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorOptions::simulator_config
           struct /* simulator_config */ {
-            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:87
+            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
             const char* doc =
 R"""(For continuous-time finite-horizon LQR, the Riccati differential
 equation is solved by the Simulator (running backwards in time). Use
@@ -294,7 +294,7 @@ integrator or integrator parameters).)""";
           } simulator_config;
           // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorOptions::u0
           struct /* u0 */ {
-            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:51
+            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
             const char* doc =
 R"""(A nominal input trajectory. The system is linearized about this
 trajectory. u0 must be defined over the entire interval [t0, tf] for
@@ -305,7 +305,7 @@ LQR method).)""";
           } u0;
           // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorOptions::ud
           struct /* ud */ {
-            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:65
+            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
             const char* doc =
 R"""(A desired input trajectory. The objective is to regulate to this
 trajectory -- the input component of the quadratic running cost is
@@ -313,7 +313,7 @@ trajectory -- the input component of the quadratic running cost is
           } ud;
           // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorOptions::use_square_root_method
           struct /* use_square_root_method */ {
-            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:80
+            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
             const char* doc =
 R"""(Enables the "square-root" method solution to the Riccati equation.
 This is slightly more expensive and potentially less numerically
@@ -323,7 +323,7 @@ definite and symmetric) Qf in this options struct.)""";
           } use_square_root_method;
           // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorOptions::x0
           struct /* x0 */ {
-            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:42
+            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
             const char* doc =
 R"""(A nominal state trajectory. The system is linearized about this
 trajectory. x0 must be defined over the entire interval [t0, tf] for
@@ -334,7 +334,7 @@ LQR method).)""";
           } x0;
           // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorOptions::xd
           struct /* xd */ {
-            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:58
+            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
             const char* doc =
 R"""(A desired state trajectory. The objective is to regulate to this
 trajectory -- the state component of the quadratic running cost is
@@ -344,7 +344,7 @@ null, then xd(t) = x0(t).)""";
         } FiniteHorizonLinearQuadraticRegulatorOptions;
         // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorResult
         struct /* FiniteHorizonLinearQuadraticRegulatorResult */ {
-          // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:104
+          // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
           const char* doc =
 R"""(A structure that contains the basic
 FiniteHorizonLinearQuadraticRegulator results.
@@ -360,44 +360,44 @@ controller is given by u−u₀[n] = −K[n] (x−x₀[n]) − k₀[n]. Please d
 overlook the factor of 2 in front of the sₓ[n] term.)""";
           // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorResult::K
           struct /* K */ {
-            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:109
+            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
             const char* doc =
 R"""(Note: This K is the K_x term in the derivation notes.)""";
           } K;
           // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorResult::S
           struct /* S */ {
-            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:112
+            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
             const char* doc = R"""()""";
           } S;
           // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorResult::k0
           struct /* k0 */ {
-            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:114
+            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
             const char* doc = R"""()""";
           } k0;
           // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorResult::s0
           struct /* s0 */ {
-            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:116
+            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
             const char* doc = R"""()""";
           } s0;
           // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorResult::sx
           struct /* sx */ {
-            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:115
+            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
             const char* doc = R"""()""";
           } sx;
           // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorResult::u0
           struct /* u0 */ {
-            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:106
+            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
             const char* doc = R"""()""";
           } u0;
           // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorResult::x0
           struct /* x0 */ {
-            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:105
+            // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
             const char* doc = R"""()""";
           } x0;
         } FiniteHorizonLinearQuadraticRegulatorResult;
         // Symbol: drake::systems::controllers::FittedValueIteration
         struct /* FittedValueIteration */ {
-          // Source: drake/systems/controllers/dynamic_programming.h:107
+          // Source: drake/systems/controllers/dynamic_programming.h
           const char* doc =
 R"""(Implements Fitted Value Iteration on a (triangulated) Barycentric
 Mesh, which designs a state-feedback policy to minimize the
@@ -449,7 +449,7 @@ Returns:
         } FittedValueIteration;
         // Symbol: drake::systems::controllers::InverseDynamics
         struct /* InverseDynamics */ {
-          // Source: drake/systems/controllers/inverse_dynamics.h:63
+          // Source: drake/systems/controllers/inverse_dynamics.h
           const char* doc =
 R"""(Solves inverse dynamics with no consideration for joint actuator force
 limits.
@@ -520,7 +520,7 @@ style="color:gray">gray</span> is only present when the ``mode`` at
 construction is not ``kGravityCompensation``.)""";
           // Symbol: drake::systems::controllers::InverseDynamics::InverseDynamics<T>
           struct /* ctor */ {
-            // Source: drake/systems/controllers/inverse_dynamics.h:92
+            // Source: drake/systems/controllers/inverse_dynamics.h
             const char* doc =
 R"""(Constructs the InverseDynamics system.
 
@@ -547,34 +547,34 @@ Precondition:
           } ctor;
           // Symbol: drake::systems::controllers::InverseDynamics::InverseDynamicsMode
           struct /* InverseDynamicsMode */ {
-            // Source: drake/systems/controllers/inverse_dynamics.h:67
+            // Source: drake/systems/controllers/inverse_dynamics.h
             const char* doc = R"""()""";
             // Symbol: drake::systems::controllers::InverseDynamics::InverseDynamicsMode::kGravityCompensation
             struct /* kGravityCompensation */ {
-              // Source: drake/systems/controllers/inverse_dynamics.h:72
+              // Source: drake/systems/controllers/inverse_dynamics.h
               const char* doc = R"""(Purely gravity compensation mode.)""";
             } kGravityCompensation;
             // Symbol: drake::systems::controllers::InverseDynamics::InverseDynamicsMode::kInverseDynamics
             struct /* kInverseDynamics */ {
-              // Source: drake/systems/controllers/inverse_dynamics.h:69
+              // Source: drake/systems/controllers/inverse_dynamics.h
               const char* doc = R"""(Full inverse computation mode.)""";
             } kInverseDynamics;
           } InverseDynamicsMode;
           // Symbol: drake::systems::controllers::InverseDynamics::get_input_port_desired_acceleration
           struct /* get_input_port_desired_acceleration */ {
-            // Source: drake/systems/controllers/inverse_dynamics.h:122
+            // Source: drake/systems/controllers/inverse_dynamics.h
             const char* doc =
 R"""(Returns the input port for the desired acceleration.)""";
           } get_input_port_desired_acceleration;
           // Symbol: drake::systems::controllers::InverseDynamics::get_input_port_estimated_state
           struct /* get_input_port_estimated_state */ {
-            // Source: drake/systems/controllers/inverse_dynamics.h:115
+            // Source: drake/systems/controllers/inverse_dynamics.h
             const char* doc =
 R"""(Returns the input port for the estimated state.)""";
           } get_input_port_estimated_state;
           // Symbol: drake::systems::controllers::InverseDynamics::get_output_port_generalized_force
           struct /* get_output_port_generalized_force */ {
-            // Source: drake/systems/controllers/inverse_dynamics.h:132
+            // Source: drake/systems/controllers/inverse_dynamics.h
             const char* doc =
 R"""(Returns the output port for the generalized forces that realize the
 desired acceleration. The dimension of that force vector will be
@@ -582,13 +582,13 @@ identical to the dimensionality of the generalized velocities.)""";
           } get_output_port_generalized_force;
           // Symbol: drake::systems::controllers::InverseDynamics::is_pure_gravity_compensation
           struct /* is_pure_gravity_compensation */ {
-            // Source: drake/systems/controllers/inverse_dynamics.h:136
+            // Source: drake/systems/controllers/inverse_dynamics.h
             const char* doc = R"""()""";
           } is_pure_gravity_compensation;
         } InverseDynamics;
         // Symbol: drake::systems::controllers::InverseDynamicsController
         struct /* InverseDynamicsController */ {
-          // Source: drake/systems/controllers/inverse_dynamics_controller.h:64
+          // Source: drake/systems/controllers/inverse_dynamics_controller.h
           const char* doc =
 R"""(A state feedback controller that uses a PidController to generate
 desired accelerations, which are then converted into MultibodyPlant
@@ -645,7 +645,7 @@ See also:
     the inverse dynamics computation.)""";
           // Symbol: drake::systems::controllers::InverseDynamicsController::InverseDynamicsController<T>
           struct /* ctor */ {
-            // Source: drake/systems/controllers/inverse_dynamics_controller.h:96
+            // Source: drake/systems/controllers/inverse_dynamics_controller.h
             const char* doc =
 R"""(Constructs an inverse dynamics controller for the given ``plant``
 model. The InverseDynamicsController holds an internal, non-owned
@@ -690,43 +690,43 @@ Raises:
           } ctor;
           // Symbol: drake::systems::controllers::InverseDynamicsController::get_input_port_desired_acceleration
           struct /* get_input_port_desired_acceleration */ {
-            // Source: drake/systems/controllers/inverse_dynamics_controller.h:132
+            // Source: drake/systems/controllers/inverse_dynamics_controller.h
             const char* doc =
 R"""(Returns the input port for the reference acceleration.)""";
           } get_input_port_desired_acceleration;
           // Symbol: drake::systems::controllers::InverseDynamicsController::get_input_port_desired_state
           struct /* get_input_port_desired_state */ {
-            // Source: drake/systems/controllers/inverse_dynamics_controller.h:148
+            // Source: drake/systems/controllers/inverse_dynamics_controller.h
             const char* doc =
 R"""(Returns the input port for the desired state.)""";
           } get_input_port_desired_state;
           // Symbol: drake::systems::controllers::InverseDynamicsController::get_input_port_estimated_state
           struct /* get_input_port_estimated_state */ {
-            // Source: drake/systems/controllers/inverse_dynamics_controller.h:141
+            // Source: drake/systems/controllers/inverse_dynamics_controller.h
             const char* doc =
 R"""(Returns the input port for the estimated state.)""";
           } get_input_port_estimated_state;
           // Symbol: drake::systems::controllers::InverseDynamicsController::get_multibody_plant_for_control
           struct /* get_multibody_plant_for_control */ {
-            // Source: drake/systems/controllers/inverse_dynamics_controller.h:169
+            // Source: drake/systems/controllers/inverse_dynamics_controller.h
             const char* doc =
 R"""(Returns a constant pointer to the MultibodyPlant used for control.)""";
           } get_multibody_plant_for_control;
           // Symbol: drake::systems::controllers::InverseDynamicsController::get_output_port_control
           struct /* get_output_port_control */ {
-            // Source: drake/systems/controllers/inverse_dynamics_controller.h:155
+            // Source: drake/systems/controllers/inverse_dynamics_controller.h
             const char* doc =
 R"""(Returns the output port for computed actuation/control.)""";
           } get_output_port_control;
           // Symbol: drake::systems::controllers::InverseDynamicsController::get_output_port_generalized_force
           struct /* get_output_port_generalized_force */ {
-            // Source: drake/systems/controllers/inverse_dynamics_controller.h:162
+            // Source: drake/systems/controllers/inverse_dynamics_controller.h
             const char* doc =
 R"""(Returns the output port for computed generalized_force.)""";
           } get_output_port_generalized_force;
           // Symbol: drake::systems::controllers::InverseDynamicsController::set_integral_value
           struct /* set_integral_value */ {
-            // Source: drake/systems/controllers/inverse_dynamics_controller.h:126
+            // Source: drake/systems/controllers/inverse_dynamics_controller.h
             const char* doc =
 R"""(Sets the integral part of the PidController to ``value``. ``value``
 must be a column vector of the appropriate size.)""";
@@ -734,7 +734,7 @@ must be a column vector of the appropriate size.)""";
         } InverseDynamicsController;
         // Symbol: drake::systems::controllers::JointStiffnessController
         struct /* JointStiffnessController */ {
-          // Source: drake/systems/controllers/joint_stiffness_controller.h:70
+          // Source: drake/systems/controllers/joint_stiffness_controller.h
           const char* doc =
 R"""(Implements a joint-space stiffness controller of the form
 
@@ -810,7 +810,7 @@ Note:
     model PD controlled actuators, refer to mbp_actuation "Actuation".)""";
           // Symbol: drake::systems::controllers::JointStiffnessController::JointStiffnessController<T>
           struct /* ctor */ {
-            // Source: drake/systems/controllers/joint_stiffness_controller.h:85
+            // Source: drake/systems/controllers/joint_stiffness_controller.h
             const char* doc =
 R"""(Constructs the JointStiffnessController system.
 
@@ -831,25 +831,25 @@ Precondition:
           } ctor;
           // Symbol: drake::systems::controllers::JointStiffnessController::get_input_port_desired_state
           struct /* get_input_port_desired_state */ {
-            // Source: drake/systems/controllers/joint_stiffness_controller.h:125
+            // Source: drake/systems/controllers/joint_stiffness_controller.h
             const char* doc =
 R"""(Returns the input port for the desired state.)""";
           } get_input_port_desired_state;
           // Symbol: drake::systems::controllers::JointStiffnessController::get_input_port_estimated_state
           struct /* get_input_port_estimated_state */ {
-            // Source: drake/systems/controllers/joint_stiffness_controller.h:118
+            // Source: drake/systems/controllers/joint_stiffness_controller.h
             const char* doc =
 R"""(Returns the input port for the estimated state.)""";
           } get_input_port_estimated_state;
           // Symbol: drake::systems::controllers::JointStiffnessController::get_multibody_plant
           struct /* get_multibody_plant */ {
-            // Source: drake/systems/controllers/joint_stiffness_controller.h:139
+            // Source: drake/systems/controllers/joint_stiffness_controller.h
             const char* doc =
 R"""(Returns a constant pointer to the MultibodyPlant used for control.)""";
           } get_multibody_plant;
           // Symbol: drake::systems::controllers::JointStiffnessController::get_output_port_actuation
           struct /* get_output_port_actuation */ {
-            // Source: drake/systems/controllers/joint_stiffness_controller.h:132
+            // Source: drake/systems/controllers/joint_stiffness_controller.h
             const char* doc =
 R"""(Returns the output port implementing the control in the form (and
 order) expected for the plant's actuation input port.)""";
@@ -857,7 +857,7 @@ order) expected for the plant's actuation input port.)""";
         } JointStiffnessController;
         // Symbol: drake::systems::controllers::LinearProgrammingApproximateDynamicProgramming
         struct /* LinearProgrammingApproximateDynamicProgramming */ {
-          // Source: drake/systems/controllers/dynamic_programming.h:170
+          // Source: drake/systems/controllers/dynamic_programming.h
           const char* doc =
 R"""(Implements the Linear Programming approach to approximate dynamic
 programming. It optimizes the linear program
@@ -915,7 +915,7 @@ Returns:
         } LinearProgrammingApproximateDynamicProgramming;
         // Symbol: drake::systems::controllers::LinearQuadraticRegulator
         struct /* LinearQuadraticRegulator */ {
-          // Source: drake/systems/controllers/linear_quadratic_regulator.h:43
+          // Source: drake/systems/controllers/linear_quadratic_regulator.h
           const char* doc_AB =
 R"""(Computes the optimal feedback controller, u=-Kx, and the optimal
 cost-to-go J = x'Sx for the problem:
@@ -961,7 +961,7 @@ Note:
 
 Note:
     The system (Q₁, A₁) should be detectable, where Q₁=Q−NR⁻¹Nᵀ.)""";
-          // Source: drake/systems/controllers/linear_quadratic_regulator.h:106
+          // Source: drake/systems/controllers/linear_quadratic_regulator.h
           const char* doc_system =
 R"""(Creates a system that implements the optimal time-invariant linear
 quadratic regulator (LQR). If ``system`` is a continuous-time system,
@@ -994,7 +994,7 @@ Returns:
 
 Raises:
     RuntimeError if R is not positive definite.)""";
-          // Source: drake/systems/controllers/linear_quadratic_regulator.h:151
+          // Source: drake/systems/controllers/linear_quadratic_regulator.h
           const char* doc_linearize_at_context =
 R"""(Linearizes the System around the specified Context, computes the
 optimal time-invariant linear quadratic regulator (LQR), and returns a
@@ -1050,22 +1050,22 @@ drake::systems::Linearize())""";
         } LinearQuadraticRegulator;
         // Symbol: drake::systems::controllers::LinearQuadraticRegulatorResult
         struct /* LinearQuadraticRegulatorResult */ {
-          // Source: drake/systems/controllers/linear_quadratic_regulator.h:11
+          // Source: drake/systems/controllers/linear_quadratic_regulator.h
           const char* doc = R"""()""";
           // Symbol: drake::systems::controllers::LinearQuadraticRegulatorResult::K
           struct /* K */ {
-            // Source: drake/systems/controllers/linear_quadratic_regulator.h:12
+            // Source: drake/systems/controllers/linear_quadratic_regulator.h
             const char* doc = R"""()""";
           } K;
           // Symbol: drake::systems::controllers::LinearQuadraticRegulatorResult::S
           struct /* S */ {
-            // Source: drake/systems/controllers/linear_quadratic_regulator.h:13
+            // Source: drake/systems/controllers/linear_quadratic_regulator.h
             const char* doc = R"""()""";
           } S;
         } LinearQuadraticRegulatorResult;
         // Symbol: drake::systems::controllers::MakeFiniteHorizonLinearQuadraticRegulator
         struct /* MakeFiniteHorizonLinearQuadraticRegulator */ {
-          // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h:209
+          // Source: drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h
           const char* doc =
 R"""(Variant of FiniteHorizonLinearQuadraticRegulator that returns a System
 implementing the regulator (controller) as a System, with a single
@@ -1086,7 +1086,7 @@ Note:
         } MakeFiniteHorizonLinearQuadraticRegulator;
         // Symbol: drake::systems::controllers::PidControlledSystem
         struct /* PidControlledSystem */ {
-          // Source: drake/systems/controllers/pid_controlled_system.h:70
+          // Source: drake/systems/controllers/pid_controlled_system.h
           const char* doc =
 R"""(A system that encapsulates a PidController and a controlled System
 (a.k.a the "plant").
@@ -1139,12 +1139,12 @@ as ``x_err = S * x - x_d``.
     - (exported output port of plant, with same name))""";
           // Symbol: drake::systems::controllers::PidControlledSystem::ConnectController
           struct /* ConnectController */ {
-            // Source: drake/systems/controllers/pid_controlled_system.h:201
+            // Source: drake/systems/controllers/pid_controlled_system.h
             const char* doc_7args =
 R"""(Creates a PidController and uses ``builder`` to connect
 ``plant_input`` and ``plant_output`` from an existing plant. The
 controlled states are selected by ``feedback_selector``.)""";
-            // Source: drake/systems/controllers/pid_controlled_system.h:210
+            // Source: drake/systems/controllers/pid_controlled_system.h
             const char* doc_6args =
 R"""(Creates a PidController and uses ``builder`` to connect
 ``plant_input`` and ``plant_output`` from an existing plant. The
@@ -1152,7 +1152,7 @@ plant's full state is used for feedback.)""";
           } ConnectController;
           // Symbol: drake::systems::controllers::PidControlledSystem::ConnectControllerWithInputSaturation
           struct /* ConnectControllerWithInputSaturation */ {
-            // Source: drake/systems/controllers/pid_controlled_system.h:223
+            // Source: drake/systems/controllers/pid_controlled_system.h
             const char* doc_9args =
 R"""(Creates a PidController with input saturation and uses ``builder`` to
 connect ``plant_input`` and ``plant_output`` from an existing plant.
@@ -1160,7 +1160,7 @@ The controlled states are selected by ``feedback_selector``. The
 output of the PidController is clipped to be within the specified
 bounds. Note that using input limits along with integral gain constant
 may cause the integrator to windup.)""";
-            // Source: drake/systems/controllers/pid_controlled_system.h:236
+            // Source: drake/systems/controllers/pid_controlled_system.h
             const char* doc_8args =
 R"""(Creates a PidController with input saturation and uses ``builder`` to
 connect ``plant_input`` and ``plant_output`` from an existing plant.
@@ -1171,22 +1171,22 @@ integrator to windup.)""";
           } ConnectControllerWithInputSaturation;
           // Symbol: drake::systems::controllers::PidControlledSystem::ConnectResult
           struct /* ConnectResult */ {
-            // Source: drake/systems/controllers/pid_controlled_system.h:191
+            // Source: drake/systems/controllers/pid_controlled_system.h
             const char* doc = R"""(The return type of ConnectController.)""";
             // Symbol: drake::systems::controllers::PidControlledSystem::ConnectResult::control_input_port
             struct /* control_input_port */ {
-              // Source: drake/systems/controllers/pid_controlled_system.h:193
+              // Source: drake/systems/controllers/pid_controlled_system.h
               const char* doc = R"""(The feed forward control input.)""";
             } control_input_port;
             // Symbol: drake::systems::controllers::PidControlledSystem::ConnectResult::state_input_port
             struct /* state_input_port */ {
-              // Source: drake/systems/controllers/pid_controlled_system.h:195
+              // Source: drake/systems/controllers/pid_controlled_system.h
               const char* doc = R"""(The feedback state input.)""";
             } state_input_port;
           } ConnectResult;
           // Symbol: drake::systems::controllers::PidControlledSystem::PidControlledSystem<T>
           struct /* ctor */ {
-            // Source: drake/systems/controllers/pid_controlled_system.h:91
+            // Source: drake/systems/controllers/pid_controlled_system.h
             const char* doc_6args_double_gains =
 R"""(``plant`` full state is used for feedback control, and all the
 dimensions have homogeneous gains specified by ``Kp``, ``Kd`` and
@@ -1216,7 +1216,7 @@ Warning:
     a System (i.e., ``plant``) may only be added to at most one
     Diagram (i.e., this ``PidControlledSystem``) so should not be
     re-used outside of the ``PidControlledSystem``.)""";
-            // Source: drake/systems/controllers/pid_controlled_system.h:112
+            // Source: drake/systems/controllers/pid_controlled_system.h
             const char* doc_6args_vector_gains =
 R"""(``plant`` full state is used for feedback control, and the vectorized
 gains are specified by ``Kp``, ``Kd`` and ``Ki``.
@@ -1245,7 +1245,7 @@ Warning:
     a System (i.e., ``plant``) may only be added to at most one
     Diagram (i.e., this ``PidControlledSystem``) so should not be
     re-used outside of the ``PidControlledSystem``.)""";
-            // Source: drake/systems/controllers/pid_controlled_system.h:139
+            // Source: drake/systems/controllers/pid_controlled_system.h
             const char* doc_7args_double_gains =
 R"""(A constructor where the gains are scalar values and some of the
 plant's output is part of the feedback signal as specified by
@@ -1280,7 +1280,7 @@ Warning:
     a System (i.e., ``plant``) may only be added to at most one
     Diagram (i.e., this ``PidControlledSystem``) so should not be
     re-used outside of the ``PidControlledSystem``.)""";
-            // Source: drake/systems/controllers/pid_controlled_system.h:165
+            // Source: drake/systems/controllers/pid_controlled_system.h
             const char* doc_7args_vector_gains =
 R"""(A constructor where the gains are vector values and some of the
 plant's output is part of the feedback signal as specified by
@@ -1318,32 +1318,32 @@ Warning:
           } ctor;
           // Symbol: drake::systems::controllers::PidControlledSystem::get_control_input_port
           struct /* get_control_input_port */ {
-            // Source: drake/systems/controllers/pid_controlled_system.h:177
+            // Source: drake/systems/controllers/pid_controlled_system.h
             const char* doc =
 R"""(Returns:
     the input port for the feed forward control input.)""";
           } get_control_input_port;
           // Symbol: drake::systems::controllers::PidControlledSystem::get_state_input_port
           struct /* get_state_input_port */ {
-            // Source: drake/systems/controllers/pid_controlled_system.h:182
+            // Source: drake/systems/controllers/pid_controlled_system.h
             const char* doc =
 R"""(Returns:
     the input port for the desired position/velocity state.)""";
           } get_state_input_port;
           // Symbol: drake::systems::controllers::PidControlledSystem::get_state_output_port
           struct /* get_state_output_port */ {
-            // Source: drake/systems/controllers/pid_controlled_system.h:186
+            // Source: drake/systems/controllers/pid_controlled_system.h
             const char* doc = R"""()""";
           } get_state_output_port;
           // Symbol: drake::systems::controllers::PidControlledSystem::plant
           struct /* plant */ {
-            // Source: drake/systems/controllers/pid_controlled_system.h:174
+            // Source: drake/systems/controllers/pid_controlled_system.h
             const char* doc = R"""()""";
           } plant;
         } PidControlledSystem;
         // Symbol: drake::systems::controllers::PidController
         struct /* PidController */ {
-          // Source: drake/systems/controllers/pid_controller.h:48
+          // Source: drake/systems/controllers/pid_controller.h
           const char* doc =
 R"""(Implements the PID controller. Given estimated state ``x_in = (q_in,
 v_in)``, the controlled state ``x_c = (q_c, v_c)`` is computed by
@@ -1383,12 +1383,12 @@ have to equal to ``|q_d|``. One typical use case for non-identity
 ``P_x`` and ``P_y`` is to select a subset of state for feedback.)""";
           // Symbol: drake::systems::controllers::PidController::DoCalcTimeDerivatives
           struct /* DoCalcTimeDerivatives */ {
-            // Source: drake/systems/controllers/pid_controller.h:184
+            // Source: drake/systems/controllers/pid_controller.h
             const char* doc = R"""()""";
           } DoCalcTimeDerivatives;
           // Symbol: drake::systems::controllers::PidController::PidController<T>
           struct /* ctor */ {
-            // Source: drake/systems/controllers/pid_controller.h:64
+            // Source: drake/systems/controllers/pid_controller.h
             const char* doc_3args =
 R"""(Constructs a PID controller. ``P_x`` and ``P_y`` are identity matrices
 of proper sizes. The estimated and desired state inputs are 2 *
@@ -1406,7 +1406,7 @@ Parameter ``kd``:
 Raises:
     RuntimeError if ``kp``, ``ki`` and ``kd`` have different
     dimensions.)""";
-            // Source: drake/systems/controllers/pid_controller.h:78
+            // Source: drake/systems/controllers/pid_controller.h
             const char* doc_4args =
 R"""(Constructs a PID controller. Calls the full constructor, with the
 output projection matrix ``P_y`` being the identity matrix.
@@ -1426,7 +1426,7 @@ Parameter ``kd``:
 Raises:
     RuntimeError if ``kp``, ``ki`` and ``kd`` have different
     dimensions or `P_x.row() != 2 * |kp|'.)""";
-            // Source: drake/systems/controllers/pid_controller.h:100
+            // Source: drake/systems/controllers/pid_controller.h
             const char* doc_5args =
 R"""(Constructs a PID controller. This assumes that
 
@@ -1464,13 +1464,13 @@ Parameter ``kd``:
 
 Raises:
     RuntimeError if any assumption is violated.)""";
-            // Source: drake/systems/controllers/pid_controller.h:107
+            // Source: drake/systems/controllers/pid_controller.h
             const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
           } ctor;
           // Symbol: drake::systems::controllers::PidController::get_Kd_singleton
           struct /* get_Kd_singleton */ {
-            // Source: drake/systems/controllers/pid_controller.h:134
+            // Source: drake/systems/controllers/pid_controller.h
             const char* doc =
 R"""(Returns the derivative gain constant. This method should only be
 called if the derivative gain can be represented as a scalar value,
@@ -1480,12 +1480,12 @@ as a scalar value.)""";
           } get_Kd_singleton;
           // Symbol: drake::systems::controllers::PidController::get_Kd_vector
           struct /* get_Kd_vector */ {
-            // Source: drake/systems/controllers/pid_controller.h:149
+            // Source: drake/systems/controllers/pid_controller.h
             const char* doc = R"""(Returns the derivative gain vector.)""";
           } get_Kd_vector;
           // Symbol: drake::systems::controllers::PidController::get_Ki_singleton
           struct /* get_Ki_singleton */ {
-            // Source: drake/systems/controllers/pid_controller.h:125
+            // Source: drake/systems/controllers/pid_controller.h
             const char* doc =
 R"""(Returns the integral gain constant. This method should only be called
 if the integral gain can be represented as a scalar value, i.e., every
@@ -1495,12 +1495,12 @@ scalar value.)""";
           } get_Ki_singleton;
           // Symbol: drake::systems::controllers::PidController::get_Ki_vector
           struct /* get_Ki_vector */ {
-            // Source: drake/systems/controllers/pid_controller.h:144
+            // Source: drake/systems/controllers/pid_controller.h
             const char* doc = R"""(Returns the integral gain vector.)""";
           } get_Ki_vector;
           // Symbol: drake::systems::controllers::PidController::get_Kp_singleton
           struct /* get_Kp_singleton */ {
-            // Source: drake/systems/controllers/pid_controller.h:116
+            // Source: drake/systems/controllers/pid_controller.h
             const char* doc =
 R"""(Returns the proportional gain constant. This method should only be
 called if the proportional gain can be represented as a scalar value,
@@ -1510,30 +1510,30 @@ represented as a scalar value.)""";
           } get_Kp_singleton;
           // Symbol: drake::systems::controllers::PidController::get_Kp_vector
           struct /* get_Kp_vector */ {
-            // Source: drake/systems/controllers/pid_controller.h:139
+            // Source: drake/systems/controllers/pid_controller.h
             const char* doc = R"""(Returns the proportional gain vector.)""";
           } get_Kp_vector;
           // Symbol: drake::systems::controllers::PidController::get_input_port_desired_state
           struct /* get_input_port_desired_state */ {
-            // Source: drake/systems/controllers/pid_controller.h:172
+            // Source: drake/systems/controllers/pid_controller.h
             const char* doc =
 R"""(Returns the input port for the desired state.)""";
           } get_input_port_desired_state;
           // Symbol: drake::systems::controllers::PidController::get_input_port_estimated_state
           struct /* get_input_port_estimated_state */ {
-            // Source: drake/systems/controllers/pid_controller.h:165
+            // Source: drake/systems/controllers/pid_controller.h
             const char* doc =
 R"""(Returns the input port for the estimated state.)""";
           } get_input_port_estimated_state;
           // Symbol: drake::systems::controllers::PidController::get_output_port_control
           struct /* get_output_port_control */ {
-            // Source: drake/systems/controllers/pid_controller.h:179
+            // Source: drake/systems/controllers/pid_controller.h
             const char* doc =
 R"""(Returns the output port for computed control.)""";
           } get_output_port_control;
           // Symbol: drake::systems::controllers::PidController::set_integral_value
           struct /* set_integral_value */ {
-            // Source: drake/systems/controllers/pid_controller.h:155
+            // Source: drake/systems/controllers/pid_controller.h
             const char* doc =
 R"""(Sets the integral part of the PidController to ``value``. ``value``
 must be a column vector of the appropriate size.)""";
@@ -1541,31 +1541,31 @@ must be a column vector of the appropriate size.)""";
         } PidController;
         // Symbol: drake::systems::controllers::StateFeedbackControllerInterface
         struct /* StateFeedbackControllerInterface */ {
-          // Source: drake/systems/controllers/state_feedback_controller_interface.h:17
+          // Source: drake/systems/controllers/state_feedback_controller_interface.h
           const char* doc =
 R"""(Interface for state feedback controllers. This class needs to be
 extended by concrete implementations. It provides named accessors to
 actual and desired state input ports and control output port.)""";
           // Symbol: drake::systems::controllers::StateFeedbackControllerInterface::StateFeedbackControllerInterface<T>
           struct /* ctor */ {
-            // Source: drake/systems/controllers/state_feedback_controller_interface.h:19
+            // Source: drake/systems/controllers/state_feedback_controller_interface.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::systems::controllers::StateFeedbackControllerInterface::get_input_port_desired_state
           struct /* get_input_port_desired_state */ {
-            // Source: drake/systems/controllers/state_feedback_controller_interface.h:29
+            // Source: drake/systems/controllers/state_feedback_controller_interface.h
             const char* doc =
 R"""(Returns the input port for the desired state.)""";
           } get_input_port_desired_state;
           // Symbol: drake::systems::controllers::StateFeedbackControllerInterface::get_input_port_estimated_state
           struct /* get_input_port_estimated_state */ {
-            // Source: drake/systems/controllers/state_feedback_controller_interface.h:24
+            // Source: drake/systems/controllers/state_feedback_controller_interface.h
             const char* doc =
 R"""(Returns the input port for the estimated state.)""";
           } get_input_port_estimated_state;
           // Symbol: drake::systems::controllers::StateFeedbackControllerInterface::get_output_port_control
           struct /* get_output_port_control */ {
-            // Source: drake/systems/controllers/state_feedback_controller_interface.h:34
+            // Source: drake/systems/controllers/state_feedback_controller_interface.h
             const char* doc =
 R"""(Returns the output port for computed control.)""";
           } get_output_port_control;

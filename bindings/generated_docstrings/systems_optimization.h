@@ -23,7 +23,7 @@ constexpr struct /* pydrake_doc_systems_optimization */ {
     struct /* systems */ {
       // Symbol: drake::systems::SystemConstraintAdapter
       struct /* SystemConstraintAdapter */ {
-        // Source: drake/systems/optimization/system_constraint_adapter.h:22
+        // Source: drake/systems/optimization/system_constraint_adapter.h
         const char* doc =
 R"""(This class is a factory class to generate SystemConstraintWrapper.
 Namely this class helps to convert a SystemConstraint to a
@@ -34,7 +34,7 @@ inside this class. Using this class with a system that cannot be
 converted to System<AutoDiffXd> will cause a runtime error.)""";
         // Symbol: drake::systems::SystemConstraintAdapter::Create
         struct /* Create */ {
-          // Source: drake/systems/optimization/system_constraint_adapter.h:45
+          // Source: drake/systems/optimization/system_constraint_adapter.h
           const char* doc =
 R"""(This method creates a solvers::Constraint from a SystemConstraint. The
 newly created constraint represents lower <=
@@ -57,7 +57,7 @@ Parameter ``context``:
         } Create;
         // Symbol: drake::systems::SystemConstraintAdapter::MaybeCreateConstraintSymbolically
         struct /* MaybeCreateConstraintSymbolically */ {
-          // Source: drake/systems/optimization/system_constraint_adapter.h:81
+          // Source: drake/systems/optimization/system_constraint_adapter.h
           const char* doc =
 R"""(Given a SystemConstraint and the Context to evaluate this
 SystemConstraint, parse the constraint in the symbolic forms.
@@ -86,7 +86,7 @@ Returns ``constraints``:
         } MaybeCreateConstraintSymbolically;
         // Symbol: drake::systems::SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically
         struct /* MaybeCreateGenericConstraintSymbolically */ {
-          // Source: drake/systems/optimization/system_constraint_adapter.h:107
+          // Source: drake/systems/optimization/system_constraint_adapter.h
           const char* doc =
 R"""(Given a SystemConstraint and the Context to evaluate this
 SystemConstraint, parses the constraint to a generic nonlinear
@@ -119,18 +119,18 @@ Raises:
         } MaybeCreateGenericConstraintSymbolically;
         // Symbol: drake::systems::SystemConstraintAdapter::SystemConstraintAdapter
         struct /* ctor */ {
-          // Source: drake/systems/optimization/system_constraint_adapter.h:24
+          // Source: drake/systems/optimization/system_constraint_adapter.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::systems::SystemConstraintAdapter::system_autodiff
         struct /* system_autodiff */ {
-          // Source: drake/systems/optimization/system_constraint_adapter.h:114
+          // Source: drake/systems/optimization/system_constraint_adapter.h
           const char* doc =
 R"""(Getters for the system instantiated with AutoDiffXd.)""";
         } system_autodiff;
         // Symbol: drake::systems::SystemConstraintAdapter::system_symbolic
         struct /* system_symbolic */ {
-          // Source: drake/systems/optimization/system_constraint_adapter.h:122
+          // Source: drake/systems/optimization/system_constraint_adapter.h
           const char* doc =
 R"""(Returns the symbolic system. Throws a runtime error if the system
 cannot be instantiated with symbolic::Expression.)""";
@@ -138,7 +138,7 @@ cannot be instantiated with symbolic::Expression.)""";
       } SystemConstraintAdapter;
       // Symbol: drake::systems::SystemConstraintWrapper
       struct /* SystemConstraintWrapper */ {
-        // Source: drake/systems/optimization/system_constraint_wrapper.h:45
+        // Source: drake/systems/optimization/system_constraint_wrapper.h
         const char* doc =
 R"""(This wrapper class wraps a SystemConstraint object to the format of
 solvers::Constraint. The constraint is lower <=
@@ -148,7 +148,7 @@ SystemConstraint object. When the lower and upper are equal, this
 represents an equality constraint.)""";
         // Symbol: drake::systems::SystemConstraintWrapper::SystemConstraintWrapper
         struct /* ctor */ {
-          // Source: drake/systems/optimization/system_constraint_wrapper.h:75
+          // Source: drake/systems/optimization/system_constraint_wrapper.h
           const char* doc =
 R"""(Wraps a single SystemConstraint of the given system into a
 solvers::Constraint. Note that this constraint doesn't require the
@@ -189,13 +189,13 @@ Parameter ``x_size``:
         } ctor;
         // Symbol: drake::systems::SystemConstraintWrapper::constraint_index
         struct /* constraint_index */ {
-          // Source: drake/systems/optimization/system_constraint_wrapper.h:89
+          // Source: drake/systems/optimization/system_constraint_wrapper.h
           const char* doc =
 R"""(Getter for the index of the constraint in the system.)""";
         } constraint_index;
         // Symbol: drake::systems::SystemConstraintWrapper::system_autodiff
         struct /* system_autodiff */ {
-          // Source: drake/systems/optimization/system_constraint_wrapper.h:86
+          // Source: drake/systems/optimization/system_constraint_wrapper.h
           const char* doc =
 R"""(Gets the AutoDiffXd type System stored in this constraint.)""";
         } system_autodiff;

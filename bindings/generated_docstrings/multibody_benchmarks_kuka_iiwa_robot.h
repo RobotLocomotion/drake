@@ -26,7 +26,7 @@ constexpr struct /* pydrake_doc_multibody_benchmarks_kuka_iiwa_robot */ {
         struct /* kuka_iiwa_robot */ {
           // Symbol: drake::multibody::benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel
           struct /* MakeKukaIiwaModel */ {
-            // Source: drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h:154
+            // Source: drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h
             const char* doc =
 R"""(This method makes a MultibodyTree model for a Kuka Iiwa arm as
 specified in the file kuka_iiwa_robot.urdf contained in this same

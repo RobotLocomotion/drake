@@ -26,7 +26,7 @@ constexpr struct /* pydrake_doc_geometry_query_results */ {
     struct /* geometry */ {
       // Symbol: drake::geometry::ContactSurface
       struct /* ContactSurface */ {
-        // Source: drake/geometry/query_results/contact_surface.h:161
+        // Source: drake/geometry/query_results/contact_surface.h
         const char* doc =
 R"""(The ContactSurface characterizes the intersection of two geometries M
 and N as a contact surface with a scalar field and a vector field,
@@ -150,12 +150,12 @@ from the origin of the world frame, expressed in the world frame.
 We use the barycentric coordinates to evaluate the field values.)""";
         // Symbol: drake::geometry::ContactSurface::ContactSurface<T>
         struct /* ctor */ {
-          // Source: drake/geometry/query_results/contact_surface.h:163
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc_was_unable_to_choose_unambiguous_names = R"""()""";
         } ctor;
         // Symbol: drake::geometry::ContactSurface::Equal
         struct /* Equal */ {
-          // Source: drake/geometry/query_results/contact_surface.h:374
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc =
 R"""(Checks to see whether the given ContactSurface object is equal via
 deep exact comparison. NaNs are treated as not equal as per the IEEE
@@ -169,7 +169,7 @@ Returns:
         } Equal;
         // Symbol: drake::geometry::ContactSurface::EvaluateGradE_M_W
         struct /* EvaluateGradE_M_W */ {
-          // Source: drake/geometry/query_results/contact_surface.h:358
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc =
 R"""(Returns the value of ∇eₘ for the face with index ``index``.
 
@@ -181,7 +181,7 @@ Precondition:
         } EvaluateGradE_M_W;
         // Symbol: drake::geometry::ContactSurface::EvaluateGradE_N_W
         struct /* EvaluateGradE_N_W */ {
-          // Source: drake/geometry/query_results/contact_surface.h:363
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc =
 R"""(Returns the value of ∇eₙ for the face with index ``index``.
 
@@ -193,46 +193,46 @@ Precondition:
         } EvaluateGradE_N_W;
         // Symbol: drake::geometry::ContactSurface::HasGradE_M
         struct /* HasGradE_M */ {
-          // Source: drake/geometry/query_results/contact_surface.h:350
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc =
 R"""(Returns:
     ``True`` if ``this`` contains values for ∇eₘ.)""";
         } HasGradE_M;
         // Symbol: drake::geometry::ContactSurface::HasGradE_N
         struct /* HasGradE_N */ {
-          // Source: drake/geometry/query_results/contact_surface.h:353
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc =
 R"""(Returns:
     ``True`` if ``this`` contains values for ∇eₙ.)""";
         } HasGradE_N;
         // Symbol: drake::geometry::ContactSurface::area
         struct /* area */ {
-          // Source: drake/geometry/query_results/contact_surface.h:240
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc = R"""()""";
         } area;
         // Symbol: drake::geometry::ContactSurface::centroid
         struct /* centroid */ {
-          // Source: drake/geometry/query_results/contact_surface.h:258
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc = R"""()""";
         } centroid;
         // Symbol: drake::geometry::ContactSurface::face_normal
         struct /* face_normal */ {
-          // Source: drake/geometry/query_results/contact_surface.h:250
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc = R"""()""";
         } face_normal;
         // Symbol: drake::geometry::ContactSurface::id_M
         struct /* id_M */ {
-          // Source: drake/geometry/query_results/contact_surface.h:215
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc = R"""(Returns the geometry id of Geometry M.)""";
         } id_M;
         // Symbol: drake::geometry::ContactSurface::id_N
         struct /* id_N */ {
-          // Source: drake/geometry/query_results/contact_surface.h:218
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc = R"""(Returns the geometry id of Geometry N.)""";
         } id_N;
         // Symbol: drake::geometry::ContactSurface::is_triangle
         struct /* is_triangle */ {
-          // Source: drake/geometry/query_results/contact_surface.h:282
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc =
 R"""(Simply reports if this contact surface's mesh representation is
 triangle. Equivalent to:
@@ -243,17 +243,17 @@ and offered as convenient sugar.)""";
         } is_triangle;
         // Symbol: drake::geometry::ContactSurface::num_faces
         struct /* num_faces */ {
-          // Source: drake/geometry/query_results/contact_surface.h:230
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc = R"""()""";
         } num_faces;
         // Symbol: drake::geometry::ContactSurface::num_vertices
         struct /* num_vertices */ {
-          // Source: drake/geometry/query_results/contact_surface.h:235
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc = R"""()""";
         } num_vertices;
         // Symbol: drake::geometry::ContactSurface::poly_e_MN
         struct /* poly_e_MN */ {
-          // Source: drake/geometry/query_results/contact_surface.h:321
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc =
 R"""(Returns a reference to the scalar field eₘₙ for the *polygonal* mesh.
 
@@ -262,7 +262,7 @@ Precondition:
         } poly_e_MN;
         // Symbol: drake::geometry::ContactSurface::poly_mesh_W
         struct /* poly_mesh_W */ {
-          // Source: drake/geometry/query_results/contact_surface.h:314
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc =
 R"""(Returns a reference to the *polygonal* surface mesh whose vertex
 positions are measured and expressed in the world frame.
@@ -272,7 +272,7 @@ Precondition:
         } poly_mesh_W;
         // Symbol: drake::geometry::ContactSurface::representation
         struct /* representation */ {
-          // Source: drake/geometry/query_results/contact_surface.h:290
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc =
 R"""(Reports the representation mode of this contact surface. If accessing
 the mesh or field directly, the APIs that can be successfully
@@ -280,12 +280,12 @@ exercised are related to this methods return value. See below.)""";
         } representation;
         // Symbol: drake::geometry::ContactSurface::total_area
         struct /* total_area */ {
-          // Source: drake/geometry/query_results/contact_surface.h:245
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc = R"""()""";
         } total_area;
         // Symbol: drake::geometry::ContactSurface::tri_e_MN
         struct /* tri_e_MN */ {
-          // Source: drake/geometry/query_results/contact_surface.h:305
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc =
 R"""(Returns a reference to the scalar field eₘₙ for the *triangle* mesh.
 
@@ -294,7 +294,7 @@ Precondition:
         } tri_e_MN;
         // Symbol: drake::geometry::ContactSurface::tri_mesh_W
         struct /* tri_mesh_W */ {
-          // Source: drake/geometry/query_results/contact_surface.h:298
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc =
 R"""(Returns a reference to the *triangular* surface mesh whose vertex
 positions are measured and expressed in the world frame.
@@ -305,25 +305,25 @@ Precondition:
       } ContactSurface;
       // Symbol: drake::geometry::HydroelasticContactRepresentation
       struct /* HydroelasticContactRepresentation */ {
-        // Source: drake/geometry/query_results/contact_surface.h:24
+        // Source: drake/geometry/query_results/contact_surface.h
         const char* doc =
 R"""(Reports on how a hydroelastic contact surface is represented. See
 contact_surface_discrete_representation "the documentation in
 ContactSurface" for more details.)""";
         // Symbol: drake::geometry::HydroelasticContactRepresentation::kPolygon
         struct /* kPolygon */ {
-          // Source: drake/geometry/query_results/contact_surface.h:24
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc = R"""()""";
         } kPolygon;
         // Symbol: drake::geometry::HydroelasticContactRepresentation::kTriangle
         struct /* kTriangle */ {
-          // Source: drake/geometry/query_results/contact_surface.h:24
+          // Source: drake/geometry/query_results/contact_surface.h
           const char* doc = R"""()""";
         } kTriangle;
       } HydroelasticContactRepresentation;
       // Symbol: drake::geometry::PenetrationAsPointPair
       struct /* PenetrationAsPointPair */ {
-        // Source: drake/geometry/query_results/penetration_as_point_pair.h:24
+        // Source: drake/geometry/query_results/penetration_as_point_pair.h
         const char* doc =
 R"""(A characterization of the intersection of two penetrating geometries.
 The characterization consists of a pair of points and a normal. The
@@ -340,30 +340,30 @@ Template parameter ``T``:
     The underlying scalar type. Must be a valid Eigen scalar.)""";
         // Symbol: drake::geometry::PenetrationAsPointPair::SwapAAndB
         struct /* SwapAAndB */ {
-          // Source: drake/geometry/query_results/penetration_as_point_pair.h:26
+          // Source: drake/geometry/query_results/penetration_as_point_pair.h
           const char* doc =
 R"""(Swaps the interpretation of geometries A and B.)""";
         } SwapAAndB;
         // Symbol: drake::geometry::PenetrationAsPointPair::depth
         struct /* depth */ {
-          // Source: drake/geometry/query_results/penetration_as_point_pair.h:48
+          // Source: drake/geometry/query_results/penetration_as_point_pair.h
           const char* doc = R"""(The penetration depth.)""";
         } depth;
         // Symbol: drake::geometry::PenetrationAsPointPair::id_A
         struct /* id_A */ {
-          // Source: drake/geometry/query_results/penetration_as_point_pair.h:34
+          // Source: drake/geometry/query_results/penetration_as_point_pair.h
           const char* doc =
 R"""(The id of the first geometry in the contact.)""";
         } id_A;
         // Symbol: drake::geometry::PenetrationAsPointPair::id_B
         struct /* id_B */ {
-          // Source: drake/geometry/query_results/penetration_as_point_pair.h:36
+          // Source: drake/geometry/query_results/penetration_as_point_pair.h
           const char* doc =
 R"""(The id of the second geometry in the contact.)""";
         } id_B;
         // Symbol: drake::geometry::PenetrationAsPointPair::nhat_BA_W
         struct /* nhat_BA_W */ {
-          // Source: drake/geometry/query_results/penetration_as_point_pair.h:46
+          // Source: drake/geometry/query_results/penetration_as_point_pair.h
           const char* doc =
 R"""(The unit-length normal which defines the penetration direction,
 pointing from geometry B into geometry A, measured and expressed in
@@ -372,14 +372,14 @@ the contact patch lies.)""";
         } nhat_BA_W;
         // Symbol: drake::geometry::PenetrationAsPointPair::p_WCa
         struct /* p_WCa */ {
-          // Source: drake/geometry/query_results/penetration_as_point_pair.h:39
+          // Source: drake/geometry/query_results/penetration_as_point_pair.h
           const char* doc =
 R"""(The point on A that most deeply penetrates B, measured and expressed
 in the world frame.)""";
         } p_WCa;
         // Symbol: drake::geometry::PenetrationAsPointPair::p_WCb
         struct /* p_WCb */ {
-          // Source: drake/geometry/query_results/penetration_as_point_pair.h:42
+          // Source: drake/geometry/query_results/penetration_as_point_pair.h
           const char* doc =
 R"""(The point on B that most deeply penetrates A, measured and expressed
 in the world frame.)""";
@@ -387,7 +387,7 @@ in the world frame.)""";
       } PenetrationAsPointPair;
       // Symbol: drake::geometry::SignedDistancePair
       struct /* SignedDistancePair */ {
-        // Source: drake/geometry/query_results/signed_distance_pair.h:31
+        // Source: drake/geometry/query_results/signed_distance_pair.h
         const char* doc =
 R"""(The data for reporting the signed distance between two geometries, A
 and B. It provides the id's of the two geometries, the witness points
@@ -413,7 +413,7 @@ Template parameter ``T``:
     The underlying scalar type. Must be a valid Eigen scalar.)""";
         // Symbol: drake::geometry::SignedDistancePair::SignedDistancePair<T>
         struct /* ctor */ {
-          // Source: drake/geometry/query_results/signed_distance_pair.h:47
+          // Source: drake/geometry/query_results/signed_distance_pair.h
           const char* doc =
 R"""(Constructor
 
@@ -440,50 +440,50 @@ Precondition:
         } ctor;
         // Symbol: drake::geometry::SignedDistancePair::SwapAAndB
         struct /* SwapAAndB */ {
-          // Source: drake/geometry/query_results/signed_distance_pair.h:58
+          // Source: drake/geometry/query_results/signed_distance_pair.h
           const char* doc =
 R"""(Swaps the interpretation of geometries A and B.)""";
         } SwapAAndB;
         // Symbol: drake::geometry::SignedDistancePair::distance
         struct /* distance */ {
-          // Source: drake/geometry/query_results/signed_distance_pair.h:82
+          // Source: drake/geometry/query_results/signed_distance_pair.h
           const char* doc =
 R"""(The signed distance between p_ACa and p_BCb.)""";
         } distance;
         // Symbol: drake::geometry::SignedDistancePair::id_A
         struct /* id_A */ {
-          // Source: drake/geometry/query_results/signed_distance_pair.h:66
+          // Source: drake/geometry/query_results/signed_distance_pair.h
           const char* doc =
 R"""(The id of the first geometry in the pair.)""";
         } id_A;
         // Symbol: drake::geometry::SignedDistancePair::id_B
         struct /* id_B */ {
-          // Source: drake/geometry/query_results/signed_distance_pair.h:68
+          // Source: drake/geometry/query_results/signed_distance_pair.h
           const char* doc =
 R"""(The id of the second geometry in the pair.)""";
         } id_B;
         // Symbol: drake::geometry::SignedDistancePair::nhat_BA_W
         struct /* nhat_BA_W */ {
-          // Source: drake/geometry/query_results/signed_distance_pair.h:84
+          // Source: drake/geometry/query_results/signed_distance_pair.h
           const char* doc =
 R"""(A direction of fastest increasing distance.)""";
         } nhat_BA_W;
         // Symbol: drake::geometry::SignedDistancePair::p_ACa
         struct /* p_ACa */ {
-          // Source: drake/geometry/query_results/signed_distance_pair.h:78
+          // Source: drake/geometry/query_results/signed_distance_pair.h
           const char* doc =
 R"""(The witness point on geometry A's surface, expressed in A's frame.)""";
         } p_ACa;
         // Symbol: drake::geometry::SignedDistancePair::p_BCb
         struct /* p_BCb */ {
-          // Source: drake/geometry/query_results/signed_distance_pair.h:80
+          // Source: drake/geometry/query_results/signed_distance_pair.h
           const char* doc =
 R"""(The witness point on geometry B's surface, expressed in B's frame.)""";
         } p_BCb;
       } SignedDistancePair;
       // Symbol: drake::geometry::SignedDistanceToPoint
       struct /* SignedDistanceToPoint */ {
-        // Source: drake/geometry/query_results/signed_distance_to_point.h:24
+        // Source: drake/geometry/query_results/signed_distance_to_point.h
         const char* doc =
 R"""(The data for reporting the signed distance from a query point to a
 geometry. Reports the result of a signed distance query between a
@@ -499,7 +499,7 @@ Template parameter ``T``:
     The underlying scalar type. Must be a valid Eigen scalar.)""";
         // Symbol: drake::geometry::SignedDistanceToPoint::SignedDistanceToPoint<T>
         struct /* ctor */ {
-          // Source: drake/geometry/query_results/signed_distance_to_point.h:50
+          // Source: drake/geometry/query_results/signed_distance_to_point.h
           const char* doc =
 R"""(Constructs SignedDistanceToPoint struct from calculated results.
 
@@ -537,7 +537,7 @@ Precondition:
         } ctor;
         // Symbol: drake::geometry::SignedDistanceToPoint::distance
         struct /* distance */ {
-          // Source: drake/geometry/query_results/signed_distance_to_point.h:66
+          // Source: drake/geometry/query_results/signed_distance_to_point.h
           const char* doc =
 R"""(The signed distance from the query point Q to the nearest point N on
 the surface of geometry G. It is positive if Q is outside G. It is
@@ -545,21 +545,21 @@ negative if Q is inside G. It is zero if Q is on the boundary of G.)""";
         } distance;
         // Symbol: drake::geometry::SignedDistanceToPoint::grad_W
         struct /* grad_W */ {
-          // Source: drake/geometry/query_results/signed_distance_to_point.h:69
+          // Source: drake/geometry/query_results/signed_distance_to_point.h
           const char* doc =
 R"""(The gradient vector of the distance function with respect to the query
 point Q, expressed in world frame W.)""";
         } grad_W;
         // Symbol: drake::geometry::SignedDistanceToPoint::id_G
         struct /* id_G */ {
-          // Source: drake/geometry/query_results/signed_distance_to_point.h:59
+          // Source: drake/geometry/query_results/signed_distance_to_point.h
           const char* doc =
 R"""(The id of the geometry G to which we measure distance from the query
 point Q.)""";
         } id_G;
         // Symbol: drake::geometry::SignedDistanceToPoint::p_GN
         struct /* p_GN */ {
-          // Source: drake/geometry/query_results/signed_distance_to_point.h:62
+          // Source: drake/geometry/query_results/signed_distance_to_point.h
           const char* doc =
 R"""(The position of the nearest point N on G's surface from the query
 point Q, expressed in G's frame.)""";

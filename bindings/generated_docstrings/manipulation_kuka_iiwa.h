@@ -32,7 +32,7 @@ constexpr struct /* pydrake_doc_manipulation_kuka_iiwa */ {
       struct /* kuka_iiwa */ {
         // Symbol: drake::manipulation::kuka_iiwa::ApplyDriverConfig
         struct /* ApplyDriverConfig */ {
-          // Source: drake/manipulation/kuka_iiwa/iiwa_driver_functions.h:22
+          // Source: drake/manipulation/kuka_iiwa/iiwa_driver_functions.h
           const char* doc =
 R"""(Wires up Drake systems between an LCM interface and the actuation
 input ports of a MultibodyPlant. This simulates the role that driver
@@ -46,7 +46,7 @@ Precondition:
         } ApplyDriverConfig;
         // Symbol: drake::manipulation::kuka_iiwa::BuildIiwaControl
         struct /* BuildIiwaControl */ {
-          // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h:58
+          // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h
           const char* doc =
 R"""(Given a ``plant`` (and associated ``iiwa_instance``) and a`builder`,
 installs in that builder the systems necessary to control and monitor
@@ -69,7 +69,7 @@ IIWA-specific LCM conventions outlined in manipulation/README.)""";
         } BuildIiwaControl;
         // Symbol: drake::manipulation::kuka_iiwa::BuildSimplifiedIiwaControl
         struct /* BuildSimplifiedIiwaControl */ {
-          // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h:88
+          // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h
           const char* doc =
 R"""(A simplified Iiwa controller builder to construct an
 InverseDynamicsController without adding LCM I/O systems.
@@ -79,13 +79,13 @@ See also:
         } BuildSimplifiedIiwaControl;
         // Symbol: drake::manipulation::kuka_iiwa::FormatIiwaControlMode
         struct /* FormatIiwaControlMode */ {
-          // Source: drake/manipulation/kuka_iiwa/iiwa_constants.h:40
+          // Source: drake/manipulation/kuka_iiwa/iiwa_constants.h
           const char* doc =
 R"""(Formats control mode to a string using the mappping shown above.)""";
         } FormatIiwaControlMode;
         // Symbol: drake::manipulation::kuka_iiwa::IiwaCommandReceiver
         struct /* IiwaCommandReceiver */ {
-          // Source: drake/manipulation/kuka_iiwa/iiwa_command_receiver.h:45
+          // Source: drake/manipulation/kuka_iiwa/iiwa_command_receiver.h
           const char* doc =
 R"""(Handles lcmt_iiwa_command message from a LcmSubscriberSystem.
 
@@ -122,12 +122,12 @@ The "torque" output will be a vector of zeros, and the "time" output
 will be a vector of a single zero.)""";
           // Symbol: drake::manipulation::kuka_iiwa::IiwaCommandReceiver::IiwaCommandReceiver
           struct /* ctor */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_command_receiver.h:47
+            // Source: drake/manipulation/kuka_iiwa/iiwa_command_receiver.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaCommandReceiver::LatchInitialPosition
           struct /* LatchInitialPosition */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_command_receiver.h:60
+            // Source: drake/manipulation/kuka_iiwa/iiwa_command_receiver.h
             const char* doc =
 R"""((Advanced.) Copies the current "position_measured" input (or zero if
 not connected) into Context state, and changes the behavior of the
@@ -139,37 +139,37 @@ special cases.)""";
           } LatchInitialPosition;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaCommandReceiver::get_commanded_position_output_port
           struct /* get_commanded_position_output_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_command_receiver.h:72
+            // Source: drake/manipulation/kuka_iiwa/iiwa_command_receiver.h
             const char* doc =
 R"""(Raises:
     RuntimeError if control_mode does not include position control.)""";
           } get_commanded_position_output_port;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaCommandReceiver::get_commanded_torque_output_port
           struct /* get_commanded_torque_output_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_command_receiver.h:79
+            // Source: drake/manipulation/kuka_iiwa/iiwa_command_receiver.h
             const char* doc =
 R"""(Raises:
     RuntimeError if control_mode does not include torque control.)""";
           } get_commanded_torque_output_port;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaCommandReceiver::get_message_input_port
           struct /* get_message_input_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_command_receiver.h:64
+            // Source: drake/manipulation/kuka_iiwa/iiwa_command_receiver.h
             const char* doc = R"""()""";
           } get_message_input_port;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaCommandReceiver::get_position_measured_input_port
           struct /* get_position_measured_input_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_command_receiver.h:67
+            // Source: drake/manipulation/kuka_iiwa/iiwa_command_receiver.h
             const char* doc = R"""()""";
           } get_position_measured_input_port;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaCommandReceiver::get_time_output_port
           struct /* get_time_output_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_command_receiver.h:84
+            // Source: drake/manipulation/kuka_iiwa/iiwa_command_receiver.h
             const char* doc = R"""()""";
           } get_time_output_port;
         } IiwaCommandReceiver;
         // Symbol: drake::manipulation::kuka_iiwa::IiwaCommandSender
         struct /* IiwaCommandSender */ {
-          // Source: drake/manipulation/kuka_iiwa/iiwa_command_sender.h:50
+          // Source: drake/manipulation/kuka_iiwa/iiwa_command_sender.h
           const char* doc =
 R"""(Creates and outputs lcmt_iiwa_command messages.
 
@@ -213,48 +213,48 @@ See also:
     ``lcmt_iiwa_command.lcm`` for additional documentation.)""";
           // Symbol: drake::manipulation::kuka_iiwa::IiwaCommandSender::IiwaCommandSender
           struct /* ctor */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_command_sender.h:52
+            // Source: drake/manipulation/kuka_iiwa/iiwa_command_sender.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaCommandSender::get_position_input_port
           struct /* get_position_input_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_command_sender.h:62
+            // Source: drake/manipulation/kuka_iiwa/iiwa_command_sender.h
             const char* doc = R"""()""";
           } get_position_input_port;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaCommandSender::get_time_input_port
           struct /* get_time_input_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_command_sender.h:61
+            // Source: drake/manipulation/kuka_iiwa/iiwa_command_sender.h
             const char* doc = R"""()""";
           } get_time_input_port;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaCommandSender::get_torque_input_port
           struct /* get_torque_input_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_command_sender.h:63
+            // Source: drake/manipulation/kuka_iiwa/iiwa_command_sender.h
             const char* doc = R"""()""";
           } get_torque_input_port;
         } IiwaCommandSender;
         // Symbol: drake::manipulation::kuka_iiwa::IiwaControlMode
         struct /* IiwaControlMode */ {
-          // Source: drake/manipulation/kuka_iiwa/iiwa_constants.h:21
+          // Source: drake/manipulation/kuka_iiwa/iiwa_constants.h
           const char* doc = R"""(Enumeration for control modes.)""";
           // Symbol: drake::manipulation::kuka_iiwa::IiwaControlMode::kPositionAndTorque
           struct /* kPositionAndTorque */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_constants.h:21
+            // Source: drake/manipulation/kuka_iiwa/iiwa_constants.h
             const char* doc = R"""()""";
           } kPositionAndTorque;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaControlMode::kPositionOnly
           struct /* kPositionOnly */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_constants.h:21
+            // Source: drake/manipulation/kuka_iiwa/iiwa_constants.h
             const char* doc = R"""()""";
           } kPositionOnly;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaControlMode::kTorqueOnly
           struct /* kTorqueOnly */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_constants.h:21
+            // Source: drake/manipulation/kuka_iiwa/iiwa_constants.h
             const char* doc = R"""()""";
           } kTorqueOnly;
         } IiwaControlMode;
         // Symbol: drake::manipulation::kuka_iiwa::IiwaControlPorts
         struct /* IiwaControlPorts */ {
-          // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h:71
+          // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h
           const char* doc =
 R"""(The return type of BuildSimplifiedIiwaControl(). Depending on the
 ``control_mode``, some of the input ports might be null. The output
@@ -264,51 +264,51 @@ These follow the general conventions for torque as outlined in
 manipulation/README.)""";
           // Symbol: drake::manipulation::kuka_iiwa::IiwaControlPorts::commanded_positions
           struct /* commanded_positions */ {
-            // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h:73
+            // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h
             const char* doc =
 R"""(This will be non-null iff the control_mode denotes commanded
 positions.)""";
           } commanded_positions;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaControlPorts::commanded_torque
           struct /* commanded_torque */ {
-            // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h:75
+            // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h
             const char* doc =
 R"""(This will be non-null iff the control_mode denotes commanded torques.)""";
           } commanded_torque;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaControlPorts::external_torque
           struct /* external_torque */ {
-            // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h:82
+            // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h
             const char* doc = R"""()""";
           } external_torque;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaControlPorts::joint_torque
           struct /* joint_torque */ {
-            // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h:80
+            // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h
             const char* doc = R"""()""";
           } joint_torque;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaControlPorts::position_commanded
           struct /* position_commanded */ {
-            // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h:77
+            // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h
             const char* doc = R"""()""";
           } position_commanded;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaControlPorts::position_measured
           struct /* position_measured */ {
-            // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h:78
+            // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h
             const char* doc = R"""()""";
           } position_measured;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaControlPorts::torque_measured
           struct /* torque_measured */ {
-            // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h:81
+            // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h
             const char* doc = R"""()""";
           } torque_measured;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaControlPorts::velocity_estimated
           struct /* velocity_estimated */ {
-            // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h:79
+            // Source: drake/manipulation/kuka_iiwa/build_iiwa_control.h
             const char* doc = R"""()""";
           } velocity_estimated;
         } IiwaControlPorts;
         // Symbol: drake::manipulation::kuka_iiwa::IiwaDriver
         struct /* IiwaDriver */ {
-          // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h:20
+          // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h
           const char* doc =
 R"""(This config struct specifies how to wire up Drake systems between an
 LCM interface and the actuation input ports of a MultibodyPlant. This
@@ -319,12 +319,12 @@ It creates an LCM publisher on the ``IIWA_STATUS`` channel and an LCM
 subscriber on the ``IIWA_COMMAND`` channel.)""";
           // Symbol: drake::manipulation::kuka_iiwa::IiwaDriver::Serialize
           struct /* Serialize */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h:58
+            // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h
             const char* doc = R"""()""";
           } Serialize;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaDriver::arm_child_frame_name
           struct /* arm_child_frame_name */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h:45
+            // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h
             const char* doc =
 R"""(Optionally give an alternative frame on the arm model for its weld
 point to the world. If not supplied, the ``child_frame_name`` in the
@@ -332,7 +332,7 @@ arm's ModelInstanceInfo will be used.)""";
           } arm_child_frame_name;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaDriver::control_mode
           struct /* control_mode */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h:40
+            // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h
             const char* doc =
 R"""(The driver's control mode. Valid options (per ParseIiwaControlMode)
 are: - "position_only" - "position_and_torque" (default) -
@@ -340,7 +340,7 @@ are: - "position_only" - "position_and_torque" (default) -
           } control_mode;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaDriver::desired_kp_gains
           struct /* desired_kp_gains */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h:34
+            // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h
             const char* doc =
 R"""(Optionally pass in gains corresponding to the Iiwa Dof (7) in the
 controller. If no value is passed, the gains derived from hardware
@@ -350,13 +350,13 @@ functions accepting this struct). These gains must be nullopt if
           } desired_kp_gains;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaDriver::ext_joint_filter_tau
           struct /* ext_joint_filter_tau */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h:27
+            // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h
             const char* doc =
 R"""(A time constant used to low-pass filter external torque inputs.)""";
           } ext_joint_filter_tau;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaDriver::gripper_parent_frame_name
           struct /* gripper_parent_frame_name */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h:50
+            // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h
             const char* doc =
 R"""(Optionally give an alternative frame on the arm model for its weld
 point to the gripper. If not supplied, the ``parent_frame_name`` in
@@ -364,7 +364,7 @@ the gripper's ModelInstanceInfo will be used.)""";
           } gripper_parent_frame_name;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaDriver::hand_model_name
           struct /* hand_model_name */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h:24
+            // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h
             const char* doc =
 R"""(The name of the model (``name`` element of the ``add_model``
 directive) in the simulation that the driver will analyze to compute
@@ -372,12 +372,12 @@ end effector inertia for its copy of the arm in inverse dynamics.)""";
           } hand_model_name;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaDriver::lcm_bus
           struct /* lcm_bus */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h:52
+            // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h
             const char* doc = R"""()""";
           } lcm_bus;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaDriver::lcm_status_period
           struct /* lcm_status_period */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h:55
+            // Source: drake/manipulation/kuka_iiwa/iiwa_driver.h
             const char* doc =
 R"""(The period in seconds at which status reports are expected.)""";
           } lcm_status_period;
@@ -396,7 +396,7 @@ R"""(The period in seconds at which status reports are expected.)""";
         } IiwaDriver;
         // Symbol: drake::manipulation::kuka_iiwa::IiwaStatusReceiver
         struct /* IiwaStatusReceiver */ {
-          // Source: drake/manipulation/kuka_iiwa/iiwa_status_receiver.h:43
+          // Source: drake/manipulation/kuka_iiwa/iiwa_status_receiver.h
           const char* doc =
 R"""(@system name: IiwaStatusReceiver input_ports: - lcmt_iiwa_status
 output_ports: - time_measured - position_commanded - position_measured
@@ -407,48 +407,48 @@ See also:
     ``lcmt_iiwa_status.lcm`` for additional documentation.)""";
           // Symbol: drake::manipulation::kuka_iiwa::IiwaStatusReceiver::IiwaStatusReceiver
           struct /* ctor */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_status_receiver.h:45
+            // Source: drake/manipulation/kuka_iiwa/iiwa_status_receiver.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaStatusReceiver::get_position_commanded_output_port
           struct /* get_position_commanded_output_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_status_receiver.h:53
+            // Source: drake/manipulation/kuka_iiwa/iiwa_status_receiver.h
             const char* doc = R"""()""";
           } get_position_commanded_output_port;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaStatusReceiver::get_position_measured_output_port
           struct /* get_position_measured_output_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_status_receiver.h:54
+            // Source: drake/manipulation/kuka_iiwa/iiwa_status_receiver.h
             const char* doc = R"""()""";
           } get_position_measured_output_port;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaStatusReceiver::get_time_measured_output_port
           struct /* get_time_measured_output_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_status_receiver.h:52
+            // Source: drake/manipulation/kuka_iiwa/iiwa_status_receiver.h
             const char* doc = R"""()""";
           } get_time_measured_output_port;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaStatusReceiver::get_torque_commanded_output_port
           struct /* get_torque_commanded_output_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_status_receiver.h:56
+            // Source: drake/manipulation/kuka_iiwa/iiwa_status_receiver.h
             const char* doc = R"""()""";
           } get_torque_commanded_output_port;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaStatusReceiver::get_torque_external_output_port
           struct /* get_torque_external_output_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_status_receiver.h:58
+            // Source: drake/manipulation/kuka_iiwa/iiwa_status_receiver.h
             const char* doc = R"""()""";
           } get_torque_external_output_port;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaStatusReceiver::get_torque_measured_output_port
           struct /* get_torque_measured_output_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_status_receiver.h:57
+            // Source: drake/manipulation/kuka_iiwa/iiwa_status_receiver.h
             const char* doc = R"""()""";
           } get_torque_measured_output_port;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaStatusReceiver::get_velocity_estimated_output_port
           struct /* get_velocity_estimated_output_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_status_receiver.h:55
+            // Source: drake/manipulation/kuka_iiwa/iiwa_status_receiver.h
             const char* doc = R"""()""";
           } get_velocity_estimated_output_port;
         } IiwaStatusReceiver;
         // Symbol: drake::manipulation::kuka_iiwa::IiwaStatusSender
         struct /* IiwaStatusSender */ {
-          // Source: drake/manipulation/kuka_iiwa/iiwa_status_sender.h:59
+          // Source: drake/manipulation/kuka_iiwa/iiwa_status_sender.h
           const char* doc =
 R"""(Creates and outputs lcmt_iiwa_status messages.
 
@@ -503,48 +503,48 @@ See also:
     ``lcmt_iiwa_status.lcm`` for additional documentation.)""";
           // Symbol: drake::manipulation::kuka_iiwa::IiwaStatusSender::IiwaStatusSender
           struct /* ctor */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_status_sender.h:61
+            // Source: drake/manipulation/kuka_iiwa/iiwa_status_sender.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaStatusSender::get_position_commanded_input_port
           struct /* get_position_commanded_input_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_status_sender.h:69
+            // Source: drake/manipulation/kuka_iiwa/iiwa_status_sender.h
             const char* doc = R"""()""";
           } get_position_commanded_input_port;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaStatusSender::get_position_measured_input_port
           struct /* get_position_measured_input_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_status_sender.h:70
+            // Source: drake/manipulation/kuka_iiwa/iiwa_status_sender.h
             const char* doc = R"""()""";
           } get_position_measured_input_port;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaStatusSender::get_time_measured_input_port
           struct /* get_time_measured_input_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_status_sender.h:68
+            // Source: drake/manipulation/kuka_iiwa/iiwa_status_sender.h
             const char* doc = R"""()""";
           } get_time_measured_input_port;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaStatusSender::get_torque_commanded_input_port
           struct /* get_torque_commanded_input_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_status_sender.h:72
+            // Source: drake/manipulation/kuka_iiwa/iiwa_status_sender.h
             const char* doc = R"""()""";
           } get_torque_commanded_input_port;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaStatusSender::get_torque_external_input_port
           struct /* get_torque_external_input_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_status_sender.h:74
+            // Source: drake/manipulation/kuka_iiwa/iiwa_status_sender.h
             const char* doc = R"""()""";
           } get_torque_external_input_port;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaStatusSender::get_torque_measured_input_port
           struct /* get_torque_measured_input_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_status_sender.h:73
+            // Source: drake/manipulation/kuka_iiwa/iiwa_status_sender.h
             const char* doc = R"""()""";
           } get_torque_measured_input_port;
           // Symbol: drake::manipulation::kuka_iiwa::IiwaStatusSender::get_velocity_estimated_input_port
           struct /* get_velocity_estimated_input_port */ {
-            // Source: drake/manipulation/kuka_iiwa/iiwa_status_sender.h:71
+            // Source: drake/manipulation/kuka_iiwa/iiwa_status_sender.h
             const char* doc = R"""()""";
           } get_velocity_estimated_input_port;
         } IiwaStatusSender;
         // Symbol: drake::manipulation::kuka_iiwa::ParseIiwaControlMode
         struct /* ParseIiwaControlMode */ {
-          // Source: drake/manipulation/kuka_iiwa/iiwa_constants.h:37
+          // Source: drake/manipulation/kuka_iiwa/iiwa_constants.h
           const char* doc =
 R"""(Parses control mode with the following mapping: - "position_only":
 kPositionOnly - "torque_only": kTorqueOnly - "position_and_torque":
@@ -552,7 +552,7 @@ kPositionAndTorque)""";
         } ParseIiwaControlMode;
         // Symbol: drake::manipulation::kuka_iiwa::SimIiwaDriver
         struct /* SimIiwaDriver */ {
-          // Source: drake/manipulation/kuka_iiwa/sim_iiwa_driver.h:45
+          // Source: drake/manipulation/kuka_iiwa/sim_iiwa_driver.h
           const char* doc =
 R"""(SimIiwaDriver simulates the IIWA control and status interface using a
 MultibodyPlant.
@@ -587,7 +587,7 @@ name. All other ports are intended to mimic the LCM command and status
 message fields.)""";
           // Symbol: drake::manipulation::kuka_iiwa::SimIiwaDriver::AddToBuilder
           struct /* AddToBuilder */ {
-            // Source: drake/manipulation/kuka_iiwa/sim_iiwa_driver.h:72
+            // Source: drake/manipulation/kuka_iiwa/sim_iiwa_driver.h
             const char* doc =
 R"""(Given a ``plant`` (and associated ``iiwa_instance``) and a
 ``builder``, installs in that builder the ``SimIiwaDriver`` system to
@@ -605,31 +605,31 @@ a longer lifetime than the Diagram.)""";
           } AddToBuilder;
           // Symbol: drake::manipulation::kuka_iiwa::SimIiwaDriver::SimIiwaDriver<T>
           struct /* ctor */ {
-            // Source: drake/manipulation/kuka_iiwa/sim_iiwa_driver.h:52
+            // Source: drake/manipulation/kuka_iiwa/sim_iiwa_driver.h
             const char* doc =
 R"""(Constructs a diagram with the given ``driver_config``. A reference to
 the ``controller_plant`` is retained by this system, so the
 ``controller_plant`` must outlive ``this``.)""";
-            // Source: drake/manipulation/kuka_iiwa/sim_iiwa_driver.h:57
+            // Source: drake/manipulation/kuka_iiwa/sim_iiwa_driver.h
             const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
           } ctor;
         } SimIiwaDriver;
         // Symbol: drake::manipulation::kuka_iiwa::get_iiwa_max_joint_velocities
         struct /* get_iiwa_max_joint_velocities */ {
-          // Source: drake/manipulation/kuka_iiwa/iiwa_constants.h:16
+          // Source: drake/manipulation/kuka_iiwa/iiwa_constants.h
           const char* doc =
 R"""(Returns the maximum joint velocities (rad/s) provided by Kuka.)""";
         } get_iiwa_max_joint_velocities;
         // Symbol: drake::manipulation::kuka_iiwa::position_enabled
         struct /* position_enabled */ {
-          // Source: drake/manipulation/kuka_iiwa/iiwa_constants.h:24
+          // Source: drake/manipulation/kuka_iiwa/iiwa_constants.h
           const char* doc =
 R"""(Reports if the given control ``mode`` includes positions.)""";
         } position_enabled;
         // Symbol: drake::manipulation::kuka_iiwa::torque_enabled
         struct /* torque_enabled */ {
-          // Source: drake/manipulation/kuka_iiwa/iiwa_constants.h:29
+          // Source: drake/manipulation/kuka_iiwa/iiwa_constants.h
           const char* doc =
 R"""(Reports if the given control ``mode`` includes torques.)""";
         } torque_enabled;

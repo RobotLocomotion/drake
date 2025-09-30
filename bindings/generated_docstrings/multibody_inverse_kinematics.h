@@ -47,7 +47,7 @@ constexpr struct /* pydrake_doc_multibody_inverse_kinematics */ {
     struct /* multibody */ {
       // Symbol: drake::multibody::AddMultibodyPlantConstraints
       struct /* AddMultibodyPlantConstraints */ {
-        // Source: drake/multibody/inverse_kinematics/add_multibody_plant_constraints.h:34
+        // Source: drake/multibody/inverse_kinematics/add_multibody_plant_constraints.h
         const char* doc =
 R"""(For all kinematic constraints associated with ``plant`` adds a
 corresponding solver::Constraint to ``prog``, using decision variables
@@ -82,7 +82,7 @@ Raises:
       } AddMultibodyPlantConstraints;
       // Symbol: drake::multibody::AddUnitQuaternionConstraintOnPlant
       struct /* AddUnitQuaternionConstraintOnPlant */ {
-        // Source: drake/multibody/inverse_kinematics/unit_quaternion_constraint.h:69
+        // Source: drake/multibody/inverse_kinematics/unit_quaternion_constraint.h
         const char* doc =
 R"""(Add unit length constraints to all the variables representing
 quaternion in ``q_vars``. Namely the quaternions for floating base
@@ -105,7 +105,7 @@ Parameter ``prog``:
       } AddUnitQuaternionConstraintOnPlant;
       // Symbol: drake::multibody::AngleBetweenVectorsConstraint
       struct /* AngleBetweenVectorsConstraint */ {
-        // Source: drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h:21
+        // Source: drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h
         const char* doc =
 R"""(Constrains that the angle between a vector ``a`` and another vector
 ``b`` is between [θ_lower, θ_upper]. ``a`` is fixed to a frame A,
@@ -116,7 +116,7 @@ normalization, the constraint is cos(θ_upper) ≤ a_unit_Aᵀ * R_AB *
 b_unit_B ≤ cos(θ_lower))""";
         // Symbol: drake::multibody::AngleBetweenVectorsConstraint::AngleBetweenVectorsConstraint
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h:49
+          // Source: drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h
           const char* doc_double =
 R"""(Constructs an AngleBetweenVectorsConstraint.
 
@@ -170,7 +170,7 @@ Raises:
 
 Raises:
     RuntimeError if ``plant_context`` is nullptr.)""";
-          // Source: drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h:62
+          // Source: drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h
           const char* doc_autodiff =
 R"""(Overloaded constructor. Use MultibodyPlant<AutoDiffXd> instead of
 MultibodyPlant<double>.)""";
@@ -178,13 +178,13 @@ MultibodyPlant<double>.)""";
       } AngleBetweenVectorsConstraint;
       // Symbol: drake::multibody::AngleBetweenVectorsCost
       struct /* AngleBetweenVectorsCost */ {
-        // Source: drake/multibody/inverse_kinematics/angle_between_vectors_cost.h:18
+        // Source: drake/multibody/inverse_kinematics/angle_between_vectors_cost.h
         const char* doc =
 R"""(Implements a cost of the form c*(1-cosθ), where θ is the angle between
 two vectors ``a`` and ``b``. `c` is a constant scalar.)""";
         // Symbol: drake::multibody::AngleBetweenVectorsCost::AngleBetweenVectorsCost
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/angle_between_vectors_cost.h:41
+          // Source: drake/multibody/inverse_kinematics/angle_between_vectors_cost.h
           const char* doc_double =
 R"""(Constructs an AngleBetweenVectorsCost.
 
@@ -227,7 +227,7 @@ Raises:
 
 Raises:
     RuntimeError if ``plant_context`` is nullptr.)""";
-          // Source: drake/multibody/inverse_kinematics/angle_between_vectors_cost.h:53
+          // Source: drake/multibody/inverse_kinematics/angle_between_vectors_cost.h
           const char* doc_autodiff =
 R"""(Overloaded constructor. Use MultibodyPlant<AutoDiffXd> instead of
 MultibodyPlant<double>.)""";
@@ -235,7 +235,7 @@ MultibodyPlant<double>.)""";
       } AngleBetweenVectorsCost;
       // Symbol: drake::multibody::ComInPolyhedronConstraint
       struct /* ComInPolyhedronConstraint */ {
-        // Source: drake/multibody/inverse_kinematics/com_in_polyhedron_constraint.h:23
+        // Source: drake/multibody/inverse_kinematics/com_in_polyhedron_constraint.h
         const char* doc =
 R"""(Constrains the center of mass to lie within a polyhedron lb <= A *
 p_EC <= ub where p_EC is the position of the center-of-mass (C)
@@ -249,7 +249,7 @@ of CoM to be within the foot support polygon, which is commonly used
 to ensure static equilibrium.)""";
         // Symbol: drake::multibody::ComInPolyhedronConstraint::ComInPolyhedronConstraint
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/com_in_polyhedron_constraint.h:43
+          // Source: drake/multibody/inverse_kinematics/com_in_polyhedron_constraint.h
           const char* doc_double =
 R"""(Constructs a ComInPolyhedronConstraint object.
 
@@ -279,7 +279,7 @@ Parameter ``plant_context``:
     update the context when evaluating the constraint.
     ``plant_context`` must be alive during the lifetime of this
     constraint.)""";
-          // Source: drake/multibody/inverse_kinematics/com_in_polyhedron_constraint.h:60
+          // Source: drake/multibody/inverse_kinematics/com_in_polyhedron_constraint.h
           const char* doc_autodiff =
 R"""(Overloaded constructor. Same as the constructor with the double
 version (using MultibodyPlant<double> and Context<double>. Except the
@@ -292,7 +292,7 @@ Precondition:
       } ComInPolyhedronConstraint;
       // Symbol: drake::multibody::ComPositionConstraint
       struct /* ComPositionConstraint */ {
-        // Source: drake/multibody/inverse_kinematics/com_position_constraint.h:20
+        // Source: drake/multibody/inverse_kinematics/com_position_constraint.h
         const char* doc =
 R"""(Impose the constraint p_EScm(q) - p_EC = 0, where p_EScm(q) is a
 function that computes the center-of-mass (COM) position from robot
@@ -302,7 +302,7 @@ evaluated variables are [q;r], where q is the generalized position
 vector of the entire plant.)""";
         // Symbol: drake::multibody::ComPositionConstraint::ComPositionConstraint
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/com_position_constraint.h:39
+          // Source: drake/multibody/inverse_kinematics/com_position_constraint.h
           const char* doc_double =
 R"""(Constructor, constrain f(q) = p_EC, where f(q) evaluates the CoM
 position expressed in frame E using the generalized position q.
@@ -327,7 +327,7 @@ Parameter ``plant_context``:
 
 Raises:
     RuntimeError if ``plant`` or ``plant_context`` is nullptr.)""";
-          // Source: drake/multibody/inverse_kinematics/com_position_constraint.h:53
+          // Source: drake/multibody/inverse_kinematics/com_position_constraint.h
           const char* doc_autodiff =
 R"""(Overloaded constructor with MultibodyPlant<AutoDiffXd> and
 Context<AutoDiffXd>. It is preferable to use the constructor with
@@ -336,7 +336,7 @@ and Context<AutoDiffXd>, then use this constructor.)""";
         } ctor;
         // Symbol: drake::multibody::ComPositionConstraint::ComposeVariable
         struct /* ComposeVariable */ {
-          // Source: drake/multibody/inverse_kinematics/com_position_constraint.h:66
+          // Source: drake/multibody/inverse_kinematics/com_position_constraint.h
           const char* doc =
 R"""(Compose the variables for Eval function from generalized position q
 and the CoM position p_EC.)""";
@@ -344,7 +344,7 @@ and the CoM position p_EC.)""";
       } ComPositionConstraint;
       // Symbol: drake::multibody::ComputePoseDiffInCommonFrame
       struct /* ComputePoseDiffInCommonFrame */ {
-        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:46
+        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
         const char* doc =
 R"""(Computes the pose "difference" between ``X_C0`` and ``X_C1`` such that
 the linear part equals p_C1 - p_C0, and the angular part equals R_C1 *
@@ -353,14 +353,14 @@ and C is the common frame.)""";
       } ComputePoseDiffInCommonFrame;
       // Symbol: drake::multibody::ConstraintRelaxingIk
       struct /* ConstraintRelaxingIk */ {
-        // Source: drake/multibody/inverse_kinematics/constraint_relaxing_ik.h:21
+        // Source: drake/multibody/inverse_kinematics/constraint_relaxing_ik.h
         const char* doc =
 R"""(A wrapper class around the IK planner. This class improves IK's
 usability by handling constraint relaxing and multiple initial guesses
 internally.)""";
         // Symbol: drake::multibody::ConstraintRelaxingIk::ConstraintRelaxingIk
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/constraint_relaxing_ik.h:45
+          // Source: drake/multibody/inverse_kinematics/constraint_relaxing_ik.h
           const char* doc =
 R"""(Constructor. Instantiates an internal MultibodyPlant from
 ``model_path``.
@@ -373,30 +373,30 @@ Parameter ``end_effector_link_name``:
         } ctor;
         // Symbol: drake::multibody::ConstraintRelaxingIk::IkCartesianWaypoint
         struct /* IkCartesianWaypoint */ {
-          // Source: drake/multibody/inverse_kinematics/constraint_relaxing_ik.h:28
+          // Source: drake/multibody/inverse_kinematics/constraint_relaxing_ik.h
           const char* doc =
 R"""(Cartesian waypoint. Input to the IK solver.)""";
           // Symbol: drake::multibody::ConstraintRelaxingIk::IkCartesianWaypoint::constrain_orientation
           struct /* constrain_orientation */ {
-            // Source: drake/multibody/inverse_kinematics/constraint_relaxing_ik.h:37
+            // Source: drake/multibody/inverse_kinematics/constraint_relaxing_ik.h
             const char* doc =
 R"""(Signals if orientation constraint is enabled.)""";
           } constrain_orientation;
           // Symbol: drake::multibody::ConstraintRelaxingIk::IkCartesianWaypoint::pos_tol
           struct /* pos_tol */ {
-            // Source: drake/multibody/inverse_kinematics/constraint_relaxing_ik.h:32
+            // Source: drake/multibody/inverse_kinematics/constraint_relaxing_ik.h
             const char* doc =
 R"""(Bounding box for the end effector in the world frame.)""";
           } pos_tol;
           // Symbol: drake::multibody::ConstraintRelaxingIk::IkCartesianWaypoint::pose
           struct /* pose */ {
-            // Source: drake/multibody/inverse_kinematics/constraint_relaxing_ik.h:30
+            // Source: drake/multibody/inverse_kinematics/constraint_relaxing_ik.h
             const char* doc =
 R"""(Desired end effector pose in the world frame.)""";
           } pose;
           // Symbol: drake::multibody::ConstraintRelaxingIk::IkCartesianWaypoint::rot_tol
           struct /* rot_tol */ {
-            // Source: drake/multibody/inverse_kinematics/constraint_relaxing_ik.h:35
+            // Source: drake/multibody/inverse_kinematics/constraint_relaxing_ik.h
             const char* doc =
 R"""(Max angle difference (in radians) between solved end effector's
 orientation and the desired.)""";
@@ -404,7 +404,7 @@ orientation and the desired.)""";
         } IkCartesianWaypoint;
         // Symbol: drake::multibody::ConstraintRelaxingIk::PlanSequentialTrajectory
         struct /* PlanSequentialTrajectory */ {
-          // Source: drake/multibody/inverse_kinematics/constraint_relaxing_ik.h:75
+          // Source: drake/multibody/inverse_kinematics/constraint_relaxing_ik.h
           const char* doc =
 R"""(Generates IK solutions for each waypoint sequentially. For waypoint
 wp_i, the IK tries to solve q_i that satisfies the end effector
@@ -436,13 +436,13 @@ Returns:
         } PlanSequentialTrajectory;
         // Symbol: drake::multibody::ConstraintRelaxingIk::SetEndEffector
         struct /* SetEndEffector */ {
-          // Source: drake/multibody/inverse_kinematics/constraint_relaxing_ik.h:51
+          // Source: drake/multibody/inverse_kinematics/constraint_relaxing_ik.h
           const char* doc = R"""(Sets end effector to ``link_name``.)""";
         } SetEndEffector;
       } ConstraintRelaxingIk;
       // Symbol: drake::multibody::DifferentialInverseKinematicsController
       struct /* DifferentialInverseKinematicsController */ {
-        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_controller.h:43
+        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_controller.h
         const char* doc =
 R"""(Differential Inverse Kinematics controller that tracks desired poses /
 velocities for multiple operational points. The controller tracks a
@@ -473,7 +473,7 @@ Precondition:
     - commanded_velocity)""";
         // Symbol: drake::multibody::DifferentialInverseKinematicsController::DifferentialInverseKinematicsController
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_controller.h:57
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_controller.h
           const char* doc =
 R"""(Constructs a DifferentialInverseKinematicsController.
 
@@ -491,29 +491,29 @@ Warning:
         } ctor;
         // Symbol: drake::multibody::DifferentialInverseKinematicsController::SetDefaultState
         struct /* SetDefaultState */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_controller.h:73
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_controller.h
           const char* doc =
 R"""(Sets the default state of the controller.)""";
         } SetDefaultState;
         // Symbol: drake::multibody::DifferentialInverseKinematicsController::SetRandomState
         struct /* SetRandomState */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_controller.h:77
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_controller.h
           const char* doc =
 R"""(Sets the random state of the controller.)""";
         } SetRandomState;
         // Symbol: drake::multibody::DifferentialInverseKinematicsController::differential_inverse_kinematics
         struct /* differential_inverse_kinematics */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_controller.h:81
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_controller.h
           const char* doc = R"""()""";
         } differential_inverse_kinematics;
         // Symbol: drake::multibody::DifferentialInverseKinematicsController::get_mutable_differential_inverse_kinematics
         struct /* get_mutable_differential_inverse_kinematics */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_controller.h:86
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_controller.h
           const char* doc = R"""()""";
         } get_mutable_differential_inverse_kinematics;
         // Symbol: drake::multibody::DifferentialInverseKinematicsController::set_initial_position
         struct /* set_initial_position */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_controller.h:68
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_controller.h
           const char* doc =
 R"""(Sets the integral part of the DiscreteTimeIntegrator to ``value``.
 `value` has the dimension of the full ``plant.num_positions()``;
@@ -524,7 +524,7 @@ system.)""";
       } DifferentialInverseKinematicsController;
       // Symbol: drake::multibody::DifferentialInverseKinematicsIntegrator
       struct /* DifferentialInverseKinematicsIntegrator */ {
-        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h:50
+        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h
         const char* doc =
 R"""(A LeafSystem that integrates successive calls to
 DoDifferentialInverseKinematics (which produces joint velocity
@@ -562,7 +562,7 @@ initialize the integrator state.
     - joint_positions)""";
         // Symbol: drake::multibody::DifferentialInverseKinematicsIntegrator::DifferentialInverseKinematicsIntegrator
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h:77
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h
           const char* doc_7args =
 R"""(Constructs the system.
 
@@ -601,7 +601,7 @@ system.
 
 Precondition:
     frame_E != frame_A.)""";
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h:108
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h
           const char* doc_6args =
 R"""(Constructs the system.
 
@@ -643,13 +643,13 @@ Precondition:
         } ctor;
         // Symbol: drake::multibody::DifferentialInverseKinematicsIntegrator::ForwardKinematics
         struct /* ForwardKinematics */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h:123
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h
           const char* doc =
 R"""(Provides X_AE as a function of the joint position set in ``context``.)""";
         } ForwardKinematics;
         // Symbol: drake::multibody::DifferentialInverseKinematicsIntegrator::SetPositions
         struct /* SetPositions */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h:119
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h
           const char* doc =
 R"""(Sets the joint positions, which are stored as state in the context. It
 is recommended that the user calls this method to initialize the
@@ -657,14 +657,14 @@ position commands to match the initial positions of the robot.)""";
         } SetPositions;
         // Symbol: drake::multibody::DifferentialInverseKinematicsIntegrator::get_mutable_parameters
         struct /* get_mutable_parameters */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h:132
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h
           const char* doc =
 R"""(Returns a mutable reference to the differential IK parameters owned by
 this system.)""";
         } get_mutable_parameters;
         // Symbol: drake::multibody::DifferentialInverseKinematicsIntegrator::get_parameters
         struct /* get_parameters */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h:128
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h
           const char* doc =
 R"""(Returns a const reference to the differential IK parameters owned by
 this system.)""";
@@ -672,14 +672,14 @@ this system.)""";
       } DifferentialInverseKinematicsIntegrator;
       // Symbol: drake::multibody::DifferentialInverseKinematicsParameters
       struct /* DifferentialInverseKinematicsParameters */ {
-        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:54
+        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
         const char* doc =
 R"""(Contains parameters for the family of differential inverse kinematics
 function overloads below, each named
 DoDifferentialInverseKinematics().)""";
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::AddLinearVelocityConstraint
         struct /* AddLinearVelocityConstraint */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:255
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc =
 R"""(Adds a linear velocity constraint.
 
@@ -692,12 +692,12 @@ Raises:
         } AddLinearVelocityConstraint;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::ClearLinearVelocityConstraints
         struct /* ClearLinearVelocityConstraints */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:261
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc = R"""(Clears all linear velocity constraints.)""";
         } ClearLinearVelocityConstraints;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::DifferentialInverseKinematicsParameters
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:68
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc =
 R"""(Constructor. Initializes the nominal joint position to zeros of size
 ``num_positions``. The time step is initialized to 1. The end effector
@@ -713,85 +713,85 @@ Parameter ``num_velocities``:
         } ctor;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::get_end_effector_angular_speed_limit
         struct /* get_end_effector_angular_speed_limit */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:110
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc = R"""()""";
         } get_end_effector_angular_speed_limit;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::get_end_effector_translational_velocity_limits
         struct /* get_end_effector_translational_velocity_limits */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:115
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc = R"""()""";
         } get_end_effector_translational_velocity_limits;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::get_end_effector_velocity_flag
         struct /* get_end_effector_velocity_flag */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:87
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc = R"""()""";
         } get_end_effector_velocity_flag;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::get_joint_acceleration_limits
         struct /* get_joint_acceleration_limits */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:102
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc = R"""()""";
         } get_joint_acceleration_limits;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::get_joint_centering_gain
         struct /* get_joint_centering_gain */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:83
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc = R"""()""";
         } get_joint_centering_gain;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::get_joint_position_limits
         struct /* get_joint_position_limits */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:92
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc = R"""()""";
         } get_joint_position_limits;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::get_joint_velocity_limits
         struct /* get_joint_velocity_limits */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:97
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc = R"""()""";
         } get_joint_velocity_limits;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::get_linear_velocity_constraints
         struct /* get_linear_velocity_constraints */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:120
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc = R"""()""";
         } get_linear_velocity_constraints;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::get_maximum_scaling_to_report_stuck
         struct /* get_maximum_scaling_to_report_stuck */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:106
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc = R"""()""";
         } get_maximum_scaling_to_report_stuck;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::get_mutable_solver_options
         struct /* get_mutable_solver_options */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:274
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc =
 R"""(Provides mutable access to change the solver options, e.g., to tune
 for speed vs accuracy.)""";
         } get_mutable_solver_options;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::get_nominal_joint_position
         struct /* get_nominal_joint_position */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:79
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc = R"""()""";
         } get_nominal_joint_position;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::get_num_positions
         struct /* get_num_positions */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:75
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc = R"""()""";
         } get_num_positions;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::get_num_velocities
         struct /* get_num_velocities */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:77
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc = R"""()""";
         } get_num_velocities;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::get_solver_options
         struct /* get_solver_options */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:266
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc =
 R"""(Provides const access to read the solver options.)""";
         } get_solver_options;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::get_time_step
         struct /* get_time_step */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:73
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc = R"""(@name Getters.)""";
         } get_time_step;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::set_end_effector_angular_speed_limit
         struct /* set_end_effector_angular_speed_limit */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:233
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc =
 R"""(When calling DoDifferentialInverseKinematics with a desired
 end-effector pose, this limits the magnitude of the angular velocity
@@ -799,14 +799,14 @@ vector.)""";
         } set_end_effector_angular_speed_limit;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::set_end_effector_translational_velocity_limits
         struct /* set_end_effector_translational_velocity_limits */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:240
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc =
 R"""(When calling DoDifferentialInverseKinematics with a desired
 end-effector pose, this sets limits on the translational velocity.)""";
         } set_end_effector_translational_velocity_limits;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::set_end_effector_velocity_flag
         struct /* set_end_effector_velocity_flag */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:151
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc =
 R"""(Sets the end effector flags in the body frame. If a spatial velocity
 flag is set to false, it will not be included in the differential IK
@@ -814,7 +814,7 @@ formulation.)""";
         } set_end_effector_velocity_flag;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::set_joint_acceleration_limits
         struct /* set_joint_acceleration_limits */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:213
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc =
 R"""(Sets the joint acceleration limits.
 
@@ -829,7 +829,7 @@ Raises:
         } set_joint_acceleration_limits;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::set_joint_centering_gain
         struct /* set_joint_centering_gain */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:160
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc =
 R"""(Sets the joint centering gain, K, so that the joint centering command
 is attempting to achieve v_next = N⁺(q) * K * (q_nominal - q_current).
@@ -839,7 +839,7 @@ Precondition:
         } set_joint_centering_gain;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::set_joint_position_limits
         struct /* set_joint_position_limits */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:179
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc =
 R"""(Sets the joint position limits.
 
@@ -854,7 +854,7 @@ Raises:
         } set_joint_position_limits;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::set_joint_velocity_limits
         struct /* set_joint_velocity_limits */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:196
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc =
 R"""(Sets the joint velocity limits.
 
@@ -869,7 +869,7 @@ Raises:
         } set_joint_velocity_limits;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::set_maximum_scaling_to_report_stuck
         struct /* set_maximum_scaling_to_report_stuck */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:227
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc =
 R"""(Sets the threshold for α below which the status returned is
 DifferentialInverseKinematicsStatus::kStuck. α is the scaling of the
@@ -881,7 +881,7 @@ commanded.
         } set_maximum_scaling_to_report_stuck;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::set_nominal_joint_position
         struct /* set_nominal_joint_position */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:138
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc =
 R"""(Sets the nominal joint position.
 
@@ -890,7 +890,7 @@ Raises:
         } set_nominal_joint_position;
         // Symbol: drake::multibody::DifferentialInverseKinematicsParameters::set_time_step
         struct /* set_time_step */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:129
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc =
 R"""(@name Setters. Sets time step to ``dt``.
 
@@ -900,43 +900,43 @@ Raises:
       } DifferentialInverseKinematicsParameters;
       // Symbol: drake::multibody::DifferentialInverseKinematicsResult
       struct /* DifferentialInverseKinematicsResult */ {
-        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:34
+        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
         const char* doc = R"""()""";
         // Symbol: drake::multibody::DifferentialInverseKinematicsResult::joint_velocities
         struct /* joint_velocities */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:35
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc = R"""()""";
         } joint_velocities;
         // Symbol: drake::multibody::DifferentialInverseKinematicsResult::status
         struct /* status */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:36
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc = R"""()""";
         } status;
       } DifferentialInverseKinematicsResult;
       // Symbol: drake::multibody::DifferentialInverseKinematicsStatus
       struct /* DifferentialInverseKinematicsStatus */ {
-        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:24
+        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
         const char* doc = R"""()""";
         // Symbol: drake::multibody::DifferentialInverseKinematicsStatus::kNoSolutionFound
         struct /* kNoSolutionFound */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:26
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc = R"""(Solver unable to find a solution.)""";
         } kNoSolutionFound;
         // Symbol: drake::multibody::DifferentialInverseKinematicsStatus::kSolutionFound
         struct /* kSolutionFound */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:25
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc = R"""(Found the optimal solution.)""";
         } kSolutionFound;
         // Symbol: drake::multibody::DifferentialInverseKinematicsStatus::kStuck
         struct /* kStuck */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:27
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc =
 R"""(Unable to follow the desired velocity direction)""";
         } kStuck;
       } DifferentialInverseKinematicsStatus;
       // Symbol: drake::multibody::DifferentialInverseKinematicsSystem
       struct /* DifferentialInverseKinematicsSystem */ {
-        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:123
+        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
         const char* doc =
 R"""(The DifferentialInverseKinematicsSystem takes as input desired
 cartesian poses (or cartesian velocities) for an arbitrary number of
@@ -1041,7 +1041,7 @@ environment), as defined by the collision_checker. For example, use
 the notation 'Scm' to denote the robot's center of mass.)""";
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CallbackDetails
         struct /* CallbackDetails */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:281
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""((Internal use only) A group of common arguments relevant to multiple
 different costs and constraints within the
@@ -1051,31 +1051,31 @@ and then processed by multiple helper functions; it is not intended to
 be a long-lived abstract data type.)""";
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CallbackDetails::Jv_TGs
           struct /* Jv_TGs */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:320
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""(The jacobian relating spatial velocities to generalized velocities,
 i.e., V_TGs (rows) with respect to v_active (cols).)""";
           } Jv_TGs;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CallbackDetails::Vd_TGlist
           struct /* Vd_TGlist */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:316
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""(The desired velocities of the goal frames.)""";
           } Vd_TGlist;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CallbackDetails::X_TGlist
           struct /* X_TGlist */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:313
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""(The current poses of the goal frames.)""";
           } X_TGlist;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CallbackDetails::active_dof
           struct /* active_dof */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:299
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""(The active degrees of freedom in ``collision_checker.plant()``.)""";
           } active_dof;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CallbackDetails::collision_checker
           struct /* collision_checker */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:296
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""(The collision checker for the robot being controlled. Note that its
 robot_model_instances() accessor also partitions which parts of the
@@ -1083,39 +1083,39 @@ robot_model_instances() accessor also partitions which parts of the
           } collision_checker;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CallbackDetails::frame_list
           struct /* frame_list */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:310
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""(The list of frames being controlled.)""";
           } frame_list;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CallbackDetails::mathematical_program
           struct /* mathematical_program */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:283
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""(The mutable, work-in-progress optimization program.)""";
           } mathematical_program;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CallbackDetails::nominal_posture
           struct /* nominal_posture */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:307
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""(The current value of the ``nominal_posture`` input port. This has the
 dimension of the full degrees of freedom (not just active dofs).)""";
           } nominal_posture;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CallbackDetails::plant_context
           struct /* plant_context */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:291
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""(A context for the control plant, set to current positions. (At the
 moment, velocities are zero but that might change down the road.))""";
           } plant_context;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CallbackDetails::time_step
           struct /* time_step */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:303
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""(The control rate for DifferentialInverseKinematicsSystem (the pace at
 which velocity commands are expected to be applied).)""";
           } time_step;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CallbackDetails::v_next
           struct /* v_next */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:287
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""(The decision variables being optimized. This has the dimension of the
 number of active degrees of freedom (see ``active_dof``).)""";
@@ -1123,7 +1123,7 @@ number of active degrees of freedom (see ``active_dof``).)""";
         } CallbackDetails;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CartesianPositionLimitConstraint
         struct /* CartesianPositionLimitConstraint */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:573
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Constrains the goal frames to a cartesian bounding box: ``∀i
 p_TG_next_lower ≤ p_TGi + Jv_TGi[3:6] * v_next * Δt ≤
@@ -1131,33 +1131,33 @@ p_TG_next_upper`` where: - p_TGi is the translation component of the
 i'th goal point w.r.t the task frame.)""";
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CartesianPositionLimitConstraint::AddToProgram
           struct /* AddToProgram */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:603
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
           } AddToProgram;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CartesianPositionLimitConstraint::CartesianPositionLimitConstraint
           struct /* ctor */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:576
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CartesianPositionLimitConstraint::Config
           struct /* Config */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:578
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
             // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CartesianPositionLimitConstraint::Config::Serialize
             struct /* Serialize */ {
-              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:582
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
               const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
             } Serialize;
             // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CartesianPositionLimitConstraint::Config::p_TG_next_lower
             struct /* p_TG_next_lower */ {
-              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:588
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
               const char* doc = R"""(Lower bound on p_TGi for all i.)""";
             } p_TG_next_lower;
             // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CartesianPositionLimitConstraint::Config::p_TG_next_upper
             struct /* p_TG_next_upper */ {
-              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:591
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
               const char* doc = R"""(Upper bound on p_TGi for all i.)""";
             } p_TG_next_upper;
             auto Serialize__fields() const {
@@ -1169,46 +1169,46 @@ Serialization" for background.)""";
           } Config;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CartesianPositionLimitConstraint::GetConfig
           struct /* GetConfig */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:598
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""(Returns the current config.)""";
           } GetConfig;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CartesianPositionLimitConstraint::SetConfig
           struct /* SetConfig */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:601
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""(Replaces the config set in the constructor.)""";
           } SetConfig;
         } CartesianPositionLimitConstraint;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CartesianVelocityLimitConstraint
         struct /* CartesianVelocityLimitConstraint */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:612
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Constrains the spatial velocities of the goal frames: ``∀i, ∀j ∈ [0,
 5]: abs(Jv_TGi * v_next)[j] ≤ V_next_TG_limit[j]``.)""";
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CartesianVelocityLimitConstraint::AddToProgram
           struct /* AddToProgram */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:643
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
           } AddToProgram;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CartesianVelocityLimitConstraint::CartesianVelocityLimitConstraint
           struct /* ctor */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:615
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CartesianVelocityLimitConstraint::Config
           struct /* Config */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:617
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
             // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CartesianVelocityLimitConstraint::Config::Serialize
             struct /* Serialize */ {
-              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:621
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
               const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
             } Serialize;
             // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CartesianVelocityLimitConstraint::Config::V_next_TG_limit
             struct /* V_next_TG_limit */ {
-              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:631
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
               const char* doc =
 R"""(This limits the absolute value of the measures of the spatial
 velocities V_next[i] for all goal frames, so must be entry-wise
@@ -1226,19 +1226,19 @@ which matches the SpatialVelocity order.)""";
           } Config;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CartesianVelocityLimitConstraint::GetConfig
           struct /* GetConfig */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:638
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""(Returns the current config.)""";
           } GetConfig;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CartesianVelocityLimitConstraint::SetConfig
           struct /* SetConfig */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:641
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""(Replaces the config set in the constructor.)""";
           } SetConfig;
         } CartesianVelocityLimitConstraint;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CollisionConstraint
         struct /* CollisionConstraint */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:684
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Constrains the collision clearance around the robot to remain above
 the safety distance: ``∀j ϕₛ ≤ ϕⱼ + ∂ϕⱼ/∂q_active * v_next * Δt``
@@ -1255,35 +1255,35 @@ velocities as well (i.e., v_passive), using the full ∂q (not just
 ∂q_active).)""";
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CollisionConstraint::AddToProgram
           struct /* AddToProgram */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:720
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
           } AddToProgram;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CollisionConstraint::CollisionConstraint
           struct /* ctor */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:687
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CollisionConstraint::Config
           struct /* Config */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:689
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
             // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CollisionConstraint::Config::Serialize
             struct /* Serialize */ {
-              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:693
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
               const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
             } Serialize;
             // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CollisionConstraint::Config::influence_distance
             struct /* influence_distance */ {
-              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:703
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
               const char* doc =
 R"""(Obstacles beyond the influence distance (in meters) are ignored. Must
 be non-negative.)""";
             } influence_distance;
             // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CollisionConstraint::Config::safety_distance
             struct /* safety_distance */ {
-              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:699
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
               const char* doc =
 R"""("ϕₛ" in the class overview (in meters). Must be finite.)""";
             } safety_distance;
@@ -1296,25 +1296,25 @@ R"""("ϕₛ" in the class overview (in meters). Must be finite.)""";
           } Config;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CollisionConstraint::GetConfig
           struct /* GetConfig */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:710
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""(Returns the current config.)""";
           } GetConfig;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CollisionConstraint::SetConfig
           struct /* SetConfig */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:713
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""(Replaces the config set in the constructor.)""";
           } SetConfig;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CollisionConstraint::SetSelectDataForCollisionConstraintFunction
           struct /* SetSelectDataForCollisionConstraintFunction */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:716
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""((Advanced) Provides a mechanism for ignoring certain clearance rows.)""";
           } SetSelectDataForCollisionConstraintFunction;
         } CollisionConstraint;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::DifferentialInverseKinematicsSystem
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:172
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""((Advanced) Constructs the DifferentialInverseKinematicsSystem with a
 user-provided recipe for the mathematical program formulation.
@@ -1366,7 +1366,7 @@ Parameter ``Vd_TG_limit``:
         } ctor;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::Ingredient
         struct /* Ingredient */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:331
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""((Internal use only) A user-provided set of constraint(s) and/or
 cost(s) for a DifferentialInverseKinematicsSystem recipe, to allow for
@@ -1377,7 +1377,7 @@ only" so that users can officially bake their own recipes for
 DifferentialInverseKinematicsSystem.)""";
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::Ingredient::AddToProgram
           struct /* AddToProgram */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:342
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""(Adds this ingredient into DifferentialInverseKinematicsSystem's
 mathematical program, returning the listing of bindings for all
@@ -1388,7 +1388,7 @@ Parameter ``details``:
           } AddToProgram;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::Ingredient::BuildBlockDiagonalAxisSelector
           struct /* BuildBlockDiagonalAxisSelector */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:378
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""(Constructs a block-diagonal matrix selecting Cartesian velocity axes
 for each goal frame, based on per-frame axis masks. This operation is
@@ -1417,13 +1417,13 @@ Returns:
           } BuildBlockDiagonalAxisSelector;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::Ingredient::Ingredient
           struct /* ctor */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:333
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
           } ctor;
         } Ingredient;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointCenteringCost
         struct /* JointCenteringCost */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:523
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Provides a secondary minimization objective. There will almost
 inevitably be times when the jacobian ``Jv_TGs`` is not full rank.
@@ -1466,23 +1466,23 @@ TODO(sean.curtis) As with the other costs, this should also have a
 scaling weight (e.g. what ``G`` is for LeastSquaresCost).)""";
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointCenteringCost::AddToProgram
           struct /* AddToProgram */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:557
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
           } AddToProgram;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointCenteringCost::Config
           struct /* Config */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:526
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
             // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointCenteringCost::Config::Serialize
             struct /* Serialize */ {
-              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:530
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
               const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
             } Serialize;
             // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointCenteringCost::Config::cartesian_axis_masks
             struct /* cartesian_axis_masks */ {
-              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:545
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
               const char* doc =
 R"""(Map from fully-scoped frame names to their 6D spatial velocity axis
 mask. Each Vector6d is a binary mask [ωx, ωy, ωz, vx, vy, vz]
@@ -1492,7 +1492,7 @@ or 1, and at least one element must be 1.)""";
             } cartesian_axis_masks;
             // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointCenteringCost::Config::posture_gain
             struct /* posture_gain */ {
-              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:538
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
               const char* doc =
 R"""(The proportional gain matrix ``K`` is a diagonal matrix with the
 diagonal set to this value (i.e., all joints use the same
@@ -1507,24 +1507,24 @@ diagonal set to this value (i.e., all joints use the same
           } Config;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointCenteringCost::GetConfig
           struct /* GetConfig */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:552
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""(Returns the current config.)""";
           } GetConfig;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointCenteringCost::JointCenteringCost
           struct /* ctor */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:548
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointCenteringCost::SetConfig
           struct /* SetConfig */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:555
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""(Replaces the config set in the constructor.)""";
           } SetConfig;
         } JointCenteringCost;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointVelocityLimitConstraint
         struct /* JointVelocityLimitConstraint */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:771
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Constrains the generalized velocity to prevent a commanded velocity
 that would push the generalized position outside its limits.
@@ -1582,23 +1582,23 @@ min_margin`` then one limit will *always* be attenuated to be less
 than its configured value.)""";
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointVelocityLimitConstraint::AddToProgram
           struct /* AddToProgram */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:813
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
           } AddToProgram;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointVelocityLimitConstraint::Config
           struct /* Config */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:776
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
             // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointVelocityLimitConstraint::Config::Serialize
             struct /* Serialize */ {
-              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:780
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
               const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
             } Serialize;
             // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointVelocityLimitConstraint::Config::influence_margin
             struct /* influence_margin */ {
-              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:794
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
               const char* doc =
 R"""(The distance (in each joint's configuration space) at which the
 velocity limit is restored to its configured value. The units will
@@ -1607,7 +1607,7 @@ strictly greater than ``min_margin``.)""";
             } influence_margin;
             // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointVelocityLimitConstraint::Config::min_margin
             struct /* min_margin */ {
-              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:788
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
               const char* doc =
 R"""(The distance (in each joint's configuration space) at which the
 velocity limit is scaled to be zero. Must be non-negative and is
@@ -1623,42 +1623,42 @@ being limited.)""";
           } Config;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointVelocityLimitConstraint::GetConfig
           struct /* GetConfig */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:802
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""(Returns the current config.)""";
           } GetConfig;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointVelocityLimitConstraint::GetJointLimits
           struct /* GetJointLimits */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:808
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""(Returns the current joint limits.)""";
           } GetJointLimits;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointVelocityLimitConstraint::JointVelocityLimitConstraint
           struct /* ctor */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:774
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointVelocityLimitConstraint::SetConfig
           struct /* SetConfig */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:805
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""(Replaces the config set in the constructor.)""";
           } SetConfig;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::JointVelocityLimitConstraint::SetJointLimits
           struct /* SetJointLimits */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:811
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""(Replaces the limits set in the constructor.)""";
           } SetJointLimits;
         } JointVelocityLimitConstraint;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::K_VX
         struct /* K_VX */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:204
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Gets the gain factor used to convert desired cartesian poses to
 velocities.)""";
         } K_VX;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::LeastSquaresCost
         struct /* LeastSquaresCost */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:436
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Provides a primary DifferentialInverseKinematicsSystem objective to
 minimize ``G*| S * (Vd_TGs - Jv_TGs * v_next)|²``, also known as the
@@ -1674,23 +1674,23 @@ frame is not explicitly listed, all axes are enabled. - Each axis mask
 is a binary Vector6d of the form [ωx, ωy, ωz, vx, vy, vz] ∈ {0, 1}⁶.)""";
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::LeastSquaresCost::AddToProgram
           struct /* AddToProgram */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:476
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
           } AddToProgram;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::LeastSquaresCost::Config
           struct /* Config */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:441
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
             // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::LeastSquaresCost::Config::Serialize
             struct /* Serialize */ {
-              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:445
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
               const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
             } Serialize;
             // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::LeastSquaresCost::Config::cartesian_axis_masks
             struct /* cartesian_axis_masks */ {
-              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:459
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
               const char* doc =
 R"""(Map from fully-scoped frame names to their 6D spatial velocity axis
 mask. Each Vector6d is a binary mask [ωx, ωy, ωz, vx, vy, vz]
@@ -1700,13 +1700,13 @@ or 1, and at least one element must be 1.)""";
             } cartesian_axis_masks;
             // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::LeastSquaresCost::Config::cartesian_qp_weight
             struct /* cartesian_qp_weight */ {
-              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:452
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
               const char* doc =
 R"""('G' in the class overview. Must be non-negative and finite.)""";
             } cartesian_qp_weight;
             // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::LeastSquaresCost::Config::use_legacy_implementation
             struct /* use_legacy_implementation */ {
-              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:464
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
               const char* doc =
 R"""(This is a temporary parameter intended for backwards compatibility. Do
 not change this value (unless you really, really know what you're
@@ -1722,92 +1722,92 @@ doing)!)""";
           } Config;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::LeastSquaresCost::GetConfig
           struct /* GetConfig */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:471
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""(Returns the current config.)""";
           } GetConfig;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::LeastSquaresCost::LeastSquaresCost
           struct /* ctor */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:439
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::LeastSquaresCost::SetConfig
           struct /* SetConfig */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:474
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""(Replaces the config set in the constructor.)""";
           } SetConfig;
         } LeastSquaresCost;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::Recipe
         struct /* Recipe */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:388
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(A recipe collects a list of ingredients for
 DifferentialInverseKinematicsSystem, allowing the user to customize
 the program being solved.)""";
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::Recipe::AddIngredient
           struct /* AddIngredient */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:394
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
           } AddIngredient;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::Recipe::AddToProgram
           struct /* AddToProgram */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:410
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
 R"""(Calls DifferentialInverseKinematicsSystem::Ingredient::AddToProgram on
 all of the ingredients in this recipe.)""";
           } AddToProgram;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::Recipe::Recipe
           struct /* ctor */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:390
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::Recipe::ingredient
           struct /* ingredient */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:403
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
           } ingredient;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::Recipe::num_ingredients
           struct /* num_ingredients */ {
-            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:399
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc = R"""()""";
           } num_ingredients;
         } Recipe;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::Vd_TG_limit
         struct /* Vd_TG_limit */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:208
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Gets the clamping limit applied to inferred desired cartesian
 velocities.)""";
         } Vd_TG_limit;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::active_dof
         struct /* active_dof */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:197
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Gets the mask of active DOFs in plant() that are being controlled.)""";
         } active_dof;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::collision_checker
         struct /* collision_checker */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:192
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Gets the collision checker used by the controller.)""";
         } collision_checker;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::get_input_port_desired_cartesian_poses
         struct /* get_input_port_desired_cartesian_poses */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:224
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Returns the input port for the desired cartesian poses (of type
 systems::BusValue containing math::RigidTransformd).)""";
         } get_input_port_desired_cartesian_poses;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::get_input_port_desired_cartesian_velocities
         struct /* get_input_port_desired_cartesian_velocities */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:232
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Returns the input port for the desired cartesian velocities (of type
 systems::BusValue containing SpatialVelocity).)""";
         } get_input_port_desired_cartesian_velocities;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::get_input_port_nominal_posture
         struct /* get_input_port_nominal_posture */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:218
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Returns the input port for the nominal joint positions to be used to
 handle nullspace resolution. This has the dimension of the full
@@ -1815,13 +1815,13 @@ handle nullspace resolution. This has the dimension of the full
         } get_input_port_nominal_posture;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::get_input_port_position
         struct /* get_input_port_position */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:211
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Returns the input port for the joint positions.)""";
         } get_input_port_position;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::get_output_port_commanded_velocity
         struct /* get_output_port_commanded_velocity */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:239
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Returns the output port for the generalized velocity command that
 realizes the desired poses within the constraints. The size is equal
@@ -1829,37 +1829,37 @@ to ``get_active_dof().count()``.)""";
         } get_output_port_commanded_velocity;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::plant
         struct /* plant */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:187
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc = R"""(Gets the plant used by the controller.)""";
         } plant;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::recipe
         struct /* recipe */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:181
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Gets the mathematical formulation recipe.)""";
         } recipe;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::task_frame
         struct /* task_frame */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:184
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Gets the frame assumed on the desired_cartesian_poses input port.)""";
         } task_frame;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::time_step
         struct /* time_step */ {
-          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:200
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Gets the time step used by the controller.)""";
         } time_step;
       } DifferentialInverseKinematicsSystem;
       // Symbol: drake::multibody::DistanceConstraint
       struct /* DistanceConstraint */ {
-        // Source: drake/multibody/inverse_kinematics/distance_constraint.h:18
+        // Source: drake/multibody/inverse_kinematics/distance_constraint.h
         const char* doc =
 R"""(Constrains the distance between a pair of geometries to be within a
 range [distance_lower, distance_upper].)""";
         // Symbol: drake::multibody::DistanceConstraint::DistanceConstraint
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/distance_constraint.h:35
+          // Source: drake/multibody/inverse_kinematics/distance_constraint.h
           const char* doc_double =
 R"""(Parameter ``plant``:
     The plant to which the pair of geometries belong. ``plant`` should
@@ -1881,7 +1881,7 @@ Parameter ``distance_lower``:
 
 Parameter ``distance_upper``:
     The upper bound on the distance.)""";
-          // Source: drake/multibody/inverse_kinematics/distance_constraint.h:45
+          // Source: drake/multibody/inverse_kinematics/distance_constraint.h
           const char* doc_autodiff =
 R"""(Overloaded constructor. Constructs the constraint with
 MultibodyPlant<AutoDiffXd>.)""";
@@ -1889,7 +1889,7 @@ MultibodyPlant<AutoDiffXd>.)""";
       } DistanceConstraint;
       // Symbol: drake::multibody::DoDifferentialInverseKinematics
       struct /* DoDifferentialInverseKinematics */ {
-        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:369
+        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
         const char* doc_7args_q_current_v_current_V_J_parameters_N_Nplus =
 R"""(Computes a generalized velocity v_next, via the following
 MathematicalProgram:
@@ -1983,7 +1983,7 @@ Note:
     implementation has been shown to be more effective for real-world
     robots. Furthermore, its architecture is more flexible, allowing
     for more customization of the cost and constraint functions.)""";
-        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:405
+        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
         const char* doc_5args_robot_context_V_WE_desired_frame_E_parameters =
 R"""(A wrapper over DoDifferentialInverseKinematics(q_current, v_current,
 V, J, params) that tracks frame E's spatial velocity. q_current and
@@ -2017,7 +2017,7 @@ Note:
     implementation has been shown to be more effective for real-world
     robots. Furthermore, its architecture is more flexible, allowing
     for more customization of the cost and constraint functions.)""";
-        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:436
+        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
         const char* doc_6args_robot_context_V_AE_desired_frame_A_frame_E_parameters =
 R"""(A wrapper over DoDifferentialInverseKinematics(q_current, v_current,
 V, J, params) that tracks frame E's spatial velocity in frame A.
@@ -2055,7 +2055,7 @@ Note:
     implementation has been shown to be more effective for real-world
     robots. Furthermore, its architecture is more flexible, allowing
     for more customization of the cost and constraint functions.)""";
-        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:467
+        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
         const char* doc_5args_robot_context_X_WE_desired_frame_E_parameters =
 R"""(A wrapper over DoDifferentialInverseKinematics(robot, context,
 V_WE_desired, frame_E, params) that tracks frame E's pose in the world
@@ -2090,7 +2090,7 @@ Note:
     implementation has been shown to be more effective for real-world
     robots. Furthermore, its architecture is more flexible, allowing
     for more customization of the cost and constraint functions.)""";
-        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h:499
+        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
         const char* doc_6args_robot_context_X_AE_desired_frame_A_frame_E_parameters =
 R"""(A wrapper over DoDifferentialInverseKinematics(robot, context,
 V_AE_desired, frame_A, frame_E, params) that tracks frame E's pose in
@@ -2131,7 +2131,7 @@ Note:
       } DoDifferentialInverseKinematics;
       // Symbol: drake::multibody::GazeTargetConstraint
       struct /* GazeTargetConstraint */ {
-        // Source: drake/multibody/inverse_kinematics/gaze_target_constraint.h:27
+        // Source: drake/multibody/inverse_kinematics/gaze_target_constraint.h
         const char* doc =
 R"""(Constrains a target point T to be within a cone K. The point T ("T"
 stands for "target") is fixed in a frame B, with position p_BT. The
@@ -2147,7 +2147,7 @@ to T, expressed in frame A. n_unit_A is the unit length directional
 vector representing the center ray of the cone.)""";
         // Symbol: drake::multibody::GazeTargetConstraint::GazeTargetConstraint
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/gaze_target_constraint.h:54
+          // Source: drake/multibody/inverse_kinematics/gaze_target_constraint.h
           const char* doc_double =
 R"""(Parameter ``plant``:
     The MultibodyPlant on which the constraint is imposed. ``plant``
@@ -2195,7 +2195,7 @@ Raises:
 
 Raises:
     RuntimeError if ``plant_context`` is nullptr.)""";
-          // Source: drake/multibody/inverse_kinematics/gaze_target_constraint.h:69
+          // Source: drake/multibody/inverse_kinematics/gaze_target_constraint.h
           const char* doc_autodiff =
 R"""(Overloaded constructor. Construct from MultibodyPlant<AutoDiffXd>
 instead of MultibodyPlant<double>.)""";
@@ -2203,7 +2203,7 @@ instead of MultibodyPlant<double>.)""";
       } GazeTargetConstraint;
       // Symbol: drake::multibody::GlobalInverseKinematics
       struct /* GlobalInverseKinematics */ {
-        // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:28
+        // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
         const char* doc =
 R"""(Solves the inverse kinematics problem as a mixed integer convex
 optimization problem. We use a mixed-integer convex relaxation of the
@@ -2217,7 +2217,7 @@ Hongkai Dai, Gregory Izatt and Russ Tedrake, International Journal of
 Robotics Research, 2019.)""";
         // Symbol: drake::multibody::GlobalInverseKinematics::AddJointLimitConstraint
         struct /* AddJointLimitConstraint */ {
-          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:359
+          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
           const char* doc =
 R"""(Adds joint limits on a specified joint.
 
@@ -2246,7 +2246,7 @@ Parameter ``linear_constraint_approximation``:
         } AddJointLimitConstraint;
         // Symbol: drake::multibody::GlobalInverseKinematics::AddPostureCost
         struct /* AddPostureCost */ {
-          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:248
+          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
           const char* doc =
 R"""(Penalizes the deviation to the desired posture.
 
@@ -2298,7 +2298,7 @@ RuntimeError if the precondition is not satisfied.)""";
         } AddPostureCost;
         // Symbol: drake::multibody::GlobalInverseKinematics::AddWorldOrientationConstraint
         struct /* AddWorldOrientationConstraint */ {
-          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:210
+          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
           const char* doc =
 R"""(Adds a constraint that the angle between the body orientation and the
 desired orientation should not be larger than ``angle_tol``. If we
@@ -2328,7 +2328,7 @@ Returns ``binding``:
         } AddWorldOrientationConstraint;
         // Symbol: drake::multibody::GlobalInverseKinematics::AddWorldPositionConstraint
         struct /* AddWorldPositionConstraint */ {
-          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:152
+          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
           const char* doc =
 R"""(Adds the constraint that the position of a point ``Q`` on a body ``B``
 (whose index is ``body_index``), is within a box in a specified frame
@@ -2384,7 +2384,7 @@ The newly added constraint, together with the bound variables.)""";
         } AddWorldPositionConstraint;
         // Symbol: drake::multibody::GlobalInverseKinematics::AddWorldRelativePositionConstraint
         struct /* AddWorldRelativePositionConstraint */ {
-          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:182
+          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
           const char* doc =
 R"""(Adds the constraint that the position of a point ``Q`` on a body ``B``
 relative to a point ``P`` on body ``A``, is within a box in a
@@ -2425,7 +2425,7 @@ Returns ``binding``:
         } AddWorldRelativePositionConstraint;
         // Symbol: drake::multibody::GlobalInverseKinematics::BodyPointInOneOfRegions
         struct /* BodyPointInOneOfRegions */ {
-          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:285
+          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
           const char* doc =
 R"""(Constrain the point ``Q`` lying within one of the convex polytopes.
 Each convex polytope Pᵢ is represented by its vertices as Pᵢ =
@@ -2464,7 +2464,7 @@ Precondition:
         } BodyPointInOneOfRegions;
         // Symbol: drake::multibody::GlobalInverseKinematics::BodySphereInOneOfPolytopes
         struct /* BodySphereInOneOfPolytopes */ {
-          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:339
+          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
           const char* doc =
 R"""(Adds the constraint that a sphere rigidly attached to a body has to be
 within at least one of the given bounded polytopes. If the polytopes
@@ -2509,7 +2509,7 @@ Returns ``z``:
         } BodySphereInOneOfPolytopes;
         // Symbol: drake::multibody::GlobalInverseKinematics::GlobalInverseKinematics
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:63
+          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
           const char* doc =
 R"""(Parses the robot kinematics tree. The decision variables include the
 pose for each body (position/orientation). This constructor loops
@@ -2528,26 +2528,26 @@ Parameter ``options``:
         } ctor;
         // Symbol: drake::multibody::GlobalInverseKinematics::Options
         struct /* Options */ {
-          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:32
+          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
           const char* doc = R"""()""";
           // Symbol: drake::multibody::GlobalInverseKinematics::Options::Options
           struct /* ctor */ {
-            // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:34
+            // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::multibody::GlobalInverseKinematics::Options::approach
           struct /* approach */ {
-            // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:37
+            // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
             const char* doc = R"""()""";
           } approach;
           // Symbol: drake::multibody::GlobalInverseKinematics::Options::interval_binning
           struct /* interval_binning */ {
-            // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:40
+            // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
             const char* doc = R"""()""";
           } interval_binning;
           // Symbol: drake::multibody::GlobalInverseKinematics::Options::linear_constraint_only
           struct /* linear_constraint_only */ {
-            // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:48
+            // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
             const char* doc =
 R"""(If true, add only mixed-integer linear constraints in the constructor
 of GlobalInverseKinematics. The mixed-integer relaxation is tighter
@@ -2557,35 +2557,35 @@ nonlinear constraints.)""";
           } linear_constraint_only;
           // Symbol: drake::multibody::GlobalInverseKinematics::Options::num_intervals_per_half_axis
           struct /* num_intervals_per_half_axis */ {
-            // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:36
+            // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
             const char* doc = R"""()""";
           } num_intervals_per_half_axis;
         } Options;
         // Symbol: drake::multibody::GlobalInverseKinematics::Polytope3D
         struct /* Polytope3D */ {
-          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:293
+          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
           const char* doc =
 R"""(Describes a polytope in 3D as 𝐀 * 𝐱 ≤ 𝐛 (a set of half-spaces), where
 𝐀 ∈ ℝⁿˣ³, 𝐱 ∈ ℝ³, 𝐛 ∈ ℝⁿ.)""";
           // Symbol: drake::multibody::GlobalInverseKinematics::Polytope3D::A
           struct /* A */ {
-            // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:297
+            // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
             const char* doc = R"""()""";
           } A;
           // Symbol: drake::multibody::GlobalInverseKinematics::Polytope3D::Polytope3D
           struct /* ctor */ {
-            // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:294
+            // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::multibody::GlobalInverseKinematics::Polytope3D::b
           struct /* b */ {
-            // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:298
+            // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
             const char* doc = R"""()""";
           } b;
         } Polytope3D;
         // Symbol: drake::multibody::GlobalInverseKinematics::ReconstructGeneralizedPositionSolution
         struct /* ReconstructGeneralizedPositionSolution */ {
-          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:108
+          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
           const char* doc =
 R"""(After solving the inverse kinematics problem and finding out the pose
 of each body, reconstruct the robot generalized position (joint
@@ -2607,7 +2607,7 @@ Returns ``q``:
         } ReconstructGeneralizedPositionSolution;
         // Symbol: drake::multibody::GlobalInverseKinematics::SetInitialGuess
         struct /* SetInitialGuess */ {
-          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:371
+          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
           const char* doc =
 R"""(Sets an initial guess for all variables (including the binary
 variables) by evaluating the kinematics of the plant at ``q``.
@@ -2621,7 +2621,7 @@ Raises:
         } SetInitialGuess;
         // Symbol: drake::multibody::GlobalInverseKinematics::body_position
         struct /* body_position */ {
-          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:90
+          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
           const char* doc =
 R"""(Getter for the decision variables on the position p_WBo of the body
 B's origin measured and expressed in the world frame.
@@ -2636,7 +2636,7 @@ Raises:
         } body_position;
         // Symbol: drake::multibody::GlobalInverseKinematics::body_rotation_matrix
         struct /* body_rotation_matrix */ {
-          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:80
+          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
           const char* doc =
 R"""(Getter for the decision variables on the rotation matrix ``R_WB`` for
 a body with the specified index. This is the orientation of body i's
@@ -2652,18 +2652,18 @@ Raises:
         } body_rotation_matrix;
         // Symbol: drake::multibody::GlobalInverseKinematics::get_mutable_prog
         struct /* get_mutable_prog */ {
-          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:70
+          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
           const char* doc = R"""()""";
         } get_mutable_prog;
         // Symbol: drake::multibody::GlobalInverseKinematics::prog
         struct /* prog */ {
-          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h:68
+          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
           const char* doc = R"""()""";
         } prog;
       } GlobalInverseKinematics;
       // Symbol: drake::multibody::InverseKinematics
       struct /* InverseKinematics */ {
-        // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:24
+        // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
         const char* doc =
 R"""(Solves an inverse kinematics (IK) problem on a MultibodyPlant, to find
 the postures of the robot satisfying certain constraints. The decision
@@ -2674,7 +2674,7 @@ that takes a ``plant_context`` and use ``Joint::Lock`` on the joints
 in that Context that should be fixed during IK.)""";
         // Symbol: drake::multibody::InverseKinematics::AddAngleBetweenVectorsConstraint
         struct /* AddAngleBetweenVectorsConstraint */ {
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:259
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc =
 R"""(Constrains that the angle between a vector na and another vector nb is
 between [θ_lower, θ_upper]. na is fixed to a frame A, while nb is
@@ -2731,7 +2731,7 @@ Raises:
         } AddAngleBetweenVectorsConstraint;
         // Symbol: drake::multibody::InverseKinematics::AddAngleBetweenVectorsCost
         struct /* AddAngleBetweenVectorsCost */ {
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:279
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc =
 R"""(Add a cost c * (1-cosθ) where θ is the angle between the vector ``na``
 and ``nb``. na is fixed to a frame A, while nb is fixed to a frame B.
@@ -2765,7 +2765,7 @@ Parameter ``c``:
         } AddAngleBetweenVectorsCost;
         // Symbol: drake::multibody::InverseKinematics::AddDistanceConstraint
         struct /* AddDistanceConstraint */ {
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:332
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc =
 R"""(Adds the constraint that the distance between a pair of geometries is
 within some bounds.
@@ -2785,7 +2785,7 @@ Parameter ``distance_upper``:
         } AddDistanceConstraint;
         // Symbol: drake::multibody::InverseKinematics::AddGazeTargetConstraint
         struct /* AddGazeTargetConstraint */ {
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:225
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc =
 R"""(Constrains a target point T to be within a cone K. The point T ("T"
 stands for "target") is fixed in a frame B, with position p_BT. The
@@ -2831,7 +2831,7 @@ Raises:
         } AddGazeTargetConstraint;
         // Symbol: drake::multibody::InverseKinematics::AddMinimumDistanceLowerBoundConstraint
         struct /* AddMinimumDistanceLowerBoundConstraint */ {
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:300
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc =
 R"""(Adds the constraint that the pairwise distance between objects should
 be no smaller than ``bound``. We consider the distance between pairs
@@ -2855,7 +2855,7 @@ Precondition:
         } AddMinimumDistanceLowerBoundConstraint;
         // Symbol: drake::multibody::InverseKinematics::AddMinimumDistanceUpperBoundConstraint
         struct /* AddMinimumDistanceUpperBoundConstraint */ {
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:319
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc =
 R"""(Adds the constraint that at least one pair of geometries has distance
 no larger than ``bound``. We consider the distance between pairs of 1.
@@ -2880,7 +2880,7 @@ Precondition:
         } AddMinimumDistanceUpperBoundConstraint;
         // Symbol: drake::multibody::InverseKinematics::AddOrientationConstraint
         struct /* AddOrientationConstraint */ {
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:179
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc =
 R"""(Constrains that the angle difference θ between the orientation of
 frame A and the orientation of frame B to satisfy θ ≤ θ_bound. Frame A
@@ -2920,7 +2920,7 @@ Parameter ``theta_bound``:
         } AddOrientationConstraint;
         // Symbol: drake::multibody::InverseKinematics::AddOrientationCost
         struct /* AddOrientationCost */ {
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:196
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc =
 R"""(Adds a cost of the form ``c * (1 - cos(θ))``, where θ is the angle
 between the orientation of frame A and the orientation of frame B, and
@@ -2945,7 +2945,7 @@ Parameter ``c``:
         } AddOrientationCost;
         // Symbol: drake::multibody::InverseKinematics::AddPointToLineDistanceConstraint
         struct /* AddPointToLineDistanceConstraint */ {
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:369
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc =
 R"""(Add a constraint that the distance between point P attached to
 frame_point (denoted as B1) and a line attached to frame_line (denoted
@@ -2977,7 +2977,7 @@ Parameter ``distance_upper``:
         } AddPointToLineDistanceConstraint;
         // Symbol: drake::multibody::InverseKinematics::AddPointToPointDistanceConstraint
         struct /* AddPointToPointDistanceConstraint */ {
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:347
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc =
 R"""(Add a constraint that the distance between point P1 attached to frame
 1 and point P2 attached to frame 2 is within the range
@@ -3003,7 +3003,7 @@ Parameter ``distance_upper``:
         } AddPointToPointDistanceConstraint;
         // Symbol: drake::multibody::InverseKinematics::AddPolyhedronConstraint
         struct /* AddPolyhedronConstraint */ {
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:388
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc =
 R"""(Adds the constraint that the position of P1, ..., Pn satisfy A *
 [p_FP1; p_FP2; ...; p_FPn] <= b.
@@ -3029,7 +3029,7 @@ Parameter ``b``:
         } AddPolyhedronConstraint;
         // Symbol: drake::multibody::InverseKinematics::AddPositionConstraint
         struct /* AddPositionConstraint */ {
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:103
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc_5args =
 R"""(Adds the kinematic constraint that a point Q, fixed in frame B, should
 lie within a bounding box expressed in another frame A as p_AQ_lower
@@ -3054,7 +3054,7 @@ Parameter ``p_AQ_lower``:
 Parameter ``p_AQ_upper``:
     The upper bound on the position of point Q, measured and expressed
     in frame A.)""";
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:126
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc_6args =
 R"""(Adds the kinematic constraint that a point Q, fixed in frame B, should
 lie within a bounding box expressed in another frame A as p_AQ_lower
@@ -3086,7 +3086,7 @@ Parameter ``p_AQ_upper``:
         } AddPositionConstraint;
         // Symbol: drake::multibody::InverseKinematics::AddPositionCost
         struct /* AddPositionCost */ {
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:143
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc =
 R"""(Adds a cost of the form (p_AP - p_AQ)ᵀ C (p_AP - p_AQ), where point P
 is specified relative to frame A and point Q is specified relative to
@@ -3109,7 +3109,7 @@ Parameter ``C``:
         } AddPositionCost;
         // Symbol: drake::multibody::InverseKinematics::InverseKinematics
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:45
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc_2args =
 R"""(Constructs an inverse kinematics problem for a MultibodyPlant. This
 constructor will create and own a context for ``plant``.
@@ -3130,7 +3130,7 @@ Note:
     AddMinimumDistanceConstraint). To enable collision related
     constraint, call InverseKinematics(const MultibodyPlant<double>&
     plant, systems::Context<double>* plant_context);)""";
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:85
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc_3args =
 R"""(Constructs an inverse kinematics problem for a MultibodyPlant. If the
 user wants to solve the problem with collision related constraint
@@ -3190,29 +3190,29 @@ Parameter ``with_joint_limits``:
         } ctor;
         // Symbol: drake::multibody::InverseKinematics::context
         struct /* context */ {
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:405
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc = R"""(Getter for the plant context.)""";
         } context;
         // Symbol: drake::multibody::InverseKinematics::get_mutable_context
         struct /* get_mutable_context */ {
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:408
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc = R"""(Getter for the mutable plant context.)""";
         } get_mutable_context;
         // Symbol: drake::multibody::InverseKinematics::get_mutable_prog
         struct /* get_mutable_prog */ {
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:402
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc =
 R"""(Getter for the optimization program constructed by InverseKinematics.)""";
         } get_mutable_prog;
         // Symbol: drake::multibody::InverseKinematics::prog
         struct /* prog */ {
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:399
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc =
 R"""(Getter for the optimization program constructed by InverseKinematics.)""";
         } prog;
         // Symbol: drake::multibody::InverseKinematics::q
         struct /* q */ {
-          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h:396
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc =
 R"""(Getter for q. q is the decision variable for the generalized positions
 of the robot.)""";
@@ -3220,7 +3220,7 @@ of the robot.)""";
       } InverseKinematics;
       // Symbol: drake::multibody::MinimumDistanceLowerBoundConstraint
       struct /* MinimumDistanceLowerBoundConstraint */ {
-        // Source: drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h:36
+        // Source: drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h
         const char* doc =
 R"""(Constrain min(d) >= lb, namely the signed distance between all
 candidate pairs of geometries (according to the logic of
@@ -3245,7 +3245,7 @@ evaluate the penalty function at -1, where it is required to have a
 non-zero gradient.)""";
         // Symbol: drake::multibody::MinimumDistanceLowerBoundConstraint::MinimumDistanceLowerBoundConstraint
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h:76
+          // Source: drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h
           const char* doc_double_mbp =
 R"""(Constructs a MinimumDistanceLowerBoundConstraint.
 
@@ -3313,11 +3313,11 @@ Raises:
 
 Raises:
     RuntimeError if influence_distance_offset ≤ 0.)""";
-          // Source: drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h:87
+          // Source: drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h
           const char* doc_autodiff_mbp =
 R"""(Overloaded constructor. Constructs the constraint using
 MultibodyPlant<AutoDiffXd>.)""";
-          // Source: drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h:100
+          // Source: drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h
           const char* doc_collision_checker =
 R"""(Overloaded constructor. Constructs the constraint with
 CollisionChecker instead of MultibodyPlant.
@@ -3331,19 +3331,19 @@ Parameter ``collision_checker_context``:
         } ctor;
         // Symbol: drake::multibody::MinimumDistanceLowerBoundConstraint::distance_bound
         struct /* distance_bound */ {
-          // Source: drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h:109
+          // Source: drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h
           const char* doc =
 R"""(Getter for the lower bound of the minimum distance.)""";
         } distance_bound;
         // Symbol: drake::multibody::MinimumDistanceLowerBoundConstraint::influence_distance
         struct /* influence_distance */ {
-          // Source: drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h:114
+          // Source: drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h
           const char* doc = R"""(Getter for the influence distance.)""";
         } influence_distance;
       } MinimumDistanceLowerBoundConstraint;
       // Symbol: drake::multibody::MinimumDistanceUpperBoundConstraint
       struct /* MinimumDistanceUpperBoundConstraint */ {
-        // Source: drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h:37
+        // Source: drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h
         const char* doc =
 R"""(Constrain min(d) <= ub, namely at least one signed distance between a
 candidate pairs of geometries (according to the logic of
@@ -3368,7 +3368,7 @@ feasible set (when dᵢ(q) == ub), we evaluate the penalty function at
 -1, where it is required to have a non-zero gradient.)""";
         // Symbol: drake::multibody::MinimumDistanceUpperBoundConstraint::MinimumDistanceUpperBoundConstraint
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h:73
+          // Source: drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h
           const char* doc_double_mbp =
 R"""(Constructs a MinimumDistanceUpperBoundConstraint.
 
@@ -3431,11 +3431,11 @@ Raises:
 
 Raises:
     RuntimeError if influence_distance_offset ≤ 0.)""";
-          // Source: drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h:83
+          // Source: drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h
           const char* doc_autodiff_mbp =
 R"""(Overloaded constructor. Constructs the constraint using
 MultibodyPlant<AutoDiffXd>.)""";
-          // Source: drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h:96
+          // Source: drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h
           const char* doc_collision_checker =
 R"""(Overloaded constructor. Constructs the constraint with
 CollisionChecker instead of MultibodyPlant.
@@ -3449,19 +3449,19 @@ Parameter ``collision_checker_context``:
         } ctor;
         // Symbol: drake::multibody::MinimumDistanceUpperBoundConstraint::distance_bound
         struct /* distance_bound */ {
-          // Source: drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h:105
+          // Source: drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h
           const char* doc =
 R"""(Getter for the upper bound of the minimum distance.)""";
         } distance_bound;
         // Symbol: drake::multibody::MinimumDistanceUpperBoundConstraint::influence_distance
         struct /* influence_distance */ {
-          // Source: drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h:110
+          // Source: drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h
           const char* doc = R"""(Getter for the influence distance.)""";
         } influence_distance;
       } MinimumDistanceUpperBoundConstraint;
       // Symbol: drake::multibody::OrientationConstraint
       struct /* OrientationConstraint */ {
-        // Source: drake/multibody/inverse_kinematics/orientation_constraint.h:33
+        // Source: drake/multibody/inverse_kinematics/orientation_constraint.h
         const char* doc =
 R"""(Constrains that the angle difference θ between the orientation of
 frame A and the orientation of frame B to satisfy θ ≤ θ_bound. The
@@ -3480,7 +3480,7 @@ I + sinθ â + (1-cosθ)â² where trace(R_AB) = 2cos(θ) + 1 ≥
 2cos(θ_bound) + 1)""";
         // Symbol: drake::multibody::OrientationConstraint::OrientationConstraint
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/orientation_constraint.h:62
+          // Source: drake/multibody/inverse_kinematics/orientation_constraint.h
           const char* doc_double =
 R"""(Constructs an OrientationConstraint object. The frame A is fixed to a
 frame A̅, with orientatation ``R_AbarA`` measured in frame A̅. The
@@ -3527,7 +3527,7 @@ Raises:
 
 Raises:
     RuntimeError if ``plant_context`` is nullptr.)""";
-          // Source: drake/multibody/inverse_kinematics/orientation_constraint.h:75
+          // Source: drake/multibody/inverse_kinematics/orientation_constraint.h
           const char* doc_autodiff =
 R"""(Overloaded constructor. Constructs the constraint using
 MultibodyPlant<AutoDiffXd>)""";
@@ -3535,14 +3535,14 @@ MultibodyPlant<AutoDiffXd>)""";
       } OrientationConstraint;
       // Symbol: drake::multibody::OrientationCost
       struct /* OrientationCost */ {
-        // Source: drake/multibody/inverse_kinematics/orientation_cost.h:17
+        // Source: drake/multibody/inverse_kinematics/orientation_cost.h
         const char* doc =
 R"""(Implements a cost of the form ``c * (1 - cos(θ))``, where θ is the
 angle between the orientation of frame A and the orientation of frame
 B, and ``c`` is a cost scaling.)""";
         // Symbol: drake::multibody::OrientationCost::OrientationCost
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/orientation_cost.h:38
+          // Source: drake/multibody/inverse_kinematics/orientation_cost.h
           const char* doc_double =
 R"""(Constructs OrientationCost object.
 
@@ -3575,7 +3575,7 @@ Raises:
 
 Raises:
     RuntimeError if ``plant_context`` is nullptr.)""";
-          // Source: drake/multibody/inverse_kinematics/orientation_cost.h:51
+          // Source: drake/multibody/inverse_kinematics/orientation_cost.h
           const char* doc_autodiff =
 R"""(Overloaded constructor. Same as the constructor with the double
 version (using MultibodyPlant<double> and Context<double>). Except the
@@ -3584,13 +3584,13 @@ gradient of the cost is computed from autodiff.)""";
       } OrientationCost;
       // Symbol: drake::multibody::PointToLineDistanceConstraint
       struct /* PointToLineDistanceConstraint */ {
-        // Source: drake/multibody/inverse_kinematics/point_to_line_distance_constraint.h:17
+        // Source: drake/multibody/inverse_kinematics/point_to_line_distance_constraint.h
         const char* doc =
 R"""(Constrain that the distance between a point P on frame B1 and another
 line L on frame B2 is within a range [distance_lower, distance_upper].)""";
         // Symbol: drake::multibody::PointToLineDistanceConstraint::PointToLineDistanceConstraint
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/point_to_line_distance_constraint.h:54
+          // Source: drake/multibody/inverse_kinematics/point_to_line_distance_constraint.h
           const char* doc_double =
 R"""(Constrain the distance between a point P attached to frame_point
 (denoted as B1) and the line L attached to frame_line (denoted as B2)
@@ -3637,7 +3637,7 @@ Parameter ``plant_context``:
     update the context when evaluating the constraint.
     ``plant_context`` must be alive during the lifetime of this
     constraint.)""";
-          // Source: drake/multibody/inverse_kinematics/point_to_line_distance_constraint.h:69
+          // Source: drake/multibody/inverse_kinematics/point_to_line_distance_constraint.h
           const char* doc_autodiff =
 R"""(Overloaded constructor. Same as the constructor with the double
 version (using MultibodyPlant<double> and Context<double>), except the
@@ -3646,14 +3646,14 @@ gradient of the constraint is computed from autodiff.)""";
       } PointToLineDistanceConstraint;
       // Symbol: drake::multibody::PointToPointDistanceConstraint
       struct /* PointToPointDistanceConstraint */ {
-        // Source: drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h:17
+        // Source: drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h
         const char* doc =
 R"""(Constrain that the distance between a point P1 on frame B1 and another
 point P2 on frame B2 is within a range [distance_lower,
 distance_upper].)""";
         // Symbol: drake::multibody::PointToPointDistanceConstraint::PointToPointDistanceConstraint
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h:46
+          // Source: drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h
           const char* doc_double =
 R"""(Constrain that the distance between a point P1 attached to frame B1
 and another point P2 attached to frame B2 is within the range
@@ -3691,7 +3691,7 @@ Parameter ``plant_context``:
     update the context when evaluating the constraint.
     ``plant_context`` should be alive during the lifetime of this
     constraint.)""";
-          // Source: drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h:59
+          // Source: drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h
           const char* doc_autodiff =
 R"""(Overloaded constructor. Same as the constructor with the double
 version (using MultibodyPlant<double> and Context<double>), except the
@@ -3700,7 +3700,7 @@ gradient of the constraint is computed from autodiff.)""";
       } PointToPointDistanceConstraint;
       // Symbol: drake::multibody::PolyhedronConstraint
       struct /* PolyhedronConstraint */ {
-        // Source: drake/multibody/inverse_kinematics/polyhedron_constraint.h:18
+        // Source: drake/multibody/inverse_kinematics/polyhedron_constraint.h
         const char* doc =
 R"""(Constrain the position of points P1, P2, ..., Pn to satisfy the
 constraint A * [p_FP1; p_FP2; ...; p_FPn] <= b, where p_FPi is the
@@ -3709,7 +3709,7 @@ constraint is imposed on the stacked column vector [p_FP1; p_FP2; ...;
 p_FPn], not on each individual point.)""";
         // Symbol: drake::multibody::PolyhedronConstraint::PolyhedronConstraint
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/polyhedron_constraint.h:39
+          // Source: drake/multibody/inverse_kinematics/polyhedron_constraint.h
           const char* doc_double =
 R"""(Construct the constraint that the position of P1, ..., Pn satisfy A *
 [p_FP1; p_FP2; ...; p_FPn] <= b.
@@ -3742,7 +3742,7 @@ Parameter ``plant_context``:
     update the context when evaluating the constraint.
     ``plant_context`` should be alive during the lifetime of this
     constraint.)""";
-          // Source: drake/multibody/inverse_kinematics/polyhedron_constraint.h:52
+          // Source: drake/multibody/inverse_kinematics/polyhedron_constraint.h
           const char* doc_autodiff =
 R"""(Overloaded constructor. Same as the constructor with the double
 version (using MultibodyPlant<double> and Context<double>). Except the
@@ -3751,14 +3751,14 @@ gradient of the constraint is computed from autodiff.)""";
       } PolyhedronConstraint;
       // Symbol: drake::multibody::PositionConstraint
       struct /* PositionConstraint */ {
-        // Source: drake/multibody/inverse_kinematics/position_constraint.h:19
+        // Source: drake/multibody/inverse_kinematics/position_constraint.h
         const char* doc =
 R"""(Constrains the position of a point Q, rigidly attached to a frame B,
 to be within a bounding box measured and expressed in frame A. Namely
 p_AQ_lower <= p_AQ <= p_AQ_upper.)""";
         // Symbol: drake::multibody::PositionConstraint::PositionConstraint
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/position_constraint.h:44
+          // Source: drake/multibody/inverse_kinematics/position_constraint.h
           const char* doc_double =
 R"""(Constructs PositionConstraint object.
 
@@ -3801,12 +3801,12 @@ Raises:
 
 Raises:
     RuntimeError if ``plant_context`` is nullptr.)""";
-          // Source: drake/multibody/inverse_kinematics/position_constraint.h:58
+          // Source: drake/multibody/inverse_kinematics/position_constraint.h
           const char* doc_autodiff =
 R"""(Overloaded constructor. Same as the constructor with the double
 version (using MultibodyPlant<double> and Context<double>). Except the
 gradient of the constraint is computed from autodiff.)""";
-          // Source: drake/multibody/inverse_kinematics/position_constraint.h:91
+          // Source: drake/multibody/inverse_kinematics/position_constraint.h
           const char* doc_double_Abar =
 R"""(Overloaded constructor. Except that the constructor takes in a frame
 A̅ and a pose X_AAbar between the frame A and A̅. We will constrain
@@ -3856,7 +3856,7 @@ Raises:
 
 Raises:
     RuntimeError if ``plant_context`` is nullptr.)""";
-          // Source: drake/multibody/inverse_kinematics/position_constraint.h:106
+          // Source: drake/multibody/inverse_kinematics/position_constraint.h
           const char* doc_autodiff_Abar =
 R"""(Overloaded constructor. Same as the constructor with the double
 version (using MultibodyPlant<double> and Context<double>). Except the
@@ -3865,14 +3865,14 @@ gradient of the constraint is computed from autodiff.)""";
       } PositionConstraint;
       // Symbol: drake::multibody::PositionCost
       struct /* PositionCost */ {
-        // Source: drake/multibody/inverse_kinematics/position_cost.h:17
+        // Source: drake/multibody/inverse_kinematics/position_cost.h
         const char* doc =
 R"""(Implements a cost of the form (p_AP - p_AQ)ᵀ C (p_AP - p_AQ), where
 point P is specified relative to frame A and point Q is specified
 relative to frame B, and the cost is evaluated in frame A.)""";
         // Symbol: drake::multibody::PositionCost::PositionCost
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/position_cost.h:36
+          // Source: drake/multibody/inverse_kinematics/position_cost.h
           const char* doc_double =
 R"""(Constructs PositionCost object.
 
@@ -3903,7 +3903,7 @@ Raises:
 
 Raises:
     RuntimeError if ``plant_context`` is nullptr.)""";
-          // Source: drake/multibody/inverse_kinematics/position_cost.h:49
+          // Source: drake/multibody/inverse_kinematics/position_cost.h
           const char* doc_autodiff =
 R"""(Overloaded constructor. Same as the constructor with the double
 version (using MultibodyPlant<double> and Context<double>). Except the
@@ -3912,7 +3912,7 @@ gradient of the cost is computed from autodiff.)""";
       } PositionCost;
       // Symbol: drake::multibody::SelectDataForCollisionConstraintFunction
       struct /* SelectDataForCollisionConstraintFunction */ {
-        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h:666
+        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
         const char* doc =
 R"""((Advanced) Filters clearance data for defining a collision constraint,
 as used by DifferentialInverseKinematicsSystem::CollisionConstraint.
@@ -3941,7 +3941,7 @@ Parameter ``ddist_dq_out``:
       } SelectDataForCollisionConstraintFunction;
       // Symbol: drake::multibody::UnitQuaternionConstraint
       struct /* UnitQuaternionConstraint */ {
-        // Source: drake/multibody/inverse_kinematics/unit_quaternion_constraint.h:25
+        // Source: drake/multibody/inverse_kinematics/unit_quaternion_constraint.h
         const char* doc =
 R"""(Constrains the quaternion to have a unit length.
 
@@ -3966,7 +3966,7 @@ Note:
     </details>)""";
         // Symbol: drake::multibody::UnitQuaternionConstraint::UnitQuaternionConstraint
         struct /* ctor */ {
-          // Source: drake/multibody/inverse_kinematics/unit_quaternion_constraint.h:27
+          // Source: drake/multibody/inverse_kinematics/unit_quaternion_constraint.h
           const char* doc = R"""()""";
         } ctor;
       } UnitQuaternionConstraint;

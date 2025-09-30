@@ -83,7 +83,7 @@ constexpr struct /* pydrake_doc_multibody_tree */ {
     struct /* multibody */ {
       // Symbol: drake::multibody::ArticulatedBodyInertia
       struct /* ArticulatedBodyInertia */ {
-        // Source: drake/multibody/tree/articulated_body_inertia.h:94
+        // Source: drake/multibody/tree/articulated_body_inertia.h
         const char* doc =
 R"""(_Articulated Body Inertia_ is the inertia that a body appears to have
 when it is the base (or root) of a rigid-body system, also referred to
@@ -189,11 +189,11 @@ Note:
     Springer Science & Business Media.)""";
         // Symbol: drake::multibody::ArticulatedBodyInertia::ArticulatedBodyInertia<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/articulated_body_inertia.h:100
+          // Source: drake/multibody/tree/articulated_body_inertia.h
           const char* doc_0args =
 R"""(Default ArticulatedBodyInertia constructor initializes all matrix
 values to NaN for a quick detection of uninitialized values.)""";
-          // Source: drake/multibody/tree/articulated_body_inertia.h:110
+          // Source: drake/multibody/tree/articulated_body_inertia.h
           const char* doc_1args_M_SQ_E =
 R"""(Constructs an articulated body inertia for an articulated body
 consisting of a single rigid body given its spatial inertia. From an
@@ -205,7 +205,7 @@ same frame E.
 Parameter ``M_SQ_E``:
     The spatial inertia of a body or composite body S about point Q
     and expressed in frame E.)""";
-          // Source: drake/multibody/tree/articulated_body_inertia.h:129
+          // Source: drake/multibody/tree/articulated_body_inertia.h
           const char* doc_1args_constEigenMatrixBase =
 R"""(Constructs an articulated body inertia from an input matrix.
 
@@ -225,13 +225,13 @@ Raises:
         } ctor;
         // Symbol: drake::multibody::ArticulatedBodyInertia::CopyToFullMatrix6
         struct /* CopyToFullMatrix6 */ {
-          // Source: drake/multibody/tree/articulated_body_inertia.h:197
+          // Source: drake/multibody/tree/articulated_body_inertia.h
           const char* doc =
 R"""(Copy to a full 6x6 matrix representation.)""";
         } CopyToFullMatrix6;
         // Symbol: drake::multibody::ArticulatedBodyInertia::IsPhysicallyValid
         struct /* IsPhysicallyValid */ {
-          // Source: drake/multibody/tree/articulated_body_inertia.h:161
+          // Source: drake/multibody/tree/articulated_body_inertia.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Performs a number of checks to verify that this is a physically valid
 articulated body inertia.
@@ -240,7 +240,7 @@ The checks performed are: - The matrix is positive semi-definite.)""";
         } IsPhysicallyValid;
         // Symbol: drake::multibody::ArticulatedBodyInertia::Shift
         struct /* Shift */ {
-          // Source: drake/multibody/tree/articulated_body_inertia.h:286
+          // Source: drake/multibody/tree/articulated_body_inertia.h
           const char* doc =
 R"""(Given ``this`` articulated body inertia ``P_AQ_E`` for some
 articulated body A, computed about point Q, and expressed in frame E,
@@ -262,7 +262,7 @@ Returns ``P_AR_E``:
         } Shift;
         // Symbol: drake::multibody::ArticulatedBodyInertia::ShiftInPlace
         struct /* ShiftInPlace */ {
-          // Source: drake/multibody/tree/articulated_body_inertia.h:232
+          // Source: drake/multibody/tree/articulated_body_inertia.h
           const char* doc =
 R"""(Given ``this`` articulated body inertia ``P_AQ_E`` for some
 articulated body A, computed about point Q, and expressed in frame E,
@@ -321,7 +321,7 @@ Parameter ``p_QR_E``:
         } ShiftInPlace;
         // Symbol: drake::multibody::ArticulatedBodyInertia::cast
         struct /* cast */ {
-          // Source: drake/multibody/tree/articulated_body_inertia.h:147
+          // Source: drake/multibody/tree/articulated_body_inertia.h
           const char* doc =
 R"""(Returns a new ArticulatedBodyInertia object templated on ``Scalar``
 with casted values of ``this`` articulated body inertia.
@@ -341,7 +341,7 @@ Note:
         } cast;
         // Symbol: drake::multibody::ArticulatedBodyInertia::operator*
         struct /* operator_mul */ {
-          // Source: drake/multibody/tree/articulated_body_inertia.h:337
+          // Source: drake/multibody/tree/articulated_body_inertia.h
           const char* doc_1args_constEigenMatrixBase =
 R"""(Multiplies ``this`` articulated body inertia on the right by a matrix
 or vector.
@@ -350,14 +350,14 @@ Note:
     This method does not evaluate the product immediately. Instead, it
     returns an intermediate Eigen quantity that can be optimized
     automatically during compile time.)""";
-          // Source: drake/multibody/tree/articulated_body_inertia.h:343
+          // Source: drake/multibody/tree/articulated_body_inertia.h
           const char* doc_1args_A_WB_E =
 R"""(Multiplies ``this`` articulated body inertia on the right by a spatial
 acceleration. See abi_eq_definition "Eq. (2)" for an example.)""";
         } operator_mul;
         // Symbol: drake::multibody::ArticulatedBodyInertia::operator+=
         struct /* operator_iadd */ {
-          // Source: drake/multibody/tree/articulated_body_inertia.h:312
+          // Source: drake/multibody/tree/articulated_body_inertia.h
           const char* doc =
 R"""(Adds in to this articulated body inertia ``P_AQ_E`` for an articulated
 body A about a point Q and expressed in a frame E the articulated body
@@ -385,7 +385,7 @@ Warning:
         } operator_iadd;
         // Symbol: drake::multibody::ArticulatedBodyInertia::operator-=
         struct /* operator_isub */ {
-          // Source: drake/multibody/tree/articulated_body_inertia.h:322
+          // Source: drake/multibody/tree/articulated_body_inertia.h
           const char* doc =
 R"""(Subtracts ``P_BQ_E`` from ``this`` articulated body inertia.
 ``P_BQ_E`` must be for the same articulated body B as this ABI (about
@@ -395,7 +395,7 @@ inertia will have the same properties.)""";
       } ArticulatedBodyInertia;
       // Symbol: drake::multibody::BallRpyJoint
       struct /* BallRpyJoint */ {
-        // Source: drake/multibody/tree/ball_rpy_joint.h:27
+        // Source: drake/multibody/tree/ball_rpy_joint.h
         const char* doc =
 R"""(This Joint allows two bodies to rotate freely relative to one another.
 That is, given a frame F attached to the parent body P and a frame M
@@ -406,7 +406,7 @@ coincident. The orientation of M relative to F is parameterized with
 space ``x-y-z`` Euler angles.)""";
         // Symbol: drake::multibody::BallRpyJoint::BallRpyJoint<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/ball_rpy_joint.h:55
+          // Source: drake/multibody/tree/ball_rpy_joint.h
           const char* doc =
 R"""(Constructor to create a ball rpy joint between two bodies so that
 frame F attached to the parent body P and frame M attached to the
@@ -432,7 +432,7 @@ Raises:
         } ctor;
         // Symbol: drake::multibody::BallRpyJoint::DoAddInDamping
         struct /* DoAddInDamping */ {
-          // Source: drake/multibody/tree/ball_rpy_joint.h:205
+          // Source: drake/multibody/tree/ball_rpy_joint.h
           const char* doc =
 R"""(Joint<T> override called through public NVI, Joint::AddInDamping().
 Therefore arguments were already checked to be valid. This method adds
@@ -441,7 +441,7 @@ into ``forces`` a dissipative torque according to the viscous law ``τ
         } DoAddInDamping;
         // Symbol: drake::multibody::BallRpyJoint::DoAddInOneForce
         struct /* DoAddInOneForce */ {
-          // Source: drake/multibody/tree/ball_rpy_joint.h:193
+          // Source: drake/multibody/tree/ball_rpy_joint.h
           const char* doc =
 R"""(Joint<T> override called through public NVI, Joint::AddInForce().
 Adding forces per-dof makes no physical sense. Therefore, this method
@@ -449,7 +449,7 @@ throws an exception if invoked.)""";
         } DoAddInOneForce;
         // Symbol: drake::multibody::BallRpyJoint::default_damping
         struct /* default_damping */ {
-          // Source: drake/multibody/tree/ball_rpy_joint.h:82
+          // Source: drake/multibody/tree/ball_rpy_joint.h
           const char* doc =
 R"""(Returns ``this`` joint's default damping constant in N⋅m⋅s. The
 damping torque (in N⋅m) is modeled as ``τ = -damping⋅ω``, i.e.
@@ -459,7 +459,7 @@ is rigidly attached).)""";
         } default_damping;
         // Symbol: drake::multibody::BallRpyJoint::get_angles
         struct /* get_angles */ {
-          // Source: drake/multibody/tree/ball_rpy_joint.h:119
+          // Source: drake/multibody/tree/ball_rpy_joint.h
           const char* doc =
 R"""(Gets the rotation angles of ``this`` joint from ``context``.
 
@@ -509,7 +509,7 @@ Returns:
         } get_angles;
         // Symbol: drake::multibody::BallRpyJoint::get_angular_velocity
         struct /* get_angular_velocity */ {
-          // Source: drake/multibody/tree/ball_rpy_joint.h:154
+          // Source: drake/multibody/tree/ball_rpy_joint.h
           const char* doc =
 R"""(Retrieves from ``context`` the angular velocity ``w_FM`` of the child
 frame M in the parent frame F, expressed in F.
@@ -524,7 +524,7 @@ Returns ``w_FM``:
         } get_angular_velocity;
         // Symbol: drake::multibody::BallRpyJoint::get_default_angles
         struct /* get_default_angles */ {
-          // Source: drake/multibody/tree/ball_rpy_joint.h:178
+          // Source: drake/multibody/tree/ball_rpy_joint.h
           const char* doc =
 R"""(Gets the default angles for ``this`` joint. Wrapper for the more
 general ``Joint::default_positions()``.
@@ -534,7 +534,7 @@ Returns:
         } get_default_angles;
         // Symbol: drake::multibody::BallRpyJoint::set_angles
         struct /* set_angles */ {
-          // Source: drake/multibody/tree/ball_rpy_joint.h:131
+          // Source: drake/multibody/tree/ball_rpy_joint.h
           const char* doc =
 R"""(Sets the ``context`` so that the generalized coordinates corresponding
 to the rotation angles of ``this`` joint equals ``angles``.
@@ -551,7 +551,7 @@ Returns:
         } set_angles;
         // Symbol: drake::multibody::BallRpyJoint::set_angular_velocity
         struct /* set_angular_velocity */ {
-          // Source: drake/multibody/tree/ball_rpy_joint.h:167
+          // Source: drake/multibody/tree/ball_rpy_joint.h
           const char* doc =
 R"""(Sets in ``context`` the state for ``this`` joint so that the angular
 velocity of the child frame M in the parent frame F is ``w_FM``.
@@ -569,7 +569,7 @@ Returns:
         } set_angular_velocity;
         // Symbol: drake::multibody::BallRpyJoint::set_default_angles
         struct /* set_default_angles */ {
-          // Source: drake/multibody/tree/ball_rpy_joint.h:185
+          // Source: drake/multibody/tree/ball_rpy_joint.h
           const char* doc =
 R"""(Sets the default angles of this joint.
 
@@ -578,7 +578,7 @@ Parameter ``angles``:
         } set_default_angles;
         // Symbol: drake::multibody::BallRpyJoint::set_random_angles_distribution
         struct /* set_random_angles_distribution */ {
-          // Source: drake/multibody/tree/ball_rpy_joint.h:139
+          // Source: drake/multibody/tree/ball_rpy_joint.h
           const char* doc =
 R"""(Sets the random distribution that angles of this joint will be
 randomly sampled from. See get_angles() for details on the angle
@@ -586,20 +586,20 @@ representation.)""";
         } set_random_angles_distribution;
         // Symbol: drake::multibody::BallRpyJoint::type_name
         struct /* type_name */ {
-          // Source: drake/multibody/tree/ball_rpy_joint.h:76
+          // Source: drake/multibody/tree/ball_rpy_joint.h
           const char* doc = R"""()""";
         } type_name;
       } BallRpyJoint;
       // Symbol: drake::multibody::BodyIndex
       struct /* BodyIndex */ {
-        // Source: drake/multibody/tree/multibody_tree_indexes.h:36
+        // Source: drake/multibody/tree/multibody_tree_indexes.h
         const char* doc =
 R"""(Type used to identify RigidBodies (a.k.a. Links) by index in a
 multibody plant. Interchangeable with LinkIndex.)""";
       } BodyIndex;
       // Symbol: drake::multibody::CalcSpatialInertia
       struct /* CalcSpatialInertia */ {
-        // Source: drake/multibody/tree/geometry_spatial_inertia.h:46
+        // Source: drake/multibody/tree/geometry_spatial_inertia.h
         const char* doc_shape =
 R"""(Computes the SpatialInertia of a body made up of a homogeneous
 material (of given ``density`` in kg/m³) uniformly distributed in the
@@ -623,7 +623,7 @@ Returns ``M_BBo_B``:
 Raises:
     RuntimeError if ``shape`` is an instance of geometry::HalfSpace or
     geometry::MeshcatCone.)""";
-        // Source: drake/multibody/tree/geometry_spatial_inertia.h:73
+        // Source: drake/multibody/tree/geometry_spatial_inertia.h
         const char* doc_mesh =
 R"""(Computes the SpatialInertia of a body made up of a homogeneous
 material (of given ``density`` in kg/m³) uniformly distributed in the
@@ -653,7 +653,7 @@ Raises:
       } CalcSpatialInertia;
       // Symbol: drake::multibody::CurvilinearJoint
       struct /* CurvilinearJoint */ {
-        // Source: drake/multibody/tree/curvilinear_joint.h:46
+        // Source: drake/multibody/tree/curvilinear_joint.h
         const char* doc =
 R"""(A Joint that allows a body to move along a piecewise constant
 curvature path contained in a plane.
@@ -686,7 +686,7 @@ See also:
     trajectories::PiecewiseConstantCurvatureTrajectory)""";
         // Symbol: drake::multibody::CurvilinearJoint::AddInForce
         struct /* AddInForce */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:252
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Adds into a MultibodyForces a generalized force on this joint.
 
@@ -706,7 +706,7 @@ Parameter ``forces``:
         } AddInForce;
         // Symbol: drake::multibody::CurvilinearJoint::CurvilinearJoint<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:78
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc_5args =
 R"""(Constructor to create a curvilinear joint between two bodies so that
 frame F attached to the parent body P and frame M attached to the
@@ -736,7 +736,7 @@ Parameter ``damping``:
 
 Raises:
     RuntimeError if damping is negative)""";
-          // Source: drake/multibody/tree/curvilinear_joint.h:117
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc_7args =
 R"""(Constructor to create a curvilinear joint between two bodies so that
 frame F attached to the parent body P and frame M attached to the
@@ -775,7 +775,7 @@ Raises:
         } ctor;
         // Symbol: drake::multibody::CurvilinearJoint::DoAddInDamping
         struct /* DoAddInDamping */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:294
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Joint<T> override called through public NVI, Joint::AddInDamping().
 Arguments already checked to be valid by Joint::AddInDamping().
@@ -792,7 +792,7 @@ Parameter ``forces``:
         } DoAddInDamping;
         // Symbol: drake::multibody::CurvilinearJoint::DoAddInOneForce
         struct /* DoAddInOneForce */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:274
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Joint<T> override called through public NVI, Joint::AddInForce().
 Arguments already checked to be valid by Joint::AddInForce().
@@ -813,7 +813,7 @@ See also:
         } DoAddInOneForce;
         // Symbol: drake::multibody::CurvilinearJoint::GetDamping
         struct /* GetDamping */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:221
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Returns the Context dependent damping coefficient stored as a
 parameter in ``context``. Refer to default_damping() for details.
@@ -826,7 +826,7 @@ Returns:
         } GetDamping;
         // Symbol: drake::multibody::CurvilinearJoint::SetDamping
         struct /* SetDamping */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:230
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Sets the value of the viscous damping coefficient for this joint,
 stored as a parameter in ``context``. Refer to default_damping() for
@@ -843,31 +843,31 @@ Raises:
         } SetDamping;
         // Symbol: drake::multibody::CurvilinearJoint::acceleration_lower_limit
         struct /* acceleration_lower_limit */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:164
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Returns the acceleration lower limit for ``this`` joint in m/s².)""";
         } acceleration_lower_limit;
         // Symbol: drake::multibody::CurvilinearJoint::acceleration_upper_limit
         struct /* acceleration_upper_limit */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:169
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Returns the acceleration upper limit for ``this`` joint in m/s².)""";
         } acceleration_upper_limit;
         // Symbol: drake::multibody::CurvilinearJoint::default_damping
         struct /* default_damping */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:129
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Returns ``this`` joint's default damping constant in N⋅s/m.)""";
         } default_damping;
         // Symbol: drake::multibody::CurvilinearJoint::get_default_distance
         struct /* get_default_distance */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:236
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Gets the default travel distance along the path.)""";
         } get_default_distance;
         // Symbol: drake::multibody::CurvilinearJoint::get_distance
         struct /* get_distance */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:176
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Gets the travel distance of the joint from the provided context.
 
@@ -879,7 +879,7 @@ Returns:
         } get_distance;
         // Symbol: drake::multibody::CurvilinearJoint::get_tangential_velocity
         struct /* get_tangential_velocity */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:202
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Gets the tangential velocity in meters per second, i.e. the rate of
 change of this joint's travel distance (see get_distance()) from the
@@ -893,26 +893,26 @@ Returns:
         } get_tangential_velocity;
         // Symbol: drake::multibody::CurvilinearJoint::get_trajectory
         struct /* get_trajectory */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:261
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Returns:
     A reference to the underlying trajectory.)""";
         } get_trajectory;
         // Symbol: drake::multibody::CurvilinearJoint::position_lower_limit
         struct /* position_lower_limit */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:144
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Returns the position lower limit for ``this`` joint in m.)""";
         } position_lower_limit;
         // Symbol: drake::multibody::CurvilinearJoint::position_upper_limit
         struct /* position_upper_limit */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:149
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Returns the position upper limit for ``this`` joint in m.)""";
         } position_upper_limit;
         // Symbol: drake::multibody::CurvilinearJoint::set_default_damping
         struct /* set_default_damping */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:136
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Sets the default value of viscous damping for this joint, in N⋅s/m.
 
@@ -928,7 +928,7 @@ Precondition:
         } set_default_damping;
         // Symbol: drake::multibody::CurvilinearJoint::set_default_distance
         struct /* set_default_distance */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:240
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Sets the default travel distance of this joint.
 
@@ -937,7 +937,7 @@ Parameter ``distance``:
         } set_default_distance;
         // Symbol: drake::multibody::CurvilinearJoint::set_distance
         struct /* set_distance */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:184
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Sets the travel distance of the joint from the provided context.
 
@@ -952,7 +952,7 @@ Returns:
         } set_distance;
         // Symbol: drake::multibody::CurvilinearJoint::set_random_distance_distribution
         struct /* set_random_distance_distribution */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:192
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Sets the random distribution for the distance along the path.
 
@@ -961,7 +961,7 @@ Parameter ``distance``:
         } set_random_distance_distribution;
         // Symbol: drake::multibody::CurvilinearJoint::set_tangential_velocity
         struct /* set_tangential_velocity */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:211
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Sets the tangential velocity of the joint from the provided context.
 
@@ -976,25 +976,25 @@ Returns:
         } set_tangential_velocity;
         // Symbol: drake::multibody::CurvilinearJoint::type_name
         struct /* type_name */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:126
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc = R"""()""";
         } type_name;
         // Symbol: drake::multibody::CurvilinearJoint::velocity_lower_limit
         struct /* velocity_lower_limit */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:154
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Returns the velocity lower limit for ``this`` joint in m/s.)""";
         } velocity_lower_limit;
         // Symbol: drake::multibody::CurvilinearJoint::velocity_upper_limit
         struct /* velocity_upper_limit */ {
-          // Source: drake/multibody/tree/curvilinear_joint.h:159
+          // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
 R"""(Returns the velocity upper limit for ``this`` joint in m/s.)""";
         } velocity_upper_limit;
       } CurvilinearJoint;
       // Symbol: drake::multibody::DeformableBody
       struct /* DeformableBody */ {
-        // Source: drake/multibody/tree/deformable_body.h:39
+        // Source: drake/multibody/tree/deformable_body.h
         const char* doc =
 R"""(The DeformableBody class represents a single deformable element within
 a MultibodyPlant. It encapsulates the mesh, physical properties, and
@@ -1012,7 +1012,7 @@ created exclusively by DeformableModel through
 DeformableModel::RegisterDeformableBody.)""";
         // Symbol: drake::multibody::DeformableBody::AddFixedConstraint
         struct /* AddFixedConstraint */ {
-          // Source: drake/multibody/tree/deformable_body.h:158
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Defines a fixed constraint between this deformable body and a rigid
 body B. Such a fixed constraint is modeled as distance holonomic
@@ -1066,7 +1066,7 @@ Raises:
         } AddFixedConstraint;
         // Symbol: drake::multibody::DeformableBody::CalcCenterOfMassPositionInWorld
         struct /* CalcCenterOfMassPositionInWorld */ {
-          // Source: drake/multibody/tree/deformable_body.h:305
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Calculates the body's center of mass position in world frame W.
 
@@ -1084,7 +1084,7 @@ Raises:
         } CalcCenterOfMassPositionInWorld;
         // Symbol: drake::multibody::DeformableBody::CalcCenterOfMassTranslationalVelocityInWorld
         struct /* CalcCenterOfMassTranslationalVelocityInWorld */ {
-          // Source: drake/multibody/tree/deformable_body.h:316
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Calculates the body's center of mass translational velocity in world
 frame W.
@@ -1103,7 +1103,7 @@ Raises:
         } CalcCenterOfMassTranslationalVelocityInWorld;
         // Symbol: drake::multibody::DeformableBody::CalcEffectiveAngularVelocity
         struct /* CalcEffectiveAngularVelocity */ {
-          // Source: drake/multibody/tree/deformable_body.h:339
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Using an angular momentum analogy, calculates an "effective" angular
 velocity for this body about its center of mass, measured and
@@ -1134,12 +1134,12 @@ Raises:
         } CalcEffectiveAngularVelocity;
         // Symbol: drake::multibody::DeformableBody::DeformableBody<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/deformable_body.h:41
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::multibody::DeformableBody::Disable
         struct /* Disable */ {
-          // Source: drake/multibody/tree/deformable_body.h:274
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Disables this deformable body in the given context. Disabling a
 deformable body sets its vertex velocities and accelerations to zero
@@ -1167,7 +1167,7 @@ Raises:
         } Disable;
         // Symbol: drake::multibody::DeformableBody::Enable
         struct /* Enable */ {
-          // Source: drake/multibody/tree/deformable_body.h:282
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Enables this deformable body in the given context. Calling Enable() on
 a body which is already enabled has no effect.
@@ -1184,7 +1184,7 @@ Raises:
         } Enable;
         // Symbol: drake::multibody::DeformableBody::GetPositions
         struct /* GetPositions */ {
-          // Source: drake/multibody/tree/deformable_body.h:228
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Copies out the matrix of vertex positions for this deformable body in
 the provided ``context``.
@@ -1202,7 +1202,7 @@ Raises:
         } GetPositions;
         // Symbol: drake::multibody::DeformableBody::GetPositionsAndVelocities
         struct /* GetPositionsAndVelocities */ {
-          // Source: drake/multibody/tree/deformable_body.h:251
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Copies out the matrix of vertex positions and velocities for this
 deformable body in the provided ``context``. The first N columns are
@@ -1222,7 +1222,7 @@ Raises:
         } GetPositionsAndVelocities;
         // Symbol: drake::multibody::DeformableBody::GetVelocities
         struct /* GetVelocities */ {
-          // Source: drake/multibody/tree/deformable_body.h:239
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Copies out the matrix of vertex velocities for this deformable body in
 the provided ``context``.
@@ -1241,7 +1241,7 @@ Raises:
         } GetVelocities;
         // Symbol: drake::multibody::DeformableBody::SetPositions
         struct /* SetPositions */ {
-          // Source: drake/multibody/tree/deformable_body.h:184
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Sets the vertex positions of this deformable body in the provided
 ``context``.
@@ -1262,7 +1262,7 @@ Raises:
         } SetPositions;
         // Symbol: drake::multibody::DeformableBody::SetPositionsAndVelocities
         struct /* SetPositionsAndVelocities */ {
-          // Source: drake/multibody/tree/deformable_body.h:215
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Sets the vertex positions and velocities of this deformable body in
 the provided ``context``.
@@ -1286,7 +1286,7 @@ Raises:
         } SetPositionsAndVelocities;
         // Symbol: drake::multibody::DeformableBody::SetVelocities
         struct /* SetVelocities */ {
-          // Source: drake/multibody/tree/deformable_body.h:199
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Sets the vertex velocities of this deformable body in the provided
 ``context``.
@@ -1307,7 +1307,7 @@ Raises:
         } SetVelocities;
         // Symbol: drake::multibody::DeformableBody::SetWallBoundaryCondition
         struct /* SetWallBoundaryCondition */ {
-          // Source: drake/multibody/tree/deformable_body.h:124
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Sets wall boundary conditions for this deformable body. All vertices
 of the mesh of the deformable body whose reference positions are
@@ -1332,57 +1332,57 @@ Warning:
         } SetWallBoundaryCondition;
         // Symbol: drake::multibody::DeformableBody::body_id
         struct /* body_id */ {
-          // Source: drake/multibody/tree/deformable_body.h:49
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc = R"""(Returns the unique body id.)""";
         } body_id;
         // Symbol: drake::multibody::DeformableBody::config
         struct /* config */ {
-          // Source: drake/multibody/tree/deformable_body.h:65
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Returns physical parameters of this deformable body.)""";
         } config;
         // Symbol: drake::multibody::DeformableBody::discrete_state_index
         struct /* discrete_state_index */ {
-          // Source: drake/multibody/tree/deformable_body.h:91
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Returns the index of the discrete state associated with this
 deformable body in the MultibodyPlant that owns the body.)""";
         } discrete_state_index;
         // Symbol: drake::multibody::DeformableBody::external_forces
         struct /* external_forces */ {
-          // Source: drake/multibody/tree/deformable_body.h:85
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Returns all the external forces acting on this deformable body.)""";
         } external_forces;
         // Symbol: drake::multibody::DeformableBody::fem_model
         struct /* fem_model */ {
-          // Source: drake/multibody/tree/deformable_body.h:82
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Returns the FemModel for this deformable body.)""";
         } fem_model;
         // Symbol: drake::multibody::DeformableBody::fem_state_cache_index
         struct /* fem_state_cache_index */ {
-          // Source: drake/multibody/tree/deformable_body.h:102
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Returns the cache index for the FemState of this deformable body.)""";
         } fem_state_cache_index;
         // Symbol: drake::multibody::DeformableBody::fixed_constraint_specs
         struct /* fixed_constraint_specs */ {
-          // Source: drake/multibody/tree/deformable_body.h:168
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""((Internal use only) Returns a reference to the fixed constraints
 registered with this deformable body.)""";
         } fixed_constraint_specs;
         // Symbol: drake::multibody::DeformableBody::geometry_id
         struct /* geometry_id */ {
-          // Source: drake/multibody/tree/deformable_body.h:62
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Returns the geometry id of the deformable geometry used to simulate
 this deformable body.)""";
         } geometry_id;
         // Symbol: drake::multibody::DeformableBody::get_default_pose
         struct /* get_default_pose */ {
-          // Source: drake/multibody/tree/deformable_body.h:296
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Returns the default pose of the simulated geometry (in its reference
 configuration) in the world frame W. This returns pose last set by
@@ -1391,18 +1391,18 @@ when the body is registered if set_default_pose() has not been called.)""";
         } get_default_pose;
         // Symbol: drake::multibody::DeformableBody::has_fixed_constraint
         struct /* has_fixed_constraint */ {
-          // Source: drake/multibody/tree/deformable_body.h:163
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Returns true if this deformable body is under any fixed constraint.)""";
         } has_fixed_constraint;
         // Symbol: drake::multibody::DeformableBody::index
         struct /* index */ {
-          // Source: drake/multibody/tree/deformable_body.h:44
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc = R"""(Returns this element's unique index.)""";
         } index;
         // Symbol: drake::multibody::DeformableBody::is_enabled
         struct /* is_enabled */ {
-          // Source: drake/multibody/tree/deformable_body.h:257
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Returns:
     true if this deformable body is enabled.
@@ -1413,25 +1413,25 @@ Raises:
         } is_enabled;
         // Symbol: drake::multibody::DeformableBody::is_enabled_parameter_index
         struct /* is_enabled_parameter_index */ {
-          // Source: drake/multibody/tree/deformable_body.h:97
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Returns the index of the boolean parameter indicating whether this
 deformable body is enabled.)""";
         } is_enabled_parameter_index;
         // Symbol: drake::multibody::DeformableBody::name
         struct /* name */ {
-          // Source: drake/multibody/tree/deformable_body.h:52
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc = R"""(Returns the name of the body.)""";
         } name;
         // Symbol: drake::multibody::DeformableBody::num_dofs
         struct /* num_dofs */ {
-          // Source: drake/multibody/tree/deformable_body.h:68
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Returns the number of degrees of freedom (DoFs) of this body.)""";
         } num_dofs;
         // Symbol: drake::multibody::DeformableBody::reference_positions
         struct /* reference_positions */ {
-          // Source: drake/multibody/tree/deformable_body.h:77
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Returns the reference positions of the vertices of the deformable body
 identified by the given ``id``. The reference positions are the
@@ -1444,7 +1444,7 @@ expressed in the world frame) of the j-th vertex are 3j, 3j + 1, and
         } reference_positions;
         // Symbol: drake::multibody::DeformableBody::scoped_name
         struct /* scoped_name */ {
-          // Source: drake/multibody/tree/deformable_body.h:58
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Returns scoped name of this body. Neither of the two pieces of the
 name will be empty (the scope name and the element name).
@@ -1455,7 +1455,7 @@ Raises:
         } scoped_name;
         // Symbol: drake::multibody::DeformableBody::set_default_pose
         struct /* set_default_pose */ {
-          // Source: drake/multibody/tree/deformable_body.h:288
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""(Sets the default pose of the simulated geometry (in its reference
 configuration) in the world frame W.
@@ -1465,7 +1465,7 @@ Parameter ``X_WD``:
         } set_default_pose;
         // Symbol: drake::multibody::DeformableBody::set_parallelism
         struct /* set_parallelism */ {
-          // Source: drake/multibody/tree/deformable_body.h:108
+          // Source: drake/multibody/tree/deformable_body.h
           const char* doc =
 R"""((Internal use only) Configures the parallelism that ``this``
 DeformableBody uses when opportunities for parallel computation
@@ -1474,21 +1474,21 @@ arises.)""";
       } DeformableBody;
       // Symbol: drake::multibody::DeformableBodyId
       struct /* DeformableBodyId */ {
-        // Source: drake/multibody/tree/multibody_tree_indexes.h:63
+        // Source: drake/multibody/tree/multibody_tree_indexes.h
         const char* doc =
 R"""(Type used to identify a deformable body by id within a multibody
 plant.)""";
       } DeformableBodyId;
       // Symbol: drake::multibody::DeformableBodyIndex
       struct /* DeformableBodyIndex */ {
-        // Source: drake/multibody/tree/multibody_tree_indexes.h:66
+        // Source: drake/multibody/tree/multibody_tree_indexes.h
         const char* doc =
 R"""(Type used to identify a deformable body by index within a multibody
 plant.)""";
       } DeformableBodyIndex;
       // Symbol: drake::multibody::DoorHinge
       struct /* DoorHinge */ {
-        // Source: drake/multibody/tree/door_hinge.h:139
+        // Source: drake/multibody/tree/door_hinge.h
         const char* doc =
 R"""(This ForceElement models a revolute DoorHinge joint that could exhibit
 different force/torque characteristics at different states due to the
@@ -1555,79 +1555,79 @@ drake/multibody/tree/images/torque_vs_angle.svg "Figure 1" @image html
 drake/multibody/tree/images/torque_vs_velocity.svg "Figure 2")""";
         // Symbol: drake::multibody::DoorHinge::CalcConservativePower
         struct /* CalcConservativePower */ {
-          // Source: drake/multibody/tree/door_hinge.h:160
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc = R"""()""";
         } CalcConservativePower;
         // Symbol: drake::multibody::DoorHinge::CalcHingeConservativePower
         struct /* CalcHingeConservativePower */ {
-          // Source: drake/multibody/tree/door_hinge.h:192
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc =
 R"""(Calculate the total conservative power with the given ``angle``,
 ``angular_rate``, and the internal DoorHingeConfig.)""";
         } CalcHingeConservativePower;
         // Symbol: drake::multibody::DoorHinge::CalcHingeFrictionalTorque
         struct /* CalcHingeFrictionalTorque */ {
-          // Source: drake/multibody/tree/door_hinge.h:180
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc =
 R"""(Calculates the total frictional torque with the given ``angular_rate``
 and the internal DoorHingeConfig.)""";
         } CalcHingeFrictionalTorque;
         // Symbol: drake::multibody::DoorHinge::CalcHingeNonConservativePower
         struct /* CalcHingeNonConservativePower */ {
-          // Source: drake/multibody/tree/door_hinge.h:196
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc =
 R"""(Calculate the total non-conservative power with the given
 ``angular_rate`` and the internal DoorHingeConfig.)""";
         } CalcHingeNonConservativePower;
         // Symbol: drake::multibody::DoorHinge::CalcHingeSpringTorque
         struct /* CalcHingeSpringTorque */ {
-          // Source: drake/multibody/tree/door_hinge.h:184
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc =
 R"""(Calculate the total spring related torque with the given ``angle`` and
 the internal DoorHingeConfig.)""";
         } CalcHingeSpringTorque;
         // Symbol: drake::multibody::DoorHinge::CalcHingeStoredEnergy
         struct /* CalcHingeStoredEnergy */ {
-          // Source: drake/multibody/tree/door_hinge.h:200
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc =
 R"""(Calculate the total potential energy of the DoorHinge ForceElement
 with the given ``angle`` and the internal DoorHingeConfig.)""";
         } CalcHingeStoredEnergy;
         // Symbol: drake::multibody::DoorHinge::CalcHingeTorque
         struct /* CalcHingeTorque */ {
-          // Source: drake/multibody/tree/door_hinge.h:188
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc =
 R"""(Calculate the total torque with the given ``angle`` and
 ``angular_rate`` and the internal DoorHingeConfig.)""";
         } CalcHingeTorque;
         // Symbol: drake::multibody::DoorHinge::CalcNonConservativePower
         struct /* CalcNonConservativePower */ {
-          // Source: drake/multibody/tree/door_hinge.h:165
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc = R"""()""";
         } CalcNonConservativePower;
         // Symbol: drake::multibody::DoorHinge::CalcPotentialEnergy
         struct /* CalcPotentialEnergy */ {
-          // Source: drake/multibody/tree/door_hinge.h:156
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc = R"""()""";
         } CalcPotentialEnergy;
         // Symbol: drake::multibody::DoorHinge::DoCalcAndAddForceContribution
         struct /* DoCalcAndAddForceContribution */ {
-          // Source: drake/multibody/tree/door_hinge.h:204
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc = R"""()""";
         } DoCalcAndAddForceContribution;
         // Symbol: drake::multibody::DoorHinge::DoCloneToScalar
         struct /* DoCloneToScalar */ {
-          // Source: drake/multibody/tree/door_hinge.h:210
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc = R"""()""";
         } DoCloneToScalar;
         // Symbol: drake::multibody::DoorHinge::DoShallowClone
         struct /* DoShallowClone */ {
-          // Source: drake/multibody/tree/door_hinge.h:219
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc = R"""()""";
         } DoShallowClone;
         // Symbol: drake::multibody::DoorHinge::DoorHinge<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/door_hinge.h:146
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc =
 R"""(Constructs a hinge force element with parameters ``config`` applied to
 the specified ``joint``. It will throw an exception if the
@@ -1635,12 +1635,12 @@ DoorHingeConfig is invalid.)""";
         } ctor;
         // Symbol: drake::multibody::DoorHinge::config
         struct /* config */ {
-          // Source: drake/multibody/tree/door_hinge.h:154
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc = R"""()""";
         } config;
         // Symbol: drake::multibody::DoorHinge::joint
         struct /* joint */ {
-          // Source: drake/multibody/tree/door_hinge.h:152
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc =
 R"""(Raises:
     RuntimeError if this element is not associated with a
@@ -1649,47 +1649,47 @@ R"""(Raises:
       } DoorHinge;
       // Symbol: drake::multibody::DoorHingeConfig
       struct /* DoorHingeConfig */ {
-        // Source: drake/multibody/tree/door_hinge.h:16
+        // Source: drake/multibody/tree/door_hinge.h
         const char* doc =
 R"""(Configuration structure for the DoorHinge.)""";
         // Symbol: drake::multibody::DoorHingeConfig::DoorHingeConfig
         struct /* ctor */ {
-          // Source: drake/multibody/tree/door_hinge.h:64
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc =
 R"""(Initialize to empirically reasonable values measured approximately by
 banging on the door of a dishwasher with a force gauge.)""";
         } ctor;
         // Symbol: drake::multibody::DoorHingeConfig::Serialize
         struct /* Serialize */ {
-          // Source: drake/multibody/tree/door_hinge.h:20
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::multibody::DoorHingeConfig::catch_torque
         struct /* catch_torque */ {
-          // Source: drake/multibody/tree/door_hinge.h:50
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc =
 R"""(k_c maximum catch torque applied over ``catch_width`` [Nm]. It should
 be non-negative.)""";
         } catch_torque;
         // Symbol: drake::multibody::DoorHingeConfig::catch_width
         struct /* catch_width */ {
-          // Source: drake/multibody/tree/door_hinge.h:47
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc =
 R"""(qc₀ measured from closed (q=0) position [radian]. It should be
 non-negative.)""";
         } catch_width;
         // Symbol: drake::multibody::DoorHingeConfig::dynamic_friction_torque
         struct /* dynamic_friction_torque */ {
-          // Source: drake/multibody/tree/door_hinge.h:38
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc =
 R"""(k_df maximum dynamic friction torque measured opposite direction of
 motion [Nm]. It should be non-negative.)""";
         } dynamic_friction_torque;
         // Symbol: drake::multibody::DoorHingeConfig::motion_threshold
         struct /* motion_threshold */ {
-          // Source: drake/multibody/tree/door_hinge.h:60
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc =
 R"""(k_q̇₀ motion threshold to start to apply friction torques [rad/s]. It
 should be non-negative. Realistic frictional force is very stiff,
@@ -1702,27 +1702,27 @@ that the simulation vibrates or explodes.)""";
         } motion_threshold;
         // Symbol: drake::multibody::DoorHingeConfig::spring_constant
         struct /* spring_constant */ {
-          // Source: drake/multibody/tree/door_hinge.h:35
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc =
 R"""(k_ts torsional spring constant measured toward the spring zero angle
 [Nm/rad]. It should be non-negative.)""";
         } spring_constant;
         // Symbol: drake::multibody::DoorHingeConfig::spring_zero_angle_rad
         struct /* spring_zero_angle_rad */ {
-          // Source: drake/multibody/tree/door_hinge.h:32
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc =
 R"""(qs₀ measured outward from the closed position [radian].)""";
         } spring_zero_angle_rad;
         // Symbol: drake::multibody::DoorHingeConfig::static_friction_torque
         struct /* static_friction_torque */ {
-          // Source: drake/multibody/tree/door_hinge.h:41
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc =
 R"""(k_sf maximum static friction measured opposite direction of motion
 [Nm]. It should be non-negative.)""";
         } static_friction_torque;
         // Symbol: drake::multibody::DoorHingeConfig::viscous_friction
         struct /* viscous_friction */ {
-          // Source: drake/multibody/tree/door_hinge.h:44
+          // Source: drake/multibody/tree/door_hinge.h
           const char* doc =
 R"""(k_vf viscous friction measured opposite direction of motion [Nm]. It
 should be non-negative.)""";
@@ -1742,7 +1742,7 @@ should be non-negative.)""";
       } DoorHingeConfig;
       // Symbol: drake::multibody::FixedOffsetFrame
       struct /* FixedOffsetFrame */ {
-        // Source: drake/multibody/tree/fixed_offset_frame.h:35
+        // Source: drake/multibody/tree/fixed_offset_frame.h
         const char* doc =
 R"""(%FixedOffsetFrame represents a material frame F whose pose is fixed
 with respect to a *parent* material frame P. The pose offset is given
@@ -1757,17 +1757,17 @@ For more information about spatial transforms, see
 multibody_spatial_pose.)""";
         // Symbol: drake::multibody::FixedOffsetFrame::DoCalcPoseInBodyFrame
         struct /* DoCalcPoseInBodyFrame */ {
-          // Source: drake/multibody/tree/fixed_offset_frame.h:114
+          // Source: drake/multibody/tree/fixed_offset_frame.h
           const char* doc = R"""()""";
         } DoCalcPoseInBodyFrame;
         // Symbol: drake::multibody::FixedOffsetFrame::DoCalcRotationMatrixInBodyFrame
         struct /* DoCalcRotationMatrixInBodyFrame */ {
-          // Source: drake/multibody/tree/fixed_offset_frame.h:117
+          // Source: drake/multibody/tree/fixed_offset_frame.h
           const char* doc = R"""()""";
         } DoCalcRotationMatrixInBodyFrame;
         // Symbol: drake::multibody::FixedOffsetFrame::DoCloneToScalar
         struct /* DoCloneToScalar */ {
-          // Source: drake/multibody/tree/fixed_offset_frame.h:102
+          // Source: drake/multibody/tree/fixed_offset_frame.h
           const char* doc =
 R"""(Precondition:
     The parent frame to this frame already has a clone in
@@ -1775,12 +1775,12 @@ R"""(Precondition:
         } DoCloneToScalar;
         // Symbol: drake::multibody::FixedOffsetFrame::DoShallowClone
         struct /* DoShallowClone */ {
-          // Source: drake/multibody/tree/fixed_offset_frame.h:112
+          // Source: drake/multibody/tree/fixed_offset_frame.h
           const char* doc = R"""()""";
         } DoShallowClone;
         // Symbol: drake::multibody::FixedOffsetFrame::FixedOffsetFrame<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/fixed_offset_frame.h:53
+          // Source: drake/multibody/tree/fixed_offset_frame.h
           const char* doc_4args =
 R"""(Creates a material Frame F whose pose is fixed with respect to its
 parent material Frame P. The pose is given by a spatial transform
@@ -1799,7 +1799,7 @@ Parameter ``X_PF``:
 Parameter ``model_instance``:
     The model instance to which this frame belongs to. If unspecified,
     will use P.model_instance().)""";
-          // Source: drake/multibody/tree/fixed_offset_frame.h:66
+          // Source: drake/multibody/tree/fixed_offset_frame.h
           const char* doc_3args =
 R"""(Creates a material Frame F whose pose is fixed with respect to the
 RigidBodyFrame B of the given RigidBody, which serves as F's parent
@@ -1817,21 +1817,21 @@ Parameter ``X_BF``:
         } ctor;
         // Symbol: drake::multibody::FixedOffsetFrame::GetFixedPoseInBodyFrame
         struct /* GetFixedPoseInBodyFrame */ {
-          // Source: drake/multibody/tree/fixed_offset_frame.h:85
+          // Source: drake/multibody/tree/fixed_offset_frame.h
           const char* doc =
 R"""(Returns:
     The default fixed pose in the body frame.)""";
         } GetFixedPoseInBodyFrame;
         // Symbol: drake::multibody::FixedOffsetFrame::GetFixedRotationMatrixInBodyFrame
         struct /* GetFixedRotationMatrixInBodyFrame */ {
-          // Source: drake/multibody/tree/fixed_offset_frame.h:91
+          // Source: drake/multibody/tree/fixed_offset_frame.h
           const char* doc =
 R"""(Returns:
     The default rotation matrix of this fixed pose in the body frame.)""";
         } GetFixedRotationMatrixInBodyFrame;
         // Symbol: drake::multibody::FixedOffsetFrame::GetPoseInParentFrame
         struct /* GetPoseInParentFrame */ {
-          // Source: drake/multibody/tree/fixed_offset_frame.h:81
+          // Source: drake/multibody/tree/fixed_offset_frame.h
           const char* doc =
 R"""(Returns the rigid transform X_PF that characterizes ``this`` frame F's
 pose in its parent frame P.
@@ -1841,7 +1841,7 @@ Parameter ``context``:
         } GetPoseInParentFrame;
         // Symbol: drake::multibody::FixedOffsetFrame::SetPoseInParentFrame
         struct /* SetPoseInParentFrame */ {
-          // Source: drake/multibody/tree/fixed_offset_frame.h:75
+          // Source: drake/multibody/tree/fixed_offset_frame.h
           const char* doc =
 R"""(Sets the pose of ``this`` frame F in its parent frame P.
 
@@ -1854,7 +1854,7 @@ Parameter ``X_PF``:
         } SetPoseInParentFrame;
         // Symbol: drake::multibody::FixedOffsetFrame::parent_frame
         struct /* parent_frame */ {
-          // Source: drake/multibody/tree/fixed_offset_frame.h:98
+          // Source: drake/multibody/tree/fixed_offset_frame.h
           const char* doc =
 R"""(Returns:
     The parent frame to which this frame is attached.)""";
@@ -1862,7 +1862,7 @@ R"""(Returns:
       } FixedOffsetFrame;
       // Symbol: drake::multibody::ForceDensityField
       struct /* ForceDensityField */ {
-        // Source: drake/multibody/tree/force_density_field.h:27
+        // Source: drake/multibody/tree/force_density_field.h
         const char* doc =
 R"""(Implementations of the ForceDensityFieldBase class should inherit from
 this class. This class provides the functionality for a force density
@@ -1870,12 +1870,12 @@ field to depend on context-dependent quantities. It also provides the
 functionality to declare system resources in a MultibodyPlant.)""";
         // Symbol: drake::multibody::ForceDensityField::DeclareAbstractInputPort
         struct /* DeclareAbstractInputPort */ {
-          // Source: drake/multibody/tree/force_density_field.h:87
+          // Source: drake/multibody/tree/force_density_field.h
           const char* doc = R"""()""";
         } DeclareAbstractInputPort;
         // Symbol: drake::multibody::ForceDensityField::DeclareCacheEntry
         struct /* DeclareCacheEntry */ {
-          // Source: drake/multibody/tree/force_density_field.h:83
+          // Source: drake/multibody/tree/force_density_field.h
           const char* doc =
 R"""(Protected LeafSystem methods exposed to declare system resources in a
 MultibodyPlant. DoDeclareCacheEntries() and DoDeclareInputPorts() can
@@ -1883,17 +1883,17 @@ use these to declare cache entries and input ports.)""";
         } DeclareCacheEntry;
         // Symbol: drake::multibody::ForceDensityField::DeclareSystemResources
         struct /* DeclareSystemResources */ {
-          // Source: drake/multibody/tree/force_density_field.h:59
+          // Source: drake/multibody/tree/force_density_field.h
           const char* doc = R"""()""";
         } DeclareSystemResources;
         // Symbol: drake::multibody::ForceDensityField::DeclareVectorInputPort
         struct /* DeclareVectorInputPort */ {
-          // Source: drake/multibody/tree/force_density_field.h:90
+          // Source: drake/multibody/tree/force_density_field.h
           const char* doc = R"""()""";
         } DeclareVectorInputPort;
         // Symbol: drake::multibody::ForceDensityField::DoDeclareCacheEntries
         struct /* DoDeclareCacheEntries */ {
-          // Source: drake/multibody/tree/force_density_field.h:76
+          // Source: drake/multibody/tree/force_density_field.h
           const char* doc =
 R"""(NVI implementations for declaring system resources. Defaults to no-op.
 Derived classes should override the default implementation if the
@@ -1901,23 +1901,23 @@ external force field is Context-dependent.)""";
         } DoDeclareCacheEntries;
         // Symbol: drake::multibody::ForceDensityField::DoDeclareInputPorts
         struct /* DoDeclareInputPorts */ {
-          // Source: drake/multibody/tree/force_density_field.h:77
+          // Source: drake/multibody/tree/force_density_field.h
           const char* doc = R"""()""";
         } DoDeclareInputPorts;
         // Symbol: drake::multibody::ForceDensityField::ForceDensityField<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/force_density_field.h:66
+          // Source: drake/multibody/tree/force_density_field.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::multibody::ForceDensityField::has_parent_system
         struct /* has_parent_system */ {
-          // Source: drake/multibody/tree/force_density_field.h:32
+          // Source: drake/multibody/tree/force_density_field.h
           const char* doc =
 R"""(Returns true iff ``this`` external force is owned by a MultibodyPlant.)""";
         } has_parent_system;
         // Symbol: drake::multibody::ForceDensityField::parent_system_or_throw
         struct /* parent_system_or_throw */ {
-          // Source: drake/multibody/tree/force_density_field.h:37
+          // Source: drake/multibody/tree/force_density_field.h
           const char* doc =
 R"""(Returns the owning MultibodyPlant LeafSystem.
 
@@ -1928,7 +1928,7 @@ Raises:
       } ForceDensityField;
       // Symbol: drake::multibody::ForceElement
       struct /* ForceElement */ {
-        // Source: drake/multibody/tree/force_element.h:38
+        // Source: drake/multibody/tree/force_element.h
         const char* doc =
 R"""(A ForceElement allows modeling state and time dependent forces in a
 MultibodyTree model. Examples of such forces are springs, dampers,
@@ -1947,7 +1947,7 @@ order to be fully defined. These are:
   non-conservative forces.)""";
         // Symbol: drake::multibody::ForceElement::CalcAndAddForceContribution
         struct /* CalcAndAddForceContribution */ {
-          // Source: drake/multibody/tree/force_element.h:77
+          // Source: drake/multibody/tree/force_element.h
           const char* doc =
 R"""((Advanced) Computes the force contribution for ``this`` force element
 and **adds** it to the output arrays of forces. Depending on their
@@ -1982,7 +1982,7 @@ Precondition:
         } CalcAndAddForceContribution;
         // Symbol: drake::multibody::ForceElement::CalcConservativePower
         struct /* CalcConservativePower */ {
-          // Source: drake/multibody/tree/force_element.h:137
+          // Source: drake/multibody/tree/force_element.h
           const char* doc =
 R"""((Advanced) Calculates and returns the power generated by conservative
 force elements or zero if ``this`` force element is non-conservative.
@@ -1996,7 +1996,7 @@ See also:
         } CalcConservativePower;
         // Symbol: drake::multibody::ForceElement::CalcNonConservativePower
         struct /* CalcNonConservativePower */ {
-          // Source: drake/multibody/tree/force_element.h:150
+          // Source: drake/multibody/tree/force_element.h
           const char* doc =
 R"""((Advanced) Calculates the rate at which mechanical energy is being
 generated (positive) or dissipated (negative) *other than* by
@@ -2010,7 +2010,7 @@ See also:
         } CalcNonConservativePower;
         // Symbol: drake::multibody::ForceElement::CalcPotentialEnergy
         struct /* CalcPotentialEnergy */ {
-          // Source: drake/multibody/tree/force_element.h:124
+          // Source: drake/multibody/tree/force_element.h
           const char* doc =
 R"""((Advanced) Calculates the potential energy currently stored given the
 configuration provided in ``context``. Non-conservative force elements
@@ -2036,12 +2036,12 @@ See also:
         } CalcPotentialEnergy;
         // Symbol: drake::multibody::ForceElement::CloneToScalar
         struct /* CloneToScalar */ {
-          // Source: drake/multibody/tree/force_element.h:164
+          // Source: drake/multibody/tree/force_element.h
           const char* doc = R"""()""";
         } CloneToScalar;
         // Symbol: drake::multibody::ForceElement::DoCalcAndAddForceContribution
         struct /* DoCalcAndAddForceContribution */ {
-          // Source: drake/multibody/tree/force_element.h:190
+          // Source: drake/multibody/tree/force_element.h
           const char* doc =
 R"""(This method is called only from the public non-virtual
 CalcAndAddForceContributions() which will already have error-checked
@@ -2061,57 +2061,57 @@ Precondition:
         } DoCalcAndAddForceContribution;
         // Symbol: drake::multibody::ForceElement::DoCloneToScalar
         struct /* DoCloneToScalar */ {
-          // Source: drake/multibody/tree/force_element.h:259
+          // Source: drake/multibody/tree/force_element.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Clones this ForceElement (templated on T) to a mobilizer templated on
 ``double``.)""";
         } DoCloneToScalar;
         // Symbol: drake::multibody::ForceElement::DoDeclareForceElementParameters
         struct /* DoDeclareForceElementParameters */ {
-          // Source: drake/multibody/tree/force_element.h:198
+          // Source: drake/multibody/tree/force_element.h
           const char* doc =
 R"""(Called by DoDeclareParameters(). Derived classes may choose to
 override to declare their sub-class specific parameters.)""";
         } DoDeclareForceElementParameters;
         // Symbol: drake::multibody::ForceElement::DoSetDefaultForceElementParameters
         struct /* DoSetDefaultForceElementParameters */ {
-          // Source: drake/multibody/tree/force_element.h:203
+          // Source: drake/multibody/tree/force_element.h
           const char* doc =
 R"""(Called by DoSetDefaultParameters(). Derived classes may choose to
 override to set their sub-class specific parameters.)""";
         } DoSetDefaultForceElementParameters;
         // Symbol: drake::multibody::ForceElement::DoShallowClone
         struct /* DoShallowClone */ {
-          // Source: drake/multibody/tree/force_element.h:272
+          // Source: drake/multibody/tree/force_element.h
           const char* doc = R"""(NVI for ShallowClone().)""";
         } DoShallowClone;
         // Symbol: drake::multibody::ForceElement::ForceElement<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/force_element.h:43
+          // Source: drake/multibody/tree/force_element.h
           const char* doc =
 R"""(Default constructor for a generic force element.)""";
         } ctor;
         // Symbol: drake::multibody::ForceElement::ShallowClone
         struct /* ShallowClone */ {
-          // Source: drake/multibody/tree/force_element.h:174
+          // Source: drake/multibody/tree/force_element.h
           const char* doc = R"""()""";
         } ShallowClone;
         // Symbol: drake::multibody::ForceElement::index
         struct /* index */ {
-          // Source: drake/multibody/tree/force_element.h:49
+          // Source: drake/multibody/tree/force_element.h
           const char* doc = R"""(Returns this element's unique index.)""";
         } index;
       } ForceElement;
       // Symbol: drake::multibody::ForceElementIndex
       struct /* ForceElementIndex */ {
-        // Source: drake/multibody/tree/multibody_tree_indexes.h:39
+        // Source: drake/multibody/tree/multibody_tree_indexes.h
         const char* doc =
 R"""(Type used to identify force elements by index within a multibody
 plant.)""";
       } ForceElementIndex;
       // Symbol: drake::multibody::Frame
       struct /* Frame */ {
-        // Source: drake/multibody/tree/frame.h:53
+        // Source: drake/multibody/tree/frame.h
         const char* doc =
 R"""(%Frame is an abstract class representing a *material frame* (also
 called a *physical frame*) of its underlying RigidBody. The Frame's
@@ -2140,7 +2140,7 @@ Frame provides methods for obtaining its current orientation,
 position, motion, etc. from a Context passed to those methods.)""";
         // Symbol: drake::multibody::Frame::CalcAngularVelocity
         struct /* CalcAngularVelocity */ {
-          // Source: drake/multibody/tree/frame.h:283
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Calculates ``this`` frame F's angular velocity measured in a frame M,
 expressed in a frame E.
@@ -2167,7 +2167,7 @@ See also:
         } CalcAngularVelocity;
         // Symbol: drake::multibody::Frame::CalcOffsetPoseInBody
         struct /* CalcOffsetPoseInBody */ {
-          // Source: drake/multibody/tree/frame.h:162
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Given the offset pose ``X_FQ`` of a frame Q in ``this`` frame F, this
 method computes the pose ``X_BQ`` of frame Q in the body frame B to
@@ -2181,7 +2181,7 @@ implementations if needed.)""";
         } CalcOffsetPoseInBody;
         // Symbol: drake::multibody::Frame::CalcOffsetRotationMatrixInBody
         struct /* CalcOffsetRotationMatrixInBody */ {
-          // Source: drake/multibody/tree/frame.h:181
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Calculates and returns the rotation matrix ``R_BQ`` that relates body
 frame B to frame Q via ``this`` intermediate frame F, i.e., ``R_BQ =
@@ -2193,7 +2193,7 @@ Parameter ``R_FQ``:
         } CalcOffsetRotationMatrixInBody;
         // Symbol: drake::multibody::Frame::CalcPose
         struct /* CalcPose */ {
-          // Source: drake/multibody/tree/frame.h:231
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Computes and returns the pose ``X_MF`` of ``this`` frame F in measured
 in ``frame_M`` as a function of the state of the model stored in
@@ -2204,7 +2204,7 @@ See also:
         } CalcPose;
         // Symbol: drake::multibody::Frame::CalcPoseInBodyFrame
         struct /* CalcPoseInBodyFrame */ {
-          // Source: drake/multibody/tree/frame.h:101
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Returns the pose ``X_BF`` of ``this`` frame F in the body frame B
 associated with this frame. In particular, if ``this`` **is** the body
@@ -2214,7 +2214,7 @@ not depend on time, input, state, etc.)""";
         } CalcPoseInBodyFrame;
         // Symbol: drake::multibody::Frame::CalcPoseInWorld
         struct /* CalcPoseInWorld */ {
-          // Source: drake/multibody/tree/frame.h:221
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Computes and returns the pose ``X_WF`` of ``this`` frame F in the
 world frame W as a function of the state of the model stored in
@@ -2226,7 +2226,7 @@ Note:
         } CalcPoseInWorld;
         // Symbol: drake::multibody::Frame::CalcRelativeSpatialAcceleration
         struct /* CalcRelativeSpatialAcceleration */ {
-          // Source: drake/multibody/tree/frame.h:481
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Calculates ``this`` frame C's spatial acceleration relative to another
 frame B, measured in a frame M, expressed in a frame E.
@@ -2285,7 +2285,7 @@ See also:
         } CalcRelativeSpatialAcceleration;
         // Symbol: drake::multibody::Frame::CalcRelativeSpatialAccelerationInWorld
         struct /* CalcRelativeSpatialAccelerationInWorld */ {
-          // Source: drake/multibody/tree/frame.h:445
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Calculates ``this`` frame C's spatial acceleration relative to another
 frame B, measured and expressed in the world frame W.
@@ -2336,7 +2336,7 @@ See also:
         } CalcRelativeSpatialAccelerationInWorld;
         // Symbol: drake::multibody::Frame::CalcRelativeSpatialVelocity
         struct /* CalcRelativeSpatialVelocity */ {
-          // Source: drake/multibody/tree/frame.h:370
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Calculates ``this`` frame C's spatial velocity relative to another
 frame B, measured in a frame M, expressed in a frame E.
@@ -2397,7 +2397,7 @@ See also:
         } CalcRelativeSpatialVelocity;
         // Symbol: drake::multibody::Frame::CalcRelativeSpatialVelocityInWorld
         struct /* CalcRelativeSpatialVelocityInWorld */ {
-          // Source: drake/multibody/tree/frame.h:335
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Calculates ``this`` frame C's spatial velocity relative to another
 frame B, measured and expressed in the world frame W.
@@ -2444,7 +2444,7 @@ See also:
         } CalcRelativeSpatialVelocityInWorld;
         // Symbol: drake::multibody::Frame::CalcRotationMatrix
         struct /* CalcRotationMatrix */ {
-          // Source: drake/multibody/tree/frame.h:240
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Calculates and returns the rotation matrix ``R_MF`` that relates
 ``frame_M`` and ``this`` frame F as a function of the state stored in
@@ -2452,7 +2452,7 @@ R"""(Calculates and returns the rotation matrix ``R_MF`` that relates
         } CalcRotationMatrix;
         // Symbol: drake::multibody::Frame::CalcRotationMatrixInBodyFrame
         struct /* CalcRotationMatrixInBodyFrame */ {
-          // Source: drake/multibody/tree/frame.h:111
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Returns the rotation matrix ``R_BF`` that relates body frame B to
 ``this`` frame F (B is the body frame to which ``this`` frame F is
@@ -2465,7 +2465,7 @@ Note:
         } CalcRotationMatrixInBodyFrame;
         // Symbol: drake::multibody::Frame::CalcRotationMatrixInWorld
         struct /* CalcRotationMatrixInWorld */ {
-          // Source: drake/multibody/tree/frame.h:249
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Calculates and returns the rotation matrix ``R_WF`` that relates the
 world frame W and ``this`` frame F as a function of the state stored
@@ -2473,7 +2473,7 @@ in ``context``.)""";
         } CalcRotationMatrixInWorld;
         // Symbol: drake::multibody::Frame::CalcSpatialAcceleration
         struct /* CalcSpatialAcceleration */ {
-          // Source: drake/multibody/tree/frame.h:420
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Calculates ``this`` frame F's spatial acceleration measured in a frame
 M, expressed in a frame E.
@@ -2517,7 +2517,7 @@ See also:
         } CalcSpatialAcceleration;
         // Symbol: drake::multibody::Frame::CalcSpatialAccelerationInWorld
         struct /* CalcSpatialAccelerationInWorld */ {
-          // Source: drake/multibody/tree/frame.h:400
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Calculates ``this`` frame F's spatial acceleration measured and
 expressed in the world frame W.
@@ -2549,7 +2549,7 @@ See also:
         } CalcSpatialAccelerationInWorld;
         // Symbol: drake::multibody::Frame::CalcSpatialVelocity
         struct /* CalcSpatialVelocity */ {
-          // Source: drake/multibody/tree/frame.h:314
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Calculates ``this`` frame F's spatial velocity measured in a frame M,
 expressed in a frame E.
@@ -2577,7 +2577,7 @@ See also:
         } CalcSpatialVelocity;
         // Symbol: drake::multibody::Frame::CalcSpatialVelocityInWorld
         struct /* CalcSpatialVelocityInWorld */ {
-          // Source: drake/multibody/tree/frame.h:299
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Calculates ``this`` frame F's spatial velocity measured and expressed
 in the world frame W.
@@ -2604,7 +2604,7 @@ See also:
         } CalcSpatialVelocityInWorld;
         // Symbol: drake::multibody::Frame::CloneToScalar
         struct /* CloneToScalar */ {
-          // Source: drake/multibody/tree/frame.h:502
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""((Advanced) NVI to DoCloneToScalar() templated on the scalar type of
 the new clone to be created. This method is mostly intended to be
@@ -2617,52 +2617,52 @@ See also:
         } CloneToScalar;
         // Symbol: drake::multibody::Frame::DoCalcOffsetPoseInBody
         struct /* DoCalcOffsetPoseInBody */ {
-          // Source: drake/multibody/tree/frame.h:624
+          // Source: drake/multibody/tree/frame.h
           const char* doc = R"""()""";
         } DoCalcOffsetPoseInBody;
         // Symbol: drake::multibody::Frame::DoCalcOffsetRotationMatrixInBody
         struct /* DoCalcOffsetRotationMatrixInBody */ {
-          // Source: drake/multibody/tree/frame.h:631
+          // Source: drake/multibody/tree/frame.h
           const char* doc = R"""()""";
         } DoCalcOffsetRotationMatrixInBody;
         // Symbol: drake::multibody::Frame::DoCalcPoseInBodyFrame
         struct /* DoCalcPoseInBodyFrame */ {
-          // Source: drake/multibody/tree/frame.h:616
+          // Source: drake/multibody/tree/frame.h
           const char* doc = R"""()""";
         } DoCalcPoseInBodyFrame;
         // Symbol: drake::multibody::Frame::DoCalcRotationMatrixInBodyFrame
         struct /* DoCalcRotationMatrixInBodyFrame */ {
-          // Source: drake/multibody/tree/frame.h:620
+          // Source: drake/multibody/tree/frame.h
           const char* doc = R"""()""";
         } DoCalcRotationMatrixInBodyFrame;
         // Symbol: drake::multibody::Frame::DoCloneToScalar
         struct /* DoCloneToScalar */ {
-          // Source: drake/multibody/tree/frame.h:601
+          // Source: drake/multibody/tree/frame.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Clones this Frame (templated on T) to a frame templated on ``double``.)""";
         } DoCloneToScalar;
         // Symbol: drake::multibody::Frame::DoDeclareFrameParameters
         struct /* DoDeclareFrameParameters */ {
-          // Source: drake/multibody/tree/frame.h:581
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Called by DoDeclareParameters(). Derived classes may choose to
 override to declare their sub-class specific parameters.)""";
         } DoDeclareFrameParameters;
         // Symbol: drake::multibody::Frame::DoSetDefaultFrameParameters
         struct /* DoSetDefaultFrameParameters */ {
-          // Source: drake/multibody/tree/frame.h:585
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Called by DoSetDefaultParameters(). Derived classes may choose to
 override to set their sub-class specific parameters.)""";
         } DoSetDefaultFrameParameters;
         // Symbol: drake::multibody::Frame::DoShallowClone
         struct /* DoShallowClone */ {
-          // Source: drake/multibody/tree/frame.h:612
+          // Source: drake/multibody/tree/frame.h
           const char* doc = R"""(NVI for ShallowClone().)""";
         } DoShallowClone;
         // Symbol: drake::multibody::Frame::EvalAngularVelocityInWorld
         struct /* EvalAngularVelocityInWorld */ {
-          // Source: drake/multibody/tree/frame.h:263
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Evaluates ``this`` frame F's angular velocity measured and expressed
 in the world frame W.
@@ -2681,7 +2681,7 @@ See also:
         } EvalAngularVelocityInWorld;
         // Symbol: drake::multibody::Frame::EvalPoseInBodyFrame
         struct /* EvalPoseInBodyFrame */ {
-          // Source: drake/multibody/tree/frame.h:88
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Returns a reference to the body-relative pose X_BF giving the pose of
 this Frame with respect to its body's RigidBodyFrame. This may depend
@@ -2692,7 +2692,7 @@ are very fast.)""";
         } EvalPoseInBodyFrame;
         // Symbol: drake::multibody::Frame::Frame<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/frame.h:573
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Only derived classes can use this constructor. It creates a Frame
 object attached to ``body`` and puts the frame in the body's model
@@ -2700,7 +2700,7 @@ instance.)""";
         } ctor;
         // Symbol: drake::multibody::Frame::GetFixedOffsetPoseInBody
         struct /* GetFixedOffsetPoseInBody */ {
-          // Source: drake/multibody/tree/frame.h:201
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Variant of CalcOffsetPoseInBody() that given the offset pose ``X_FQ``
 of a frame Q in ``this`` frame F, returns the pose ``X_BQ`` of frame Q
@@ -2712,7 +2712,7 @@ Raises:
         } GetFixedOffsetPoseInBody;
         // Symbol: drake::multibody::Frame::GetFixedPoseInBodyFrame
         struct /* GetFixedPoseInBodyFrame */ {
-          // Source: drake/multibody/tree/frame.h:125
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Variant of CalcPoseInBodyFrame() that returns the fixed pose ``X_BF``
 of ``this`` frame F in the body frame B associated with this frame.
@@ -2723,7 +2723,7 @@ Raises:
         } GetFixedPoseInBodyFrame;
         // Symbol: drake::multibody::Frame::GetFixedRotationMatrixInBody
         struct /* GetFixedRotationMatrixInBody */ {
-          // Source: drake/multibody/tree/frame.h:212
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Calculates and returns the rotation matrix ``R_BQ`` that relates body
 frame B to frame Q via ``this`` intermediate frame F, i.e., ``R_BQ =
@@ -2739,7 +2739,7 @@ Raises:
         } GetFixedRotationMatrixInBody;
         // Symbol: drake::multibody::Frame::GetFixedRotationMatrixInBodyFrame
         struct /* GetFixedRotationMatrixInBodyFrame */ {
-          // Source: drake/multibody/tree/frame.h:140
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Returns the rotation matrix ``R_BF`` that relates body frame B to
 ``this`` frame F (B is the body frame to which ``this`` frame F is
@@ -2755,7 +2755,7 @@ Raises:
         } GetFixedRotationMatrixInBodyFrame;
         // Symbol: drake::multibody::Frame::ShallowClone
         struct /* ShallowClone */ {
-          // Source: drake/multibody/tree/frame.h:510
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""((Internal use only) Returns a shallow clone (i.e., dependent elements
 such as bodies are aliased, not copied) that is not associated with
@@ -2763,13 +2763,13 @@ any MbT (so the assigned index, if any, is discarded).)""";
         } ShallowClone;
         // Symbol: drake::multibody::Frame::body
         struct /* body */ {
-          // Source: drake/multibody/tree/frame.h:63
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Returns a const reference to the body associated to this Frame.)""";
         } body;
         // Symbol: drake::multibody::Frame::get_X_BF
         struct /* get_X_BF */ {
-          // Source: drake/multibody/tree/frame.h:542
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""((Internal use only) Given an already up-to-date frame body pose cache,
 extract X_BF for this Frame from it.
@@ -2783,7 +2783,7 @@ Returns ``X_BF``:
         } get_X_BF;
         // Symbol: drake::multibody::Frame::get_X_FB
         struct /* get_X_FB */ {
-          // Source: drake/multibody/tree/frame.h:552
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""((Internal use only) Given an already up-to-date frame body pose cache,
 extract X_FB (=X_BF⁻¹) for this Frame from it.
@@ -2797,19 +2797,19 @@ Returns ``X_FB``:
         } get_X_FB;
         // Symbol: drake::multibody::Frame::get_body_pose_index_in_cache
         struct /* get_body_pose_index_in_cache */ {
-          // Source: drake/multibody/tree/frame.h:535
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""((Internal use only) Retrieve this Frame's body pose index in the
 cache.)""";
         } get_body_pose_index_in_cache;
         // Symbol: drake::multibody::Frame::index
         struct /* index */ {
-          // Source: drake/multibody/tree/frame.h:60
+          // Source: drake/multibody/tree/frame.h
           const char* doc = R"""(Returns this element's unique index.)""";
         } index;
         // Symbol: drake::multibody::Frame::is_X_BF_identity
         struct /* is_X_BF_identity */ {
-          // Source: drake/multibody/tree/frame.h:563
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""((Internal use only) Given an already up-to-date frame body pose cache,
 returns whether X_BF (and thus X_FB) is exactly identity. This is
@@ -2824,25 +2824,25 @@ See also:
         } is_X_BF_identity;
         // Symbol: drake::multibody::Frame::is_body_frame
         struct /* is_body_frame */ {
-          // Source: drake/multibody/tree/frame.h:69
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Returns true if ``this`` is the body frame.)""";
         } is_body_frame;
         // Symbol: drake::multibody::Frame::is_world_frame
         struct /* is_world_frame */ {
-          // Source: drake/multibody/tree/frame.h:66
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Returns true if ``this`` is the world frame.)""";
         } is_world_frame;
         // Symbol: drake::multibody::Frame::name
         struct /* name */ {
-          // Source: drake/multibody/tree/frame.h:74
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Returns the name of this frame. The name will never be empty.)""";
         } name;
         // Symbol: drake::multibody::Frame::scoped_name
         struct /* scoped_name */ {
-          // Source: drake/multibody/tree/frame.h:80
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Returns scoped name of this frame. Neither of the two pieces of the
 name will be empty (the scope name and the element name).
@@ -2853,7 +2853,7 @@ Raises:
         } scoped_name;
         // Symbol: drake::multibody::Frame::set_body_pose_index_in_cache
         struct /* set_body_pose_index_in_cache */ {
-          // Source: drake/multibody/tree/frame.h:530
+          // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""((Internal use only) A Frame's pose-in-parent X_PF can be
 parameterized, the parent's pose may also be parameterized, and so on.
@@ -2874,20 +2874,20 @@ about its body pose!))""";
       } Frame;
       // Symbol: drake::multibody::FrameIndex
       struct /* FrameIndex */ {
-        // Source: drake/multibody/tree/multibody_tree_indexes.h:32
+        // Source: drake/multibody/tree/multibody_tree_indexes.h
         const char* doc =
 R"""(Type used to identify frames by index in a multibody plant.)""";
       } FrameIndex;
       // Symbol: drake::multibody::GravityForceField
       struct /* GravityForceField */ {
-        // Source: drake/multibody/tree/force_density_field.h:119
+        // Source: drake/multibody/tree/force_density_field.h
         const char* doc =
 R"""(A uniform gravitational force density field for a uniform density
 object. The force density f [N/m³] is given by the product of mass
 density ρ [kg/m³] and gravity vector g [m/s²].)""";
         // Symbol: drake::multibody::GravityForceField::GravityForceField<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/force_density_field.h:128
+          // Source: drake/multibody/tree/force_density_field.h
           const char* doc =
 R"""(Constructs a uniform gravitational force density field for a uniform
 density object with the given ``gravity_vector`` [m/s²] and
@@ -2898,25 +2898,25 @@ mesh provided by the user.)""";
       } GravityForceField;
       // Symbol: drake::multibody::JacobianWrtVariable
       struct /* JacobianWrtVariable */ {
-        // Source: drake/multibody/tree/multibody_tree.h:57
+        // Source: drake/multibody/tree/multibody_tree.h
         const char* doc =
 R"""(Enumeration that indicates whether the Jacobian is partial
 differentiation with respect to q̇ (time-derivatives of generalized
 positions) or with respect to v (generalized velocities).)""";
         // Symbol: drake::multibody::JacobianWrtVariable::kQDot
         struct /* kQDot */ {
-          // Source: drake/multibody/tree/multibody_tree.h:58
+          // Source: drake/multibody/tree/multibody_tree.h
           const char* doc = R"""(J = ∂V/∂q̇)""";
         } kQDot;
         // Symbol: drake::multibody::JacobianWrtVariable::kV
         struct /* kV */ {
-          // Source: drake/multibody/tree/multibody_tree.h:59
+          // Source: drake/multibody/tree/multibody_tree.h
           const char* doc = R"""(J = ∂V/∂v)""";
         } kV;
       } JacobianWrtVariable;
       // Symbol: drake::multibody::Joint
       struct /* Joint */ {
-        // Source: drake/multibody/tree/joint.h:84
+        // Source: drake/multibody/tree/joint.h
         const char* doc =
 R"""(A Joint models the kinematical relationship which characterizes the
 possible relative motion between two bodies. The two bodies connected
@@ -2988,7 +2988,7 @@ Note:
     won't necessarily be able to provide a deprecation period.)""";
         // Symbol: drake::multibody::Joint::AddInDamping
         struct /* AddInDamping */ {
-          // Source: drake/multibody/tree/joint.h:343
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Adds into ``forces`` the force due to damping within ``this`` joint.
 
@@ -3004,7 +3004,7 @@ Parameter ``forces``:
         } AddInDamping;
         // Symbol: drake::multibody::Joint::AddInOneForce
         struct /* AddInOneForce */ {
-          // Source: drake/multibody/tree/joint.h:323
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Adds into ``forces`` a force along the one of the joint's degrees of
 freedom indicated by index ``joint_dof``. The meaning for this degree
@@ -3038,17 +3038,17 @@ Parameter ``forces``:
         } AddInOneForce;
         // Symbol: drake::multibody::Joint::Build
         struct /* Build */ {
-          // Source: drake/multibody/tree/joint.h:764
+          // Source: drake/multibody/tree/joint.h
           const char* doc = R"""()""";
         } Build;
         // Symbol: drake::multibody::Joint::CloneToScalar
         struct /* CloneToScalar */ {
-          // Source: drake/multibody/tree/joint.h:772
+          // Source: drake/multibody/tree/joint.h
           const char* doc = R"""()""";
         } CloneToScalar;
         // Symbol: drake::multibody::Joint::DoAddInDamping
         struct /* DoAddInDamping */ {
-          // Source: drake/multibody/tree/joint.h:920
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Adds into MultibodyForces the forces due to damping within ``this``
 joint. How forces are added to a MultibodyTree model depends on the
@@ -3059,7 +3059,7 @@ no-op for joints with no damping.)""";
         } DoAddInDamping;
         // Symbol: drake::multibody::Joint::DoAddInOneForce
         struct /* DoAddInOneForce */ {
-          // Source: drake/multibody/tree/joint.h:910
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Adds into ``forces`` a force along the one of the joint's degrees of
 freedom given by ``joint_dof``. How forces are added to a
@@ -3078,7 +3078,7 @@ See also:
         } DoAddInOneForce;
         // Symbol: drake::multibody::Joint::DoCloneToScalar
         struct /* DoCloneToScalar */ {
-          // Source: drake/multibody/tree/joint.h:931
+          // Source: drake/multibody/tree/joint.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(@name Methods to make a clone, optionally templated on different
 scalar types. Clones this Joint (templated on T) to a joint templated
@@ -3086,7 +3086,7 @@ on ``double``.)""";
         } DoCloneToScalar;
         // Symbol: drake::multibody::Joint::DoGetDefaultPosePair
         struct /* DoGetDefaultPosePair */ {
-          // Source: drake/multibody/tree/joint.h:871
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Implementation of the NVI GetDefaultPose(). This is optional for Joint
 subclasses *except* for floating (6 dof) Joints. The subclass should
@@ -3098,7 +3098,7 @@ to a transform first).)""";
         } DoGetDefaultPosePair;
         // Symbol: drake::multibody::Joint::DoGetOnePosition
         struct /* DoGetOnePosition */ {
-          // Source: drake/multibody/tree/joint.h:882
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Implementation of the NVI GetOnePosition() that must only be
 implemented by those joint subclasses that have a single degree of
@@ -3108,7 +3108,7 @@ joints that will want to implement this method.)""";
         } DoGetOnePosition;
         // Symbol: drake::multibody::Joint::DoGetOneVelocity
         struct /* DoGetOneVelocity */ {
-          // Source: drake/multibody/tree/joint.h:893
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Implementation of the NVI GetOneVelocity() that must only be
 implemented by those joint subclasses that have a single degree of
@@ -3118,7 +3118,7 @@ joints that will want to implement this method.)""";
         } DoGetOneVelocity;
         // Symbol: drake::multibody::Joint::DoSetDefaultPosePair
         struct /* DoSetDefaultPosePair */ {
-          // Source: drake/multibody/tree/joint.h:856
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Implementation of the NVI SetDefaultPose(). This is optional for Joint
 subclasses *except* for floating (6 dof) Joints. The subclass should
@@ -3129,12 +3129,12 @@ already uses (quaternion, translation) as generalized coordinates
         } DoSetDefaultPosePair;
         // Symbol: drake::multibody::Joint::DoSetTopology
         struct /* DoSetTopology */ {
-          // Source: drake/multibody/tree/joint.h:925
+          // Source: drake/multibody/tree/joint.h
           const char* doc = R"""()""";
         } DoSetTopology;
         // Symbol: drake::multibody::Joint::DoShallowClone
         struct /* DoShallowClone */ {
-          // Source: drake/multibody/tree/joint.h:945
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(NVI for ShallowClone(). The public Joint::ShallowClone in this base
 class is responsible for copying the mutable Joint data (damping, all
@@ -3143,7 +3143,7 @@ only needs to handle subclass-specific details.)""";
         } DoShallowClone;
         // Symbol: drake::multibody::Joint::GetDampingVector
         struct /* GetDampingVector */ {
-          // Source: drake/multibody/tree/joint.h:719
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns the Context dependent damping coefficients stored as
 parameters in ``context``. Refer to default_damping_vector() for
@@ -3155,7 +3155,7 @@ Parameter ``context``:
         } GetDampingVector;
         // Symbol: drake::multibody::Joint::GetDefaultPose
         struct /* GetDefaultPose */ {
-          // Source: drake/multibody/tree/joint.h:557
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns this joint's default pose as a RigidTransform X_FM.
 
@@ -3179,7 +3179,7 @@ See also:
         } GetDefaultPose;
         // Symbol: drake::multibody::Joint::GetDefaultPosePair
         struct /* GetDefaultPosePair */ {
-          // Source: drake/multibody/tree/joint.h:666
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""((Advanced) This is the same as GetDefaultPose() except it returns this
 joint's default pose as a (quaternion, translation vector) pair.
@@ -3207,12 +3207,12 @@ See also:
         } GetDefaultPosePair;
         // Symbol: drake::multibody::Joint::GetMobilizerInUse
         struct /* GetMobilizerInUse */ {
-          // Source: drake/multibody/tree/joint.h:784
+          // Source: drake/multibody/tree/joint.h
           const char* doc = R"""()""";
         } GetMobilizerInUse;
         // Symbol: drake::multibody::Joint::GetOnePosition
         struct /* GetOnePosition */ {
-          // Source: drake/multibody/tree/joint.h:283
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns the position coordinate for joints with a single degree of
 freedom.
@@ -3223,7 +3223,7 @@ Raises:
         } GetOnePosition;
         // Symbol: drake::multibody::Joint::GetOneVelocity
         struct /* GetOneVelocity */ {
-          // Source: drake/multibody/tree/joint.h:292
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns the velocity coordinate for joints with a single degree of
 freedom.
@@ -3234,7 +3234,7 @@ Raises:
         } GetOneVelocity;
         // Symbol: drake::multibody::Joint::GetPose
         struct /* GetPose */ {
-          // Source: drake/multibody/tree/joint.h:596
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns this joint's current pose using its position coordinates q
 taken from the given ``context`` and converting that to a
@@ -3261,7 +3261,7 @@ See also:
         } GetPose;
         // Symbol: drake::multibody::Joint::GetPosePair
         struct /* GetPosePair */ {
-          // Source: drake/multibody/tree/joint.h:698
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""((Advanced) This is the same as GetPose() except it returns this
 joint's pose in the given ``context`` as a (quaternion, translation
@@ -3289,7 +3289,7 @@ See also:
         } GetPosePair;
         // Symbol: drake::multibody::Joint::GetPositions
         struct /* GetPositions */ {
-          // Source: drake/multibody/tree/joint.h:512
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns the current value in the given ``context`` of the generalized
 coordinates q for this joint.
@@ -3300,7 +3300,7 @@ Raises:
         } GetPositions;
         // Symbol: drake::multibody::Joint::GetSpatialVelocity
         struct /* GetSpatialVelocity */ {
-          // Source: drake/multibody/tree/joint.h:630
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Given the generalized positions q and generalized velocities v for
 this joint in the given ``context``, returns the cross-joint spatial
@@ -3322,7 +3322,7 @@ See also:
         } GetSpatialVelocity;
         // Symbol: drake::multibody::Joint::GetVelocities
         struct /* GetVelocities */ {
-          // Source: drake/multibody/tree/joint.h:531
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns the current value in the given ``context`` of the generalized
 velocities v for this joint.
@@ -3333,7 +3333,7 @@ Raises:
         } GetVelocities;
         // Symbol: drake::multibody::Joint::Joint<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/joint.h:130
+          // Source: drake/multibody/tree/joint.h
           const char* doc_10args =
 R"""(Creates a joint between two Frame objects which imposes a given
 kinematic relation between frame F attached on the parent body P and
@@ -3385,7 +3385,7 @@ Parameter ``acc_upper_limits``:
     A vector storing the upper limit for each generalized
     acceleration. It must have the same size as ``acc_lower_limit``. A
     value equal to +∞ implies no upper limit.)""";
-          // Source: drake/multibody/tree/joint.h:173
+          // Source: drake/multibody/tree/joint.h
           const char* doc_9args =
 R"""(Additional constructor overload for joints with zero damping. Refer to
 the more general constructor signature taking damping for further
@@ -3393,19 +3393,19 @@ details on the rest of the arguments for this constructor.)""";
         } ctor;
         // Symbol: drake::multibody::Joint::Lock
         struct /* Lock */ {
-          // Source: drake/multibody/tree/joint.h:353
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Lock the joint. Its generalized velocities will be 0 until it is
 unlocked.)""";
         } Lock;
         // Symbol: drake::multibody::Joint::MakeUniqueOffsetFrameName
         struct /* MakeUniqueOffsetFrameName */ {
-          // Source: drake/multibody/tree/joint.h:797
+          // Source: drake/multibody/tree/joint.h
           const char* doc = R"""()""";
         } MakeUniqueOffsetFrameName;
         // Symbol: drake::multibody::Joint::SetDampingVector
         struct /* SetDampingVector */ {
-          // Source: drake/multibody/tree/joint.h:752
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Sets the value of the viscous damping coefficients for this joint,
 stored as parameters in ``context``. Refer to default_damping_vector()
@@ -3436,7 +3436,7 @@ Note:
         } SetDampingVector;
         // Symbol: drake::multibody::Joint::SetDefaultPose
         struct /* SetDefaultPose */ {
-          // Source: drake/multibody/tree/joint.h:544
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Sets this joint's default generalized positions q₀ such that the pose
 of the child frame M in the parent frame F best matches the given
@@ -3459,7 +3459,7 @@ See also:
         } SetDefaultPose;
         // Symbol: drake::multibody::Joint::SetDefaultPosePair
         struct /* SetDefaultPosePair */ {
-          // Source: drake/multibody/tree/joint.h:648
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""((Advanced) This is the same as SetDefaultPose() except it takes the
 pose as a (quaternion, translation vector) pair. A
@@ -3480,7 +3480,7 @@ See also:
         } SetDefaultPosePair;
         // Symbol: drake::multibody::Joint::SetPose
         struct /* SetPose */ {
-          // Source: drake/multibody/tree/joint.h:578
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Sets in the given ``context`` this joint's generalized positions q
 such that the pose of the child frame M in the parent frame F best
@@ -3513,7 +3513,7 @@ See also:
         } SetPose;
         // Symbol: drake::multibody::Joint::SetPosePair
         struct /* SetPosePair */ {
-          // Source: drake/multibody/tree/joint.h:682
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""((Advanced) This is the same as SetPose() except it takes the pose as a
 (quaternion, translation vector) pair. A QuaternionFloatingJoint will
@@ -3539,7 +3539,7 @@ See also:
         } SetPosePair;
         // Symbol: drake::multibody::Joint::SetPositions
         struct /* SetPositions */ {
-          // Source: drake/multibody/tree/joint.h:505
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Sets in the given ``context`` the generalized position coordinates q
 for this joint to ``positions``.
@@ -3561,7 +3561,7 @@ Precondition:
         } SetPositions;
         // Symbol: drake::multibody::Joint::SetSpatialVelocity
         struct /* SetSpatialVelocity */ {
-          // Source: drake/multibody/tree/joint.h:616
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Sets in the given ``context`` this joint's generalized velocities v
 such that the spatial velocity of the child frame M in the parent
@@ -3591,7 +3591,7 @@ See also:
         } SetSpatialVelocity;
         // Symbol: drake::multibody::Joint::SetVelocities
         struct /* SetVelocities */ {
-          // Source: drake/multibody/tree/joint.h:524
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Sets in the given ``context`` the generalized velocity coordinates v
 for this joint to ``velocities``.
@@ -3613,27 +3613,27 @@ Precondition:
         } SetVelocities;
         // Symbol: drake::multibody::Joint::ShallowClone
         struct /* ShallowClone */ {
-          // Source: drake/multibody/tree/joint.h:782
+          // Source: drake/multibody/tree/joint.h
           const char* doc = R"""()""";
         } ShallowClone;
         // Symbol: drake::multibody::Joint::Unlock
         struct /* Unlock */ {
-          // Source: drake/multibody/tree/joint.h:359
+          // Source: drake/multibody/tree/joint.h
           const char* doc = R"""(Unlock the joint.)""";
         } Unlock;
         // Symbol: drake::multibody::Joint::acceleration_lower_limits
         struct /* acceleration_lower_limits */ {
-          // Source: drake/multibody/tree/joint.h:398
+          // Source: drake/multibody/tree/joint.h
           const char* doc = R"""(Returns the acceleration lower limits.)""";
         } acceleration_lower_limits;
         // Symbol: drake::multibody::Joint::acceleration_upper_limits
         struct /* acceleration_upper_limits */ {
-          // Source: drake/multibody/tree/joint.h:403
+          // Source: drake/multibody/tree/joint.h
           const char* doc = R"""(Returns the acceleration upper limits.)""";
         } acceleration_upper_limits;
         // Symbol: drake::multibody::Joint::can_rotate
         struct /* can_rotate */ {
-          // Source: drake/multibody/tree/joint.h:249
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns true if this joint's mobility allows relative rotation of the
 two frames associated with this joint.
@@ -3646,7 +3646,7 @@ See also:
         } can_rotate;
         // Symbol: drake::multibody::Joint::can_translate
         struct /* can_translate */ {
-          // Source: drake/multibody/tree/joint.h:255
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns true if this joint's mobility allows relative translation of
 the two frames associated with this joint.
@@ -3659,13 +3659,13 @@ See also:
         } can_translate;
         // Symbol: drake::multibody::Joint::child_body
         struct /* child_body */ {
-          // Source: drake/multibody/tree/joint.h:211
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns a const reference to the child body B.)""";
         } child_body;
         // Symbol: drake::multibody::Joint::default_damping_vector
         struct /* default_damping_vector */ {
-          // Source: drake/multibody/tree/joint.h:713
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns all default damping coefficients for joints that model viscous
 damping, of size num_velocities(). Joints that do not model damping
@@ -3681,7 +3681,7 @@ further details.)""";
         } default_damping_vector;
         // Symbol: drake::multibody::Joint::default_positions
         struct /* default_positions */ {
-          // Source: drake/multibody/tree/joint.h:492
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns the default generalized position coordinates q₀. These will be
 the values set with set_default_positions() if any; otherwise, they
@@ -3693,7 +3693,7 @@ Note:
         } default_positions;
         // Symbol: drake::multibody::Joint::do_get_num_positions
         struct /* do_get_num_positions */ {
-          // Source: drake/multibody/tree/joint.h:826
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Implementation of the NVI num_positions(), see num_positions() for
 details.
@@ -3704,7 +3704,7 @@ Note:
         } do_get_num_positions;
         // Symbol: drake::multibody::Joint::do_get_num_velocities
         struct /* do_get_num_velocities */ {
-          // Source: drake/multibody/tree/joint.h:814
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Implementation of the NVI num_velocities(), see num_velocities() for
 details.
@@ -3715,7 +3715,7 @@ Note:
         } do_get_num_velocities;
         // Symbol: drake::multibody::Joint::do_get_position_start
         struct /* do_get_position_start */ {
-          // Source: drake/multibody/tree/joint.h:820
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Implementation of the NVI position_start(), see position_start() for
 details.
@@ -3726,7 +3726,7 @@ Note:
         } do_get_position_start;
         // Symbol: drake::multibody::Joint::do_get_position_suffix
         struct /* do_get_position_suffix */ {
-          // Source: drake/multibody/tree/joint.h:831
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Implementation of the NVI position_suffix(), see position_suffix() for
 details. The suffix should contain only alphanumeric characters (e.g.
@@ -3734,7 +3734,7 @@ details. The suffix should contain only alphanumeric characters (e.g.
         } do_get_position_suffix;
         // Symbol: drake::multibody::Joint::do_get_velocity_start
         struct /* do_get_velocity_start */ {
-          // Source: drake/multibody/tree/joint.h:808
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Implementation of the NVI velocity_start(), see velocity_start() for
 details. Note that this must be the offset within just the velocity
@@ -3746,7 +3746,7 @@ Note:
         } do_get_velocity_start;
         // Symbol: drake::multibody::Joint::do_get_velocity_suffix
         struct /* do_get_velocity_suffix */ {
-          // Source: drake/multibody/tree/joint.h:836
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Implementation of the NVI velocity_suffix(), see velocity_suffix() for
 details. The suffix should contain only alphanumeric characters (e.g.
@@ -3754,7 +3754,7 @@ details. The suffix should contain only alphanumeric characters (e.g.
         } do_get_velocity_suffix;
         // Symbol: drake::multibody::Joint::do_set_default_positions
         struct /* do_set_default_positions */ {
-          // Source: drake/multibody/tree/joint.h:847
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Implementation of the NVI set_default_positions(), see
 set_default_positions() for details. It is the responsibility of the
@@ -3770,20 +3770,20 @@ Note:
         } do_set_default_positions;
         // Symbol: drake::multibody::Joint::frame_on_child
         struct /* frame_on_child */ {
-          // Source: drake/multibody/tree/joint.h:217
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns a const reference to the frame M attached on the child body B.)""";
         } frame_on_child;
         // Symbol: drake::multibody::Joint::frame_on_parent
         struct /* frame_on_parent */ {
-          // Source: drake/multibody/tree/joint.h:214
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns a const reference to the frame F attached on the parent body
 P.)""";
         } frame_on_parent;
         // Symbol: drake::multibody::Joint::get_mobilizer_downcast
         struct /* get_mobilizer_downcast */ {
-          // Source: drake/multibody/tree/joint.h:967
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""((Internal use only) Returns the mobilizer implementing this joint,
 downcast to its specific type.
@@ -3798,49 +3798,49 @@ Precondition:
         } get_mobilizer_downcast;
         // Symbol: drake::multibody::Joint::get_mutable_mobilizer_downcast
         struct /* get_mutable_mobilizer_downcast */ {
-          // Source: drake/multibody/tree/joint.h:976
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""((Internal use only) Mutable flavor of get_mobilizer_downcast().)""";
         } get_mutable_mobilizer_downcast;
         // Symbol: drake::multibody::Joint::has_mobilizer
         struct /* has_mobilizer */ {
-          // Source: drake/multibody/tree/joint.h:984
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""((Internal use only) Returns true if this Joint has an implementing
 Mobilizer.)""";
         } has_mobilizer;
         // Symbol: drake::multibody::Joint::index
         struct /* index */ {
-          // Source: drake/multibody/tree/joint.h:188
+          // Source: drake/multibody/tree/joint.h
           const char* doc = R"""(Returns this element's unique index.)""";
         } index;
         // Symbol: drake::multibody::Joint::is_locked
         struct /* is_locked */ {
-          // Source: drake/multibody/tree/joint.h:365
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns:
     true if the joint is locked, false otherwise.)""";
         } is_locked;
         // Symbol: drake::multibody::Joint::name
         struct /* name */ {
-          // Source: drake/multibody/tree/joint.h:205
+          // Source: drake/multibody/tree/joint.h
           const char* doc = R"""(Returns the name of this joint.)""";
         } name;
         // Symbol: drake::multibody::Joint::num_positions
         struct /* num_positions */ {
-          // Source: drake/multibody/tree/joint.h:240
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns the number of generalized positions describing this joint.)""";
         } num_positions;
         // Symbol: drake::multibody::Joint::num_velocities
         struct /* num_velocities */ {
-          // Source: drake/multibody/tree/joint.h:229
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns the number of generalized velocities describing this joint.)""";
         } num_velocities;
         // Symbol: drake::multibody::Joint::ordinal
         struct /* ordinal */ {
-          // Source: drake/multibody/tree/joint.h:200
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns this element's unique ordinal. The joint's ordinal is a unique
 index into contiguous containers that have an entry for each Joint,
@@ -3856,18 +3856,18 @@ containers with entries per Joint.)""";
         } ordinal;
         // Symbol: drake::multibody::Joint::parent_body
         struct /* parent_body */ {
-          // Source: drake/multibody/tree/joint.h:208
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns a const reference to the parent body P.)""";
         } parent_body;
         // Symbol: drake::multibody::Joint::position_lower_limits
         struct /* position_lower_limits */ {
-          // Source: drake/multibody/tree/joint.h:378
+          // Source: drake/multibody/tree/joint.h
           const char* doc = R"""(Returns the position lower limits.)""";
         } position_lower_limits;
         // Symbol: drake::multibody::Joint::position_start
         struct /* position_start */ {
-          // Source: drake/multibody/tree/joint.h:237
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns the index to the first generalized position for this joint
 within the vector q of generalized positions for the full multibody
@@ -3875,7 +3875,7 @@ system.)""";
         } position_start;
         // Symbol: drake::multibody::Joint::position_suffix
         struct /* position_suffix */ {
-          // Source: drake/multibody/tree/joint.h:261
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns a string suffix (e.g. to be appended to the name()) to
 identify the `k`th position in this joint. ``position_index_in_joint``
@@ -3886,12 +3886,12 @@ Precondition:
         } position_suffix;
         // Symbol: drake::multibody::Joint::position_upper_limits
         struct /* position_upper_limits */ {
-          // Source: drake/multibody/tree/joint.h:383
+          // Source: drake/multibody/tree/joint.h
           const char* doc = R"""(Returns the position upper limits.)""";
         } position_upper_limits;
         // Symbol: drake::multibody::Joint::set_acceleration_limits
         struct /* set_acceleration_limits */ {
-          // Source: drake/multibody/tree/joint.h:443
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Sets the acceleration limits to ``lower_limits`` and ``upper_limits``.
 
@@ -3905,7 +3905,7 @@ Raises:
         } set_acceleration_limits;
         // Symbol: drake::multibody::Joint::set_default_damping_vector
         struct /* set_default_damping_vector */ {
-          // Source: drake/multibody/tree/joint.h:730
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Sets the default value of the viscous damping coefficients for this
 joint. Refer to default_damping_vector() for details.
@@ -3925,7 +3925,7 @@ Precondition:
         } set_default_damping_vector;
         // Symbol: drake::multibody::Joint::set_default_positions
         struct /* set_default_positions */ {
-          // Source: drake/multibody/tree/joint.h:485
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Sets the default generalized position coordinates q₀ to
 ``default_positions``.
@@ -3943,7 +3943,7 @@ Raises:
         } set_default_positions;
         // Symbol: drake::multibody::Joint::set_position_limits
         struct /* set_position_limits */ {
-          // Source: drake/multibody/tree/joint.h:415
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Sets the position limits to ``lower_limits`` and ``upper_limits``.
 
@@ -3962,7 +3962,7 @@ Note:
         } set_position_limits;
         // Symbol: drake::multibody::Joint::set_velocity_limits
         struct /* set_velocity_limits */ {
-          // Source: drake/multibody/tree/joint.h:429
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Sets the velocity limits to ``lower_limits`` and ``upper_limits``.
 
@@ -3976,7 +3976,7 @@ Raises:
         } set_velocity_limits;
         // Symbol: drake::multibody::Joint::tree_frames
         struct /* tree_frames */ {
-          // Source: drake/multibody/tree/joint.h:952
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Utility for concrete joint implementations to use to select the
 inboard/outboard frames for a tree in the spanning forest, given
@@ -3985,19 +3985,19 @@ members of this Joint object.)""";
         } tree_frames;
         // Symbol: drake::multibody::Joint::type_name
         struct /* type_name */ {
-          // Source: drake/multibody/tree/joint.h:221
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns a string identifying the type of ``this`` joint, such as
 "revolute" or "prismatic".)""";
         } type_name;
         // Symbol: drake::multibody::Joint::velocity_lower_limits
         struct /* velocity_lower_limits */ {
-          // Source: drake/multibody/tree/joint.h:388
+          // Source: drake/multibody/tree/joint.h
           const char* doc = R"""(Returns the velocity lower limits.)""";
         } velocity_lower_limits;
         // Symbol: drake::multibody::Joint::velocity_start
         struct /* velocity_start */ {
-          // Source: drake/multibody/tree/joint.h:226
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns the index to the first generalized velocity for this joint
 within the vector v of generalized velocities for the full multibody
@@ -4005,7 +4005,7 @@ system.)""";
         } velocity_start;
         // Symbol: drake::multibody::Joint::velocity_suffix
         struct /* velocity_suffix */ {
-          // Source: drake/multibody/tree/joint.h:272
+          // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Returns a string suffix (e.g. to be appended to the name()) to
 identify the `k`th velocity in this joint. ``velocity_index_in_joint``
@@ -4016,13 +4016,13 @@ Precondition:
         } velocity_suffix;
         // Symbol: drake::multibody::Joint::velocity_upper_limits
         struct /* velocity_upper_limits */ {
-          // Source: drake/multibody/tree/joint.h:393
+          // Source: drake/multibody/tree/joint.h
           const char* doc = R"""(Returns the velocity upper limits.)""";
         } velocity_upper_limits;
       } Joint;
       // Symbol: drake::multibody::JointActuator
       struct /* JointActuator */ {
-        // Source: drake/multibody/tree/joint_actuator.h:41
+        // Source: drake/multibody/tree/joint_actuator.h
         const char* doc =
 R"""(The JointActuator class is mostly a simple bookkeeping structure to
 represent an actuator acting on a given Joint. It helps to flag
@@ -4031,7 +4031,7 @@ can apply forces on actuated joints through their actuators, see
 AddInOneForce().)""";
         // Symbol: drake::multibody::JointActuator::AddInOneForce
         struct /* AddInOneForce */ {
-          // Source: drake/multibody/tree/joint_actuator.h:105
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Adds into ``forces`` a force along one of the degrees of freedom of
 the Joint actuated by ``this`` actuator. The meaning for this degree
@@ -4067,12 +4067,12 @@ Parameter ``forces``:
         } AddInOneForce;
         // Symbol: drake::multibody::JointActuator::CloneToScalar
         struct /* CloneToScalar */ {
-          // Source: drake/multibody/tree/joint_actuator.h:335
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc = R"""()""";
         } CloneToScalar;
         // Symbol: drake::multibody::JointActuator::JointActuator<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/joint_actuator.h:59
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Creates an actuator for ``joint`` with the given ``name``. The name
 must be unique within the given multibody model. This is enforced by
@@ -4094,21 +4094,21 @@ Parameter ``effort_limit``:
         } ctor;
         // Symbol: drake::multibody::JointActuator::SetGearRatio
         struct /* SetGearRatio */ {
-          // Source: drake/multibody/tree/joint_actuator.h:264
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Sets the associated gear ratio value for this actuator in ``context``.
 See reflected_inertia.)""";
         } SetGearRatio;
         // Symbol: drake::multibody::JointActuator::SetRotorInertia
         struct /* SetRotorInertia */ {
-          // Source: drake/multibody/tree/joint_actuator.h:256
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Sets the associated rotor inertia value for this actuator in
 ``context``. See reflected_inertia.)""";
         } SetRotorInertia;
         // Symbol: drake::multibody::JointActuator::calc_reflected_inertia
         struct /* calc_reflected_inertia */ {
-          // Source: drake/multibody/tree/joint_actuator.h:273
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Calculates the reflected inertia value for this actuator in
 ``context``. See reflected_inertia. Note that this ONLY depends on the
@@ -4117,14 +4117,14 @@ etc.)""";
         } calc_reflected_inertia;
         // Symbol: drake::multibody::JointActuator::default_gear_ratio
         struct /* default_gear_ratio */ {
-          // Source: drake/multibody/tree/joint_actuator.h:214
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Gets the default value for this actuator's gear ratio. See
 reflected_inertia.)""";
         } default_gear_ratio;
         // Symbol: drake::multibody::JointActuator::default_reflected_inertia
         struct /* default_reflected_inertia */ {
-          // Source: drake/multibody/tree/joint_actuator.h:232
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Returns the default value for this actuator's reflected inertia. It is
 calculated as ρ²⋅Iᵣ, where ρ is the default gear ratio and Iᵣ is the
@@ -4132,19 +4132,19 @@ default rotor inertia for this actuator. See reflected_inertia.)""";
         } default_reflected_inertia;
         // Symbol: drake::multibody::JointActuator::default_rotor_inertia
         struct /* default_rotor_inertia */ {
-          // Source: drake/multibody/tree/joint_actuator.h:210
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Gets the default value for this actuator's rotor inertia. See
 reflected_inertia.)""";
         } default_rotor_inertia;
         // Symbol: drake::multibody::JointActuator::effort_limit
         struct /* effort_limit */ {
-          // Source: drake/multibody/tree/joint_actuator.h:155
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc = R"""(Returns the actuator effort limit.)""";
         } effort_limit;
         // Symbol: drake::multibody::JointActuator::gear_ratio
         struct /* gear_ratio */ {
-          // Source: drake/multibody/tree/joint_actuator.h:250
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Returns the associated gear ratio value for this actuator, stored in
 ``context``. See reflected_inertia. Note that this ONLY depends on the
@@ -4153,7 +4153,7 @@ etc.)""";
         } gear_ratio;
         // Symbol: drake::multibody::JointActuator::get_actuation_vector
         struct /* get_actuation_vector */ {
-          // Source: drake/multibody/tree/joint_actuator.h:114
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Gets the actuation values for ``this`` actuator from the actuation
 vector u for the entire plant model.
@@ -4168,7 +4168,7 @@ Raises:
         } get_actuation_vector;
         // Symbol: drake::multibody::JointActuator::get_controller_gains
         struct /* get_controller_gains */ {
-          // Source: drake/multibody/tree/joint_actuator.h:323
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Returns a reference to the controller gains for this actuator.
 
@@ -4177,7 +4177,7 @@ Precondition:
         } get_controller_gains;
         // Symbol: drake::multibody::JointActuator::has_controller
         struct /* has_controller */ {
-          // Source: drake/multibody/tree/joint_actuator.h:319
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Returns ``True`` if any non-zero controller gains have been specified
 with a call to set_controller_gains().
@@ -4193,12 +4193,12 @@ Note:
         } has_controller;
         // Symbol: drake::multibody::JointActuator::index
         struct /* index */ {
-          // Source: drake/multibody/tree/joint_actuator.h:65
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc = R"""(Returns this element's unique index.)""";
         } index;
         // Symbol: drake::multibody::JointActuator::input_start
         struct /* input_start */ {
-          // Source: drake/multibody/tree/joint_actuator.h:146
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Returns the index to the first element for this joint actuator /
 within the vector of actuation inputs for the full multibody / system.
@@ -4208,7 +4208,7 @@ Raises:
         } input_start;
         // Symbol: drake::multibody::JointActuator::joint
         struct /* joint */ {
-          // Source: drake/multibody/tree/joint_actuator.h:75
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Returns a reference to the joint actuated by this JointActuator.
 
@@ -4218,12 +4218,12 @@ Raises:
         } joint;
         // Symbol: drake::multibody::JointActuator::name
         struct /* name */ {
-          // Source: drake/multibody/tree/joint_actuator.h:70
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc = R"""(Returns the name of the actuator.)""";
         } name;
         // Symbol: drake::multibody::JointActuator::num_inputs
         struct /* num_inputs */ {
-          // Source: drake/multibody/tree/joint_actuator.h:150
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Returns the number of inputs associated with this actuator.
 
@@ -4232,7 +4232,7 @@ Raises:
         } num_inputs;
         // Symbol: drake::multibody::JointActuator::rotor_inertia
         struct /* rotor_inertia */ {
-          // Source: drake/multibody/tree/joint_actuator.h:241
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Returns the associated rotor inertia value for this actuator, stored
 in ``context``. See reflected_inertia. Note that this ONLY depends on
@@ -4241,7 +4241,7 @@ state, etc.)""";
         } rotor_inertia;
         // Symbol: drake::multibody::JointActuator::set_actuation_vector
         struct /* set_actuation_vector */ {
-          // Source: drake/multibody/tree/joint_actuator.h:140
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Given the actuation values ``u_actuator`` for ``this`` actuator,
 updates the actuation vector ``u`` for the entire multibody model to
@@ -4274,7 +4274,7 @@ Raises:
         } set_actuation_vector;
         // Symbol: drake::multibody::JointActuator::set_controller_gains
         struct /* set_controller_gains */ {
-          // Source: drake/multibody/tree/joint_actuator.h:308
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Set controller gains for this joint actuator. This enables the
 modeling of a simple PD controller of the form: ũ = -Kp⋅(q − qd) -
@@ -4298,14 +4298,14 @@ details.)""";
         } set_controller_gains;
         // Symbol: drake::multibody::JointActuator::set_default_gear_ratio
         struct /* set_default_gear_ratio */ {
-          // Source: drake/multibody/tree/joint_actuator.h:224
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Sets the default value for this actuator's gear ratio. See
 reflected_inertia.)""";
         } set_default_gear_ratio;
         // Symbol: drake::multibody::JointActuator::set_default_rotor_inertia
         struct /* set_default_rotor_inertia */ {
-          // Source: drake/multibody/tree/joint_actuator.h:218
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
 R"""(Sets the default value for this actuator's rotor inertia. See
 reflected_inertia.)""";
@@ -4313,25 +4313,25 @@ reflected_inertia.)""";
       } JointActuator;
       // Symbol: drake::multibody::JointActuatorIndex
       struct /* JointActuatorIndex */ {
-        // Source: drake/multibody/tree/multibody_tree_indexes.h:48
+        // Source: drake/multibody/tree/multibody_tree_indexes.h
         const char* doc =
 R"""(Type used to identify actuators by index within a multibody plant.)""";
       } JointActuatorIndex;
       // Symbol: drake::multibody::JointIndex
       struct /* JointIndex */ {
-        // Source: drake/multibody/tree/multibody_tree_indexes.h:42
+        // Source: drake/multibody/tree/multibody_tree_indexes.h
         const char* doc =
 R"""(Type used to identify joints by index within a multibody plant.)""";
       } JointIndex;
       // Symbol: drake::multibody::JointOrdinal
       struct /* JointOrdinal */ {
-        // Source: drake/multibody/tree/multibody_tree_indexes.h:45
+        // Source: drake/multibody/tree/multibody_tree_indexes.h
         const char* doc =
 R"""(Type used to identify joints by ordinal within a multibody plant.)""";
       } JointOrdinal;
       // Symbol: drake::multibody::LinearBushingRollPitchYaw
       struct /* LinearBushingRollPitchYaw */ {
-        // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:324
+        // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
         const char* doc =
 R"""(This ForceElement models a massless flexible bushing that connects a
 frame A of a link (body) L0 to a frame C of a link (body) L1. The
@@ -4745,7 +4745,7 @@ Note:
     CalcNonConservativePower().)""";
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::CalcBushingSpatialForceOnFrameA
         struct /* CalcBushingSpatialForceOnFrameA */ {
-          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:505
+          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
           const char* doc =
 R"""(Calculate F_A_A, the bushing's spatial force on frame A expressed in
 A. F_A_A contains two vectors: the moment of all bushing forces on A
@@ -4766,7 +4766,7 @@ See also:
         } CalcBushingSpatialForceOnFrameA;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::CalcBushingSpatialForceOnFrameC
         struct /* CalcBushingSpatialForceOnFrameC */ {
-          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:515
+          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
           const char* doc =
 R"""(Calculate F_C_C, the bushing's spatial force on frame C expressed in
 C. F_C_C contains two vectors: the moment of all bushing forces on C
@@ -4787,35 +4787,35 @@ See also:
         } CalcBushingSpatialForceOnFrameC;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::GetForceDampingConstants
         struct /* GetForceDampingConstants */ {
-          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:452
+          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
           const char* doc =
 R"""(Returns the force damping constants ``[dx dy dz]`` (units of N*s/m)
 stored in ``context``.)""";
         } GetForceDampingConstants;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::GetForceStiffnessConstants
         struct /* GetForceStiffnessConstants */ {
-          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:443
+          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
           const char* doc =
 R"""(Returns the force stiffness constants ``[kx ky kz]`` (units of N/m)
 stored in ``context``.)""";
         } GetForceStiffnessConstants;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::GetTorqueDampingConstants
         struct /* GetTorqueDampingConstants */ {
-          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:434
+          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
           const char* doc =
 R"""(Returns the torque damping constants ``[d₀ d₁ d₂]`` (units of
 N*m*s/rad) stored in ``context``.)""";
         } GetTorqueDampingConstants;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::GetTorqueStiffnessConstants
         struct /* GetTorqueStiffnessConstants */ {
-          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:425
+          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
           const char* doc =
 R"""(Returns the torque stiffness constants ``[k₀ k₁ k₂]`` (units of
 N*m/rad) stored in ``context``.)""";
         } GetTorqueStiffnessConstants;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::LinearBushingRollPitchYaw<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:356
+          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
           const char* doc =
 R"""(Construct a LinearBushingRollPitchYaw B that connects frames A and C,
 where frame A is welded to a link L0 and frame C is welded to a link
@@ -4870,35 +4870,35 @@ Precondition:
         } ctor;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::SetForceDampingConstants
         struct /* SetForceDampingConstants */ {
-          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:490
+          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
           const char* doc =
 R"""(Sets the force damping constants ``[dx dy dz]`` (units of N*s/m) in
 ``context``.)""";
         } SetForceDampingConstants;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::SetForceStiffnessConstants
         struct /* SetForceStiffnessConstants */ {
-          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:480
+          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
           const char* doc =
 R"""(Sets the force stiffness constants ``[kx ky kz]`` (units of N/m) in
 ``context``.)""";
         } SetForceStiffnessConstants;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::SetTorqueDampingConstants
         struct /* SetTorqueDampingConstants */ {
-          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:471
+          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
           const char* doc =
 R"""(Sets the torque damping constants ``[d₀ d₁ d₂]`` (units of N*m*s/rad)
 in ``context``.)""";
         } SetTorqueDampingConstants;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::SetTorqueStiffnessConstants
         struct /* SetTorqueStiffnessConstants */ {
-          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:461
+          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
           const char* doc =
 R"""(Sets the torque stiffness constants ``[k₀ k₁ k₂]`` (units of N*m/rad)
 in ``context``.)""";
         } SetTorqueStiffnessConstants;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::force_damping_constants
         struct /* force_damping_constants */ {
-          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:412
+          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
           const char* doc =
 R"""(Returns the default force damping constants ``[dx dy dz]`` (units of
 N*s/m). Refer to Basic_bushing_force_stiffness_and_damping "How to
@@ -4906,7 +4906,7 @@ choose force stiffness and damping constants" for more details.)""";
         } force_damping_constants;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::force_stiffness_constants
         struct /* force_stiffness_constants */ {
-          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:405
+          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
           const char* doc =
 R"""(Returns the default force stiffness constants ``[kx ky kz]`` (units of
 N/m). Refer to Basic_bushing_force_stiffness_and_damping "How to
@@ -4914,7 +4914,7 @@ choose force stiffness and damping constants" for more details.)""";
         } force_stiffness_constants;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::frameA
         struct /* frameA */ {
-          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:374
+          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
           const char* doc =
 R"""(Returns frame A, which is the frame that is welded to link (body) L0
 and attached to the bushing.
@@ -4925,7 +4925,7 @@ Raises:
         } frameA;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::frameC
         struct /* frameC */ {
-          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:383
+          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
           const char* doc =
 R"""(Returns frame C, which is the frame that is welded to link (body) L1
 and attached to the bushing.
@@ -4936,19 +4936,19 @@ Raises:
         } frameC;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::link0
         struct /* link0 */ {
-          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:365
+          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
           const char* doc =
 R"""(Returns link (body) L0 (frame A is welded to link L0).)""";
         } link0;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::link1
         struct /* link1 */ {
-          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:368
+          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
           const char* doc =
 R"""(Returns link (body) L1 (frame C is welded to link L1).)""";
         } link1;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::torque_damping_constants
         struct /* torque_damping_constants */ {
-          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:398
+          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
           const char* doc =
 R"""(Returns the default torque damping constants ``[d₀ d₁ d₂]`` (units of
 N*m*s/rad). Refer to Basic_bushing_torque_stiffness_and_damping "How
@@ -4956,7 +4956,7 @@ to choose torque stiffness and damping constants" for more details.)""";
         } torque_damping_constants;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::torque_stiffness_constants
         struct /* torque_stiffness_constants */ {
-          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h:391
+          // Source: drake/multibody/tree/linear_bushing_roll_pitch_yaw.h
           const char* doc =
 R"""(Returns the default torque stiffness constants ``[k₀ k₁ k₂]`` (units
 of N*m/rad). Refer to Basic_bushing_torque_stiffness_and_damping "How
@@ -4965,7 +4965,7 @@ to choose torque stiffness and damping constants" for more details.)""";
       } LinearBushingRollPitchYaw;
       // Symbol: drake::multibody::LinearSpringDamper
       struct /* LinearSpringDamper */ {
-        // Source: drake/multibody/tree/linear_spring_damper.h:44
+        // Source: drake/multibody/tree/linear_spring_damper.h
         const char* doc =
 R"""(This ForceElement models a spring-damper attached between two points
 on two different bodies. Given a point P on a body A and a point Q on
@@ -5005,37 +5005,37 @@ Q. - Damping always dissipates energy. - Forces on bodies A and B are
 equal and opposite according to Newton's third law.)""";
         // Symbol: drake::multibody::LinearSpringDamper::CalcConservativePower
         struct /* CalcConservativePower */ {
-          // Source: drake/multibody/tree/linear_spring_damper.h:93
+          // Source: drake/multibody/tree/linear_spring_damper.h
           const char* doc = R"""()""";
         } CalcConservativePower;
         // Symbol: drake::multibody::LinearSpringDamper::CalcNonConservativePower
         struct /* CalcNonConservativePower */ {
-          // Source: drake/multibody/tree/linear_spring_damper.h:98
+          // Source: drake/multibody/tree/linear_spring_damper.h
           const char* doc = R"""()""";
         } CalcNonConservativePower;
         // Symbol: drake::multibody::LinearSpringDamper::CalcPotentialEnergy
         struct /* CalcPotentialEnergy */ {
-          // Source: drake/multibody/tree/linear_spring_damper.h:89
+          // Source: drake/multibody/tree/linear_spring_damper.h
           const char* doc = R"""()""";
         } CalcPotentialEnergy;
         // Symbol: drake::multibody::LinearSpringDamper::DoCalcAndAddForceContribution
         struct /* DoCalcAndAddForceContribution */ {
-          // Source: drake/multibody/tree/linear_spring_damper.h:104
+          // Source: drake/multibody/tree/linear_spring_damper.h
           const char* doc = R"""()""";
         } DoCalcAndAddForceContribution;
         // Symbol: drake::multibody::LinearSpringDamper::DoCloneToScalar
         struct /* DoCloneToScalar */ {
-          // Source: drake/multibody/tree/linear_spring_damper.h:110
+          // Source: drake/multibody/tree/linear_spring_damper.h
           const char* doc = R"""()""";
         } DoCloneToScalar;
         // Symbol: drake::multibody::LinearSpringDamper::DoShallowClone
         struct /* DoShallowClone */ {
-          // Source: drake/multibody/tree/linear_spring_damper.h:119
+          // Source: drake/multibody/tree/linear_spring_damper.h
           const char* doc = R"""()""";
         } DoShallowClone;
         // Symbol: drake::multibody::LinearSpringDamper::LinearSpringDamper<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/linear_spring_damper.h:65
+          // Source: drake/multibody/tree/linear_spring_damper.h
           const char* doc =
 R"""(Constructor for a spring-damper between a point P on ``bodyA`` and a
 point Q on ``bodyB``. Point P is defined by its position ``p_AP`` as
@@ -5066,60 +5066,60 @@ Raises:
         } ctor;
         // Symbol: drake::multibody::LinearSpringDamper::bodyA
         struct /* bodyA */ {
-          // Source: drake/multibody/tree/linear_spring_damper.h:71
+          // Source: drake/multibody/tree/linear_spring_damper.h
           const char* doc = R"""()""";
         } bodyA;
         // Symbol: drake::multibody::LinearSpringDamper::bodyB
         struct /* bodyB */ {
-          // Source: drake/multibody/tree/linear_spring_damper.h:73
+          // Source: drake/multibody/tree/linear_spring_damper.h
           const char* doc = R"""()""";
         } bodyB;
         // Symbol: drake::multibody::LinearSpringDamper::damping
         struct /* damping */ {
-          // Source: drake/multibody/tree/linear_spring_damper.h:87
+          // Source: drake/multibody/tree/linear_spring_damper.h
           const char* doc = R"""()""";
         } damping;
         // Symbol: drake::multibody::LinearSpringDamper::free_length
         struct /* free_length */ {
-          // Source: drake/multibody/tree/linear_spring_damper.h:83
+          // Source: drake/multibody/tree/linear_spring_damper.h
           const char* doc = R"""()""";
         } free_length;
         // Symbol: drake::multibody::LinearSpringDamper::p_AP
         struct /* p_AP */ {
-          // Source: drake/multibody/tree/linear_spring_damper.h:77
+          // Source: drake/multibody/tree/linear_spring_damper.h
           const char* doc =
 R"""(The position p_AP of point P on body A as measured and expressed in
 body frame A.)""";
         } p_AP;
         // Symbol: drake::multibody::LinearSpringDamper::p_BQ
         struct /* p_BQ */ {
-          // Source: drake/multibody/tree/linear_spring_damper.h:81
+          // Source: drake/multibody/tree/linear_spring_damper.h
           const char* doc =
 R"""(The position p_BQ of point Q on body B as measured and expressed in
 body frame B.)""";
         } p_BQ;
         // Symbol: drake::multibody::LinearSpringDamper::stiffness
         struct /* stiffness */ {
-          // Source: drake/multibody/tree/linear_spring_damper.h:85
+          // Source: drake/multibody/tree/linear_spring_damper.h
           const char* doc = R"""()""";
         } stiffness;
       } LinearSpringDamper;
       // Symbol: drake::multibody::ModelInstanceIndex
       struct /* ModelInstanceIndex */ {
-        // Source: drake/multibody/tree/multibody_tree_indexes.h:54
+        // Source: drake/multibody/tree/multibody_tree_indexes.h
         const char* doc =
 R"""(Type used to identify model instances by index within a multibody
 plant.)""";
       } ModelInstanceIndex;
       // Symbol: drake::multibody::MultibodyConstraintId
       struct /* MultibodyConstraintId */ {
-        // Source: drake/multibody/tree/multibody_tree_indexes.h:51
+        // Source: drake/multibody/tree/multibody_tree_indexes.h
         const char* doc =
 R"""(Type used to identify constraint by id within a multibody plant.)""";
       } MultibodyConstraintId;
       // Symbol: drake::multibody::MultibodyElement
       struct /* MultibodyElement */ {
-        // Source: drake/multibody/tree/multibody_element.h:45
+        // Source: drake/multibody/tree/multibody_element.h
         const char* doc =
 R"""(A class representing an element (subcomponent) of a MultibodyPlant or
 (internally) a MultibodyTree. Examples of multibody elements are
@@ -5151,7 +5151,7 @@ trees to World - fixed offset frames added when joints are modeled by
 mobilizers - all mobilizers.)""";
         // Symbol: drake::multibody::MultibodyElement::DeclareAbstractParameter
         struct /* DeclareAbstractParameter */ {
-          // Source: drake/multibody/tree/multibody_element.h:192
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""(To be used by MultibodyElement-derived objects when declaring
 parameters in their implementation of DoDeclareParameters(). For an
@@ -5159,7 +5159,7 @@ example, see Joint::DoDeclareParameters().)""";
         } DeclareAbstractParameter;
         // Symbol: drake::multibody::MultibodyElement::DeclareCacheEntries
         struct /* DeclareCacheEntries */ {
-          // Source: drake/multibody/tree/multibody_element.h:93
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""((Advanced) Declares all cache entries needed by this element. This
 method is called by MultibodyTree on ``this`` element during
@@ -5169,7 +5169,7 @@ entries must override DoDeclareCacheEntries().)""";
         } DeclareCacheEntries;
         // Symbol: drake::multibody::MultibodyElement::DeclareCacheEntry
         struct /* DeclareCacheEntry */ {
-          // Source: drake/multibody/tree/multibody_element.h:206
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""(To be used by MultibodyElement-derived objects when declaring cache
 entries in their implementation of DoDeclareCacheEntries(). For an
@@ -5177,7 +5177,7 @@ example, see DeformableBody::DoDeclareCacheEntries().)""";
         } DeclareCacheEntry;
         // Symbol: drake::multibody::MultibodyElement::DeclareDiscreteState
         struct /* DeclareDiscreteState */ {
-          // Source: drake/multibody/tree/multibody_element.h:86
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc_1args =
 R"""(Declares MultibodyTreeSystem discrete states. NVI to the virtual
 method DoDeclareDiscreteState().
@@ -5188,7 +5188,7 @@ Parameter ``tree_system``:
 Precondition:
     'tree_system' must be the same as the parent tree system (what's
     returned from GetParentTreeSystem()).)""";
-          // Source: drake/multibody/tree/multibody_element.h:199
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc_2args =
 R"""(To be used by MultibodyElement-derived objects when declaring discrete
 states in their implementation of DoDeclareDiscreteStates(). For an
@@ -5196,7 +5196,7 @@ example, see DeformableBody::DoDeclareDiscreteStates().)""";
         } DeclareDiscreteState;
         // Symbol: drake::multibody::MultibodyElement::DeclareNumericParameter
         struct /* DeclareNumericParameter */ {
-          // Source: drake/multibody/tree/multibody_element.h:185
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""(To be used by MultibodyElement-derived objects when declaring
 parameters in their implementation of DoDeclareParameters(). For an
@@ -5204,7 +5204,7 @@ example, see RigidBody::DoDeclareParameters().)""";
         } DeclareNumericParameter;
         // Symbol: drake::multibody::MultibodyElement::DeclareParameters
         struct /* DeclareParameters */ {
-          // Source: drake/multibody/tree/multibody_element.h:73
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""(Declares MultibodyTreeSystem Parameters at
 MultibodyTreeSystem::Finalize() time. NVI to the virtual method
@@ -5219,14 +5219,14 @@ Precondition:
         } DeclareParameters;
         // Symbol: drake::multibody::MultibodyElement::DoDeclareCacheEntries
         struct /* DoDeclareCacheEntries */ {
-          // Source: drake/multibody/tree/multibody_element.h:180
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""(Derived classes must override this method to declare cache entries
 needed by ``this`` element. The default implementation is a no-op.)""";
         } DoDeclareCacheEntries;
         // Symbol: drake::multibody::MultibodyElement::DoDeclareDiscreteState
         struct /* DoDeclareDiscreteState */ {
-          // Source: drake/multibody/tree/multibody_element.h:176
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""(Implementation of the NVI DeclareDiscreteState().
 MultibodyElement-derived objects may override to declare their
@@ -5234,7 +5234,7 @@ specific state variables.)""";
         } DoDeclareDiscreteState;
         // Symbol: drake::multibody::MultibodyElement::DoDeclareParameters
         struct /* DoDeclareParameters */ {
-          // Source: drake/multibody/tree/multibody_element.h:168
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""(Implementation of the NVI DeclareParameters().
 MultibodyElement-derived objects may override to declare their
@@ -5242,7 +5242,7 @@ specific parameters.)""";
         } DoDeclareParameters;
         // Symbol: drake::multibody::MultibodyElement::DoSetDefaultParameters
         struct /* DoSetDefaultParameters */ {
-          // Source: drake/multibody/tree/multibody_element.h:172
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""(Implementation of the NVI SetDefaultParameters().
 MultibodyElement-derived objects may override to set default values of
@@ -5250,14 +5250,14 @@ their specific parameters.)""";
         } DoSetDefaultParameters;
         // Symbol: drake::multibody::MultibodyElement::DoSetTopology
         struct /* DoSetTopology */ {
-          // Source: drake/multibody/tree/multibody_element.h:164
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""(Implementation of the NVI SetTopology(). For advanced use only for
 developers implementing new MultibodyTree components.)""";
         } DoSetTopology;
         // Symbol: drake::multibody::MultibodyElement::GetParentPlant
         struct /* GetParentPlant */ {
-          // Source: drake/multibody/tree/multibody_element.h:64
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""(Returns the MultibodyPlant that owns this MultibodyElement.
 
@@ -5273,7 +5273,7 @@ Raises:
         } GetParentPlant;
         // Symbol: drake::multibody::MultibodyElement::GetParentTreeSystem
         struct /* GetParentTreeSystem */ {
-          // Source: drake/multibody/tree/multibody_element.h:148
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""(Returns a constant reference to the parent MultibodyTreeSystem that
 owns the parent MultibodyTree that owns this element.
@@ -5283,20 +5283,20 @@ Raises:
         } GetParentTreeSystem;
         // Symbol: drake::multibody::MultibodyElement::MultibodyElement<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/multibody_element.h:107
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc_0args =
 R"""(Default constructor made protected so that sub-classes can still
 declare their default constructors if they need to.)""";
-          // Source: drake/multibody/tree/multibody_element.h:110
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc_1args =
 R"""(Constructor which allows specifying a model instance.)""";
-          // Source: drake/multibody/tree/multibody_element.h:113
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc_2args =
 R"""(Both the model instance and element index are specified.)""";
         } ctor;
         // Symbol: drake::multibody::MultibodyElement::SetDefaultParameters
         struct /* SetDefaultParameters */ {
-          // Source: drake/multibody/tree/multibody_element.h:79
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""(Sets default values of parameters belonging to each MultibodyElement
 in ``parameters`` at a call to
@@ -5310,7 +5310,7 @@ Precondition:
         } SetDefaultParameters;
         // Symbol: drake::multibody::MultibodyElement::SetTopology
         struct /* SetTopology */ {
-          // Source: drake/multibody/tree/multibody_element.h:158
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""(Gives MultibodyElement-derived objects the opportunity to retrieve
 their topology after MultibodyTree::Finalize() is invoked. NVI to pure
@@ -5318,7 +5318,7 @@ virtual method DoSetTopology().)""";
         } SetTopology;
         // Symbol: drake::multibody::MultibodyElement::get_parent_tree
         struct /* get_parent_tree */ {
-          // Source: drake/multibody/tree/multibody_element.h:136
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""(Returns a constant reference to the parent MultibodyTree that owns
 this element.
@@ -5328,33 +5328,33 @@ Precondition:
         } get_parent_tree;
         // Symbol: drake::multibody::MultibodyElement::has_parent_tree
         struct /* has_parent_tree */ {
-          // Source: drake/multibody/tree/multibody_element.h:212
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""(Returns true if this multibody element has a parent tree, otherwise
 false.)""";
         } has_parent_tree;
         // Symbol: drake::multibody::MultibodyElement::index_impl
         struct /* index_impl */ {
-          // Source: drake/multibody/tree/multibody_element.h:117
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc = R"""(Returns this element's unique index.)""";
         } index_impl;
         // Symbol: drake::multibody::MultibodyElement::is_ephemeral
         struct /* is_ephemeral */ {
-          // Source: drake/multibody/tree/multibody_element.h:97
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""(Returns ``True`` if this MultibodyElement was added during Finalize()
 rather than something a user added. (See class comments.))""";
         } is_ephemeral;
         // Symbol: drake::multibody::MultibodyElement::model_instance
         struct /* model_instance */ {
-          // Source: drake/multibody/tree/multibody_element.h:53
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""(Returns the ModelInstanceIndex of the model instance to which this
 element belongs.)""";
         } model_instance;
         // Symbol: drake::multibody::MultibodyElement::ordinal_impl
         struct /* ordinal_impl */ {
-          // Source: drake/multibody/tree/multibody_element.h:128
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""(Returns this element's unique ordinal.
 
@@ -5367,7 +5367,7 @@ Note:
         } ordinal_impl;
         // Symbol: drake::multibody::MultibodyElement::set_is_ephemeral
         struct /* set_is_ephemeral */ {
-          // Source: drake/multibody/tree/multibody_element.h:102
+          // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""((Internal use only) Sets the ``is_ephemeral`` flag to the indicated
 value. The default if this is never called is ``False``. Any element
@@ -5376,7 +5376,7 @@ that is added during Finalize() should set this flag to ``True``.)""";
       } MultibodyElement;
       // Symbol: drake::multibody::MultibodyForces
       struct /* MultibodyForces */ {
-        // Source: drake/multibody/tree/multibody_forces.h:27
+        // Source: drake/multibody/tree/multibody_forces.h
         const char* doc =
 R"""(A class to hold a set of forces applied to a MultibodyTree system.
 Forces can include generalized forces as well as body spatial forces.
@@ -5385,13 +5385,13 @@ MultibodyPlant::CalcGeneralizedForces() can be used to compute the
 body_forces().)""";
         // Symbol: drake::multibody::MultibodyForces::AddInForces
         struct /* AddInForces */ {
-          // Source: drake/multibody/tree/multibody_forces.h:78
+          // Source: drake/multibody/tree/multibody_forces.h
           const char* doc =
 R"""(Adds into ``this`` the force contribution stored in ``addend``.)""";
         } AddInForces;
         // Symbol: drake::multibody::MultibodyForces::CheckHasRightSizeForModel
         struct /* CheckHasRightSizeForModel */ {
-          // Source: drake/multibody/tree/multibody_forces.h:84
+          // Source: drake/multibody/tree/multibody_forces.h
           const char* doc_1args_plant =
 R"""(Utility that checks that the forces stored by ``this`` object have the
 proper sizes to represent the set of forces for the given ``plant``.
@@ -5399,21 +5399,21 @@ proper sizes to represent the set of forces for the given ``plant``.
 Returns:
     true if ``this`` forces object has the proper sizes for the given
     ``plant``.)""";
-          // Source: drake/multibody/tree/multibody_forces.h:88
+          // Source: drake/multibody/tree/multibody_forces.h
           const char* doc_1args_model = R"""((Advanced) Tree overload.)""";
         } CheckHasRightSizeForModel;
         // Symbol: drake::multibody::MultibodyForces::MultibodyForces<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/multibody_forces.h:36
+          // Source: drake/multibody/tree/multibody_forces.h
           const char* doc_1args_plant =
 R"""(Constructs a force object to store a set of forces to be applied to
 the multibody model for ``plant``. Forces are initialized to zero,
 meaning no forces are applied. ``plant`` must have been already
 finalized with MultibodyPlant::Finalize() or this constructor will
 abort.)""";
-          // Source: drake/multibody/tree/multibody_forces.h:39
+          // Source: drake/multibody/tree/multibody_forces.h
           const char* doc_1args_model = R"""((Advanced) Tree overload.)""";
-          // Source: drake/multibody/tree/multibody_forces.h:44
+          // Source: drake/multibody/tree/multibody_forces.h
           const char* doc_2args_nb_nv =
 R"""(Number of bodies and number of generalized velocities overload. This
 constructor is useful for constructing the MultibodyForces structure
@@ -5421,13 +5421,13 @@ before a MultibodyPlant has been constructed.)""";
         } ctor;
         // Symbol: drake::multibody::MultibodyForces::SetZero
         struct /* SetZero */ {
-          // Source: drake/multibody/tree/multibody_forces.h:49
+          // Source: drake/multibody/tree/multibody_forces.h
           const char* doc =
 R"""(Sets ``this`` to store zero forces (no applied forces).)""";
         } SetZero;
         // Symbol: drake::multibody::MultibodyForces::body_forces
         struct /* body_forces */ {
-          // Source: drake/multibody/tree/multibody_forces.h:72
+          // Source: drake/multibody/tree/multibody_forces.h
           const char* doc =
 R"""((Advanced) Returns a constant reference to the vector of spatial body
 forces ``F_BBo_W`` on each body B in the model, at the body's frame
@@ -5438,33 +5438,33 @@ Note:
         } body_forces;
         // Symbol: drake::multibody::MultibodyForces::generalized_forces
         struct /* generalized_forces */ {
-          // Source: drake/multibody/tree/multibody_forces.h:63
+          // Source: drake/multibody/tree/multibody_forces.h
           const char* doc =
 R"""((Advanced) Returns a constant reference to the vector of generalized
 forces stored by ``this`` forces object.)""";
         } generalized_forces;
         // Symbol: drake::multibody::MultibodyForces::mutable_body_forces
         struct /* mutable_body_forces */ {
-          // Source: drake/multibody/tree/multibody_forces.h:75
+          // Source: drake/multibody/tree/multibody_forces.h
           const char* doc =
 R"""((Advanced) Mutable version of body_forces().)""";
         } mutable_body_forces;
         // Symbol: drake::multibody::MultibodyForces::mutable_generalized_forces
         struct /* mutable_generalized_forces */ {
-          // Source: drake/multibody/tree/multibody_forces.h:66
+          // Source: drake/multibody/tree/multibody_forces.h
           const char* doc =
 R"""((Advanced) Mutable version of generalized_forces().)""";
         } mutable_generalized_forces;
         // Symbol: drake::multibody::MultibodyForces::num_bodies
         struct /* num_bodies */ {
-          // Source: drake/multibody/tree/multibody_forces.h:53
+          // Source: drake/multibody/tree/multibody_forces.h
           const char* doc =
 R"""(Returns the number of bodies for which ``this`` force object applies.
 Determined at construction from the given model MultibodyTree object.)""";
         } num_bodies;
         // Symbol: drake::multibody::MultibodyForces::num_velocities
         struct /* num_velocities */ {
-          // Source: drake/multibody/tree/multibody_forces.h:59
+          // Source: drake/multibody/tree/multibody_forces.h
           const char* doc =
 R"""(Returns the number of generalized velocities for the model to which
 these forces apply. The number of generalized forces in a multibody
@@ -5474,24 +5474,24 @@ at construction from the given model MultibodyTree object.)""";
       } MultibodyForces;
       // Symbol: drake::multibody::PdControllerGains
       struct /* PdControllerGains */ {
-        // Source: drake/multibody/tree/joint_actuator.h:26
+        // Source: drake/multibody/tree/joint_actuator.h
         const char* doc =
 R"""(PD controller gains. This enables the modeling of a simple low level
 PD controllers, see JointActuator::set_controller_gains().)""";
         // Symbol: drake::multibody::PdControllerGains::d
         struct /* d */ {
-          // Source: drake/multibody/tree/joint_actuator.h:30
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc = R"""()""";
         } d;
         // Symbol: drake::multibody::PdControllerGains::p
         struct /* p */ {
-          // Source: drake/multibody/tree/joint_actuator.h:28
+          // Source: drake/multibody/tree/joint_actuator.h
           const char* doc = R"""()""";
         } p;
       } PdControllerGains;
       // Symbol: drake::multibody::PlanarJoint
       struct /* PlanarJoint */ {
-        // Source: drake/multibody/tree/planar_joint.h:33
+        // Source: drake/multibody/tree/planar_joint.h
         const char* doc =
 R"""(This joint models a planar joint allowing two bodies to translate and
 rotate relative to one another in a plane with three degrees of
@@ -5508,7 +5508,7 @@ is defined to be positive according to the right-hand-rule with the
 thumb aligned in the direction of frame F's z-axis.)""";
         // Symbol: drake::multibody::PlanarJoint::PlanarJoint<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/planar_joint.h:59
+          // Source: drake/multibody/tree/planar_joint.h
           const char* doc =
 R"""(Constructor to create a planar joint between two bodies so that frame
 F attached to the parent body P and frame M attached to the child body
@@ -5532,7 +5532,7 @@ Raises:
         } ctor;
         // Symbol: drake::multibody::PlanarJoint::default_damping
         struct /* default_damping */ {
-          // Source: drake/multibody/tree/planar_joint.h:91
+          // Source: drake/multibody/tree/planar_joint.h
           const char* doc =
 R"""(Returns ``this`` joint's default damping constant in N⋅s/m for the
 translational degrees and N⋅m⋅s for the rotational degree. The damping
@@ -5547,7 +5547,7 @@ frame F as t_B_F = τ⋅Fz_F.)""";
         } default_damping;
         // Symbol: drake::multibody::PlanarJoint::get_angular_velocity
         struct /* get_angular_velocity */ {
-          // Source: drake/multibody/tree/planar_joint.h:189
+          // Source: drake/multibody/tree/planar_joint.h
           const char* doc =
 R"""(Gets the rate of change, in radians per second, of ``this`` joint's
 angle θ from ``context``. See class documentation for the definition
@@ -5562,7 +5562,7 @@ Returns ``theta_dot``:
         } get_angular_velocity;
         // Symbol: drake::multibody::PlanarJoint::get_default_rotation
         struct /* get_default_rotation */ {
-          // Source: drake/multibody/tree/planar_joint.h:225
+          // Source: drake/multibody/tree/planar_joint.h
           const char* doc =
 R"""(Gets the default angle for ``this`` joint.
 
@@ -5571,7 +5571,7 @@ Returns ``theta``:
         } get_default_rotation;
         // Symbol: drake::multibody::PlanarJoint::get_default_translation
         struct /* get_default_translation */ {
-          // Source: drake/multibody/tree/planar_joint.h:211
+          // Source: drake/multibody/tree/planar_joint.h
           const char* doc =
 R"""(Gets the default position for ``this`` joint.
 
@@ -5580,7 +5580,7 @@ Returns ``p_FoMo_F``:
         } get_default_translation;
         // Symbol: drake::multibody::PlanarJoint::get_rotation
         struct /* get_rotation */ {
-          // Source: drake/multibody/tree/planar_joint.h:125
+          // Source: drake/multibody/tree/planar_joint.h
           const char* doc =
 R"""(Gets the angle θ of ``this`` joint from ``context``.
 
@@ -5593,7 +5593,7 @@ Returns ``theta``:
         } get_rotation;
         // Symbol: drake::multibody::PlanarJoint::get_translation
         struct /* get_translation */ {
-          // Source: drake/multibody/tree/planar_joint.h:103
+          // Source: drake/multibody/tree/planar_joint.h
           const char* doc =
 R"""(Gets the position of ``this`` joint from ``context``.
 
@@ -5606,7 +5606,7 @@ Returns ``p_FoMo_F``:
         } get_translation;
         // Symbol: drake::multibody::PlanarJoint::get_translational_velocity
         struct /* get_translational_velocity */ {
-          // Source: drake/multibody/tree/planar_joint.h:164
+          // Source: drake/multibody/tree/planar_joint.h
           const char* doc =
 R"""(Gets the translational velocity v_FoMo_F, in meters per second, of
 ``this`` joint's Mo measured and expressed in frame F from
@@ -5621,7 +5621,7 @@ Returns ``v_FoMo_F``:
         } get_translational_velocity;
         // Symbol: drake::multibody::PlanarJoint::set_angular_velocity
         struct /* set_angular_velocity */ {
-          // Source: drake/multibody/tree/planar_joint.h:201
+          // Source: drake/multibody/tree/planar_joint.h
           const char* doc =
 R"""(Sets the rate of change, in radians per second, of ``this`` joint's
 angle θ (see class documentation) to ``theta_dot``. The new rate of
@@ -5639,7 +5639,7 @@ Returns:
         } set_angular_velocity;
         // Symbol: drake::multibody::PlanarJoint::set_default_pose
         struct /* set_default_pose */ {
-          // Source: drake/multibody/tree/planar_joint.h:238
+          // Source: drake/multibody/tree/planar_joint.h
           const char* doc =
 R"""(Sets the default position and angle of this joint.
 
@@ -5651,7 +5651,7 @@ Parameter ``theta``:
         } set_default_pose;
         // Symbol: drake::multibody::PlanarJoint::set_default_rotation
         struct /* set_default_rotation */ {
-          // Source: drake/multibody/tree/planar_joint.h:229
+          // Source: drake/multibody/tree/planar_joint.h
           const char* doc =
 R"""(Sets the default angle of this joint.
 
@@ -5660,7 +5660,7 @@ Parameter ``theta``:
         } set_default_rotation;
         // Symbol: drake::multibody::PlanarJoint::set_default_translation
         struct /* set_default_translation */ {
-          // Source: drake/multibody/tree/planar_joint.h:217
+          // Source: drake/multibody/tree/planar_joint.h
           const char* doc =
 R"""(Sets the default position of this joint.
 
@@ -5669,7 +5669,7 @@ Parameter ``p_FoMo_F``:
         } set_default_translation;
         // Symbol: drake::multibody::PlanarJoint::set_pose
         struct /* set_pose */ {
-          // Source: drake/multibody/tree/planar_joint.h:151
+          // Source: drake/multibody/tree/planar_joint.h
           const char* doc =
 R"""(Sets the ``context`` so that the position of ``this`` joint equals
 ``p_FoMo_F`` and its angle equals ``theta``.
@@ -5690,7 +5690,7 @@ Returns:
         } set_pose;
         // Symbol: drake::multibody::PlanarJoint::set_random_pose_distribution
         struct /* set_random_pose_distribution */ {
-          // Source: drake/multibody/tree/planar_joint.h:246
+          // Source: drake/multibody/tree/planar_joint.h
           const char* doc =
 R"""(Sets the random distribution that the position and angle of this joint
 will be randomly sampled from. See class documentation for details on
@@ -5698,7 +5698,7 @@ the definition of the position and angle.)""";
         } set_random_pose_distribution;
         // Symbol: drake::multibody::PlanarJoint::set_rotation
         struct /* set_rotation */ {
-          // Source: drake/multibody/tree/planar_joint.h:135
+          // Source: drake/multibody/tree/planar_joint.h
           const char* doc =
 R"""(Sets the ``context`` so that the angle θ of ``this`` joint equals
 ``theta``.
@@ -5715,7 +5715,7 @@ Returns:
         } set_rotation;
         // Symbol: drake::multibody::PlanarJoint::set_translation
         struct /* set_translation */ {
-          // Source: drake/multibody/tree/planar_joint.h:114
+          // Source: drake/multibody/tree/planar_joint.h
           const char* doc =
 R"""(Sets the ``context`` so that the position of ``this`` joint equals
 ``p_FoMo_F``.
@@ -5732,7 +5732,7 @@ Returns:
         } set_translation;
         // Symbol: drake::multibody::PlanarJoint::set_translational_velocity
         struct /* set_translational_velocity */ {
-          // Source: drake/multibody/tree/planar_joint.h:176
+          // Source: drake/multibody/tree/planar_joint.h
           const char* doc =
 R"""(Sets the translational velocity, in meters per second, of this
 ``this`` joint's Mo measured and expressed in frame F to ``v_FoMo_F``.
@@ -5750,13 +5750,13 @@ Returns:
         } set_translational_velocity;
         // Symbol: drake::multibody::PlanarJoint::type_name
         struct /* type_name */ {
-          // Source: drake/multibody/tree/planar_joint.h:79
+          // Source: drake/multibody/tree/planar_joint.h
           const char* doc = R"""()""";
         } type_name;
       } PlanarJoint;
       // Symbol: drake::multibody::PrismaticJoint
       struct /* PrismaticJoint */ {
-        // Source: drake/multibody/tree/prismatic_joint.h:28
+        // Source: drake/multibody/tree/prismatic_joint.h
         const char* doc =
 R"""(This Joint allows two bodies to translate relative to one another
 along a common axis. That is, given a frame Jp attached to the parent
@@ -5768,7 +5768,7 @@ direction of â. Axis vector â is constant and has the same
 components in both frames Jp and Jc, that is, ``â_Jp = â_Jc``.)""";
         // Symbol: drake::multibody::PrismaticJoint::AddInForce
         struct /* AddInForce */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:226
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Adds into ``multibody_forces`` a given ``force``, in Newtons, for
 ``this`` joint that is to be applied along the joint's axis. The force
@@ -5778,7 +5778,7 @@ along the joint's axis.)""";
         } AddInForce;
         // Symbol: drake::multibody::PrismaticJoint::DoAddInDamping
         struct /* DoAddInDamping */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:261
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Joint<T> override called through public NVI, Joint::AddInDamping().
 Therefore arguments were already checked to be valid. This method adds
@@ -5787,7 +5787,7 @@ into ``forces`` a dissipative force according to the viscous law ``f =
         } DoAddInDamping;
         // Symbol: drake::multibody::PrismaticJoint::DoAddInOneForce
         struct /* DoAddInOneForce */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:244
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Joint<T> virtual override called through public NVI,
 Joint::AddInForce(). Therefore arguments were already checked to be
@@ -5800,7 +5800,7 @@ with the origin of the parent frame at all times).)""";
         } DoAddInOneForce;
         // Symbol: drake::multibody::PrismaticJoint::GetDamping
         struct /* GetDamping */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:183
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Returns the Context dependent damping coefficient stored as a
 parameter in ``context``. Refer to default_damping() for details.
@@ -5811,7 +5811,7 @@ Parameter ``context``:
         } GetDamping;
         // Symbol: drake::multibody::PrismaticJoint::PrismaticJoint<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:66
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Constructor to create a prismatic joint between two bodies so that
 frame Jp attached to the parent body P and frame Jc attached to the
@@ -5856,7 +5856,7 @@ Raises:
         } ctor;
         // Symbol: drake::multibody::PrismaticJoint::SetDamping
         struct /* SetDamping */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:193
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Sets the value of the viscous damping coefficient for this joint,
 stored as a parameter in ``context``. Refer to default_damping() for
@@ -5874,27 +5874,27 @@ Raises:
         } SetDamping;
         // Symbol: drake::multibody::PrismaticJoint::acceleration_lower_limit
         struct /* acceleration_lower_limit */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:120
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Returns the acceleration lower limit for ``this`` joint in meters per
 second squared.)""";
         } acceleration_lower_limit;
         // Symbol: drake::multibody::PrismaticJoint::acceleration_upper_limit
         struct /* acceleration_upper_limit */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:126
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Returns the acceleration upper limit for ``this`` joint in meters per
 second squared.)""";
         } acceleration_upper_limit;
         // Symbol: drake::multibody::PrismaticJoint::default_damping
         struct /* default_damping */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:84
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Returns ``this`` joint's default damping constant in N⋅s/m.)""";
         } default_damping;
         // Symbol: drake::multibody::PrismaticJoint::get_default_translation
         struct /* get_default_translation */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:203
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Gets the default translation. Wrapper for the more general
 ``Joint::default_positions()``.
@@ -5905,7 +5905,7 @@ Returns:
         } get_default_translation;
         // Symbol: drake::multibody::PrismaticJoint::get_translation
         struct /* get_translation */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:137
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Gets the translation distance of ``this`` mobilizer from ``context``.
 
@@ -5918,7 +5918,7 @@ Returns:
         } get_translation;
         // Symbol: drake::multibody::PrismaticJoint::get_translation_rate
         struct /* get_translation_rate */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:160
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Gets the rate of change, in meters per second, of ``this`` joint's
 translation distance (see get_translation()) from ``context``.
@@ -5932,19 +5932,19 @@ Returns:
         } get_translation_rate;
         // Symbol: drake::multibody::PrismaticJoint::position_lower_limit
         struct /* position_lower_limit */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:99
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Returns the position lower limit for ``this`` joint in meters.)""";
         } position_lower_limit;
         // Symbol: drake::multibody::PrismaticJoint::position_upper_limit
         struct /* position_upper_limit */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:104
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Returns the position upper limit for ``this`` joint in meters.)""";
         } position_upper_limit;
         // Symbol: drake::multibody::PrismaticJoint::set_default_damping
         struct /* set_default_damping */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:91
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Sets the default value of viscous damping for this joint, in N⋅s/m.
 
@@ -5960,7 +5960,7 @@ Precondition:
         } set_default_damping;
         // Symbol: drake::multibody::PrismaticJoint::set_default_translation
         struct /* set_default_translation */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:211
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Sets the ``default_positions`` of this joint (in this case a single
 translation)
@@ -5970,12 +5970,12 @@ Parameter ``translation``:
         } set_default_translation;
         // Symbol: drake::multibody::PrismaticJoint::set_random_translation_distribution
         struct /* set_random_translation_distribution */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:215
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc = R"""()""";
         } set_random_translation_distribution;
         // Symbol: drake::multibody::PrismaticJoint::set_translation
         struct /* set_translation */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:148
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Sets ``context`` so that the generalized coordinate corresponding to
 the translation distance of ``this`` joint equals ``translation``.
@@ -5991,7 +5991,7 @@ Returns:
         } set_translation;
         // Symbol: drake::multibody::PrismaticJoint::set_translation_rate
         struct /* set_translation_rate */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:173
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Sets the rate of change, in meters per second, of ``this`` joint's
 translation distance to ``translation_dot``. The new rate of change
@@ -6009,7 +6009,7 @@ Returns:
         } set_translation_rate;
         // Symbol: drake::multibody::PrismaticJoint::translation_axis
         struct /* translation_axis */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:81
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Returns the axis of translation for ``this`` joint as a unit vector.
 Since the components of this axis in either frame Jp or Jc are the
@@ -6018,19 +6018,19 @@ same (see this class's documentation for frame definitions) then,
         } translation_axis;
         // Symbol: drake::multibody::PrismaticJoint::type_name
         struct /* type_name */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:75
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc = R"""()""";
         } type_name;
         // Symbol: drake::multibody::PrismaticJoint::velocity_lower_limit
         struct /* velocity_lower_limit */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:109
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Returns the velocity lower limit for ``this`` joint in meters per
 second.)""";
         } velocity_lower_limit;
         // Symbol: drake::multibody::PrismaticJoint::velocity_upper_limit
         struct /* velocity_upper_limit */ {
-          // Source: drake/multibody/tree/prismatic_joint.h:114
+          // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Returns the velocity upper limit for ``this`` joint in meters per
 second.)""";
@@ -6038,7 +6038,7 @@ second.)""";
       } PrismaticJoint;
       // Symbol: drake::multibody::PrismaticSpring
       struct /* PrismaticSpring */ {
-        // Source: drake/multibody/tree/prismatic_spring.h:29
+        // Source: drake/multibody/tree/prismatic_spring.h
         const char* doc =
 R"""(This ForceElement models a linear spring attached to a PrismaticJoint
 and applies a force to that joint according to
@@ -6067,22 +6067,22 @@ Note:
     LinearSpringDamper connects two bodies.)""";
         // Symbol: drake::multibody::PrismaticSpring::CalcConservativePower
         struct /* CalcConservativePower */ {
-          // Source: drake/multibody/tree/prismatic_spring.h:59
+          // Source: drake/multibody/tree/prismatic_spring.h
           const char* doc = R"""()""";
         } CalcConservativePower;
         // Symbol: drake::multibody::PrismaticSpring::CalcNonConservativePower
         struct /* CalcNonConservativePower */ {
-          // Source: drake/multibody/tree/prismatic_spring.h:64
+          // Source: drake/multibody/tree/prismatic_spring.h
           const char* doc = R"""()""";
         } CalcNonConservativePower;
         // Symbol: drake::multibody::PrismaticSpring::CalcPotentialEnergy
         struct /* CalcPotentialEnergy */ {
-          // Source: drake/multibody/tree/prismatic_spring.h:55
+          // Source: drake/multibody/tree/prismatic_spring.h
           const char* doc = R"""()""";
         } CalcPotentialEnergy;
         // Symbol: drake::multibody::PrismaticSpring::PrismaticSpring<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/prismatic_spring.h:41
+          // Source: drake/multibody/tree/prismatic_spring.h
           const char* doc =
 R"""(Constructor for a linear spring attached to the given prismatic joint.
 
@@ -6099,7 +6099,7 @@ Raises:
         } ctor;
         // Symbol: drake::multibody::PrismaticSpring::joint
         struct /* joint */ {
-          // Source: drake/multibody/tree/prismatic_spring.h:49
+          // Source: drake/multibody/tree/prismatic_spring.h
           const char* doc =
 R"""(Returns the joint associated with this spring.
 
@@ -6109,18 +6109,18 @@ Raises:
         } joint;
         // Symbol: drake::multibody::PrismaticSpring::nominal_position
         struct /* nominal_position */ {
-          // Source: drake/multibody/tree/prismatic_spring.h:51
+          // Source: drake/multibody/tree/prismatic_spring.h
           const char* doc = R"""()""";
         } nominal_position;
         // Symbol: drake::multibody::PrismaticSpring::stiffness
         struct /* stiffness */ {
-          // Source: drake/multibody/tree/prismatic_spring.h:53
+          // Source: drake/multibody/tree/prismatic_spring.h
           const char* doc = R"""()""";
         } stiffness;
       } PrismaticSpring;
       // Symbol: drake::multibody::QuaternionFloatingJoint
       struct /* QuaternionFloatingJoint */ {
-        // Source: drake/multibody/tree/quaternion_floating_joint.h:36
+        // Source: drake/multibody/tree/quaternion_floating_joint.h
         const char* doc =
 R"""(This Joint allows two bodies to move freely relatively to one another.
 That is, given a frame F attached to the parent body P and a frame M
@@ -6138,7 +6138,7 @@ frame M in F and the linear velocity ``v_FM`` of frame M's origin in
 frame F, ordered ``(w_FM, v_FM)``.)""";
         // Symbol: drake::multibody::QuaternionFloatingJoint::DoAddInDamping
         struct /* DoAddInDamping */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:374
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Joint<T> override called through public NVI, Joint::AddInDamping().
 Therefore arguments were already checked to be valid. This method adds
@@ -6151,7 +6151,7 @@ with d the damping coefficient (see default_angular_damping()).)""";
         } DoAddInDamping;
         // Symbol: drake::multibody::QuaternionFloatingJoint::DoAddInOneForce
         struct /* DoAddInOneForce */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:363
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Joint<T> override called through public NVI, Joint::AddInForce().
 Adding forces per-dof makes no physical sense. Therefore, this method
@@ -6159,7 +6159,7 @@ throws an exception if invoked.)""";
         } DoAddInOneForce;
         // Symbol: drake::multibody::QuaternionFloatingJoint::GetPose
         struct /* GetPose */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:157
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Returns the pose ``X_FM`` of the outboard frame M as measured and
 expressed in the inboard frame F. Refer to the documentation for this
@@ -6173,7 +6173,7 @@ Returns ``X_FM``:
         } GetPose;
         // Symbol: drake::multibody::QuaternionFloatingJoint::QuaternionFloatingJoint<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:75
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Constructor for a QuaternionFloatingJoint granting six degrees of
 freedom to an outboard frame M attached to the child body B with
@@ -6216,7 +6216,7 @@ Raises:
         } ctor;
         // Symbol: drake::multibody::QuaternionFloatingJoint::SetOrientation
         struct /* SetOrientation */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:212
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Sets the quaternion in ``context`` so this joint's orientation is
 consistent with the given ``R_FM`` rotation matrix.
@@ -6233,7 +6233,7 @@ Returns:
         } SetOrientation;
         // Symbol: drake::multibody::QuaternionFloatingJoint::SetPose
         struct /* SetPose */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:237
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Sets ``context`` to store ``X_FM`` the pose of frame M measured and
 expressed in frame F.
@@ -6250,7 +6250,7 @@ Returns:
         } SetPose;
         // Symbol: drake::multibody::QuaternionFloatingJoint::SetQuaternion
         struct /* SetQuaternion */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:199
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Sets ``context`` so that the orientation of frame M in F is given by
 the input quaternion ``q_FM``.
@@ -6266,7 +6266,7 @@ Returns:
         } SetQuaternion;
         // Symbol: drake::multibody::QuaternionFloatingJoint::SetTranslation
         struct /* SetTranslation */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:224
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(For this joint, stores the position vector ``p_FM`` in ``context``.
 
@@ -6282,7 +6282,7 @@ Returns:
         } SetTranslation;
         // Symbol: drake::multibody::QuaternionFloatingJoint::default_angular_damping
         struct /* default_angular_damping */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:113
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Returns ``this`` joint's default angular damping constant in N⋅m⋅s.
 The damping torque (in N⋅m) is modeled as ``τ = -damping⋅ω``, i.e.
@@ -6292,7 +6292,7 @@ is rigidly attached).)""";
         } default_angular_damping;
         // Symbol: drake::multibody::QuaternionFloatingJoint::default_translational_damping
         struct /* default_translational_damping */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:123
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Returns ``this`` joint's default translational damping constant in
 N⋅s/m. The damping force (in N) is modeled as ``f = -damping⋅v`` i.e.
@@ -6302,7 +6302,7 @@ Mo.)""";
         } default_translational_damping;
         // Symbol: drake::multibody::QuaternionFloatingJoint::get_angular_velocity
         struct /* get_angular_velocity */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:170
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Retrieves from ``context`` the angular velocity ``w_FM`` of the child
 frame M in the parent frame F, expressed in F.
@@ -6317,7 +6317,7 @@ Returns ``w_FM``:
         } get_angular_velocity;
         // Symbol: drake::multibody::QuaternionFloatingJoint::get_default_quaternion
         struct /* get_default_quaternion */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:318
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Gets the default quaternion ``q_FM`` for ``this`` joint.
 
@@ -6326,7 +6326,7 @@ Returns:
         } get_default_quaternion;
         // Symbol: drake::multibody::QuaternionFloatingJoint::get_default_translation
         struct /* get_default_translation */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:327
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Returns this joint's default translation as the position vector
 p_FoMo_F from Fo (inboard frame F's origin) to Mo (outboard frame M's
@@ -6337,7 +6337,7 @@ Returns ``This``:
         } get_default_translation;
         // Symbol: drake::multibody::QuaternionFloatingJoint::get_quaternion
         struct /* get_quaternion */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:138
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Gets the quaternion ``q_FM`` that represents the orientation of
 outboard frame M in the inboard frame F. Refer to the documentation
@@ -6351,7 +6351,7 @@ Returns ``q_FM``:
         } get_quaternion;
         // Symbol: drake::multibody::QuaternionFloatingJoint::get_translation
         struct /* get_translation */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:148
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Returns the position vector p_FoMo_F from Fo (inboard frame F's
 origin) to Mo (outboard frame M's origin), expressed in inboard frame
@@ -6370,7 +6370,7 @@ Returns ``p_FM``:
         } get_translation;
         // Symbol: drake::multibody::QuaternionFloatingJoint::get_translational_velocity
         struct /* get_translational_velocity */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:182
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Retrieves from ``context`` the translational velocity ``v_FM`` of the
 child frame M's origin as measured and expressed in the parent frame
@@ -6387,7 +6387,7 @@ Returns ``v_FM``:
         } get_translational_velocity;
         // Symbol: drake::multibody::QuaternionFloatingJoint::set_angular_velocity
         struct /* set_angular_velocity */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:252
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Sets in ``context`` the state for ``this`` joint so that the angular
 velocity of the child frame M in the parent frame F is ``w_FM``.
@@ -6405,7 +6405,7 @@ Returns:
         } set_angular_velocity;
         // Symbol: drake::multibody::QuaternionFloatingJoint::set_default_quaternion
         struct /* set_default_quaternion */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:338
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Sets the default quaternion ``q_FM`` of this joint.
 
@@ -6414,7 +6414,7 @@ Parameter ``q_FM``:
         } set_default_quaternion;
         // Symbol: drake::multibody::QuaternionFloatingJoint::set_default_translation
         struct /* set_default_translation */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:352
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Sets this joint's default position vector ``p_FM``.
 
@@ -6424,7 +6424,7 @@ Parameter ``p_FM``:
         } set_default_translation;
         // Symbol: drake::multibody::QuaternionFloatingJoint::set_random_quaternion_distribution
         struct /* set_random_quaternion_distribution */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:297
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""((Advanced) Sets the random distribution that the orientation of this
 joint will be randomly sampled from. If a translation (position)
@@ -6442,14 +6442,14 @@ Note:
         } set_random_quaternion_distribution;
         // Symbol: drake::multibody::QuaternionFloatingJoint::set_random_quaternion_distribution_to_uniform
         struct /* set_random_quaternion_distribution_to_uniform */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:304
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Sets the random distribution such that the orientation of this joint
 will be randomly sampled using uniformly sampled rotations.)""";
         } set_random_quaternion_distribution_to_uniform;
         // Symbol: drake::multibody::QuaternionFloatingJoint::set_random_translation_distribution
         struct /* set_random_translation_distribution */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:283
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(For this joint, sets the random distribution that the translation of
 this joint will be randomly sampled from. If a quaternion distribution
@@ -6459,7 +6459,7 @@ See get_translation() for details on the translation representation.)""";
         } set_random_translation_distribution;
         // Symbol: drake::multibody::QuaternionFloatingJoint::set_translational_velocity
         struct /* set_translational_velocity */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:267
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Sets in ``context`` the state for ``this`` joint so that the
 translational velocity of the child frame M's origin in the parent
@@ -6479,14 +6479,14 @@ Returns:
         } set_translational_velocity;
         // Symbol: drake::multibody::QuaternionFloatingJoint::type_name
         struct /* type_name */ {
-          // Source: drake/multibody/tree/quaternion_floating_joint.h:103
+          // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
 R"""(Returns the name of this joint type: "quaternion_floating")""";
         } type_name;
       } QuaternionFloatingJoint;
       // Symbol: drake::multibody::RevoluteJoint
       struct /* RevoluteJoint */ {
-        // Source: drake/multibody/tree/revolute_joint.h:30
+        // Source: drake/multibody/tree/revolute_joint.h
         const char* doc =
 R"""(This Joint allows two bodies to rotate relatively to one another
 around a common axis. That is, given a frame Jp attached to the parent
@@ -6499,7 +6499,7 @@ vector â is constant and has the same components in both frames Jp
 and Jc, that is, ``â_Jp = â_Jc``.)""";
         // Symbol: drake::multibody::RevoluteJoint::AddInTorque
         struct /* AddInTorque */ {
-          // Source: drake/multibody/tree/revolute_joint.h:254
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Adds into ``forces`` a given ``torque`` for ``this`` joint that is to
 be applied about the joint's axis. The torque is defined to be
@@ -6513,7 +6513,7 @@ Note:
         } AddInTorque;
         // Symbol: drake::multibody::RevoluteJoint::DoAddInDamping
         struct /* DoAddInDamping */ {
-          // Source: drake/multibody/tree/revolute_joint.h:292
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Joint<T> override called through public NVI, Joint::AddInDamping().
 Therefore arguments were already checked to be valid. This method adds
@@ -6522,7 +6522,7 @@ into ``forces`` a dissipative torque according to the viscous law ``τ
         } DoAddInDamping;
         // Symbol: drake::multibody::RevoluteJoint::DoAddInOneForce
         struct /* DoAddInOneForce */ {
-          // Source: drake/multibody/tree/revolute_joint.h:275
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Joint<T> override called through public NVI, Joint::AddInForce().
 Therefore arguments were already checked to be valid. For a
@@ -6539,7 +6539,7 @@ right-hand-rule around the joint's axis.)""";
         } DoAddInOneForce;
         // Symbol: drake::multibody::RevoluteJoint::GetDamping
         struct /* GetDamping */ {
-          // Source: drake/multibody/tree/revolute_joint.h:218
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Returns the Context dependent damping coefficient stored as a
 parameter in ``context``. Refer to default_damping() for details.
@@ -6550,7 +6550,7 @@ Parameter ``context``:
         } GetDamping;
         // Symbol: drake::multibody::RevoluteJoint::RevoluteJoint<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/revolute_joint.h:63
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc_5args =
 R"""(Constructor to create a revolute joint between two bodies so that
 frame Jp attached to the parent body P and frame Jc attached to the
@@ -6581,7 +6581,7 @@ Parameter ``damping``:
 
 Raises:
     RuntimeError if damping is negative.)""";
-          // Source: drake/multibody/tree/revolute_joint.h:101
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc_7args =
 R"""(Constructor to create a revolute joint between two bodies so that
 frame Jp attached to the parent body P and frame Jc attached to the
@@ -6626,7 +6626,7 @@ Raises:
         } ctor;
         // Symbol: drake::multibody::RevoluteJoint::SetDamping
         struct /* SetDamping */ {
-          // Source: drake/multibody/tree/revolute_joint.h:228
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Sets the value of the viscous damping coefficient for this joint,
 stored as a parameter in ``context``. Refer to default_damping() for
@@ -6644,27 +6644,27 @@ Raises:
         } SetDamping;
         // Symbol: drake::multibody::RevoluteJoint::acceleration_lower_limit
         struct /* acceleration_lower_limit */ {
-          // Source: drake/multibody/tree/revolute_joint.h:152
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Returns the acceleration lower limit for ``this`` joint in radians /
 s².)""";
         } acceleration_lower_limit;
         // Symbol: drake::multibody::RevoluteJoint::acceleration_upper_limit
         struct /* acceleration_upper_limit */ {
-          // Source: drake/multibody/tree/revolute_joint.h:157
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Returns the acceleration upper limit for ``this`` joint in radians /
 s².)""";
         } acceleration_upper_limit;
         // Symbol: drake::multibody::RevoluteJoint::default_damping
         struct /* default_damping */ {
-          // Source: drake/multibody/tree/revolute_joint.h:117
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Returns ``this`` joint's default damping constant in N⋅m⋅s.)""";
         } default_damping;
         // Symbol: drake::multibody::RevoluteJoint::get_angle
         struct /* get_angle */ {
-          // Source: drake/multibody/tree/revolute_joint.h:168
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Gets the rotation angle of ``this`` mobilizer from ``context``.
 
@@ -6676,7 +6676,7 @@ Returns:
         } get_angle;
         // Symbol: drake::multibody::RevoluteJoint::get_angular_rate
         struct /* get_angular_rate */ {
-          // Source: drake/multibody/tree/revolute_joint.h:195
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Gets the rate of change, in radians per second, of ``this`` joint's
 angle (see get_angle()) from ``context``.
@@ -6690,7 +6690,7 @@ Returns:
         } get_angular_rate;
         // Symbol: drake::multibody::RevoluteJoint::get_default_angle
         struct /* get_default_angle */ {
-          // Source: drake/multibody/tree/revolute_joint.h:238
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Gets the default rotation angle. Wrapper for the more general
 ``Joint::default_positions()``.
@@ -6700,19 +6700,19 @@ Returns:
         } get_default_angle;
         // Symbol: drake::multibody::RevoluteJoint::position_lower_limit
         struct /* position_lower_limit */ {
-          // Source: drake/multibody/tree/revolute_joint.h:132
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Returns the position lower limit for ``this`` joint in radians.)""";
         } position_lower_limit;
         // Symbol: drake::multibody::RevoluteJoint::position_upper_limit
         struct /* position_upper_limit */ {
-          // Source: drake/multibody/tree/revolute_joint.h:137
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Returns the position upper limit for ``this`` joint in radians.)""";
         } position_upper_limit;
         // Symbol: drake::multibody::RevoluteJoint::revolute_axis
         struct /* revolute_axis */ {
-          // Source: drake/multibody/tree/revolute_joint.h:114
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Returns the axis of revolution of ``this`` joint as a unit vector.
 Since the measures of this axis in either frame F or M are the same
@@ -6721,7 +6721,7 @@ axis_Jp = axis_Jc``.)""";
         } revolute_axis;
         // Symbol: drake::multibody::RevoluteJoint::set_angle
         struct /* set_angle */ {
-          // Source: drake/multibody/tree/revolute_joint.h:179
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Sets the ``context`` so that the generalized coordinate corresponding
 to the rotation angle of ``this`` joint equals ``angle``.
@@ -6737,7 +6737,7 @@ Returns:
         } set_angle;
         // Symbol: drake::multibody::RevoluteJoint::set_angular_rate
         struct /* set_angular_rate */ {
-          // Source: drake/multibody/tree/revolute_joint.h:208
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Sets the rate of change, in radians per second, of this ``this``
 joint's angle to ``angle``. The new rate of change ``angle`` gets
@@ -6755,7 +6755,7 @@ Returns:
         } set_angular_rate;
         // Symbol: drake::multibody::RevoluteJoint::set_default_angle
         struct /* set_default_angle */ {
-          // Source: drake/multibody/tree/revolute_joint.h:243
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Sets the ``default_positions`` of this joint (in this case a single
 angle).
@@ -6765,7 +6765,7 @@ Parameter ``angle``:
         } set_default_angle;
         // Symbol: drake::multibody::RevoluteJoint::set_default_damping
         struct /* set_default_damping */ {
-          // Source: drake/multibody/tree/revolute_joint.h:124
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Sets the default value of viscous damping for this joint, in N⋅m⋅s.
 
@@ -6781,30 +6781,30 @@ Precondition:
         } set_default_damping;
         // Symbol: drake::multibody::RevoluteJoint::set_random_angle_distribution
         struct /* set_random_angle_distribution */ {
-          // Source: drake/multibody/tree/revolute_joint.h:184
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc = R"""()""";
         } set_random_angle_distribution;
         // Symbol: drake::multibody::RevoluteJoint::type_name
         struct /* type_name */ {
-          // Source: drake/multibody/tree/revolute_joint.h:108
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc = R"""()""";
         } type_name;
         // Symbol: drake::multibody::RevoluteJoint::velocity_lower_limit
         struct /* velocity_lower_limit */ {
-          // Source: drake/multibody/tree/revolute_joint.h:142
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Returns the velocity lower limit for ``this`` joint in radians / s.)""";
         } velocity_lower_limit;
         // Symbol: drake::multibody::RevoluteJoint::velocity_upper_limit
         struct /* velocity_upper_limit */ {
-          // Source: drake/multibody/tree/revolute_joint.h:147
+          // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Returns the velocity upper limit for ``this`` joint in radians / s.)""";
         } velocity_upper_limit;
       } RevoluteJoint;
       // Symbol: drake::multibody::RevoluteSpring
       struct /* RevoluteSpring */ {
-        // Source: drake/multibody/tree/revolute_spring.h:28
+        // Source: drake/multibody/tree/revolute_spring.h
         const char* doc =
 R"""(This ForceElement models a torsional spring attached to a
 RevoluteJoint and applies a torque to that joint
@@ -6831,37 +6831,37 @@ context and can be accessed and set by context dependent
 getters/setters.)""";
         // Symbol: drake::multibody::RevoluteSpring::CalcConservativePower
         struct /* CalcConservativePower */ {
-          // Source: drake/multibody/tree/revolute_spring.h:101
+          // Source: drake/multibody/tree/revolute_spring.h
           const char* doc = R"""()""";
         } CalcConservativePower;
         // Symbol: drake::multibody::RevoluteSpring::CalcNonConservativePower
         struct /* CalcNonConservativePower */ {
-          // Source: drake/multibody/tree/revolute_spring.h:106
+          // Source: drake/multibody/tree/revolute_spring.h
           const char* doc = R"""()""";
         } CalcNonConservativePower;
         // Symbol: drake::multibody::RevoluteSpring::CalcPotentialEnergy
         struct /* CalcPotentialEnergy */ {
-          // Source: drake/multibody/tree/revolute_spring.h:97
+          // Source: drake/multibody/tree/revolute_spring.h
           const char* doc = R"""()""";
         } CalcPotentialEnergy;
         // Symbol: drake::multibody::RevoluteSpring::DoCalcAndAddForceContribution
         struct /* DoCalcAndAddForceContribution */ {
-          // Source: drake/multibody/tree/revolute_spring.h:112
+          // Source: drake/multibody/tree/revolute_spring.h
           const char* doc = R"""()""";
         } DoCalcAndAddForceContribution;
         // Symbol: drake::multibody::RevoluteSpring::DoCloneToScalar
         struct /* DoCloneToScalar */ {
-          // Source: drake/multibody/tree/revolute_spring.h:118
+          // Source: drake/multibody/tree/revolute_spring.h
           const char* doc = R"""()""";
         } DoCloneToScalar;
         // Symbol: drake::multibody::RevoluteSpring::DoShallowClone
         struct /* DoShallowClone */ {
-          // Source: drake/multibody/tree/revolute_spring.h:127
+          // Source: drake/multibody/tree/revolute_spring.h
           const char* doc = R"""()""";
         } DoShallowClone;
         // Symbol: drake::multibody::RevoluteSpring::GetNominalAngle
         struct /* GetNominalAngle */ {
-          // Source: drake/multibody/tree/revolute_spring.h:60
+          // Source: drake/multibody/tree/revolute_spring.h
           const char* doc =
 R"""(Returns the Context dependent nominal angle θ₀ stored as a parameter
 in ``context``.
@@ -6875,7 +6875,7 @@ Returns ``returns``:
         } GetNominalAngle;
         // Symbol: drake::multibody::RevoluteSpring::GetStiffness
         struct /* GetStiffness */ {
-          // Source: drake/multibody/tree/revolute_spring.h:81
+          // Source: drake/multibody/tree/revolute_spring.h
           const char* doc =
 R"""(Returns the Context dependent stiffness coefficient k stored as a
 parameter in ``context``.
@@ -6889,7 +6889,7 @@ Returns ``returns``:
         } GetStiffness;
         // Symbol: drake::multibody::RevoluteSpring::RevoluteSpring<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/revolute_spring.h:39
+          // Source: drake/multibody/tree/revolute_spring.h
           const char* doc =
 R"""(Constructor for a spring attached to the given joint
 
@@ -6905,7 +6905,7 @@ Raises:
         } ctor;
         // Symbol: drake::multibody::RevoluteSpring::SetNominalAngle
         struct /* SetNominalAngle */ {
-          // Source: drake/multibody/tree/revolute_spring.h:70
+          // Source: drake/multibody/tree/revolute_spring.h
           const char* doc =
 R"""(Sets the value of the nominal angle θ₀ for this force element, stored
 as a parameter in ``context``.
@@ -6919,7 +6919,7 @@ Parameter ``nominal_angle``:
         } SetNominalAngle;
         // Symbol: drake::multibody::RevoluteSpring::SetStiffness
         struct /* SetStiffness */ {
-          // Source: drake/multibody/tree/revolute_spring.h:91
+          // Source: drake/multibody/tree/revolute_spring.h
           const char* doc =
 R"""(Sets the value of the linear stiffness coefficient k for this force
 element, stored as a parameter in ``context``.
@@ -6936,19 +6936,19 @@ Raises:
         } SetStiffness;
         // Symbol: drake::multibody::RevoluteSpring::default_nominal_angle
         struct /* default_nominal_angle */ {
-          // Source: drake/multibody/tree/revolute_spring.h:50
+          // Source: drake/multibody/tree/revolute_spring.h
           const char* doc =
 R"""(Returns the default spring reference angle θ₀ in radians.)""";
         } default_nominal_angle;
         // Symbol: drake::multibody::RevoluteSpring::default_stiffness
         struct /* default_stiffness */ {
-          // Source: drake/multibody/tree/revolute_spring.h:53
+          // Source: drake/multibody/tree/revolute_spring.h
           const char* doc =
 R"""(Returns the default stiffness constant k in N⋅m/rad.)""";
         } default_stiffness;
         // Symbol: drake::multibody::RevoluteSpring::joint
         struct /* joint */ {
-          // Source: drake/multibody/tree/revolute_spring.h:47
+          // Source: drake/multibody/tree/revolute_spring.h
           const char* doc =
 R"""(Returns the joint associated with this spring.
 
@@ -6959,7 +6959,7 @@ Raises:
       } RevoluteSpring;
       // Symbol: drake::multibody::RigidBody
       struct /* RigidBody */ {
-        // Source: drake/multibody/tree/rigid_body.h:191
+        // Source: drake/multibody/tree/rigid_body.h
         const char* doc =
 R"""(The term **rigid body** implies that the deformations of the body
 under consideration are so small that they have no significant effect
@@ -6984,7 +6984,7 @@ more degrees of freedom.
                    (3rd Edition), Addison-Wesley, 2001.)""";
         // Symbol: drake::multibody::RigidBody::AddInForce
         struct /* AddInForce */ {
-          // Source: drake/multibody/tree/rigid_body.h:521
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Adds the SpatialForce on this RigidBody B, applied at point P and
 expressed in a frame E into ``forces``.
@@ -7012,14 +7012,14 @@ Raises:
         } AddInForce;
         // Symbol: drake::multibody::RigidBody::AddInForceInWorld
         struct /* AddInForceInWorld */ {
-          // Source: drake/multibody/tree/rigid_body.h:495
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Adds the SpatialForce on this RigidBody B, applied at body B's origin
 Bo and expressed in the world frame W into ``forces``.)""";
         } AddInForceInWorld;
         // Symbol: drake::multibody::RigidBody::CalcCenterOfMassInBodyFrame
         struct /* CalcCenterOfMassInBodyFrame */ {
-          // Source: drake/multibody/tree/rigid_body.h:530
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Gets this body's center of mass position from the given context.
 
@@ -7035,7 +7035,7 @@ Precondition:
         } CalcCenterOfMassInBodyFrame;
         // Symbol: drake::multibody::RigidBody::CalcCenterOfMassTranslationalAccelerationInWorld
         struct /* CalcCenterOfMassTranslationalAccelerationInWorld */ {
-          // Source: drake/multibody/tree/rigid_body.h:552
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Calculates Bcm's translational acceleration in the world frame W.
 
@@ -7054,7 +7054,7 @@ Note:
         } CalcCenterOfMassTranslationalAccelerationInWorld;
         // Symbol: drake::multibody::RigidBody::CalcCenterOfMassTranslationalVelocityInWorld
         struct /* CalcCenterOfMassTranslationalVelocityInWorld */ {
-          // Source: drake/multibody/tree/rigid_body.h:542
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Calculates Bcm's translational velocity in the world frame W.
 
@@ -7067,7 +7067,7 @@ Returns ``v_WBcm_W``:
         } CalcCenterOfMassTranslationalVelocityInWorld;
         // Symbol: drake::multibody::RigidBody::CalcSpatialInertiaInBodyFrame
         struct /* CalcSpatialInertiaInBodyFrame */ {
-          // Source: drake/multibody/tree/rigid_body.h:562
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Gets this body's spatial inertia about its origin from the given
 context.
@@ -7086,7 +7086,7 @@ Precondition:
         } CalcSpatialInertiaInBodyFrame;
         // Symbol: drake::multibody::RigidBody::CloneToScalar
         struct /* CloneToScalar */ {
-          // Source: drake/multibody/tree/rigid_body.h:752
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) This method is mostly intended to be called by
 MultibodyTree::CloneToScalar(). Most users should not call this clone
@@ -7098,14 +7098,14 @@ See also:
         } CloneToScalar;
         // Symbol: drake::multibody::RigidBody::EvalPoseInWorld
         struct /* EvalPoseInWorld */ {
-          // Source: drake/multibody/tree/rigid_body.h:448
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Returns the pose ``X_WB`` of this RigidBody B in the world frame W as
 a function of the state of the model stored in ``context``.)""";
         } EvalPoseInWorld;
         // Symbol: drake::multibody::RigidBody::EvalSpatialAccelerationInWorld
         struct /* EvalSpatialAccelerationInWorld */ {
-          // Source: drake/multibody/tree/rigid_body.h:474
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Evaluates A_WB, this body B's SpatialAcceleration in the world frame
 W.
@@ -7125,7 +7125,7 @@ Note:
         } EvalSpatialAccelerationInWorld;
         // Symbol: drake::multibody::RigidBody::EvalSpatialVelocityInWorld
         struct /* EvalSpatialVelocityInWorld */ {
-          // Source: drake/multibody/tree/rigid_body.h:459
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Evaluates V_WB, this body B's SpatialVelocity in the world frame W.
 
@@ -7138,14 +7138,14 @@ Returns ``V_WB_W``:
         } EvalSpatialVelocityInWorld;
         // Symbol: drake::multibody::RigidBody::GetForceInWorld
         struct /* GetForceInWorld */ {
-          // Source: drake/multibody/tree/rigid_body.h:484
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Gets the SpatialForce on this RigidBody B from ``forces`` as F_BBo_W:
 applied at body B's origin Bo and expressed in world frame W.)""";
         } GetForceInWorld;
         // Symbol: drake::multibody::RigidBody::Lock
         struct /* Lock */ {
-          // Source: drake/multibody/tree/rigid_body.h:246
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(For a floating base RigidBody, lock its inboard joint. Its generalized
 velocities will be 0 until it is unlocked.
@@ -7155,7 +7155,7 @@ Raises:
         } Lock;
         // Symbol: drake::multibody::RigidBody::RigidBody<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/rigid_body.h:205
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc_2args =
 R"""(Constructs a RigidBody named ``body_name`` with the given default
 SpatialInertia.
@@ -7171,7 +7171,7 @@ Parameter ``M_BBo_B``:
 Note:
     See multibody_spatial_inertia for details on the monogram notation
     used for spatial inertia quantities.)""";
-          // Source: drake/multibody/tree/rigid_body.h:221
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc_3args =
 R"""(Constructs a RigidBody named ``body_name`` with the given default
 SpatialInertia.
@@ -7193,7 +7193,7 @@ Note:
         } ctor;
         // Symbol: drake::multibody::RigidBody::SetCenterOfMassInBodyFrame
         struct /* SetCenterOfMassInBodyFrame */ {
-          // Source: drake/multibody/tree/rigid_body.h:602
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) Sets this body's center of mass position while preserving
 its inertia about its body origin.
@@ -7224,7 +7224,7 @@ Warning:
         } SetCenterOfMassInBodyFrame;
         // Symbol: drake::multibody::RigidBody::SetCenterOfMassInBodyFrameAndPreserveCentralInertia
         struct /* SetCenterOfMassInBodyFrameAndPreserveCentralInertia */ {
-          // Source: drake/multibody/tree/rigid_body.h:621
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Sets this body's center of mass position while preserving its inertia
 about its center of mass.
@@ -7255,7 +7255,7 @@ Raises:
         } SetCenterOfMassInBodyFrameAndPreserveCentralInertia;
         // Symbol: drake::multibody::RigidBody::SetMass
         struct /* SetMass */ {
-          // Source: drake/multibody/tree/rigid_body.h:579
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(For this RigidBody B, sets its mass stored in ``context`` to ``mass``.
 
@@ -7277,7 +7277,7 @@ Raises:
         } SetMass;
         // Symbol: drake::multibody::RigidBody::SetSpatialInertiaInBodyFrame
         struct /* SetSpatialInertiaInBodyFrame */ {
-          // Source: drake/multibody/tree/rigid_body.h:634
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(For this RigidBody B, sets its SpatialInertia that is stored in
 ``context`` to ``M_Bo_B``.
@@ -7299,7 +7299,7 @@ Raises:
         } SetSpatialInertiaInBodyFrame;
         // Symbol: drake::multibody::RigidBody::Unlock
         struct /* Unlock */ {
-          // Source: drake/multibody/tree/rigid_body.h:264
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(For a floating base RigidBody, unlock its inboard joint.
 
@@ -7308,13 +7308,13 @@ Raises:
         } Unlock;
         // Symbol: drake::multibody::RigidBody::body_frame
         struct /* body_frame */ {
-          // Source: drake/multibody/tree/rigid_body.h:241
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Returns a const reference to the associated BodyFrame.)""";
         } body_frame;
         // Symbol: drake::multibody::RigidBody::default_com
         struct /* default_com */ {
-          // Source: drake/multibody/tree/rigid_body.h:410
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Returns the default value of this RigidBody's center of mass as
 measured and expressed in its body frame. This value is initially
@@ -7327,7 +7327,7 @@ Returns ``p_BoBcm_B``:
         } default_com;
         // Symbol: drake::multibody::RigidBody::default_mass
         struct /* default_mass */ {
-          // Source: drake/multibody/tree/rigid_body.h:403
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Returns this RigidBody's default mass, which is initially supplied at
 construction when specifying this body's SpatialInertia.
@@ -7340,7 +7340,7 @@ Note:
         } default_mass;
         // Symbol: drake::multibody::RigidBody::default_rotational_inertia
         struct /* default_rotational_inertia */ {
-          // Source: drake/multibody/tree/rigid_body.h:426
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Gets the default value of this body B's rotational inertia about Bo
 (B's origin), expressed in B (this body's body frame). This value is
@@ -7352,7 +7352,7 @@ Returns ``I_BBo_B``:
         } default_rotational_inertia;
         // Symbol: drake::multibody::RigidBody::default_spatial_inertia
         struct /* default_spatial_inertia */ {
-          // Source: drake/multibody/tree/rigid_body.h:433
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Gets the default value of this body B's SpatialInertia about Bo (B's
 origin) and expressed in B (this body's frame).
@@ -7362,7 +7362,7 @@ Returns ``M_BBo_B``:
         } default_spatial_inertia;
         // Symbol: drake::multibody::RigidBody::default_unit_inertia
         struct /* default_unit_inertia */ {
-          // Source: drake/multibody/tree/rigid_body.h:418
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Returns the default value of this body B's unit inertia about Bo (body
 B's origin), expressed in B (this body's body frame). This value is
@@ -7374,7 +7374,7 @@ Returns ``G_BBo_B``:
         } default_unit_inertia;
         // Symbol: drake::multibody::RigidBody::floating_position_suffix
         struct /* floating_position_suffix */ {
-          // Source: drake/multibody/tree/rigid_body.h:367
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Returns a string suffix (e.g. to be appended to the name()) to
 identify the ``k`th position in the floating base body.
@@ -7395,7 +7395,7 @@ See also:
         } floating_position_suffix;
         // Symbol: drake::multibody::RigidBody::floating_positions_start
         struct /* floating_positions_start */ {
-          // Source: drake/multibody/tree/rigid_body.h:341
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) For floating base bodies (see is_floating_base_body()),
 returns the index of this RigidBody's first generalized position in
@@ -7420,7 +7420,7 @@ See also:
         } floating_positions_start;
         // Symbol: drake::multibody::RigidBody::floating_velocities_start_in_v
         struct /* floating_velocities_start_in_v */ {
-          // Source: drake/multibody/tree/rigid_body.h:354
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) For floating base bodies (see is_floating_base_body()),
 returns the index of this RigidBody's first generalized velocity in
@@ -7439,7 +7439,7 @@ See also:
         } floating_velocities_start_in_v;
         // Symbol: drake::multibody::RigidBody::floating_velocity_suffix
         struct /* floating_velocity_suffix */ {
-          // Source: drake/multibody/tree/rigid_body.h:387
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Returns a string suffix (e.g. to be appended to the name()) to
 identify the ``k`th velocity in the floating base body.
@@ -7456,7 +7456,7 @@ See also:
         } floating_velocity_suffix;
         // Symbol: drake::multibody::RigidBody::get_angular_acceleration_in_world
         struct /* get_angular_acceleration_in_world */ {
-          // Source: drake/multibody/tree/rigid_body.h:731
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) Extract this body's angular acceleration in world,
 expressed in world.
@@ -7469,7 +7469,7 @@ Returns ``alpha_WB_W``:
         } get_angular_acceleration_in_world;
         // Symbol: drake::multibody::RigidBody::get_angular_velocity_in_world
         struct /* get_angular_velocity_in_world */ {
-          // Source: drake/multibody/tree/rigid_body.h:697
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) Extract this body's angular velocity in world, expressed in
 world.
@@ -7482,7 +7482,7 @@ Returns ``w_WB_W``:
         } get_angular_velocity_in_world;
         // Symbol: drake::multibody::RigidBody::get_mass
         struct /* get_mass */ {
-          // Source: drake/multibody/tree/rigid_body.h:440
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Gets this body's mass from the given context.
 
@@ -7494,7 +7494,7 @@ Precondition:
         } get_mass;
         // Symbol: drake::multibody::RigidBody::get_origin_acceleration_in_world
         struct /* get_origin_acceleration_in_world */ {
-          // Source: drake/multibody/tree/rigid_body.h:740
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) Extract acceleration of this body's origin in world,
 expressed in world.
@@ -7507,7 +7507,7 @@ Returns ``a_WBo_W``:
         } get_origin_acceleration_in_world;
         // Symbol: drake::multibody::RigidBody::get_origin_position_in_world
         struct /* get_origin_position_in_world */ {
-          // Source: drake/multibody/tree/rigid_body.h:672
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) Extract the position vector from world origin to this
 body's origin, expressed in world.
@@ -7521,7 +7521,7 @@ Returns ``p_WoBo_W``:
         } get_origin_position_in_world;
         // Symbol: drake::multibody::RigidBody::get_origin_velocity_in_world
         struct /* get_origin_velocity_in_world */ {
-          // Source: drake/multibody/tree/rigid_body.h:706
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) Extract the velocity of this body's origin in world,
 expressed in world.
@@ -7534,7 +7534,7 @@ Returns ``v_WBo_W``:
         } get_origin_velocity_in_world;
         // Symbol: drake::multibody::RigidBody::get_pose_in_world
         struct /* get_pose_in_world */ {
-          // Source: drake/multibody/tree/rigid_body.h:653
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) Extract this body's pose in world (from the position
 kinematics).
@@ -7547,7 +7547,7 @@ Returns ``X_WB``:
         } get_pose_in_world;
         // Symbol: drake::multibody::RigidBody::get_rotation_matrix_in_world
         struct /* get_rotation_matrix_in_world */ {
-          // Source: drake/multibody/tree/rigid_body.h:662
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) Extract the RotationMatrix relating the world frame to this
 body's frame.
@@ -7560,7 +7560,7 @@ Returns ``R_WB``:
         } get_rotation_matrix_in_world;
         // Symbol: drake::multibody::RigidBody::get_spatial_acceleration_in_world
         struct /* get_spatial_acceleration_in_world */ {
-          // Source: drake/multibody/tree/rigid_body.h:722
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) Returns A_WB, this RigidBody B's SpatialAcceleration in the
 world frame W.
@@ -7574,7 +7574,7 @@ Returns ``A_WB_W``:
         } get_spatial_acceleration_in_world;
         // Symbol: drake::multibody::RigidBody::get_spatial_velocity_in_world
         struct /* get_spatial_velocity_in_world */ {
-          // Source: drake/multibody/tree/rigid_body.h:688
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) Returns V_WB, this RigidBody B's SpatialVelocity in the
 world frame W.
@@ -7588,7 +7588,7 @@ Returns ``V_WB_W``:
         } get_spatial_velocity_in_world;
         // Symbol: drake::multibody::RigidBody::has_quaternion_dofs
         struct /* has_quaternion_dofs */ {
-          // Source: drake/multibody/tree/rigid_body.h:324
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) If ``True``, this body's generalized position coordinates q
 include a quaternion, which occupies the first four elements of q.
@@ -7604,12 +7604,12 @@ See also:
         } has_quaternion_dofs;
         // Symbol: drake::multibody::RigidBody::index
         struct /* index */ {
-          // Source: drake/multibody/tree/rigid_body.h:228
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc = R"""(Returns this element's unique index.)""";
         } index;
         // Symbol: drake::multibody::RigidBody::is_floating
         struct /* is_floating */ {
-          // Source: drake/multibody/tree/rigid_body.h:315
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc_deprecated =
 R"""((Deprecated.)
 
@@ -7619,7 +7619,7 @@ Deprecated:
         } is_floating;
         // Symbol: drake::multibody::RigidBody::is_floating_base_body
         struct /* is_floating_base_body */ {
-          // Source: drake/multibody/tree/rigid_body.h:309
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) Returns ``True`` if this body is a *floating base body*,
 meaning it had no explicit joint to a parent body so is mobilized by
@@ -7639,7 +7639,7 @@ See also:
         } is_floating_base_body;
         // Symbol: drake::multibody::RigidBody::is_locked
         struct /* is_locked */ {
-          // Source: drake/multibody/tree/rigid_body.h:284
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Determines whether this RigidBody is currently locked to its inboard
 (parent) RigidBody. This is not limited to floating base bodies but
@@ -7650,7 +7650,7 @@ Returns:
         } is_locked;
         // Symbol: drake::multibody::RigidBody::mobod_index
         struct /* mobod_index */ {
-          // Source: drake/multibody/tree/rigid_body.h:296
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) Returns the index of the mobilized body ("mobod") in the
 computational directed forest structure of the owning MultibodyTree to
@@ -7659,14 +7659,14 @@ the index into all associated quantities.)""";
         } mobod_index;
         // Symbol: drake::multibody::RigidBody::name
         struct /* name */ {
-          // Source: drake/multibody/tree/rigid_body.h:232
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Gets the ``name`` associated with this rigid body. The name will never
 be empty.)""";
         } name;
         // Symbol: drake::multibody::RigidBody::scoped_name
         struct /* scoped_name */ {
-          // Source: drake/multibody/tree/rigid_body.h:238
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Returns scoped name of this body. Neither of the two pieces of the
 name will be empty (the scope name and the element name).
@@ -7678,7 +7678,7 @@ Raises:
       } RigidBody;
       // Symbol: drake::multibody::RigidBodyFrame
       struct /* RigidBodyFrame */ {
-        // Source: drake/multibody/tree/rigid_body.h:59
+        // Source: drake/multibody/tree/rigid_body.h
         const char* doc =
 R"""(A RigidBodyFrame is a material Frame that serves as the unique
 reference frame for a RigidBody.
@@ -7706,63 +7706,63 @@ more than a convenience; you can use the RigidBodyFrame to define
 other frames on the body and to attach other multibody elements to it.)""";
         // Symbol: drake::multibody::RigidBodyFrame::DoCalcOffsetPoseInBody
         struct /* DoCalcOffsetPoseInBody */ {
-          // Source: drake/multibody/tree/rigid_body.h:106
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc = R"""()""";
         } DoCalcOffsetPoseInBody;
         // Symbol: drake::multibody::RigidBodyFrame::DoCalcOffsetRotationMatrixInBody
         struct /* DoCalcOffsetRotationMatrixInBody */ {
-          // Source: drake/multibody/tree/rigid_body.h:112
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc = R"""()""";
         } DoCalcOffsetRotationMatrixInBody;
         // Symbol: drake::multibody::RigidBodyFrame::DoCalcPoseInBodyFrame
         struct /* DoCalcPoseInBodyFrame */ {
-          // Source: drake/multibody/tree/rigid_body.h:96
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc = R"""()""";
         } DoCalcPoseInBodyFrame;
         // Symbol: drake::multibody::RigidBodyFrame::DoCalcRotationMatrixInBodyFrame
         struct /* DoCalcRotationMatrixInBodyFrame */ {
-          // Source: drake/multibody/tree/rigid_body.h:101
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc = R"""()""";
         } DoCalcRotationMatrixInBodyFrame;
         // Symbol: drake::multibody::RigidBodyFrame::DoCloneToScalar
         struct /* DoCloneToScalar */ {
-          // Source: drake/multibody/tree/rigid_body.h:85
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc = R"""()""";
         } DoCloneToScalar;
         // Symbol: drake::multibody::RigidBodyFrame::DoShallowClone
         struct /* DoShallowClone */ {
-          // Source: drake/multibody/tree/rigid_body.h:94
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc = R"""()""";
         } DoShallowClone;
         // Symbol: drake::multibody::RigidBodyFrame::GetFixedOffsetPoseInBody
         struct /* GetFixedOffsetPoseInBody */ {
-          // Source: drake/multibody/tree/rigid_body.h:73
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc = R"""()""";
         } GetFixedOffsetPoseInBody;
         // Symbol: drake::multibody::RigidBodyFrame::GetFixedPoseInBodyFrame
         struct /* GetFixedPoseInBodyFrame */ {
-          // Source: drake/multibody/tree/rigid_body.h:65
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc = R"""()""";
         } GetFixedPoseInBodyFrame;
         // Symbol: drake::multibody::RigidBodyFrame::GetFixedRotationMatrixInBody
         struct /* GetFixedRotationMatrixInBody */ {
-          // Source: drake/multibody/tree/rigid_body.h:78
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc = R"""()""";
         } GetFixedRotationMatrixInBody;
         // Symbol: drake::multibody::RigidBodyFrame::GetFixedRotationMatrixInBodyFrame
         struct /* GetFixedRotationMatrixInBodyFrame */ {
-          // Source: drake/multibody/tree/rigid_body.h:69
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc = R"""()""";
         } GetFixedRotationMatrixInBodyFrame;
         // Symbol: drake::multibody::RigidBodyFrame::RigidBodyFrame<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/rigid_body.h:61
+          // Source: drake/multibody/tree/rigid_body.h
           const char* doc = R"""()""";
         } ctor;
       } RigidBodyFrame;
       // Symbol: drake::multibody::RotationalInertia
       struct /* RotationalInertia */ {
-        // Source: drake/multibody/tree/rotational_inertia.h:171
+        // Source: drake/multibody/tree/rotational_inertia.h
         const char* doc =
 R"""(This class describes the mass distribution (inertia properties) of a
 body or composite body about a particular point. Herein, "composite
@@ -8032,7 +8032,7 @@ Various methods in this class require numerical (not symbolic) data
 types.)""";
         // Symbol: drake::multibody::RotationalInertia::CalcMaximumPossibleMomentOfInertia
         struct /* CalcMaximumPossibleMomentOfInertia */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:266
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Returns the maximum possible moment of inertia for ``this`` rotational
 inertia about-point P for any expressed-in frame E.
@@ -8045,7 +8045,7 @@ See also:
         } CalcMaximumPossibleMomentOfInertia;
         // Symbol: drake::multibody::RotationalInertia::CalcPrincipalMomentsAndAxesOfInertia
         struct /* CalcPrincipalMomentsAndAxesOfInertia */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:597
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Forms the 3 principal moments of inertia and their 3 associated
 principal directions for ``this`` rotational inertia.
@@ -8079,7 +8079,7 @@ See also:
         } CalcPrincipalMomentsAndAxesOfInertia;
         // Symbol: drake::multibody::RotationalInertia::CalcPrincipalMomentsOfInertia
         struct /* CalcPrincipalMomentsOfInertia */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:573
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Forms the 3 principal moments of inertia for ``this`` rotational
 inertia.
@@ -8101,7 +8101,7 @@ See also:
         } CalcPrincipalMomentsOfInertia;
         // Symbol: drake::multibody::RotationalInertia::CopyToFullMatrix3
         struct /* CopyToFullMatrix3 */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:284
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Gets a full 3x3 matrix copy of this rotational inertia. The returned
 copy is symmetric and includes both lower and upper parts of the
@@ -8109,7 +8109,7 @@ matrix.)""";
         } CopyToFullMatrix3;
         // Symbol: drake::multibody::RotationalInertia::CouldBePhysicallyValid
         struct /* CouldBePhysicallyValid */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:626
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Performs several checks to verify whether ``this`` rotational inertia
 *could* be physically valid, including:
@@ -8142,7 +8142,7 @@ Raises:
         } CouldBePhysicallyValid;
         // Symbol: drake::multibody::RotationalInertia::IsFinite
         struct /* IsFinite */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:500
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Returns true if all moments and products in ``this`` rotational
 inertia are finite (e.g., no NaNs or infinities), otherwise returns
@@ -8150,14 +8150,14 @@ false.)""";
         } IsFinite;
         // Symbol: drake::multibody::RotationalInertia::IsNaN
         struct /* IsNaN */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:517
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Returns ``True`` if any moment/product in ``this`` rotational inertia
 is NaN. Otherwise returns ``False``.)""";
         } IsNaN;
         // Symbol: drake::multibody::RotationalInertia::IsNearlyEqualTo
         struct /* IsNearlyEqualTo */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:307
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Compares ``this`` rotational inertia to ``other`` rotational inertia
 within the specified ``precision`` (which is a dimensionless number
@@ -8192,14 +8192,14 @@ Note:
         } IsNearlyEqualTo;
         // Symbol: drake::multibody::RotationalInertia::IsZero
         struct /* IsZero */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:533
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Returns ``True`` if all moments and products of inertia are exactly
 zero.)""";
         } IsZero;
         // Symbol: drake::multibody::RotationalInertia::MakeFromMomentsAndProductsOfInertia
         struct /* MakeFromMomentsAndProductsOfInertia */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:224
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""((Internal use only) Creates a rotational inertia with moments of
 inertia Ixx, Iyy, Izz, and with products of inertia Ixy, Ixz, Iyz.
@@ -8222,7 +8222,7 @@ Raises:
         } MakeFromMomentsAndProductsOfInertia;
         // Symbol: drake::multibody::RotationalInertia::MinusEqualsUnchecked
         struct /* MinusEqualsUnchecked */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:795
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Subtracts a rotational inertia ``I_BP_E`` from ``this`` rotational
 inertia. No check is done to determine if the result is physically
@@ -8261,7 +8261,7 @@ See also:
         } MinusEqualsUnchecked;
         // Symbol: drake::multibody::RotationalInertia::MultiplyByScalarSkipValidityCheck
         struct /* MultiplyByScalarSkipValidityCheck */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:475
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""((Internal use only) Multiplies a rotational inertia by a scalar.
 
@@ -8281,7 +8281,7 @@ Note:
         } MultiplyByScalarSkipValidityCheck;
         // Symbol: drake::multibody::RotationalInertia::ReExpress
         struct /* ReExpress */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:649
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Re-expresses ``this`` rotational inertia ``I_BP_E`` to ``I_BP_A``
 i.e., re-expresses body B's rotational inertia from frame E to frame
@@ -8302,7 +8302,7 @@ See also:
         } ReExpress;
         // Symbol: drake::multibody::RotationalInertia::ReExpressInPlace
         struct /* ReExpressInPlace */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:640
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Re-expresses ``this`` rotational inertia ``I_BP_E`` in place to
 ``I_BP_A``. In other words, starts with ``this`` rotational inertia of
@@ -8323,25 +8323,25 @@ See also:
         } ReExpressInPlace;
         // Symbol: drake::multibody::RotationalInertia::RotationalInertia<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:177
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc_0args =
 R"""(Constructs a rotational inertia that has all its moments/products of
 inertia equal to NaN (helps quickly detect uninitialized values).)""";
-          // Source: drake/multibody/tree/rotational_inertia.h:182
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc_3args =
 R"""(Creates a rotational inertia with moments of inertia ``Ixx``, `Iyy`,
 ``Izz``, and with each product of inertia set to zero.
 
 Raises:
     RuntimeError for Debug builds if not CouldBePhysicallyValid().)""";
-          // Source: drake/multibody/tree/rotational_inertia.h:188
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc_6args =
 R"""(Creates a rotational inertia with moments of inertia ``Ixx``, `Iyy`,
 ``Izz``, and with products of inertia ``Ixy``, `Ixz`, ``Iyz``.
 
 Raises:
     RuntimeError for Debug builds if not CouldBePhysicallyValid().)""";
-          // Source: drake/multibody/tree/rotational_inertia.h:202
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc_2args =
 R"""(Constructs a rotational inertia for a particle Q of mass ``mass``,
 whose position vector from about-point P is p_PQ_E (E is expressed-in
@@ -8364,14 +8364,14 @@ Raises:
         } ctor;
         // Symbol: drake::multibody::RotationalInertia::SetToNaN
         struct /* SetToNaN */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:483
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Sets ``this`` rotational inertia so all its elements are equal to NaN.
 This helps quickly detect uninitialized moments/products of inertia.)""";
         } SetToNaN;
         // Symbol: drake::multibody::RotationalInertia::SetZero
         struct /* SetZero */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:492
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Sets ``this`` rotational inertia so all its moments/products of
 inertia are zero, e.g., for convenient initialization before a
@@ -8381,7 +8381,7 @@ moments of inertia.)""";
         } SetZero;
         // Symbol: drake::multibody::RotationalInertia::ShiftFromCenterOfMass
         struct /* ShiftFromCenterOfMass */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:691
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Calculates the rotational inertia that results from shifting ``this``
 rotational inertia for a body (or composite body) B from about-point
@@ -8406,7 +8406,7 @@ Remark:
         } ShiftFromCenterOfMass;
         // Symbol: drake::multibody::RotationalInertia::ShiftFromCenterOfMassInPlace
         struct /* ShiftFromCenterOfMassInPlace */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:677
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Shifts ``this`` rotational inertia for a body (or composite body) B
 from about-point Bcm (B's center of mass) to about-point Q. I.e.,
@@ -8429,7 +8429,7 @@ Remark:
         } ShiftFromCenterOfMassInPlace;
         // Symbol: drake::multibody::RotationalInertia::ShiftToCenterOfMass
         struct /* ShiftToCenterOfMass */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:724
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Calculates the rotational inertia that results from shifting ``this``
 rotational inertia for a body (or composite body) B from about-point Q
@@ -8455,7 +8455,7 @@ Remark:
         } ShiftToCenterOfMass;
         // Symbol: drake::multibody::RotationalInertia::ShiftToCenterOfMassInPlace
         struct /* ShiftToCenterOfMassInPlace */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:708
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Shifts ``this`` rotational inertia for a body (or composite body) B
 from about-point Q to about-point ``Bcm`` (B's center of mass). I.e.,
@@ -8478,7 +8478,7 @@ Remark:
         } ShiftToCenterOfMassInPlace;
         // Symbol: drake::multibody::RotationalInertia::ShiftToThenAwayFromCenterOfMass
         struct /* ShiftToThenAwayFromCenterOfMass */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:765
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Calculates the rotational inertia that results from shifting ``this``
 rotational inertia for a body (or composite body) B from about-point P
@@ -8507,7 +8507,7 @@ Remark:
         } ShiftToThenAwayFromCenterOfMass;
         // Symbol: drake::multibody::RotationalInertia::ShiftToThenAwayFromCenterOfMassInPlace
         struct /* ShiftToThenAwayFromCenterOfMassInPlace */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:746
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Shifts ``this`` rotational inertia for a body (or composite body) B
 from about-point P to about-point Q via Bcm (B's center of mass).
@@ -8539,7 +8539,7 @@ Remark:
         } ShiftToThenAwayFromCenterOfMassInPlace;
         // Symbol: drake::multibody::RotationalInertia::Trace
         struct /* Trace */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:260
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Returns a rotational inertia's trace (i.e., Ixx + Iyy + Izz, the sum
 of the diagonal elements of the inertia matrix). The trace happens to
@@ -8553,12 +8553,12 @@ rotational inertia.)""";
         } Trace;
         // Symbol: drake::multibody::RotationalInertia::TriaxiallySymmetric
         struct /* TriaxiallySymmetric */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:210
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc = R"""()""";
         } TriaxiallySymmetric;
         // Symbol: drake::multibody::RotationalInertia::cast
         struct /* cast */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:560
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Returns a new RotationalInertia object templated on ``Scalar``
 initialized from the values of ``this`` rotational inertia's entries.
@@ -8578,25 +8578,25 @@ Note:
         } cast;
         // Symbol: drake::multibody::RotationalInertia::cols
         struct /* cols */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:237
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(For consistency with Eigen's API, the cols() method returns 3.)""";
         } cols;
         // Symbol: drake::multibody::RotationalInertia::get_moments
         struct /* get_moments */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:240
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Returns 3-element vector with moments of inertia [Ixx, Iyy, Izz].)""";
         } get_moments;
         // Symbol: drake::multibody::RotationalInertia::get_products
         struct /* get_products */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:243
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Returns 3-element vector with products of inertia [Ixy, Ixz, Iyz].)""";
         } get_products;
         // Symbol: drake::multibody::RotationalInertia::operator()
         struct /* operator_call */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:275
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Const access to the ``(i, j)`` element of this rotational inertia.
 
@@ -8608,7 +8608,7 @@ Remark:
         } operator_call;
         // Symbol: drake::multibody::RotationalInertia::operator*
         struct /* operator_mul */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:400
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Multiplies ``this`` rotational inertia by a nonnegative scalar (>= 0).
 In debug builds, throws RuntimeError if ``nonnegative_scalar`` < 0.
@@ -8624,7 +8624,7 @@ See also:
         } operator_mul;
         // Symbol: drake::multibody::RotationalInertia::operator*=
         struct /* operator_imul */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:388
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Multiplies ``this`` rotational inertia by a nonnegative scalar (>= 0).
 In debug builds, throws RuntimeError if ``nonnegative_scalar`` < 0.
@@ -8641,7 +8641,7 @@ See also:
         } operator_imul;
         // Symbol: drake::multibody::RotationalInertia::operator+
         struct /* operator_add */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:341
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Adds a rotational inertia ``I_BP_E`` to ``this`` rotational inertia.
 This method requires both rotational inertias (``I_BP_E`` and
@@ -8661,12 +8661,12 @@ See also:
         } operator_add;
         // Symbol: drake::multibody::RotationalInertia::operator+=
         struct /* operator_iadd */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:328
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc = R"""()""";
         } operator_iadd;
         // Symbol: drake::multibody::RotationalInertia::operator-
         struct /* operator_sub */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:378
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Subtracts a rotational inertia ``I_BP_E`` from ``this`` rotational
 inertia. This method requires both rotational inertias (``I_BP_E`` and
@@ -8693,7 +8693,7 @@ Warning:
         } operator_sub;
         // Symbol: drake::multibody::RotationalInertia::operator-=
         struct /* operator_isub */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:362
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Subtracts a rotational inertia ``I_BP_E`` from ``this`` rotational
 inertia. This method requires both rotational inertias (``I_BP_E`` and
@@ -8728,12 +8728,12 @@ Note:
         } operator_isub;
         // Symbol: drake::multibody::RotationalInertia::operator/
         struct /* operator_div */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:465
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc = R"""()""";
         } operator_div;
         // Symbol: drake::multibody::RotationalInertia::operator/=
         struct /* operator_idiv */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:452
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(Divides ``this`` rotational inertia by a positive scalar (> 0). In
 debug builds, throws RuntimeError if ``positive_scalar`` <= 0.
@@ -8750,14 +8750,14 @@ See also:
         } operator_idiv;
         // Symbol: drake::multibody::RotationalInertia::rows
         struct /* rows */ {
-          // Source: drake/multibody/tree/rotational_inertia.h:234
+          // Source: drake/multibody/tree/rotational_inertia.h
           const char* doc =
 R"""(For consistency with Eigen's API, the rows() method returns 3.)""";
         } rows;
       } RotationalInertia;
       // Symbol: drake::multibody::RpyFloatingJoint
       struct /* RpyFloatingJoint */ {
-        // Source: drake/multibody/tree/rpy_floating_joint.h:41
+        // Source: drake/multibody/tree/rpy_floating_joint.h
         const char* doc =
 R"""(This Joint allows a rigid body to move freely with respect to its
 parent rigid body. This is most commonly used to allow a body to move
@@ -8786,7 +8786,7 @@ Warning:
     QuaternionFloatingJoint instead.)""";
         // Symbol: drake::multibody::RpyFloatingJoint::DoAddInDamping
         struct /* DoAddInDamping */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:373
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Joint<T> override called through public NVI, Joint::AddInDamping().
 Therefore arguments were already checked to be valid. This method adds
@@ -8799,7 +8799,7 @@ with d the damping coefficient (see default_angular_damping()).)""";
         } DoAddInDamping;
         // Symbol: drake::multibody::RpyFloatingJoint::DoAddInOneForce
         struct /* DoAddInOneForce */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:358
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Joint<T> override called through public NVI, Joint::AddInForce().
 Adding forces per-dof for this joint is not supported. Therefore, this
@@ -8807,7 +8807,7 @@ method throws an exception if invoked.)""";
         } DoAddInOneForce;
         // Symbol: drake::multibody::RpyFloatingJoint::GetPose
         struct /* GetPose */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:213
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Returns the pose ``X_FM`` of the outboard frame M as measured and
 expressed in the inboard frame F. Refer to the documentation for this
@@ -8821,7 +8821,7 @@ Returns ``X_FM``:
         } GetPose;
         // Symbol: drake::multibody::RpyFloatingJoint::RpyFloatingJoint<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:75
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Constructor to create an rpy floating joint between two bodies so that
 frame F attached to the parent body P and frame M attached to the
@@ -8858,7 +8858,7 @@ Raises:
         } ctor;
         // Symbol: drake::multibody::RpyFloatingJoint::SetOrientation
         struct /* SetOrientation */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:178
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Sets the roll-pitch-yaw angles in ``context`` so this Joint's
 orientation is consistent with the given ``R_FM`` rotation matrix.
@@ -8877,7 +8877,7 @@ Returns:
         } SetOrientation;
         // Symbol: drake::multibody::RpyFloatingJoint::SetPose
         struct /* SetPose */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:226
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Sets ``context`` to store ``X_FM`` the pose of frame M measured and
 expressed in frame F.
@@ -8897,7 +8897,7 @@ Returns:
         } SetPose;
         // Symbol: drake::multibody::RpyFloatingJoint::SetTranslation
         struct /* SetTranslation */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:201
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Sets ``context`` to store the translation (position vector) ``p_FM``
 of frame M's origin Mo measured and expressed in frame F.
@@ -8914,7 +8914,7 @@ Returns:
         } SetTranslation;
         // Symbol: drake::multibody::RpyFloatingJoint::default_angular_damping
         struct /* default_angular_damping */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:105
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Returns this joint's default angular damping constant in N⋅m⋅s. The
 damping torque (in N⋅m) is modeled as ``τ = -damping⋅ω``, i.e.
@@ -8924,7 +8924,7 @@ is rigidly attached).)""";
         } default_angular_damping;
         // Symbol: drake::multibody::RpyFloatingJoint::default_translational_damping
         struct /* default_translational_damping */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:115
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Returns this joint's default translational damping constant in N⋅s/m.
 The damping force (in N) is modeled as ``f = -damping⋅v`` i.e.
@@ -8934,7 +8934,7 @@ Mo.)""";
         } default_translational_damping;
         // Symbol: drake::multibody::RpyFloatingJoint::get_angles
         struct /* get_angles */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:151
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Gets the roll-pitch-yaw rotation angles of this joint from
 ``context``.
@@ -8979,7 +8979,7 @@ Returns ``angles``:
         } get_angles;
         // Symbol: drake::multibody::RpyFloatingJoint::get_angular_velocity
         struct /* get_angular_velocity */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:242
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Retrieves from ``context`` the angular velocity ``w_FM`` of the child
 frame M in the parent frame F, expressed in F.
@@ -8994,7 +8994,7 @@ Returns ``w_FM``:
         } get_angular_velocity;
         // Symbol: drake::multibody::RpyFloatingJoint::get_default_angles
         struct /* get_default_angles */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:326
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Gets the default angles for this joint.
 
@@ -9003,7 +9003,7 @@ Returns ``angles``:
         } get_default_angles;
         // Symbol: drake::multibody::RpyFloatingJoint::get_default_translation
         struct /* get_default_translation */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:341
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Gets the default translation (position vector) ``p_FM`` for this
 joint.
@@ -9013,7 +9013,7 @@ Returns ``p_FM``:
         } get_default_translation;
         // Symbol: drake::multibody::RpyFloatingJoint::get_translation
         struct /* get_translation */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:189
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Returns the translation (position vector) ``p_FM`` of the child frame
 M's origin Mo as measured and expressed in the parent frame F. Refer
@@ -9027,7 +9027,7 @@ Returns ``p_FM``:
         } get_translation;
         // Symbol: drake::multibody::RpyFloatingJoint::get_translational_velocity
         struct /* get_translational_velocity */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:269
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Retrieves from ``context`` the translational velocity ``v_FM`` of the
 child frame M's origin as measured and expressed in the parent frame
@@ -9044,7 +9044,7 @@ Returns ``v_FM``:
         } get_translational_velocity;
         // Symbol: drake::multibody::RpyFloatingJoint::set_angles
         struct /* set_angles */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:164
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Sets the ``context`` so that the generalized coordinates corresponding
 to the roll-pitch-yaw rotation angles of this joint equals ``angles``.
@@ -9067,7 +9067,7 @@ See also:
         } set_angles;
         // Symbol: drake::multibody::RpyFloatingJoint::set_angular_velocity
         struct /* set_angular_velocity */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:255
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Sets in ``context`` the state for this joint so that the angular
 velocity of the child frame M in the parent frame F is ``w_FM``.
@@ -9085,7 +9085,7 @@ Returns:
         } set_angular_velocity;
         // Symbol: drake::multibody::RpyFloatingJoint::set_default_angles
         struct /* set_default_angles */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:333
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Sets the default roll-pitch-yaw angles of this joint.
 
@@ -9097,7 +9097,7 @@ Warning:
         } set_default_angles;
         // Symbol: drake::multibody::RpyFloatingJoint::set_default_translation
         struct /* set_default_translation */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:347
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Sets the default translation (position vector) ``p_FM`` of this joint.
 
@@ -9106,7 +9106,7 @@ Parameter ``p_FM``:
         } set_default_translation;
         // Symbol: drake::multibody::RpyFloatingJoint::set_random_angles_distribution
         struct /* set_random_angles_distribution */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:301
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Sets the random distribution from which the roll-pitch-yaw orientation
 angles of this joint will be randomly sampled. See the
@@ -9121,7 +9121,7 @@ Warning:
         } set_random_angles_distribution;
         // Symbol: drake::multibody::RpyFloatingJoint::set_random_translation_distribution
         struct /* set_random_translation_distribution */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:311
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Sets the random distribution that the translation vector of this joint
 will be randomly sampled from. See the RpyFloatingJoint class
@@ -9132,7 +9132,7 @@ joint's zero configuration.)""";
         } set_random_translation_distribution;
         // Symbol: drake::multibody::RpyFloatingJoint::set_translational_velocity
         struct /* set_translational_velocity */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:283
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Sets in ``context`` the state for this joint so that the translational
 velocity of the child frame M's origin in the parent frame F is
@@ -9152,14 +9152,14 @@ Returns:
         } set_translational_velocity;
         // Symbol: drake::multibody::RpyFloatingJoint::type_name
         struct /* type_name */ {
-          // Source: drake/multibody/tree/rpy_floating_joint.h:99
+          // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
 R"""(Returns the name of this joint type: "rpy_floating")""";
         } type_name;
       } RpyFloatingJoint;
       // Symbol: drake::multibody::ScopedName
       struct /* ScopedName */ {
-        // Source: drake/multibody/tree/scoped_name.h:39
+        // Source: drake/multibody/tree/scoped_name.h
         const char* doc =
 R"""(A delimited string name for a multibody element, e.g.,
 "robot1::torso".
@@ -9193,7 +9193,7 @@ This class does not treat a single colon (":") specially. Those can
 appear in either namespace names or element names.)""";
         // Symbol: drake::multibody::ScopedName::Join
         struct /* Join */ {
-          // Source: drake/multibody/tree/scoped_name.h:65
+          // Source: drake/multibody/tree/scoped_name.h
           const char* doc =
 R"""(Creates a ScopedName for the given ``name1::name2``. Unlike the
 constructor or ScopedName::Make(), this function allows "::" in either
@@ -9203,7 +9203,7 @@ name, and everything prior is the namespace name.)""";
         } Join;
         // Symbol: drake::multibody::ScopedName::Make
         struct /* Make */ {
-          // Source: drake/multibody/tree/scoped_name.h:57
+          // Source: drake/multibody/tree/scoped_name.h
           const char* doc =
 R"""(Creates a ScopedName for the given ``namespace_name`` and
 ``element_name``. Returns nullopt if ``namespace_name`` starts or ends
@@ -9214,7 +9214,7 @@ See also:
         } Make;
         // Symbol: drake::multibody::ScopedName::Parse
         struct /* Parse */ {
-          // Source: drake/multibody/tree/scoped_name.h:69
+          // Source: drake/multibody/tree/scoped_name.h
           const char* doc =
 R"""(Parses the given ``scoped_name`` string. Any leading or trailing "::"s
 on the name are removed (even multiple copies like "::::" are
@@ -9222,9 +9222,9 @@ removed).)""";
         } Parse;
         // Symbol: drake::multibody::ScopedName::ScopedName
         struct /* ctor */ {
-          // Source: drake/multibody/tree/scoped_name.h:44
+          // Source: drake/multibody/tree/scoped_name.h
           const char* doc_0args = R"""(Creates an empty name.)""";
-          // Source: drake/multibody/tree/scoped_name.h:51
+          // Source: drake/multibody/tree/scoped_name.h
           const char* doc_2args =
 R"""(Creates a ScopedName for the given ``namespace_name`` and
 ``element_name``.
@@ -9244,7 +9244,7 @@ See also:
         } ctor;
         // Symbol: drake::multibody::ScopedName::get_element
         struct /* get_element */ {
-          // Source: drake/multibody/tree/scoped_name.h:79
+          // Source: drake/multibody/tree/scoped_name.h
           const char* doc =
 R"""(Returns the element portion of this scoped name, e.g., "torso". This
 is the local name of the joint, body, etc. within the model instance.
@@ -9253,7 +9253,7 @@ moved-from.)""";
         } get_element;
         // Symbol: drake::multibody::ScopedName::get_full
         struct /* get_full */ {
-          // Source: drake/multibody/tree/scoped_name.h:83
+          // Source: drake/multibody/tree/scoped_name.h
           const char* doc =
 R"""(Returns the full ScopedName as a string, e.g., "robot1::torso". It is
 never empty unless this ScopedName was default-constructed or
@@ -9261,7 +9261,7 @@ moved-from.)""";
         } get_full;
         // Symbol: drake::multibody::ScopedName::get_namespace
         struct /* get_namespace */ {
-          // Source: drake/multibody/tree/scoped_name.h:74
+          // Source: drake/multibody/tree/scoped_name.h
           const char* doc =
 R"""(Returns the namespace portion of this scoped name, e.g., "robot1".
 This is typically the model instance name. This is typically the model
@@ -9269,7 +9269,7 @@ instance name but can be empty (see class overview for details).)""";
         } get_namespace;
         // Symbol: drake::multibody::ScopedName::set_element
         struct /* set_element */ {
-          // Source: drake/multibody/tree/scoped_name.h:96
+          // Source: drake/multibody/tree/scoped_name.h
           const char* doc =
 R"""(Replaces the element name of this object, leaving the namespace name
 unchanged.
@@ -9279,7 +9279,7 @@ Raises:
         } set_element;
         // Symbol: drake::multibody::ScopedName::set_namespace
         struct /* set_namespace */ {
-          // Source: drake/multibody/tree/scoped_name.h:91
+          // Source: drake/multibody/tree/scoped_name.h
           const char* doc =
 R"""(Replaces the namespace name of this object, leaving the element name
 unchanged. The namespace name is allowed to be empty.
@@ -9289,14 +9289,14 @@ Raises:
         } set_namespace;
         // Symbol: drake::multibody::ScopedName::to_string
         struct /* to_string */ {
-          // Source: drake/multibody/tree/scoped_name.h:86
+          // Source: drake/multibody/tree/scoped_name.h
           const char* doc =
 R"""(Returns get_full() as a string value instead of a string_view.)""";
         } to_string;
       } ScopedName;
       // Symbol: drake::multibody::ScrewJoint
       struct /* ScrewJoint */ {
-        // Source: drake/multibody/tree/screw_joint.h:34
+        // Source: drake/multibody/tree/screw_joint.h
         const char* doc =
 R"""(This joint models a screw joint allowing two bodies to rotate about
 one axis while translating along that same axis with one degree of
@@ -9313,7 +9313,7 @@ to be positive according to the right-hand-rule with the thumb aligned
 in the direction of the ``â_F`` axis.)""";
         // Symbol: drake::multibody::ScrewJoint::GetDamping
         struct /* GetDamping */ {
-          // Source: drake/multibody/tree/screw_joint.h:225
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc =
 R"""(Returns the Context dependent damping coefficient stored as a
 parameter in ``context``. Refer to default_damping() for details.
@@ -9324,7 +9324,7 @@ Parameter ``context``:
         } GetDamping;
         // Symbol: drake::multibody::ScrewJoint::ScrewJoint<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/screw_joint.h:68
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc_5args =
 R"""(Constructor to create a screw joint between two bodies so that frame F
 attached to the parent body P and frame M attached to the child body B
@@ -9352,7 +9352,7 @@ Parameter ``damping``:
 
 Raises:
     RuntimeError if damping is negative.)""";
-          // Source: drake/multibody/tree/screw_joint.h:105
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc_6args =
 R"""(Constructor to create a screw joint between two bodies so that frame F
 attached to the parent body P and frame M attached to the child body B
@@ -9395,7 +9395,7 @@ Raises:
         } ctor;
         // Symbol: drake::multibody::ScrewJoint::SetDamping
         struct /* SetDamping */ {
-          // Source: drake/multibody/tree/screw_joint.h:235
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc =
 R"""(Sets the value of the viscous damping coefficient for this joint,
 stored as a parameter in ``context``. Refer to default_damping() for
@@ -9413,7 +9413,7 @@ Raises:
         } SetDamping;
         // Symbol: drake::multibody::ScrewJoint::default_damping
         struct /* default_damping */ {
-          // Source: drake/multibody/tree/screw_joint.h:128
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc =
 R"""(Returns ``this`` joint's default damping constant N⋅m⋅s for the
 rotational degree. The damping torque (in N⋅m) is modeled as ``τ =
@@ -9423,7 +9423,7 @@ body B expressed in frame F as t_B_F = τ⋅Fâ_F.)""";
         } default_damping;
         // Symbol: drake::multibody::ScrewJoint::get_angular_velocity
         struct /* get_angular_velocity */ {
-          // Source: drake/multibody/tree/screw_joint.h:203
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc =
 R"""(Gets the rate of change, in radians per second, of ``this`` joint's
 angle θ from ``context``. See class documentation for the definition
@@ -9438,7 +9438,7 @@ Returns ``theta_dot``:
         } get_angular_velocity;
         // Symbol: drake::multibody::ScrewJoint::get_default_rotation
         struct /* get_default_rotation */ {
-          // Source: drake/multibody/tree/screw_joint.h:261
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc =
 R"""(Gets the default angle for ``this`` joint.
 
@@ -9447,7 +9447,7 @@ Returns ``theta``:
         } get_default_rotation;
         // Symbol: drake::multibody::ScrewJoint::get_default_translation
         struct /* get_default_translation */ {
-          // Source: drake/multibody/tree/screw_joint.h:244
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc =
 R"""(Gets the default position for ``this`` joint.
 
@@ -9456,7 +9456,7 @@ Returns ``z``:
         } get_default_translation;
         // Symbol: drake::multibody::ScrewJoint::get_rotation
         struct /* get_rotation */ {
-          // Source: drake/multibody/tree/screw_joint.h:158
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc =
 R"""(Gets the angle θ of ``this`` joint from ``context``.
 
@@ -9469,7 +9469,7 @@ Returns ``theta``:
         } get_rotation;
         // Symbol: drake::multibody::ScrewJoint::get_translation
         struct /* get_translation */ {
-          // Source: drake/multibody/tree/screw_joint.h:138
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc =
 R"""(Gets the translation of ``this`` joint from ``context``.
 
@@ -9482,7 +9482,7 @@ Returns ``z``:
         } get_translation;
         // Symbol: drake::multibody::ScrewJoint::get_translational_velocity
         struct /* get_translational_velocity */ {
-          // Source: drake/multibody/tree/screw_joint.h:179
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc =
 R"""(Gets the translational velocity vz, in meters per second, of ``this``
 joint's Mo measured and expressed in frame F from ``context``.
@@ -9496,7 +9496,7 @@ Returns ``vz``:
         } get_translational_velocity;
         // Symbol: drake::multibody::ScrewJoint::screw_axis
         struct /* screw_axis */ {
-          // Source: drake/multibody/tree/screw_joint.h:117
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc =
 R"""(Returns the normalized axis of motion of ``this`` joint as a unit
 vector. Since the measures of this axis in either frame F or M are the
@@ -9505,14 +9505,14 @@ same (see this class's documentation for frame definitions) then,
         } screw_axis;
         // Symbol: drake::multibody::ScrewJoint::screw_pitch
         struct /* screw_pitch */ {
-          // Source: drake/multibody/tree/screw_joint.h:121
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc =
 R"""(Returns ``this`` joint's amount of translation in meters occurring
 over a one full revolution.)""";
         } screw_pitch;
         // Symbol: drake::multibody::ScrewJoint::set_angular_velocity
         struct /* set_angular_velocity */ {
-          // Source: drake/multibody/tree/screw_joint.h:215
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc =
 R"""(Sets the rate of change, in radians per second, of ``this`` joint's
 angle θ (see class documentation) to ``theta_dot``. The new rate of
@@ -9530,7 +9530,7 @@ Returns:
         } set_angular_velocity;
         // Symbol: drake::multibody::ScrewJoint::set_default_rotation
         struct /* set_default_rotation */ {
-          // Source: drake/multibody/tree/screw_joint.h:266
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc =
 R"""(Sets the default angle of this joint. This will change the
 ``default_translation`` too, because they are not independent in this
@@ -9541,7 +9541,7 @@ Parameter ``theta``:
         } set_default_rotation;
         // Symbol: drake::multibody::ScrewJoint::set_default_translation
         struct /* set_default_translation */ {
-          // Source: drake/multibody/tree/screw_joint.h:253
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc =
 R"""(Sets the default translation of this joint. This will change the
 ``default_rotation`` too, which are not independent in this joint.
@@ -9554,7 +9554,7 @@ Raises:
         } set_default_translation;
         // Symbol: drake::multibody::ScrewJoint::set_random_pose_distribution
         struct /* set_random_pose_distribution */ {
-          // Source: drake/multibody/tree/screw_joint.h:274
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc =
 R"""(Sets the random distribution that the angle of this joint will be
 randomly sampled from. See class documentation for details on the
@@ -9562,7 +9562,7 @@ definition of the position and angle.)""";
         } set_random_pose_distribution;
         // Symbol: drake::multibody::ScrewJoint::set_rotation
         struct /* set_rotation */ {
-          // Source: drake/multibody/tree/screw_joint.h:168
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc =
 R"""(Sets the ``context`` so that the angle θ of ``this`` joint equals
 ``theta``.
@@ -9579,7 +9579,7 @@ Returns:
         } set_rotation;
         // Symbol: drake::multibody::ScrewJoint::set_translation
         struct /* set_translation */ {
-          // Source: drake/multibody/tree/screw_joint.h:148
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc =
 R"""(Sets the ``context`` so that the translation of ``this`` joint equals
 to (z).
@@ -9596,7 +9596,7 @@ Returns:
         } set_translation;
         // Symbol: drake::multibody::ScrewJoint::set_translational_velocity
         struct /* set_translational_velocity */ {
-          // Source: drake/multibody/tree/screw_joint.h:190
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc =
 R"""(Sets the translational velocity, in meters per second, of this
 ``this`` joint's Mo along frame F's â-axis to ``vz``. The new
@@ -9614,13 +9614,13 @@ Returns:
         } set_translational_velocity;
         // Symbol: drake::multibody::ScrewJoint::type_name
         struct /* type_name */ {
-          // Source: drake/multibody/tree/screw_joint.h:111
+          // Source: drake/multibody/tree/screw_joint.h
           const char* doc = R"""()""";
         } type_name;
       } ScrewJoint;
       // Symbol: drake::multibody::SpatialInertia
       struct /* SpatialInertia */ {
-        // Source: drake/multibody/tree/spatial_inertia.h:113
+        // Source: drake/multibody/tree/spatial_inertia.h
         const char* doc =
 R"""(This class represents the physical concept of a *Spatial Inertia*. A
 spatial inertia (or spatial mass matrix) encapsulates the mass, center
@@ -9731,7 +9731,7 @@ See also:
                algorithms. Springer Science & Business Media.)""";
         // Symbol: drake::multibody::SpatialInertia::CalcComMoment
         struct /* CalcComMoment */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:542
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Computes the center of mass moment vector ``mass * p_PScm_E`` given
 the position vector ``p_PScm_E`` from the *about point* P to the
@@ -9740,7 +9740,7 @@ frame E. See the documentation of this class for details.)""";
         } CalcComMoment;
         // Symbol: drake::multibody::SpatialInertia::CalcMinimumPhysicalLength
         struct /* CalcMinimumPhysicalLength */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:701
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Returns the minimum possible length for the physical extent of the
 massive object that underlies this spatial inertia. In other words,
@@ -9778,7 +9778,7 @@ Note:
         } CalcMinimumPhysicalLength;
         // Symbol: drake::multibody::SpatialInertia::CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox
         struct /* CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:671
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Returns three ½-lengths [lmax lmed lmin] sorted in descending order
 (lmax ≥ lmed ≥ lmin), orientation, and position of a box whose mass is
@@ -9797,7 +9797,7 @@ Raises:
         } CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox;
         // Symbol: drake::multibody::SpatialInertia::CalcPrincipalHalfLengthsAndPoseForSolidBox
         struct /* CalcPrincipalHalfLengthsAndPoseForSolidBox */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:653
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Returns three ½-lengths [lmax lmed lmin] sorted in descending order
 (lmax ≥ lmed ≥ lmin), orientation, and position of a solid box whose
@@ -9813,7 +9813,7 @@ Raises:
         } CalcPrincipalHalfLengthsAndPoseForSolidBox;
         // Symbol: drake::multibody::SpatialInertia::CalcPrincipalSemiDiametersAndPoseForSolidEllipsoid
         struct /* CalcPrincipalSemiDiametersAndPoseForSolidEllipsoid */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:638
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Returns 3 principal semi-diameters [lmax lmed lmin] sorted in
 descending order (lmax ≥ lmed ≥ lmin), orientation, and position of a
@@ -9829,7 +9829,7 @@ Raises:
         } CalcPrincipalSemiDiametersAndPoseForSolidEllipsoid;
         // Symbol: drake::multibody::SpatialInertia::CalcRotationalInertia
         struct /* CalcRotationalInertia */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:552
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Computes the rotational inertia ``I_SP_E = mass * G_SP_E`` of this
 spatial inertia, computed about point P and expressed in frame E. See
@@ -9837,20 +9837,20 @@ the documentation of this class for details.)""";
         } CalcRotationalInertia;
         // Symbol: drake::multibody::SpatialInertia::CopyToFullMatrix6
         struct /* CopyToFullMatrix6 */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:705
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Copy to a full 6x6 matrix representation.)""";
         } CopyToFullMatrix6;
         // Symbol: drake::multibody::SpatialInertia::CreateInvalidityReport
         struct /* CreateInvalidityReport */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:594
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""((Internal use only). Returns an optional string if this SpatialInertia
 is invalid, otherwise returns an empty optional.)""";
         } CreateInvalidityReport;
         // Symbol: drake::multibody::SpatialInertia::HollowSphereWithDensity
         struct /* HollowSphereWithDensity */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:406
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a uniform density thin hollow sphere B
 about its geometric center Bo (which is coincident with B's center of
@@ -9878,7 +9878,7 @@ Raises:
         } HollowSphereWithDensity;
         // Symbol: drake::multibody::SpatialInertia::HollowSphereWithMass
         struct /* HollowSphereWithMass */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:420
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a uniform density hollow sphere B about
 its geometric center Bo (which is coincident with B's center of mass
@@ -9905,14 +9905,14 @@ Raises:
         } HollowSphereWithMass;
         // Symbol: drake::multibody::SpatialInertia::IsNaN
         struct /* IsNaN */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:556
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Returns ``True`` if any of the elements in this spatial inertia is NaN
 and ``False`` otherwise.)""";
         } IsNaN;
         // Symbol: drake::multibody::SpatialInertia::IsPhysicallyValid
         struct /* IsPhysicallyValid */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:590
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Performs a number of checks to verify that this is a physically valid
 spatial inertia. The checks performed include:
@@ -9936,14 +9936,14 @@ See also:
         } IsPhysicallyValid;
         // Symbol: drake::multibody::SpatialInertia::IsZero
         struct /* IsZero */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:566
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Returns ``True`` if all of the elements in this spatial inertia are
 zero and ``False`` otherwise.)""";
         } IsZero;
         // Symbol: drake::multibody::SpatialInertia::MakeFromCentralInertia
         struct /* MakeFromCentralInertia */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:133
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a physical body or composite body S
 about a point P from a given mass, center of mass, and central
@@ -9972,7 +9972,7 @@ Returns ``M_SP_E``:
         } MakeFromCentralInertia;
         // Symbol: drake::multibody::SpatialInertia::MakeUnitary
         struct /* MakeUnitary */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:140
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""((Internal use only) Creates a spatial inertia whose mass is 1,
 position vector to center of mass is zero, and whose rotational
@@ -9980,14 +9980,14 @@ inertia has moments of inertia of 1 and products of inertia of 0.)""";
         } MakeUnitary;
         // Symbol: drake::multibody::SpatialInertia::NaN
         struct /* NaN */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:473
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Initializes mass, center of mass and rotational inertia to invalid
 NaN's for a quick detection of uninitialized values.)""";
         } NaN;
         // Symbol: drake::multibody::SpatialInertia::PointMass
         struct /* PointMass */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:147
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates the spatial inertia for a particle Q of mass m about a point
 P.
@@ -10006,7 +10006,7 @@ Raises:
         } PointMass;
         // Symbol: drake::multibody::SpatialInertia::ReExpress
         struct /* ReExpress */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:767
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Given ``this`` spatial inertia ``M_SP_E`` for some body or composite
 body S, taken about a point P and expressed in frame E, this method
@@ -10024,7 +10024,7 @@ See also:
         } ReExpress;
         // Symbol: drake::multibody::SpatialInertia::ReExpressInPlace
         struct /* ReExpressInPlace */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:754
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Given ``this`` spatial inertia ``M_SP_E`` for some body or composite
 body S, taken about a point P and expressed in frame E, this method
@@ -10037,14 +10037,14 @@ Parameter ``R_AE``:
         } ReExpressInPlace;
         // Symbol: drake::multibody::SpatialInertia::SetNaN
         struct /* SetNaN */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:717
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Sets ``this`` spatial inertia to have NaN entries. Typically used for
 quick detection of uninitialized values.)""";
         } SetNaN;
         // Symbol: drake::multibody::SpatialInertia::Shift
         struct /* Shift */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:811
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Given ``this`` spatial inertia ``M_SP_E`` for some body or composite
 body S, computed about point P, and expressed in frame E, this method
@@ -10066,7 +10066,7 @@ Returns ``M_SQ_E``:
         } Shift;
         // Symbol: drake::multibody::SpatialInertia::ShiftInPlace
         struct /* ShiftInPlace */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:787
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Given ``this`` spatial inertia ``M_SP_E`` for some body or composite
 body S, computed about point P, and expressed in frame E, this method
@@ -10088,7 +10088,7 @@ Parameter ``p_PQ_E``:
         } ShiftInPlace;
         // Symbol: drake::multibody::SpatialInertia::SolidBoxWithDensity
         struct /* SolidBoxWithDensity */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:158
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a uniform density solid box B about its
 geometric center Bo (which is coincident with B's center of mass Bcm).
@@ -10113,7 +10113,7 @@ Raises:
         } SolidBoxWithDensity;
         // Symbol: drake::multibody::SpatialInertia::SolidBoxWithMass
         struct /* SolidBoxWithMass */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:169
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a uniform density solid box B about its
 geometric center Bo (which is coincident with B's center of mass Bcm).
@@ -10138,7 +10138,7 @@ Raises:
         } SolidBoxWithMass;
         // Symbol: drake::multibody::SpatialInertia::SolidCapsuleWithDensity
         struct /* SolidCapsuleWithDensity */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:210
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a uniform density solid capsule B about
 its geometric center Bo (which is coincident with B's center of mass
@@ -10171,7 +10171,7 @@ Raises:
         } SolidCapsuleWithDensity;
         // Symbol: drake::multibody::SpatialInertia::SolidCapsuleWithMass
         struct /* SolidCapsuleWithMass */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:227
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a uniform density solid capsule B about
 its geometric center Bo (which is coincident with B's center of mass
@@ -10204,7 +10204,7 @@ Raises:
         } SolidCapsuleWithMass;
         // Symbol: drake::multibody::SpatialInertia::SolidCubeWithDensity
         struct /* SolidCubeWithDensity */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:182
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a uniform density solid cube B about its
 geometric center Bo (which is coincident with B's center of mass Bcm).
@@ -10230,7 +10230,7 @@ Raises:
         } SolidCubeWithDensity;
         // Symbol: drake::multibody::SpatialInertia::SolidCubeWithMass
         struct /* SolidCubeWithMass */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:195
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a uniform density solid cube B about its
 geometric center Bo (which is coincident with B's center of mass Bcm).
@@ -10256,7 +10256,7 @@ Raises:
         } SolidCubeWithMass;
         // Symbol: drake::multibody::SpatialInertia::SolidCylinderWithDensity
         struct /* SolidCylinderWithDensity */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:246
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a uniform density solid cylinder B about
 its geometric center Bo (which is coincident with B's center of mass
@@ -10294,7 +10294,7 @@ See also:
         } SolidCylinderWithDensity;
         // Symbol: drake::multibody::SpatialInertia::SolidCylinderWithDensityAboutEnd
         struct /* SolidCylinderWithDensityAboutEnd */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:285
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a uniform-density solid cylinder B about
 an end-point Bp of the cylinder's axis (see below for more about Bp).
@@ -10333,7 +10333,7 @@ See also:
         } SolidCylinderWithDensityAboutEnd;
         // Symbol: drake::multibody::SpatialInertia::SolidCylinderWithMass
         struct /* SolidCylinderWithMass */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:265
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a uniform density solid cylinder B about
 its geometric center Bo (which is coincident with B's center of mass
@@ -10371,7 +10371,7 @@ See also:
         } SolidCylinderWithMass;
         // Symbol: drake::multibody::SpatialInertia::SolidCylinderWithMassAboutEnd
         struct /* SolidCylinderWithMassAboutEnd */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:305
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a uniform-density solid cylinder B about
 an end-point Bp of the cylinder's axis (see below for more about Bp).
@@ -10410,7 +10410,7 @@ See also:
         } SolidCylinderWithMassAboutEnd;
         // Symbol: drake::multibody::SpatialInertia::SolidEllipsoidWithDensity
         struct /* SolidEllipsoidWithDensity */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:354
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a uniform density solid ellipsoid B
 about its geometric center Bo (which is coincident with B's center of
@@ -10436,7 +10436,7 @@ Raises:
         } SolidEllipsoidWithDensity;
         // Symbol: drake::multibody::SpatialInertia::SolidEllipsoidWithMass
         struct /* SolidEllipsoidWithMass */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:366
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a uniform density solid ellipsoid B
 about its geometric center Bo (which is coincident with B's center of
@@ -10462,7 +10462,7 @@ Raises:
         } SolidEllipsoidWithMass;
         // Symbol: drake::multibody::SpatialInertia::SolidSphereWithDensity
         struct /* SolidSphereWithDensity */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:379
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a uniform density solid sphere B about
 its geometric center Bo (which is coincident with B's center of mass
@@ -10488,7 +10488,7 @@ Raises:
         } SolidSphereWithDensity;
         // Symbol: drake::multibody::SpatialInertia::SolidSphereWithMass
         struct /* SolidSphereWithMass */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:392
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a uniform density solid sphere B about
 its geometric center Bo (which is coincident with B's center of mass
@@ -10514,7 +10514,7 @@ Raises:
         } SolidSphereWithMass;
         // Symbol: drake::multibody::SpatialInertia::SolidTetrahedronAboutPointWithDensity
         struct /* SolidTetrahedronAboutPointWithDensity */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:446
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a uniform density solid tetrahedron B
 about a point A, from which position vectors to B's 4 vertices B0, B1,
@@ -10573,7 +10573,7 @@ See also:
         } SolidTetrahedronAboutPointWithDensity;
         // Symbol: drake::multibody::SpatialInertia::SolidTetrahedronAboutVertexWithDensity
         struct /* SolidTetrahedronAboutVertexWithDensity */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:462
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""((Advanced) Creates a spatial inertia for a uniform density solid
 tetrahedron B about its vertex B0, from which position vectors to B's
@@ -10604,7 +10604,7 @@ See also:
         } SolidTetrahedronAboutVertexWithDensity;
         // Symbol: drake::multibody::SpatialInertia::SpatialInertia<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:501
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Constructs a spatial inertia for a physical body or composite body S
 about a point P from a given mass, center of mass and rotational
@@ -10646,7 +10646,7 @@ Parameter ``skip_validity_check``:
         } ctor;
         // Symbol: drake::multibody::SpatialInertia::ThinRodWithMass
         struct /* ThinRodWithMass */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:324
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a uniform-density thin rod B about its
 center of mass Bcm.
@@ -10680,7 +10680,7 @@ See also:
         } ThinRodWithMass;
         // Symbol: drake::multibody::SpatialInertia::ThinRodWithMassAboutEnd
         struct /* ThinRodWithMassAboutEnd */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:343
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Creates a spatial inertia for a uniform-density thin rod B about one
 of its ends.
@@ -10717,13 +10717,13 @@ See also:
         } ThinRodWithMassAboutEnd;
         // Symbol: drake::multibody::SpatialInertia::Zero
         struct /* Zero */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:467
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Initializes mass, center of mass and rotational inertia to zero.)""";
         } Zero;
         // Symbol: drake::multibody::SpatialInertia::cast
         struct /* cast */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:523
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Returns a new SpatialInertia object templated on ``Scalar``
 initialized from the value of ``this`` spatial inertia.
@@ -10742,7 +10742,7 @@ Note:
         } cast;
         // Symbol: drake::multibody::SpatialInertia::get_com
         struct /* get_com */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:536
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Get a constant reference to the position vector ``p_PScm_E`` from the
 *about point* P to the center of mass ``Scm`` of the body or composite
@@ -10751,13 +10751,13 @@ details.)""";
         } get_com;
         // Symbol: drake::multibody::SpatialInertia::get_mass
         struct /* get_mass */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:531
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Get a constant reference to the mass of this spatial inertia.)""";
         } get_mass;
         // Symbol: drake::multibody::SpatialInertia::get_unit_inertia
         struct /* get_unit_inertia */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:547
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Get a constant reference to the unit inertia ``G_SP_E`` of this
 spatial inertia, computed about point P and expressed in frame E. See
@@ -10765,7 +10765,7 @@ the documentation of this class for details.)""";
         } get_unit_inertia;
         // Symbol: drake::multibody::SpatialInertia::operator*
         struct /* operator_mul */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:841
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc_1args_A_WB_E =
 R"""(Multiplies ``this`` spatial inertia ``M_Bo_E`` of a body B about its
 frame origin ``Bo`` by the spatial acceleration of the body frame B in
@@ -10827,7 +10827,7 @@ where ``Ftot_BBo`` is the total spatial force applied on body B at
 ``Bo`` that corresponds to the body spatial acceleration ``A_WB`` and
 ``b_Bo`` contains the velocity dependent gyroscopic terms (see Eq.
 2.26, p. 27, in A. Jain's book).)""";
-          // Source: drake/multibody/tree/spatial_inertia.h:861
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc_1args_V_WBp_E =
 R"""(Multiplies ``this`` spatial inertia ``M_BP_E`` of a body B about a
 point P by the spatial velocity ``V_WBp``, in a frame W, of the body
@@ -10871,7 +10871,7 @@ spatial momentum ``L_WBp``, respectively.
 Note:
     It is possible to show that ``M_BP_E.Shift(p_PQ_E) *
     V_WBp_E.Shift(p_PQ_E)`` exactly equals ``L_WBp_E.Shift(p_PQ_E)``.)""";
-          // Source: drake/multibody/tree/spatial_inertia.h:873
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc_1args_constEigenMatrixBase =
 R"""(Multiplies ``this`` spatial inertia by a set of spatial vectors in M⁶
 stored as columns of input matrix ``Mmatrix``. The top three rows of
@@ -10883,7 +10883,7 @@ spatial inertia with the j-th column of ``Mmatrix``.)""";
         } operator_mul;
         // Symbol: drake::multibody::SpatialInertia::operator+=
         struct /* operator_iadd */ {
-          // Source: drake/multibody/tree/spatial_inertia.h:746
+          // Source: drake/multibody/tree/spatial_inertia.h
           const char* doc =
 R"""(Adds in a spatial inertia to ``this`` spatial inertia.
 
@@ -10917,19 +10917,19 @@ Warning:
       } SpatialInertia;
       // Symbol: drake::multibody::UniformGravityFieldElement
       struct /* UniformGravityFieldElement */ {
-        // Source: drake/multibody/tree/uniform_gravity_field_element.h:20
+        // Source: drake/multibody/tree/uniform_gravity_field_element.h
         const char* doc =
 R"""(This ForceElement allows modeling the effect of a uniform gravity
 field as felt by bodies on the surface of the Earth. This gravity
 field acts on all bodies in the MultibodyTree model.)""";
         // Symbol: drake::multibody::UniformGravityFieldElement::CalcConservativePower
         struct /* CalcConservativePower */ {
-          // Source: drake/multibody/tree/uniform_gravity_field_element.h:112
+          // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc = R"""()""";
         } CalcConservativePower;
         // Symbol: drake::multibody::UniformGravityFieldElement::CalcGravityGeneralizedForces
         struct /* CalcGravityGeneralizedForces */ {
-          // Source: drake/multibody/tree/uniform_gravity_field_element.h:99
+          // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc =
 R"""(Computes the generalized forces ``tau_g(q)`` due to ``this`` gravity
 field element as a function of the generalized positions ``q`` stored
@@ -10971,12 +10971,12 @@ Returns:
         } CalcGravityGeneralizedForces;
         // Symbol: drake::multibody::UniformGravityFieldElement::CalcNonConservativePower
         struct /* CalcNonConservativePower */ {
-          // Source: drake/multibody/tree/uniform_gravity_field_element.h:117
+          // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc = R"""()""";
         } CalcNonConservativePower;
         // Symbol: drake::multibody::UniformGravityFieldElement::CalcPotentialEnergy
         struct /* CalcPotentialEnergy */ {
-          // Source: drake/multibody/tree/uniform_gravity_field_element.h:108
+          // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc =
 R"""(Computes the total potential energy of all bodies in the model in this
 uniform gravity field. The definition of potential energy allows to
@@ -10987,31 +10987,31 @@ mass is at the world's origin.)""";
         } CalcPotentialEnergy;
         // Symbol: drake::multibody::UniformGravityFieldElement::DoCalcAndAddForceContribution
         struct /* DoCalcAndAddForceContribution */ {
-          // Source: drake/multibody/tree/uniform_gravity_field_element.h:123
+          // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc = R"""()""";
         } DoCalcAndAddForceContribution;
         // Symbol: drake::multibody::UniformGravityFieldElement::DoCloneToScalar
         struct /* DoCloneToScalar */ {
-          // Source: drake/multibody/tree/uniform_gravity_field_element.h:129
+          // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc = R"""()""";
         } DoCloneToScalar;
         // Symbol: drake::multibody::UniformGravityFieldElement::DoShallowClone
         struct /* DoShallowClone */ {
-          // Source: drake/multibody/tree/uniform_gravity_field_element.h:138
+          // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc = R"""()""";
         } DoShallowClone;
         // Symbol: drake::multibody::UniformGravityFieldElement::UniformGravityFieldElement<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/uniform_gravity_field_element.h:32
+          // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc_0args =
 R"""(Constructs a uniform gravity field element with a default strength (on
 the earth's surface) and direction (-z).)""";
-          // Source: drake/multibody/tree/uniform_gravity_field_element.h:36
+          // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc_1args =
 R"""(Constructs a uniform gravity field element with a strength given by
 the acceleration of gravity vector ``g_W``, expressed in the world
 frame W.)""";
-          // Source: drake/multibody/tree/uniform_gravity_field_element.h:42
+          // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc_2args =
 R"""(Constructs a uniform gravity field element with a strength given by
 the acceleration of gravity vector ``g_W``, expressed in the world
@@ -11020,14 +11020,14 @@ frame W. Gravity is disabled for the set of model instances
         } ctor;
         // Symbol: drake::multibody::UniformGravityFieldElement::gravity_vector
         struct /* gravity_vector */ {
-          // Source: drake/multibody/tree/uniform_gravity_field_element.h:50
+          // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc =
 R"""(Returns the acceleration of the gravity vector in m/s², expressed in
 the world frame W.)""";
         } gravity_vector;
         // Symbol: drake::multibody::UniformGravityFieldElement::is_enabled
         struct /* is_enabled */ {
-          // Source: drake/multibody/tree/uniform_gravity_field_element.h:61
+          // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc =
 R"""(Returns:
     ``True`` iff gravity is enabled for ``model_instance``.
@@ -11044,7 +11044,7 @@ Raises:
         } is_enabled;
         // Symbol: drake::multibody::UniformGravityFieldElement::set_enabled
         struct /* set_enabled */ {
-          // Source: drake/multibody/tree/uniform_gravity_field_element.h:74
+          // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc =
 R"""(Sets is_enabled() for ``model_instance`` to ``is_enabled``.
 
@@ -11060,7 +11060,7 @@ Raises:
         } set_enabled;
         // Symbol: drake::multibody::UniformGravityFieldElement::set_gravity_vector
         struct /* set_gravity_vector */ {
-          // Source: drake/multibody/tree/uniform_gravity_field_element.h:54
+          // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc =
 R"""(Sets the acceleration of gravity vector, expressed in the world frame
 W in m/s².)""";
@@ -11068,7 +11068,7 @@ W in m/s².)""";
       } UniformGravityFieldElement;
       // Symbol: drake::multibody::UnitInertia
       struct /* UnitInertia */ {
-        // Source: drake/multibody/tree/unit_inertia.h:49
+        // Source: drake/multibody/tree/unit_inertia.h
         const char* doc =
 R"""(This class is used to represent rotational inertias for unit mass
 bodies. Therefore, unlike RotationalInertia whose units are kg⋅m², the
@@ -11107,7 +11107,7 @@ See also:
     https://en.cppreference.com/w/cpp/language/exceptions)""";
         // Symbol: drake::multibody::UnitInertia::AxiallySymmetric
         struct /* AxiallySymmetric */ {
-          // Source: drake/multibody/tree/unit_inertia.h:384
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(Returns the unit inertia for a body B for which there exists an axis L
 passing through the body's center of mass Bcm having the property that
@@ -11169,12 +11169,12 @@ Raises:
         } AxiallySymmetric;
         // Symbol: drake::multibody::UnitInertia::CalcPrincipalHalfLengthsAndAxesForEquivalentShape
         struct /* CalcPrincipalHalfLengthsAndAxesForEquivalentShape */ {
-          // Source: drake/multibody/tree/unit_inertia.h:449
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc = R"""()""";
         } CalcPrincipalHalfLengthsAndAxesForEquivalentShape;
         // Symbol: drake::multibody::UnitInertia::HollowSphere
         struct /* HollowSphere */ {
-          // Source: drake/multibody/tree/unit_inertia.h:255
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(Computes the unit inertia for a unit-mass hollow sphere of radius
 ``r`` consisting of an infinitesimally thin shell of uniform density.
@@ -11182,7 +11182,7 @@ The unit inertia is taken about the center of the sphere.)""";
         } HollowSphere;
         // Symbol: drake::multibody::UnitInertia::PointMass
         struct /* PointMass */ {
-          // Source: drake/multibody/tree/unit_inertia.h:228
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(Construct a unit inertia for a point mass of unit mass located at
 point Q, whose location in a frame F is given by the position vector
@@ -11221,7 +11221,7 @@ px² * a``.)""";
         } PointMass;
         // Symbol: drake::multibody::UnitInertia::ReExpress
         struct /* ReExpress */ {
-          // Source: drake/multibody/tree/unit_inertia.h:120
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(Given ``this`` unit inertia ``G_BP_E`` of a body B about a point P and
 expressed in frame E, this method computes the same unit inertia
@@ -11237,7 +11237,7 @@ Returns ``G_BP_A``:
         } ReExpress;
         // Symbol: drake::multibody::UnitInertia::ReExpressInPlace
         struct /* ReExpressInPlace */ {
-          // Source: drake/multibody/tree/unit_inertia.h:110
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(Re-express a unit inertia in a different frame, performing the
 operation in place and modifying the original object.
@@ -11247,7 +11247,7 @@ See also:
         } ReExpressInPlace;
         // Symbol: drake::multibody::UnitInertia::SetFromRotationalInertia
         struct /* SetFromRotationalInertia */ {
-          // Source: drake/multibody/tree/unit_inertia.h:101
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(Sets ``this`` unit inertia from a generally non-unit inertia I
 corresponding to a body with a given ``mass``.
@@ -11257,7 +11257,7 @@ Raises:
         } SetFromRotationalInertia;
         // Symbol: drake::multibody::UnitInertia::ShiftFromCenterOfMass
         struct /* ShiftFromCenterOfMass */ {
-          // Source: drake/multibody/tree/unit_inertia.h:144
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(Shifts this central unit inertia to a different point, and returns the
 result. See ShiftFromCenterOfMassInPlace() for details.
@@ -11272,7 +11272,7 @@ Returns ``G_BQ_E``:
         } ShiftFromCenterOfMass;
         // Symbol: drake::multibody::UnitInertia::ShiftFromCenterOfMassInPlace
         struct /* ShiftFromCenterOfMassInPlace */ {
-          // Source: drake/multibody/tree/unit_inertia.h:133
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(For a central unit inertia ``G_Bcm_E`` computed about a body's center
 of mass (or centroid) ``Bcm`` and expressed in a frame E, this method
@@ -11288,7 +11288,7 @@ Parameter ``p_BcmQ_E``:
         } ShiftFromCenterOfMassInPlace;
         // Symbol: drake::multibody::UnitInertia::ShiftToCenterOfMass
         struct /* ShiftToCenterOfMass */ {
-          // Source: drake/multibody/tree/unit_inertia.h:187
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(For the unit inertia ``G_BQ_E`` of a body or composite body B computed
 about a point Q and expressed in a frame E, this method shifts this
@@ -11311,12 +11311,12 @@ Warning:
         } ShiftToCenterOfMass;
         // Symbol: drake::multibody::UnitInertia::ShiftToCenterOfMassInPlace
         struct /* ShiftToCenterOfMassInPlace */ {
-          // Source: drake/multibody/tree/unit_inertia.h:170
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc = R"""()""";
         } ShiftToCenterOfMassInPlace;
         // Symbol: drake::multibody::UnitInertia::SolidBox
         struct /* SolidBox */ {
-          // Source: drake/multibody/tree/unit_inertia.h:267
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(Computes the unit inertia for a unit-mass solid box of uniform density
 taken about its geometric center. If one length is zero the inertia
@@ -11338,7 +11338,7 @@ Raises:
         } SolidBox;
         // Symbol: drake::multibody::UnitInertia::SolidCapsule
         struct /* SolidCapsule */ {
-          // Source: drake/multibody/tree/unit_inertia.h:305
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(Creates a unit inertia for a uniform density solid capsule B about its
 center of mass Bcm (which is coincident with B's geometric center Bo).
@@ -11368,7 +11368,7 @@ Raises:
         } SolidCapsule;
         // Symbol: drake::multibody::UnitInertia::SolidCube
         struct /* SolidCube */ {
-          // Source: drake/multibody/tree/unit_inertia.h:272
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(Computes the unit inertia for a unit-mass solid cube (a box with
 equal-sized sides) of uniform density taken about its geometric
@@ -11379,7 +11379,7 @@ Parameter ``L``:
         } SolidCube;
         // Symbol: drake::multibody::UnitInertia::SolidCylinder
         struct /* SolidCylinder */ {
-          // Source: drake/multibody/tree/unit_inertia.h:289
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(Creates a unit inertia for a uniform density solid cylinder B about
 its center of mass Bcm (which is coincident with B's geometric center
@@ -11415,7 +11415,7 @@ See also:
         } SolidCylinder;
         // Symbol: drake::multibody::UnitInertia::SolidCylinderAboutEnd
         struct /* SolidCylinderAboutEnd */ {
-          // Source: drake/multibody/tree/unit_inertia.h:322
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(Creates a unit inertia for a uniform-density solid cylinder B about an
 end-point Bp of the cylinder's axis (see below for more about Bp).
@@ -11448,7 +11448,7 @@ Raises:
         } SolidCylinderAboutEnd;
         // Symbol: drake::multibody::UnitInertia::SolidEllipsoid
         struct /* SolidEllipsoid */ {
-          // Source: drake/multibody/tree/unit_inertia.h:244
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(Computes the unit inertia for a unit-mass solid ellipsoid of uniform
 density taken about its center. The lengths of the semi-axes of the
@@ -11457,14 +11457,14 @@ respectively.)""";
         } SolidEllipsoid;
         // Symbol: drake::multibody::UnitInertia::SolidSphere
         struct /* SolidSphere */ {
-          // Source: drake/multibody/tree/unit_inertia.h:248
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(Computes the unit inertia for a unit-mass solid sphere of uniform
 density and radius ``r`` taken about its center.)""";
         } SolidSphere;
         // Symbol: drake::multibody::UnitInertia::SolidTetrahedronAboutPoint
         struct /* SolidTetrahedronAboutPoint */ {
-          // Source: drake/multibody/tree/unit_inertia.h:335
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(Creates a unit inertia for a unit-mass uniform density solid
 tetrahedron B about a point A, from which position vectors to B's 4
@@ -11492,7 +11492,7 @@ See also:
         } SolidTetrahedronAboutPoint;
         // Symbol: drake::multibody::UnitInertia::SolidTetrahedronAboutVertex
         struct /* SolidTetrahedronAboutVertex */ {
-          // Source: drake/multibody/tree/unit_inertia.h:350
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""((Advanced) Creates a unit inertia for a unit-mass uniform density
 solid tetrahedron B about its vertex B0, from which position vectors
@@ -11517,7 +11517,7 @@ See also:
         } SolidTetrahedronAboutVertex;
         // Symbol: drake::multibody::UnitInertia::StraightLine
         struct /* StraightLine */ {
-          // Source: drake/multibody/tree/unit_inertia.h:404
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(Creates a unit inertia for a straight line segment B about a point Bp
 on the line segment.
@@ -11553,7 +11553,7 @@ See also:
         } StraightLine;
         // Symbol: drake::multibody::UnitInertia::ThinRod
         struct /* ThinRod */ {
-          // Source: drake/multibody/tree/unit_inertia.h:420
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(Creates a unit inertia for a uniform density thin rod B about its
 center of mass Bcm (which is coincident with B's geometric center Bo).
@@ -11583,28 +11583,28 @@ Note:
         } ThinRod;
         // Symbol: drake::multibody::UnitInertia::TriaxiallySymmetric
         struct /* TriaxiallySymmetric */ {
-          // Source: drake/multibody/tree/unit_inertia.h:428
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc = R"""()""";
         } TriaxiallySymmetric;
         // Symbol: drake::multibody::UnitInertia::UnitInertia<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/unit_inertia.h:55
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc_0args =
 R"""(Default UnitInertia constructor sets all entries to NaN for quick
 detection of uninitialized values.)""";
-          // Source: drake/multibody/tree/unit_inertia.h:61
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc_3args =
 R"""(Creates a unit inertia with moments of inertia ``Ixx``, `Iyy`,
 ``Izz``, and with each product of inertia set to zero. In debug
 builds, throws RuntimeError if unit inertia constructed from these
 arguments violates RotationalInertia::CouldBePhysicallyValid().)""";
-          // Source: drake/multibody/tree/unit_inertia.h:68
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc_6args =
 R"""(Creates a unit inertia with moments of inertia ``Ixx``, `Iyy`,
 ``Izz``, and with products of inertia ``Ixy``, `Ixz`, ``Iyz``. In
 debug builds, throws RuntimeError if unit inertia constructed from
 these arguments violates RotationalInertia::CouldBePhysicallyValid().)""";
-          // Source: drake/multibody/tree/unit_inertia.h:78
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc_1args =
 R"""(Constructs a UnitInertia from a RotationalInertia. This constructor
 has no way to verify that the input rotational inertia actually is a
@@ -11617,7 +11617,7 @@ Precondition:
         } ctor;
         // Symbol: drake::multibody::UnitInertia::cast
         struct /* cast */ {
-          // Source: drake/multibody/tree/unit_inertia.h:94
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc =
 R"""(Returns a new UnitInertia object templated on ``Scalar`` initialized
 from the value of ``this`` unit inertia.
@@ -11635,28 +11635,28 @@ Note:
         } cast;
         // Symbol: drake::multibody::UnitInertia::operator*=
         struct /* operator_imul */ {
-          // Source: drake/multibody/tree/unit_inertia.h:466
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc = R"""()""";
         } operator_imul;
         // Symbol: drake::multibody::UnitInertia::operator+=
         struct /* operator_iadd */ {
-          // Source: drake/multibody/tree/unit_inertia.h:464
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc = R"""()""";
         } operator_iadd;
         // Symbol: drake::multibody::UnitInertia::operator-=
         struct /* operator_isub */ {
-          // Source: drake/multibody/tree/unit_inertia.h:465
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc = R"""()""";
         } operator_isub;
         // Symbol: drake::multibody::UnitInertia::operator/=
         struct /* operator_idiv */ {
-          // Source: drake/multibody/tree/unit_inertia.h:467
+          // Source: drake/multibody/tree/unit_inertia.h
           const char* doc = R"""()""";
         } operator_idiv;
       } UnitInertia;
       // Symbol: drake::multibody::UniversalJoint
       struct /* UniversalJoint */ {
-        // Source: drake/multibody/tree/universal_joint.h:45
+        // Source: drake/multibody/tree/universal_joint.h
         const char* doc =
 R"""(This joint models a universal joint allowing two bodies to rotate
 relative to one another with two degrees of freedom. A universal joint
@@ -11697,7 +11697,7 @@ be positive according to the right-hand-rule with the thumb aligned in
 the direction of their respective axes.)""";
         // Symbol: drake::multibody::UniversalJoint::DoAddInDamping
         struct /* DoAddInDamping */ {
-          // Source: drake/multibody/tree/universal_joint.h:205
+          // Source: drake/multibody/tree/universal_joint.h
           const char* doc =
 R"""(Joint<T> override called through public NVI, Joint::AddInDamping().
 Therefore arguments were already checked to be valid. This method adds
@@ -11706,7 +11706,7 @@ into ``forces`` a dissipative torque according to the viscous law ``τ
         } DoAddInDamping;
         // Symbol: drake::multibody::UniversalJoint::DoAddInOneForce
         struct /* DoAddInOneForce */ {
-          // Source: drake/multibody/tree/universal_joint.h:190
+          // Source: drake/multibody/tree/universal_joint.h
           const char* doc =
 R"""(Joint<T> override called through public NVI, Joint::AddInForce().
 Therefore arguments were already checked to be valid. For a
@@ -11724,7 +11724,7 @@ a positive rotational acceleration (of the child body frame).)""";
         } DoAddInOneForce;
         // Symbol: drake::multibody::UniversalJoint::UniversalJoint<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/universal_joint.h:71
+          // Source: drake/multibody/tree/universal_joint.h
           const char* doc =
 R"""(Constructor to create a universal joint between two bodies so that
 frame F attached to the parent body P and frame M attached to the
@@ -11748,7 +11748,7 @@ Raises:
         } ctor;
         // Symbol: drake::multibody::UniversalJoint::default_damping
         struct /* default_damping */ {
-          // Source: drake/multibody/tree/universal_joint.h:99
+          // Source: drake/multibody/tree/universal_joint.h
           const char* doc =
 R"""(Returns ``this`` joint's default damping constant in N⋅m⋅s. The
 damping torque (in N⋅m) is modeled as ``τᵢ = -damping⋅ωᵢ, i = 1, 2``
@@ -11758,7 +11758,7 @@ body B about the same i-th axis.)""";
         } default_damping;
         // Symbol: drake::multibody::UniversalJoint::get_angles
         struct /* get_angles */ {
-          // Source: drake/multibody/tree/universal_joint.h:113
+          // Source: drake/multibody/tree/universal_joint.h
           const char* doc =
 R"""(Gets the rotation angles of ``this`` joint from ``context``. See class
 documentation for the definition of these angles.
@@ -11772,7 +11772,7 @@ Returns:
         } get_angles;
         // Symbol: drake::multibody::UniversalJoint::get_angular_rates
         struct /* get_angular_rates */ {
-          // Source: drake/multibody/tree/universal_joint.h:135
+          // Source: drake/multibody/tree/universal_joint.h
           const char* doc =
 R"""(Gets the rates of change, in radians per second, of ``this`` joint's
 angles (see class documentation) from ``context``.
@@ -11786,7 +11786,7 @@ Returns:
         } get_angular_rates;
         // Symbol: drake::multibody::UniversalJoint::get_default_angles
         struct /* get_default_angles */ {
-          // Source: drake/multibody/tree/universal_joint.h:157
+          // Source: drake/multibody/tree/universal_joint.h
           const char* doc =
 R"""(Gets the default angles for ``this`` joint. Wrapper for the more
 general ``Joint::default_positions()``.
@@ -11796,7 +11796,7 @@ Returns:
         } get_default_angles;
         // Symbol: drake::multibody::UniversalJoint::set_angles
         struct /* set_angles */ {
-          // Source: drake/multibody/tree/universal_joint.h:124
+          // Source: drake/multibody/tree/universal_joint.h
           const char* doc =
 R"""(Sets the ``context`` so that the generalized coordinates corresponding
 to the rotation angles of ``this`` joint equals ``angles``.
@@ -11813,7 +11813,7 @@ Returns:
         } set_angles;
         // Symbol: drake::multibody::UniversalJoint::set_angular_rates
         struct /* set_angular_rates */ {
-          // Source: drake/multibody/tree/universal_joint.h:146
+          // Source: drake/multibody/tree/universal_joint.h
           const char* doc =
 R"""(Sets the rates of change, in radians per second, of this ``this``
 joint's angles (see class documentation) to ``theta_dot``. The new
@@ -11831,7 +11831,7 @@ Returns:
         } set_angular_rates;
         // Symbol: drake::multibody::UniversalJoint::set_default_angles
         struct /* set_default_angles */ {
-          // Source: drake/multibody/tree/universal_joint.h:163
+          // Source: drake/multibody/tree/universal_joint.h
           const char* doc =
 R"""(Sets the default angles of this joint.
 
@@ -11840,7 +11840,7 @@ Parameter ``angles``:
         } set_default_angles;
         // Symbol: drake::multibody::UniversalJoint::set_random_angles_distribution
         struct /* set_random_angles_distribution */ {
-          // Source: drake/multibody/tree/universal_joint.h:170
+          // Source: drake/multibody/tree/universal_joint.h
           const char* doc =
 R"""(Sets the random distribution that angles of this joint will be
 randomly sampled from. See class documentation for details on the
@@ -11848,19 +11848,19 @@ definition of the angles.)""";
         } set_random_angles_distribution;
         // Symbol: drake::multibody::UniversalJoint::type_name
         struct /* type_name */ {
-          // Source: drake/multibody/tree/universal_joint.h:92
+          // Source: drake/multibody/tree/universal_joint.h
           const char* doc = R"""()""";
         } type_name;
       } UniversalJoint;
       // Symbol: drake::multibody::WeldJoint
       struct /* WeldJoint */ {
-        // Source: drake/multibody/tree/weld_joint.h:22
+        // Source: drake/multibody/tree/weld_joint.h
         const char* doc =
 R"""(This Joint fixes the relative pose between two frames as if "welding"
 them together.)""";
         // Symbol: drake::multibody::WeldJoint::DoAddInOneForce
         struct /* DoAddInOneForce */ {
-          // Source: drake/multibody/tree/weld_joint.h:66
+          // Source: drake/multibody/tree/weld_joint.h
           const char* doc =
 R"""(Joint<T> override called through public NVI, Joint::AddInForce().
 Since frame F and M are welded together, it is physically not possible
@@ -11869,7 +11869,7 @@ exception if invoked.)""";
         } DoAddInOneForce;
         // Symbol: drake::multibody::WeldJoint::WeldJoint<T>
         struct /* ctor */ {
-          // Source: drake/multibody/tree/weld_joint.h:41
+          // Source: drake/multibody/tree/weld_joint.h
           const char* doc =
 R"""(Constructor for a WeldJoint between a ``frame_on_parent_F`` and a
 ``frame_on_child_M`` so that their relative pose ``X_FM`` is fixed as
@@ -11877,39 +11877,39 @@ if they were "welded" together.)""";
         } ctor;
         // Symbol: drake::multibody::WeldJoint::X_FM
         struct /* X_FM */ {
-          // Source: drake/multibody/tree/weld_joint.h:59
+          // Source: drake/multibody/tree/weld_joint.h
           const char* doc = R"""(Returns the pose X_FM of frame M in F.)""";
         } X_FM;
         // Symbol: drake::multibody::WeldJoint::type_name
         struct /* type_name */ {
-          // Source: drake/multibody/tree/weld_joint.h:55
+          // Source: drake/multibody/tree/weld_joint.h
           const char* doc = R"""()""";
         } type_name;
       } WeldJoint;
       // Symbol: drake::multibody::default_model_instance
       struct /* default_model_instance */ {
-        // Source: drake/multibody/tree/multibody_tree_indexes.h:95
+        // Source: drake/multibody/tree/multibody_tree_indexes.h
         const char* doc =
 R"""(Returns the model instance which contains all tree elements with no
 explicit model instance specified.)""";
       } default_model_instance;
       // Symbol: drake::multibody::world_frame_index
       struct /* world_frame_index */ {
-        // Source: drake/multibody/tree/multibody_tree_indexes.h:82
+        // Source: drake/multibody/tree/multibody_tree_indexes.h
         const char* doc =
 R"""(For every MultibodyPlant the **world** frame *always* has this unique
 index and it is always zero.)""";
       } world_frame_index;
       // Symbol: drake::multibody::world_index
       struct /* world_index */ {
-        // Source: drake/multibody/tree/multibody_tree_indexes.h:76
+        // Source: drake/multibody/tree/multibody_tree_indexes.h
         const char* doc =
 R"""(For every MultibodyPlant the **world** body *always* has this unique
 index and it is always zero.)""";
       } world_index;
       // Symbol: drake::multibody::world_model_instance
       struct /* world_model_instance */ {
-        // Source: drake/multibody/tree/multibody_tree_indexes.h:89
+        // Source: drake/multibody/tree/multibody_tree_indexes.h
         const char* doc =
 R"""(Returns the model instance containing the *world* body. For every
 MultibodyPlant the **world** body *always* has this unique model

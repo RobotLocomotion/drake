@@ -32,14 +32,14 @@ constexpr struct /* pydrake_doc_common_symbolic_expression */ {
   struct /* drake */ {
     // Symbol: drake::ExtractDoubleOrThrow
     struct /* ExtractDoubleOrThrow */ {
-      // Source: drake/common/symbolic/expression/expression.h:1725
+      // Source: drake/common/symbolic/expression/expression.h
       const char* doc_1args_e =
 R"""(Returns the symbolic expression's value() as a double.
 
 Raises:
     RuntimeError if it is not possible to evaluate the symbolic
     expression with an empty environment.)""";
-      // Source: drake/common/symbolic/expression/expression.h:1734
+      // Source: drake/common/symbolic/expression/expression.h
       const char* doc_1args_constEigenMatrixBase =
 R"""(Returns ``matrix`` as an Eigen::Matrix<double, ...> with the same size
 allocation as ``matrix``. Calls ExtractDoubleOrThrow on each element
@@ -50,18 +50,18 @@ fail.)""";
     struct /* assert */ {
       // Symbol: drake::assert::ConditionTraits
       struct /* ConditionTraits */ {
-        // Source: drake/common/symbolic/expression/formula.h:1148
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc = R"""()""";
         // Symbol: drake::assert::ConditionTraits::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/formula.h:1150
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""()""";
         } Evaluate;
       } ConditionTraits;
     } assert;
     // Symbol: drake::cond
     struct /* cond */ {
-      // Source: drake/common/symbolic/expression/expression.h:1710
+      // Source: drake/common/symbolic/expression/expression.h
       const char* doc =
 R"""(Provides specialization of ``cond`` function defined in
 drake/common/cond.h file. This specialization is required to handle
@@ -70,83 +70,83 @@ one such as ``cond(x > 0.0, 1.0, -1.0)``.)""";
     } cond;
     // Symbol: drake::dummy_value
     struct /* dummy_value */ {
-      // Source: drake/common/symbolic/expression/expression.h:1717
+      // Source: drake/common/symbolic/expression/expression.h
       const char* doc = R"""(Specializes common/dummy_value.h.)""";
       // Symbol: drake::dummy_value::get
       struct /* get */ {
-        // Source: drake/common/symbolic/expression/expression.h:1718
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } get;
     } dummy_value;
     // Symbol: drake::is_eigen_nonvector_expression_double_pair
     struct /* is_eigen_nonvector_expression_double_pair */ {
-      // Source: drake/common/symbolic/expression/expression.h:1747
+      // Source: drake/common/symbolic/expression/expression.h
       const char* doc = R"""()""";
     } is_eigen_nonvector_expression_double_pair;
     // Symbol: drake::is_eigen_vector_expression_double_pair
     struct /* is_eigen_vector_expression_double_pair */ {
-      // Source: drake/common/symbolic/expression/expression.h:1757
+      // Source: drake/common/symbolic/expression/expression.h
       const char* doc = R"""()""";
     } is_eigen_vector_expression_double_pair;
     // Symbol: drake::symbolic
     struct /* symbolic */ {
       // Symbol: drake::symbolic::BinaryExpressionCell
       struct /* BinaryExpressionCell */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:151
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Represents the base class for binary expressions.)""";
         // Symbol: drake::symbolic::BinaryExpressionCell::BinaryExpressionCell
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:168
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Constructs BinaryExpressionCell of kind ``k`` with ``e1``, ``e2``,
 ``is_poly``, and ``is_expanded``.)""";
         } ctor;
         // Symbol: drake::symbolic::BinaryExpressionCell::DoEvaluate
         struct /* DoEvaluate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:171
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Returns the evaluation result f(``v1``, ``v2`` ).)""";
         } DoEvaluate;
         // Symbol: drake::symbolic::BinaryExpressionCell::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:156
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EqualTo;
         // Symbol: drake::symbolic::BinaryExpressionCell::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:158
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::BinaryExpressionCell::GetVariables
         struct /* GetVariables */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:155
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } GetVariables;
         // Symbol: drake::symbolic::BinaryExpressionCell::HashAppendDetail
         struct /* HashAppendDetail */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:154
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } HashAppendDetail;
         // Symbol: drake::symbolic::BinaryExpressionCell::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:157
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Less;
         // Symbol: drake::symbolic::BinaryExpressionCell::get_first_argument
         struct /* get_first_argument */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:160
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""(Returns the first argument.)""";
         } get_first_argument;
         // Symbol: drake::symbolic::BinaryExpressionCell::get_second_argument
         struct /* get_second_argument */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:162
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""(Returns the second argument.)""";
         } get_second_argument;
       } BinaryExpressionCell;
       // Symbol: drake::symbolic::CheckStructuralEquality
       struct /* CheckStructuralEquality */ {
-        // Source: drake/common/symbolic/expression/expression.h:1694
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Checks if two Eigen::Matrix<Expression> ``m1`` and ``m2`` are
 structurally equal. That is, it returns true if and only if ``m1(i,
@@ -154,7 +154,7 @@ j)`` is structurally equal to ``m2(i, j)`` for all ``i``, `j`.)""";
       } CheckStructuralEquality;
       // Symbol: drake::symbolic::Environment
       struct /* Environment */ {
-        // Source: drake/common/symbolic/expression/environment.h:41
+        // Source: drake/common/symbolic/expression/environment.h
         const char* doc =
 R"""(Represents a symbolic environment (mapping from a variable to a
 value).
@@ -189,23 +189,23 @@ which include unquantified (free) variables. Here are examples:
     </details>)""";
         // Symbol: drake::symbolic::Environment::Environment
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/environment.h:54
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc_0args = R"""(Default constructor.)""";
-          // Source: drake/common/symbolic/expression/environment.h:62
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc_1args_init =
 R"""(List constructor. Constructs an environment from a list of (Variable *
 double).
 
 Raises:
     RuntimeError if ``init`` include a dummy variable or a NaN value.)""";
-          // Source: drake/common/symbolic/expression/environment.h:69
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc_1args_vars =
 R"""(List constructor. Constructs an environment from a list of Variable.
 Initializes the variables with 0.0.
 
 Raises:
     RuntimeError if ``vars`` include a dummy variable.)""";
-          // Source: drake/common/symbolic/expression/environment.h:76
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc_1args_m =
 R"""(Constructs an environment from ``m`` (of ``map`` type, which is
 ``std::unordered_map``).
@@ -215,59 +215,59 @@ Raises:
         } ctor;
         // Symbol: drake::symbolic::Environment::begin
         struct /* begin */ {
-          // Source: drake/common/symbolic/expression/environment.h:81
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc_0args_nonconst = R"""(Returns an iterator to the beginning.)""";
-          // Source: drake/common/symbolic/expression/environment.h:85
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc_0args_const =
 R"""(Returns a const iterator to the beginning.)""";
         } begin;
         // Symbol: drake::symbolic::Environment::cbegin
         struct /* cbegin */ {
-          // Source: drake/common/symbolic/expression/environment.h:89
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc =
 R"""(Returns a const iterator to the beginning.)""";
         } cbegin;
         // Symbol: drake::symbolic::Environment::cend
         struct /* cend */ {
-          // Source: drake/common/symbolic/expression/environment.h:91
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc = R"""(Returns a const iterator to the end.)""";
         } cend;
         // Symbol: drake::symbolic::Environment::const_iterator
         struct /* const_iterator */ {
-          // Source: drake/common/symbolic/expression/environment.h:51
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc = R"""()""";
         } const_iterator;
         // Symbol: drake::symbolic::Environment::domain
         struct /* domain */ {
-          // Source: drake/common/symbolic/expression/environment.h:126
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc = R"""(Returns the domain of this environment.)""";
         } domain;
         // Symbol: drake::symbolic::Environment::empty
         struct /* empty */ {
-          // Source: drake/common/symbolic/expression/environment.h:114
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc = R"""(Checks whether the container is empty.)""";
         } empty;
         // Symbol: drake::symbolic::Environment::end
         struct /* end */ {
-          // Source: drake/common/symbolic/expression/environment.h:83
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc_0args_nonconst = R"""(Returns an iterator to the end.)""";
-          // Source: drake/common/symbolic/expression/environment.h:87
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc_0args_const = R"""(Returns a const iterator to the end.)""";
         } end;
         // Symbol: drake::symbolic::Environment::find
         struct /* find */ {
-          // Source: drake/common/symbolic/expression/environment.h:119
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc = R"""(Finds element with specific key.)""";
         } find;
         // Symbol: drake::symbolic::Environment::insert
         struct /* insert */ {
-          // Source: drake/common/symbolic/expression/environment.h:98
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc_2args_key_elem =
 R"""(Inserts a pair (``key``, ``elem)`` if this environment doesn't contain
 ``key``. Similar to insert function in map, if the key already exists
 in this environment, then calling insert(key, elem) doesn't change the
 existing key-value in this environment.)""";
-          // Source: drake/common/symbolic/expression/environment.h:110
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc_2args_keys_elements =
 R"""(Given a matrix of symbolic variables ``keys`` and a matrix of values
 ``elements``, inserts each pair (keys(i, j), elements(i, j)) into the
@@ -282,54 +282,54 @@ Raises:
         } insert;
         // Symbol: drake::symbolic::Environment::iterator
         struct /* iterator */ {
-          // Source: drake/common/symbolic/expression/environment.h:50
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc = R"""()""";
         } iterator;
         // Symbol: drake::symbolic::Environment::key_type
         struct /* key_type */ {
-          // Source: drake/common/symbolic/expression/environment.h:45
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc = R"""()""";
         } key_type;
         // Symbol: drake::symbolic::Environment::map
         struct /* map */ {
-          // Source: drake/common/symbolic/expression/environment.h:47
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc = R"""()""";
         } map;
         // Symbol: drake::symbolic::Environment::mapped_type
         struct /* mapped_type */ {
-          // Source: drake/common/symbolic/expression/environment.h:46
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc = R"""()""";
         } mapped_type;
         // Symbol: drake::symbolic::Environment::operator[]
         struct /* operator_array */ {
-          // Source: drake/common/symbolic/expression/environment.h:134
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc_1args_key_nonconst =
 R"""(Returns a reference to the value that is mapped to a key equivalent to
 ``key``, performing an insertion if such key does not already exist.)""";
-          // Source: drake/common/symbolic/expression/environment.h:138
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc_1args_key_const =
 R"""(As above, but returns a constref and does not perform an insertion
 (throwing a runtime error instead) if the key does not exist.)""";
         } operator_array;
         // Symbol: drake::symbolic::Environment::size
         struct /* size */ {
-          // Source: drake/common/symbolic/expression/environment.h:116
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc = R"""(Returns the number of elements.)""";
         } size;
         // Symbol: drake::symbolic::Environment::to_string
         struct /* to_string */ {
-          // Source: drake/common/symbolic/expression/environment.h:129
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc = R"""(Returns string representation.)""";
         } to_string;
         // Symbol: drake::symbolic::Environment::value_type
         struct /* value_type */ {
-          // Source: drake/common/symbolic/expression/environment.h:49
+          // Source: drake/common/symbolic/expression/environment.h
           const char* doc = R"""(std::pair<key_type, mapped_type>)""";
         } value_type;
       } Environment;
       // Symbol: drake::symbolic::Evaluate
       struct /* Evaluate */ {
-        // Source: drake/common/symbolic/expression/expression.h:1590
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_expression =
 R"""(Evaluates a symbolic matrix ``m`` using ``env`` and
 ``random_generator``.
@@ -347,7 +347,7 @@ Raises:
 Raises:
     RuntimeError if ``m`` includes unassigned random variables but
     ``random_generator`` is ``nullptr``.)""";
-        // Source: drake/common/symbolic/expression/expression.h:1617
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Evaluates ``m`` using a given environment (by default, an empty
 environment).
@@ -361,7 +361,7 @@ Raises:
       } Evaluate;
       // Symbol: drake::symbolic::Expression
       struct /* Expression */ {
-        // Source: drake/common/symbolic/expression/expression.h:166
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Represents a symbolic form of an expression.
 
@@ -484,7 +484,7 @@ just above.
 symbolic::Expression can be used as a scalar type of Eigen types.)""";
         // Symbol: drake::symbolic::Expression::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression.h:310
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc =
 R"""(Differentiates this symbolic expression with respect to the variable
 ``var``.
@@ -494,13 +494,13 @@ Raises:
         } Differentiate;
         // Symbol: drake::symbolic::Expression::E
         struct /* E */ {
-          // Source: drake/common/symbolic/expression/expression.h:329
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc =
 R"""(Return e, the base of natural logarithms.)""";
         } E;
         // Symbol: drake::symbolic::Expression::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/expression.h:227
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc =
 R"""(Checks structural equality.
 
@@ -530,7 +530,7 @@ p1.Expand().EqualTo(p2.Expand()))""";
         } EqualTo;
         // Symbol: drake::symbolic::Expression::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/expression.h:250
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc_2args =
 R"""(Evaluates using a given environment (by default, an empty environment)
 and a random number generator. If there is a random variable in this
@@ -548,7 +548,7 @@ Raises:
 
 Raises:
     RuntimeError if NaN is detected during evaluation.)""";
-          // Source: drake/common/symbolic/expression/expression.h:259
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc_1args =
 R"""(Evaluates using an empty environment and a random number generator. It
 uses ``random_generator`` to sample values for the random variables in
@@ -558,7 +558,7 @@ See the above overload for the exceptions that it might throw.)""";
         } Evaluate;
         // Symbol: drake::symbolic::Expression::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression.h:267
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc =
 R"""(Partially evaluates this expression using an environment ``env``.
 Internally, this method promotes ``env`` into a substitution (Variable
@@ -569,7 +569,7 @@ Raises:
         } EvaluatePartial;
         // Symbol: drake::symbolic::Expression::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression.h:289
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc =
 R"""(Expands out products and positive integer powers in expression. For
 example, ``(x + 1) * (x - 1)`` is expanded to ``x^2 - 1`` and ``(x +
@@ -584,12 +584,12 @@ Raises:
         } Expand;
         // Symbol: drake::symbolic::Expression::Expression
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression.h:174
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc_0args =
 R"""(Default constructor. It constructs Zero().)""";
-          // Source: drake/common/symbolic/expression/expression.h:178
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc_1args_constant = R"""(Constructs a constant.)""";
-          // Source: drake/common/symbolic/expression/expression.h:188
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc_1args_var =
 R"""(Constructs an expression from ``var``.
 
@@ -598,19 +598,19 @@ Precondition:
         } ctor;
         // Symbol: drake::symbolic::Expression::GetFreeVariables
         struct /* GetFreeVariables */ {
-          // Source: drake/common/symbolic/expression/expression.h:198
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc =
 R"""(Same as GetVariables(); we provide this overload for compatibility
 with Formula.)""";
         } GetFreeVariables;
         // Symbol: drake::symbolic::Expression::GetVariables
         struct /* GetVariables */ {
-          // Source: drake/common/symbolic/expression/expression.h:194
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc = R"""(Collects variables in expression.)""";
         } GetVariables;
         // Symbol: drake::symbolic::Expression::Jacobian
         struct /* Jacobian */ {
-          // Source: drake/common/symbolic/expression/expression.h:316
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc =
 R"""(Let ``f`` be this Expression, computes a row vector of derivatives,
 ``[∂f/∂vars(0), ... , ∂f/∂vars(n-1)]`` with respect to the variables
@@ -618,7 +618,7 @@ R"""(Let ``f`` be this Expression, computes a row vector of derivatives,
         } Jacobian;
         // Symbol: drake::symbolic::Expression::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/expression.h:232
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc =
 R"""(Provides lexicographical ordering between expressions. This function
 is used as a compare function in map<Expression> and set<Expression>
@@ -626,30 +626,30 @@ via std::less<drake::symbolic::Expression>.)""";
         } Less;
         // Symbol: drake::symbolic::Expression::NaN
         struct /* NaN */ {
-          // Source: drake/common/symbolic/expression/expression.h:331
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc = R"""(Returns NaN (Not-a-Number).)""";
         } NaN;
         // Symbol: drake::symbolic::Expression::One
         struct /* One */ {
-          // Source: drake/common/symbolic/expression/expression.h:325
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc = R"""(Returns one.)""";
         } One;
         // Symbol: drake::symbolic::Expression::Pi
         struct /* Pi */ {
-          // Source: drake/common/symbolic/expression/expression.h:327
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc =
 R"""(Returns Pi, the ratio of a circle’s circumference to its diameter.)""";
         } Pi;
         // Symbol: drake::symbolic::Expression::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression.h:295
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc_2args =
 R"""(Returns a copy of this expression replacing all occurrences of ``var``
 with ``e``.
 
 Raises:
     RuntimeError if NaN is detected during substitution.)""";
-          // Source: drake/common/symbolic/expression/expression.h:304
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc_1args =
 R"""(Returns a copy of this expression replacing all occurrences of the
 variables in ``s`` with corresponding expressions in ``s``. Note that
@@ -661,17 +661,17 @@ Raises:
         } Substitute;
         // Symbol: drake::symbolic::Expression::Zero
         struct /* Zero */ {
-          // Source: drake/common/symbolic/expression/expression.h:323
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc = R"""(Returns zero.)""";
         } Zero;
         // Symbol: drake::symbolic::Expression::get_kind
         struct /* get_kind */ {
-          // Source: drake/common/symbolic/expression/expression.h:191
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc = R"""(Returns expression kind.)""";
         } get_kind;
         // Symbol: drake::symbolic::Expression::is_expanded
         struct /* is_expanded */ {
-          // Source: drake/common/symbolic/expression/expression.h:278
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc =
 R"""(Returns true if this symbolic expression is already expanded.
 Expression::Expand() uses this flag to avoid calling
@@ -686,110 +686,110 @@ Note:
         } is_expanded;
         // Symbol: drake::symbolic::Expression::is_polynomial
         struct /* is_polynomial */ {
-          // Source: drake/common/symbolic/expression/expression.h:235
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc =
 R"""(Checks if this symbolic expression is convertible to Polynomial.)""";
         } is_polynomial;
         // Symbol: drake::symbolic::Expression::operator++
         struct /* operator_inc */ {
-          // Source: drake/common/symbolic/expression/expression.h:376
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc_0args =
 R"""(Provides prefix increment operator (i.e. ++x).)""";
-          // Source: drake/common/symbolic/expression/expression.h:378
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc_1args =
 R"""(Provides postfix increment operator (i.e. x++).)""";
         } operator_inc;
         // Symbol: drake::symbolic::Expression::operator--
         struct /* operator_dec */ {
-          // Source: drake/common/symbolic/expression/expression.h:403
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc_0args =
 R"""(Provides prefix decrement operator (i.e. --x).)""";
-          // Source: drake/common/symbolic/expression/expression.h:405
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc_1args =
 R"""(Provides postfix decrement operator (i.e. x--).)""";
         } operator_dec;
         // Symbol: drake::symbolic::Expression::to_string
         struct /* to_string */ {
-          // Source: drake/common/symbolic/expression/expression.h:320
+          // Source: drake/common/symbolic/expression/expression.h
           const char* doc =
 R"""(Returns string representation of Expression.)""";
         } to_string;
       } Expression;
       // Symbol: drake::symbolic::ExpressionAbs
       struct /* ExpressionAbs */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:484
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing absolute value function.)""";
         // Symbol: drake::symbolic::ExpressionAbs::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:492
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionAbs::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:493
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionAbs::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:489
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionAbs::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:488
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionAbs::ExpressionAbs
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:486
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionAbs::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:491
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionAbs;
       // Symbol: drake::symbolic::ExpressionAcos
       struct /* ExpressionAcos */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:628
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing arccosine function.)""";
         // Symbol: drake::symbolic::ExpressionAcos::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:636
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionAcos::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:637
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionAcos::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:633
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionAcos::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:632
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionAcos::ExpressionAcos
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:630
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionAcos::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:635
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionAcos;
       // Symbol: drake::symbolic::ExpressionAdd
       struct /* ExpressionAdd */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:234
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing an addition which is a sum of
 products.
@@ -805,109 +805,109 @@ represent :math:`c_0` and another member variable
 :math:`e_i` to its coefficient :math:`c_i` of double.)""";
         // Symbol: drake::symbolic::ExpressionAdd::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:250
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionAdd::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:251
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionAdd::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:243
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EqualTo;
         // Symbol: drake::symbolic::ExpressionAdd::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:245
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::ExpressionAdd::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:247
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionAdd::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:246
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionAdd::ExpressionAdd
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:238
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Constructs ExpressionAdd from ``constant_term`` and
 ``term_to_coeff_map``.)""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionAdd::GetVariables
         struct /* GetVariables */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:242
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } GetVariables;
         // Symbol: drake::symbolic::ExpressionAdd::HashAppendDetail
         struct /* HashAppendDetail */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:241
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } HashAppendDetail;
         // Symbol: drake::symbolic::ExpressionAdd::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:244
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Less;
         // Symbol: drake::symbolic::ExpressionAdd::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:249
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
         // Symbol: drake::symbolic::ExpressionAdd::get_constant
         struct /* get_constant */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:253
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""(Returns the constant.)""";
         } get_constant;
         // Symbol: drake::symbolic::ExpressionAdd::get_expr_to_coeff_map
         struct /* get_expr_to_coeff_map */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:255
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Returns map from an expression to its coefficient.)""";
         } get_expr_to_coeff_map;
       } ExpressionAdd;
       // Symbol: drake::symbolic::ExpressionAddFactory
       struct /* ExpressionAddFactory */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:269
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Factory class to help build ExpressionAdd expressions.)""";
         // Symbol: drake::symbolic::ExpressionAddFactory::Add
         struct /* Add */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:289
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Adds ExpressionAdd pointed by ``ptr`` to this factory.)""";
         } Add;
         // Symbol: drake::symbolic::ExpressionAddFactory::AddExpression
         struct /* AddExpression */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:287
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""(Adds ``e`` to this factory.)""";
         } AddExpression;
         // Symbol: drake::symbolic::ExpressionAddFactory::ExpressionAddFactory
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:274
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc_0args = R"""(Default constructor.)""";
-          // Source: drake/common/symbolic/expression/expression_cell.h:278
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc_2args =
 R"""(Constructs ExpressionAddFactory with ``constant`` and
 ``expr_to_coeff_map``.)""";
-          // Source: drake/common/symbolic/expression/expression_cell.h:282
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc_1args =
 R"""(Constructs ExpressionAddFactory from ``add``.)""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionAddFactory::GetExpression
         struct /* GetExpression */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:301
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""(Returns a symbolic expression.)""";
         } GetExpression;
         // Symbol: drake::symbolic::ExpressionAddFactory::Negate
         struct /* Negate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:298
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Negates the expressions in factory. If it represents c0 + c1 * t1 +
 ... + * cn * tn, this method flips it into -c0 - c1 * t1 - ... - cn *
@@ -919,152 +919,152 @@ Returns:
       } ExpressionAddFactory;
       // Symbol: drake::symbolic::ExpressionAsin
       struct /* ExpressionAsin */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:608
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing arcsine function.)""";
         // Symbol: drake::symbolic::ExpressionAsin::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:616
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionAsin::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:617
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionAsin::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:613
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionAsin::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:612
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionAsin::ExpressionAsin
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:610
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionAsin::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:615
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionAsin;
       // Symbol: drake::symbolic::ExpressionAtan
       struct /* ExpressionAtan */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:648
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing arctangent function.)""";
         // Symbol: drake::symbolic::ExpressionAtan::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:656
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionAtan::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:657
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionAtan::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:653
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionAtan::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:652
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionAtan::ExpressionAtan
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:650
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionAtan::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:655
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionAtan;
       // Symbol: drake::symbolic::ExpressionAtan2
       struct /* ExpressionAtan2 */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:665
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing atan2 function (arctangent function
 with two arguments). atan2(y, x) is defined as atan(y/x).)""";
         // Symbol: drake::symbolic::ExpressionAtan2::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:673
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionAtan2::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:674
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionAtan2::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:670
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionAtan2::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:669
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionAtan2::ExpressionAtan2
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:667
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionAtan2::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:672
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionAtan2;
       // Symbol: drake::symbolic::ExpressionCeiling
       struct /* ExpressionCeiling */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:761
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing ceil function.)""";
         // Symbol: drake::symbolic::ExpressionCeiling::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:769
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionCeiling::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:770
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionCeiling::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:766
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionCeiling::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:765
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionCeiling::ExpressionCeiling
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:763
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionCeiling::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:768
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionCeiling;
       // Symbol: drake::symbolic::ExpressionCell
       struct /* ExpressionCell */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:43
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Represents an abstract class which is the base of concrete
 symbolic-expression classes.
@@ -1074,7 +1074,7 @@ Note:
     operator<< is not allowed to be a virtual function.)""";
         // Symbol: drake::symbolic::ExpressionCell::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:108
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Differentiates this symbolic expression with respect to the variable
 ``var``.
@@ -1084,18 +1084,18 @@ Raises:
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionCell::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:111
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Outputs string representation of expression into output stream ``os``.)""";
         } Display;
         // Symbol: drake::symbolic::ExpressionCell::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:65
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""(Checks structural equality.)""";
         } EqualTo;
         // Symbol: drake::symbolic::ExpressionCell::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:82
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Evaluates under a given environment (by default, an empty
 environment).
@@ -1105,7 +1105,7 @@ Raises:
         } Evaluate;
         // Symbol: drake::symbolic::ExpressionCell::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:94
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Returns an Expression obtained by replacing all occurrences of the
 variables in ``env`` in the current expression cell with the
@@ -1116,7 +1116,7 @@ Raises:
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionCell::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:87
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Expands out products and positive integer powers in expression.
 
@@ -1125,19 +1125,19 @@ Raises:
         } Expand;
         // Symbol: drake::symbolic::ExpressionCell::ExpressionCell
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:116
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Constructs ExpressionCell of kind ``k`` with ``is_poly`` and
 ``is_expanded``, with a ``use_count`` of zero.)""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionCell::GetVariables
         struct /* GetVariables */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:62
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""(Collects variables in expression.)""";
         } GetVariables;
         // Symbol: drake::symbolic::ExpressionCell::HashAppendDetail
         struct /* HashAppendDetail */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:59
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Sends all hash-relevant bytes for this ExpressionCell type into the
 given hasher, per the hash_append concept -- except for get_kind(),
@@ -1145,13 +1145,13 @@ because Expression already sends that.)""";
         } HashAppendDetail;
         // Symbol: drake::symbolic::ExpressionCell::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:68
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Provides lexicographical ordering between expressions.)""";
         } Less;
         // Symbol: drake::symbolic::ExpressionCell::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:102
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Returns an Expression obtained by replacing all occurrences of the
 variables in ``s`` in the current expression cell with the
@@ -1162,296 +1162,296 @@ Raises:
         } Substitute;
         // Symbol: drake::symbolic::ExpressionCell::get_kind
         struct /* get_kind */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:53
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""(Returns expression kind.)""";
         } get_kind;
         // Symbol: drake::symbolic::ExpressionCell::is_expanded
         struct /* is_expanded */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:74
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Checks if this symbolic expression is already expanded.)""";
         } is_expanded;
         // Symbol: drake::symbolic::ExpressionCell::is_polynomial
         struct /* is_polynomial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:71
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Checks if this symbolic expression is convertible to Polynomial.)""";
         } is_polynomial;
         // Symbol: drake::symbolic::ExpressionCell::set_expanded
         struct /* set_expanded */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:77
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Sets this symbolic expression as already expanded.)""";
         } set_expanded;
         // Symbol: drake::symbolic::ExpressionCell::use_count
         struct /* use_count */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:50
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Returns the intrusive use count (ala boost::intrusive_ptr).)""";
         } use_count;
       } ExpressionCell;
       // Symbol: drake::symbolic::ExpressionCos
       struct /* ExpressionCos */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:576
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing cosine function.)""";
         // Symbol: drake::symbolic::ExpressionCos::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:584
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionCos::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:585
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionCos::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:581
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionCos::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:580
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionCos::ExpressionCos
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:578
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionCos::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:583
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionCos;
       // Symbol: drake::symbolic::ExpressionCosh
       struct /* ExpressionCosh */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:697
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing hyperbolic cosine function.)""";
         // Symbol: drake::symbolic::ExpressionCosh::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:705
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionCosh::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:706
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionCosh::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:702
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionCosh::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:701
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionCosh::ExpressionCosh
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:699
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionCosh::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:704
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionCosh;
       // Symbol: drake::symbolic::ExpressionDiv
       struct /* ExpressionDiv */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:448
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing division.)""";
         // Symbol: drake::symbolic::ExpressionDiv::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:456
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionDiv::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:457
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionDiv::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:453
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionDiv::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:452
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionDiv::ExpressionDiv
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:450
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionDiv::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:455
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionDiv;
       // Symbol: drake::symbolic::ExpressionExp
       struct /* ExpressionExp */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:503
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing exponentiation using the base of
 natural logarithms.)""";
         // Symbol: drake::symbolic::ExpressionExp::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:511
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionExp::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:512
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionExp::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:508
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionExp::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:507
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionExp::ExpressionExp
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:505
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionExp::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:510
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionExp;
       // Symbol: drake::symbolic::ExpressionFloor
       struct /* ExpressionFloor */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:777
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing floor function.)""";
         // Symbol: drake::symbolic::ExpressionFloor::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:785
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionFloor::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:786
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionFloor::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:782
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionFloor::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:781
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionFloor::ExpressionFloor
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:779
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionFloor::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:784
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionFloor;
       // Symbol: drake::symbolic::ExpressionIfThenElse
       struct /* ExpressionIfThenElse */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:793
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing if-then-else expression.)""";
         // Symbol: drake::symbolic::ExpressionIfThenElse::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:808
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionIfThenElse::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:809
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionIfThenElse::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:801
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EqualTo;
         // Symbol: drake::symbolic::ExpressionIfThenElse::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:803
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::ExpressionIfThenElse::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:805
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionIfThenElse::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:804
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionIfThenElse::ExpressionIfThenElse
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:797
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Constructs if-then-else expression from ``f_cond``, ``e_then``, and
 ``e_else``.)""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionIfThenElse::GetVariables
         struct /* GetVariables */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:800
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } GetVariables;
         // Symbol: drake::symbolic::ExpressionIfThenElse::HashAppendDetail
         struct /* HashAppendDetail */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:799
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } HashAppendDetail;
         // Symbol: drake::symbolic::ExpressionIfThenElse::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:802
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Less;
         // Symbol: drake::symbolic::ExpressionIfThenElse::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:807
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
         // Symbol: drake::symbolic::ExpressionIfThenElse::get_conditional_formula
         struct /* get_conditional_formula */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:812
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""(Returns the conditional formula.)""";
         } get_conditional_formula;
         // Symbol: drake::symbolic::ExpressionIfThenElse::get_else_expression
         struct /* get_else_expression */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:820
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""(Returns the 'else' expression.)""";
         } get_else_expression;
         // Symbol: drake::symbolic::ExpressionIfThenElse::get_then_expression
         struct /* get_then_expression */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:816
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""(Returns the 'then' expression.)""";
         } get_then_expression;
       } ExpressionIfThenElse;
       // Symbol: drake::symbolic::ExpressionKind
       struct /* ExpressionKind */ {
-        // Source: drake/common/symbolic/expression/expression_kind.h:17
+        // Source: drake/common/symbolic/expression/expression_kind.h
         const char* doc =
 R"""(Kinds of symbolic expressions. The constants here are carefully chosen
 to support nanboxing. For all elements except Constant, the bit
@@ -1460,251 +1460,251 @@ nor 0xFFF0 (reserved for ±infinity). Refer to the details in
 boxed_cell.h for more information.)""";
         // Symbol: drake::symbolic::ExpressionKind::Abs
         struct /* Abs */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:25
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(absolute value function)""";
         } Abs;
         // Symbol: drake::symbolic::ExpressionKind::Acos
         struct /* Acos */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:33
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(arccosine)""";
         } Acos;
         // Symbol: drake::symbolic::ExpressionKind::Add
         struct /* Add */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:21
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(addition (+))""";
         } Add;
         // Symbol: drake::symbolic::ExpressionKind::Asin
         struct /* Asin */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:32
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(arcsine)""";
         } Asin;
         // Symbol: drake::symbolic::ExpressionKind::Atan
         struct /* Atan */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:34
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(arctangent)""";
         } Atan;
         // Symbol: drake::symbolic::ExpressionKind::Atan2
         struct /* Atan2 */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:37
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(arctangent2 (atan2(y,x) = atan(y/x)))""";
         } Atan2;
         // Symbol: drake::symbolic::ExpressionKind::Ceil
         struct /* Ceil */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:43
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(ceil)""";
         } Ceil;
         // Symbol: drake::symbolic::ExpressionKind::Constant
         struct /* Constant */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:19
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(constant (double))""";
         } Constant;
         // Symbol: drake::symbolic::ExpressionKind::Cos
         struct /* Cos */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:30
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(cosine)""";
         } Cos;
         // Symbol: drake::symbolic::ExpressionKind::Cosh
         struct /* Cosh */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:39
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(hyperbolic cosine)""";
         } Cosh;
         // Symbol: drake::symbolic::ExpressionKind::Div
         struct /* Div */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:23
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(division (/))""";
         } Div;
         // Symbol: drake::symbolic::ExpressionKind::Exp
         struct /* Exp */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:26
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(exponentiation)""";
         } Exp;
         // Symbol: drake::symbolic::ExpressionKind::Floor
         struct /* Floor */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:44
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(floor)""";
         } Floor;
         // Symbol: drake::symbolic::ExpressionKind::IfThenElse
         struct /* IfThenElse */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:45
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(if then else)""";
         } IfThenElse;
         // Symbol: drake::symbolic::ExpressionKind::Log
         struct /* Log */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:24
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(logarithms)""";
         } Log;
         // Symbol: drake::symbolic::ExpressionKind::Max
         struct /* Max */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:42
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(max)""";
         } Max;
         // Symbol: drake::symbolic::ExpressionKind::Min
         struct /* Min */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:41
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(min)""";
         } Min;
         // Symbol: drake::symbolic::ExpressionKind::Mul
         struct /* Mul */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:22
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(multiplication (*))""";
         } Mul;
         // Symbol: drake::symbolic::ExpressionKind::NaN
         struct /* NaN */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:46
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(NaN)""";
         } NaN;
         // Symbol: drake::symbolic::ExpressionKind::Pow
         struct /* Pow */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:28
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(power function)""";
         } Pow;
         // Symbol: drake::symbolic::ExpressionKind::Sin
         struct /* Sin */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:29
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(sine)""";
         } Sin;
         // Symbol: drake::symbolic::ExpressionKind::Sinh
         struct /* Sinh */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:38
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(hyperbolic sine)""";
         } Sinh;
         // Symbol: drake::symbolic::ExpressionKind::Sqrt
         struct /* Sqrt */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:27
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(square root)""";
         } Sqrt;
         // Symbol: drake::symbolic::ExpressionKind::Tan
         struct /* Tan */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:31
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(tangent)""";
         } Tan;
         // Symbol: drake::symbolic::ExpressionKind::Tanh
         struct /* Tanh */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:40
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(hyperbolic tangent)""";
         } Tanh;
         // Symbol: drake::symbolic::ExpressionKind::UninterpretedFunction
         struct /* UninterpretedFunction */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:47
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(Uninterpreted function)""";
         } UninterpretedFunction;
         // Symbol: drake::symbolic::ExpressionKind::Var
         struct /* Var */ {
-          // Source: drake/common/symbolic/expression/expression_kind.h:20
+          // Source: drake/common/symbolic/expression/expression_kind.h
           const char* doc = R"""(variable)""";
         } Var;
       } ExpressionKind;
       // Symbol: drake::symbolic::ExpressionLog
       struct /* ExpressionLog */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:464
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing logarithms.)""";
         // Symbol: drake::symbolic::ExpressionLog::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:472
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionLog::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:473
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionLog::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:469
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionLog::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:468
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionLog::ExpressionLog
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:466
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionLog::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:471
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionLog;
       // Symbol: drake::symbolic::ExpressionMax
       struct /* ExpressionMax */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:745
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing max function.)""";
         // Symbol: drake::symbolic::ExpressionMax::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:753
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionMax::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:754
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionMax::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:750
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionMax::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:749
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionMax::ExpressionMax
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:747
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionMax::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:752
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionMax;
       // Symbol: drake::symbolic::ExpressionMin
       struct /* ExpressionMin */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:729
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing min function.)""";
         // Symbol: drake::symbolic::ExpressionMin::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:737
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionMin::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:738
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionMin::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:734
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionMin::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:733
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionMin::ExpressionMin
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:731
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionMin::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:736
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionMin;
       // Symbol: drake::symbolic::ExpressionMul
       struct /* ExpressionMul */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:343
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing a multiplication of powers.
 
@@ -1719,115 +1719,115 @@ representing :math:`c_0` and another member variable
 :math:`b_i` to its exponentiation :math:`e_i`.)""";
         // Symbol: drake::symbolic::ExpressionMul::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:358
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionMul::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:359
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionMul::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:351
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EqualTo;
         // Symbol: drake::symbolic::ExpressionMul::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:353
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::ExpressionMul::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:355
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionMul::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:354
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionMul::ExpressionMul
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:346
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Constructs ExpressionMul from ``constant`` and
 ``base_to_exponent_map``.)""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionMul::GetVariables
         struct /* GetVariables */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:350
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } GetVariables;
         // Symbol: drake::symbolic::ExpressionMul::HashAppendDetail
         struct /* HashAppendDetail */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:349
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } HashAppendDetail;
         // Symbol: drake::symbolic::ExpressionMul::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:352
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Less;
         // Symbol: drake::symbolic::ExpressionMul::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:357
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
         // Symbol: drake::symbolic::ExpressionMul::get_base_to_exponent_map
         struct /* get_base_to_exponent_map */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:364
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Returns map from a term to its coefficient.)""";
         } get_base_to_exponent_map;
         // Symbol: drake::symbolic::ExpressionMul::get_constant
         struct /* get_constant */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:361
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""(Returns constant term.)""";
         } get_constant;
       } ExpressionMul;
       // Symbol: drake::symbolic::ExpressionMulFactory
       struct /* ExpressionMulFactory */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:378
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Factory class to help build ExpressionMul expressions.)""";
         // Symbol: drake::symbolic::ExpressionMulFactory::Add
         struct /* Add */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:404
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Adds ExpressionMul pointed by ``ptr`` to this factory.)""";
         } Add;
         // Symbol: drake::symbolic::ExpressionMulFactory::AddExpression
         struct /* AddExpression */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:402
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""(Adds ``e`` to this factory.)""";
         } AddExpression;
         // Symbol: drake::symbolic::ExpressionMulFactory::ExpressionMulFactory
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:383
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc_0args = R"""(Default constructor.)""";
-          // Source: drake/common/symbolic/expression/expression_cell.h:388
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc_2args_constant_base_to_exponent_map =
 R"""(Constructs ExpressionMulFactory with ``constant`` and
 Expression-valued ``base_to_exponent_map``. Note that this constructor
 runs in constant-time because it moves the map into storage; it does
 not loop over the map.)""";
-          // Source: drake/common/symbolic/expression/expression_cell.h:393
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc_1args_base_to_exponent_map =
 R"""(Constructs ExpressionMulFactory with a Monomial-like (Variable to
 integer power) ``base_to_exponent_map``.)""";
-          // Source: drake/common/symbolic/expression/expression_cell.h:397
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc_1args_mul =
 R"""(Constructs ExpressionMulFactory from ``mul``.)""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionMulFactory::GetExpression
         struct /* GetExpression */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:416
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""(Returns a symbolic expression.)""";
         } GetExpression;
         // Symbol: drake::symbolic::ExpressionMulFactory::Negate
         struct /* Negate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:413
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Negates the expressions in factory. If it represents c0 * p1 * ... *
 pn, this method flips it into -c0 * p1 * ... * pn.
@@ -1838,393 +1838,393 @@ Returns:
       } ExpressionMulFactory;
       // Symbol: drake::symbolic::ExpressionNaN
       struct /* ExpressionNaN */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:204
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing NaN (not-a-number).)""";
         // Symbol: drake::symbolic::ExpressionNaN::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:217
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionNaN::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:218
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionNaN::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:210
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EqualTo;
         // Symbol: drake::symbolic::ExpressionNaN::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:212
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::ExpressionNaN::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:214
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionNaN::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:213
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionNaN::ExpressionNaN
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:206
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionNaN::GetVariables
         struct /* GetVariables */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:209
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } GetVariables;
         // Symbol: drake::symbolic::ExpressionNaN::HashAppendDetail
         struct /* HashAppendDetail */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:208
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } HashAppendDetail;
         // Symbol: drake::symbolic::ExpressionNaN::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:211
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Less;
         // Symbol: drake::symbolic::ExpressionNaN::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:216
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionNaN;
       // Symbol: drake::symbolic::ExpressionPow
       struct /* ExpressionPow */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:539
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing power function.)""";
         // Symbol: drake::symbolic::ExpressionPow::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:547
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionPow::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:548
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionPow::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:544
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionPow::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:543
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionPow::ExpressionPow
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:541
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionPow::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:546
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionPow;
       // Symbol: drake::symbolic::ExpressionSin
       struct /* ExpressionSin */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:560
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing sine function.)""";
         // Symbol: drake::symbolic::ExpressionSin::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:568
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionSin::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:569
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionSin::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:565
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionSin::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:564
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionSin::ExpressionSin
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:562
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionSin::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:567
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionSin;
       // Symbol: drake::symbolic::ExpressionSinh
       struct /* ExpressionSinh */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:681
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing hyperbolic sine function.)""";
         // Symbol: drake::symbolic::ExpressionSinh::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:689
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionSinh::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:690
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionSinh::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:686
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionSinh::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:685
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionSinh::ExpressionSinh
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:683
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionSinh::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:688
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionSinh;
       // Symbol: drake::symbolic::ExpressionSqrt
       struct /* ExpressionSqrt */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:519
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing square-root.)""";
         // Symbol: drake::symbolic::ExpressionSqrt::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:527
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionSqrt::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:528
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionSqrt::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:524
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionSqrt::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:523
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionSqrt::ExpressionSqrt
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:521
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionSqrt::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:526
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionSqrt;
       // Symbol: drake::symbolic::ExpressionTan
       struct /* ExpressionTan */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:592
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing tangent function.)""";
         // Symbol: drake::symbolic::ExpressionTan::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:600
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionTan::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:601
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionTan::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:597
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionTan::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:596
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionTan::ExpressionTan
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:594
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionTan::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:599
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionTan;
       // Symbol: drake::symbolic::ExpressionTanh
       struct /* ExpressionTanh */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:713
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing hyperbolic tangent function.)""";
         // Symbol: drake::symbolic::ExpressionTanh::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:721
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionTanh::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:722
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionTanh::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:718
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionTanh::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:717
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionTanh::ExpressionTanh
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:715
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionTanh::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:720
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } ExpressionTanh;
       // Symbol: drake::symbolic::ExpressionUninterpretedFunction
       struct /* ExpressionUninterpretedFunction */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:831
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing an uninterpreted function.)""";
         // Symbol: drake::symbolic::ExpressionUninterpretedFunction::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:848
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionUninterpretedFunction::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:849
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionUninterpretedFunction::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:841
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EqualTo;
         // Symbol: drake::symbolic::ExpressionUninterpretedFunction::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:843
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::ExpressionUninterpretedFunction::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:845
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionUninterpretedFunction::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:844
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionUninterpretedFunction::ExpressionUninterpretedFunction
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:836
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Constructs an uninterpreted-function expression from ``name`` and
 ``arguments``.)""";
         } ctor;
         // Symbol: drake::symbolic::ExpressionUninterpretedFunction::GetVariables
         struct /* GetVariables */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:840
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } GetVariables;
         // Symbol: drake::symbolic::ExpressionUninterpretedFunction::HashAppendDetail
         struct /* HashAppendDetail */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:839
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } HashAppendDetail;
         // Symbol: drake::symbolic::ExpressionUninterpretedFunction::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:842
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Less;
         // Symbol: drake::symbolic::ExpressionUninterpretedFunction::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:847
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
         // Symbol: drake::symbolic::ExpressionUninterpretedFunction::get_arguments
         struct /* get_arguments */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:855
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Returns the arguments of this expression.)""";
         } get_arguments;
         // Symbol: drake::symbolic::ExpressionUninterpretedFunction::get_name
         struct /* get_name */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:852
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""(Returns the name of this expression.)""";
         } get_name;
       } ExpressionUninterpretedFunction;
       // Symbol: drake::symbolic::ExpressionVar
       struct /* ExpressionVar */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:179
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Symbolic expression representing a variable.)""";
         // Symbol: drake::symbolic::ExpressionVar::Differentiate
         struct /* Differentiate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:196
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Differentiate;
         // Symbol: drake::symbolic::ExpressionVar::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:197
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::ExpressionVar::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:189
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EqualTo;
         // Symbol: drake::symbolic::ExpressionVar::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:191
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::ExpressionVar::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:193
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EvaluatePartial;
         // Symbol: drake::symbolic::ExpressionVar::Expand
         struct /* Expand */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:192
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Expand;
         // Symbol: drake::symbolic::ExpressionVar::ExpressionVar
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:184
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Constructs an expression from ``var``.
 
@@ -2233,33 +2233,33 @@ Precondition:
         } ctor;
         // Symbol: drake::symbolic::ExpressionVar::GetVariables
         struct /* GetVariables */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:188
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } GetVariables;
         // Symbol: drake::symbolic::ExpressionVar::HashAppendDetail
         struct /* HashAppendDetail */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:186
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } HashAppendDetail;
         // Symbol: drake::symbolic::ExpressionVar::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:190
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Less;
         // Symbol: drake::symbolic::ExpressionVar::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:195
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Substitute;
         // Symbol: drake::symbolic::ExpressionVar::get_variable
         struct /* get_variable */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:187
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } get_variable;
       } ExpressionVar;
       // Symbol: drake::symbolic::Formula
       struct /* Formula */ {
-        // Source: drake/common/symbolic/expression/formula.h:114
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Represents a symbolic form of a first-order logic formula.
 
@@ -2329,12 +2329,12 @@ Note:
     ``Evaluate`` from within Drake for readability.)""";
         // Symbol: drake::symbolic::Formula::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/formula.h:142
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""(Checks structural equality.)""";
         } EqualTo;
         // Symbol: drake::symbolic::Formula::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/formula.h:178
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc_2args =
 R"""(Evaluates using a given environment (by default, an empty environment)
 and a random number generator. If there is a random variable in this
@@ -2349,7 +2349,7 @@ Raises:
 Raises:
     RuntimeError if an unassigned random variable is detected while
     ``random_generator`` is ``nullptr``.)""";
-          // Source: drake/common/symbolic/expression/formula.h:185
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc_1args =
 R"""(Evaluates using an empty environment and a random number generator.
 
@@ -2357,20 +2357,20 @@ See the above overload for the exceptions that it might throw.)""";
         } Evaluate;
         // Symbol: drake::symbolic::Formula::False
         struct /* False */ {
-          // Source: drake/common/symbolic/expression/formula.h:206
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""()""";
         } False;
         // Symbol: drake::symbolic::Formula::Formula
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/formula.h:121
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc_0args =
 R"""(Default constructor. Sets the value to Formula::False, to be
 consistent with value-initialized `bool`s.)""";
-          // Source: drake/common/symbolic/expression/formula.h:126
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc_1args_value =
 R"""(Constructs from a ``bool``. This overload is also used by Eigen when
 EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.)""";
-          // Source: drake/common/symbolic/expression/formula.h:133
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc_1args_var =
 R"""(Constructs a formula from ``var``.
 
@@ -2379,13 +2379,13 @@ Precondition:
         } ctor;
         // Symbol: drake::symbolic::Formula::GetFreeVariables
         struct /* GetFreeVariables */ {
-          // Source: drake/common/symbolic/expression/formula.h:140
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc =
 R"""(Gets free variables (unquantified variables).)""";
         } GetFreeVariables;
         // Symbol: drake::symbolic::Formula::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/formula.h:165
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc =
 R"""(Checks lexicographical ordering between this and ``e``.
 
@@ -2411,14 +2411,14 @@ std::less<symbolic::Formula>.)""";
         } Less;
         // Symbol: drake::symbolic::Formula::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/formula.h:191
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc_2args =
 R"""(Returns a copy of this formula replacing all occurrences of ``var``
 with ``e``.
 
 Raises:
     RuntimeError if NaN is detected during substitution.)""";
-          // Source: drake/common/symbolic/expression/formula.h:200
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc_1args =
 R"""(Returns a copy of this formula replacing all occurrences of the
 variables in ``s`` with corresponding expressions in ``s``. Note that
@@ -2430,57 +2430,57 @@ Raises:
         } Substitute;
         // Symbol: drake::symbolic::Formula::True
         struct /* True */ {
-          // Source: drake/common/symbolic/expression/formula.h:205
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""()""";
         } True;
         // Symbol: drake::symbolic::Formula::get_kind
         struct /* get_kind */ {
-          // Source: drake/common/symbolic/expression/formula.h:138
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""()""";
         } get_kind;
         // Symbol: drake::symbolic::Formula::operator bool
         struct /* operator_bool */ {
-          // Source: drake/common/symbolic/expression/formula.h:209
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""(Conversion to bool.)""";
         } operator_bool;
         // Symbol: drake::symbolic::Formula::to_string
         struct /* to_string */ {
-          // Source: drake/common/symbolic/expression/formula.h:203
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc =
 R"""(Returns string representation of Formula.)""";
         } to_string;
       } Formula;
       // Symbol: drake::symbolic::FormulaAnd
       struct /* FormulaAnd */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:263
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Symbolic formula representing conjunctions (f1 ∧ ... ∧ fn).)""";
         // Symbol: drake::symbolic::FormulaAnd::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:272
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::FormulaAnd::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:270
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::FormulaAnd::FormulaAnd
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:266
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc_1args = R"""(Constructs from ``formulas``.)""";
-          // Source: drake/common/symbolic/expression/formula_cell.h:268
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc_2args = R"""(Constructs ``f1`` ∧ ``f2``.)""";
         } ctor;
         // Symbol: drake::symbolic::FormulaAnd::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:271
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } FormulaAnd;
       // Symbol: drake::symbolic::FormulaCell
       struct /* FormulaCell */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:29
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Represents an abstract class which is the base of concrete
 symbolic-formula classes (i.e. symbolic::FormulaAnd,
@@ -2491,42 +2491,42 @@ Note:
     operator<< is not allowed to be a virtual function.)""";
         // Symbol: drake::symbolic::FormulaCell::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:52
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc =
 R"""(Outputs string representation of formula into output stream ``os``.)""";
         } Display;
         // Symbol: drake::symbolic::FormulaCell::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:41
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""(Checks structural equality.)""";
         } EqualTo;
         // Symbol: drake::symbolic::FormulaCell::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:45
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""(Evaluates under a given environment.)""";
         } Evaluate;
         // Symbol: drake::symbolic::FormulaCell::FormulaCell
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:55
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc_0args = R"""(Default constructor (deleted).)""";
-          // Source: drake/common/symbolic/expression/formula_cell.h:65
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc_move =
 R"""(Move-construct a formula from an rvalue.)""";
-          // Source: drake/common/symbolic/expression/formula_cell.h:67
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc_copy =
 R"""(Copy-construct a formula from an lvalue.)""";
-          // Source: drake/common/symbolic/expression/formula_cell.h:69
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc_1args = R"""(Construct FormulaCell of kind ``k``.)""";
         } ctor;
         // Symbol: drake::symbolic::FormulaCell::GetFreeVariables
         struct /* GetFreeVariables */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:39
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc =
 R"""(Returns set of free variables in formula.)""";
         } GetFreeVariables;
         // Symbol: drake::symbolic::FormulaCell::HashAppendDetail
         struct /* HashAppendDetail */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:37
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc =
 R"""(Sends all hash-relevant bytes for this FormulaCell type into the given
 hasher, per the hash_append concept -- except for get_kind(), because
@@ -2534,12 +2534,12 @@ Formula already sends that.)""";
         } HashAppendDetail;
         // Symbol: drake::symbolic::FormulaCell::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:43
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""(Checks ordering.)""";
         } Less;
         // Symbol: drake::symbolic::FormulaCell::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:50
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc =
 R"""(Returns a Formula obtained by replacing all occurrences of the
 variables in ``s`` in the current formula cell with the corresponding
@@ -2547,501 +2547,501 @@ expressions in ``s``.)""";
         } Substitute;
         // Symbol: drake::symbolic::FormulaCell::get_kind
         struct /* get_kind */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:32
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""(Returns kind of formula.)""";
         } get_kind;
       } FormulaCell;
       // Symbol: drake::symbolic::FormulaEq
       struct /* FormulaEq */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:197
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Symbolic formula representing equality (e1 = e2).)""";
         // Symbol: drake::symbolic::FormulaEq::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:204
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::FormulaEq::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:202
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::FormulaEq::FormulaEq
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:200
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""(Constructs from ``e1`` and ``e2``.)""";
         } ctor;
         // Symbol: drake::symbolic::FormulaEq::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:203
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } FormulaEq;
       // Symbol: drake::symbolic::FormulaFalse
       struct /* FormulaFalse */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:161
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc = R"""(Symbolic formula representing false.)""";
         // Symbol: drake::symbolic::FormulaFalse::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:172
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::FormulaFalse::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:168
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } EqualTo;
         // Symbol: drake::symbolic::FormulaFalse::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:170
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::FormulaFalse::FormulaFalse
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:164
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""(Default Constructor.)""";
         } ctor;
         // Symbol: drake::symbolic::FormulaFalse::GetFreeVariables
         struct /* GetFreeVariables */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:167
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } GetFreeVariables;
         // Symbol: drake::symbolic::FormulaFalse::HashAppendDetail
         struct /* HashAppendDetail */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:166
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } HashAppendDetail;
         // Symbol: drake::symbolic::FormulaFalse::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:169
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Less;
         // Symbol: drake::symbolic::FormulaFalse::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:171
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } FormulaFalse;
       // Symbol: drake::symbolic::FormulaForall
       struct /* FormulaForall */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:311
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Symbolic formula representing universal quantifications (∀ x₁, ..., *
 xn. F).)""";
         // Symbol: drake::symbolic::FormulaForall::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:322
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::FormulaForall::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:318
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } EqualTo;
         // Symbol: drake::symbolic::FormulaForall::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:320
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::FormulaForall::FormulaForall
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:314
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""(Constructs from ``vars`` and ``f``.)""";
         } ctor;
         // Symbol: drake::symbolic::FormulaForall::GetFreeVariables
         struct /* GetFreeVariables */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:317
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } GetFreeVariables;
         // Symbol: drake::symbolic::FormulaForall::HashAppendDetail
         struct /* HashAppendDetail */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:316
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } HashAppendDetail;
         // Symbol: drake::symbolic::FormulaForall::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:319
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Less;
         // Symbol: drake::symbolic::FormulaForall::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:321
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Substitute;
         // Symbol: drake::symbolic::FormulaForall::get_quantified_formula
         struct /* get_quantified_formula */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:328
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""(Returns the quantified formula.)""";
         } get_quantified_formula;
         // Symbol: drake::symbolic::FormulaForall::get_quantified_variables
         struct /* get_quantified_variables */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:324
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""(Returns the quantified variables.)""";
         } get_quantified_variables;
       } FormulaForall;
       // Symbol: drake::symbolic::FormulaGeq
       struct /* FormulaGeq */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:230
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Symbolic formula representing 'greater-than-or-equal-to' (e1 ≥ e2).)""";
         // Symbol: drake::symbolic::FormulaGeq::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:237
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::FormulaGeq::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:235
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::FormulaGeq::FormulaGeq
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:233
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""(Constructs from ``e1`` and ``e2``.)""";
         } ctor;
         // Symbol: drake::symbolic::FormulaGeq::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:236
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } FormulaGeq;
       // Symbol: drake::symbolic::FormulaGt
       struct /* FormulaGt */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:219
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Symbolic formula representing 'greater-than' (e1 > e2).)""";
         // Symbol: drake::symbolic::FormulaGt::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:226
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::FormulaGt::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:224
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::FormulaGt::FormulaGt
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:222
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""(Constructs from ``e1`` and ``e2``.)""";
         } ctor;
         // Symbol: drake::symbolic::FormulaGt::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:225
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } FormulaGt;
       // Symbol: drake::symbolic::FormulaIsnan
       struct /* FormulaIsnan */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:336
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Symbolic formula representing isnan predicate.)""";
         // Symbol: drake::symbolic::FormulaIsnan::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:346
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::FormulaIsnan::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:342
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } EqualTo;
         // Symbol: drake::symbolic::FormulaIsnan::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:344
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::FormulaIsnan::FormulaIsnan
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:338
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::symbolic::FormulaIsnan::GetFreeVariables
         struct /* GetFreeVariables */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:341
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } GetFreeVariables;
         // Symbol: drake::symbolic::FormulaIsnan::HashAppendDetail
         struct /* HashAppendDetail */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:340
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } HashAppendDetail;
         // Symbol: drake::symbolic::FormulaIsnan::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:343
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Less;
         // Symbol: drake::symbolic::FormulaIsnan::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:345
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Substitute;
         // Symbol: drake::symbolic::FormulaIsnan::get_unary_expression
         struct /* get_unary_expression */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:348
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""(Returns the operand expression.)""";
         } get_unary_expression;
       } FormulaIsnan;
       // Symbol: drake::symbolic::FormulaKind
       struct /* FormulaKind */ {
-        // Source: drake/common/symbolic/expression/formula.h:28
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc = R"""(Kinds of symbolic formulas.)""";
         // Symbol: drake::symbolic::FormulaKind::And
         struct /* And */ {
-          // Source: drake/common/symbolic/expression/formula.h:38
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""(Conjunction (∧))""";
         } And;
         // Symbol: drake::symbolic::FormulaKind::Eq
         struct /* Eq */ {
-          // Source: drake/common/symbolic/expression/formula.h:32
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""(=)""";
         } Eq;
         // Symbol: drake::symbolic::FormulaKind::False
         struct /* False */ {
-          // Source: drake/common/symbolic/expression/formula.h:29
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""(⊥)""";
         } False;
         // Symbol: drake::symbolic::FormulaKind::Forall
         struct /* Forall */ {
-          // Source: drake/common/symbolic/expression/formula.h:41
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""(Universal quantification (∀))""";
         } Forall;
         // Symbol: drake::symbolic::FormulaKind::Geq
         struct /* Geq */ {
-          // Source: drake/common/symbolic/expression/formula.h:35
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""(>=)""";
         } Geq;
         // Symbol: drake::symbolic::FormulaKind::Gt
         struct /* Gt */ {
-          // Source: drake/common/symbolic/expression/formula.h:34
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""(>)""";
         } Gt;
         // Symbol: drake::symbolic::FormulaKind::Isnan
         struct /* Isnan */ {
-          // Source: drake/common/symbolic/expression/formula.h:42
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""(NaN check predicate)""";
         } Isnan;
         // Symbol: drake::symbolic::FormulaKind::Leq
         struct /* Leq */ {
-          // Source: drake/common/symbolic/expression/formula.h:37
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""(<=)""";
         } Leq;
         // Symbol: drake::symbolic::FormulaKind::Lt
         struct /* Lt */ {
-          // Source: drake/common/symbolic/expression/formula.h:36
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""(<)""";
         } Lt;
         // Symbol: drake::symbolic::FormulaKind::Neq
         struct /* Neq */ {
-          // Source: drake/common/symbolic/expression/formula.h:33
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""(!=)""";
         } Neq;
         // Symbol: drake::symbolic::FormulaKind::Not
         struct /* Not */ {
-          // Source: drake/common/symbolic/expression/formula.h:40
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""(Negation (¬))""";
         } Not;
         // Symbol: drake::symbolic::FormulaKind::Or
         struct /* Or */ {
-          // Source: drake/common/symbolic/expression/formula.h:39
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""(Disjunction (∨))""";
         } Or;
         // Symbol: drake::symbolic::FormulaKind::PositiveSemidefinite
         struct /* PositiveSemidefinite */ {
-          // Source: drake/common/symbolic/expression/formula.h:43
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""(Positive semidefinite matrix)""";
         } PositiveSemidefinite;
         // Symbol: drake::symbolic::FormulaKind::True
         struct /* True */ {
-          // Source: drake/common/symbolic/expression/formula.h:30
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""(⊤)""";
         } True;
         // Symbol: drake::symbolic::FormulaKind::Var
         struct /* Var */ {
-          // Source: drake/common/symbolic/expression/formula.h:31
+          // Source: drake/common/symbolic/expression/formula.h
           const char* doc = R"""(Boolean Variable)""";
         } Var;
       } FormulaKind;
       // Symbol: drake::symbolic::FormulaLeq
       struct /* FormulaLeq */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:252
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Symbolic formula representing 'less-than-or-equal-to' (e1 ≤ e2).)""";
         // Symbol: drake::symbolic::FormulaLeq::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:259
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::FormulaLeq::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:257
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::FormulaLeq::FormulaLeq
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:255
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""(Constructs from ``e1`` and ``e2``.)""";
         } ctor;
         // Symbol: drake::symbolic::FormulaLeq::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:258
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } FormulaLeq;
       // Symbol: drake::symbolic::FormulaLt
       struct /* FormulaLt */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:241
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Symbolic formula representing 'less-than' (e1 < e2).)""";
         // Symbol: drake::symbolic::FormulaLt::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:248
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::FormulaLt::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:246
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::FormulaLt::FormulaLt
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:244
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""(Constructs from ``e1`` and ``e2``.)""";
         } ctor;
         // Symbol: drake::symbolic::FormulaLt::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:247
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } FormulaLt;
       // Symbol: drake::symbolic::FormulaNeq
       struct /* FormulaNeq */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:208
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Symbolic formula representing disequality (e1 ≠ e2).)""";
         // Symbol: drake::symbolic::FormulaNeq::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:215
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::FormulaNeq::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:213
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::FormulaNeq::FormulaNeq
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:211
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""(Constructs from ``e1`` and ``e2``.)""";
         } ctor;
         // Symbol: drake::symbolic::FormulaNeq::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:214
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } FormulaNeq;
       // Symbol: drake::symbolic::FormulaNot
       struct /* FormulaNot */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:289
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Symbolic formula representing negations (¬f).)""";
         // Symbol: drake::symbolic::FormulaNot::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:300
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::FormulaNot::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:296
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } EqualTo;
         // Symbol: drake::symbolic::FormulaNot::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:298
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::FormulaNot::FormulaNot
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:292
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""(Constructs from ``f``.)""";
         } ctor;
         // Symbol: drake::symbolic::FormulaNot::GetFreeVariables
         struct /* GetFreeVariables */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:295
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } GetFreeVariables;
         // Symbol: drake::symbolic::FormulaNot::HashAppendDetail
         struct /* HashAppendDetail */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:294
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } HashAppendDetail;
         // Symbol: drake::symbolic::FormulaNot::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:297
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Less;
         // Symbol: drake::symbolic::FormulaNot::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:299
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Substitute;
         // Symbol: drake::symbolic::FormulaNot::get_operand
         struct /* get_operand */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:302
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""(Returns the operand.)""";
         } get_operand;
       } FormulaNot;
       // Symbol: drake::symbolic::FormulaOr
       struct /* FormulaOr */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:276
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Symbolic formula representing disjunctions (f1 ∨ ... ∨ fn).)""";
         // Symbol: drake::symbolic::FormulaOr::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:285
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::FormulaOr::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:283
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::FormulaOr::FormulaOr
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:279
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc_1args = R"""(Constructs from ``formulas``.)""";
-          // Source: drake/common/symbolic/expression/formula_cell.h:281
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc_2args = R"""(Constructs ``f1`` ∨ ``f2``.)""";
         } ctor;
         // Symbol: drake::symbolic::FormulaOr::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:284
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } FormulaOr;
       // Symbol: drake::symbolic::FormulaPositiveSemidefinite
       struct /* FormulaPositiveSemidefinite */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:355
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Symbolic formula representing positive-semidefinite (PSD) constraint.)""";
         // Symbol: drake::symbolic::FormulaPositiveSemidefinite::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:420
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::FormulaPositiveSemidefinite::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:388
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } EqualTo;
         // Symbol: drake::symbolic::FormulaPositiveSemidefinite::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:418
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::FormulaPositiveSemidefinite::FormulaPositiveSemidefinite
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:363
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Constructs a positive-semidefinite formula from a symmetric matrix
 ``m``.
@@ -3055,17 +3055,17 @@ Note:
         } ctor;
         // Symbol: drake::symbolic::FormulaPositiveSemidefinite::GetFreeVariables
         struct /* GetFreeVariables */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:387
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } GetFreeVariables;
         // Symbol: drake::symbolic::FormulaPositiveSemidefinite::HashAppendDetail
         struct /* HashAppendDetail */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:386
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } HashAppendDetail;
         // Symbol: drake::symbolic::FormulaPositiveSemidefinite::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:417
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc =
 R"""(Checks ordering between this PSD formula and ``f``. The ordering
 between two PSD formulas ``psd1`` and ``psd2`` are determined by the
@@ -3108,84 +3108,84 @@ column-major ordering : (x + y) 3.14 3.14 y_.)""";
         } Less;
         // Symbol: drake::symbolic::FormulaPositiveSemidefinite::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:419
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Substitute;
         // Symbol: drake::symbolic::FormulaPositiveSemidefinite::get_matrix
         struct /* get_matrix */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:422
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc =
 R"""(Returns the corresponding matrix in this PSD formula.)""";
         } get_matrix;
       } FormulaPositiveSemidefinite;
       // Symbol: drake::symbolic::FormulaTrue
       struct /* FormulaTrue */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:146
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc = R"""(Symbolic formula representing true.)""";
         // Symbol: drake::symbolic::FormulaTrue::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:157
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::FormulaTrue::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:153
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } EqualTo;
         // Symbol: drake::symbolic::FormulaTrue::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:155
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::FormulaTrue::FormulaTrue
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:149
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""(Default Constructor.)""";
         } ctor;
         // Symbol: drake::symbolic::FormulaTrue::GetFreeVariables
         struct /* GetFreeVariables */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:152
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } GetFreeVariables;
         // Symbol: drake::symbolic::FormulaTrue::HashAppendDetail
         struct /* HashAppendDetail */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:151
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } HashAppendDetail;
         // Symbol: drake::symbolic::FormulaTrue::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:154
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Less;
         // Symbol: drake::symbolic::FormulaTrue::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:156
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Substitute;
       } FormulaTrue;
       // Symbol: drake::symbolic::FormulaVar
       struct /* FormulaVar */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:176
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Symbolic formula representing a Boolean variable.)""";
         // Symbol: drake::symbolic::FormulaVar::Display
         struct /* Display */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:189
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Display;
         // Symbol: drake::symbolic::FormulaVar::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:185
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } EqualTo;
         // Symbol: drake::symbolic::FormulaVar::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:187
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::FormulaVar::FormulaVar
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:181
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc =
 R"""(Constructs a formula from ``var``.
 
@@ -3194,39 +3194,39 @@ Precondition:
         } ctor;
         // Symbol: drake::symbolic::FormulaVar::GetFreeVariables
         struct /* GetFreeVariables */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:184
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } GetFreeVariables;
         // Symbol: drake::symbolic::FormulaVar::HashAppendDetail
         struct /* HashAppendDetail */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:183
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } HashAppendDetail;
         // Symbol: drake::symbolic::FormulaVar::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:186
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Less;
         // Symbol: drake::symbolic::FormulaVar::Substitute
         struct /* Substitute */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:188
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Substitute;
         // Symbol: drake::symbolic::FormulaVar::get_variable
         struct /* get_variable */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:190
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } get_variable;
       } FormulaVar;
       // Symbol: drake::symbolic::GetDistinctVariables
       struct /* GetDistinctVariables */ {
-        // Source: drake/common/symbolic/expression/expression.h:1682
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Returns the distinct variables in the matrix of expressions.)""";
       } GetDistinctVariables;
       // Symbol: drake::symbolic::GetVariableVector
       struct /* GetVariableVector */ {
-        // Source: drake/common/symbolic/expression/expression.h:1655
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Constructs a vector of variables from the vector of variable
 expressions.
@@ -3237,7 +3237,7 @@ Raises:
       } GetVariableVector;
       // Symbol: drake::symbolic::Jacobian
       struct /* Jacobian */ {
-        // Source: drake/common/symbolic/expression/expression.h:1670
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Computes the Jacobian matrix J of the vector function ``f`` with
 respect to ``vars``. J(i,j) contains ∂f(i)/∂vars(j).
@@ -3262,7 +3262,7 @@ the following 3x2 matrix:
 
 Precondition:
     {``vars`` is non-empty}.)""";
-        // Source: drake/common/symbolic/expression/expression.h:1678
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_expression =
 R"""(Computes the Jacobian matrix J of the vector function ``f`` with
 respect to ``vars``. J(i,j) contains ∂f(i)/∂vars(j).
@@ -3272,7 +3272,7 @@ Precondition:
       } Jacobian;
       // Symbol: drake::symbolic::MakeMatrixBinaryVariable
       struct /* MakeMatrixBinaryVariable */ {
-        // Source: drake/common/symbolic/expression/variable.h:145
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_3args =
 R"""(Creates a dynamically-sized Eigen matrix of symbolic binary variables.
 
@@ -3285,7 +3285,7 @@ Parameter ``cols``:
 Parameter ``name``:
     The common prefix for variables. The (i, j)-th element will be
     named as ``name(i, j)``.)""";
-        // Source: drake/common/symbolic/expression/variable.h:201
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_1args =
 R"""(Creates a static-sized Eigen matrix of symbolic binary variables.
 
@@ -3301,7 +3301,7 @@ Parameter ``name``:
       } MakeMatrixBinaryVariable;
       // Symbol: drake::symbolic::MakeMatrixBooleanVariable
       struct /* MakeMatrixBooleanVariable */ {
-        // Source: drake/common/symbolic/expression/variable.h:137
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_3args =
 R"""(Creates a dynamically-sized Eigen matrix of symbolic Boolean
 variables.
@@ -3315,7 +3315,7 @@ Parameter ``cols``:
 Parameter ``name``:
     The common prefix for variables. The (i, j)-th element will be
     named as ``name(i, j)``.)""";
-        // Source: drake/common/symbolic/expression/variable.h:190
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_1args =
 R"""(Creates a static-sized Eigen matrix of symbolic Boolean variables.
 
@@ -3331,7 +3331,7 @@ Parameter ``name``:
       } MakeMatrixBooleanVariable;
       // Symbol: drake::symbolic::MakeMatrixContinuousVariable
       struct /* MakeMatrixContinuousVariable */ {
-        // Source: drake/common/symbolic/expression/variable.h:153
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_3args =
 R"""(Creates a dynamically-sized Eigen matrix of symbolic continuous
 variables.
@@ -3345,7 +3345,7 @@ Parameter ``cols``:
 Parameter ``name``:
     The common prefix for variables. The (i, j)-th element will be
     named as ``name(i, j)``.)""";
-        // Source: drake/common/symbolic/expression/variable.h:212
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_1args =
 R"""(Creates a static-sized Eigen matrix of symbolic continuous variables.
 
@@ -3361,7 +3361,7 @@ Parameter ``name``:
       } MakeMatrixContinuousVariable;
       // Symbol: drake::symbolic::MakeMatrixIntegerVariable
       struct /* MakeMatrixIntegerVariable */ {
-        // Source: drake/common/symbolic/expression/variable.h:161
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_3args =
 R"""(Creates a dynamically-sized Eigen matrix of symbolic integer
 variables.
@@ -3375,7 +3375,7 @@ Parameter ``cols``:
 Parameter ``name``:
     The common prefix for variables. The (i, j)-th element will be
     named as ``name(i, j)``.)""";
-        // Source: drake/common/symbolic/expression/variable.h:223
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_1args =
 R"""(Creates a static-sized Eigen matrix of symbolic integer variables.
 
@@ -3391,7 +3391,7 @@ Parameter ``name``:
       } MakeMatrixIntegerVariable;
       // Symbol: drake::symbolic::MakeMatrixVariable
       struct /* MakeMatrixVariable */ {
-        // Source: drake/common/symbolic/expression/variable.h:128
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_4args =
 R"""(Creates a dynamically-sized Eigen matrix of symbolic variables.
 
@@ -3407,7 +3407,7 @@ Parameter ``name``:
 
 Parameter ``type``:
     The type of variables in the matrix.)""";
-        // Source: drake/common/symbolic/expression/variable.h:171
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_2args =
 R"""(Creates a static-sized Eigen matrix of symbolic variables.
 
@@ -3426,7 +3426,7 @@ Parameter ``type``:
       } MakeMatrixVariable;
       // Symbol: drake::symbolic::MakeVectorBinaryVariable
       struct /* MakeVectorBinaryVariable */ {
-        // Source: drake/common/symbolic/expression/variable.h:247
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_2args =
 R"""(Creates a dynamically-sized Eigen vector of symbolic binary variables.
 
@@ -3436,7 +3436,7 @@ Parameter ``rows``:
 Parameter ``name``:
     The common prefix for variables. The i-th element will be named as
     ``name(i)``.)""";
-        // Source: drake/common/symbolic/expression/variable.h:292
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_1args =
 R"""(Creates a static-sized Eigen vector of symbolic binary variables.
 
@@ -3449,7 +3449,7 @@ Parameter ``name``:
       } MakeVectorBinaryVariable;
       // Symbol: drake::symbolic::MakeVectorBooleanVariable
       struct /* MakeVectorBooleanVariable */ {
-        // Source: drake/common/symbolic/expression/variable.h:241
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_2args =
 R"""(Creates a dynamically-sized Eigen vector of symbolic Boolean
 variables.
@@ -3460,7 +3460,7 @@ Parameter ``rows``:
 Parameter ``name``:
     The common prefix for variables. The i-th element will be named as
     ``name(i)``.)""";
-        // Source: drake/common/symbolic/expression/variable.h:282
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_1args =
 R"""(Creates a static-sized Eigen vector of symbolic Boolean variables.
 
@@ -3473,7 +3473,7 @@ Parameter ``name``:
       } MakeVectorBooleanVariable;
       // Symbol: drake::symbolic::MakeVectorContinuousVariable
       struct /* MakeVectorContinuousVariable */ {
-        // Source: drake/common/symbolic/expression/variable.h:253
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_2args =
 R"""(Creates a dynamically-sized Eigen vector of symbolic continuous
 variables.
@@ -3484,7 +3484,7 @@ Parameter ``rows``:
 Parameter ``name``:
     The common prefix for variables. The i-th element will be named as
     ``name(i)``.)""";
-        // Source: drake/common/symbolic/expression/variable.h:302
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_1args =
 R"""(Creates a static-sized Eigen vector of symbolic continuous variables.
 
@@ -3497,7 +3497,7 @@ Parameter ``name``:
       } MakeVectorContinuousVariable;
       // Symbol: drake::symbolic::MakeVectorIntegerVariable
       struct /* MakeVectorIntegerVariable */ {
-        // Source: drake/common/symbolic/expression/variable.h:260
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_2args =
 R"""(Creates a dynamically-sized Eigen vector of symbolic integer
 variables.
@@ -3508,7 +3508,7 @@ Parameter ``rows``:
 Parameter ``name``:
     The common prefix for variables. The i-th element will be named as
     ``name(i)``.)""";
-        // Source: drake/common/symbolic/expression/variable.h:312
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_1args =
 R"""(Creates a static-sized Eigen vector of symbolic integer variables.
 
@@ -3521,7 +3521,7 @@ Parameter ``name``:
       } MakeVectorIntegerVariable;
       // Symbol: drake::symbolic::MakeVectorVariable
       struct /* MakeVectorVariable */ {
-        // Source: drake/common/symbolic/expression/variable.h:233
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_3args =
 R"""(Creates a dynamically-sized Eigen vector of symbolic variables.
 
@@ -3534,7 +3534,7 @@ Parameter ``name``:
 
 Parameter ``type``:
     The type of variables in the vector.)""";
-        // Source: drake/common/symbolic/expression/variable.h:268
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc_2args =
 R"""(Creates a static-sized Eigen vector of symbolic variables.
 
@@ -3550,7 +3550,7 @@ Parameter ``type``:
       } MakeVectorVariable;
       // Symbol: drake::symbolic::NaryFormulaCell
       struct /* NaryFormulaCell */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:114
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Represents the base class for N-ary logic operators (∧ and ∨).
 
@@ -3559,52 +3559,52 @@ Note:
     avoid duplicated elements (i.e. f1 ∧ ... ∧ f1).)""";
         // Symbol: drake::symbolic::NaryFormulaCell::DisplayWithOp
         struct /* DisplayWithOp */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:139
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } DisplayWithOp;
         // Symbol: drake::symbolic::NaryFormulaCell::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:131
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } EqualTo;
         // Symbol: drake::symbolic::NaryFormulaCell::GetFreeVariables
         struct /* GetFreeVariables */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:130
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } GetFreeVariables;
         // Symbol: drake::symbolic::NaryFormulaCell::HashAppendDetail
         struct /* HashAppendDetail */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:129
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } HashAppendDetail;
         // Symbol: drake::symbolic::NaryFormulaCell::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:132
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Less;
         // Symbol: drake::symbolic::NaryFormulaCell::NaryFormulaCell
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:117
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc_0args = R"""(Default constructor (deleted).)""";
-          // Source: drake/common/symbolic/expression/formula_cell.h:119
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc_move =
 R"""(Move-construct a formula from an rvalue.)""";
-          // Source: drake/common/symbolic/expression/formula_cell.h:121
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc_copy =
 R"""(Copy-construct a formula from an lvalue.)""";
-          // Source: drake/common/symbolic/expression/formula_cell.h:127
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc_2args =
 R"""(Construct NaryFormulaCell of kind ``k`` with ``formulas``.)""";
         } ctor;
         // Symbol: drake::symbolic::NaryFormulaCell::get_operands
         struct /* get_operands */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:134
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""(Returns the formulas.)""";
         } get_operands;
       } NaryFormulaCell;
       // Symbol: drake::symbolic::PopulateRandomVariables
       struct /* PopulateRandomVariables */ {
-        // Source: drake/common/symbolic/expression/environment.h:148
+        // Source: drake/common/symbolic/expression/environment.h
         const char* doc =
 R"""(Populates the environment ``env`` by sampling values for the
 unassigned random variables in ``variables`` using
@@ -3612,61 +3612,61 @@ unassigned random variables in ``variables`` using
       } PopulateRandomVariables;
       // Symbol: drake::symbolic::RelationalFormulaCell
       struct /* RelationalFormulaCell */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:79
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Represents the base class for relational operators (==, !=, <, <=, >,
 >=).)""";
         // Symbol: drake::symbolic::RelationalFormulaCell::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:96
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } EqualTo;
         // Symbol: drake::symbolic::RelationalFormulaCell::GetFreeVariables
         struct /* GetFreeVariables */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:95
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } GetFreeVariables;
         // Symbol: drake::symbolic::RelationalFormulaCell::HashAppendDetail
         struct /* HashAppendDetail */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:94
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } HashAppendDetail;
         // Symbol: drake::symbolic::RelationalFormulaCell::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:97
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc = R"""()""";
         } Less;
         // Symbol: drake::symbolic::RelationalFormulaCell::RelationalFormulaCell
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:82
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc_0args = R"""(Default constructor (deleted).)""";
-          // Source: drake/common/symbolic/expression/formula_cell.h:84
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc_move =
 R"""(Move-construct a formula from an rvalue.)""";
-          // Source: drake/common/symbolic/expression/formula_cell.h:86
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc_copy =
 R"""(Copy-construct a formula from an lvalue.)""";
-          // Source: drake/common/symbolic/expression/formula_cell.h:92
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc_3args =
 R"""(Construct RelationalFormulaCell of kind ``k`` with ``lhs`` and
 ``rhs``.)""";
         } ctor;
         // Symbol: drake::symbolic::RelationalFormulaCell::get_lhs_expression
         struct /* get_lhs_expression */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:100
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc =
 R"""(Returns the expression on left-hand-side.)""";
         } get_lhs_expression;
         // Symbol: drake::symbolic::RelationalFormulaCell::get_rhs_expression
         struct /* get_rhs_expression */ {
-          // Source: drake/common/symbolic/expression/formula_cell.h:102
+          // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc =
 R"""(Returns the expression on right-hand-side.)""";
         } get_rhs_expression;
       } RelationalFormulaCell;
       // Symbol: drake::symbolic::Substitute
       struct /* Substitute */ {
-        // Source: drake/common/symbolic/expression/expression.h:1626
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_2args =
 R"""(Substitutes a symbolic matrix ``m`` using a given substitution
 ``subst``.
@@ -3676,7 +3676,7 @@ Returns:
 
 Raises:
     RuntimeError if NaN is detected during substitution.)""";
-        // Source: drake/common/symbolic/expression/expression.h:1642
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_3args =
 R"""(Substitutes ``var`` with ``e`` in a symbolic matrix ``m``.
 
@@ -3688,12 +3688,12 @@ Raises:
       } Substitute;
       // Symbol: drake::symbolic::Substitution
       struct /* Substitution */ {
-        // Source: drake/common/symbolic/expression/expression.h:72
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } Substitution;
       // Symbol: drake::symbolic::TaylorExpand
       struct /* TaylorExpand */ {
-        // Source: drake/common/symbolic/expression/expression.h:906
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Returns the Taylor series expansion of ``f`` around ``a`` of order
 ``order``.
@@ -3712,56 +3712,56 @@ Parameter ``order``:
       } TaylorExpand;
       // Symbol: drake::symbolic::UnaryExpressionCell
       struct /* UnaryExpressionCell */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:126
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc =
 R"""(Represents the base class for unary expressions.)""";
         // Symbol: drake::symbolic::UnaryExpressionCell::DoEvaluate
         struct /* DoEvaluate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:143
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Returns the evaluation result f(``v`` ).)""";
         } DoEvaluate;
         // Symbol: drake::symbolic::UnaryExpressionCell::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:131
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } EqualTo;
         // Symbol: drake::symbolic::UnaryExpressionCell::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:133
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Evaluate;
         // Symbol: drake::symbolic::UnaryExpressionCell::GetVariables
         struct /* GetVariables */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:130
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } GetVariables;
         // Symbol: drake::symbolic::UnaryExpressionCell::HashAppendDetail
         struct /* HashAppendDetail */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:129
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } HashAppendDetail;
         // Symbol: drake::symbolic::UnaryExpressionCell::Less
         struct /* Less */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:132
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""()""";
         } Less;
         // Symbol: drake::symbolic::UnaryExpressionCell::UnaryExpressionCell
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:140
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
 R"""(Constructs UnaryExpressionCell of kind ``k`` with ``e``, ``is_poly``,
 and ``is_expanded``.)""";
         } ctor;
         // Symbol: drake::symbolic::UnaryExpressionCell::get_argument
         struct /* get_argument */ {
-          // Source: drake/common/symbolic/expression/expression_cell.h:135
+          // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc = R"""(Returns the argument.)""";
         } get_argument;
       } UnaryExpressionCell;
       // Symbol: drake::symbolic::Variable
       struct /* Variable */ {
-        // Source: drake/common/symbolic/expression/variable.h:34
+        // Source: drake/common/symbolic/expression/variable.h
         const char* doc =
 R"""(Represents a symbolic variable.
 
@@ -3775,54 +3775,54 @@ Note:
     the corresponding random variable in an expression or a formula.)""";
         // Symbol: drake::symbolic::Variable::Id
         struct /* Id */ {
-          // Source: drake/common/symbolic/expression/variable.h:36
+          // Source: drake/common/symbolic/expression/variable.h
           const char* doc = R"""()""";
         } Id;
         // Symbol: drake::symbolic::Variable::Type
         struct /* Type */ {
-          // Source: drake/common/symbolic/expression/variable.h:39
+          // Source: drake/common/symbolic/expression/variable.h
           const char* doc = R"""(Supported types of symbolic variables.)""";
           // Symbol: drake::symbolic::Variable::Type::BINARY
           struct /* BINARY */ {
-            // Source: drake/common/symbolic/expression/variable.h:42
+            // Source: drake/common/symbolic/expression/variable.h
             const char* doc =
 R"""(A BINARY variable takes an integer value from {0, 1}.)""";
           } BINARY;
           // Symbol: drake::symbolic::Variable::Type::BOOLEAN
           struct /* BOOLEAN */ {
-            // Source: drake/common/symbolic/expression/variable.h:43
+            // Source: drake/common/symbolic/expression/variable.h
             const char* doc =
 R"""(A BOOLEAN variable takes a ``bool`` value.)""";
           } BOOLEAN;
           // Symbol: drake::symbolic::Variable::Type::CONTINUOUS
           struct /* CONTINUOUS */ {
-            // Source: drake/common/symbolic/expression/variable.h:40
+            // Source: drake/common/symbolic/expression/variable.h
             const char* doc =
 R"""(A CONTINUOUS variable takes a ``double`` value.)""";
           } CONTINUOUS;
           // Symbol: drake::symbolic::Variable::Type::INTEGER
           struct /* INTEGER */ {
-            // Source: drake/common/symbolic/expression/variable.h:41
+            // Source: drake/common/symbolic/expression/variable.h
             const char* doc =
 R"""(An INTEGER variable takes an ``int`` value.)""";
           } INTEGER;
           // Symbol: drake::symbolic::Variable::Type::RANDOM_EXPONENTIAL
           struct /* RANDOM_EXPONENTIAL */ {
-            // Source: drake/common/symbolic/expression/variable.h:48
+            // Source: drake/common/symbolic/expression/variable.h
             const char* doc =
 R"""(A random variable whose value will be drawn from exponential
 distribution with λ=1.)""";
           } RANDOM_EXPONENTIAL;
           // Symbol: drake::symbolic::Variable::Type::RANDOM_GAUSSIAN
           struct /* RANDOM_GAUSSIAN */ {
-            // Source: drake/common/symbolic/expression/variable.h:46
+            // Source: drake/common/symbolic/expression/variable.h
             const char* doc =
 R"""(A random variable whose value will be drawn from mean-zero,
 unit-variance normal.)""";
           } RANDOM_GAUSSIAN;
           // Symbol: drake::symbolic::Variable::Type::RANDOM_UNIFORM
           struct /* RANDOM_UNIFORM */ {
-            // Source: drake/common/symbolic/expression/variable.h:44
+            // Source: drake/common/symbolic/expression/variable.h
             const char* doc =
 R"""(A random variable whose value will be drawn from uniform real
 distributed ∈ [0,1).)""";
@@ -3830,64 +3830,64 @@ distributed ∈ [0,1).)""";
         } Type;
         // Symbol: drake::symbolic::Variable::Variable
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/variable.h:59
+          // Source: drake/common/symbolic/expression/variable.h
           const char* doc_0args =
 R"""(Constructs a default variable of type CONTINUOUS with an ``Id`` of
 zero. All default-constructed variables are considered the same
 variable by the equality operator (==). Similarly, a moved-from
 variable is also identical to a default-constructed variable (in both
 its ``name`` and its ``Id``).)""";
-          // Source: drake/common/symbolic/expression/variable.h:64
+          // Source: drake/common/symbolic/expression/variable.h
           const char* doc_1args =
 R"""(Constructs a default value. This overload is used by Eigen when
 EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.)""";
-          // Source: drake/common/symbolic/expression/variable.h:68
+          // Source: drake/common/symbolic/expression/variable.h
           const char* doc_2args =
 R"""(Constructs a variable with a string. If not specified, it has
 CONTINUOUS type by default.)""";
         } ctor;
         // Symbol: drake::symbolic::Variable::equal_to
         struct /* equal_to */ {
-          // Source: drake/common/symbolic/expression/variable.h:85
+          // Source: drake/common/symbolic/expression/variable.h
           const char* doc =
 R"""(Checks the equality of two variables based on their ID values.)""";
         } equal_to;
         // Symbol: drake::symbolic::Variable::get_id
         struct /* get_id */ {
-          // Source: drake/common/symbolic/expression/variable.h:75
+          // Source: drake/common/symbolic/expression/variable.h
           const char* doc = R"""()""";
         } get_id;
         // Symbol: drake::symbolic::Variable::get_name
         struct /* get_name */ {
-          // Source: drake/common/symbolic/expression/variable.h:81
+          // Source: drake/common/symbolic/expression/variable.h
           const char* doc = R"""()""";
         } get_name;
         // Symbol: drake::symbolic::Variable::get_type
         struct /* get_type */ {
-          // Source: drake/common/symbolic/expression/variable.h:76
+          // Source: drake/common/symbolic/expression/variable.h
           const char* doc = R"""()""";
         } get_type;
         // Symbol: drake::symbolic::Variable::is_dummy
         struct /* is_dummy */ {
-          // Source: drake/common/symbolic/expression/variable.h:74
+          // Source: drake/common/symbolic/expression/variable.h
           const char* doc =
 R"""(Checks if this is the variable created by the default constructor.)""";
         } is_dummy;
         // Symbol: drake::symbolic::Variable::less
         struct /* less */ {
-          // Source: drake/common/symbolic/expression/variable.h:90
+          // Source: drake/common/symbolic/expression/variable.h
           const char* doc =
 R"""(Compares two variables based on their ID values.)""";
         } less;
         // Symbol: drake::symbolic::Variable::to_string
         struct /* to_string */ {
-          // Source: drake/common/symbolic/expression/variable.h:82
+          // Source: drake/common/symbolic/expression/variable.h
           const char* doc = R"""()""";
         } to_string;
       } Variable;
       // Symbol: drake::symbolic::Variables
       struct /* Variables */ {
-        // Source: drake/common/symbolic/expression/variables.h:29
+        // Source: drake/common/symbolic/expression/variables.h
         const char* doc =
 R"""(Represents a set of variables.
 
@@ -3899,159 +3899,159 @@ Variables::IsSupersetOf, Variables::IsStrictSubsetOf,
 Variables::IsStrictSupersetOf).)""";
         // Symbol: drake::symbolic::Variables::IsStrictSubsetOf
         struct /* IsStrictSubsetOf */ {
-          // Source: drake/common/symbolic/expression/variables.h:131
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc =
 R"""(Return true if ``vars`` is a strict subset of the Variables.)""";
         } IsStrictSubsetOf;
         // Symbol: drake::symbolic::Variables::IsStrictSupersetOf
         struct /* IsStrictSupersetOf */ {
-          // Source: drake/common/symbolic/expression/variables.h:133
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc =
 R"""(Return true if ``vars`` is a strict superset of the Variables.)""";
         } IsStrictSupersetOf;
         // Symbol: drake::symbolic::Variables::IsSubsetOf
         struct /* IsSubsetOf */ {
-          // Source: drake/common/symbolic/expression/variables.h:127
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc =
 R"""(Return true if ``vars`` is a subset of the Variables.)""";
         } IsSubsetOf;
         // Symbol: drake::symbolic::Variables::IsSupersetOf
         struct /* IsSupersetOf */ {
-          // Source: drake/common/symbolic/expression/variables.h:129
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc =
 R"""(Return true if ``vars`` is a superset of the Variables.)""";
         } IsSupersetOf;
         // Symbol: drake::symbolic::Variables::Variables
         struct /* ctor */ {
-          // Source: drake/common/symbolic/expression/variables.h:41
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc_0args = R"""(Default constructor.)""";
-          // Source: drake/common/symbolic/expression/variables.h:44
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc_1args_init = R"""(List constructor.)""";
-          // Source: drake/common/symbolic/expression/variables.h:47
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc_1args_vec =
 R"""(Constructs from an Eigen vector of variables.)""";
         } ctor;
         // Symbol: drake::symbolic::Variables::begin
         struct /* begin */ {
-          // Source: drake/common/symbolic/expression/variables.h:70
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc = R"""(Returns an iterator to the beginning.)""";
         } begin;
         // Symbol: drake::symbolic::Variables::cbegin
         struct /* cbegin */ {
-          // Source: drake/common/symbolic/expression/variables.h:78
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc =
 R"""(Returns a const iterator to the beginning.)""";
         } cbegin;
         // Symbol: drake::symbolic::Variables::cend
         struct /* cend */ {
-          // Source: drake/common/symbolic/expression/variables.h:80
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc = R"""(Returns a const iterator to the end.)""";
         } cend;
         // Symbol: drake::symbolic::Variables::const_iterator
         struct /* const_iterator */ {
-          // Source: drake/common/symbolic/expression/variables.h:35
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc = R"""()""";
         } const_iterator;
         // Symbol: drake::symbolic::Variables::const_reverse_iterator
         struct /* const_reverse_iterator */ {
-          // Source: drake/common/symbolic/expression/variables.h:38
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc = R"""()""";
         } const_reverse_iterator;
         // Symbol: drake::symbolic::Variables::crbegin
         struct /* crbegin */ {
-          // Source: drake/common/symbolic/expression/variables.h:92
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc =
 R"""(Returns a const reverse-iterator to the beginning.)""";
         } crbegin;
         // Symbol: drake::symbolic::Variables::crend
         struct /* crend */ {
-          // Source: drake/common/symbolic/expression/variables.h:96
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc =
 R"""(Returns a const reverse-iterator to the end.)""";
         } crend;
         // Symbol: drake::symbolic::Variables::empty
         struct /* empty */ {
-          // Source: drake/common/symbolic/expression/variables.h:55
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc = R"""(Checks if this set is empty or not.)""";
         } empty;
         // Symbol: drake::symbolic::Variables::end
         struct /* end */ {
-          // Source: drake/common/symbolic/expression/variables.h:72
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc = R"""(Returns an iterator to the end.)""";
         } end;
         // Symbol: drake::symbolic::Variables::erase
         struct /* erase */ {
-          // Source: drake/common/symbolic/expression/variables.h:109
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc_1args_key =
 R"""(Erases ``key`` from a set. Return number of erased elements (0 or 1).)""";
-          // Source: drake/common/symbolic/expression/variables.h:113
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc_1args_vars =
 R"""(Erases variables in ``vars`` from a set. Return number of erased
 elements ([0, vars.size()]).)""";
         } erase;
         // Symbol: drake::symbolic::Variables::find
         struct /* find */ {
-          // Source: drake/common/symbolic/expression/variables.h:116
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc = R"""(Finds element with specific key.)""";
         } find;
         // Symbol: drake::symbolic::Variables::include
         struct /* include */ {
-          // Source: drake/common/symbolic/expression/variables.h:122
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc =
 R"""(Return true if ``key`` is included in the Variables.)""";
         } include;
         // Symbol: drake::symbolic::Variables::insert
         struct /* insert */ {
-          // Source: drake/common/symbolic/expression/variables.h:99
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc_1args_var = R"""(Inserts a variable ``var`` into a set.)""";
-          // Source: drake/common/symbolic/expression/variables.h:102
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc_2args_InputIt_InputIt =
 R"""(Inserts variables in [``first``, ``last)`` into a set.)""";
-          // Source: drake/common/symbolic/expression/variables.h:106
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc_1args_vars =
 R"""(Inserts variables in ``vars`` into a set.)""";
         } insert;
         // Symbol: drake::symbolic::Variables::iterator
         struct /* iterator */ {
-          // Source: drake/common/symbolic/expression/variables.h:34
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc = R"""()""";
         } iterator;
         // Symbol: drake::symbolic::Variables::rbegin
         struct /* rbegin */ {
-          // Source: drake/common/symbolic/expression/variables.h:82
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc =
 R"""(Returns a reverse iterator to the beginning.)""";
         } rbegin;
         // Symbol: drake::symbolic::Variables::rend
         struct /* rend */ {
-          // Source: drake/common/symbolic/expression/variables.h:84
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc = R"""(Returns a reverse iterator to the end.)""";
         } rend;
         // Symbol: drake::symbolic::Variables::reverse_iterator
         struct /* reverse_iterator */ {
-          // Source: drake/common/symbolic/expression/variables.h:36
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc = R"""()""";
         } reverse_iterator;
         // Symbol: drake::symbolic::Variables::size
         struct /* size */ {
-          // Source: drake/common/symbolic/expression/variables.h:52
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc = R"""(Returns the number of elements.)""";
         } size;
         // Symbol: drake::symbolic::Variables::size_type
         struct /* size_type */ {
-          // Source: drake/common/symbolic/expression/variables.h:33
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc = R"""()""";
         } size_type;
         // Symbol: drake::symbolic::Variables::to_string
         struct /* to_string */ {
-          // Source: drake/common/symbolic/expression/variables.h:58
+          // Source: drake/common/symbolic/expression/variables.h
           const char* doc =
 R"""(Returns string representation of Variables.)""";
         } to_string;
       } Variables;
       // Symbol: drake::symbolic::VisitExpression
       struct /* VisitExpression */ {
-        // Source: drake/common/symbolic/expression/expression_visitor.h:90
+        // Source: drake/common/symbolic/expression/expression_visitor.h
         const char* doc =
 R"""(Calls visitor object ``v`` with a symbolic-expression ``e``, and
 arguments ``args``. Visitor object is expected to implement the
@@ -4068,7 +4068,7 @@ Raises:
       } VisitExpression;
       // Symbol: drake::symbolic::VisitFormula
       struct /* VisitFormula */ {
-        // Source: drake/common/symbolic/expression/formula_visitor.h:25
+        // Source: drake/common/symbolic/expression/formula_visitor.h
         const char* doc =
 R"""(Calls visitor object ``v`` with a symbolic formula ``f``, and
 arguments ``args``. Visitor object is expected to implement the
@@ -4085,7 +4085,7 @@ example.)""";
       } VisitFormula;
       // Symbol: drake::symbolic::VisitPolynomial
       struct /* VisitPolynomial */ {
-        // Source: drake/common/symbolic/expression/expression_visitor.h:27
+        // Source: drake/common/symbolic/expression/expression_visitor.h
         const char* doc =
 R"""(Calls visitor object ``v`` with a polynomial symbolic-expression
 ``e``, and arguments ``args``. Visitor object is expected to implement
@@ -4104,68 +4104,68 @@ Precondition:
       } VisitPolynomial;
       // Symbol: drake::symbolic::abs
       struct /* abs */ {
-        // Source: drake/common/symbolic/expression/expression.h:653
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } abs;
       // Symbol: drake::symbolic::acos
       struct /* acos */ {
-        // Source: drake/common/symbolic/expression/expression.h:661
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } acos;
       // Symbol: drake::symbolic::asin
       struct /* asin */ {
-        // Source: drake/common/symbolic/expression/expression.h:660
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } asin;
       // Symbol: drake::symbolic::atan
       struct /* atan */ {
-        // Source: drake/common/symbolic/expression/expression.h:662
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } atan;
       // Symbol: drake::symbolic::atan2
       struct /* atan2 */ {
-        // Source: drake/common/symbolic/expression/expression.h:663
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } atan2;
       // Symbol: drake::symbolic::ceil
       struct /* ceil */ {
-        // Source: drake/common/symbolic/expression/expression.h:671
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } ceil;
       // Symbol: drake::symbolic::clamp
       struct /* clamp */ {
-        // Source: drake/common/symbolic/expression/expression.h:669
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } clamp;
       // Symbol: drake::symbolic::cos
       struct /* cos */ {
-        // Source: drake/common/symbolic/expression/expression.h:658
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } cos;
       // Symbol: drake::symbolic::cosh
       struct /* cosh */ {
-        // Source: drake/common/symbolic/expression/expression.h:665
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } cosh;
       // Symbol: drake::symbolic::exp
       struct /* exp */ {
-        // Source: drake/common/symbolic/expression/expression.h:654
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } exp;
       // Symbol: drake::symbolic::floor
       struct /* floor */ {
-        // Source: drake/common/symbolic/expression/expression.h:672
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } floor;
       // Symbol: drake::symbolic::forall
       struct /* forall */ {
-        // Source: drake/common/symbolic/expression/formula.h:277
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Returns a formula ``f``, universally quantified by variables ``vars``.)""";
       } forall;
       // Symbol: drake::symbolic::get_argument
       struct /* get_argument */ {
-        // Source: drake/common/symbolic/expression/expression.h:833
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Returns the argument in the unary expression ``e``.
 
@@ -4174,7 +4174,7 @@ Precondition:
       } get_argument;
       // Symbol: drake::symbolic::get_base_to_exponent_map_in_multiplication
       struct /* get_base_to_exponent_map_in_multiplication */ {
-        // Source: drake/common/symbolic/expression/expression.h:865
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Returns the map from a base expression to its exponent expression in
 the multiplication expression ``e``. For instance, given 7 * x^2 * y^3
@@ -4185,7 +4185,7 @@ Precondition:
       } get_base_to_exponent_map_in_multiplication;
       // Symbol: drake::symbolic::get_conditional_formula
       struct /* get_conditional_formula */ {
-        // Source: drake/common/symbolic/expression/expression.h:881
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Returns the conditional formula in the if-then-else expression ``e``.
 
@@ -4194,7 +4194,7 @@ Precondition:
       } get_conditional_formula;
       // Symbol: drake::symbolic::get_constant_in_addition
       struct /* get_constant_in_addition */ {
-        // Source: drake/common/symbolic/expression/expression.h:846
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Returns the constant part of the addition expression ``e``. For
 instance, given 7 + 2 * x + 3 * y, it returns 7.
@@ -4204,7 +4204,7 @@ Precondition:
       } get_constant_in_addition;
       // Symbol: drake::symbolic::get_constant_in_multiplication
       struct /* get_constant_in_multiplication */ {
-        // Source: drake/common/symbolic/expression/expression.h:858
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Returns the constant part of the multiplication expression ``e``. For
 instance, given 7 * x^2 * y^3, it returns 7.
@@ -4214,7 +4214,7 @@ Precondition:
       } get_constant_in_multiplication;
       // Symbol: drake::symbolic::get_constant_value
       struct /* get_constant_value */ {
-        // Source: drake/common/symbolic/expression/expression.h:823
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Returns the constant value of the constant expression ``e``.
 
@@ -4223,7 +4223,7 @@ Precondition:
       } get_constant_value;
       // Symbol: drake::symbolic::get_else_expression
       struct /* get_else_expression */ {
-        // Source: drake/common/symbolic/expression/expression.h:891
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Returns the 'else' expression in the if-then-else expression ``e``.
 
@@ -4232,7 +4232,7 @@ Precondition:
       } get_else_expression;
       // Symbol: drake::symbolic::get_expr_to_coeff_map_in_addition
       struct /* get_expr_to_coeff_map_in_addition */ {
-        // Source: drake/common/symbolic/expression/expression.h:852
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Returns the map from an expression to its coefficient in the addition
 expression ``e``. For instance, given 7 + 2 * x + 3 * y, the return
@@ -4243,7 +4243,7 @@ Precondition:
       } get_expr_to_coeff_map_in_addition;
       // Symbol: drake::symbolic::get_first_argument
       struct /* get_first_argument */ {
-        // Source: drake/common/symbolic/expression/expression.h:837
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Returns the first argument of the binary expression ``e``.
 
@@ -4252,7 +4252,7 @@ Precondition:
       } get_first_argument;
       // Symbol: drake::symbolic::get_lhs_expression
       struct /* get_lhs_expression */ {
-        // Source: drake/common/symbolic/expression/formula.h:477
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Returns the lhs-argument of a relational formula ``f``.
 
@@ -4261,7 +4261,7 @@ Precondition:
       } get_lhs_expression;
       // Symbol: drake::symbolic::get_matrix_in_positive_semidefinite
       struct /* get_matrix_in_positive_semidefinite */ {
-        // Source: drake/common/symbolic/expression/formula.h:513
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Returns the matrix in a positive-semidefinite formula ``f``.
 
@@ -4270,7 +4270,7 @@ Precondition:
       } get_matrix_in_positive_semidefinite;
       // Symbol: drake::symbolic::get_operand
       struct /* get_operand */ {
-        // Source: drake/common/symbolic/expression/formula.h:498
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Returns the formula in a negation formula ``f``.
 
@@ -4279,7 +4279,7 @@ Precondition:
       } get_operand;
       // Symbol: drake::symbolic::get_operands
       struct /* get_operands */ {
-        // Source: drake/common/symbolic/expression/formula.h:493
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Returns the set of formulas in a n-ary formula ``f``.
 
@@ -4288,7 +4288,7 @@ Precondition:
       } get_operands;
       // Symbol: drake::symbolic::get_quantified_formula
       struct /* get_quantified_formula */ {
-        // Source: drake/common/symbolic/expression/formula.h:508
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Returns the quantified formula in a forall formula ``f``.
 
@@ -4297,7 +4297,7 @@ Precondition:
       } get_quantified_formula;
       // Symbol: drake::symbolic::get_quantified_variables
       struct /* get_quantified_variables */ {
-        // Source: drake/common/symbolic/expression/formula.h:503
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Returns the quantified variables in a forall formula ``f``.
 
@@ -4306,7 +4306,7 @@ Precondition:
       } get_quantified_variables;
       // Symbol: drake::symbolic::get_rhs_expression
       struct /* get_rhs_expression */ {
-        // Source: drake/common/symbolic/expression/formula.h:482
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Returns the rhs-argument of a relational formula ``f``.
 
@@ -4315,7 +4315,7 @@ Precondition:
       } get_rhs_expression;
       // Symbol: drake::symbolic::get_second_argument
       struct /* get_second_argument */ {
-        // Source: drake/common/symbolic/expression/expression.h:841
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Returns the second argument of the binary expression ``e``.
 
@@ -4324,7 +4324,7 @@ Precondition:
       } get_second_argument;
       // Symbol: drake::symbolic::get_then_expression
       struct /* get_then_expression */ {
-        // Source: drake/common/symbolic/expression/expression.h:886
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Returns the 'then' expression in the if-then-else expression ``e``.
 
@@ -4333,7 +4333,7 @@ Precondition:
       } get_then_expression;
       // Symbol: drake::symbolic::get_unary_expression
       struct /* get_unary_expression */ {
-        // Source: drake/common/symbolic/expression/formula.h:488
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Returns the expression in a unary expression formula ``f``. Currently,
 an isnan() formula is the only kind of unary expression formula.
@@ -4343,7 +4343,7 @@ Precondition:
       } get_unary_expression;
       // Symbol: drake::symbolic::get_uninterpreted_function_arguments
       struct /* get_uninterpreted_function_arguments */ {
-        // Source: drake/common/symbolic/expression/expression.h:875
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Returns the arguments of an uninterpreted-function expression ``e``.
 
@@ -4352,7 +4352,7 @@ Precondition:
       } get_uninterpreted_function_arguments;
       // Symbol: drake::symbolic::get_uninterpreted_function_name
       struct /* get_uninterpreted_function_name */ {
-        // Source: drake/common/symbolic/expression/expression.h:870
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Returns the name of an uninterpreted-function expression ``e``.
 
@@ -4361,13 +4361,13 @@ Precondition:
       } get_uninterpreted_function_name;
       // Symbol: drake::symbolic::get_variable
       struct /* get_variable */ {
-        // Source: drake/common/symbolic/expression/expression.h:829
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e =
 R"""(Returns the embedded variable in the variable expression ``e``.
 
 Precondition:
     {``e`` is a variable expression.})""";
-        // Source: drake/common/symbolic/expression/formula.h:472
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc_1args_f =
 R"""(Returns the embedded variable in the variable formula ``f``.
 
@@ -4376,7 +4376,7 @@ Precondition:
       } get_variable;
       // Symbol: drake::symbolic::if_then_else
       struct /* if_then_else */ {
-        // Source: drake/common/symbolic/expression/expression.h:673
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Constructs if-then-else expression.
 
@@ -4431,7 +4431,7 @@ Note:
       } if_then_else;
       // Symbol: drake::symbolic::intersect
       struct /* intersect */ {
-        // Source: drake/common/symbolic/expression/variables.h:179
+        // Source: drake/common/symbolic/expression/variables.h
         const char* doc =
 R"""(Returns the intersection of ``vars1`` and ``vars2``.
 
@@ -4440,369 +4440,369 @@ This function has a time complexity of ``O(N₁ + N₂)`` where ``N₁`` and
       } intersect;
       // Symbol: drake::symbolic::is_abs
       struct /* is_abs */ {
-        // Source: drake/common/symbolic/expression/expression.h:740
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e = R"""(Checks if ``e`` is an abs expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:879
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c =
 R"""(Checks if ``c`` is an absolute-value-function expression.)""";
       } is_abs;
       // Symbol: drake::symbolic::is_acos
       struct /* is_acos */ {
-        // Source: drake/common/symbolic/expression/expression.h:772
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e =
 R"""(Checks if ``e`` is an arccosine expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:895
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c =
 R"""(Checks if ``c`` is an arccosine expression.)""";
       } is_acos;
       // Symbol: drake::symbolic::is_addition
       struct /* is_addition */ {
-        // Source: drake/common/symbolic/expression/expression.h:724
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e =
 R"""(Checks if ``e`` is an addition expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:871
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c =
 R"""(Checks if ``c`` is an addition expression.)""";
       } is_addition;
       // Symbol: drake::symbolic::is_asin
       struct /* is_asin */ {
-        // Source: drake/common/symbolic/expression/expression.h:768
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e =
 R"""(Checks if ``e`` is an arcsine expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:893
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c =
 R"""(Checks if ``c`` is an arcsine expression.)""";
       } is_asin;
       // Symbol: drake::symbolic::is_atan
       struct /* is_atan */ {
-        // Source: drake/common/symbolic/expression/expression.h:776
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e =
 R"""(Checks if ``e`` is an arctangent expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:897
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c =
 R"""(Checks if ``c`` is an arctangent expression.)""";
       } is_atan;
       // Symbol: drake::symbolic::is_atan2
       struct /* is_atan2 */ {
-        // Source: drake/common/symbolic/expression/expression.h:780
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e =
 R"""(Checks if ``e`` is an arctangent2 expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:899
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c =
 R"""(Checks if ``c`` is a arctangent2 expression.)""";
       } is_atan2;
       // Symbol: drake::symbolic::is_binary
       struct /* is_binary */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:869
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc = R"""(Checks if ``c`` is a binary expression.)""";
       } is_binary;
       // Symbol: drake::symbolic::is_ceil
       struct /* is_ceil */ {
-        // Source: drake/common/symbolic/expression/expression.h:804
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e = R"""(Checks if ``e`` is a ceil expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:911
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c = R"""(Checks if ``c`` is a ceil expression.)""";
       } is_ceil;
       // Symbol: drake::symbolic::is_conjunction
       struct /* is_conjunction */ {
-        // Source: drake/common/symbolic/expression/formula.h:455
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc = R"""(Checks if ``f`` is a conjunction (∧).)""";
       } is_conjunction;
       // Symbol: drake::symbolic::is_constant
       struct /* is_constant */ {
-        // Source: drake/common/symbolic/expression/expression.h:690
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args =
 R"""(Checks if ``e`` is a constant expression.)""";
-        // Source: drake/common/symbolic/expression/expression.h:694
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_2args =
 R"""(Checks if ``e`` is a constant expression representing ``v``.)""";
       } is_constant;
       // Symbol: drake::symbolic::is_cos
       struct /* is_cos */ {
-        // Source: drake/common/symbolic/expression/expression.h:760
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e = R"""(Checks if ``e`` is a cosine expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:889
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c = R"""(Checks if ``c`` is a cosine expression.)""";
       } is_cos;
       // Symbol: drake::symbolic::is_cosh
       struct /* is_cosh */ {
-        // Source: drake/common/symbolic/expression/expression.h:788
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e =
 R"""(Checks if ``e`` is a hyperbolic-cosine expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:903
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c =
 R"""(Checks if ``c`` is a hyperbolic-cosine expression.)""";
       } is_cosh;
       // Symbol: drake::symbolic::is_disjunction
       struct /* is_disjunction */ {
-        // Source: drake/common/symbolic/expression/formula.h:457
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc = R"""(Checks if ``f`` is a disjunction (∨).)""";
       } is_disjunction;
       // Symbol: drake::symbolic::is_division
       struct /* is_division */ {
-        // Source: drake/common/symbolic/expression/expression.h:732
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e =
 R"""(Checks if ``e`` is a division expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:875
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c =
 R"""(Checks if ``c`` is a division expression.)""";
       } is_division;
       // Symbol: drake::symbolic::is_equal_to
       struct /* is_equal_to */ {
-        // Source: drake/common/symbolic/expression/formula.h:441
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Checks if ``f`` is a formula representing equality (==).)""";
       } is_equal_to;
       // Symbol: drake::symbolic::is_exp
       struct /* is_exp */ {
-        // Source: drake/common/symbolic/expression/expression.h:744
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e = R"""(Checks if ``e`` is an exp expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:881
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c = R"""(Checks if ``c`` is an exp expression.)""";
       } is_exp;
       // Symbol: drake::symbolic::is_false
       struct /* is_false */ {
-        // Source: drake/common/symbolic/expression/formula.h:435
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Checks if ``f`` is structurally equal to False formula.)""";
       } is_false;
       // Symbol: drake::symbolic::is_floor
       struct /* is_floor */ {
-        // Source: drake/common/symbolic/expression/expression.h:808
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e = R"""(Checks if ``e`` is a floor expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:913
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c = R"""(Checks if ``c`` is a floor expression.)""";
       } is_floor;
       // Symbol: drake::symbolic::is_forall
       struct /* is_forall */ {
-        // Source: drake/common/symbolic/expression/formula.h:463
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Checks if ``f`` is a Forall formula (∀).)""";
       } is_forall;
       // Symbol: drake::symbolic::is_greater_than
       struct /* is_greater_than */ {
-        // Source: drake/common/symbolic/expression/formula.h:445
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Checks if ``f`` is a formula representing greater-than (>).)""";
       } is_greater_than;
       // Symbol: drake::symbolic::is_greater_than_or_equal_to
       struct /* is_greater_than_or_equal_to */ {
-        // Source: drake/common/symbolic/expression/formula.h:447
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Checks if ``f`` is a formula representing greater-than-or-equal-to
 (>=).)""";
       } is_greater_than_or_equal_to;
       // Symbol: drake::symbolic::is_if_then_else
       struct /* is_if_then_else */ {
-        // Source: drake/common/symbolic/expression/expression.h:812
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e =
 R"""(Checks if ``e`` is an if-then-else expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:915
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c =
 R"""(Checks if ``c`` is an if-then-else expression.)""";
       } is_if_then_else;
       // Symbol: drake::symbolic::is_integer
       struct /* is_integer */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:29
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc = R"""()""";
       } is_integer;
       // Symbol: drake::symbolic::is_isnan
       struct /* is_isnan */ {
-        // Source: drake/common/symbolic/expression/formula.h:465
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc = R"""(Checks if ``f`` is an isnan formula.)""";
       } is_isnan;
       // Symbol: drake::symbolic::is_less_than
       struct /* is_less_than */ {
-        // Source: drake/common/symbolic/expression/formula.h:449
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Checks if ``f`` is a formula representing less-than (<).)""";
       } is_less_than;
       // Symbol: drake::symbolic::is_less_than_or_equal_to
       struct /* is_less_than_or_equal_to */ {
-        // Source: drake/common/symbolic/expression/formula.h:451
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Checks if ``f`` is a formula representing less-than-or-equal-to (<=).)""";
       } is_less_than_or_equal_to;
       // Symbol: drake::symbolic::is_log
       struct /* is_log */ {
-        // Source: drake/common/symbolic/expression/expression.h:736
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e = R"""(Checks if ``e`` is a log expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:877
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c = R"""(Checks if ``c`` is a log expression.)""";
       } is_log;
       // Symbol: drake::symbolic::is_max
       struct /* is_max */ {
-        // Source: drake/common/symbolic/expression/expression.h:800
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e = R"""(Checks if ``e`` is a max expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:909
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c = R"""(Checks if ``c`` is a max expression.)""";
       } is_max;
       // Symbol: drake::symbolic::is_min
       struct /* is_min */ {
-        // Source: drake/common/symbolic/expression/expression.h:796
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e = R"""(Checks if ``e`` is a min expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:907
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c = R"""(Checks if ``c`` is a min expression.)""";
       } is_min;
       // Symbol: drake::symbolic::is_multiplication
       struct /* is_multiplication */ {
-        // Source: drake/common/symbolic/expression/expression.h:728
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e =
 R"""(Checks if ``e`` is a multiplication expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:873
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c =
 R"""(Checks if ``c`` is an multiplication expression.)""";
       } is_multiplication;
       // Symbol: drake::symbolic::is_nan
       struct /* is_nan */ {
-        // Source: drake/common/symbolic/expression/expression.h:716
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""(Checks if ``e`` is NaN.)""";
       } is_nan;
       // Symbol: drake::symbolic::is_nary
       struct /* is_nary */ {
-        // Source: drake/common/symbolic/expression/formula.h:459
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Checks if ``f`` is a n-ary formula ({∧, ∨}).)""";
       } is_nary;
       // Symbol: drake::symbolic::is_neg_one
       struct /* is_neg_one */ {
-        // Source: drake/common/symbolic/expression/expression.h:708
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""(Checks if ``e`` is -1.0.)""";
       } is_neg_one;
       // Symbol: drake::symbolic::is_negation
       struct /* is_negation */ {
-        // Source: drake/common/symbolic/expression/formula.h:461
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc = R"""(Checks if ``f`` is a negation (¬).)""";
       } is_negation;
       // Symbol: drake::symbolic::is_non_negative_integer
       struct /* is_non_negative_integer */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:35
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc = R"""()""";
       } is_non_negative_integer;
       // Symbol: drake::symbolic::is_not_equal_to
       struct /* is_not_equal_to */ {
-        // Source: drake/common/symbolic/expression/formula.h:443
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Checks if ``f`` is a formula representing disequality (!=).)""";
       } is_not_equal_to;
       // Symbol: drake::symbolic::is_one
       struct /* is_one */ {
-        // Source: drake/common/symbolic/expression/expression.h:704
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""(Checks if ``e`` is 1.0.)""";
       } is_one;
       // Symbol: drake::symbolic::is_positive_integer
       struct /* is_positive_integer */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:32
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc = R"""()""";
       } is_positive_integer;
       // Symbol: drake::symbolic::is_positive_semidefinite
       struct /* is_positive_semidefinite */ {
-        // Source: drake/common/symbolic/expression/formula.h:467
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Checks if ``f`` is a positive-semidefinite formula.)""";
       } is_positive_semidefinite;
       // Symbol: drake::symbolic::is_pow
       struct /* is_pow */ {
-        // Source: drake/common/symbolic/expression/expression.h:752
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e =
 R"""(Checks if ``e`` is a power-function expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:885
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c =
 R"""(Checks if ``c`` is a power-function expression.)""";
       } is_pow;
       // Symbol: drake::symbolic::is_relational
       struct /* is_relational */ {
-        // Source: drake/common/symbolic/expression/formula.h:453
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Checks if ``f`` is a relational formula ({==, !=, >, >=, <, <=}).)""";
       } is_relational;
       // Symbol: drake::symbolic::is_sin
       struct /* is_sin */ {
-        // Source: drake/common/symbolic/expression/expression.h:756
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e = R"""(Checks if ``e`` is a sine expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:887
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c = R"""(Checks if ``c`` is a sine expression.)""";
       } is_sin;
       // Symbol: drake::symbolic::is_sinh
       struct /* is_sinh */ {
-        // Source: drake/common/symbolic/expression/expression.h:784
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e =
 R"""(Checks if ``e`` is a hyperbolic-sine expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:901
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c =
 R"""(Checks if ``c`` is a hyperbolic-sine expression.)""";
       } is_sinh;
       // Symbol: drake::symbolic::is_sqrt
       struct /* is_sqrt */ {
-        // Source: drake/common/symbolic/expression/expression.h:748
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e =
 R"""(Checks if ``e`` is a square-root expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:883
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c =
 R"""(Checks if ``c`` is a square-root expression.)""";
       } is_sqrt;
       // Symbol: drake::symbolic::is_tan
       struct /* is_tan */ {
-        // Source: drake/common/symbolic/expression/expression.h:764
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e =
 R"""(Checks if ``e`` is a tangent expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:891
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c =
 R"""(Checks if ``c`` is a tangent expression.)""";
       } is_tan;
       // Symbol: drake::symbolic::is_tanh
       struct /* is_tanh */ {
-        // Source: drake/common/symbolic/expression/expression.h:792
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e =
 R"""(Checks if ``e`` is a hyperbolic-tangent expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:905
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c =
 R"""(Checks if ``c`` is a hyperbolic-tangent expression.)""";
       } is_tanh;
       // Symbol: drake::symbolic::is_true
       struct /* is_true */ {
-        // Source: drake/common/symbolic/expression/formula.h:437
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Checks if ``f`` is structurally equal to True formula.)""";
       } is_true;
       // Symbol: drake::symbolic::is_two
       struct /* is_two */ {
-        // Source: drake/common/symbolic/expression/expression.h:712
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""(Checks if ``e`` is 2.0.)""";
       } is_two;
       // Symbol: drake::symbolic::is_unary
       struct /* is_unary */ {
-        // Source: drake/common/symbolic/expression/expression_cell.h:867
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc = R"""(Checks if ``c`` is a unary expression.)""";
       } is_unary;
       // Symbol: drake::symbolic::is_uninterpreted_function
       struct /* is_uninterpreted_function */ {
-        // Source: drake/common/symbolic/expression/expression.h:816
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e =
 R"""(Checks if ``e`` is an uninterpreted-function expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:917
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c =
 R"""(Checks if ``c`` is an uninterpreted-function expression.)""";
       } is_uninterpreted_function;
       // Symbol: drake::symbolic::is_variable
       struct /* is_variable */ {
-        // Source: drake/common/symbolic/expression/expression.h:720
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e =
 R"""(Checks if ``e`` is a variable expression.)""";
-        // Source: drake/common/symbolic/expression/expression_cell.h:865
+        // Source: drake/common/symbolic/expression/expression_cell.h
         const char* doc_1args_c =
 R"""(Checks if ``c`` is a variable expression.)""";
-        // Source: drake/common/symbolic/expression/formula.h:439
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc_1args_f = R"""(Checks if ``f`` is a variable formula.)""";
       } is_variable;
       // Symbol: drake::symbolic::is_zero
       struct /* is_zero */ {
-        // Source: drake/common/symbolic/expression/expression.h:700
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""(Checks if ``e`` is 0.0.)""";
       } is_zero;
       // Symbol: drake::symbolic::isfinite
       struct /* isfinite */ {
-        // Source: drake/common/symbolic/expression/formula.h:339
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Returns a Formula determining if the given expression ``e`` has a
 finite value.
@@ -4812,7 +4812,7 @@ Raises:
       } isfinite;
       // Symbol: drake::symbolic::isinf
       struct /* isinf */ {
-        // Source: drake/common/symbolic/expression/formula.h:333
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Returns a Formula determining if the given expression ``e`` is a
 positive or negative infinity.
@@ -4822,7 +4822,7 @@ Raises:
       } isinf;
       // Symbol: drake::symbolic::isnan
       struct /* isnan */ {
-        // Source: drake/common/symbolic/expression/formula.h:327
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Returns a Formula for the predicate isnan(e) to the given expression.
 This serves as the argument-dependent lookup related to
@@ -4835,12 +4835,12 @@ NaN is detected during evaluation. Note that the evaluation of
       } isnan;
       // Symbol: drake::symbolic::log
       struct /* log */ {
-        // Source: drake/common/symbolic/expression/expression.h:652
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } log;
       // Symbol: drake::symbolic::make_conjunction
       struct /* make_conjunction */ {
-        // Source: drake/common/symbolic/expression/formula.h:289
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Returns a conjunction of ``formulas``. It performs the following
 simplification:
@@ -4854,7 +4854,7 @@ simplification:
       } make_conjunction;
       // Symbol: drake::symbolic::make_disjunction
       struct /* make_disjunction */ {
-        // Source: drake/common/symbolic/expression/formula.h:305
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc =
 R"""(Returns a disjunction of ``formulas``. It performs the following
 simplification:
@@ -4868,119 +4868,119 @@ simplification:
       } make_disjunction;
       // Symbol: drake::symbolic::max
       struct /* max */ {
-        // Source: drake/common/symbolic/expression/expression.h:668
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } max;
       // Symbol: drake::symbolic::min
       struct /* min */ {
-        // Source: drake/common/symbolic/expression/expression.h:667
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } min;
       // Symbol: drake::symbolic::operator!
       struct /* operator_lnot */ {
-        // Source: drake/common/symbolic/expression/formula.h:310
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc = R"""()""";
       } operator_lnot;
       // Symbol: drake::symbolic::operator!=
       struct /* operator_ne */ {
-        // Source: drake/common/symbolic/expression/formula.h:313
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc_was_unable_to_choose_unambiguous_names = R"""()""";
       } operator_ne;
       // Symbol: drake::symbolic::operator&&
       struct /* operator_land */ {
-        // Source: drake/common/symbolic/expression/formula.h:290
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc = R"""()""";
       } operator_land;
       // Symbol: drake::symbolic::operator*
       struct /* operator_mul */ {
-        // Source: drake/common/symbolic/expression/expression.h:645
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_was_unable_to_choose_unambiguous_names = R"""()""";
       } operator_mul;
       // Symbol: drake::symbolic::operator*=
       struct /* operator_imul */ {
-        // Source: drake/common/symbolic/expression/expression.h:647
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } operator_imul;
       // Symbol: drake::symbolic::operator+
       struct /* operator_add */ {
-        // Source: drake/common/symbolic/expression/expression.h:640
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e = R"""(Provides unary plus operator.)""";
-        // Source: drake/common/symbolic/expression/variables.h:157
+        // Source: drake/common/symbolic/expression/variables.h
         const char* doc_2args_vars1_vars2 =
 R"""(Returns set-union of ``var1`` and ``var2``.)""";
-        // Source: drake/common/symbolic/expression/variables.h:159
+        // Source: drake/common/symbolic/expression/variables.h
         const char* doc_2args_vars_var =
 R"""(Returns set-union of ``vars`` and {``var``}.)""";
-        // Source: drake/common/symbolic/expression/variables.h:161
+        // Source: drake/common/symbolic/expression/variables.h
         const char* doc_2args_var_vars =
 R"""(Returns set-union of {``var``} and ``vars``.)""";
       } operator_add;
       // Symbol: drake::symbolic::operator+=
       struct /* operator_iadd */ {
-        // Source: drake/common/symbolic/expression/variables.h:152
+        // Source: drake/common/symbolic/expression/variables.h
         const char* doc_2args_vars1_vars2 =
 R"""(Updates ``var1`` with the result of set-union(``var1``, ``var2)``.)""";
-        // Source: drake/common/symbolic/expression/variables.h:155
+        // Source: drake/common/symbolic/expression/variables.h
         const char* doc_2args_vars_var =
 R"""(Updates ``vars`` with the result of set-union(``vars``, { ``var`` }).)""";
       } operator_iadd;
       // Symbol: drake::symbolic::operator-
       struct /* operator_sub */ {
-        // Source: drake/common/symbolic/expression/expression.h:644
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc_1args_e = R"""(Provides unary minus operator.)""";
-        // Source: drake/common/symbolic/expression/variables.h:170
+        // Source: drake/common/symbolic/expression/variables.h
         const char* doc_2args_vars1_vars2 = R"""(Returns set-minus(``var1``, ``vars2)``.)""";
-        // Source: drake/common/symbolic/expression/variables.h:172
+        // Source: drake/common/symbolic/expression/variables.h
         const char* doc_2args_vars_var =
 R"""(Returns set-minus(``vars``, { ``var`` }).)""";
       } operator_sub;
       // Symbol: drake::symbolic::operator-=
       struct /* operator_isub */ {
-        // Source: drake/common/symbolic/expression/variables.h:165
+        // Source: drake/common/symbolic/expression/variables.h
         const char* doc_2args_vars1_vars2 =
 R"""(Updates ``var1`` with the result of set-minus(``var1``, ``var2)``.)""";
-        // Source: drake/common/symbolic/expression/variables.h:168
+        // Source: drake/common/symbolic/expression/variables.h
         const char* doc_2args_vars_var =
 R"""(Updates ``vars`` with the result of set-minus(``vars``, {``var``}).)""";
       } operator_isub;
       // Symbol: drake::symbolic::operator/
       struct /* operator_div */ {
-        // Source: drake/common/symbolic/expression/expression.h:648
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } operator_div;
       // Symbol: drake::symbolic::operator/=
       struct /* operator_idiv */ {
-        // Source: drake/common/symbolic/expression/expression.h:650
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } operator_idiv;
       // Symbol: drake::symbolic::operator<
       struct /* operator_lt */ {
-        // Source: drake/common/symbolic/expression/expression_kind.h:53
+        // Source: drake/common/symbolic/expression/expression_kind.h
         const char* doc_was_unable_to_choose_unambiguous_names = R"""(Total ordering between ExpressionKinds.)""";
       } operator_lt;
       // Symbol: drake::symbolic::operator<=
       struct /* operator_le */ {
-        // Source: drake/common/symbolic/expression/formula.h:315
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc_was_unable_to_choose_unambiguous_names = R"""()""";
       } operator_le;
       // Symbol: drake::symbolic::operator>
       struct /* operator_gt */ {
-        // Source: drake/common/symbolic/expression/formula.h:316
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc_was_unable_to_choose_unambiguous_names = R"""()""";
       } operator_gt;
       // Symbol: drake::symbolic::operator>=
       struct /* operator_ge */ {
-        // Source: drake/common/symbolic/expression/formula.h:317
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc_was_unable_to_choose_unambiguous_names = R"""()""";
       } operator_ge;
       // Symbol: drake::symbolic::operator||
       struct /* operator_lor */ {
-        // Source: drake/common/symbolic/expression/formula.h:306
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc = R"""()""";
       } operator_lor;
       // Symbol: drake::symbolic::positive_semidefinite
       struct /* positive_semidefinite */ {
-        // Source: drake/common/symbolic/expression/formula.h:355
+        // Source: drake/common/symbolic/expression/formula.h
         const char* doc_1args_m =
 R"""(Returns a symbolic formula constraining ``m`` to be a
 positive-semidefinite matrix. By definition, a symmetric matrix ``m``
@@ -4998,42 +4998,42 @@ Note:
       } positive_semidefinite;
       // Symbol: drake::symbolic::pow
       struct /* pow */ {
-        // Source: drake/common/symbolic/expression/expression.h:656
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } pow;
       // Symbol: drake::symbolic::sin
       struct /* sin */ {
-        // Source: drake/common/symbolic/expression/expression.h:657
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } sin;
       // Symbol: drake::symbolic::sinh
       struct /* sinh */ {
-        // Source: drake/common/symbolic/expression/expression.h:664
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } sinh;
       // Symbol: drake::symbolic::sqrt
       struct /* sqrt */ {
-        // Source: drake/common/symbolic/expression/expression.h:655
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } sqrt;
       // Symbol: drake::symbolic::swap
       struct /* swap */ {
-        // Source: drake/common/symbolic/expression/expression.h:685
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } swap;
       // Symbol: drake::symbolic::tan
       struct /* tan */ {
-        // Source: drake/common/symbolic/expression/expression.h:659
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } tan;
       // Symbol: drake::symbolic::tanh
       struct /* tanh */ {
-        // Source: drake/common/symbolic/expression/expression.h:666
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc = R"""()""";
       } tanh;
       // Symbol: drake::symbolic::to_conjunction
       struct /* to_conjunction */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:550
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Casts ``f_ptr`` to ``shared_ptr``<const FormulaAnd>.
 
@@ -5042,7 +5042,7 @@ Precondition:
       } to_conjunction;
       // Symbol: drake::symbolic::to_disjunction
       struct /* to_disjunction */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:556
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Casts ``f_ptr`` to ``shared_ptr``<const FormulaOr>.
 
@@ -5051,7 +5051,7 @@ Precondition:
       } to_disjunction;
       // Symbol: drake::symbolic::to_equal_to
       struct /* to_equal_to */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:514
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Casts ``f_ptr`` to ``shared_ptr``<const FormulaEq>.
 
@@ -5060,7 +5060,7 @@ Precondition:
       } to_equal_to;
       // Symbol: drake::symbolic::to_false
       struct /* to_false */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:490
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Casts ``f_ptr`` to ``shared_ptr``<const FormulaFalse>.
 
@@ -5069,7 +5069,7 @@ Precondition:
       } to_false;
       // Symbol: drake::symbolic::to_forall
       struct /* to_forall */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:574
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Casts ``f_ptr`` to ``shared_ptr``<const FormulaForall>.
 
@@ -5078,7 +5078,7 @@ Precondition:
       } to_forall;
       // Symbol: drake::symbolic::to_greater_than
       struct /* to_greater_than */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:526
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Casts ``f_ptr`` to ``shared_ptr``<const FormulaGt>.
 
@@ -5087,7 +5087,7 @@ Precondition:
       } to_greater_than;
       // Symbol: drake::symbolic::to_greater_than_or_equal_to
       struct /* to_greater_than_or_equal_to */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:532
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Casts ``f_ptr`` to ``shared_ptr``<const FormulaGeq>.
 
@@ -5096,7 +5096,7 @@ Precondition:
       } to_greater_than_or_equal_to;
       // Symbol: drake::symbolic::to_isnan
       struct /* to_isnan */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:580
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Casts ``f_ptr`` to ``shared_ptr``<const FormulaIsnan>.
 
@@ -5105,7 +5105,7 @@ Precondition:
       } to_isnan;
       // Symbol: drake::symbolic::to_less_than
       struct /* to_less_than */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:538
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Casts ``f_ptr`` to ``shared_ptr``<const FormulaLt>.
 
@@ -5114,7 +5114,7 @@ Precondition:
       } to_less_than;
       // Symbol: drake::symbolic::to_less_than_or_equal_to
       struct /* to_less_than_or_equal_to */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:544
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Casts ``f_ptr`` to ``shared_ptr``<const FormulaLeq>.
 
@@ -5123,7 +5123,7 @@ Precondition:
       } to_less_than_or_equal_to;
       // Symbol: drake::symbolic::to_nary
       struct /* to_nary */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:562
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Casts ``f_ptr`` to ``shared_ptr``<const NaryFormulaCell>.
 
@@ -5132,7 +5132,7 @@ Precondition:
       } to_nary;
       // Symbol: drake::symbolic::to_negation
       struct /* to_negation */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:568
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Casts ``f_ptr`` to ``shared_ptr``<const FormulaNot>.
 
@@ -5141,7 +5141,7 @@ Precondition:
       } to_negation;
       // Symbol: drake::symbolic::to_not_equal_to
       struct /* to_not_equal_to */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:520
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Casts ``f_ptr`` to ``shared_ptr``<const FormulaNeq>.
 
@@ -5150,7 +5150,7 @@ Precondition:
       } to_not_equal_to;
       // Symbol: drake::symbolic::to_positive_semidefinite
       struct /* to_positive_semidefinite */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:586
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Casts ``f_ptr`` to ``shared_ptr``<const FormulaPositiveSemidefinite>.
 
@@ -5159,7 +5159,7 @@ Precondition:
       } to_positive_semidefinite;
       // Symbol: drake::symbolic::to_relational
       struct /* to_relational */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:508
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Casts ``f_ptr`` to ``shared_ptr``<const RelationalFormulaCell>.
 
@@ -5168,7 +5168,7 @@ Precondition:
       } to_relational;
       // Symbol: drake::symbolic::to_true
       struct /* to_true */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:496
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Casts ``f_ptr`` to ``shared_ptr``<const FormulaTrue>.
 
@@ -5177,7 +5177,7 @@ Precondition:
       } to_true;
       // Symbol: drake::symbolic::to_variable
       struct /* to_variable */ {
-        // Source: drake/common/symbolic/expression/formula_cell.h:502
+        // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Casts ``f_ptr`` to ``shared_ptr``<const FormulaVar>.
 
@@ -5186,7 +5186,7 @@ Precondition:
       } to_variable;
       // Symbol: drake::symbolic::uninterpreted_function
       struct /* uninterpreted_function */ {
-        // Source: drake/common/symbolic/expression/expression.h:683
+        // Source: drake/common/symbolic/expression/expression.h
         const char* doc =
 R"""(Constructs an uninterpreted-function expression with ``name`` and
 ``arguments``. An uninterpreted function is an opaque function that

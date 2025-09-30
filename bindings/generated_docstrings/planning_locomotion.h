@@ -22,7 +22,7 @@ constexpr struct /* pydrake_doc_planning_locomotion */ {
     struct /* planning */ {
       // Symbol: drake::planning::ZmpPlanner
       struct /* ZmpPlanner */ {
-        // Source: drake/planning/locomotion/zmp_planner.h:71
+        // Source: drake/planning/locomotion/zmp_planner.h
         const char* doc =
 R"""(Given a desired two dimensional (X and Y) zero-moment point (ZMP)
 trajectory parameterized as a piecewise polynomial, an optimal center
@@ -81,7 +81,7 @@ stabilization," 2015 IEEE-RAS 15th International Conference on
 Humanoid Robots (Humanoids), Seoul, 2015, pp. 936-940.)""";
         // Symbol: drake::planning::ZmpPlanner::ComputeOptimalCoMdd
         struct /* ComputeOptimalCoMdd */ {
-          // Source: drake/planning/locomotion/zmp_planner.h:111
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc =
 R"""(Computes the optimal control (CoM acceleration) at ``time`` given CoM
 state ``x`` using the linear policy.
@@ -100,7 +100,7 @@ Precondition:
         } ComputeOptimalCoMdd;
         // Symbol: drake::planning::ZmpPlanner::Plan
         struct /* Plan */ {
-          // Source: drake/planning/locomotion/zmp_planner.h:93
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc =
 R"""(Implements the algorithm in [1] that computes a nominal CoM
 trajectory, and the corresponding second order value function and
@@ -133,12 +133,12 @@ Parameter ``R``:
         } Plan;
         // Symbol: drake::planning::ZmpPlanner::ZmpPlanner
         struct /* ctor */ {
-          // Source: drake/planning/locomotion/zmp_planner.h:73
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::planning::ZmpPlanner::comdd_to_cop
         struct /* comdd_to_cop */ {
-          // Source: drake/planning/locomotion/zmp_planner.h:124
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc =
 R"""(Converts CoM acceleration to center of pressure (CoP) using cop = C *
 x + D * u, which is equivalent to cop = com - z / g * comdd Should
@@ -158,7 +158,7 @@ Precondition:
         } comdd_to_cop;
         // Symbol: drake::planning::ZmpPlanner::get_A
         struct /* get_A */ {
-          // Source: drake/planning/locomotion/zmp_planner.h:134
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc =
 R"""(Getter for A matrix.
 
@@ -167,7 +167,7 @@ Precondition:
         } get_A;
         // Symbol: drake::planning::ZmpPlanner::get_B
         struct /* get_B */ {
-          // Source: drake/planning/locomotion/zmp_planner.h:143
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc =
 R"""(Getter for B matrix.
 
@@ -176,7 +176,7 @@ Precondition:
         } get_B;
         // Symbol: drake::planning::ZmpPlanner::get_C
         struct /* get_C */ {
-          // Source: drake/planning/locomotion/zmp_planner.h:152
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc =
 R"""(Getter for C matrix.
 
@@ -185,7 +185,7 @@ Precondition:
         } get_C;
         // Symbol: drake::planning::ZmpPlanner::get_D
         struct /* get_D */ {
-          // Source: drake/planning/locomotion/zmp_planner.h:161
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc =
 R"""(Getter for D matrix.
 
@@ -194,7 +194,7 @@ Precondition:
         } get_D;
         // Symbol: drake::planning::ZmpPlanner::get_Qy
         struct /* get_Qy */ {
-          // Source: drake/planning/locomotion/zmp_planner.h:170
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc =
 R"""(Getter for Qy matrix.
 
@@ -203,7 +203,7 @@ Precondition:
         } get_Qy;
         // Symbol: drake::planning::ZmpPlanner::get_R
         struct /* get_R */ {
-          // Source: drake/planning/locomotion/zmp_planner.h:179
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc =
 R"""(Getter for R matrix.
 
@@ -212,14 +212,14 @@ Precondition:
         } get_R;
         // Symbol: drake::planning::ZmpPlanner::get_Vx
         struct /* get_Vx */ {
-          // Source: drake/planning/locomotion/zmp_planner.h:286
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc =
 R"""(Returns the time varying first order term (s2 in [1]) of the value
 function.
 
 Precondition:
     Plan() has already been called.)""";
-          // Source: drake/planning/locomotion/zmp_planner.h:298
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc_at_time =
 R"""(Returns the time varying first order term (s2 in [1]) of the value
 function, evaluated at the given ``time``.
@@ -229,7 +229,7 @@ Precondition:
         } get_Vx;
         // Symbol: drake::planning::ZmpPlanner::get_Vxx
         struct /* get_Vxx */ {
-          // Source: drake/planning/locomotion/zmp_planner.h:277
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc =
 R"""(Returns the time invariant second order term (S1 in [1]) of the value
 function.
@@ -239,13 +239,13 @@ Precondition:
         } get_Vxx;
         // Symbol: drake::planning::ZmpPlanner::get_desired_zmp
         struct /* get_desired_zmp */ {
-          // Source: drake/planning/locomotion/zmp_planner.h:189
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc_at_time =
 R"""(Returns the desired ZMP evaluated at ``time``.
 
 Precondition:
     Plan() has already been called.)""";
-          // Source: drake/planning/locomotion/zmp_planner.h:237
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc =
 R"""(Returns the desired ZMP trajectory.
 
@@ -254,7 +254,7 @@ Precondition:
         } get_desired_zmp;
         // Symbol: drake::planning::ZmpPlanner::get_final_desired_zmp
         struct /* get_final_desired_zmp */ {
-          // Source: drake/planning/locomotion/zmp_planner.h:228
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc =
 R"""(Returns the position of the ZMP at the end of the desired trajectory.
 
@@ -263,13 +263,13 @@ Precondition:
         } get_final_desired_zmp;
         // Symbol: drake::planning::ZmpPlanner::get_nominal_com
         struct /* get_nominal_com */ {
-          // Source: drake/planning/locomotion/zmp_planner.h:199
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc_at_time =
 R"""(Returns the nominal CoM position evaluated at ``time``.
 
 Precondition:
     Plan() has already been called.)""";
-          // Source: drake/planning/locomotion/zmp_planner.h:247
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc =
 R"""(Returns the nominal CoM trajectory.
 
@@ -278,13 +278,13 @@ Precondition:
         } get_nominal_com;
         // Symbol: drake::planning::ZmpPlanner::get_nominal_comd
         struct /* get_nominal_comd */ {
-          // Source: drake/planning/locomotion/zmp_planner.h:209
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc_at_time =
 R"""(Returns the nominal CoM velocity evaluated at ``time``.
 
 Precondition:
     Plan() has already been called.)""";
-          // Source: drake/planning/locomotion/zmp_planner.h:257
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc =
 R"""(Returns the nominal CoM velocity trajectory.
 
@@ -293,13 +293,13 @@ Precondition:
         } get_nominal_comd;
         // Symbol: drake::planning::ZmpPlanner::get_nominal_comdd
         struct /* get_nominal_comdd */ {
-          // Source: drake/planning/locomotion/zmp_planner.h:219
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc_at_time =
 R"""(Returns the nominal CoM acceleration evaluated at ``time``.
 
 Precondition:
     Plan() has already been called.)""";
-          // Source: drake/planning/locomotion/zmp_planner.h:267
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc =
 R"""(Returns the nominal CoM acceleration trajectory.
 
@@ -308,7 +308,7 @@ Precondition:
         } get_nominal_comdd;
         // Symbol: drake::planning::ZmpPlanner::has_planned
         struct /* has_planned */ {
-          // Source: drake/planning/locomotion/zmp_planner.h:101
+          // Source: drake/planning/locomotion/zmp_planner.h
           const char* doc = R"""(Returns true if Plan() has been called.)""";
         } has_planned;
       } ZmpPlanner;
