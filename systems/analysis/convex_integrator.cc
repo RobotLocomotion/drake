@@ -216,11 +216,19 @@ bool ConvexIntegrator<T>::StepWithTrapezoidErrorEstimate(const T& h) {
     model_.MultiplyByDynamicsMatrix(v, &tau);  // Av − r = Jᵀγ = τ
     tau -= model_.params().r;
 
+    const T h0 = this->get_previous_integration_step_size();
+    if (!isfinite(h0)) {
+      // This is the first step, so we don't have previous impulses to use for
+      // error estimation. In this case, we'll advance the state using
+      // half-stepping instead. We've already recorded tau from the first step,
+      // so subsequent steps will be able to use the trapezoid strategy.
+      // TODO(vincekurtz): get rid of the redundant full-step solve.
+      return StepWithHalfSteppingErrorEstimate(h);
+    }
+
     // Recover the constraint impulses τₙ from the previous time step, taking
     // care to adjust for any difference in step size.
-    const T h0 = this->get_previous_integration_step_size();
-    const T scale = isfinite(h0) ? h / h0 : 1.0;
-    const VectorX<T> tau0 = scale * previous_impulse_;
+    const VectorX<T> tau0 = (h / h0) * previous_impulse_;
 
     // Compute a midpoint estimate of constraint impulses, τ̅ = (τₙ + τₙ₊₁) / 2.
     const VectorX<T> tau_bar = 0.5 * (tau0 + tau);
@@ -249,7 +257,6 @@ bool ConvexIntegrator<T>::StepWithTrapezoidErrorEstimate(const T& h) {
     AccelerationKinematicsCache<T>& ac = *scratch_.ac;
 
     const VectorX<T> diagonal_inertia =
-        plant().EvalReflectedInertiaCache(plant_context) +
         plant().EvalJointDampingCache(plant_context) * h;
     plant().CalcForceElementsContribution(plant_context, &forces);
     forces.mutable_generalized_forces() += tau_bar / h;
