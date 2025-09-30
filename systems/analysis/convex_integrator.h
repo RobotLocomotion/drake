@@ -19,6 +19,7 @@ namespace systems {
 
 using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
+using multibody::SpatialForce;
 using multibody::contact_solvers::internal::BlockSparseCholeskySolver;
 using multibody::contact_solvers::internal::BlockSparseSymmetricMatrixT;
 using multibody::contact_solvers::internal::BlockSparsityPattern;
@@ -26,6 +27,9 @@ using multibody::contact_solvers::pooled_sap::PooledSapBuilder;
 using multibody::contact_solvers::pooled_sap::PooledSapModel;
 using multibody::contact_solvers::pooled_sap::SapData;
 using multibody::contact_solvers::pooled_sap::SearchDirectionData;
+using multibody::internal::AccelerationKinematicsCache;
+using multibody::internal::ArticulatedBodyForceCache;
+using multibody::internal::ArticulatedBodyInertiaCache;
 
 /**
  * Tolerances and other parameters for the convex integrator's solver.
@@ -362,6 +366,12 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     // External forces
     std::unique_ptr<MultibodyForces<T>> f_ext;
 
+    // ABA-related intermediates
+    std::unique_ptr<ArticulatedBodyInertiaCache<T>> abic;
+    std::vector<SpatialForce<T>> Zb_Bo_W;
+    std::unique_ptr<ArticulatedBodyForceCache<T>> aba_forces;
+    std::unique_ptr<AccelerationKinematicsCache<T>> ac;
+
     // External system linearization
     VectorX<T> Ku;
     VectorX<T> bu;
@@ -397,6 +407,12 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   std::unique_ptr<ContinuousState<T>> x_next_half_1_;  // x_{t+h/2}
   std::unique_ptr<ContinuousState<T>> x_next_half_2_;  // x_{t+h/2+h/2}
   std::unique_ptr<ContinuousState<T>> z_dot_;          // Misc state derivs.
+
+  // Stored constraint impulses from the previous time step, for the trapezoid
+  // method. Note that we need to use a little buffer since we only want to
+  // store the result after a step is accepted by error control.
+  VectorX<T> previous_impulse_;
+  VectorX<T> previous_impulse_buffer_;
 };
 
 // Forward-declare specializations to double, prior to DRAKE_DECLARE... below.
