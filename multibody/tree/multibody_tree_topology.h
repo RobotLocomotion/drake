@@ -31,9 +31,6 @@ class MultibodyTreeTopology {
   // members of `other`.
   bool operator==(const MultibodyTreeTopology& other) const;
 
-  // Returns the number of levels in the forest topology.
-  int forest_height() const { return forest_height_; }
-
   // Returns the number of trees in the "forest" topology of the entire system.
   // We refer to as "tree" a subgraph in the topology having a tree structure
   // and whose base node connects to the world. The world does not belong to any
@@ -73,7 +70,6 @@ class MultibodyTreeTopology {
   // Returns the tree index for the v-th velocity.
   // @pre 0 <= v and v < num_velocities().
   TreeIndex velocity_to_tree_index(int v) const {
-    DRAKE_ASSERT(0 <= v && v < num_velocities());
     return velocity_to_tree_index_[v];
   }
 
@@ -107,38 +103,11 @@ class MultibodyTreeTopology {
   // @see FinalizeTopology()
   bool is_valid() const { return is_valid_; }
 
-  // Returns the total number of generalized positions in the model.
-  int num_positions() const { return num_positions_; }
-
-  // Returns the total number of generalized velocities in the model.
-  int num_velocities() const { return num_velocities_; }
-
-  // Returns the total size of the state vector in the model.
-  int num_states() const { return num_states_; }
-
-  // Returns the total number of actuated joint dofs in the model.
-  int num_actuated_dofs() const { return num_actuated_dofs_; }
-
  private:
-  // Helper method to be used within FinalizeTopology() to obtain the
-  // topological information that describes the multibody system as a "forest"
-  // of trees.
-  void ExtractForestInfo(const LinkJointGraph& graph);
-
   // is_valid is set to `true` after a successful FinalizeTopology().
   bool is_valid_{false};
-  // Number of levels in the full Forest topology. After FinalizeTopology()
-  // there will be at least one level (level = 0) with the world body.
-  int forest_height_{-1};
 
   // Topological elements:
-
-  // Total number of generalized positions and velocities in the MultibodyTree
-  // model.
-  int num_positions_{0};
-  int num_velocities_{0};
-  int num_states_{0};
-  int num_actuated_dofs_{0};
 
   // Number of generalized velocities for the t-th tree.
   std::vector<int> num_tree_velocities_;

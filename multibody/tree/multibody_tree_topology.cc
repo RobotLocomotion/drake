@@ -7,12 +7,6 @@ namespace internal {
 bool MultibodyTreeTopology::operator==(
     const MultibodyTreeTopology& other) const {
   if (is_valid_ != other.is_valid_) return false;
-  if (forest_height_ != other.forest_height_) return false;
-
-  if (num_positions_ != other.num_positions_) return false;
-  if (num_velocities_ != other.num_velocities_) return false;
-  if (num_states_ != other.num_states_) return false;
-  if (num_actuated_dofs_ != other.num_actuated_dofs_) return false;
 
   if (num_tree_velocities_ != other.num_tree_velocities_) return false;
   if (tree_velocities_start_in_v_ != other.tree_velocities_start_in_v_)
@@ -46,25 +40,6 @@ void MultibodyTreeTopology::FinalizeTopology(const LinkJointGraph& graph) {
 
   const SpanningForest& forest = graph.forest();
 
-  num_positions_ = forest.num_positions();
-  num_velocities_ = forest.num_velocities();
-  num_states_ = num_positions_ + num_velocities_;
-
-  ExtractForestInfo(graph);
-
-  // We are done with a successful Finalize() and we mark it as so.
-  // Do not add any more code after this!
-  is_valid_ = true;
-}
-
-// TODO(sherm1) Currently this copies from the graph and forest into the
-//  previous data structures, to establish that we are computing the same
-//  quantities. Once this works, should switch to using the forest data
-//  directly and cut out the redundant data structures.
-void MultibodyTreeTopology::ExtractForestInfo(const LinkJointGraph& graph) {
-  const SpanningForest& forest = graph.forest();
-  forest_height_ = forest.height();
-
   const SpanningForest::Mobod& root = forest.mobods(MobodIndex(0));
   DRAKE_DEMAND(ssize(root.outboards()) == ssize(forest.trees()));
 
@@ -90,6 +65,10 @@ void MultibodyTreeTopology::ExtractForestInfo(const LinkJointGraph& graph) {
     // The tree index will be invalid for World.
     rigid_body_to_tree_index_[link.index()] = forest.link_to_tree(link.index());
   }
+
+  // We are done with a successful Finalize() and we mark it as so.
+  // Do not add any more code after this!
+  is_valid_ = true;
 }
 
 }  // namespace internal

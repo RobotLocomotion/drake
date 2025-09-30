@@ -358,8 +358,6 @@ class TreeTopologyTests : public ::testing::Test {
                              const SpanningForest& forest) {
     const int kNumRigidBodies = 10;
 
-    EXPECT_EQ(topology.forest_height(), 4);
-
     EXPECT_EQ(forest.num_links(), kNumRigidBodies);
     EXPECT_EQ(forest.num_mobods(), kNumRigidBodies);
     EXPECT_EQ(forest.height(), 4);
@@ -474,7 +472,7 @@ class TreeTopologyTests : public ::testing::Test {
         {3, TreeIndex(3)}, {4, TreeIndex(3)}, {5, TreeIndex(3)},
         {6, TreeIndex(3)}};
 
-    EXPECT_EQ(topology.num_velocities(), 7);
+    EXPECT_EQ(forest.num_velocities(), 7);
     for (const auto& [velocity_index, tree_index] : expected_velocity_to_tree) {
       EXPECT_EQ(topology.velocity_to_tree_index(velocity_index), tree_index);
     }
@@ -505,8 +503,6 @@ TEST_F(TreeTopologyTests, Finalize) {
   const MultibodyTreeTopology& topology = model_->get_topology();
   const SpanningForest& forest = model_->forest();
 
-  EXPECT_EQ(topology.forest_height(), 4);
-
   EXPECT_EQ(forest.num_mobods(), 10);
   EXPECT_EQ(forest.height(), 4);
 
@@ -521,15 +517,7 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
   EXPECT_EQ(model_->num_mobilizers(), 10);
   EXPECT_EQ(model_->num_joints(), 9);
 
-  // TODO(sherm1) First make sure topology and forest agree, then nuke the
-  //  old topology code.
-  const MultibodyTreeTopology& topology = model_->get_topology();
   const SpanningForest& forest = model_->forest();
-
-  EXPECT_EQ(topology.forest_height(), 4);
-  EXPECT_EQ(topology.num_positions(), 7);
-  EXPECT_EQ(topology.num_velocities(), 7);
-  EXPECT_EQ(topology.num_states(), 14);
 
   EXPECT_EQ(forest.num_mobods(), 10);
   EXPECT_EQ(forest.height(), 4);
@@ -552,8 +540,8 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
     positions_index += mobod.nq();
     velocities_index += mobod.nv();
   }
-  EXPECT_EQ(positions_index, topology.num_positions());
-  EXPECT_EQ(velocities_index, topology.num_velocities());
+  EXPECT_EQ(positions_index, forest.num_positions());
+  EXPECT_EQ(velocities_index, forest.num_velocities());
 }
 
 // Verifies that the clone of a given MultibodyTree model created with
