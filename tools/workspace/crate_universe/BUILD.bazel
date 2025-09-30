@@ -4,9 +4,8 @@ load(
     "crates_vendor",
     "render_config",
 )
-load("//tools/install:install.bzl", "install", "install_license")
+load("//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/workspace/crate_universe:lock/archives.bzl", "ARCHIVES")
 
 exports_files(glob(["lock/**"]))
 
@@ -33,27 +32,10 @@ crates_vendor(
     vendor_path = "lock/details",
 )
 
-# Install the license files for all crates.
-ARCHIVE_NAMES = [archive["name"] for archive in ARCHIVES]
-
-[
-    install_license(
-        name = "install_{}".format(name),
-        doc_dest = "share/doc/{}".format(name),
-        licenses = [
-            "@{}//:license".format(name),
-        ],
-    )
-    for name in ARCHIVE_NAMES
-]
-
 install(
     name = "install",
     visibility = ["//visibility:public"],
-    deps = [
-        "install_{}".format(name)
-        for name in ARCHIVE_NAMES
-    ],
+    deps = ["@crate_licenses//:install"],
 )
 
 add_lint_tests()
