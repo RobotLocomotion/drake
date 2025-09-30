@@ -1500,6 +1500,12 @@ class IntegratorBase {
    */
   virtual bool DoStep(const T& h) = 0;
 
+  /**
+   Derived classes can override this method to perform special
+   processing after each successful step. This default method does nothing.
+   */
+  virtual void PostSuccessfulStepCallback(const T&) {}
+
   // TODO(russt): Allow subclasses to override the interpolation scheme used, as
   // the 'optimal' dense output scheme is only known by the specific integration
   // scheme being implemented.

@@ -290,6 +290,15 @@ bool ConvexIntegrator<T>::StepWithTrapezoidErrorEstimate(const T& h) {
 }
 
 template <typename T>
+void ConvexIntegrator<T>::PostSuccessfulStepCallback(const T&) {
+  if (solver_parameters_.error_estimation_strategy == "trapezoid") {
+    // Record impulses τₙ₊₁ from this successful step, for use as τₙ in the
+    // next step.
+    previous_impulse_ = previous_impulse_buffer_;
+  }
+}
+
+template <typename T>
 void ConvexIntegrator<T>::ComputeNextContinuousState(const T& h,
                                                      const VectorX<T>& v_guess,
                                                      ContinuousState<T>* x_next,

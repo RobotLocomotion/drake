@@ -262,6 +262,10 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // for error estimation. This requires only 1 SAP solve.
   bool StepWithTrapezoidErrorEstimate(const T& h);
 
+  // After a successful step, record the constraint impulses J(q)'γ(q, v) for
+  // use in the next time step (with the explicit trapezoid method).
+  void PostSuccessfulStepCallback(const T& h) final;
+
   // Solve the SAP problem to compute x_{t+h} at a given step size. This will be
   // called multiple times for each DoStep to compute the error estimate.
   //
