@@ -40,10 +40,11 @@ namespace drake {
 namespace solvers {
 namespace {
 
-// Returns the (base) URL for Gurobi's online reference manual.
+// Returns the base URL for Gurobi's online reference manual.
 std::string refman() {
-  return fmt::format("https://www.gurobi.com/documentation/{}.{}/refman",
-                     GRB_VERSION_MAJOR, GRB_VERSION_MINOR);
+  return fmt::format(
+      "https://www.docs.gurobi.com/projects/optimizer/en/{}.{}/reference",
+      GRB_VERSION_MAJOR, GRB_VERSION_MINOR);
 }
 
 // Information to be passed through a Gurobi C callback to
@@ -1058,7 +1059,7 @@ void GurobiSolver::DoSolve2(const MathematicalProgram& prog,
             fmt::format("{}.{}", GRB_VERSION_MAJOR, GRB_VERSION_MINOR);
         throw std::runtime_error(fmt::format(
             "GurobiSolver(): setting GRBwrite to {}, this is not supported. "
-            "Check {}/py_model_write.html for more details.",
+            "Check {}/python/model.html#Write for more details.",
             grb_write.value(), refman()));
       }
     }
