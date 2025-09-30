@@ -342,7 +342,11 @@ def run_simulation(
     simulator = Simulator(diagram, context)
     ApplySimulatorConfig(config, simulator)
     if config.integration_scheme == "convex":
-        simulator.get_mutable_integrator().set_plant(plant)
+        ci = simulator.get_mutable_integrator()
+        ci.set_plant(plant)
+        ci_params = ci.get_solver_parameters()
+        ci_params.error_estimation_strategy = "half_stepping"
+        ci.set_solver_parameters(ci_params)
     meshcat.StartRecording()
     simulator.Initialize()
 
@@ -380,8 +384,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--accuracy",
         type=float,
-        default=0.1,
-        help="The accuracy to use. default: 0.1",
+        default=1e-3,
+        help="The accuracy to use. default: 1e-3",
     )
     parser.add_argument(
         "--no_error_control",
