@@ -1,0 +1,14 @@
+# -*- bazel -*-
+
+# This file is the BUILD file for @glib//glib (the `glib` subdirectory, not the
+# top-level `@glib` directory).
+
+package(default_visibility = ["//visibility:public"])
+
+# Provide @glib//glib as an alias for the pkg-config library. The former is the
+# name given to the glib cc_library by the bzlmod glib module, which we want to
+# remain compatible with.
+alias(
+    name = "glib",
+    actual = "//:pkgconfig_glib_internal",
+)
