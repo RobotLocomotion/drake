@@ -307,8 +307,11 @@ QuaternionFloatingMobilizer<T>::QuaternionRateToAngularVelocityMatrix(
   // returns, it is ready to multiply by q̇_FM to produce w_FM_F.
   // q̇_unit = ( [I₄₄] - q_unit * q_unitᵀ) * q̇_FM
   //        = dqnorm_dq * q̇_FM
-  const Matrix4<T> dqnorm_dq =
-      (Matrix4<T>::Identity() - q_unit * q_unit.transpose()) / q_norm;
+  // TODO(Mitiguy) Is the 2nd term of dqnorm_dq necessary?  Note: If
+  //  q_unit * q_unit.transpose() multiplies qdot, the result is zero.
+  /* const Matrix4<T> dqnorm_dq =
+      (Matrix4<T>::Identity() - q_unit * q_unit.transpose()) / q_norm; */
+  const Matrix4<T> dqnorm_dq = Matrix4<T>::Identity() / q_norm;
 
   // From documentation in CalcQMatrix(), Nᵣ⁺(q_unit) = 2 * Q(q_unit)ᵀ.
   const Eigen::Matrix<T, 3, 4> NrPlus_q_unit = CalcTwoTimesQMatrixTranspose(
