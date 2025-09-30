@@ -13,7 +13,7 @@ namespace systems {
 // clang-format off
 /**
  A fifth-order, seven-stage, first-same-as-last (FSAL) Runge Kutta integrator
- with a fourth order error estimate.
+ with a fifth order error estimate.
 
  For a discussion of this Runge-Kutta method, see [Dormand, 1980] and
  [Hairer, 1993]. The embedded error estimate was derived as described
@@ -71,7 +71,7 @@ class RungeKutta5Integrator final : public IntegratorBase<T> {
   bool supports_error_estimation() const override { return true; }
 
   /// The order of the asymptotic term in the error estimate.
-  int get_error_estimate_order() const override { return 4; }
+  int get_error_estimate_order() const override { return 5; }
 
  private:
   void DoInitialize() override;
