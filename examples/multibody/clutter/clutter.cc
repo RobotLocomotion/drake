@@ -133,7 +133,7 @@ DEFINE_double(
 DEFINE_double(tolerance, 1e-8, "Main solver tolerance");
 DEFINE_string(error_estimation_strategy, "half_stepping",
               "Error estimation strategy for the convex integrator. "
-              "Options are: 'half_stepping', 'sdirk', 'implicit_trapezoid'.");
+              "Options are: 'half_stepping', 'trapezoid'.");
 
 using drake::geometry::CollisionFilterDeclaration;
 using drake::math::RigidTransform;
