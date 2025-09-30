@@ -383,12 +383,12 @@ TEST_F(QuaternionFloatingMobilizerTest, MapUsesNplus) {
 TEST_F(QuaternionFloatingMobilizerTest, MapVelocityToQDotAndViceVersa) {
   // Set an arbitrary non-zero state, but with a non-unit quaternion.
   // Test with both a unnormalized and normalized quaternion q_FM.
-  const Quaternion<double> q_nonUnit(0.7, 0.8, 0.9, -1.2);   // Unnormalized.
-  const Quaternion<double> q_unit = q_nonUnit.normalized();  // Unit quaternion.
+  const Quaternion<double> qr_nonUnit(0.7, 0.8, 0.9, -1.2);    // Unnormalized.
+  const Quaternion<double> qr_unit = qr_nonUnit.normalized();  // Normalized.
   const Vector3<double> wxyz(5.4, -9.8, 3.2);
   const Vector3<double> vxyz(0.2, 0.5, -0.87);
   const Vector6<double> v(wxyz[0], wxyz[1], wxyz[2], vxyz[0], vxyz[1], vxyz[2]);
-  mobilizer_->SetQuaternion(context_.get(), q_unit);
+  mobilizer_->SetQuaternion(context_.get(), qr_unit);
   mobilizer_->SetAngularVelocity(context_.get(), wxyz);
   mobilizer_->SetTranslationalVelocity(context_.get(), vxyz);
 
@@ -407,15 +407,15 @@ TEST_F(QuaternionFloatingMobilizerTest, MapVelocityToQDotAndViceVersa) {
   // satisfies the time-derivative of the quaternion constraint.
   // Mathematically: (qᵣ)ᵀ * qᵣ = constant, so it should be true that
   // (q̇ᵣ)ᵀ * qᵣ + (qᵣ)ᵀ * q̇ᵣ = 2 * (qᵣ)ᵀ * q̇ᵣ = 0. Due to the fact that q̇ᵣ is
-  // calculated as q̇ᵣ = Nᵣ * vᵣ, we can prove this is true. Double check here.
+  // computed as q̇ᵣ = Nᵣ * vᵣ, we can prove this is true. We double check here.
   const Vector4<double> qrdot_unit(qdot_unit[0], qdot_unit[1], qdot_unit[2],
                                    qdot_unit[3]);
   double is_zero_if_OK_qdot =
-      math::CalculateQuaternionDtConstraintViolation(q_unit, qrdot_unit);
+      math::CalculateQuaternionDtConstraintViolation(qr_unit, qrdot_unit);
   EXPECT_TRUE(std::abs(is_zero_if_OK_qdot) < 16 * kTolerance);
 
   // Repeat the previous calculations with a non-unit quaternion.
-  mobilizer_->SetQuaternion(context_.get(), q_nonUnit);
+  mobilizer_->SetQuaternion(context_.get(), qr_nonUnit);
   Eigen::Matrix<double, 7, 1> qdot_nonUnit;  // Calculate qdot using q_nonUnit.
   mobilizer_->MapVelocityToQDot(*context_, v, &qdot_nonUnit);
   Vector6<double> v_from_qdot_nonUnit;
@@ -425,18 +425,28 @@ TEST_F(QuaternionFloatingMobilizerTest, MapVelocityToQDotAndViceVersa) {
   const Vector4<double> qrdot_nonUnit(qdot_nonUnit[0], qdot_nonUnit[1],
                                       qdot_nonUnit[2], qdot_nonUnit[3]);
   is_zero_if_OK_qdot =
-      math::CalculateQuaternionDtConstraintViolation(q_unit, qrdot_nonUnit);
+      math::CalculateQuaternionDtConstraintViolation(qr_unit, qrdot_nonUnit);
   EXPECT_TRUE(std::abs(is_zero_if_OK_qdot) < 16 * kTolerance);
 
   // Verify qrdot_nonUnit = |qr_nonUnit| * qrdot_unit.
-  const double s = q_nonUnit.norm();
+  const double s = qr_nonUnit.norm();
   EXPECT_TRUE(CompareMatrices(qrdot_nonUnit, s * qrdot_unit, 16 * kTolerance,
                               MatrixCompareType::relative));
 
   // Verify vr_from_qdot_nonUnit = vr_from_qdot_unit.
-  const Vector3<double> vr_from_qdot_nonUnit = v_from_qdot_nonUnit.head(3);
-  const Vector3<double> vr_from_qdot_unit = v_from_qdot_unit.head(3);
+  Vector3<double> vr_from_qdot_nonUnit = v_from_qdot_nonUnit.head(3);
+  Vector3<double> vr_from_qdot_unit = v_from_qdot_unit.head(3);
   EXPECT_TRUE(CompareMatrices(vr_from_qdot_nonUnit, vr_from_qdot_unit,
+                              16 * kTolerance, MatrixCompareType::relative));
+
+  // Verify that if qrdot_nonUnit = scalar * qr_nonUnit, where scalar is a
+  // real number, that angular velocity vr_from_qdot_nonUnit = [0 0 0].
+  // Note: The proof of this uses the fact that Nᵣ⁺ * qᵣ = 0.
+  qdot_nonUnit.head(4) = 5.67 * Vector4<double>(qr_nonUnit.w(), qr_nonUnit.x(),
+                                                qr_nonUnit.y(), qr_nonUnit.z());
+  mobilizer_->MapQDotToVelocity(*context_, qdot_nonUnit, &v_from_qdot_nonUnit);
+  vr_from_qdot_nonUnit = v_from_qdot_nonUnit.head(3);  // Angular velocity.
+  EXPECT_TRUE(CompareMatrices(vr_from_qdot_nonUnit, Vector3<double>::Zero(),
                               16 * kTolerance, MatrixCompareType::relative));
 }
 
