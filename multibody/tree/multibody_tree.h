@@ -567,7 +567,7 @@ class MultibodyTree {
   // Kinematic paths are created by Mobilizer objects connecting a chain of
   // frames. Therefore, this method does not count kinematic cycles, which
   // could only be considered in the model using constraints.
-  int forest_height() const { return topology_.forest_height(); }
+  int forest_height() const { return forest().height(); }
 
   // Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {

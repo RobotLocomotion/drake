@@ -1687,7 +1687,7 @@ void MultibodyTree<T>::CalcSpatialAccelerationsFromVdot(
   DRAKE_DEMAND(A_WB_array != nullptr);
   DRAKE_DEMAND(ssize(*A_WB_array) == num_mobods());
 
-  DRAKE_DEMAND(known_vdot.size() == topology_.num_velocities());
+  DRAKE_DEMAND(known_vdot.size() == forest().num_velocities());
 
   const auto& frame_body_pose_cache = EvalFrameBodyPoses(context);
   const auto& pc = EvalPositionKinematics(context);
@@ -1721,7 +1721,7 @@ void MultibodyTree<T>::CalcAccelerationKinematicsCache(
     const VelocityKinematicsCache<T>& vc, const VectorX<T>& known_vdot,
     AccelerationKinematicsCache<T>* ac) const {
   DRAKE_DEMAND(ac != nullptr);
-  DRAKE_DEMAND(known_vdot.size() == topology_.num_velocities());
+  DRAKE_DEMAND(known_vdot.size() == forest().num_velocities());
 
   std::vector<SpatialAcceleration<T>>& A_WB_array = ac->get_mutable_A_WB_pool();
 
