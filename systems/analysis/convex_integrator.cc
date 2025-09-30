@@ -208,76 +208,69 @@ bool ConvexIntegrator<T>::StepWithTrapezoidErrorEstimate(const T& h) {
   // linearization after a step has been rejected.
   ComputeNextContinuousState(h, v0, &x, false, false);
 
-  // Extract the constraint impulses τₙ₊₁ = Jₙᵀγₙ₊₁ from the first-order step,
-  // and save them for later.
-  VectorX<T>& tau = previous_impulse_buffer_;
-  const VectorX<T> v = x.get_generalized_velocity().CopyToVector();
-  model_.MultiplyByDynamicsMatrix(v, &tau);  // Av − r = Jᵀγ
-  tau -= model_.params().r;
-
-  // Recover the constraint impulses τₙ from the previous time step, taking
-  // care to adjust for any difference in step size.
-  const T h0 = this->get_previous_integration_step_size();
-  const T scale = isfinite(h0) && h0 > 0.0 ? h / h0 : 1.0;
-  const VectorX<T> tau0 = scale * previous_impulse_;
-
-  // Compute a midpoint estimate of constraint impulses, τ̅ = (τₙ + τₙ₊₁) / 2.
-  const VectorX<T> tau_bar = 0.5 * (tau0 + tau);
-
-  // Store x̅ = (xₙ + xₙ₊₁) / 2 in the context. This will allow us to compute
-  // midpoint estimates of multibody dynamics quantities like M̅ = M(q̅).
-  const VectorX<T> x_bar = 0.5 * (x0.CopyToVector() + x.CopyToVector());
-  this->get_mutable_context()->get_mutable_continuous_state().SetFromVector(
-      x_bar);
-
-  // Compute a second-order velocity estimate
-  //    M̅(v̂ₙ₊₁ − vₙ) + h k̅ = τ̅ .
-  // We can do this in O(n) with the Articulated Body Algorithm by solving for
-  // accelerations
-  //    M̅ v̇ + k̅ = τ̅ / h,
-  // where
-  //    v̇ = (v̂ₙ₊₁ − vₙ) / h.
-  // Since x̅ is already stored in the context, we can just use MultibodyPlant
-  // APIs for this, and avoid constructing M̅ and k̅ explicitly.
-  const Context<T>& plant_context =
-      plant().GetMyContextFromRoot(this->get_context());
-  MultibodyForces<T>& forces = *scratch_.f_ext;
-  ArticulatedBodyInertiaCache<T>& abic = *scratch_.abic;
-  std::vector<SpatialForce<T>>& Zb_Bo_W = scratch_.Zb_Bo_W;
-  ArticulatedBodyForceCache<T>& aba_forces = *scratch_.aba_forces;
-  AccelerationKinematicsCache<T>& ac = *scratch_.ac;
-
-  const VectorX<T> diagonal_inertia =
-      plant().EvalReflectedInertiaCache(plant_context) +
-      plant().EvalJointDampingCache(plant_context) * h;
-  plant().CalcForceElementsContribution(plant_context, &forces);
-  forces.mutable_generalized_forces() += tau_bar / h;
-  plant().internal_tree().CalcArticulatedBodyInertiaCache(
-      plant_context, diagonal_inertia, &abic);
-  plant().internal_tree().CalcArticulatedBodyForceBias(plant_context, abic,
-                                                       &Zb_Bo_W);
-  plant().internal_tree().CalcArticulatedBodyForceCache(
-      plant_context, abic, Zb_Bo_W, forces, &aba_forces);
-  plant().internal_tree().CalcArticulatedBodyAccelerations(plant_context, abic,
-                                                           aba_forces, &ac);
-
-  const VectorX<T>& vdot = ac.get_vdot();
-  VectorX<T>& v_hat = scratch_.v;
-  v_hat = h * vdot + v0;
-
-  // Compute the second-order position update, ̂q = q₀ + h N(q̅) (̂v + v₀) / 2
-  VectorX<T>& q_hat = scratch_.q;
-  plant().MapVelocityToQDot(plant_context, h * (v_hat + v0) / 2.0, &q_hat);
-  q_hat += q0;
-
-  // Propagate the first-order solution
-  this->get_mutable_context()
-      ->get_mutable_continuous_state()
-      .get_mutable_vector()
-      .SetFrom(x.get_vector());
-  this->get_mutable_context()->SetTime(t0 + h);
-
   if (!this->get_fixed_step_mode()) {
+    // Extract the constraint impulses τₙ₊₁ = Jₙᵀγₙ₊₁ from the first-order step,
+    // and save them for later.
+    VectorX<T>& tau = previous_impulse_buffer_;
+    const VectorX<T> v = x.get_generalized_velocity().CopyToVector();
+    model_.MultiplyByDynamicsMatrix(v, &tau);  // Av − r = Jᵀγ = τ
+    tau -= model_.params().r;
+
+    // Recover the constraint impulses τₙ from the previous time step, taking
+    // care to adjust for any difference in step size.
+    const T h0 = this->get_previous_integration_step_size();
+    const T scale = isfinite(h0) ? h / h0 : 1.0;
+    const VectorX<T> tau0 = scale * previous_impulse_;
+
+    // Compute a midpoint estimate of constraint impulses, τ̅ = (τₙ + τₙ₊₁) / 2.
+    const VectorX<T> tau_bar = 0.5 * (tau0 + tau);
+
+    // Store x̅ = (xₙ + xₙ₊₁) / 2 in the context. This will allow us to compute
+    // midpoint estimates of multibody dynamics quantities like M̅ = M(q̅).
+    const VectorX<T> x_bar = 0.5 * (x0.CopyToVector() + x.CopyToVector());
+    this->get_mutable_context()->get_mutable_continuous_state().SetFromVector(
+        x_bar);
+
+    // Compute a second-order velocity estimate
+    //    M̅(v̂ₙ₊₁ − vₙ) + h k̅ = τ̅ .
+    // We can do this in O(n) with the Articulated Body Algorithm by solving for
+    // accelerations
+    //    M̅ v̇ + k̅ = τ̅ / h,
+    // where
+    //    v̇ = (v̂ₙ₊₁ − vₙ) / h.
+    // Since x̅ is already stored in the context, we can just use MultibodyPlant
+    // APIs for this, and avoid constructing M̅ and k̅ explicitly.
+    const Context<T>& plant_context =
+        plant().GetMyContextFromRoot(this->get_context());
+    MultibodyForces<T>& forces = *scratch_.f_ext;
+    ArticulatedBodyInertiaCache<T>& abic = *scratch_.abic;
+    std::vector<SpatialForce<T>>& Zb_Bo_W = scratch_.Zb_Bo_W;
+    ArticulatedBodyForceCache<T>& aba_forces = *scratch_.aba_forces;
+    AccelerationKinematicsCache<T>& ac = *scratch_.ac;
+
+    const VectorX<T> diagonal_inertia =
+        plant().EvalReflectedInertiaCache(plant_context) +
+        plant().EvalJointDampingCache(plant_context) * h;
+    plant().CalcForceElementsContribution(plant_context, &forces);
+    forces.mutable_generalized_forces() += tau_bar / h;
+    plant().internal_tree().CalcArticulatedBodyInertiaCache(
+        plant_context, diagonal_inertia, &abic);
+    plant().internal_tree().CalcArticulatedBodyForceBias(plant_context, abic,
+                                                         &Zb_Bo_W);
+    plant().internal_tree().CalcArticulatedBodyForceCache(
+        plant_context, abic, Zb_Bo_W, forces, &aba_forces);
+    plant().internal_tree().CalcArticulatedBodyAccelerations(
+        plant_context, abic, aba_forces, &ac);
+
+    const VectorX<T>& vdot = ac.get_vdot();
+    VectorX<T>& v_hat = scratch_.v;
+    v_hat = h * vdot + v0;
+
+    // Compute the second-order position update, ̂q = q₀ + h N(q̅) (̂v + v₀) / 2
+    VectorX<T>& q_hat = scratch_.q;
+    plant().MapVelocityToQDot(plant_context, h * (v_hat + v0) / 2.0, &q_hat);
+    q_hat += q0;
+
     // Estimate the error as the difference between the first and second-order
     // solutions.
     ContinuousState<T>& err = *this->get_mutable_error_estimate();
@@ -285,6 +278,13 @@ bool ConvexIntegrator<T>::StepWithTrapezoidErrorEstimate(const T& h) {
     err.get_mutable_generalized_velocity().SetFromVector(v_hat);
     err.get_mutable_vector().PlusEqScaled(-1.0, x.get_vector());
   }
+
+  // Propagate the first-order solution
+  this->get_mutable_context()
+      ->get_mutable_continuous_state()
+      .get_mutable_vector()
+      .SetFrom(x.get_vector());
+  this->get_mutable_context()->SetTime(t0 + h);
 
   return true;  // step was successful
 }
