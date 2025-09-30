@@ -163,9 +163,19 @@ template <typename T>
 void MultibodyTree<T>::RemoveJointActuator(const JointActuator<T>& actuator) {
   DRAKE_MBT_THROW_IF_FINALIZED();
   actuator.HasThisParentTreeOrThrow(this);
+  const int num_dofs_removed = actuator.num_inputs();
   JointActuatorIndex actuator_index = actuator.index();
   actuators_.Remove(actuator_index);
-  topology_.RemoveJointActuatorTopology(actuator_index);
+  num_actuated_dofs_ -= num_dofs_removed;
+
+  // We have to adjust the dof-start allocation for all the higher-index
+  // actuators.
+  for (JointActuatorIndex i(actuator_index); i < actuators_.next_index(); ++i) {
+    if (!actuators_.has_element(i)) continue;  // Skip removed actuators.
+    JointActuator<T>& fixup_actuator = actuators_.get_mutable_element(i);
+    fixup_actuator.set_actuator_dof_start(fixup_actuator.input_start() -
+                                          num_dofs_removed);
+  }
 }
 
 template <typename T>
@@ -4136,6 +4146,8 @@ std::unique_ptr<MultibodyTree<ToScalar>> MultibodyTree<T>::CloneToScalar()
   for (const JointActuator<T>* actuator : actuators_.elements()) {
     tree_clone->CloneActuatorAndAdd(*actuator);
   }
+
+  tree_clone->num_actuated_dofs_ = this->num_actuated_dofs_;
 
   // We can safely make a deep copy here since the original multibody tree is
   // required to be finalized.

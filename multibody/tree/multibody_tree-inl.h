@@ -281,7 +281,8 @@ const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
   // if the JointActuator constructor throws our state will still be valid.
   auto actuator = std::make_unique<JointActuator<T>>(name, joint, effort_limit);
   const JointActuatorIndex actuator_index(actuators_.next_index());
-  topology_.add_joint_actuator_topology(actuator_index, joint.num_velocities());
+  actuator->set_actuator_dof_start(num_actuated_dofs_);
+  num_actuated_dofs_ += joint.num_velocities();
   actuator->set_parent_tree(this, actuator_index);
   return actuators_.Add(std::move(actuator));
 }
