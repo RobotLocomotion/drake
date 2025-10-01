@@ -5,7 +5,7 @@ import unittest
 
 import numpy as np
 
-from pydrake.common.value import AbstractValue, Value
+from pydrake.common.value import Value
 from pydrake.systems.sensors import CameraInfo, PixelType
 from pydrake.systems.framework import InputPort, OutputPort
 
@@ -96,7 +96,7 @@ class TestPerception(unittest.TestCase):
         self.assertFalse(rgb_pc.has_rgbs())
         self.assertTrue(rgb_pc.has_normals())
         # - Check for none.
-        with self.assertRaises(RuntimeError) as ex:
+        with self.assertRaises(RuntimeError):
             mut.PointCloud(new_size=0, fields=mut.Fields(mut.BaseField.kNone))
         # Test Systems' value registration.
         self.assertIsInstance(Value(pc), Value[mut.PointCloud])

@@ -8,36 +8,30 @@ an internal verbose option.
 import dataclasses
 import functools
 import gc
-import platform
-import sys
 import textwrap
 import unittest
 import weakref
 
-from pydrake.planning import RobotDiagramBuilder
-from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import DiagramBuilder, LeafSystem
-from pydrake.systems.primitives import ConstantVectorSource
-
 from pydrake.common import RandomGenerator
 from pydrake.common.schema import Rotation, Transform
 from pydrake.common.test_utilities.memory_test_util import actual_ref_count
+from pydrake.geometry import Meshcat, SceneGraphConfig
 from pydrake.lcm import DrakeLcmParams
-from pydrake.geometry import Meshcat
 from pydrake.manipulation import ApplyDriverConfigs, IiwaDriver
-from pydrake.geometry import SceneGraphConfig
 from pydrake.multibody.plant import AddMultibodyPlant, MultibodyPlantConfig
 from pydrake.multibody.parsing import (
     LoadModelDirectivesFromString,
     ProcessModelDirectives,
 )
+from pydrake.planning import RobotDiagramBuilder
 from pydrake.systems.analysis import (
     ApplySimulatorConfig,
     Simulator,
     SimulatorConfig,
 )
-from pydrake.systems.framework import DiagramBuilder
+from pydrake.systems.framework import DiagramBuilder, LeafSystem
 from pydrake.systems.lcm import ApplyLcmBusConfig
+from pydrake.systems.primitives import ConstantVectorSource
 from pydrake.systems.sensors import ApplyCameraConfig, CameraConfig
 from pydrake.visualization import ApplyVisualizationConfig, VisualizationConfig
 
