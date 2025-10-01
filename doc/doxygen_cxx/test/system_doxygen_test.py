@@ -1,4 +1,3 @@
-import re
 from textwrap import dedent, indent
 import unittest
 

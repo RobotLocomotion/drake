@@ -5,7 +5,6 @@ For instructions, see https://drake.mit.edu/documentation_instructions.html.
 """
 
 import os
-import tempfile
 
 from doc.defs import (
     check_call,

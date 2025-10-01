@@ -7,7 +7,7 @@ import os
 from os.path import join
 import sys
 
-import pydrake._all_everything
+import pydrake._all_everything  # noqa: F401
 from pydrake.common import _MangledName
 
 from doc.defs import (

@@ -11,7 +11,6 @@ For guidance, see:
 # important to be user-visible.
 
 
-from collections import namedtuple
 import re
 from textwrap import indent
 from typing import Any, Tuple
