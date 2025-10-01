@@ -28,9 +28,6 @@ drake_py_library(
     srcs = ["install_test_helper.py"],
     data = ["//:install"],
     imports = ["."],
-    deps = [
-        "@rules_python//python/runfiles",
-    ],
 )
 
 exports_files(

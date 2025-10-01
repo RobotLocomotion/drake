@@ -6,8 +6,6 @@ import subprocess
 import sys
 import unittest
 
-from python import runfiles
-
 import install_test_helper
 
 
