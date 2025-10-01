@@ -18,7 +18,7 @@ class _EqualityProxyBase:
         return hash(self._value)
 
     def __eq__(self, other):
-        raise NotImplemented("Abstract method")
+        raise NotImplementedError("Abstract method")
 
     value = property(_get_value)
 

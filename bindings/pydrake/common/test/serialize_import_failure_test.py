@@ -10,7 +10,7 @@ class TestSerializeImportFailure(unittest.TestCase):
         # Bar has a field of type Foo, but forgot to py::module::import it.
         # This is an error.
         with self.assertRaises(ImportError) as cm:
-            from pydrake.common.test.serialize_test_bar import Bar
+            from pydrake.common.test.serialize_test_bar import Bar  # noqa: F401
         message = str(cm.exception)
         self.assertIn("an import is missing", message)
         self.assertIn("drake::pydrake::test::Foo", message)

@@ -6,11 +6,9 @@ import math
 from math import inf, nan
 import os
 from pathlib import Path
-import sys
 from textwrap import dedent
 import typing
 import unittest
-import yaml
 
 import numpy as np
 
@@ -843,7 +841,6 @@ class TestYamlTypedRead(unittest.TestCase,
           inner_value: 2.0
         """)
         x = yaml_load_typed(schema=OuterStruct, data=data, **options)
-        expected = dict(foo=0.0, bar=1.0)
         self.assertEqual(x, OuterStruct(1.0, InnerStruct(2.0)))
 
     # TODO(jwnimmer-tri) Add a test case similar to NestedWithMergeKeys from
@@ -1002,7 +999,7 @@ class TestYamlTypedWrite(unittest.TestCase):
             # Plain string.
             ("a", "a"),
             # Needs quoting for special characters.
-            ("'", f"''''"),
+            ("'", "''''"),
             ('"', f"'{dq}'"),
             # Needs quoting to avoid being misinterpreted as another data type.
             ("1", "'1'"),
