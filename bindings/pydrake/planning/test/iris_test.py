@@ -2,14 +2,13 @@ import unittest
 
 import pydrake.planning as mut
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common import RandomGenerator, Parallelism
+from pydrake.common import Parallelism
 from pydrake.geometry.optimization import Hyperellipsoid, HPolyhedron
 from pydrake.multibody.inverse_kinematics import InverseKinematics
 from pydrake.multibody.rational import RationalForwardKinematics
 from pydrake.planning import (
     RobotDiagramBuilder,
     SceneGraphCollisionChecker,
-    CollisionCheckerParams,
     IrisParameterizationFunction,
 )
 from pydrake.solvers import IpoptSolver

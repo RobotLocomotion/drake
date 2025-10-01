@@ -1,6 +1,4 @@
-import math
 import unittest
-import warnings
 import weakref
 
 import numpy as np
@@ -17,7 +15,6 @@ from pydrake.planning import (
     GetContinuousRevoluteJointIndices
 )
 from pydrake.geometry.optimization import (
-    ConvexSet,
     GraphOfConvexSetsOptions,
     GraphOfConvexSets,
     GcsGraphvizOptions,
@@ -43,9 +40,6 @@ from pydrake.trajectories import (
     CompositeTrajectory,
     PiecewisePolynomial,
 )
-from pydrake.symbolic import Variable
-from pydrake.systems.framework import InputPortSelection
-from pydrake.systems.primitives import LinearSystem
 
 
 class TestTrajectoryOptimization(unittest.TestCase):
@@ -68,16 +62,16 @@ class TestTrajectoryOptimization(unittest.TestCase):
         # Spell out most of the methods, regardless of whether they make sense
         # as a consistent optimization.  The goal is to check the bindings,
         # not the implementation.
-        t = dircol.time()
-        dt = dircol.time_step(index=0)
+        dircol.time()
+        dircol.time_step(index=0)
         x = dircol.state()
-        x2 = dircol.state(index=2)
-        x0 = dircol.initial_state()
-        xf = dircol.final_state()
+        dircol.state(index=2)
+        dircol.initial_state()
+        dircol.final_state()
         u = dircol.input()
-        u2 = dircol.input(index=2)
-        v = dircol.NewSequentialVariable(rows=1, name="test")
-        v2 = dircol.GetSequentialVariableAtIndex(name="test", index=2)
+        dircol.input(index=2)
+        dircol.NewSequentialVariable(rows=1, name="test")
+        dircol.GetSequentialVariableAtIndex(name="test", index=2)
 
         dircol.AddRunningCost(x.dot(x))
         input_con = dircol.AddConstraintToAllKnotPoints(u[0] == 0)
@@ -129,8 +123,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
         dircol.GetInputSamples(result=result)
         dircol.GetStateSamples(result=result)
         dircol.GetSequentialVariableSamples(result=result, name="test")
-        u_traj = dircol.ReconstructInputTrajectory(result=result)
-        x_traj = dircol.ReconstructStateTrajectory(result=result)
+        dircol.ReconstructInputTrajectory(result=result)
+        dircol.ReconstructStateTrajectory(result=result)
 
         constraint = DirectCollocationConstraint(plant, context)
         AddDirectCollocationConstraint(constraint, dircol.time_step(0),
@@ -220,14 +214,14 @@ class TestTrajectoryOptimization(unittest.TestCase):
         # Spell out most of the methods, regardless of whether they make sense
         # as a consistent optimization.  The goal is to check the bindings,
         # not the implementation.
-        t = dirtran.time()
-        dt = dirtran.fixed_time_step()
+        dirtran.time()
+        dirtran.fixed_time_step()
         x = dirtran.state()
-        x2 = dirtran.state(2)
-        x0 = dirtran.initial_state()
-        xf = dirtran.final_state()
+        dirtran.state(2)
+        dirtran.initial_state()
+        dirtran.final_state()
         u = dirtran.input()
-        u2 = dirtran.input(2)
+        dirtran.input(2)
 
         dirtran.AddRunningCost(x.dot(x))
         dirtran.AddConstraintToAllKnotPoints(u[0] == 0)
@@ -239,11 +233,11 @@ class TestTrajectoryOptimization(unittest.TestCase):
         dirtran.SetInitialTrajectory(initial_u, initial_x)
 
         result = mp.Solve(dirtran.prog())
-        times = dirtran.GetSampleTimes(result)
-        inputs = dirtran.GetInputSamples(result)
-        states = dirtran.GetStateSamples(result)
-        input_traj = dirtran.ReconstructInputTrajectory(result)
-        state_traj = dirtran.ReconstructStateTrajectory(result)
+        dirtran.GetSampleTimes(result)
+        dirtran.GetInputSamples(result)
+        dirtran.GetStateSamples(result)
+        dirtran.ReconstructInputTrajectory(result)
+        dirtran.ReconstructStateTrajectory(result)
 
         # Confirm that the constructor for continuous systems works (and
         # confirm binding of nested TimeStep).
