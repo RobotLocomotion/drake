@@ -36,7 +36,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         Simulator = Simulator_[T]
         role = mut.Role.kIllustration
         params = mut.DrakeVisualizerParams(
-            publish_period=0.1, role=mut.Role.kIllustration,
+            publish_period=0.1, role=role,
             default_color=mut.Rgba(0.1, 0.2, 0.3, 0.4),
             show_hydroelastic=False,
             use_role_channel_suffix=False)
@@ -184,7 +184,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         self.assertIn("host", repr(params))
         copy.copy(params)
         with self.assertRaises(RuntimeError):
-            meshcat2 = mut.Meshcat(port=port)
+            mut.Meshcat(port=port)
         self.assertIn("http", meshcat.web_url())
         self.assertIn("ws", meshcat.ws_url())
         meshcat.SetEnvironmentMap(image_path="")
@@ -455,7 +455,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         self.assertIsInstance(visualizer.pose_input_port(), InputPort_[T])
         visualizer.ForcedPublish(context)
         visualizer.Delete()
-        if T == float:
+        if T is float:
             ad_visualizer = visualizer.ToAutoDiffXd()
             self.assertIsInstance(
                 ad_visualizer, mut.MeshcatPointCloudVisualizer_[AutoDiffXd])
