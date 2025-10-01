@@ -8,7 +8,6 @@ import sys
 from pydrake.examples import (
     AcrobotPlant,
     AcrobotSpongController,
-    AcrobotState,
 )
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
