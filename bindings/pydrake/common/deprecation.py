@@ -15,7 +15,6 @@ If you would like to disable all Drake-related warnings, you may use the
 import os
 import re
 import sys
-import traceback
 from types import ModuleType
 import warnings
 

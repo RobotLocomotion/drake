@@ -1,4 +1,3 @@
-import logging
 import unittest
 
 from pydrake.common.test.text_logging_test_helpers import (

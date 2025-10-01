@@ -1,6 +1,6 @@
-import collections
+# ruff: noqa: F821
+
 import functools
-import inspect
 import logging as _logging
 import sys
 import typing
