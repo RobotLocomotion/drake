@@ -268,5 +268,4 @@ add_lint_tests(
         "drake_lcm_log_disabled.cc",
         "test/drake_lcm_disabled_test.cc",
     ],
-    python_lint_use_ruff_format = False,
 )
