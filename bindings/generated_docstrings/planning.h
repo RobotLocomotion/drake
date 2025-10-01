@@ -1905,12 +1905,33 @@ selected dofs in either ``this`` or ``other``.
 Precondition:
     ``size() == other.size()``.)""";
         } Union;
+        // Symbol: drake::planning::DofMask::active_to_full_index
+        struct /* active_to_full_index */ {
+          // Source: drake/planning/dof_mask.h
+          const char* doc =
+R"""(Returns the index in the full vector. Namely q_active[i] =
+q_full[dof_mask.active_to_full_index(i)].
+
+Precondition:
+    i >= 0 and i < this->count())""";
+        } active_to_full_index;
         // Symbol: drake::planning::DofMask::count
         struct /* count */ {
           // Source: drake/planning/dof_mask.h
           const char* doc =
 R"""(Reports this DofMask instance's number of *selected* dofs.)""";
         } count;
+        // Symbol: drake::planning::DofMask::full_to_active_index
+        struct /* full_to_active_index */ {
+          // Source: drake/planning/dof_mask.h
+          const char* doc =
+R"""(Returns the index in the active vector. Namely
+q_active[dof_mask.full_to_active_index(i)] = q_full[i]. If (*this)[i]
+== false (namely this DoF is inactive), then return a nullopt.
+
+Precondition:
+    i >= 0, i < this->size().)""";
+        } full_to_active_index;
         // Symbol: drake::planning::DofMask::operator[]
         struct /* operator_array */ {
           // Source: drake/planning/dof_mask.h

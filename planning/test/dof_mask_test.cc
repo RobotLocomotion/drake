@@ -26,26 +26,55 @@ using multibody::ModelInstanceIndex;
 
 /* Exercise all of the constructors and evaluate the size-like APIs. */
 GTEST_TEST(DofMaskTest, ConstructorsAndSize) {
-  const DofMask dut1;
-  EXPECT_EQ(dut1.count(), 0);
-  EXPECT_EQ(dut1.size(), 0);
+  {
+    const DofMask dut1;
+    EXPECT_EQ(dut1.count(), 0);
+    EXPECT_EQ(dut1.size(), 0);
+  }
+  {
+    const DofMask dut2(13, true);
+    EXPECT_EQ(dut2.count(), 13);
+    EXPECT_EQ(dut2.size(), 13);
+    for (int i = 0; i < dut2.size(); ++i) {
+      EXPECT_EQ(dut2.full_to_active_index(i), i);
+      EXPECT_EQ(dut2.active_to_full_index(i), i);
+    }
+  }
+  {
+    const DofMask dut3(14, false);
+    EXPECT_EQ(dut3.count(), 0);
+    EXPECT_EQ(dut3.size(), 14);
+    for (int i = 0; i < dut3.size(); ++i) {
+      EXPECT_FALSE(dut3.full_to_active_index(i).has_value());
+      EXPECT_THROW(drake::unused(dut3.active_to_full_index(i)), std::exception);
+    }
+  }
+  {
+    const DofMask dut4({true, false, true, true, false});
+    EXPECT_EQ(dut4.count(), 3);
+    EXPECT_EQ(dut4.size(), 5);
 
-  const DofMask dut2(13, true);
-  EXPECT_EQ(dut2.count(), 13);
-  EXPECT_EQ(dut2.size(), 13);
-
-  const DofMask dut3(14, false);
-  EXPECT_EQ(dut3.count(), 0);
-  EXPECT_EQ(dut3.size(), 14);
-
-  const DofMask dut4({true, false, true, true, false});
-  EXPECT_EQ(dut4.count(), 3);
-  EXPECT_EQ(dut4.size(), 5);
-
-  std::vector<bool> bits{true, true, false, true, true, false};
-  const DofMask dut5(bits);
-  EXPECT_EQ(dut5.count(), 4);
-  EXPECT_EQ(dut5.size(), 6);
+    EXPECT_EQ(dut4.full_to_active_index(0).value(), 0);
+    EXPECT_FALSE(dut4.full_to_active_index(1).has_value());
+    EXPECT_EQ(dut4.full_to_active_index(2), 1);
+    EXPECT_EQ(dut4.full_to_active_index(3), 2);
+    EXPECT_FALSE(dut4.full_to_active_index(4).has_value());
+    EXPECT_EQ(dut4.active_to_full_index(0), 0);
+    EXPECT_EQ(dut4.active_to_full_index(1), 2);
+    EXPECT_EQ(dut4.active_to_full_index(2), 3);
+  }
+  {
+    std::vector<bool> bits{true, true, false, true, true, false};
+    const DofMask dut5(bits);
+    EXPECT_EQ(dut5.count(), 4);
+    EXPECT_EQ(dut5.size(), 6);
+    EXPECT_EQ(dut5.full_to_active_index(0), 0);
+    EXPECT_EQ(dut5.full_to_active_index(1), 1);
+    EXPECT_FALSE(dut5.full_to_active_index(2).has_value());
+    EXPECT_EQ(dut5.full_to_active_index(3), 2);
+    EXPECT_EQ(dut5.full_to_active_index(4), 3);
+    EXPECT_FALSE(dut5.full_to_active_index(5).has_value());
+  }
 }
 
 // In addition to testing move/copy semantics, this also provides testing for
@@ -183,11 +212,26 @@ GTEST_TEST(DofMaskTest, ToString) {
   EXPECT_EQ(dut.to_string(), fmt::to_string(int_bits));
 }
 
+namespace {
+void ExpectFullAndActiveIndicesEqual(const DofMask& mask1,
+                                     const DofMask& mask2) {
+  ASSERT_EQ(mask1.count(), mask2.count());
+  ASSERT_EQ(mask1.size(), mask2.size());
+  for (int i = 0; i < mask1.size(); ++i) {
+    EXPECT_EQ(mask1.full_to_active_index(i), mask2.full_to_active_index(i));
+  }
+  for (int i = 0; i < mask1.count(); ++i) {
+    EXPECT_EQ(mask1.active_to_full_index(i), mask2.active_to_full_index(i));
+  }
+}
+}  // namespace
 GTEST_TEST(DofMaskTest, Complement) {
   const DofMask d1({true, false, false});
   const DofMask expected({false, true, true});
 
-  EXPECT_EQ(d1.Complement(), expected);
+  const DofMask d1_complement = d1.Complement();
+  EXPECT_EQ(d1_complement, expected);
+  ExpectFullAndActiveIndicesEqual(d1_complement, expected);
 }
 
 GTEST_TEST(DofMaskTest, Union) {
@@ -195,7 +239,9 @@ GTEST_TEST(DofMaskTest, Union) {
   const DofMask d2({false, false, true});
   const DofMask expected({true, false, true});
 
-  EXPECT_EQ(d1.Union(d2), expected);
+  const DofMask d1_union_d2 = d1.Union(d2);
+  EXPECT_EQ(d1_union_d2, expected);
+  ExpectFullAndActiveIndicesEqual(d1_union_d2, expected);
 }
 
 GTEST_TEST(DofMaskTest, Intersect) {
@@ -203,7 +249,9 @@ GTEST_TEST(DofMaskTest, Intersect) {
   const DofMask d2({false, true, true});
   const DofMask expected({false, true, false});
 
-  EXPECT_EQ(d1.Intersect(d2), expected);
+  const DofMask d1_intersect_d2 = d1.Intersect(d2);
+  EXPECT_EQ(d1_intersect_d2, expected);
+  ExpectFullAndActiveIndicesEqual(d1_intersect_d2, expected);
 }
 
 GTEST_TEST(DofMaskTest, Subtract) {
@@ -211,7 +259,9 @@ GTEST_TEST(DofMaskTest, Subtract) {
   const DofMask d2({false, true, true});
   const DofMask expected({true, false, false});
 
-  EXPECT_EQ(d1.Subtract(d2), expected);
+  const DofMask d1_subtract_d2 = d1.Subtract(d2);
+  EXPECT_EQ(d1_subtract_d2, expected);
+  ExpectFullAndActiveIndicesEqual(d1_subtract_d2, expected);
 }
 
 GTEST_TEST(DofMaskTest, GetFromArrayWithReturn) {
