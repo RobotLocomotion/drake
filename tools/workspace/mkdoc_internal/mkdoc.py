@@ -40,10 +40,8 @@
 from collections import OrderedDict, defaultdict
 from fnmatch import fnmatch
 import os
-import platform
 import re
 import shutil
-import subprocess
 import sys
 
 from clang import cindex
@@ -603,12 +601,12 @@ def print_symbols(f, name, node, level=0):
                 == CursorKind.FIELD_DECL)
         ]
         if field_names:
-            iprint(f'  auto Serialize__fields() const {{')
-            iprint(f'    return std::array{{')
+            iprint('  auto Serialize__fields() const {')
+            iprint('    return std::array{')
             for x in field_names:
                 iprint(f'      std::make_pair("{x}", {x}.doc),')
-            iprint(f'    }};')
-            iprint(f'  }}')
+            iprint('    };')
+            iprint('  }')
     iprint('}} {};'.format(name_var))
 
 
