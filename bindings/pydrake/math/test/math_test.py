@@ -99,7 +99,7 @@ class TestMath(unittest.TestCase):
     def check_cast(self, template, T):
         value = template[T]()
         # Refer to docstrings for `CastUPack` in `default_scalars_pybind.h`.
-        if T == float:
+        if T is float:
             U_list = [float, AutoDiffXd, Expression]
         else:
             U_list = [T]
@@ -219,7 +219,7 @@ class TestMath(unittest.TestCase):
           ]),
           p=[{z}, {z}, {z}],
         )"""))
-        if T == float:
+        if T is float:
             # TODO(jwnimmer-tri) Once AutoDiffXd and Expression implement an
             # eval-able repr, then we can test more than just T=float here.
             roundtrip = eval(repr(RigidTransform()))
@@ -281,7 +281,7 @@ class TestMath(unittest.TestCase):
         R = RotationMatrix.MakeZRotation(theta=0)
         numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
         # TODO(eric.cousineau): #11575, remove the conditional.
-        if T == float:
+        if T is float:
             numpy_compare.assert_float_equal(R.row(index=0), [1., 0., 0.])
             numpy_compare.assert_float_equal(R.col(index=0), [1., 0., 0.])
             R = RotationMatrix.MakeFromOneVector(b_A=[1, 0, 0], axis_index=0)
@@ -358,7 +358,7 @@ class TestMath(unittest.TestCase):
         self.assertEqual(repr(RollPitchYaw(rpy=[2, 1, 0])),
                          f"RollPitchYaw{type_suffix}("
                          f"roll={t}, pitch={i}, yaw={z})")
-        if T == float:
+        if T is float:
             # TODO(jwnimmer-tri) Once AutoDiffXd and Expression implement an
             # eval-able repr, then we can test more than just T=float here.
             roundtrip = eval(repr(RotationMatrix()))
