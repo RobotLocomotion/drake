@@ -1,9 +1,7 @@
 import copy
 import inspect
-import os
 import subprocess
 import textwrap
-import time
 import unittest
 
 from pydrake.common import FindResourceOrThrow
@@ -47,7 +45,7 @@ class TestModelVisualizerSubprocess(unittest.TestCase):
                 args = [self.dut, filename, "--loop_once"]
                 # Smoke test coverage of optional command line options.
                 if i % 2 == 1:
-                    args.append(f"--compliance_type=compliant")
+                    args.append("--compliance_type=compliant")
                 subprocess.check_call(args)
 
     def test_model_with_invalid_dynamics(self):

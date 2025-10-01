@@ -1,11 +1,6 @@
-import math
 import unittest
 
-from pydrake.common.test_utilities import numpy_compare
-from pydrake.geometry import (
-    RenderLabel,
-    Rgba,
-)
+from pydrake.geometry import Rgba
 from pydrake.systems.sensors import (
     ImageDepth16U,
     ImageDepth32F,

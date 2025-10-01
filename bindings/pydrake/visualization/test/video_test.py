@@ -120,7 +120,7 @@ class TestVideoWriter(unittest.TestCase):
                 sensor_pose=RigidTransform(), fps=16, backend="cv2",
                 fourcc="wrong")
 
-    def test_bad_backend(self):
+    def test_bad_backend_1(self):
         """Tests detection of a malformed backend setting."""
         builder = DiagramBuilder()
         AddMultibodyPlantSceneGraph(builder, time_step=0.0)
@@ -130,7 +130,7 @@ class TestVideoWriter(unittest.TestCase):
                 backend="WRONG")
         self.assertIn("WRONG", str(cm.exception))
 
-    def test_bad_backend(self):
+    def test_bad_backend_2(self):
         """Tests detection of a malformed kinds setting."""
         builder = DiagramBuilder()
         AddMultibodyPlantSceneGraph(builder, time_step=0.0)
