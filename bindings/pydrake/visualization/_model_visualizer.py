@@ -1,5 +1,4 @@
 import copy
-from enum import Enum
 import logging
 import os
 from pathlib import Path
@@ -12,11 +11,7 @@ import numpy as np
 
 from pydrake.geometry import (
     Box,
-    Cylinder,
-    GeometryInstance,
-    MakePhongIllustrationProperties,
     MeshcatCone,
-    Role,
     Rgba,
     StartMeshcat,
 )
@@ -515,7 +510,7 @@ class ModelVisualizer:
         try:
             for kwargs in self._added_models:
                 self._builder.parser().AddModels(**kwargs)
-            logging.getLogger("drake").info(f"Reload was successful")
+            logging.getLogger("drake").info("Reload was successful")
         except BaseException as e:
             # If there's a parsing error, show it; don't crash.
             logging.getLogger("drake").error(e)

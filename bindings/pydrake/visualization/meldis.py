@@ -73,7 +73,7 @@ def _main(args=None):
         "By default, opens as a new window (use --open-tab to override). "
         "When no --browser is provided, the --open-tab or --open-window flags "
         "use the $BROWSER environment variable by default. "
-        f"(Available names: %(choices)s)")
+        "(Available names: %(choices)s)")
     parser.add_argument(
         "--idle-timeout", metavar="TIME", type=float, default=15*60,
         help="When no web browser has been connected for this many seconds,"

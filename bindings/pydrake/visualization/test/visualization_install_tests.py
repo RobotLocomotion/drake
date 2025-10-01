@@ -1,5 +1,4 @@
 from os.path import join
-import sys
 import unittest
 
 import install_test_helper
