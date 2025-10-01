@@ -26,26 +26,32 @@ using multibody::ModelInstanceIndex;
 
 /* Exercise all of the constructors and evaluate the size-like APIs. */
 GTEST_TEST(DofMaskTest, ConstructorsAndSize) {
-  const DofMask dut1;
-  EXPECT_EQ(dut1.count(), 0);
-  EXPECT_EQ(dut1.size(), 0);
-
-  const DofMask dut2(13, true);
-  EXPECT_EQ(dut2.count(), 13);
-  EXPECT_EQ(dut2.size(), 13);
-
-  const DofMask dut3(14, false);
-  EXPECT_EQ(dut3.count(), 0);
-  EXPECT_EQ(dut3.size(), 14);
-
-  const DofMask dut4({true, false, true, true, false});
-  EXPECT_EQ(dut4.count(), 3);
-  EXPECT_EQ(dut4.size(), 5);
-
-  std::vector<bool> bits{true, true, false, true, true, false};
-  const DofMask dut5(bits);
-  EXPECT_EQ(dut5.count(), 4);
-  EXPECT_EQ(dut5.size(), 6);
+  {
+    const DofMask dut1;
+    EXPECT_EQ(dut1.count(), 0);
+    EXPECT_EQ(dut1.size(), 0);
+  }
+  {
+    const DofMask dut2(13, true);
+    EXPECT_EQ(dut2.count(), 13);
+    EXPECT_EQ(dut2.size(), 13);
+  }
+  {
+    const DofMask dut3(14, false);
+    EXPECT_EQ(dut3.count(), 0);
+    EXPECT_EQ(dut3.size(), 14);
+  }
+  {
+    const DofMask dut4({true, false, true, true, false});
+    EXPECT_EQ(dut4.count(), 3);
+    EXPECT_EQ(dut4.size(), 5);
+  }
+  {
+    std::vector<bool> bits{true, true, false, true, true, false};
+    const DofMask dut5(bits);
+    EXPECT_EQ(dut5.count(), 4);
+    EXPECT_EQ(dut5.size(), 6);
+  }
 }
 
 // In addition to testing move/copy semantics, this also provides testing for
@@ -293,6 +299,23 @@ GTEST_TEST(DofMaskTest, SetInArray) {
   dofs.SetInArray(dof_values, &full_new);
   const Vector3d full_new_expected(1.0, 0.0, 3.0);
   EXPECT_EQ(full_new, full_new_expected);
+}
+
+GTEST_TEST(DofMaskTest, GetActiveToFullIndex) {
+  const DofMask dofs1{true, false, false, true, false};
+  EXPECT_EQ(dofs1.GetActiveToFullIndex(), std::vector<int>({0, 3}));
+
+  const DofMask dofs2{false, false, false, false};
+  EXPECT_TRUE(dofs2.GetActiveToFullIndex().empty());
+}
+
+GTEST_TEST(DofMaskTest, GetFullToActiveIndex) {
+  const DofMask dofs1{true, false, false, true, false, true};
+  const std::unordered_map<int, int> expected1{{0, 0}, {3, 1}, {5, 2}};
+  EXPECT_EQ(dofs1.GetFullToActiveIndex(), expected1);
+
+  const DofMask dofs2{false, false, false, false};
+  EXPECT_TRUE(dofs2.GetFullToActiveIndex().empty());
 }
 
 }  // namespace
