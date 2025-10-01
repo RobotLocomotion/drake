@@ -1,3 +1,5 @@
+# ruff: noqa: F821
+
 from pydrake.common import (
     _MangledName,
     pretty_class_name as _pretty_class_name,

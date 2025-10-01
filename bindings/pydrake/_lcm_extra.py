@@ -1,6 +1,7 @@
 # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
 # rationale.
 
+# ruff: noqa: F821
 
 # This is a python reimplementation of drake::lcm::Subscriber.  We reimplement
 # (rather than bind) the C++ class because we want message() to be a python LCM

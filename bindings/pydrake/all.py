@@ -32,6 +32,8 @@ collisions, please run ``bazel run //bindings/pydrake:print_symbol_collision``
 from the Drake source tree.
 """
 
+# ruff: noqa: F401,F403
+
 # Normal symbols.
 from . import getDrakePath
 from .autodiffutils import *
