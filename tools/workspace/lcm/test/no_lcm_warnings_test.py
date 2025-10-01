@@ -6,7 +6,6 @@ from lcm import EventLog, LCM
 
 
 class Test(unittest.TestCase):
-
     def test_publish(self):
         """
         Ensures that no warnings are issued using `lcm.publish()`.

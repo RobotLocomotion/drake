@@ -56,7 +56,7 @@ def _settings_names():
     needle = "struct DefaultSettings\n{"
     index = text.find(needle)
     assert index > 0
-    text = text[index + len(needle):]
+    text = text[index + len(needle) :]
     needle = "}"
     index = text.find(needle)
     assert index > 0
