@@ -73,8 +73,8 @@ class StressTestDownloader(unittest.TestCase):
             for x in glob.glob(f"{scratch_dir}/drake/**", recursive=True)
         ]
         self.assertListEqual(sorted(found), [
-            f"drake",
-            f"drake/package_map",
+            "drake",
+            "drake/package_map",
             f"drake/package_map/{sha256}",
             f"drake/package_map/{sha256}.README",
             f"drake/package_map/{sha256}/hello",
