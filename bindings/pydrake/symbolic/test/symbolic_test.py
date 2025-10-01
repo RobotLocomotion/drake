@@ -282,7 +282,7 @@ class TestSymbolicVariables(unittest.TestCase):
         self.assertEqual(vars.size(), 3)
         self.assertEqual(len(vars), 3)
 
-    def test_to_string(self):
+    def test_to_string_1(self):
         vars = sym.Variables([x, y, z])
         self.assertEqual(vars.to_string(), "{x, y, z}")
         self.assertEqual("{}".format(vars), "{x, y, z}")
@@ -341,7 +341,7 @@ class TestSymbolicVariables(unittest.TestCase):
         self.assertTrue(vars1.EqualTo(vars3))
         self.assertFalse(vars1.EqualTo(vars2))
 
-    def test_to_string(self):
+    def test_to_string_2(self):
         vars = sym.Variables()
         vars.insert(x)
         vars.insert(y)
@@ -436,10 +436,10 @@ class TestSymbolicExpression(unittest.TestCase):
         xv = algebra.to_algebra(x)
         yv = algebra.to_algebra(y)
         zv = algebra.to_algebra(z)
-        wv = algebra.to_algebra(w)
-        av = algebra.to_algebra(a)
-        bv = algebra.to_algebra(b)
-        cv = algebra.to_algebra(c)
+        algebra.to_algebra(w)
+        algebra.to_algebra(a)
+        algebra.to_algebra(b)
+        algebra.to_algebra(c)
         e_xv = algebra.to_algebra(e_x)
         e_yv = algebra.to_algebra(e_y)
 
@@ -751,14 +751,14 @@ class TestSymbolicExpression(unittest.TestCase):
         # that work around this, which are tested in `_check_algebra`.
         # Ensure that we throw on `__nonzero__`.
         with self.assertRaises(RuntimeError) as cm:
-            value = bool(e_x == e_x)
+            bool(e_x == e_x)
         message = str(cm.exception)
         self.assertTrue(
             all([s in message for s in ["__nonzero__", "EqualToDict"]]),
             message)
         # Ensure that compound formulas fail (#8536).
         with self.assertRaises(RuntimeError):
-            value = 0 < e_y < e_y
+            (0 < e_y < e_y)
         # Indication of #8135. Ideally, these would all be arrays of formulas.
         e_xv = np.array([e_x, e_x])
         e_yv = np.array([e_y, e_y])
@@ -770,16 +770,16 @@ class TestSymbolicExpression(unittest.TestCase):
         # - All false.
         with self.assertRaisesRegex((DeprecationWarning, RuntimeError),
                                     "(elementwise comparison|__nonzero__)"):
-            value = (e_xv == e_yv)
+            (e_xv == e_yv)
         # - True + False.
         with self.assertRaisesRegex((DeprecationWarning, RuntimeError),
                                     "(elementwise comparison|__nonzero__)"):
             e_xyv = np.array([e_x, e_y])
-            value = (e_xv == e_xyv)
+            (e_xv == e_xyv)
         # - All true.
         with self.assertRaisesRegex((DeprecationWarning, RuntimeError),
                                     "(elementwise comparison|__nonzero__)"):
-            value = (e_xv == e_xv)
+            (e_xv == e_xv)
 
     def test_functions_with_float(self):
         # TODO(eric.cousineau): Use concrete values once vectorized methods are
@@ -1710,13 +1710,13 @@ class TestSymbolicPolynomial(unittest.TestCase):
     def test_calc_polynomial_w_gram_lower(self):
         monomial_basis = np.array([sym.Monomial(x, 2), sym.Monomial(x)])
         Q1_lower = np.array([1., 2., 3.])
-        poly1 = sym.CalcPolynomialWLowerTriangularPart(
+        sym.CalcPolynomialWLowerTriangularPart(
             monomial_basis=monomial_basis, gram_lower=Q1_lower)
         Q2_lower = np.array([a, b, c])
-        poly2 = sym.CalcPolynomialWLowerTriangularPart(
+        sym.CalcPolynomialWLowerTriangularPart(
             monomial_basis=monomial_basis, gram_lower=Q2_lower)
         Q3_lower = np.array([a+b, b, 2*b])
-        poly3 = sym.CalcPolynomialWLowerTriangularPart(
+        sym.CalcPolynomialWLowerTriangularPart(
             monomial_basis=monomial_basis, gram_lower=Q3_lower)
 
 
@@ -2416,8 +2416,6 @@ class TestSinCosSubstitution(unittest.TestCase):
 
 class TestStereographicSubstitution(unittest.TestCase):
     def test(self):
-        x = sym.Variable("x")
-        y = sym.Variable("y")
         sx = sym.Variable("sx")
         sy = sym.Variable("sy")
         cx = sym.Variable("cx")
@@ -2435,7 +2433,6 @@ class TestStereographicSubstitution(unittest.TestCase):
         self.assertTrue(r.denominator().Expand().EqualTo(
             sym.Polynomial((1+ty*ty)*(1+tx*tx)).Expand()))
 
-        e = 2 * np.sin(x) + np.sin(y) * np.cos(x)
         self.assertTrue(r.numerator().Expand().EqualTo(
             sym.Polynomial(4*tx*(1+ty*ty) + 2*ty * (1-tx*tx)).Expand()))
         self.assertTrue(r.denominator().Expand().EqualTo(

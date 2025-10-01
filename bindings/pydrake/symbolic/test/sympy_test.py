@@ -112,7 +112,7 @@ class TestSympy(unittest.TestCase):
             self.assertTrue(item.EqualTo(readback),
                             msg=f"Got {readback_str} (from {converted_str})")
             return
-        except TypeError as e:
+        except TypeError:
             # We'll do a self.fail(), but outside the except. Otherwise we are
             # bombarded by Python's "a new exception happened in the middle of
             # handling a prior exception" vomit that isn't useful in this case.
