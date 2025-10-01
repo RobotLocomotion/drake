@@ -3,7 +3,6 @@ symbol visibility while doing so using `nmedit` to mark everything hidden.
 """
 
 import argparse
-import glob
 import subprocess
 import tempfile
 from pathlib import Path
