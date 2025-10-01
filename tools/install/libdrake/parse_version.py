@@ -4,17 +4,21 @@ which specifies the variable substitutions needed for drake-config.cmake."""
 import argparse
 import re
 
-VERSION_TAG = 'STABLE_VERSION'
+VERSION_TAG = "STABLE_VERSION"
 
 
 # Check if a version string conforms to PEP 440.
 def _check_version(version):
-    return re.match(
-        r'^([1-9][0-9]*!)?(0|[1-9][0-9]*)'
-        r'(\.(0|[1-9][0-9]*))*((a|b|rc)(0|[1-9][0-9]*))?'
-        r'(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?'
-        r'([+][a-z0-9]+([-_\.][a-z0-9]+)*)?$',
-        version) is not None
+    return (
+        re.match(
+            r"^([1-9][0-9]*!)?(0|[1-9][0-9]*)"
+            r"(\.(0|[1-9][0-9]*))*((a|b|rc)(0|[1-9][0-9]*))?"
+            r"(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?"
+            r"([+][a-z0-9]+([-_\.][a-z0-9]+)*)?$",
+            version,
+        )
+        is not None
+    )
 
 
 # Extract full version and version parts from version stamp file.
@@ -37,24 +41,27 @@ def _parse_stamp(stamp_file):
 
             # Check version format and extract numerical components.
             if not _check_version(version_full):
-                raise ValueError(f'Version {version_full} is not valid')
-            if re.match(r'^[1-9][0-9]*!', version_full):
-                raise ValueError(f'Version {version_full} contains an epoch,'
-                                 ' which is not supported at this time')
+                raise ValueError(f"Version {version_full} is not valid")
+            if re.match(r"^[1-9][0-9]*!", version_full):
+                raise ValueError(
+                    f"Version {version_full} contains an epoch,"
+                    " which is not supported at this time"
+                )
 
-            m = re.match(r'^[0-9.]+', version_full)
+            m = re.match(r"^[0-9.]+", version_full)
             assert m
 
             # Check for sufficient version parts (note: user and continuous
             # builds may have more than three parts) and pad to ensure we
             # always have four.
-            version_parts = m.group(0).split('.')
+            version_parts = m.group(0).split(".")
             if len(version_parts) < 4:
                 if len(version_parts) == 3:
                     version_parts.append(0)
                 else:
-                    raise ValueError(f'Version {version_full}'
-                                     ' does not have enough parts')
+                    raise ValueError(
+                        f"Version {version_full} does not have enough parts"
+                    )
 
             return version_full, tuple(map(int, version_parts))
 
@@ -80,11 +87,13 @@ def _write_version_info(out, version_full, version_parts):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        'input', type=argparse.FileType('r'),
-        help='Path to file optionally containing stamp version.')
+        "input",
+        type=argparse.FileType("r"),
+        help="Path to file optionally containing stamp version.",
+    )
     parser.add_argument(
-        'output', type=argparse.FileType('w'),
-        help='Path to output file.')
+        "output", type=argparse.FileType("w"), help="Path to output file."
+    )
     args = parser.parse_args()
 
     _write_version_info(args.output, *_parse_stamp(args.input))
@@ -92,5 +101,5 @@ def main():
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
