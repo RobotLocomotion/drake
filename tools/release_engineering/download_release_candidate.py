@@ -28,7 +28,6 @@ from io import StringIO
 import os
 from pathlib import Path
 import shlex
-import shutil
 import subprocess
 import sys
 import tarfile
