@@ -62,7 +62,7 @@ class TestMathematicalProgram(unittest.TestCase):
         file_name = temp_directory() + "/gurobi.mps"
         options = SolverOptions()
         options.SetOption(solver.id(), "GRBwrite", file_name)
-        result = solver.Solve(prog, None, options)
+        solver.Solve(prog, None, options)
         self.assertTrue(os.path.exists(file_name))
 
     def test_compute_iis(self):
@@ -75,7 +75,7 @@ class TestMathematicalProgram(unittest.TestCase):
         options = SolverOptions()
         options.SetOption(solver.id(), "GRBwrite", ilp_file_name)
         options.SetOption(solver.id(), "GRBcomputeIIS", 1)
-        result = solver.Solve(prog, None, options)
+        solver.Solve(prog, None, options)
         self.assertTrue(os.path.exists(ilp_file_name))
 
     def test_callback(self):
