@@ -1,3 +1,5 @@
+# ruff: noqa: F401,F403
+
 import warnings
 
 # Normal symbols.
