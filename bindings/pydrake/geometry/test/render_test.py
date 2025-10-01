@@ -7,7 +7,6 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.value import Value
 from pydrake.math import RigidTransform
 from pydrake.systems.framework import (

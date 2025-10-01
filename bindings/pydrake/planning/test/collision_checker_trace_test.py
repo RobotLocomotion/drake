@@ -1,6 +1,5 @@
 import pydrake.planning as mut
 
-import logging
 import textwrap
 import unittest
 

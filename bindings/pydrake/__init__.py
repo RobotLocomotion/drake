@@ -147,7 +147,7 @@ try:
 except ImportError as e:
     if ('cannot open shared object file' in (e.msg or '')
             and '/pydrake/' in (e.path or '')):
-        message = f'''
+        message = '''
 Drake failed to load a required library. This could indicate an installation
 problem, or that your system is missing required distro-provided packages.
 Please refer to the installation instructions to ensure that all required

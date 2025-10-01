@@ -142,7 +142,7 @@ class TestMeshcat(unittest.TestCase):
         """
         meshcat = Meshcat()
         params = ContactVisualizerParams()
-        dut = _PointContactVisualizer(meshcat=meshcat, params=params)
+        _PointContactVisualizer(meshcat=meshcat, params=params)
 
     def test_internal_hydroelastic_contact_visualizer(self):
         """A very basic existence test, since this class is internal use only.
@@ -150,4 +150,4 @@ class TestMeshcat(unittest.TestCase):
         """
         meshcat = Meshcat()
         params = ContactVisualizerParams()
-        dut = _HydroelasticContactVisualizer(meshcat=meshcat, params=params)
+        _HydroelasticContactVisualizer(meshcat=meshcat, params=params)

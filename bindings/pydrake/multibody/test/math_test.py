@@ -114,7 +114,7 @@ class TestMultibodyTreeMath(unittest.TestCase):
                   {rotation_name}=[{z}, {z}, {z}],
                   {translation_name}=[{z}, {z}, {z}],
                 )"""))
-        if T == float:
+        if T is float:
             # TODO(jwnimmer-tri) Once AutoDiffXd and Expression implement an
             # eval-able repr, then we can test more than just T=float here.
             original = cls.Zero()

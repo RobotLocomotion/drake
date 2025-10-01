@@ -236,7 +236,7 @@ class TestAutoDiffXd(unittest.TestCase):
         # that this is currently `dtype=object`, it would be extremely unwise
         # to do so. See #8116 for alternative.
         with self.assertRaises(TypeError):
-            Y = np.linalg.inv(X)
+            np.linalg.inv(X)
 
         # Use workaround for inverse. For now, just check values.
         X_float = numpy_compare.to_float(X)

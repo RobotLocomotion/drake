@@ -26,15 +26,15 @@ class Overloads:
     # Provides interface for testing function overloads for a given type, `T`.
     def supports(self, func):
         # Determines if `func` is supported by this overload.
-        raise NotImplemented
+        raise NotImplementedError()
 
     def to_float(self, y_T):
         # Converts `y_T` (a value of type `T`) to a float.
-        raise NotImplemented
+        raise NotImplementedError()
 
     def to_type(self, y_float):
         # Converts `y_float` (a float value) to a value of type `T`.
-        raise NotImplemented
+        raise NotImplementedError()
 
 
 class FloatOverloads(Overloads):
@@ -201,7 +201,6 @@ class MathOverloadsTest(unittest.TestCase):
                     self.assertEqual(y_T_float, y_float)
 
         debug_print("\n\nOverload: ", qualname(type(overload)))
-        float_overload = FloatOverloads()
         # Check each number of arguments.
         debug_print("Unary:")
         check_eval(unary, 1)

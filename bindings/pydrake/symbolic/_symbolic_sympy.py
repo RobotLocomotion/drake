@@ -108,7 +108,7 @@ def _var_to_sympy(drake_var: Variable, *, memo: Dict):
     """
     sympy_var = memo.get(drake_var.get_id())
     if sympy_var is None:
-        drake_type = drake_var.get_type()
+        drake_type = drake_var.get_type()  # noqa: F841 (unused-variable)
         assumptions = {
             # TODO(jwnimmer-tri) Use drake_type to fill in the assumptions.
         }
@@ -152,7 +152,7 @@ def _to_sympy(
         return _var_to_sympy(drake_var=x, memo=memo)
     try:
         kind = x.get_kind()
-    except AttributeError as e:
+    except AttributeError:
         kind = None
     if kind is None:
         raise NotImplementedError(

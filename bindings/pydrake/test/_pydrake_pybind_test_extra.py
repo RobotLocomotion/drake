@@ -1,7 +1,7 @@
 # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
 # rationale.
 
-import copy
+import copy  # noqa: F401 (unused-import). This is used by C++ code.
 import weakref
 
 

@@ -56,4 +56,4 @@ class TestConfig(unittest.TestCase):
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         plant.Finalize()
         meshcat = Meshcat()
-        config = mut.AddDefaultVisualization(builder=builder, meshcat=meshcat)
+        mut.AddDefaultVisualization(builder=builder, meshcat=meshcat)

@@ -12,10 +12,7 @@ from pydrake.common.test_utilities.memory_test_util import actual_ref_count
 from pydrake.geometry import Sphere
 from pydrake.math import RigidTransform
 from pydrake.multibody.plant import MultibodyPlant
-from pydrake.multibody.tree import (
-    BodyIndex,
-    ModelInstanceIndex,
-)
+from pydrake.multibody.tree import BodyIndex
 from pydrake.systems.framework import Context
 
 

@@ -193,10 +193,10 @@ class TestCommon(unittest.TestCase):
         self.assertNotEqual(rs1.randint(100), rs2.randint(100))
 
     def test_calc_probability_density(self):
-        density_val = mut.CalcProbabilityDensity(
+        mut.CalcProbabilityDensity(
             distribution=mut.RandomDistribution.kGaussian,
             x=np.array([0.5, 1.]))
-        density_ad = mut.CalcProbabilityDensity(
+        mut.CalcProbabilityDensity(
             distribution=mut.RandomDistribution.kGaussian,
             x=np.array([AutoDiffXd(1), AutoDiffXd(2)]))
 

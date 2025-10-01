@@ -1,4 +1,3 @@
-import functools
 from logging import (
     CRITICAL,
     DEBUG,

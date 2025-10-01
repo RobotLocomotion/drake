@@ -90,7 +90,7 @@ class TestValue(unittest.TestCase):
                 new_value_data = value_data.PlusEqScaled(scale=2,
                                                          rhs=old_value_data)
                 self.assertTrue(
-                    np.allclose(value_data.get_value(), expected_plus_eq))
+                    np.allclose(new_value_data.get_value(), expected_plus_eq))
                 # Ensure we can clone.
                 value_copies = [
                     value_data.Clone(),
@@ -183,7 +183,7 @@ class TestValue(unittest.TestCase):
         params.SetFrom(copy.deepcopy(params))
 
         # Test alternative constructors.
-        ctor_test = [
+        [
             Parameters(),
             Parameters(numeric=[model_numeric.Clone()]),
             Parameters(abstract=[model_abstract.Clone()]),
@@ -192,7 +192,7 @@ class TestValue(unittest.TestCase):
                 abstract=[model_abstract.Clone()]),
             Parameters(vec=model_numeric.Clone()),
             Parameters(value=model_abstract.Clone()),
-            ]
+        ]
 
     def test_bus_value(self):
         dut = BusValue()

@@ -6,7 +6,7 @@ import numpy as np
 
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
-    Context, DiagramBuilder, PortDataType, VectorSystem, kUseDefaultName)
+    DiagramBuilder, PortDataType, VectorSystem, kUseDefaultName)
 from pydrake.systems.primitives import VectorLogSink
 from pydrake.systems.pyplot_visualizer import PyPlotVisualizer
 from pydrake.trajectories import PiecewisePolynomial

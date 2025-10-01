@@ -1,4 +1,3 @@
-import copy
 import gc
 import unittest
 

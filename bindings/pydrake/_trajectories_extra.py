@@ -1,3 +1,5 @@
+# ruff: noqa: F821 (undefined-name). This file is only a fragment.
+
 from pydrake.common import (
     _MangledName,
     pretty_class_name as _pretty_class_name,

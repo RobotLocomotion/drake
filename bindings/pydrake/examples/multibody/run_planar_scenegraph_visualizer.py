@@ -63,26 +63,12 @@ def main():
                         type=float,
                         help="Duration to run sim in seconds.",
                         default=1.0)
-    parser.add_argument("-m", "--models",
-                        type=str,
-                        nargs="*",
-                        help="Models to run, at least one of [pend, manip]",
-                        default=["pend"])
     parser.add_argument("-p", "--playback",
                         type=bool,
                         help="Whether to record and playback the animation",
                         default=False)
     args = parser.parse_args()
-
-    for model in args.models:
-        if model == "pend":
-            run_pendulum_example(args)
-        elif model == "manip":
-            run_manipulation_example(args)
-        else:
-            print("Unrecognized model %s." % model)
-            parser.print_usage()
-            exit(1)
+    run_pendulum_example(args)
 
 
 if __name__ == "__main__":
