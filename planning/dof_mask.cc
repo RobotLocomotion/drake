@@ -1,5 +1,6 @@
 #include "drake/planning/dof_mask.h"
 
+#include "planning/dof_mask.h"
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
@@ -10,12 +11,36 @@ using multibody::Joint;
 using multibody::JointIndex;
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
+namespace {
+void SetFullAndActiveIndices(
+    const std::vector<bool>& data, std::vector<int>* full_indices,
+    std::unordered_map<int, int>* full_to_active_index) {
+  full_indices->clear();
+  full_to_active_index->clear();
+  int count = 0;
+  for (int i = 0; i < std::ssize(data); ++i) {
+    if (data[i]) {
+      full_indices->push_back(i);
+      full_to_active_index->emplace(i, count);
+      ++count;
+    }
+  }
+}
+}  // namespace
 
 DofMask::DofMask() = default;
 
 DofMask::DofMask(int size, bool value)
     : data_(size >= 0 ? size : 0, value), count_(value ? size : 0) {
   DRAKE_THROW_UNLESS(size >= 0);
+  if (value) {
+    full_indices_.reserve(size);
+    full_to_active_index_.reserve(size);
+    for (int i = 0; i < size; ++i) {
+      full_indices_.push_back(i);
+      full_to_active_index_.emplace(i, i);
+    }
+  }
 }
 
 DofMask::DofMask(std::initializer_list<bool> values)
@@ -27,6 +52,7 @@ DofMask::DofMask(std::vector<bool> values) : data_(std::move(values)) {
       ++count_;
     }
   }
+  SetFullAndActiveIndices(data_, &full_indices_, &full_to_active_index_);
 }
 
 DofMask DofMask::MakeFromModel(const MultibodyPlant<double>& plant,
@@ -74,6 +100,8 @@ DofMask DofMask::Complement() const {
   DofMask result(*this);
   result.data_.flip();
   result.count_ = this->size() - this->count();
+  SetFullAndActiveIndices(result.data_, &result.full_indices_,
+                          &result.full_to_active_index_);
   return result;
 }
 
@@ -88,6 +116,8 @@ DofMask DofMask::Union(const DofMask& other) const {
       ++result.count_;
     }
   }
+  SetFullAndActiveIndices(result.data_, &result.full_indices_,
+                          &result.full_to_active_index_);
   return result;
 }
 
@@ -102,6 +132,8 @@ DofMask DofMask::Intersect(const DofMask& other) const {
       ++result.count_;
     }
   }
+  SetFullAndActiveIndices(result.data_, &result.full_indices_,
+                          &result.full_to_active_index_);
   return result;
 }
 
@@ -116,6 +148,8 @@ DofMask DofMask::Subtract(const DofMask& other) const {
       ++result.count_;
     }
   }
+  SetFullAndActiveIndices(result.data_, &result.full_indices_,
+                          &result.full_to_active_index_);
   return result;
 }
 
@@ -201,6 +235,19 @@ bool DofMask::operator==(const DofMask& o) const {
   const bool result = data_ == o.data_;
   DRAKE_ASSERT((result == false) || (this->count() == o.count()));
   return result;
+}
+
+std::optional<int> DofMask::full_to_active_index(int i) const {
+  DRAKE_THROW_UNLESS(i >= 0 && i < this->size());
+  if (data_[i]) {
+    return full_to_active_index_.at(i);
+  }
+  return std::nullopt;
+}
+
+int DofMask::active_to_full_index(int i) const {
+  DRAKE_THROW_UNLESS(i >= 0 && i < this->count());
+  return full_indices_[i];
 }
 
 }  // namespace planning
