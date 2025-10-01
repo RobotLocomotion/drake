@@ -6,7 +6,7 @@ import install_test_helper
 class TestInstallTestHelperTest(unittest.TestCase):
     def test_get_install_dir(self):
         self.assertIn("TEST_TMPDIR", os.environ)
-        self.assertIn('installation', install_test_helper.get_install_dir())
+        self.assertIn("installation", install_test_helper.get_install_dir())
 
     def test_create_temporary_dir(self):
         subdirectory_name = "tmp"
@@ -19,9 +19,11 @@ class TestInstallTestHelperTest(unittest.TestCase):
 
     def test_run_and_kill(self):
         python = install_test_helper.get_python_executable()
-        install_test_helper.run_and_kill([python, "-c",
-                                         "import time; time.sleep(5)"], 0.5,
-                                         from_install_dir=False)
+        install_test_helper.run_and_kill(
+            [python, "-c", "import time; time.sleep(5)"],
+            0.5,
+            from_install_dir=False,
+        )
 
     def test_check_call(self):
         python = install_test_helper.get_python_executable()
@@ -30,10 +32,10 @@ class TestInstallTestHelperTest(unittest.TestCase):
     def test_check_output(self):
         python = install_test_helper.get_python_executable()
         output = install_test_helper.check_output([python, "--help"])
-        self.assertIn('PYTHONPATH', output)
+        self.assertIn("PYTHONPATH", output)
 
     def test_read_only(self):
-        tmp_dir = os.environ['TEST_TMPDIR']
+        tmp_dir = os.environ["TEST_TMPDIR"]
         tmp_file = os.path.join(tmp_dir, "test_file")
         with open(tmp_file, "w") as f:
             f.write("")

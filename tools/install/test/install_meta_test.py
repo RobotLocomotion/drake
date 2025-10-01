@@ -19,7 +19,8 @@ class TestInstallMeta(unittest.TestCase):
         # Do not use `install_test_helper`, as its behavior is more constrained
         # than what is useful for these tests.
         assert "TEST_TMPDIR" in os.environ, (
-            "Must only be run within `bazel test`.")
+            "Must only be run within `bazel test`."
+        )
         install_dir = join(os.environ["TEST_TMPDIR"], "installation", case)
         # Ensure this is only called once per case.
         self.assertFalse(isdir(install_dir), case)
@@ -31,7 +32,7 @@ class TestInstallMeta(unittest.TestCase):
 
     def listdir_recursive(self, d):
         out = set()
-        for (dirpath, _, filenames) in os.walk(d):
+        for dirpath, _, filenames in os.walk(d):
             dirrel = relpath(dirpath, d)
             for filename in filenames:
                 out.add(join(dirrel, filename))
@@ -44,8 +45,9 @@ class TestInstallMeta(unittest.TestCase):
         stream = io.StringIO()
         with redirect_stdout(stream), redirect_stderr(stream):
             installer.main(
-                ['--actions', 'tools/install/dummy/install_actions']
-                + list(args))
+                ["--actions", "tools/install/dummy/install_actions"]
+                + list(args)
+            )
         return stream.getvalue()
 
     def dummy_install_binary(self, *args):
@@ -53,8 +55,9 @@ class TestInstallMeta(unittest.TestCase):
         binary.
         """
         BINARY = "tools/install/dummy/install"
-        return check_output([BINARY] + list(args),
-                            stderr=STDOUT, encoding="utf8")
+        return check_output(
+            [BINARY] + list(args), stderr=STDOUT, encoding="utf8"
+        )
 
     def do_test_nominal(self, test_name, invoker):
         """Test nominal behavior of install."""
@@ -82,7 +85,7 @@ class TestInstallMeta(unittest.TestCase):
         self.assertTrue(substr_without in text_without)
         # - With.
         substr_with = "Install the project..."
-        text_with = invoker(install_dir, '--no_strip')
+        text_with = invoker(install_dir, "--no_strip")
         print(text_with)
         self.assertTrue(substr_with in text_with)
 
@@ -94,8 +97,10 @@ class TestInstallMeta(unittest.TestCase):
 
     def test_strip_args_by_import(self):
         self.do_test_strip_args(
-            "strip_args_by_import", self.dummy_install_import)
+            "strip_args_by_import", self.dummy_install_import
+        )
 
     def test_strip_args_by_binary(self):
         self.do_test_strip_args(
-            "strip_args_by_binary", self.dummy_install_binary)
+            "strip_args_by_binary", self.dummy_install_binary
+        )
