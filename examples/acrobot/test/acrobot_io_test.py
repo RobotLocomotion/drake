@@ -83,4 +83,4 @@ tape_period: 0.05
 """
         self.assertEqual(actual, expected)
         readback = load_output(data=expected)
-        self.assertEqual(x_tape.tolist(), values)
+        self.assertEqual(readback.tolist(), values)
