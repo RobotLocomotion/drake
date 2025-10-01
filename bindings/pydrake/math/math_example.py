@@ -12,7 +12,6 @@ os.environ['MPLBACKEND'] = 'Agg'  # noqa
 
 # Now that the environment is set up, it's safe to import matplotlib, etc.
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import webbrowser
 
