@@ -62,11 +62,11 @@ def _main():
 
     # Bail out early.
     if new_version == old_version:
-        logging.info(f"No new archive is required")
+        logging.info("No new archive is required")
         return
 
     # Update the repository.bzl.
-    logging.info(f"Updating repository.bzl ...")
+    logging.info("Updating repository.bzl ...")
     with open(mydir / "repository.bzl", encoding="utf-8") as f:
         old_repository_bzl = f.read()
     new_repository_bzl = old_repository_bzl.replace(old_version, new_version)
