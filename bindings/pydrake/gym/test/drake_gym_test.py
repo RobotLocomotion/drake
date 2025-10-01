@@ -1,7 +1,6 @@
 import unittest
 
 import gymnasium as gym
-import numpy as np
 import stable_baselines3.common.env_checker
 
 
