@@ -2,6 +2,7 @@
 
 #include <initializer_list>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -234,6 +235,18 @@ class DofMask {
   @pre `output.size() == size()`. */
   void SetInArray(const Eigen::Ref<const Eigen::VectorXd>& vec,
                   drake::EigenPtr<Eigen::VectorXd> output) const;
+
+  /** Returns the map from the active entry to the index in the full vector.
+   Namely q_active[i] = q_full[dof_mask.GetActiveToFullIndex()[i]].
+   */
+  [[nodiscard]] std::vector<int> GetActiveToFullIndex() const;
+
+  /** Returns the map from the index in the full vector to the index to the
+   active vector. Namely q_active[dof_mask.GetFullToActiveIndex()[i]] =
+   q_full[i]. If (*this)[i] == false (namely this DoF is inactive), then return
+   a nullopt.
+   */
+  [[nodiscard]] std::unordered_map<int, int> GetFullToActiveIndex() const;
   //@}
 
  private:

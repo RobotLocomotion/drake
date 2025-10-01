@@ -203,5 +203,28 @@ bool DofMask::operator==(const DofMask& o) const {
   return result;
 }
 
+std::vector<int> DofMask::GetActiveToFullIndex() const {
+  std::vector<int> ret(this->count());
+  int count = 0;
+  for (int i = 0; i < std::ssize(data_); ++i) {
+    if (data_[i]) {
+      ret[count++] = i;
+    }
+  }
+  return ret;
+}
+
+std::unordered_map<int, int> DofMask::GetFullToActiveIndex() const {
+  std::unordered_map<int, int> ret;
+  int count = 0;
+  for (int i = 0; i < std::ssize(data_); ++i) {
+    if (data_[i]) {
+      ret.emplace(i, count);
+      count++;
+    }
+  }
+  return ret;
+}
+
 }  // namespace planning
 }  // namespace drake

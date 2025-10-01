@@ -1725,6 +1725,13 @@ R"""(Constructs a DofMask from an initializer list of bool.)""";
           const char* doc_vector_bool =
 R"""(Constructs a DofMask from a vector of bool.)""";
         } ctor;
+        // Symbol: drake::planning::DofMask::GetActiveToFullIndex
+        struct /* GetActiveToFullIndex */ {
+          // Source: drake/planning/dof_mask.h
+          const char* doc =
+R"""(Returns the map from the active entry to the index in the full vector.
+Namely q_active[i] = q_full[dof_mask.GetActiveToFullIndex()[i]].)""";
+        } GetActiveToFullIndex;
         // Symbol: drake::planning::DofMask::GetColumnsFromMatrix
         struct /* GetColumnsFromMatrix */ {
           // Source: drake/planning/dof_mask.h
@@ -1800,6 +1807,15 @@ vector instead of writing to an output argument.
 Precondition:
     ``full_vec.size() == size()``.)""";
         } GetFromArray;
+        // Symbol: drake::planning::DofMask::GetFullToActiveIndex
+        struct /* GetFullToActiveIndex */ {
+          // Source: drake/planning/dof_mask.h
+          const char* doc =
+R"""(Returns the map from the index in the full vector to the index to the
+active vector. Namely q_active[dof_mask.GetFullToActiveIndex()[i]] =
+q_full[i]. If (*this)[i] == false (namely this DoF is inactive), then
+return a nullopt.)""";
+        } GetFullToActiveIndex;
         // Symbol: drake::planning::DofMask::GetJoints
         struct /* GetJoints */ {
           // Source: drake/planning/dof_mask.h
