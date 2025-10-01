@@ -2641,6 +2641,13 @@ Parameter ``context``:
     The pointer to the context will be maintained internally. The
     integrator must not outlive the context.)""";
         } ctor;
+        // Symbol: drake::systems::IntegratorBase::PostSuccessfulStepCallback
+        struct /* PostSuccessfulStepCallback */ {
+          // Source: drake/systems/analysis/integrator_base.h
+          const char* doc =
+R"""(Derived classes can override this method to perform special processing
+after each successful step. This default method does nothing.)""";
+        } PostSuccessfulStepCallback;
         // Symbol: drake::systems::IntegratorBase::Reset
         struct /* Reset */ {
           // Source: drake/systems/analysis/integrator_base.h
