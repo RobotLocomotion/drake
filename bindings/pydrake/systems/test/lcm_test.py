@@ -4,7 +4,6 @@ Test bindings of LCM integration with the Systems framework.
 import pydrake.systems.lcm as mut
 
 import collections
-import time
 import unittest
 
 import numpy as np
@@ -16,7 +15,7 @@ from pydrake.common.value import Value
 from pydrake.lcm import DrakeLcm, DrakeLcmParams, Subscriber
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
-    BasicVector, DiagramBuilder, LeafSystem, TriggerType,
+    DiagramBuilder, LeafSystem, TriggerType,
 )
 from pydrake.systems.primitives import ConstantVectorSource
 
@@ -298,7 +297,7 @@ class TestSystemsLcm(unittest.TestCase):
         # a subscriber.
         builder = DiagramBuilder()
         lcm = DrakeLcm()
-        lcm_system = builder.AddSystem(mut.LcmInterfaceSystem(lcm=lcm))
+        builder.AddSystem(mut.LcmInterfaceSystem(lcm=lcm))
         # Create subscriber in the diagram.
         subscriber = builder.AddSystem(mut.LcmSubscriberSystem.Make(
             channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm))

@@ -7,11 +7,9 @@ import textwrap
 import unittest
 
 import numpy as np
-from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
-from pydrake.common.value import AbstractValue, Value
+from pydrake.common.value import Value
 from pydrake.geometry import (
     ClippingRange,
     ColorRenderCamera,
@@ -21,10 +19,7 @@ from pydrake.geometry import (
     RenderCameraCore,
 )
 from pydrake.lcm import DrakeLcm
-from pydrake.math import (
-    RigidTransform,
-    RollPitchYaw,
-)
+from pydrake.math import RigidTransform
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
 )
@@ -232,7 +227,6 @@ class TestSensors(unittest.TestCase):
             channel_default = 1
             ImageT = mut.Image[pixel_type]
             image = ImageT(w, h, channel_default)
-            nc = ImageT.Traits.kNumChannels
 
             # Test default initialization.
             self.assertEqual(image.at(0, 0)[0], channel_default)

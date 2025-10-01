@@ -1,15 +1,9 @@
 import math
-import warnings
 
-import errno
-import glob
 import matplotlib
 import matplotlib.cm as plt_cm
 import numpy as np
-import os
-from pathlib import Path
 
-from pydrake.common.deprecation import _warn_deprecated
 from pydrake.common.value import Value
 from pydrake.geometry import (
     Box,
