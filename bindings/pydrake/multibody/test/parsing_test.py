@@ -24,7 +24,6 @@ from pydrake.multibody.parsing import (
 import copy
 import os
 from pathlib import Path
-import re
 import unittest
 
 from pydrake.common import FindResourceOrThrow
@@ -279,8 +278,7 @@ directives:
 
     def test_flatten_model_directives(self):
         (plant, parser, directives) = self._make_plant_parser_directives()
-        added_models = ProcessModelDirectives(
-            directives=directives, parser=parser)
+        ProcessModelDirectives(directives=directives, parser=parser)
         flat_directives = FlattenModelDirectives(
             directives=directives, package_map=parser.package_map()
         )

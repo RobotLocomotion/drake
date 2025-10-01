@@ -3,14 +3,12 @@ from pydrake.multibody import rational
 import numpy as np
 import unittest
 
-import pydrake
 from pydrake.common import FindResourceOrThrow
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.multibody.plant import (
     MultibodyPlant, AddMultibodyPlantSceneGraph)
 from pydrake.symbolic import Polynomial, RationalFunction, Variable, Expression
 from pydrake.multibody.parsing import Parser
-from pydrake.multibody.tree import JointIndex
 import pydrake.symbolic as sym
 
 
@@ -28,14 +26,14 @@ class TestRationalForwardKinematics(unittest.TestCase):
         self.body0 = self.plant.GetBodyByName("rail_base")
         self.body1 = self.plant.GetBodyByName("pendulum")
 
-        diagram = builder.Build()
+        builder.Build()
 
         # test constructor
         self.rat_forward = rational.RationalForwardKinematics(plant=self.plant)
 
     def testGetters(self):
-        plant = self.rat_forward.plant()
-        s = self.rat_forward.s()
+        self.rat_forward.plant()
+        self.rat_forward.s()
 
     def testCalcBodyPoseAsMultilinearPolynomial(self):
         # this also tests that rational::Pose is properly bound.

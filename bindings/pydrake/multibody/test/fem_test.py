@@ -1,7 +1,6 @@
 import unittest
 from pydrake.common.test_utilities import numpy_compare
 
-from pydrake.autodiffutils import AutoDiffXd
 from pydrake.multibody.fem import (
     MaterialModel,
     DeformableBodyConfig_,

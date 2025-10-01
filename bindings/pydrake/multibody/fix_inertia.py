@@ -56,9 +56,7 @@ tags.
 
 import argparse
 import logging
-import numpy as np
 import os
-from pathlib import Path
 
 from pydrake.common import configure_logging as _configure_logging
 from pydrake.multibody import _inertia_fixer
