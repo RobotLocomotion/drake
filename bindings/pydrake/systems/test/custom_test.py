@@ -1,17 +1,13 @@
 # -*- coding: utf-8 -*-
 
-import copy
 import gc
-import sys
 from types import SimpleNamespace
 import unittest
-import warnings
 import weakref
 
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import Value
 from pydrake.symbolic import Expression
 from pydrake.systems.analysis import (
@@ -369,7 +365,7 @@ class TestCustom(unittest.TestCase):
         def broken_alloc_callback():
             pass
         system = LeafSystem()
-        cache_entry = system.DeclareCacheEntry(
+        system.DeclareCacheEntry(
             description="",
             value_producer=ValueProducer(
                 allocate=broken_alloc_callback,
@@ -383,7 +379,7 @@ class TestCustom(unittest.TestCase):
         def broken_alloc_callback():
             return "hello"
         system = LeafSystem()
-        cache_entry = system.DeclareCacheEntry(
+        system.DeclareCacheEntry(
             description="",
             value_producer=ValueProducer(
                 allocate=broken_alloc_callback,
@@ -1023,7 +1019,6 @@ class TestCustom(unittest.TestCase):
                 self.assertEqual(system.AllocateDiscreteVariables().size(), 3)
 
     def test_abstract_io_port(self):
-        test = self
 
         def assert_value_equal(a, b):
             a_name, a_value = a

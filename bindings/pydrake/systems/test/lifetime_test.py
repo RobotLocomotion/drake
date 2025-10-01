@@ -75,7 +75,7 @@ class TestLifetime(unittest.TestCase):
         # Add the system to a built diagram.
         builder_1 = DiagramBuilder()
         builder_1.AddSystem(system)
-        diagram_1 = builder_1.Build()
+        diagram_1 = builder_1.Build()  # noqa: F841 (unused-variable)
 
         # Add it again to another diagram. We don't care if the Add fails or
         # the Build fails, so long as one of them does.
