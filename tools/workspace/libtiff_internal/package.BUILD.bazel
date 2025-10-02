@@ -71,6 +71,8 @@ cmake_configure_files(
         "HAVE_UNISTD_H=1",
     ],
     undefines = [
+        # Drake only supports 64-bit, little-endian hardware.
+        "WORDS_BIGENDIAN",
         # Platform stuff that we don't have or don't want.
         "CXX_SUPPORT",
         "HAVE_IO_H",
