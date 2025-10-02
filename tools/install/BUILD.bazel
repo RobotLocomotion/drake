@@ -39,7 +39,11 @@ exports_files(
 drake_py_binary(
     name = "installer",
     srcs = ["installer.py"],
-    deps = [":otool"],
+    data = ["@patchelf"],
+    deps = [
+        ":otool",
+        "@rules_python//python/runfiles",
+    ],
 )
 
 drake_py_unittest(
