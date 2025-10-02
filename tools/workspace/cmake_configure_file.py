@@ -15,7 +15,7 @@ import sys
 from collections import OrderedDict
 
 # Looks like "#cmakedefine VAR ..." or "#cmakedefine01 VAR".
-_cmakedefine = re.compile(r'^(\s*)#cmakedefine(01)? ([^ \r\n]+)(.*?)([\r\n]+)')
+_cmakedefine = re.compile(r'^(\s*)#(\s*)cmakedefine(01)? ([^ \r\n]+)(.*?)([\r\n]+)')  # noqa
 
 # Looks like "${VAR}".
 _varsubst = re.compile(r'^(.*)\$\{([^} ]+?)\}(.*)([\r\n]*)')
@@ -72,7 +72,7 @@ def _transform_cmake(*, line, definitions, strict, atonly):
     # Replace define statements.
     match = _cmakedefine.match(line)
     if match:
-        blank, maybe01, var, rest, newline = match.groups()
+        blank, _, maybe01, var, rest, newline = match.groups()
         if var not in definitions:
             defined = False
             if strict:

@@ -58,6 +58,7 @@ cmake_configure_files(
         "TIFF_SSIZE_T=ptrdiff_t",
         # Drake only supports 64-bit, little-endian hardware.
         "HOST_BIG_ENDIAN=0",
+        "WORDS_BIGENDIAN=0",
         "SIZEOF_SIZE_T=8",
         # Platform stuff.
         "HAVE_ASSERT_H=1",
@@ -84,7 +85,9 @@ cmake_configure_files(
         "THUNDER_SUPPORT",
         # Opt-out of compression algorithms that require external libraries.
         "HAVE_JBG_NEWLEN",
+        "HAVE_JPEGTURBO_DUAL_MODE_8_12",
         "JBIG_SUPPORT",
+        "LERC_STATIC",
         "LERC_SUPPORT",
         "LIBDEFLATE_SUPPORT",
         "LIBJPEG_12_PATH",
