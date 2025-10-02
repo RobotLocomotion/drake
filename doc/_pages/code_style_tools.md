@@ -29,15 +29,11 @@ User manuals for the style-checking tools are as follows:
 * C/C++: See the cpplint ``USAGE`` string at
   [https://github.com/cpplint/cpplint/blob/develop/cpplint.py](https://github.com/cpplint/cpplint/blob/develop/cpplint.py).
   * In particular, note the ``// NOLINT(foo/bar)`` syntax to disable a warning.
-* Python:
-  * When the call to `add_lint_tests()` has `use_ruff = True`, we use `ruff` as
-    the linter. Drake uses both `check` mode along with `format --check` mode.
-    See the ruff manual at
-    [https://docs.astral.sh/ruff/linter/#error-suppression](https://docs.astral.sh/ruff/linter/#error-suppression)
-	and
-	[https://docs.astral.sh/ruff/formatter/#format-suppression](https://docs.astral.sh/ruff/formatter/#format-suppression).
-  * Otherwise, we use `pycodestyle`. See the pycodestyle manual at
-    [http://pycodestyle.readthedocs.io/en/latest/intro.html](http://pycodestyle.readthedocs.io/en/latest/intro.html).
+* Python: Drake uses `ruff` both for linting (`check` mode) and auto-formatting
+  (`format --check` mode). See the `ruff` manual at
+  [https://docs.astral.sh/ruff/linter/#error-suppression](https://docs.astral.sh/ruff/linter/#error-suppression)
+  and
+  [https://docs.astral.sh/ruff/formatter/#format-suppression](https://docs.astral.sh/ruff/formatter/#format-suppression).
   * The syntax ``# noqa`` can be used to quiet the warning about an overly-long
     line.
 * Bazel: Uses the buildifier tool as described in
