@@ -91,6 +91,32 @@ def _check_invalid_line_endings(filename):
     return 0
 
 
+def _check_80_cols(filename):
+    """Returns 0 if all lines are less that 80 colums, and 1 otherwise; note
+    that certain long lines are exempt (e.g., URLs).
+    """
+    result = 0
+    with open(filename, mode="r", encoding="utf8") as file:
+        lines = file.read().splitlines()
+    # Allow long-line URLs (optionally preceded by a comment marker).
+    url_re = re.compile(
+        # Optional leading whitespace + optional comment marker.
+        r"^\s*(#|//|///|\*|-)?\s*?"
+        # URL without any whitespace + EOL.
+        r"(http|https|file|package)://\S*$"
+    )
+    for index, line in enumerate(lines):
+        if len(line) <= 80:
+            continue
+        if "# noqa" in line:
+            continue
+        if url_re.match(line):
+            continue
+        print(f"ERROR:{filename}:{index + 1}: line too long")
+        result = 1
+    return result
+
+
 def _check_shebang(filename, disallow_executable):
     """Returns 0 if the filename's executable bit is consistent with the
     presence of a shebang line and the shebang line is in the whitelist of
@@ -228,6 +254,7 @@ def main():
         print("drakelint.py: Linting " + filename)
         total_errors += _check_invalid_line_endings(filename)
         if not filename.endswith((".cc", ".cpp", ".h")):
+            total_errors += _check_80_cols(filename)
             # TODO(jwnimmer-tri) We should enable this check for C++ files
             # also, but that runs into some struggle with genfiles.
             total_errors += _check_shebang(filename, disallow_executable)
