@@ -40,8 +40,8 @@ User manuals for the style-checking tools are as follows:
     [http://pycodestyle.readthedocs.io/en/latest/intro.html](http://pycodestyle.readthedocs.io/en/latest/intro.html).
   * The syntax ``# noqa`` can be used to quiet the warning about an overly-long
     line.
-* Bazel: Uses both pycodestyle like Python, and also the buildifier tool as
-  described in [Updating BUILD files](/bazel.html#updating-build-files).
+* Bazel: Uses the buildifier tool as described in
+  [Updating BUILD files](/bazel.html#updating-build-files).
 
 To opt-out of all linting (e.g., when committing vendored copies of third-party
 external files into Drake's workspace), add `tags = ["nolint"]` to the
