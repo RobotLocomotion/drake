@@ -3,7 +3,6 @@
 For instructions, see https://drake.mit.edu/documentation_instructions.html.
 """
 
-import argparse
 from fnmatch import fnmatch
 from glob import glob
 import os

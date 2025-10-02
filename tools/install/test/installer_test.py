@@ -1,7 +1,7 @@
 """Tests the behavior of targets that use `installer.py`."""
 
 import os
-from os.path import isdir, join
+from os.path import join
 import unittest
 
 from tools.install.installer import Installer

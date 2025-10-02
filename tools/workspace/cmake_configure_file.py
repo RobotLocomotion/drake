@@ -10,7 +10,6 @@ https://cmake.org/cmake/help/latest/command/configure_file.html
 import argparse
 import os
 import re
-import sys
 
 from collections import OrderedDict
 

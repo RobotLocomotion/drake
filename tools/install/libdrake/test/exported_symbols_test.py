@@ -1,5 +1,4 @@
 from collections import namedtuple
-from pathlib import Path
 import re
 import subprocess
 import sys

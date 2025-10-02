@@ -4,7 +4,6 @@ drake_cc_googletest bazel macro, by running
 with a variety of command-line flags.
 """
 
-import re
 import subprocess
 import os
 import sys

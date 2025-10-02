@@ -3,7 +3,6 @@ implementation uses Bazel command-line actions so is suitable only
 for manual use, not any build rules or test automation.
 """
 
-import glob
 import json
 import logging
 import os
