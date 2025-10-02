@@ -165,13 +165,15 @@ def _dut_full_example():
     directives:
     - add_model:
         name: amazon_table
-        file: package://drake_models/manipulation_station/amazon_table_simplified.sdf
+        file: |-
+          package://drake_models/manipulation_station/amazon_table_simplified.sdf
     - add_weld:
         parent: world
         child: amazon_table::amazon_table
     - add_model:
         name: iiwa
-        file: package://drake_models/iiwa_description/urdf/iiwa14_primitive_collision.urdf
+        file: |-
+          package://drake_models/iiwa_description/urdf/iiwa14_primitive_collision.urdf
         default_joint_positions:
           iiwa_joint_1: [-0.2]
           iiwa_joint_2: [0.79]
@@ -191,7 +193,8 @@ def _dut_full_example():
         child: iiwa::base
     - add_model:
         name: wsg
-        file: package://drake_models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf
+        file: |-
+          package://drake_models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf
         default_joint_positions:
           left_finger_sliding_joint: [-0.02]
           right_finger_sliding_joint: [0.02]
@@ -206,7 +209,8 @@ def _dut_full_example():
         child: wsg::body
     - add_model:
         name: bell_pepper
-        file: package://drake_models/veggies/yellow_bell_pepper_no_stem_low.sdf
+        file: |-
+          package://drake_models/veggies/yellow_bell_pepper_no_stem_low.sdf
         default_free_body_pose:
           flush_bottom_center__z_up:
             base_frame: amazon_table::amazon_table
