@@ -187,4 +187,5 @@ add_lint_tests(
         ],
         allow_empty = False,
     ),
+    python_lint_use_ruff_format = False,
 )

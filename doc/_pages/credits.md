@@ -87,7 +87,6 @@ all of their maintainers, whose work is essential to Drake's success:
   * [numpy](https://numpy.org/)
   * [onetbb](https://github.com/oneapi-src/oneTBB)
   * [pybind11](https://pybind11.readthedocs.io/)
-  * [pycodestyle](https://github.com/PyCQA/pycodestyle)
   * [spdlog](https://github.com/gabime/spdlog)
 
 * Documentation:

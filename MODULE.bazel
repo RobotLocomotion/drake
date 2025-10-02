@@ -321,7 +321,6 @@ use_repo(
     "cpplint_internal",
     "github3_py_internal",
     "mpmath_py_internal",
-    "pycodestyle_internal",
     "sympy_py_internal",
     "uritemplate_py_internal",
     "xmlrunner_py_internal",
