@@ -12,8 +12,8 @@ def libtiff_internal_repository(
         The package.BUILD.bazel file hard-codes the version number and release
         date; be sure to update those to match the new commit.
         """,
-        commit = "v4.7.0",
-        sha256 = "8f568a0dfac2e514074b04d7368c22e8afc1009af29780762a2536fd4d111e16",  # noqa
+        commit = "v4.7.1",
+        sha256 = "a3faec056a490c62b8749847317521204f8c4d9933cce834e691a74524ec38fe",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
