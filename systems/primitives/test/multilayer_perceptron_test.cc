@@ -330,7 +330,7 @@ GTEST_TEST(MultilayerPereceptronTest, BatchOutputWithGradients) {
 GTEST_TEST(MultilayerPerceptronTest, BatchOutputWithGradientsThrows) {
   MultilayerPerceptron<double> mlp({2, 2});
   auto context = mlp.CreateDefaultContext();
-  const Eigen::Matrix2d X;
+  const Eigen::Matrix2d X = Eigen::Matrix2d::Zero();
   Eigen::Matrix2d Y, dYdX;
 
   DRAKE_EXPECT_THROWS_MESSAGE(

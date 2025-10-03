@@ -143,7 +143,6 @@ TEST_F(CartPoleTest, SystemDynamics) {
   const Vector2<double> q(2.5, M_PI / 3);
   const Vector2<double> v(-1.5, 0.5);
 
-  Matrix2<double> M;
   cart_slider_->set_translation(context_.get(), q(0));
   cart_slider_->set_translation_rate(context_.get(), v(0));
   pole_pin_->set_angle(context_.get(), q(1));

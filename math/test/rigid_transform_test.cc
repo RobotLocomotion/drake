@@ -854,7 +854,6 @@ GTEST_TEST(RigidTransform, SpecializedTransformOperators) {
 
   // Test ApplyAxialRotation().
   const Vector3d p_C(1.0, 2.0, 3.0);
-  Vector3d p_B;  // reusable result
   EXPECT_TRUE(CompareMatrices(Xform::ApplyAxialRotation<0>(xrX_BC, p_C),
                               xrX_BC * p_C, kTol));
   EXPECT_TRUE(CompareMatrices(Xform::ApplyAxialRotation<1>(yrX_BC, p_C),
