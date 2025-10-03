@@ -1,4 +1,3 @@
-curl
 kcov
 python3-dateutil
 python3-flask
