@@ -310,4 +310,4 @@ drake_py_unittest(
     ],
 )
 
-add_lint_tests_pydrake()
+add_lint_tests_pydrake(python_lint_use_ruff_format = False)

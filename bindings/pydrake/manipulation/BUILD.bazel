@@ -102,4 +102,4 @@ install(
     deps = get_drake_py_installs([":manipulation"]),
 )
 
-add_lint_tests_pydrake()
+add_lint_tests_pydrake(python_lint_use_ruff_format = False)

@@ -248,4 +248,5 @@ add_lint_tests_pydrake(
         "run_installed_model_visualizer.py",
         "test/visualization_install_tests.py",
     ],
+    python_lint_use_ruff_format = False,
 )
