@@ -320,6 +320,49 @@ void ComposeRinvRImpl(const double* R_BA, const double* R_BC, double* R_AC) {
   hn::StoreN(pqr_, tag, R_AC + 6, 3);  // 3-wide write to stay in bounds
 }
 
+/* Composition of rotation matrix and vector v_A = R_AB * v_B.
+
+We want to perform this 3x3 * 3x1 matrix multiplication:
+
+v_A      R_AB      v_B
+ s      a d g       X
+ t   =  b e h  @    Y
+ u      c f i       Z
+
+Writing that out longhand, we have:
+
+  s = aX + dY + gZ
+  t = bX + eY + hZ
+  u = cX + fY + iZ
+
+Strategy: compute stu in parallel.
+
+  <stu_> =   <abc_> * <XXX_>
+           + <def_> * <YYY_>
+           + <ghi_> * <ZZZ_>
+
+It is OK if the result v_A overlaps one or both of the inputs. */
+void ComposeRv3Impl(const double* R_AB, const double* v_B, double* v_A) {
+  const hn::FixedTag<double, 4> tag;
+
+  // Load the input.
+  const auto abc_ = hn::LoadU(tag, R_AB);      // (d is loaded but unused)
+  const auto def_ = hn::LoadU(tag, R_AB + 3);  // (g is loaded but unused)
+  const auto ghi_ = hn::LoadN(tag, R_AB + 6, 3);
+
+  const auto XXX_ = hn::Set(tag, v_B[0]);
+  const auto YYY_ = hn::Set(tag, v_B[1]);
+  const auto ZZZ_ = hn::Set(tag, v_B[2]);
+
+  // Column stu:                            s   t   u   _  =
+  auto stu_ = hn::Mul(abc_, XXX_);      //  aX  bX  cX  _
+  stu_ = hn::MulAdd(def_, YYY_, stu_);  // +dY +eY +fY  _
+  stu_ = hn::MulAdd(ghi_, ZZZ_, stu_);  // +gZ +hZ +iZ  _
+
+  // Store the output.
+  hn::StoreN(stu_, tag, v_A, 3);  // 3-wide write to stay in bounds
+}
+
 /* Composition of transforms X_AC = X_AB * X_BC.
 
 Each matrix is 12 consecutive doubles in column-major order.
@@ -591,6 +634,112 @@ void ComposeXinvXImpl(const double* X_BA, const double* X_BC, double* X_AC) {
   hn::StoreN(stu_, tag, X_AC + 9, 3);  // 3-wide write to stay in bounds
 }
 
+/* Composition of transform and point p_AoQ_A = X_AB * p_BoQ_B.
+
+We want to perform this 4x4 * 4x1 matrix multiplication:
+
+p_AoQ_A       X_AB      p_BoQ_B
+   s        a d g x        X
+   t     =  b e h y  @     Y
+   u        c f i z        Z
+   1        0 0 0 1        1
+
+(Note that the "0 0 0 1" is only an illustration of the math; our transform
+matrix does not actually store that row.)
+
+Writing that out longhand, we have:
+
+  s = x + aX + dY + gZ
+  t = y + bX + eY + hZ
+  u = z + cX + fY + iZ
+
+Strategy: compute stu in parallel.
+
+  <stu_> =   <xyz_>
+           + <abc_> * <XXX_>
+           + <def_> * <YYY_>
+           + <ghi_> * <ZZZ_>
+
+It is OK if the result p_AoQ_A overlaps one or both of the inputs. */
+void ComposeXpImpl(const double* X_AB, const double* p_BoQ_B, double* p_AoQ_A) {
+  const hn::FixedTag<double, 4> tag;
+
+  // Load the input.
+  const auto abc_ = hn::LoadU(tag, X_AB);      // (d is loaded but unused)
+  const auto def_ = hn::LoadU(tag, X_AB + 3);  // (g is loaded but unused)
+  const auto ghi_ = hn::LoadU(tag, X_AB + 6);  // (x is loaded but unused)
+  const auto xyz_ = hn::LoadN(tag, X_AB + 9, 3);
+
+  const auto XXX_ = hn::Set(tag, p_BoQ_B[0]);
+  const auto YYY_ = hn::Set(tag, p_BoQ_B[1]);
+  const auto ZZZ_ = hn::Set(tag, p_BoQ_B[2]);
+
+  // Column stu:                            s   t   u   _  =
+  auto stu_ = xyz_;                     //  x   y   z   _
+  stu_ = hn::MulAdd(abc_, XXX_, stu_);  // +aX +bX +cX  _
+  stu_ = hn::MulAdd(def_, YYY_, stu_);  // +dY +eY +fY  _
+  stu_ = hn::MulAdd(ghi_, ZZZ_, stu_);  // +gZ +hZ +iZ  _
+
+  // Store the output.
+  hn::StoreN(stu_, tag, p_AoQ_A, 3);  // 3-wide write to stay in bounds
+}
+
+/* Composition of transform and vector vec_A = X_AB * vec_B.
+
+We want to perform this 4x4 * 4x1 matrix multiplication:
+
+vec_A      X_AB      vec_B
+  s       a d g x       X
+  t    =  b e h y  @    Y
+  u       c f i z       Z
+  v       0 0 0 1       W
+
+(Note that the "0 0 0 1" is only an illustration of the math; our transform
+matrix does not actually store that row.)
+
+Writing that out longhand, we have:
+
+  s = aX + dY + gZ + xW
+  t = bX + eY + hZ + yW
+  u = cX + fY + iZ + zW
+  v = W
+
+Strategy: compute stu in parallel.
+
+  <stu_> =   <xyz_> * <WWW_>
+           + <abc_> * <XXX_>
+           + <def_> * <YYY_>
+           + <ghi_> * <ZZZ_>
+
+then set vec_A[3] = vec_B[3] to overwrite whatever garbage is otherwise there.
+
+It is OK if the result vec_A overlaps one or both of the inputs. */
+void ComposeXv4Impl(const double* X_AB, const double* vec_B, double* vec_A) {
+  const double vec_B_3 = vec_B[3];
+  const hn::FixedTag<double, 4> tag;
+
+  // Load the input.
+  const auto abc_ = hn::LoadU(tag, X_AB);      // (d is loaded but unused)
+  const auto def_ = hn::LoadU(tag, X_AB + 3);  // (g is loaded but unused)
+  const auto ghi_ = hn::LoadU(tag, X_AB + 6);  // (x is loaded but unused)
+  const auto xyz_ = hn::LoadN(tag, X_AB + 9, 3);
+
+  const auto XXX_ = hn::Set(tag, vec_B[0]);
+  const auto YYY_ = hn::Set(tag, vec_B[1]);
+  const auto ZZZ_ = hn::Set(tag, vec_B[2]);
+  const auto WWW_ = hn::Set(tag, vec_B[3]);
+
+  // Column stu:                            s   t   u   _  =
+  auto stu_ = hn::Mul(xyz_, WWW_);      //  xW  yW  zW  _
+  stu_ = hn::MulAdd(abc_, XXX_, stu_);  // +aX +bX +cX  _
+  stu_ = hn::MulAdd(def_, YYY_, stu_);  // +dY +eY +fY  _
+  stu_ = hn::MulAdd(ghi_, ZZZ_, stu_);  // +gZ +hZ +iZ  _
+
+  // Store the output.
+  hn::StoreU(stu_, tag, vec_A);
+  vec_A[3] = vec_B_3;
+}
+
 #else  // HWY_MAX_BYTES
 
 /* The portable versions are always defined. They should be written to maximize
@@ -638,6 +787,13 @@ void ComposeRinvRNoAlias(const double* R_BA, const double* R_BC, double* R_AC) {
   R_AC[8] = col_x_col(&R_BA[6], &R_BC[6]);
 }
 
+/* @pre v_A is disjoint in memory from the inputs. */
+void ComposeRv3NoAlias(const double* R_AB, const double* v_B, double* v_A) {
+  v_A[0] = row_x_col(&R_AB[0], v_B);
+  v_A[1] = row_x_col(&R_AB[1], v_B);
+  v_A[2] = row_x_col(&R_AB[2], v_B);
+}
+
 /* @pre X_AC is disjoint in memory from the inputs. */
 void ComposeXXNoAlias(const double* X_AB, const double* X_BC, double* X_AC) {
   const double* p_AB = X_AB + 9;  // Make some nice aliases.
@@ -670,6 +826,27 @@ void ComposeXinvXNoAlias(const double* X_BA, const double* X_BC, double* X_AC) {
   p_AC[2] = col_x_col(&X_BA[6], p_AC_B);  // rather than rows.
 }
 
+/* @pre p_AoQ_A is disjoint in memory from the inputs. */
+void ComposeXpNoAlias(const double* X_AB, const double* p_BoQ_B,
+                      double* p_AoQ_A) {
+  const double* p_AB = X_AB + 9;  // Make some nice aliases.
+
+  p_AoQ_A[0] = p_AB[0] + row_x_col(&X_AB[0], p_BoQ_B);
+  p_AoQ_A[1] = p_AB[1] + row_x_col(&X_AB[1], p_BoQ_B);
+  p_AoQ_A[2] = p_AB[2] + row_x_col(&X_AB[2], p_BoQ_B);
+}
+
+/* @pre vec_A is disjoint in memory from the inputs. */
+void ComposeXv4NoAlias(const double* X_AB, const double* vec_B, double* vec_A) {
+  const double* p_AB = X_AB + 9;    // Make some nice aliases.
+  const double vec_B_3 = vec_B[3];  // This is either 1 or 0.
+
+  vec_A[0] = (p_AB[0] * vec_B_3) + row_x_col(&X_AB[0], vec_B);
+  vec_A[1] = (p_AB[1] * vec_B_3) + row_x_col(&X_AB[1], vec_B);
+  vec_A[2] = (p_AB[2] * vec_B_3) + row_x_col(&X_AB[2], vec_B);
+  vec_A[3] = vec_B_3;
+}
+
 void ComposeRRImpl(const double* R_AB, const double* R_BC, double* R_AC) {
   DRAKE_ASSERT(R_AC != nullptr);
   double R_AC_temp[9];  // Protect from overlap with inputs.
@@ -684,6 +861,12 @@ void ComposeRinvRImpl(const double* R_BA, const double* R_BC, double* R_AC) {
   std::copy(R_AC_temp, R_AC_temp + 9, R_AC);
 }
 
+void ComposeRv3Impl(const double* R_AB, const double* v_B, double* v_A) {
+  DRAKE_ASSERT(v_B != nullptr);
+  DRAKE_ASSERT(v_A != nullptr);
+  ComposeRv3NoAlias(R_AB, v_B, v_A);
+}
+
 void ComposeXXImpl(const double* X_AB, const double* X_BC, double* X_AC) {
   DRAKE_ASSERT(X_AC != nullptr);
   double X_AC_temp[12];  // Protect from overlap with inputs.
@@ -696,6 +879,18 @@ void ComposeXinvXImpl(const double* X_BA, const double* X_BC, double* X_AC) {
   double X_AC_temp[12];  // Protect from overlap with inputs.
   ComposeXinvXNoAlias(X_BA, X_BC, X_AC_temp);
   std::copy(X_AC_temp, X_AC_temp + 12, X_AC);
+}
+
+void ComposeXpImpl(const double* X_AB, const double* p_BoQ_B, double* p_AoQ_A) {
+  DRAKE_ASSERT(p_BoQ_B != nullptr);
+  DRAKE_ASSERT(p_AoQ_A != nullptr);
+  ComposeXpNoAlias(X_AB, p_BoQ_B, p_AoQ_A);
+}
+
+void ComposeXv4Impl(const double* X_AB, const double* vec_B, double* vec_A) {
+  DRAKE_ASSERT(vec_B != nullptr);
+  DRAKE_ASSERT(vec_A != nullptr);
+  ComposeXv4NoAlias(X_AB, vec_B, vec_A);
 }
 
 #endif  // HWY_MAX_BYTES
@@ -724,6 +919,10 @@ HWY_EXPORT(ComposeRinvRImpl);
 struct ChooseBestComposeRinvR {
   auto operator()() { return HWY_DYNAMIC_POINTER(ComposeRinvRImpl); }
 };
+HWY_EXPORT(ComposeRv3Impl);
+struct ChooseBestComposeRv3 {
+  auto operator()() { return HWY_DYNAMIC_POINTER(ComposeRv3Impl); }
+};
 HWY_EXPORT(ComposeXXImpl);
 struct ChooseBestComposeXX {
   auto operator()() { return HWY_DYNAMIC_POINTER(ComposeXXImpl); }
@@ -731,6 +930,14 @@ struct ChooseBestComposeXX {
 HWY_EXPORT(ComposeXinvXImpl);
 struct ChooseBestComposeXinvX {
   auto operator()() { return HWY_DYNAMIC_POINTER(ComposeXinvXImpl); }
+};
+HWY_EXPORT(ComposeXpImpl);
+struct ChooseBestComposeXp {
+  auto operator()() { return HWY_DYNAMIC_POINTER(ComposeXpImpl); }
+};
+HWY_EXPORT(ComposeXv4Impl);
+struct ChooseBestComposeXv4 {
+  auto operator()() { return HWY_DYNAMIC_POINTER(ComposeXv4Impl); }
 };
 
 // These sugar functions convert C++ types into bare arrays.
@@ -767,6 +974,11 @@ void ComposeRinvR(const RotationMatrix<double>& R_BA,
       GetRawData(R_BA), GetRawData(R_BC), GetRawData(R_AC));
 }
 
+void ComposeRv3(const RotationMatrix<double>& R_AB, const double v_B[3],
+                double v_A[3]) {
+  LateBoundFunction<ChooseBestComposeRv3>::Call(GetRawData(R_AB), v_B, v_A);
+}
+
 void ComposeXX(const RigidTransform<double>& X_AB,
                const RigidTransform<double>& X_BC,
                RigidTransform<double>* X_AC) {
@@ -779,6 +991,17 @@ void ComposeXinvX(const RigidTransform<double>& X_BA,
                   RigidTransform<double>* X_AC) {
   LateBoundFunction<ChooseBestComposeXinvX>::Call(
       GetRawData(X_BA), GetRawData(X_BC), GetRawData(X_AC));
+}
+
+void ComposeXp(const RigidTransform<double>& X_AB, const double p_BoQ_B[3],
+               double p_AoQ_A[3]) {
+  LateBoundFunction<ChooseBestComposeXp>::Call(GetRawData(X_AB), p_BoQ_B,
+                                               p_AoQ_A);
+}
+
+void ComposeXv4(const RigidTransform<double>& X_AB, const double vec_B[4],
+                double vec_A[4]) {
+  LateBoundFunction<ChooseBestComposeXv4>::Call(GetRawData(X_AB), vec_B, vec_A);
 }
 
 }  // namespace internal
