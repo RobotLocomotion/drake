@@ -485,7 +485,10 @@ Parameter ``p_MQ``:
 
 Raises:
     RuntimeError if the field does not have gradients defined *and*
-    the MeshType doesn't support Barycentric coordinates.)""";
+    the MeshType doesn't support Barycentric coordinates.
+
+Template parameter ``C``:
+    must be either ``double`` or ``AutoDiffXd``.)""";
         } EvaluateCartesian;
         // Symbol: drake::geometry::MeshFieldLinear::EvaluateGradient
         struct /* EvaluateGradient */ {
@@ -871,7 +874,10 @@ elements (three or more sides).)""";
 R"""(See TriangleSurfaceMesh::CalcBaryCentric(). This implementation is
 provided to maintain compatibility with MeshFieldLinear. However, it
 only throws. PolygonSurfaceMesh does not support barycentric
-coordinates.)""";
+coordinates.
+
+Template parameter ``C``:
+    must be either ``double`` or ``AutoDiffXd``.)""";
         } CalcBarycentric;
         // Symbol: drake::geometry::PolygonSurfaceMesh::CalcBoundingBox
         struct /* CalcBoundingBox */ {
@@ -1292,7 +1298,7 @@ Parameter ``t``:
     The index of a triangle.
 
 Returns ``b_Q``:
-    ' The barycentric coordinates of Q' (projection of Q onto `t`'s
+    ' The barycentric coordinates of Q' (projection of Q onto ``t`'s
     plane) relative to triangle t.
 
 Note:
@@ -1301,7 +1307,10 @@ Note:
     negative.
 
 Precondition:
-    t ∈ {0, 1, 2,..., num_triangles()-1}.)""";
+    t ∈ {0, 1, 2,..., num_triangles()-1}.
+
+Template parameter ``C``:
+    must be either `double`` or ``AutoDiffXd``.)""";
         } CalcBarycentric;
         // Symbol: drake::geometry::TriangleSurfaceMesh::CalcBoundingBox
         struct /* CalcBoundingBox */ {
@@ -1616,7 +1625,10 @@ Parameter ``e``:
 Note:
     If p_MQ is outside the tetrahedral element, the barycentric
     coordinates (b₀, b₁, b₂, b₃) still satisfy b₀ + b₁ + b₂ + b₃ = 1;
-    however, some bᵢ will be negative.)""";
+    however, some bᵢ will be negative.
+
+Template parameter ``C``:
+    must be either ``double`` or ``AutoDiffXd``.)""";
         } CalcBarycentric;
         // Symbol: drake::geometry::VolumeMesh::CalcGradientVectorOfLinearField
         struct /* CalcGradientVectorOfLinearField */ {
