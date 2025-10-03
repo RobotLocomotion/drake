@@ -362,9 +362,15 @@ class TestGeometryVisualizers(unittest.TestCase):
     def test_meshcat_404(self):
         meshcat = mut.Meshcat()
 
-        good_url = meshcat.web_url()
-        with urllib.request.urlopen(good_url) as response:
-            self.assertTrue(response.read(1))
+        good_urls = [
+            meshcat.web_url(),
+            meshcat.web_url() + "/index.html",
+            meshcat.web_url() + "/favicon.ico",
+            meshcat.web_url() + "/meshcat.js",
+        ]
+        for good_url in good_urls:
+            with urllib.request.urlopen(good_url) as response:
+                self.assertTrue(response.read(1))
 
         bad_url = f"{good_url}/no_such_file"
         with self.assertRaisesRegex(Exception, "HTTP.*404"):
@@ -468,6 +474,8 @@ class TestGeometryVisualizers(unittest.TestCase):
         with urllib.request.urlopen(meshcat.web_url()) as response:
             content_type = response.getheader("Content-Type")
             some_data = response.read(4096)
+            # Finish reading everything, but discard it.
+            response.read()
         # This also serves as a regresion test of the C++ code, where parsing
         # the Content-Type is difficult within its unit test infrastructure.
         self.assertIn("text/html", content_type)
