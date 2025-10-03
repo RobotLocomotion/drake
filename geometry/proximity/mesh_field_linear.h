@@ -330,7 +330,7 @@ class MeshFieldLinear {
                coordinates. M is the frame of the mesh.
    @throws std::exception if the field does not have gradients defined _and_ the
            MeshType doesn't support Barycentric coordinates.
-   */
+   @tparam C must be either `double` or `AutoDiffXd`. */
   template <typename C>
   promoted_numerical_t<C, T> EvaluateCartesian(int e,
                                                const Vector3<C>& p_MQ) const {
