@@ -397,7 +397,7 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
   //   - X_PH - pose of the hierarchy in the primitive frame or, in this
   //     context, the hierarchy of the _rigid_ mesh_R in the half space
   //     primitive: X_SR.
-  bvh_R.Collide(HalfSpace{}, convert_to_double(X_RS).inverse(), bvh_callback);
+  bvh_R.Collide(convert_to_double(X_RS).inverse(), bvh_callback);
 
   if (tri_indices.size() == 0) return nullptr;
 

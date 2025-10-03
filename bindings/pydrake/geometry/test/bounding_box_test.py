@@ -124,12 +124,11 @@ class TestGeometryBoundingBox(unittest.TestCase):
         self.assertFalse(mut.Obb.HasOverlap(obb1, obb2, identity_transform))
 
         # Test Obb-HalfSpace overlap.
-        half_space = mut.HalfSpace()
+        # XXX fix comment below.
         # Default half space has normal [0,0,1] and passes through origin.
         # Our obb1 is centered at origin with half_width [1,1,1], so it
         # should overlap the half space (extends into negative z).
-        self.assertTrue(mut.Obb.HasOverlap(obb1, half_space,
-                                           identity_transform))
+        self.assertTrue(mut.Obb.HasOverlap(obb1, identity_transform))
 
     def test_aabb_obb_cross_overlap(self):
         # Test cross-type overlap between Aabb and Obb.
