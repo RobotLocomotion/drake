@@ -190,7 +190,7 @@ Adjusting closed-source (commercial) software dependencies:
 
 * `WITH_GUROBI` (default `OFF`).
   When `ON`, enables the `GurobiSolver` in the build.
-  * When enabled, you must download and install Gurobi 10.0 yourself prior to
+  * When enabled, you must download and install Gurobi 12.0 yourself prior to
     running Drake's CMake configure script; Drake does not automatically
     download Gurobi. If Gurobi is not installed to its standard location, you
     must also `export GUROBI_HOME=${...GUROBI_UNZIP_PATH...}/linux64`
