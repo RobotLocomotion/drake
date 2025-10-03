@@ -2,6 +2,7 @@
 
 #include <initializer_list>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -234,6 +235,18 @@ class DofMask {
   @pre `output.size() == size()`. */
   void SetInArray(const Eigen::Ref<const Eigen::VectorXd>& vec,
                   drake::EigenPtr<Eigen::VectorXd> output) const;
+
+  /** Returns the index in the full vector. Namely q_active[i] =
+   q_full[dof_mask.active_to_full_index(i)].
+   @pre i >= 0 and i < this->count()
+   */
+  [[nodiscard]] int active_to_full_index(int i) const;
+
+  /** Returns the index in the active vector. Namely
+   q_active[dof_mask.full_to_active_index(i)] = q_full[i]. If (*this)[i] ==
+   false (namely this DoF is inactive), then return a nullopt.
+   @pre i >= 0, i < this->size(). */
+  [[nodiscard]] std::optional<int> full_to_active_index(int i) const;
   //@}
 
  private:
@@ -246,6 +259,12 @@ class DofMask {
   // These member fields are almost "const" -- we have no member functions that
   // mutate them, other than the two default assignment operators.
   std::vector<bool> data_;
+  // Maps the active index to the full index, namely q_active[i] =
+  // q_full[full_indices_[i]].
+  std::vector<int> full_indices_;
+  // Maps the full index to the active index, namely
+  // q_active[full_to_active_index_[i]] = q_full[i].
+  std::unordered_map<int, int> full_to_active_index_;
   reset_after_move<int> count_{0};
 };
 

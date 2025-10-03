@@ -48,7 +48,11 @@ void DefinePlanningDofMask(py::module m) {
         .def("Intersect", &Class::Intersect, py::arg("other"),
             cls_doc.Intersect.doc)
         .def("Subtract", &Class::Subtract, py::arg("other"),
-            cls_doc.Subtract.doc);
+            cls_doc.Subtract.doc)
+        .def("full_to_active_index", &Class::full_to_active_index, py::arg("i"),
+            cls_doc.full_to_active_index.doc)
+        .def("active_to_full_index", &Class::active_to_full_index, py::arg("i"),
+            cls_doc.active_to_full_index.doc);
     py::implicitly_convertible<std::vector<bool>, Class>();
   }
 }
