@@ -290,46 +290,6 @@ class MultibodyTree {
   const MobilizerType<T>& AddMobilizer(
       std::unique_ptr<MobilizerType<T>> mobilizer);
 
-  // Constructs a new mobilizer with type `MobilizerType` with the given
-  // `args`, and adds it to `this` %MultibodyTree, which retains ownership.
-  // The `MobilizerType` will be specialized on the scalar type T of this
-  // %MultibodyTree.
-  //
-  // Example of usage:
-  // @code
-  //   MultibodyTree<T> model;
-  //   // ... Code to define inboard and outboard frames by calling
-  //   // MultibodyTree::AddFrame() ...
-  //   // Notice RevoluteMobilizer is a template an a scalar type.
-  //   const RevoluteMobilizer<T>& pin =
-  //     model.template AddMobilizer<RevoluteMobilizer>(
-  //       inboard_frame, outboard_frame,
-  //       Vector3d::UnitZ() /*revolute axis*/);
-  // @endcode
-  //
-  // Note that for dependent names _only_ you must use the template keyword
-  // (say for instance you have a MultibodyTree<T> member within your custom
-  // class).
-  //
-  // @throws std::exception if Finalize() was already called on `this` tree.
-  // @throws std::exception if the new mobilizer attempts to connect a
-  // frame with itself.
-  // @throws std::exception if attempting to connect two bodies with more
-  // than one mobilizer between them.
-  //
-  // @param[in] args The arguments needed to construct a valid Mobilizer of
-  //                 type `MobilizerType`. `MobilizerType` must provide a
-  //                 public constructor that takes these arguments.
-  // @returns A constant reference of type `MobilizerType` to the created
-  //          mobilizer. This reference which will remain valid for the
-  //          lifetime of `this` %MultibodyTree.
-  //
-  // @tparam MobilizerType A template for the type of Mobilizer to construct.
-  //                       The template will be specialized on the scalar type
-  //                       T of `this` %MultibodyTree.
-  template <template <typename Scalar> class MobilizerType, typename... Args>
-  const MobilizerType<T>& AddMobilizer(Args&&... args);
-
   // Creates and adds to `this` %MultibodyTree (which retains ownership) a new
   // `ForceElement` member with the specific type `ForceElementType`. The
   // arguments to this method `args` are forwarded to `ForceElementType`'s
@@ -586,7 +546,7 @@ class MultibodyTree {
   }
 
   // See MultibodyPlant method.
-  int num_actuated_dofs() const { return topology_.num_actuated_dofs(); }
+  int num_actuated_dofs() const { return num_actuated_dofs_; }
 
   // See MultibodyPlant method.
   int num_actuators(ModelInstanceIndex model_instance) const {
@@ -607,7 +567,7 @@ class MultibodyTree {
   // Kinematic paths are created by Mobilizer objects connecting a chain of
   // frames. Therefore, this method does not count kinematic cycles, which
   // could only be considered in the model using constraints.
-  int forest_height() const { return topology_.forest_height(); }
+  int forest_height() const { return forest().height(); }
 
   // Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
@@ -2881,10 +2841,6 @@ class MultibodyTree {
   GetDefaultFloatingBaseBodyPoseAsQuaternionVec3Pair(
       const RigidBody<T>& body) const;
 
-  // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
-  //  a method that verifies the state of the topology with a signature similar
-  //  to RoadGeometry::CheckHasRightSizeForModel().
-
   // These objects are defined via MultibodyPlant and are thus user-visible.
   const RigidBody<T>* world_rigid_body_{nullptr};
   // When we need to look up elements by name, we'll use an ElementCollection.
@@ -2894,6 +2850,9 @@ class MultibodyTree {
   ElementCollection<T, Joint, JointIndex> joints_;
   std::vector<std::unique_ptr<ForceElement<T>>> force_elements_;
   ElementCollection<T, JointActuator, JointActuatorIndex> actuators_;
+
+  // This is accumulated as actuators are added.
+  int num_actuated_dofs_{0};
 
   // This is the internal representation of user-defined model instances.
   ElementCollection<T, internal::ModelInstance, ModelInstanceIndex>
@@ -2924,13 +2883,14 @@ class MultibodyTree {
   std::unordered_map<JointIndex, MobodIndex> joint_to_mobilizer_;
 
   // Maps the default body poses of all floating bodies AND bodies touched by
-  // MultibodyPlant::SetDefaultFreeBodyPose(). During Finalize(), the default
-  // pose of a floating body is converted to the joint index of the floating
-  // joint connecting the world and the body. Post-finalize and the default
-  // poses of such floating bodies can (and should) be retrieved via the joints'
-  // default positions. The poses are stored as a quaternion-translation pair to
-  // match the default positions stored in the quaternion floating joints
-  // without any numerical conversions and thereby avoiding roundoff errors and
+  // MultibodyPlant::SetDefaultFloatingBaseBodyPose(). During Finalize(), the
+  // default pose of a floating base body is converted to the joint index of the
+  // ephemeral (automatically added) floating joint connecting the world frame
+  // and the body frame. Post-finalize, the default poses of such floating
+  // base bodies can (and should) be retrieved via the joints' default
+  // positions. The poses are stored as a quaternion-translation pair to match
+  // the default positions stored in the quaternion floating joints without
+  // any numerical conversions and thereby avoiding roundoff errors and
   // surprising discrepancies pre and post finalize.
   std::unordered_map<
       BodyIndex, std::variant<JointIndex, std::pair<Eigen::Quaternion<double>,

@@ -358,11 +358,6 @@ class TreeTopologyTests : public ::testing::Test {
                              const SpanningForest& forest) {
     const int kNumRigidBodies = 10;
 
-    EXPECT_EQ(topology.num_rigid_bodies(), kNumRigidBodies);
-    EXPECT_EQ(topology.num_mobilizers(), kNumRigidBodies);
-    EXPECT_EQ(topology.num_mobods(), kNumRigidBodies);
-    EXPECT_EQ(topology.forest_height(), 4);
-
     EXPECT_EQ(forest.num_links(), kNumRigidBodies);
     EXPECT_EQ(forest.num_mobods(), kNumRigidBodies);
     EXPECT_EQ(forest.height(), 4);
@@ -377,24 +372,11 @@ class TreeTopologyTests : public ::testing::Test {
                                             LinkIndex(3), LinkIndex(8)};
     const set<LinkIndex> expected_level3 = {LinkIndex(6)};
 
-    std::vector<std::set<BodyIndex>> topo_levels(topology.num_rigid_bodies());
-    for (BodyIndex index(0); index < topology.num_rigid_bodies(); ++index) {
-      const RigidBodyTopology& rigid_body_topology =
-          topology.get_rigid_body_topology(index);
-      topo_levels[rigid_body_topology.level].insert(index);
-    }
     // Comparison of sets. The order of the elements is not important.
-    EXPECT_EQ(topo_levels[0], expected_level0);
-    EXPECT_EQ(topo_levels[1], expected_level1);
-    EXPECT_EQ(topo_levels[2], expected_level2);
-    EXPECT_EQ(topo_levels[3], expected_level3);
-
-    // Repeat for the forest.
-    std::vector<std::set<LinkIndex>> levels(topology.num_rigid_bodies());
+    std::vector<std::set<LinkIndex>> levels(forest.height());
     for (const LinkJointGraph::Link& link : forest.links()) {
-      const LinkIndex link_index = link.index();
       const int level = forest.mobods(link.mobod_index()).level();
-      levels[level].insert(link_index);
+      levels[level].insert(link.index());
     }
     EXPECT_EQ(levels[0], expected_level0);
     EXPECT_EQ(levels[1], expected_level1);
@@ -490,7 +472,7 @@ class TreeTopologyTests : public ::testing::Test {
         {3, TreeIndex(3)}, {4, TreeIndex(3)}, {5, TreeIndex(3)},
         {6, TreeIndex(3)}};
 
-    EXPECT_EQ(topology.num_velocities(), 7);
+    EXPECT_EQ(forest.num_velocities(), 7);
     for (const auto& [velocity_index, tree_index] : expected_velocity_to_tree) {
       EXPECT_EQ(topology.velocity_to_tree_index(velocity_index), tree_index);
     }
@@ -521,9 +503,6 @@ TEST_F(TreeTopologyTests, Finalize) {
   const MultibodyTreeTopology& topology = model_->get_topology();
   const SpanningForest& forest = model_->forest();
 
-  EXPECT_EQ(topology.num_mobods(), 10);
-  EXPECT_EQ(topology.forest_height(), 4);
-
   EXPECT_EQ(forest.num_mobods(), 10);
   EXPECT_EQ(forest.height(), 4);
 
@@ -538,16 +517,7 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
   EXPECT_EQ(model_->num_mobilizers(), 10);
   EXPECT_EQ(model_->num_joints(), 9);
 
-  // TODO(sherm1) First make sure topology and forest agree, then nuke the
-  //  old topology code.
-  const MultibodyTreeTopology& topology = model_->get_topology();
   const SpanningForest& forest = model_->forest();
-
-  EXPECT_EQ(topology.num_mobods(), model_->num_bodies());
-  EXPECT_EQ(topology.forest_height(), 4);
-  EXPECT_EQ(topology.num_positions(), 7);
-  EXPECT_EQ(topology.num_velocities(), 7);
-  EXPECT_EQ(topology.num_states(), 14);
 
   EXPECT_EQ(forest.num_mobods(), 10);
   EXPECT_EQ(forest.height(), 4);
@@ -570,8 +540,8 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
     positions_index += mobod.nq();
     velocities_index += mobod.nv();
   }
-  EXPECT_EQ(positions_index, topology.num_positions());
-  EXPECT_EQ(velocities_index, topology.num_velocities());
+  EXPECT_EQ(positions_index, forest.num_positions());
+  EXPECT_EQ(velocities_index, forest.num_velocities());
 }
 
 // Verifies that the clone of a given MultibodyTree model created with
