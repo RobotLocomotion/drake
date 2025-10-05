@@ -10,3 +10,5 @@ py_binary(
     name = "pycodestyle",
     srcs = ["pycodestyle.py"],
 )
+
+exports_files(["drake_repository_metadata.json"])

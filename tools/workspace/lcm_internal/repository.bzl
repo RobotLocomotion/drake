@@ -21,5 +21,8 @@ def lcm_internal_repository(
             ":patches/copts.patch",
             ":patches/vendor_namespace.patch",
         ],
+        patch_cmds = [
+            "echo 'exports_files([\"drake_repository_metadata.json\"])' >> BUILD.bazel",  # noqa
+        ],
         mirrors = mirrors,
     )

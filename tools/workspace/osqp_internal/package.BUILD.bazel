@@ -139,3 +139,5 @@ install(
     docs = ["LICENSE"],
     doc_strip_prefix = ["lin_sys/direct/qdldl"],
 )
+
+exports_files(["drake_repository_metadata.json"])
