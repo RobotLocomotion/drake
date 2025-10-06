@@ -1,4 +1,3 @@
-curl
 python3-dateutil
 python3-flask
 python3-nbconvert
