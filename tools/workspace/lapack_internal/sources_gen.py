@@ -64,12 +64,14 @@ def _get_makefile_lines(*, subdir: str) -> list[str]:
     undoing the line continuations (i.e., backslashes at EOL).
     """
     text = _slurp_file_from_runfiles(
-        respath=f"lapack_internal/{subdir}/Makefile")
+        respath=f"lapack_internal/{subdir}/Makefile"
+    )
     return text.replace("\\\n", " ").splitlines()
 
 
 def _convert_makefile_value_to_sources(
-        *, subdir: str, makefile_value: str) -> list[str]:
+    *, subdir: str, makefile_value: str
+) -> list[str]:
     """Given a subdir in lapack_internal and the value of one of its Makefile's
     variables (e.g., "DBLAS1 = abc.o def.o"), returns the list of source files
     that are compiled into that list of object files.
@@ -101,14 +103,15 @@ def _get_vars(*, subdir: str) -> dict[str, list[str]]:
     Makefile variable name to its list of source files.
     """
     result = {}
-    variable_assign_regex = re.compile('^([A-Z0-9]*) = (.*)$')
+    variable_assign_regex = re.compile("^([A-Z0-9]*) = (.*)$")
     for line in _get_makefile_lines(subdir=subdir):
         regex_match = variable_assign_regex.match(line)
         if not regex_match:
             continue
         (var, makefile_value) = regex_match.groups()
         result[var] = _convert_makefile_value_to_sources(
-            subdir=subdir, makefile_value=makefile_value,
+            subdir=subdir,
+            makefile_value=makefile_value,
         )
     return result
 
@@ -142,8 +145,8 @@ def _generate_sources_bzl() -> str:
 def _main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--output", type=Path,
-        help="Write the lockfile to the given path.")
+        "--output", type=Path, help="Write the lockfile to the given path."
+    )
     args = parser.parse_args()
     sources_bzl = _generate_sources_bzl()
     args.output.write_text(sources_bzl, encoding="utf-8")

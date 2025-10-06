@@ -76,5 +76,4 @@ add_lint_tests(
         "fixture_memory_no.cc",
         "fixture_memory_yes.cc",
     ],
-    python_lint_use_ruff_format = False,
 )

@@ -53,9 +53,9 @@ def _main():
     new_version = None
     with open(local / "third_party/jpeg/workspace.bzl", encoding="utf-8") as f:
         for line in f.readlines():
-            m = re.search(r'archive/refs/tags/([0-9a-z.]*).tar.gz', line)
+            m = re.search(r"archive/refs/tags/([0-9a-z.]*).tar.gz", line)
             if m:
-                new_version, = m.groups()
+                (new_version,) = m.groups()
                 break
     assert new_version
     logging.info(f"Drake's new jpeg version: {new_version}")

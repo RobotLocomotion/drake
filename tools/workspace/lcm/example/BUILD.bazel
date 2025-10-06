@@ -64,4 +64,4 @@ drake_py_unittest(
 # don't write tests for them. (In practice, we've never seen any regressions
 # escape due to that lack of testing.)
 
-add_lint_tests(python_lint_use_ruff_format = False)
+add_lint_tests()

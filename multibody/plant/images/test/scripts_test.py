@@ -11,9 +11,9 @@ class TestCreatePlot(unittest.TestCase):
     def test_sripts(self):
         # Must be run directly via Bazel.
         python_bin = sys.executable
-        run([python_bin, "multibody/plant/images/ideal_stiction.py"],
-            check=True)
+        run(
+            [python_bin, "multibody/plant/images/ideal_stiction.py"], check=True
+        )
         self.assert_isfile("./ideal_stiction.png")
-        run([python_bin, "multibody/plant/images/stiction.py"],
-            check=True)
+        run([python_bin, "multibody/plant/images/stiction.py"], check=True)
         self.assert_isfile("./stribeck.png")

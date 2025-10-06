@@ -17,12 +17,13 @@ def _runfiles_inventory() -> Iterator[tuple[str, Path]]:
     and filesystem_path="/dir/to/foo.runfiles/drake_models/veggies/pepper.png".
     """
     manifest = runfiles.Create()
-    inventory = Path(manifest.Rlocation(
-        "drake/tools/workspace/drake_models/inventory.txt"))
+    inventory = Path(
+        manifest.Rlocation("drake/tools/workspace/drake_models/inventory.txt")
+    )
     repo_name = "+drake_dep_repositories+drake_models/"
     for line in inventory.read_text(encoding="utf-8").splitlines():
         assert line.startswith(repo_name), line
-        filename = line[len(repo_name):].strip()
+        filename = line[len(repo_name) :].strip()
         resource_path = f"drake_models/{filename}"
         filesystem_path = Path(manifest.Rlocation(resource_path))
         assert filesystem_path.exists(), filesystem_path
@@ -35,9 +36,11 @@ def _models_inventory() -> Iterator[str]:
     """
     for resource_path, filesystem_path in _runfiles_inventory():
         url = f"package://{resource_path}"
-        if any([resource_path.endswith(".dmd.yaml"),
-                resource_path.endswith(".sdf"),
-                resource_path.endswith(".urdf")]):
+        if (
+            resource_path.endswith(".dmd.yaml")
+            or resource_path.endswith(".sdf")
+            or resource_path.endswith(".urdf")
+        ):
             yield url
         elif resource_path.endswith(".xml"):
             # We can't tell a MuJoCo file just by its suffix.
@@ -58,7 +61,7 @@ def _get_all_test_cases() -> Iterator[dict]:
     all_models = set(_models_inventory())
 
     # Allow warnings on these models until they are repaired.
-    models_with_warnings = set([
+    models_with_warnings = {
         # TODO(#19992) for tracking these warnings.
         "package://drake_models/atlas/atlas_convex_hull.urdf",
         "package://drake_models/atlas/atlas_minimal_contact.urdf",
@@ -69,16 +72,16 @@ def _get_all_test_cases() -> Iterator[dict]:
         "package://drake_models/allegro_hand_description/urdf/allegro_hand_description_right.urdf",  # noqa
         # TODO(jwnimmer-tri) Fix these warnings.
         "package://drake_models/jaco_description/urdf/j2n6s300_col.urdf",
-    ])
+    }
     stragglers = models_with_warnings - all_models
     assert not stragglers, repr(stragglers)
 
     # Allow errors on these models until they are repaired.
-    models_with_errors = set([
+    models_with_errors = {
         # This file is not designed to be loaded independently from its
         # parent file `homecart.dmd.yaml`; it will always error out.
         "package://drake_models/tri_homecart/homecart_grippers.dmd.yaml",
-    ])
+    }
     stragglers = models_with_errors - all_models
     assert not stragglers, repr(stragglers)
     overlap = models_with_warnings & models_with_errors
@@ -93,12 +96,10 @@ def _get_all_test_cases() -> Iterator[dict]:
 
 
 class TestDrakeModels(unittest.TestCase, metaclass=ValueParameterizedTest):
-
     @run_with_multiple_values(_get_all_test_cases())
-    def test_model(self, *,
-                   url: str,
-                   expect_warnings: bool,
-                   expect_errors: bool):
+    def test_model(
+        self, *, url: str, expect_warnings: bool, expect_errors: bool
+    ):
         """Checks that when parsed, the given package url contains warnings
         and/or errors consistent with the given conditions. This test case is
         run repeatedly (via 'run_with_multiple_values') in order to cover all

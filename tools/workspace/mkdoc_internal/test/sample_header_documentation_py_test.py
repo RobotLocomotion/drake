@@ -6,6 +6,7 @@ def _read(filename):
     with open(filename) as f:
         return f.read()
 
+
 # To replace the expected header file with the most recent build's generated
 # header file, use this command ...
 #
@@ -30,5 +31,6 @@ class TestDocumentation(unittest.TestCase):
         expected = _read(expected_file)
         actual = _read(actual_file).replace(
             "GENERATED FILE DO NOT EDIT",
-            "<GENERIC MARKER SCRUBBED FOR REVIEWABLE>")
+            "<GENERIC MARKER SCRUBBED FOR REVIEWABLE>",
+        )
         self.assertMultiLineEqual(expected, actual)

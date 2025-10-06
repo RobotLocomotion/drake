@@ -15,5 +15,4 @@ install_files(
 
 add_lint_tests(
     python_lint_extra_srcs = ["upgrade.py"],
-    python_lint_use_ruff_format = False,
 )

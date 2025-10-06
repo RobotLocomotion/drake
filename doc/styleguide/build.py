@@ -20,11 +20,13 @@ def _add_title(*, temp_dir, filename, title):
         data = f.read()
     os.unlink(temp_dir_filename)
     with open(temp_dir_filename, "w", encoding="utf-8") as f:
-        f.write(textwrap.dedent(f"""\
+        title = textwrap.dedent(f"""\
             ---
             title: {title}
             ---
-        """) + "\n")
+
+        """)
+        f.write(title)
         f.write(data)
 
 
@@ -36,28 +38,37 @@ def _build(*, out_dir, temp_dir):
     # Create a hermetic copy of our input.  This helps ensure that only files
     # listed in BUILD.bazel will render onto the website.
     symlink_input(
-        "drake/doc/styleguide/jekyll_input.txt", temp_dir, copy=True,
+        "drake/doc/styleguide/jekyll_input.txt",
+        temp_dir,
+        copy=True,
         strip_prefix=[
             "drake/doc/styleguide/",
             "+internal_repositories+styleguide_internal/",
-        ])
+        ],
+    )
 
     # Prepare the files for Jekyll.
     _add_title(
         temp_dir=temp_dir,
         filename="pyguide.md",
-        title="Google Python Style Guide for Drake")
+        title="Google Python Style Guide for Drake",
+    )
 
     # Run the documentation generator.
-    check_call([
-        "/usr/bin/jekyll", "build",
-        "--source", temp_dir,
-        "--destination", out_dir,
-    ])
+    check_call(
+        [
+            "/usr/bin/jekyll",
+            "build",
+            "--source",
+            temp_dir,
+            "--destination",
+            out_dir,
+        ]
+    )
 
     # The filenames to suggest as the starting points for preview.
     return ["cppguide.html", "pyguide.html"]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(build=_build, subdir="styleguide", description=__doc__.strip())
