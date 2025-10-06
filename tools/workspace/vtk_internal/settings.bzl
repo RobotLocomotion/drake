@@ -79,6 +79,14 @@ MODULE_SETTINGS = {
             ],
         }),
     },
+    "VTK::x11": {
+        "cmake_defines": select({
+            ":osx": [],
+            "//conditions:default": [
+                "VTK_USE_X",
+            ],
+        }),
+    },
 
     # Second, we'll configure the modules Drake needs (in alphabetical order).
     "VTK::CommonColor": {
