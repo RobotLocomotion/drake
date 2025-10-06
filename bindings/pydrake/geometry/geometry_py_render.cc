@@ -28,6 +28,7 @@ using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::PerceptionProperties;
 using geometry::Shape;
+using geometry::SsaoParameter;
 using geometry::render::ColorRenderCamera;
 using geometry::render::DepthRenderCamera;
 using geometry::render::LightParameter;
@@ -416,6 +417,17 @@ void DoScalarIndependentDefinitions(py::module m) {
     using Class = geometry::render::LightParameter;
     constexpr auto& cls_doc = doc.LightParameter;
     py::class_<Class> cls(m, "LightParameter", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = geometry::SsaoParameter;
+    constexpr auto& cls_doc = doc_vtk.SsaoParameter;
+    py::class_<Class> cls(m, "SsaoParameter", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls);

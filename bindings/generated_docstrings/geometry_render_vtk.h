@@ -412,6 +412,14 @@ times but improve shadow fidelity (less obvious pixelation).
 See the note on ``cast_shadows`` for the warning on directional lights
 and shadow maps.)""";
         } shadow_map_size;
+        // Symbol: drake::geometry::RenderEngineVtkParams::ssao
+        struct /* ssao */ {
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
+          const char* doc =
+R"""(An optional SSAO (screen-space ambient occlusion) parameters set. When
+specified, VTK enables screen-space ambient occlusion configured by
+the given parameters.)""";
+        } ssao;
         auto Serialize__fields() const {
           return std::array{
             std::make_pair("backend", backend.doc),
@@ -424,9 +432,138 @@ and shadow maps.)""";
             std::make_pair("gltf_extensions", gltf_extensions.doc),
             std::make_pair("lights", lights.doc),
             std::make_pair("shadow_map_size", shadow_map_size.doc),
+            std::make_pair("ssao", ssao.doc),
           };
         }
       } RenderEngineVtkParams;
+      // Symbol: drake::geometry::SsaoParameter
+      struct /* SsaoParameter */ {
+        // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
+        const char* doc =
+R"""(Screen-space ambient occlusion (SSAO) parameters.
+
+Ambient occlusion is a shading method used to calculate how exposed
+each point in a scene is to ambient lighting. The more occluded a
+point is, the darker it appears. SSAO is an efficient, real-time
+approximation of ambient occlusion that operates in screen space. It
+enhances the depth and realism of a scene by adding subtle shadowing
+effects in creases, holes, and surfaces that are close to each other.
+See https://www.kitware.com/ssao/ for an overview.
+
+The default parameter values below have been chosen as a best-guess
+effort at producing good quality images. They may not be optimal for
+your particular scene.
+
+To understand how to tune these parameters, you need a bit of insight
+into how ambient occlusion works generally, and how SSAO works
+specifically. For each pixel, its "occlusion factor" is determined by
+examining a hemispherical area around the pixel's position in 3D space
+(oriented based on its normal). The fraction of the hemisphere
+contained within geometry is the occlusion factor.
+
+SSAO produces a discrete approximation of the true occlusion factor.
+It evaluates a discrete number of samples within the hemisphere and
+compares their depths (in the OpenGL-camera sense) with that of the
+pixel being shaded to determine how much of the hemisphere is occupied
+by geometry. As with all discrete approximations, there is a tradeoff
+between fidelity and cost. The parameter documentation below provides
+some guidance on the effect of each parameter on the final rendered
+image.)""";
+        // Symbol: drake::geometry::SsaoParameter::Serialize
+        struct /* Serialize */ {
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
+          const char* doc =
+R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
+Serialization" for background.)""";
+        } Serialize;
+        // Symbol: drake::geometry::SsaoParameter::bias
+        struct /* bias */ {
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
+          const char* doc =
+R"""(SSAO works in screen space; so it uses the depth image to determine
+whether a sample lies within the hemisphere or not. We compare the
+depth of a sample point with the recorded depth in the same direction.
+In principle, if the sample point is farther than the recorded depth,
+the sample is occluded. This bias pads that calculation by specifying
+how far in front (in meters) the recorded distance has to be before
+the sample is considered occluded. Larger bias values will classify
+fewer samples as occluded, reducing the amount of ambient occlusion
+(darkness) in the final image.
+
+A non-zero value is usually helpful to help resolve potential issues
+due to depth map precision issues (so-called "acne"), but it should
+generally be small.)""";
+        } bias;
+        // Symbol: drake::geometry::SsaoParameter::blur
+        struct /* blur */ {
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
+          const char* doc =
+R"""(The discrete sampling approach will ultimately produce shading with a
+noisy pattern. More samples will reduce the noise, but you can also
+apply a blur to the final occlusion image to reduce the noise. This is
+a screen space blur, so it is fast. However, it will also reduce the
+sharpness of occlusion patterns. You can disable blurring to speed
+things up, but it will emphasize the sampling noise.)""";
+        } blur;
+        // Symbol: drake::geometry::SsaoParameter::intensity_scale
+        struct /* intensity_scale */ {
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
+          const char* doc =
+R"""(Once the occlusion factor is computed, prior to applying the factor to
+the shaded pixel, you can apply a final affine transformation:
+
+occlusion = (occlusion - intensity_shift) * intensity_scale
+
+Using these two values allows you to tune the contrast and mean
+occlusion value independent of the sampling algorithm above. Remember,
+the more occlusion, the more darkness. So, scale factors greater than
+one will make the image darker as will *negative* shift values.
+
+One reason to consider shifting is is based on the total lighting in
+the scene. For a very brightly lit scene with a large camera exposure,
+the ambient occlusion effects should have a smaller influence. A scale
+less than one, or a shift greater than zero, will reduce the SSAO
+effect.)""";
+        } intensity_scale;
+        // Symbol: drake::geometry::SsaoParameter::intensity_shift
+        struct /* intensity_shift */ {
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
+          const char* doc = R"""()""";
+        } intensity_shift;
+        // Symbol: drake::geometry::SsaoParameter::radius
+        struct /* radius */ {
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
+          const char* doc =
+R"""(The radius (in meters) of the sampling hemisphere. There is no
+"correct" value. Heuristically, it should scale with your scene. A
+rubric of 1/10th the size of your scene is reasonable. For example,
+0.25 meters is good for a robot working at a table top.
+
+If the radius is too large, pixels will exhibit occlusion (darkness)
+from objects that might seem too distant to be relevant. A too-small
+radius would have the opposite effect; missing occlusion where it
+seems it should occur.)""";
+        } radius;
+        // Symbol: drake::geometry::SsaoParameter::sample_count
+        struct /* sample_count */ {
+          // Source: drake/geometry/render_vtk/render_engine_vtk_params.h
+          const char* doc =
+R"""(This is simply the number of samples taken. More samples lead to
+smoother occlusion patterns. Large numbers will produce better images
+but at a higher computational cost. You should use the smallest number
+that still provides acceptable visual quality.)""";
+        } sample_count;
+        auto Serialize__fields() const {
+          return std::array{
+            std::make_pair("bias", bias.doc),
+            std::make_pair("blur", blur.doc),
+            std::make_pair("intensity_scale", intensity_scale.doc),
+            std::make_pair("intensity_shift", intensity_shift.doc),
+            std::make_pair("radius", radius.doc),
+            std::make_pair("sample_count", sample_count.doc),
+          };
+        }
+      } SsaoParameter;
       // Symbol: drake::geometry::render_vtk
       struct /* render_vtk */ {
       } render_vtk;

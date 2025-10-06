@@ -30,6 +30,7 @@
 #include <vtkPointData.h>                // vtkCommonDataModel
 #include <vtkProperty.h>                 // vtkRenderingCore
 #include <vtkRenderPassCollection.h>     // vtkRenderingOpenGL2
+#include <vtkSSAOPass.h>                 // vtkRenderingOpenGL2
 #include <vtkSequencePass.h>             // vtkRenderingOpenGL2
 #include <vtkShadowMapBakerPass.h>       // vtkRenderingOpenGL2
 #include <vtkShadowMapPass.h>            // vtkRenderingOpenGL2
@@ -962,7 +963,27 @@ void RenderEngineVtk::InitializePipelines() {
   vtkNew<vtkSequencePass> full_seq;
   vtkNew<vtkRenderPassCollection> full_passes;
   full_passes->AddItem(vtkNew<vtkLightsPass>());
-  full_passes->AddItem(vtkNew<vtkOpaquePass>());
+  if (parameters_.ssao.has_value()) {
+    vtkNew<vtkOpaquePass> opaque_pass;
+
+    vtkNew<vtkCameraPass> ssao_camera_pass;
+    ssao_camera_pass->SetDelegatePass(opaque_pass);
+
+    vtkNew<vtkSSAOPass> ssao_pass;
+    ssao_pass->SetDelegatePass(ssao_camera_pass);
+
+    const auto& ssao_parameter = parameters_.ssao.value();
+    ssao_pass->SetRadius(ssao_parameter.radius);
+    ssao_pass->SetBias(ssao_parameter.bias);
+    ssao_pass->SetKernelSize(ssao_parameter.sample_count);
+    ssao_pass->SetIntensityScale(ssao_parameter.intensity_scale);
+    ssao_pass->SetIntensityShift(ssao_parameter.intensity_shift);
+    ssao_pass->SetBlur(ssao_parameter.blur);
+
+    full_passes->AddItem(ssao_pass);
+  } else {
+    full_passes->AddItem(vtkNew<vtkOpaquePass>());
+  }
   full_passes->AddItem(vtkNew<vtkTranslucentPass>());
   full_seq->SetPasses(full_passes);
 

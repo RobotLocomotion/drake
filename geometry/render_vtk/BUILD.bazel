@@ -150,6 +150,7 @@ drake_cc_googletest(
     timeout = "moderate",
     data = [
         ":test/multi_material_mesh.png",
+        ":test/ssao_reference.png",
         ":test/whole_image_custom_color.png",
         ":test/whole_image_custom_depth.png",
         ":test/whole_image_custom_label.png",
