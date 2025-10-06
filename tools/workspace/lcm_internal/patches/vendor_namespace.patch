@@ -1,0 +1,19 @@
+[lcm] Add a Drake-specific symbol namespace
+
+Drake's LCM runtime library is a private dependency, so we need to use
+different symbol names in case the user has their own, distinct copy.
+
+Reasoning for not upstreaming this patch: Drake-specific
+vendoring.
+
+--- lcm/BUILD.bazel
++++ lcm/BUILD.bazel
+@@ -66,7 +66,7 @@ LCM_COMPILE_DEFINITIONS_PRIVATE = [
+ 
+ string_flag(
+     name = "LCM_C_NAMESPACE",
+-    build_setting_default = "lcm",
++    build_setting_default = "drake_vendor_lcm",
+ )
+ 
+ expand_flag_template(

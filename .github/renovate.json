@@ -11,5 +11,10 @@
   "enabledManagers": [
     "bazelisk",
     "bazel-module"
+  ],
+  "labels": [
+    "priority: low",
+    "release notes: fix",
+    "status: single reviewer ok"
   ]
 }

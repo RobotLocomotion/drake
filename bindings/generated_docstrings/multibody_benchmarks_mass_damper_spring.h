@@ -24,7 +24,7 @@ constexpr struct /* pydrake_doc_multibody_benchmarks_mass_damper_spring */ {
       struct /* benchmarks */ {
         // Symbol: drake::multibody::benchmarks::MassDamperSpringAnalyticalSolution
         struct /* MassDamperSpringAnalyticalSolution */ {
-          // Source: drake/multibody/benchmarks/mass_damper_spring/mass_damper_spring_analytical_solution.h:28
+          // Source: drake/multibody/benchmarks/mass_damper_spring/mass_damper_spring_analytical_solution.h
           const char* doc =
 R"""(This class provides an analytical solution to a mass-damper-spring
 system. The system consists of a particle Q of mass m that can only
@@ -44,7 +44,7 @@ Note:
     damper, rotational spring.)""";
           // Symbol: drake::multibody::benchmarks::MassDamperSpringAnalyticalSolution::CalculateOutput
           struct /* CalculateOutput */ {
-            // Source: drake/multibody/benchmarks/mass_damper_spring/mass_damper_spring_analytical_solution.h:55
+            // Source: drake/multibody/benchmarks/mass_damper_spring/mass_damper_spring_analytical_solution.h
             const char* doc =
 R"""(For ``this`` mass-damper-spring system, and with the given initial
 values, this method calculates the values of x, ẋ, ẍ at time t.
@@ -57,7 +57,7 @@ Returns:
           } CalculateOutput;
           // Symbol: drake::multibody::benchmarks::MassDamperSpringAnalyticalSolution::MassDamperSpringAnalyticalSolution<T>
           struct /* ctor */ {
-            // Source: drake/multibody/benchmarks/mass_damper_spring/mass_damper_spring_analytical_solution.h:37
+            // Source: drake/multibody/benchmarks/mass_damper_spring/mass_damper_spring_analytical_solution.h
             const char* doc =
 R"""(This constructs the aforementioned mass-damper-spring system.
 
@@ -72,7 +72,7 @@ Parameter ``k``:
           } ctor;
           // Symbol: drake::multibody::benchmarks::MassDamperSpringAnalyticalSolution::SetInitialValue
           struct /* SetInitialValue */ {
-            // Source: drake/multibody/benchmarks/mass_damper_spring/mass_damper_spring_analytical_solution.h:44
+            // Source: drake/multibody/benchmarks/mass_damper_spring/mass_damper_spring_analytical_solution.h
             const char* doc =
 R"""(Sets the initial values of x and ẋ for ``this`` system.
 
@@ -84,19 +84,19 @@ Parameter ``xDt0``:
           } SetInitialValue;
           // Symbol: drake::multibody::benchmarks::MassDamperSpringAnalyticalSolution::get_x
           struct /* get_x */ {
-            // Source: drake/multibody/benchmarks/mass_damper_spring/mass_damper_spring_analytical_solution.h:58
+            // Source: drake/multibody/benchmarks/mass_damper_spring/mass_damper_spring_analytical_solution.h
             const char* doc =
 R"""(Returns x (Nx measure of Q's position from No) at time t.)""";
           } get_x;
           // Symbol: drake::multibody::benchmarks::MassDamperSpringAnalyticalSolution::get_xDt
           struct /* get_xDt */ {
-            // Source: drake/multibody/benchmarks/mass_damper_spring/mass_damper_spring_analytical_solution.h:61
+            // Source: drake/multibody/benchmarks/mass_damper_spring/mass_damper_spring_analytical_solution.h
             const char* doc =
 R"""(Returns ẋ (Nx measure of Q's velocity in N) at time t.)""";
           } get_xDt;
           // Symbol: drake::multibody::benchmarks::MassDamperSpringAnalyticalSolution::get_xDtDt
           struct /* get_xDtDt */ {
-            // Source: drake/multibody/benchmarks/mass_damper_spring/mass_damper_spring_analytical_solution.h:64
+            // Source: drake/multibody/benchmarks/mass_damper_spring/mass_damper_spring_analytical_solution.h
             const char* doc =
 R"""(Returns ẍ (Nx measure of Q's acceleration in N) at time t.)""";
           } get_xDtDt;

@@ -13,16 +13,16 @@ module(
 # Add starlark rules.
 
 bazel_dep(name = "apple_support", version = "1.23.1")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
-bazel_dep(name = "bazel_features", version = "1.35.0")
-bazel_dep(name = "bazel_skylib", version = "1.8.1")
+bazel_dep(name = "bazel_features", version = "1.36.0")
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
 bazel_dep(name = "platforms", version = "1.0.0")
-bazel_dep(name = "rules_cc", version = "0.2.3")
-bazel_dep(name = "rules_java", version = "8.15.2")
+bazel_dep(name = "rules_cc", version = "0.2.8")
+bazel_dep(name = "rules_java", version = "8.16.1")
 bazel_dep(name = "rules_jvm_external", version = "6.8")
 bazel_dep(name = "rules_license", version = "1.0.0")
-bazel_dep(name = "rules_python", version = "1.6.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
-bazel_dep(name = "rules_rust", version = "0.64.0")
-bazel_dep(name = "rules_shell", version = "0.6.0")
+bazel_dep(name = "rules_python", version = "1.6.3")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
+bazel_dep(name = "rules_rust", version = "0.65.0")
+bazel_dep(name = "rules_shell", version = "0.6.1")
 
 single_version_override(
     module_name = "rules_cc",
@@ -58,7 +58,7 @@ use_repo(cc_configure, "local_config_cc")
 # used by default but can be changed using the Bazel flags.
 
 bazel_dep(name = "eigen", version = "3.4.0.bcr.3", repo_name = "module_eigen")
-bazel_dep(name = "fmt", version = "11.2.0", repo_name = "module_fmt")
+bazel_dep(name = "fmt", version = "12.0.0", repo_name = "module_fmt")
 bazel_dep(name = "spdlog", version = "1.15.3", repo_name = "module_spdlog")  # noqa
 
 # Add C++ module dependencies that are NOT used by Drake's public API, but are
@@ -79,12 +79,13 @@ bazel_dep(name = "spdlog", version = "1.15.3", repo_name = "module_spdlog")  # n
 # to get it to work yet, so for the moment we don't offer it as a module option.
 
 bazel_dep(name = "glib", version = "2.82.2.bcr.5", repo_name = "module_glib")
-bazel_dep(name = "zlib", version = "1.3.1.bcr.6", repo_name = "module_zlib")
+bazel_dep(name = "zlib", version = "1.3.1.bcr.7", repo_name = "module_zlib")
 
 # Add additional modules we use as tools (not runtime dependencies).
 
-bazel_dep(name = "nasm", version = "2.16.03.bcr.1")
-bazel_dep(name = "toolchains_llvm", version = "1.4.0")
+bazel_dep(name = "nasm", version = "2.16.03.bcr.2")
+bazel_dep(name = "patchelf", version = "0.18.0")
+bazel_dep(name = "toolchains_llvm", version = "1.5.0")
 
 llvm = use_repo_rule("@toolchains_llvm//toolchain:rules.bzl", "llvm")
 
@@ -321,7 +322,6 @@ use_repo(
     "cpplint_internal",
     "github3_py_internal",
     "mpmath_py_internal",
-    "pycodestyle_internal",
     "sympy_py_internal",
     "uritemplate_py_internal",
     "xmlrunner_py_internal",
@@ -346,62 +346,15 @@ use_repo(
     "styleguide_internal",
 )
 
-internal_crate_universe_repositories = use_extension(
-    "//tools/workspace:default.bzl",
-    "internal_crate_universe_repositories",
+crate_universe = use_extension(
+    "//tools/workspace/crate_universe:extensions.bzl",
+    "crate_universe",
 )
 use_repo(
-    internal_crate_universe_repositories,
-    "crate__amd-0.2.2",
-    "crate__autocfg-1.5.0",
-    "crate__blas-0.22.0",
-    "crate__blas-sys-0.7.1",
-    "crate__bumpalo-3.19.0",
-    "crate__cfg-if-1.0.1",
+    crate_universe,
+    "crate",
+    "crate__cfg-if-1.0.3",
     "crate__clarabel-0.11.1",
-    "crate__darling-0.14.4",
-    "crate__darling_core-0.14.4",
-    "crate__darling_macro-0.14.4",
-    "crate__derive_builder-0.11.2",
-    "crate__derive_builder_core-0.11.2",
-    "crate__derive_builder_macro-0.11.2",
-    "crate__either-1.15.0",
-    "crate__enum_dispatch-0.3.13",
-    "crate__equivalent-1.0.2",
-    "crate__fnv-1.0.7",
-    "crate__hashbrown-0.15.4",
-    "crate__ident_case-1.0.1",
-    "crate__indexmap-2.10.0",
-    "crate__itertools-0.11.0",
-    "crate__itoa-1.0.15",
-    "crate__js-sys-0.3.77",
-    "crate__lapack-0.19.0",
-    "crate__lapack-sys-0.14.0",
-    "crate__lazy_static-1.5.0",
-    "crate__libc-0.2.174",
-    "crate__log-0.4.27",
-    "crate__memchr-2.7.5",
-    "crate__num-complex-0.4.6",
-    "crate__num-traits-0.2.19",
-    "crate__once_cell-1.21.3",
     "crate__paste-1.0.15",
-    "crate__proc-macro2-1.0.95",
-    "crate__quote-1.0.40",
-    "crate__ryu-1.0.20",
-    "crate__serde-1.0.219",
-    "crate__serde-big-array-0.5.1",
-    "crate__serde_derive-1.0.219",
-    "crate__serde_json-1.0.141",
-    "crate__strsim-0.10.0",
-    "crate__syn-1.0.109",
-    "crate__syn-2.0.104",
-    "crate__thiserror-1.0.69",
-    "crate__thiserror-impl-1.0.69",
-    "crate__unicode-ident-1.0.18",
-    "crate__wasm-bindgen-0.2.100",
-    "crate__wasm-bindgen-backend-0.2.100",
-    "crate__wasm-bindgen-macro-0.2.100",
-    "crate__wasm-bindgen-macro-support-0.2.100",
-    "crate__wasm-bindgen-shared-0.2.100",
-    "crate__web-time-0.2.4",
+    "crate_licenses",
 )

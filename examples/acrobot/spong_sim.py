@@ -8,7 +8,6 @@ import sys
 from pydrake.examples import (
     AcrobotPlant,
     AcrobotSpongController,
-    AcrobotState,
 )
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
@@ -28,19 +27,20 @@ def simulate(*, initial_state, controller_params, t_final, tape_period):
 
     builder.Connect(plant.get_output_port(0), controller.get_input_port(0))
     builder.Connect(controller.get_output_port(0), plant.get_input_port(0))
-    state_logger = LogVectorOutput(plant.get_output_port(0), builder,
-                                   tape_period)
+    state_logger = LogVectorOutput(
+        plant.get_output_port(0), builder, tape_period
+    )
 
     diagram = builder.Build()
     simulator = Simulator(diagram)
     context = simulator.get_mutable_context()
     plant_context = diagram.GetMutableSubsystemContext(plant, context)
-    controller_context = diagram.GetMutableSubsystemContext(
-        controller, context)
+    controller_context = diagram.GetMutableSubsystemContext(controller, context)
 
     plant_context.SetContinuousState(initial_state)
     controller_context.get_mutable_numeric_parameter(0).SetFromVector(
-        controller_params)
+        controller_params
+    )
 
     simulator.AdvanceTo(t_final)
 
@@ -51,16 +51,22 @@ def simulate(*, initial_state, controller_params, t_final, tape_period):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--scenario", metavar="*.yaml", required=True,
-        help="Scenario file to load (required).")
+        "--scenario",
+        metavar="*.yaml",
+        required=True,
+        help="Scenario file to load (required).",
+    )
     parser.add_argument(
-        "--output", metavar="*.yaml", required=True,
-        help="Output file to save (required).")
+        "--output",
+        metavar="*.yaml",
+        required=True,
+        help="Output file to save (required).",
+    )
     args = parser.parse_args()
     scenario = load_scenario(filename=args.scenario)
     x_tape = simulate(**scenario)
     text = save_output(x_tape=x_tape)
-    with open(args.output, 'w') as handle:
+    with open(args.output, "w") as handle:
         handle.write(text)
     return 0
 

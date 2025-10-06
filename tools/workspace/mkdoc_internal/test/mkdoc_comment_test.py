@@ -463,9 +463,6 @@ Sagittis id consectetur purus ut faucibus pulvinar.
     def test_public(self):
         self.assertEqual(process_comment("/// @public"), "")
 
-    def test_protected(self):
-        self.assertEqual(process_comment("/// @protected"), "")
-
     def test_showinitializer(self):
         self.assertEqual(process_comment("/// @showinitializer"), "")
 

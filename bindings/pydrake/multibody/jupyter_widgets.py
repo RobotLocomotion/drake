@@ -13,7 +13,7 @@ from IPython.display import display
 
 from pydrake.common.jupyter import process_ipywidget_events
 from pydrake.multibody.tree import JointIndex
-from pydrake.systems.framework import BasicVector, PublishEvent, VectorSystem
+from pydrake.systems.framework import PublishEvent, VectorSystem
 
 
 class JointSliders(VectorSystem):

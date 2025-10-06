@@ -25,7 +25,7 @@ constexpr struct /* pydrake_doc_multibody_benchmarks_acrobot */ {
       struct /* benchmarks */ {
         // Symbol: drake::multibody::benchmarks::Acrobot
         struct /* Acrobot */ {
-          // Source: drake/multibody/benchmarks/acrobot/acrobot.h:23
+          // Source: drake/multibody/benchmarks/acrobot/acrobot.h
           const char* doc =
 R"""(The Acrobot - a canonical underactuated system as described in <a
 href="http://underactuated.mit.edu/underactuated.html?chapter=3">Chapter
@@ -37,7 +37,7 @@ parameterized by angle theta1 and Link 2 is connected to Link 1 by an
 "elbow" revolute joint parameterized by angle theta2.)""";
           // Symbol: drake::multibody::benchmarks::Acrobot::Acrobot<T>
           struct /* ctor */ {
-            // Source: drake/multibody/benchmarks/acrobot/acrobot.h:50
+            // Source: drake/multibody/benchmarks/acrobot/acrobot.h
             const char* doc =
 R"""(Creates an acrobot model in a plane passing through the world's origin
 and normal to ``normal``. Vector ``up`` defines the upwards direction
@@ -79,14 +79,14 @@ system:
           } ctor;
           // Symbol: drake::multibody::benchmarks::Acrobot::CalcCoriolisVector
           struct /* CalcCoriolisVector */ {
-            // Source: drake/multibody/benchmarks/acrobot/acrobot.h:62
+            // Source: drake/multibody/benchmarks/acrobot/acrobot.h
             const char* doc =
 R"""(Computes the bias term ``C(q, v) * v`` containing Coriolis and
 gyroscopic effects as a function of the state of the pendulum.)""";
           } CalcCoriolisVector;
           // Symbol: drake::multibody::benchmarks::Acrobot::CalcElbowOutboardFramePoseInWorldFrame
           struct /* CalcElbowOutboardFramePoseInWorldFrame */ {
-            // Source: drake/multibody/benchmarks/acrobot/acrobot.h:93
+            // Source: drake/multibody/benchmarks/acrobot/acrobot.h
             const char* doc =
 R"""(Computes the pose of the elbow outboard frame ``Eo`` in the world
 frame W.
@@ -102,7 +102,7 @@ Returns:
           } CalcElbowOutboardFramePoseInWorldFrame;
           // Symbol: drake::multibody::benchmarks::Acrobot::CalcGravityVector
           struct /* CalcGravityVector */ {
-            // Source: drake/multibody/benchmarks/acrobot/acrobot.h:71
+            // Source: drake/multibody/benchmarks/acrobot/acrobot.h
             const char* doc =
 R"""(Computes the effective joint-space torques induced by gravity
 ``tau_g(q)`` containing the effect of gravity as a function of the
@@ -114,7 +114,7 @@ tau_g(q)``.)""";
           } CalcGravityVector;
           // Symbol: drake::multibody::benchmarks::Acrobot::CalcLink1PoseInWorldFrame
           struct /* CalcLink1PoseInWorldFrame */ {
-            // Source: drake/multibody/benchmarks/acrobot/acrobot.h:78
+            // Source: drake/multibody/benchmarks/acrobot/acrobot.h
             const char* doc =
 R"""(Computes the pose of the center of mass of link 1 measured and
 expressed in the world frame.
@@ -128,7 +128,7 @@ Returns:
           } CalcLink1PoseInWorldFrame;
           // Symbol: drake::multibody::benchmarks::Acrobot::CalcLink1SpatialAccelerationInWorldFrame
           struct /* CalcLink1SpatialAccelerationInWorldFrame */ {
-            // Source: drake/multibody/benchmarks/acrobot/acrobot.h:129
+            // Source: drake/multibody/benchmarks/acrobot/acrobot.h
             const char* doc =
 R"""(Computes the spatial acceleration of the center of mass of link 1
 expressed in the world frame.
@@ -148,7 +148,7 @@ Returns ``A_WL1_W``:
           } CalcLink1SpatialAccelerationInWorldFrame;
           // Symbol: drake::multibody::benchmarks::Acrobot::CalcLink1SpatialVelocityInWorldFrame
           struct /* CalcLink1SpatialVelocityInWorldFrame */ {
-            // Source: drake/multibody/benchmarks/acrobot/acrobot.h:102
+            // Source: drake/multibody/benchmarks/acrobot/acrobot.h
             const char* doc =
 R"""(Computes the spatial velocity of the center of mass of link 1
 expressed in the world frame.
@@ -165,7 +165,7 @@ Returns:
           } CalcLink1SpatialVelocityInWorldFrame;
           // Symbol: drake::multibody::benchmarks::Acrobot::CalcLink2PoseInWorldFrame
           struct /* CalcLink2PoseInWorldFrame */ {
-            // Source: drake/multibody/benchmarks/acrobot/acrobot.h:86
+            // Source: drake/multibody/benchmarks/acrobot/acrobot.h
             const char* doc =
 R"""(Computes the pose of the center of mass of link 2 measured and
 expressed in the world frame.
@@ -182,7 +182,7 @@ Returns:
           } CalcLink2PoseInWorldFrame;
           // Symbol: drake::multibody::benchmarks::Acrobot::CalcLink2SpatialAccelerationInWorldFrame
           struct /* CalcLink2SpatialAccelerationInWorldFrame */ {
-            // Source: drake/multibody/benchmarks/acrobot/acrobot.h:149
+            // Source: drake/multibody/benchmarks/acrobot/acrobot.h
             const char* doc =
 R"""(Computes the spatial acceleration of the center of mass of link 2
 expressed in the world frame.
@@ -211,7 +211,7 @@ Returns ``A_WL2_W``:
           } CalcLink2SpatialAccelerationInWorldFrame;
           // Symbol: drake::multibody::benchmarks::Acrobot::CalcLink2SpatialVelocityInWorldFrame
           struct /* CalcLink2SpatialVelocityInWorldFrame */ {
-            // Source: drake/multibody/benchmarks/acrobot/acrobot.h:113
+            // Source: drake/multibody/benchmarks/acrobot/acrobot.h
             const char* doc =
 R"""(Computes the spatial velocity of the center of mass of link 2
 expressed in the world frame.
@@ -234,7 +234,7 @@ Returns:
           } CalcLink2SpatialVelocityInWorldFrame;
           // Symbol: drake::multibody::benchmarks::Acrobot::CalcMassMatrix
           struct /* CalcMassMatrix */ {
-            // Source: drake/multibody/benchmarks/acrobot/acrobot.h:58
+            // Source: drake/multibody/benchmarks/acrobot/acrobot.h
             const char* doc =
 R"""(Computes the mass matrix ``H(q)`` for the double pendulum system. It
 turns out that for this system the mass matrix is independent of the
@@ -242,7 +242,7 @@ shoulder angle ``theta1``.)""";
           } CalcMassMatrix;
           // Symbol: drake::multibody::benchmarks::Acrobot::CalcPotentialEnergy
           struct /* CalcPotentialEnergy */ {
-            // Source: drake/multibody/benchmarks/acrobot/acrobot.h:156
+            // Source: drake/multibody/benchmarks/acrobot/acrobot.h
             const char* doc =
 R"""(Computes the total potential energy due to gravity of the acrobot
 system for the state given by angles ``theta1`` and ``theta2``. The
@@ -253,7 +253,7 @@ zero potential energy is defined for ``y = 0``.)""";
         struct /* acrobot */ {
           // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters
           struct /* AcrobotParameters */ {
-            // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:25
+            // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
             const char* doc =
 R"""(This class is used to store the numerical parameters defining the
 model of an acrobot with the method MakeAcrobotPlant(). Refer to this
@@ -266,7 +266,7 @@ Note:
     file and ``acrobot.sdf`` MUST be kept in sync.)""";
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::AcrobotParameters
             struct /* ctor */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:59
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc =
 R"""(Constructor used to initialize the physical parameters for an acrobot
 model. The parameters are defaulted to values in Spong's paper [Spong
@@ -313,108 +313,108 @@ Conference on (pp. 2356-2361). IEEE.)""";
             } ctor;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::Gc1
             struct /* Gc1 */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:87
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } Gc1;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::Gc2
             struct /* Gc2 */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:88
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } Gc2;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::Ic1
             struct /* Ic1 */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:85
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } Ic1;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::Ic2
             struct /* Ic2 */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:86
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } Ic2;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::actuator_name
             struct /* actuator_name */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:105
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } actuator_name;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::b1
             struct /* b1 */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:89
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } b1;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::b2
             struct /* b2 */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:90
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } b2;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::elbow_joint_name
             struct /* elbow_joint_name */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:104
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } elbow_joint_name;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::g
             struct /* g */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:91
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } g;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::l1
             struct /* l1 */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:81
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } l1;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::l2
             struct /* l2 */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:82
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } l2;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::lc1
             struct /* lc1 */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:83
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } lc1;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::lc2
             struct /* lc2 */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:84
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } lc2;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::link1_name
             struct /* link1_name */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:99
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } link1_name;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::link2_name
             struct /* link2_name */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:100
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } link2_name;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::m1
             struct /* m1 */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:79
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } m1;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::m2
             struct /* m2 */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:80
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } m2;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::r1
             struct /* r1 */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:95
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } r1;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::r2
             struct /* r2 */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:96
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } r2;
             // Symbol: drake::multibody::benchmarks::acrobot::AcrobotParameters::shoulder_joint_name
             struct /* shoulder_joint_name */ {
-              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:101
+              // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
               const char* doc = R"""()""";
             } shoulder_joint_name;
           } AcrobotParameters;
           // Symbol: drake::multibody::benchmarks::acrobot::MakeAcrobotPlant
           struct /* MakeAcrobotPlant */ {
-            // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h:146
+            // Source: drake/multibody/benchmarks/acrobot/make_acrobot_plant.h
             const char* doc =
 R"""(This method makes a MultibodyPlant model of the Acrobot - a canonical
 underactuated system as described in <a

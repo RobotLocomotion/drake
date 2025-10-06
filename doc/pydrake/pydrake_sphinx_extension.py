@@ -11,7 +11,6 @@ For guidance, see:
 # important to be user-visible.
 
 
-from collections import namedtuple
 import re
 from textwrap import indent
 from typing import Any, Tuple
@@ -342,7 +341,7 @@ class PydrakeSystemDirective(Directive):
     See also:
     - https://www.sphinx-doc.org/en/1.6.7/extdev/tutorial.html#the-directive-classes
     - https://docutils.sourceforge.io/docs/howto/rst-directives.html#error-handling
-    - Example: https://github.com/sphinx-contrib/autoprogram/blob/0.1.5/sphinxcontrib/autoprogram.py
+    - https://github.com/sphinx-contrib/autoprogram/blob/0.1.5/sphinxcontrib/autoprogram.py
     """  # noqa
 
     has_content = True

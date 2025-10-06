@@ -189,7 +189,7 @@ class VideoWriter(LeafSystem):
             elif kind == "label":
                 converter = builder.AddSystem(ColorizeLabelImage())
                 builder.Connect(
-                    sensor.GetOutputPort(f"label_image"),
+                    sensor.GetOutputPort("label_image"),
                     converter.get_input_port())
                 image_sources.append(converter.get_output_port())
             else:

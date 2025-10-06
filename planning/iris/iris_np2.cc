@@ -599,9 +599,6 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           options.sampled_iris_options.tau);
 
       particles.resize(N_k);  // Entries will be overwritten.
-
-      // TODO(rhjiang): Implement the ray sampling strategy, and expose it as an
-      // option to the user.
       internal::PopulateParticlesByUniformSampling(
           P_candidate, N_k, options.sampled_iris_options.mixing_steps,
           &generators, &particles);

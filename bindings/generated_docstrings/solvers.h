@@ -77,7 +77,7 @@ constexpr struct /* pydrake_doc_solvers */ {
     struct /* solvers */ {
       // Symbol: drake::solvers::AddBilinearProductMcCormickEnvelopeMultipleChoice
       struct /* AddBilinearProductMcCormickEnvelopeMultipleChoice */ {
-        // Source: drake/solvers/mixed_integer_optimization_util.h:406
+        // Source: drake/solvers/mixed_integer_optimization_util.h
         const char* doc =
 R"""(Add constraints to the optimization program, such that the bilinear
 product x * y is approximated by w, using Mixed Integer constraint
@@ -242,7 +242,7 @@ Note:
       } AddBilinearProductMcCormickEnvelopeMultipleChoice;
       // Symbol: drake::solvers::AddBilinearProductMcCormickEnvelopeSos2
       struct /* AddBilinearProductMcCormickEnvelopeSos2 */ {
-        // Source: drake/solvers/mixed_integer_optimization_util.h:251
+        // Source: drake/solvers/mixed_integer_optimization_util.h
         const char* doc =
 R"""(Add constraints to the optimization program, such that the bilinear
 product x * y is approximated by w, using Special Ordered Set of Type
@@ -343,7 +343,7 @@ Note:
       } AddBilinearProductMcCormickEnvelopeSos2;
       // Symbol: drake::solvers::AddBoundingBoxConstraintsImpliedByRollPitchYawLimits
       struct /* AddBoundingBoxConstraintsImpliedByRollPitchYawLimits */ {
-        // Source: drake/solvers/rotation_constraint.h:74
+        // Source: drake/solvers/rotation_constraint.h
         const char* doc =
 R"""(Applies *very conservative* limits on the entries of R for the cases
 when rotations can be limited (for instance, if you want to search
@@ -358,7 +358,7 @@ extrinsic rotations about Space-fixed x-y-z axes, respectively.)""";
       } AddBoundingBoxConstraintsImpliedByRollPitchYawLimits;
       // Symbol: drake::solvers::AddLogarithmicSos1Constraint
       struct /* AddLogarithmicSos1Constraint */ {
-        // Source: drake/solvers/mixed_integer_optimization_util.h:138
+        // Source: drake/solvers/mixed_integer_optimization_util.h
         const char* doc_4args =
 R"""(Adds the special ordered set of type 1 (SOS1) constraint. Namely
 
@@ -402,7 +402,7 @@ Parameter ``binary_encoding``:
 
 Raises:
     RuntimeError if ``binary_encoding`` has a non-binary entry (0, 1).)""";
-        // Source: drake/solvers/mixed_integer_optimization_util.h:168
+        // Source: drake/solvers/mixed_integer_optimization_util.h
         const char* doc_2args =
 R"""(Adds the special ordered set of type 1 (SOS1) constraint. Namely
 
@@ -445,7 +445,7 @@ Returns:
       } AddLogarithmicSos1Constraint;
       // Symbol: drake::solvers::AddLogarithmicSos2Constraint
       struct /* AddLogarithmicSos2Constraint */ {
-        // Source: drake/solvers/mixed_integer_optimization_util.h:74
+        // Source: drake/solvers/mixed_integer_optimization_util.h
         const char* doc_3args_MathematicalProgram_constEigenMatrixBase_conststdstring =
 R"""(Adds the special ordered set 2 (SOS2) constraint,
 
@@ -487,7 +487,7 @@ Returns:
     and λ(M + 1) can be non-zero. For example, if the assignment of y
     = (1, 1), in Gray code, (1, 1) represents integer 2, so only λ(2)
     and λ(3) can be strictly positive.)""";
-        // Source: drake/solvers/mixed_integer_optimization_util.h:89
+        // Source: drake/solvers/mixed_integer_optimization_util.h
         const char* doc_3args_prog_lambda_y =
 R"""(Adds the special ordered set 2 (SOS2) constraint,
 
@@ -496,7 +496,7 @@ See also:
       } AddLogarithmicSos2Constraint;
       // Symbol: drake::solvers::AddRelaxNonConvexQuadraticConstraintInTrustRegion
       struct /* AddRelaxNonConvexQuadraticConstraintInTrustRegion */ {
-        // Source: drake/solvers/non_convex_optimization_util.h:157
+        // Source: drake/solvers/non_convex_optimization_util.h
         const char* doc =
 R"""(For a non-convex quadratic constraint lb ≤ xᵀQ₁x - xᵀQ₂x + pᵀy ≤ ub
 where Q₁, Q₂ are both positive semidefinite matrices. ``y`` is a
@@ -667,7 +667,7 @@ RuntimeError when the precondition is not satisfied.)""";
       } AddRelaxNonConvexQuadraticConstraintInTrustRegion;
       // Symbol: drake::solvers::AddRotationMatrixBoxSphereIntersectionMilpConstraints
       struct /* AddRotationMatrixBoxSphereIntersectionMilpConstraints */ {
-        // Source: drake/solvers/mixed_integer_rotation_constraint.h:229
+        // Source: drake/solvers/mixed_integer_rotation_constraint.h
         const char* doc =
 R"""(Adds binary variables that constrain the value of the column *and* row
 vectors of R, in order to add the following (in some cases non-convex)
@@ -718,7 +718,7 @@ Note:
       } AddRotationMatrixBoxSphereIntersectionMilpConstraints;
       // Symbol: drake::solvers::AddRotationMatrixBoxSphereIntersectionReturn
       struct /* AddRotationMatrixBoxSphereIntersectionReturn */ {
-        // Source: drake/solvers/mixed_integer_rotation_constraint.h:184
+        // Source: drake/solvers/mixed_integer_rotation_constraint.h
         const char* doc =
 R"""(Some of the newly added variables in function
 AddRotationMatrixBoxSphereIntersectionMilpConstraints. CRpos, CRneg,
@@ -747,28 +747,28 @@ where ``N`` is ``num_intervals_per_half_axis``, one of the input
 argument of AddRotationMatrixBoxSphereIntersectionMilpConstraints.)""";
         // Symbol: drake::solvers::AddRotationMatrixBoxSphereIntersectionReturn::BRneg
         struct /* BRneg */ {
-          // Source: drake/solvers/mixed_integer_rotation_constraint.h:188
+          // Source: drake/solvers/mixed_integer_rotation_constraint.h
           const char* doc = R"""()""";
         } BRneg;
         // Symbol: drake::solvers::AddRotationMatrixBoxSphereIntersectionReturn::BRpos
         struct /* BRpos */ {
-          // Source: drake/solvers/mixed_integer_rotation_constraint.h:187
+          // Source: drake/solvers/mixed_integer_rotation_constraint.h
           const char* doc = R"""()""";
         } BRpos;
         // Symbol: drake::solvers::AddRotationMatrixBoxSphereIntersectionReturn::CRneg
         struct /* CRneg */ {
-          // Source: drake/solvers/mixed_integer_rotation_constraint.h:186
+          // Source: drake/solvers/mixed_integer_rotation_constraint.h
           const char* doc = R"""()""";
         } CRneg;
         // Symbol: drake::solvers::AddRotationMatrixBoxSphereIntersectionReturn::CRpos
         struct /* CRpos */ {
-          // Source: drake/solvers/mixed_integer_rotation_constraint.h:185
+          // Source: drake/solvers/mixed_integer_rotation_constraint.h
           const char* doc = R"""()""";
         } CRpos;
       } AddRotationMatrixBoxSphereIntersectionReturn;
       // Symbol: drake::solvers::AddRotationMatrixOrthonormalSocpConstraint
       struct /* AddRotationMatrixOrthonormalSocpConstraint */ {
-        // Source: drake/solvers/rotation_constraint.h:91
+        // Source: drake/solvers/rotation_constraint.h
         const char* doc =
 R"""(Adds a set of convex constraints which approximate the set of
 orthogonal matrices, O(3). Adds the bilinear constraints that the each
@@ -779,14 +779,14 @@ applied to all of the rows.)""";
       } AddRotationMatrixOrthonormalSocpConstraint;
       // Symbol: drake::solvers::AddRotationMatrixSpectrahedralSdpConstraint
       struct /* AddRotationMatrixSpectrahedralSdpConstraint */ {
-        // Source: drake/solvers/rotation_constraint.h:81
+        // Source: drake/solvers/rotation_constraint.h
         const char* doc =
 R"""(Adds constraint (10) from https://arxiv.org/pdf/1403.4914.pdf , which
 exactly represents the convex hull of all rotation matrices in 3D.)""";
       } AddRotationMatrixSpectrahedralSdpConstraint;
       // Symbol: drake::solvers::AddSos2Constraint
       struct /* AddSos2Constraint */ {
-        // Source: drake/solvers/mixed_integer_optimization_util.h:109
+        // Source: drake/solvers/mixed_integer_optimization_util.h
         const char* doc =
 R"""(Adds the special ordered set 2 (SOS2) constraint. y(i) takes binary
 values (either 0 or 1).
@@ -823,7 +823,7 @@ Parameter ``y``:
       } AddSos2Constraint;
       // Symbol: drake::solvers::AggregateBoundingBoxConstraints
       struct /* AggregateBoundingBoxConstraints */ {
-        // Source: drake/solvers/aggregate_costs_constraints.h:67
+        // Source: drake/solvers/aggregate_costs_constraints.h
         const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Aggregates many bounding box constraints, returns the intersection
 (the tightest bounds) of these constraints.
@@ -838,7 +838,7 @@ Returns ``aggregated_bounds``:
       } AggregateBoundingBoxConstraints;
       // Symbol: drake::solvers::AggregateDuplicateVariables
       struct /* AggregateDuplicateVariables */ {
-        // Source: drake/solvers/aggregate_costs_constraints.h:99
+        // Source: drake/solvers/aggregate_costs_constraints.h
         const char* doc =
 R"""(For linear expression A * vars where ``vars`` might contain duplicated
 entries, rewrite this linear expression as A_new * vars_new where
@@ -846,7 +846,7 @@ vars_new doesn't contain duplicated entries.)""";
       } AggregateDuplicateVariables;
       // Symbol: drake::solvers::AggregateLinearCosts
       struct /* AggregateLinearCosts */ {
-        // Source: drake/solvers/aggregate_costs_constraints.h:23
+        // Source: drake/solvers/aggregate_costs_constraints.h
         const char* doc =
 R"""(Given many linear costs, aggregate them into
 
@@ -866,7 +866,7 @@ Parameter ``constant_cost``:
       } AggregateLinearCosts;
       // Symbol: drake::solvers::AggregateQuadraticAndLinearCosts
       struct /* AggregateQuadraticAndLinearCosts */ {
-        // Source: drake/solvers/aggregate_costs_constraints.h:40
+        // Source: drake/solvers/aggregate_costs_constraints.h
         const char* doc =
 R"""(Given many linear and quadratic costs, aggregate them into
 
@@ -895,7 +895,7 @@ Parameter ``constant_cost``:
       } AggregateQuadraticAndLinearCosts;
       // Symbol: drake::solvers::AreRequiredAttributesSupported
       struct /* AreRequiredAttributesSupported */ {
-        // Source: drake/solvers/program_attribute.h:51
+        // Source: drake/solvers/program_attribute.h
         const char* doc =
 R"""(Returns true iff ``required`` is a subset of ``supported``.
 
@@ -907,7 +907,7 @@ Parameter ``unsupported_message``:
       } AreRequiredAttributesSupported;
       // Symbol: drake::solvers::AugmentedLagrangianNonsmooth
       struct /* AugmentedLagrangianNonsmooth */ {
-        // Source: drake/solvers/augmented_lagrangian.h:43
+        // Source: drake/solvers/augmented_lagrangian.h
         const char* doc =
 R"""(Compute the augmented Lagrangian (AL) of a given mathematical program
 
@@ -938,7 +938,7 @@ NOT a smooth function of x, since s = max(c(x) - λ₂/μ, 0) is
 non-smooth at c(x) - λ₂/μ = 0.)""";
         // Symbol: drake::solvers::AugmentedLagrangianNonsmooth::AugmentedLagrangianNonsmooth
         struct /* ctor */ {
-          // Source: drake/solvers/augmented_lagrangian.h:53
+          // Source: drake/solvers/augmented_lagrangian.h
           const char* doc =
 R"""(Parameter ``prog``:
     The mathematical program we will evaluate.
@@ -949,7 +949,7 @@ Parameter ``include_x_bounds``:
         } ctor;
         // Symbol: drake::solvers::AugmentedLagrangianNonsmooth::Eval
         struct /* Eval */ {
-          // Source: drake/solvers/augmented_lagrangian.h:79
+          // Source: drake/solvers/augmented_lagrangian.h
           const char* doc =
 R"""(Parameter ``x``:
     The value of all the decision variables.
@@ -986,7 +986,7 @@ Returns:
         } Eval;
         // Symbol: drake::solvers::AugmentedLagrangianNonsmooth::include_x_bounds
         struct /* include_x_bounds */ {
-          // Source: drake/solvers/augmented_lagrangian.h:93
+          // Source: drake/solvers/augmented_lagrangian.h
           const char* doc =
 R"""(Returns:
     Whether the bounding box constraint x_lo <= x <= x_up is included
@@ -994,7 +994,7 @@ R"""(Returns:
         } include_x_bounds;
         // Symbol: drake::solvers::AugmentedLagrangianNonsmooth::is_equality
         struct /* is_equality */ {
-          // Source: drake/solvers/augmented_lagrangian.h:104
+          // Source: drake/solvers/augmented_lagrangian.h
           const char* doc =
 R"""(Returns:
     Whether each constraint is equality or not. The order of the
@@ -1002,14 +1002,14 @@ R"""(Returns:
         } is_equality;
         // Symbol: drake::solvers::AugmentedLagrangianNonsmooth::lagrangian_size
         struct /* lagrangian_size */ {
-          // Source: drake/solvers/augmented_lagrangian.h:98
+          // Source: drake/solvers/augmented_lagrangian.h
           const char* doc =
 R"""(Returns:
     The size of the Lagrangian multiplier λ.)""";
         } lagrangian_size;
         // Symbol: drake::solvers::AugmentedLagrangianNonsmooth::prog
         struct /* prog */ {
-          // Source: drake/solvers/augmented_lagrangian.h:87
+          // Source: drake/solvers/augmented_lagrangian.h
           const char* doc =
 R"""(Returns:
     The mathematical program for which the augmented Lagrangian is
@@ -1017,14 +1017,14 @@ R"""(Returns:
         } prog;
         // Symbol: drake::solvers::AugmentedLagrangianNonsmooth::x_lo
         struct /* x_lo */ {
-          // Source: drake/solvers/augmented_lagrangian.h:109
+          // Source: drake/solvers/augmented_lagrangian.h
           const char* doc =
 R"""(Returns:
     all the lower bounds of x.)""";
         } x_lo;
         // Symbol: drake::solvers::AugmentedLagrangianNonsmooth::x_up
         struct /* x_up */ {
-          // Source: drake/solvers/augmented_lagrangian.h:112
+          // Source: drake/solvers/augmented_lagrangian.h
           const char* doc =
 R"""(Returns:
     all the upper bounds of x.)""";
@@ -1032,7 +1032,7 @@ R"""(Returns:
       } AugmentedLagrangianNonsmooth;
       // Symbol: drake::solvers::AugmentedLagrangianSmooth
       struct /* AugmentedLagrangianSmooth */ {
-        // Source: drake/solvers/augmented_lagrangian.h:159
+        // Source: drake/solvers/augmented_lagrangian.h
         const char* doc =
 R"""(Compute the augmented Lagrangian (AL) of a given mathematical program
 
@@ -1066,7 +1066,7 @@ should be able to handle bounding box constraints on the decision
 variables.)""";
         // Symbol: drake::solvers::AugmentedLagrangianSmooth::AugmentedLagrangianSmooth
         struct /* ctor */ {
-          // Source: drake/solvers/augmented_lagrangian.h:169
+          // Source: drake/solvers/augmented_lagrangian.h
           const char* doc =
 R"""(Parameter ``prog``:
     The mathematical program we will evaluate.
@@ -1078,7 +1078,7 @@ Parameter ``include_x_bounds``:
         } ctor;
         // Symbol: drake::solvers::AugmentedLagrangianSmooth::Eval
         struct /* Eval */ {
-          // Source: drake/solvers/augmented_lagrangian.h:199
+          // Source: drake/solvers/augmented_lagrangian.h
           const char* doc =
 R"""(Parameter ``x``:
     The value of all the decision variables in prog().
@@ -1124,7 +1124,7 @@ Note:
         } Eval;
         // Symbol: drake::solvers::AugmentedLagrangianSmooth::include_x_bounds
         struct /* include_x_bounds */ {
-          // Source: drake/solvers/augmented_lagrangian.h:214
+          // Source: drake/solvers/augmented_lagrangian.h
           const char* doc =
 R"""(Returns:
     Whether the bounding box constraint x_lo <= x <= x_up is included
@@ -1132,7 +1132,7 @@ R"""(Returns:
         } include_x_bounds;
         // Symbol: drake::solvers::AugmentedLagrangianSmooth::is_equality
         struct /* is_equality */ {
-          // Source: drake/solvers/augmented_lagrangian.h:230
+          // Source: drake/solvers/augmented_lagrangian.h
           const char* doc =
 R"""(Returns:
     Whether each constraint is equality or not. The order of the
@@ -1140,14 +1140,14 @@ R"""(Returns:
         } is_equality;
         // Symbol: drake::solvers::AugmentedLagrangianSmooth::lagrangian_size
         struct /* lagrangian_size */ {
-          // Source: drake/solvers/augmented_lagrangian.h:219
+          // Source: drake/solvers/augmented_lagrangian.h
           const char* doc =
 R"""(Returns:
     The size of the Lagrangian multiplier λ.)""";
         } lagrangian_size;
         // Symbol: drake::solvers::AugmentedLagrangianSmooth::prog
         struct /* prog */ {
-          // Source: drake/solvers/augmented_lagrangian.h:208
+          // Source: drake/solvers/augmented_lagrangian.h
           const char* doc =
 R"""(Returns:
     The mathematical program for which the augmented Lagrangian is
@@ -1155,21 +1155,21 @@ R"""(Returns:
         } prog;
         // Symbol: drake::solvers::AugmentedLagrangianSmooth::s_size
         struct /* s_size */ {
-          // Source: drake/solvers/augmented_lagrangian.h:224
+          // Source: drake/solvers/augmented_lagrangian.h
           const char* doc =
 R"""(Returns:
     The size of the slack variable s.)""";
         } s_size;
         // Symbol: drake::solvers::AugmentedLagrangianSmooth::x_lo
         struct /* x_lo */ {
-          // Source: drake/solvers/augmented_lagrangian.h:235
+          // Source: drake/solvers/augmented_lagrangian.h
           const char* doc =
 R"""(Returns:
     All the lower bounds of x.)""";
         } x_lo;
         // Symbol: drake::solvers::AugmentedLagrangianSmooth::x_up
         struct /* x_up */ {
-          // Source: drake/solvers/augmented_lagrangian.h:238
+          // Source: drake/solvers/augmented_lagrangian.h
           const char* doc =
 R"""(Returns:
     All the upper bounds of x.)""";
@@ -1177,14 +1177,14 @@ R"""(Returns:
       } AugmentedLagrangianSmooth;
       // Symbol: drake::solvers::Binding
       struct /* Binding */ {
-        // Source: drake/solvers/binding.h:24
+        // Source: drake/solvers/binding.h
         const char* doc =
 R"""(A binding on constraint type C is a mapping of the decision variables
 onto the inputs of C. This allows the constraint to operate on a
 vector made up of different elements of the decision variables.)""";
         // Symbol: drake::solvers::Binding::Binding<C>
         struct /* ctor */ {
-          // Source: drake/solvers/binding.h:39
+          // Source: drake/solvers/binding.h
           const char* doc =
 R"""(Concatenates each VectorDecisionVariable object in ``v`` into a single
 column vector, binds this column vector of decision variables with the
@@ -1192,19 +1192,19 @@ constraint ``c``.)""";
         } ctor;
         // Symbol: drake::solvers::Binding::ContainsVariable
         struct /* ContainsVariable */ {
-          // Source: drake/solvers/binding.h:63
+          // Source: drake/solvers/binding.h
           const char* doc =
 R"""(Returns true iff the given ``var`` is included in this Binding.)""";
         } ContainsVariable;
         // Symbol: drake::solvers::Binding::GetNumElements
         struct /* GetNumElements */ {
-          // Source: drake/solvers/binding.h:75
+          // Source: drake/solvers/binding.h
           const char* doc =
 R"""(Returns the number of variables associated with this evaluator.)""";
         } GetNumElements;
         // Symbol: drake::solvers::Binding::ToLatex
         struct /* ToLatex */ {
-          // Source: drake/solvers/binding.h:93
+          // Source: drake/solvers/binding.h
           const char* doc =
 R"""(Returns a LaTeX description of this Binding. Does not include any
 characters to enter/exit math mode; you might want, e.g. "$$" +
@@ -1212,45 +1212,45 @@ evaluator.ToLatex() + "$$".)""";
         } ToLatex;
         // Symbol: drake::solvers::Binding::evaluator
         struct /* evaluator */ {
-          // Source: drake/solvers/binding.h:53
+          // Source: drake/solvers/binding.h
           const char* doc = R"""()""";
         } evaluator;
         // Symbol: drake::solvers::Binding::operator!=
         struct /* operator_ne */ {
-          // Source: drake/solvers/binding.h:116
+          // Source: drake/solvers/binding.h
           const char* doc = R"""()""";
         } operator_ne;
         // Symbol: drake::solvers::Binding::to_string
         struct /* to_string */ {
-          // Source: drake/solvers/binding.h:84
+          // Source: drake/solvers/binding.h
           const char* doc =
 R"""(Returns string representation of Binding.)""";
         } to_string;
         // Symbol: drake::solvers::Binding::variables
         struct /* variables */ {
-          // Source: drake/solvers/binding.h:57
+          // Source: drake/solvers/binding.h
           const char* doc = R"""()""";
         } variables;
       } Binding;
       // Symbol: drake::solvers::Bound
       struct /* Bound */ {
-        // Source: drake/solvers/aggregate_costs_constraints.h:51
+        // Source: drake/solvers/aggregate_costs_constraints.h
         const char* doc =
 R"""(Stores the lower and upper bound of a variable.)""";
         // Symbol: drake::solvers::Bound::lower
         struct /* lower */ {
-          // Source: drake/solvers/aggregate_costs_constraints.h:53
+          // Source: drake/solvers/aggregate_costs_constraints.h
           const char* doc = R"""(Lower bound.)""";
         } lower;
         // Symbol: drake::solvers::Bound::upper
         struct /* upper */ {
-          // Source: drake/solvers/aggregate_costs_constraints.h:55
+          // Source: drake/solvers/aggregate_costs_constraints.h
           const char* doc = R"""(Upper bound.)""";
         } upper;
       } Bound;
       // Symbol: drake::solvers::BoundingBoxConstraint
       struct /* BoundingBoxConstraint */ {
-        // Source: drake/solvers/constraint.h:819
+        // Source: drake/solvers/constraint.h
         const char* doc =
 R"""(Implements a constraint of the form :math:`lb <= x <= ub`
 
@@ -1261,13 +1261,13 @@ information to handle bounding box constraints differently than
 general constraints, so use of this form is encouraged.)""";
         // Symbol: drake::solvers::BoundingBoxConstraint::BoundingBoxConstraint
         struct /* ctor */ {
-          // Source: drake/solvers/constraint.h:821
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } ctor;
       } BoundingBoxConstraint;
       // Symbol: drake::solvers::CeilLog2
       struct /* CeilLog2 */ {
-        // Source: drake/solvers/mixed_integer_optimization_util.h:17
+        // Source: drake/solvers/mixed_integer_optimization_util.h
         const char* doc =
 R"""(Return ⌈log₂(n)⌉, namely the minimal integer no smaller than log₂(n),
 with base 2.
@@ -1280,7 +1280,7 @@ Returns:
       } CeilLog2;
       // Symbol: drake::solvers::ChooseBestSolver
       struct /* ChooseBestSolver */ {
-        // Source: drake/solvers/choose_best_solver.h:19
+        // Source: drake/solvers/choose_best_solver.h
         const char* doc =
 R"""(Choose the best solver given the formulation in the optimization
 program and the availability of the solvers.
@@ -1290,50 +1290,50 @@ Raises:
       } ChooseBestSolver;
       // Symbol: drake::solvers::ClarabelSolver
       struct /* ClarabelSolver */ {
-        // Source: drake/solvers/clarabel_solver.h:24
+        // Source: drake/solvers/clarabel_solver.h
         const char* doc =
 R"""(An interface to wrap Clarabel
 https://github.com/oxfordcontrol/Clarabel.cpp)""";
         // Symbol: drake::solvers::ClarabelSolver::ClarabelSolver
         struct /* ctor */ {
-          // Source: drake/solvers/clarabel_solver.h:26
+          // Source: drake/solvers/clarabel_solver.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::ClarabelSolver::Details
         struct /* Details */ {
-          // Source: drake/solvers/clarabel_solver.h:29
+          // Source: drake/solvers/clarabel_solver.h
           const char* doc =
 R"""(Type of details stored in MathematicalProgramResult.)""";
         } Details;
         // Symbol: drake::solvers::ClarabelSolver::ProgramAttributesSatisfied
         struct /* ProgramAttributesSatisfied */ {
-          // Source: drake/solvers/clarabel_solver.h:39
+          // Source: drake/solvers/clarabel_solver.h
           const char* doc = R"""()""";
         } ProgramAttributesSatisfied;
         // Symbol: drake::solvers::ClarabelSolver::UnsatisfiedProgramAttributes
         struct /* UnsatisfiedProgramAttributes */ {
-          // Source: drake/solvers/clarabel_solver.h:40
+          // Source: drake/solvers/clarabel_solver.h
           const char* doc = R"""()""";
         } UnsatisfiedProgramAttributes;
         // Symbol: drake::solvers::ClarabelSolver::id
         struct /* id */ {
-          // Source: drake/solvers/clarabel_solver.h:36
+          // Source: drake/solvers/clarabel_solver.h
           const char* doc = R"""()""";
         } id;
         // Symbol: drake::solvers::ClarabelSolver::is_available
         struct /* is_available */ {
-          // Source: drake/solvers/clarabel_solver.h:37
+          // Source: drake/solvers/clarabel_solver.h
           const char* doc = R"""()""";
         } is_available;
         // Symbol: drake::solvers::ClarabelSolver::is_enabled
         struct /* is_enabled */ {
-          // Source: drake/solvers/clarabel_solver.h:38
+          // Source: drake/solvers/clarabel_solver.h
           const char* doc = R"""()""";
         } is_enabled;
       } ClarabelSolver;
       // Symbol: drake::solvers::ClarabelSolverDetails
       struct /* ClarabelSolverDetails */ {
-        // Source: drake/solvers/clarabel_solver.h:14
+        // Source: drake/solvers/clarabel_solver.h
         const char* doc =
 R"""(The Clarabel solver details after calling the Solve() function. The
 user can call
@@ -1341,24 +1341,24 @@ MathematicalProgramResult::get_solver_details<ClarabelSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::ClarabelSolverDetails::iterations
         struct /* iterations */ {
-          // Source: drake/solvers/clarabel_solver.h:18
+          // Source: drake/solvers/clarabel_solver.h
           const char* doc = R"""(Number of iterations in Clarabel.)""";
         } iterations;
         // Symbol: drake::solvers::ClarabelSolverDetails::solve_time
         struct /* solve_time */ {
-          // Source: drake/solvers/clarabel_solver.h:16
+          // Source: drake/solvers/clarabel_solver.h
           const char* doc =
 R"""(The solve time inside Clarabel in seconds.)""";
         } solve_time;
         // Symbol: drake::solvers::ClarabelSolverDetails::status
         struct /* status */ {
-          // Source: drake/solvers/clarabel_solver.h:20
+          // Source: drake/solvers/clarabel_solver.h
           const char* doc = R"""(The status from Clarabel.)""";
         } status;
       } ClarabelSolverDetails;
       // Symbol: drake::solvers::ClpSolver
       struct /* ClpSolver */ {
-        // Source: drake/solvers/clp_solver.h:44
+        // Source: drake/solvers/clp_solver.h
         const char* doc =
 R"""(A wrapper to call CLP using Drake's MathematicalProgram.
 
@@ -1374,55 +1374,55 @@ Note:
     will do "no scaling". The default is 1.)""";
         // Symbol: drake::solvers::ClpSolver::ClpSolver
         struct /* ctor */ {
-          // Source: drake/solvers/clp_solver.h:46
+          // Source: drake/solvers/clp_solver.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::ClpSolver::Details
         struct /* Details */ {
-          // Source: drake/solvers/clp_solver.h:48
+          // Source: drake/solvers/clp_solver.h
           const char* doc = R"""()""";
         } Details;
         // Symbol: drake::solvers::ClpSolver::ProgramAttributesSatisfied
         struct /* ProgramAttributesSatisfied */ {
-          // Source: drake/solvers/clp_solver.h:59
+          // Source: drake/solvers/clp_solver.h
           const char* doc = R"""()""";
         } ProgramAttributesSatisfied;
         // Symbol: drake::solvers::ClpSolver::UnsatisfiedProgramAttributes
         struct /* UnsatisfiedProgramAttributes */ {
-          // Source: drake/solvers/clp_solver.h:60
+          // Source: drake/solvers/clp_solver.h
           const char* doc = R"""()""";
         } UnsatisfiedProgramAttributes;
         // Symbol: drake::solvers::ClpSolver::id
         struct /* id */ {
-          // Source: drake/solvers/clp_solver.h:56
+          // Source: drake/solvers/clp_solver.h
           const char* doc = R"""()""";
         } id;
         // Symbol: drake::solvers::ClpSolver::is_available
         struct /* is_available */ {
-          // Source: drake/solvers/clp_solver.h:57
+          // Source: drake/solvers/clp_solver.h
           const char* doc = R"""()""";
         } is_available;
         // Symbol: drake::solvers::ClpSolver::is_enabled
         struct /* is_enabled */ {
-          // Source: drake/solvers/clp_solver.h:58
+          // Source: drake/solvers/clp_solver.h
           const char* doc = R"""()""";
         } is_enabled;
       } ClpSolver;
       // Symbol: drake::solvers::ClpSolverDetails
       struct /* ClpSolverDetails */ {
-        // Source: drake/solvers/clp_solver.h:17
+        // Source: drake/solvers/clp_solver.h
         const char* doc =
 R"""(The CLP solver details after calling Solve() function. The user can
 call MathematicalProgramResult::get_solver_details<ClpSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::ClpSolverDetails::clp_version
         struct /* clp_version */ {
-          // Source: drake/solvers/clp_solver.h:19
+          // Source: drake/solvers/clp_solver.h
           const char* doc = R"""(The CLP_VERSION from the Clp build.)""";
         } clp_version;
         // Symbol: drake::solvers::ClpSolverDetails::status
         struct /* status */ {
-          // Source: drake/solvers/clp_solver.h:30
+          // Source: drake/solvers/clp_solver.h
           const char* doc =
 R"""(Refer to ClpModel::status() function for the meaning of the status
 code. - -1: unknown error. - 0: optimal. - 1: primal infeasible - 2:
@@ -1432,7 +1432,7 @@ to errors - 5: stopped by event handler)""";
       } ClpSolverDetails;
       // Symbol: drake::solvers::CommonSolverOption
       struct /* CommonSolverOption */ {
-        // Source: drake/solvers/common_solver_option.h:17
+        // Source: drake/solvers/common_solver_option.h
         const char* doc =
 R"""(Some options can be applied to not one solver, but many solvers (for
 example, many solvers support printing out the progress in each
@@ -1442,7 +1442,7 @@ SolverOption::SetOption(). If the solver doesn't support the option,
 the option is ignored.)""";
         // Symbol: drake::solvers::CommonSolverOption::kMaxThreads
         struct /* kMaxThreads */ {
-          // Source: drake/solvers/common_solver_option.h:50
+          // Source: drake/solvers/common_solver_option.h
           const char* doc =
 R"""(Some solvers are multi-threaded. The user can request the maximum
 number of threads used by the solver with this ``int`` option. When
@@ -1468,7 +1468,7 @@ Note:
         } kMaxThreads;
         // Symbol: drake::solvers::CommonSolverOption::kPrintFileName
         struct /* kPrintFileName */ {
-          // Source: drake/solvers/common_solver_option.h:22
+          // Source: drake/solvers/common_solver_option.h
           const char* doc =
 R"""(Many solvers support printing the progress of each iteration to a
 file. The user can call SolverOptions::SetOption(kPrintFileName,
@@ -1477,7 +1477,7 @@ empty string ``""``, which indicates that no file should be written.)""";
         } kPrintFileName;
         // Symbol: drake::solvers::CommonSolverOption::kPrintToConsole
         struct /* kPrintToConsole */ {
-          // Source: drake/solvers/common_solver_option.h:27
+          // Source: drake/solvers/common_solver_option.h
           const char* doc =
 R"""(Many solvers support printing the progress of each iteration to the
 console. The user can call ``SolverOptions::SetOption(kPrintToConsole,
@@ -1485,7 +1485,7 @@ console. The user can call ``SolverOptions::SetOption(kPrintToConsole,
         } kPrintToConsole;
         // Symbol: drake::solvers::CommonSolverOption::kStandaloneReproductionFileName
         struct /* kStandaloneReproductionFileName */ {
-          // Source: drake/solvers/common_solver_option.h:36
+          // Source: drake/solvers/common_solver_option.h
           const char* doc =
 R"""(Some solvers support writing a standalone (e.g., it does not depend on
 Drake) minimal reproduction of the problem to a file. This is
@@ -1498,21 +1498,21 @@ empty string ``""``, which indicates that no file should be written.)""";
       } CommonSolverOption;
       // Symbol: drake::solvers::ConcatenateIndeterminatesRefList
       struct /* ConcatenateIndeterminatesRefList */ {
-        // Source: drake/solvers/indeterminate.h:50
+        // Source: drake/solvers/indeterminate.h
         const char* doc =
 R"""(Concatenates each element in ``var_list`` into a single Eigen vector
 of indeterminates, returns this concatenated vector.)""";
       } ConcatenateIndeterminatesRefList;
       // Symbol: drake::solvers::ConcatenateVariableRefList
       struct /* ConcatenateVariableRefList */ {
-        // Source: drake/solvers/decision_variable.h:28
+        // Source: drake/solvers/decision_variable.h
         const char* doc =
 R"""(Concatenates each element in ``var_list`` into a single Eigen vector
 of decision variables, returns this concatenated vector.)""";
       } ConcatenateVariableRefList;
       // Symbol: drake::solvers::Constraint
       struct /* Constraint */ {
-        // Source: drake/solvers/constraint.h:47
+        // Source: drake/solvers/constraint.h
         const char* doc =
 R"""(A constraint is a function + lower and upper bounds.
 
@@ -1524,7 +1524,7 @@ It should support evaluating the constraint, and adding it to an
 optimization problem.)""";
         // Symbol: drake::solvers::Constraint::CheckSatisfied
         struct /* CheckSatisfied */ {
-          // Source: drake/solvers/constraint.h:98
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Return whether this constraint is satisfied by the given value, ``x``.
 
@@ -1539,7 +1539,7 @@ Raises:
         } CheckSatisfied;
         // Symbol: drake::solvers::Constraint::Constraint
         struct /* ctor */ {
-          // Source: drake/solvers/constraint.h:64
+          // Source: drake/solvers/constraint.h
           const char* doc_5args =
 R"""(Constructs a constraint which has ``num_constraints`` rows, with an
 input ``num_vars`` x 1 vector.
@@ -1561,7 +1561,7 @@ Parameter ``ub``:
 
 See also:
     Eval(...))""";
-          // Source: drake/solvers/constraint.h:84
+          // Source: drake/solvers/constraint.h
           const char* doc_2args =
 R"""(Constructs a constraint which has ``num_constraints`` rows, with an
 input ``num_vars`` x 1 vector, with no bounds.
@@ -1578,12 +1578,12 @@ See also:
         } ctor;
         // Symbol: drake::solvers::Constraint::DoCheckSatisfied
         struct /* DoCheckSatisfied */ {
-          // Source: drake/solvers/constraint.h:158
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } DoCheckSatisfied;
         // Symbol: drake::solvers::Constraint::UpdateLowerBound
         struct /* UpdateLowerBound */ {
-          // Source: drake/solvers/constraint.h:127
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Updates the lower bound.
 
@@ -1593,7 +1593,7 @@ Note:
         } UpdateLowerBound;
         // Symbol: drake::solvers::Constraint::UpdateUpperBound
         struct /* UpdateUpperBound */ {
-          // Source: drake/solvers/constraint.h:138
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Updates the upper bound.
 
@@ -1603,18 +1603,18 @@ Note:
         } UpdateUpperBound;
         // Symbol: drake::solvers::Constraint::lower_bound
         struct /* lower_bound */ {
-          // Source: drake/solvers/constraint.h:116
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } lower_bound;
         // Symbol: drake::solvers::Constraint::num_constraints
         struct /* num_constraints */ {
-          // Source: drake/solvers/constraint.h:120
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Number of rows in the output constraint.)""";
         } num_constraints;
         // Symbol: drake::solvers::Constraint::set_bounds
         struct /* set_bounds */ {
-          // Source: drake/solvers/constraint.h:152
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Set the upper and lower bounds of the constraint.
 
@@ -1630,13 +1630,13 @@ Note:
         } set_bounds;
         // Symbol: drake::solvers::Constraint::upper_bound
         struct /* upper_bound */ {
-          // Source: drake/solvers/constraint.h:117
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } upper_bound;
       } Constraint;
       // Symbol: drake::solvers::ConstructMonomialBasis
       struct /* ConstructMonomialBasis */ {
-        // Source: drake/solvers/sos_basis_generator.h:22
+        // Source: drake/solvers/sos_basis_generator.h
         const char* doc =
 R"""(Given input polynomial p, outputs a set M of monomials with the
 following guarantee: if p = f1*f1 + f2*f2 + ... + fn*fn for some
@@ -1654,12 +1654,12 @@ Returns:
       } ConstructMonomialBasis;
       // Symbol: drake::solvers::Cost
       struct /* Cost */ {
-        // Source: drake/solvers/cost.h:25
+        // Source: drake/solvers/cost.h
         const char* doc =
 R"""(Provides an abstract base for all costs.)""";
         // Symbol: drake::solvers::Cost::Cost
         struct /* ctor */ {
-          // Source: drake/solvers/cost.h:35
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Constructs a cost evaluator.
 
@@ -1672,7 +1672,7 @@ Parameter ``description``:
       } Cost;
       // Symbol: drake::solvers::CreateBinaryCodeMatchConstraint
       struct /* CreateBinaryCodeMatchConstraint */ {
-        // Source: drake/solvers/integer_optimization_util.h:88
+        // Source: drake/solvers/integer_optimization_util.h
         const char* doc =
 R"""(Create linear constraints such that, when these constraints are
 satisfied, match = 1 if and only if code == expected, otherwise match
@@ -1698,7 +1698,7 @@ call the function CreateBinaryCodeMatchConstraint({b1, b2, b3}, {0, 1,
       } CreateBinaryCodeMatchConstraint;
       // Symbol: drake::solvers::CreateLogicalAndConstraint
       struct /* CreateLogicalAndConstraint */ {
-        // Source: drake/solvers/integer_optimization_util.h:26
+        // Source: drake/solvers/integer_optimization_util.h
         const char* doc =
 R"""(Adds linear constraints, such that when b1, b2, b1_and_b2 satisfy the
 constraints, and b1, b2 take binary values, it is guaranteed that
@@ -1739,7 +1739,7 @@ Precondition:
       } CreateLogicalAndConstraint;
       // Symbol: drake::solvers::CreateLogicalOrConstraint
       struct /* CreateLogicalOrConstraint */ {
-        // Source: drake/solvers/integer_optimization_util.h:48
+        // Source: drake/solvers/integer_optimization_util.h
         const char* doc =
 R"""(Adds linear constraints, such that when b1, b2, b1_or_b2 satisfy the
 constraints, and b1, b2 take binary values, it is guaranteed that
@@ -1779,7 +1779,7 @@ Precondition:
       } CreateLogicalOrConstraint;
       // Symbol: drake::solvers::CreateLogicalXorConstraint
       struct /* CreateLogicalXorConstraint */ {
-        // Source: drake/solvers/integer_optimization_util.h:71
+        // Source: drake/solvers/integer_optimization_util.h
         const char* doc =
 R"""(Add linear constraints, such that when b1, b2, b1_xor_b2 satisfy the
 constraints, and b1, b2 take binary values, it is guaranteed that
@@ -1821,7 +1821,7 @@ Precondition:
       } CreateLogicalXorConstraint;
       // Symbol: drake::solvers::CsdpSolver
       struct /* CsdpSolver */ {
-        // Source: drake/solvers/csdp_solver.h:71
+        // Source: drake/solvers/csdp_solver.h
         const char* doc =
 R"""(Wrap CSDP solver such that it can solve a
 drake::solvers::MathematicalProgram.
@@ -1855,60 +1855,60 @@ Note:
 For more details, check out RemoveFreeVariableMethod.)""";
         // Symbol: drake::solvers::CsdpSolver::CsdpSolver
         struct /* ctor */ {
-          // Source: drake/solvers/csdp_solver.h:76
+          // Source: drake/solvers/csdp_solver.h
           const char* doc = R"""(Default constructor)""";
         } ctor;
         // Symbol: drake::solvers::CsdpSolver::Details
         struct /* Details */ {
-          // Source: drake/solvers/csdp_solver.h:91
+          // Source: drake/solvers/csdp_solver.h
           const char* doc = R"""()""";
         } Details;
         // Symbol: drake::solvers::CsdpSolver::ProgramAttributesSatisfied
         struct /* ProgramAttributesSatisfied */ {
-          // Source: drake/solvers/csdp_solver.h:85
+          // Source: drake/solvers/csdp_solver.h
           const char* doc = R"""()""";
         } ProgramAttributesSatisfied;
         // Symbol: drake::solvers::CsdpSolver::id
         struct /* id */ {
-          // Source: drake/solvers/csdp_solver.h:82
+          // Source: drake/solvers/csdp_solver.h
           const char* doc = R"""()""";
         } id;
         // Symbol: drake::solvers::CsdpSolver::is_available
         struct /* is_available */ {
-          // Source: drake/solvers/csdp_solver.h:83
+          // Source: drake/solvers/csdp_solver.h
           const char* doc = R"""()""";
         } is_available;
         // Symbol: drake::solvers::CsdpSolver::is_enabled
         struct /* is_enabled */ {
-          // Source: drake/solvers/csdp_solver.h:84
+          // Source: drake/solvers/csdp_solver.h
           const char* doc = R"""()""";
         } is_enabled;
       } CsdpSolver;
       // Symbol: drake::solvers::CsdpSolverDetails
       struct /* CsdpSolverDetails */ {
-        // Source: drake/solvers/csdp_solver.h:14
+        // Source: drake/solvers/csdp_solver.h
         const char* doc =
 R"""(The CSDP solver details after calling Solve() function. The user can
 call MathematicalProgramResult::get_solver_details<CsdpSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::CsdpSolverDetails::Z_val
         struct /* Z_val */ {
-          // Source: drake/solvers/csdp_solver.h:51
+          // Source: drake/solvers/csdp_solver.h
           const char* doc = R"""()""";
         } Z_val;
         // Symbol: drake::solvers::CsdpSolverDetails::dual_objective
         struct /* dual_objective */ {
-          // Source: drake/solvers/csdp_solver.h:33
+          // Source: drake/solvers/csdp_solver.h
           const char* doc = R"""(The dual objective value.)""";
         } dual_objective;
         // Symbol: drake::solvers::CsdpSolverDetails::primal_objective
         struct /* primal_objective */ {
-          // Source: drake/solvers/csdp_solver.h:31
+          // Source: drake/solvers/csdp_solver.h
           const char* doc = R"""(The primal objective value.)""";
         } primal_objective;
         // Symbol: drake::solvers::CsdpSolverDetails::return_code
         struct /* return_code */ {
-          // Source: drake/solvers/csdp_solver.h:29
+          // Source: drake/solvers/csdp_solver.h
           const char* doc =
 R"""(Refer to the Return Codes section of CSDP 6.2.0 User's Guide for
 explanation on the return code. Some of the common return codes are
@@ -1921,7 +1921,7 @@ singular. 9 NaN or Inf values encountered.)""";
         } return_code;
         // Symbol: drake::solvers::CsdpSolverDetails::y_val
         struct /* y_val */ {
-          // Source: drake/solvers/csdp_solver.h:50
+          // Source: drake/solvers/csdp_solver.h
           const char* doc =
 R"""(CSDP solves a primal problem of the form
 
@@ -1937,12 +1937,12 @@ solutions to the dual problem.)""";
       } CsdpSolverDetails;
       // Symbol: drake::solvers::DecisionVariable
       struct /* DecisionVariable */ {
-        // Source: drake/solvers/decision_variable.h:12
+        // Source: drake/solvers/decision_variable.h
         const char* doc = R"""()""";
       } DecisionVariable;
       // Symbol: drake::solvers::DecomposeNonConvexQuadraticForm
       struct /* DecomposeNonConvexQuadraticForm */ {
-        // Source: drake/solvers/non_convex_optimization_util.h:43
+        // Source: drake/solvers/non_convex_optimization_util.h
         const char* doc =
 R"""(For a non-convex homogeneous quadratic form xᵀQx, where Q is not
 necessarily a positive semidefinite matrix, we decompose it as a
@@ -1971,7 +1971,7 @@ Returns:
       } DecomposeNonConvexQuadraticForm;
       // Symbol: drake::solvers::EnumerateIntegerSolutions
       struct /* EnumerateIntegerSolutions */ {
-        // Source: drake/solvers/integer_inequality_solver.h:20
+        // Source: drake/solvers/integer_inequality_solver.h
         const char* doc =
 R"""(Finds all integer solutions x to the linear inequalities
 
@@ -2007,7 +2007,7 @@ Returns:
       } EnumerateIntegerSolutions;
       // Symbol: drake::solvers::EqualityConstrainedQPSolver
       struct /* EqualityConstrainedQPSolver */ {
-        // Source: drake/solvers/equality_constrained_qp_solver.h:22
+        // Source: drake/solvers/equality_constrained_qp_solver.h
         const char* doc =
 R"""(Solves a quadratic program with equality constraint.
 
@@ -2020,40 +2020,40 @@ The user can set the following options:
   this value. The default is Eigen::dummy_precision().)""";
         // Symbol: drake::solvers::EqualityConstrainedQPSolver::EqualityConstrainedQPSolver
         struct /* ctor */ {
-          // Source: drake/solvers/equality_constrained_qp_solver.h:24
+          // Source: drake/solvers/equality_constrained_qp_solver.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::EqualityConstrainedQPSolver::FeasibilityTolOptionName
         struct /* FeasibilityTolOptionName */ {
-          // Source: drake/solvers/equality_constrained_qp_solver.h:30
+          // Source: drake/solvers/equality_constrained_qp_solver.h
           const char* doc =
 R"""(Returns:
     string key for SolverOptions to set the feasibility tolerance.)""";
         } FeasibilityTolOptionName;
         // Symbol: drake::solvers::EqualityConstrainedQPSolver::ProgramAttributesSatisfied
         struct /* ProgramAttributesSatisfied */ {
-          // Source: drake/solvers/equality_constrained_qp_solver.h:37
+          // Source: drake/solvers/equality_constrained_qp_solver.h
           const char* doc = R"""()""";
         } ProgramAttributesSatisfied;
         // Symbol: drake::solvers::EqualityConstrainedQPSolver::id
         struct /* id */ {
-          // Source: drake/solvers/equality_constrained_qp_solver.h:34
+          // Source: drake/solvers/equality_constrained_qp_solver.h
           const char* doc = R"""()""";
         } id;
         // Symbol: drake::solvers::EqualityConstrainedQPSolver::is_available
         struct /* is_available */ {
-          // Source: drake/solvers/equality_constrained_qp_solver.h:35
+          // Source: drake/solvers/equality_constrained_qp_solver.h
           const char* doc = R"""()""";
         } is_available;
         // Symbol: drake::solvers::EqualityConstrainedQPSolver::is_enabled
         struct /* is_enabled */ {
-          // Source: drake/solvers/equality_constrained_qp_solver.h:36
+          // Source: drake/solvers/equality_constrained_qp_solver.h
           const char* doc = R"""()""";
         } is_enabled;
       } EqualityConstrainedQPSolver;
       // Symbol: drake::solvers::EvaluatorBase
       struct /* EvaluatorBase */ {
-        // Source: drake/solvers/evaluator_base.h:32
+        // Source: drake/solvers/evaluator_base.h
         const char* doc =
 R"""(Provides an abstract interface to represent an expression, mapping a
 fixed or dynamic number of inputs to a fixed number of outputs, that
@@ -2063,7 +2063,7 @@ These objects, and its derivatives, are meant to be bound to a given
 set of variables using the Binding<> class.)""";
         // Symbol: drake::solvers::EvaluatorBase::Display
         struct /* Display */ {
-          // Source: drake/solvers/evaluator_base.h:97
+          // Source: drake/solvers/evaluator_base.h
           const char* doc_2args =
 R"""(Formats this evaluator into the given stream using ``vars`` for the
 bound decision variable names.
@@ -2071,14 +2071,14 @@ bound decision variable names.
 The size of ``vars`` must match the ``num_vars()`` declared by this
 evaluator. (If ``num_vars()`` is ``Eigen::Dynamic``, then ``vars`` may
 be any size.))""";
-          // Source: drake/solvers/evaluator_base.h:104
+          // Source: drake/solvers/evaluator_base.h
           const char* doc_1args =
 R"""(Formats this evaluator into the given stream, without displaying the
 decision variables it is bound to.)""";
         } Display;
         // Symbol: drake::solvers::EvaluatorBase::DoDisplay
         struct /* DoDisplay */ {
-          // Source: drake/solvers/evaluator_base.h:203
+          // Source: drake/solvers/evaluator_base.h
           const char* doc =
 R"""(NVI implementation of Display. The default implementation will report
 the NiceTypeName, get_description, and list the bound variables.
@@ -2089,7 +2089,7 @@ Precondition:
         } DoDisplay;
         // Symbol: drake::solvers::EvaluatorBase::DoEval
         struct /* DoEval */ {
-          // Source: drake/solvers/evaluator_base.h:174
+          // Source: drake/solvers/evaluator_base.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Implements expression evaluation for scalar type double.
 
@@ -2107,12 +2107,12 @@ Postcondition:
         } DoEval;
         // Symbol: drake::solvers::EvaluatorBase::DoToLatex
         struct /* DoToLatex */ {
-          // Source: drake/solvers/evaluator_base.h:206
+          // Source: drake/solvers/evaluator_base.h
           const char* doc = R"""()""";
         } DoToLatex;
         // Symbol: drake::solvers::EvaluatorBase::Eval
         struct /* Eval */ {
-          // Source: drake/solvers/evaluator_base.h:45
+          // Source: drake/solvers/evaluator_base.h
           const char* doc =
 R"""(Evaluates the expression.
 
@@ -2124,7 +2124,7 @@ Parameter ``y``:
         } Eval;
         // Symbol: drake::solvers::EvaluatorBase::EvaluatorBase
         struct /* ctor */ {
-          // Source: drake/solvers/evaluator_base.h:160
+          // Source: drake/solvers/evaluator_base.h
           const char* doc =
 R"""(Constructs a evaluator.
 
@@ -2143,7 +2143,7 @@ See also:
         } ctor;
         // Symbol: drake::solvers::EvaluatorBase::SetGradientSparsityPattern
         struct /* SetGradientSparsityPattern */ {
-          // Source: drake/solvers/evaluator_base.h:130
+          // Source: drake/solvers/evaluator_base.h
           const char* doc =
 R"""(Set the sparsity pattern of the gradient matrix ∂y/∂x (the gradient of
 y value in Eval, w.r.t x in Eval) . gradient_sparsity_pattern contains
@@ -2152,7 +2152,7 @@ entries could have non-zero value in the gradient matrix ∂y/∂x.)""";
         } SetGradientSparsityPattern;
         // Symbol: drake::solvers::EvaluatorBase::ToLatex
         struct /* ToLatex */ {
-          // Source: drake/solvers/evaluator_base.h:109
+          // Source: drake/solvers/evaluator_base.h
           const char* doc =
 R"""(Returns a LaTeX string describing this evaluator. Does not include any
 characters to enter/exit math mode; you might want, e.g. "$$" +
@@ -2160,13 +2160,13 @@ evaluator.ToLatex() + "$$".)""";
         } ToLatex;
         // Symbol: drake::solvers::EvaluatorBase::get_description
         struct /* get_description */ {
-          // Source: drake/solvers/evaluator_base.h:88
+          // Source: drake/solvers/evaluator_base.h
           const char* doc =
 R"""(Getter for a human-friendly description for the evaluator.)""";
         } get_description;
         // Symbol: drake::solvers::EvaluatorBase::gradient_sparsity_pattern
         struct /* gradient_sparsity_pattern */ {
-          // Source: drake/solvers/evaluator_base.h:142
+          // Source: drake/solvers/evaluator_base.h
           const char* doc =
 R"""(Returns the vector of (row_index, col_index) that contains all the
 entries in the gradient of Eval function (∂y/∂x) whose value could be
@@ -2179,44 +2179,44 @@ Returns ``gradient_sparsity_pattern``:
         } gradient_sparsity_pattern;
         // Symbol: drake::solvers::EvaluatorBase::is_thread_safe
         struct /* is_thread_safe */ {
-          // Source: drake/solvers/evaluator_base.h:149
+          // Source: drake/solvers/evaluator_base.h
           const char* doc =
 R"""(Returns whether it is safe to call Eval in parallel.)""";
         } is_thread_safe;
         // Symbol: drake::solvers::EvaluatorBase::num_outputs
         struct /* num_outputs */ {
-          // Source: drake/solvers/evaluator_base.h:122
+          // Source: drake/solvers/evaluator_base.h
           const char* doc =
 R"""(Getter for the number of outputs, namely the number of rows in y, as
 used in Eval(x, y).)""";
         } num_outputs;
         // Symbol: drake::solvers::EvaluatorBase::num_vars
         struct /* num_vars */ {
-          // Source: drake/solvers/evaluator_base.h:116
+          // Source: drake/solvers/evaluator_base.h
           const char* doc =
 R"""(Getter for the number of variables, namely the number of rows in x, as
 used in Eval(x, y).)""";
         } num_vars;
         // Symbol: drake::solvers::EvaluatorBase::set_description
         struct /* set_description */ {
-          // Source: drake/solvers/evaluator_base.h:81
+          // Source: drake/solvers/evaluator_base.h
           const char* doc =
 R"""(Set a human-friendly description for the evaluator.)""";
         } set_description;
         // Symbol: drake::solvers::EvaluatorBase::set_is_thread_safe
         struct /* set_is_thread_safe */ {
-          // Source: drake/solvers/evaluator_base.h:221
+          // Source: drake/solvers/evaluator_base.h
           const char* doc = R"""()""";
         } set_is_thread_safe;
         // Symbol: drake::solvers::EvaluatorBase::set_num_outputs
         struct /* set_num_outputs */ {
-          // Source: drake/solvers/evaluator_base.h:214
+          // Source: drake/solvers/evaluator_base.h
           const char* doc = R"""()""";
         } set_num_outputs;
       } EvaluatorBase;
       // Symbol: drake::solvers::EvaluatorConstraint
       struct /* EvaluatorConstraint */ {
-        // Source: drake/solvers/constraint.h:516
+        // Source: drake/solvers/constraint.h
         const char* doc =
 R"""(A constraint that may be specified using another (potentially
 nonlinear) evaluator.
@@ -2225,7 +2225,7 @@ Template parameter ``EvaluatorType``:
     The nested evaluator.)""";
         // Symbol: drake::solvers::EvaluatorConstraint::EvaluatorConstraint<EvaluatorType>
         struct /* ctor */ {
-          // Source: drake/solvers/constraint.h:528
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Constructs an evaluator constraint, given the EvaluatorType instance
 (which will specify the number of constraints and variables), and will
@@ -2239,13 +2239,13 @@ Parameter ``args``:
         } ctor;
         // Symbol: drake::solvers::EvaluatorConstraint::evaluator
         struct /* evaluator */ {
-          // Source: drake/solvers/constraint.h:542
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""(Reference to the nested evaluator.)""";
         } evaluator;
       } EvaluatorConstraint;
       // Symbol: drake::solvers::EvaluatorCost
       struct /* EvaluatorCost */ {
-        // Source: drake/solvers/cost.h:560
+        // Source: drake/solvers/cost.h
         const char* doc =
 R"""(A cost that may be specified using another (potentially nonlinear)
 evaluator.
@@ -2254,12 +2254,12 @@ Template parameter ``EvaluatorType``:
     The nested evaluator.)""";
         // Symbol: drake::solvers::EvaluatorCost::DoEval
         struct /* DoEval */ {
-          // Source: drake/solvers/cost.h:587
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoEval;
         // Symbol: drake::solvers::EvaluatorCost::EvaluatorCost<EvaluatorType>
         struct /* ctor */ {
-          // Source: drake/solvers/cost.h:577
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(This cost computes a.dot(evaluator(x)) + b
 
@@ -2268,13 +2268,13 @@ Precondition:
         } ctor;
         // Symbol: drake::solvers::EvaluatorCost::evaluator
         struct /* evaluator */ {
-          // Source: drake/solvers/cost.h:585
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } evaluator;
       } EvaluatorCost;
       // Symbol: drake::solvers::ExponentialConeConstraint
       struct /* ExponentialConeConstraint */ {
-        // Source: drake/solvers/constraint.h:1189
+        // Source: drake/solvers/constraint.h
         const char* doc =
 R"""(An exponential cone constraint is a special type of convex cone
 constraint. We constrain A * x + b to be in the exponential cone,
@@ -2293,27 +2293,27 @@ consider to solve the program through conic solvers that can exploit
 exponential cone, such as MOSEK™ and SCS.)""";
         // Symbol: drake::solvers::ExponentialConeConstraint::A
         struct /* A */ {
-          // Source: drake/solvers/constraint.h:1205
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""(Getter for matrix A.)""";
         } A;
         // Symbol: drake::solvers::ExponentialConeConstraint::DoEval
         struct /* DoEval */ {
-          // Source: drake/solvers/constraint.h:1215
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } DoEval;
         // Symbol: drake::solvers::ExponentialConeConstraint::DoEvalGeneric
         struct /* DoEvalGeneric */ {
-          // Source: drake/solvers/constraint.h:1212
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } DoEvalGeneric;
         // Symbol: drake::solvers::ExponentialConeConstraint::DoToLatex
         struct /* DoToLatex */ {
-          // Source: drake/solvers/constraint.h:1224
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } DoToLatex;
         // Symbol: drake::solvers::ExponentialConeConstraint::ExponentialConeConstraint
         struct /* ctor */ {
-          // Source: drake/solvers/constraint.h:1198
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Constructor for exponential cone. Constrains A * x + b to be in the
 exponential cone.
@@ -2323,13 +2323,13 @@ Precondition:
         } ctor;
         // Symbol: drake::solvers::ExponentialConeConstraint::b
         struct /* b */ {
-          // Source: drake/solvers/constraint.h:1208
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""(Getter for vector b.)""";
         } b;
       } ExponentialConeConstraint;
       // Symbol: drake::solvers::ExponentiallySmoothedHingeLoss
       struct /* ExponentiallySmoothedHingeLoss */ {
-        // Source: drake/solvers/minimum_value_constraint.h:35
+        // Source: drake/solvers/minimum_value_constraint.h
         const char* doc =
 R"""(A hinge loss function smoothed by exponential function. This loss
 function is differentiable everywhere. The formulation is described in
@@ -2341,7 +2341,7 @@ on Humanoid Robots, 2014.)""";
       } ExponentiallySmoothedHingeLoss;
       // Symbol: drake::solvers::ExpressionConstraint
       struct /* ExpressionConstraint */ {
-        // Source: drake/solvers/constraint.h:1120
+        // Source: drake/solvers/constraint.h
         const char* doc =
 R"""(Impose a generic (potentially nonlinear) constraint represented as a
 vector of symbolic Expression. Expression::Evaluate is called on every
@@ -2351,34 +2351,34 @@ Uses symbolic::Jacobian to provide the gradients to the AutoDiff
 method.)""";
         // Symbol: drake::solvers::ExpressionConstraint::DoDisplay
         struct /* DoDisplay */ {
-          // Source: drake/solvers/constraint.h:1151
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } DoDisplay;
         // Symbol: drake::solvers::ExpressionConstraint::DoEval
         struct /* DoEval */ {
-          // Source: drake/solvers/constraint.h:1142
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } DoEval;
         // Symbol: drake::solvers::ExpressionConstraint::DoToLatex
         struct /* DoToLatex */ {
-          // Source: drake/solvers/constraint.h:1154
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } DoToLatex;
         // Symbol: drake::solvers::ExpressionConstraint::ExpressionConstraint
         struct /* ctor */ {
-          // Source: drake/solvers/constraint.h:1122
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::ExpressionConstraint::expressions
         struct /* expressions */ {
-          // Source: drake/solvers/constraint.h:1137
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Returns:
     the symbolic expressions.)""";
         } expressions;
         // Symbol: drake::solvers::ExpressionConstraint::vars
         struct /* vars */ {
-          // Source: drake/solvers/constraint.h:1134
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Returns:
     the list of the variables involved in the vector of expressions,
@@ -2389,7 +2389,7 @@ R"""(Returns:
       } ExpressionConstraint;
       // Symbol: drake::solvers::ExpressionCost
       struct /* ExpressionCost */ {
-        // Source: drake/solvers/cost.h:660
+        // Source: drake/solvers/cost.h
         const char* doc =
 R"""(Impose a generic (potentially nonlinear) cost represented as a
 symbolic Expression. Expression::Evaluate is called on every
@@ -2399,34 +2399,34 @@ Uses symbolic::Jacobian to provide the gradients to the AutoDiff
 method.)""";
         // Symbol: drake::solvers::ExpressionCost::DoDisplay
         struct /* DoDisplay */ {
-          // Source: drake/solvers/cost.h:687
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoDisplay;
         // Symbol: drake::solvers::ExpressionCost::DoEval
         struct /* DoEval */ {
-          // Source: drake/solvers/cost.h:678
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoEval;
         // Symbol: drake::solvers::ExpressionCost::DoToLatex
         struct /* DoToLatex */ {
-          // Source: drake/solvers/cost.h:690
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoToLatex;
         // Symbol: drake::solvers::ExpressionCost::ExpressionCost
         struct /* ctor */ {
-          // Source: drake/solvers/cost.h:662
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::ExpressionCost::expression
         struct /* expression */ {
-          // Source: drake/solvers/cost.h:675
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Returns:
     the symbolic expression.)""";
         } expression;
         // Symbol: drake::solvers::ExpressionCost::vars
         struct /* vars */ {
-          // Source: drake/solvers/cost.h:672
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Returns:
     the list of the variables involved in the vector of expressions,
@@ -2437,7 +2437,7 @@ R"""(Returns:
       } ExpressionCost;
       // Symbol: drake::solvers::FunctionEvaluator
       struct /* FunctionEvaluator */ {
-        // Source: drake/solvers/evaluator_base.h:306
+        // Source: drake/solvers/evaluator_base.h
         const char* doc =
 R"""(An evaluator that may be specified using a callable object. Consider
 constructing these instances using MakeFunctionEvaluator(...).
@@ -2446,7 +2446,7 @@ Template parameter ``F``:
     The function / functor's type.)""";
         // Symbol: drake::solvers::FunctionEvaluator::FunctionEvaluator<F>
         struct /* ctor */ {
-          // Source: drake/solvers/evaluator_base.h:318
+          // Source: drake/solvers/evaluator_base.h
           const char* doc =
 R"""(Constructs an instance by copying from an lvalue or rvalue of ``F``.
 
@@ -2463,7 +2463,7 @@ Parameter ``args``:
       } FunctionEvaluator;
       // Symbol: drake::solvers::GenerateSDPA
       struct /* GenerateSDPA */ {
-        // Source: drake/solvers/sdpa_free_format.h:511
+        // Source: drake/solvers/sdpa_free_format.h
         const char* doc =
 R"""(SDPA is a format to record an SDP problem
 
@@ -2500,7 +2500,7 @@ Returns ``is_success``:
       } GenerateSDPA;
       // Symbol: drake::solvers::GetAvailableSolvers
       struct /* GetAvailableSolvers */ {
-        // Source: drake/solvers/choose_best_solver.h:54
+        // Source: drake/solvers/choose_best_solver.h
         const char* doc =
 R"""(Returns the list of available and enabled solvers that definitely
 accept all programs of the given program type. The order of the
@@ -2520,13 +2520,13 @@ Note:
       } GetAvailableSolvers;
       // Symbol: drake::solvers::GetKnownSolvers
       struct /* GetKnownSolvers */ {
-        // Source: drake/solvers/choose_best_solver.h:24
+        // Source: drake/solvers/choose_best_solver.h
         const char* doc =
 R"""(Returns the set of solvers known to ChooseBestSolver.)""";
       } GetKnownSolvers;
       // Symbol: drake::solvers::GetProgramType
       struct /* GetProgramType */ {
-        // Source: drake/solvers/get_program_type.h:15
+        // Source: drake/solvers/get_program_type.h
         const char* doc =
 R"""(Returns the type of the optimization program (LP, QP, etc), based on
 the properties of its cost/constraints/variables. Each mathematical
@@ -2538,7 +2538,7 @@ of programs (LP in this case).)""";
       } GetProgramType;
       // Symbol: drake::solvers::GetVariableValue
       struct /* GetVariableValue */ {
-        // Source: drake/solvers/mathematical_program_result.h:39
+        // Source: drake/solvers/mathematical_program_result.h
         const char* doc_3args_var_variable_index_variable_values =
 R"""(Retrieve the value of a single variable ``var`` from
 ``variable_values``.
@@ -2564,14 +2564,14 @@ Raises:
 Precondition:
     All the mapped value in variable_index is in the range [0,
     variable_values.rows()))""";
-        // Source: drake/solvers/mathematical_program_result.h:53
+        // Source: drake/solvers/mathematical_program_result.h
         const char* doc_3args_constEigenMatrixBase_conststdoptional_constEigenRef =
 R"""(Overload GetVariableValue() function, but for an Eigen matrix of
 decision variables.)""";
       } GetVariableValue;
       // Symbol: drake::solvers::GurobiSolver
       struct /* GurobiSolver */ {
-        // Source: drake/solvers/gurobi_solver.h:77
+        // Source: drake/solvers/gurobi_solver.h
         const char* doc =
 R"""(An implementation of SolverInterface for the commercially-licensed
 Gurobi solver (https://www.gurobi.com/).
@@ -2618,7 +2618,7 @@ GUROBI_NUM_THREADS are set, then Drake's default maximum parallelism
 will be used.)""";
         // Symbol: drake::solvers::GurobiSolver::AcquireLicense
         struct /* AcquireLicense */ {
-          // Source: drake/solvers/gurobi_solver.h:192
+          // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(This acquires a Gurobi license environment shared among all
 GurobiSolver instances. The environment will stay valid as long as at
@@ -2648,7 +2648,7 @@ Raises:
         } AcquireLicense;
         // Symbol: drake::solvers::GurobiSolver::AddMipNodeCallback
         struct /* AddMipNodeCallback */ {
-          // Source: drake/solvers/gurobi_solver.h:135
+          // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(Registers a callback to be called at intermediate solutions during the
 solve.
@@ -2658,7 +2658,7 @@ Parameter ``callback``:
         } AddMipNodeCallback;
         // Symbol: drake::solvers::GurobiSolver::AddMipSolCallback
         struct /* AddMipSolCallback */ {
-          // Source: drake/solvers/gurobi_solver.h:160
+          // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(Registers a callback to be called at feasible solutions during the
 solve.
@@ -2668,18 +2668,18 @@ Parameter ``callback``:
         } AddMipSolCallback;
         // Symbol: drake::solvers::GurobiSolver::Details
         struct /* Details */ {
-          // Source: drake/solvers/gurobi_solver.h:82
+          // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(Type of details stored in MathematicalProgramResult.)""";
         } Details;
         // Symbol: drake::solvers::GurobiSolver::GurobiSolver
         struct /* ctor */ {
-          // Source: drake/solvers/gurobi_solver.h:79
+          // Source: drake/solvers/gurobi_solver.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::GurobiSolver::MipNodeCallbackFunction
         struct /* MipNodeCallbackFunction */ {
-          // Source: drake/solvers/gurobi_solver.h:130
+          // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(Users can supply a callback to be called when the Gurobi solver finds
 an intermediate solution node, which may not be feasible. See Gurobi
@@ -2709,7 +2709,7 @@ Parameter ``VectorXDecisionVariable*``:
         } MipNodeCallbackFunction;
         // Symbol: drake::solvers::GurobiSolver::MipSolCallbackFunction
         struct /* MipSolCallbackFunction */ {
-          // Source: drake/solvers/gurobi_solver.h:155
+          // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(Users can supply a callback to be called when the Gurobi solver finds
 a feasible solution. See Gurobi reference manual for more detail on
@@ -2733,12 +2733,12 @@ Parameter ``void*``:
         } MipSolCallbackFunction;
         // Symbol: drake::solvers::GurobiSolver::ProgramAttributesSatisfied
         struct /* ProgramAttributesSatisfied */ {
-          // Source: drake/solvers/gurobi_solver.h:201
+          // Source: drake/solvers/gurobi_solver.h
           const char* doc = R"""()""";
         } ProgramAttributesSatisfied;
         // Symbol: drake::solvers::GurobiSolver::SolveStatusInfo
         struct /* SolveStatusInfo */ {
-          // Source: drake/solvers/gurobi_solver.h:91
+          // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(Contains info returned to a user function that handles a Node or
 Solution callback.
@@ -2750,53 +2750,53 @@ See also:
     MipSolCallbackFunction)""";
           // Symbol: drake::solvers::GurobiSolver::SolveStatusInfo::best_bound
           struct /* best_bound */ {
-            // Source: drake/solvers/gurobi_solver.h:99
+            // Source: drake/solvers/gurobi_solver.h
             const char* doc = R"""(Best known objective lower bound.)""";
           } best_bound;
           // Symbol: drake::solvers::GurobiSolver::SolveStatusInfo::best_objective
           struct /* best_objective */ {
-            // Source: drake/solvers/gurobi_solver.h:97
+            // Source: drake/solvers/gurobi_solver.h
             const char* doc = R"""(Objective of best solution yet.)""";
           } best_objective;
           // Symbol: drake::solvers::GurobiSolver::SolveStatusInfo::current_objective
           struct /* current_objective */ {
-            // Source: drake/solvers/gurobi_solver.h:95
+            // Source: drake/solvers/gurobi_solver.h
             const char* doc = R"""(Objective of current solution.)""";
           } current_objective;
           // Symbol: drake::solvers::GurobiSolver::SolveStatusInfo::explored_node_count
           struct /* explored_node_count */ {
-            // Source: drake/solvers/gurobi_solver.h:101
+            // Source: drake/solvers/gurobi_solver.h
             const char* doc = R"""(Number of nodes explored so far.)""";
           } explored_node_count;
           // Symbol: drake::solvers::GurobiSolver::SolveStatusInfo::feasible_solutions_count
           struct /* feasible_solutions_count */ {
-            // Source: drake/solvers/gurobi_solver.h:103
+            // Source: drake/solvers/gurobi_solver.h
             const char* doc = R"""(Number of feasible sols found so far.)""";
           } feasible_solutions_count;
           // Symbol: drake::solvers::GurobiSolver::SolveStatusInfo::reported_runtime
           struct /* reported_runtime */ {
-            // Source: drake/solvers/gurobi_solver.h:93
+            // Source: drake/solvers/gurobi_solver.h
             const char* doc = R"""(Runtime as of this callback.)""";
           } reported_runtime;
         } SolveStatusInfo;
         // Symbol: drake::solvers::GurobiSolver::UnsatisfiedProgramAttributes
         struct /* UnsatisfiedProgramAttributes */ {
-          // Source: drake/solvers/gurobi_solver.h:202
+          // Source: drake/solvers/gurobi_solver.h
           const char* doc = R"""()""";
         } UnsatisfiedProgramAttributes;
         // Symbol: drake::solvers::GurobiSolver::id
         struct /* id */ {
-          // Source: drake/solvers/gurobi_solver.h:196
+          // Source: drake/solvers/gurobi_solver.h
           const char* doc = R"""()""";
         } id;
         // Symbol: drake::solvers::GurobiSolver::is_available
         struct /* is_available */ {
-          // Source: drake/solvers/gurobi_solver.h:197
+          // Source: drake/solvers/gurobi_solver.h
           const char* doc = R"""()""";
         } is_available;
         // Symbol: drake::solvers::GurobiSolver::is_enabled
         struct /* is_enabled */ {
-          // Source: drake/solvers/gurobi_solver.h:200
+          // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(Returns true iff the environment variable GRB_LICENSE_FILE has been
 set to a non-empty value.)""";
@@ -2804,21 +2804,21 @@ set to a non-empty value.)""";
       } GurobiSolver;
       // Symbol: drake::solvers::GurobiSolverDetails
       struct /* GurobiSolverDetails */ {
-        // Source: drake/solvers/gurobi_solver.h:18
+        // Source: drake/solvers/gurobi_solver.h
         const char* doc =
 R"""(The Gurobi solver details after calling Solve() function. The user can
 call MathematicalProgramResult::get_solver_details<GurobiSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::GurobiSolverDetails::error_code
         struct /* error_code */ {
-          // Source: drake/solvers/gurobi_solver.h:25
+          // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(The error message returned from Gurobi call. Please refer to
 https://www.gurobi.com/documentation/10.0/refman/error_codes.html)""";
         } error_code;
         // Symbol: drake::solvers::GurobiSolverDetails::objective_bound
         struct /* objective_bound */ {
-          // Source: drake/solvers/gurobi_solver.h:34
+          // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(The best known bound on the optimal objective. This is used in mixed
 integer optimization. Please refer to
@@ -2826,14 +2826,14 @@ https://www.gurobi.com/documentation/10.0/refman/objbound.html)""";
         } objective_bound;
         // Symbol: drake::solvers::GurobiSolverDetails::optimization_status
         struct /* optimization_status */ {
-          // Source: drake/solvers/gurobi_solver.h:29
+          // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(The status code when the optimize call has returned. Please refer to
 https://www.gurobi.com/documentation/10.0/refman/optimization_status_codes.html)""";
         } optimization_status;
         // Symbol: drake::solvers::GurobiSolverDetails::optimizer_time
         struct /* optimizer_time */ {
-          // Source: drake/solvers/gurobi_solver.h:21
+          // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(The gurobi optimization time. Please refer to
 https://www.gurobi.com/documentation/10.0/refman/runtime.html)""";
@@ -2841,12 +2841,12 @@ https://www.gurobi.com/documentation/10.0/refman/runtime.html)""";
       } GurobiSolverDetails;
       // Symbol: drake::solvers::IndeterminatesRefList
       struct /* IndeterminatesRefList */ {
-        // Source: drake/solvers/indeterminate.h:44
+        // Source: drake/solvers/indeterminate.h
         const char* doc = R"""()""";
       } IndeterminatesRefList;
       // Symbol: drake::solvers::IntervalBinning
       struct /* IntervalBinning */ {
-        // Source: drake/solvers/mixed_integer_optimization_util.h:177
+        // Source: drake/solvers/mixed_integer_optimization_util.h
         const char* doc =
 R"""(For a continuous variable whose range is cut into small intervals, we
 will use binary variables to represent which interval the continuous
@@ -2858,82 +2858,82 @@ See also:
     AddLogarithmicSos2Constraint and AddSos2Constraint)""";
         // Symbol: drake::solvers::IntervalBinning::kLinear
         struct /* kLinear */ {
-          // Source: drake/solvers/mixed_integer_optimization_util.h:177
+          // Source: drake/solvers/mixed_integer_optimization_util.h
           const char* doc = R"""()""";
         } kLinear;
         // Symbol: drake::solvers::IntervalBinning::kLogarithmic
         struct /* kLogarithmic */ {
-          // Source: drake/solvers/mixed_integer_optimization_util.h:177
+          // Source: drake/solvers/mixed_integer_optimization_util.h
           const char* doc = R"""()""";
         } kLogarithmic;
       } IntervalBinning;
       // Symbol: drake::solvers::IpoptSolver
       struct /* IpoptSolver */ {
-        // Source: drake/solvers/ipopt_solver.h:45
+        // Source: drake/solvers/ipopt_solver.h
         const char* doc =
 R"""(A wrapper to call <a href="https://coin-or.github.io/Ipopt/">Ipopt</a>
 using Drake's MathematicalProgram.)""";
         // Symbol: drake::solvers::IpoptSolver::Details
         struct /* Details */ {
-          // Source: drake/solvers/ipopt_solver.h:50
+          // Source: drake/solvers/ipopt_solver.h
           const char* doc =
 R"""(Type of details stored in MathematicalProgramResult.)""";
         } Details;
         // Symbol: drake::solvers::IpoptSolver::IpoptSolver
         struct /* ctor */ {
-          // Source: drake/solvers/ipopt_solver.h:47
+          // Source: drake/solvers/ipopt_solver.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::IpoptSolver::ProgramAttributesSatisfied
         struct /* ProgramAttributesSatisfied */ {
-          // Source: drake/solvers/ipopt_solver.h:60
+          // Source: drake/solvers/ipopt_solver.h
           const char* doc = R"""()""";
         } ProgramAttributesSatisfied;
         // Symbol: drake::solvers::IpoptSolver::id
         struct /* id */ {
-          // Source: drake/solvers/ipopt_solver.h:57
+          // Source: drake/solvers/ipopt_solver.h
           const char* doc = R"""()""";
         } id;
         // Symbol: drake::solvers::IpoptSolver::is_available
         struct /* is_available */ {
-          // Source: drake/solvers/ipopt_solver.h:58
+          // Source: drake/solvers/ipopt_solver.h
           const char* doc = R"""()""";
         } is_available;
         // Symbol: drake::solvers::IpoptSolver::is_enabled
         struct /* is_enabled */ {
-          // Source: drake/solvers/ipopt_solver.h:59
+          // Source: drake/solvers/ipopt_solver.h
           const char* doc = R"""()""";
         } is_enabled;
       } IpoptSolver;
       // Symbol: drake::solvers::IpoptSolverDetails
       struct /* IpoptSolverDetails */ {
-        // Source: drake/solvers/ipopt_solver.h:16
+        // Source: drake/solvers/ipopt_solver.h
         const char* doc =
 R"""(The Ipopt solver details after calling Solve() function. The user can
 call MathematicalProgramResult::get_solver_details<IpoptSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::IpoptSolverDetails::ConvertStatusToString
         struct /* ConvertStatusToString */ {
-          // Source: drake/solvers/ipopt_solver.h:37
+          // Source: drake/solvers/ipopt_solver.h
           const char* doc =
 R"""(Convert status field to string. This function is useful if you want to
 interpret the meaning of status.)""";
         } ConvertStatusToString;
         // Symbol: drake::solvers::IpoptSolverDetails::g
         struct /* g */ {
-          // Source: drake/solvers/ipopt_solver.h:30
+          // Source: drake/solvers/ipopt_solver.h
           const char* doc =
 R"""(The final value for the constraint function.)""";
         } g;
         // Symbol: drake::solvers::IpoptSolverDetails::lambda
         struct /* lambda */ {
-          // Source: drake/solvers/ipopt_solver.h:32
+          // Source: drake/solvers/ipopt_solver.h
           const char* doc =
 R"""(The final value for the constraint multiplier.)""";
         } lambda;
         // Symbol: drake::solvers::IpoptSolverDetails::status
         struct /* status */ {
-          // Source: drake/solvers/ipopt_solver.h:24
+          // Source: drake/solvers/ipopt_solver.h
           const char* doc =
 R"""(The final status of the solver. Please refer to section 6 in
 Introduction to Ipopt: A tutorial for downloading, installing, and
@@ -2942,46 +2942,46 @@ Ipopt::SolverReturn defined in IpAlgTypes.hpp)""";
         } status;
         // Symbol: drake::solvers::IpoptSolverDetails::z_L
         struct /* z_L */ {
-          // Source: drake/solvers/ipopt_solver.h:26
+          // Source: drake/solvers/ipopt_solver.h
           const char* doc =
 R"""(The final value for the lower bound multiplier.)""";
         } z_L;
         // Symbol: drake::solvers::IpoptSolverDetails::z_U
         struct /* z_U */ {
-          // Source: drake/solvers/ipopt_solver.h:28
+          // Source: drake/solvers/ipopt_solver.h
           const char* doc =
 R"""(The final value for the upper bound multiplier.)""";
         } z_U;
       } IpoptSolverDetails;
       // Symbol: drake::solvers::L1NormCost
       struct /* L1NormCost */ {
-        // Source: drake/solvers/cost.h:279
+        // Source: drake/solvers/cost.h
         const char* doc =
 R"""(Implements a cost of the form ‖Ax + b‖₁. Note that this cost is
 non-differentiable when any element of Ax + b equals zero.)""";
         // Symbol: drake::solvers::L1NormCost::A
         struct /* A */ {
-          // Source: drake/solvers/cost.h:294
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } A;
         // Symbol: drake::solvers::L1NormCost::DoDisplay
         struct /* DoDisplay */ {
-          // Source: drake/solvers/cost.h:327
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoDisplay;
         // Symbol: drake::solvers::L1NormCost::DoEval
         struct /* DoEval */ {
-          // Source: drake/solvers/cost.h:318
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoEval;
         // Symbol: drake::solvers::L1NormCost::DoToLatex
         struct /* DoToLatex */ {
-          // Source: drake/solvers/cost.h:330
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoToLatex;
         // Symbol: drake::solvers::L1NormCost::L1NormCost
         struct /* ctor */ {
-          // Source: drake/solvers/cost.h:289
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Construct a cost of the form ‖Ax + b‖₁.
 
@@ -2996,7 +2996,7 @@ Raises:
         } ctor;
         // Symbol: drake::solvers::L1NormCost::UpdateCoefficients
         struct /* UpdateCoefficients */ {
-          // Source: drake/solvers/cost.h:304
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Updates the coefficients of the cost. Note that the number of
 variables (columns of A) cannot change.
@@ -3009,12 +3009,12 @@ Parameter ``new_b``:
         } UpdateCoefficients;
         // Symbol: drake::solvers::L1NormCost::b
         struct /* b */ {
-          // Source: drake/solvers/cost.h:296
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } b;
         // Symbol: drake::solvers::L1NormCost::update_A_entry
         struct /* update_A_entry */ {
-          // Source: drake/solvers/cost.h:310
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Updates A(i, j) = val.
 
@@ -3023,7 +3023,7 @@ Raises:
         } update_A_entry;
         // Symbol: drake::solvers::L1NormCost::update_b_entry
         struct /* update_b_entry */ {
-          // Source: drake/solvers/cost.h:315
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Updates b(i) = val.
 
@@ -3033,32 +3033,32 @@ Raises:
       } L1NormCost;
       // Symbol: drake::solvers::L2NormCost
       struct /* L2NormCost */ {
-        // Source: drake/solvers/cost.h:342
+        // Source: drake/solvers/cost.h
         const char* doc =
 R"""(Implements a cost of the form ‖Ax + b‖₂.)""";
         // Symbol: drake::solvers::L2NormCost::DoDisplay
         struct /* DoDisplay */ {
-          // Source: drake/solvers/cost.h:402
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoDisplay;
         // Symbol: drake::solvers::L2NormCost::DoEval
         struct /* DoEval */ {
-          // Source: drake/solvers/cost.h:393
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoEval;
         // Symbol: drake::solvers::L2NormCost::DoToLatex
         struct /* DoToLatex */ {
-          // Source: drake/solvers/cost.h:405
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoToLatex;
         // Symbol: drake::solvers::L2NormCost::GetDenseA
         struct /* GetDenseA */ {
-          // Source: drake/solvers/cost.h:371
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } GetDenseA;
         // Symbol: drake::solvers::L2NormCost::L2NormCost
         struct /* ctor */ {
-          // Source: drake/solvers/cost.h:355
+          // Source: drake/solvers/cost.h
           const char* doc_dense_A =
 R"""(Construct a cost of the form ‖Ax + b‖₂.
 
@@ -3070,13 +3070,13 @@ Parameter ``b``:
 
 Raises:
     RuntimeError if the size of A and b don't match.)""";
-          // Source: drake/solvers/cost.h:362
+          // Source: drake/solvers/cost.h
           const char* doc_sparse_A =
 R"""(Overloads constructor with a sparse A matrix.)""";
         } ctor;
         // Symbol: drake::solvers::L2NormCost::UpdateCoefficients
         struct /* UpdateCoefficients */ {
-          // Source: drake/solvers/cost.h:382
+          // Source: drake/solvers/cost.h
           const char* doc_dense_A =
 R"""(Updates the coefficients of the cost. Note that the number of
 variables (columns of A) cannot change.
@@ -3086,50 +3086,50 @@ Parameter ``new_A``:
 
 Parameter ``new_b``:
     New constant term.)""";
-          // Source: drake/solvers/cost.h:389
+          // Source: drake/solvers/cost.h
           const char* doc_sparse_A =
 R"""(Overloads UpdateCoefficients but with a sparse A matrix.)""";
         } UpdateCoefficients;
         // Symbol: drake::solvers::L2NormCost::b
         struct /* b */ {
-          // Source: drake/solvers/cost.h:373
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } b;
         // Symbol: drake::solvers::L2NormCost::get_sparse_A
         struct /* get_sparse_A */ {
-          // Source: drake/solvers/cost.h:367
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } get_sparse_A;
       } L2NormCost;
       // Symbol: drake::solvers::LInfNormCost
       struct /* LInfNormCost */ {
-        // Source: drake/solvers/cost.h:418
+        // Source: drake/solvers/cost.h
         const char* doc =
 R"""(Implements a cost of the form ‖Ax + b‖∞. Note that this cost is
 non-differentiable when any two or more elements of Ax + b are equal.)""";
         // Symbol: drake::solvers::LInfNormCost::A
         struct /* A */ {
-          // Source: drake/solvers/cost.h:433
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } A;
         // Symbol: drake::solvers::LInfNormCost::DoDisplay
         struct /* DoDisplay */ {
-          // Source: drake/solvers/cost.h:466
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoDisplay;
         // Symbol: drake::solvers::LInfNormCost::DoEval
         struct /* DoEval */ {
-          // Source: drake/solvers/cost.h:457
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoEval;
         // Symbol: drake::solvers::LInfNormCost::DoToLatex
         struct /* DoToLatex */ {
-          // Source: drake/solvers/cost.h:469
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoToLatex;
         // Symbol: drake::solvers::LInfNormCost::LInfNormCost
         struct /* ctor */ {
-          // Source: drake/solvers/cost.h:428
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Construct a cost of the form ‖Ax + b‖∞.
 
@@ -3144,7 +3144,7 @@ Raises:
         } ctor;
         // Symbol: drake::solvers::LInfNormCost::UpdateCoefficients
         struct /* UpdateCoefficients */ {
-          // Source: drake/solvers/cost.h:443
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Updates the coefficients of the cost. Note that the number of
 variables (columns of A) cannot change.
@@ -3157,12 +3157,12 @@ Parameter ``new_b``:
         } UpdateCoefficients;
         // Symbol: drake::solvers::LInfNormCost::b
         struct /* b */ {
-          // Source: drake/solvers/cost.h:435
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } b;
         // Symbol: drake::solvers::LInfNormCost::update_A_entry
         struct /* update_A_entry */ {
-          // Source: drake/solvers/cost.h:449
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Updates A(i, j) = val.
 
@@ -3171,7 +3171,7 @@ Raises:
         } update_A_entry;
         // Symbol: drake::solvers::LInfNormCost::update_b_entry
         struct /* update_b_entry */ {
-          // Source: drake/solvers/cost.h:454
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Updates b(i) = val.
 
@@ -3181,7 +3181,7 @@ Raises:
       } LInfNormCost;
       // Symbol: drake::solvers::LinearComplementarityConstraint
       struct /* LinearComplementarityConstraint */ {
-        // Source: drake/solvers/constraint.h:872
+        // Source: drake/solvers/constraint.h
         const char* doc =
 R"""(Implements a constraint of the form:
 
@@ -3219,63 +3219,63 @@ An implied slack variable complements any 0 component of x. To get the
 slack values at a given solution x, use Eval(x).)""";
         // Symbol: drake::solvers::LinearComplementarityConstraint::DoCheckSatisfied
         struct /* DoCheckSatisfied */ {
-          // Source: drake/solvers/constraint.h:898
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } DoCheckSatisfied;
         // Symbol: drake::solvers::LinearComplementarityConstraint::DoEval
         struct /* DoEval */ {
-          // Source: drake/solvers/constraint.h:889
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } DoEval;
         // Symbol: drake::solvers::LinearComplementarityConstraint::DoToLatex
         struct /* DoToLatex */ {
-          // Source: drake/solvers/constraint.h:907
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } DoToLatex;
         // Symbol: drake::solvers::LinearComplementarityConstraint::LinearComplementarityConstraint
         struct /* ctor */ {
-          // Source: drake/solvers/constraint.h:874
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::LinearComplementarityConstraint::M
         struct /* M */ {
-          // Source: drake/solvers/constraint.h:885
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } M;
         // Symbol: drake::solvers::LinearComplementarityConstraint::q
         struct /* q */ {
-          // Source: drake/solvers/constraint.h:886
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } q;
       } LinearComplementarityConstraint;
       // Symbol: drake::solvers::LinearConstraint
       struct /* LinearConstraint */ {
-        // Source: drake/solvers/constraint.h:612
+        // Source: drake/solvers/constraint.h
         const char* doc =
 R"""(Implements a constraint of the form :math:`lb <= Ax <= ub`)""";
         // Symbol: drake::solvers::LinearConstraint::A_
         struct /* A_ */ {
-          // Source: drake/solvers/constraint.h:714
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } A_;
         // Symbol: drake::solvers::LinearConstraint::DoDisplay
         struct /* DoDisplay */ {
-          // Source: drake/solvers/constraint.h:709
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } DoDisplay;
         // Symbol: drake::solvers::LinearConstraint::DoEval
         struct /* DoEval */ {
-          // Source: drake/solvers/constraint.h:700
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } DoEval;
         // Symbol: drake::solvers::LinearConstraint::DoToLatex
         struct /* DoToLatex */ {
-          // Source: drake/solvers/constraint.h:712
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } DoToLatex;
         // Symbol: drake::solvers::LinearConstraint::GetDenseA
         struct /* GetDenseA */ {
-          // Source: drake/solvers/constraint.h:647
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Get the matrix A as a dense matrix.
 
@@ -3286,19 +3286,19 @@ Note:
         } GetDenseA;
         // Symbol: drake::solvers::LinearConstraint::LinearConstraint
         struct /* ctor */ {
-          // Source: drake/solvers/constraint.h:622
+          // Source: drake/solvers/constraint.h
           const char* doc_dense_A =
 R"""(Construct the linear constraint lb <= A*x <= ub
 
 Throws if A has any entry which is not finite.)""";
-          // Source: drake/solvers/constraint.h:631
+          // Source: drake/solvers/constraint.h
           const char* doc_sparse_A =
 R"""(Overloads constructor with a sparse A matrix. Throws if A has any
 entry which is not finite.)""";
         } ctor;
         // Symbol: drake::solvers::LinearConstraint::RemoveTinyCoefficient
         struct /* RemoveTinyCoefficient */ {
-          // Source: drake/solvers/constraint.h:689
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Sets A(i, j) to zero if abs(A(i, j)) <= tol. Oftentimes the
 coefficient A is computed numerically with round-off errors. Such
@@ -3314,7 +3314,7 @@ Note:
         } RemoveTinyCoefficient;
         // Symbol: drake::solvers::LinearConstraint::UpdateCoefficients
         struct /* UpdateCoefficients */ {
-          // Source: drake/solvers/constraint.h:664
+          // Source: drake/solvers/constraint.h
           const char* doc_dense_A =
 R"""(Updates the linear term, upper and lower bounds in the linear
 constraint. The updated constraint is: new_lb <= new_A * x <= new_ub
@@ -3332,7 +3332,7 @@ Parameter ``new_lb``:
 
 Parameter ``new_ub``:
     new upper bound)""";
-          // Source: drake/solvers/constraint.h:676
+          // Source: drake/solvers/constraint.h
           const char* doc_sparse_A =
 R"""(Overloads UpdateCoefficients but with a sparse A matrix.
 
@@ -3341,12 +3341,12 @@ and new_ub don't all have the same number of rows.)""";
         } UpdateCoefficients;
         // Symbol: drake::solvers::LinearConstraint::get_sparse_A
         struct /* get_sparse_A */ {
-          // Source: drake/solvers/constraint.h:637
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } get_sparse_A;
         // Symbol: drake::solvers::LinearConstraint::is_dense_A_constructed
         struct /* is_dense_A_constructed */ {
-          // Source: drake/solvers/constraint.h:693
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Returns true iff this constraint already has a dense representation,
 i.e, if GetDenseA() will be cheap.)""";
@@ -3354,7 +3354,7 @@ i.e, if GetDenseA() will be cheap.)""";
       } LinearConstraint;
       // Symbol: drake::solvers::LinearCost
       struct /* LinearCost */ {
-        // Source: drake/solvers/cost.h:44
+        // Source: drake/solvers/cost.h
         const char* doc =
 R"""(Implements a cost of the form
 
@@ -3363,27 +3363,27 @@ R"""(Implements a cost of the form
 .)""";
         // Symbol: drake::solvers::LinearCost::DoDisplay
         struct /* DoDisplay */ {
-          // Source: drake/solvers/cost.h:103
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoDisplay;
         // Symbol: drake::solvers::LinearCost::DoEval
         struct /* DoEval */ {
-          // Source: drake/solvers/cost.h:94
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoEval;
         // Symbol: drake::solvers::LinearCost::DoToLatex
         struct /* DoToLatex */ {
-          // Source: drake/solvers/cost.h:106
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoToLatex;
         // Symbol: drake::solvers::LinearCost::GetSparseMatrix
         struct /* GetSparseMatrix */ {
-          // Source: drake/solvers/cost.h:61
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } GetSparseMatrix;
         // Symbol: drake::solvers::LinearCost::LinearCost
         struct /* ctor */ {
-          // Source: drake/solvers/cost.h:54
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Construct a linear cost of the form
 
@@ -3399,7 +3399,7 @@ Parameter ``b``:
         } ctor;
         // Symbol: drake::solvers::LinearCost::UpdateCoefficients
         struct /* UpdateCoefficients */ {
-          // Source: drake/solvers/cost.h:77
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Updates the coefficients of the cost. Note that the number of
 variables (size of a) cannot change.
@@ -3412,17 +3412,17 @@ Parameter ``new_b``:
         } UpdateCoefficients;
         // Symbol: drake::solvers::LinearCost::a
         struct /* a */ {
-          // Source: drake/solvers/cost.h:67
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } a;
         // Symbol: drake::solvers::LinearCost::b
         struct /* b */ {
-          // Source: drake/solvers/cost.h:69
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } b;
         // Symbol: drake::solvers::LinearCost::update_coefficient_entry
         struct /* update_coefficient_entry */ {
-          // Source: drake/solvers/cost.h:86
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Updates one entry in the coefficient of the cost. a[i] = val.
 
@@ -3434,33 +3434,33 @@ Parameter ``val``:
         } update_coefficient_entry;
         // Symbol: drake::solvers::LinearCost::update_constant_term
         struct /* update_constant_term */ {
-          // Source: drake/solvers/cost.h:91
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Updates the constant term in the cost to ``new_b``.)""";
         } update_constant_term;
       } LinearCost;
       // Symbol: drake::solvers::LinearEqualityConstraint
       struct /* LinearEqualityConstraint */ {
-        // Source: drake/solvers/constraint.h:727
+        // Source: drake/solvers/constraint.h
         const char* doc =
 R"""(Implements a constraint of the form :math:`Ax = b`)""";
         // Symbol: drake::solvers::LinearEqualityConstraint::LinearEqualityConstraint
         struct /* ctor */ {
-          // Source: drake/solvers/constraint.h:737
+          // Source: drake/solvers/constraint.h
           const char* doc_dense_Aeq =
 R"""(Constructs the linear equality constraint Aeq * x = beq.
 
 Throws is any entry in Aeq or beq is not finite.)""";
-          // Source: drake/solvers/constraint.h:747
+          // Source: drake/solvers/constraint.h
           const char* doc_sparse_Aeq =
 R"""(Overloads the constructor with a sparse matrix Aeq.)""";
-          // Source: drake/solvers/constraint.h:757
+          // Source: drake/solvers/constraint.h
           const char* doc_row_a =
 R"""(Constructs the linear equality constraint a.dot(x) = beq)""";
         } ctor;
         // Symbol: drake::solvers::LinearEqualityConstraint::UpdateCoefficients
         struct /* UpdateCoefficients */ {
-          // Source: drake/solvers/constraint.h:784
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Overloads UpdateCoefficients but with a sparse A matrix.
 
@@ -3469,7 +3469,7 @@ Throws if any entry of beq or Aeq is not finite.)""";
       } LinearEqualityConstraint;
       // Symbol: drake::solvers::LinearMatrixInequalityConstraint
       struct /* LinearMatrixInequalityConstraint */ {
-        // Source: drake/solvers/constraint.h:1056
+        // Source: drake/solvers/constraint.h
         const char* doc =
 R"""(Impose the matrix inequality constraint on variable x
 
@@ -3486,23 +3486,23 @@ Note:
     X(1, 1), X(0, 1)] in the rotated Lorentz cone.)""";
         // Symbol: drake::solvers::LinearMatrixInequalityConstraint::DoEval
         struct /* DoEval */ {
-          // Source: drake/solvers/constraint.h:1087
+          // Source: drake/solvers/constraint.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Evaluate the eigen values of the linear matrix.)""";
         } DoEval;
         // Symbol: drake::solvers::LinearMatrixInequalityConstraint::DoToLatex
         struct /* DoToLatex */ {
-          // Source: drake/solvers/constraint.h:1104
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } DoToLatex;
         // Symbol: drake::solvers::LinearMatrixInequalityConstraint::F
         struct /* F */ {
-          // Source: drake/solvers/constraint.h:1071
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } F;
         // Symbol: drake::solvers::LinearMatrixInequalityConstraint::LinearMatrixInequalityConstraint
         struct /* ctor */ {
-          // Source: drake/solvers/constraint.h:1065
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Parameter ``F``:
     Each symmetric matrix F[i] should be of the same size.
@@ -3516,12 +3516,12 @@ See also:
         } ctor;
         // Symbol: drake::solvers::LinearMatrixInequalityConstraint::WarnOnSmallMatrixSize
         struct /* WarnOnSmallMatrixSize */ {
-          // Source: drake/solvers/constraint.h:1081
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""(Warn if the matrix size is 1x1 or 2x2.)""";
         } WarnOnSmallMatrixSize;
         // Symbol: drake::solvers::LinearMatrixInequalityConstraint::matrix_rows
         struct /* matrix_rows */ {
-          // Source: drake/solvers/constraint.h:1075
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Gets the number of rows in the matrix inequality constraint. Namely Fi
 are all matrix_rows() x matrix_rows() matrices.)""";
@@ -3529,43 +3529,43 @@ are all matrix_rows() x matrix_rows() matrices.)""";
       } LinearMatrixInequalityConstraint;
       // Symbol: drake::solvers::LinearSystemSolver
       struct /* LinearSystemSolver */ {
-        // Source: drake/solvers/linear_system_solver.h:12
+        // Source: drake/solvers/linear_system_solver.h
         const char* doc =
 R"""(Finds the least-square solution to the linear system A * x = b.)""";
         // Symbol: drake::solvers::LinearSystemSolver::LinearSystemSolver
         struct /* ctor */ {
-          // Source: drake/solvers/linear_system_solver.h:14
+          // Source: drake/solvers/linear_system_solver.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::LinearSystemSolver::ProgramAttributesSatisfied
         struct /* ProgramAttributesSatisfied */ {
-          // Source: drake/solvers/linear_system_solver.h:24
+          // Source: drake/solvers/linear_system_solver.h
           const char* doc = R"""()""";
         } ProgramAttributesSatisfied;
         // Symbol: drake::solvers::LinearSystemSolver::UnsatisfiedProgramAttributes
         struct /* UnsatisfiedProgramAttributes */ {
-          // Source: drake/solvers/linear_system_solver.h:25
+          // Source: drake/solvers/linear_system_solver.h
           const char* doc = R"""()""";
         } UnsatisfiedProgramAttributes;
         // Symbol: drake::solvers::LinearSystemSolver::id
         struct /* id */ {
-          // Source: drake/solvers/linear_system_solver.h:21
+          // Source: drake/solvers/linear_system_solver.h
           const char* doc = R"""()""";
         } id;
         // Symbol: drake::solvers::LinearSystemSolver::is_available
         struct /* is_available */ {
-          // Source: drake/solvers/linear_system_solver.h:22
+          // Source: drake/solvers/linear_system_solver.h
           const char* doc = R"""()""";
         } is_available;
         // Symbol: drake::solvers::LinearSystemSolver::is_enabled
         struct /* is_enabled */ {
-          // Source: drake/solvers/linear_system_solver.h:23
+          // Source: drake/solvers/linear_system_solver.h
           const char* doc = R"""()""";
         } is_enabled;
       } LinearSystemSolver;
       // Symbol: drake::solvers::LogarithmicSos2NewBinaryVariables
       struct /* LogarithmicSos2NewBinaryVariables */ {
-        // Source: drake/solvers/mixed_integer_optimization_util.h:32
+        // Source: drake/solvers/mixed_integer_optimization_util.h
         const char* doc =
 R"""(The size of the new binary variables in the compile time, for Special
 Ordered Set of type 2 (SOS2) constraint. The SOS2 constraint says that
@@ -3589,13 +3589,13 @@ Template parameter ``NumLambda``:
     The length of the lambda vector. NumLambda = n + 1.)""";
         // Symbol: drake::solvers::LogarithmicSos2NewBinaryVariables::type
         struct /* type */ {
-          // Source: drake/solvers/mixed_integer_optimization_util.h:34
+          // Source: drake/solvers/mixed_integer_optimization_util.h
           const char* doc = R"""()""";
         } type;
       } LogarithmicSos2NewBinaryVariables;
       // Symbol: drake::solvers::LorentzConeConstraint
       struct /* LorentzConeConstraint */ {
-        // Source: drake/solvers/constraint.h:346
+        // Source: drake/solvers/constraint.h
         const char* doc =
 R"""(Constraining the linear expression :math:`z=Ax+b` lies within the
 Lorentz cone. A vector z ∈ ℝ ⁿ lies within Lorentz cone if
@@ -3618,38 +3618,38 @@ https://www.epfl.ch/labs/disopt/wp-content/uploads/2018/09/7.pdf and
 https://docs.mosek.com/modeling-cookbook/cqo.html (Fig 3.1))""";
         // Symbol: drake::solvers::LorentzConeConstraint::A
         struct /* A */ {
-          // Source: drake/solvers/constraint.h:377
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""(Getter for A.)""";
         } A;
         // Symbol: drake::solvers::LorentzConeConstraint::A_dense
         struct /* A_dense */ {
-          // Source: drake/solvers/constraint.h:380
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""(Getter for dense version of A.)""";
         } A_dense;
         // Symbol: drake::solvers::LorentzConeConstraint::EvalType
         struct /* EvalType */ {
-          // Source: drake/solvers/constraint.h:355
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(We provide three possible Eval functions to represent the Lorentz cone
 constraint z₀ ≥ sqrt(z₁² + ... + zₙ₋₁²). For more explanation on the
 three formulations, refer to LorentzConeConstraint documentation.)""";
           // Symbol: drake::solvers::LorentzConeConstraint::EvalType::kConvex
           struct /* kConvex */ {
-            // Source: drake/solvers/constraint.h:356
+            // Source: drake/solvers/constraint.h
             const char* doc =
 R"""(The constraint is g(z) = z₀ - sqrt(z₁² + ... + zₙ₋₁²) ≥ 0. Note this
 formulation is non-differentiable at z₁= ...= zₙ₋₁=0)""";
           } kConvex;
           // Symbol: drake::solvers::LorentzConeConstraint::EvalType::kConvexSmooth
           struct /* kConvexSmooth */ {
-            // Source: drake/solvers/constraint.h:359
+            // Source: drake/solvers/constraint.h
             const char* doc =
 R"""(Same as kConvex, but with approximated gradient that exists
 everywhere..)""";
           } kConvexSmooth;
           // Symbol: drake::solvers::LorentzConeConstraint::EvalType::kNonconvex
           struct /* kNonconvex */ {
-            // Source: drake/solvers/constraint.h:361
+            // Source: drake/solvers/constraint.h
             const char* doc =
 R"""(Nonconvex constraint z₀²-(z₁²+...+zₙ₋₁²) ≥ 0 and z₀ ≥ 0. Note this
 formulation is differentiable, but at z₁= ...= zₙ₋₁=0 the gradient is
@@ -3658,14 +3658,14 @@ also 0, so a gradient-based nonlinear solver can get stuck.)""";
         } EvalType;
         // Symbol: drake::solvers::LorentzConeConstraint::LorentzConeConstraint
         struct /* ctor */ {
-          // Source: drake/solvers/constraint.h:370
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Raises:
     RuntimeError if A.row() < 2.)""";
         } ctor;
         // Symbol: drake::solvers::LorentzConeConstraint::UpdateCoefficients
         struct /* UpdateCoefficients */ {
-          // Source: drake/solvers/constraint.h:395
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Updates the coefficients, the updated constraint is z=new_A * x +
 new_b in the Lorentz cone.
@@ -3680,31 +3680,31 @@ Precondition:
         } UpdateCoefficients;
         // Symbol: drake::solvers::LorentzConeConstraint::b
         struct /* b */ {
-          // Source: drake/solvers/constraint.h:383
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""(Getter for b.)""";
         } b;
         // Symbol: drake::solvers::LorentzConeConstraint::eval_type
         struct /* eval_type */ {
-          // Source: drake/solvers/constraint.h:386
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""(Getter for eval type.)""";
         } eval_type;
       } LorentzConeConstraint;
       // Symbol: drake::solvers::Make2NormSquaredCost
       struct /* Make2NormSquaredCost */ {
-        // Source: drake/solvers/cost.h:269
+        // Source: drake/solvers/cost.h
         const char* doc =
 R"""(Creates a quadratic cost of the form |Ax-b|²=(Ax-b)ᵀ(Ax-b))""";
       } Make2NormSquaredCost;
       // Symbol: drake::solvers::MakeFirstAvailableSolver
       struct /* MakeFirstAvailableSolver */ {
-        // Source: drake/solvers/choose_best_solver.h:36
+        // Source: drake/solvers/choose_best_solver.h
         const char* doc =
 R"""(Makes the first available and enabled solver. If no solvers are
 available, throws a RuntimeError.)""";
       } MakeFirstAvailableSolver;
       // Symbol: drake::solvers::MakeFunctionCost
       struct /* MakeFunctionCost */ {
-        // Source: drake/solvers/cost.h:705
+        // Source: drake/solvers/cost.h
         const char* doc =
 R"""(Converts an input of type ``F`` to a nonlinear cost.
 
@@ -3715,7 +3715,7 @@ Template parameter ``FF``:
       } MakeFunctionCost;
       // Symbol: drake::solvers::MakeFunctionEvaluator
       struct /* MakeFunctionEvaluator */ {
-        // Source: drake/solvers/evaluator_base.h:362
+        // Source: drake/solvers/evaluator_base.h
         const char* doc =
 R"""(Creates a FunctionEvaluator instance bound to a given callable object.
 
@@ -3730,13 +3730,13 @@ Returns:
       } MakeFunctionEvaluator;
       // Symbol: drake::solvers::MakeQuadraticErrorCost
       struct /* MakeQuadraticErrorCost */ {
-        // Source: drake/solvers/cost.h:260
+        // Source: drake/solvers/cost.h
         const char* doc =
 R"""(Creates a cost term of the form (x-x_desired)'*Q*(x-x_desired).)""";
       } MakeQuadraticErrorCost;
       // Symbol: drake::solvers::MakeSemidefiniteRelaxation
       struct /* MakeSemidefiniteRelaxation */ {
-        // Source: drake/solvers/semidefinite_relaxation.h:72
+        // Source: drake/solvers/semidefinite_relaxation.h
         const char* doc_2args =
 R"""(Constructs a new MathematicalProgram which represents the semidefinite
 programming convex relaxation of the (likely nonconvex) program
@@ -3755,7 +3755,7 @@ LinearEqualityConstraint.
 Raises:
     RuntimeError if ``prog`` has costs and constraints which are not
     linear nor quadratic.)""";
-        // Source: drake/solvers/semidefinite_relaxation.h:147
+        // Source: drake/solvers/semidefinite_relaxation.h
         const char* doc_3args =
 R"""(A version of MakeSemidefiniteRelaxation that allows for specifying the
 sparsity of the relaxation.
@@ -3822,7 +3822,7 @@ Raises:
       } MakeSemidefiniteRelaxation;
       // Symbol: drake::solvers::MakeSolver
       struct /* MakeSolver */ {
-        // Source: drake/solvers/choose_best_solver.h:30
+        // Source: drake/solvers/choose_best_solver.h
         const char* doc =
 R"""(Given the solver ID, create the solver with the matching ID.
 
@@ -3831,7 +3831,7 @@ Raises:
       } MakeSolver;
       // Symbol: drake::solvers::MathematicalProgram
       struct /* MathematicalProgram */ {
-        // Source: drake/solvers/mathematical_program.h:146
+        // Source: drake/solvers/mathematical_program.h
         const char* doc =
 R"""(MathematicalProgram stores the decision variables, the constraints and
 costs of an optimization problem. The user can solve the problem by
@@ -3839,13 +3839,13 @@ calling solvers::Solve() function, and obtain the results of the
 optimization.)""";
         // Symbol: drake::solvers::MathematicalProgram::Add2NormSquaredCost
         struct /* Add2NormSquaredCost */ {
-          // Source: drake/solvers/mathematical_program.h:1155
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Adds a quadratic cost of the form |Ax-b|²=(Ax-b)ᵀ(Ax-b))""";
         } Add2NormSquaredCost;
         // Symbol: drake::solvers::MathematicalProgram::AddBoundingBoxConstraint
         struct /* AddBoundingBoxConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:1974
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_lb_ub_vars =
 R"""(Adds bounding box constraints referencing potentially a subset of the
 decision variables.
@@ -3861,7 +3861,7 @@ Parameter ``vars``:
 
 Returns:
     The newly constructed BoundingBoxConstraint.)""";
-          // Source: drake/solvers/mathematical_program.h:1985
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_lb_ub_var =
 R"""(Adds bounds for a single variable.
 
@@ -3873,7 +3873,7 @@ Parameter ``ub``:
 
 Parameter ``var``:
     The decision variable.)""";
-          // Source: drake/solvers/mathematical_program.h:2041
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_double_double_constEigenMatrixBase =
 R"""(Adds the same scalar lower and upper bound to every variable in
 ``vars``.
@@ -3894,7 +3894,7 @@ Parameter ``vars``:
         } AddBoundingBoxConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddConstraint
         struct /* AddConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:1390
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args_binding =
 R"""(Adds a generic constraint to the program. This should only be used if
 a more specific type of constraint is not available, as it may require
@@ -3904,7 +3904,7 @@ Note:
     If ``binding``.evaluator()->num_constraints() == 0, then this
     constraint is not added into the MathematicalProgram. We return
     ``binding`` directly.)""";
-          // Source: drake/solvers/mathematical_program.h:1409
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_e_lb_ub =
 R"""(Adds one row of constraint lb <= e <= ub where ``e`` is a symbolic
 expression.
@@ -3929,7 +3929,7 @@ ExpressionConstraint, depending on the arguments. Constraints of the
 form x == 1 (which could be created as a BoundingBoxConstraint or
 LinearEqualityConstraint) will be constructed as a
 LinearEqualityConstraint.)""";
-          // Source: drake/solvers/mathematical_program.h:1453
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args_f =
 R"""(Add a constraint represented by a symbolic formula to the program. The
 input formula ``f`` can be of the following forms:
@@ -3954,7 +3954,7 @@ find numerical bounds of ``e1`` and ``e2`` where ``f`` = e1 ≃ e2. We
 allow ``e1`` and ``e2`` to be infinite but only if there are no other
 terms. For example, ``x <= ∞`` is allowed. However, ``x - ∞ <= 0`` is
 not allowed because ``x ↦ ∞`` introduces ``nan`` in the evaluation.)""";
-          // Source: drake/solvers/mathematical_program.h:1487
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args_constEigenDenseBase =
 R"""(Adds a constraint represented by an Eigen::Matrix<symbolic::Formula>
 or Eigen::Array<symbolic::Formula> to the program. A common use-case
@@ -3993,7 +3993,7 @@ f)
 
 Template parameter ``Derived``:
     Eigen::Matrix or Eigen::Array with Formula as the Scalar.)""";
-          // Source: drake/solvers/mathematical_program.h:1512
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_2args_con_vars =
 R"""(Adds a generic constraint to the program. This should only be used if
 a more specific type of constraint is not available, as it may require
@@ -4001,10 +4001,10 @@ the use of a significantly more expensive solver.)""";
         } AddConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddCost
         struct /* AddCost */ {
-          // Source: drake/solvers/mathematical_program.h:920
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args_binding_cost =
 R"""(Adds a generic cost to the optimization program.)""";
-          // Source: drake/solvers/mathematical_program.h:930
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_2args_obj_vars =
 R"""(Adds a cost type to the optimization program.
 
@@ -4013,12 +4013,12 @@ Parameter ``obj``:
 
 Parameter ``vars``:
     The decision variables on which the cost depend.)""";
-          // Source: drake/solvers/mathematical_program.h:1176
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args_binding =
 R"""(Adds an L2 norm cost |Ax+b|₂ (notice this cost is not quadratic since
 we don't take the square of the L2 norm). Refer to AddL2NormCost for
 more details.)""";
-          // Source: drake/solvers/mathematical_program.h:1260
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args_e =
 R"""(Adds a cost in the symbolic form.
 
@@ -4027,7 +4027,7 @@ Returns:
         } AddCost;
         // Symbol: drake::solvers::MathematicalProgram::AddDecisionVariables
         struct /* AddDecisionVariables */ {
-          // Source: drake/solvers/mathematical_program.h:449
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Appends new variables to the end of the existing variables.
 
@@ -4043,7 +4043,7 @@ Raises:
         } AddDecisionVariables;
         // Symbol: drake::solvers::MathematicalProgram::AddEqualityConstraintBetweenPolynomials
         struct /* AddEqualityConstraintBetweenPolynomials */ {
-          // Source: drake/solvers/mathematical_program.h:3115
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Constraining that two polynomials are the same (i.e., they have the
 same coefficients for each monomial). This function is often used in
@@ -4069,7 +4069,7 @@ Note:
         } AddEqualityConstraintBetweenPolynomials;
         // Symbol: drake::solvers::MathematicalProgram::AddExponentialConeConstraint
         struct /* AddExponentialConeConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:3141
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args =
 R"""(Adds an exponential cone constraint, that z = A * vars + b should be
 in the exponential cone. Namely {z₀, z₁, z₂ | z₀ ≥ z₁ * exp(z₂ / z₁),
@@ -4084,7 +4084,7 @@ Parameter ``b``:
 
 Parameter ``vars``:
     The variables bound with this constraint.)""";
-          // Source: drake/solvers/mathematical_program.h:3151
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args =
 R"""(Add the constraint that z is in the exponential cone.
 
@@ -4097,7 +4097,7 @@ Precondition:
         } AddExponentialConeConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddIndeterminate
         struct /* AddIndeterminate */ {
-          // Source: drake/solvers/mathematical_program.h:849
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Adds indeterminate. This method appends an indeterminate to the end of
 the program's old indeterminates, if ``new_indeterminate`` is not
@@ -4121,7 +4121,7 @@ Precondition:
         } AddIndeterminate;
         // Symbol: drake::solvers::MathematicalProgram::AddIndeterminates
         struct /* AddIndeterminates */ {
-          // Source: drake/solvers/mathematical_program.h:860
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Adds indeterminates. This method appends some indeterminates to the
 end of the program's old indeterminates.
@@ -4139,7 +4139,7 @@ Precondition:
         } AddIndeterminates;
         // Symbol: drake::solvers::MathematicalProgram::AddL1NormCostInEpigraphForm
         struct /* AddL1NormCostInEpigraphForm */ {
-          // Source: drake/solvers/mathematical_program.h:1244
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Adds an L1 norm cost min |Ax+b|₁ as a linear cost min Σᵢsᵢ on the
 slack variables sᵢ, together with the constraints (for each i) sᵢ ≥
@@ -4153,7 +4153,7 @@ Returns:
         } AddL1NormCostInEpigraphForm;
         // Symbol: drake::solvers::MathematicalProgram::AddL2NormCost
         struct /* AddL2NormCost */ {
-          // Source: drake/solvers/mathematical_program.h:1186
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_A_b_vars =
 R"""(Adds an L2 norm cost |Ax+b|₂ (notice this cost is not quadratic since
 we don't take the square of the L2 norm).
@@ -4162,11 +4162,11 @@ Note:
     Currently kL2NormCost is supported by SnoptSolver, IpoptSolver,
     NloptSolver, GurobiSolver, MosekSolver, ClarabelSolver, and
     SCSSolver.)""";
-          // Source: drake/solvers/mathematical_program.h:1196
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_A_b_vars_list =
 R"""(Adds an L2 norm cost |Ax+b|₂ (notice this cost is not quadratic since
 we don't take the square of the L2 norm))""";
-          // Source: drake/solvers/mathematical_program.h:1210
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_expression =
 R"""(Adds an L2 norm cost |Ax+b|₂ from a symbolic expression which can be
 decomposed into sqrt((Ax+b)'(Ax+b)). See
@@ -4178,7 +4178,7 @@ Raises:
         } AddL2NormCost;
         // Symbol: drake::solvers::MathematicalProgram::AddL2NormCostUsingConicConstraint
         struct /* AddL2NormCostUsingConicConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:1229
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Adds an L2 norm cost min |Ax+b|₂ as a linear cost min s on the slack
 variable s, together with a Lorentz cone constraint s ≥ |Ax+b|₂ Many
@@ -4195,22 +4195,22 @@ Returns:
         } AddL2NormCostUsingConicConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddLinearComplementarityConstraint
         struct /* AddLinearComplementarityConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2581
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Adds a linear complementarity constraints referencing a subset of the
 decision variables.)""";
         } AddLinearComplementarityConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddLinearConstraint
         struct /* AddLinearConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:1560
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_4args_A_lb_ub_dense =
 R"""(Adds linear constraints referencing potentially a subset of the
 decision variables (defined in the vars parameter).)""";
-          // Source: drake/solvers/mathematical_program.h:1572
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_4args_A_lb_ub_sparse =
 R"""(Adds sparse linear constraints referencing potentially a subset of the
 decision variables (defined in the vars parameter).)""";
-          // Source: drake/solvers/mathematical_program.h:1588
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_4args_a_lb_ub_vars =
 R"""(Adds one row of linear constraint referencing potentially a subset of
 the decision variables (defined in the vars parameter). lb <= a*vars
@@ -4227,7 +4227,7 @@ Parameter ``ub``:
 
 Parameter ``vars``:
     The decision variables on which to impose the linear constraint.)""";
-          // Source: drake/solvers/mathematical_program.h:1623
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_e_lb_ub =
 R"""(Adds one row of linear constraint lb <= e <= ub where ``e`` is a
 symbolic expression.
@@ -4246,12 +4246,12 @@ Parameter ``lb``:
 
 Parameter ``ub``:
     A scalar, the upper bound.)""";
-          // Source: drake/solvers/mathematical_program.h:1631
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_v_lb_ub =
 R"""(Adds linear constraints represented by symbolic expressions to the
 program. It throws if @v includes a non-linear expression or ``lb <= v
 <= ub`` includes trivial/unsatisfiable constraints.)""";
-          // Source: drake/solvers/mathematical_program.h:1661
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args_f =
 R"""(Add a linear constraint represented by a symbolic formula to the
 program. The input formula ``f`` can be of the following forms:
@@ -4275,7 +4275,7 @@ such as "2 <= 1". 4. It is not possible to find numerical bounds of
 be infinite but only if there are no other terms. For example, ``x <=
 ∞`` is allowed. However, ``x - ∞ <= 0`` is not allowed because ``x ↦
 ∞`` introduces ``nan`` in the evaluation.)""";
-          // Source: drake/solvers/mathematical_program.h:1688
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args_formulas =
 R"""(Add a linear constraint represented by an
 Eigen::Array<symbolic::Formula> to the program. A common use-case of
@@ -4313,7 +4313,7 @@ Template parameter ``Derived``:
         } AddLinearConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddLinearCost
         struct /* AddLinearCost */ {
-          // Source: drake/solvers/mathematical_program.h:1018
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args =
 R"""(Adds a linear cost term of the form a'*x + b.
 
@@ -4327,18 +4327,18 @@ Precondition:
 Returns:
     The newly added linear constraint, together with the bound
     variables.)""";
-          // Source: drake/solvers/mathematical_program.h:1025
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args =
 R"""(Adds a linear cost term of the form a'*x + b. Applied to a subset of
 the variables and pushes onto the linear cost data structure.)""";
-          // Source: drake/solvers/mathematical_program.h:1045
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_2args =
 R"""(Adds a linear cost term of the form a'*x. Applied to a subset of the
 variables and pushes onto the linear cost data structure.)""";
         } AddLinearCost;
         // Symbol: drake::solvers::MathematicalProgram::AddLinearEqualityConstraint
         struct /* AddLinearEqualityConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:1714
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_2args_e_b =
 R"""(Adds one row of linear constraint e = b where ``e`` is a symbolic
 expression.
@@ -4357,7 +4357,7 @@ Parameter ``b``:
 Returns:
     The newly added linear equality constraint, together with the
     bound variable.)""";
-          // Source: drake/solvers/mathematical_program.h:1727
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args_f =
 R"""(Adds a linear equality constraint represented by a symbolic formula to
 the program. The input formula ``f`` is either an equality formula
@@ -4367,7 +4367,7 @@ It throws an exception if
 
 1. ``f`` is neither an equality formula nor a conjunction of equalities.
 2. ``f`` includes a non-linear expression.)""";
-          // Source: drake/solvers/mathematical_program.h:1749
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args_formulas =
 R"""(Adds a linear equality constraint represented by an
 Eigen::Array<symbolic::Formula> to the program. A common use-case of
@@ -4398,7 +4398,7 @@ f) throws an exception for f ∈ ``formulas``.
 
 Template parameter ``Derived``:
     An Eigen Array type of Formula.)""";
-          // Source: drake/solvers/mathematical_program.h:1773
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_2args_constEigenMatrixBase_constEigenMatrixBase =
 R"""(Adds linear equality constraints :math:`v = b`, where ``v(i)`` is a
 symbolic linear expression.
@@ -4424,7 +4424,7 @@ Parameter ``b``:
 Returns:
     The newly added linear equality constraint, together with the
     bound variables.)""";
-          // Source: drake/solvers/mathematical_program.h:1875
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_Aeq_beq_dense =
 R"""(AddLinearEqualityConstraint
 
@@ -4454,13 +4454,13 @@ the elements of x, you could use
 .. raw:: html
 
     </details>)""";
-          // Source: drake/solvers/mathematical_program.h:1886
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_Aeq_beq_sparse =
 R"""(AddLinearEqualityConstraint
 
 Adds linear equality constraints referencing potentially a subset of
 the decision variables using a sparse A matrix.)""";
-          // Source: drake/solvers/mathematical_program.h:1920
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_a_beq_vars =
 R"""(Adds one row of linear equality constraint referencing potentially a
 subset of decision variables.
@@ -4478,10 +4478,10 @@ Parameter ``vars``:
         } AddLinearEqualityConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddLinearMatrixInequalityConstraint
         struct /* AddLinearMatrixInequalityConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2725
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_2args =
 R"""(Adds a linear matrix inequality constraint to the program.)""";
-          // Source: drake/solvers/mathematical_program.h:2749
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args =
 R"""(Adds a linear matrix inequality constraint on a symmetric matrix of
 symbolic expressions ``X``, namely ``X`` is positive semidefinite, and
@@ -4502,7 +4502,7 @@ Returns:
         } AddLinearMatrixInequalityConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddLogDeterminantLowerBoundConstraint
         struct /* AddLogDeterminantLowerBoundConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:1324
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Impose the constraint log(det(X)) >= lower. See log_determinant for
 more details.
@@ -4525,7 +4525,7 @@ Precondition:
         } AddLogDeterminantLowerBoundConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddLorentzConeConstraint
         struct /* AddLorentzConeConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2163
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_formula =
 R"""(Adds a Lorentz cone constraint of the form Ax+b >= |Cx+d|₂ from a
 symbolic formula with one side which can be decomposed into
@@ -4543,7 +4543,7 @@ decomposition.
 
 Raises:
     RuntimeError if ``f`` cannot be decomposed into a Lorentz cone.)""";
-          // Source: drake/solvers/mathematical_program.h:2191
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_2args_v_eval_type =
 R"""(Adds Lorentz cone constraint referencing potentially a subset of the
 decision variables.
@@ -4579,7 +4579,7 @@ Parameter ``eval_type``:
     The evaluation type when evaluating the lorentz cone constraint in
     generic optimization. Refer to LorentzConeConstraint::EvalType for
     more details.)""";
-          // Source: drake/solvers/mathematical_program.h:2235
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_4args_linear_expression_quadratic_expression_tol_eval_type =
 R"""(Adds Lorentz cone constraint on the linear expression v1 and quadratic
 expression v2, such that v1 >= sqrt(v2)
@@ -4667,7 +4667,7 @@ x+1 >= sqrt(y² + 2y + x² + 4), the user could call
 .. raw:: html
 
     </details>)""";
-          // Source: drake/solvers/mathematical_program.h:2307
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_4args_A_b_vars_eval_type =
 R"""(Adds Lorentz cone constraint referencing potentially a subset of the
 decision variables (defined in the vars parameter). The linear
@@ -4721,7 +4721,7 @@ call
         } AddLorentzConeConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddMaximizeGeometricMeanCost
         struct /* AddMaximizeGeometricMeanCost */ {
-          // Source: drake/solvers/mathematical_program.h:1360
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args =
 R"""(An overloaded version of maximize_geometric_mean.
 
@@ -4732,7 +4732,7 @@ Returns:
 
 Precondition:
     A.rows() == b.rows(), A.rows() >= 2.)""";
-          // Source: drake/solvers/mathematical_program.h:1376
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_2args =
 R"""(An overloaded version of maximize_geometric_mean. We add the cost to
 maximize the geometric mean of x, i.e., c*power(∏ᵢx(i), 1/n).
@@ -4754,7 +4754,7 @@ Precondition:
         } AddMaximizeGeometricMeanCost;
         // Symbol: drake::solvers::MathematicalProgram::AddMaximizeLogDeterminantCost
         struct /* AddMaximizeLogDeterminantCost */ {
-          // Source: drake/solvers/mathematical_program.h:1306
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Maximize the log determinant. See log_determinant for more details.
 
@@ -4774,14 +4774,14 @@ Precondition:
         } AddMaximizeLogDeterminantCost;
         // Symbol: drake::solvers::MathematicalProgram::AddPolynomialConstraint
         struct /* AddPolynomialConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2601
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Adds a polynomial constraint to the program referencing a subset of
 the decision variables (defined in the vars parameter).)""";
         } AddPolynomialConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddPolynomialCost
         struct /* AddPolynomialCost */ {
-          // Source: drake/solvers/mathematical_program.h:1254
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Adds a cost term in the polynomial form.
 
@@ -4793,7 +4793,7 @@ Returns:
         } AddPolynomialCost;
         // Symbol: drake::solvers::MathematicalProgram::AddPositiveDiagonallyDominantDualConeMatrixConstraint
         struct /* AddPositiveDiagonallyDominantDualConeMatrixConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2831
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_expression =
 R"""(This is an overloaded variant of add_dd_dual "diagonally dominant dual
 cone constraint"
@@ -4807,7 +4807,7 @@ Precondition:
 
 Returns:
     A linear constraint of size n² encoding vᵢᵀXvᵢ ≥ 0)""";
-          // Source: drake/solvers/mathematical_program.h:2844
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_variable =
 R"""(This is an overloaded variant of add_dd_dual "diagonally dominant dual
 cone constraint"
@@ -4821,7 +4821,7 @@ Returns:
         } AddPositiveDiagonallyDominantDualConeMatrixConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddPositiveDiagonallyDominantMatrixConstraint
         struct /* AddPositiveDiagonallyDominantMatrixConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2775
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Adds the constraint that a symmetric matrix is diagonally dominant
 with non-negative diagonal entries. A symmetric matrix X is diagonally
@@ -4848,7 +4848,7 @@ Returns:
         } AddPositiveDiagonallyDominantMatrixConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddPositiveSemidefiniteConstraint
         struct /* AddPositiveSemidefiniteConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2646
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args_symmetric_matrix_var =
 R"""(Adds a positive semidefinite constraint on a symmetric matrix.
 
@@ -4858,7 +4858,7 @@ Raises:
 
 Parameter ``symmetric_matrix_var``:
     A symmetric MatrixDecisionVariable object.)""";
-          // Source: drake/solvers/mathematical_program.h:2677
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args_e =
 R"""(Adds a positive semidefinite constraint on a symmetric matrix of
 symbolic expressions ``e``. We create a new symmetric matrix of
@@ -4909,7 +4909,7 @@ Note:
         } AddPositiveSemidefiniteConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddPrincipalSubmatrixIsPsdConstraint
         struct /* AddPrincipalSubmatrixIsPsdConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2690
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_2args_symmetric_matrix_var_minor_indices =
 R"""(Adds a constraint that the principal submatrix of a symmetric matrix
 composed of the indices in minor_indices is positive semidefinite.
@@ -4926,7 +4926,7 @@ Parameter ``symmetric_matrix_var``:
 
 See also:
     AddPositiveSemidefiniteConstraint)""";
-          // Source: drake/solvers/mathematical_program.h:2710
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_2args_e_minor_indices =
 R"""(Adds a constraint the that the principal submatrix of a symmetric
 matrix of expressions composed of the indices in minor_indices is
@@ -4953,7 +4953,7 @@ Note:
         } AddPrincipalSubmatrixIsPsdConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddQuadraticAsRotatedLorentzConeConstraint
         struct /* AddQuadraticAsRotatedLorentzConeConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2562
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Add the convex quadratic constraint 0.5xᵀQx + bᵀx + c <= 0 as a
 rotated Lorentz cone constraint [rᵀx+s, 1, Px+q] is in the rotated
@@ -4986,7 +4986,7 @@ Parameter ``psd_tol``:
         } AddQuadraticAsRotatedLorentzConeConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddQuadraticConstraint
         struct /* AddQuadraticConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2089
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_6args =
 R"""(Adds quadratic constraint lb ≤ .5 xᵀQx + bᵀx ≤ ub Notice that if your
 quadratic constraint is convex, and you intend to solve the problem
@@ -5007,7 +5007,7 @@ Parameter ``hessian_type``:
 Precondition:
     hessian_type should be correct if it is not std::nullopt, as we
     will blindly trust it in the downstream code.)""";
-          // Source: drake/solvers/mathematical_program.h:2126
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_4args =
 R"""(Overloads AddQuadraticConstraint, impose lb <= e <= ub where ``e`` is
 a quadratic expression. Notice that if your quadratic constraint is
@@ -5019,7 +5019,7 @@ for an explanation.)""";
         } AddQuadraticConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddQuadraticCost
         struct /* AddQuadraticCost */ {
-          // Source: drake/solvers/mathematical_program.h:1070
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_2args =
 R"""(Add a quadratic cost term of the form 0.5*x'*Q*x + b'*x + c.
 
@@ -5038,7 +5038,7 @@ Raises:
 
 Returns:
     The newly added cost together with the bound variables.)""";
-          // Source: drake/solvers/mathematical_program.h:1099
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_5args =
 R"""(Adds a cost term of the form 0.5*x'*Q*x + b'x + c Applied to subset of
 the variables.
@@ -5049,7 +5049,7 @@ Parameter ``is_convex``:
     is a convex quadratic cost or not. To improve the computation
     speed, the user can set is_convex if the user knows whether the
     cost is convex or not.)""";
-          // Source: drake/solvers/mathematical_program.h:1113
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_4args =
 R"""(Adds a cost term of the form 0.5*x'*Q*x + b'x Applied to subset of the
 variables.
@@ -5063,16 +5063,16 @@ Parameter ``is_convex``:
         } AddQuadraticCost;
         // Symbol: drake::solvers::MathematicalProgram::AddQuadraticErrorCost
         struct /* AddQuadraticErrorCost */ {
-          // Source: drake/solvers/mathematical_program.h:1122
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_w_x_desired_vars =
 R"""(Adds a cost term of the form w*|x-x_desired|^2.)""";
-          // Source: drake/solvers/mathematical_program.h:1139
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_Q_x_desired_vars =
 R"""(Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).)""";
         } AddQuadraticErrorCost;
         // Symbol: drake::solvers::MathematicalProgram::AddRotatedLorentzConeConstraint
         struct /* AddRotatedLorentzConeConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2419
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_4args_linear_expression1_linear_expression2_quadratic_expression_tol =
 R"""(Adds rotated Lorentz cone constraint on the linear expression v1, v2
 and quadratic expression u, such that v1 * v2 >= u, v1 >= 0, v2 >= 0
@@ -5144,7 +5144,7 @@ For example, to add the rotated Lorentz cone constraint
 .. raw:: html
 
     </details>)""";
-          // Source: drake/solvers/mathematical_program.h:2449
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args_v =
 R"""(Adds a constraint that a symbolic expression ``v`` is in the rotated
 Lorentz cone, i.e.,
@@ -5181,7 +5181,7 @@ could call
 .. raw:: html
 
     </details>)""";
-          // Source: drake/solvers/mathematical_program.h:2471
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_A_b_vars =
 R"""(Adds a rotated Lorentz cone constraint referencing potentially a
 subset of decision variables, The linear expression :math:`z=Ax+b` is
@@ -5203,7 +5203,7 @@ Parameter ``b``:
 
 Parameter ``vars``:
     The decision variables on which the constraint is imposed.)""";
-          // Source: drake/solvers/mathematical_program.h:2516
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args_vars =
 R"""(Impose that a vector :math:`x\in\mathbb{R}^m` is in rotated Lorentz
 cone. Namely
@@ -5219,7 +5219,7 @@ Returns:
         } AddRotatedLorentzConeConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddScaledDiagonallyDominantDualConeMatrixConstraint
         struct /* AddScaledDiagonallyDominantDualConeMatrixConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2987
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_expression =
 R"""(This is an overloaded variant of add_sdd_dual "scaled diagonally
 dominant dual cone constraint"
@@ -5234,7 +5234,7 @@ Precondition:
 Returns:
     A vector of RotatedLorentzConeConstraint constraints of length 1/2
     * n * (n-1) encoding VᵢⱼᵀXVᵢⱼ is psd)""";
-          // Source: drake/solvers/mathematical_program.h:3000
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_variable =
 R"""(This is an overloaded variant of add_sdd_dual "scaled diagonally
 dominant dual cone constraint"
@@ -5249,7 +5249,7 @@ Returns:
         } AddScaledDiagonallyDominantDualConeMatrixConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint
         struct /* AddScaledDiagonallyDominantMatrixConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2906
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_expression =
 R"""(This is an overloaded variant of addsdd "scaled diagonally dominant
 matrix constraint"
@@ -5280,7 +5280,7 @@ Returns:
 
 Note that M[i][j](0, 1) = Mⁱʲ(i, j) = (X(i, j) + X(j, i)) / 2 for i >=
 j, M[i][j] is the zero matrix.)""";
-          // Source: drake/solvers/mathematical_program.h:2921
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_variable =
 R"""(This is an overloaded variant of addsdd "scaled diagonally dominant
 matrix constraint"
@@ -5297,7 +5297,7 @@ Returns:
         } AddScaledDiagonallyDominantMatrixConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddSosConstraint
         struct /* AddSosConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:3038
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_4args_p_monomial_basis_type_gram_name =
 R"""(Adds constraints that a given polynomial ``p`` is a sums-of-squares
 (SOS), that is, ``p`` can be decomposed into ``mᵀQm``, where m is the
@@ -5315,7 +5315,7 @@ Parameter ``gram_name``:
 Note:
     It calls ``Reparse`` to enforce ``p`` to have this
     MathematicalProgram's indeterminates if necessary.)""";
-          // Source: drake/solvers/mathematical_program.h:3060
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_p_type_gram_name =
 R"""(Adds constraints that a given polynomial ``p`` is a sums-of-squares
 (SOS), that is, ``p`` can be decomposed into ``mᵀQm``, where m is a
@@ -5334,7 +5334,7 @@ Parameter ``gram_name``:
 Note:
     It calls ``Reparse`` to enforce ``p`` to have this
     MathematicalProgram's indeterminates if necessary.)""";
-          // Source: drake/solvers/mathematical_program.h:3074
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_4args_e_monomial_basis_type_gram_name =
 R"""(Adds constraints that a given symbolic expression ``e`` is a
 sums-of-squares (SOS), that is, ``p`` can be decomposed into ``mᵀQm``,
@@ -5348,7 +5348,7 @@ Parameter ``type``:
 
 Parameter ``gram_name``:
     The name of the gram matrix for print out.)""";
-          // Source: drake/solvers/mathematical_program.h:3091
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_e_type_gram_name =
 R"""(Adds constraints that a given symbolic expression ``e`` is a
 sums-of-squares (SOS), that is, ``e`` can be decomposed into ``mᵀQm``.
@@ -5365,7 +5365,7 @@ Parameter ``gram_name``:
         } AddSosConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddVisualizationCallback
         struct /* AddVisualizationCallback */ {
-          // Source: drake/solvers/mathematical_program.h:888
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Adds a callback method to visualize intermediate results of the
 optimization.
@@ -5387,14 +5387,14 @@ Parameter ``vars``:
         } AddVisualizationCallback;
         // Symbol: drake::solvers::MathematicalProgram::CheckSatisfied
         struct /* CheckSatisfied */ {
-          // Source: drake/solvers/mathematical_program.h:3584
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Evaluates CheckSatisfied for the constraint in ``binding`` using the
 value of ALL of the decision variables in this program.
 
 Raises:
     RuntimeError if the size of ``prog_var_vals`` is invalid.)""";
-          // Source: drake/solvers/mathematical_program.h:3596
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_vector =
 R"""(Evaluates CheckSatisfied for the all of the constraints in ``binding``
 using the value of ALL of the decision variables in this program.
@@ -5407,11 +5407,11 @@ Raises:
         } CheckSatisfied;
         // Symbol: drake::solvers::MathematicalProgram::CheckSatisfiedAtInitialGuess
         struct /* CheckSatisfiedAtInitialGuess */ {
-          // Source: drake/solvers/mathematical_program.h:3605
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Evaluates CheckSatisfied for the constraint in ``binding`` at the
 initial guess.)""";
-          // Source: drake/solvers/mathematical_program.h:3614
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_vector =
 R"""(Evaluates CheckSatisfied for the all of the constraints in
 ``bindings`` at the initial guess.
@@ -5421,7 +5421,7 @@ Returns:
         } CheckSatisfiedAtInitialGuess;
         // Symbol: drake::solvers::MathematicalProgram::ClearVariableScaling
         struct /* ClearVariableScaling */ {
-          // Source: drake/solvers/mathematical_program.h:3708
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Clears the scaling factors for decision variables.
 
@@ -5429,7 +5429,7 @@ See variable_scaling "Variable scaling" for more information.)""";
         } ClearVariableScaling;
         // Symbol: drake::solvers::MathematicalProgram::Clone
         struct /* Clone */ {
-          // Source: drake/solvers/mathematical_program.h:186
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Clones an optimization program. The clone will be functionally
 equivalent to the source program with the same:
@@ -5448,7 +5448,7 @@ Returns ``new_prog``:
         } Clone;
         // Symbol: drake::solvers::MathematicalProgram::EvalBinding
         struct /* EvalBinding */ {
-          // Source: drake/solvers/mathematical_program.h:3483
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Evaluates the value of some binding, for some input value for all
 decision variables.
@@ -5464,7 +5464,7 @@ Raises:
         } EvalBinding;
         // Symbol: drake::solvers::MathematicalProgram::EvalBindingAtInitialGuess
         struct /* EvalBindingAtInitialGuess */ {
-          // Source: drake/solvers/mathematical_program.h:3575
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Evaluates the evaluator in ``binding`` at the initial guess.
 
@@ -5473,7 +5473,7 @@ Returns:
         } EvalBindingAtInitialGuess;
         // Symbol: drake::solvers::MathematicalProgram::EvalBindings
         struct /* EvalBindings */ {
-          // Source: drake/solvers/mathematical_program.h:3514
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Evaluates a set of bindings (plural version of ``EvalBinding``).
 
@@ -5491,7 +5491,7 @@ Raises:
         } EvalBindings;
         // Symbol: drake::solvers::MathematicalProgram::EvalVisualizationCallbacks
         struct /* EvalVisualizationCallbacks */ {
-          // Source: drake/solvers/mathematical_program.h:3567
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Evaluates all visualization callbacks registered with the
 MathematicalProgram.
@@ -5504,7 +5504,7 @@ Raises:
         } EvalVisualizationCallbacks;
         // Symbol: drake::solvers::MathematicalProgram::FindDecisionVariableIndex
         struct /* FindDecisionVariableIndex */ {
-          // Source: drake/solvers/mathematical_program.h:3446
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Returns the index of the decision variable. Internally the solvers
 thinks all variables are stored in an array, and it accesses each
@@ -5517,7 +5517,7 @@ Precondition:
         } FindDecisionVariableIndex;
         // Symbol: drake::solvers::MathematicalProgram::FindDecisionVariableIndices
         struct /* FindDecisionVariableIndices */ {
-          // Source: drake/solvers/mathematical_program.h:3458
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Returns the indices of the decision variables. Internally the solvers
 thinks all variables are stored in an array, and it accesses each
@@ -5530,7 +5530,7 @@ Precondition:
         } FindDecisionVariableIndices;
         // Symbol: drake::solvers::MathematicalProgram::FindIndeterminateIndex
         struct /* FindIndeterminateIndex */ {
-          // Source: drake/solvers/mathematical_program.h:3468
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Returns the index of the indeterminate. Internally a solver thinks all
 indeterminates are stored in an array, and it accesses each individual
@@ -5543,7 +5543,7 @@ Precondition:
         } FindIndeterminateIndex;
         // Symbol: drake::solvers::MathematicalProgram::GetAllConstraints
         struct /* GetAllConstraints */ {
-          // Source: drake/solvers/mathematical_program.h:3428
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Getter for returning all constraints.
 
@@ -5555,7 +5555,7 @@ Note:
         } GetAllConstraints;
         // Symbol: drake::solvers::MathematicalProgram::GetAllCosts
         struct /* GetAllCosts */ {
-          // Source: drake/solvers/mathematical_program.h:3412
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Getter returning all costs.
 
@@ -5567,7 +5567,7 @@ Note:
         } GetAllCosts;
         // Symbol: drake::solvers::MathematicalProgram::GetAllLinearConstraints
         struct /* GetAllLinearConstraints */ {
-          // Source: drake/solvers/mathematical_program.h:3420
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Getter returning all linear constraints (both linear equality and
 inequality constraints). Note that this does *not* include bounding
@@ -5578,7 +5578,7 @@ Returns:
         } GetAllLinearConstraints;
         // Symbol: drake::solvers::MathematicalProgram::GetBindingVariableValues
         struct /* GetBindingVariableValues */ {
-          // Source: drake/solvers/mathematical_program.h:3548
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Given the value of all decision variables, namely
 this.decision_variable(i) takes the value prog_var_vals(i), returns
@@ -5598,7 +5598,7 @@ Returns:
         } GetBindingVariableValues;
         // Symbol: drake::solvers::MathematicalProgram::GetInitialGuess
         struct /* GetInitialGuess */ {
-          // Source: drake/solvers/mathematical_program.h:3159
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args_decision_variable =
 R"""(Gets the initial guess for a single variable.
 
@@ -5608,7 +5608,7 @@ Precondition:
 
 Raises:
     RuntimeError if the pre condition is not satisfied.)""";
-          // Source: drake/solvers/mathematical_program.h:3172
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args_constEigenMatrixBase =
 R"""(Gets the initial guess for some variables.
 
@@ -5621,7 +5621,7 @@ Raises:
         } GetInitialGuess;
         // Symbol: drake::solvers::MathematicalProgram::GetVariableScaling
         struct /* GetVariableScaling */ {
-          // Source: drake/solvers/mathematical_program.h:3690
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Returns the mapping from a decision variable index to its scaling
 factor.
@@ -5630,7 +5630,7 @@ See variable_scaling "Variable scaling" for more information.)""";
         } GetVariableScaling;
         // Symbol: drake::solvers::MathematicalProgram::IsThreadSafe
         struct /* IsThreadSafe */ {
-          // Source: drake/solvers/mathematical_program.h:205
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Returns whether it is safe to solve this mathematical program
 concurrently. A mathematical program is safe to solve concurrently if
@@ -5639,7 +5639,7 @@ as thread safe.)""";
         } IsThreadSafe;
         // Symbol: drake::solvers::MathematicalProgram::MakeCost
         struct /* MakeCost */ {
-          // Source: drake/solvers/mathematical_program.h:955
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Convert an input of type ``F`` to a FunctionCost object.
 
@@ -5649,7 +5649,7 @@ Template parameter ``F``:
         } MakeCost;
         // Symbol: drake::solvers::MathematicalProgram::MakePolynomial
         struct /* MakePolynomial */ {
-          // Source: drake/solvers/mathematical_program.h:659
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Creates a symbolic polynomial from the given expression ``e``. It uses
 this MathematicalProgram's ``indeterminates()`` in constructing the
@@ -5682,12 +5682,12 @@ Note:
         } MakePolynomial;
         // Symbol: drake::solvers::MathematicalProgram::MathematicalProgram
         struct /* ctor */ {
-          // Source: drake/solvers/mathematical_program.h:155
+          // Source: drake/solvers/mathematical_program.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::MathematicalProgram::NewBinaryVariables
         struct /* NewBinaryVariables */ {
-          // Source: drake/solvers/mathematical_program.h:354
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args =
 R"""(Adds binary variables, appending them to an internal vector of any
 existing vars. The initial guess values for the new variables are set
@@ -5736,7 +5736,7 @@ This adds a 2 x 3 matrix decision variables into the program.
 
 The name of the variable is only used for the user in order to ease
 readability.)""";
-          // Source: drake/solvers/mathematical_program.h:373
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args =
 R"""(Adds a matrix of binary variables into the optimization program.
 
@@ -5752,7 +5752,7 @@ Parameter ``name``:
 
 Returns:
     A matrix containing the newly added variables.)""";
-          // Source: drake/solvers/mathematical_program.h:384
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_2args =
 R"""(Adds binary variables to this MathematicalProgram. The new variables
 are viewed as a column vector, with size ``rows`` x 1.
@@ -5763,7 +5763,7 @@ See also:
         } NewBinaryVariables;
         // Symbol: drake::solvers::MathematicalProgram::NewContinuousVariables
         struct /* NewContinuousVariables */ {
-          // Source: drake/solvers/mathematical_program.h:248
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_2args =
 R"""(Adds continuous variables, appending them to an internal vector of any
 existing vars. The initial guess values for the new variables are set
@@ -5804,7 +5804,7 @@ program. The names of the variables are "x(0)" and "x(1)".
 
 The name of the variable is only used for the user in order to ease
 readability.)""";
-          // Source: drake/solvers/mathematical_program.h:285
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args =
 R"""(Adds continuous variables, appending them to an internal vector of any
 existing vars. The initial guess values for the new variables are set
@@ -5856,7 +5856,7 @@ This adds a 2 x 3 matrix decision variables into the program.
 
 The name of the variable is only used for the user in order to ease
 readability.)""";
-          // Source: drake/solvers/mathematical_program.h:321
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args =
 R"""(Adds continuous variables, appending them to an internal vector of any
 existing vars. The initial guess values for the new variables are set
@@ -5902,7 +5902,7 @@ readability.)""";
         } NewContinuousVariables;
         // Symbol: drake::solvers::MathematicalProgram::NewEvenDegreeDsosPolynomial
         struct /* NewEvenDegreeDsosPolynomial */ {
-          // Source: drake/solvers/mathematical_program.h:627
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(see even_degree_nonnegative_polynomial for details. Variant that
 produces a DSOS polynomial. Same as NewEvenDegreeSosPolynomial, except
@@ -5910,7 +5910,7 @@ the returned polynomial is diagonally dominant sum of squares (dsos).)""";
         } NewEvenDegreeDsosPolynomial;
         // Symbol: drake::solvers::MathematicalProgram::NewEvenDegreeFreePolynomial
         struct /* NewEvenDegreeFreePolynomial */ {
-          // Source: drake/solvers/mathematical_program.h:472
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Returns a free polynomial that only contains even degree monomials. A
 monomial is even degree if its total degree (sum of all variables'
@@ -5929,7 +5929,7 @@ Parameter ``coeff_name``:
         } NewEvenDegreeFreePolynomial;
         // Symbol: drake::solvers::MathematicalProgram::NewEvenDegreeNonnegativePolynomial
         struct /* NewEvenDegreeNonnegativePolynomial */ {
-          // Source: drake/solvers/mathematical_program.h:598
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(See even_degree_nonnegative_polynomial for more details. Variant that
 produces different non-negative polynomials depending on ``type``.
@@ -5940,21 +5940,21 @@ Parameter ``type``:
         } NewEvenDegreeNonnegativePolynomial;
         // Symbol: drake::solvers::MathematicalProgram::NewEvenDegreeSdsosPolynomial
         struct /* NewEvenDegreeSdsosPolynomial */ {
-          // Source: drake/solvers/mathematical_program.h:616
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(see even_degree_nonnegative_polynomial for details. Variant that
 produces an SDSOS polynomial.)""";
         } NewEvenDegreeSdsosPolynomial;
         // Symbol: drake::solvers::MathematicalProgram::NewEvenDegreeSosPolynomial
         struct /* NewEvenDegreeSosPolynomial */ {
-          // Source: drake/solvers/mathematical_program.h:607
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(See even_degree_nonnegative_polynomial for more details. Variant that
 produces a SOS polynomial.)""";
         } NewEvenDegreeSosPolynomial;
         // Symbol: drake::solvers::MathematicalProgram::NewFreePolynomial
         struct /* NewFreePolynomial */ {
-          // Source: drake/solvers/mathematical_program.h:458
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Returns a free polynomial in a monomial basis over ``indeterminates``
 of a given ``degree``. It uses ``coeff_name`` to make new decision
@@ -5964,7 +5964,7 @@ a₃x₁ + a₄x₀ + a₅.)""";
         } NewFreePolynomial;
         // Symbol: drake::solvers::MathematicalProgram::NewIndeterminates
         struct /* NewIndeterminates */ {
-          // Source: drake/solvers/mathematical_program.h:798
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_2args =
 R"""(Adds indeterminates to this MathematicalProgram, with default name
 "x".
@@ -5972,7 +5972,7 @@ R"""(Adds indeterminates to this MathematicalProgram, with default name
 See also:
     NewIndeterminates(int rows, int cols, const
     std::vector<std::string>& names);)""";
-          // Source: drake/solvers/mathematical_program.h:833
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args =
 R"""(Adds indeterminates to this MathematicalProgram, with default name
 "X". The new variables are returned and viewed as a matrix, with size
@@ -5984,7 +5984,7 @@ See also:
         } NewIndeterminates;
         // Symbol: drake::solvers::MathematicalProgram::NewOddDegreeFreePolynomial
         struct /* NewOddDegreeFreePolynomial */ {
-          // Source: drake/solvers/mathematical_program.h:486
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Returns a free polynomial that only contains odd degree monomials. A
 monomial is odd degree if its total degree (sum of all variables'
@@ -6003,7 +6003,7 @@ Parameter ``coeff_name``:
         } NewOddDegreeFreePolynomial;
         // Symbol: drake::solvers::MathematicalProgram::NewSosPolynomial
         struct /* NewSosPolynomial */ {
-          // Source: drake/solvers/mathematical_program.h:521
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_monomial_basis_type_gram_name =
 R"""(Returns a pair of a SOS polynomial p = mᵀQm and the Gramian matrix Q,
 where m is the ``monomial`` basis. For example,
@@ -6020,11 +6020,11 @@ Parameter ``gram_name``:
 Note:
     Q is a symmetric monomial_basis.rows() x monomial_basis.rows()
     matrix.)""";
-          // Source: drake/solvers/mathematical_program.h:530
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_gramian_monomial_basis_type =
 R"""(Overloads NewSosPolynomial, except the Gramian matrix Q is an input
 instead of an output.)""";
-          // Source: drake/solvers/mathematical_program.h:553
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_4args_indeterminates_degree_type_gram_name =
 R"""(Overloads NewSosPolynomial. Returns a pair of a SOS polynomial p =
 m(x)ᵀQm(x) of degree ``degree`` and the Gramian matrix Q that should
@@ -6052,7 +6052,7 @@ See also:
         } NewSosPolynomial;
         // Symbol: drake::solvers::MathematicalProgram::NewSymmetricContinuousVariables
         struct /* NewSymmetricContinuousVariables */ {
-          // Source: drake/solvers/mathematical_program.h:407
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_2args =
 R"""(Adds a runtime sized symmetric matrix as decision variables to this
 MathematicalProgram. The optimization will only use the stacked
@@ -6087,7 +6087,7 @@ Notice that the (i,j)'th entry and (j,i)'th entry has the same name.
 
 Returns:
     The newly added decision variables.)""";
-          // Source: drake/solvers/mathematical_program.h:429
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_1args =
 R"""(Adds a static sized symmetric matrix as decision variables to this
 MathematicalProgram. The optimization will only use the stacked
@@ -6125,7 +6125,7 @@ Returns:
         } NewSymmetricContinuousVariables;
         // Symbol: drake::solvers::MathematicalProgram::NonnegativePolynomial
         struct /* NonnegativePolynomial */ {
-          // Source: drake/solvers/mathematical_program.h:499
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Types of non-negative polynomial that can be found through conic
 optimization. We currently support SOS, SDSOS and DSOS. For more
@@ -6135,25 +6135,25 @@ Semidefinite Optimization" by Amir Ali Ahmadi and Anirudha Majumdar,
 with arXiv link https://arxiv.org/abs/1706.02586)""";
           // Symbol: drake::solvers::MathematicalProgram::NonnegativePolynomial::kDsos
           struct /* kDsos */ {
-            // Source: drake/solvers/mathematical_program.h:503
+            // Source: drake/solvers/mathematical_program.h
             const char* doc =
 R"""(A diagonally dominant sum-of-squares polynomial.)""";
           } kDsos;
           // Symbol: drake::solvers::MathematicalProgram::NonnegativePolynomial::kSdsos
           struct /* kSdsos */ {
-            // Source: drake/solvers/mathematical_program.h:502
+            // Source: drake/solvers/mathematical_program.h
             const char* doc =
 R"""(A scaled-diagonally dominant sum-of-squares polynomial.)""";
           } kSdsos;
           // Symbol: drake::solvers::MathematicalProgram::NonnegativePolynomial::kSos
           struct /* kSos */ {
-            // Source: drake/solvers/mathematical_program.h:501
+            // Source: drake/solvers/mathematical_program.h
             const char* doc = R"""(A sum-of-squares polynomial.)""";
           } kSos;
         } NonnegativePolynomial;
         // Symbol: drake::solvers::MathematicalProgram::RelaxPsdConstraintToDdDualCone
         struct /* RelaxPsdConstraintToDdDualCone */ {
-          // Source: drake/solvers/mathematical_program.h:2865
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(1. Relaxes the positive semidefinite ``constraint`` with a diagonally
 dominant dual cone constraint. 2. Adds the diagonally dominant dual
@@ -6176,7 +6176,7 @@ Returns:
         } RelaxPsdConstraintToDdDualCone;
         // Symbol: drake::solvers::MathematicalProgram::RelaxPsdConstraintToSddDualCone
         struct /* RelaxPsdConstraintToSddDualCone */ {
-          // Source: drake/solvers/mathematical_program.h:3022
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(1. Relaxes the positive semidefinite ``constraint`` with a scaled
 diagonally dominant dual cone constraint. 2. Adds the scaled
@@ -6199,7 +6199,7 @@ Returns:
         } RelaxPsdConstraintToSddDualCone;
         // Symbol: drake::solvers::MathematicalProgram::RemoveConstraint
         struct /* RemoveConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:3766
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Removes ``constraint`` from this mathematical program. See
 remove_cost_constraint "Remove costs, constraints or callbacks" for
@@ -6213,7 +6213,7 @@ Returns:
         } RemoveConstraint;
         // Symbol: drake::solvers::MathematicalProgram::RemoveCost
         struct /* RemoveCost */ {
-          // Source: drake/solvers/mathematical_program.h:3755
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Removes ``cost`` from this mathematical program. See
 remove_cost_constraint "Remove costs, constraints or callbacks" for
@@ -6227,7 +6227,7 @@ Returns:
         } RemoveCost;
         // Symbol: drake::solvers::MathematicalProgram::RemoveDecisionVariable
         struct /* RemoveDecisionVariable */ {
-          // Source: drake/solvers/mathematical_program.h:3720
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Remove ``var`` from this program's decision variable.
 
@@ -6247,7 +6247,7 @@ Raises:
         } RemoveDecisionVariable;
         // Symbol: drake::solvers::MathematicalProgram::RemoveVisualizationCallback
         struct /* RemoveVisualizationCallback */ {
-          // Source: drake/solvers/mathematical_program.h:3777
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Removes ``callback`` from this mathematical program. See
 remove_cost_constraint "Remove costs, constraints or callbacks" for
@@ -6261,14 +6261,14 @@ Returns:
         } RemoveVisualizationCallback;
         // Symbol: drake::solvers::MathematicalProgram::Reparse
         struct /* Reparse */ {
-          // Source: drake/solvers/mathematical_program.h:666
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Reparses the polynomial ``p`` using this MathematicalProgram's
 indeterminates.)""";
         } Reparse;
         // Symbol: drake::solvers::MathematicalProgram::SetDecisionVariableValueInVector
         struct /* SetDecisionVariableValueInVector */ {
-          // Source: drake/solvers/mathematical_program.h:3231
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_decision_variable_decision_variable_new_value_values =
 R"""(Updates the value of a single ``decision_variable`` inside the
 ``values`` vector to be ``decision_variable_new_value``. The other
@@ -6282,7 +6282,7 @@ Parameter ``decision_variable_new_value``:
 
 Parameter ``values``:
     The vector to be tweaked; must be of size num_vars().)""";
-          // Source: drake/solvers/mathematical_program.h:3245
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_3args_decision_variables_decision_variables_new_values_values =
 R"""(Updates the values of some ``decision_variables`` inside the
 ``values`` vector to be ``decision_variables_new_values``. The other
@@ -6300,7 +6300,7 @@ Parameter ``values``:
         } SetDecisionVariableValueInVector;
         // Symbol: drake::solvers::MathematicalProgram::SetInitialGuess
         struct /* SetInitialGuess */ {
-          // Source: drake/solvers/mathematical_program.h:3191
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_2args_decision_variable_variable_guess_value =
 R"""(Sets the initial guess for a single variable ``decision_variable``.
 The guess is stored as part of this program.
@@ -6311,7 +6311,7 @@ Precondition:
 
 Raises:
     RuntimeError if precondition is not satisfied.)""";
-          // Source: drake/solvers/mathematical_program.h:3200
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_2args_constEigenMatrixBase_constEigenMatrixBase =
 R"""(Sets the initial guess for the decision variables stored in
 ``decision_variable_mat`` to be ``x0``. The guess is stored as part of
@@ -6319,7 +6319,7 @@ this program.)""";
         } SetInitialGuess;
         // Symbol: drake::solvers::MathematicalProgram::SetInitialGuessForAllVariables
         struct /* SetInitialGuessForAllVariables */ {
-          // Source: drake/solvers/mathematical_program.h:3218
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Set the initial guess for ALL decision variables. Note that variables
 begin with a default initial guess of NaN to indicate that no guess is
@@ -6330,27 +6330,27 @@ Parameter ``x0``:
         } SetInitialGuessForAllVariables;
         // Symbol: drake::solvers::MathematicalProgram::SetSolverOption
         struct /* SetSolverOption */ {
-          // Source: drake/solvers/mathematical_program.h:3263
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_double_option =
 R"""(See set_solver_option for more details. Set the double-valued options.)""";
-          // Source: drake/solvers/mathematical_program.h:3273
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_int_option =
 R"""(See set_solver_option for more details. Set the integer-valued
 options.)""";
-          // Source: drake/solvers/mathematical_program.h:3283
+          // Source: drake/solvers/mathematical_program.h
           const char* doc_string_option =
 R"""(See set_solver_option for more details. Set the string-valued options.)""";
         } SetSolverOption;
         // Symbol: drake::solvers::MathematicalProgram::SetSolverOptions
         struct /* SetSolverOptions */ {
-          // Source: drake/solvers/mathematical_program.h:3293
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Overwrite the stored solver options inside MathematicalProgram with
 the provided solver options.)""";
         } SetSolverOptions;
         // Symbol: drake::solvers::MathematicalProgram::SetVariableScaling
         struct /* SetVariableScaling */ {
-          // Source: drake/solvers/mathematical_program.h:3701
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Setter for the scaling ``s`` of decision variable ``var``.
 
@@ -6364,7 +6364,7 @@ See variable_scaling "Variable scaling" for more information.)""";
         } SetVariableScaling;
         // Symbol: drake::solvers::MathematicalProgram::TightenPsdConstraintToDd
         struct /* TightenPsdConstraintToDd */ {
-          // Source: drake/solvers/mathematical_program.h:2795
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(1. Tightens the positive semidefinite ``constraint`` with a positive
 diagonally dominant constraint. 2. Adds the positive diagonally
@@ -6386,7 +6386,7 @@ Returns:
         } TightenPsdConstraintToDd;
         // Symbol: drake::solvers::MathematicalProgram::TightenPsdConstraintToSdd
         struct /* TightenPsdConstraintToSdd */ {
-          // Source: drake/solvers/mathematical_program.h:2943
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(1. Tightens the positive semidefinite ``constraint`` with a scaled
 diagonally dominant constraint. 2. Adds the scaled diagonally dominant
@@ -6408,7 +6408,7 @@ Returns:
         } TightenPsdConstraintToSdd;
         // Symbol: drake::solvers::MathematicalProgram::ToLatex
         struct /* ToLatex */ {
-          // Source: drake/solvers/mathematical_program.h:221
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Returns a string representation of this program in LaTeX.
 
@@ -6436,23 +6436,23 @@ dramatically improve the readability of the output. See the tutorial
         } ToLatex;
         // Symbol: drake::solvers::MathematicalProgram::VarType
         struct /* VarType */ {
-          // Source: drake/solvers/mathematical_program.h:159
+          // Source: drake/solvers/mathematical_program.h
           const char* doc = R"""()""";
         } VarType;
         // Symbol: drake::solvers::MathematicalProgram::bounding_box_constraints
         struct /* bounding_box_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:3396
+          // Source: drake/solvers/mathematical_program.h
           const char* doc = R"""(Getter for all bounding box constraints)""";
         } bounding_box_constraints;
         // Symbol: drake::solvers::MathematicalProgram::decision_variable
         struct /* decision_variable */ {
-          // Source: drake/solvers/mathematical_program.h:3625
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Getter for the decision variable with index ``i`` in the program.)""";
         } decision_variable;
         // Symbol: drake::solvers::MathematicalProgram::decision_variable_index
         struct /* decision_variable_index */ {
-          // Source: drake/solvers/mathematical_program.h:3655
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Returns the mapping from a decision variable ID to its index in the
 vector containing all the decision variables in the mathematical
@@ -6460,64 +6460,64 @@ program.)""";
         } decision_variable_index;
         // Symbol: drake::solvers::MathematicalProgram::decision_variables
         struct /* decision_variables */ {
-          // Source: drake/solvers/mathematical_program.h:3619
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Getter for all decision variables in the program.)""";
         } decision_variables;
         // Symbol: drake::solvers::MathematicalProgram::exponential_cone_constraints
         struct /* exponential_cone_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:3391
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Getter for exponential cone constraints.)""";
         } exponential_cone_constraints;
         // Symbol: drake::solvers::MathematicalProgram::generic_constraints
         struct /* generic_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:3321
+          // Source: drake/solvers/mathematical_program.h
           const char* doc = R"""(Getter for all generic constraints)""";
         } generic_constraints;
         // Symbol: drake::solvers::MathematicalProgram::generic_costs
         struct /* generic_costs */ {
-          // Source: drake/solvers/mathematical_program.h:3314
+          // Source: drake/solvers/mathematical_program.h
           const char* doc = R"""(Getter for all generic costs.)""";
         } generic_costs;
         // Symbol: drake::solvers::MathematicalProgram::indeterminate
         struct /* indeterminate */ {
-          // Source: drake/solvers/mathematical_program.h:3638
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Getter for the indeterminate with index ``i`` in the program.)""";
         } indeterminate;
         // Symbol: drake::solvers::MathematicalProgram::indeterminates
         struct /* indeterminates */ {
-          // Source: drake/solvers/mathematical_program.h:3632
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Getter for all indeterminates in the program.)""";
         } indeterminates;
         // Symbol: drake::solvers::MathematicalProgram::indeterminates_index
         struct /* indeterminates_index */ {
-          // Source: drake/solvers/mathematical_program.h:3663
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Returns the mapping from an indeterminate ID to its index in the
 vector containing all the indeterminates in the mathematical program.)""";
         } indeterminates_index;
         // Symbol: drake::solvers::MathematicalProgram::initial_guess
         struct /* initial_guess */ {
-          // Source: drake/solvers/mathematical_program.h:3437
+          // Source: drake/solvers/mathematical_program.h
           const char* doc = R"""(Getter for the initial guess)""";
         } initial_guess;
         // Symbol: drake::solvers::MathematicalProgram::l2norm_costs
         struct /* l2norm_costs */ {
-          // Source: drake/solvers/mathematical_program.h:3348
+          // Source: drake/solvers/mathematical_program.h
           const char* doc = R"""(Getter for l2norm costs.)""";
         } l2norm_costs;
         // Symbol: drake::solvers::MathematicalProgram::linear_complementarity_constraints
         struct /* linear_complementarity_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:3403
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Getter for all linear complementarity constraints.)""";
         } linear_complementarity_constraints;
         // Symbol: drake::solvers::MathematicalProgram::linear_constraints
         struct /* linear_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:3355
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Getter for linear *inequality* constraints. Note that this does not
 include linear_equality_constraints() nor bounding_box_constraints().
@@ -6525,12 +6525,12 @@ See also GetAllLinearConstraints().)""";
         } linear_constraints;
         // Symbol: drake::solvers::MathematicalProgram::linear_costs
         struct /* linear_costs */ {
-          // Source: drake/solvers/mathematical_program.h:3338
+          // Source: drake/solvers/mathematical_program.h
           const char* doc = R"""(Getter for linear costs.)""";
         } linear_costs;
         // Symbol: drake::solvers::MathematicalProgram::linear_equality_constraints
         struct /* linear_equality_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:3333
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Getter for linear equality constraints. Note that this only includes
 constraints that were added explicitly as LinearEqualityConstraint or
@@ -6540,65 +6540,65 @@ linear_constraints() whose lower bounds also equal their upper bounds.)""";
         } linear_equality_constraints;
         // Symbol: drake::solvers::MathematicalProgram::linear_matrix_inequality_constraints
         struct /* linear_matrix_inequality_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:3385
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Getter for linear matrix inequality constraints.)""";
         } linear_matrix_inequality_constraints;
         // Symbol: drake::solvers::MathematicalProgram::lorentz_cone_constraints
         struct /* lorentz_cone_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:3366
+          // Source: drake/solvers/mathematical_program.h
           const char* doc = R"""(Getter for Lorentz cone constraints.)""";
         } lorentz_cone_constraints;
         // Symbol: drake::solvers::MathematicalProgram::num_indeterminates
         struct /* num_indeterminates */ {
-          // Source: drake/solvers/mathematical_program.h:3434
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Gets the number of indeterminates in the optimization program)""";
         } num_indeterminates;
         // Symbol: drake::solvers::MathematicalProgram::num_vars
         struct /* num_vars */ {
-          // Source: drake/solvers/mathematical_program.h:3431
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Getter for number of variables in the optimization program)""";
         } num_vars;
         // Symbol: drake::solvers::MathematicalProgram::positive_semidefinite_constraints
         struct /* positive_semidefinite_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:3379
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Getter for positive semidefinite constraints.)""";
         } positive_semidefinite_constraints;
         // Symbol: drake::solvers::MathematicalProgram::quadratic_constraints
         struct /* quadratic_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:3360
+          // Source: drake/solvers/mathematical_program.h
           const char* doc = R"""(Getter for quadratic constraints.)""";
         } quadratic_constraints;
         // Symbol: drake::solvers::MathematicalProgram::quadratic_costs
         struct /* quadratic_costs */ {
-          // Source: drake/solvers/mathematical_program.h:3343
+          // Source: drake/solvers/mathematical_program.h
           const char* doc = R"""(Getter for quadratic costs.)""";
         } quadratic_costs;
         // Symbol: drake::solvers::MathematicalProgram::required_capabilities
         struct /* required_capabilities */ {
-          // Source: drake/solvers/mathematical_program.h:3646
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Getter for the required capability on the solver, given the
 cost/constraint/variable types in the program.)""";
         } required_capabilities;
         // Symbol: drake::solvers::MathematicalProgram::rotated_lorentz_cone_constraints
         struct /* rotated_lorentz_cone_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:3373
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Getter for rotated Lorentz cone constraints.)""";
         } rotated_lorentz_cone_constraints;
         // Symbol: drake::solvers::MathematicalProgram::solver_options
         struct /* solver_options */ {
-          // Source: drake/solvers/mathematical_program.h:3301
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Returns the solver options stored inside MathematicalProgram.)""";
         } solver_options;
         // Symbol: drake::solvers::MathematicalProgram::to_string
         struct /* to_string */ {
-          // Source: drake/solvers/mathematical_program.h:198
+          // Source: drake/solvers/mathematical_program.h
           const char* doc =
 R"""(Returns string representation of this program, listing the decision
 variables, costs, and constraints.
@@ -6611,13 +6611,13 @@ dramatically improve the readability of the output. See the tutorial
         } to_string;
         // Symbol: drake::solvers::MathematicalProgram::visualization_callbacks
         struct /* visualization_callbacks */ {
-          // Source: drake/solvers/mathematical_program.h:3306
+          // Source: drake/solvers/mathematical_program.h
           const char* doc = R"""(Getter for all callbacks.)""";
         } visualization_callbacks;
       } MathematicalProgram;
       // Symbol: drake::solvers::MathematicalProgramResult
       struct /* MathematicalProgramResult */ {
-        // Source: drake/solvers/mathematical_program_result.h:74
+        // Source: drake/solvers/mathematical_program_result.h
         const char* doc =
 R"""(The result returned by MathematicalProgram::Solve(). It stores the
 solvers::SolutionResult (whether the program is solved to optimality,
@@ -6625,7 +6625,7 @@ detected infeasibility, etc), the optimal value for the decision
 variables, the optimal cost, and solver specific details.)""";
         // Symbol: drake::solvers::MathematicalProgramResult::AddSuboptimalSolution
         struct /* AddSuboptimalSolution */ {
-          // Source: drake/solvers/mathematical_program_result.h:465
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc =
 R"""(Adds the suboptimal solution to the result. See solution_pools
 "solution pools".
@@ -6638,7 +6638,7 @@ Parameter ``suboptimal_x``:
         } AddSuboptimalSolution;
         // Symbol: drake::solvers::MathematicalProgramResult::EvalBinding
         struct /* EvalBinding */ {
-          // Source: drake/solvers/mathematical_program_result.h:387
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc =
 R"""(Evaluate a Binding at the solution.
 
@@ -6655,7 +6655,7 @@ Precondition:
         } EvalBinding;
         // Symbol: drake::solvers::MathematicalProgramResult::GetDualSolution
         struct /* GetDualSolution */ {
-          // Source: drake/solvers/mathematical_program_result.h:346
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc =
 R"""(Gets the dual solution associated with a constraint.
 
@@ -6753,7 +6753,7 @@ matrix Z.)""";
         } GetDualSolution;
         // Symbol: drake::solvers::MathematicalProgramResult::GetInfeasibleConstraintNames
         struct /* GetInfeasibleConstraintNames */ {
-          // Source: drake/solvers/mathematical_program_result.h:497
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc =
 R"""(See get_infeasible_constraints for more information.
 
@@ -6775,7 +6775,7 @@ specific/useful.)""";
         } GetInfeasibleConstraintNames;
         // Symbol: drake::solvers::MathematicalProgramResult::GetInfeasibleConstraints
         struct /* GetInfeasibleConstraints */ {
-          // Source: drake/solvers/mathematical_program_result.h:513
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc =
 R"""(See get_infeasible_constraints for more information.
 
@@ -6796,10 +6796,10 @@ Returns:
         } GetInfeasibleConstraints;
         // Symbol: drake::solvers::MathematicalProgramResult::GetSolution
         struct /* GetSolution */ {
-          // Source: drake/solvers/mathematical_program_result.h:181
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc_0args =
 R"""(Gets the solution of all decision variables.)""";
-          // Source: drake/solvers/mathematical_program_result.h:193
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc_1args_constEigenMatrixBase =
 R"""(Gets the solution of an Eigen matrix of decision variables.
 
@@ -6811,7 +6811,7 @@ Parameter ``var``:
 
 Returns:
     The value of the decision variable after solving the problem.)""";
-          // Source: drake/solvers/mathematical_program_result.h:205
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc_1args_var =
 R"""(Gets the solution of a single decision variable.
 
@@ -6825,7 +6825,7 @@ Raises:
     RuntimeError if ``var`` is not captured in the mapping
     ``decision_variable_index``, as the input argument of
     set_decision_variable_index().)""";
-          // Source: drake/solvers/mathematical_program_result.h:219
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc_1args_e =
 R"""(Substitutes the value of all decision variables into the Expression.
 
@@ -6834,7 +6834,7 @@ Parameter ``e``:
 
 Returns:
     the Expression that is the result of the substitution.)""";
-          // Source: drake/solvers/mathematical_program_result.h:230
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc_1args_p =
 R"""(Substitutes the value of all decision variables into the coefficients
 of the symbolic polynomial.
@@ -6849,7 +6849,7 @@ Returns:
         } GetSolution;
         // Symbol: drake::solvers::MathematicalProgramResult::GetSuboptimalSolution
         struct /* GetSuboptimalSolution */ {
-          // Source: drake/solvers/mathematical_program_result.h:420
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc_2args_constEigenMatrixBase_int =
 R"""(@name Solution Pools Some solvers (like Gurobi, Cplex, etc) can store
 a pool of (suboptimal) solutions for mixed integer programming model.
@@ -6869,7 +6869,7 @@ Precondition:
 Returns:
     The suboptimal values of the decision variables after solving the
     problem.)""";
-          // Source: drake/solvers/mathematical_program_result.h:436
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc_2args_var_solution_number =
 R"""(Gets the suboptimal solution of a decision variable. See
 solution_pools "solution pools"
@@ -6890,7 +6890,7 @@ Returns:
         } GetSuboptimalSolution;
         // Symbol: drake::solvers::MathematicalProgramResult::MathematicalProgramResult
         struct /* ctor */ {
-          // Source: drake/solvers/mathematical_program_result.h:82
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc =
 R"""(Constructs the result.
 
@@ -6899,7 +6899,7 @@ Note:
         } ctor;
         // Symbol: drake::solvers::MathematicalProgramResult::SetSolution
         struct /* SetSolution */ {
-          // Source: drake/solvers/mathematical_program_result.h:212
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc =
 R"""(Resets the solution of a single decision variable that is already
 registered with this result.
@@ -6911,7 +6911,7 @@ Raises:
         } SetSolution;
         // Symbol: drake::solvers::MathematicalProgramResult::SetSolverDetailsType
         struct /* SetSolverDetailsType */ {
-          // Source: drake/solvers/mathematical_program_result.h:169
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc =
 R"""((Advanced.) Forces the solver_details to be stored using the given
 type ``T``. Typically, only an implementation of SolverInterface will
@@ -6924,7 +6924,7 @@ this MathematicalProgramResult is destroyed.)""";
         } SetSolverDetailsType;
         // Symbol: drake::solvers::MathematicalProgramResult::get_abstract_solver_details
         struct /* get_abstract_solver_details */ {
-          // Source: drake/solvers/mathematical_program_result.h:157
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc =
 R"""((Advanced.) Gets the type-erased solver details. Most users should use
 get_solver_details() instead. Throws an error if the solver_details
@@ -6932,34 +6932,34 @@ has not been set.)""";
         } get_abstract_solver_details;
         // Symbol: drake::solvers::MathematicalProgramResult::get_decision_variable_index
         struct /* get_decision_variable_index */ {
-          // Source: drake/solvers/mathematical_program_result.h:106
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc = R"""(Gets decision_variable_index.)""";
         } get_decision_variable_index;
         // Symbol: drake::solvers::MathematicalProgramResult::get_optimal_cost
         struct /* get_optimal_cost */ {
-          // Source: drake/solvers/mathematical_program_result.h:135
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc = R"""(Gets the optimal cost.)""";
         } get_optimal_cost;
         // Symbol: drake::solvers::MathematicalProgramResult::get_solution_result
         struct /* get_solution_result */ {
-          // Source: drake/solvers/mathematical_program_result.h:119
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc = R"""(Gets SolutionResult.)""";
         } get_solution_result;
         // Symbol: drake::solvers::MathematicalProgramResult::get_solver_details
         struct /* get_solver_details */ {
-          // Source: drake/solvers/mathematical_program_result.h:149
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc =
 R"""(Gets the solver details for the ``Solver`` that solved the program.
 Throws an error if the solver_details has not been set.)""";
         } get_solver_details;
         // Symbol: drake::solvers::MathematicalProgramResult::get_solver_id
         struct /* get_solver_id */ {
-          // Source: drake/solvers/mathematical_program_result.h:141
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc = R"""(Gets the solver ID.)""";
         } get_solver_id;
         // Symbol: drake::solvers::MathematicalProgramResult::get_suboptimal_objective
         struct /* get_suboptimal_objective */ {
-          // Source: drake/solvers/mathematical_program_result.h:453
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc =
 R"""(Gets the suboptimal objective value. See solution_pools "solution
 pools".
@@ -6973,12 +6973,12 @@ Precondition:
         } get_suboptimal_objective;
         // Symbol: drake::solvers::MathematicalProgramResult::get_x_val
         struct /* get_x_val */ {
-          // Source: drake/solvers/mathematical_program_result.h:116
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc = R"""(Gets the decision variable values.)""";
         } get_x_val;
         // Symbol: drake::solvers::MathematicalProgramResult::is_success
         struct /* is_success */ {
-          // Source: drake/solvers/mathematical_program_result.h:89
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc =
 R"""(Returns true if the optimization problem is solved successfully; false
 otherwise. For more information on the solution status, the user could
@@ -6987,14 +6987,14 @@ status.)""";
         } is_success;
         // Symbol: drake::solvers::MathematicalProgramResult::num_suboptimal_solution
         struct /* num_suboptimal_solution */ {
-          // Source: drake/solvers/mathematical_program_result.h:443
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc =
 R"""(Number of suboptimal solutions stored inside
 MathematicalProgramResult. See solution_pools "solution pools".)""";
         } num_suboptimal_solution;
         // Symbol: drake::solvers::MathematicalProgramResult::set_decision_variable_index
         struct /* set_decision_variable_index */ {
-          // Source: drake/solvers/mathematical_program_result.h:96
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc =
 R"""(Sets decision_variable_index mapping, that maps each decision variable
 to its index in the aggregated vector containing all decision
@@ -7002,39 +7002,39 @@ variables in MathematicalProgram. Initialize x_val to NAN.)""";
         } set_decision_variable_index;
         // Symbol: drake::solvers::MathematicalProgramResult::set_dual_solution
         struct /* set_dual_solution */ {
-          // Source: drake/solvers/mathematical_program_result.h:126
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc =
 R"""(Sets the dual solution associated with a given constraint.)""";
         } set_dual_solution;
         // Symbol: drake::solvers::MathematicalProgramResult::set_optimal_cost
         struct /* set_optimal_cost */ {
-          // Source: drake/solvers/mathematical_program_result.h:138
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc = R"""(Sets the optimal cost.)""";
         } set_optimal_cost;
         // Symbol: drake::solvers::MathematicalProgramResult::set_solution_result
         struct /* set_solution_result */ {
-          // Source: drake/solvers/mathematical_program_result.h:111
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc = R"""(Sets SolutionResult.)""";
         } set_solution_result;
         // Symbol: drake::solvers::MathematicalProgramResult::set_solver_id
         struct /* set_solver_id */ {
-          // Source: drake/solvers/mathematical_program_result.h:144
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc = R"""(Sets the solver ID.)""";
         } set_solver_id;
         // Symbol: drake::solvers::MathematicalProgramResult::set_x_val
         struct /* set_x_val */ {
-          // Source: drake/solvers/mathematical_program_result.h:122
+          // Source: drake/solvers/mathematical_program_result.h
           const char* doc = R"""(Sets the decision variable values.)""";
         } set_x_val;
       } MathematicalProgramResult;
       // Symbol: drake::solvers::MatrixXDecisionVariable
       struct /* MatrixXDecisionVariable */ {
-        // Source: drake/solvers/decision_variable.h:18
+        // Source: drake/solvers/decision_variable.h
         const char* doc = R"""()""";
       } MatrixXDecisionVariable;
       // Symbol: drake::solvers::MatrixXIndeterminate
       struct /* MatrixXIndeterminate */ {
-        // Source: drake/solvers/indeterminate.h:35
+        // Source: drake/solvers/indeterminate.h
         const char* doc =
 R"""(MatrixXIndeterminate is used as an alias for
 Eigen::Matrix<symbolic::Variable, Eigen::Dynamic, Eigen::Dynamic>.
@@ -7044,7 +7044,7 @@ See also:
       } MatrixXIndeterminate;
       // Symbol: drake::solvers::MinimumValueLowerBoundConstraint
       struct /* MinimumValueLowerBoundConstraint */ {
-        // Source: drake/solvers/minimum_value_constraint.h:75
+        // Source: drake/solvers/minimum_value_constraint.h
         const char* doc =
 R"""(Constrain min(v) >= lb where v=f(x). Namely all elements of the vector
 ``v`` returned by the user-provided function f(x) to be no smaller
@@ -7081,7 +7081,7 @@ the remaining elements are assumed to be greater than the "influence
 value".)""";
         // Symbol: drake::solvers::MinimumValueLowerBoundConstraint::MinimumValueLowerBoundConstraint
         struct /* ctor */ {
-          // Source: drake/solvers/minimum_value_constraint.h:108
+          // Source: drake/solvers/minimum_value_constraint.h
           const char* doc =
 R"""(Constructs a MinimumValueLowerBoundConstraint. min(v) >= lb And we set
 ub to infinity in min(v) <= ub.
@@ -7135,30 +7135,30 @@ Raises:
         } ctor;
         // Symbol: drake::solvers::MinimumValueLowerBoundConstraint::influence_value
         struct /* influence_value */ {
-          // Source: drake/solvers/minimum_value_constraint.h:124
+          // Source: drake/solvers/minimum_value_constraint.h
           const char* doc = R"""(Getter for the influence value.)""";
         } influence_value;
         // Symbol: drake::solvers::MinimumValueLowerBoundConstraint::max_num_values
         struct /* max_num_values */ {
-          // Source: drake/solvers/minimum_value_constraint.h:127
+          // Source: drake/solvers/minimum_value_constraint.h
           const char* doc =
 R"""(Getter for maximum number of values expected from value_function.)""";
         } max_num_values;
         // Symbol: drake::solvers::MinimumValueLowerBoundConstraint::minimum_value_lower
         struct /* minimum_value_lower */ {
-          // Source: drake/solvers/minimum_value_constraint.h:121
+          // Source: drake/solvers/minimum_value_constraint.h
           const char* doc =
 R"""(Getter for the lower bound on the minimum value.)""";
         } minimum_value_lower;
         // Symbol: drake::solvers::MinimumValueLowerBoundConstraint::set_penalty_function
         struct /* set_penalty_function */ {
-          // Source: drake/solvers/minimum_value_constraint.h:130
+          // Source: drake/solvers/minimum_value_constraint.h
           const char* doc = R"""(Setter for the penalty function.)""";
         } set_penalty_function;
       } MinimumValueLowerBoundConstraint;
       // Symbol: drake::solvers::MinimumValuePenaltyFunction
       struct /* MinimumValuePenaltyFunction */ {
-        // Source: drake/solvers/minimum_value_constraint.h:20
+        // Source: drake/solvers/minimum_value_constraint.h
         const char* doc =
 R"""(Computes the penalty function φ(x) and its derivatives dφ(x)/dx. Valid
 penalty functions must meet the following criteria:
@@ -7172,7 +7172,7 @@ If ``dpenalty_dx`` is nullptr, the function should only compute φ(x).)""";
       } MinimumValuePenaltyFunction;
       // Symbol: drake::solvers::MinimumValueUpperBoundConstraint
       struct /* MinimumValueUpperBoundConstraint */ {
-        // Source: drake/solvers/minimum_value_constraint.h:187
+        // Source: drake/solvers/minimum_value_constraint.h
         const char* doc =
 R"""(Constrain min(v) <= ub where v=f(x). Namely at least one element of
 the vector ``v`` returned by the user-provided function f(x) to be no
@@ -7210,7 +7210,7 @@ the remaining elements are assumed to be greater than the "influence
 value".)""";
         // Symbol: drake::solvers::MinimumValueUpperBoundConstraint::MinimumValueUpperBoundConstraint
         struct /* ctor */ {
-          // Source: drake/solvers/minimum_value_constraint.h:223
+          // Source: drake/solvers/minimum_value_constraint.h
           const char* doc =
 R"""(Constructs a MinimumValueUpperBoundConstraint. min(v) <= ub
 
@@ -7268,30 +7268,30 @@ Raises:
         } ctor;
         // Symbol: drake::solvers::MinimumValueUpperBoundConstraint::influence_value
         struct /* influence_value */ {
-          // Source: drake/solvers/minimum_value_constraint.h:239
+          // Source: drake/solvers/minimum_value_constraint.h
           const char* doc = R"""(Getter for the influence value.)""";
         } influence_value;
         // Symbol: drake::solvers::MinimumValueUpperBoundConstraint::max_num_values
         struct /* max_num_values */ {
-          // Source: drake/solvers/minimum_value_constraint.h:242
+          // Source: drake/solvers/minimum_value_constraint.h
           const char* doc =
 R"""(Getter for maximum number of values expected from value_function.)""";
         } max_num_values;
         // Symbol: drake::solvers::MinimumValueUpperBoundConstraint::minimum_value_upper
         struct /* minimum_value_upper */ {
-          // Source: drake/solvers/minimum_value_constraint.h:236
+          // Source: drake/solvers/minimum_value_constraint.h
           const char* doc =
 R"""(Getter for the upper bound on the minimum value.)""";
         } minimum_value_upper;
         // Symbol: drake::solvers::MinimumValueUpperBoundConstraint::set_penalty_function
         struct /* set_penalty_function */ {
-          // Source: drake/solvers/minimum_value_constraint.h:245
+          // Source: drake/solvers/minimum_value_constraint.h
           const char* doc = R"""(Setter for the penalty function.)""";
         } set_penalty_function;
       } MinimumValueUpperBoundConstraint;
       // Symbol: drake::solvers::MixedIntegerBranchAndBound
       struct /* MixedIntegerBranchAndBound */ {
-        // Source: drake/solvers/branch_and_bound.h:263
+        // Source: drake/solvers/branch_and_bound.h
         const char* doc =
 R"""(Given a mixed-integer optimization problem (MIP) (or more accurately,
 mixed binary problem), solve this problem through branch-and-bound
@@ -7305,7 +7305,7 @@ branch-and-bound process, since we need to replace the binary
 variables with continuous variables.)""";
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::GetNewVariable
         struct /* GetNewVariable */ {
-          // Source: drake/solvers/branch_and_bound.h:397
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Given an old variable in the original mixed-integer program, return
 the corresponding new variable in the branch-and-bound process.
@@ -7325,7 +7325,7 @@ Raises:
         } GetNewVariable;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::GetNewVariables
         struct /* GetNewVariables */ {
-          // Source: drake/solvers/branch_and_bound.h:412
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Given a matrix of old variables in the original mixed-integer program,
 return a matrix of corresponding new variables in the branch-and-bound
@@ -7339,12 +7339,12 @@ Returns ``new_variables``:
         } GetNewVariables;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::GetOptimalCost
         struct /* GetOptimalCost */ {
-          // Source: drake/solvers/branch_and_bound.h:336
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc = R"""(Get the optimal cost.)""";
         } GetOptimalCost;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::GetSolution
         struct /* GetSolution */ {
-          // Source: drake/solvers/branch_and_bound.h:359
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc_2args_mip_var_nth_best_solution =
 R"""(Get the n'th best integral solution for a variable. The best solutions
 are sorted in the ascending order based on their costs. Each solution
@@ -7365,7 +7365,7 @@ Precondition:
 
 Raises:
     RuntimeError if the preconditions are not satisfied.)""";
-          // Source: drake/solvers/branch_and_bound.h:376
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc_2args_constEigenMatrixBase_int =
 R"""(Get the n'th best integral solution for some variables. The best
 solutions are sorted in the ascending order based on their costs. Each
@@ -7388,7 +7388,7 @@ Raises:
         } GetSolution;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::GetSubOptimalCost
         struct /* GetSubOptimalCost */ {
-          // Source: drake/solvers/branch_and_bound.h:346
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Get the n'th sub-optimal cost. The costs are sorted in the ascending
 order. The sub-optimal costs do not include the optimal cost.
@@ -7404,7 +7404,7 @@ Raises:
         } GetSubOptimalCost;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::IsLeafNodeFathomed
         struct /* IsLeafNodeFathomed */ {
-          // Source: drake/solvers/branch_and_bound.h:545
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(If a leaf node is fathomed, then there is no need to branch on this
 node any more. A leaf node is fathomed is any of the following
@@ -7426,7 +7426,7 @@ Raises:
         } IsLeafNodeFathomed;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::MixedIntegerBranchAndBound
         struct /* ctor */ {
-          // Source: drake/solvers/branch_and_bound.h:319
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Construct a branch-and-bound tree from a mixed-integer optimization
 program.
@@ -7439,60 +7439,60 @@ Parameter ``solver_id``:
         } ctor;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::NodeCallbackFun
         struct /* NodeCallbackFun */ {
-          // Source: drake/solvers/branch_and_bound.h:310
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(The function signature for user defined node callback function.)""";
         } NodeCallbackFun;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::NodeSelectFun
         struct /* NodeSelectFun */ {
-          // Source: drake/solvers/branch_and_bound.h:305
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(The function signature for the user defined method to pick a branching
 node or a branching variable.)""";
         } NodeSelectFun;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::NodeSelectionMethod
         struct /* NodeSelectionMethod */ {
-          // Source: drake/solvers/branch_and_bound.h:277
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Different methods to pick a branching node.)""";
           // Symbol: drake::solvers::MixedIntegerBranchAndBound::NodeSelectionMethod::kDepthFirst
           struct /* kDepthFirst */ {
-            // Source: drake/solvers/branch_and_bound.h:279
+            // Source: drake/solvers/branch_and_bound.h
             const char* doc =
 R"""(Pick the node with the most binary variables fixed.)""";
           } kDepthFirst;
           // Symbol: drake::solvers::MixedIntegerBranchAndBound::NodeSelectionMethod::kMinLowerBound
           struct /* kMinLowerBound */ {
-            // Source: drake/solvers/branch_and_bound.h:280
+            // Source: drake/solvers/branch_and_bound.h
             const char* doc =
 R"""(Pick the node with the smallest optimal cost.)""";
           } kMinLowerBound;
           // Symbol: drake::solvers::MixedIntegerBranchAndBound::NodeSelectionMethod::kUserDefined
           struct /* kUserDefined */ {
-            // Source: drake/solvers/branch_and_bound.h:278
+            // Source: drake/solvers/branch_and_bound.h
             const char* doc = R"""(User defined.)""";
           } kUserDefined;
         } NodeSelectionMethod;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::Options
         struct /* Options */ {
-          // Source: drake/solvers/branch_and_bound.h:284
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Configuration settings for the MixedIntegerBranchAndBound constructor.)""";
           // Symbol: drake::solvers::MixedIntegerBranchAndBound::Options::Options
           struct /* ctor */ {
-            // Source: drake/solvers/branch_and_bound.h:285
+            // Source: drake/solvers/branch_and_bound.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::solvers::MixedIntegerBranchAndBound::Options::Serialize
           struct /* Serialize */ {
-            // Source: drake/solvers/branch_and_bound.h:290
+            // Source: drake/solvers/branch_and_bound.h
             const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
           } Serialize;
           // Symbol: drake::solvers::MixedIntegerBranchAndBound::Options::max_explored_nodes
           struct /* max_explored_nodes */ {
-            // Source: drake/solvers/branch_and_bound.h:298
+            // Source: drake/solvers/branch_and_bound.h
             const char* doc =
 R"""(The maximal number of explored nodes in the tree. The branch and bound
 process will terminate if the tree has explored this number of nodes.
@@ -7507,7 +7507,7 @@ number of explored nodes.)""";
         } Options;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::SetNodeSelectionMethod
         struct /* SetNodeSelectionMethod */ {
-          // Source: drake/solvers/branch_and_bound.h:430
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(The user can choose the method to pick a node for branching. We
 provide options such as "depth first" or "min lower bound".
@@ -7520,7 +7520,7 @@ Parameter ``node_selection_method``:
         } SetNodeSelectionMethod;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::SetSearchIntegralSolutionByRounding
         struct /* SetSearchIntegralSolutionByRounding */ {
-          // Source: drake/solvers/branch_and_bound.h:519
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Set the flag to true if the user wants to search an integral solution
 in each node, after the optimization problem in that node is solved.
@@ -7532,14 +7532,14 @@ solution is an integral solution to the mixed-integer program.)""";
         } SetSearchIntegralSolutionByRounding;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::SetUserDefinedNodeCallbackFunction
         struct /* SetUserDefinedNodeCallbackFunction */ {
-          // Source: drake/solvers/branch_and_bound.h:527
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(The user can set a defined callback function in each node. This
 function is called after the optimization is solved in each node.)""";
         } SetUserDefinedNodeCallbackFunction;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::SetUserDefinedNodeSelectionFunction
         struct /* SetUserDefinedNodeSelectionFunction */ {
-          // Source: drake/solvers/branch_and_bound.h:467
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Set the user-defined method to pick the branching node. This method is
 used if the user calls
@@ -7590,7 +7590,7 @@ Raises:
         } SetUserDefinedNodeSelectionFunction;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::SetUserDefinedVariableSelectionFunction
         struct /* SetUserDefinedVariableSelectionFunction */ {
-          // Source: drake/solvers/branch_and_bound.h:507
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Set the user-defined method to pick the branching variable. This
 method is used if the user calls
@@ -7637,7 +7637,7 @@ select the branching variable as
         } SetUserDefinedVariableSelectionFunction;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::SetVariableSelectionMethod
         struct /* SetVariableSelectionMethod */ {
-          // Source: drake/solvers/branch_and_bound.h:479
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(The user can choose the method to pick a variable for branching in
 each node. We provide options such as "most ambivalent" or "least
@@ -7651,7 +7651,7 @@ Parameter ``variable_selection_method``:
         } SetVariableSelectionMethod;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::Solve
         struct /* Solve */ {
-          // Source: drake/solvers/branch_and_bound.h:333
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Solve the mixed-integer problem (MIP) through a branch and bound
 process.
@@ -7667,62 +7667,62 @@ Returns ``solution_result``:
         } Solve;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::VariableSelectFun
         struct /* VariableSelectFun */ {
-          // Source: drake/solvers/branch_and_bound.h:307
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc = R"""()""";
         } VariableSelectFun;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::VariableSelectionMethod
         struct /* VariableSelectionMethod */ {
-          // Source: drake/solvers/branch_and_bound.h:268
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Different methods to pick a branching variable.)""";
           // Symbol: drake::solvers::MixedIntegerBranchAndBound::VariableSelectionMethod::kLeastAmbivalent
           struct /* kLeastAmbivalent */ {
-            // Source: drake/solvers/branch_and_bound.h:270
+            // Source: drake/solvers/branch_and_bound.h
             const char* doc =
 R"""(Pick the variable whose value is closest to 0 or 1.)""";
           } kLeastAmbivalent;
           // Symbol: drake::solvers::MixedIntegerBranchAndBound::VariableSelectionMethod::kMostAmbivalent
           struct /* kMostAmbivalent */ {
-            // Source: drake/solvers/branch_and_bound.h:271
+            // Source: drake/solvers/branch_and_bound.h
             const char* doc =
 R"""(Pick the variable whose value is closest to 0.5)""";
           } kMostAmbivalent;
           // Symbol: drake::solvers::MixedIntegerBranchAndBound::VariableSelectionMethod::kUserDefined
           struct /* kUserDefined */ {
-            // Source: drake/solvers/branch_and_bound.h:269
+            // Source: drake/solvers/branch_and_bound.h
             const char* doc = R"""(User defined.)""";
           } kUserDefined;
         } VariableSelectionMethod;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::absolute_gap_tol
         struct /* absolute_gap_tol */ {
-          // Source: drake/solvers/branch_and_bound.h:580
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc = R"""(Getter for the absolute gap tolerance.)""";
         } absolute_gap_tol;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::best_lower_bound
         struct /* best_lower_bound */ {
-          // Source: drake/solvers/branch_and_bound.h:560
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc = R"""(Getter for the best lower bound.)""";
         } best_lower_bound;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::best_upper_bound
         struct /* best_upper_bound */ {
-          // Source: drake/solvers/branch_and_bound.h:557
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc = R"""(Getter for the best upper bound.)""";
         } best_upper_bound;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::relative_gap_tol
         struct /* relative_gap_tol */ {
-          // Source: drake/solvers/branch_and_bound.h:590
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc = R"""(Geeter for the relative gap tolerance.)""";
         } relative_gap_tol;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::root
         struct /* root */ {
-          // Source: drake/solvers/branch_and_bound.h:552
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Getter for the root node. Note that this is aliased for the lifetime
 of this object.)""";
         } root;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::set_absolute_gap_tol
         struct /* set_absolute_gap_tol */ {
-          // Source: drake/solvers/branch_and_bound.h:577
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Setter for the absolute gap tolerance. The branch-and-bound will
 terminate if its difference between its best upper bound and best
@@ -7730,7 +7730,7 @@ lower bound is below this gap tolerance.)""";
         } set_absolute_gap_tol;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::set_relative_gap_tol
         struct /* set_relative_gap_tol */ {
-          // Source: drake/solvers/branch_and_bound.h:587
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Setter for the relative gap tolerance. The branch-and-bound will
 terminate if (best_upper_bound() - best_lower_bound()) /
@@ -7738,7 +7738,7 @@ abs(best_lower_bound()) is smaller than this tolerance.)""";
         } set_relative_gap_tol;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::solutions
         struct /* solutions */ {
-          // Source: drake/solvers/branch_and_bound.h:568
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Getter for the solutions. Returns a list of solutions, together with
 the costs evaluated at the solutions. The solutions are sorted in the
@@ -7747,7 +7747,7 @@ ascending order based on the cost.)""";
       } MixedIntegerBranchAndBound;
       // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode
       struct /* MixedIntegerBranchAndBoundNode */ {
-        // Source: drake/solvers/branch_and_bound.h:38
+        // Source: drake/solvers/branch_and_bound.h
         const char* doc =
 R"""(A node in the branch-and-bound (bnb) tree. The whole branch-and-bound
 tree solves the mixed-integer problem min f(x) (1) s.t g(x) ≤ 0 z ∈
@@ -7766,7 +7766,7 @@ Each node is created from its parent node, by fixing one binary
 variable to either 0 or 1.)""";
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::Branch
         struct /* Branch */ {
-          // Source: drake/solvers/branch_and_bound.h:83
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Branches on ``binary_variable``, and creates two child nodes. In the
 left child node, the binary variable is fixed to 0. In the right node,
@@ -7784,7 +7784,7 @@ Raises:
         } Branch;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::ConstructRootNode
         struct /* ConstructRootNode */ {
-          // Source: drake/solvers/branch_and_bound.h:71
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Construct the root node from an optimization program. For the
 mixed-integer optimization program min f(x) (1) s.t g(x) ≤ 0 z ∈ {0,
@@ -7822,45 +7822,45 @@ Raises:
         } ConstructRootNode;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::IsLeaf
         struct /* IsLeaf */ {
-          // Source: drake/solvers/branch_and_bound.h:93
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Determine if a node is a leaf or not. A leaf node has no child nodes.)""";
         } IsLeaf;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::IsRoot
         struct /* IsRoot */ {
-          // Source: drake/solvers/branch_and_bound.h:88
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Returns true if a node is the root. A root node has no parent.)""";
         } IsRoot;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::MixedIntegerBranchAndBoundNode
         struct /* ctor */ {
-          // Source: drake/solvers/branch_and_bound.h:40
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::NumExploredNodesInSubtree
         struct /* NumExploredNodesInSubtree */ {
-          // Source: drake/solvers/branch_and_bound.h:174
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Returns the total number of explored nodes in the subtree (including
 this node if it has been explored).)""";
         } NumExploredNodesInSubtree;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::fixed_binary_value
         struct /* fixed_binary_value */ {
-          // Source: drake/solvers/branch_and_bound.h:145
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Getter for the value of the binary variable, which was not fixed in
 the parent node, but is fixed to either 0 or 1 in this node.)""";
         } fixed_binary_value;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::fixed_binary_variable
         struct /* fixed_binary_variable */ {
-          // Source: drake/solvers/branch_and_bound.h:137
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Getter for the binary variable, whose value was not fixed in the
 parent node, but is fixed to either 0 or 1 in this node.)""";
         } fixed_binary_variable;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::is_explored
         struct /* is_explored */ {
-          // Source: drake/solvers/branch_and_bound.h:169
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(If the mathematical program in this node has been solved and the
 result is stored inside this node, then we say this node has been
@@ -7868,27 +7868,27 @@ explored.)""";
         } is_explored;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::left_child
         struct /* left_child */ {
-          // Source: drake/solvers/branch_and_bound.h:108
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc = R"""(Getter for the left child.)""";
         } left_child;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::mutable_left_child
         struct /* mutable_left_child */ {
-          // Source: drake/solvers/branch_and_bound.h:113
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc = R"""(Getter for the mutable left child.)""";
         } mutable_left_child;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::mutable_parent
         struct /* mutable_parent */ {
-          // Source: drake/solvers/branch_and_bound.h:131
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc = R"""(Getter for the mutable parent node.)""";
         } mutable_parent;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::mutable_right_child
         struct /* mutable_right_child */ {
-          // Source: drake/solvers/branch_and_bound.h:123
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc = R"""(Getter for the mutable right child.)""";
         } mutable_right_child;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::optimal_solution_is_integral
         struct /* optimal_solution_is_integral */ {
-          // Source: drake/solvers/branch_and_bound.h:162
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Getter for optimal_solution_is_integral.
 
@@ -7900,46 +7900,46 @@ Raises:
         } optimal_solution_is_integral;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::parent
         struct /* parent */ {
-          // Source: drake/solvers/branch_and_bound.h:128
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc = R"""(Getter for the parent node.)""";
         } parent;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::prog
         struct /* prog */ {
-          // Source: drake/solvers/branch_and_bound.h:98
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc = R"""(Getter for the mathematical program.)""";
         } prog;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::prog_result
         struct /* prog_result */ {
-          // Source: drake/solvers/branch_and_bound.h:103
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Getter for the mathematical program result.)""";
         } prog_result;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::remaining_binary_variables
         struct /* remaining_binary_variables */ {
-          // Source: drake/solvers/branch_and_bound.h:150
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Getter for the remaining binary variables in this node.)""";
         } remaining_binary_variables;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::right_child
         struct /* right_child */ {
-          // Source: drake/solvers/branch_and_bound.h:118
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc = R"""(Getter for the right child.)""";
         } right_child;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::solution_result
         struct /* solution_result */ {
-          // Source: drake/solvers/branch_and_bound.h:155
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc =
 R"""(Getter for the solution result when solving the optimization program.)""";
         } solution_result;
         // Symbol: drake::solvers::MixedIntegerBranchAndBoundNode::solver_id
         struct /* solver_id */ {
-          // Source: drake/solvers/branch_and_bound.h:165
+          // Source: drake/solvers/branch_and_bound.h
           const char* doc = R"""(Getter for solver id.)""";
         } solver_id;
       } MixedIntegerBranchAndBoundNode;
       // Symbol: drake::solvers::MixedIntegerRotationConstraintGenerator
       struct /* MixedIntegerRotationConstraintGenerator */ {
-        // Source: drake/solvers/mixed_integer_rotation_constraint.h:51
+        // Source: drake/solvers/mixed_integer_rotation_constraint.h
         const char* doc =
 R"""(We relax the non-convex SO(3) constraint on rotation matrix R to
 mixed-integer linear constraints. The formulation of these constraints
@@ -7987,7 +7987,7 @@ Note:
     AddToProgram() function repeatedly.)""";
         // Symbol: drake::solvers::MixedIntegerRotationConstraintGenerator::AddToProgram
         struct /* AddToProgram */ {
-          // Source: drake/solvers/mixed_integer_rotation_constraint.h:121
+          // Source: drake/solvers/mixed_integer_rotation_constraint.h
           const char* doc =
 R"""(Add the mixed-integer linear constraints to the optimization program,
 as a relaxation of SO(3) constraint on the rotation matrix ``R``.
@@ -8001,18 +8001,18 @@ Parameter ``prog``:
         } AddToProgram;
         // Symbol: drake::solvers::MixedIntegerRotationConstraintGenerator::Approach
         struct /* Approach */ {
-          // Source: drake/solvers/mixed_integer_rotation_constraint.h:56
+          // Source: drake/solvers/mixed_integer_rotation_constraint.h
           const char* doc = R"""()""";
           // Symbol: drake::solvers::MixedIntegerRotationConstraintGenerator::Approach::kBilinearMcCormick
           struct /* kBilinearMcCormick */ {
-            // Source: drake/solvers/mixed_integer_rotation_constraint.h:60
+            // Source: drake/solvers/mixed_integer_rotation_constraint.h
             const char* doc =
 R"""(Relax SO(3) constraint by considering the McCormick envelope on the
 bilinear product.)""";
           } kBilinearMcCormick;
           // Symbol: drake::solvers::MixedIntegerRotationConstraintGenerator::Approach::kBoth
           struct /* kBoth */ {
-            // Source: drake/solvers/mixed_integer_rotation_constraint.h:62
+            // Source: drake/solvers/mixed_integer_rotation_constraint.h
             const char* doc =
 R"""(Relax SO(3) constraint by considering both the intersection between
 boxes and the unit sphere surface, and the McCormick envelope on the
@@ -8020,7 +8020,7 @@ bilinear product.)""";
           } kBoth;
           // Symbol: drake::solvers::MixedIntegerRotationConstraintGenerator::Approach::kBoxSphereIntersection
           struct /* kBoxSphereIntersection */ {
-            // Source: drake/solvers/mixed_integer_rotation_constraint.h:57
+            // Source: drake/solvers/mixed_integer_rotation_constraint.h
             const char* doc =
 R"""(Relax SO(3) constraint by considering the intersection between boxes
 and the unit sphere surface.)""";
@@ -8028,7 +8028,7 @@ and the unit sphere surface.)""";
         } Approach;
         // Symbol: drake::solvers::MixedIntegerRotationConstraintGenerator::MixedIntegerRotationConstraintGenerator
         struct /* ctor */ {
-          // Source: drake/solvers/mixed_integer_rotation_constraint.h:110
+          // Source: drake/solvers/mixed_integer_rotation_constraint.h
           const char* doc =
 R"""(Constructor
 
@@ -8052,11 +8052,11 @@ Parameter ``interval_binning``:
         } ctor;
         // Symbol: drake::solvers::MixedIntegerRotationConstraintGenerator::ReturnType
         struct /* ReturnType */ {
-          // Source: drake/solvers/mixed_integer_rotation_constraint.h:68
+          // Source: drake/solvers/mixed_integer_rotation_constraint.h
           const char* doc = R"""()""";
           // Symbol: drake::solvers::MixedIntegerRotationConstraintGenerator::ReturnType::B_
           struct /* B_ */ {
-            // Source: drake/solvers/mixed_integer_rotation_constraint.h:79
+            // Source: drake/solvers/mixed_integer_rotation_constraint.h
             const char* doc =
 R"""(B_ contains the new binary variables added to the program. B_`i][j]
 represents in which interval R(i, j) lies. If we use linear binning,
@@ -8069,7 +8069,7 @@ in the interval [φ(k), φ(k+1)].)""";
           } B_;
           // Symbol: drake::solvers::MixedIntegerRotationConstraintGenerator::ReturnType::lambda_
           struct /* lambda_ */ {
-            // Source: drake/solvers/mixed_integer_rotation_constraint.h:93
+            // Source: drake/solvers/mixed_integer_rotation_constraint.h
             const char* doc =
 R"""(λ contains part of the new continuous variables added to the program.
 λ_[i][j] is of length 2 * num_intervals_per_half_axis_ + 1, such that
@@ -8096,34 +8096,34 @@ consecutive. Mathematically
         } ReturnType;
         // Symbol: drake::solvers::MixedIntegerRotationConstraintGenerator::approach
         struct /* approach */ {
-          // Source: drake/solvers/mixed_integer_rotation_constraint.h:131
+          // Source: drake/solvers/mixed_integer_rotation_constraint.h
           const char* doc = R"""()""";
         } approach;
         // Symbol: drake::solvers::MixedIntegerRotationConstraintGenerator::interval_binning
         struct /* interval_binning */ {
-          // Source: drake/solvers/mixed_integer_rotation_constraint.h:137
+          // Source: drake/solvers/mixed_integer_rotation_constraint.h
           const char* doc = R"""()""";
         } interval_binning;
         // Symbol: drake::solvers::MixedIntegerRotationConstraintGenerator::num_intervals_per_half_axis
         struct /* num_intervals_per_half_axis */ {
-          // Source: drake/solvers/mixed_integer_rotation_constraint.h:133
+          // Source: drake/solvers/mixed_integer_rotation_constraint.h
           const char* doc = R"""()""";
         } num_intervals_per_half_axis;
         // Symbol: drake::solvers::MixedIntegerRotationConstraintGenerator::phi
         struct /* phi */ {
-          // Source: drake/solvers/mixed_integer_rotation_constraint.h:126
+          // Source: drake/solvers/mixed_integer_rotation_constraint.h
           const char* doc = R"""(Getter for φ.)""";
         } phi;
         // Symbol: drake::solvers::MixedIntegerRotationConstraintGenerator::phi_nonnegative
         struct /* phi_nonnegative */ {
-          // Source: drake/solvers/mixed_integer_rotation_constraint.h:129
+          // Source: drake/solvers/mixed_integer_rotation_constraint.h
           const char* doc =
 R"""(Getter for φ₊, the non-negative part of φ.)""";
         } phi_nonnegative;
       } MixedIntegerRotationConstraintGenerator;
       // Symbol: drake::solvers::MobyLCPSolver
       struct /* MobyLCPSolver */ {
-        // Source: drake/solvers/moby_lcp_solver.h:70
+        // Source: drake/solvers/moby_lcp_solver.h
         const char* doc =
 R"""(A class for solving Linear Complementarity Problems (LCPs). Solving a
 LCP requires finding a solution to the problem:
@@ -8187,24 +8187,24 @@ latter) describe relevant matrix classes in more detail.
                     Programming. Heldermann Verlag, 1988.)""";
         // Symbol: drake::solvers::MobyLCPSolver::ComputeZeroTolerance
         struct /* ComputeZeroTolerance */ {
-          // Source: drake/solvers/moby_lcp_solver.h:80
+          // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
 R"""(Calculates the zero tolerance that the solver would compute if the
 user does not specify a tolerance.)""";
         } ComputeZeroTolerance;
         // Symbol: drake::solvers::MobyLCPSolver::MobyLCPSolver<T>
         struct /* ctor */ {
-          // Source: drake/solvers/moby_lcp_solver.h:72
+          // Source: drake/solvers/moby_lcp_solver.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::MobyLCPSolver::ProgramAttributesSatisfied
         struct /* ProgramAttributesSatisfied */ {
-          // Source: drake/solvers/moby_lcp_solver.h:277
+          // Source: drake/solvers/moby_lcp_solver.h
           const char* doc = R"""()""";
         } ProgramAttributesSatisfied;
         // Symbol: drake::solvers::MobyLCPSolver::SolveLcpFast
         struct /* SolveLcpFast */ {
-          // Source: drake/solvers/moby_lcp_solver.h:123
+          // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
 R"""(Fast pivoting algorithm for LCPs of the form M = PAPᵀ, q = Pb, where b
 ∈ ℝᵐ, P ∈ ℝⁿˣᵐ, and A ∈ ℝᵐˣᵐ (where A is positive definite).
@@ -8258,7 +8258,7 @@ Returns:
         } SolveLcpFast;
         // Symbol: drake::solvers::MobyLCPSolver::SolveLcpFastRegularized
         struct /* SolveLcpFastRegularized */ {
-          // Source: drake/solvers/moby_lcp_solver.h:177
+          // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
 R"""(Regularized version of the fast pivoting algorithm for LCPs of the
 form M = PAPᵀ, q = Pb, where b ∈ ℝᵐ, P ∈ ℝⁿˣᵐ, and A ∈ ℝᵐˣᵐ (where A
@@ -8345,7 +8345,7 @@ See also:
         } SolveLcpFastRegularized;
         // Symbol: drake::solvers::MobyLCPSolver::SolveLcpLemke
         struct /* SolveLcpLemke */ {
-          // Source: drake/solvers/moby_lcp_solver.h:224
+          // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
 R"""(Lemke's Algorithm for solving LCPs in the matrix class E, which
 contains all strictly semimonotone matrices, all P-matrices, and all
@@ -8407,7 +8407,7 @@ Raises:
         } SolveLcpLemke;
         // Symbol: drake::solvers::MobyLCPSolver::SolveLcpLemkeRegularized
         struct /* SolveLcpLemkeRegularized */ {
-          // Source: drake/solvers/moby_lcp_solver.h:259
+          // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
 R"""(Lemke's Algorithm for solving LCPs in the matrix class E, which
 contains all strictly semimonotone matrices, all P-matrices, and all
@@ -8460,28 +8460,28 @@ See also:
         } SolveLcpLemkeRegularized;
         // Symbol: drake::solvers::MobyLCPSolver::get_num_pivots
         struct /* get_num_pivots */ {
-          // Source: drake/solvers/moby_lcp_solver.h:266
+          // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
 R"""(Returns the number of pivoting operations made by the last LCP solve.)""";
         } get_num_pivots;
         // Symbol: drake::solvers::MobyLCPSolver::id
         struct /* id */ {
-          // Source: drake/solvers/moby_lcp_solver.h:274
+          // Source: drake/solvers/moby_lcp_solver.h
           const char* doc = R"""()""";
         } id;
         // Symbol: drake::solvers::MobyLCPSolver::is_available
         struct /* is_available */ {
-          // Source: drake/solvers/moby_lcp_solver.h:275
+          // Source: drake/solvers/moby_lcp_solver.h
           const char* doc = R"""()""";
         } is_available;
         // Symbol: drake::solvers::MobyLCPSolver::is_enabled
         struct /* is_enabled */ {
-          // Source: drake/solvers/moby_lcp_solver.h:276
+          // Source: drake/solvers/moby_lcp_solver.h
           const char* doc = R"""()""";
         } is_enabled;
         // Symbol: drake::solvers::MobyLCPSolver::reset_num_pivots
         struct /* reset_num_pivots */ {
-          // Source: drake/solvers/moby_lcp_solver.h:270
+          // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
 R"""(Resets the number of pivoting operations made by the last LCP solver
 to zero.)""";
@@ -8489,17 +8489,17 @@ to zero.)""";
       } MobyLCPSolver;
       // Symbol: drake::solvers::MobyLcpSolverId
       struct /* MobyLcpSolverId */ {
-        // Source: drake/solvers/moby_lcp_solver.h:24
+        // Source: drake/solvers/moby_lcp_solver.h
         const char* doc =
 R"""(Non-template class for MobyLcpSolver<T> constants.)""";
         // Symbol: drake::solvers::MobyLcpSolverId::MobyLcpSolverId
         struct /* ctor */ {
-          // Source: drake/solvers/moby_lcp_solver.h:26
+          // Source: drake/solvers/moby_lcp_solver.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::MobyLcpSolverId::id
         struct /* id */ {
-          // Source: drake/solvers/moby_lcp_solver.h:30
+          // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
 R"""(Returns:
     same as SolverInterface::solver_id())""";
@@ -8507,7 +8507,7 @@ R"""(Returns:
       } MobyLcpSolverId;
       // Symbol: drake::solvers::MosekSolver
       struct /* MosekSolver */ {
-        // Source: drake/solvers/mosek_solver.h:73
+        // Source: drake/solvers/mosek_solver.h
         const char* doc =
 R"""(An implementation of SolverInterface for the commercially-licensed
 MOSEK (TM) solver (https://www.mosek.com/).
@@ -8549,7 +8549,7 @@ parameters
    not to write to a file.)""";
         // Symbol: drake::solvers::MosekSolver::AcquireLicense
         struct /* AcquireLicense */ {
-          // Source: drake/solvers/mosek_solver.h:102
+          // Source: drake/solvers/mosek_solver.h
           const char* doc =
 R"""(This acquires a MOSEK™ license environment shared among all
 MosekSolver instances; the environment will stay valid as long as at
@@ -8570,38 +8570,38 @@ Raises:
         } AcquireLicense;
         // Symbol: drake::solvers::MosekSolver::Details
         struct /* Details */ {
-          // Source: drake/solvers/mosek_solver.h:78
+          // Source: drake/solvers/mosek_solver.h
           const char* doc =
 R"""(Type of details stored in MathematicalProgramResult.)""";
         } Details;
         // Symbol: drake::solvers::MosekSolver::MosekSolver
         struct /* ctor */ {
-          // Source: drake/solvers/mosek_solver.h:75
+          // Source: drake/solvers/mosek_solver.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::MosekSolver::ProgramAttributesSatisfied
         struct /* ProgramAttributesSatisfied */ {
-          // Source: drake/solvers/mosek_solver.h:111
+          // Source: drake/solvers/mosek_solver.h
           const char* doc = R"""()""";
         } ProgramAttributesSatisfied;
         // Symbol: drake::solvers::MosekSolver::UnsatisfiedProgramAttributes
         struct /* UnsatisfiedProgramAttributes */ {
-          // Source: drake/solvers/mosek_solver.h:112
+          // Source: drake/solvers/mosek_solver.h
           const char* doc = R"""()""";
         } UnsatisfiedProgramAttributes;
         // Symbol: drake::solvers::MosekSolver::id
         struct /* id */ {
-          // Source: drake/solvers/mosek_solver.h:106
+          // Source: drake/solvers/mosek_solver.h
           const char* doc = R"""()""";
         } id;
         // Symbol: drake::solvers::MosekSolver::is_available
         struct /* is_available */ {
-          // Source: drake/solvers/mosek_solver.h:107
+          // Source: drake/solvers/mosek_solver.h
           const char* doc = R"""()""";
         } is_available;
         // Symbol: drake::solvers::MosekSolver::is_enabled
         struct /* is_enabled */ {
-          // Source: drake/solvers/mosek_solver.h:110
+          // Source: drake/solvers/mosek_solver.h
           const char* doc =
 R"""(Returns true iff the environment variable MOSEKLM_LICENSE_FILE has
 been set to a non-empty value.)""";
@@ -8609,14 +8609,14 @@ been set to a non-empty value.)""";
       } MosekSolver;
       // Symbol: drake::solvers::MosekSolverDetails
       struct /* MosekSolverDetails */ {
-        // Source: drake/solvers/mosek_solver.h:19
+        // Source: drake/solvers/mosek_solver.h
         const char* doc =
 R"""(The MOSEK™ solver details after calling Solve() function. The user can
 call MathematicalProgramResult::get_solver_details<MosekSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::MosekSolverDetails::optimizer_time
         struct /* optimizer_time */ {
-          // Source: drake/solvers/mosek_solver.h:22
+          // Source: drake/solvers/mosek_solver.h
           const char* doc =
 R"""(The MOSEK™ optimization time. Please refer to MSK_DINF_OPTIMIZER_TIME
 in
@@ -8624,7 +8624,7 @@ https://docs.mosek.com/11.0/capi/constants.html?highlight=msk_dinf_optimizer_tim
         } optimizer_time;
         // Symbol: drake::solvers::MosekSolverDetails::rescode
         struct /* rescode */ {
-          // Source: drake/solvers/mosek_solver.h:26
+          // Source: drake/solvers/mosek_solver.h
           const char* doc =
 R"""(The response code returned from MOSEK™ solver. Check
 https://docs.mosek.com/11.0/capi/response-codes.html for the meaning
@@ -8632,7 +8632,7 @@ on the response code.)""";
         } rescode;
         // Symbol: drake::solvers::MosekSolverDetails::solution_status
         struct /* solution_status */ {
-          // Source: drake/solvers/mosek_solver.h:31
+          // Source: drake/solvers/mosek_solver.h
           const char* doc =
 R"""(The solution status after solving the problem. Check
 https://docs.mosek.com/11.0/capi/accessing-solution.html and
@@ -8642,7 +8642,7 @@ meaning on the solution status.)""";
       } MosekSolverDetails;
       // Symbol: drake::solvers::NewRotationMatrixVars
       struct /* NewRotationMatrixVars */ {
-        // Source: drake/solvers/rotation_constraint.h:45
+        // Source: drake/solvers/rotation_constraint.h
         const char* doc =
 R"""(Allocates a 3x3 matrix of decision variables with the trivial bounding
 box constraint ensuring all elements are [-1,1], and the linear
@@ -8650,50 +8650,50 @@ constraint imposing -1 <= trace(R) <= 3.)""";
       } NewRotationMatrixVars;
       // Symbol: drake::solvers::NewSymmetricVariableNames
       struct /* NewSymmetricVariableNames */ {
-        // Source: drake/solvers/mathematical_program.h:70
+        // Source: drake/solvers/mathematical_program.h
         const char* doc = R"""()""";
       } NewSymmetricVariableNames;
       // Symbol: drake::solvers::NewVariableNames
       struct /* NewVariableNames */ {
-        // Source: drake/solvers/mathematical_program.h:47
+        // Source: drake/solvers/mathematical_program.h
         const char* doc = R"""()""";
         // Symbol: drake::solvers::NewVariableNames::type
         struct /* type */ {
-          // Source: drake/solvers/mathematical_program.h:61
+          // Source: drake/solvers/mathematical_program.h
           const char* doc = R"""()""";
         } type;
       } NewVariableNames;
       // Symbol: drake::solvers::NloptSolver
       struct /* NloptSolver */ {
-        // Source: drake/solvers/nlopt_solver.h:21
+        // Source: drake/solvers/nlopt_solver.h
         const char* doc = R"""()""";
         // Symbol: drake::solvers::NloptSolver::AlgorithmName
         struct /* AlgorithmName */ {
-          // Source: drake/solvers/nlopt_solver.h:48
+          // Source: drake/solvers/nlopt_solver.h
           const char* doc =
 R"""(The key name for the string-valued algorithm.)""";
         } AlgorithmName;
         // Symbol: drake::solvers::NloptSolver::ConstraintToleranceName
         struct /* ConstraintToleranceName */ {
-          // Source: drake/solvers/nlopt_solver.h:32
+          // Source: drake/solvers/nlopt_solver.h
           const char* doc =
 R"""(The key name for the double-valued constraint tolerance.)""";
         } ConstraintToleranceName;
         // Symbol: drake::solvers::NloptSolver::Details
         struct /* Details */ {
-          // Source: drake/solvers/nlopt_solver.h:26
+          // Source: drake/solvers/nlopt_solver.h
           const char* doc =
 R"""(Type of details stored in MathematicalProgramResult.)""";
         } Details;
         // Symbol: drake::solvers::NloptSolver::MaxEvalName
         struct /* MaxEvalName */ {
-          // Source: drake/solvers/nlopt_solver.h:41
+          // Source: drake/solvers/nlopt_solver.h
           const char* doc =
 R"""(The key name for int-valued maximum number of evaluations.)""";
         } MaxEvalName;
         // Symbol: drake::solvers::NloptSolver::MaxTimeName
         struct /* MaxTimeName */ {
-          // Source: drake/solvers/nlopt_solver.h:45
+          // Source: drake/solvers/nlopt_solver.h
           const char* doc =
 R"""(The key name for the maximum runtime. By default, there is no maximum
 runtime. A nonpositive value will be interpreted as no maximum
@@ -8701,52 +8701,52 @@ runtime.)""";
         } MaxTimeName;
         // Symbol: drake::solvers::NloptSolver::NloptSolver
         struct /* ctor */ {
-          // Source: drake/solvers/nlopt_solver.h:23
+          // Source: drake/solvers/nlopt_solver.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::NloptSolver::ProgramAttributesSatisfied
         struct /* ProgramAttributesSatisfied */ {
-          // Source: drake/solvers/nlopt_solver.h:55
+          // Source: drake/solvers/nlopt_solver.h
           const char* doc = R"""()""";
         } ProgramAttributesSatisfied;
         // Symbol: drake::solvers::NloptSolver::XAbsoluteToleranceName
         struct /* XAbsoluteToleranceName */ {
-          // Source: drake/solvers/nlopt_solver.h:38
+          // Source: drake/solvers/nlopt_solver.h
           const char* doc =
 R"""(The key name for double-valued x absolute tolerance.)""";
         } XAbsoluteToleranceName;
         // Symbol: drake::solvers::NloptSolver::XRelativeToleranceName
         struct /* XRelativeToleranceName */ {
-          // Source: drake/solvers/nlopt_solver.h:35
+          // Source: drake/solvers/nlopt_solver.h
           const char* doc =
 R"""(The key name for double-valued x relative tolerance.)""";
         } XRelativeToleranceName;
         // Symbol: drake::solvers::NloptSolver::id
         struct /* id */ {
-          // Source: drake/solvers/nlopt_solver.h:52
+          // Source: drake/solvers/nlopt_solver.h
           const char* doc = R"""()""";
         } id;
         // Symbol: drake::solvers::NloptSolver::is_available
         struct /* is_available */ {
-          // Source: drake/solvers/nlopt_solver.h:53
+          // Source: drake/solvers/nlopt_solver.h
           const char* doc = R"""()""";
         } is_available;
         // Symbol: drake::solvers::NloptSolver::is_enabled
         struct /* is_enabled */ {
-          // Source: drake/solvers/nlopt_solver.h:54
+          // Source: drake/solvers/nlopt_solver.h
           const char* doc = R"""()""";
         } is_enabled;
       } NloptSolver;
       // Symbol: drake::solvers::NloptSolverDetails
       struct /* NloptSolverDetails */ {
-        // Source: drake/solvers/nlopt_solver.h:15
+        // Source: drake/solvers/nlopt_solver.h
         const char* doc =
 R"""(The NLopt solver details after calling Solve() function. The user can
 call MathematicalProgramResult::get_solver_details<NloptSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::NloptSolverDetails::status
         struct /* status */ {
-          // Source: drake/solvers/nlopt_solver.h:18
+          // Source: drake/solvers/nlopt_solver.h
           const char* doc =
 R"""(The return status of NLopt solver. Please refer to
 https://nlopt.readthedocs.io/en/latest/NLopt_Reference/#return-values.)""";
@@ -8754,7 +8754,7 @@ https://nlopt.readthedocs.io/en/latest/NLopt_Reference/#return-values.)""";
       } NloptSolverDetails;
       // Symbol: drake::solvers::OsqpSolver
       struct /* OsqpSolver */ {
-        // Source: drake/solvers/osqp_solver.h:59
+        // Source: drake/solvers/osqp_solver.h
         const char* doc =
 R"""(A wrapper to call `OSQP <https://osqp.org/>`_ using Drake's
 MathematicalProgram.
@@ -8778,98 +8778,98 @@ check the solver status before interpreting the returned primal and
 dual variables.)""";
         // Symbol: drake::solvers::OsqpSolver::Details
         struct /* Details */ {
-          // Source: drake/solvers/osqp_solver.h:64
+          // Source: drake/solvers/osqp_solver.h
           const char* doc =
 R"""(Type of details stored in MathematicalProgramResult.)""";
         } Details;
         // Symbol: drake::solvers::OsqpSolver::OsqpSolver
         struct /* ctor */ {
-          // Source: drake/solvers/osqp_solver.h:61
+          // Source: drake/solvers/osqp_solver.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::OsqpSolver::ProgramAttributesSatisfied
         struct /* ProgramAttributesSatisfied */ {
-          // Source: drake/solvers/osqp_solver.h:74
+          // Source: drake/solvers/osqp_solver.h
           const char* doc = R"""()""";
         } ProgramAttributesSatisfied;
         // Symbol: drake::solvers::OsqpSolver::UnsatisfiedProgramAttributes
         struct /* UnsatisfiedProgramAttributes */ {
-          // Source: drake/solvers/osqp_solver.h:75
+          // Source: drake/solvers/osqp_solver.h
           const char* doc = R"""()""";
         } UnsatisfiedProgramAttributes;
         // Symbol: drake::solvers::OsqpSolver::id
         struct /* id */ {
-          // Source: drake/solvers/osqp_solver.h:71
+          // Source: drake/solvers/osqp_solver.h
           const char* doc = R"""()""";
         } id;
         // Symbol: drake::solvers::OsqpSolver::is_available
         struct /* is_available */ {
-          // Source: drake/solvers/osqp_solver.h:72
+          // Source: drake/solvers/osqp_solver.h
           const char* doc = R"""()""";
         } is_available;
         // Symbol: drake::solvers::OsqpSolver::is_enabled
         struct /* is_enabled */ {
-          // Source: drake/solvers/osqp_solver.h:73
+          // Source: drake/solvers/osqp_solver.h
           const char* doc = R"""()""";
         } is_enabled;
       } OsqpSolver;
       // Symbol: drake::solvers::OsqpSolverDetails
       struct /* OsqpSolverDetails */ {
-        // Source: drake/solvers/osqp_solver.h:13
+        // Source: drake/solvers/osqp_solver.h
         const char* doc =
 R"""(The OSQP solver details after calling Solve() function. The user can
 call MathematicalProgramResult::get_solver_details<OsqpSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::OsqpSolverDetails::dual_res
         struct /* dual_res */ {
-          // Source: drake/solvers/osqp_solver.h:22
+          // Source: drake/solvers/osqp_solver.h
           const char* doc = R"""(Norm of dual residue.)""";
         } dual_res;
         // Symbol: drake::solvers::OsqpSolverDetails::iter
         struct /* iter */ {
-          // Source: drake/solvers/osqp_solver.h:15
+          // Source: drake/solvers/osqp_solver.h
           const char* doc = R"""(Number of iterations taken.)""";
         } iter;
         // Symbol: drake::solvers::OsqpSolverDetails::polish_time
         struct /* polish_time */ {
-          // Source: drake/solvers/osqp_solver.h:28
+          // Source: drake/solvers/osqp_solver.h
           const char* doc = R"""(Time taken for polish phase (seconds).)""";
         } polish_time;
         // Symbol: drake::solvers::OsqpSolverDetails::primal_res
         struct /* primal_res */ {
-          // Source: drake/solvers/osqp_solver.h:20
+          // Source: drake/solvers/osqp_solver.h
           const char* doc = R"""(Norm of primal residue.)""";
         } primal_res;
         // Symbol: drake::solvers::OsqpSolverDetails::rho_updates
         struct /* rho_updates */ {
-          // Source: drake/solvers/osqp_solver.h:32
+          // Source: drake/solvers/osqp_solver.h
           const char* doc = R"""(Number of rho updates.)""";
         } rho_updates;
         // Symbol: drake::solvers::OsqpSolverDetails::run_time
         struct /* run_time */ {
-          // Source: drake/solvers/osqp_solver.h:30
+          // Source: drake/solvers/osqp_solver.h
           const char* doc = R"""(Total OSQP time (seconds).)""";
         } run_time;
         // Symbol: drake::solvers::OsqpSolverDetails::setup_time
         struct /* setup_time */ {
-          // Source: drake/solvers/osqp_solver.h:24
+          // Source: drake/solvers/osqp_solver.h
           const char* doc = R"""(Time taken for setup phase (seconds).)""";
         } setup_time;
         // Symbol: drake::solvers::OsqpSolverDetails::solve_time
         struct /* solve_time */ {
-          // Source: drake/solvers/osqp_solver.h:26
+          // Source: drake/solvers/osqp_solver.h
           const char* doc = R"""(Time taken for solve phase (seconds).)""";
         } solve_time;
         // Symbol: drake::solvers::OsqpSolverDetails::status_val
         struct /* status_val */ {
-          // Source: drake/solvers/osqp_solver.h:18
+          // Source: drake/solvers/osqp_solver.h
           const char* doc =
 R"""(Status of the solver at termination. Please refer to
 https://github.com/oxfordcontrol/osqp/blob/master/include/constants.h)""";
         } status_val;
         // Symbol: drake::solvers::OsqpSolverDetails::y
         struct /* y */ {
-          // Source: drake/solvers/osqp_solver.h:37
+          // Source: drake/solvers/osqp_solver.h
           const char* doc =
 R"""(y contains the solution for the Lagrangian multiplier associated with
 l <= Ax <= u. The Lagrangian multiplier is set only when OSQP solves
@@ -8879,7 +8879,7 @@ linear inequality first, and then linear equality constraints.)""";
       } OsqpSolverDetails;
       // Symbol: drake::solvers::PerspectiveQuadraticCost
       struct /* PerspectiveQuadraticCost */ {
-        // Source: drake/solvers/cost.h:488
+        // Source: drake/solvers/cost.h
         const char* doc =
 R"""(If :math:`z = Ax + b,` implements a cost of the form:
 
@@ -8892,27 +8892,27 @@ Costs of this form are sometimes referred to as "quadratic over
 linear".)""";
         // Symbol: drake::solvers::PerspectiveQuadraticCost::A
         struct /* A */ {
-          // Source: drake/solvers/cost.h:503
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } A;
         // Symbol: drake::solvers::PerspectiveQuadraticCost::DoDisplay
         struct /* DoDisplay */ {
-          // Source: drake/solvers/cost.h:536
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoDisplay;
         // Symbol: drake::solvers::PerspectiveQuadraticCost::DoEval
         struct /* DoEval */ {
-          // Source: drake/solvers/cost.h:527
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoEval;
         // Symbol: drake::solvers::PerspectiveQuadraticCost::DoToLatex
         struct /* DoToLatex */ {
-          // Source: drake/solvers/cost.h:539
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoToLatex;
         // Symbol: drake::solvers::PerspectiveQuadraticCost::PerspectiveQuadraticCost
         struct /* ctor */ {
-          // Source: drake/solvers/cost.h:498
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Construct a cost of the form (z_1^2 + z_2^2 + ... + z_{n-1}^2) / z_0
 where z = Ax + b.
@@ -8925,7 +8925,7 @@ Parameter ``b``:
         } ctor;
         // Symbol: drake::solvers::PerspectiveQuadraticCost::UpdateCoefficients
         struct /* UpdateCoefficients */ {
-          // Source: drake/solvers/cost.h:513
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Updates the coefficients of the cost. Note that the number of
 variables (columns of A) cannot change.
@@ -8938,12 +8938,12 @@ Parameter ``new_b``:
         } UpdateCoefficients;
         // Symbol: drake::solvers::PerspectiveQuadraticCost::b
         struct /* b */ {
-          // Source: drake/solvers/cost.h:505
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } b;
         // Symbol: drake::solvers::PerspectiveQuadraticCost::update_A_entry
         struct /* update_A_entry */ {
-          // Source: drake/solvers/cost.h:519
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Updates A(i, j) = val.
 
@@ -8952,7 +8952,7 @@ Raises:
         } update_A_entry;
         // Symbol: drake::solvers::PerspectiveQuadraticCost::update_b_entry
         struct /* update_b_entry */ {
-          // Source: drake/solvers/cost.h:524
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Updates b(i) = val.
 
@@ -8962,7 +8962,7 @@ Raises:
       } PerspectiveQuadraticCost;
       // Symbol: drake::solvers::PolynomialConstraint
       struct /* PolynomialConstraint */ {
-        // Source: drake/solvers/constraint.h:576
+        // Source: drake/solvers/constraint.h
         const char* doc =
 R"""(A constraint on the values of multivariate polynomials.
 
@@ -8987,7 +8987,7 @@ correspond to the members of the MathematicalProgram::Binding (the
 individual scalar elements of the given VariableList).)""";
         // Symbol: drake::solvers::PolynomialConstraint::PolynomialConstraint
         struct /* ctor */ {
-          // Source: drake/solvers/constraint.h:587
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Constructs a polynomial constraint
 
@@ -9005,18 +9005,18 @@ Parameter ``ub``:
         } ctor;
         // Symbol: drake::solvers::PolynomialConstraint::poly_vars
         struct /* poly_vars */ {
-          // Source: drake/solvers/constraint.h:598
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } poly_vars;
         // Symbol: drake::solvers::PolynomialConstraint::polynomials
         struct /* polynomials */ {
-          // Source: drake/solvers/constraint.h:596
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } polynomials;
       } PolynomialConstraint;
       // Symbol: drake::solvers::PolynomialCost
       struct /* PolynomialCost */ {
-        // Source: drake/solvers/cost.h:631
+        // Source: drake/solvers/cost.h
         const char* doc =
 R"""(Implements a cost of the form P(x, y...) where P is a multivariate
 polynomial in x, y, ...
@@ -9027,7 +9027,7 @@ correspond to the members of the Binding<> (the individual scalar
 elements of the given VariableList).)""";
         // Symbol: drake::solvers::PolynomialCost::PolynomialCost
         struct /* ctor */ {
-          // Source: drake/solvers/cost.h:640
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Constructs a polynomial cost
 
@@ -9039,18 +9039,18 @@ Parameter ``poly_vars``:
         } ctor;
         // Symbol: drake::solvers::PolynomialCost::poly_vars
         struct /* poly_vars */ {
-          // Source: drake/solvers/cost.h:647
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } poly_vars;
         // Symbol: drake::solvers::PolynomialCost::polynomials
         struct /* polynomials */ {
-          // Source: drake/solvers/cost.h:645
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } polynomials;
       } PolynomialCost;
       // Symbol: drake::solvers::PolynomialEvaluator
       struct /* PolynomialEvaluator */ {
-        // Source: drake/solvers/evaluator_base.h:254
+        // Source: drake/solvers/evaluator_base.h
         const char* doc =
 R"""(Implements an evaluator of the form P(x, y...) where P is a
 multivariate polynomial in x, y, ...
@@ -9061,7 +9061,7 @@ correspond to the members of the Binding<> (the individual scalar
 elements of the given VariableList).)""";
         // Symbol: drake::solvers::PolynomialEvaluator::PolynomialEvaluator
         struct /* ctor */ {
-          // Source: drake/solvers/evaluator_base.h:264
+          // Source: drake/solvers/evaluator_base.h
           const char* doc =
 R"""(Constructs a polynomial evaluator given a set of polynomials and the
 corresponding variables.
@@ -9074,18 +9074,18 @@ Parameter ``poly_vars``:
         } ctor;
         // Symbol: drake::solvers::PolynomialEvaluator::poly_vars
         struct /* poly_vars */ {
-          // Source: drake/solvers/evaluator_base.h:272
+          // Source: drake/solvers/evaluator_base.h
           const char* doc = R"""()""";
         } poly_vars;
         // Symbol: drake::solvers::PolynomialEvaluator::polynomials
         struct /* polynomials */ {
-          // Source: drake/solvers/evaluator_base.h:270
+          // Source: drake/solvers/evaluator_base.h
           const char* doc = R"""()""";
         } polynomials;
       } PolynomialEvaluator;
       // Symbol: drake::solvers::PositiveSemidefiniteConstraint
       struct /* PositiveSemidefiniteConstraint */ {
-        // Source: drake/solvers/constraint.h:936
+        // Source: drake/solvers/constraint.h
         const char* doc =
 R"""(Implements a positive semidefinite constraint on a symmetric matrix S
 
@@ -9103,7 +9103,7 @@ Note:
     S(0, 1)] in the rotated Lorentz cone.)""";
         // Symbol: drake::solvers::PositiveSemidefiniteConstraint::DoEval
         struct /* DoEval */ {
-          // Source: drake/solvers/constraint.h:1012
+          // Source: drake/solvers/constraint.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Evaluate the eigen values of the symmetric matrix.
 
@@ -9112,12 +9112,12 @@ Parameter ``x``:
         } DoEval;
         // Symbol: drake::solvers::PositiveSemidefiniteConstraint::DoToLatex
         struct /* DoToLatex */ {
-          // Source: drake/solvers/constraint.h:1030
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } DoToLatex;
         // Symbol: drake::solvers::PositiveSemidefiniteConstraint::PositiveSemidefiniteConstraint
         struct /* ctor */ {
-          // Source: drake/solvers/constraint.h:995
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Impose the constraint that a symmetric matrix with size ``rows`` x
 ``rows`` is positive semidefinite.
@@ -9191,108 +9191,108 @@ Example:
         } ctor;
         // Symbol: drake::solvers::PositiveSemidefiniteConstraint::WarnOnSmallMatrixSize
         struct /* WarnOnSmallMatrixSize */ {
-          // Source: drake/solvers/constraint.h:1005
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Throw a warning if the matrix size is either 1x1 or 2x2.)""";
         } WarnOnSmallMatrixSize;
         // Symbol: drake::solvers::PositiveSemidefiniteConstraint::matrix_rows
         struct /* matrix_rows */ {
-          // Source: drake/solvers/constraint.h:999
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } matrix_rows;
       } PositiveSemidefiniteConstraint;
       // Symbol: drake::solvers::ProgramAttribute
       struct /* ProgramAttribute */ {
-        // Source: drake/solvers/program_attribute.h:12
+        // Source: drake/solvers/program_attribute.h
         const char* doc = R"""()""";
         // Symbol: drake::solvers::ProgramAttribute::kBinaryVariable
         struct /* kBinaryVariable */ {
-          // Source: drake/solvers/program_attribute.h:37
+          // Source: drake/solvers/program_attribute.h
           const char* doc = R"""(Variable taking binary value {0, 1}.)""";
         } kBinaryVariable;
         // Symbol: drake::solvers::ProgramAttribute::kCallback
         struct /* kCallback */ {
-          // Source: drake/solvers/program_attribute.h:39
+          // Source: drake/solvers/program_attribute.h
           const char* doc =
 R"""(Supports callback during solving the problem.)""";
         } kCallback;
         // Symbol: drake::solvers::ProgramAttribute::kExponentialConeConstraint
         struct /* kExponentialConeConstraint */ {
-          // Source: drake/solvers/program_attribute.h:33
+          // Source: drake/solvers/program_attribute.h
           const char* doc = R"""(An exponential cone constraint.)""";
         } kExponentialConeConstraint;
         // Symbol: drake::solvers::ProgramAttribute::kGenericConstraint
         struct /* kGenericConstraint */ {
-          // Source: drake/solvers/program_attribute.h:15
+          // Source: drake/solvers/program_attribute.h
           const char* doc =
 R"""(A generic constraint, doesn't belong to any specific)""";
         } kGenericConstraint;
         // Symbol: drake::solvers::ProgramAttribute::kGenericCost
         struct /* kGenericCost */ {
-          // Source: drake/solvers/program_attribute.h:13
+          // Source: drake/solvers/program_attribute.h
           const char* doc =
 R"""(A generic cost, doesn't belong to any specific cost type)""";
         } kGenericCost;
         // Symbol: drake::solvers::ProgramAttribute::kL2NormCost
         struct /* kL2NormCost */ {
-          // Source: drake/solvers/program_attribute.h:35
+          // Source: drake/solvers/program_attribute.h
           const char* doc = R"""(An L2 norm |Ax+b|)""";
         } kL2NormCost;
         // Symbol: drake::solvers::ProgramAttribute::kLinearComplementarityConstraint
         struct /* kLinearComplementarityConstraint */ {
-          // Source: drake/solvers/program_attribute.h:25
+          // Source: drake/solvers/program_attribute.h
           const char* doc = R"""(A linear complementarity constraint in)""";
         } kLinearComplementarityConstraint;
         // Symbol: drake::solvers::ProgramAttribute::kLinearConstraint
         struct /* kLinearConstraint */ {
-          // Source: drake/solvers/program_attribute.h:22
+          // Source: drake/solvers/program_attribute.h
           const char* doc = R"""(A constraint on a linear function.)""";
         } kLinearConstraint;
         // Symbol: drake::solvers::ProgramAttribute::kLinearCost
         struct /* kLinearCost */ {
-          // Source: drake/solvers/program_attribute.h:21
+          // Source: drake/solvers/program_attribute.h
           const char* doc = R"""(A linear function as the cost.)""";
         } kLinearCost;
         // Symbol: drake::solvers::ProgramAttribute::kLinearEqualityConstraint
         struct /* kLinearEqualityConstraint */ {
-          // Source: drake/solvers/program_attribute.h:23
+          // Source: drake/solvers/program_attribute.h
           const char* doc =
 R"""(An equality constraint on a linear function.)""";
         } kLinearEqualityConstraint;
         // Symbol: drake::solvers::ProgramAttribute::kLorentzConeConstraint
         struct /* kLorentzConeConstraint */ {
-          // Source: drake/solvers/program_attribute.h:28
+          // Source: drake/solvers/program_attribute.h
           const char* doc = R"""(A Lorentz cone constraint.)""";
         } kLorentzConeConstraint;
         // Symbol: drake::solvers::ProgramAttribute::kPositiveSemidefiniteConstraint
         struct /* kPositiveSemidefiniteConstraint */ {
-          // Source: drake/solvers/program_attribute.h:31
+          // Source: drake/solvers/program_attribute.h
           const char* doc = R"""(A positive semidefinite constraint.)""";
         } kPositiveSemidefiniteConstraint;
         // Symbol: drake::solvers::ProgramAttribute::kQuadraticConstraint
         struct /* kQuadraticConstraint */ {
-          // Source: drake/solvers/program_attribute.h:19
+          // Source: drake/solvers/program_attribute.h
           const char* doc = R"""(A constraint on a quadratic function.)""";
         } kQuadraticConstraint;
         // Symbol: drake::solvers::ProgramAttribute::kQuadraticCost
         struct /* kQuadraticCost */ {
-          // Source: drake/solvers/program_attribute.h:18
+          // Source: drake/solvers/program_attribute.h
           const char* doc = R"""(A quadratic function as the cost.)""";
         } kQuadraticCost;
         // Symbol: drake::solvers::ProgramAttribute::kRotatedLorentzConeConstraint
         struct /* kRotatedLorentzConeConstraint */ {
-          // Source: drake/solvers/program_attribute.h:29
+          // Source: drake/solvers/program_attribute.h
           const char* doc = R"""(A rotated Lorentz cone constraint.)""";
         } kRotatedLorentzConeConstraint;
       } ProgramAttribute;
       // Symbol: drake::solvers::ProgramAttributes
       struct /* ProgramAttributes */ {
-        // Source: drake/solvers/program_attribute.h:42
+        // Source: drake/solvers/program_attribute.h
         const char* doc = R"""()""";
       } ProgramAttributes;
       // Symbol: drake::solvers::ProgramType
       struct /* ProgramType */ {
-        // Source: drake/solvers/program_attribute.h:66
+        // Source: drake/solvers/program_attribute.h
         const char* doc =
 R"""(A coarse categorization of the optimization problem based on the type
 of constraints/costs/variables. Notice that Drake chooses the solver
@@ -9300,7 +9300,7 @@ based on a finer category; for example we have a specific solver for
 equality-constrained convex QP.)""";
         // Symbol: drake::solvers::ProgramType::kCGP
         struct /* kCGP */ {
-          // Source: drake/solvers/program_attribute.h:76
+          // Source: drake/solvers/program_attribute.h
           const char* doc =
 R"""(Conic Geometric Programming, this is a superset that unifies GP and
 SDP. Refer to http://people.lids.mit.edu/pari/cgp_preprint.pdf for
@@ -9308,95 +9308,95 @@ more details.)""";
         } kCGP;
         // Symbol: drake::solvers::ProgramType::kGP
         struct /* kGP */ {
-          // Source: drake/solvers/program_attribute.h:74
+          // Source: drake/solvers/program_attribute.h
           const char* doc =
 R"""(Geometric Programming, with a linear cost and exponential cone
 constraints.)""";
         } kGP;
         // Symbol: drake::solvers::ProgramType::kLCP
         struct /* kLCP */ {
-          // Source: drake/solvers/program_attribute.h:92
+          // Source: drake/solvers/program_attribute.h
           const char* doc =
 R"""(Linear Complementarity Programs. Programs with linear complementary
 constraints and no cost.)""";
         } kLCP;
         // Symbol: drake::solvers::ProgramType::kLP
         struct /* kLP */ {
-          // Source: drake/solvers/program_attribute.h:67
+          // Source: drake/solvers/program_attribute.h
           const char* doc =
 R"""(Linear Programming, with a linear cost and linear constraints.)""";
         } kLP;
         // Symbol: drake::solvers::ProgramType::kMILP
         struct /* kMILP */ {
-          // Source: drake/solvers/program_attribute.h:80
+          // Source: drake/solvers/program_attribute.h
           const char* doc =
 R"""(Mixed-integer Linear Programming. LP with some variables taking binary
 values.)""";
         } kMILP;
         // Symbol: drake::solvers::ProgramType::kMIQP
         struct /* kMIQP */ {
-          // Source: drake/solvers/program_attribute.h:82
+          // Source: drake/solvers/program_attribute.h
           const char* doc =
 R"""(Mixed-integer Quadratic Programming. QP with some variables taking
 binary values.)""";
         } kMIQP;
         // Symbol: drake::solvers::ProgramType::kMISDP
         struct /* kMISDP */ {
-          // Source: drake/solvers/program_attribute.h:86
+          // Source: drake/solvers/program_attribute.h
           const char* doc =
 R"""(Mixed-integer Semidefinite Programming. SDP with some variables taking
 binary values.)""";
         } kMISDP;
         // Symbol: drake::solvers::ProgramType::kMISOCP
         struct /* kMISOCP */ {
-          // Source: drake/solvers/program_attribute.h:84
+          // Source: drake/solvers/program_attribute.h
           const char* doc =
 R"""(Mixed-integer Second-order Cone Programming. SOCP with some variables
 taking binary values.)""";
         } kMISOCP;
         // Symbol: drake::solvers::ProgramType::kNLP
         struct /* kNLP */ {
-          // Source: drake/solvers/program_attribute.h:90
+          // Source: drake/solvers/program_attribute.h
           const char* doc =
 R"""(nonlinear programming. Programs with generic costs or constraints.)""";
         } kNLP;
         // Symbol: drake::solvers::ProgramType::kQP
         struct /* kQP */ {
-          // Source: drake/solvers/program_attribute.h:68
+          // Source: drake/solvers/program_attribute.h
           const char* doc =
 R"""(Quadratic Programming, with a convex quadratic cost and linear
 constraints.)""";
         } kQP;
         // Symbol: drake::solvers::ProgramType::kQuadraticCostConicConstraint
         struct /* kQuadraticCostConicConstraint */ {
-          // Source: drake/solvers/program_attribute.h:88
+          // Source: drake/solvers/program_attribute.h
           const char* doc =
 R"""(convex quadratic cost with nonlinear conic constraints.)""";
         } kQuadraticCostConicConstraint;
         // Symbol: drake::solvers::ProgramType::kSDP
         struct /* kSDP */ {
-          // Source: drake/solvers/program_attribute.h:72
+          // Source: drake/solvers/program_attribute.h
           const char* doc =
 R"""(Semidefinite Programming, with a linear cost and positive semidefinite
 matrix constraints.)""";
         } kSDP;
         // Symbol: drake::solvers::ProgramType::kSOCP
         struct /* kSOCP */ {
-          // Source: drake/solvers/program_attribute.h:70
+          // Source: drake/solvers/program_attribute.h
           const char* doc =
 R"""(Second-order Cone Programming, with a linear cost and second-order
 cone constraints.)""";
         } kSOCP;
         // Symbol: drake::solvers::ProgramType::kUnknown
         struct /* kUnknown */ {
-          // Source: drake/solvers/program_attribute.h:94
+          // Source: drake/solvers/program_attribute.h
           const char* doc =
 R"""(Does not fall into any of the types above.)""";
         } kUnknown;
       } ProgramType;
       // Symbol: drake::solvers::ProjectedGradientDescentSolver
       struct /* ProjectedGradientDescentSolver */ {
-        // Source: drake/solvers/projected_gradient_descent_solver.h:32
+        // Source: drake/solvers/projected_gradient_descent_solver.h
         const char* doc =
 R"""(Solves a nonlinear program via the projected gradient descent
 algorithm. The gradient is determined by differentiation of the costs,
@@ -9419,7 +9419,7 @@ Warning:
     time.)""";
         // Symbol: drake::solvers::ProjectedGradientDescentSolver::BacktrackingAlpha0OptionName
         struct /* BacktrackingAlpha0OptionName */ {
-          // Source: drake/solvers/projected_gradient_descent_solver.h:95
+          // Source: drake/solvers/projected_gradient_descent_solver.h
           const char* doc =
 R"""(Returns:
     string key for SolverOptions to set the value of alpha_0 to use
@@ -9427,7 +9427,7 @@ R"""(Returns:
         } BacktrackingAlpha0OptionName;
         // Symbol: drake::solvers::ProjectedGradientDescentSolver::BacktrackingCOptionName
         struct /* BacktrackingCOptionName */ {
-          // Source: drake/solvers/projected_gradient_descent_solver.h:83
+          // Source: drake/solvers/projected_gradient_descent_solver.h
           const char* doc =
 R"""(Returns:
     string key for SolverOptions to set the value of c to use for the
@@ -9435,7 +9435,7 @@ R"""(Returns:
         } BacktrackingCOptionName;
         // Symbol: drake::solvers::ProjectedGradientDescentSolver::BacktrackingTauOptionName
         struct /* BacktrackingTauOptionName */ {
-          // Source: drake/solvers/projected_gradient_descent_solver.h:89
+          // Source: drake/solvers/projected_gradient_descent_solver.h
           const char* doc =
 R"""(Returns:
     string key for SolverOptions to set the value of tau to use for
@@ -9443,7 +9443,7 @@ R"""(Returns:
         } BacktrackingTauOptionName;
         // Symbol: drake::solvers::ProjectedGradientDescentSolver::ConvergenceTolOptionName
         struct /* ConvergenceTolOptionName */ {
-          // Source: drake/solvers/projected_gradient_descent_solver.h:71
+          // Source: drake/solvers/projected_gradient_descent_solver.h
           const char* doc =
 R"""(Returns:
     string key for SolverOptions to set the threshold used to
@@ -9451,7 +9451,7 @@ R"""(Returns:
         } ConvergenceTolOptionName;
         // Symbol: drake::solvers::ProjectedGradientDescentSolver::MaxIterationsOptionName
         struct /* MaxIterationsOptionName */ {
-          // Source: drake/solvers/projected_gradient_descent_solver.h:77
+          // Source: drake/solvers/projected_gradient_descent_solver.h
           const char* doc =
 R"""(Returns:
     string key for SolverOptions to set the maximum number of
@@ -9459,17 +9459,17 @@ R"""(Returns:
         } MaxIterationsOptionName;
         // Symbol: drake::solvers::ProjectedGradientDescentSolver::ProgramAttributesSatisfied
         struct /* ProgramAttributesSatisfied */ {
-          // Source: drake/solvers/projected_gradient_descent_solver.h:102
+          // Source: drake/solvers/projected_gradient_descent_solver.h
           const char* doc = R"""()""";
         } ProgramAttributesSatisfied;
         // Symbol: drake::solvers::ProjectedGradientDescentSolver::ProjectedGradientDescentSolver
         struct /* ctor */ {
-          // Source: drake/solvers/projected_gradient_descent_solver.h:34
+          // Source: drake/solvers/projected_gradient_descent_solver.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::ProjectedGradientDescentSolver::SetCustomGradientFunction
         struct /* SetCustomGradientFunction */ {
-          // Source: drake/solvers/projected_gradient_descent_solver.h:42
+          // Source: drake/solvers/projected_gradient_descent_solver.h
           const char* doc =
 R"""(Specify a custom gradient function. Otherwise, this solver will
 differentiate through the costs in the MathematicalProgram it's used
@@ -9477,7 +9477,7 @@ to solve.)""";
         } SetCustomGradientFunction;
         // Symbol: drake::solvers::ProjectedGradientDescentSolver::SetCustomProjectionFunction
         struct /* SetCustomProjectionFunction */ {
-          // Source: drake/solvers/projected_gradient_descent_solver.h:54
+          // Source: drake/solvers/projected_gradient_descent_solver.h
           const char* doc =
 R"""(Specify a custom projection function. Otherwise, this solver will
 attempt to solve the L2 projection onto the feasible set of the
@@ -9488,7 +9488,7 @@ output argument where the projected value will be placed.)""";
         } SetCustomProjectionFunction;
         // Symbol: drake::solvers::ProjectedGradientDescentSolver::SetProjectionSolverInterface
         struct /* SetProjectionSolverInterface */ {
-          // Source: drake/solvers/projected_gradient_descent_solver.h:62
+          // Source: drake/solvers/projected_gradient_descent_solver.h
           const char* doc =
 R"""(Specify a solver interface to be used when solving the L2 projection
 onto the feasible set of the MathematicalProgram it's being used to
@@ -9496,23 +9496,23 @@ solve.)""";
         } SetProjectionSolverInterface;
         // Symbol: drake::solvers::ProjectedGradientDescentSolver::id
         struct /* id */ {
-          // Source: drake/solvers/projected_gradient_descent_solver.h:99
+          // Source: drake/solvers/projected_gradient_descent_solver.h
           const char* doc = R"""()""";
         } id;
         // Symbol: drake::solvers::ProjectedGradientDescentSolver::is_available
         struct /* is_available */ {
-          // Source: drake/solvers/projected_gradient_descent_solver.h:100
+          // Source: drake/solvers/projected_gradient_descent_solver.h
           const char* doc = R"""()""";
         } is_available;
         // Symbol: drake::solvers::ProjectedGradientDescentSolver::is_enabled
         struct /* is_enabled */ {
-          // Source: drake/solvers/projected_gradient_descent_solver.h:101
+          // Source: drake/solvers/projected_gradient_descent_solver.h
           const char* doc = R"""()""";
         } is_enabled;
       } ProjectedGradientDescentSolver;
       // Symbol: drake::solvers::QuadraticConstraint
       struct /* QuadraticConstraint */ {
-        // Source: drake/solvers/constraint.h:198
+        // Source: drake/solvers/constraint.h
         const char* doc =
 R"""(lb ≤ .5 xᵀQx + bᵀx ≤ ub Without loss of generality, the class stores a
 symmetric matrix Q. For a non-symmetric matrix Q₀, we can define Q =
@@ -9522,40 +9522,40 @@ Hence we can always convert a non-symmetric matrix Q₀ to a symmetric
 matrix Q.)""";
         // Symbol: drake::solvers::QuadraticConstraint::HessianType
         struct /* HessianType */ {
-          // Source: drake/solvers/constraint.h:208
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Whether the Hessian matrix is positive semidefinite, negative
 semidefinite, indefinite or a zero-matrix.)""";
           // Symbol: drake::solvers::QuadraticConstraint::HessianType::kIndefinite
           struct /* kIndefinite */ {
-            // Source: drake/solvers/constraint.h:211
+            // Source: drake/solvers/constraint.h
             const char* doc = R"""()""";
           } kIndefinite;
           // Symbol: drake::solvers::QuadraticConstraint::HessianType::kNegativeSemidefinite
           struct /* kNegativeSemidefinite */ {
-            // Source: drake/solvers/constraint.h:210
+            // Source: drake/solvers/constraint.h
             const char* doc = R"""()""";
           } kNegativeSemidefinite;
           // Symbol: drake::solvers::QuadraticConstraint::HessianType::kPositiveSemidefinite
           struct /* kPositiveSemidefinite */ {
-            // Source: drake/solvers/constraint.h:209
+            // Source: drake/solvers/constraint.h
             const char* doc = R"""()""";
           } kPositiveSemidefinite;
           // Symbol: drake::solvers::QuadraticConstraint::HessianType::kZero
           struct /* kZero */ {
-            // Source: drake/solvers/constraint.h:212
+            // Source: drake/solvers/constraint.h
             const char* doc = R"""()""";
           } kZero;
         } HessianType;
         // Symbol: drake::solvers::QuadraticConstraint::Q
         struct /* Q */ {
-          // Source: drake/solvers/constraint.h:251
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(The symmetric matrix Q, being the Hessian of this constraint.)""";
         } Q;
         // Symbol: drake::solvers::QuadraticConstraint::QuadraticConstraint
         struct /* ctor */ {
-          // Source: drake/solvers/constraint.h:233
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Construct a quadratic constraint.
 
@@ -9592,7 +9592,7 @@ Raises:
         } ctor;
         // Symbol: drake::solvers::QuadraticConstraint::UpdateCoefficients
         struct /* UpdateCoefficients */ {
-          // Source: drake/solvers/constraint.h:272
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Updates the quadratic and linear term of the constraint. The new
 matrices need to have the same dimension as before.
@@ -9612,24 +9612,24 @@ Parameter ``hessian_type``:
         } UpdateCoefficients;
         // Symbol: drake::solvers::QuadraticConstraint::b
         struct /* b */ {
-          // Source: drake/solvers/constraint.h:253
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } b;
         // Symbol: drake::solvers::QuadraticConstraint::hessian_type
         struct /* hessian_type */ {
-          // Source: drake/solvers/constraint.h:255
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } hessian_type;
         // Symbol: drake::solvers::QuadraticConstraint::is_convex
         struct /* is_convex */ {
-          // Source: drake/solvers/constraint.h:258
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Returns if this quadratic constraint is convex.)""";
         } is_convex;
       } QuadraticConstraint;
       // Symbol: drake::solvers::QuadraticCost
       struct /* QuadraticCost */ {
-        // Source: drake/solvers/cost.h:121
+        // Source: drake/solvers/cost.h
         const char* doc =
 R"""(Implements a cost of the form
 
@@ -9638,13 +9638,13 @@ R"""(Implements a cost of the form
 .)""";
         // Symbol: drake::solvers::QuadraticCost::Q
         struct /* Q */ {
-          // Source: drake/solvers/cost.h:155
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Returns the symmetric matrix Q, as the Hessian of the cost.)""";
         } Q;
         // Symbol: drake::solvers::QuadraticCost::QuadraticCost
         struct /* ctor */ {
-          // Source: drake/solvers/cost.h:138
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Constructs a cost of the form
 
@@ -9672,7 +9672,7 @@ Parameter ``is_hessian_psd``:
         } ctor;
         // Symbol: drake::solvers::QuadraticCost::UpdateCoefficients
         struct /* UpdateCoefficients */ {
-          // Source: drake/solvers/cost.h:181
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Updates the quadratic and linear term of the constraint. The new
 matrices need to have the same dimension as before.
@@ -9697,7 +9697,7 @@ Parameter ``is_hessian_psd``:
         } UpdateCoefficients;
         // Symbol: drake::solvers::QuadraticCost::UpdateHessianEntry
         struct /* UpdateHessianEntry */ {
-          // Source: drake/solvers/cost.h:216
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Updates both Q(i, j) and Q(j, i) to val
 
@@ -9715,35 +9715,35 @@ Note:
         } UpdateHessianEntry;
         // Symbol: drake::solvers::QuadraticCost::b
         struct /* b */ {
-          // Source: drake/solvers/cost.h:157
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } b;
         // Symbol: drake::solvers::QuadraticCost::c
         struct /* c */ {
-          // Source: drake/solvers/cost.h:159
+          // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } c;
         // Symbol: drake::solvers::QuadraticCost::is_convex
         struct /* is_convex */ {
-          // Source: drake/solvers/cost.h:165
+          // Source: drake/solvers/cost.h
           const char* doc =
 R"""(Returns true if this cost is convex. A quadratic cost if convex if and
 only if its Hessian matrix Q is positive semidefinite.)""";
         } is_convex;
         // Symbol: drake::solvers::QuadraticCost::update_constant_term
         struct /* update_constant_term */ {
-          // Source: drake/solvers/cost.h:227
+          // Source: drake/solvers/cost.h
           const char* doc = R"""(Updates the constant term to ``new_c``.)""";
         } update_constant_term;
         // Symbol: drake::solvers::QuadraticCost::update_linear_coefficient_entry
         struct /* update_linear_coefficient_entry */ {
-          // Source: drake/solvers/cost.h:222
+          // Source: drake/solvers/cost.h
           const char* doc = R"""(Updates b(i)=val.)""";
         } update_linear_coefficient_entry;
       } QuadraticCost;
       // Symbol: drake::solvers::QuadraticallySmoothedHingeLoss
       struct /* QuadraticallySmoothedHingeLoss */ {
-        // Source: drake/solvers/minimum_value_constraint.h:49
+        // Source: drake/solvers/minimum_value_constraint.h
         const char* doc =
 R"""(A linear hinge loss, smoothed with a quadratic loss near the origin.
 The formulation is in equation (6) of [1]. The penalty is <pre
@@ -9755,7 +9755,7 @@ Preference Handling.)""";
       } QuadraticallySmoothedHingeLoss;
       // Symbol: drake::solvers::RemoveFreeVariableMethod
       struct /* RemoveFreeVariableMethod */ {
-        // Source: drake/solvers/sdpa_free_format.h:469
+        // Source: drake/solvers/sdpa_free_format.h
         const char* doc =
 R"""(SDPA format doesn't accept free variables, namely the problem it
 solves is in this form P1
@@ -9791,93 +9791,93 @@ problem P2. 3. Add a slack variable t, with the Lorentz cone
 constraint t ≥ sqrt(sᵀs).)""";
         // Symbol: drake::solvers::RemoveFreeVariableMethod::kLorentzConeSlack
         struct /* kLorentzConeSlack */ {
-          // Source: drake/solvers/sdpa_free_format.h:474
+          // Source: drake/solvers/sdpa_free_format.h
           const char* doc =
 R"""(Approach 3, add a slack variable t with the lorentz cone constraint t
 ≥ sqrt(sᵀs).)""";
         } kLorentzConeSlack;
         // Symbol: drake::solvers::RemoveFreeVariableMethod::kNullspace
         struct /* kNullspace */ {
-          // Source: drake/solvers/sdpa_free_format.h:472
+          // Source: drake/solvers/sdpa_free_format.h
           const char* doc =
 R"""(Approach 2, reformulate the dual problem by considering the nullspace
 of the linear constraint in the dual.)""";
         } kNullspace;
         // Symbol: drake::solvers::RemoveFreeVariableMethod::kTwoSlackVariables
         struct /* kTwoSlackVariables */ {
-          // Source: drake/solvers/sdpa_free_format.h:470
+          // Source: drake/solvers/sdpa_free_format.h
           const char* doc =
 R"""(Approach 1, replace a free variable s as s = y⁺ - y⁻, y⁺ ≥ 0, y⁻ ≥ 0.)""";
         } kTwoSlackVariables;
       } RemoveFreeVariableMethod;
       // Symbol: drake::solvers::RollPitchYawLimitOptions
       struct /* RollPitchYawLimitOptions */ {
-        // Source: drake/solvers/rotation_constraint.h:48
+        // Source: drake/solvers/rotation_constraint.h
         const char* doc = R"""()""";
         // Symbol: drake::solvers::RollPitchYawLimitOptions::kNoLimits
         struct /* kNoLimits */ {
-          // Source: drake/solvers/rotation_constraint.h:49
+          // Source: drake/solvers/rotation_constraint.h
           const char* doc = R"""()""";
         } kNoLimits;
         // Symbol: drake::solvers::RollPitchYawLimitOptions::kPitch_0_to_PI
         struct /* kPitch_0_to_PI */ {
-          // Source: drake/solvers/rotation_constraint.h:54
+          // Source: drake/solvers/rotation_constraint.h
           const char* doc = R"""()""";
         } kPitch_0_to_PI;
         // Symbol: drake::solvers::RollPitchYawLimitOptions::kPitch_0_to_PI_2
         struct /* kPitch_0_to_PI_2 */ {
-          // Source: drake/solvers/rotation_constraint.h:58
+          // Source: drake/solvers/rotation_constraint.h
           const char* doc = R"""()""";
         } kPitch_0_to_PI_2;
         // Symbol: drake::solvers::RollPitchYawLimitOptions::kPitch_NegPI_2_to_PI_2
         struct /* kPitch_NegPI_2_to_PI_2 */ {
-          // Source: drake/solvers/rotation_constraint.h:53
+          // Source: drake/solvers/rotation_constraint.h
           const char* doc = R"""()""";
         } kPitch_NegPI_2_to_PI_2;
         // Symbol: drake::solvers::RollPitchYawLimitOptions::kRPYError
         struct /* kRPYError */ {
-          // Source: drake/solvers/rotation_constraint.h:50
+          // Source: drake/solvers/rotation_constraint.h
           const char* doc = R"""(Do not use, to avoid & vs. && typos.)""";
         } kRPYError;
         // Symbol: drake::solvers::RollPitchYawLimitOptions::kRoll_0_to_PI
         struct /* kRoll_0_to_PI */ {
-          // Source: drake/solvers/rotation_constraint.h:52
+          // Source: drake/solvers/rotation_constraint.h
           const char* doc = R"""()""";
         } kRoll_0_to_PI;
         // Symbol: drake::solvers::RollPitchYawLimitOptions::kRoll_0_to_PI_2
         struct /* kRoll_0_to_PI_2 */ {
-          // Source: drake/solvers/rotation_constraint.h:57
+          // Source: drake/solvers/rotation_constraint.h
           const char* doc = R"""()""";
         } kRoll_0_to_PI_2;
         // Symbol: drake::solvers::RollPitchYawLimitOptions::kRoll_NegPI_2_to_PI_2
         struct /* kRoll_NegPI_2_to_PI_2 */ {
-          // Source: drake/solvers/rotation_constraint.h:51
+          // Source: drake/solvers/rotation_constraint.h
           const char* doc = R"""()""";
         } kRoll_NegPI_2_to_PI_2;
         // Symbol: drake::solvers::RollPitchYawLimitOptions::kYaw_0_to_PI
         struct /* kYaw_0_to_PI */ {
-          // Source: drake/solvers/rotation_constraint.h:56
+          // Source: drake/solvers/rotation_constraint.h
           const char* doc = R"""()""";
         } kYaw_0_to_PI;
         // Symbol: drake::solvers::RollPitchYawLimitOptions::kYaw_0_to_PI_2
         struct /* kYaw_0_to_PI_2 */ {
-          // Source: drake/solvers/rotation_constraint.h:59
+          // Source: drake/solvers/rotation_constraint.h
           const char* doc = R"""()""";
         } kYaw_0_to_PI_2;
         // Symbol: drake::solvers::RollPitchYawLimitOptions::kYaw_NegPI_2_to_PI_2
         struct /* kYaw_NegPI_2_to_PI_2 */ {
-          // Source: drake/solvers/rotation_constraint.h:55
+          // Source: drake/solvers/rotation_constraint.h
           const char* doc = R"""()""";
         } kYaw_NegPI_2_to_PI_2;
       } RollPitchYawLimitOptions;
       // Symbol: drake::solvers::RollPitchYawLimits
       struct /* RollPitchYawLimits */ {
-        // Source: drake/solvers/rotation_constraint.h:61
+        // Source: drake/solvers/rotation_constraint.h
         const char* doc = R"""()""";
       } RollPitchYawLimits;
       // Symbol: drake::solvers::RotatedLorentzConeConstraint
       struct /* RotatedLorentzConeConstraint */ {
-        // Source: drake/solvers/constraint.h:448
+        // Source: drake/solvers/constraint.h
         const char* doc =
 R"""(Constraining that the linear expression :math:`z=Ax+b` lies within
 rotated Lorentz cone. A vector z ∈ ℝ ⁿ lies within rotated Lorentz
@@ -9893,24 +9893,24 @@ For more information and visualization, please refer to
 https://docs.mosek.com/modeling-cookbook/cqo.html (Fig 3.1))""";
         // Symbol: drake::solvers::RotatedLorentzConeConstraint::A
         struct /* A */ {
-          // Source: drake/solvers/constraint.h:459
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""(Getter for A.)""";
         } A;
         // Symbol: drake::solvers::RotatedLorentzConeConstraint::A_dense
         struct /* A_dense */ {
-          // Source: drake/solvers/constraint.h:462
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""(Getter for dense version of A.)""";
         } A_dense;
         // Symbol: drake::solvers::RotatedLorentzConeConstraint::RotatedLorentzConeConstraint
         struct /* ctor */ {
-          // Source: drake/solvers/constraint.h:455
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Raises:
     RuntimeError if A.rows() < 3.)""";
         } ctor;
         // Symbol: drake::solvers::RotatedLorentzConeConstraint::UpdateCoefficients
         struct /* UpdateCoefficients */ {
-          // Source: drake/solvers/constraint.h:476
+          // Source: drake/solvers/constraint.h
           const char* doc =
 R"""(Updates the coefficients, the updated constraint is z=new_A * x +
 new_b in the rotated Lorentz cone.
@@ -9924,72 +9924,72 @@ Precondition:
         } UpdateCoefficients;
         // Symbol: drake::solvers::RotatedLorentzConeConstraint::b
         struct /* b */ {
-          // Source: drake/solvers/constraint.h:465
+          // Source: drake/solvers/constraint.h
           const char* doc = R"""(Getter for b.)""";
         } b;
       } RotatedLorentzConeConstraint;
       // Symbol: drake::solvers::ScsSolver
       struct /* ScsSolver */ {
-        // Source: drake/solvers/scs_solver.h:62
+        // Source: drake/solvers/scs_solver.h
         const char* doc = R"""()""";
         // Symbol: drake::solvers::ScsSolver::Details
         struct /* Details */ {
-          // Source: drake/solvers/scs_solver.h:67
+          // Source: drake/solvers/scs_solver.h
           const char* doc =
 R"""(Type of details stored in MathematicalProgramResult.)""";
         } Details;
         // Symbol: drake::solvers::ScsSolver::ProgramAttributesSatisfied
         struct /* ProgramAttributesSatisfied */ {
-          // Source: drake/solvers/scs_solver.h:80
+          // Source: drake/solvers/scs_solver.h
           const char* doc = R"""()""";
         } ProgramAttributesSatisfied;
         // Symbol: drake::solvers::ScsSolver::ScsSolver
         struct /* ctor */ {
-          // Source: drake/solvers/scs_solver.h:64
+          // Source: drake/solvers/scs_solver.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::ScsSolver::UnsatisfiedProgramAttributes
         struct /* UnsatisfiedProgramAttributes */ {
-          // Source: drake/solvers/scs_solver.h:81
+          // Source: drake/solvers/scs_solver.h
           const char* doc = R"""()""";
         } UnsatisfiedProgramAttributes;
         // Symbol: drake::solvers::ScsSolver::id
         struct /* id */ {
-          // Source: drake/solvers/scs_solver.h:77
+          // Source: drake/solvers/scs_solver.h
           const char* doc = R"""()""";
         } id;
         // Symbol: drake::solvers::ScsSolver::is_available
         struct /* is_available */ {
-          // Source: drake/solvers/scs_solver.h:78
+          // Source: drake/solvers/scs_solver.h
           const char* doc = R"""()""";
         } is_available;
         // Symbol: drake::solvers::ScsSolver::is_enabled
         struct /* is_enabled */ {
-          // Source: drake/solvers/scs_solver.h:79
+          // Source: drake/solvers/scs_solver.h
           const char* doc = R"""()""";
         } is_enabled;
       } ScsSolver;
       // Symbol: drake::solvers::ScsSolverDetails
       struct /* ScsSolverDetails */ {
-        // Source: drake/solvers/scs_solver.h:15
+        // Source: drake/solvers/scs_solver.h
         const char* doc =
 R"""(The SCS solver details after calling Solve() function. The user can
 call MathematicalProgramResult::get_solver_details<ScsSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::ScsSolverDetails::dual_objective
         struct /* dual_objective */ {
-          // Source: drake/solvers/scs_solver.h:32
+          // Source: drake/solvers/scs_solver.h
           const char* doc =
 R"""(Dual objective value at termination. Equal to SCS_INFO.dobj)""";
         } dual_objective;
         // Symbol: drake::solvers::ScsSolverDetails::duality_gap
         struct /* duality_gap */ {
-          // Source: drake/solvers/scs_solver.h:47
+          // Source: drake/solvers/scs_solver.h
           const char* doc = R"""(duality gap. Equal to SCS_INFO.gap.)""";
         } duality_gap;
         // Symbol: drake::solvers::ScsSolverDetails::iter
         struct /* iter */ {
-          // Source: drake/solvers/scs_solver.h:26
+          // Source: drake/solvers/scs_solver.h
           const char* doc =
 R"""(These are the information returned by SCS at termination, please refer
 to "SCS_INFO" struct in
@@ -9998,58 +9998,58 @@ iterations taken at termination. Equal to SCS_INFO.iter)""";
         } iter;
         // Symbol: drake::solvers::ScsSolverDetails::primal_objective
         struct /* primal_objective */ {
-          // Source: drake/solvers/scs_solver.h:29
+          // Source: drake/solvers/scs_solver.h
           const char* doc =
 R"""(Primal objective value at termination. Equal to SCS_INFO.pobj)""";
         } primal_objective;
         // Symbol: drake::solvers::ScsSolverDetails::primal_residue
         struct /* primal_residue */ {
-          // Source: drake/solvers/scs_solver.h:35
+          // Source: drake/solvers/scs_solver.h
           const char* doc =
 R"""(Primal equality residue. Equal to SCS_INFO.res_pri)""";
         } primal_residue;
         // Symbol: drake::solvers::ScsSolverDetails::residue_infeasibility
         struct /* residue_infeasibility */ {
-          // Source: drake/solvers/scs_solver.h:38
+          // Source: drake/solvers/scs_solver.h
           const char* doc =
 R"""(infeasibility certificate residue. Equal to SCS_INFO.res_infeas)""";
         } residue_infeasibility;
         // Symbol: drake::solvers::ScsSolverDetails::residue_unbounded_a
         struct /* residue_unbounded_a */ {
-          // Source: drake/solvers/scs_solver.h:41
+          // Source: drake/solvers/scs_solver.h
           const char* doc =
 R"""(unbounded certificate residue. Equal to SCS_INFO.res_unbdd_a)""";
         } residue_unbounded_a;
         // Symbol: drake::solvers::ScsSolverDetails::residue_unbounded_p
         struct /* residue_unbounded_p */ {
-          // Source: drake/solvers/scs_solver.h:44
+          // Source: drake/solvers/scs_solver.h
           const char* doc =
 R"""(unbounded certificate residue. Equal to SCS_INFO.res_unbdd_p)""";
         } residue_unbounded_p;
         // Symbol: drake::solvers::ScsSolverDetails::s
         struct /* s */ {
-          // Source: drake/solvers/scs_solver.h:59
+          // Source: drake/solvers/scs_solver.h
           const char* doc =
 R"""(The primal equality constraint slack, namely Ax + s = b where x is the
 primal variable.)""";
         } s;
         // Symbol: drake::solvers::ScsSolverDetails::scs_setup_time
         struct /* scs_setup_time */ {
-          // Source: drake/solvers/scs_solver.h:50
+          // Source: drake/solvers/scs_solver.h
           const char* doc =
 R"""(Time taken for SCS to setup in milliseconds. Equal to
 SCS_INFO.setup_time.)""";
         } scs_setup_time;
         // Symbol: drake::solvers::ScsSolverDetails::scs_solve_time
         struct /* scs_solve_time */ {
-          // Source: drake/solvers/scs_solver.h:53
+          // Source: drake/solvers/scs_solver.h
           const char* doc =
 R"""(Time taken for SCS to solve in millisecond. Equal to
 SCS_INFO.solve_time.)""";
         } scs_solve_time;
         // Symbol: drake::solvers::ScsSolverDetails::scs_status
         struct /* scs_status */ {
-          // Source: drake/solvers/scs_solver.h:20
+          // Source: drake/solvers/scs_solver.h
           const char* doc =
 R"""(The status of the solver at termination. Please refer to
 https://github.com/cvxgrp/scs/blob/master/include/glbopts.h Note that
@@ -10058,14 +10058,14 @@ the version used in Drake.)""";
         } scs_status;
         // Symbol: drake::solvers::ScsSolverDetails::y
         struct /* y */ {
-          // Source: drake/solvers/scs_solver.h:56
+          // Source: drake/solvers/scs_solver.h
           const char* doc =
 R"""(The dual variable values at termination.)""";
         } y;
       } ScsSolverDetails;
       // Symbol: drake::solvers::SemidefiniteRelaxationOptions
       struct /* SemidefiniteRelaxationOptions */ {
-        // Source: drake/solvers/semidefinite_relaxation.h:22
+        // Source: drake/solvers/semidefinite_relaxation.h
         const char* doc =
 R"""(Configuration options for the MakeSemidefiniteRelaxation. Throughout
 these options, we refer to the variables of the original optimization
@@ -10075,7 +10075,7 @@ relaxation as X.
 X has the structure X = [Y, y] [yᵀ, one])""";
         // Symbol: drake::solvers::SemidefiniteRelaxationOptions::add_implied_linear_constraints
         struct /* add_implied_linear_constraints */ {
-          // Source: drake/solvers/semidefinite_relaxation.h:31
+          // Source: drake/solvers/semidefinite_relaxation.h
           const char* doc =
 R"""(Given a program with the linear equality constraints Ay = b, sets
 whether to add the implied linear constraints [A, -b]X = 0 to the
@@ -10083,7 +10083,7 @@ semidefinite relaxation.)""";
         } add_implied_linear_constraints;
         // Symbol: drake::solvers::SemidefiniteRelaxationOptions::add_implied_linear_equality_constraints
         struct /* add_implied_linear_equality_constraints */ {
-          // Source: drake/solvers/semidefinite_relaxation.h:26
+          // Source: drake/solvers/semidefinite_relaxation.h
           const char* doc =
 R"""(Given a program with the linear constraints Ay ≤ b, sets whether to
 add the implied linear constraints [A,-b]X[A,-b]ᵀ ≤ 0 to the
@@ -10091,7 +10091,7 @@ semidefinite relaxation.)""";
         } add_implied_linear_equality_constraints;
         // Symbol: drake::solvers::SemidefiniteRelaxationOptions::set_to_strongest
         struct /* set_to_strongest */ {
-          // Source: drake/solvers/semidefinite_relaxation.h:37
+          // Source: drake/solvers/semidefinite_relaxation.h
           const char* doc =
 R"""(Configure the semidefinite relaxation options to provide the strongest
 possible semidefinite relaxation that we currently support. This in
@@ -10100,7 +10100,7 @@ longest solve times.)""";
         } set_to_strongest;
         // Symbol: drake::solvers::SemidefiniteRelaxationOptions::set_to_weakest
         struct /* set_to_weakest */ {
-          // Source: drake/solvers/semidefinite_relaxation.h:48
+          // Source: drake/solvers/semidefinite_relaxation.h
           const char* doc =
 R"""(Configure the semidefinite relaxation options to provide the weakest
 semidefinite relaxation that we currently support. This in general
@@ -10112,7 +10112,7 @@ by Vandenberghe and Boyd).)""";
       } SemidefiniteRelaxationOptions;
       // Symbol: drake::solvers::SnoptSolver
       struct /* SnoptSolver */ {
-        // Source: drake/solvers/snopt_solver.h:59
+        // Source: drake/solvers/snopt_solver.h
         const char* doc =
 R"""(An implementation of SolverInterface for the commercially-licensed
 SNOPT solver (https://ccom.ucsd.edu/~optimizers/solvers/snopt/).
@@ -10133,40 +10133,40 @@ force-disable SNOPT, in which case SolverInterface::enabled() will
 return false.)""";
         // Symbol: drake::solvers::SnoptSolver::Details
         struct /* Details */ {
-          // Source: drake/solvers/snopt_solver.h:64
+          // Source: drake/solvers/snopt_solver.h
           const char* doc =
 R"""(Type of details stored in MathematicalProgramResult.)""";
         } Details;
         // Symbol: drake::solvers::SnoptSolver::ProgramAttributesSatisfied
         struct /* ProgramAttributesSatisfied */ {
-          // Source: drake/solvers/snopt_solver.h:79
+          // Source: drake/solvers/snopt_solver.h
           const char* doc = R"""()""";
         } ProgramAttributesSatisfied;
         // Symbol: drake::solvers::SnoptSolver::SnoptSolver
         struct /* ctor */ {
-          // Source: drake/solvers/snopt_solver.h:61
+          // Source: drake/solvers/snopt_solver.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::SnoptSolver::id
         struct /* id */ {
-          // Source: drake/solvers/snopt_solver.h:74
+          // Source: drake/solvers/snopt_solver.h
           const char* doc = R"""()""";
         } id;
         // Symbol: drake::solvers::SnoptSolver::is_available
         struct /* is_available */ {
-          // Source: drake/solvers/snopt_solver.h:75
+          // Source: drake/solvers/snopt_solver.h
           const char* doc = R"""()""";
         } is_available;
         // Symbol: drake::solvers::SnoptSolver::is_bounded_lp_broken
         struct /* is_bounded_lp_broken */ {
-          // Source: drake/solvers/snopt_solver.h:70
+          // Source: drake/solvers/snopt_solver.h
           const char* doc =
 R"""(For some reason, SNOPT 7.4 fails to detect a simple LP being
 unbounded.)""";
         } is_bounded_lp_broken;
         // Symbol: drake::solvers::SnoptSolver::is_enabled
         struct /* is_enabled */ {
-          // Source: drake/solvers/snopt_solver.h:78
+          // Source: drake/solvers/snopt_solver.h
           const char* doc =
 R"""(Returns true iff the environment variable DRAKE_SNOPT_SOLVER_ENABLED
 is unset or set to anything other than "0".)""";
@@ -10174,27 +10174,27 @@ is unset or set to anything other than "0".)""";
       } SnoptSolver;
       // Symbol: drake::solvers::SnoptSolverDetails
       struct /* SnoptSolverDetails */ {
-        // Source: drake/solvers/snopt_solver.h:16
+        // Source: drake/solvers/snopt_solver.h
         const char* doc =
 R"""(The SNOPT solver details after calling Solve() function. The user can
 call MathematicalProgramResult::get_solver_details<SnoptSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::SnoptSolverDetails::F
         struct /* F */ {
-          // Source: drake/solvers/snopt_solver.h:31
+          // Source: drake/solvers/snopt_solver.h
           const char* doc =
 R"""(The final value of the vector of problem functions F(x).)""";
         } F;
         // Symbol: drake::solvers::SnoptSolverDetails::Fmul
         struct /* Fmul */ {
-          // Source: drake/solvers/snopt_solver.h:35
+          // Source: drake/solvers/snopt_solver.h
           const char* doc =
 R"""(The final value of the dual variables (Lagrange multipliers) for the
 general constraints F_lower <= F(x) <= F_upper.)""";
         } Fmul;
         // Symbol: drake::solvers::SnoptSolverDetails::info
         struct /* info */ {
-          // Source: drake/solvers/snopt_solver.h:23
+          // Source: drake/solvers/snopt_solver.h
           const char* doc =
 R"""(The snopt INFO field. Please refer to section 8.6 in "User's Guide for
 SNOPT Version 7: Software for Large-Scale Nonlinear Programming"
@@ -10203,13 +10203,13 @@ Gill to interpret the INFO field.)""";
         } info;
         // Symbol: drake::solvers::SnoptSolverDetails::solve_time
         struct /* solve_time */ {
-          // Source: drake/solvers/snopt_solver.h:39
+          // Source: drake/solvers/snopt_solver.h
           const char* doc =
 R"""(The duration of the snopt solve in seconds.)""";
         } solve_time;
         // Symbol: drake::solvers::SnoptSolverDetails::xmul
         struct /* xmul */ {
-          // Source: drake/solvers/snopt_solver.h:28
+          // Source: drake/solvers/snopt_solver.h
           const char* doc =
 R"""(The final value of the dual variables for the bound constraint x_lower
 <= x <= x_upper.)""";
@@ -10217,51 +10217,51 @@ R"""(The final value of the dual variables for the bound constraint x_lower
       } SnoptSolverDetails;
       // Symbol: drake::solvers::SolutionResult
       struct /* SolutionResult */ {
-        // Source: drake/solvers/solution_result.h:10
+        // Source: drake/solvers/solution_result.h
         const char* doc = R"""()""";
         // Symbol: drake::solvers::SolutionResult::kDualInfeasible
         struct /* kDualInfeasible */ {
-          // Source: drake/solvers/solution_result.h:29
+          // Source: drake/solvers/solution_result.h
           const char* doc =
 R"""(Dual problem is infeasible. In this case we cannot infer the status of
 the primal problem.)""";
         } kDualInfeasible;
         // Symbol: drake::solvers::SolutionResult::kInfeasibleConstraints
         struct /* kInfeasibleConstraints */ {
-          // Source: drake/solvers/solution_result.h:16
+          // Source: drake/solvers/solution_result.h
           const char* doc = R"""(The primal is infeasible.)""";
         } kInfeasibleConstraints;
         // Symbol: drake::solvers::SolutionResult::kInfeasibleOrUnbounded
         struct /* kInfeasibleOrUnbounded */ {
-          // Source: drake/solvers/solution_result.h:24
+          // Source: drake/solvers/solution_result.h
           const char* doc =
 R"""(The primal is either infeasible or unbounded.)""";
         } kInfeasibleOrUnbounded;
         // Symbol: drake::solvers::SolutionResult::kInvalidInput
         struct /* kInvalidInput */ {
-          // Source: drake/solvers/solution_result.h:14
+          // Source: drake/solvers/solution_result.h
           const char* doc = R"""(Invalid input.)""";
         } kInvalidInput;
         // Symbol: drake::solvers::SolutionResult::kIterationLimit
         struct /* kIterationLimit */ {
-          // Source: drake/solvers/solution_result.h:26
+          // Source: drake/solvers/solution_result.h
           const char* doc = R"""(Reaches the iteration limits.)""";
         } kIterationLimit;
         // Symbol: drake::solvers::SolutionResult::kSolutionFound
         struct /* kSolutionFound */ {
-          // Source: drake/solvers/solution_result.h:12
+          // Source: drake/solvers/solution_result.h
           const char* doc = R"""(Found the optimal solution.)""";
         } kSolutionFound;
         // Symbol: drake::solvers::SolutionResult::kSolutionResultNotSet
         struct /* kSolutionResultNotSet */ {
-          // Source: drake/solvers/solution_result.h:32
+          // Source: drake/solvers/solution_result.h
           const char* doc =
 R"""(The initial (invalid) solution result. This value should be
 overwritten by the solver during Solve().)""";
         } kSolutionResultNotSet;
         // Symbol: drake::solvers::SolutionResult::kSolverSpecificError
         struct /* kSolverSpecificError */ {
-          // Source: drake/solvers/solution_result.h:22
+          // Source: drake/solvers/solution_result.h
           const char* doc =
 R"""(Solver-specific error. (Try
 MathematicalProgramResult::get_solver_details() or enabling verbose
@@ -10269,13 +10269,13 @@ solver output.))""";
         } kSolverSpecificError;
         // Symbol: drake::solvers::SolutionResult::kUnbounded
         struct /* kUnbounded */ {
-          // Source: drake/solvers/solution_result.h:18
+          // Source: drake/solvers/solution_result.h
           const char* doc = R"""(The primal is unbounded.)""";
         } kUnbounded;
       } SolutionResult;
       // Symbol: drake::solvers::Solve
       struct /* Solve */ {
-        // Source: drake/solvers/solve.h:33
+        // Source: drake/solvers/solve.h
         const char* doc_3args =
 R"""(Solves an optimization program, with optional initial guess and solver
 options. This function first chooses the best solver depending on the
@@ -10302,13 +10302,13 @@ Parameter ``solver_options``:
 
 Returns:
     result The result of solving the program through the solver.)""";
-        // Source: drake/solvers/solve.h:41
+        // Source: drake/solvers/solve.h
         const char* doc_2args =
 R"""(Solves an optimization program with a given initial guess.)""";
       } Solve;
       // Symbol: drake::solvers::SolveInParallel
       struct /* SolveInParallel */ {
-        // Source: drake/solvers/solve.h:80
+        // Source: drake/solvers/solve.h
         const char* doc_6args_progs_initial_guesses_solver_options_solver_ids_parallelism_dynamic_schedule =
 R"""(Solves progs[i] into result[i], optionally using initial_guess[i] and
 solver_options[i] if given, by invoking the solver at solver_ids[i] if
@@ -10348,7 +10348,7 @@ Raises:
 
 Raises:
     RuntimeError if any of the programs cannot be solved.)""";
-        // Source: drake/solvers/solve.h:99
+        // Source: drake/solvers/solve.h
         const char* doc_6args_progs_initial_guesses_solver_options_solver_id_parallelism_dynamic_schedule =
 R"""(Provides the same functionality as SolveInParallel, but allows for
 specifying a single solver id and solver option that is used when
@@ -10366,17 +10366,17 @@ Raises:
       } SolveInParallel;
       // Symbol: drake::solvers::SolverBase
       struct /* SolverBase */ {
-        // Source: drake/solvers/solver_base.h:21
+        // Source: drake/solvers/solver_base.h
         const char* doc =
 R"""(Abstract base class used by implementations of individual solvers.)""";
         // Symbol: drake::solvers::SolverBase::AreProgramAttributesSatisfied
         struct /* AreProgramAttributesSatisfied */ {
-          // Source: drake/solvers/solver_base.h:41
+          // Source: drake/solvers/solver_base.h
           const char* doc = R"""()""";
         } AreProgramAttributesSatisfied;
         // Symbol: drake::solvers::SolverBase::DoSolve
         struct /* DoSolve */ {
-          // Source: drake/solvers/solver_base.h:65
+          // Source: drake/solvers/solver_base.h
           const char* doc =
 R"""(Hook for subclasses to implement Solve. Prior to the SolverBase's call
 to this method, the solver's availability and capabilities vs the
@@ -10388,7 +10388,7 @@ initial guess.)""";
         } DoSolve;
         // Symbol: drake::solvers::SolverBase::DoSolve2
         struct /* DoSolve2 */ {
-          // Source: drake/solvers/solver_base.h:79
+          // Source: drake/solvers/solver_base.h
           const char* doc =
 R"""((Internal use only) Like DoSolve() but using SpecificOptions instead
 of SolverOptions. The "2" here means "version 2", to help disabiguate
@@ -10402,19 +10402,19 @@ this function is marked as internal use only.)""";
         } DoSolve2;
         // Symbol: drake::solvers::SolverBase::ExplainUnsatisfiedProgramAttributes
         struct /* ExplainUnsatisfiedProgramAttributes */ {
-          // Source: drake/solvers/solver_base.h:42
+          // Source: drake/solvers/solver_base.h
           const char* doc = R"""()""";
         } ExplainUnsatisfiedProgramAttributes;
         // Symbol: drake::solvers::SolverBase::Solve
         struct /* Solve */ {
-          // Source: drake/solvers/solver_base.h:29
+          // Source: drake/solvers/solver_base.h
           const char* doc =
 R"""(Like SolverInterface::Solve(), but the result is a return value
 instead of an output argument.)""";
         } Solve;
         // Symbol: drake::solvers::SolverBase::SolverBase
         struct /* ctor */ {
-          // Source: drake/solvers/solver_base.h:53
+          // Source: drake/solvers/solver_base.h
           const char* doc =
 R"""(Constructs a SolverBase with the given default implementations of the
 solver_id(), available(), enabled(), AreProgramAttributesSatisfied(),
@@ -10427,23 +10427,23 @@ default implementation.)""";
         } ctor;
         // Symbol: drake::solvers::SolverBase::available
         struct /* available */ {
-          // Source: drake/solvers/solver_base.h:38
+          // Source: drake/solvers/solver_base.h
           const char* doc = R"""()""";
         } available;
         // Symbol: drake::solvers::SolverBase::enabled
         struct /* enabled */ {
-          // Source: drake/solvers/solver_base.h:39
+          // Source: drake/solvers/solver_base.h
           const char* doc = R"""()""";
         } enabled;
         // Symbol: drake::solvers::SolverBase::solver_id
         struct /* solver_id */ {
-          // Source: drake/solvers/solver_base.h:40
+          // Source: drake/solvers/solver_base.h
           const char* doc = R"""()""";
         } solver_id;
       } SolverBase;
       // Symbol: drake::solvers::SolverId
       struct /* SolverId */ {
-        // Source: drake/solvers/solver_id.h:19
+        // Source: drake/solvers/solver_id.h
         const char* doc =
 R"""(Identifies a SolverInterface implementation.
 
@@ -10451,7 +10451,7 @@ A moved-from instance is guaranteed to be empty and will not compare
 equal to any non-empty ID.)""";
         // Symbol: drake::solvers::SolverId::SolverId
         struct /* ctor */ {
-          // Source: drake/solvers/solver_id.h:32
+          // Source: drake/solvers/solver_id.h
           const char* doc =
 R"""(Constructs a specific, known solver type. Internally, a hidden integer
 is allocated and assigned to this instance; all instances that share
@@ -10464,25 +10464,25 @@ that it fits within the libstdc++ "small string" optimization ("SSO").)""";
         } ctor;
         // Symbol: drake::solvers::SolverId::name
         struct /* name */ {
-          // Source: drake/solvers/solver_id.h:34
+          // Source: drake/solvers/solver_id.h
           const char* doc = R"""()""";
         } name;
       } SolverId;
       // Symbol: drake::solvers::SolverInterface
       struct /* SolverInterface */ {
-        // Source: drake/solvers/solver_interface.h:19
+        // Source: drake/solvers/solver_interface.h
         const char* doc =
 R"""(Interface used by implementations of individual solvers.)""";
         // Symbol: drake::solvers::SolverInterface::AreProgramAttributesSatisfied
         struct /* AreProgramAttributesSatisfied */ {
-          // Source: drake/solvers/solver_interface.h:77
+          // Source: drake/solvers/solver_interface.h
           const char* doc =
 R"""(Returns true iff the program's attributes are compatible with this
 solver's capabilities.)""";
         } AreProgramAttributesSatisfied;
         // Symbol: drake::solvers::SolverInterface::ExplainUnsatisfiedProgramAttributes
         struct /* ExplainUnsatisfiedProgramAttributes */ {
-          // Source: drake/solvers/solver_interface.h:83
+          // Source: drake/solvers/solver_interface.h
           const char* doc =
 R"""(Describes the reasons (if any) why the program is incompatible with
 this solver's capabilities. If AreProgramAttributesSatisfied would
@@ -10491,7 +10491,7 @@ string.)""";
         } ExplainUnsatisfiedProgramAttributes;
         // Symbol: drake::solvers::SolverInterface::Solve
         struct /* Solve */ {
-          // Source: drake/solvers/solver_interface.h:67
+          // Source: drake/solvers/solver_interface.h
           const char* doc =
 R"""(Solves an optimization program with optional initial guess and solver
 options. Note that these initial guess and solver options are not
@@ -10503,12 +10503,12 @@ badly formed programs.)""";
         } Solve;
         // Symbol: drake::solvers::SolverInterface::SolverInterface
         struct /* ctor */ {
-          // Source: drake/solvers/solver_interface.h:21
+          // Source: drake/solvers/solver_interface.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::SolverInterface::available
         struct /* available */ {
-          // Source: drake/solvers/solver_interface.h:37
+          // Source: drake/solvers/solver_interface.h
           const char* doc =
 R"""(Returns true iff support for this solver has been compiled into Drake.
 When this method returns false, the Solve method will throw.
@@ -10526,7 +10526,7 @@ overview documentation, e.g., SnoptSolver, MosekSolver, GurobiSolver.)""";
         } available;
         // Symbol: drake::solvers::SolverInterface::enabled
         struct /* enabled */ {
-          // Source: drake/solvers/solver_interface.h:57
+          // Source: drake/solvers/solver_interface.h
           const char* doc =
 R"""(Returns true iff this solver is properly configured for use at
 runtime. When this method returns false, the Solve method will throw.
@@ -10551,13 +10551,13 @@ GurobiSolver.)""";
         } enabled;
         // Symbol: drake::solvers::SolverInterface::solver_id
         struct /* solver_id */ {
-          // Source: drake/solvers/solver_interface.h:73
+          // Source: drake/solvers/solver_interface.h
           const char* doc = R"""(Returns the identifier of this solver.)""";
         } solver_id;
       } SolverInterface;
       // Symbol: drake::solvers::SolverOptions
       struct /* SolverOptions */ {
-        // Source: drake/solvers/solver_options.h:61
+        // Source: drake/solvers/solver_options.h
         const char* doc =
 R"""(Stores options for multiple solvers. This interface does not do any
 verification of solver parameters. It does not even verify that the
@@ -10611,7 +10611,7 @@ boolean options should be passed as integers (0 or 1).
 https://manpages.ubuntu.com/manpages/focal/en/man1/csdp-randgraph.1.html)""";
         // Symbol: drake::solvers::SolverOptions::Merge
         struct /* Merge */ {
-          // Source: drake/solvers/solver_options.h:82
+          // Source: drake/solvers/solver_options.h
           const char* doc =
 R"""(Merges the other solver options into this. If ``other`` and ``this``
 option both define the same option for the same solver, we ignore the
@@ -10619,7 +10619,7 @@ one from ``other`` and keep the one from ``this``.)""";
         } Merge;
         // Symbol: drake::solvers::SolverOptions::OptionValue
         struct /* OptionValue */ {
-          // Source: drake/solvers/solver_options.h:67
+          // Source: drake/solvers/solver_options.h
           const char* doc =
 R"""(The values stored in SolverOptions can be double, int, or string. In
 the future, we might re-order or add more allowed types without any
@@ -10628,19 +10628,19 @@ retrieve the variant's value in a future-proof way.)""";
         } OptionValue;
         // Symbol: drake::solvers::SolverOptions::Serialize
         struct /* Serialize */ {
-          // Source: drake/solvers/solver_options.h:91
+          // Source: drake/solvers/solver_options.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::solvers::SolverOptions::SetOption
         struct /* SetOption */ {
-          // Source: drake/solvers/solver_options.h:72
+          // Source: drake/solvers/solver_options.h
           const char* doc_3args =
 R"""(Sets a solver option for a specific solver. If the solver doesn't
 support the option, it will throw an exception during the Solve (not
 when setting the option here).)""";
-          // Source: drake/solvers/solver_options.h:77
+          // Source: drake/solvers/solver_options.h
           const char* doc_2args =
 R"""(Sets a common option for all solvers supporting that option (for
 example, printing the progress in each iteration). If the solver
@@ -10648,12 +10648,12 @@ doesn't support the option, the option is ignored.)""";
         } SetOption;
         // Symbol: drake::solvers::SolverOptions::operator!=
         struct /* operator_ne */ {
-          // Source: drake/solvers/solver_options.h:85
+          // Source: drake/solvers/solver_options.h
           const char* doc = R"""()""";
         } operator_ne;
         // Symbol: drake::solvers::SolverOptions::options
         struct /* options */ {
-          // Source: drake/solvers/solver_options.h:97
+          // Source: drake/solvers/solver_options.h
           const char* doc =
 R"""(The options are indexed first by the solver name and second by the
 key. In the case of Drake's common options, the solver name is
@@ -10661,7 +10661,7 @@ key. In the case of Drake's common options, the solver name is
         } options;
         // Symbol: drake::solvers::SolverOptions::to_string
         struct /* to_string */ {
-          // Source: drake/solvers/solver_options.h:86
+          // Source: drake/solvers/solver_options.h
           const char* doc = R"""()""";
         } to_string;
         auto Serialize__fields() const {
@@ -10672,104 +10672,104 @@ key. In the case of Drake's common options, the solver name is
       } SolverOptions;
       // Symbol: drake::solvers::SolverType
       struct /* SolverType */ {
-        // Source: drake/solvers/solver_type.h:8
+        // Source: drake/solvers/solver_type.h
         const char* doc =
 R"""(This type only exists for backwards compatibility, and should not be
 used in new code.)""";
         // Symbol: drake::solvers::SolverType::kClp
         struct /* kClp */ {
-          // Source: drake/solvers/solver_type.h:9
+          // Source: drake/solvers/solver_type.h
           const char* doc = R"""()""";
         } kClp;
         // Symbol: drake::solvers::SolverType::kCsdp
         struct /* kCsdp */ {
-          // Source: drake/solvers/solver_type.h:10
+          // Source: drake/solvers/solver_type.h
           const char* doc = R"""()""";
         } kCsdp;
         // Symbol: drake::solvers::SolverType::kEqualityConstrainedQP
         struct /* kEqualityConstrainedQP */ {
-          // Source: drake/solvers/solver_type.h:11
+          // Source: drake/solvers/solver_type.h
           const char* doc = R"""()""";
         } kEqualityConstrainedQP;
         // Symbol: drake::solvers::SolverType::kGurobi
         struct /* kGurobi */ {
-          // Source: drake/solvers/solver_type.h:12
+          // Source: drake/solvers/solver_type.h
           const char* doc = R"""()""";
         } kGurobi;
         // Symbol: drake::solvers::SolverType::kIpopt
         struct /* kIpopt */ {
-          // Source: drake/solvers/solver_type.h:13
+          // Source: drake/solvers/solver_type.h
           const char* doc = R"""()""";
         } kIpopt;
         // Symbol: drake::solvers::SolverType::kLinearSystem
         struct /* kLinearSystem */ {
-          // Source: drake/solvers/solver_type.h:14
+          // Source: drake/solvers/solver_type.h
           const char* doc = R"""()""";
         } kLinearSystem;
         // Symbol: drake::solvers::SolverType::kMobyLCP
         struct /* kMobyLCP */ {
-          // Source: drake/solvers/solver_type.h:15
+          // Source: drake/solvers/solver_type.h
           const char* doc = R"""()""";
         } kMobyLCP;
         // Symbol: drake::solvers::SolverType::kMosek
         struct /* kMosek */ {
-          // Source: drake/solvers/solver_type.h:16
+          // Source: drake/solvers/solver_type.h
           const char* doc = R"""()""";
         } kMosek;
         // Symbol: drake::solvers::SolverType::kNlopt
         struct /* kNlopt */ {
-          // Source: drake/solvers/solver_type.h:17
+          // Source: drake/solvers/solver_type.h
           const char* doc = R"""()""";
         } kNlopt;
         // Symbol: drake::solvers::SolverType::kOsqp
         struct /* kOsqp */ {
-          // Source: drake/solvers/solver_type.h:18
+          // Source: drake/solvers/solver_type.h
           const char* doc = R"""()""";
         } kOsqp;
         // Symbol: drake::solvers::SolverType::kScs
         struct /* kScs */ {
-          // Source: drake/solvers/solver_type.h:20
+          // Source: drake/solvers/solver_type.h
           const char* doc = R"""()""";
         } kScs;
         // Symbol: drake::solvers::SolverType::kSnopt
         struct /* kSnopt */ {
-          // Source: drake/solvers/solver_type.h:19
+          // Source: drake/solvers/solver_type.h
           const char* doc = R"""()""";
         } kSnopt;
         // Symbol: drake::solvers::SolverType::kUnrevisedLemke
         struct /* kUnrevisedLemke */ {
-          // Source: drake/solvers/solver_type.h:21
+          // Source: drake/solvers/solver_type.h
           const char* doc = R"""()""";
         } kUnrevisedLemke;
       } SolverType;
       // Symbol: drake::solvers::SolverTypeConverter
       struct /* SolverTypeConverter */ {
-        // Source: drake/solvers/solver_type_converter.h:14
+        // Source: drake/solvers/solver_type_converter.h
         const char* doc =
 R"""(Converts between SolverType and SolverId. This class only exists for
 backwards compatibility, and should not be used in new code.)""";
         // Symbol: drake::solvers::SolverTypeConverter::IdToType
         struct /* IdToType */ {
-          // Source: drake/solvers/solver_type_converter.h:25
+          // Source: drake/solvers/solver_type_converter.h
           const char* doc =
 R"""(Converts the given ID to its matching type, iff the type matches one
 of SolverType's known values.)""";
         } IdToType;
         // Symbol: drake::solvers::SolverTypeConverter::SolverTypeConverter
         struct /* ctor */ {
-          // Source: drake/solvers/solver_type_converter.h:16
+          // Source: drake/solvers/solver_type_converter.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::SolverTypeConverter::TypeToId
         struct /* TypeToId */ {
-          // Source: drake/solvers/solver_type_converter.h:21
+          // Source: drake/solvers/solver_type_converter.h
           const char* doc =
 R"""(Converts the given type to its matching ID.)""";
         } TypeToId;
       } SolverTypeConverter;
       // Symbol: drake::solvers::UnrevisedLemkeSolver
       struct /* UnrevisedLemkeSolver */ {
-        // Source: drake/solvers/unrevised_lemke_solver.h:37
+        // Source: drake/solvers/unrevised_lemke_solver.h
         const char* doc =
 R"""(A class for the Unrevised Implementation of Lemke Algorithm's for
 solving Linear Complementarity Problems (LCPs). See MobyLcpSolver for
@@ -10780,14 +10780,14 @@ Problems with Lemke's Algorithm. (2018, located in
 doc/pivot_column.pdf).)""";
         // Symbol: drake::solvers::UnrevisedLemkeSolver::ComputeZeroTolerance
         struct /* ComputeZeroTolerance */ {
-          // Source: drake/solvers/unrevised_lemke_solver.h:47
+          // Source: drake/solvers/unrevised_lemke_solver.h
           const char* doc =
 R"""(Calculates the zero tolerance that the solver would compute if the
 user does not specify a tolerance.)""";
         } ComputeZeroTolerance;
         // Symbol: drake::solvers::UnrevisedLemkeSolver::IsSolution
         struct /* IsSolution */ {
-          // Source: drake/solvers/unrevised_lemke_solver.h:55
+          // Source: drake/solvers/unrevised_lemke_solver.h
           const char* doc =
 R"""(Checks whether a given candidate solution to the LCP Mz + q = w, z ≥
 0, w ≥ 0, zᵀw = 0 is satisfied to a given tolerance. If the tolerance
@@ -10795,12 +10795,12 @@ is non-positive, this method computes a reasonable tolerance using M.)""";
         } IsSolution;
         // Symbol: drake::solvers::UnrevisedLemkeSolver::ProgramAttributesSatisfied
         struct /* ProgramAttributesSatisfied */ {
-          // Source: drake/solvers/unrevised_lemke_solver.h:95
+          // Source: drake/solvers/unrevised_lemke_solver.h
           const char* doc = R"""()""";
         } ProgramAttributesSatisfied;
         // Symbol: drake::solvers::UnrevisedLemkeSolver::SolveLcpLemke
         struct /* SolveLcpLemke */ {
-          // Source: drake/solvers/unrevised_lemke_solver.h:87
+          // Source: drake/solvers/unrevised_lemke_solver.h
           const char* doc =
 R"""(Lemke's Algorithm for solving LCPs in the matrix class E, which
 contains all strictly semimonotone matrices, all P-matrices, and all
@@ -10847,38 +10847,38 @@ Raises:
         } SolveLcpLemke;
         // Symbol: drake::solvers::UnrevisedLemkeSolver::UnrevisedLemkeSolver<T>
         struct /* ctor */ {
-          // Source: drake/solvers/unrevised_lemke_solver.h:39
+          // Source: drake/solvers/unrevised_lemke_solver.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::UnrevisedLemkeSolver::id
         struct /* id */ {
-          // Source: drake/solvers/unrevised_lemke_solver.h:92
+          // Source: drake/solvers/unrevised_lemke_solver.h
           const char* doc = R"""()""";
         } id;
         // Symbol: drake::solvers::UnrevisedLemkeSolver::is_available
         struct /* is_available */ {
-          // Source: drake/solvers/unrevised_lemke_solver.h:93
+          // Source: drake/solvers/unrevised_lemke_solver.h
           const char* doc = R"""()""";
         } is_available;
         // Symbol: drake::solvers::UnrevisedLemkeSolver::is_enabled
         struct /* is_enabled */ {
-          // Source: drake/solvers/unrevised_lemke_solver.h:94
+          // Source: drake/solvers/unrevised_lemke_solver.h
           const char* doc = R"""()""";
         } is_enabled;
       } UnrevisedLemkeSolver;
       // Symbol: drake::solvers::UnrevisedLemkeSolverId
       struct /* UnrevisedLemkeSolverId */ {
-        // Source: drake/solvers/unrevised_lemke_solver.h:21
+        // Source: drake/solvers/unrevised_lemke_solver.h
         const char* doc =
 R"""(Non-template class for UnrevisedLemkeSolver<T> constants.)""";
         // Symbol: drake::solvers::UnrevisedLemkeSolverId::UnrevisedLemkeSolverId
         struct /* ctor */ {
-          // Source: drake/solvers/unrevised_lemke_solver.h:23
+          // Source: drake/solvers/unrevised_lemke_solver.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::solvers::UnrevisedLemkeSolverId::id
         struct /* id */ {
-          // Source: drake/solvers/unrevised_lemke_solver.h:27
+          // Source: drake/solvers/unrevised_lemke_solver.h
           const char* doc =
 R"""(Returns:
     same as SolverInterface::solver_id())""";
@@ -10886,17 +10886,17 @@ R"""(Returns:
       } UnrevisedLemkeSolverId;
       // Symbol: drake::solvers::VariableRefList
       struct /* VariableRefList */ {
-        // Source: drake/solvers/decision_variable.h:22
+        // Source: drake/solvers/decision_variable.h
         const char* doc = R"""()""";
       } VariableRefList;
       // Symbol: drake::solvers::VectorXDecisionVariable
       struct /* VectorXDecisionVariable */ {
-        // Source: drake/solvers/decision_variable.h:20
+        // Source: drake/solvers/decision_variable.h
         const char* doc = R"""()""";
       } VectorXDecisionVariable;
       // Symbol: drake::solvers::VectorXIndeterminate
       struct /* VectorXIndeterminate */ {
-        // Source: drake/solvers/indeterminate.h:42
+        // Source: drake/solvers/indeterminate.h
         const char* doc =
 R"""(VectorXIndeterminate is used as an alias for
 Eigen::Matrix<symbolic::Variable, Eigen::Dynamic, 1>.
@@ -10906,7 +10906,7 @@ See also:
       } VectorXIndeterminate;
       // Symbol: drake::solvers::VisualizationCallback
       struct /* VisualizationCallback */ {
-        // Source: drake/solvers/evaluator_base.h:372
+        // Source: drake/solvers/evaluator_base.h
         const char* doc =
 R"""(Defines a simple evaluator with no outputs that takes a callback
 function pointer. This is intended for debugging / visualization of
@@ -10914,28 +10914,28 @@ intermediate results during an optimization (for solvers that support
 it).)""";
         // Symbol: drake::solvers::VisualizationCallback::CallbackFunction
         struct /* CallbackFunction */ {
-          // Source: drake/solvers/evaluator_base.h:377
+          // Source: drake/solvers/evaluator_base.h
           const char* doc = R"""()""";
         } CallbackFunction;
         // Symbol: drake::solvers::VisualizationCallback::EvalCallback
         struct /* EvalCallback */ {
-          // Source: drake/solvers/evaluator_base.h:383
+          // Source: drake/solvers/evaluator_base.h
           const char* doc = R"""()""";
         } EvalCallback;
         // Symbol: drake::solvers::VisualizationCallback::VisualizationCallback
         struct /* ctor */ {
-          // Source: drake/solvers/evaluator_base.h:374
+          // Source: drake/solvers/evaluator_base.h
           const char* doc = R"""()""";
         } ctor;
       } VisualizationCallback;
       // Symbol: drake::solvers::operator!=
       struct /* operator_ne */ {
-        // Source: drake/solvers/solver_id.h:57
+        // Source: drake/solvers/solver_id.h
         const char* doc = R"""()""";
       } operator_ne;
       // Symbol: drake::solvers::to_string
       struct /* to_string */ {
-        // Source: drake/solvers/common_solver_option.h:54
+        // Source: drake/solvers/common_solver_option.h
         const char* doc =
 R"""(Returns the short, unadorned name of the option, e.g.,
 ``kPrintFileName``.)""";

@@ -3,7 +3,6 @@ Ensures we can import `pydrake.all` from install.
 """
 
 import os
-import sys
 import unittest
 
 import install_test_helper

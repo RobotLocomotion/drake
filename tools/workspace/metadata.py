@@ -3,7 +3,6 @@ implementation uses Bazel command-line actions so is suitable only
 for manual use, not any build rules or test automation.
 """
 
-import glob
 import json
 import logging
 import os
@@ -16,6 +15,7 @@ _REPOSITORIES_WITH_NO_METADATA = [
     "bazel_skylib",
     "bazel_tools",
     "buildifier_prebuilt",
+    "crate",
     "gflags",
     "google_benchmark",
     "googletest",
@@ -111,7 +111,7 @@ def read_repository_metadata(repositories=None):
         if expect_to_find and not found:
             logging.warn(f"Missing metadata for {apparent_name}")
         elif not expect_to_find and found:
-            logging.warn(f"Unexpectedly found metadata for {name}")
+            logging.warn(f"Unexpectedly found metadata for {apparent_name}")
 
     # Add 'magic' metadata for repositories that don't/can't generate it the
     # usual way.

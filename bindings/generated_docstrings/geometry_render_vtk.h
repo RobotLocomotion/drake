@@ -135,7 +135,7 @@ can configure specific extensions to be quiet.)""";
       } GltfExtension;
       // Symbol: drake::geometry::MakeRenderEngineVtk
       struct /* MakeRenderEngineVtk */ {
-        // Source: drake/geometry/render_vtk/factory.h:87
+        // Source: drake/geometry/render_vtk/factory.h
         const char* doc =
 R"""(Constructs a RenderEngine implementation which uses a VTK-based OpenGL
 renderer.

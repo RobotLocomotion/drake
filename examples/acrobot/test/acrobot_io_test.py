@@ -4,16 +4,19 @@ import unittest
 from pydrake.common import FindResourceOrThrow
 
 from examples.acrobot.acrobot_io import (
-    load_scenario, save_scenario,
-    load_output, save_output)
+    load_scenario,
+    save_scenario,
+    load_output,
+    save_output,
+)
 
 
 class TestIo(unittest.TestCase):
-
     def setUp(self):
         self.maxDiff = None
         self.example = FindResourceOrThrow(
-            "drake/examples/acrobot/test/example_scenario.yaml")
+            "drake/examples/acrobot/test/example_scenario.yaml"
+        )
         # When saving, everything comes out as floats (not `int`, etc.).
         self.expected_save = """\
 controller_params: [5.0, 50.0, 5.0, 1000.0]
@@ -24,11 +27,14 @@ tape_period: 0.05
 
     def test_load_scenario(self):
         scenario = load_scenario(filename=self.example)
-        expected = ", ".join([
-            "{'controller_params': [5, 50, 5, '1e3']",
-            "'initial_state': [1.2, 0, 0, 0]",
-            "'t_final': 30.0",
-            "'tape_period': 0.05}"])
+        expected = ", ".join(
+            [
+                "{'controller_params': [5, 50, 5, '1e3']",
+                "'initial_state': [1.2, 0, 0, 0]",
+                "'t_final': 30.0",
+                "'tape_period': 0.05}",
+            ]
+        )
         self.assertEqual(str(scenario), expected)
 
     def test_save_scenario(self):
@@ -57,14 +63,17 @@ tape_period: 0.05
             "tape_period": 0.05,
         }
         actual = save_scenario(scenario=scenario)
-        self.assertEqual(actual, """\
+        self.assertEqual(
+            actual,
+            """\
 controller_params:
   max: [5.0, 50.0, 5.0, 1000.0]
   min: [1.0, 10.0, 1.0, 100.0]
 initial_state: [1.2, 0.0, 0.0, 0.0]
 t_final: 30.0
 tape_period: 0.05
-""")
+""",
+        )
 
     def test_save_output_and_load_output(self):
         values = [
@@ -83,4 +92,4 @@ tape_period: 0.05
 """
         self.assertEqual(actual, expected)
         readback = load_output(data=expected)
-        self.assertEqual(x_tape.tolist(), values)
+        self.assertEqual(readback.tolist(), values)

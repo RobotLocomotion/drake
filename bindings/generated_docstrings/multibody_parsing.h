@@ -29,7 +29,7 @@ constexpr struct /* pydrake_doc_multibody_parsing */ {
     struct /* multibody */ {
       // Symbol: drake::multibody::CollisionFilterGroups
       struct /* CollisionFilterGroups */ {
-        // Source: drake/multibody/parsing/collision_filter_groups.h:33
+        // Source: drake/multibody/parsing/collision_filter_groups.h
         const char* doc =
 R"""(This is storage for parsed collision filter groups and group pairs.
 This data may be useful to users needing to compose further collision
@@ -46,7 +46,7 @@ found during parsing. The only condition checked here is that a group
 with a given name is only added once.)""";
         // Symbol: drake::multibody::CollisionFilterGroups::AddExclusionPair
         struct /* AddExclusionPair */ {
-          // Source: drake/multibody/parsing/collision_filter_groups.h:55
+          // Source: drake/multibody/parsing/collision_filter_groups.h
           const char* doc =
 R"""(Adds an exclusion pair between two collision filter groups.
 
@@ -60,7 +60,7 @@ Note:
         } AddExclusionPair;
         // Symbol: drake::multibody::CollisionFilterGroups::AddGroup
         struct /* AddGroup */ {
-          // Source: drake/multibody/parsing/collision_filter_groups.h:47
+          // Source: drake/multibody/parsing/collision_filter_groups.h
           const char* doc =
 R"""(Adds a new collision filter group.
 
@@ -75,33 +75,33 @@ Precondition:
         } AddGroup;
         // Symbol: drake::multibody::CollisionFilterGroups::CollisionFilterGroups
         struct /* ctor */ {
-          // Source: drake/multibody/parsing/collision_filter_groups.h:35
+          // Source: drake/multibody/parsing/collision_filter_groups.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::multibody::CollisionFilterGroups::empty
         struct /* empty */ {
-          // Source: drake/multibody/parsing/collision_filter_groups.h:58
+          // Source: drake/multibody/parsing/collision_filter_groups.h
           const char* doc =
 R"""(Returns:
     true iff both groups() and exclusion_pairs() are empty.)""";
         } empty;
         // Symbol: drake::multibody::CollisionFilterGroups::exclusion_pairs
         struct /* exclusion_pairs */ {
-          // Source: drake/multibody/parsing/collision_filter_groups.h:64
+          // Source: drake/multibody/parsing/collision_filter_groups.h
           const char* doc =
 R"""(Returns:
     the pairs stored by prior calls to AddExclusionPair().)""";
         } exclusion_pairs;
         // Symbol: drake::multibody::CollisionFilterGroups::groups
         struct /* groups */ {
-          // Source: drake/multibody/parsing/collision_filter_groups.h:61
+          // Source: drake/multibody/parsing/collision_filter_groups.h
           const char* doc =
 R"""(Returns:
     the groups stored by prior calls to AddGroup().)""";
         } groups;
         // Symbol: drake::multibody::CollisionFilterGroups::to_string
         struct /* to_string */ {
-          // Source: drake/multibody/parsing/collision_filter_groups.h:67
+          // Source: drake/multibody/parsing/collision_filter_groups.h
           const char* doc =
 R"""(Returns:
     a multi-line human-readable representation of this' contents.)""";
@@ -109,7 +109,7 @@ R"""(Returns:
       } CollisionFilterGroups;
       // Symbol: drake::multibody::PackageMap
       struct /* PackageMap */ {
-        // Source: drake/multibody/parsing/package_map.h:20
+        // Source: drake/multibody/parsing/package_map.h
         const char* doc =
 R"""(Maps ROS package names to their full path on the local file system. It
 is used by the SDF and URDF parsers when parsing files that reference
@@ -118,7 +118,7 @@ download remote packages from the internet on an as-needed basis via
 AddRemote().)""";
         // Symbol: drake::multibody::PackageMap::Add
         struct /* Add */ {
-          // Source: drake/multibody/parsing/package_map.h:71
+          // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(Adds package ``package_name`` and its path, ``package_path``. Throws
 if ``package_name`` is already present in this PackageMap with a
@@ -126,7 +126,7 @@ different path, or if ``package_path`` does not exist.)""";
         } Add;
         // Symbol: drake::multibody::PackageMap::AddMap
         struct /* AddMap */ {
-          // Source: drake/multibody/parsing/package_map.h:87
+          // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(Adds all packages from ``other_map`` into ``this``. Throws if
 ``other`` contains a package with the same ``package_name`` as one
@@ -135,7 +135,7 @@ local path).)""";
         } AddMap;
         // Symbol: drake::multibody::PackageMap::AddPackageXml
         struct /* AddPackageXml */ {
-          // Source: drake/multibody/parsing/package_map.h:92
+          // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(Adds an entry into this PackageMap for the given ``package.xml``
 filename. Throws if ``filename`` does not exist or its embedded name
@@ -143,7 +143,7 @@ already exists in this map.)""";
         } AddPackageXml;
         // Symbol: drake::multibody::PackageMap::AddRemote
         struct /* AddRemote */ {
-          // Source: drake/multibody/parsing/package_map.h:157
+          // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(Adds an entry into this PackageMap for the given ``package_name``,
 which will be downloaded from the internet (with local caching). The
@@ -162,13 +162,13 @@ checksum).)""";
         } AddRemote;
         // Symbol: drake::multibody::PackageMap::Contains
         struct /* Contains */ {
-          // Source: drake/multibody/parsing/package_map.h:44
+          // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(Returns true if and only if this PackageMap contains ``package_name``.)""";
         } Contains;
         // Symbol: drake::multibody::PackageMap::GetDeprecated
         struct /* GetDeprecated */ {
-          // Source: drake/multibody/parsing/package_map.h:214
+          // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(Returns the deprecation message for package ``package_name`` if it has
 been set as deprecated. A value of std::nullopt implies no
@@ -177,14 +177,14 @@ this PackageMap.)""";
         } GetDeprecated;
         // Symbol: drake::multibody::PackageMap::GetPackageNames
         struct /* GetPackageNames */ {
-          // Source: drake/multibody/parsing/package_map.h:41
+          // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(Returns the package names in this PackageMap. The order of package
 names returned is unspecified.)""";
         } GetPackageNames;
         // Symbol: drake::multibody::PackageMap::GetPath
         struct /* GetPath */ {
-          // Source: drake/multibody/parsing/package_map.h:53
+          // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(Obtains the path associated with package ``package_name``. Aborts if
 no package named ``package_name`` exists in this PackageMap.
@@ -199,13 +199,13 @@ Parameter ``deprecated_message``:
         } GetPath;
         // Symbol: drake::multibody::PackageMap::MakeEmpty
         struct /* MakeEmpty */ {
-          // Source: drake/multibody/parsing/package_map.h:31
+          // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(A factory method that initializes an empty map.)""";
         } MakeEmpty;
         // Symbol: drake::multibody::PackageMap::PackageMap
         struct /* ctor */ {
-          // Source: drake/multibody/parsing/package_map.h:26
+          // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(A constructor that initializes a default map containing only the
 top-level ``drake`` manifest. See PackageMap::MakeEmpty() to create an
@@ -213,7 +213,7 @@ empty map.)""";
         } ctor;
         // Symbol: drake::multibody::PackageMap::PopulateFromEnvironment
         struct /* PopulateFromEnvironment */ {
-          // Source: drake/multibody/parsing/package_map.h:195
+          // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(Obtains one or more paths from environment variable
 ``environment_variable``. Crawls downward through the directory
@@ -237,7 +237,7 @@ Warning:
         } PopulateFromEnvironment;
         // Symbol: drake::multibody::PackageMap::PopulateFromFolder
         struct /* PopulateFromFolder */ {
-          // Source: drake/multibody/parsing/package_map.h:166
+          // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(Crawls down the directory tree starting at ``path`` searching for
 directories containing the file ``package.xml``. For each of these
@@ -250,7 +250,7 @@ unreadable, a warning is logged.)""";
         } PopulateFromFolder;
         // Symbol: drake::multibody::PackageMap::PopulateFromRosPackagePath
         struct /* PopulateFromRosPackagePath */ {
-          // Source: drake/multibody/parsing/package_map.h:205
+          // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(Obtains one or more paths from the ROS_PACKAGE_PATH environment
 variable. Semantics are similar to PopulateFromEnvironment(), except
@@ -261,22 +261,22 @@ files: - AMENT_IGNORE - CATKIN_IGNORE - COLCON_IGNORE)""";
         } PopulateFromRosPackagePath;
         // Symbol: drake::multibody::PackageMap::RemoteParams
         struct /* RemoteParams */ {
-          // Source: drake/multibody/parsing/package_map.h:105
+          // Source: drake/multibody/parsing/package_map.h
           const char* doc = R"""(Parameters used for AddRemote().)""";
           // Symbol: drake::multibody::PackageMap::RemoteParams::Serialize
           struct /* Serialize */ {
-            // Source: drake/multibody/parsing/package_map.h:107
+            // Source: drake/multibody/parsing/package_map.h
             const char* doc = R"""()""";
           } Serialize;
           // Symbol: drake::multibody::PackageMap::RemoteParams::ToJson
           struct /* ToJson */ {
-            // Source: drake/multibody/parsing/package_map.h:115
+            // Source: drake/multibody/parsing/package_map.h
             const char* doc =
 R"""(Returns the JSON serialization of these params.)""";
           } ToJson;
           // Symbol: drake::multibody::PackageMap::RemoteParams::archive_type
           struct /* archive_type */ {
-            // Source: drake/multibody/parsing/package_map.h:133
+            // Source: drake/multibody/parsing/package_map.h
             const char* doc =
 R"""((Optional) The archive type of the downloaded file. Valid options are
 "zip", "tar", "gztar", "bztar", or "xztar". By default, the archive
@@ -285,14 +285,14 @@ has no filename extension, you should explicitly specify one here.)""";
           } archive_type;
           // Symbol: drake::multibody::PackageMap::RemoteParams::sha256
           struct /* sha256 */ {
-            // Source: drake/multibody/parsing/package_map.h:127
+            // Source: drake/multibody/parsing/package_map.h
             const char* doc =
 R"""(The cryptographic checksum of the file to be downloaded, as a
 64-character hexadecimal string.)""";
           } sha256;
           // Symbol: drake::multibody::PackageMap::RemoteParams::strip_prefix
           struct /* strip_prefix */ {
-            // Source: drake/multibody/parsing/package_map.h:142
+            // Source: drake/multibody/parsing/package_map.h
             const char* doc =
 R"""((Optional) A directory prefix to remove from the extracted files. In
 many cases, an archive will prefix all filenames with something like
@@ -304,7 +304,7 @@ of this directory they will be silently discarded.)""";
           } strip_prefix;
           // Symbol: drake::multibody::PackageMap::RemoteParams::urls
           struct /* urls */ {
-            // Source: drake/multibody/parsing/package_map.h:123
+            // Source: drake/multibody/parsing/package_map.h
             const char* doc =
 R"""(The list of remote URLs for this resource. The urls are used in the
 other they appear here, so preferred mirror(s) should come first.
@@ -321,14 +321,14 @@ Valid methods are "http://" or "https://" or "file://".)""";
         } RemoteParams;
         // Symbol: drake::multibody::PackageMap::Remove
         struct /* Remove */ {
-          // Source: drake/multibody/parsing/package_map.h:225
+          // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(Removes package ``package_name`` and its previously added path. Throws
 if ``package_name`` is not present in this PackageMap.)""";
         } Remove;
         // Symbol: drake::multibody::PackageMap::ResolveUrl
         struct /* ResolveUrl */ {
-          // Source: drake/multibody/parsing/package_map.h:61
+          // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(Returns a resolved path for ``url``. URL schemes are either
 ``file://`` for local files or ``package://`` (or ``model://``).
@@ -338,7 +338,7 @@ Raises:
         } ResolveUrl;
         // Symbol: drake::multibody::PackageMap::SetDeprecated
         struct /* SetDeprecated */ {
-          // Source: drake/multibody/parsing/package_map.h:220
+          // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(Sets or clears the deprecation message for package ``package_name``. A
 ``deprecated_message`` value of std::nullopt implies no deprecation.
@@ -346,14 +346,14 @@ Aborts if no package named ``package_name`` exists in this PackageMap.)""";
         } SetDeprecated;
         // Symbol: drake::multibody::PackageMap::size
         struct /* size */ {
-          // Source: drake/multibody/parsing/package_map.h:37
+          // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(Returns the number of entries in this PackageMap.)""";
         } size;
       } PackageMap;
       // Symbol: drake::multibody::Parser
       struct /* Parser */ {
-        // Source: drake/multibody/parsing/parser.h:132
+        // Source: drake/multibody/parsing/parser.h
         const char* doc =
 R"""(Parses model description input into a MultibodyPlant and (optionally)
 a SceneGraph. A variety of input formats are supported, and are
@@ -488,7 +488,7 @@ completeness; we strongly discourage anyone from taking advantage of
 this feature.)""";
         // Symbol: drake::multibody::Parser::AddModels
         struct /* AddModels */ {
-          // Source: drake/multibody/parsing/parser.h:244
+          // Source: drake/multibody/parsing/parser.h
           const char* doc =
 R"""(Parses the input file named in ``file_name`` and adds all of its
 model(s) to ``plant``.
@@ -506,7 +506,7 @@ Raises:
         } AddModels;
         // Symbol: drake::multibody::Parser::AddModelsFromString
         struct /* AddModelsFromString */ {
-          // Source: drake/multibody/parsing/parser.h:268
+          // Source: drake/multibody/parsing/parser.h
           const char* doc =
 R"""(Provides same functionality as AddModels, but instead parses the model
 description text data via ``file_contents`` with format dictated by
@@ -528,7 +528,7 @@ Raises:
         } AddModelsFromString;
         // Symbol: drake::multibody::Parser::AddModelsFromUrl
         struct /* AddModelsFromUrl */ {
-          // Source: drake/multibody/parsing/parser.h:256
+          // Source: drake/multibody/parsing/parser.h
           const char* doc =
 R"""(Parses the input file named in ``url`` and adds all of its model(s) to
 ``plant``. The allowed URL schemes are either ``file://`` for local
@@ -548,7 +548,7 @@ Raises:
         } AddModelsFromUrl;
         // Symbol: drake::multibody::Parser::GetAutoRenaming
         struct /* GetAutoRenaming */ {
-          // Source: drake/multibody/parsing/parser.h:223
+          // Source: drake/multibody/parsing/parser.h
           const char* doc =
 R"""(Get the current state of auto-renaming.
 
@@ -557,7 +557,7 @@ See also:
         } GetAutoRenaming;
         // Symbol: drake::multibody::Parser::GetCollisionFilterGroups
         struct /* GetCollisionFilterGroups */ {
-          // Source: drake/multibody/parsing/parser.h:234
+          // Source: drake/multibody/parsing/parser.h
           const char* doc =
 R"""(Gets the accumulated set of collision filter definitions seen by this
 parser.
@@ -572,7 +572,7 @@ names will be the names seen during parsing.)""";
         } GetCollisionFilterGroups;
         // Symbol: drake::multibody::Parser::Parser
         struct /* ctor */ {
-          // Source: drake/multibody/parsing/parser.h:150
+          // Source: drake/multibody/parsing/parser.h
           const char* doc_4args_builder_plant_scene_graph_model_name_prefix =
 R"""(Create a Parser given a DiagramBuilder (and optionally plant and
 scene_graph). If specified, the resulting parser will apply
@@ -595,7 +595,7 @@ Parameter ``scene_graph``:
 Precondition:
     If both ``builder`` and ``scene_graph`` are specified, then
     scene_graph ∈ builder.GetSystems().)""";
-          // Source: drake/multibody/parsing/parser.h:164
+          // Source: drake/multibody/parsing/parser.h
           const char* doc_2args_plant_scene_graph =
 R"""(Creates a Parser that adds models to the given plant and (optionally)
 scene_graph.
@@ -609,7 +609,7 @@ Parameter ``scene_graph``:
     A pointer to a mutable SceneGraph object used for geometry
     registration (either to model visual or contact geometry). May be
     nullptr.)""";
-          // Source: drake/multibody/parsing/parser.h:180
+          // Source: drake/multibody/parsing/parser.h
           const char* doc_3args_plant_scene_graph_model_name_prefix =
 R"""(Creates a Parser that adds models to the given plant and scene_graph.
 The resulting parser will apply ``model_name_prefix`` to the names of
@@ -629,7 +629,7 @@ Parameter ``model_name_prefix``:
     A string that will be added as a scoped name prefix to the names
     of any models loaded by this parser; when empty, no scoping will
     be added.)""";
-          // Source: drake/multibody/parsing/parser.h:194
+          // Source: drake/multibody/parsing/parser.h
           const char* doc_2args_plant_model_name_prefix =
 R"""(Creates a Parser that adds models to the given plant and scene_graph.
 The resulting parser will apply ``model_name_prefix`` to the names of
@@ -647,7 +647,7 @@ Parameter ``model_name_prefix``:
         } ctor;
         // Symbol: drake::multibody::Parser::SetAutoRenaming
         struct /* SetAutoRenaming */ {
-          // Source: drake/multibody/parsing/parser.h:219
+          // Source: drake/multibody/parsing/parser.h
           const char* doc =
 R"""(Enable or disable auto-renaming. It is disabled by default.
 
@@ -656,34 +656,34 @@ See also:
         } SetAutoRenaming;
         // Symbol: drake::multibody::Parser::SetStrictParsing
         struct /* SetStrictParsing */ {
-          // Source: drake/multibody/parsing/parser.h:215
+          // Source: drake/multibody/parsing/parser.h
           const char* doc =
 R"""(Cause all subsequent Add*Model*() operations to use strict parsing;
 warnings will be treated as errors.)""";
         } SetStrictParsing;
         // Symbol: drake::multibody::Parser::builder
         struct /* builder */ {
-          // Source: drake/multibody/parsing/parser.h:200
+          // Source: drake/multibody/parsing/parser.h
           const char* doc =
 R"""(Gets a mutable pointer to the DiagramBuilder that will be modified by
 this parser, or nullptr if this parser does not have a DiagramBuilder.)""";
         } builder;
         // Symbol: drake::multibody::Parser::package_map
         struct /* package_map */ {
-          // Source: drake/multibody/parsing/parser.h:211
+          // Source: drake/multibody/parsing/parser.h
           const char* doc =
 R"""(Gets a mutable reference to the PackageMap used by this parser.)""";
         } package_map;
         // Symbol: drake::multibody::Parser::plant
         struct /* plant */ {
-          // Source: drake/multibody/parsing/parser.h:204
+          // Source: drake/multibody/parsing/parser.h
           const char* doc =
 R"""(Gets a mutable reference to the plant that will be modified by this
 parser.)""";
         } plant;
         // Symbol: drake::multibody::Parser::scene_graph
         struct /* scene_graph */ {
-          // Source: drake/multibody/parsing/parser.h:208
+          // Source: drake/multibody/parsing/parser.h
           const char* doc =
 R"""(Gets a mutable pointer to the SceneGraph that will be modified by this
 parser, or nullptr if this parser does not have a SceneGraph.)""";
@@ -693,23 +693,23 @@ parser, or nullptr if this parser does not have a SceneGraph.)""";
       struct /* parsing */ {
         // Symbol: drake::multibody::parsing::AddCollisionFilterGroup
         struct /* AddCollisionFilterGroup */ {
-          // Source: drake/multibody/parsing/model_directives.h:147
+          // Source: drake/multibody/parsing/model_directives.h
           const char* doc =
 R"""(Directive to add a collision filter group. This directive is analogous
 to tag_drake_collision_filter_group in XML model formats.)""";
           // Symbol: drake::multibody::parsing::AddCollisionFilterGroup::IsValid
           struct /* IsValid */ {
-            // Source: drake/multibody/parsing/model_directives.h:148
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } IsValid;
           // Symbol: drake::multibody::parsing::AddCollisionFilterGroup::Serialize
           struct /* Serialize */ {
-            // Source: drake/multibody/parsing/model_directives.h:151
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } Serialize;
           // Symbol: drake::multibody::parsing::AddCollisionFilterGroup::ignored_collision_filter_groups
           struct /* ignored_collision_filter_groups */ {
-            // Source: drake/multibody/parsing/model_directives.h:180
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc =
 R"""(Names of groups against which to ignore collisions. If another group
 is named, collisions between this group and that group will be
@@ -721,7 +721,7 @@ tag_drake_ignored_collision_filter_group in XML model formats.)""";
           } ignored_collision_filter_groups;
           // Symbol: drake::multibody::parsing::AddCollisionFilterGroup::member_groups
           struct /* member_groups */ {
-            // Source: drake/multibody/parsing/model_directives.h:172
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc =
 R"""(Names of groups to add en masse as members of the group. May be scoped
 and refer to bodies of already added models. This data is analogous to
@@ -729,7 +729,7 @@ a sequence of tag_drake_member_group in XML model formats.)""";
           } member_groups;
           // Symbol: drake::multibody::parsing::AddCollisionFilterGroup::members
           struct /* members */ {
-            // Source: drake/multibody/parsing/model_directives.h:168
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc =
 R"""(Names of members of the group. May be scoped and refer to bodies of
 already added models. This data is analogous to a sequence of
@@ -737,7 +737,7 @@ tag_drake_member in XML model formats.)""";
           } members;
           // Symbol: drake::multibody::parsing::AddCollisionFilterGroup::model_namespace
           struct /* model_namespace */ {
-            // Source: drake/multibody/parsing/model_directives.h:164
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc =
 R"""(Optional model namespace. Allows ``name`` to be reused between models
 and lets you use the scoped name in
@@ -745,7 +745,7 @@ and lets you use the scoped name in
           } model_namespace;
           // Symbol: drake::multibody::parsing::AddCollisionFilterGroup::name
           struct /* name */ {
-            // Source: drake/multibody/parsing/model_directives.h:161
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc =
 R"""(Name of group to be added. This is an unscoped name, and must be
 unique either globally or within its specified model namespace.)""";
@@ -762,29 +762,29 @@ unique either globally or within its specified model namespace.)""";
         } AddCollisionFilterGroup;
         // Symbol: drake::multibody::parsing::AddDirectives
         struct /* AddDirectives */ {
-          // Source: drake/multibody/parsing/model_directives.h:185
+          // Source: drake/multibody/parsing/model_directives.h
           const char* doc =
 R"""(Directive to incorporate another model directives file, optionally
 with its elements prefixed with a namespace.)""";
           // Symbol: drake::multibody::parsing::AddDirectives::IsValid
           struct /* IsValid */ {
-            // Source: drake/multibody/parsing/model_directives.h:186
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } IsValid;
           // Symbol: drake::multibody::parsing::AddDirectives::Serialize
           struct /* Serialize */ {
-            // Source: drake/multibody/parsing/model_directives.h:189
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } Serialize;
           // Symbol: drake::multibody::parsing::AddDirectives::file
           struct /* file */ {
-            // Source: drake/multibody/parsing/model_directives.h:195
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc =
 R"""(The ``package://`` URI of the file to add.)""";
           } file;
           // Symbol: drake::multibody::parsing::AddDirectives::model_namespace
           struct /* model_namespace */ {
-            // Source: drake/multibody/parsing/model_directives.h:209
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc =
 R"""(Namespaces base model instance for processing directive files. Affects
 scoping (i.e. the following members): - AddModel::name -
@@ -804,30 +804,30 @@ references and namespacing.)""";
         } AddDirectives;
         // Symbol: drake::multibody::parsing::AddFrame
         struct /* AddFrame */ {
-          // Source: drake/multibody/parsing/model_directives.h:128
+          // Source: drake/multibody/parsing/model_directives.h
           const char* doc =
 R"""(Directive to add a Frame to the scene. The added frame must have a
 name and a transform with a base frame and offset.)""";
           // Symbol: drake::multibody::parsing::AddFrame::IsValid
           struct /* IsValid */ {
-            // Source: drake/multibody/parsing/model_directives.h:129
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } IsValid;
           // Symbol: drake::multibody::parsing::AddFrame::Serialize
           struct /* Serialize */ {
-            // Source: drake/multibody/parsing/model_directives.h:132
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } Serialize;
           // Symbol: drake::multibody::parsing::AddFrame::X_PF
           struct /* X_PF */ {
-            // Source: drake/multibody/parsing/model_directives.h:142
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc =
 R"""(Pose of frame to be added, ``F``, w.r.t. parent frame ``P`` (as
 defined by ``X_PF.base_frame``).)""";
           } X_PF;
           // Symbol: drake::multibody::parsing::AddFrame::name
           struct /* name */ {
-            // Source: drake/multibody/parsing/model_directives.h:139
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc =
 R"""(Name of frame to be added. If scope is specified, will override model
 instance; otherwise, will use `X_PF.base_frame`s instance.)""";
@@ -841,23 +841,23 @@ instance; otherwise, will use `X_PF.base_frame`s instance.)""";
         } AddFrame;
         // Symbol: drake::multibody::parsing::AddModel
         struct /* AddModel */ {
-          // Source: drake/multibody/parsing/model_directives.h:50
+          // Source: drake/multibody/parsing/model_directives.h
           const char* doc =
 R"""(Directive to add a model from a URDF or SDFormat file to a scene,
 using a given name for the added instance.)""";
           // Symbol: drake::multibody::parsing::AddModel::IsValid
           struct /* IsValid */ {
-            // Source: drake/multibody/parsing/model_directives.h:51
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } IsValid;
           // Symbol: drake::multibody::parsing::AddModel::Serialize
           struct /* Serialize */ {
-            // Source: drake/multibody/parsing/model_directives.h:54
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } Serialize;
           // Symbol: drake::multibody::parsing::AddModel::default_free_body_pose
           struct /* default_free_body_pose */ {
-            // Source: drake/multibody/parsing/model_directives.h:110
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc =
 R"""(Map of body_name or frame_name => default free body pose. The name
 must be a name within the scope of the model added by this directive.
@@ -905,7 +905,7 @@ Warning:
           } default_free_body_pose;
           // Symbol: drake::multibody::parsing::AddModel::default_joint_positions
           struct /* default_joint_positions */ {
-            // Source: drake/multibody/parsing/model_directives.h:69
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc =
 R"""(Map of joint_name => default position vector. Each joint name must be
 a name within the scope of the model added by this directive. The name
@@ -914,13 +914,13 @@ previously added model).)""";
           } default_joint_positions;
           // Symbol: drake::multibody::parsing::AddModel::file
           struct /* file */ {
-            // Source: drake/multibody/parsing/model_directives.h:62
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc =
 R"""(The ``package://`` URI of the file to add.)""";
           } file;
           // Symbol: drake::multibody::parsing::AddModel::name
           struct /* name */ {
-            // Source: drake/multibody/parsing/model_directives.h:64
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""(The model instance name.)""";
           } name;
           auto Serialize__fields() const {
@@ -934,22 +934,22 @@ R"""(The ``package://`` URI of the file to add.)""";
         } AddModel;
         // Symbol: drake::multibody::parsing::AddModelInstance
         struct /* AddModelInstance */ {
-          // Source: drake/multibody/parsing/model_directives.h:114
+          // Source: drake/multibody/parsing/model_directives.h
           const char* doc =
 R"""(Directive to add an empty, named model instance to a scene.)""";
           // Symbol: drake::multibody::parsing::AddModelInstance::IsValid
           struct /* IsValid */ {
-            // Source: drake/multibody/parsing/model_directives.h:115
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } IsValid;
           // Symbol: drake::multibody::parsing::AddModelInstance::Serialize
           struct /* Serialize */ {
-            // Source: drake/multibody/parsing/model_directives.h:118
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } Serialize;
           // Symbol: drake::multibody::parsing::AddModelInstance::name
           struct /* name */ {
-            // Source: drake/multibody/parsing/model_directives.h:123
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""(The model instance name.)""";
           } name;
           auto Serialize__fields() const {
@@ -960,36 +960,36 @@ R"""(Directive to add an empty, named model instance to a scene.)""";
         } AddModelInstance;
         // Symbol: drake::multibody::parsing::AddWeld
         struct /* AddWeld */ {
-          // Source: drake/multibody/parsing/model_directives.h:29
+          // Source: drake/multibody/parsing/model_directives.h
           const char* doc =
 R"""(Directive to add a weld between two named frames, a parent and a
 child.)""";
           // Symbol: drake::multibody::parsing::AddWeld::IsValid
           struct /* IsValid */ {
-            // Source: drake/multibody/parsing/model_directives.h:30
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } IsValid;
           // Symbol: drake::multibody::parsing::AddWeld::Serialize
           struct /* Serialize */ {
-            // Source: drake/multibody/parsing/model_directives.h:33
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } Serialize;
           // Symbol: drake::multibody::parsing::AddWeld::X_PC
           struct /* X_PC */ {
-            // Source: drake/multibody/parsing/model_directives.h:45
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc =
 R"""(Relative transform between the parent frame P and the child frame C.
 If unspecified, the Identity transform will be used.)""";
           } X_PC;
           // Symbol: drake::multibody::parsing::AddWeld::child
           struct /* child */ {
-            // Source: drake/multibody/parsing/model_directives.h:42
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc =
 R"""(Child frame. Can (and should) specify scope.)""";
           } child;
           // Symbol: drake::multibody::parsing::AddWeld::parent
           struct /* parent */ {
-            // Source: drake/multibody/parsing/model_directives.h:40
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""(Parent frame. Can specify scope.)""";
           } parent;
           auto Serialize__fields() const {
@@ -1002,7 +1002,7 @@ R"""(Child frame. Can (and should) specify scope.)""";
         } AddWeld;
         // Symbol: drake::multibody::parsing::FlattenModelDirectives
         struct /* FlattenModelDirectives */ {
-          // Source: drake/multibody/parsing/process_model_directives.h:42
+          // Source: drake/multibody/parsing/process_model_directives.h
           const char* doc =
 R"""(Flatten model directives into a single object.
 
@@ -1021,14 +1021,14 @@ debugging.)""";
         } FlattenModelDirectives;
         // Symbol: drake::multibody::parsing::GetScopedFrameByName
         struct /* GetScopedFrameByName */ {
-          // Source: drake/multibody/parsing/scoped_names.h:27
+          // Source: drake/multibody/parsing/scoped_names.h
           const char* doc =
 R"""(Equivalent to ``GetScopedFrameByNameMaybe``, but throws if the frame
 is not found.)""";
         } GetScopedFrameByName;
         // Symbol: drake::multibody::parsing::GetScopedFrameByNameMaybe
         struct /* GetScopedFrameByNameMaybe */ {
-          // Source: drake/multibody/parsing/scoped_names.h:18
+          // Source: drake/multibody/parsing/scoped_names.h
           const char* doc =
 R"""(Finds an optionally model-scoped frame.
 
@@ -1037,17 +1037,17 @@ error cases of ``MultibodyPlant::HasFrameNamed(std::string_view)``.)""";
         } GetScopedFrameByNameMaybe;
         // Symbol: drake::multibody::parsing::LoadModelDirectives
         struct /* LoadModelDirectives */ {
-          // Source: drake/multibody/parsing/process_model_directives.h:16
+          // Source: drake/multibody/parsing/process_model_directives.h
           const char* doc = R"""()""";
         } LoadModelDirectives;
         // Symbol: drake::multibody::parsing::LoadModelDirectivesFromString
         struct /* LoadModelDirectivesFromString */ {
-          // Source: drake/multibody/parsing/process_model_directives.h:18
+          // Source: drake/multibody/parsing/process_model_directives.h
           const char* doc = R"""()""";
         } LoadModelDirectivesFromString;
         // Symbol: drake::multibody::parsing::ModelDirective
         struct /* ModelDirective */ {
-          // Source: drake/multibody/parsing/model_directives.h:218
+          // Source: drake/multibody/parsing/model_directives.h
           const char* doc =
 R"""(Union structure for model directives.
 
@@ -1057,42 +1057,42 @@ Note:
     to designate the intended type for the directive.)""";
           // Symbol: drake::multibody::parsing::ModelDirective::IsValid
           struct /* IsValid */ {
-            // Source: drake/multibody/parsing/model_directives.h:219
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } IsValid;
           // Symbol: drake::multibody::parsing::ModelDirective::Serialize
           struct /* Serialize */ {
-            // Source: drake/multibody/parsing/model_directives.h:222
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } Serialize;
           // Symbol: drake::multibody::parsing::ModelDirective::add_collision_filter_group
           struct /* add_collision_filter_group */ {
-            // Source: drake/multibody/parsing/model_directives.h:235
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } add_collision_filter_group;
           // Symbol: drake::multibody::parsing::ModelDirective::add_directives
           struct /* add_directives */ {
-            // Source: drake/multibody/parsing/model_directives.h:236
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } add_directives;
           // Symbol: drake::multibody::parsing::ModelDirective::add_frame
           struct /* add_frame */ {
-            // Source: drake/multibody/parsing/model_directives.h:233
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } add_frame;
           // Symbol: drake::multibody::parsing::ModelDirective::add_model
           struct /* add_model */ {
-            // Source: drake/multibody/parsing/model_directives.h:231
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } add_model;
           // Symbol: drake::multibody::parsing::ModelDirective::add_model_instance
           struct /* add_model_instance */ {
-            // Source: drake/multibody/parsing/model_directives.h:232
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } add_model_instance;
           // Symbol: drake::multibody::parsing::ModelDirective::add_weld
           struct /* add_weld */ {
-            // Source: drake/multibody/parsing/model_directives.h:234
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } add_weld;
           auto Serialize__fields() const {
@@ -1108,22 +1108,22 @@ Note:
         } ModelDirective;
         // Symbol: drake::multibody::parsing::ModelDirectives
         struct /* ModelDirectives */ {
-          // Source: drake/multibody/parsing/model_directives.h:240
+          // Source: drake/multibody/parsing/model_directives.h
           const char* doc =
 R"""(Top-level structure for a model directives yaml file schema.)""";
           // Symbol: drake::multibody::parsing::ModelDirectives::IsValid
           struct /* IsValid */ {
-            // Source: drake/multibody/parsing/model_directives.h:241
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } IsValid;
           // Symbol: drake::multibody::parsing::ModelDirectives::Serialize
           struct /* Serialize */ {
-            // Source: drake/multibody/parsing/model_directives.h:244
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } Serialize;
           // Symbol: drake::multibody::parsing::ModelDirectives::directives
           struct /* directives */ {
-            // Source: drake/multibody/parsing/model_directives.h:248
+            // Source: drake/multibody/parsing/model_directives.h
             const char* doc = R"""()""";
           } directives;
           auto Serialize__fields() const {
@@ -1134,58 +1134,58 @@ R"""(Top-level structure for a model directives yaml file schema.)""";
         } ModelDirectives;
         // Symbol: drake::multibody::parsing::ModelInstanceInfo
         struct /* ModelInstanceInfo */ {
-          // Source: drake/multibody/parsing/model_instance_info.h:18
+          // Source: drake/multibody/parsing/model_instance_info.h
           const char* doc =
 R"""(Convenience structure to hold all of the information to add a model
 instance from a file.)""";
           // Symbol: drake::multibody::parsing::ModelInstanceInfo::X_PC
           struct /* X_PC */ {
-            // Source: drake/multibody/parsing/model_instance_info.h:27
+            // Source: drake/multibody/parsing/model_instance_info.h
             const char* doc = R"""()""";
           } X_PC;
           // Symbol: drake::multibody::parsing::ModelInstanceInfo::child_frame_name
           struct /* child_frame_name */ {
-            // Source: drake/multibody/parsing/model_instance_info.h:26
+            // Source: drake/multibody/parsing/model_instance_info.h
             const char* doc =
 R"""(This is the unscoped frame name belonging to ``model_instance``.)""";
           } child_frame_name;
           // Symbol: drake::multibody::parsing::ModelInstanceInfo::model_instance
           struct /* model_instance */ {
-            // Source: drake/multibody/parsing/model_instance_info.h:28
+            // Source: drake/multibody/parsing/model_instance_info.h
             const char* doc = R"""()""";
           } model_instance;
           // Symbol: drake::multibody::parsing::ModelInstanceInfo::model_name
           struct /* model_name */ {
-            // Source: drake/multibody/parsing/model_instance_info.h:20
+            // Source: drake/multibody/parsing/model_instance_info.h
             const char* doc = R"""(Model name (possibly scoped).)""";
           } model_name;
           // Symbol: drake::multibody::parsing::ModelInstanceInfo::model_path
           struct /* model_path */ {
-            // Source: drake/multibody/parsing/model_instance_info.h:22
+            // Source: drake/multibody/parsing/model_instance_info.h
             const char* doc = R"""(File path.)""";
           } model_path;
           // Symbol: drake::multibody::parsing::ModelInstanceInfo::parent_frame_name
           struct /* parent_frame_name */ {
-            // Source: drake/multibody/parsing/model_instance_info.h:24
+            // Source: drake/multibody/parsing/model_instance_info.h
             const char* doc =
 R"""(WARNING: This is the *unscoped* parent frame, assumed to be unique.)""";
           } parent_frame_name;
         } ModelInstanceInfo;
         // Symbol: drake::multibody::parsing::ProcessModelDirectives
         struct /* ProcessModelDirectives */ {
-          // Source: drake/multibody/parsing/process_model_directives.h:50
+          // Source: drake/multibody/parsing/process_model_directives.h
           const char* doc_2args =
 R"""(Parses the given model directives using the given parser. The
 MultibodyPlant (and optionally SceneGraph) being modified are
 implicitly associated with the Parser object. Returns the list of
 added models.)""";
-          // Source: drake/multibody/parsing/process_model_directives.h:54
+          // Source: drake/multibody/parsing/process_model_directives.h
           const char* doc_4args =
 R"""(Processes model directives for a given MultibodyPlant.)""";
         } ProcessModelDirectives;
         // Symbol: drake::multibody::parsing::ResolveModelDirectiveUri
         struct /* ResolveModelDirectiveUri */ {
-          // Source: drake/multibody/parsing/process_model_directives.h:26
+          // Source: drake/multibody/parsing/process_model_directives.h
           const char* doc =
 R"""(Converts URIs into filesystem absolute paths.
 

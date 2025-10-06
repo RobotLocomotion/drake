@@ -1,7 +1,6 @@
 """Provides containers for tracking instantiations of C++ templates. """
 
 import inspect
-import sys
 import types
 
 from pydrake import _is_building_documentation

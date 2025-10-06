@@ -33,7 +33,7 @@ constexpr struct /* pydrake_doc_multibody_optimization */ {
     struct /* multibody */ {
       // Symbol: drake::multibody::AddSlidingFrictionComplementarityExplicitContactConstraint
       struct /* AddSlidingFrictionComplementarityExplicitContactConstraint */ {
-        // Source: drake/multibody/optimization/sliding_friction_complementarity_constraint.h:168
+        // Source: drake/multibody/optimization/sliding_friction_complementarity_constraint.h
         const char* doc =
 R"""(For a pair of geometries in explicit contact, adds the sliding
 friction complementarity constraint explained in
@@ -70,7 +70,7 @@ Returns:
       } AddSlidingFrictionComplementarityExplicitContactConstraint;
       // Symbol: drake::multibody::AddSlidingFrictionComplementarityImplicitContactConstraint
       struct /* AddSlidingFrictionComplementarityImplicitContactConstraint */ {
-        // Source: drake/multibody/optimization/sliding_friction_complementarity_constraint.h:191
+        // Source: drake/multibody/optimization/sliding_friction_complementarity_constraint.h
         const char* doc =
 R"""(For a pair of geometries in implicit contact (they may or may not be
 in contact, adds the sliding friction complementarity constraint
@@ -83,7 +83,7 @@ for implicit contact.)""";
       } AddSlidingFrictionComplementarityImplicitContactConstraint;
       // Symbol: drake::multibody::AddStaticFrictionConeComplementarityConstraint
       struct /* AddStaticFrictionConeComplementarityConstraint */ {
-        // Source: drake/multibody/optimization/static_friction_cone_complementarity_constraint.h:120
+        // Source: drake/multibody/optimization/static_friction_cone_complementarity_constraint.h
         const char* doc =
 R"""(Adds the complementarity constraint on the static friction force
 between a pair of contacts |ft_W| <= μ * n_Wᵀ * f_W (static friction
@@ -124,33 +124,33 @@ Precondition:
       } AddStaticFrictionConeComplementarityConstraint;
       // Symbol: drake::multibody::CalcGridPointsOptions
       struct /* CalcGridPointsOptions */ {
-        // Source: drake/multibody/optimization/toppra.h:37
+        // Source: drake/multibody/optimization/toppra.h
         const char* doc = R"""()""";
         // Symbol: drake::multibody::CalcGridPointsOptions::Serialize
         struct /* Serialize */ {
-          // Source: drake/multibody/optimization/toppra.h:41
+          // Source: drake/multibody/optimization/toppra.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::multibody::CalcGridPointsOptions::max_err
         struct /* max_err */ {
-          // Source: drake/multibody/optimization/toppra.h:48
+          // Source: drake/multibody/optimization/toppra.h
           const char* doc = R"""()""";
         } max_err;
         // Symbol: drake::multibody::CalcGridPointsOptions::max_iter
         struct /* max_iter */ {
-          // Source: drake/multibody/optimization/toppra.h:49
+          // Source: drake/multibody/optimization/toppra.h
           const char* doc = R"""()""";
         } max_iter;
         // Symbol: drake::multibody::CalcGridPointsOptions::max_seg_length
         struct /* max_seg_length */ {
-          // Source: drake/multibody/optimization/toppra.h:50
+          // Source: drake/multibody/optimization/toppra.h
           const char* doc = R"""()""";
         } max_seg_length;
         // Symbol: drake::multibody::CalcGridPointsOptions::min_points
         struct /* min_points */ {
-          // Source: drake/multibody/optimization/toppra.h:51
+          // Source: drake/multibody/optimization/toppra.h
           const char* doc = R"""()""";
         } min_points;
         auto Serialize__fields() const {
@@ -164,7 +164,7 @@ Serialization" for background.)""";
       } CalcGridPointsOptions;
       // Symbol: drake::multibody::CentroidalMomentumConstraint
       struct /* CentroidalMomentumConstraint */ {
-        // Source: drake/multibody/optimization/centroidal_momentum_constraint.h:21
+        // Source: drake/multibody/optimization/centroidal_momentum_constraint.h
         const char* doc =
 R"""(Impose the constraint CentroidalMomentum(q, v) - h_WC = 0 with
 decision variables [q;v;h_WC] or CentroidalAngularMomentum(q, v) -
@@ -175,7 +175,7 @@ the angular momentum about the center of mass C expressed in the world
 frame W.)""";
         // Symbol: drake::multibody::CentroidalMomentumConstraint::CentroidalMomentumConstraint
         struct /* ctor */ {
-          // Source: drake/multibody/optimization/centroidal_momentum_constraint.h:46
+          // Source: drake/multibody/optimization/centroidal_momentum_constraint.h
           const char* doc =
 R"""(Construct centroidal momentum constraint If ``angular_only`` = false,
 we impose the constraint CentroidalMomentum(q, v) - h_WC = 0 where
@@ -203,42 +203,42 @@ Parameter ``model_instances``:
         } ctor;
         // Symbol: drake::multibody::CentroidalMomentumConstraint::ComposeVariable
         struct /* ComposeVariable */ {
-          // Source: drake/multibody/optimization/centroidal_momentum_constraint.h:57
+          // Source: drake/multibody/optimization/centroidal_momentum_constraint.h
           const char* doc = R"""()""";
         } ComposeVariable;
       } CentroidalMomentumConstraint;
       // Symbol: drake::multibody::ContactWrench
       struct /* ContactWrench */ {
-        // Source: drake/multibody/optimization/contact_wrench.h:15
+        // Source: drake/multibody/optimization/contact_wrench.h
         const char* doc =
 R"""(Stores the contact wrench (spatial force) from Body A to Body B
 applied at point Cb.)""";
         // Symbol: drake::multibody::ContactWrench::ContactWrench
         struct /* ctor */ {
-          // Source: drake/multibody/optimization/contact_wrench.h:19
+          // Source: drake/multibody/optimization/contact_wrench.h
           const char* doc =
 R"""(Refer to the documentation for each attribute.)""";
         } ctor;
         // Symbol: drake::multibody::ContactWrench::F_Cb_W
         struct /* F_Cb_W */ {
-          // Source: drake/multibody/optimization/contact_wrench.h:37
+          // Source: drake/multibody/optimization/contact_wrench.h
           const char* doc =
 R"""(F_Cb_W_in The wrench (spatial force) applied at point Cb from Body A
 to Body B, measured in the world frame.)""";
         } F_Cb_W;
         // Symbol: drake::multibody::ContactWrench::bodyA_index
         struct /* bodyA_index */ {
-          // Source: drake/multibody/optimization/contact_wrench.h:27
+          // Source: drake/multibody/optimization/contact_wrench.h
           const char* doc = R"""(The index of Body A.)""";
         } bodyA_index;
         // Symbol: drake::multibody::ContactWrench::bodyB_index
         struct /* bodyB_index */ {
-          // Source: drake/multibody/optimization/contact_wrench.h:29
+          // Source: drake/multibody/optimization/contact_wrench.h
           const char* doc = R"""(The index of Body B.)""";
         } bodyB_index;
         // Symbol: drake::multibody::ContactWrench::p_WCb_W
         struct /* p_WCb_W */ {
-          // Source: drake/multibody/optimization/contact_wrench.h:33
+          // Source: drake/multibody/optimization/contact_wrench.h
           const char* doc =
 R"""(The position of the point Cb (where the wrench is applied) expressed
 in the world frame W.)""";
@@ -246,20 +246,20 @@ in the world frame W.)""";
       } ContactWrench;
       // Symbol: drake::multibody::ContactWrenchEvaluator
       struct /* ContactWrenchEvaluator */ {
-        // Source: drake/multibody/optimization/contact_wrench_evaluator.h:19
+        // Source: drake/multibody/optimization/contact_wrench_evaluator.h
         const char* doc = R"""()""";
         // Symbol: drake::multibody::ContactWrenchEvaluator::ComposeVariableValues
         struct /* ComposeVariableValues */ {
-          // Source: drake/multibody/optimization/contact_wrench_evaluator.h:38
+          // Source: drake/multibody/optimization/contact_wrench_evaluator.h
           const char* doc_2args_constsystemsContext_constDerived = R"""(Overloads ComposeVariableValues)""";
-          // Source: drake/multibody/optimization/contact_wrench_evaluator.h:56
+          // Source: drake/multibody/optimization/contact_wrench_evaluator.h
           const char* doc_2args_constEigenMatrixBase_constEigenMatrixBase =
 R"""(Overloads ComposeVariableValues with q, λ as the input instead of
 context, λ.)""";
         } ComposeVariableValues;
         // Symbol: drake::multibody::ContactWrenchEvaluator::ContactWrenchEvaluator
         struct /* ctor */ {
-          // Source: drake/multibody/optimization/contact_wrench_evaluator.h:102
+          // Source: drake/multibody/optimization/contact_wrench_evaluator.h
           const char* doc =
 R"""(Each derived class should call this constructor.
 
@@ -281,38 +281,38 @@ Parameter ``geometry_id_pair``:
         } ctor;
         // Symbol: drake::multibody::ContactWrenchEvaluator::context
         struct /* context */ {
-          // Source: drake/multibody/optimization/contact_wrench_evaluator.h:85
+          // Source: drake/multibody/optimization/contact_wrench_evaluator.h
           const char* doc = R"""(Getter for const context)""";
         } context;
         // Symbol: drake::multibody::ContactWrenchEvaluator::geometry_id_pair
         struct /* geometry_id_pair */ {
-          // Source: drake/multibody/optimization/contact_wrench_evaluator.h:78
+          // Source: drake/multibody/optimization/contact_wrench_evaluator.h
           const char* doc = R"""(Returns the pair of geometry IDs.)""";
         } geometry_id_pair;
         // Symbol: drake::multibody::ContactWrenchEvaluator::get_mutable_context
         struct /* get_mutable_context */ {
-          // Source: drake/multibody/optimization/contact_wrench_evaluator.h:88
+          // Source: drake/multibody/optimization/contact_wrench_evaluator.h
           const char* doc = R"""(Getter for the mutable context)""";
         } get_mutable_context;
         // Symbol: drake::multibody::ContactWrenchEvaluator::lambda
         struct /* lambda */ {
-          // Source: drake/multibody/optimization/contact_wrench_evaluator.h:130
+          // Source: drake/multibody/optimization/contact_wrench_evaluator.h
           const char* doc =
 R"""(Extract lambda from x (x is used in Eval(x, &y)).)""";
         } lambda;
         // Symbol: drake::multibody::ContactWrenchEvaluator::num_lambda
         struct /* num_lambda */ {
-          // Source: drake/multibody/optimization/contact_wrench_evaluator.h:73
+          // Source: drake/multibody/optimization/contact_wrench_evaluator.h
           const char* doc = R"""(Returns the size of lambda.)""";
         } num_lambda;
         // Symbol: drake::multibody::ContactWrenchEvaluator::plant
         struct /* plant */ {
-          // Source: drake/multibody/optimization/contact_wrench_evaluator.h:82
+          // Source: drake/multibody/optimization/contact_wrench_evaluator.h
           const char* doc = R"""()""";
         } plant;
         // Symbol: drake::multibody::ContactWrenchEvaluator::q
         struct /* q */ {
-          // Source: drake/multibody/optimization/contact_wrench_evaluator.h:122
+          // Source: drake/multibody/optimization/contact_wrench_evaluator.h
           const char* doc =
 R"""(Extract the generalized configuration q from x (x is used in Eval(x,
 &y)).)""";
@@ -320,14 +320,14 @@ R"""(Extract the generalized configuration q from x (x is used in Eval(x,
       } ContactWrenchEvaluator;
       // Symbol: drake::multibody::ContactWrenchFromForceInWorldFrameEvaluator
       struct /* ContactWrenchFromForceInWorldFrameEvaluator */ {
-        // Source: drake/multibody/optimization/contact_wrench_evaluator.h:150
+        // Source: drake/multibody/optimization/contact_wrench_evaluator.h
         const char* doc =
 R"""(The contact wrench is τ_AB_W = 0, f_AB_W = λ Namely we assume that λ
 is the contact force from A to B, applied directly at B's witness
 point.)""";
         // Symbol: drake::multibody::ContactWrenchFromForceInWorldFrameEvaluator::ContactWrenchFromForceInWorldFrameEvaluator
         struct /* ctor */ {
-          // Source: drake/multibody/optimization/contact_wrench_evaluator.h:164
+          // Source: drake/multibody/optimization/contact_wrench_evaluator.h
           const char* doc =
 R"""(Parameter ``plant``:
     The MultibodyPlant on which the contact wrench is computed. The
@@ -345,34 +345,34 @@ Parameter ``geometry_id_pair``:
       } ContactWrenchFromForceInWorldFrameEvaluator;
       // Symbol: drake::multibody::GeometryPairContactWrenchEvaluatorBinding
       struct /* GeometryPairContactWrenchEvaluatorBinding */ {
-        // Source: drake/multibody/optimization/contact_wrench_evaluator.h:191
+        // Source: drake/multibody/optimization/contact_wrench_evaluator.h
         const char* doc = R"""()""";
         // Symbol: drake::multibody::GeometryPairContactWrenchEvaluatorBinding::GeometryPairContactWrenchEvaluatorBinding
         struct /* ctor */ {
-          // Source: drake/multibody/optimization/contact_wrench_evaluator.h:192
+          // Source: drake/multibody/optimization/contact_wrench_evaluator.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::multibody::GeometryPairContactWrenchEvaluatorBinding::contact_wrench_evaluator
         struct /* contact_wrench_evaluator */ {
-          // Source: drake/multibody/optimization/contact_wrench_evaluator.h:202
+          // Source: drake/multibody/optimization/contact_wrench_evaluator.h
           const char* doc = R"""()""";
         } contact_wrench_evaluator;
         // Symbol: drake::multibody::GeometryPairContactWrenchEvaluatorBinding::lambda_indices_in_all_lambda
         struct /* lambda_indices_in_all_lambda */ {
-          // Source: drake/multibody/optimization/contact_wrench_evaluator.h:201
+          // Source: drake/multibody/optimization/contact_wrench_evaluator.h
           const char* doc = R"""()""";
         } lambda_indices_in_all_lambda;
       } GeometryPairContactWrenchEvaluatorBinding;
       // Symbol: drake::multibody::ManipulatorEquationConstraint
       struct /* ManipulatorEquationConstraint */ {
-        // Source: drake/multibody/optimization/manipulator_equation_constraint.h:24
+        // Source: drake/multibody/optimization/manipulator_equation_constraint.h
         const char* doc =
 R"""(A Constraint to impose the manipulator equation: 0 = (Buₙ₊₁ + ∑ᵢ
 (Jᵢ_WBᵀ(qₙ₊₁)ᵀ * Fᵢ_AB_W(λᵢ,ₙ₊₁)) + tau_g(qₙ₊₁) - C(qₙ₊₁, Vₙ₊₁)) * dt
 - M(qₙ₊₁) * (Vₙ₊₁ - Vₙ))""";
         // Symbol: drake::multibody::ManipulatorEquationConstraint::MakeBinding
         struct /* MakeBinding */ {
-          // Source: drake/multibody/optimization/manipulator_equation_constraint.h:54
+          // Source: drake/multibody/optimization/manipulator_equation_constraint.h
           const char* doc =
 R"""(This constraint depends on the decision variable vector: {vₙ, qₙ₊₁,
 vₙ₊₁, uₙ₊₁, λₙ₊₁, dt}.
@@ -421,12 +421,12 @@ Precondition:
         } MakeBinding;
         // Symbol: drake::multibody::ManipulatorEquationConstraint::ManipulatorEquationConstraint
         struct /* ctor */ {
-          // Source: drake/multibody/optimization/manipulator_equation_constraint.h:26
+          // Source: drake/multibody/optimization/manipulator_equation_constraint.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::multibody::ManipulatorEquationConstraint::contact_pair_to_wrench_evaluator
         struct /* contact_pair_to_wrench_evaluator */ {
-          // Source: drake/multibody/optimization/manipulator_equation_constraint.h:73
+          // Source: drake/multibody/optimization/manipulator_equation_constraint.h
           const char* doc =
 R"""(Getter for contact_pair_to_wrench_evaluator, passed in the
 constructor.)""";
@@ -434,7 +434,7 @@ constructor.)""";
       } ManipulatorEquationConstraint;
       // Symbol: drake::multibody::QuaternionEulerIntegrationConstraint
       struct /* QuaternionEulerIntegrationConstraint */ {
-        // Source: drake/multibody/optimization/quaternion_integration_constraint.h:57
+        // Source: drake/multibody/optimization/quaternion_integration_constraint.h
         const char* doc =
 R"""(If we have a body with orientation quaternion z₁ at time t₁, and a
 quaternion z₂ at time t₂ = t₁ + h, with the angular velocity ω
@@ -489,25 +489,25 @@ Note:
     optimization anyway).)""";
         // Symbol: drake::multibody::QuaternionEulerIntegrationConstraint::ComposeVariable
         struct /* ComposeVariable */ {
-          // Source: drake/multibody/optimization/quaternion_integration_constraint.h:69
+          // Source: drake/multibody/optimization/quaternion_integration_constraint.h
           const char* doc = R"""()""";
         } ComposeVariable;
         // Symbol: drake::multibody::QuaternionEulerIntegrationConstraint::QuaternionEulerIntegrationConstraint
         struct /* ctor */ {
-          // Source: drake/multibody/optimization/quaternion_integration_constraint.h:64
+          // Source: drake/multibody/optimization/quaternion_integration_constraint.h
           const char* doc =
 R"""(Parameter ``allow_quaternion_negation``:
     Refer to the class documentation.)""";
         } ctor;
         // Symbol: drake::multibody::QuaternionEulerIntegrationConstraint::allow_quaternion_negation
         struct /* allow_quaternion_negation */ {
-          // Source: drake/multibody/optimization/quaternion_integration_constraint.h:78
+          // Source: drake/multibody/optimization/quaternion_integration_constraint.h
           const char* doc = R"""()""";
         } allow_quaternion_negation;
       } QuaternionEulerIntegrationConstraint;
       // Symbol: drake::multibody::SpatialVelocityConstraint
       struct /* SpatialVelocityConstraint */ {
-        // Source: drake/multibody/optimization/spatial_velocity_constraint.h:20
+        // Source: drake/multibody/optimization/spatial_velocity_constraint.h
         const char* doc =
 R"""(Constrains the spatial velocity of a frame C, rigidly attached to a
 frame B, measured and expressed in frame A. It should be bound with
@@ -515,13 +515,13 @@ decision variables corresponding to the multibody state x=[q,v] of the
 ``plant`` passed to the constructor.)""";
         // Symbol: drake::multibody::SpatialVelocityConstraint::AngularVelocityBounds
         struct /* AngularVelocityBounds */ {
-          // Source: drake/multibody/optimization/spatial_velocity_constraint.h:26
+          // Source: drake/multibody/optimization/spatial_velocity_constraint.h
           const char* doc =
 R"""(Parametrizes bounds on the magnitude and direction of the angular
 velocity vector.)""";
           // Symbol: drake::multibody::SpatialVelocityConstraint::AngularVelocityBounds::magnitude_lower
           struct /* magnitude_lower */ {
-            // Source: drake/multibody/optimization/spatial_velocity_constraint.h:30
+            // Source: drake/multibody/optimization/spatial_velocity_constraint.h
             const char* doc =
 R"""(Lower bound on the magnitude of the angular velocity vector. Must be
 non-negative. The actual constraint will be implemented as a
@@ -529,7 +529,7 @@ constraint on the squared magnitude.)""";
           } magnitude_lower;
           // Symbol: drake::multibody::SpatialVelocityConstraint::AngularVelocityBounds::magnitude_upper
           struct /* magnitude_upper */ {
-            // Source: drake/multibody/optimization/spatial_velocity_constraint.h:35
+            // Source: drake/multibody/optimization/spatial_velocity_constraint.h
             const char* doc =
 R"""(Upper bound on the magnitude of the angular velocity vector. Must be ≥
 magnitude_lower. The actual constraint will be implemented as a
@@ -537,14 +537,14 @@ constraint on the squared magnitude.)""";
           } magnitude_upper;
           // Symbol: drake::multibody::SpatialVelocityConstraint::AngularVelocityBounds::reference_direction
           struct /* reference_direction */ {
-            // Source: drake/multibody/optimization/spatial_velocity_constraint.h:39
+            // Source: drake/multibody/optimization/spatial_velocity_constraint.h
             const char* doc =
 R"""(Reference direction of the angular velocity vector. (Only the
 direction matters, the magnitude does not).)""";
           } reference_direction;
           // Symbol: drake::multibody::SpatialVelocityConstraint::AngularVelocityBounds::theta_bound
           struct /* theta_bound */ {
-            // Source: drake/multibody/optimization/spatial_velocity_constraint.h:46
+            // Source: drake/multibody/optimization/spatial_velocity_constraint.h
             const char* doc =
 R"""(The angle difference between w_AC and reference_direction will be
 constrained to θ ∈ [0,π] ≤ θ_bound. Must be nonnegative. The actual
@@ -555,7 +555,7 @@ to avoid numerical difficulties.)""";
         } AngularVelocityBounds;
         // Symbol: drake::multibody::SpatialVelocityConstraint::SpatialVelocityConstraint
         struct /* ctor */ {
-          // Source: drake/multibody/optimization/spatial_velocity_constraint.h:74
+          // Source: drake/multibody/optimization/spatial_velocity_constraint.h
           const char* doc =
 R"""(Constructs SpatialVelocityConstraint object.
 
@@ -611,13 +611,13 @@ Raises:
       } SpatialVelocityConstraint;
       // Symbol: drake::multibody::StaticEquilibriumConstraint
       struct /* StaticEquilibriumConstraint */ {
-        // Source: drake/multibody/optimization/static_equilibrium_constraint.h:22
+        // Source: drake/multibody/optimization/static_equilibrium_constraint.h
         const char* doc =
 R"""(Impose the static equilibrium constraint 0 = τ_g + Bu + ∑J_WBᵀ(q) *
 Fapp_B_W)""";
         // Symbol: drake::multibody::StaticEquilibriumConstraint::MakeBinding
         struct /* MakeBinding */ {
-          // Source: drake/multibody/optimization/static_equilibrium_constraint.h:48
+          // Source: drake/multibody/optimization/static_equilibrium_constraint.h
           const char* doc =
 R"""(Create a static equilibrium constraint 0 = g(q) + Bu + ∑ᵢ
 JᵢᵀFᵢ_AB_W(λᵢ) This constraint depends on the variables q, u and λ.
@@ -655,12 +655,12 @@ Precondition:
         } MakeBinding;
         // Symbol: drake::multibody::StaticEquilibriumConstraint::StaticEquilibriumConstraint
         struct /* ctor */ {
-          // Source: drake/multibody/optimization/static_equilibrium_constraint.h:24
+          // Source: drake/multibody/optimization/static_equilibrium_constraint.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::multibody::StaticEquilibriumConstraint::contact_pair_to_wrench_evaluator
         struct /* contact_pair_to_wrench_evaluator */ {
-          // Source: drake/multibody/optimization/static_equilibrium_constraint.h:64
+          // Source: drake/multibody/optimization/static_equilibrium_constraint.h
           const char* doc =
 R"""(Getter for contact_pair_to_wrench_evaluator, passed in the
 constructor.)""";
@@ -668,7 +668,7 @@ constructor.)""";
       } StaticEquilibriumConstraint;
       // Symbol: drake::multibody::StaticEquilibriumProblem
       struct /* StaticEquilibriumProblem */ {
-        // Source: drake/multibody/optimization/static_equilibrium_problem.h:33
+        // Source: drake/multibody/optimization/static_equilibrium_problem.h
         const char* doc =
 R"""(Finds the static equilibrium pose of a multibody system through
 optimization. The constraints are 1. 0 = g(q) + Bu + ∑ᵢ JᵢᵀFᵢ_AB_W(λᵢ)
@@ -680,7 +680,7 @@ the contact force and the signed distance. 5. q within the joint
 limit.)""";
         // Symbol: drake::multibody::StaticEquilibriumProblem::GetContactWrenchSolution
         struct /* GetContactWrenchSolution */ {
-          // Source: drake/multibody/optimization/static_equilibrium_problem.h:71
+          // Source: drake/multibody/optimization/static_equilibrium_problem.h
           const char* doc =
 R"""(Retrieve the solution to all contact wrenches.
 
@@ -689,7 +689,7 @@ Parameter ``result``:
         } GetContactWrenchSolution;
         // Symbol: drake::multibody::StaticEquilibriumProblem::StaticEquilibriumProblem
         struct /* ctor */ {
-          // Source: drake/multibody/optimization/static_equilibrium_problem.h:48
+          // Source: drake/multibody/optimization/static_equilibrium_problem.h
           const char* doc =
 R"""(Parameter ``plant``:
     The plant for which the static equilibrium posture is computed.
@@ -708,7 +708,7 @@ Parameter ``ignored_collision_pairs``:
         } ctor;
         // Symbol: drake::multibody::StaticEquilibriumProblem::UpdateComplementarityTolerance
         struct /* UpdateComplementarityTolerance */ {
-          // Source: drake/multibody/optimization/static_equilibrium_problem.h:79
+          // Source: drake/multibody/optimization/static_equilibrium_problem.h
           const char* doc =
 R"""(Updates the tolerance on all the complementarity constraints α * β =
 0. The complementarity constraint is relaxed as 0 ≤ α * β ≤ tol. See
@@ -716,31 +716,31 @@ AddStaticFrictionConeComplementarityConstraint() for more details.)""";
         } UpdateComplementarityTolerance;
         // Symbol: drake::multibody::StaticEquilibriumProblem::get_mutable_prog
         struct /* get_mutable_prog */ {
-          // Source: drake/multibody/optimization/static_equilibrium_problem.h:56
+          // Source: drake/multibody/optimization/static_equilibrium_problem.h
           const char* doc = R"""()""";
         } get_mutable_prog;
         // Symbol: drake::multibody::StaticEquilibriumProblem::prog
         struct /* prog */ {
-          // Source: drake/multibody/optimization/static_equilibrium_problem.h:59
+          // Source: drake/multibody/optimization/static_equilibrium_problem.h
           const char* doc =
 R"""(Getter for the immutable optimization program.)""";
         } prog;
         // Symbol: drake::multibody::StaticEquilibriumProblem::q_vars
         struct /* q_vars */ {
-          // Source: drake/multibody/optimization/static_equilibrium_problem.h:62
+          // Source: drake/multibody/optimization/static_equilibrium_problem.h
           const char* doc =
 R"""(Getter for q, the decision variable for the generalized position.)""";
         } q_vars;
         // Symbol: drake::multibody::StaticEquilibriumProblem::u_vars
         struct /* u_vars */ {
-          // Source: drake/multibody/optimization/static_equilibrium_problem.h:65
+          // Source: drake/multibody/optimization/static_equilibrium_problem.h
           const char* doc =
 R"""(Getter for u, the decision variable for the input.)""";
         } u_vars;
       } StaticEquilibriumProblem;
       // Symbol: drake::multibody::StaticFrictionConeConstraint
       struct /* StaticFrictionConeConstraint */ {
-        // Source: drake/multibody/optimization/static_friction_cone_constraint.h:29
+        // Source: drake/multibody/optimization/static_friction_cone_constraint.h
         const char* doc =
 R"""(Formulates the nonlinear friction cone constraint |fₜ| ≤ μ*fₙ, where
 fₜ is the tangential contact force, fₙ is the normal contact force,
@@ -758,7 +758,7 @@ generalized position, and λ is the parameterization of the contact
 wrench.)""";
         // Symbol: drake::multibody::StaticFrictionConeConstraint::DecomposeX
         struct /* DecomposeX */ {
-          // Source: drake/multibody/optimization/static_friction_cone_constraint.h:55
+          // Source: drake/multibody/optimization/static_friction_cone_constraint.h
           const char* doc =
 R"""(Given the bound variable ``x``, decompose it into the generalized
 position q, and λ as a parameterization of the contact wrench. x = [q;
@@ -766,7 +766,7 @@ position q, and λ as a parameterization of the contact wrench. x = [q;
         } DecomposeX;
         // Symbol: drake::multibody::StaticFrictionConeConstraint::StaticFrictionConeConstraint
         struct /* ctor */ {
-          // Source: drake/multibody/optimization/static_friction_cone_constraint.h:45
+          // Source: drake/multibody/optimization/static_friction_cone_constraint.h
           const char* doc =
 R"""(Parameter ``contact_wrench_evaluator``:
     The evaluator takes in the generalized position q, and a
@@ -786,7 +786,7 @@ Note:
       } StaticFrictionConeConstraint;
       // Symbol: drake::multibody::Toppra
       struct /* Toppra */ {
-        // Source: drake/multibody/optimization/toppra.h:64
+        // Source: drake/multibody/optimization/toppra.h
         const char* doc =
 R"""(Solves a Time Optimal Path Parameterization based on Reachability
 Analysis (TOPPRA) to find the fastest traversal of a given path,
@@ -796,7 +796,7 @@ Analysis" by Hung Pham and Quang Cuong Pham, IEEE Transactions on
 Robotics, 2018.)""";
         // Symbol: drake::multibody::Toppra::AddFrameAccelerationLimit
         struct /* AddFrameAccelerationLimit */ {
-          // Source: drake/multibody/optimization/toppra.h:233
+          // Source: drake/multibody/optimization/toppra.h
           const char* doc_const =
 R"""(Adds a limit on the elements of the spatial acceleration of the given
 frame, measured and expressed in the world frame. The limits should be
@@ -820,7 +820,7 @@ Returns:
     A pair containing the linear constraints that will enforce the
     frame acceleration limit on the backward pass and forward pass
     respectively.)""";
-          // Source: drake/multibody/optimization/toppra.h:264
+          // Source: drake/multibody/optimization/toppra.h
           const char* doc_trajectory =
 R"""(A version of acceleration limit that uses a trajectory for the upper
 and lower limits.
@@ -862,7 +862,7 @@ Note:
         } AddFrameAccelerationLimit;
         // Symbol: drake::multibody::Toppra::AddFrameTranslationalSpeedLimit
         struct /* AddFrameTranslationalSpeedLimit */ {
-          // Source: drake/multibody/optimization/toppra.h:195
+          // Source: drake/multibody/optimization/toppra.h
           const char* doc_const =
 R"""(Adds a limit on the magnitude of the translational velocity of the
 given frame, measured and expressed in the world frame.
@@ -876,7 +876,7 @@ Parameter ``upper_limit``:
 Returns:
     The bounding box constraint that will enforce the frame
     translational speed limit during the backward pass.)""";
-          // Source: drake/multibody/optimization/toppra.h:213
+          // Source: drake/multibody/optimization/toppra.h
           const char* doc_trajectory =
 R"""(A version of the frame translational speed limit that uses a
 trajectory for the limit.
@@ -906,7 +906,7 @@ Note:
         } AddFrameTranslationalSpeedLimit;
         // Symbol: drake::multibody::Toppra::AddFrameVelocityLimit
         struct /* AddFrameVelocityLimit */ {
-          // Source: drake/multibody/optimization/toppra.h:180
+          // Source: drake/multibody/optimization/toppra.h
           const char* doc =
 R"""(Adds a limit on the elements of the spatial velocity of the given
 frame, measured and and expressed in the world frame. The limits
@@ -928,7 +928,7 @@ Returns:
         } AddFrameVelocityLimit;
         // Symbol: drake::multibody::Toppra::AddJointAccelerationLimit
         struct /* AddJointAccelerationLimit */ {
-          // Source: drake/multibody/optimization/toppra.h:145
+          // Source: drake/multibody/optimization/toppra.h
           const char* doc =
 R"""(Adds an acceleration limit to all the degrees of freedom in the plant.
 The limits must be arranged in the same order as the entries in the
@@ -951,7 +951,7 @@ Returns:
         } AddJointAccelerationLimit;
         // Symbol: drake::multibody::Toppra::AddJointTorqueLimit
         struct /* AddJointTorqueLimit */ {
-          // Source: drake/multibody/optimization/toppra.h:164
+          // Source: drake/multibody/optimization/toppra.h
           const char* doc =
 R"""(Adds a torque limit to all the degrees of freedom in the plant. The
 limits must be arranged in the same order as the entries in the path.
@@ -974,7 +974,7 @@ Returns:
         } AddJointTorqueLimit;
         // Symbol: drake::multibody::Toppra::AddJointVelocityLimit
         struct /* AddJointVelocityLimit */ {
-          // Source: drake/multibody/optimization/toppra.h:129
+          // Source: drake/multibody/optimization/toppra.h
           const char* doc =
 R"""(Adds a velocity limit to all the degrees of freedom in the plant. The
 limits must be arranged in the same order as the entries in the path.
@@ -987,7 +987,7 @@ Parameter ``upper_limit``:
         } AddJointVelocityLimit;
         // Symbol: drake::multibody::Toppra::CalcGridPoints
         struct /* CalcGridPoints */ {
-          // Source: drake/multibody/optimization/toppra.h:105
+          // Source: drake/multibody/optimization/toppra.h
           const char* doc =
 R"""(Takes a path and generates a sequence of gridpoints selected to
 control the interpolation error of the optimization. The gridpoints
@@ -1017,7 +1017,7 @@ path.start_time() and path.end_time().)""";
         } CalcGridPoints;
         // Symbol: drake::multibody::Toppra::SolvePathParameterization
         struct /* SolvePathParameterization */ {
-          // Source: drake/multibody/optimization/toppra.h:120
+          // Source: drake/multibody/optimization/toppra.h
           const char* doc =
 R"""(Solves the TOPPRA optimization and returns the time optimized path
 parameterization s(t). This can be used with the original path q(s) to
@@ -1034,7 +1034,7 @@ Parameter ``s_dot_end``:
         } SolvePathParameterization;
         // Symbol: drake::multibody::Toppra::Toppra
         struct /* ctor */ {
-          // Source: drake/multibody/optimization/toppra.h:86
+          // Source: drake/multibody/optimization/toppra.h
           const char* doc =
 R"""(Constructs an inverse kinematics problem for a MultibodyPlant. This
 constructor will create and own a context for ``plant``.
@@ -1065,7 +1065,7 @@ Note:
       } Toppra;
       // Symbol: drake::multibody::ToppraDiscretization
       struct /* ToppraDiscretization */ {
-        // Source: drake/multibody/optimization/toppra.h:35
+        // Source: drake/multibody/optimization/toppra.h
         const char* doc =
 R"""(Selects how linear constraints are enforced for TOPPRA's optimization.
 kCollocation - enforces constraints only at each gridpoint.
@@ -1074,12 +1074,12 @@ following gridpoint using forward integration. Yields higher accuracy
 at minor computational cost.)""";
         // Symbol: drake::multibody::ToppraDiscretization::kCollocation
         struct /* kCollocation */ {
-          // Source: drake/multibody/optimization/toppra.h:35
+          // Source: drake/multibody/optimization/toppra.h
           const char* doc = R"""()""";
         } kCollocation;
         // Symbol: drake::multibody::ToppraDiscretization::kInterpolation
         struct /* kInterpolation */ {
-          // Source: drake/multibody/optimization/toppra.h:35
+          // Source: drake/multibody/optimization/toppra.h
           const char* doc = R"""()""";
         } kInterpolation;
       } ToppraDiscretization;

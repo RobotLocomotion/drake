@@ -11,6 +11,11 @@ def _impl(repo_ctx):
 pkgconfig_glib_internal_repository = repository_rule(
     attrs = {
         "modname": attr.string(default = "glib-2.0"),
+        "extra_build_file_templates": attr.string_keyed_label_dict(
+            default = {
+                "glib/BUILD.bazel": "//tools/workspace/pkgconfig_glib_internal:glib.BUILD.bazel",  # noqa
+            },
+        ),
     },
     local = True,
     configure = True,

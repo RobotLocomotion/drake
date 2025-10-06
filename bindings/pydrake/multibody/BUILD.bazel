@@ -565,4 +565,5 @@ add_lint_tests_pydrake(
         "run_installed_mesh_to_model.py",
         "run_installed_fix_inertia.py",
     ],
+    python_lint_use_ruff_format = False,
 )

@@ -30,7 +30,7 @@ constexpr struct /* pydrake_doc_planning_trajectory_optimization */ {
       struct /* trajectory_optimization */ {
         // Symbol: drake::planning::trajectory_optimization::AddDirectCollocationConstraint
         struct /* AddDirectCollocationConstraint */ {
-          // Source: drake/planning/trajectory_optimization/direct_collocation.h:201
+          // Source: drake/planning/trajectory_optimization/direct_collocation.h
           const char* doc =
 R"""(Helper method to add a DirectCollocationConstraint to the ``prog``,
 ensuring that the order of variables in the binding matches the order
@@ -38,7 +38,7 @@ expected by the constraint.)""";
         } AddDirectCollocationConstraint;
         // Symbol: drake::planning::trajectory_optimization::DirectCollocation
         struct /* DirectCollocation */ {
-          // Source: drake/planning/trajectory_optimization/direct_collocation.h:30
+          // Source: drake/planning/trajectory_optimization/direct_collocation.h
           const char* doc =
 R"""(DirectCollocation implements the approach to trajectory optimization
 as described in C. R. Hargraves and S. W. Paris. Direct trajectory
@@ -53,7 +53,7 @@ Note: This algorithm only works with the continuous states of a
 system.)""";
           // Symbol: drake::planning::trajectory_optimization::DirectCollocation::DirectCollocation
           struct /* ctor */ {
-            // Source: drake/planning/trajectory_optimization/direct_collocation.h:66
+            // Source: drake/planning/trajectory_optimization/direct_collocation.h
             const char* doc =
 R"""(Constructs the MathematicalProgram% and adds the collocation
 constraints.
@@ -109,18 +109,18 @@ Raises:
           } ctor;
           // Symbol: drake::planning::trajectory_optimization::DirectCollocation::ReconstructInputTrajectory
           struct /* ReconstructInputTrajectory */ {
-            // Source: drake/planning/trajectory_optimization/direct_collocation.h:82
+            // Source: drake/planning/trajectory_optimization/direct_collocation.h
             const char* doc = R"""()""";
           } ReconstructInputTrajectory;
           // Symbol: drake::planning::trajectory_optimization::DirectCollocation::ReconstructStateTrajectory
           struct /* ReconstructStateTrajectory */ {
-            // Source: drake/planning/trajectory_optimization/direct_collocation.h:85
+            // Source: drake/planning/trajectory_optimization/direct_collocation.h
             const char* doc = R"""()""";
           } ReconstructStateTrajectory;
         } DirectCollocation;
         // Symbol: drake::planning::trajectory_optimization::DirectCollocationConstraint
         struct /* DirectCollocationConstraint */ {
-          // Source: drake/planning/trajectory_optimization/direct_collocation.h:111
+          // Source: drake/planning/trajectory_optimization/direct_collocation.h
           const char* doc =
 R"""(Implements the direct collocation constraints for a first-order hold
 on the input and a cubic polynomial representation of the state
@@ -131,7 +131,7 @@ these constraints, but binds that constraint multiple times (with
 different decision variables, along the trajectory).)""";
           // Symbol: drake::planning::trajectory_optimization::DirectCollocationConstraint::DirectCollocationConstraint
           struct /* ctor */ {
-            // Source: drake/planning/trajectory_optimization/direct_collocation.h:120
+            // Source: drake/planning/trajectory_optimization/direct_collocation.h
             const char* doc_double =
 R"""(See also:
     DirectCollocation constructor for a description of the parameters.
@@ -139,7 +139,7 @@ R"""(See also:
 Raises:
     RuntimeError if ``system`` is not supported by this direct
     collocation method.)""";
-            // Source: drake/planning/trajectory_optimization/direct_collocation.h:139
+            // Source: drake/planning/trajectory_optimization/direct_collocation.h
             const char* doc_autodiff =
 R"""(Constructor which supports passing different mutable contexts for the
 different evaluation times. This can be used to facilitate caching
@@ -156,23 +156,23 @@ Raises:
           } ctor;
           // Symbol: drake::planning::trajectory_optimization::DirectCollocationConstraint::DoEval
           struct /* DoEval */ {
-            // Source: drake/planning/trajectory_optimization/direct_collocation.h:168
+            // Source: drake/planning/trajectory_optimization/direct_collocation.h
             const char* doc = R"""()""";
           } DoEval;
           // Symbol: drake::planning::trajectory_optimization::DirectCollocationConstraint::num_inputs
           struct /* num_inputs */ {
-            // Source: drake/planning/trajectory_optimization/direct_collocation.h:152
+            // Source: drake/planning/trajectory_optimization/direct_collocation.h
             const char* doc = R"""()""";
           } num_inputs;
           // Symbol: drake::planning::trajectory_optimization::DirectCollocationConstraint::num_states
           struct /* num_states */ {
-            // Source: drake/planning/trajectory_optimization/direct_collocation.h:151
+            // Source: drake/planning/trajectory_optimization/direct_collocation.h
             const char* doc = R"""()""";
           } num_states;
         } DirectCollocationConstraint;
         // Symbol: drake::planning::trajectory_optimization::DirectTranscription
         struct /* DirectTranscription */ {
-          // Source: drake/planning/trajectory_optimization/direct_transcription.h:33
+          // Source: drake/planning/trajectory_optimization/direct_transcription.h
           const char* doc =
 R"""(DirectTranscription is perhaps the simplest implementation of a
 multiple shooting method, where we have decision variables
@@ -181,7 +181,7 @@ trajectory, and one-step of numerical integration provides the dynamic
 constraints between those decision variables.)""";
           // Symbol: drake::planning::trajectory_optimization::DirectTranscription::DirectTranscription
           struct /* ctor */ {
-            // Source: drake/planning/trajectory_optimization/direct_transcription.h:59
+            // Source: drake/planning/trajectory_optimization/direct_transcription.h
             const char* doc_4args =
 R"""(Constructs the MathematicalProgram and adds the dynamic constraints.
 This version of the constructor is only for simple discrete-time
@@ -215,7 +215,7 @@ Parameter ``input_port_index``:
     $Raises:
 
 RuntimeError if ``context.has_only_discrete_state() == false``.)""";
-            // Source: drake/planning/trajectory_optimization/direct_transcription.h:125
+            // Source: drake/planning/trajectory_optimization/direct_transcription.h
             const char* doc_5args =
 R"""(Constructs the MathematicalProgram and adds the dynamic constraints.
 This version of the constructor is only for continuous-time systems;
@@ -253,7 +253,7 @@ RuntimeError if ``context.has_only_continuous_state() == false``.)""";
           } ctor;
           // Symbol: drake::planning::trajectory_optimization::DirectTranscription::ReconstructInputTrajectory
           struct /* ReconstructInputTrajectory */ {
-            // Source: drake/planning/trajectory_optimization/direct_transcription.h:142
+            // Source: drake/planning/trajectory_optimization/direct_transcription.h
             const char* doc =
 R"""(Get the input trajectory at the solution as a PiecewisePolynomial. The
 order of the trajectory will be determined by the integrator used in
@@ -261,7 +261,7 @@ the dynamic constraints.)""";
           } ReconstructInputTrajectory;
           // Symbol: drake::planning::trajectory_optimization::DirectTranscription::ReconstructStateTrajectory
           struct /* ReconstructStateTrajectory */ {
-            // Source: drake/planning/trajectory_optimization/direct_transcription.h:148
+            // Source: drake/planning/trajectory_optimization/direct_transcription.h
             const char* doc =
 R"""(Get the state trajectory at the solution as a PiecewisePolynomial. The
 order of the trajectory will be determined by the integrator used in
@@ -270,7 +270,7 @@ the dynamic constraints.)""";
         } DirectTranscription;
         // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization
         struct /* GcsTrajectoryOptimization */ {
-          // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:68
+          // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
           const char* doc =
 R"""(GcsTrajectoryOptimization implements a simplified motion planning
 optimization problem introduced in the paper `"Motion Planning around
@@ -320,7 +320,7 @@ scenes, including applying the appropriate logic to connect sets that
 "wrap around" 2π.)""";
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::AddContinuityConstraints
           struct /* AddContinuityConstraints */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1226
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(Enforces that for any two subsequent path segments in the entire
 graph, the `continuity_order`th time derivative at the end of the
@@ -379,7 +379,7 @@ Note:
           } AddContinuityConstraints;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::AddEdges
           struct /* AddEdges */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1052
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(Connects two subgraphs with directed edges.
 
@@ -436,7 +436,7 @@ Raises:
           } AddEdges;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::AddNonlinearDerivativeBounds
           struct /* AddNonlinearDerivativeBounds */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1176
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(Adds a nonlinear derivative constraints to the entire graph ``lb`` ≤
 dᴺq(t) / dtᴺ ≤ ``ub``.
@@ -469,7 +469,7 @@ Raises:
           } AddNonlinearDerivativeBounds;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::AddPathContinuityConstraints
           struct /* AddPathContinuityConstraints */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1198
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(Enforces that for any two subsequent path segments in the entire
 graph, the ``continuity_order`th path derivative at the end of the
@@ -494,7 +494,7 @@ Note:
           } AddPathContinuityConstraints;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::AddPathEnergyCost
           struct /* AddPathEnergyCost */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1104
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc_1args_weight_matrix =
 R"""(Similar to AddPathLengthCost in usage, but minimizes ∑ |weight_matrix
 * (rᵢ₊₁ − rᵢ)|₂². In comparison to AddPathLength cost, this cost
@@ -518,7 +518,7 @@ Parameter ``weight_matrix``:
 
 Precondition:
     weight_matrix must be of size num_positions() x num_positions().)""";
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1137
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc_1args_weight =
 R"""(Similar to AddPathLengthCost in usage, but minimizes ∑ |(rᵢ₊₁ − rᵢ)|₂²
 with weight being applied uniformly to all dimensions. In comparison
@@ -539,7 +539,7 @@ Parameter ``weight``:
           } AddPathEnergyCost;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::AddPathLengthCost
           struct /* AddPathLengthCost */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1084
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc_1args_weight_matrix =
 R"""(Adds multiple L2Norm Costs on the upper bound of the path length.
 Since we cannot directly compute the path length of a Bézier curve, we
@@ -561,7 +561,7 @@ Parameter ``weight_matrix``:
 
 Precondition:
     weight_matrix must be of size num_positions() x num_positions().)""";
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1120
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc_1args_weight =
 R"""(Adds multiple L2Norm Costs on the upper bound of the path length.
 Since we cannot directly compute the path length of a Bézier curve, we
@@ -581,7 +581,7 @@ Parameter ``weight``:
           } AddPathLengthCost;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::AddRegions
           struct /* AddRegions */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:980
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc_7args =
 R"""(Creates a Subgraph with the given regions and indices.
 
@@ -634,7 +634,7 @@ Parameter ``edge_offsets``:
 Raises:
     RuntimeError if any index referenced in ``edges_between_regions``
     is outside the range [0, ssize(regions)).)""";
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1006
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc_5args =
 R"""(Creates a Subgraph with the given regions. This function will compute
 the edges between the regions based on the set intersections.
@@ -669,7 +669,7 @@ Raises:
           } AddRegions;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::AddTimeCost
           struct /* AddTimeCost */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1066
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(Adds a minimum time cost to all regions in the whole graph. The cost
 is the sum of the time scaling variables.
@@ -682,7 +682,7 @@ Parameter ``weight``:
           } AddTimeCost;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::AddVelocityBounds
           struct /* AddVelocityBounds */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1151
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(Adds a linear velocity constraint to the entire graph ``lb`` ≤ q̇(t) ≤
 ``ub``.
@@ -704,7 +704,7 @@ Raises:
           } AddVelocityBounds;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::EdgesBetweenSubgraphs
           struct /* EdgesBetweenSubgraphs */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:613
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(EdgesBetweenSubgraphs are defined as the connecting edges between two
 given subgraphs. These edges are a subset of the many other edges in
@@ -717,7 +717,7 @@ framework, thus mixing it with other instances of
 GCSTrajetoryOptimization is not supported.)""";
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::EdgesBetweenSubgraphs::AddContinuityConstraints
             struct /* AddContinuityConstraints */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:724
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Enforces that for any two subsequent path segments that are joined by
 an edge in this EdgesBetweenSubgraphs, the `continuity_order`th time
@@ -781,7 +781,7 @@ Note:
             } AddContinuityConstraints;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::EdgesBetweenSubgraphs::AddEdgeConstraint
             struct /* AddEdgeConstraint */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:826
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc_2args_e_use_in_transcription =
 R"""(Adds an arbitrary user-defined constraint to every edge within the
 EdgesBetweenSubgraphs. The constraint should be defined using the
@@ -801,7 +801,7 @@ used with Transcription::kMIP or Transcription::kRelaxation. Consider
 providing an appropriate "convex surrogate" that is supported within
 GraphOfConvexSets, or exclusively using the SolveConvexRestriction
 method.)""";
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:843
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc_2args_binding_use_in_transcription =
 R"""(Convenience overload of AddEdgeConstraint to take in a
 Binding<Constraint>.
@@ -813,7 +813,7 @@ Raises:
             } AddEdgeConstraint;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::EdgesBetweenSubgraphs::AddEdgeCost
             struct /* AddEdgeCost */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:782
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc_2args_e_use_in_transcription =
 R"""(Adds an arbitrary user-defined cost to every edge within the
 EdgesBetweenSubgraphs. The cost should be defined using the
@@ -833,7 +833,7 @@ with Transcription::kMIP or Transcription::kRelaxation. Consider
 providing an appropriate "convex surrogate" that is supported within
 GraphOfConvexSets, or exclusively using the SolveConvexRestriction
 method.)""";
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:798
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc_2args_binding_use_in_transcription =
 R"""(Convenience overload of AddEdgeCost to take in a Binding<Cost>.
 
@@ -844,7 +844,7 @@ Raises:
             } AddEdgeCost;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::EdgesBetweenSubgraphs::AddNonlinearDerivativeBounds
             struct /* AddNonlinearDerivativeBounds */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:655
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Adds a nonlinear derivative constraints to the control point
 connecting the subgraphs ``lb`` ≤ dᴺq(t) / dtᴺ ≤ ``ub``.
@@ -881,7 +881,7 @@ Raises:
             } AddNonlinearDerivativeBounds;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::EdgesBetweenSubgraphs::AddPathContinuityConstraints
             struct /* AddPathContinuityConstraints */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:693
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Enforces that for any two subsequent path segments that are joined by
 an edge in this EdgesBetweenSubgraphs, the ``continuity_order`th path
@@ -911,7 +911,7 @@ Note:
             } AddPathContinuityConstraints;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::EdgesBetweenSubgraphs::AddVelocityBounds
             struct /* AddVelocityBounds */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:629
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Adds a linear velocity constraint to the control point connecting the
 subgraphs ``lb`` ≤ q̇(t) ≤ ``ub``.
@@ -932,7 +932,7 @@ Raises:
             } AddVelocityBounds;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::EdgesBetweenSubgraphs::AddZeroDerivativeConstraints
             struct /* AddZeroDerivativeConstraints */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:670
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Enforces zero derivatives on the control point connecting the
 subgraphs.
@@ -953,19 +953,19 @@ Raises:
             } AddZeroDerivativeConstraints;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::EdgesBetweenSubgraphs::Edges
             struct /* Edges */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:729
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Returns constant reference to a vector of mutable pointers to the
 edges.)""";
             } Edges;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::EdgesBetweenSubgraphs::EdgesBetweenSubgraphs
             struct /* ctor */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:615
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc = R"""()""";
             } ctor;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::EdgesBetweenSubgraphs::edge_constituent_vertex_control_points
             struct /* edge_constituent_vertex_control_points */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:762
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Returns a pair of placeholder decision variables (not actually
 declared as decision variables in the MathematicalProgram) associated
@@ -980,7 +980,7 @@ directly into objectives/constraints will result in an error.)""";
             } edge_constituent_vertex_control_points;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::EdgesBetweenSubgraphs::edge_constituent_vertex_durations
             struct /* edge_constituent_vertex_durations */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:746
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Returns a pair of placeholder decision variables (not actually
 declared as decision variables in the MathematicalProgram) associated
@@ -993,7 +993,7 @@ objectives/constraints will result in an error.)""";
           } EdgesBetweenSubgraphs;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::EstimateComplexity
           struct /* EstimateComplexity */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1294
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(Provide a heuristic estimate of the complexity of the underlying GCS
 mathematical program, for regression testing purposes. Here we sum the
@@ -1002,7 +1002,7 @@ rough approximation of the complexity of the subproblems.)""";
           } EstimateComplexity;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::GcsTrajectoryOptimization
           struct /* ctor */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:82
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(Constructs the motion planning problem.
 
@@ -1021,13 +1021,13 @@ Parameter ``continuous_revolute_joints``:
           } ctor;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::GetEdgesBetweenSubgraphs
           struct /* GetEdgesBetweenSubgraphs */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1300
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(Returns a vector of all edges between subgraphs.)""";
           } GetEdgesBetweenSubgraphs;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::GetGraphvizString
           struct /* GetGraphvizString */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:941
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(Returns a Graphviz string describing the graph vertices and edges. If
 ``result`` is supplied, then the graph will be annotated with the
@@ -1035,12 +1035,12 @@ solution values.)""";
           } GetGraphvizString;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::GetSubgraphs
           struct /* GetSubgraphs */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1297
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc = R"""(Returns a vector of all subgraphs.)""";
           } GetSubgraphs;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::NormalizeSegmentTimes
           struct /* NormalizeSegmentTimes */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1318
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(Normalizes each trajectory segment to one second in duration.
 Reconstructs the path r(s) from the solution trajectory q(t) of
@@ -1056,7 +1056,7 @@ Raises:
           } NormalizeSegmentTimes;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::RemoveSubgraph
           struct /* RemoveSubgraph */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1015
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(Remove a subgraph and all associated edges found in the subgraph and
 to and from other subgraphs.
@@ -1067,7 +1067,7 @@ Precondition:
           } RemoveSubgraph;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::SolveConvexRestriction
           struct /* SolveConvexRestriction */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1284
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(Solves a trajectory optimization problem through specific vertices.
 
@@ -1104,7 +1104,7 @@ Raises:
           } SolveConvexRestriction;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::SolvePath
           struct /* SolvePath */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1256
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(Formulates and solves the mixed-integer convex formulation of the
 shortest path problem on the whole graph.
@@ -1142,7 +1142,7 @@ See also:
           } SolvePath;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph
           struct /* Subgraph */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:96
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(A Subgraph is a subset of the larger graph. It is defined by a set of
 regions and edges between them based on intersection. From an API
@@ -1153,7 +1153,7 @@ GraphOfConvexSets does not differentiate between subgraphs and can't
 be mixed with other instances of GcsTrajectoryOptimization.)""";
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::AddContinuityConstraints
             struct /* AddContinuityConstraints */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:289
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Enforces that for any two subsequent path segments within the
 subgraph, the `continuity_order`th time derivative at the end of the
@@ -1216,7 +1216,7 @@ Note:
             } AddContinuityConstraints;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::AddEdgeConstraint
             struct /* AddEdgeConstraint */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:478
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc_2args_e_use_in_transcription =
 R"""(Adds an arbitrary user-defined constraint (in the form of a Formula or
 Binding<Constraint>) to every internal edge within the subgraph. The
@@ -1237,7 +1237,7 @@ used with Transcription::kMIP or Transcription::kRelaxation. Consider
 providing an appropriate "convex surrogate" that is supported within
 GraphOfConvexSets, or exclusively using the SolveConvexRestriction
 method.)""";
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:495
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc_2args_binding_use_in_transcription =
 R"""(Convenience overload of AddEdgeConstraint to take in a
 Binding<Constraint>.
@@ -1249,7 +1249,7 @@ Raises:
             } AddEdgeConstraint;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::AddEdgeCost
             struct /* AddEdgeCost */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:434
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc_2args_e_use_in_transcription =
 R"""(Adds an arbitrary user-defined cost to every internal edge within the
 subgraph. The cost should be defined using the placeholder control
@@ -1269,7 +1269,7 @@ with Transcription::kMIP or Transcription::kRelaxation. Consider
 providing an appropriate "convex surrogate" that is supported within
 GraphOfConvexSets, or exclusively using the SolveConvexRestriction
 method.)""";
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:450
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc_2args_binding_use_in_transcription =
 R"""(Convenience overload of AddEdgeCost to take in a Binding<Cost>.
 
@@ -1280,7 +1280,7 @@ Raises:
             } AddEdgeCost;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::AddNonlinearDerivativeBounds
             struct /* AddNonlinearDerivativeBounds */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:235
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Adds a nonlinear derivative constraints to the subgraph ``lb`` ≤
 dᴺq(t) / dtᴺ ≤ ``ub``.
@@ -1316,7 +1316,7 @@ Raises:
             } AddNonlinearDerivativeBounds;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::AddPathContinuityConstraints
             struct /* AddPathContinuityConstraints */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:259
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Enforces that for any two subsequent path segments within the
 subgraph, the ``continuity_order`th path derivative at the end of the
@@ -1345,7 +1345,7 @@ Note:
             } AddPathContinuityConstraints;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::AddPathEnergyCost
             struct /* AddPathEnergyCost */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:177
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc_1args_weight_matrix =
 R"""(Similar to AddPathLengthCost in usage, but minimizes ∑ |weight_matrix
 * (rᵢ₊₁ − rᵢ)|₂². In comparison to AddPathLength cost, this cost
@@ -1363,7 +1363,7 @@ Parameter ``weight_matrix``:
 
 Precondition:
     weight_matrix must be of size num_positions() x num_positions().)""";
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:199
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc_1args_weight =
 R"""(Similar to AddPathLengthCost in usage, but minimizes ∑ |(rᵢ₊₁ − rᵢ)|₂²
 with weight being applied uniformly to all dimensions. In comparison
@@ -1378,7 +1378,7 @@ Parameter ``weight``:
             } AddPathEnergyCost;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::AddPathLengthCost
             struct /* AddPathLengthCost */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:162
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc_1args_weight_matrix =
 R"""(Adds multiple L2Norm Costs on the upper bound of the path length.
 Since we cannot directly compute the path length of a Bézier curve, we
@@ -1395,7 +1395,7 @@ Parameter ``weight_matrix``:
 
 Precondition:
     weight_matrix must be of size num_positions() x num_positions().)""";
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:187
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc_1args_weight =
 R"""(Adds multiple L2Norm Costs on the upper bound of the path length. We
 upper bound the trajectory length by the sum of the distances between
@@ -1408,7 +1408,7 @@ Parameter ``weight``:
             } AddPathLengthCost;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::AddTimeCost
             struct /* AddTimeCost */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:147
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Adds a minimum time cost to all regions in the subgraph. The cost is
 the sum of the time scaling variables.
@@ -1418,7 +1418,7 @@ Parameter ``weight``:
             } AddTimeCost;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::AddVelocityBounds
             struct /* AddVelocityBounds */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:210
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Adds a linear velocity constraint to the subgraph ``lb`` ≤ q̇(t) ≤
 ``ub``.
@@ -1438,7 +1438,7 @@ Raises:
             } AddVelocityBounds;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::AddVertexConstraint
             struct /* AddVertexConstraint */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:392
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc_2args_e_use_in_transcription =
 R"""(Adds an arbitrary user-defined constraint to every vertex in the
 subgraph. The constraint should be defined using the placeholder
@@ -1456,7 +1456,7 @@ used with Transcription::kMIP or Transcription::kRelaxation. Consider
 providing an appropriate "convex surrogate" that is supported within
 GraphOfConvexSets, or exclusively using the SolveConvexRestriction
 method.)""";
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:408
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc_2args_binding_use_in_transcription =
 R"""(Convenience overload of AddVertexConstraint to take in a
 Binding<Constraint>.
@@ -1467,7 +1467,7 @@ Raises:
             } AddVertexConstraint;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::AddVertexCost
             struct /* AddVertexCost */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:351
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc_2args_e_use_in_transcription =
 R"""(Adds an arbitrary user-defined cost to every vertex in the subgraph.
 The cost should be defined using the placeholder control point
@@ -1485,7 +1485,7 @@ with Transcription::kMIP or Transcription::kRelaxation. Consider
 providing an appropriate "convex surrogate" that is supported within
 GraphOfConvexSets, or exclusively using the SolveConvexRestriction
 method.)""";
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:366
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc_2args_binding_use_in_transcription =
 R"""(Convenience overload of AddVertexCost to take in a Binding<Cost>.
 
@@ -1495,19 +1495,19 @@ Raises:
             } AddVertexCost;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::Edges
             struct /* Edges */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:128
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Returns constant reference to a vector of mutable pointers to the
 edges.)""";
             } Edges;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::Subgraph
             struct /* ctor */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:98
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc = R"""()""";
             } ctor;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::Vertices
             struct /* Vertices */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:115
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Returns constant reference to a vector of mutable pointers to the
 vertices stored in the subgraph. The order of the vertices is the same
@@ -1515,7 +1515,7 @@ as the order the regions were added.)""";
             } Vertices;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::edge_constituent_vertex_control_points
             struct /* edge_constituent_vertex_control_points */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:334
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Returns a pair of placeholder decision variables (not actually
 declared as decision variables in the MathematicalProgram) associated
@@ -1529,7 +1529,7 @@ error.)""";
             } edge_constituent_vertex_control_points;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::edge_constituent_vertex_durations
             struct /* edge_constituent_vertex_durations */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:320
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Returns a pair of placeholder decision variables (not actually
 declared as decision variables in the MathematicalProgram) associated
@@ -1541,31 +1541,31 @@ objectives/constraints will result in an error.)""";
             } edge_constituent_vertex_durations;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::name
             struct /* name */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:103
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc = R"""(Returns the name of the subgraph.)""";
             } name;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::order
             struct /* order */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:106
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Returns the order of the Bézier trajectory within the region.)""";
             } order;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::regions
             struct /* regions */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:139
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Returns the regions associated with this subgraph before the
 CartesianProduct.)""";
             } regions;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::size
             struct /* size */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:109
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Returns the number of vertices in the subgraph.)""";
             } size;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::vertex_control_points
             struct /* vertex_control_points */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:308
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Returns a placeholder decision variable (not actually declared as a
 decision variable in the MathematicalProgram) associated with the
@@ -1578,7 +1578,7 @@ objectives/constraints will result in an error.)""";
             } vertex_control_points;
             // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph::vertex_duration
             struct /* vertex_duration */ {
-              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:297
+              // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
               const char* doc =
 R"""(Returns a placeholder decision variable (not actually declared as a
 decision variable in the MathematicalProgram) associated with the time
@@ -1590,7 +1590,7 @@ into objectives/constraints will result in an error.)""";
           } Subgraph;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::UnwrapToContinuousTrajectory
           struct /* UnwrapToContinuousTrajectory */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1357
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(Unwraps a trajectory with continuous revolute joints into a continuous
 trajectory in the Euclidean space. Trajectories produced by
@@ -1647,27 +1647,27 @@ Raises:
           } UnwrapToContinuousTrajectory;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::continuous_revolute_joints
           struct /* continuous_revolute_joints */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:933
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(Returns a list of indices corresponding to continuous revolute joints.)""";
           } continuous_revolute_joints;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::graph_of_convex_sets
           struct /* graph_of_convex_sets */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1304
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(Getter for the underlying GraphOfConvexSets. This is intended
 primarily for inspecting the resulting programs.)""";
           } graph_of_convex_sets;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::num_positions
           struct /* num_positions */ {
-            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:930
+            // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
             const char* doc =
 R"""(Returns the number of position variables.)""";
           } num_positions;
         } GcsTrajectoryOptimization;
         // Symbol: drake::planning::trajectory_optimization::GetContinuousRevoluteJointIndices
         struct /* GetContinuousRevoluteJointIndices */ {
-          // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h:1399
+          // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
           const char* doc =
 R"""(Returns a list of indices in the plant's generalized positions which
 correspond to a continuous revolute joint (a revolute joint with no
@@ -1676,7 +1676,7 @@ component of PlanarJoint and RpyFloatingJoint.)""";
         } GetContinuousRevoluteJointIndices;
         // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization
         struct /* KinematicTrajectoryOptimization */ {
-          // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:45
+          // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
           const char* doc =
 R"""(Optimizes a trajectory, q(t) subject to costs and constraints on the
 trajectory and its derivatives. This is accomplished using a ``path``,
@@ -1712,7 +1712,7 @@ When possible this class attempts to formulate convex forms of the
 costs and constraints.)""";
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::AddAccelerationBounds
           struct /* AddAccelerationBounds */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:209
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Adds generic (nonlinear) constraints to enforce the upper and lower
 bounds to the acceleration trajectory, q̈(t). By leveraging the convex
@@ -1729,20 +1729,20 @@ Returns:
           } AddAccelerationBounds;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::AddDurationConstraint
           struct /* AddDurationConstraint */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:170
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Adds bounding box constraints for upper and lower bounds on the
 duration of the trajectory.)""";
           } AddDurationConstraint;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::AddDurationCost
           struct /* AddDurationCost */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:261
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Adds a linear cost on the duration of the trajectory.)""";
           } AddDurationCost;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::AddEffortBoundsAtNormalizedTimes
           struct /* AddEffortBoundsAtNormalizedTimes */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:253
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Adds generic (nonlinear) constraints to enforce the effort limits
 defined in the plant at a sequence of normalized times, ``s``:
@@ -1796,7 +1796,7 @@ Returns:
           } AddEffortBoundsAtNormalizedTimes;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::AddJerkBounds
           struct /* AddJerkBounds */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:223
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Adds generic (nonlinear) constraints to enforce the upper and lower
 bounds to the jerk trajectory, d³qdt³(t). By leveraging the convex
@@ -1813,7 +1813,7 @@ Returns:
           } AddJerkBounds;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::AddPathAccelerationConstraint
           struct /* AddPathAccelerationConstraint */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:164
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Adds a linear constraint on the second derivative of the path, ``lb``
 ≤ r̈(s) ≤ ``ub``. Note that this does NOT directly constrain q̈(t).
@@ -1823,7 +1823,7 @@ Precondition:
           } AddPathAccelerationConstraint;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::AddPathEnergyCost
           struct /* AddPathEnergyCost */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:287
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Adds a convex quadratic cost on an upper bound on the energy of the
 path, ∫₀¹ |ṙ(s)|₂² ds, by summing the squared distance between the
@@ -1842,7 +1842,7 @@ Returns:
           } AddPathEnergyCost;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::AddPathLengthCost
           struct /* AddPathLengthCost */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:272
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Adds a cost on an upper bound of the length of the path, ∫₀ᵀ |q̇(t)|₂
 dt, or equivalently ∫₀¹ |ṙ(s)|₂ ds, by summing the distance between
@@ -1858,14 +1858,14 @@ Returns:
           } AddPathLengthCost;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::AddPathPositionConstraint
           struct /* AddPathPositionConstraint */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:109
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc_3args =
 R"""(Adds a linear constraint on the value of the path, ``lb`` ≤ r(s) ≤
 ``ub``.
 
 Precondition:
     0 <= ``s`` <= 1.)""";
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:117
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc_2args =
 R"""(Adds a (generic) constraint on path. The constraint will be evaluated
 as if it is bound with variables corresponding to ``r(s)``.
@@ -1878,7 +1878,7 @@ Precondition:
           } AddPathPositionConstraint;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::AddPathVelocityConstraint
           struct /* AddPathVelocityConstraint */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:123
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Adds a linear constraint on the derivative of the path, ``lb`` ≤ ṙ(s)
 ≤ ``ub``. Note that this does NOT directly constrain q̇(t).
@@ -1888,7 +1888,7 @@ Precondition:
           } AddPathVelocityConstraint;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::AddPositionBounds
           struct /* AddPositionBounds */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:183
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Adds bounding box constraints to enforce upper and lower bounds on the
 positions trajectory, q(t). These bounds will be respected at all
@@ -1902,7 +1902,7 @@ Returns:
           } AddPositionBounds;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::AddVelocityBounds
           struct /* AddVelocityBounds */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:195
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Adds linear constraints to enforce upper and lower bounds on the
 velocity trajectory, q̇(t). By leveraging the convex hull property of
@@ -1919,7 +1919,7 @@ Returns:
           } AddVelocityBounds;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::AddVelocityConstraintAtNormalizedTime
           struct /* AddVelocityConstraintAtNormalizedTime */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:143
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc_2args_constraint_s =
 R"""(Adds a (generic) constraint on trajectory velocity ``q̇(t)``,
 evaluated at ``s``. The constraint will be evaluated as if it is bound
@@ -1940,7 +1940,7 @@ Precondition:
 
 Precondition:
     0 <= ``s`` <= 1.)""";
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:158
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc_2args_binding_s =
 R"""(Adds a linear constraint on some (or all) of the placeholder variables
 qdot, evaluated at a normalized time s.
@@ -1968,7 +1968,7 @@ Precondition:
           } AddVelocityConstraintAtNormalizedTime;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::KinematicTrajectoryOptimization
           struct /* ctor */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:62
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc_4args =
 R"""(Constructs an optimization problem for a position trajectory
 represented as a B-spline. The initial guess is the zero trajectory
@@ -1985,7 +1985,7 @@ Parameter ``spline_order``:
 
 Parameter ``duration``:
     The duration (in seconds) of the initial guess.)""";
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:68
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc_1args =
 R"""(Constructs an optimization problem for a trajectory represented by a
 B-spline with the same order and number of control points as
@@ -1994,13 +1994,13 @@ for the optimization.)""";
           } ctor;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::ReconstructTrajectory
           struct /* ReconstructTrajectory */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:104
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Returns the trajectory q(t) from the ``result`` of solving ``prog()``.)""";
           } ReconstructTrajectory;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::SetInitialGuess
           struct /* SetInitialGuess */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:100
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Sets the initial guess for the path and duration to match
 ``trajectory``.
@@ -2013,13 +2013,13 @@ Precondition:
           } SetInitialGuess;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::basis
           struct /* basis */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:78
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Returns the basis used to represent the path, r(s), over s∈[0,1].)""";
           } basis;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::control_points
           struct /* control_points */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:82
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Returns the control points defining the path as an M-by-N matrix,
 where M is the number of positions and N is the number of control
@@ -2027,37 +2027,37 @@ points.)""";
           } control_points;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::duration
           struct /* duration */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:88
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Returns the decision variable defining the time duration of the
 trajectory.)""";
           } duration;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::get_mutable_prog
           struct /* get_mutable_prog */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:94
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Getter for a mutable pointer to the optimization program.)""";
           } get_mutable_prog;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::num_control_points
           struct /* num_control_points */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:75
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Returns the number of control points used for the path.)""";
           } num_control_points;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::num_positions
           struct /* num_positions */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:72
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Returns the number of position variables.)""";
           } num_positions;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::prog
           struct /* prog */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:91
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc = R"""(Getter for the optimization program.)""";
           } prog;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::q
           struct /* q */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:296
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Returns the placeholder variable for generalized position q. Note
 these are NOT decision variables in the MathematicalProgram. These
@@ -2068,7 +2068,7 @@ error.)""";
           } q;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::qddot
           struct /* qddot */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:315
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Returns the placeholder variable for the second time derivative of
 generalized position. Note these are NOT decision variables in the
@@ -2079,7 +2079,7 @@ result in an error.)""";
           } qddot;
           // Symbol: drake::planning::trajectory_optimization::KinematicTrajectoryOptimization::qdot
           struct /* qdot */ {
-            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h:304
+            // Source: drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h
             const char* doc =
 R"""(Returns the placeholder variable for the time derivative of
 generalized position. Note these are NOT decision variables in the
@@ -2091,7 +2091,7 @@ result in an error.)""";
         } KinematicTrajectoryOptimization;
         // Symbol: drake::planning::trajectory_optimization::MidPointIntegrationConstraint
         struct /* MidPointIntegrationConstraint */ {
-          // Source: drake/planning/trajectory_optimization/integration_constraint.h:16
+          // Source: drake/planning/trajectory_optimization/integration_constraint.h
           const char* doc =
 R"""(Implements the midpoint integration
 
@@ -2099,19 +2099,19 @@ R"""(Implements the midpoint integration
 ẋᵣ, ẋₗ, dt))""";
           // Symbol: drake::planning::trajectory_optimization::MidPointIntegrationConstraint::ComposeX
           struct /* ComposeX */ {
-            // Source: drake/planning/trajectory_optimization/integration_constraint.h:26
+            // Source: drake/planning/trajectory_optimization/integration_constraint.h
             const char* doc =
 R"""(Compose x for the Eval input from individual variables.)""";
           } ComposeX;
           // Symbol: drake::planning::trajectory_optimization::MidPointIntegrationConstraint::MidPointIntegrationConstraint
           struct /* ctor */ {
-            // Source: drake/planning/trajectory_optimization/integration_constraint.h:18
+            // Source: drake/planning/trajectory_optimization/integration_constraint.h
             const char* doc = R"""()""";
           } ctor;
         } MidPointIntegrationConstraint;
         // Symbol: drake::planning::trajectory_optimization::MultipleShooting
         struct /* MultipleShooting */ {
-          // Source: drake/planning/trajectory_optimization/multiple_shooting.h:44
+          // Source: drake/planning/trajectory_optimization/multiple_shooting.h
           const char* doc =
 R"""(MultipleShooting is an abstract class for trajectory optimization that
 creates decision variables for inputs, states, and (optionally) sample
@@ -2135,7 +2135,7 @@ h (N-1 of these), state x (N of these), and control input u (N of
 these).)""";
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::AddCompleteTrajectoryCallback
           struct /* AddCompleteTrajectoryCallback */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:319
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Adds a callback method to visualize intermediate results of all
 variables used in the trajectory optimization. The callback should be
@@ -2158,7 +2158,7 @@ Note:
           } AddCompleteTrajectoryCallback;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::AddConstraintToAllKnotPoints
           struct /* AddConstraintToAllKnotPoints */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:170
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc_shared_ptr =
 R"""(Adds a constraint to all breakpoints, where any instances in ``vars``
 of time(), state(), and/or input() placeholder variables, as well as
@@ -2167,7 +2167,7 @@ are substituted with the relevant variables for each time index.
 
 Returns:
     A vector of the bindings added to each knot point.)""";
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:187
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Adds a constraint to all breakpoints, where any instances of time(),
 state(), and/or input() placeholder variables, as well as placeholder
@@ -2176,14 +2176,14 @@ substituted with the relevant variables for each time index.
 
 Returns:
     A vector of the bindings added to each knot point.)""";
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:200
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc_formulas =
 R"""(Variant of AddConstraintToAllKnotPoints that accepts a vector of
 formulas.)""";
           } AddConstraintToAllKnotPoints;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::AddDurationBounds
           struct /* AddDurationBounds */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:230
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Adds a constraint on the total duration of the trajectory.
 
@@ -2201,7 +2201,7 @@ Raises:
           } AddDurationBounds;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::AddEqualTimeIntervalsConstraints
           struct /* AddEqualTimeIntervalsConstraints */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:222
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Adds constraints to enforce that all time steps have equal duration.
 
@@ -2213,7 +2213,7 @@ Raises:
           } AddEqualTimeIntervalsConstraints;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::AddFinalCost
           struct /* AddFinalCost */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:240
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc_1args_e =
 R"""(Adds a cost to the final time, of the form
 
@@ -2226,7 +2226,7 @@ for the final time index.
 
 Returns:
     The final cost added to the problem.)""";
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:250
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc_1args_matrix =
 R"""(Adds support for passing in a (scalar) matrix Expression, which is a
 common output of most symbolic linear algebra operations.
@@ -2240,7 +2240,7 @@ Note:
           } AddFinalCost;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::AddInputTrajectoryCallback
           struct /* AddInputTrajectoryCallback */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:281
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Adds a callback method to visualize intermediate results of input
 variables used in the trajectory optimization. The callback should be
@@ -2259,7 +2259,7 @@ Note:
           } AddInputTrajectoryCallback;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::AddRunningCost
           struct /* AddRunningCost */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:153
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc_1args_g =
 R"""(Adds an integrated cost to all time steps, of the form
 
@@ -2270,14 +2270,14 @@ variables, as well as placeholder variables returned by calls to
 NewSequentialVariable(), are substituted with the relevant variables
 for each time index. The particular integration scheme is determined
 by the derived class implementation.)""";
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:158
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc_1args_constEigenMatrixBase =
 R"""(Adds support for passing in a (scalar) matrix Expression, which is a
 common output of most symbolic linear algebra operations.)""";
           } AddRunningCost;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::AddStateTrajectoryCallback
           struct /* AddStateTrajectoryCallback */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:298
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Adds a callback method to visualize intermediate results of state
 variables used in the trajectory optimization. The callback should be
@@ -2296,7 +2296,7 @@ Note:
           } AddStateTrajectoryCallback;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::AddTimeIntervalBounds
           struct /* AddTimeIntervalBounds */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:214
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Adds bounds on all time intervals.
 
@@ -2314,36 +2314,36 @@ Raises:
           } AddTimeIntervalBounds;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::CompleteTrajectoryCallback
           struct /* CompleteTrajectoryCallback */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:265
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc = R"""()""";
           } CompleteTrajectoryCallback;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::GetInputSamples
           struct /* GetInputSamples */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:359
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Returns a matrix containing the input values (arranged in columns) at
 each breakpoint at the solution.)""";
           } GetInputSamples;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::GetSampleTimes
           struct /* GetSampleTimes */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:347
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc_1args_h_var_values =
 R"""(Returns a vector containing the elapsed time at each breakpoint.)""";
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:352
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc_1args_result =
 R"""(Returns a vector containing the elapsed time at each breakpoint at the
 solution.)""";
           } GetSampleTimes;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::GetSequentialVariable
           struct /* GetSequentialVariable */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:500
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Returns the decision variables associated with the sequential variable
 ``name``.)""";
           } GetSequentialVariable;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::GetSequentialVariableAtIndex
           struct /* GetSequentialVariableAtIndex */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:143
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Returns the decision variables associated with the sequential variable
 ``name`` at time index ``index``.
@@ -2353,7 +2353,7 @@ See also:
           } GetSequentialVariableAtIndex;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::GetSequentialVariableSamples
           struct /* GetSequentialVariableSamples */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:372
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Returns a matrix containing the sequential variable values (arranged
 in columns) at each breakpoint at the solution.
@@ -2364,14 +2364,14 @@ Parameter ``name``:
           } GetSequentialVariableSamples;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::GetStateSamples
           struct /* GetStateSamples */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:364
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Returns a matrix containing the state values (arranged in columns) at
 each breakpoint at the solution.)""";
           } GetStateSamples;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::MultipleShooting
           struct /* ctor */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:408
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc_5args_num_inputs_num_states_num_time_samples_fixed_time_step_prog =
 R"""(Constructs a MultipleShooting instance with fixed sample times. It
 creates new placeholder variables for input and state.
@@ -2395,7 +2395,7 @@ Parameter ``prog``:
     multiple trajectory optimizations into a single program, coupled
     by a few constraints. If nullptr, then a new MathematicalProgram
     will be allocated.)""";
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:426
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc_5args_input_state_num_time_samples_fixed_time_step_prog =
 R"""(Constructs a MultipleShooting instance with fixed sample times. It
 uses the provided ``input`` and ``state`` as placeholders instead of
@@ -2420,7 +2420,7 @@ Parameter ``prog``:
     multiple trajectory optimizations into a single program, coupled
     by a few constraints. If nullptr, then a new MathematicalProgram
     will be allocated.)""";
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:446
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc_6args_num_inputs_num_states_num_time_samples_minimum_time_step_maximum_time_step_prog =
 R"""(Constructs a MultipleShooting instance with sample times as decision
 variables. It creates new placeholder variables for input, state, and
@@ -2448,7 +2448,7 @@ Parameter ``prog``:
     multiple trajectory optimizations into a single program, coupled
     by a few constraints. If nullptr, then a new MathematicalProgram
     will be allocated.)""";
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:466
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc_7args_input_state_time_num_time_samples_minimum_time_step_maximum_time_step_prog =
 R"""(Constructs a MultipleShooting instance with sample times as decision
 variables. It uses the provided ``input``, `state`, and ``time`` as
@@ -2482,12 +2482,12 @@ Parameter ``prog``:
           } ctor;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::N
           struct /* N */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:486
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc = R"""()""";
           } N;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::NewSequentialVariable
           struct /* NewSequentialVariable */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:137
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Adds a sequential variable (a variable that has associated decision
 variables for each time index) to the optimization problem and returns
@@ -2499,7 +2499,7 @@ objectives/constraints for the parent classes will result in an error.)""";
           } NewSequentialVariable;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::ReconstructInputTrajectory
           struct /* ReconstructInputTrajectory */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:380
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Get the input trajectory at the solution as a PiecewisePolynomial. The
 order of the trajectory will be determined by the integrator used in
@@ -2508,7 +2508,7 @@ input port.)""";
           } ReconstructInputTrajectory;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::ReconstructStateTrajectory
           struct /* ReconstructStateTrajectory */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:386
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Get the state trajectory at the solution as a PiecewisePolynomial. The
 order of the trajectory will be determined by the integrator used in
@@ -2516,48 +2516,48 @@ the dynamic constraints.)""";
           } ReconstructStateTrajectory;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::SetInitialTrajectory
           struct /* SetInitialTrajectory */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:342
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc = R"""()""";
           } SetInitialTrajectory;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::SubstitutePlaceholderVariables
           struct /* SubstitutePlaceholderVariables */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:474
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Replaces e.g. placeholder_x_var_ with x_vars_ at time interval
 ``interval_index``, for all placeholder variables.)""";
           } SubstitutePlaceholderVariables;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::TrajectoryCallback
           struct /* TrajectoryCallback */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:259
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc = R"""()""";
           } TrajectoryCallback;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::final_state
           struct /* final_state */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:116
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Returns the decision variables associated with the state, x, at the
 final time index.)""";
           } final_state;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::fixed_time_step
           struct /* fixed_time_step */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:389
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc = R"""()""";
           } fixed_time_step;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::h_vars
           struct /* h_vars */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:492
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc = R"""()""";
           } h_vars;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::initial_state
           struct /* initial_state */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:109
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Returns the decision variables associated with the state, x, at the
 initial time index.)""";
           } initial_state;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::input
           struct /* input */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:95
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc_0args =
 R"""(Returns placeholder decision variables (not actually declared as
 decision variables in the MathematicalProgram) associated with the
@@ -2565,31 +2565,31 @@ input, u, but with the time-index undetermined. These variables will
 be substituted for real decision variables at particular times in
 methods like AddRunningCost. Passing these variables directly into
 objectives/constraints for the parent classes will result in an error.)""";
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:123
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc_1args =
 R"""(Returns the decision variables associated with the input, u, at time
 index ``index``.)""";
           } input;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::num_inputs
           struct /* num_inputs */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:482
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc = R"""()""";
           } num_inputs;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::num_states
           struct /* num_states */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:484
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc = R"""()""";
           } num_states;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::prog
           struct /* prog */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:52
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Returns a reference to the MathematicalProgram associated with the
 trajectory optimization problem.)""";
           } prog;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::state
           struct /* state */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:85
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc_0args =
 R"""(Returns placeholder decision variables (not actually declared as
 decision variables in the MathematicalProgram) associated with the
@@ -2597,14 +2597,14 @@ state, x, but with the time-index undetermined. These variables will
 be substituted for real decision variables at particular times in
 methods like AddRunningCost. Passing these variables directly into
 objectives/constraints for the parent classes will result in an error.)""";
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:101
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc_1args =
 R"""(Returns the decision variables associated with the state, x, at time
 index ``index``.)""";
           } state;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::time
           struct /* time */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:75
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Returns a placeholder decision variable (not actually declared as a
 decision variable in the MathematicalProgram) associated with the
@@ -2615,7 +2615,7 @@ will result in an error.)""";
           } time;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::time_step
           struct /* time_step */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:63
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc =
 R"""(Returns the decision variable associated with the time step, h, at
 time index ``index``.
@@ -2625,32 +2625,32 @@ Raises:
           } time_step;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::time_steps_are_decision_variables
           struct /* time_steps_are_decision_variables */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:488
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc = R"""()""";
           } time_steps_are_decision_variables;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::u_vars
           struct /* u_vars */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:494
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc = R"""()""";
           } u_vars;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::x_vars
           struct /* x_vars */ {
-            // Source: drake/planning/trajectory_optimization/multiple_shooting.h:496
+            // Source: drake/planning/trajectory_optimization/multiple_shooting.h
             const char* doc = R"""()""";
           } x_vars;
         } MultipleShooting;
         // Symbol: drake::planning::trajectory_optimization::TimeStep
         struct /* TimeStep */ {
-          // Source: drake/planning/trajectory_optimization/direct_transcription.h:22
+          // Source: drake/planning/trajectory_optimization/direct_transcription.h
           const char* doc = R"""()""";
           // Symbol: drake::planning::trajectory_optimization::TimeStep::TimeStep
           struct /* ctor */ {
-            // Source: drake/planning/trajectory_optimization/direct_transcription.h:24
+            // Source: drake/planning/trajectory_optimization/direct_transcription.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::planning::trajectory_optimization::TimeStep::value
           struct /* value */ {
-            // Source: drake/planning/trajectory_optimization/direct_transcription.h:23
+            // Source: drake/planning/trajectory_optimization/direct_transcription.h
             const char* doc = R"""()""";
           } value;
         } TimeStep;

@@ -7,7 +7,6 @@ import unittest
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
-    DiagramBuilder,
     DiagramBuilder_,
     LeafSystem_,
     SystemScalarConverter,

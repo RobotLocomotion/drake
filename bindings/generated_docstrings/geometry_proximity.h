@@ -75,7 +75,7 @@ constexpr struct /* pydrake_doc_geometry_proximity */ {
     struct /* geometry */ {
       // Symbol: drake::geometry::Aabb
       struct /* Aabb */ {
-        // Source: drake/geometry/proximity/aabb.h:42
+        // Source: drake/geometry/proximity/aabb.h
         const char* doc =
 R"""(Axis-aligned bounding box. The box is defined in a canonical frame B
 such that it is centered on Bo and its extents are aligned with B's
@@ -103,7 +103,7 @@ measured and expressed in the same frame.
     </details>)""";
         // Symbol: drake::geometry::Aabb::Aabb
         struct /* ctor */ {
-          // Source: drake/geometry/proximity/aabb.h:60
+          // Source: drake/geometry/proximity/aabb.h
           const char* doc =
 R"""(Constructs an axis-aligned bounding box measured and expressed in
 frame H.
@@ -123,14 +123,14 @@ Precondition:
         } ctor;
         // Symbol: drake::geometry::Aabb::CalcVolume
         struct /* CalcVolume */ {
-          // Source: drake/geometry/proximity/aabb.h:97
+          // Source: drake/geometry/proximity/aabb.h
           const char* doc =
 R"""(Returns:
     Volume of the bounding box.)""";
         } CalcVolume;
         // Symbol: drake::geometry::Aabb::Equal
         struct /* Equal */ {
-          // Source: drake/geometry/proximity/aabb.h:135
+          // Source: drake/geometry/proximity/aabb.h
           const char* doc =
 R"""(Compares the values of the two Aabb instances for exact equality down
 to the last bit. Assumes that the quantities are measured and
@@ -138,7 +138,7 @@ expressed in the same frame.)""";
         } Equal;
         // Symbol: drake::geometry::Aabb::HasOverlap
         struct /* HasOverlap */ {
-          // Source: drake/geometry/proximity/aabb.h:113
+          // Source: drake/geometry/proximity/aabb.h
           const char* doc_aabb_aabb =
 R"""(Reports whether the two axis-aligned bounding boxes ``a_G`` and
 ``b_H`` intersect. The poses of ``a_G`` and ``b_H`` are defined in
@@ -155,7 +155,7 @@ Parameter ``X_GH``:
 
 Returns:
     ``True`` if the boxes intersect.)""";
-          // Source: drake/geometry/proximity/aabb.h:126
+          // Source: drake/geometry/proximity/aabb.h
           const char* doc_aabb_obb =
 R"""(Reports whether axis-aligned bounding box ``aabb_G`` intersects the
 given oriented bounding box ``obb_H``. The poses of ``aabb_G`` and
@@ -177,7 +177,7 @@ Returns:
         } HasOverlap;
         // Symbol: drake::geometry::Aabb::center
         struct /* center */ {
-          // Source: drake/geometry/proximity/aabb.h:69
+          // Source: drake/geometry/proximity/aabb.h
           const char* doc =
 R"""(Returns the center of the box -- equivalent to the position vector
 from the hierarchy frame's origin Ho to ``this`` box's origin Bo:
@@ -185,25 +185,25 @@ from the hierarchy frame's origin Ho to ``this`` box's origin Bo:
         } center;
         // Symbol: drake::geometry::Aabb::half_width
         struct /* half_width */ {
-          // Source: drake/geometry/proximity/aabb.h:72
+          // Source: drake/geometry/proximity/aabb.h
           const char* doc = R"""(Returns the half_width.)""";
         } half_width;
         // Symbol: drake::geometry::Aabb::lower
         struct /* lower */ {
-          // Source: drake/geometry/proximity/aabb.h:76
+          // Source: drake/geometry/proximity/aabb.h
           const char* doc =
 R"""(The point on the axis-aligned box with the smallest measures along the
 Bx-, By-, and Bz-directions.)""";
         } lower;
         // Symbol: drake::geometry::Aabb::pose
         struct /* pose */ {
-          // Source: drake/geometry/proximity/aabb.h:94
+          // Source: drake/geometry/proximity/aabb.h
           const char* doc =
 R"""(Returns the pose X_HB of the box frame B in the hierarchy frame H.)""";
         } pose;
         // Symbol: drake::geometry::Aabb::upper
         struct /* upper */ {
-          // Source: drake/geometry/proximity/aabb.h:80
+          // Source: drake/geometry/proximity/aabb.h
           const char* doc =
 R"""(The point on the axis-aligned box with the largest measures along the
 Bx-, By-, and Bz-directions.)""";
@@ -211,7 +211,7 @@ Bx-, By-, and Bz-directions.)""";
       } Aabb;
       // Symbol: drake::geometry::AabbMaker
       struct /* AabbMaker */ {
-        // Source: drake/geometry/proximity/aabb.h:170
+        // Source: drake/geometry/proximity/aabb.h
         const char* doc =
 R"""(AabbMaker implements the logic to fit an Aabb to a collection of
 points. The points are the position of a subset of vertices in a mesh.
@@ -225,7 +225,7 @@ Template parameter ``MeshType``:
     double or AutoDiffXd.)""";
         // Symbol: drake::geometry::AabbMaker::AabbMaker<type-parameter-0-0>
         struct /* ctor */ {
-          // Source: drake/geometry/proximity/aabb.h:181
+          // Source: drake/geometry/proximity/aabb.h
           const char* doc =
 R"""(Constructs the maker with the reference mesh and the subset of
 vertices to fit (indicated by corresponding index).
@@ -242,7 +242,7 @@ Precondition:
         } ctor;
         // Symbol: drake::geometry::AabbMaker::Compute
         struct /* Compute */ {
-          // Source: drake/geometry/proximity/aabb.h:188
+          // Source: drake/geometry/proximity/aabb.h
           const char* doc =
 R"""(Computes the bounding volume of the vertices specified in the
 constructor.
@@ -253,7 +253,7 @@ Returns ``aabb_M``:
       } AabbMaker;
       // Symbol: drake::geometry::CalcObb
       struct /* CalcObb */ {
-        // Source: drake/geometry/proximity/calc_obb.h:16
+        // Source: drake/geometry/proximity/calc_obb.h
         const char* doc =
 R"""(Calculates the oriented bounding box (OBB) for the Shape in its
 canonical frame. Returns ``std::nullopt`` if the Shape is HalfSpace
@@ -264,7 +264,7 @@ Raises:
       } CalcObb;
       // Symbol: drake::geometry::ConvertVolumeToSurfaceMesh
       struct /* ConvertVolumeToSurfaceMesh */ {
-        // Source: drake/geometry/proximity/volume_to_surface_mesh.h:98
+        // Source: drake/geometry/proximity/volume_to_surface_mesh.h
         const char* doc =
 R"""(Converts a tetrahedral volume mesh to a triangulated surface mesh of
 the boundary surface of the volume.
@@ -286,7 +286,7 @@ Precondition:
       } ConvertVolumeToSurfaceMesh;
       // Symbol: drake::geometry::MeshFieldLinear
       struct /* MeshFieldLinear */ {
-        // Source: drake/geometry/proximity/mesh_field_linear.h:126
+        // Source: drake/geometry/proximity/mesh_field_linear.h
         const char* doc =
 R"""(MeshFieldLinear represents a continuous piecewise-linear scalar field
 ``f`` defined on a (triangular or tetrahedral) mesh; the field value
@@ -382,7 +382,7 @@ Template parameter ``MeshType``:
     the type of the meshes: TriangleSurfaceMesh or VolumeMesh.)""";
         // Symbol: drake::geometry::MeshFieldLinear::CloneAndSetMesh
         struct /* CloneAndSetMesh */ {
-          // Source: drake/geometry/proximity/mesh_field_linear.h:385
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc =
 R"""(Copy to a new MeshFieldLinear and set the new MeshFieldLinear to use a
 new compatible mesh. MeshFieldLinear needs a mesh to operate; however,
@@ -391,7 +391,7 @@ MeshFieldLinear objects can use the same mesh.)""";
         } CloneAndSetMesh;
         // Symbol: drake::geometry::MeshFieldLinear::Equal
         struct /* Equal */ {
-          // Source: drake/geometry/proximity/mesh_field_linear.h:412
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc =
 R"""(Checks to see whether the given MeshFieldLinear object is equal via
 deep exact comparison. The name of the objects are exempt from this
@@ -405,7 +405,7 @@ Returns:
         } Equal;
         // Symbol: drake::geometry::MeshFieldLinear::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/geometry/proximity/mesh_field_linear.h:293
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc =
 R"""(Evaluates the field value at a location on an element.
 
@@ -433,7 +433,7 @@ Template parameter ``B``:
         } Evaluate;
         // Symbol: drake::geometry::MeshFieldLinear::EvaluateAtMo
         struct /* EvaluateAtMo */ {
-          // Source: drake/geometry/proximity/mesh_field_linear.h:271
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc =
 R"""((Advanced) Evaluates the linear function associated with element e at
 the mesh origin Mo.
@@ -449,7 +449,7 @@ Precondition:
         } EvaluateAtMo;
         // Symbol: drake::geometry::MeshFieldLinear::EvaluateAtVertex
         struct /* EvaluateAtVertex */ {
-          // Source: drake/geometry/proximity/mesh_field_linear.h:242
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc =
 R"""(Evaluates the field value at a vertex.
 
@@ -461,7 +461,7 @@ Precondition:
         } EvaluateAtVertex;
         // Symbol: drake::geometry::MeshFieldLinear::EvaluateCartesian
         struct /* EvaluateCartesian */ {
-          // Source: drake/geometry/proximity/mesh_field_linear.h:335
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc =
 R"""(Evaluates the field at a point Qp on an element. If the element is a
 tetrahedron, Qp is the input point Q. If the element is a triangle, Qp
@@ -489,7 +489,7 @@ Raises:
         } EvaluateCartesian;
         // Symbol: drake::geometry::MeshFieldLinear::EvaluateGradient
         struct /* EvaluateGradient */ {
-          // Source: drake/geometry/proximity/mesh_field_linear.h:355
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc =
 R"""(Evaluates the gradient in the domain of the element indicated by
 ``e``. The gradient is a vector in R³ expressed in frame M. For
@@ -504,7 +504,7 @@ Raises:
         } EvaluateGradient;
         // Symbol: drake::geometry::MeshFieldLinear::EvaluateMax
         struct /* EvaluateMax */ {
-          // Source: drake/geometry/proximity/mesh_field_linear.h:260
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc =
 R"""((Advanced) Evaluates the maximum field value on an element.
 
@@ -516,7 +516,7 @@ Precondition:
         } EvaluateMax;
         // Symbol: drake::geometry::MeshFieldLinear::EvaluateMin
         struct /* EvaluateMin */ {
-          // Source: drake/geometry/proximity/mesh_field_linear.h:251
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc =
 R"""((Advanced) Evaluates the minimum field value on an element.
 
@@ -528,7 +528,7 @@ Precondition:
         } EvaluateMin;
         // Symbol: drake::geometry::MeshFieldLinear::MeshFieldLinear<T, MeshType>
         struct /* ctor */ {
-          // Source: drake/geometry/proximity/mesh_field_linear.h:185
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc_3args_values_mesh_gradient_mode =
 R"""(Constructs a MeshFieldLinear.
 
@@ -589,7 +589,7 @@ Note:
 Precondition:
     The ``mesh`` is non-null, and the number of entries in ``values``
     is the same as the number of vertices of the mesh.)""";
-          // Source: drake/geometry/proximity/mesh_field_linear.h:218
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc_3args_values_mesh_gradients =
 R"""((Advanced) Constructor variant which receives the pre-computed,
 per-element gradients of the field. ``gradients[i]`` is the gradient
@@ -608,7 +608,7 @@ Precondition:
         } ctor;
         // Symbol: drake::geometry::MeshFieldLinear::Transform
         struct /* Transform */ {
-          // Source: drake/geometry/proximity/mesh_field_linear.h:373
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc =
 R"""((Advanced) Transforms this mesh field to be measured and expressed in
 frame N (from its original frame M). See the class documentation for
@@ -622,7 +622,7 @@ Warning:
         } Transform;
         // Symbol: drake::geometry::MeshFieldLinear::is_gradient_field_degenerate
         struct /* is_gradient_field_degenerate */ {
-          // Source: drake/geometry/proximity/mesh_field_linear.h:234
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc =
 R"""(Returns:
     true iff the gradient field could not be computed, and the mesh
@@ -630,66 +630,66 @@ R"""(Returns:
         } is_gradient_field_degenerate;
         // Symbol: drake::geometry::MeshFieldLinear::max_values
         struct /* max_values */ {
-          // Source: drake/geometry/proximity/mesh_field_linear.h:403
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc =
 R"""(The maximum field value on each element.)""";
         } max_values;
         // Symbol: drake::geometry::MeshFieldLinear::mesh
         struct /* mesh */ {
-          // Source: drake/geometry/proximity/mesh_field_linear.h:397
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc = R"""(The mesh M to which this field refers.)""";
         } mesh;
         // Symbol: drake::geometry::MeshFieldLinear::min_values
         struct /* min_values */ {
-          // Source: drake/geometry/proximity/mesh_field_linear.h:401
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc =
 R"""(The minimum field value on each element.)""";
         } min_values;
         // Symbol: drake::geometry::MeshFieldLinear::values
         struct /* values */ {
-          // Source: drake/geometry/proximity/mesh_field_linear.h:399
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc = R"""(The field value at each vertex.)""";
         } values;
       } MeshFieldLinear;
       // Symbol: drake::geometry::MeshGradientMode
       struct /* MeshGradientMode */ {
-        // Source: drake/geometry/proximity/mesh_field_linear.h:26
+        // Source: drake/geometry/proximity/mesh_field_linear.h
         const char* doc =
 R"""(Specify whether to generate gradients, and how to handle numerical
 failures.)""";
         // Symbol: drake::geometry::MeshGradientMode::kNone
         struct /* kNone */ {
-          // Source: drake/geometry/proximity/mesh_field_linear.h:28
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc = R"""(Don't compute gradients at all.)""";
         } kNone;
         // Symbol: drake::geometry::MeshGradientMode::kOkOrMarkDegenerate
         struct /* kOkOrMarkDegenerate */ {
-          // Source: drake/geometry/proximity/mesh_field_linear.h:31
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc =
 R"""(If gradient computation fails, mark it degenerate. See
 MeshFieldLinear::is_gradient_field_degenerate().)""";
         } kOkOrMarkDegenerate;
         // Symbol: drake::geometry::MeshGradientMode::kOkOrThrow
         struct /* kOkOrThrow */ {
-          // Source: drake/geometry/proximity/mesh_field_linear.h:33
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc =
 R"""(If gradient computation fails, throw an exception.)""";
         } kOkOrThrow;
       } MeshGradientMode;
       // Symbol: drake::geometry::Obb
       struct /* Obb */ {
-        // Source: drake/geometry/proximity/obb.h:36
+        // Source: drake/geometry/proximity/obb.h
         const char* doc = R"""()""";
         // Symbol: drake::geometry::Obb::CalcVolume
         struct /* CalcVolume */ {
-          // Source: drake/geometry/proximity/obb.h:69
+          // Source: drake/geometry/proximity/obb.h
           const char* doc =
 R"""(Returns:
     Volume of the bounding box.)""";
         } CalcVolume;
         // Symbol: drake::geometry::Obb::Equal
         struct /* Equal */ {
-          // Source: drake/geometry/proximity/obb.h:144
+          // Source: drake/geometry/proximity/obb.h
           const char* doc =
 R"""(Compares the values of the two Obb instances for exact equality down
 to the last bit. Assumes that the quantities are measured and
@@ -697,7 +697,7 @@ expressed in the same frame.)""";
         } Equal;
         // Symbol: drake::geometry::Obb::HasOverlap
         struct /* HasOverlap */ {
-          // Source: drake/geometry/proximity/obb.h:85
+          // Source: drake/geometry/proximity/obb.h
           const char* doc_obb_obb =
 R"""(Reports whether the two oriented bounding boxes ``a_G`` and ``b_H``
 intersect. The poses of ``a_G`` and ``b_H`` are defined in their
@@ -714,7 +714,7 @@ Parameter ``X_GH``:
 
 Returns:
     ``True`` if the boxes intersect.)""";
-          // Source: drake/geometry/proximity/obb.h:98
+          // Source: drake/geometry/proximity/obb.h
           const char* doc_obb_aabb =
 R"""(Reports whether oriented bounding box ``obb_G`` intersects the given
 axis-aligned bounding box ``aabb_H``. The poses of ``obb_G`` and
@@ -733,7 +733,7 @@ Parameter ``X_GH``:
 
 Returns:
     ``True`` if the boxes intersect.)""";
-          // Source: drake/geometry/proximity/obb.h:119
+          // Source: drake/geometry/proximity/obb.h
           const char* doc =
 R"""((Internal use only) Checks whether bounding volume ``bv`` intersects
 the given plane. The bounding volume is centered on its canonical
@@ -757,7 +757,7 @@ Parameter ``X_PH``:
 
 Returns:
     ``True`` if the plane intersects the box.)""";
-          // Source: drake/geometry/proximity/obb.h:138
+          // Source: drake/geometry/proximity/obb.h
           const char* doc_obb_halfspace =
 R"""(Checks whether bounding volume ``bv`` intersects the given half space.
 The bounding volume is centered on its canonical frame B, and B is
@@ -783,7 +783,7 @@ Returns:
         } HasOverlap;
         // Symbol: drake::geometry::Obb::Obb
         struct /* ctor */ {
-          // Source: drake/geometry/proximity/obb.h:54
+          // Source: drake/geometry/proximity/obb.h
           const char* doc =
 R"""(Constructs an oriented bounding box measured and expressed in frame H.
 
@@ -800,7 +800,7 @@ Precondition:
         } ctor;
         // Symbol: drake::geometry::Obb::center
         struct /* center */ {
-          // Source: drake/geometry/proximity/obb.h:58
+          // Source: drake/geometry/proximity/obb.h
           const char* doc =
 R"""(Returns the center of the box -- equivalent to the position vector
 from the hierarchy frame's origin Ho to ``this`` box's origin Bo:
@@ -808,7 +808,7 @@ from the hierarchy frame's origin Ho to ``this`` box's origin Bo:
         } center;
         // Symbol: drake::geometry::Obb::half_width
         struct /* half_width */ {
-          // Source: drake/geometry/proximity/obb.h:63
+          // Source: drake/geometry/proximity/obb.h
           const char* doc =
 R"""(Returns the half_width -- equivalent to the position vector from the
 box's center Bo to the box's first octant (+,+,+) corner U expressed
@@ -816,14 +816,14 @@ in the box's frame B: ``p_BoU_B``.)""";
         } half_width;
         // Symbol: drake::geometry::Obb::pose
         struct /* pose */ {
-          // Source: drake/geometry/proximity/obb.h:66
+          // Source: drake/geometry/proximity/obb.h
           const char* doc =
 R"""(Returns the pose X_HB of the box frame B in the hierarchy frame H)""";
         } pose;
       } Obb;
       // Symbol: drake::geometry::ObbMaker
       struct /* ObbMaker */ {
-        // Source: drake/geometry/proximity/obb.h:181
+        // Source: drake/geometry/proximity/obb.h
         const char* doc =
 R"""(ObbMaker performs an algorithm to create an oriented bounding box that
 fits a specified set of vertices in a mesh.
@@ -833,7 +833,7 @@ Template parameter ``MeshType``:
     where T is double or AutoDiffXd.)""";
         // Symbol: drake::geometry::ObbMaker::Compute
         struct /* Compute */ {
-          // Source: drake/geometry/proximity/obb.h:200
+          // Source: drake/geometry/proximity/obb.h
           const char* doc =
 R"""(Computes the bounding volume of the vertices specified in the
 constructor.
@@ -843,7 +843,7 @@ Returns ``obb_M``:
         } Compute;
         // Symbol: drake::geometry::ObbMaker::ObbMaker<type-parameter-0-0>
         struct /* ctor */ {
-          // Source: drake/geometry/proximity/obb.h:193
+          // Source: drake/geometry/proximity/obb.h
           const char* doc =
 R"""(Specifies the input mesh with frame M and a set of vertices to fit.
 
@@ -860,13 +860,13 @@ Precondition:
       } ObbMaker;
       // Symbol: drake::geometry::PolygonSurfaceMesh
       struct /* PolygonSurfaceMesh */ {
-        // Source: drake/geometry/proximity/polygon_surface_mesh.h:82
+        // Source: drake/geometry/proximity/polygon_surface_mesh.h
         const char* doc =
 R"""(PolygonSurfaceMesh represents a surface comprised of *polygonal*
 elements (three or more sides).)""";
         // Symbol: drake::geometry::PolygonSurfaceMesh::CalcBarycentric
         struct /* CalcBarycentric */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:238
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""(See TriangleSurfaceMesh::CalcBaryCentric(). This implementation is
 provided to maintain compatibility with MeshFieldLinear. However, it
@@ -875,7 +875,7 @@ coordinates.)""";
         } CalcBarycentric;
         // Symbol: drake::geometry::PolygonSurfaceMesh::CalcBoundingBox
         struct /* CalcBoundingBox */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:251
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""(Calculates the axis-aligned bounding box of this surface mesh M.
 
@@ -884,7 +884,7 @@ Returns:
         } CalcBoundingBox;
         // Symbol: drake::geometry::PolygonSurfaceMesh::CalcGradientVectorOfLinearField
         struct /* CalcGradientVectorOfLinearField */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:271
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""(This is a stub method. It is provided so that PolygonSurfaceMesh
 provides a sufficient API to compile against MeshFieldLinear. However,
@@ -895,7 +895,7 @@ will, in turn, throw.)""";
         } CalcGradientVectorOfLinearField;
         // Symbol: drake::geometry::PolygonSurfaceMesh::Equal
         struct /* Equal */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:259
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""(Checks to see whether the given PolygonSurfaceMesh object is equal via
 deep exact comparison. NaNs are treated as not equal as per the IEEE
@@ -909,7 +909,7 @@ Returns:
         } Equal;
         // Symbol: drake::geometry::PolygonSurfaceMesh::MaybeCalcGradientVectorOfLinearField
         struct /* MaybeCalcGradientVectorOfLinearField */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:285
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""(Like CalcGradientVectorOfLinearField above, this is a stub method,
 provided for compatibility with MeshFieldLinear. The empty return
@@ -917,12 +917,12 @@ value here will cause the caller to report errors.)""";
         } MaybeCalcGradientVectorOfLinearField;
         // Symbol: drake::geometry::PolygonSurfaceMesh::PolygonSurfaceMesh<T>
         struct /* ctor */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:142
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc_0args =
 R"""(Advanced() Constructs an *empty* mesh. This enables compatibility with
 STL container types and facilitates some unit tests. Otherwise, it
 shouldn't be used.)""";
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:187
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc_2args =
 R"""(Constructs a mesh from specified vertex and mesh data.
 
@@ -973,18 +973,18 @@ Note:
         } ctor;
         // Symbol: drake::geometry::PolygonSurfaceMesh::ReverseFaceWinding
         struct /* ReverseFaceWinding */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:195
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""((Internal use only) Reverses the ordering of all the faces' indices.)""";
         } ReverseFaceWinding;
         // Symbol: drake::geometry::PolygonSurfaceMesh::ScalarType
         struct /* ScalarType */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:94
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc = R"""()""";
         } ScalarType;
         // Symbol: drake::geometry::PolygonSurfaceMesh::SetAllPositions
         struct /* SetAllPositions */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:299
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""(Updates the position of all vertices in the mesh. Each sequential
 triple in p_MVs (e.g., 3i, 3i + 1, 3i + 2), i ∈ ℤ, is interpreted as a
@@ -1002,14 +1002,14 @@ Raises:
         } SetAllPositions;
         // Symbol: drake::geometry::PolygonSurfaceMesh::TransformVertices
         struct /* TransformVertices */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:192
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""((Internal use only) Transforms the vertices of this mesh from its
 initial frame M to the new frame N.)""";
         } TransformVertices;
         // Symbol: drake::geometry::PolygonSurfaceMesh::area
         struct /* area */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:202
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""(Returns area of a polygonal element.
 
@@ -1018,7 +1018,7 @@ Precondition:
         } area;
         // Symbol: drake::geometry::PolygonSurfaceMesh::centroid
         struct /* centroid */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:232
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""(Returns the geometric centroid of this mesh measured and expressed in
 the mesh's frame M. (M is the frame in which this mesh's vertices are
@@ -1028,7 +1028,7 @@ define the centroid to be (0,0,0).)""";
         } centroid;
         // Symbol: drake::geometry::PolygonSurfaceMesh::element
         struct /* element */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:117
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""(Returns the polygonal element identified by the given index ``e``.
 
@@ -1037,7 +1037,7 @@ Precondition:
         } element;
         // Symbol: drake::geometry::PolygonSurfaceMesh::element_centroid
         struct /* element_centroid */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:222
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""(Returns the geometric centroid of the element indicated be index
 ``e``, measured and expressed in the mesh's frame M.
@@ -1047,12 +1047,12 @@ Precondition:
         } element_centroid;
         // Symbol: drake::geometry::PolygonSurfaceMesh::face_data
         struct /* face_data */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:263
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc = R"""()""";
         } face_data;
         // Symbol: drake::geometry::PolygonSurfaceMesh::face_normal
         struct /* face_normal */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:214
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""(Returns the unit face normal vector of a polygon. It respects the
 right-handed normal rule. A near-zero-area triangle may get an
@@ -1063,7 +1063,7 @@ Precondition:
         } face_normal;
         // Symbol: drake::geometry::PolygonSurfaceMesh::num_elements
         struct /* num_elements */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:135
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""(Returns the number of elements in the mesh. For PolygonSurfaceMesh, an
 element is a polygon. Returns the same number as num_faces() and
@@ -1071,25 +1071,25 @@ enables mesh consumers to be templated on mesh type.)""";
         } num_elements;
         // Symbol: drake::geometry::PolygonSurfaceMesh::num_faces
         struct /* num_faces */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:198
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""(Returns the number of polygonal elements in the mesh.)""";
         } num_faces;
         // Symbol: drake::geometry::PolygonSurfaceMesh::num_vertices
         struct /* num_vertices */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:130
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""(Returns the number of vertices in the mesh.)""";
         } num_vertices;
         // Symbol: drake::geometry::PolygonSurfaceMesh::total_area
         struct /* total_area */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:208
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""(Returns the total area of all the faces of this surface mesh.)""";
         } total_area;
         // Symbol: drake::geometry::PolygonSurfaceMesh::vertex
         struct /* vertex */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:124
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""(Returns the vertex identified by the given index ``v``.
 
@@ -1099,7 +1099,7 @@ Precondition:
       } PolygonSurfaceMesh;
       // Symbol: drake::geometry::ReadObjToTriangleSurfaceMesh
       struct /* ReadObjToTriangleSurfaceMesh */ {
-        // Source: drake/geometry/proximity/obj_to_surface_mesh.h:46
+        // Source: drake/geometry/proximity/obj_to_surface_mesh.h
         const char* doc_3args_filename_scale3_on_warning =
 R"""(Constructs a surface mesh from a Wavefront .obj file and optionally
 scales coordinates by the given scale factor. Polygons will be
@@ -1123,18 +1123,18 @@ Raises:
 
 Returns:
     surface mesh)""";
-        // Source: drake/geometry/proximity/obj_to_surface_mesh.h:51
+        // Source: drake/geometry/proximity/obj_to_surface_mesh.h
         const char* doc_3args_filename_scale_on_warning =
 R"""(Variant that allows defining uniform scaling from a single scalar
 value.)""";
-        // Source: drake/geometry/proximity/obj_to_surface_mesh.h:57
+        // Source: drake/geometry/proximity/obj_to_surface_mesh.h
         const char* doc_3args_mesh_source_scale3_on_warning =
 R"""(Overload of ReadObjToTriangleSurfaceMesh(const std::filesystem::path&,
 double) with the Wavefront .obj in a Mesh shape specification.)""";
       } ReadObjToTriangleSurfaceMesh;
       // Symbol: drake::geometry::RefineVolumeMesh
       struct /* RefineVolumeMesh */ {
-        // Source: drake/geometry/proximity/volume_mesh_refiner.h:136
+        // Source: drake/geometry/proximity/volume_mesh_refiner.h
         const char* doc =
 R"""(Refines a tetrahedral mesh to eliminate problematic simplices.
 
@@ -1150,7 +1150,7 @@ Raises:
       } RefineVolumeMesh;
       // Symbol: drake::geometry::RefineVolumeMeshIntoVtkFileContents
       struct /* RefineVolumeMeshIntoVtkFileContents */ {
-        // Source: drake/geometry/proximity/volume_mesh_refiner.h:144
+        // Source: drake/geometry/proximity/volume_mesh_refiner.h
         const char* doc =
 R"""(Refines a tetrahedral mesh to eliminate problematic simplices.
 
@@ -1167,30 +1167,30 @@ Raises:
       } RefineVolumeMeshIntoVtkFileContents;
       // Symbol: drake::geometry::SurfacePolygon
       struct /* SurfacePolygon */ {
-        // Source: drake/geometry/proximity/polygon_surface_mesh.h:29
+        // Source: drake/geometry/proximity/polygon_surface_mesh.h
         const char* doc =
 R"""(Representation of a polygonal face in a SurfacePolygon.)""";
         // Symbol: drake::geometry::SurfacePolygon::SurfacePolygon
         struct /* ctor */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:33
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::geometry::SurfacePolygon::copy_to_unique
         struct /* copy_to_unique */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:50
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""((Internal use only) Returns a copy of this, wrapped in a unique_ptr.
 This function is only intended for use by Drake's Python bindings.)""";
         } copy_to_unique;
         // Symbol: drake::geometry::SurfacePolygon::num_vertices
         struct /* num_vertices */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:36
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""(Returns the number of vertices in this face.)""";
         } num_vertices;
         // Symbol: drake::geometry::SurfacePolygon::vertex
         struct /* vertex */ {
-          // Source: drake/geometry/proximity/polygon_surface_mesh.h:43
+          // Source: drake/geometry/proximity/polygon_surface_mesh.h
           const char* doc =
 R"""(Returns the vertex index in PolygonSurfaceMesh of the i-th vertex of
 this face.
@@ -1204,20 +1204,20 @@ Precondition:
       } SurfacePolygon;
       // Symbol: drake::geometry::SurfaceTriangle
       struct /* SurfaceTriangle */ {
-        // Source: drake/geometry/proximity/triangle_surface_mesh.h:20
+        // Source: drake/geometry/proximity/triangle_surface_mesh.h
         const char* doc =
 R"""(%SurfaceTriangle represents a triangular face in a
 TriangleSurfaceMesh.)""";
         // Symbol: drake::geometry::SurfaceTriangle::ReverseWinding
         struct /* ReverseWinding */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:53
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Reverses the order of the vertex indices -- this essentially flips the
 triangle normal based on the right-handed normal rule.)""";
         } ReverseWinding;
         // Symbol: drake::geometry::SurfaceTriangle::SurfaceTriangle
         struct /* ctor */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:29
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc_3args =
 R"""(Constructs SurfaceTriangle.
 
@@ -1232,7 +1232,7 @@ Parameter ``v2``:
 
 Precondition:
     index values are non-negative.)""";
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:37
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc_1args =
 R"""(Constructs SurfaceTriangle.
 
@@ -1245,13 +1245,13 @@ Precondition:
         } ctor;
         // Symbol: drake::geometry::SurfaceTriangle::num_vertices
         struct /* num_vertices */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:41
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Returns the number of vertices in this face.)""";
         } num_vertices;
         // Symbol: drake::geometry::SurfaceTriangle::vertex
         struct /* vertex */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:48
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Returns the vertex index in TriangleSurfaceMesh of the i-th vertex of
 this triangle.
@@ -1265,13 +1265,13 @@ Precondition:
       } SurfaceTriangle;
       // Symbol: drake::geometry::TriangleSurfaceMesh
       struct /* TriangleSurfaceMesh */ {
-        // Source: drake/geometry/proximity/triangle_surface_mesh.h:72
+        // Source: drake/geometry/proximity/triangle_surface_mesh.h
         const char* doc =
 R"""(TriangleSurfaceMesh represents a union of triangles. The surface is
 not necessarily continuous.)""";
         // Symbol: drake::geometry::TriangleSurfaceMesh::CalcBarycentric
         struct /* CalcBarycentric */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:292
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Calculate barycentric coordinates with respect to the triangle ``t``
 of the point Q'. Q' is the projection of the provided point Q on the
@@ -1305,7 +1305,7 @@ Precondition:
         } CalcBarycentric;
         // Symbol: drake::geometry::TriangleSurfaceMesh::CalcBoundingBox
         struct /* CalcBoundingBox */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:357
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Calculates the axis-aligned bounding box of this surface mesh M.
 
@@ -1314,7 +1314,7 @@ Returns:
         } CalcBoundingBox;
         // Symbol: drake::geometry::TriangleSurfaceMesh::CalcCartesianFromBarycentric
         struct /* CalcCartesianFromBarycentric */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:256
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Maps the barycentric coordinates ``Q_barycentric`` of a point Q in
 ``element_index`` to its position vector p_MQ.
@@ -1329,7 +1329,7 @@ Precondition:
         } CalcCartesianFromBarycentric;
         // Symbol: drake::geometry::TriangleSurfaceMesh::CalcGradientVectorOfLinearField
         struct /* CalcGradientVectorOfLinearField */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:408
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Calculates the gradient ∇u of a linear field u on the triangle ``t``.
 Field u is defined by the three field values ``field_value[i]`` at the
@@ -1338,7 +1338,7 @@ coordinates frame of this mesh M.)""";
         } CalcGradientVectorOfLinearField;
         // Symbol: drake::geometry::TriangleSurfaceMesh::Equal
         struct /* Equal */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:379
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Checks to see whether the given TriangleSurfaceMesh object is equal
 via deep exact comparison. NaNs are treated as not equal as per the
@@ -1352,7 +1352,7 @@ Returns:
         } Equal;
         // Symbol: drake::geometry::TriangleSurfaceMesh::MaybeCalcGradientVectorOfLinearField
         struct /* MaybeCalcGradientVectorOfLinearField */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:424
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Calculates the gradient ∇u of a linear field u on the triangle ``t``.
 Field u is defined by the three field values ``field_value[i]`` at the
@@ -1361,19 +1361,19 @@ coordinates frame of this mesh M.)""";
         } MaybeCalcGradientVectorOfLinearField;
         // Symbol: drake::geometry::TriangleSurfaceMesh::ReverseFaceWinding
         struct /* ReverseFaceWinding */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:206
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""((Internal use only) Reverses the ordering of all the triangles'
 indices -- see SurfaceTriangle::ReverseWinding().)""";
         } ReverseFaceWinding;
         // Symbol: drake::geometry::TriangleSurfaceMesh::ScalarType
         struct /* ScalarType */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:86
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc = R"""()""";
         } ScalarType;
         // Symbol: drake::geometry::TriangleSurfaceMesh::SetAllPositions
         struct /* SetAllPositions */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:446
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Updates the position of all vertices in the mesh. Each sequential
 triple in p_MVs (e.g., 3i, 3i + 1, 3i + 2), i ∈ ℤ, is interpreted as a
@@ -1391,14 +1391,14 @@ Raises:
         } SetAllPositions;
         // Symbol: drake::geometry::TriangleSurfaceMesh::TransformVertices
         struct /* TransformVertices */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:193
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""((Internal use only) Transforms the vertices of this mesh from its
 initial frame M to the new frame N.)""";
         } TransformVertices;
         // Symbol: drake::geometry::TriangleSurfaceMesh::TriangleSurfaceMesh<T>
         struct /* ctor */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:174
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Constructs a TriangleSurfaceMesh from triangles and vertices.
 
@@ -1410,7 +1410,7 @@ Parameter ``vertices``:
         } ctor;
         // Symbol: drake::geometry::TriangleSurfaceMesh::area
         struct /* area */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:215
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Returns area of triangle ``t``.
 
@@ -1419,7 +1419,7 @@ Precondition:
         } area;
         // Symbol: drake::geometry::TriangleSurfaceMesh::centroid
         struct /* centroid */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:244
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Returns the area-weighted geometric centroid of this surface mesh. The
 returned value is the position vector p_MSc from M's origin to the
@@ -1433,7 +1433,7 @@ insensitive to whether vertices are shared by triangles.)""";
         } centroid;
         // Symbol: drake::geometry::TriangleSurfaceMesh::element
         struct /* element */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:121
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Returns the triangular element identified by a given index.
 
@@ -1445,14 +1445,14 @@ Precondition:
         } element;
         // Symbol: drake::geometry::TriangleSurfaceMesh::element_centroid
         struct /* element_centroid */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:128
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Returns the centroid of a triangle measured and expressed in the
 mesh's frame.)""";
         } element_centroid;
         // Symbol: drake::geometry::TriangleSurfaceMesh::face_normal
         struct /* face_normal */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:229
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Returns the unit face normal vector of a triangle. It respects the
 right-handed normal rule. A near-zero-area triangle may get an
@@ -1463,7 +1463,7 @@ Precondition:
         } face_normal;
         // Symbol: drake::geometry::TriangleSurfaceMesh::num_elements
         struct /* num_elements */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:165
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Returns the number of triangles in the mesh. For TriangleSurfaceMesh,
 an element is a triangle. Returns the same number as num_triangles()
@@ -1471,30 +1471,30 @@ and enables mesh consumers to be templated on mesh type.)""";
         } num_elements;
         // Symbol: drake::geometry::TriangleSurfaceMesh::num_triangles
         struct /* num_triangles */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:210
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Returns the number of triangles in the mesh.)""";
         } num_triangles;
         // Symbol: drake::geometry::TriangleSurfaceMesh::num_vertices
         struct /* num_vertices */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:159
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Returns the number of vertices in the mesh.)""";
         } num_vertices;
         // Symbol: drake::geometry::TriangleSurfaceMesh::total_area
         struct /* total_area */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:222
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Returns the total area of all the triangles of this surface mesh.)""";
         } total_area;
         // Symbol: drake::geometry::TriangleSurfaceMesh::triangles
         struct /* triangles */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:142
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc = R"""(Returns the triangles.)""";
         } triangles;
         // Symbol: drake::geometry::TriangleSurfaceMesh::vertex
         struct /* vertex */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:152
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc =
 R"""(Returns the vertex identified by a given index.
 
@@ -1506,20 +1506,20 @@ Precondition:
         } vertex;
         // Symbol: drake::geometry::TriangleSurfaceMesh::vertices
         struct /* vertices */ {
-          // Source: drake/geometry/proximity/triangle_surface_mesh.h:145
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
           const char* doc = R"""(Returns the vertices.)""";
         } vertices;
       } TriangleSurfaceMesh;
       // Symbol: drake::geometry::VolumeElement
       struct /* VolumeElement */ {
-        // Source: drake/geometry/proximity/volume_mesh.h:25
+        // Source: drake/geometry/proximity/volume_mesh.h
         const char* doc =
 R"""(VolumeElement represents a tetrahedral element in a VolumeMesh. It is
 a topological entity in the sense that it only knows the indices of
 its vertices but not their coordinates.)""";
         // Symbol: drake::geometry::VolumeElement::Equal
         struct /* Equal */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:69
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc =
 R"""(Checks to see whether the given VolumeElement use the same four
 indices in the same order. We check for equality to the last bit
@@ -1529,7 +1529,7 @@ even though they span the same space.)""";
         } Equal;
         // Symbol: drake::geometry::VolumeElement::VolumeElement
         struct /* ctor */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:41
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc_4args =
 R"""(Constructs VolumeElement. We follow the convention that the first
 three vertices define a triangle with its right-handed normal pointing
@@ -1554,7 +1554,7 @@ Parameter ``v3``:
 
 Precondition:
     All indices are non-negative.)""";
-          // Source: drake/geometry/proximity/volume_mesh.h:50
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc_1args =
 R"""(Constructs VolumeElement.
 
@@ -1567,13 +1567,13 @@ Precondition:
         } ctor;
         // Symbol: drake::geometry::VolumeElement::num_vertices
         struct /* num_vertices */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:54
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc =
 R"""(Returns the number of vertices in this element.)""";
         } num_vertices;
         // Symbol: drake::geometry::VolumeElement::vertex
         struct /* vertex */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:61
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc =
 R"""(Returns the vertex index in VolumeMesh of the i-th vertex of this
 element.
@@ -1587,7 +1587,7 @@ Precondition:
       } VolumeElement;
       // Symbol: drake::geometry::VolumeMesh
       struct /* VolumeMesh */ {
-        // Source: drake/geometry/proximity/volume_mesh.h:96
+        // Source: drake/geometry/proximity/volume_mesh.h
         const char* doc =
 R"""(VolumeMesh represents a tetrahedral volume mesh.
 
@@ -1596,7 +1596,7 @@ Template parameter ``T``:
     AutoDiffXd. Must be a valid Eigen scalar.)""";
         // Symbol: drake::geometry::VolumeMesh::CalcBarycentric
         struct /* CalcBarycentric */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:246
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc =
 R"""(Calculate barycentric coordinates with respect to the tetrahedron
 ``e`` of the point Q. This operation is expensive compared with going
@@ -1620,7 +1620,7 @@ Note:
         } CalcBarycentric;
         // Symbol: drake::geometry::VolumeMesh::CalcGradientVectorOfLinearField
         struct /* CalcGradientVectorOfLinearField */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:320
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc =
 R"""(Like MaybeCalcGradientVectorOfLinearField, but throws if the geometry
 is degenerate.
@@ -1630,7 +1630,7 @@ Raises:
         } CalcGradientVectorOfLinearField;
         // Symbol: drake::geometry::VolumeMesh::CalcTetrahedronVolume
         struct /* CalcTetrahedronVolume */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:212
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc =
 R"""(Calculates volume of a tetrahedral element. It is a signed volume,
 i.e., it can be negative depending on the order of the four vertices
@@ -1641,14 +1641,14 @@ Precondition:
         } CalcTetrahedronVolume;
         // Symbol: drake::geometry::VolumeMesh::CalcVolume
         struct /* CalcVolume */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:223
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc =
 R"""(Calculates the volume of ``this`` mesh by taking the sum of the volume
 of each tetrahedral element.)""";
         } CalcVolume;
         // Symbol: drake::geometry::VolumeMesh::Equal
         struct /* Equal */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:284
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc =
 R"""(Checks to see whether the given VolumeMesh object is equal via deep
 comparison (up to a tolerance). NaNs are treated as not equal as per
@@ -1668,7 +1668,7 @@ Returns:
         } Equal;
         // Symbol: drake::geometry::VolumeMesh::MaybeCalcGradientVectorOfLinearField
         struct /* MaybeCalcGradientVectorOfLinearField */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:300
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc =
 R"""(Calculates the gradient ∇u of a linear field u on the tetrahedron
 ``e``. Field u is defined by the four field values ``field_value[i]``
@@ -1685,12 +1685,12 @@ details.)""";
         } MaybeCalcGradientVectorOfLinearField;
         // Symbol: drake::geometry::VolumeMesh::ScalarType
         struct /* ScalarType */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:110
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc = R"""()""";
         } ScalarType;
         // Symbol: drake::geometry::VolumeMesh::SetAllPositions
         struct /* SetAllPositions */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:344
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc =
 R"""(Updates the position of all vertices in the mesh. Each sequential
 triple in p_MVs (e.g., 3i, 3i + 1, 3i + 2), i ∈ ℤ, is interpreted as a
@@ -1708,7 +1708,7 @@ Raises:
         } SetAllPositions;
         // Symbol: drake::geometry::VolumeMesh::TransformVertices
         struct /* TransformVertices */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:333
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc =
 R"""(Transforms the vertices of this mesh from its initial frame M to the
 new frame N.
@@ -1719,7 +1719,7 @@ Parameter ``transform``:
         } TransformVertices;
         // Symbol: drake::geometry::VolumeMesh::VolumeMesh<T>
         struct /* ctor */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:143
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc =
 R"""(Constructor from a vector of vertices and from a vector of elements.
 Each element must be a valid VolumeElement following the vertex
@@ -1729,7 +1729,7 @@ responsibility of the user.)""";
         } ctor;
         // Symbol: drake::geometry::VolumeMesh::edge_vector
         struct /* edge_vector */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:183
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc =
 R"""(Returns p_AB_M, the position vector from vertex A to vertex B in M,
 where A and B are specified by the element local indices a and b of
@@ -1758,12 +1758,12 @@ Precondition:
         } edge_vector;
         // Symbol: drake::geometry::VolumeMesh::element
         struct /* element */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:146
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc = R"""()""";
         } element;
         // Symbol: drake::geometry::VolumeMesh::inward_normal
         struct /* inward_normal */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:167
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc =
 R"""(Returns the inward facing normal of face f of element e.
 
@@ -1782,24 +1782,24 @@ Precondition:
         } inward_normal;
         // Symbol: drake::geometry::VolumeMesh::num_elements
         struct /* num_elements */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:201
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc =
 R"""(Returns the number of tetrahedral elements in the mesh.)""";
         } num_elements;
         // Symbol: drake::geometry::VolumeMesh::num_vertices
         struct /* num_vertices */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:205
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc =
 R"""(Returns the number of vertices in the mesh.)""";
         } num_vertices;
         // Symbol: drake::geometry::VolumeMesh::tetrahedra
         struct /* tetrahedra */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:197
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc = R"""()""";
         } tetrahedra;
         // Symbol: drake::geometry::VolumeMesh::vertex
         struct /* vertex */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:155
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc =
 R"""(Returns the vertex identified by a given index.
 
@@ -1811,18 +1811,18 @@ Precondition:
         } vertex;
         // Symbol: drake::geometry::VolumeMesh::vertices
         struct /* vertices */ {
-          // Source: drake/geometry/proximity/volume_mesh.h:195
+          // Source: drake/geometry/proximity/volume_mesh.h
           const char* doc = R"""()""";
         } vertices;
       } VolumeMesh;
       // Symbol: drake::geometry::operator!=
       struct /* operator_ne */ {
-        // Source: drake/geometry/proximity/volume_mesh.h:82
+        // Source: drake/geometry/proximity/volume_mesh.h
         const char* doc = R"""()""";
       } operator_ne;
       // Symbol: drake::geometry::promoted_numerical
       struct /* promoted_numerical */ {
-        // Source: drake/geometry/proximity/mesh_traits.h:31
+        // Source: drake/geometry/proximity/mesh_traits.h
         const char* doc =
 R"""(Given the two scalar types U and T, returns the most "promoted" type.
 The scalars must be either ``double`` or ``AutoDiffXd``.
@@ -1853,7 +1853,7 @@ This also includes the helper type:
     </details>)""";
         // Symbol: drake::geometry::promoted_numerical::type
         struct /* type */ {
-          // Source: drake/geometry/proximity/mesh_traits.h:43
+          // Source: drake/geometry/proximity/mesh_traits.h
           const char* doc = R"""()""";
         } type;
       } promoted_numerical;

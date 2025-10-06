@@ -1,12 +1,10 @@
 import pickle
 import subprocess
-from subprocess import PIPE
 import sys
-import tempfile
 import textwrap
 import unittest
 
-import pydrake.all
+import pydrake.all  # noqa: F401 (unused-import)
 from pydrake.common import temp_directory
 from pydrake.common.test_utilities.meta import (
     ValueParameterizedTest,

@@ -47,7 +47,7 @@ class TestEqualToDict(unittest.TestCase):
         # `Polynomial` as a key in a dictionary.
         self.assertEqual(d[a], "a")
         with self.assertRaises(ValueError):
-            value = bool(a == b)
+            bool(a == b)
 
     def test_equal_to_dict(self):
         d = EqualToDict({a: "a", b: "b"})

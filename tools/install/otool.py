@@ -30,7 +30,7 @@ def _join(proc, cmd='otool'):
     """
     retcode = proc.wait(timeout=30)
     if retcode:
-        raise CalledProcessError(retcode, cmd)
+        raise subprocess.CalledProcessError(retcode, cmd)
 
 
 def _split_load_command(line):

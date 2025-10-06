@@ -26,7 +26,7 @@ constexpr struct /* pydrake_doc_multibody_benchmarks_free_body */ {
         struct /* free_body */ {
           // Symbol: drake::multibody::benchmarks::free_body::FreeBody
           struct /* FreeBody */ {
-            // Source: drake/multibody/benchmarks/free_body/free_body.h:35
+            // Source: drake/multibody/benchmarks/free_body/free_body.h
             const char* doc =
 R"""(The purpose of the FreeBody class is to provide the data (initial
 values and gravity) and methods for calculating the exact analytical
@@ -49,7 +49,7 @@ Sections 1.13 and 3.1, Pages 60-62 and 159-169.
   https://ecommons.cornell.edu/handle/1813/637)""";
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::CalcAngularRates_s_p
             struct /* CalcAngularRates_s_p */ {
-              // Source: drake/multibody/benchmarks/free_body/free_body.h:182
+              // Source: drake/multibody/benchmarks/free_body/free_body.h
               const char* doc =
 R"""(Returns angular rates associated with spin ``s`` and precession ``p``
 from the analytical solution [Kane, 1983] for rotational motion
@@ -71,17 +71,17 @@ Note:
             } CalcAngularRates_s_p;
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::CalcInitial_v_NBcm_N
             struct /* CalcInitial_v_NBcm_N */ {
-              // Source: drake/multibody/benchmarks/free_body/free_body.h:95
+              // Source: drake/multibody/benchmarks/free_body/free_body.h
               const char* doc = R"""()""";
             } CalcInitial_v_NBcm_N;
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::CalcInitial_w_NB_N
             struct /* CalcInitial_w_NB_N */ {
-              // Source: drake/multibody/benchmarks/free_body/free_body.h:85
+              // Source: drake/multibody/benchmarks/free_body/free_body.h
               const char* doc = R"""()""";
             } CalcInitial_w_NB_N;
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::CalculateExactRotationalSolutionNB
             struct /* CalculateExactRotationalSolutionNB */ {
-              // Source: drake/multibody/benchmarks/free_body/free_body.h:149
+              // Source: drake/multibody/benchmarks/free_body/free_body.h
               const char* doc =
 R"""(Calculates exact solutions for quaternion and angular velocity
 expressed in body-frame, and their time derivatives for torque-free
@@ -121,7 +121,7 @@ acceleration in N, expressed in B.
             } CalculateExactRotationalSolutionNB;
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::CalculateExactTranslationalSolution
             struct /* CalculateExactTranslationalSolution */ {
-              // Source: drake/multibody/benchmarks/free_body/free_body.h:164
+              // Source: drake/multibody/benchmarks/free_body/free_body.h
               const char* doc =
 R"""(Calculates exact solutions for translational motion of an arbitrary
 rigid body B in a Newtonian frame (world) N. Algorithm from
@@ -141,7 +141,7 @@ xyzDDt | Vector3d [ẍ ÿ z̈], Bcm's acceleration in N, expressed in N.)""";
             } CalculateExactTranslationalSolution;
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::FreeBody
             struct /* ctor */ {
-              // Source: drake/multibody/benchmarks/free_body/free_body.h:53
+              // Source: drake/multibody/benchmarks/free_body/free_body.h
               const char* doc =
 R"""(Constructs a class that can be queried for exact values of
 orientation, position, and motion of a torque-free rigid body at time
@@ -171,12 +171,12 @@ Parameter ``gravity_N``:
             } ctor;
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::SetUniformGravityExpressedInWorld
             struct /* SetUniformGravityExpressedInWorld */ {
-              // Source: drake/multibody/benchmarks/free_body/free_body.h:113
+              // Source: drake/multibody/benchmarks/free_body/free_body.h
               const char* doc = R"""()""";
             } SetUniformGravityExpressedInWorld;
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::get_I
             struct /* get_I */ {
-              // Source: drake/multibody/benchmarks/free_body/free_body.h:71
+              // Source: drake/multibody/benchmarks/free_body/free_body.h
               const char* doc =
 R"""(Returns body B's moment of inertia about any axis that passes through
 Bcm (B's center of mass) and is perpendicular to B's inertia symmetry
@@ -186,7 +186,7 @@ frame z-axis this would be: I = Ixx = Iyy = m / 12 (3 r² + h²))""";
             } get_I;
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::get_J
             struct /* get_J */ {
-              // Source: drake/multibody/benchmarks/free_body/free_body.h:78
+              // Source: drake/multibody/benchmarks/free_body/free_body.h
               const char* doc =
 R"""(Returns body's moment of inertia about the axis that passes through
 Bcm (B's center of mass) and is parallel to B's inertia symmetry axis.
@@ -196,42 +196,42 @@ frame z-axis this would be: J = Izz = m r² / 2)""";
             } get_J;
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::get_initial_p_NoBcm_N
             struct /* get_initial_p_NoBcm_N */ {
-              // Source: drake/multibody/benchmarks/free_body/free_body.h:89
+              // Source: drake/multibody/benchmarks/free_body/free_body.h
               const char* doc = R"""()""";
             } get_initial_p_NoBcm_N;
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::get_initial_quat_NB
             struct /* get_initial_quat_NB */ {
-              // Source: drake/multibody/benchmarks/free_body/free_body.h:81
+              // Source: drake/multibody/benchmarks/free_body/free_body.h
               const char* doc = R"""()""";
             } get_initial_quat_NB;
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::get_initial_w_NB_B
             struct /* get_initial_w_NB_B */ {
-              // Source: drake/multibody/benchmarks/free_body/free_body.h:84
+              // Source: drake/multibody/benchmarks/free_body/free_body.h
               const char* doc = R"""()""";
             } get_initial_w_NB_B;
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::get_uniform_gravity_expressed_in_world
             struct /* get_uniform_gravity_expressed_in_world */ {
-              // Source: drake/multibody/benchmarks/free_body/free_body.h:92
+              // Source: drake/multibody/benchmarks/free_body/free_body.h
               const char* doc = R"""()""";
             } get_uniform_gravity_expressed_in_world;
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::set_initial_p_NoBcm_N
             struct /* set_initial_p_NoBcm_N */ {
-              // Source: drake/multibody/benchmarks/free_body/free_body.h:107
+              // Source: drake/multibody/benchmarks/free_body/free_body.h
               const char* doc = R"""()""";
             } set_initial_p_NoBcm_N;
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::set_initial_quat_NB
             struct /* set_initial_quat_NB */ {
-              // Source: drake/multibody/benchmarks/free_body/free_body.h:101
+              // Source: drake/multibody/benchmarks/free_body/free_body.h
               const char* doc = R"""()""";
             } set_initial_quat_NB;
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::set_initial_v_NBcm_B
             struct /* set_initial_v_NBcm_B */ {
-              // Source: drake/multibody/benchmarks/free_body/free_body.h:110
+              // Source: drake/multibody/benchmarks/free_body/free_body.h
               const char* doc = R"""()""";
             } set_initial_v_NBcm_B;
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::set_initial_w_NB_B
             struct /* set_initial_w_NB_B */ {
-              // Source: drake/multibody/benchmarks/free_body/free_body.h:104
+              // Source: drake/multibody/benchmarks/free_body/free_body.h
               const char* doc = R"""()""";
             } set_initial_w_NB_B;
           } FreeBody;

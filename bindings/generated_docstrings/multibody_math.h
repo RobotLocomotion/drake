@@ -27,7 +27,7 @@ constexpr struct /* pydrake_doc_multibody_math */ {
     struct /* multibody */ {
       // Symbol: drake::multibody::SpatialAcceleration
       struct /* SpatialAcceleration */ {
-        // Source: drake/multibody/math/spatial_acceleration.h:55
+        // Source: drake/multibody/math/spatial_acceleration.h
         const char* doc =
 R"""(This class represents a *spatial acceleration* A and has 6 elements
 with an angular (rotational) acceleration α (3-element vector) on top
@@ -66,7 +66,7 @@ in section Dt_multibody_quantities.
 Simulation.)""";
         // Symbol: drake::multibody::SpatialAcceleration::ComposeWithMovingFrameAcceleration
         struct /* ComposeWithMovingFrameAcceleration */ {
-          // Source: drake/multibody/math/spatial_acceleration.h:283
+          // Source: drake/multibody/math/spatial_acceleration.h
           const char* doc =
 R"""(Compose ``this`` spatial acceleration (measured in some frame M) with
 the spatial acceleration of another frame to form the 𝐨𝐭𝐡𝐞𝐫 frame's
@@ -313,7 +313,7 @@ To show this, we rearrange and substitute our expression for v_MCo.
         } ComposeWithMovingFrameAcceleration;
         // Symbol: drake::multibody::SpatialAcceleration::Shift
         struct /* Shift */ {
-          // Source: drake/multibody/math/spatial_acceleration.h:156
+          // Source: drake/multibody/math/spatial_acceleration.h
           const char* doc =
 R"""(Shifts a SpatialAcceleration from a frame B to a frame C, where both B
 and C are fixed to the same frame or rigid body.
@@ -344,7 +344,7 @@ See also:
         } Shift;
         // Symbol: drake::multibody::SpatialAcceleration::ShiftInPlace
         struct /* ShiftInPlace */ {
-          // Source: drake/multibody/math/spatial_acceleration.h:130
+          // Source: drake/multibody/math/spatial_acceleration.h
           const char* doc =
 R"""(In-place shift of a SpatialAcceleration from a frame B to a frame C,
 where both B and C are fixed to the same frame or rigid body. On
@@ -459,7 +459,7 @@ as
         } ShiftInPlace;
         // Symbol: drake::multibody::SpatialAcceleration::ShiftWithZeroAngularVelocity
         struct /* ShiftWithZeroAngularVelocity */ {
-          // Source: drake/multibody/math/spatial_acceleration.h:177
+          // Source: drake/multibody/math/spatial_acceleration.h
           const char* doc =
 R"""((Advanced) Given ``this`` spatial acceleration A_MB of a frame B
 measured in a frame M, shifts SpatialAcceleration from frame B to a
@@ -487,18 +487,18 @@ Note:
         } ShiftWithZeroAngularVelocity;
         // Symbol: drake::multibody::SpatialAcceleration::SpatialAcceleration<T>
         struct /* ctor */ {
-          // Source: drake/multibody/math/spatial_acceleration.h:69
+          // Source: drake/multibody/math/spatial_acceleration.h
           const char* doc_0args =
 R"""(Default constructor. In Release builds, all 6 elements of a newly
 constructed spatial acceleration are uninitialized (for speed). In
 Debug builds, the 6 elements are set to NaN so that invalid operations
 on an uninitialized spatial acceleration fail fast (fast bug
 detection).)""";
-          // Source: drake/multibody/math/spatial_acceleration.h:73
+          // Source: drake/multibody/math/spatial_acceleration.h
           const char* doc_2args =
 R"""(Constructs a spatial acceleration A from an angular acceleration α
 (alpha) and a translational acceleration 𝐚.)""";
-          // Source: drake/multibody/math/spatial_acceleration.h:83
+          // Source: drake/multibody/math/spatial_acceleration.h
           const char* doc_1args =
 R"""(Constructs a spatial acceleration A from an Eigen expression that
 represents a 6-element vector, i.e., a 3-element angular acceleration
@@ -509,7 +509,7 @@ Eigen expressions or at run-time for dynamic sized Eigen expressions.)""";
       } SpatialAcceleration;
       // Symbol: drake::multibody::SpatialForce
       struct /* SpatialForce */ {
-        // Source: drake/multibody/math/spatial_force.h:47
+        // Source: drake/multibody/math/spatial_force.h
         const char* doc =
 R"""(This class represents a *spatial force* F (also called a *wrench*) and
 has 6 elements with a torque 𝛕 (3-element vector) on top of a force 𝐟
@@ -536,7 +536,7 @@ on spatial vectors and monogram notation are in sections
 multibody_spatial_vectors and multibody_quantities.)""";
         // Symbol: drake::multibody::SpatialForce::Shift
         struct /* Shift */ {
-          // Source: drake/multibody/math/spatial_force.h:153
+          // Source: drake/multibody/math/spatial_force.h
           const char* doc_1args =
 R"""(Shifts a SpatialForce from one point fixed on frame B to another point
 fixed on frame B.
@@ -556,7 +556,7 @@ See also:
     (modifying ``this``) and static functions ShiftInPlace() and
     Shift() to shift multiple spatial forces (with or without
     modifying the input parameter spatial_forces).)""";
-          // Source: drake/multibody/math/spatial_force.h:180
+          // Source: drake/multibody/math/spatial_force.h
           const char* doc_3args =
 R"""(Shifts a matrix of spatial forces from one point fixed on frame B to
 another point fixed on frame B.
@@ -597,7 +597,7 @@ Note:
         } Shift;
         // Symbol: drake::multibody::SpatialForce::ShiftInPlace
         struct /* ShiftInPlace */ {
-          // Source: drake/multibody/math/spatial_force.h:93
+          // Source: drake/multibody/math/spatial_force.h
           const char* doc_1args =
 R"""(In-place shift of a SpatialForce from one point fixed on frame B to
 another fixed on frame B. On entry, ``this`` is F_Bp_E (spatial force
@@ -635,7 +635,7 @@ See also:
     modifying ``this`` and static functions ShiftInPlace() and Shift()
     to shift multiple spatial forces (with or without modifying the
     input parameter spatial_forces).)""";
-          // Source: drake/multibody/math/spatial_force.h:125
+          // Source: drake/multibody/math/spatial_force.h
           const char* doc_2args =
 R"""(Shifts a matrix of spatial forces from one point fixed on frame B to
 another point fixed on frame B.
@@ -661,16 +661,16 @@ See also:
         } ShiftInPlace;
         // Symbol: drake::multibody::SpatialForce::SpatialForce<T>
         struct /* ctor */ {
-          // Source: drake/multibody/math/spatial_force.h:61
+          // Source: drake/multibody/math/spatial_force.h
           const char* doc_0args =
 R"""(Default constructor. In Release builds, all 6 elements of a newly
 constructed spatial force are uninitialized (for speed). In Debug
 builds, the 6 elements are set to NaN so that invalid operations on an
 uninitialized spatial force fail fast (fast bug detection).)""";
-          // Source: drake/multibody/math/spatial_force.h:64
+          // Source: drake/multibody/math/spatial_force.h
           const char* doc_2args =
 R"""(Constructs a spatial force F from a torque 𝛕 (tau) and a force 𝐟.)""";
-          // Source: drake/multibody/math/spatial_force.h:74
+          // Source: drake/multibody/math/spatial_force.h
           const char* doc_1args =
 R"""(Constructs a spatial force F from an Eigen expression that represents
 a 6-element vector, i.e., a 3-element torque 𝛕 and a 3-element force
@@ -680,7 +680,7 @@ dynamic sized Eigen expressions.)""";
         } ctor;
         // Symbol: drake::multibody::SpatialForce::dot
         struct /* dot */ {
-          // Source: drake/multibody/math/spatial_force.h:205
+          // Source: drake/multibody/math/spatial_force.h
           const char* doc =
 R"""(Calculates the power generated by a spatial force. For an arbitrary
 frame B, calculates the dot-product of ``this`` = F_B_E (frame B's
@@ -710,7 +710,7 @@ Note:
       } SpatialForce;
       // Symbol: drake::multibody::SpatialMomentum
       struct /* SpatialMomentum */ {
-        // Source: drake/multibody/math/spatial_momentum.h:62
+        // Source: drake/multibody/math/spatial_momentum.h
         const char* doc =
 R"""(This class represents a *spatial momentum* L and has 6 elements with
 an angular (rotational) momentum 𝐡 (3-element vector) on top of a
@@ -778,7 +778,7 @@ location r as:
     </details>)""";
         // Symbol: drake::multibody::SpatialMomentum::Shift
         struct /* Shift */ {
-          // Source: drake/multibody/math/spatial_momentum.h:135
+          // Source: drake/multibody/math/spatial_momentum.h
           const char* doc =
 R"""(Shifts a SpatialMomentum from an about-point P to an about-point Q.
 
@@ -802,7 +802,7 @@ See also:
         } Shift;
         // Symbol: drake::multibody::SpatialMomentum::ShiftInPlace
         struct /* ShiftInPlace */ {
-          // Source: drake/multibody/math/spatial_momentum.h:107
+          // Source: drake/multibody/math/spatial_momentum.h
           const char* doc =
 R"""(In-place shift of a SpatialMomentum from an about-point P to an
 about-point Q. On entry, ``this`` is L_MSP_E (system S's spatial
@@ -840,17 +840,17 @@ See also:
         } ShiftInPlace;
         // Symbol: drake::multibody::SpatialMomentum::SpatialMomentum<T>
         struct /* ctor */ {
-          // Source: drake/multibody/math/spatial_momentum.h:76
+          // Source: drake/multibody/math/spatial_momentum.h
           const char* doc_0args =
 R"""(Default constructor. In Release builds, all 6 elements of a newly
 constructed spatial momentum are uninitialized (for speed). In Debug
 builds, the 6 elements are set to NaN so that invalid operations on an
 uninitialized spatial momentum fail fast (fast bug detection).)""";
-          // Source: drake/multibody/math/spatial_momentum.h:80
+          // Source: drake/multibody/math/spatial_momentum.h
           const char* doc_2args =
 R"""(Constructs a spatial momentum L from an angular momentum 𝐡 and a
 translational momentum 𝐥.)""";
-          // Source: drake/multibody/math/spatial_momentum.h:90
+          // Source: drake/multibody/math/spatial_momentum.h
           const char* doc_1args =
 R"""(Constructs a spatial momentum L from an Eigen expression that
 represents a 6-element vector, i.e., a 3-element angular momentum 𝐡
@@ -860,7 +860,7 @@ expressions or at run-time for dynamic sized Eigen expressions.)""";
         } ctor;
         // Symbol: drake::multibody::SpatialMomentum::dot
         struct /* dot */ {
-          // Source: drake/multibody/math/spatial_momentum.h:161
+          // Source: drake/multibody/math/spatial_momentum.h
           const char* doc =
 R"""(Calculates twice (2x) a body B's kinetic energy measured in a frame M.
 For any frame (e.g., an multibody_frames_and_bodies "offset frame") Bp
@@ -910,7 +910,7 @@ Note:
       } SpatialMomentum;
       // Symbol: drake::multibody::SpatialVector
       struct /* SpatialVector */ {
-        // Source: drake/multibody/math/spatial_vector.h:46
+        // Source: drake/multibody/math/spatial_vector.h
         const char* doc =
 R"""(This class represents a *spatial vector* and has 6 elements, with a
 3-element rotational vector on top of a 3-element translational
@@ -931,14 +931,14 @@ Template parameter ``SV``:
     a template on the scalar type T.)""";
         // Symbol: drake::multibody::SpatialVector::CoeffsEigenType
         struct /* CoeffsEigenType */ {
-          // Source: drake/multibody/math/spatial_vector.h:61
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc =
 R"""(The type of the underlying in-memory representation using an Eigen
 vector.)""";
         } CoeffsEigenType;
         // Symbol: drake::multibody::SpatialVector::GetMaximumAbsoluteDifferences
         struct /* GetMaximumAbsoluteDifferences */ {
-          // Source: drake/multibody/math/spatial_vector.h:151
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc =
 R"""(Returns the maximum absolute values of the differences in the
 rotational and translational components of ``this`` and ``other``
@@ -958,7 +958,7 @@ Returns:
         } GetMaximumAbsoluteDifferences;
         // Symbol: drake::multibody::SpatialVector::IsApprox
         struct /* IsApprox */ {
-          // Source: drake/multibody/math/spatial_vector.h:191
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc =
 R"""(Determines whether all six corresponding elements of two spatial
 vectors are equal to each other to within a specified tolerance
@@ -977,7 +977,7 @@ Returns:
         } IsApprox;
         // Symbol: drake::multibody::SpatialVector::IsNearlyEqualWithinAbsoluteTolerance
         struct /* IsNearlyEqualWithinAbsoluteTolerance */ {
-          // Source: drake/multibody/math/spatial_vector.h:174
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc =
 R"""(Compares the rotational and translational parts of ``this`` and
 ``other`` to check if they are the same to within specified absolute
@@ -1007,7 +1007,7 @@ Returns:
         } IsNearlyEqualWithinAbsoluteTolerance;
         // Symbol: drake::multibody::SpatialVector::SetNaN
         struct /* SetNaN */ {
-          // Source: drake/multibody/math/spatial_vector.h:200
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc =
 R"""(Sets all the elements in ``this`` SpatialVector to NaN. This is
 typically used to quickly detect uninitialized values since NaN will
@@ -1016,31 +1016,31 @@ their source.)""";
         } SetNaN;
         // Symbol: drake::multibody::SpatialVector::SetZero
         struct /* SetZero */ {
-          // Source: drake/multibody/math/spatial_vector.h:207
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc =
 R"""(Sets both the rotational and translational components of ``this``
 SpatialVector to zero.)""";
         } SetZero;
         // Symbol: drake::multibody::SpatialVector::SpatialQuantity
         struct /* SpatialQuantity */ {
-          // Source: drake/multibody/math/spatial_vector.h:51
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc =
 R"""(The more specialized spatial vector class templated on the scalar type
 T.)""";
         } SpatialQuantity;
         // Symbol: drake::multibody::SpatialVector::SpatialVector<SV, T>
         struct /* ctor */ {
-          // Source: drake/multibody/math/spatial_vector.h:67
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc_0args =
 R"""(Default constructor. In Release builds, all 6 elements of a newly
 constructed spatial vector are uninitialized (for speed). In Debug
 builds, the 6 elements are set to NaN so that invalid operations on an
 uninitialized spatial vector fail fast (fast bug detection).)""";
-          // Source: drake/multibody/math/spatial_vector.h:71
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc_2args =
 R"""(Constructs a spatial vector from a rotational component w and a
 translational component v.)""";
-          // Source: drake/multibody/math/spatial_vector.h:83
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc_1args =
 R"""(Constructs a spatial vector V from an Eigen expression that represents
 a 6-element vector (3-element rotational vector on top of a 3-element
@@ -1050,14 +1050,14 @@ run-time for dynamic sized Eigen expressions.)""";
         } ctor;
         // Symbol: drake::multibody::SpatialVector::Zero
         struct /* Zero */ {
-          // Source: drake/multibody/math/spatial_vector.h:290
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc =
 R"""(Factory to create a *zero* spatial vector, i.e., a SpatialVector whose
 rotational and translational components are both zero.)""";
         } Zero;
         // Symbol: drake::multibody::SpatialVector::data
         struct /* data */ {
-          // Source: drake/multibody/math/spatial_vector.h:136
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc =
 R"""(Returns a (const) bare pointer to the underlying data. It is
 guaranteed that there will be six (6) T's densely packed at data[0],
@@ -1065,31 +1065,31 @@ data[1], etc.)""";
         } data;
         // Symbol: drake::multibody::SpatialVector::get_coeffs
         struct /* get_coeffs */ {
-          // Source: drake/multibody/math/spatial_vector.h:213
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc_0args_nonconst =
 R"""(Returns a mutable reference to the underlying storage.)""";
-          // Source: drake/multibody/math/spatial_vector.h:216
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc_0args_const =
 R"""(Returns a constant reference to the underlying storage.)""";
         } get_coeffs;
         // Symbol: drake::multibody::SpatialVector::kRotationSize
         struct /* kRotationSize */ {
-          // Source: drake/multibody/math/spatial_vector.h:56
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc = R"""()""";
         } kRotationSize;
         // Symbol: drake::multibody::SpatialVector::kSpatialVectorSize
         struct /* kSpatialVectorSize */ {
-          // Source: drake/multibody/math/spatial_vector.h:55
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc = R"""()""";
         } kSpatialVectorSize;
         // Symbol: drake::multibody::SpatialVector::kTranslationSize
         struct /* kTranslationSize */ {
-          // Source: drake/multibody/math/spatial_vector.h:57
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc = R"""()""";
         } kTranslationSize;
         // Symbol: drake::multibody::SpatialVector::mutable_data
         struct /* mutable_data */ {
-          // Source: drake/multibody/math/spatial_vector.h:140
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc =
 R"""(Returns a (mutable) bare pointer to the underlying data. It is
 guaranteed that there will be six (6) T's densely packed at data[0],
@@ -1097,32 +1097,32 @@ data[1], etc.)""";
         } mutable_data;
         // Symbol: drake::multibody::SpatialVector::operator*=
         struct /* operator_imul */ {
-          // Source: drake/multibody/math/spatial_vector.h:234
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc = R"""(Multiplication assignment operator.)""";
         } operator_imul;
         // Symbol: drake::multibody::SpatialVector::operator+=
         struct /* operator_iadd */ {
-          // Source: drake/multibody/math/spatial_vector.h:222
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc = R"""(Addition assignment operator.)""";
         } operator_iadd;
         // Symbol: drake::multibody::SpatialVector::operator-
         struct /* operator_sub */ {
-          // Source: drake/multibody/math/spatial_vector.h:219
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc = R"""(Unary minus operator.)""";
         } operator_sub;
         // Symbol: drake::multibody::SpatialVector::operator-=
         struct /* operator_isub */ {
-          // Source: drake/multibody/math/spatial_vector.h:228
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc = R"""(Subtraction assignment operator.)""";
         } operator_isub;
         // Symbol: drake::multibody::SpatialVector::operator[]
         struct /* operator_array */ {
-          // Source: drake/multibody/math/spatial_vector.h:93
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc_1args_i_const =
 R"""(Const access to the i-th element of this spatial vector. In Debug
 builds, this function asserts that i is in bounds whereas for release
 builds, no bounds-check on i is performed (for speed).)""";
-          // Source: drake/multibody/math/spatial_vector.h:101
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc_1args_i_nonconst =
 R"""(Mutable access to the i-th element of this spatial vector. In Debug
 builds, this function asserts that i is in bounds whereas for release
@@ -1130,16 +1130,16 @@ builds, no bounds-check on i is performed (for speed).)""";
         } operator_array;
         // Symbol: drake::multibody::SpatialVector::rotational
         struct /* rotational */ {
-          // Source: drake/multibody/math/spatial_vector.h:107
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc_0args_const =
 R"""(Const access to the rotational component of this spatial vector.)""";
-          // Source: drake/multibody/math/spatial_vector.h:114
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc_0args_nonconst =
 R"""(Mutable access to the rotational component of this spatial vector.)""";
         } rotational;
         // Symbol: drake::multibody::SpatialVector::size
         struct /* size */ {
-          // Source: drake/multibody/math/spatial_vector.h:88
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc =
 R"""(For 3D (three-dimensional) analysis, the total size of the
 concatenated rotational vector (3 elements) and translational vector
@@ -1147,17 +1147,17 @@ concatenated rotational vector (3 elements) and translational vector
         } size;
         // Symbol: drake::multibody::SpatialVector::translational
         struct /* translational */ {
-          // Source: drake/multibody/math/spatial_vector.h:121
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc_0args_const =
 R"""(Const access to the translational component of this spatial vector.)""";
-          // Source: drake/multibody/math/spatial_vector.h:128
+          // Source: drake/multibody/math/spatial_vector.h
           const char* doc_0args_nonconst =
 R"""(Mutable access to the translational component of this spatial vector.)""";
         } translational;
       } SpatialVector;
       // Symbol: drake::multibody::SpatialVelocity
       struct /* SpatialVelocity */ {
-        // Source: drake/multibody/math/spatial_velocity.h:40
+        // Source: drake/multibody/math/spatial_velocity.h
         const char* doc =
 R"""(This class represents a *spatial velocity* V (also called a *twist*)
 and has 6 elements with an angular (rotational) velocity ω (3-element
@@ -1180,7 +1180,7 @@ and monogram notation are in sections multibody_spatial_vectors and
 multibody_quantities.)""";
         // Symbol: drake::multibody::SpatialVelocity::ComposeWithMovingFrameVelocity
         struct /* ComposeWithMovingFrameVelocity */ {
-          // Source: drake/multibody/math/spatial_velocity.h:136
+          // Source: drake/multibody/math/spatial_velocity.h
           const char* doc =
 R"""(Compose ``this`` spatial velocity (measured in some frame M) with the
 spatial velocity of another frame to form the 𝐨𝐭𝐡𝐞𝐫 frame's spatial
@@ -1229,7 +1229,7 @@ See also:
         } ComposeWithMovingFrameVelocity;
         // Symbol: drake::multibody::SpatialVelocity::Shift
         struct /* Shift */ {
-          // Source: drake/multibody/math/spatial_velocity.h:109
+          // Source: drake/multibody/math/spatial_velocity.h
           const char* doc =
 R"""(Shifts a SpatialVelocity from a frame B to a frame C, where both B and
 C are fixed to the same frame or rigid body.
@@ -1253,7 +1253,7 @@ See also:
         } Shift;
         // Symbol: drake::multibody::SpatialVelocity::ShiftInPlace
         struct /* ShiftInPlace */ {
-          // Source: drake/multibody/math/spatial_velocity.h:83
+          // Source: drake/multibody/math/spatial_velocity.h
           const char* doc =
 R"""(In-place shift of a SpatialVelocity from a frame B to a frame C, where
 both B and C are fixed to the same frame or rigid body. On entry,
@@ -1286,17 +1286,17 @@ See also:
         } ShiftInPlace;
         // Symbol: drake::multibody::SpatialVelocity::SpatialVelocity<T>
         struct /* ctor */ {
-          // Source: drake/multibody/math/spatial_velocity.h:54
+          // Source: drake/multibody/math/spatial_velocity.h
           const char* doc_0args =
 R"""(Default constructor. In Release builds, all 6 elements of a newly
 constructed spatial velocity are uninitialized (for speed). In Debug
 builds, the 6 elements are set to NaN so that invalid operations on an
 uninitialized spatial velocity fail fast (fast bug detection).)""";
-          // Source: drake/multibody/math/spatial_velocity.h:58
+          // Source: drake/multibody/math/spatial_velocity.h
           const char* doc_2args =
 R"""(Constructs a spatial velocity V from an angular velocity ω and a
 translational velocity v.)""";
-          // Source: drake/multibody/math/spatial_velocity.h:68
+          // Source: drake/multibody/math/spatial_velocity.h
           const char* doc_1args =
 R"""(Constructs a spatial velocity V from an Eigen expression that
 represents a 6-element vector, i.e., two 3-element vectors, namely an
@@ -1307,7 +1307,7 @@ expressions.)""";
         } ctor;
         // Symbol: drake::multibody::SpatialVelocity::dot
         struct /* dot */ {
-          // Source: drake/multibody/math/spatial_velocity.h:159
+          // Source: drake/multibody/math/spatial_velocity.h
           const char* doc_1args_force =
 R"""(Calculates the power generated by a spatial force. For an arbitrary
 frame B, calculates the dot-product of ``this`` = V_MB_E (frame B's
@@ -1333,7 +1333,7 @@ Note:
     Although the spatial vectors F_B_E and V_MB_E must have the same
     expressed-in frame E, the returned scalar is independent of frame
     E.)""";
-          // Source: drake/multibody/math/spatial_velocity.h:185
+          // Source: drake/multibody/math/spatial_velocity.h
           const char* doc_1args_momentum =
 R"""(Calculates twice (2x) a body B's kinetic energy measured in a frame M.
 For any frame (e.g., an multibody_frames_and_bodies "offset frame") Bp
@@ -1384,7 +1384,7 @@ Note:
       } SpatialVelocity;
       // Symbol: drake::multibody::operator+
       struct /* operator_add */ {
-        // Source: drake/multibody/math/spatial_acceleration.h:328
+        // Source: drake/multibody/math/spatial_acceleration.h
         const char* doc_2args_constSpatialAcceleration_constSpatialAcceleration =
 R"""(Adds two spatial accelerations by simply adding their 6 underlying
 elements.
@@ -1401,7 +1401,7 @@ Note:
 
 See also:
     Shift(), ShiftInPlace(), and ComposeWithMovingFrameAcceleration().)""";
-        // Source: drake/multibody/math/spatial_force.h:219
+        // Source: drake/multibody/math/spatial_force.h
         const char* doc_2args_constSpatialForce_constSpatialForce =
 R"""(Adds two spatial forces by simply adding their 6 underlying elements.
 
@@ -1416,7 +1416,7 @@ Note:
     situations when F1 and F2 are associated with different sets of
     forces, but are applied to the same frame B, with same application
     point Bp, and have the same expressed-in frame E.)""";
-        // Source: drake/multibody/math/spatial_momentum.h:175
+        // Source: drake/multibody/math/spatial_momentum.h
         const char* doc_2args_constSpatialMomentum_constSpatialMomentum =
 R"""(Adds two spatial momenta by simply adding their 6 underlying elements.
 
@@ -1431,7 +1431,7 @@ Note:
     situations when L1 and L2 are associated with different systems
     (S1 and S2), but have the same about-point P, same measured-in
     frame M, and same expressed-in frame E.)""";
-        // Source: drake/multibody/math/spatial_velocity.h:205
+        // Source: drake/multibody/math/spatial_velocity.h
         const char* doc_2args_constSpatialVelocity_constSpatialVelocity =
 R"""(Adds two spatial velocities by simply adding their 6 underlying
 elements.
@@ -1458,7 +1458,7 @@ See also:
       } operator_add;
       // Symbol: drake::multibody::operator-
       struct /* operator_sub */ {
-        // Source: drake/multibody/math/spatial_acceleration.h:344
+        // Source: drake/multibody/math/spatial_acceleration.h
         const char* doc_2args_constSpatialAcceleration_constSpatialAcceleration =
 R"""(Subtracts spatial accelerations by simply subtracting their 6
 underlying elements.
@@ -1475,7 +1475,7 @@ Note:
 
 See also:
     Shift(), ShiftInPlace(), and ComposeWithMovingFrameAcceleration().)""";
-        // Source: drake/multibody/math/spatial_force.h:235
+        // Source: drake/multibody/math/spatial_force.h
         const char* doc_2args_constSpatialForce_constSpatialForce =
 R"""(Subtracts spatial forces by simply subtracting their 6 underlying
 elements.
@@ -1491,7 +1491,7 @@ Note:
     situations when F1 and F2 are associated with different sets of
     forces, but are applied to the same frame B, with same application
     point Bp, and have the same expressed-in frame E.)""";
-        // Source: drake/multibody/math/spatial_momentum.h:189
+        // Source: drake/multibody/math/spatial_momentum.h
         const char* doc_2args_constSpatialMomentum_constSpatialMomentum =
 R"""(Subtracts spatial momenta by simply subtracting their 6 underlying
 elements.
@@ -1505,7 +1505,7 @@ Parameter ``L2_E``:
 Note:
     The general utility of this operator-() function is questionable
     and it should only be used if you are sure it makes sense.)""";
-        // Source: drake/multibody/math/spatial_velocity.h:237
+        // Source: drake/multibody/math/spatial_velocity.h
         const char* doc_2args_constSpatialVelocity_constSpatialVelocity =
 R"""(Subtracts spatial velocities by simply subtracting their 6 underlying
 elements.

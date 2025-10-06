@@ -30,7 +30,7 @@ class TestAll(unittest.TestCase):
             warnings.filterwarnings(
                 "ignore", message=".* from 'collections.abc' is deprecated",
                 category=DeprecationWarning)
-            import pydrake.all
+            import pydrake.all  # noqa: F401 (unused-import)
             self.assertEqual(len(w), 0, [x.message for x in w])
 
     def test_usage_no_all(self):
@@ -46,7 +46,7 @@ class TestAll(unittest.TestCase):
             FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
         plant.Finalize()
         diagram = builder.Build()
-        simulator = Simulator(diagram)
+        Simulator(diagram)
 
     def test_usage_all(self):
         from pydrake.all import (
@@ -59,10 +59,10 @@ class TestAll(unittest.TestCase):
             FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
         plant.Finalize()
         diagram = builder.Build()
-        simulator = Simulator(diagram)
+        Simulator(diagram)
 
     def test_usage_all_explicit(self):
-        import pydrake.all
+        import pydrake.all  # noqa: F401 (unused-import)
 
         builder = pydrake.systems.framework.DiagramBuilder()
         plant, _ = pydrake.multibody.plant.AddMultibodyPlantSceneGraph(
@@ -72,10 +72,10 @@ class TestAll(unittest.TestCase):
                 "drake/examples/pendulum/Pendulum.urdf"))
         plant.Finalize()
         diagram = builder.Build()
-        simulator = pydrake.systems.analysis.Simulator(diagram)
+        pydrake.systems.analysis.Simulator(diagram)
 
     def test_preferred_ordering(self):
-        import pydrake.all
+        import pydrake.all  # noqa: F401 (unused-import)
         self.assertIs(pydrake.all.sin, pydrake.math.sin)
         self.assertIs(pydrake.all.Polynomial, pydrake.symbolic.Polynomial)
 
@@ -83,7 +83,7 @@ class TestAll(unittest.TestCase):
         """Tests a subset of symbols provided by `drake.all`. At least one
         symbol per submodule should be included.
         """
-        import pydrake.all
+        import pydrake.all  # noqa: F401 (unused-import)
 
         # Subset of symbols.
         expected_symbols = (
@@ -179,7 +179,7 @@ class TestAll(unittest.TestCase):
 
         Test that none of the modules which we've decided should only be
         imported by functions appear in sys.modules."""
-        import pydrake.all
+        import pydrake.all  # noqa: F401 (unused-import)
 
         # We want to ensure that the following modules are only be imported
         # within a function, not at the module level.

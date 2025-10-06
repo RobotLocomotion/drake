@@ -18,7 +18,8 @@ def lcm_internal_repository(
         commit = "e4bed2c86fbd6dd2280326801acf71cbd05074be",
         sha256 = "b2bf5bf7fed61805d72855c8ea9d247de95e5ca885ee6c5c8c9185aa87dda74c",  # noqa
         patches = [
-            ":patches/respell_glib_deps.patch",
+            ":patches/copts.patch",
+            ":patches/vendor_namespace.patch",
         ],
         mirrors = mirrors,
     )

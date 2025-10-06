@@ -1,8 +1,6 @@
 import copy
-from functools import partial
 import textwrap
 import unittest
-import warnings
 import weakref
 
 import numpy as np
@@ -12,7 +10,6 @@ from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import kDrakeAssertIsArmed, Parallelism
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
-from pydrake.forwarddiff import jacobian
 from pydrake.math import ge
 from pydrake.solvers import (
     GurobiSolver,
@@ -415,8 +412,7 @@ class TestMathematicalProgram(unittest.TestCase):
                 constraint,
                 np.vstack((x_expected, x_expected)).T)
             a = np.vstack((value_expected, value_expected)).T
-            self.assertTrue(np.allclose(
-                value, np.vstack((value_expected, value_expected)).T))
+            self.assertTrue(np.allclose(value, a))
 
         enum = zip(costs, cost_values_expected)
         for (cost, value_expected) in enum:
@@ -485,7 +481,7 @@ class TestMathematicalProgram(unittest.TestCase):
                 self.assertAlmostEqual(xval[i, j], 2 * i + j)
                 self.assertEqual(xval[i, j], result.GetSolution(x[i, j]))
         # Just check spelling.
-        y = prog.NewIndeterminates(2, 2, "y")
+        prog.NewIndeterminates(2, 2, "y")
 
     def test_linear_constraint(self):
         A = np.array([[1, 3, 4], [2., 4., 5]])
@@ -603,7 +599,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertIsInstance(gramian1, np.ndarray)
 
         gramian2 = prog.NewSymmetricContinuousVariables(2)
-        poly2 = prog.NewSosPolynomial(
+        prog.NewSosPolynomial(
             gramian=gramian2,
             monomial_basis=(sym.Monomial(x[0]), sym.Monomial(x[1])),
             type=mp.MathematicalProgram.NonnegativePolynomial.kDsos)
@@ -658,8 +654,8 @@ class TestMathematicalProgram(unittest.TestCase):
         poly = prog.NewFreePolynomial(sym.Variables(x), 1)
         (poly, binding) = prog.NewSosPolynomial(
             indeterminates=sym.Variables(x), degree=2, gram_name="M0")
-        even_poly = prog.NewEvenDegreeFreePolynomial(sym.Variables(x), 2)
-        odd_poly = prog.NewOddDegreeFreePolynomial(sym.Variables(x), 3)
+        prog.NewEvenDegreeFreePolynomial(sym.Variables(x), 2)
+        prog.NewOddDegreeFreePolynomial(sym.Variables(x), 3)
         y = prog.NewIndeterminates(1, "y")
         self.assertEqual(prog.indeterminates_index()[y[0].get_id()], 1)
         (poly, binding) = prog.NewSosPolynomial(
@@ -1246,13 +1242,13 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(3)
         hessian_type = mp.QuadraticConstraint.HessianType.kPositiveSemidefinite
-        constraint1 = prog.AddQuadraticConstraint(
+        prog.AddQuadraticConstraint(
             Q=np.eye(2), b=np.array([1., 2.]), lb=0., ub=1., vars=x[:2],
             hessian_type=hessian_type)
         self.assertEqual(len(prog.quadratic_constraints()), 1)
 
         hessian_type = mp.QuadraticConstraint.HessianType.kIndefinite
-        constraint2 = prog.AddQuadraticConstraint(
+        prog.AddQuadraticConstraint(
             x[0] * x[0] - x[2] * x[2], 1, 2, hessian_type=hessian_type)
         self.assertEqual(len(prog.quadratic_constraints()), 2)
 
@@ -1481,7 +1477,7 @@ class TestMathematicalProgram(unittest.TestCase):
 
     def test_infeasible_constraints(self):
         prog = mp.MathematicalProgram()
-        x = prog.NewContinuousVariables(1)
+        prog.NewContinuousVariables(1)
         result = mp.Solve(prog)
 
         infeasible = result.GetInfeasibleConstraints(prog)
@@ -1538,7 +1534,7 @@ class TestMathematicalProgram(unittest.TestCase):
         gurobi_solver = GurobiSolver()
         scs_solver = ScsSolver()
         if scs_solver.available() and scs_solver.enabled():
-            solver = mp.MakeFirstAvailableSolver(
+            mp.MakeFirstAvailableSolver(
                 [gurobi_solver.solver_id(), scs_solver.solver_id()])
 
     def test_variable_scaling(self):
@@ -1572,11 +1568,11 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(len(prog.linear_costs()), 0)
 
         quadratic_cost1 = prog.AddQuadraticCost(x[0] * x[0] + 2 * x[1] * x[1])
-        quadratic_cost2 = prog.AddQuadraticCost(x[2] * x[2])
+        prog.AddQuadraticCost(x[2] * x[2])
         prog.RemoveCost(cost=quadratic_cost1)
         self.assertEqual(len(prog.quadratic_costs()), 1)
 
-        generic_cost1 = prog.AddCost(x[0] * x[1] * x[2])
+        prog.AddCost(x[0] * x[1] * x[2])
         generic_cost2 = prog.AddCost(x[0] * x[1] * x[2] * x[2])
         prog.RemoveCost(cost=generic_cost2)
         self.assertEqual(len(prog.generic_costs()), 1)

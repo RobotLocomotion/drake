@@ -21,7 +21,7 @@ exports_files([
 exports_files(
     [
         "MODULE.bazel",
-        "WORKSPACE.bzlmod",
+        "cmake/MODULE.bazel.in",
     ],
     visibility = ["//tools/workspace:__pkg__"],
 )
@@ -187,4 +187,5 @@ add_lint_tests(
         ],
         allow_empty = False,
     ),
+    python_lint_use_ruff_format = False,
 )

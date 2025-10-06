@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import copy
-import time
 import unittest
-import warnings
-
-import numpy as np
 
 from pydrake.common import RandomGenerator
 from pydrake.systems.analysis import (

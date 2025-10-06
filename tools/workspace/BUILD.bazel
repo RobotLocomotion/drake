@@ -71,6 +71,21 @@ drake_py_test(
     deps = [":module_py"],
 )
 
+drake_py_test(
+    name = "bzlmod_sync_test",
+    srcs = ["bzlmod_sync_test.py"],
+    allow_import_unittest = True,
+    data = [
+        "//:MODULE.bazel",
+        "//:cmake/MODULE.bazel.in",
+    ],
+    tags = ["lint"],
+    deps = [
+        ":module_py",
+        "@rules_python//python/runfiles",
+    ],
+)
+
 drake_py_binary(
     name = "cmake_configure_file",
     srcs = ["cmake_configure_file.py"],
@@ -154,7 +169,9 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "//tools/workspace/scs_internal:enabled": ["@scs_internal//:install"],
     "//conditions:default": [],
 }) + select({
-    "//tools/workspace/lcm:flag_with_lcm_runtime_true": ["@lcm//:install"],
+    "//tools/workspace/lcm_internal:flag_with_lcm_runtime_true": [
+        "//tools/workspace/lcm_internal:install",
+    ],
     "//conditions:default": [],
 })
 
@@ -166,4 +183,4 @@ install(
 
 check_licenses(_DRAKE_EXTERNAL_PACKAGE_INSTALLS)
 
-add_lint_tests()
+add_lint_tests(python_lint_use_ruff_format = False)

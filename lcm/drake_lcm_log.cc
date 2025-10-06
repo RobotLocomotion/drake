@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-#include "lcm/lcm.h"
+#include <lcm/lcm.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/string_map.h"

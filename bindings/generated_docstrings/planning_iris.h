@@ -25,19 +25,19 @@ constexpr struct /* pydrake_doc_planning_iris */ {
     struct /* planning */ {
       // Symbol: drake::planning::CommonSampledIrisOptions
       struct /* CommonSampledIrisOptions */ {
-        // Source: drake/planning/iris/iris_common.h:28
+        // Source: drake/planning/iris/iris_common.h
         const char* doc =
 R"""(Various options which are common to the sampling-based algorithms
 IrisNp2 and IrisZo for generating collision free polytopes in
 configuration space.)""";
         // Symbol: drake::planning::CommonSampledIrisOptions::CommonSampledIrisOptions
         struct /* ctor */ {
-          // Source: drake/planning/iris/iris_common.h:30
+          // Source: drake/planning/iris/iris_common.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::planning::CommonSampledIrisOptions::Serialize
         struct /* Serialize */ {
-          // Source: drake/planning/iris/iris_common.h:36
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background. Note: This only serializes options that
@@ -45,7 +45,7 @@ are YAML built-in types.)""";
         } Serialize;
         // Symbol: drake::planning::CommonSampledIrisOptions::configuration_space_margin
         struct /* configuration_space_margin */ {
-          // Source: drake/planning/iris/iris_common.h:112
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(We retreat by this margin from each C-space obstacle in order to avoid
 the possibility of requiring an infinite number of faces to
@@ -53,7 +53,7 @@ approximate a curved boundary.)""";
         } configuration_space_margin;
         // Symbol: drake::planning::CommonSampledIrisOptions::containment_points
         struct /* containment_points */ {
-          // Source: drake/planning/iris/iris_common.h:82
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(Points that are guaranteed to be contained in the final region
 provided their convex hull is collision free. Note that if the
@@ -66,34 +66,34 @@ containment points.)""";
         } containment_points;
         // Symbol: drake::planning::CommonSampledIrisOptions::delta
         struct /* delta */ {
-          // Source: drake/planning/iris/iris_common.h:70
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(Upper bound on the probability the returned region has a
 fraction-in-collision greater than ``epsilon``.)""";
         } delta;
         // Symbol: drake::planning::CommonSampledIrisOptions::epsilon
         struct /* epsilon */ {
-          // Source: drake/planning/iris/iris_common.h:73
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(Admissible fraction of the region volume allowed to be in collision.)""";
         } epsilon;
         // Symbol: drake::planning::CommonSampledIrisOptions::max_iterations
         struct /* max_iterations */ {
-          // Source: drake/planning/iris/iris_common.h:86
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(Maximum number of alternations between the ellipsoid and the
 separating planes step (a.k.a. outer iterations).)""";
         } max_iterations;
         // Symbol: drake::planning::CommonSampledIrisOptions::max_iterations_separating_planes
         struct /* max_iterations_separating_planes */ {
-          // Source: drake/planning/iris/iris_common.h:90
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(Maximum number of rounds of adding faces to the polytope per outer
 iteration.)""";
         } max_iterations_separating_planes;
         // Symbol: drake::planning::CommonSampledIrisOptions::max_separating_planes_per_iteration
         struct /* max_separating_planes_per_iteration */ {
-          // Source: drake/planning/iris/iris_common.h:94
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(Maximum number of faces to add per inner iteration. Setting the value
 to -1 means there is no limit to the number of faces that can be
@@ -101,26 +101,28 @@ added.)""";
         } max_separating_planes_per_iteration;
         // Symbol: drake::planning::CommonSampledIrisOptions::meshcat
         struct /* meshcat */ {
-          // Source: drake/planning/iris/iris_common.h:157
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(Passing a meshcat instance may enable debugging visualizations when
 the configuration space is <= 3 dimensional.)""";
         } meshcat;
         // Symbol: drake::planning::CommonSampledIrisOptions::mixing_steps
         struct /* mixing_steps */ {
-          // Source: drake/planning/iris/iris_common.h:143
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(Number of mixing steps used for hit-and-run sampling.)""";
         } mixing_steps;
         // Symbol: drake::planning::CommonSampledIrisOptions::num_particles
         struct /* num_particles */ {
-          // Source: drake/planning/iris/iris_common.h:59
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
-R"""(Number of particles used to estimate the closest collision.)""";
+R"""(Minimum number of particles drawn per inner iteration. Some or all of
+these particles, depending on the other algorithm settings, will be
+used to find the closest collisions.)""";
         } num_particles;
         // Symbol: drake::planning::CommonSampledIrisOptions::parallelism
         struct /* parallelism */ {
-          // Source: drake/planning/iris/iris_common.h:100
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(Number of threads to use when updating the particles. If the user
 requests more threads than the CollisionChecker supports, that number
@@ -129,7 +131,7 @@ of threads will be used instead. However, see also
         } parallelism;
         // Symbol: drake::planning::CommonSampledIrisOptions::prog_with_additional_constraints
         struct /* prog_with_additional_constraints */ {
-          // Source: drake/planning/iris/iris_common.h:174
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(By default, IRIS-ZO only considers collision avoidance constraints.
 This option can be used to pass additional constraints that should be
@@ -155,14 +157,14 @@ Note:
         } prog_with_additional_constraints;
         // Symbol: drake::planning::CommonSampledIrisOptions::random_seed
         struct /* random_seed */ {
-          // Source: drake/planning/iris/iris_common.h:140
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(This option sets the random seed for random sampling throughout the
 algorithm.)""";
         } random_seed;
         // Symbol: drake::planning::CommonSampledIrisOptions::relative_termination_threshold
         struct /* relative_termination_threshold */ {
-          // Source: drake/planning/iris/iris_common.h:129
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(IRIS will terminate if the change in the *volume* of the
 hyperellipsoid between iterations is less that this percent of the
@@ -171,7 +173,7 @@ setting to a negative value.)""";
         } relative_termination_threshold;
         // Symbol: drake::planning::CommonSampledIrisOptions::relax_margin
         struct /* relax_margin */ {
-          // Source: drake/planning/iris/iris_common.h:119
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(Suppose stepping back by configuration_space_margin would cut off the
 seed point. If ``relax_margin`` is false, we throw an error, and if
@@ -182,7 +184,7 @@ seed point is not cut off. Ignored if the user has provided
         } relax_margin;
         // Symbol: drake::planning::CommonSampledIrisOptions::remove_all_collisions_possible
         struct /* remove_all_collisions_possible */ {
-          // Source: drake/planning/iris/iris_common.h:136
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(A region may satisfy the user-requested fraction in-collision, but
 still have some of the samples drawn be in-collision. If this flag is
@@ -192,14 +194,14 @@ beat the user-requested fraction in-collision by a larger margin.)""";
         } remove_all_collisions_possible;
         // Symbol: drake::planning::CommonSampledIrisOptions::require_sample_point_is_contained
         struct /* require_sample_point_is_contained */ {
-          // Source: drake/planning/iris/iris_common.h:107
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(The initial polytope is guaranteed to contain the point if that point
 is collision-free.)""";
         } require_sample_point_is_contained;
         // Symbol: drake::planning::CommonSampledIrisOptions::sample_particles_in_parallel
         struct /* sample_particles_in_parallel */ {
-          // Source: drake/planning/iris/iris_common.h:153
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(If true, the hit-and-run procedure is run in parallel to quickly draw
 all the samples necessary. When the statistical test requires many
@@ -212,7 +214,7 @@ to the lower cumulative mixing time).)""";
         } sample_particles_in_parallel;
         // Symbol: drake::planning::CommonSampledIrisOptions::tau
         struct /* tau */ {
-          // Source: drake/planning/iris/iris_common.h:66
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(Decision threshold for the unadaptive test. Choosing a small value
 increases both the cost and the power of the statistical test.
@@ -222,7 +224,7 @@ a value of 0.5 a good trade-off.)""";
         } tau;
         // Symbol: drake::planning::CommonSampledIrisOptions::termination_threshold
         struct /* termination_threshold */ {
-          // Source: drake/planning/iris/iris_common.h:124
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(IRIS will terminate if the change in the *volume* of the
 hyperellipsoid between iterations is less that this threshold. This
@@ -230,7 +232,7 @@ termination condition can be disabled by setting to a negative value.)""";
         } termination_threshold;
         // Symbol: drake::planning::CommonSampledIrisOptions::verbose
         struct /* verbose */ {
-          // Source: drake/planning/iris/iris_common.h:103
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(Enables print statements indicating the progress of IrisZo.)""";
         } verbose;
@@ -262,18 +264,18 @@ R"""(Enables print statements indicating the progress of IrisZo.)""";
       } CommonSampledIrisOptions;
       // Symbol: drake::planning::IrisFromCliqueCoverOptions
       struct /* IrisFromCliqueCoverOptions */ {
-        // Source: drake/planning/iris/iris_from_clique_cover.h:23
+        // Source: drake/planning/iris/iris_from_clique_cover.h
         const char* doc = R"""()""";
         // Symbol: drake::planning::IrisFromCliqueCoverOptions::coverage_termination_threshold
         struct /* coverage_termination_threshold */ {
-          // Source: drake/planning/iris/iris_from_clique_cover.h:57
+          // Source: drake/planning/iris/iris_from_clique_cover.h
           const char* doc =
 R"""(The fraction of the domain that must be covered before we terminate
 the algorithm.)""";
         } coverage_termination_threshold;
         // Symbol: drake::planning::IrisFromCliqueCoverOptions::iris_options
         struct /* iris_options */ {
-          // Source: drake/planning/iris/iris_from_clique_cover.h:51
+          // Source: drake/planning/iris/iris_from_clique_cover.h
           const char* doc =
 R"""(The options used on internal calls to Iris. The type of this option
 determines which variant of Iris is called. Currently, it is
@@ -298,13 +300,13 @@ Note:
         } iris_options;
         // Symbol: drake::planning::IrisFromCliqueCoverOptions::iteration_limit
         struct /* iteration_limit */ {
-          // Source: drake/planning/iris/iris_from_clique_cover.h:62
+          // Source: drake/planning/iris/iris_from_clique_cover.h
           const char* doc =
 R"""(The maximum number of iterations of the algorithm.)""";
         } iteration_limit;
         // Symbol: drake::planning::IrisFromCliqueCoverOptions::minimum_clique_size
         struct /* minimum_clique_size */ {
-          // Source: drake/planning/iris/iris_from_clique_cover.h:81
+          // Source: drake/planning/iris/iris_from_clique_cover.h
           const char* doc =
 R"""(The minimum size of the cliques used to construct a region. If this is
 set lower than the ambient dimension of the space we are trying to
@@ -313,13 +315,13 @@ ambient dimension.)""";
         } minimum_clique_size;
         // Symbol: drake::planning::IrisFromCliqueCoverOptions::num_points_per_coverage_check
         struct /* num_points_per_coverage_check */ {
-          // Source: drake/planning/iris/iris_from_clique_cover.h:67
+          // Source: drake/planning/iris/iris_from_clique_cover.h
           const char* doc =
 R"""(The number of points to sample when testing coverage.)""";
         } num_points_per_coverage_check;
         // Symbol: drake::planning::IrisFromCliqueCoverOptions::num_points_per_visibility_round
         struct /* num_points_per_visibility_round */ {
-          // Source: drake/planning/iris/iris_from_clique_cover.h:90
+          // Source: drake/planning/iris/iris_from_clique_cover.h
           const char* doc =
 R"""(Number of points to sample when building visibilty cliques. If this
 option is less than twice the minimum clique size, it will be
@@ -329,7 +331,7 @@ then the number of points in a visibility round will be doubled.)""";
         } num_points_per_visibility_round;
         // Symbol: drake::planning::IrisFromCliqueCoverOptions::parallelism
         struct /* parallelism */ {
-          // Source: drake/planning/iris/iris_from_clique_cover.h:74
+          // Source: drake/planning/iris/iris_from_clique_cover.h
           const char* doc =
 R"""(The amount of parallelism to use. This algorithm makes heavy use of
 parallelism at many points and thus it is highly recommended to set
@@ -337,14 +339,14 @@ this to the maximum tolerable parallelism.)""";
         } parallelism;
         // Symbol: drake::planning::IrisFromCliqueCoverOptions::point_in_set_tol
         struct /* point_in_set_tol */ {
-          // Source: drake/planning/iris/iris_from_clique_cover.h:103
+          // Source: drake/planning/iris/iris_from_clique_cover.h
           const char* doc =
 R"""(The tolerance used for checking whether a point is contained inside an
 HPolyhedron. See @ConvexSet::PointInSet.)""";
         } point_in_set_tol;
         // Symbol: drake::planning::IrisFromCliqueCoverOptions::rank_tol_for_minimum_volume_circumscribed_ellipsoid
         struct /* rank_tol_for_minimum_volume_circumscribed_ellipsoid */ {
-          // Source: drake/planning/iris/iris_from_clique_cover.h:97
+          // Source: drake/planning/iris/iris_from_clique_cover.h
           const char* doc =
 R"""(The rank tolerance used for computing the
 MinimumVolumeCircumscribedEllipsoid of a clique. See
@@ -353,7 +355,7 @@ MinimumVolumeCircumscribedEllipsoid of a clique. See
       } IrisFromCliqueCoverOptions;
       // Symbol: drake::planning::IrisInConfigurationSpaceFromCliqueCover
       struct /* IrisInConfigurationSpaceFromCliqueCover */ {
-        // Source: drake/planning/iris/iris_from_clique_cover.h:159
+        // Source: drake/planning/iris/iris_from_clique_cover.h
         const char* doc =
 R"""(Cover the configuration space in Iris regions using the Visibility
 Clique Cover Algorithm as described in
@@ -421,7 +423,7 @@ Raises:
       } IrisInConfigurationSpaceFromCliqueCover;
       // Symbol: drake::planning::IrisNp2
       struct /* IrisNp2 */ {
-        // Source: drake/planning/iris/iris_np2.h:173
+        // Source: drake/planning/iris/iris_np2.h
         const char* doc =
 R"""(The IRIS-NP2 (Iterative Regional Inflation by Semidefinite and
 Nonlinear Programming 2) algorithm, as described in
@@ -494,7 +496,7 @@ Raises:
       } IrisNp2;
       // Symbol: drake::planning::IrisNp2Options
       struct /* IrisNp2Options */ {
-        // Source: drake/planning/iris/iris_np2.h:72
+        // Source: drake/planning/iris/iris_np2.h
         const char* doc =
 R"""(IrisNp2Options collects all parameters for the IRIS-NP2 algorithm.
 
@@ -507,12 +509,12 @@ See also:
     IrisNp2 for more details.)""";
         // Symbol: drake::planning::IrisNp2Options::IrisNp2Options
         struct /* ctor */ {
-          // Source: drake/planning/iris/iris_np2.h:74
+          // Source: drake/planning/iris/iris_np2.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::planning::IrisNp2Options::Serialize
         struct /* Serialize */ {
-          // Source: drake/planning/iris/iris_np2.h:80
+          // Source: drake/planning/iris/iris_np2.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background. Note: This only serializes options that
@@ -520,7 +522,7 @@ are YAML built-in types.)""";
         } Serialize;
         // Symbol: drake::planning::IrisNp2Options::add_hyperplane_if_solve_fails
         struct /* add_hyperplane_if_solve_fails */ {
-          // Source: drake/planning/iris/iris_np2.h:116
+          // Source: drake/planning/iris/iris_np2.h
           const char* doc =
 R"""(Add a hyperplane at a particle in collision if the nonlinear solve
 (initialized at that point) fails. Generally leads to regions with
@@ -529,7 +531,7 @@ nonlinear solves are failing.)""";
         } add_hyperplane_if_solve_fails;
         // Symbol: drake::planning::IrisNp2Options::parameterization
         struct /* parameterization */ {
-          // Source: drake/planning/iris/iris_np2.h:99
+          // Source: drake/planning/iris/iris_np2.h
           const char* doc =
 R"""(Parameterization of the subspace along which to grow the region.
 Default is the identity parameterization, corresponding to growing
@@ -537,18 +539,18 @@ regions in the ordinary configuration space.)""";
         } parameterization;
         // Symbol: drake::planning::IrisNp2Options::ray_sampler_options
         struct /* ray_sampler_options */ {
-          // Source: drake/planning/iris/iris_np2.h:110
+          // Source: drake/planning/iris/iris_np2.h
           const char* doc =
 R"""(Additional options for kRaySampler. Ignored if kGreedySampler is used.)""";
         } ray_sampler_options;
         // Symbol: drake::planning::IrisNp2Options::sampled_iris_options
         struct /* sampled_iris_options */ {
-          // Source: drake/planning/iris/iris_np2.h:94
+          // Source: drake/planning/iris/iris_np2.h
           const char* doc = R"""(Options common to IRIS-type algorithms.)""";
         } sampled_iris_options;
         // Symbol: drake::planning::IrisNp2Options::sampling_strategy
         struct /* sampling_strategy */ {
-          // Source: drake/planning/iris/iris_np2.h:107
+          // Source: drake/planning/iris/iris_np2.h
           const char* doc =
 R"""(Which sampling strategy to use when growing the region. Use "ray" for
 kRaySmpler, and "greedy" for kGreedySampler. kRaySampler finds
@@ -561,7 +563,7 @@ Note:
         } sampling_strategy;
         // Symbol: drake::planning::IrisNp2Options::solver
         struct /* solver */ {
-          // Source: drake/planning/iris/iris_np2.h:91
+          // Source: drake/planning/iris/iris_np2.h
           const char* doc =
 R"""(The user can specify a solver to use for the counterexample search
 program. If nullptr (the default value) is given, then
@@ -580,7 +582,7 @@ solvers::MakeFirstAvailableSolver will be used to pick the solver.)""";
       } IrisNp2Options;
       // Symbol: drake::planning::IrisParameterizationFunction
       struct /* IrisParameterizationFunction */ {
-        // Source: drake/planning/iris/iris_common.h:189
+        // Source: drake/planning/iris/iris_common.h
         const char* doc =
 R"""(Ordinarily, IRIS algorithms grow collision free regions in the robot's
 configuration space C. This allows the user to specify a function
@@ -596,14 +598,14 @@ specify whether or not the parameterization function can be called in
 parallel.)""";
         // Symbol: drake::planning::IrisParameterizationFunction::IrisParameterizationFunction
         struct /* ctor */ {
-          // Source: drake/planning/iris/iris_common.h:204
+          // Source: drake/planning/iris/iris_common.h
           const char* doc_3args_parameterization_double_parameterization_is_threadsafe_parameterization_dimension =
 R"""(Constructor for when the user only provides a version of the
 parameterization function for Eigen::VectorX<double>.
 ``parameterization_double`` is the function itself,
 ``parameterization_is_threadsafe`` specifies whether or not its
 threadsafe, and ``parameterization_dimension`` is the input dimension.)""";
-          // Source: drake/planning/iris/iris_common.h:218
+          // Source: drake/planning/iris/iris_common.h
           const char* doc_4args_parameterization_double_parameterization_autodiff_parameterization_is_threadsafe_parameterization_dimension =
 R"""(Constructor for when the user only provides both versions of the
 parameterization function. ``parameterization_double`` is the version
@@ -611,11 +613,11 @@ for Eigen::VectorX<double>, ``parameterization_autodiff_`` is the
 version for Eigen::VectorX<AutoDiffXd>,
 ``parameterization_is_threadsafe`` specifies whether or not its
 threadsafe, and ``parameterization_dimension`` is the input dimension.)""";
-          // Source: drake/planning/iris/iris_common.h:229
+          // Source: drake/planning/iris/iris_common.h
           const char* doc_0args =
 R"""(Default constructor -- returns the identity mapping, which is
 threadsafe and compatible with any dimension configuration space.)""";
-          // Source: drake/planning/iris/iris_common.h:245
+          // Source: drake/planning/iris/iris_common.h
           const char* doc_2args_expression_parameterization_variables =
 R"""(Alternative constructor that allows the user to define the
 parameterization using a ``VectorX<Expression>``. The user must also
@@ -644,7 +646,7 @@ Raises:
 Raises:
     if any variables in ``variables`` are not used anywhere in
     ``expression_parameterization``.)""";
-          // Source: drake/planning/iris/iris_common.h:258
+          // Source: drake/planning/iris/iris_common.h
           const char* doc_2args_kin_q_star_val =
 R"""(Constructs an instance of IrisParameterizationFunction that handles a
 rational kinematic parameterization. Regions are grown in the ``s``
@@ -662,17 +664,17 @@ Note:
         } ctor;
         // Symbol: drake::planning::IrisParameterizationFunction::ParameterizationFunctionAutodiff
         struct /* ParameterizationFunctionAutodiff */ {
-          // Source: drake/planning/iris/iris_common.h:197
+          // Source: drake/planning/iris/iris_common.h
           const char* doc = R"""()""";
         } ParameterizationFunctionAutodiff;
         // Symbol: drake::planning::IrisParameterizationFunction::ParameterizationFunctionDouble
         struct /* ParameterizationFunctionDouble */ {
-          // Source: drake/planning/iris/iris_common.h:194
+          // Source: drake/planning/iris/iris_common.h
           const char* doc = R"""()""";
         } ParameterizationFunctionDouble;
         // Symbol: drake::planning::IrisParameterizationFunction::get_parameterization_autodiff
         struct /* get_parameterization_autodiff */ {
-          // Source: drake/planning/iris/iris_common.h:278
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(Get the Eigen::VectorX<AutoDiffXd> parameterization function.
 
@@ -689,7 +691,7 @@ Raises:
         } get_parameterization_autodiff;
         // Symbol: drake::planning::IrisParameterizationFunction::get_parameterization_dimension
         struct /* get_parameterization_dimension */ {
-          // Source: drake/planning/iris/iris_common.h:296
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(Returns what the user has specified as the input dimension for the
 parameterization function, or std::nullopt if it has not been set. A
@@ -699,7 +701,7 @@ the parameterization.)""";
         } get_parameterization_dimension;
         // Symbol: drake::planning::IrisParameterizationFunction::get_parameterization_double
         struct /* get_parameterization_double */ {
-          // Source: drake/planning/iris/iris_common.h:267
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(Get the Eigen::VectorX<double> parameterization function.
 
@@ -712,7 +714,7 @@ Note:
         } get_parameterization_double;
         // Symbol: drake::planning::IrisParameterizationFunction::get_parameterization_is_threadsafe
         struct /* get_parameterization_is_threadsafe */ {
-          // Source: drake/planning/iris/iris_common.h:287
+          // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(Returns whether or not the user has specified the parameterization to
 be threadsafe.
@@ -724,7 +726,7 @@ Note:
       } IrisParameterizationFunction;
       // Symbol: drake::planning::IrisZo
       struct /* IrisZo */ {
-        // Source: drake/planning/iris/iris_zo.h:96
+        // Source: drake/planning/iris/iris_zo.h
         const char* doc =
 R"""(The IRIS-ZO (Iterative Regional Inflation by Semidefinite programming
 - Zero Order) algorithm, as described in
@@ -787,7 +789,7 @@ Note:
       } IrisZo;
       // Symbol: drake::planning::IrisZoOptions
       struct /* IrisZoOptions */ {
-        // Source: drake/planning/iris/iris_zo.h:22
+        // Source: drake/planning/iris/iris_zo.h
         const char* doc =
 R"""(IrisZoOptions collects all parameters for the IRIS-ZO algorithm.
 
@@ -800,12 +802,12 @@ See also:
     IrisZo for more details.)""";
         // Symbol: drake::planning::IrisZoOptions::IrisZoOptions
         struct /* ctor */ {
-          // Source: drake/planning/iris/iris_zo.h:24
+          // Source: drake/planning/iris/iris_zo.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::planning::IrisZoOptions::Serialize
         struct /* Serialize */ {
-          // Source: drake/planning/iris/iris_zo.h:30
+          // Source: drake/planning/iris/iris_zo.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background. Note: This only serializes options that
@@ -813,12 +815,12 @@ are YAML built-in types.)""";
         } Serialize;
         // Symbol: drake::planning::IrisZoOptions::bisection_steps
         struct /* bisection_steps */ {
-          // Source: drake/planning/iris/iris_zo.h:41
+          // Source: drake/planning/iris/iris_zo.h
           const char* doc = R"""(Maximum number of bisection steps.)""";
         } bisection_steps;
         // Symbol: drake::planning::IrisZoOptions::parameterization
         struct /* parameterization */ {
-          // Source: drake/planning/iris/iris_zo.h:46
+          // Source: drake/planning/iris/iris_zo.h
           const char* doc =
 R"""(Parameterization of the subspace along which to grow the region.
 Default is the identity parameterization, corresponding to growing
@@ -826,7 +828,7 @@ regions in the ordinary configuration space.)""";
         } parameterization;
         // Symbol: drake::planning::IrisZoOptions::sampled_iris_options
         struct /* sampled_iris_options */ {
-          // Source: drake/planning/iris/iris_zo.h:38
+          // Source: drake/planning/iris/iris_zo.h
           const char* doc =
 R"""(Options pertaining to the sampling and termination conditions.)""";
         } sampled_iris_options;
@@ -840,13 +842,13 @@ R"""(Options pertaining to the sampling and termination conditions.)""";
       } IrisZoOptions;
       // Symbol: drake::planning::RaySamplerOptions
       struct /* RaySamplerOptions */ {
-        // Source: drake/planning/iris/iris_np2.h:36
+        // Source: drake/planning/iris/iris_np2.h
         const char* doc =
 R"""(RaySamplerOptions contains settings specific to the kRaySampler
 strategy for drawing the initial samples.)""";
         // Symbol: drake::planning::RaySamplerOptions::Serialize
         struct /* Serialize */ {
-          // Source: drake/planning/iris/iris_np2.h:41
+          // Source: drake/planning/iris/iris_np2.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background. Note: This only serializes options that
@@ -854,7 +856,7 @@ are YAML built-in types.)""";
         } Serialize;
         // Symbol: drake::planning::RaySamplerOptions::num_particles_to_walk_towards
         struct /* num_particles_to_walk_towards */ {
-          // Source: drake/planning/iris/iris_np2.h:62
+          // Source: drake/planning/iris/iris_np2.h
           const char* doc =
 R"""(The number of particles to step towards. Ignored if
 only_walk_toward_collisions is true, because we walk toward all
@@ -862,14 +864,14 @@ collisions in that case. Must be at least 1.)""";
         } num_particles_to_walk_towards;
         // Symbol: drake::planning::RaySamplerOptions::only_walk_toward_collisions
         struct /* only_walk_toward_collisions */ {
-          // Source: drake/planning/iris/iris_np2.h:49
+          // Source: drake/planning/iris/iris_np2.h
           const char* doc =
 R"""(If true, the ray stepping strategy is only applied to samples which
 are initially in collision. If false, it is applied to all samples.)""";
         } only_walk_toward_collisions;
         // Symbol: drake::planning::RaySamplerOptions::ray_search_num_steps
         struct /* ray_search_num_steps */ {
-          // Source: drake/planning/iris/iris_np2.h:57
+          // Source: drake/planning/iris/iris_np2.h
           const char* doc =
 R"""(The step size for the ray search is defined per-particle, as the
 distance between the current ellipsoid center and the particle,

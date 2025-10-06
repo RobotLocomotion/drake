@@ -43,7 +43,7 @@ constexpr struct /* pydrake_doc_systems_sensors */ {
       struct /* scalar_conversion */ {
         // Symbol: drake::systems::scalar_conversion::Traits
         struct /* Traits */ {
-          // Source: drake/systems/sensors/beam_model.h:111
+          // Source: drake/systems/sensors/beam_model.h
           const char* doc = R"""()""";
         } Traits;
       } scalar_conversion;
@@ -51,7 +51,7 @@ constexpr struct /* pydrake_doc_systems_sensors */ {
       struct /* sensors */ {
         // Symbol: drake::systems::sensors::Accelerometer
         struct /* Accelerometer */ {
-          // Source: drake/systems/sensors/accelerometer.h:52
+          // Source: drake/systems/sensors/accelerometer.h
           const char* doc =
 R"""(Sensor to represent an ideal accelerometer sensor. Currently does not
 represent noise or bias, but this could and should be added at a later
@@ -86,7 +86,7 @@ the sensor frame.
     - measurement)""";
           // Symbol: drake::systems::sensors::Accelerometer::Accelerometer<T>
           struct /* ctor */ {
-            // Source: drake/systems/sensors/accelerometer.h:60
+            // Source: drake/systems/sensors/accelerometer.h
             const char* doc =
 R"""(Parameter ``body``:
     the body B to which the sensor is affixed
@@ -97,13 +97,13 @@ Parameter ``X_BS``:
 Parameter ``gravity_vector``:
     the constant acceleration due to gravity expressed in world
     coordinates)""";
-            // Source: drake/systems/sensors/accelerometer.h:67
+            // Source: drake/systems/sensors/accelerometer.h
             const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
           } ctor;
           // Symbol: drake::systems::sensors::Accelerometer::AddToDiagram
           struct /* AddToDiagram */ {
-            // Source: drake/systems/sensors/accelerometer.h:112
+            // Source: drake/systems/sensors/accelerometer.h
             const char* doc =
 R"""(Static factory method that creates an Accelerometer object and
 connects it to the given plant. Modifies a Diagram by connecting the
@@ -137,48 +137,48 @@ Parameter ``builder``:
           } AddToDiagram;
           // Symbol: drake::systems::sensors::Accelerometer::body_index
           struct /* body_index */ {
-            // Source: drake/systems/sensors/accelerometer.h:86
+            // Source: drake/systems/sensors/accelerometer.h
             const char* doc =
 R"""(Returns the index of the RigidBody that was supplied in the
 constructor.)""";
           } body_index;
           // Symbol: drake::systems::sensors::Accelerometer::get_body_accelerations_input_port
           struct /* get_body_accelerations_input_port */ {
-            // Source: drake/systems/sensors/accelerometer.h:77
+            // Source: drake/systems/sensors/accelerometer.h
             const char* doc = R"""()""";
           } get_body_accelerations_input_port;
           // Symbol: drake::systems::sensors::Accelerometer::get_body_poses_input_port
           struct /* get_body_poses_input_port */ {
-            // Source: drake/systems/sensors/accelerometer.h:69
+            // Source: drake/systems/sensors/accelerometer.h
             const char* doc = R"""()""";
           } get_body_poses_input_port;
           // Symbol: drake::systems::sensors::Accelerometer::get_body_velocities_input_port
           struct /* get_body_velocities_input_port */ {
-            // Source: drake/systems/sensors/accelerometer.h:73
+            // Source: drake/systems/sensors/accelerometer.h
             const char* doc = R"""()""";
           } get_body_velocities_input_port;
           // Symbol: drake::systems::sensors::Accelerometer::get_measurement_output_port
           struct /* get_measurement_output_port */ {
-            // Source: drake/systems/sensors/accelerometer.h:81
+            // Source: drake/systems/sensors/accelerometer.h
             const char* doc = R"""()""";
           } get_measurement_output_port;
           // Symbol: drake::systems::sensors::Accelerometer::gravity_vector
           struct /* gravity_vector */ {
-            // Source: drake/systems/sensors/accelerometer.h:89
+            // Source: drake/systems/sensors/accelerometer.h
             const char* doc =
 R"""(Returns the gravity vector supplied in the constructor, or zero if
 none.)""";
           } gravity_vector;
           // Symbol: drake::systems::sensors::Accelerometer::pose
           struct /* pose */ {
-            // Source: drake/systems/sensors/accelerometer.h:92
+            // Source: drake/systems/sensors/accelerometer.h
             const char* doc =
 R"""(Gets X_BS, the pose of sensor frame S in body B)""";
           } pose;
         } Accelerometer;
         // Symbol: drake::systems::sensors::ApplyCameraConfig
         struct /* ApplyCameraConfig */ {
-          // Source: drake/systems/sensors/camera_config_functions.h:62
+          // Source: drake/systems/sensors/camera_config_functions.h
           const char* doc =
 R"""(Constructs a simulated camera sensor (rgbd sensor and publishing
 systems) within ``builder``. As specified, the RGB, depth, and/or
@@ -248,7 +248,7 @@ See also:
         } ApplyCameraConfig;
         // Symbol: drake::systems::sensors::BeamModel
         struct /* BeamModel */ {
-          // Source: drake/systems/sensors/beam_model.h:70
+          // Source: drake/systems/sensors/beam_model.h
           const char* doc =
 R"""(Implements the "Beam Models of Range Finders" from section 6.3 of
 Probabilistic Robotics (2006), by Thrun, Burgard, and Fox
@@ -318,54 +318,54 @@ the random input signals:
     </details>)""";
           // Symbol: drake::systems::sensors::BeamModel::BeamModel<T>
           struct /* ctor */ {
-            // Source: drake/systems/sensors/beam_model.h:78
+            // Source: drake/systems/sensors/beam_model.h
             const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
           } ctor;
           // Symbol: drake::systems::sensors::BeamModel::get_depth_input_port
           struct /* get_depth_input_port */ {
-            // Source: drake/systems/sensors/beam_model.h:80
+            // Source: drake/systems/sensors/beam_model.h
             const char* doc = R"""()""";
           } get_depth_input_port;
           // Symbol: drake::systems::sensors::BeamModel::get_event_random_input_port
           struct /* get_event_random_input_port */ {
-            // Source: drake/systems/sensors/beam_model.h:83
+            // Source: drake/systems/sensors/beam_model.h
             const char* doc = R"""()""";
           } get_event_random_input_port;
           // Symbol: drake::systems::sensors::BeamModel::get_hit_random_input_port
           struct /* get_hit_random_input_port */ {
-            // Source: drake/systems/sensors/beam_model.h:86
+            // Source: drake/systems/sensors/beam_model.h
             const char* doc = R"""()""";
           } get_hit_random_input_port;
           // Symbol: drake::systems::sensors::BeamModel::get_mutable_parameters
           struct /* get_mutable_parameters */ {
-            // Source: drake/systems/sensors/beam_model.h:96
+            // Source: drake/systems/sensors/beam_model.h
             const char* doc = R"""()""";
           } get_mutable_parameters;
           // Symbol: drake::systems::sensors::BeamModel::get_short_random_input_port
           struct /* get_short_random_input_port */ {
-            // Source: drake/systems/sensors/beam_model.h:89
+            // Source: drake/systems/sensors/beam_model.h
             const char* doc = R"""()""";
           } get_short_random_input_port;
           // Symbol: drake::systems::sensors::BeamModel::get_uniform_random_input_port
           struct /* get_uniform_random_input_port */ {
-            // Source: drake/systems/sensors/beam_model.h:92
+            // Source: drake/systems/sensors/beam_model.h
             const char* doc = R"""()""";
           } get_uniform_random_input_port;
           // Symbol: drake::systems::sensors::BeamModel::max_range
           struct /* max_range */ {
-            // Source: drake/systems/sensors/beam_model.h:98
+            // Source: drake/systems/sensors/beam_model.h
             const char* doc = R"""()""";
           } max_range;
         } BeamModel;
         // Symbol: drake::systems::sensors::BeamModelParams
         struct /* BeamModelParams */ {
-          // Source: drake/systems/sensors/beam_model_params.h:49
+          // Source: drake/systems/sensors/beam_model_params.h
           const char* doc =
 R"""(Specializes BasicVector with specific getters and setters.)""";
           // Symbol: drake::systems::sensors::BeamModelParams::BeamModelParams<T>
           struct /* ctor */ {
-            // Source: drake/systems/sensors/beam_model_params.h:60
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
 R"""(Default constructor. Sets all rows to their default value:
 
@@ -381,35 +381,35 @@ R"""(Default constructor. Sets all rows to their default value:
           } ctor;
           // Symbol: drake::systems::sensors::BeamModelParams::DoClone
           struct /* DoClone */ {
-            // Source: drake/systems/sensors/beam_model_params.h:100
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc = R"""()""";
           } DoClone;
           // Symbol: drake::systems::sensors::BeamModelParams::GetCoordinateNames
           struct /* GetCoordinateNames */ {
-            // Source: drake/systems/sensors/beam_model_params.h:231
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
 R"""(See BeamModelParamsIndices::GetCoordinateNames().)""";
           } GetCoordinateNames;
           // Symbol: drake::systems::sensors::BeamModelParams::GetElementBounds
           struct /* GetElementBounds */ {
-            // Source: drake/systems/sensors/beam_model_params.h:255
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc = R"""()""";
           } GetElementBounds;
           // Symbol: drake::systems::sensors::BeamModelParams::IsValid
           struct /* IsValid */ {
-            // Source: drake/systems/sensors/beam_model_params.h:236
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
 R"""(Returns whether the current values of this vector are well-formed.)""";
           } IsValid;
           // Symbol: drake::systems::sensors::BeamModelParams::K
           struct /* K */ {
-            // Source: drake/systems/sensors/beam_model_params.h:52
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
 R"""(An abbreviation for our row index constants.)""";
           } K;
           // Symbol: drake::systems::sensors::BeamModelParams::Serialize
           struct /* Serialize */ {
-            // Source: drake/systems/sensors/beam_model_params.h:216
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
 R"""(Visit each field of this named vector, passing them (in order) to the
 given Archive. The archive can read and/or write to the vector values.
@@ -417,14 +417,14 @@ One common use of Serialize is the //common/yaml tools.)""";
           } Serialize;
           // Symbol: drake::systems::sensors::BeamModelParams::SetToNamedVariables
           struct /* SetToNamedVariables */ {
-            // Source: drake/systems/sensors/beam_model_params.h:92
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
 R"""(Create a symbolic::Variable for each element with the known variable
 name. This is only available for T == symbolic::Expression.)""";
           } SetToNamedVariables;
           // Symbol: drake::systems::sensors::BeamModelParams::lambda_short
           struct /* lambda_short */ {
-            // Source: drake/systems/sensors/beam_model_params.h:110
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
 R"""(The rate parameter of the (truncated) exponential distribution
 governing short returns
@@ -437,7 +437,7 @@ Note:
           } lambda_short;
           // Symbol: drake::systems::sensors::BeamModelParams::probability_miss
           struct /* probability_miss */ {
-            // Source: drake/systems/sensors/beam_model_params.h:172
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
 R"""(The probability of ignoring the input depth and simply returning the
 max range of the sensor
@@ -450,7 +450,7 @@ Note:
           } probability_miss;
           // Symbol: drake::systems::sensors::BeamModelParams::probability_short
           struct /* probability_short */ {
-            // Source: drake/systems/sensors/beam_model_params.h:151
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
 R"""(The total probability of getting a short return is probability_short *
 p(lambda_short*w_short <= input_depth)
@@ -463,7 +463,7 @@ Note:
           } probability_short;
           // Symbol: drake::systems::sensors::BeamModelParams::probability_uniform
           struct /* probability_uniform */ {
-            // Source: drake/systems/sensors/beam_model_params.h:193
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
 R"""(The probability of ignoring the input depth and simple returning a
 uniform random value between 0 and the max range of the sensor
@@ -476,34 +476,34 @@ Note:
           } probability_uniform;
           // Symbol: drake::systems::sensors::BeamModelParams::set_lambda_short
           struct /* set_lambda_short */ {
-            // Source: drake/systems/sensors/beam_model_params.h:115
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc = R"""(Setter that matches lambda_short().)""";
           } set_lambda_short;
           // Symbol: drake::systems::sensors::BeamModelParams::set_probability_miss
           struct /* set_probability_miss */ {
-            // Source: drake/systems/sensors/beam_model_params.h:177
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc = R"""(Setter that matches probability_miss().)""";
           } set_probability_miss;
           // Symbol: drake::systems::sensors::BeamModelParams::set_probability_short
           struct /* set_probability_short */ {
-            // Source: drake/systems/sensors/beam_model_params.h:156
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
 R"""(Setter that matches probability_short().)""";
           } set_probability_short;
           // Symbol: drake::systems::sensors::BeamModelParams::set_probability_uniform
           struct /* set_probability_uniform */ {
-            // Source: drake/systems/sensors/beam_model_params.h:198
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
 R"""(Setter that matches probability_uniform().)""";
           } set_probability_uniform;
           // Symbol: drake::systems::sensors::BeamModelParams::set_sigma_hit
           struct /* set_sigma_hit */ {
-            // Source: drake/systems/sensors/beam_model_params.h:136
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc = R"""(Setter that matches sigma_hit().)""";
           } set_sigma_hit;
           // Symbol: drake::systems::sensors::BeamModelParams::sigma_hit
           struct /* sigma_hit */ {
-            // Source: drake/systems/sensors/beam_model_params.h:131
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
 R"""(The standard deviation of the (truncated) Gaussian distribution
 governing the noisy returns of the true depth (aka hit)
@@ -516,35 +516,35 @@ Note:
           } sigma_hit;
           // Symbol: drake::systems::sensors::BeamModelParams::with_lambda_short
           struct /* with_lambda_short */ {
-            // Source: drake/systems/sensors/beam_model_params.h:121
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
 R"""(Fluent setter that matches lambda_short(). Returns a copy of ``this``
 with lambda_short set to a new value.)""";
           } with_lambda_short;
           // Symbol: drake::systems::sensors::BeamModelParams::with_probability_miss
           struct /* with_probability_miss */ {
-            // Source: drake/systems/sensors/beam_model_params.h:183
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
 R"""(Fluent setter that matches probability_miss(). Returns a copy of
 ``this`` with probability_miss set to a new value.)""";
           } with_probability_miss;
           // Symbol: drake::systems::sensors::BeamModelParams::with_probability_short
           struct /* with_probability_short */ {
-            // Source: drake/systems/sensors/beam_model_params.h:162
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
 R"""(Fluent setter that matches probability_short(). Returns a copy of
 ``this`` with probability_short set to a new value.)""";
           } with_probability_short;
           // Symbol: drake::systems::sensors::BeamModelParams::with_probability_uniform
           struct /* with_probability_uniform */ {
-            // Source: drake/systems/sensors/beam_model_params.h:204
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
 R"""(Fluent setter that matches probability_uniform(). Returns a copy of
 ``this`` with probability_uniform set to a new value.)""";
           } with_probability_uniform;
           // Symbol: drake::systems::sensors::BeamModelParams::with_sigma_hit
           struct /* with_sigma_hit */ {
-            // Source: drake/systems/sensors/beam_model_params.h:142
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
 R"""(Fluent setter that matches sigma_hit(). Returns a copy of ``this``
 with sigma_hit set to a new value.)""";
@@ -552,12 +552,12 @@ with sigma_hit set to a new value.)""";
         } BeamModelParams;
         // Symbol: drake::systems::sensors::BeamModelParamsIndices
         struct /* BeamModelParamsIndices */ {
-          // Source: drake/systems/sensors/beam_model_params.h:29
+          // Source: drake/systems/sensors/beam_model_params.h
           const char* doc =
 R"""(Describes the row indices of a BeamModelParams.)""";
           // Symbol: drake::systems::sensors::BeamModelParamsIndices::GetCoordinateNames
           struct /* GetCoordinateNames */ {
-            // Source: drake/systems/sensors/beam_model_params.h:44
+            // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
 R"""(Returns a vector containing the names of each coordinate within this
 class. The indices within the returned vector matches that of this
@@ -568,7 +568,7 @@ class. In other words,
         } BeamModelParamsIndices;
         // Symbol: drake::systems::sensors::CameraConfig
         struct /* CameraConfig */ {
-          // Source: drake/systems/sensors/camera_config.h:125
+          // Source: drake/systems/sensors/camera_config.h
           const char* doc =
 R"""(Configuration of a camera. This covers all of the parameters for both
 color (see geometry::render::ColorRenderCamera) and depth (see
@@ -681,7 +681,7 @@ different parameters) is considered a conflicting specification and
 will give rise to runtime errors.)""";
           // Symbol: drake::systems::sensors::CameraConfig::FocalLength
           struct /* FocalLength */ {
-            // Source: drake/systems/sensors/camera_config.h:161
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(Specification of a camera's intrinsic focal properties as focal
 *length* (in pixels). One or both values can be given. When only one
@@ -689,19 +689,19 @@ value is given, the other is assumed to match. At least one value must
 be provided.)""";
             // Symbol: drake::systems::sensors::CameraConfig::FocalLength::Serialize
             struct /* Serialize */ {
-              // Source: drake/systems/sensors/camera_config.h:165
+              // Source: drake/systems/sensors/camera_config.h
               const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
             } Serialize;
             // Symbol: drake::systems::sensors::CameraConfig::FocalLength::ValidateOrThrow
             struct /* ValidateOrThrow */ {
-              // Source: drake/systems/sensors/camera_config.h:178
+              // Source: drake/systems/sensors/camera_config.h
               const char* doc = R"""()""";
             } ValidateOrThrow;
             // Symbol: drake::systems::sensors::CameraConfig::FocalLength::focal_x
             struct /* focal_x */ {
-              // Source: drake/systems/sensors/camera_config.h:182
+              // Source: drake/systems/sensors/camera_config.h
               const char* doc =
 R"""(Reports focal length along x-axis.
 
@@ -710,7 +710,7 @@ Raises:
             } focal_x;
             // Symbol: drake::systems::sensors::CameraConfig::FocalLength::focal_y
             struct /* focal_y */ {
-              // Source: drake/systems/sensors/camera_config.h:186
+              // Source: drake/systems/sensors/camera_config.h
               const char* doc =
 R"""(Resolves focal length along y-axis.
 
@@ -719,14 +719,14 @@ Raises:
             } focal_y;
             // Symbol: drake::systems::sensors::CameraConfig::FocalLength::x
             struct /* x */ {
-              // Source: drake/systems/sensors/camera_config.h:172
+              // Source: drake/systems/sensors/camera_config.h
               const char* doc =
 R"""(If specified, the focal length along this axis; otherwise, use focal
 length in the y-direction.)""";
             } x;
             // Symbol: drake::systems::sensors::CameraConfig::FocalLength::y
             struct /* y */ {
-              // Source: drake/systems/sensors/camera_config.h:176
+              // Source: drake/systems/sensors/camera_config.h
               const char* doc =
 R"""(If specified, the focal length along this axis; otherwise, use focal
 length in the x-direction.)""";
@@ -740,24 +740,24 @@ length in the x-direction.)""";
           } FocalLength;
           // Symbol: drake::systems::sensors::CameraConfig::FovDegrees
           struct /* FovDegrees */ {
-            // Source: drake/systems/sensors/camera_config.h:190
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(Specification of focal length via fields of view (in degrees).)""";
             // Symbol: drake::systems::sensors::CameraConfig::FovDegrees::Serialize
             struct /* Serialize */ {
-              // Source: drake/systems/sensors/camera_config.h:194
+              // Source: drake/systems/sensors/camera_config.h
               const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
             } Serialize;
             // Symbol: drake::systems::sensors::CameraConfig::FovDegrees::ValidateOrThrow
             struct /* ValidateOrThrow */ {
-              // Source: drake/systems/sensors/camera_config.h:207
+              // Source: drake/systems/sensors/camera_config.h
               const char* doc = R"""()""";
             } ValidateOrThrow;
             // Symbol: drake::systems::sensors::CameraConfig::FovDegrees::focal_x
             struct /* focal_x */ {
-              // Source: drake/systems/sensors/camera_config.h:212
+              // Source: drake/systems/sensors/camera_config.h
               const char* doc =
 R"""(Resolves focal length along x-axis based on image dimensions and
 defined value for ``x`` and/or ``y``.
@@ -767,7 +767,7 @@ Raises:
             } focal_x;
             // Symbol: drake::systems::sensors::CameraConfig::FovDegrees::focal_y
             struct /* focal_y */ {
-              // Source: drake/systems/sensors/camera_config.h:217
+              // Source: drake/systems/sensors/camera_config.h
               const char* doc =
 R"""(Resolves focal length along y-axis based on image dimensions and
 defined value for ``y`` and/or ``x``.
@@ -777,14 +777,14 @@ Raises:
             } focal_y;
             // Symbol: drake::systems::sensors::CameraConfig::FovDegrees::x
             struct /* x */ {
-              // Source: drake/systems/sensors/camera_config.h:201
+              // Source: drake/systems/sensors/camera_config.h
               const char* doc =
 R"""(If specified, compute focal length along this axis; otherwise, use
 focal length given computation for ``y``.)""";
             } x;
             // Symbol: drake::systems::sensors::CameraConfig::FovDegrees::y
             struct /* y */ {
-              // Source: drake/systems/sensors/camera_config.h:205
+              // Source: drake/systems/sensors/camera_config.h
               const char* doc =
 R"""(If specified, compute focal length along this axis; otherwise, use
 focal length given computation for ``x``.)""";
@@ -798,7 +798,7 @@ focal length given computation for ``x``.)""";
           } FovDegrees;
           // Symbol: drake::systems::sensors::CameraConfig::MakeCameras
           struct /* MakeCameras */ {
-            // Source: drake/systems/sensors/camera_config.h:508
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(Creates color and depth camera data from this configuration.
 
@@ -808,19 +808,19 @@ Raises:
           } MakeCameras;
           // Symbol: drake::systems::sensors::CameraConfig::Serialize
           struct /* Serialize */ {
-            // Source: drake/systems/sensors/camera_config.h:129
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
           } Serialize;
           // Symbol: drake::systems::sensors::CameraConfig::ValidateOrThrow
           struct /* ValidateOrThrow */ {
-            // Source: drake/systems/sensors/camera_config.h:511
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc = R"""(Throws if the values are inconsistent.)""";
           } ValidateOrThrow;
           // Symbol: drake::systems::sensors::CameraConfig::X_BC
           struct /* X_BC */ {
-            // Source: drake/systems/sensors/camera_config.h:322
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(The pose of the color sensor relative to the camera body frame.
 
@@ -829,7 +829,7 @@ Precondition:
           } X_BC;
           // Symbol: drake::systems::sensors::CameraConfig::X_BD
           struct /* X_BD */ {
-            // Source: drake/systems/sensors/camera_config.h:326
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(The pose of the depth sensor relative to the camera body frame.
 
@@ -838,7 +838,7 @@ Precondition:
           } X_BD;
           // Symbol: drake::systems::sensors::CameraConfig::X_PB
           struct /* X_PB */ {
-            // Source: drake/systems/sensors/camera_config.h:318
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(The pose of the body camera relative to a parent frame P. If
 ``X_PB.base_frame`` is unspecified, then the world frame is assumed to
@@ -849,7 +849,7 @@ Precondition:
           } X_PB;
           // Symbol: drake::systems::sensors::CameraConfig::background
           struct /* background */ {
-            // Source: drake/systems/sensors/camera_config.h:442
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(The "background" color. This is the color drawn where there are no
 objects visible. Its default value matches the default value for
@@ -863,7 +863,7 @@ This value is used only if the ``render_class`` specifies either
           } background;
           // Symbol: drake::systems::sensors::CameraConfig::capture_offset
           struct /* capture_offset */ {
-            // Source: drake/systems/sensors/camera_config.h:462
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(Phase offset (in seconds) for image capture, relative to the
 simulator's time zero. This can be useful to stagger multiple cameras.
@@ -874,7 +874,7 @@ Precondition:
           } capture_offset;
           // Symbol: drake::systems::sensors::CameraConfig::center_x
           struct /* center_x */ {
-            // Source: drake/systems/sensors/camera_config.h:254
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(The x-position of the principal point (in pixels). To query what the
 current value is, use principal_point().
@@ -884,7 +884,7 @@ Precondition:
           } center_x;
           // Symbol: drake::systems::sensors::CameraConfig::center_y
           struct /* center_y */ {
-            // Source: drake/systems/sensors/camera_config.h:259
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(The y-position of the principal point (in pixels). To query what the
 current value is, use principal_point().
@@ -894,7 +894,7 @@ Precondition:
           } center_y;
           // Symbol: drake::systems::sensors::CameraConfig::clipping_far
           struct /* clipping_far */ {
-            // Source: drake/systems/sensors/camera_config.h:283
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(The distance (in meters) from sensor origin to far clipping plane.
 
@@ -903,7 +903,7 @@ Precondition:
           } clipping_far;
           // Symbol: drake::systems::sensors::CameraConfig::clipping_near
           struct /* clipping_near */ {
-            // Source: drake/systems/sensors/camera_config.h:279
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(The distance (in meters) from sensor origin to near clipping plane.
 
@@ -912,19 +912,19 @@ Precondition:
           } clipping_near;
           // Symbol: drake::systems::sensors::CameraConfig::depth
           struct /* depth */ {
-            // Source: drake/systems/sensors/camera_config.h:474
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(If true, depth images will be produced and published via LCM.)""";
           } depth;
           // Symbol: drake::systems::sensors::CameraConfig::do_compress
           struct /* do_compress */ {
-            // Source: drake/systems/sensors/camera_config.h:495
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(Controls whether the images are broadcast in a compressed format.)""";
           } do_compress;
           // Symbol: drake::systems::sensors::CameraConfig::focal
           struct /* focal */ {
-            // Source: drake/systems/sensors/camera_config.h:243
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(The focal properties of the camera. It can be specified in one of two
 ways:
@@ -944,19 +944,19 @@ Precondition:
           } focal;
           // Symbol: drake::systems::sensors::CameraConfig::focal_x
           struct /* focal_x */ {
-            // Source: drake/systems/sensors/camera_config.h:246
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(Returns the focal length (in pixels) in the x-direction.)""";
           } focal_x;
           // Symbol: drake::systems::sensors::CameraConfig::focal_y
           struct /* focal_y */ {
-            // Source: drake/systems/sensors/camera_config.h:249
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(Returns the focal length (in pixels) in the y-direction.)""";
           } focal_y;
           // Symbol: drake::systems::sensors::CameraConfig::fps
           struct /* fps */ {
-            // Source: drake/systems/sensors/camera_config.h:456
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(Publishing rate (in Hz) for both RGB and depth cameras (as requested).
 
@@ -965,7 +965,7 @@ Precondition:
           } fps;
           // Symbol: drake::systems::sensors::CameraConfig::height
           struct /* height */ {
-            // Source: drake/systems/sensors/camera_config.h:229
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(%Image height (in pixels).
 
@@ -974,13 +974,13 @@ Precondition:
           } height;
           // Symbol: drake::systems::sensors::CameraConfig::label
           struct /* label */ {
-            // Source: drake/systems/sensors/camera_config.h:477
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(If true, label images will be produced and published via LCM.)""";
           } label;
           // Symbol: drake::systems::sensors::CameraConfig::lcm_bus
           struct /* lcm_bus */ {
-            // Source: drake/systems/sensors/camera_config.h:499
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(Which LCM URL to use.
 
@@ -989,7 +989,7 @@ See also:
           } lcm_bus;
           // Symbol: drake::systems::sensors::CameraConfig::name
           struct /* name */ {
-            // Source: drake/systems/sensors/camera_config.h:452
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(The camera name. This ``name`` is used as part of the corresponding
 RgbdSensor system's name and serves as a suffix of the LCM channel
@@ -1000,7 +1000,7 @@ Precondition:
           } name;
           // Symbol: drake::systems::sensors::CameraConfig::output_delay
           struct /* output_delay */ {
-            // Source: drake/systems/sensors/camera_config.h:468
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(Delay (in seconds) between when the scene graph geometry is "captured"
 and when the output image is published. Refer to the RgbdSensorAsync
@@ -1011,7 +1011,7 @@ Precondition:
           } output_delay;
           // Symbol: drake::systems::sensors::CameraConfig::principal_point
           struct /* principal_point */ {
-            // Source: drake/systems/sensors/camera_config.h:264
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(Returns the position of the principal point. This respects the
 semantics that undefined center_x and center_y place the principal
@@ -1019,7 +1019,7 @@ point in the center of the image.)""";
           } principal_point;
           // Symbol: drake::systems::sensors::CameraConfig::renderer_class
           struct /* renderer_class */ {
-            // Source: drake/systems/sensors/camera_config.h:431
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(The configuration of the camera's supporting RenderEngine.
 
@@ -1187,7 +1187,7 @@ See also:
           } renderer_class;
           // Symbol: drake::systems::sensors::CameraConfig::renderer_name
           struct /* renderer_name */ {
-            // Source: drake/systems/sensors/camera_config.h:336
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(The name of the geometry::render::RenderEngine that this camera uses.
 
@@ -1196,13 +1196,13 @@ Precondition:
           } renderer_name;
           // Symbol: drake::systems::sensors::CameraConfig::rgb
           struct /* rgb */ {
-            // Source: drake/systems/sensors/camera_config.h:471
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(If true, RGB images will be produced and published via LCM.)""";
           } rgb;
           // Symbol: drake::systems::sensors::CameraConfig::show_rgb
           struct /* show_rgb */ {
-            // Source: drake/systems/sensors/camera_config.h:492
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(Controls whether the rendered RGB and/or label images are displayed
 (in separate windows controlled by the thread in which the camera
@@ -1220,7 +1220,7 @@ renderer or upside-down images if RenderEngineGl is set. See issue
           } show_rgb;
           // Symbol: drake::systems::sensors::CameraConfig::width
           struct /* width */ {
-            // Source: drake/systems/sensors/camera_config.h:226
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(%Image width (in pixels).
 
@@ -1229,7 +1229,7 @@ Precondition:
           } width;
           // Symbol: drake::systems::sensors::CameraConfig::z_far
           struct /* z_far */ {
-            // Source: drake/systems/sensors/camera_config.h:298
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(The distance (in meters) from sensor origin to farthest measurable
 plane.
@@ -1239,7 +1239,7 @@ Precondition:
           } z_far;
           // Symbol: drake::systems::sensors::CameraConfig::z_near
           struct /* z_near */ {
-            // Source: drake/systems/sensors/camera_config.h:294
+            // Source: drake/systems/sensors/camera_config.h
             const char* doc =
 R"""(The distance (in meters) from sensor origin to closest measurable
 plane.
@@ -1279,7 +1279,7 @@ Precondition:
         } CameraConfig;
         // Symbol: drake::systems::sensors::CameraInfo
         struct /* CameraInfo */ {
-          // Source: drake/systems/sensors/camera_info.h:137
+          // Source: drake/systems/sensors/camera_info.h
           const char* doc =
 R"""(Simple class for characterizing the Drake camera model. The camera
 model is based on the `pinhole *model_
@@ -1405,7 +1405,7 @@ plane. Its value is measured from the image's origin in pixels.
 parallel with Cz.)""";
           // Symbol: drake::systems::sensors::CameraInfo::CameraInfo
           struct /* ctor */ {
-            // Source: drake/systems/sensors/camera_info.h:159
+            // Source: drake/systems/sensors/camera_info.h
             const char* doc_6args_width_height_focal_x_focal_y_center_x_center_y =
 R"""(Constructor that directly sets the image size, principal point, and
 focal lengths.
@@ -1435,7 +1435,7 @@ Parameter ``center_y``:
 Raises:
     RuntimeError if the provided values don't satisfy the listed
     requirements.)""";
-            // Source: drake/systems/sensors/camera_info.h:176
+            // Source: drake/systems/sensors/camera_info.h
             const char* doc_3args_width_height_intrinsic_matrix =
 R"""(Constructs this instance by extracting focal_x, focal_y, center_x, and
 center_y from the provided intrinsic_matrix.
@@ -1456,7 +1456,7 @@ Raises:
     above for the pinhole camera model (representing an affine /
     homogeneous transform) or the non-zero values don't meet the
     documented requirements.)""";
-            // Source: drake/systems/sensors/camera_info.h:196
+            // Source: drake/systems/sensors/camera_info.h
             const char* doc_3args_width_height_fov_y =
 R"""(Constructs this instance from image size and vertical field of view.
 We assume the principal point is in the center of the image; ``(center
@@ -1483,59 +1483,59 @@ Raises:
           } ctor;
           // Symbol: drake::systems::sensors::CameraInfo::center_x
           struct /* center_x */ {
-            // Source: drake/systems/sensors/camera_info.h:220
+            // Source: drake/systems/sensors/camera_info.h
             const char* doc =
 R"""(Returns the principal point's x coordinate in pixels.)""";
           } center_x;
           // Symbol: drake::systems::sensors::CameraInfo::center_y
           struct /* center_y */ {
-            // Source: drake/systems/sensors/camera_info.h:223
+            // Source: drake/systems/sensors/camera_info.h
             const char* doc =
 R"""(Returns the principal point's y coordinate in pixels.)""";
           } center_y;
           // Symbol: drake::systems::sensors::CameraInfo::focal_x
           struct /* focal_x */ {
-            // Source: drake/systems/sensors/camera_info.h:205
+            // Source: drake/systems/sensors/camera_info.h
             const char* doc = R"""(Returns the focal length x in pixels.)""";
           } focal_x;
           // Symbol: drake::systems::sensors::CameraInfo::focal_y
           struct /* focal_y */ {
-            // Source: drake/systems/sensors/camera_info.h:208
+            // Source: drake/systems/sensors/camera_info.h
             const char* doc = R"""(Returns the focal length y in pixels.)""";
           } focal_y;
           // Symbol: drake::systems::sensors::CameraInfo::fov_x
           struct /* fov_x */ {
-            // Source: drake/systems/sensors/camera_info.h:211
+            // Source: drake/systems/sensors/camera_info.h
             const char* doc =
 R"""(Returns the field of view in the x-direction (in radians).)""";
           } fov_x;
           // Symbol: drake::systems::sensors::CameraInfo::fov_y
           struct /* fov_y */ {
-            // Source: drake/systems/sensors/camera_info.h:214
+            // Source: drake/systems/sensors/camera_info.h
             const char* doc =
 R"""(Returns the field of view in the y-direction (in radians).)""";
           } fov_y;
           // Symbol: drake::systems::sensors::CameraInfo::height
           struct /* height */ {
-            // Source: drake/systems/sensors/camera_info.h:202
+            // Source: drake/systems/sensors/camera_info.h
             const char* doc =
 R"""(Returns the height of the image in pixels.)""";
           } height;
           // Symbol: drake::systems::sensors::CameraInfo::intrinsic_matrix
           struct /* intrinsic_matrix */ {
-            // Source: drake/systems/sensors/camera_info.h:226
+            // Source: drake/systems/sensors/camera_info.h
             const char* doc = R"""(Returns the camera intrinsic matrix, K.)""";
           } intrinsic_matrix;
           // Symbol: drake::systems::sensors::CameraInfo::width
           struct /* width */ {
-            // Source: drake/systems/sensors/camera_info.h:199
+            // Source: drake/systems/sensors/camera_info.h
             const char* doc =
 R"""(Returns the width of the image in pixels.)""";
           } width;
         } CameraInfo;
         // Symbol: drake::systems::sensors::ConvertDepth16UTo32F
         struct /* ConvertDepth16UTo32F */ {
-          // Source: drake/systems/sensors/image.h:183
+          // Source: drake/systems/sensors/image.h
           const char* doc =
 R"""(Converts a single channel 16-bit unsigned int depth image with depths
 in millimeters to a single channel 32-bit float depth image with
@@ -1543,7 +1543,7 @@ depths in meters.)""";
         } ConvertDepth16UTo32F;
         // Symbol: drake::systems::sensors::ConvertDepth32FTo16U
         struct /* ConvertDepth32FTo16U */ {
-          // Source: drake/systems/sensors/image.h:178
+          // Source: drake/systems/sensors/image.h
           const char* doc =
 R"""(Converts a single channel 32-bit float depth image with depths in
 meters to a single channel 16-bit unsigned int depth image with depths
@@ -1555,7 +1555,7 @@ range.)""";
         } ConvertDepth32FTo16U;
         // Symbol: drake::systems::sensors::Gyroscope
         struct /* Gyroscope */ {
-          // Source: drake/systems/sensors/gyroscope.h:50
+          // Source: drake/systems/sensors/gyroscope.h
           const char* doc =
 R"""(Sensor to represent an ideal gyroscopic sensor. Currently does not
 represent noise or bias, but this could and should be added at a later
@@ -1588,7 +1588,7 @@ useful for display or other purposes.
     - measurement)""";
           // Symbol: drake::systems::sensors::Gyroscope::AddToDiagram
           struct /* AddToDiagram */ {
-            // Source: drake/systems/sensors/gyroscope.h:96
+            // Source: drake/systems/sensors/gyroscope.h
             const char* doc =
 R"""(Static factory method that creates a Gyroscope object and connects it
 to the given plant. Modifies a Diagram by connecting the input ports
@@ -1616,7 +1616,7 @@ Parameter ``builder``:
           } AddToDiagram;
           // Symbol: drake::systems::sensors::Gyroscope::Gyroscope<T>
           struct /* ctor */ {
-            // Source: drake/systems/sensors/gyroscope.h:57
+            // Source: drake/systems/sensors/gyroscope.h
             const char* doc =
 R"""(Constructor for Gyroscope using full transform.
 
@@ -1625,42 +1625,42 @@ Parameter ``body``:
 
 Parameter ``X_BS``:
     the pose of sensor frame S in body B)""";
-            // Source: drake/systems/sensors/gyroscope.h:62
+            // Source: drake/systems/sensors/gyroscope.h
             const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
           } ctor;
           // Symbol: drake::systems::sensors::Gyroscope::body_index
           struct /* body_index */ {
-            // Source: drake/systems/sensors/gyroscope.h:77
+            // Source: drake/systems/sensors/gyroscope.h
             const char* doc =
 R"""(Returns the index of the RigidBody that was supplied in the
 constructor.)""";
           } body_index;
           // Symbol: drake::systems::sensors::Gyroscope::get_body_poses_input_port
           struct /* get_body_poses_input_port */ {
-            // Source: drake/systems/sensors/gyroscope.h:64
+            // Source: drake/systems/sensors/gyroscope.h
             const char* doc = R"""()""";
           } get_body_poses_input_port;
           // Symbol: drake::systems::sensors::Gyroscope::get_body_velocities_input_port
           struct /* get_body_velocities_input_port */ {
-            // Source: drake/systems/sensors/gyroscope.h:68
+            // Source: drake/systems/sensors/gyroscope.h
             const char* doc = R"""()""";
           } get_body_velocities_input_port;
           // Symbol: drake::systems::sensors::Gyroscope::get_measurement_output_port
           struct /* get_measurement_output_port */ {
-            // Source: drake/systems/sensors/gyroscope.h:72
+            // Source: drake/systems/sensors/gyroscope.h
             const char* doc = R"""()""";
           } get_measurement_output_port;
           // Symbol: drake::systems::sensors::Gyroscope::pose
           struct /* pose */ {
-            // Source: drake/systems/sensors/gyroscope.h:80
+            // Source: drake/systems/sensors/gyroscope.h
             const char* doc =
 R"""(Gets X_BS, the pose of sensor frame S in body B.)""";
           } pose;
         } Gyroscope;
         // Symbol: drake::systems::sensors::Image
         struct /* Image */ {
-          // Source: drake/systems/sensors/image.h:71
+          // Source: drake/systems/sensors/image.h
           const char* doc =
 R"""(Simple data format for Image. For the complex calculation with the
 image, consider converting this to other libaries' Matrix data format,
@@ -1674,15 +1674,15 @@ Template parameter ``kPixelType``:
     definitions in this class to the .cc file.)""";
           // Symbol: drake::systems::sensors::Image::Image<kPixelType>
           struct /* ctor */ {
-            // Source: drake/systems/sensors/image.h:97
+            // Source: drake/systems/sensors/image.h
             const char* doc_0args = R"""(Constructs a zero-sized image.)""";
-            // Source: drake/systems/sensors/image.h:102
+            // Source: drake/systems/sensors/image.h
             const char* doc_2args =
 R"""(Image size only constructor. Specifies a width and height for the
 image. The width and height can be either both zero or both strictly
 positive. All the channel values in all the pixels are initialized
 with zero.)""";
-            // Source: drake/systems/sensors/image.h:107
+            // Source: drake/systems/sensors/image.h
             const char* doc_3args =
 R"""(Image size and initial value constructor. Specifies a width, height
 and an initial value for all the channels in all the pixels. The width
@@ -1690,26 +1690,26 @@ and height can be either both zero or both strictly positive.)""";
           } ctor;
           // Symbol: drake::systems::sensors::Image::NonTypeTemplateParameter
           struct /* NonTypeTemplateParameter */ {
-            // Source: drake/systems/sensors/image.h:77
+            // Source: drake/systems/sensors/image.h
             const char* doc =
 R"""(This is used by generic helpers such as drake::Value to deduce a
 non-type template argument.)""";
           } NonTypeTemplateParameter;
           // Symbol: drake::systems::sensors::Image::T
           struct /* T */ {
-            // Source: drake/systems/sensors/image.h:85
+            // Source: drake/systems/sensors/image.h
             const char* doc = R"""(The data type for a channel.)""";
           } T;
           // Symbol: drake::systems::sensors::Image::Traits
           struct /* Traits */ {
-            // Source: drake/systems/sensors/image.h:82
+            // Source: drake/systems/sensors/image.h
             const char* doc =
 R"""(An alias for ImageTraits that contains the data type for a channel,
 the number of channels and the pixel format in it.)""";
           } Traits;
           // Symbol: drake::systems::sensors::Image::at
           struct /* at */ {
-            // Source: drake/systems/sensors/image.h:147
+            // Source: drake/systems/sensors/image.h
             const char* doc_2args_x_y_nonconst =
 R"""(Access to the pixel located at (x, y) in image coordinate system where
 x is the variable for horizontal direction and y is one for vertical
@@ -1719,20 +1719,20 @@ you can do:
 ImageRgbaU8 image(640, 480, 255); uint8_t red = image.at(x, y)[0];
 uint8_t green = image.at(x, y)[1]; uint8_t blue = image.at(x, y)[2];
 uint8_t alpha = image.at(x, y)[3];)""";
-            // Source: drake/systems/sensors/image.h:155
+            // Source: drake/systems/sensors/image.h
             const char* doc_2args_x_y_const =
 R"""(Const version of at() method. See the document for the non-const
 version for the detail.)""";
           } at;
           // Symbol: drake::systems::sensors::Image::height
           struct /* height */ {
-            // Source: drake/systems/sensors/image.h:119
+            // Source: drake/systems/sensors/image.h
             const char* doc =
 R"""(Returns the size of height for the image)""";
           } height;
           // Symbol: drake::systems::sensors::Image::resize
           struct /* resize */ {
-            // Source: drake/systems/sensors/image.h:128
+            // Source: drake/systems/sensors/image.h
             const char* doc =
 R"""(Changes the sizes of the width and height for the image. The new width
 and height can be either both zero or both strictly positive. All the
@@ -1740,78 +1740,78 @@ values in the pixels become zero after resize.)""";
           } resize;
           // Symbol: drake::systems::sensors::Image::size
           struct /* size */ {
-            // Source: drake/systems/sensors/image.h:123
+            // Source: drake/systems/sensors/image.h
             const char* doc =
 R"""(Returns the result of the number of pixels in a image by the number of
 channels in a pixel)""";
           } size;
           // Symbol: drake::systems::sensors::Image::width
           struct /* width */ {
-            // Source: drake/systems/sensors/image.h:116
+            // Source: drake/systems/sensors/image.h
             const char* doc = R"""(Returns the size of width for the image)""";
           } width;
         } Image;
         // Symbol: drake::systems::sensors::ImageAny
         struct /* ImageAny */ {
-          // Source: drake/systems/sensors/image.h:47
+          // Source: drake/systems/sensors/image.h
           const char* doc =
 R"""(A sum type of all built-in images types.)""";
         } ImageAny;
         // Symbol: drake::systems::sensors::ImageBgr8U
         struct /* ImageBgr8U */ {
-          // Source: drake/systems/sensors/image.h:26
+          // Source: drake/systems/sensors/image.h
           const char* doc =
 R"""(The type for BGR image where the each channel has the type of uint8_t.)""";
         } ImageBgr8U;
         // Symbol: drake::systems::sensors::ImageBgra8U
         struct /* ImageBgra8U */ {
-          // Source: drake/systems/sensors/image.h:32
+          // Source: drake/systems/sensors/image.h
           const char* doc =
 R"""(The type for BGRA image where the each channel has the type of
 uint8_t.)""";
         } ImageBgra8U;
         // Symbol: drake::systems::sensors::ImageDepth16U
         struct /* ImageDepth16U */ {
-          // Source: drake/systems/sensors/image.h:38
+          // Source: drake/systems/sensors/image.h
           const char* doc =
 R"""(The type for depth image where the channel has the type of uint16_t.)""";
         } ImageDepth16U;
         // Symbol: drake::systems::sensors::ImageDepth32F
         struct /* ImageDepth32F */ {
-          // Source: drake/systems/sensors/image.h:35
+          // Source: drake/systems/sensors/image.h
           const char* doc =
 R"""(The type for depth image where the channel has the type of float.)""";
         } ImageDepth32F;
         // Symbol: drake::systems::sensors::ImageFileFormat
         struct /* ImageFileFormat */ {
-          // Source: drake/systems/sensors/image_file_format.h:12
+          // Source: drake/systems/sensors/image_file_format.h
           const char* doc = R"""(The image file formats known to Drake.)""";
           // Symbol: drake::systems::sensors::ImageFileFormat::kJpeg
           struct /* kJpeg */ {
-            // Source: drake/systems/sensors/image_file_format.h:14
+            // Source: drake/systems/sensors/image_file_format.h
             const char* doc = R"""(mime-type: image/jpeg.)""";
           } kJpeg;
           // Symbol: drake::systems::sensors::ImageFileFormat::kPng
           struct /* kPng */ {
-            // Source: drake/systems/sensors/image_file_format.h:16
+            // Source: drake/systems/sensors/image_file_format.h
             const char* doc = R"""(mime-type: image/png.)""";
           } kPng;
           // Symbol: drake::systems::sensors::ImageFileFormat::kTiff
           struct /* kTiff */ {
-            // Source: drake/systems/sensors/image_file_format.h:18
+            // Source: drake/systems/sensors/image_file_format.h
             const char* doc = R"""(mime-type: image/tiff.)""";
           } kTiff;
         } ImageFileFormat;
         // Symbol: drake::systems::sensors::ImageGrey8U
         struct /* ImageGrey8U */ {
-          // Source: drake/systems/sensors/image.h:44
+          // Source: drake/systems/sensors/image.h
           const char* doc =
 R"""(The type for greyscale image where the channel has the type of
 uint8_t.)""";
         } ImageGrey8U;
         // Symbol: drake::systems::sensors::ImageIo
         struct /* ImageIo */ {
-          // Source: drake/systems/sensors/image_io.h:27
+          // Source: drake/systems/sensors/image_io.h
           const char* doc =
 R"""(Utility functions for reading and writing images, from/to either files
 or memory buffers.
@@ -1823,29 +1823,29 @@ ImageDepth32F) is TIFF. Trying to load or save a floating-point image
 from/to a PNG or JPEG file will throw an exception.)""";
           // Symbol: drake::systems::sensors::ImageIo::ByteSpan
           struct /* ByteSpan */ {
-            // Source: drake/systems/sensors/image_io.h:56
+            // Source: drake/systems/sensors/image_io.h
             const char* doc =
 R"""(When loading from memory, this struct denotes a span of raw bytes as
 input.)""";
             // Symbol: drake::systems::sensors::ImageIo::ByteSpan::data
             struct /* data */ {
-              // Source: drake/systems/sensors/image_io.h:58
+              // Source: drake/systems/sensors/image_io.h
               const char* doc = R"""(Pointer to the first byte of the span.)""";
             } data;
             // Symbol: drake::systems::sensors::ImageIo::ByteSpan::size
             struct /* size */ {
-              // Source: drake/systems/sensors/image_io.h:60
+              // Source: drake/systems/sensors/image_io.h
               const char* doc = R"""(Total number of bytes in the span.)""";
             } size;
           } ByteSpan;
           // Symbol: drake::systems::sensors::ImageIo::ImageIo
           struct /* ctor */ {
-            // Source: drake/systems/sensors/image_io.h:64
+            // Source: drake/systems/sensors/image_io.h
             const char* doc = R"""(Default constructor.)""";
           } ctor;
           // Symbol: drake::systems::sensors::ImageIo::Load
           struct /* Load */ {
-            // Source: drake/systems/sensors/image_io.h:86
+            // Source: drake/systems/sensors/image_io.h
             const char* doc_2args_path_format =
 R"""(Loads and returns an image from disk.
 
@@ -1857,7 +1857,7 @@ Parameter ``format``:
 
 Raises:
     RuntimeError for any kind of error loading the image file.)""";
-            // Source: drake/systems/sensors/image_io.h:95
+            // Source: drake/systems/sensors/image_io.h
             const char* doc_2args_buffer_format =
 R"""(Loads and returns an image from a memory buffer.
 
@@ -1870,58 +1870,58 @@ Raises:
           } Load;
           // Symbol: drake::systems::sensors::ImageIo::LoadMetadata
           struct /* LoadMetadata */ {
-            // Source: drake/systems/sensors/image_io.h:69
+            // Source: drake/systems/sensors/image_io.h
             const char* doc_1args_path =
 R"""(Returns the metadata of the given image file, or nullopt if the
 metadata cannot be determined or is unsupported. The filename
 extension has no bearing on the result; only the actual file contents
 determine the file format.)""";
-            // Source: drake/systems/sensors/image_io.h:76
+            // Source: drake/systems/sensors/image_io.h
             const char* doc_1args_buffer =
 R"""(Returns the metadata of the given image buffer, or nullopt if the
 metadata cannot be determined or is unsupported.)""";
           } LoadMetadata;
           // Symbol: drake::systems::sensors::ImageIo::Metadata
           struct /* Metadata */ {
-            // Source: drake/systems/sensors/image_io.h:33
+            // Source: drake/systems/sensors/image_io.h
             const char* doc =
 R"""(Some characteristics of an image file. Note that Drake's Image<> class
 can only express ``depth == 1``.)""";
             // Symbol: drake::systems::sensors::ImageIo::Metadata::Serialize
             struct /* Serialize */ {
-              // Source: drake/systems/sensors/image_io.h:37
+              // Source: drake/systems/sensors/image_io.h
               const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
             } Serialize;
             // Symbol: drake::systems::sensors::ImageIo::Metadata::channels
             struct /* channels */ {
-              // Source: drake/systems/sensors/image_io.h:50
+              // Source: drake/systems/sensors/image_io.h
               const char* doc = R"""()""";
             } channels;
             // Symbol: drake::systems::sensors::ImageIo::Metadata::depth
             struct /* depth */ {
-              // Source: drake/systems/sensors/image_io.h:49
+              // Source: drake/systems/sensors/image_io.h
               const char* doc = R"""()""";
             } depth;
             // Symbol: drake::systems::sensors::ImageIo::Metadata::format
             struct /* format */ {
-              // Source: drake/systems/sensors/image_io.h:46
+              // Source: drake/systems/sensors/image_io.h
               const char* doc = R"""()""";
             } format;
             // Symbol: drake::systems::sensors::ImageIo::Metadata::height
             struct /* height */ {
-              // Source: drake/systems/sensors/image_io.h:48
+              // Source: drake/systems/sensors/image_io.h
               const char* doc = R"""()""";
             } height;
             // Symbol: drake::systems::sensors::ImageIo::Metadata::scalar
             struct /* scalar */ {
-              // Source: drake/systems/sensors/image_io.h:51
+              // Source: drake/systems/sensors/image_io.h
               const char* doc = R"""()""";
             } scalar;
             // Symbol: drake::systems::sensors::ImageIo::Metadata::width
             struct /* width */ {
-              // Source: drake/systems/sensors/image_io.h:47
+              // Source: drake/systems/sensors/image_io.h
               const char* doc = R"""()""";
             } width;
             auto Serialize__fields() const {
@@ -1937,7 +1937,7 @@ Serialization" for background.)""";
           } Metadata;
           // Symbol: drake::systems::sensors::ImageIo::Save
           struct /* Save */ {
-            // Source: drake/systems/sensors/image_io.h:154
+            // Source: drake/systems/sensors/image_io.h
             const char* doc_3args =
 R"""(Saves an image to disk.
 
@@ -1949,7 +1949,7 @@ Parameter ``format``:
 
 Raises:
     RuntimeError for any kind of error saving the image file.)""";
-            // Source: drake/systems/sensors/image_io.h:162
+            // Source: drake/systems/sensors/image_io.h
             const char* doc_2args =
 R"""(Saves an image to a new memory buffer, returning the buffer.
 
@@ -1959,26 +1959,26 @@ Raises:
         } ImageIo;
         // Symbol: drake::systems::sensors::ImageLabel16I
         struct /* ImageLabel16I */ {
-          // Source: drake/systems/sensors/image.h:41
+          // Source: drake/systems/sensors/image.h
           const char* doc =
 R"""(The type for label image where the channel has the type of int16_t.)""";
         } ImageLabel16I;
         // Symbol: drake::systems::sensors::ImageRgb8U
         struct /* ImageRgb8U */ {
-          // Source: drake/systems/sensors/image.h:23
+          // Source: drake/systems/sensors/image.h
           const char* doc =
 R"""(The type for RGB image where the each channel has the type of uint8_t.)""";
         } ImageRgb8U;
         // Symbol: drake::systems::sensors::ImageRgba8U
         struct /* ImageRgba8U */ {
-          // Source: drake/systems/sensors/image.h:29
+          // Source: drake/systems/sensors/image.h
           const char* doc =
 R"""(The type for RGBA image where the each channel has the type of
 uint8_t.)""";
         } ImageRgba8U;
         // Symbol: drake::systems::sensors::ImageToLcmImageArrayT
         struct /* ImageToLcmImageArrayT */ {
-          // Source: drake/systems/sensors/image_to_lcm_image_array_t.h:39
+          // Source: drake/systems/sensors/image_to_lcm_image_array_t.h
           const char* doc =
 R"""(An ImageToLcmImageArrayT takes as input an ImageRgba8U, ImageDepth32F
 and ImageLabel16I. This system outputs an AbstractValue containing a
@@ -2003,16 +2003,16 @@ Note:
     The output message's header field ``seq`` is always zero.)""";
           // Symbol: drake::systems::sensors::ImageToLcmImageArrayT::DeclareImageInputPort
           struct /* DeclareImageInputPort */ {
-            // Source: drake/systems/sensors/image_to_lcm_image_array_t.h:77
+            // Source: drake/systems/sensors/image_to_lcm_image_array_t.h
             const char* doc = R"""()""";
           } DeclareImageInputPort;
           // Symbol: drake::systems::sensors::ImageToLcmImageArrayT::ImageToLcmImageArrayT
           struct /* ctor */ {
-            // Source: drake/systems/sensors/image_to_lcm_image_array_t.h:45
+            // Source: drake/systems/sensors/image_to_lcm_image_array_t.h
             const char* doc_1args =
 R"""(Constructs an empty system with no input ports. After construction,
 use DeclareImageInputPort() to add inputs.)""";
-            // Source: drake/systems/sensors/image_to_lcm_image_array_t.h:55
+            // Source: drake/systems/sensors/image_to_lcm_image_array_t.h
             const char* doc_4args =
 R"""(An ImageToLcmImageArrayT constructor. Declares three input ports --
 one color image, one depth image, and one label image.
@@ -2032,28 +2032,28 @@ Parameter ``do_compress``:
           } ctor;
           // Symbol: drake::systems::sensors::ImageToLcmImageArrayT::color_image_input_port
           struct /* color_image_input_port */ {
-            // Source: drake/systems/sensors/image_to_lcm_image_array_t.h:62
+            // Source: drake/systems/sensors/image_to_lcm_image_array_t.h
             const char* doc =
 R"""(Returns the input port containing a color image. Note: Only valid if
 the color/depth/label constructor is used.)""";
           } color_image_input_port;
           // Symbol: drake::systems::sensors::ImageToLcmImageArrayT::depth_image_input_port
           struct /* depth_image_input_port */ {
-            // Source: drake/systems/sensors/image_to_lcm_image_array_t.h:66
+            // Source: drake/systems/sensors/image_to_lcm_image_array_t.h
             const char* doc =
 R"""(Returns the input port containing a depth image. Note: Only valid if
 the color/depth/label constructor is used.)""";
           } depth_image_input_port;
           // Symbol: drake::systems::sensors::ImageToLcmImageArrayT::image_array_t_msg_output_port
           struct /* image_array_t_msg_output_port */ {
-            // Source: drake/systems/sensors/image_to_lcm_image_array_t.h:74
+            // Source: drake/systems/sensors/image_to_lcm_image_array_t.h
             const char* doc =
 R"""(Returns the abstract valued output port that contains a
 ``Value<lcmt_image_array>``.)""";
           } image_array_t_msg_output_port;
           // Symbol: drake::systems::sensors::ImageToLcmImageArrayT::label_image_input_port
           struct /* label_image_input_port */ {
-            // Source: drake/systems/sensors/image_to_lcm_image_array_t.h:70
+            // Source: drake/systems/sensors/image_to_lcm_image_array_t.h
             const char* doc =
 R"""(Returns the input port containing a label image. Note: Only valid if
 the color/depth/label constructor is used.)""";
@@ -2061,17 +2061,17 @@ the color/depth/label constructor is used.)""";
         } ImageToLcmImageArrayT;
         // Symbol: drake::systems::sensors::ImageTraits
         struct /* ImageTraits */ {
-          // Source: drake/systems/sensors/pixel_types.h:101
+          // Source: drake/systems/sensors/pixel_types.h
           const char* doc = R"""()""";
           // Symbol: drake::systems::sensors::ImageTraits::ChannelType
           struct /* ChannelType */ {
-            // Source: drake/systems/sensors/pixel_types.h:102
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc = R"""()""";
           } ChannelType;
         } ImageTraits;
         // Symbol: drake::systems::sensors::ImageWriter
         struct /* ImageWriter */ {
-          // Source: drake/systems/sensors/image_writer.h:105
+          // Source: drake/systems/sensors/image_writer.h
           const char* doc =
 R"""(A system for periodically writing images to the file system. The
 system also provides direct image writing via a forced publish event.
@@ -2120,7 +2120,7 @@ resulting in multiple write operations, with each operation
 overwriting the same file(s).)""";
           // Symbol: drake::systems::sensors::ImageWriter::DeclareImageInputPort
           struct /* DeclareImageInputPort */ {
-            // Source: drake/systems/sensors/image_writer.h:214
+            // Source: drake/systems/sensors/image_writer.h
             const char* doc =
 R"""(Declares and configures a new image input port. A port is configured
 by providing:
@@ -2236,19 +2236,19 @@ Raises:
           } DeclareImageInputPort;
           // Symbol: drake::systems::sensors::ImageWriter::ImageWriter
           struct /* ctor */ {
-            // Source: drake/systems/sensors/image_writer.h:110
+            // Source: drake/systems/sensors/image_writer.h
             const char* doc =
 R"""(Constructs default instance with no image ports.)""";
           } ctor;
           // Symbol: drake::systems::sensors::ImageWriter::ResetAllImageCounts
           struct /* ResetAllImageCounts */ {
-            // Source: drake/systems/sensors/image_writer.h:230
+            // Source: drake/systems/sensors/image_writer.h
             const char* doc = R"""()""";
           } ResetAllImageCounts;
         } ImageWriter;
         // Symbol: drake::systems::sensors::LcmImageArrayToImages
         struct /* LcmImageArrayToImages */ {
-          // Source: drake/systems/sensors/lcm_image_array_to_images.h:28
+          // Source: drake/systems/sensors/lcm_image_array_to_images.h
           const char* doc =
 R"""(An LcmImageArrayToImages takes as input an AbstractValue containing a
 ``Value<lcmt_image_array>`` LCM message that defines an array of
@@ -2268,12 +2268,12 @@ port).
     - label_image)""";
           // Symbol: drake::systems::sensors::LcmImageArrayToImages::LcmImageArrayToImages
           struct /* ctor */ {
-            // Source: drake/systems/sensors/lcm_image_array_to_images.h:30
+            // Source: drake/systems/sensors/lcm_image_array_to_images.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::systems::sensors::LcmImageArrayToImages::color_image_output_port
           struct /* color_image_output_port */ {
-            // Source: drake/systems/sensors/lcm_image_array_to_images.h:46
+            // Source: drake/systems/sensors/lcm_image_array_to_images.h
             const char* doc =
 R"""(Returns the abstract valued output port that contains a RGBA image of
 the type ImageRgba8U. The image will be empty if no color image was
@@ -2282,7 +2282,7 @@ and depth in different messages will not produce useful results).)""";
           } color_image_output_port;
           // Symbol: drake::systems::sensors::LcmImageArrayToImages::depth_image_output_port
           struct /* depth_image_output_port */ {
-            // Source: drake/systems/sensors/lcm_image_array_to_images.h:54
+            // Source: drake/systems/sensors/lcm_image_array_to_images.h
             const char* doc =
 R"""(Returns the abstract valued output port that contains an
 ImageDepth32F. The image will be empty if no color image was received
@@ -2291,14 +2291,14 @@ in different messages will not produce useful results).)""";
           } depth_image_output_port;
           // Symbol: drake::systems::sensors::LcmImageArrayToImages::image_array_t_input_port
           struct /* image_array_t_input_port */ {
-            // Source: drake/systems/sensors/lcm_image_array_to_images.h:38
+            // Source: drake/systems/sensors/lcm_image_array_to_images.h
             const char* doc =
 R"""(Returns the abstract valued input port that expects a
 ``Value<lcmt_image_array>``.)""";
           } image_array_t_input_port;
           // Symbol: drake::systems::sensors::LcmImageArrayToImages::label_image_output_port
           struct /* label_image_output_port */ {
-            // Source: drake/systems/sensors/lcm_image_array_to_images.h:62
+            // Source: drake/systems/sensors/lcm_image_array_to_images.h
             const char* doc =
 R"""(Returns the abstract valued output port that contains an
 ImageLabel16I. The image will be empty if no label image was received
@@ -2308,93 +2308,93 @@ in different messages will not produce useful results).)""";
         } LcmImageArrayToImages;
         // Symbol: drake::systems::sensors::LcmImageTraits
         struct /* LcmImageTraits */ {
-          // Source: drake/systems/sensors/lcm_image_traits.h:54
+          // Source: drake/systems/sensors/lcm_image_traits.h
           const char* doc = R"""()""";
         } LcmImageTraits;
         // Symbol: drake::systems::sensors::LcmPixelTraits
         struct /* LcmPixelTraits */ {
-          // Source: drake/systems/sensors/lcm_image_traits.h:16
+          // Source: drake/systems/sensors/lcm_image_traits.h
           const char* doc = R"""()""";
         } LcmPixelTraits;
         // Symbol: drake::systems::sensors::PixelFormat
         struct /* PixelFormat */ {
-          // Source: drake/systems/sensors/pixel_types.h:47
+          // Source: drake/systems/sensors/pixel_types.h
           const char* doc =
 R"""(The enum class to be used to express semantic meaning of pixels. This
 also expresses the order of channels in a pixel if the pixel has
 multiple channels.)""";
           // Symbol: drake::systems::sensors::PixelFormat::kBgr
           struct /* kBgr */ {
-            // Source: drake/systems/sensors/pixel_types.h:51
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc =
 R"""(The pixel format used for all the BGR images.)""";
           } kBgr;
           // Symbol: drake::systems::sensors::PixelFormat::kBgra
           struct /* kBgra */ {
-            // Source: drake/systems/sensors/pixel_types.h:55
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc =
 R"""(The pixel format used for all the BGRA images.)""";
           } kBgra;
           // Symbol: drake::systems::sensors::PixelFormat::kDepth
           struct /* kDepth */ {
-            // Source: drake/systems/sensors/pixel_types.h:59
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc =
 R"""(The pixel format used for all the depth images.)""";
           } kDepth;
           // Symbol: drake::systems::sensors::PixelFormat::kGrey
           struct /* kGrey */ {
-            // Source: drake/systems/sensors/pixel_types.h:57
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc =
 R"""(The pixel format used for all the greyscale images.)""";
           } kGrey;
           // Symbol: drake::systems::sensors::PixelFormat::kLabel
           struct /* kLabel */ {
-            // Source: drake/systems/sensors/pixel_types.h:61
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc =
 R"""(The pixel format used for all the labe images.)""";
           } kLabel;
           // Symbol: drake::systems::sensors::PixelFormat::kRgb
           struct /* kRgb */ {
-            // Source: drake/systems/sensors/pixel_types.h:49
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc =
 R"""(The pixel format used for all the RGB images.)""";
           } kRgb;
           // Symbol: drake::systems::sensors::PixelFormat::kRgba
           struct /* kRgba */ {
-            // Source: drake/systems/sensors/pixel_types.h:53
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc =
 R"""(The pixel format used for all the RGBA images.)""";
           } kRgba;
         } PixelFormat;
         // Symbol: drake::systems::sensors::PixelScalar
         struct /* PixelScalar */ {
-          // Source: drake/systems/sensors/pixel_types.h:67
+          // Source: drake/systems/sensors/pixel_types.h
           const char* doc =
 R"""(The enum class to be used to express channel type.)""";
           // Symbol: drake::systems::sensors::PixelScalar::k16I
           struct /* k16I */ {
-            // Source: drake/systems/sensors/pixel_types.h:71
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc = R"""(int16_t)""";
           } k16I;
           // Symbol: drake::systems::sensors::PixelScalar::k16U
           struct /* k16U */ {
-            // Source: drake/systems/sensors/pixel_types.h:73
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc = R"""(uint16_t)""";
           } k16U;
           // Symbol: drake::systems::sensors::PixelScalar::k32F
           struct /* k32F */ {
-            // Source: drake/systems/sensors/pixel_types.h:75
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc = R"""(float (32-bit))""";
           } k32F;
           // Symbol: drake::systems::sensors::PixelScalar::k8U
           struct /* k8U */ {
-            // Source: drake/systems/sensors/pixel_types.h:69
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc = R"""(uint8_t)""";
           } k8U;
         } PixelScalar;
         // Symbol: drake::systems::sensors::PixelType
         struct /* PixelType */ {
-          // Source: drake/systems/sensors/pixel_types.h:23
+          // Source: drake/systems/sensors/pixel_types.h
           const char* doc =
 R"""(The enum class to be used for describing pixel type in Image class.
 The naming rule for the enum members is: k + (pixel format) + (bit per
@@ -2406,48 +2406,48 @@ of the following capital letters is used.
 - F: float)""";
           // Symbol: drake::systems::sensors::PixelType::kBgr8U
           struct /* kBgr8U */ {
-            // Source: drake/systems/sensors/pixel_types.h:27
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc = R"""(The pixel format used by ImageBgr8U.)""";
           } kBgr8U;
           // Symbol: drake::systems::sensors::PixelType::kBgra8U
           struct /* kBgra8U */ {
-            // Source: drake/systems/sensors/pixel_types.h:31
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc = R"""(The pixel format used by ImageBgra8U.)""";
           } kBgra8U;
           // Symbol: drake::systems::sensors::PixelType::kDepth16U
           struct /* kDepth16U */ {
-            // Source: drake/systems/sensors/pixel_types.h:35
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc = R"""(The pixel format used by ImageDepth16U.)""";
           } kDepth16U;
           // Symbol: drake::systems::sensors::PixelType::kDepth32F
           struct /* kDepth32F */ {
-            // Source: drake/systems/sensors/pixel_types.h:37
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc = R"""(The pixel format used by ImageDepth32F.)""";
           } kDepth32F;
           // Symbol: drake::systems::sensors::PixelType::kGrey8U
           struct /* kGrey8U */ {
-            // Source: drake/systems/sensors/pixel_types.h:33
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc = R"""(The pixel format used by ImageGrey8U.)""";
           } kGrey8U;
           // Symbol: drake::systems::sensors::PixelType::kLabel16I
           struct /* kLabel16I */ {
-            // Source: drake/systems/sensors/pixel_types.h:39
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc = R"""(The pixel format used by ImageLabel16I.)""";
           } kLabel16I;
           // Symbol: drake::systems::sensors::PixelType::kRgb8U
           struct /* kRgb8U */ {
-            // Source: drake/systems/sensors/pixel_types.h:25
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc = R"""(The pixel format used by ImageRgb8U.)""";
           } kRgb8U;
           // Symbol: drake::systems::sensors::PixelType::kRgba8U
           struct /* kRgba8U */ {
-            // Source: drake/systems/sensors/pixel_types.h:29
+            // Source: drake/systems/sensors/pixel_types.h
             const char* doc = R"""(The pixel format used by ImageRgba8U.)""";
           } kRgba8U;
         } PixelType;
         // Symbol: drake::systems::sensors::RgbdSensor
         struct /* RgbdSensor */ {
-          // Source: drake/systems/sensors/rgbd_sensor.h:107
+          // Source: drake/systems/sensors/rgbd_sensor.h
           const char* doc =
 R"""(A meta-sensor that houses RGB, depth, and label cameras, producing
 their corresponding images based on the contents of the
@@ -2529,36 +2529,36 @@ Note:
     object's surface.)""";
           // Symbol: drake::systems::sensors::RgbdSensor::GetColorRenderCamera
           struct /* GetColorRenderCamera */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:139
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Returns the context dependent render camera for color/label
 renderings.)""";
           } GetColorRenderCamera;
           // Symbol: drake::systems::sensors::RgbdSensor::GetDepthRenderCamera
           struct /* GetDepthRenderCamera */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:157
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Returns the context dependent render camera for depth renderings.)""";
           } GetDepthRenderCamera;
           // Symbol: drake::systems::sensors::RgbdSensor::GetParentFrameId
           struct /* GetParentFrameId */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:187
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Returns the context dependent id of the frame to which the body is
 affixed.)""";
           } GetParentFrameId;
           // Symbol: drake::systems::sensors::RgbdSensor::GetX_PB
           struct /* GetX_PB */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:173
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc = R"""(Returns the context dependent ``X_PB``.)""";
           } GetX_PB;
           // Symbol: drake::systems::sensors::RgbdSensor::RgbdSensor
           struct /* ctor */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:114
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc_individual_intrinsics =
 R"""(Constructs an RgbdSensor with fully specified render camera models for
 both color/label and depth cameras.)""";
-            // Source: drake/systems/sensors/rgbd_sensor.h:124
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc_combined_intrinsics =
 R"""(Constructs an RgbdSensor using a fully specified depth render camera,
 inferring the color settings based on depth. The color camera in
@@ -2568,84 +2568,84 @@ window based on the value of ``show_color_window``.)""";
           } ctor;
           // Symbol: drake::systems::sensors::RgbdSensor::SetColorRenderCamera
           struct /* SetColorRenderCamera */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:144
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Sets the render camera for color/label renderings, as stored as
 parameters in ``context``.)""";
           } SetColorRenderCamera;
           // Symbol: drake::systems::sensors::RgbdSensor::SetDepthRenderCamera
           struct /* SetDepthRenderCamera */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:162
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Sets the render camera for depth renderings, as stored as parameters
 in ``context``.)""";
           } SetDepthRenderCamera;
           // Symbol: drake::systems::sensors::RgbdSensor::SetParentFrameId
           struct /* SetParentFrameId */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:191
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Sets the id of the frame to which the body is affixed, as stored as
 parameters in ``context``.)""";
           } SetParentFrameId;
           // Symbol: drake::systems::sensors::RgbdSensor::SetX_PB
           struct /* SetX_PB */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:176
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Sets the ``X_PB``, as stored as parameters in ``context``.)""";
           } SetX_PB;
           // Symbol: drake::systems::sensors::RgbdSensor::body_pose_in_world_output_port
           struct /* body_pose_in_world_output_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:213
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Returns the abstract-valued output port (containing a RigidTransform)
 which reports the pose of the body in the world frame (X_WB).)""";
           } body_pose_in_world_output_port;
           // Symbol: drake::systems::sensors::RgbdSensor::color_image_output_port
           struct /* color_image_output_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:197
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Returns the abstract-valued output port that contains an ImageRgba8U.)""";
           } color_image_output_port;
           // Symbol: drake::systems::sensors::RgbdSensor::default_X_PB
           struct /* default_X_PB */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:167
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc = R"""(Returns the default ``X_PB``.)""";
           } default_X_PB;
           // Symbol: drake::systems::sensors::RgbdSensor::default_color_render_camera
           struct /* default_color_render_camera */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:131
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Returns the default render camera for color/label renderings.)""";
           } default_color_render_camera;
           // Symbol: drake::systems::sensors::RgbdSensor::default_depth_render_camera
           struct /* default_depth_render_camera */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:149
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Returns the default render camera for depth renderings.)""";
           } default_depth_render_camera;
           // Symbol: drake::systems::sensors::RgbdSensor::default_parent_frame_id
           struct /* default_parent_frame_id */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:180
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Returns the default id of the frame to which the body is affixed.)""";
           } default_parent_frame_id;
           // Symbol: drake::systems::sensors::RgbdSensor::depth_image_16U_output_port
           struct /* depth_image_16U_output_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:205
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Returns the abstract-valued output port that contains an
 ImageDepth16U.)""";
           } depth_image_16U_output_port;
           // Symbol: drake::systems::sensors::RgbdSensor::depth_image_32F_output_port
           struct /* depth_image_32F_output_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:201
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Returns the abstract-valued output port that contains an
 ImageDepth32F.)""";
           } depth_image_32F_output_port;
           // Symbol: drake::systems::sensors::RgbdSensor::image_time_output_port
           struct /* image_time_output_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:219
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Returns the vector-valued output port (with size == 1) that reports
 the current simulation time, in seconds. This is provided for
@@ -2654,44 +2654,44 @@ image time is not always the current time).)""";
           } image_time_output_port;
           // Symbol: drake::systems::sensors::RgbdSensor::label_image_output_port
           struct /* label_image_output_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:209
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Returns the abstract-valued output port that contains an
 ImageLabel16I.)""";
           } label_image_output_port;
           // Symbol: drake::systems::sensors::RgbdSensor::query_object_input_port
           struct /* query_object_input_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:194
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Returns the geometry::QueryObject<double>-valued input port.)""";
           } query_object_input_port;
           // Symbol: drake::systems::sensors::RgbdSensor::set_default_X_PB
           struct /* set_default_X_PB */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:170
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc = R"""(Sets the default ``X_PB``.)""";
           } set_default_X_PB;
           // Symbol: drake::systems::sensors::RgbdSensor::set_default_color_render_camera
           struct /* set_default_color_render_camera */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:135
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Sets the default render camera for color/label renderings.)""";
           } set_default_color_render_camera;
           // Symbol: drake::systems::sensors::RgbdSensor::set_default_depth_render_camera
           struct /* set_default_depth_render_camera */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:153
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Sets the default render camera for depth renderings.)""";
           } set_default_depth_render_camera;
           // Symbol: drake::systems::sensors::RgbdSensor::set_default_parent_frame_id
           struct /* set_default_parent_frame_id */ {
-            // Source: drake/systems/sensors/rgbd_sensor.h:183
+            // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
 R"""(Sets the default id of the frame to which the body is affixed.)""";
           } set_default_parent_frame_id;
         } RgbdSensor;
         // Symbol: drake::systems::sensors::RgbdSensorAsync
         struct /* RgbdSensorAsync */ {
-          // Source: drake/systems/sensors/rgbd_sensor_async.h:115
+          // Source: drake/systems/sensors/rgbd_sensor_async.h
           const char* doc =
 R"""(A sensor similar to RgbdSensorDiscrete but the rendering occurs on a
 background thread to offer improved performance.
@@ -2776,32 +2776,32 @@ Warning:
     geometry in a scene graph Context.)""";
           // Symbol: drake::systems::sensors::RgbdSensorAsync::GetColorRenderCamera
           struct /* GetColorRenderCamera */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:200
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Returns the context dependent render camera for color/label
 renderings.)""";
           } GetColorRenderCamera;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::GetDepthRenderCamera
           struct /* GetDepthRenderCamera */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:220
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Returns the context dependent render camera for depth renderings.)""";
           } GetDepthRenderCamera;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::GetParentFrameId
           struct /* GetParentFrameId */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:170
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Returns the context dependent id of the frame to which the body is
 affixed.)""";
           } GetParentFrameId;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::GetX_PB
           struct /* GetX_PB */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:183
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc = R"""(Returns the context dependent ``X_PB``.)""";
           } GetX_PB;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::RgbdSensorAsync
           struct /* ctor */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:145
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Constructs a sensor with the given parameters. Refer to the class
 overview documentation for additional exposition and examples of the
@@ -2853,7 +2853,7 @@ Parameter ``render_label_image``:
           } ctor;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::SetColorRenderCamera
           struct /* SetColorRenderCamera */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:205
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Sets the render camera for color/label renderings, as stored as
 parameters in ``context``.
@@ -2863,7 +2863,7 @@ Raises:
           } SetColorRenderCamera;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::SetDepthRenderCamera
           struct /* SetDepthRenderCamera */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:225
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Sets the render camera for depth renderings, as stored as parameters
 in ``context``.
@@ -2873,33 +2873,33 @@ Raises:
           } SetDepthRenderCamera;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::SetParentFrameId
           struct /* SetParentFrameId */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:174
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Sets the id of the frame to which the body is affixed, as stored as
 parameters in ``context``.)""";
           } SetParentFrameId;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::SetX_PB
           struct /* SetX_PB */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:186
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Sets the ``X_PB``, as stored as parameters in ``context``.)""";
           } SetX_PB;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::body_pose_in_world_output_port
           struct /* body_pose_in_world_output_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:251
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Returns the abstract-valued output port (containing a RigidTransform)
 which reports the pose of the body in the world frame (X_WB).)""";
           } body_pose_in_world_output_port;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::capture_offset
           struct /* capture_offset */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:157
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Returns the capture offset provided at construction.)""";
           } capture_offset;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::color_image_output_port
           struct /* color_image_output_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:235
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Returns the abstract-valued output port that contains an ImageRgba8U.
 
@@ -2908,30 +2908,30 @@ Raises:
           } color_image_output_port;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::default_X_PB
           struct /* default_X_PB */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:177
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc = R"""(Returns the default ``X_PB``.)""";
           } default_X_PB;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::default_color_render_camera
           struct /* default_color_render_camera */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:191
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Returns the default render camera for color renderings.)""";
           } default_color_render_camera;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::default_depth_render_camera
           struct /* default_depth_render_camera */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:211
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Returns the default render camera for depth renderings.)""";
           } default_depth_render_camera;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::default_parent_frame_id
           struct /* default_parent_frame_id */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:163
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Returns the default id of the frame to which the body is affixed.)""";
           } default_parent_frame_id;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::depth_image_16U_output_port
           struct /* depth_image_16U_output_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:243
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Returns the abstract-valued output port that contains an
 ImageDepth16U.
@@ -2941,7 +2941,7 @@ Raises:
           } depth_image_16U_output_port;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::depth_image_32F_output_port
           struct /* depth_image_32F_output_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:239
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Returns the abstract-valued output port that contains an
 ImageDepth32F.
@@ -2951,13 +2951,13 @@ Raises:
           } depth_image_32F_output_port;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::fps
           struct /* fps */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:154
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Returns the frame rate provided at construction.)""";
           } fps;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::image_time_output_port
           struct /* image_time_output_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:257
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Returns the vector-valued output port (with size == 1) which reports
 the simulation time when the image outputs were captured, in seconds.
@@ -2966,7 +2966,7 @@ beginning of a simulation), the value will be NaN.)""";
           } image_time_output_port;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::label_image_output_port
           struct /* label_image_output_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:247
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Returns the abstract-valued output port that contains an
 ImageLabel16I.
@@ -2976,18 +2976,18 @@ Raises:
           } label_image_output_port;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::output_delay
           struct /* output_delay */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:160
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Returns the output delay provided at construction.)""";
           } output_delay;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::set_default_X_PB
           struct /* set_default_X_PB */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:180
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc = R"""(Sets the default ``X_PB``.)""";
           } set_default_X_PB;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::set_default_color_render_camera
           struct /* set_default_color_render_camera */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:195
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Sets the default render camera for color/label renderings.
 
@@ -2996,7 +2996,7 @@ Raises:
           } set_default_color_render_camera;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::set_default_depth_render_camera
           struct /* set_default_depth_render_camera */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:215
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Sets the default render camera for depth renderings.
 
@@ -3005,14 +3005,14 @@ Raises:
           } set_default_depth_render_camera;
           // Symbol: drake::systems::sensors::RgbdSensorAsync::set_default_parent_frame_id
           struct /* set_default_parent_frame_id */ {
-            // Source: drake/systems/sensors/rgbd_sensor_async.h:166
+            // Source: drake/systems/sensors/rgbd_sensor_async.h
             const char* doc =
 R"""(Sets the default id of the frame to which the body is affixed.)""";
           } set_default_parent_frame_id;
         } RgbdSensorAsync;
         // Symbol: drake::systems::sensors::RgbdSensorDiscrete
         struct /* RgbdSensorDiscrete */ {
-          // Source: drake/systems/sensors/rgbd_sensor_discrete.h:44
+          // Source: drake/systems/sensors/rgbd_sensor_discrete.h
           const char* doc =
 R"""(Wraps a continuous RgbdSensor with a zero-order hold to create a
 discrete sensor.
@@ -3044,7 +3044,7 @@ Note:
     just the one RgbdSensor output port that you need.)""";
           // Symbol: drake::systems::sensors::RgbdSensorDiscrete::RgbdSensorDiscrete
           struct /* ctor */ {
-            // Source: drake/systems/sensors/rgbd_sensor_discrete.h:63
+            // Source: drake/systems/sensors/rgbd_sensor_discrete.h
             const char* doc =
 R"""(Constructs a diagram containing a (non-registered) RgbdSensor that
 will update at a given rate.
@@ -3067,35 +3067,35 @@ Warning:
           } ctor;
           // Symbol: drake::systems::sensors::RgbdSensorDiscrete::body_pose_in_world_output_port
           struct /* body_pose_in_world_output_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor_discrete.h:99
+            // Source: drake/systems/sensors/rgbd_sensor_discrete.h
             const char* doc =
 R"""(See also:
     RgbdSensor::body_pose_in_world_output_port().)""";
           } body_pose_in_world_output_port;
           // Symbol: drake::systems::sensors::RgbdSensorDiscrete::color_image_output_port
           struct /* color_image_output_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor_discrete.h:79
+            // Source: drake/systems/sensors/rgbd_sensor_discrete.h
             const char* doc =
 R"""(See also:
     RgbdSensor::color_image_output_port().)""";
           } color_image_output_port;
           // Symbol: drake::systems::sensors::RgbdSensorDiscrete::depth_image_16U_output_port
           struct /* depth_image_16U_output_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor_discrete.h:89
+            // Source: drake/systems/sensors/rgbd_sensor_discrete.h
             const char* doc =
 R"""(See also:
     RgbdSensor::depth_image_16U_output_port().)""";
           } depth_image_16U_output_port;
           // Symbol: drake::systems::sensors::RgbdSensorDiscrete::depth_image_32F_output_port
           struct /* depth_image_32F_output_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor_discrete.h:84
+            // Source: drake/systems/sensors/rgbd_sensor_discrete.h
             const char* doc =
 R"""(See also:
     RgbdSensor::depth_image_32F_output_port().)""";
           } depth_image_32F_output_port;
           // Symbol: drake::systems::sensors::RgbdSensorDiscrete::image_time_output_port
           struct /* image_time_output_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor_discrete.h:106
+            // Source: drake/systems/sensors/rgbd_sensor_discrete.h
             const char* doc =
 R"""(Returns the vector-valued output port (with size == 1) which reports
 the simulation time when the image outputs were captured, in seconds
@@ -3103,34 +3103,34 @@ the simulation time when the image outputs were captured, in seconds
           } image_time_output_port;
           // Symbol: drake::systems::sensors::RgbdSensorDiscrete::label_image_output_port
           struct /* label_image_output_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor_discrete.h:94
+            // Source: drake/systems/sensors/rgbd_sensor_discrete.h
             const char* doc =
 R"""(See also:
     RgbdSensor::label_image_output_port().)""";
           } label_image_output_port;
           // Symbol: drake::systems::sensors::RgbdSensorDiscrete::period
           struct /* period */ {
-            // Source: drake/systems/sensors/rgbd_sensor_discrete.h:71
+            // Source: drake/systems/sensors/rgbd_sensor_discrete.h
             const char* doc =
 R"""(Returns the update period for the discrete camera.)""";
           } period;
           // Symbol: drake::systems::sensors::RgbdSensorDiscrete::query_object_input_port
           struct /* query_object_input_port */ {
-            // Source: drake/systems/sensors/rgbd_sensor_discrete.h:74
+            // Source: drake/systems/sensors/rgbd_sensor_discrete.h
             const char* doc =
 R"""(See also:
     RgbdSensor::query_object_input_port().)""";
           } query_object_input_port;
           // Symbol: drake::systems::sensors::RgbdSensorDiscrete::sensor
           struct /* sensor */ {
-            // Source: drake/systems/sensors/rgbd_sensor_discrete.h:68
+            // Source: drake/systems/sensors/rgbd_sensor_discrete.h
             const char* doc =
 R"""(Returns a reference to the underlying RgbdSensor object.)""";
           } sensor;
         } RgbdSensorDiscrete;
         // Symbol: drake::systems::sensors::RotaryEncoders
         struct /* RotaryEncoders */ {
-          // Source: drake/systems/sensors/rotary_encoders.h:32
+          // Source: drake/systems/sensors/rotary_encoders.h
           const char* doc =
 R"""(Simple model to capture the quantization and calibration offset
 effects of a rotary encoder. Consider combining this with a
@@ -3148,11 +3148,11 @@ outputs of the system are also in radians.
     - y0)""";
           // Symbol: drake::systems::sensors::RotaryEncoders::RotaryEncoders<T>
           struct /* ctor */ {
-            // Source: drake/systems/sensors/rotary_encoders.h:38
+            // Source: drake/systems/sensors/rotary_encoders.h
             const char* doc_1args =
 R"""(Quantization-only constructor. Specifies one ticks_per_revolution
 count for every element of the input port.)""";
-            // Source: drake/systems/sensors/rotary_encoders.h:45
+            // Source: drake/systems/sensors/rotary_encoders.h
             const char* doc_2args =
 R"""(Selector-only constructor. Provides arguments to select particular
 indices from the input signal to use in the output. Since
@@ -3164,33 +3164,33 @@ Parameter ``input_port_size``:
 
 Parameter ``input_vector_indices``:
     List of indices)""";
-            // Source: drake/systems/sensors/rotary_encoders.h:49
+            // Source: drake/systems/sensors/rotary_encoders.h
             const char* doc_3args = R"""(Quantization and Selector constructor.)""";
-            // Source: drake/systems/sensors/rotary_encoders.h:55
+            // Source: drake/systems/sensors/rotary_encoders.h
             const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
           } ctor;
           // Symbol: drake::systems::sensors::RotaryEncoders::get_calibration_offsets
           struct /* get_calibration_offsets */ {
-            // Source: drake/systems/sensors/rotary_encoders.h:63
+            // Source: drake/systems/sensors/rotary_encoders.h
             const char* doc =
 R"""(Retrieve the calibration offset parameters.)""";
           } get_calibration_offsets;
           // Symbol: drake::systems::sensors::RotaryEncoders::set_calibration_offsets
           struct /* set_calibration_offsets */ {
-            // Source: drake/systems/sensors/rotary_encoders.h:58
+            // Source: drake/systems/sensors/rotary_encoders.h
             const char* doc = R"""(Set the calibration offset parameters.)""";
           } set_calibration_offsets;
         } RotaryEncoders;
         // Symbol: drake::systems::sensors::SaveToPng
         struct /* SaveToPng */ {
-          // Source: drake/systems/sensors/image_writer.h:40
+          // Source: drake/systems/sensors/image_writer.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Writes the color (8-bit, RGBA) image data to disk.)""";
         } SaveToPng;
         // Symbol: drake::systems::sensors::SaveToTiff
         struct /* SaveToTiff */ {
-          // Source: drake/systems/sensors/image_writer.h:47
+          // Source: drake/systems/sensors/image_writer.h
           const char* doc =
 R"""(Writes the depth (32-bit) image data to disk. A 32-bit depth image can
 only be saved as TIFF (not PNG) because PNG files do not support
@@ -3200,7 +3200,7 @@ is also limited at best. See ConvertDepth32FTo16U() for converting
         } SaveToTiff;
         // Symbol: drake::systems::sensors::to_string
         struct /* to_string */ {
-          // Source: drake/systems/sensors/image_file_format.h:21
+          // Source: drake/systems/sensors/image_file_format.h
           const char* doc = R"""()""";
         } to_string;
       } sensors;

@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from pydrake.geometry import Meshcat, Rgba
+from pydrake.geometry import Rgba
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.tree import FixedOffsetFrame

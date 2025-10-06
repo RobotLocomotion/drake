@@ -68,7 +68,7 @@ drake_cc_library(
 drake_cc_library(
     name = "drake_lcm",
     srcs = select({
-        "//tools/workspace/lcm:flag_with_lcm_runtime_true": [
+        "//tools/workspace/lcm_internal:flag_with_lcm_runtime_true": [
             "drake_lcm.cc",
         ],
         "//conditions:default": [
@@ -87,10 +87,10 @@ drake_cc_library(
         "//common:essential",
     ],
     implementation_deps = select({
-        "//tools/workspace/lcm:flag_with_lcm_runtime_true": [
+        "//tools/workspace/lcm_internal:flag_with_lcm_runtime_true": [
             "//common:network_policy",
-            "@glib",
-            "@lcm",
+            "//tools/workspace/lcm_internal:shared_library",
+            "@glib//glib",
         ],
         "//conditions:default": [],
     }),
@@ -99,7 +99,7 @@ drake_cc_library(
 drake_cc_library(
     name = "lcm_log",
     srcs = select({
-        "//tools/workspace/lcm:flag_with_lcm_runtime_true": [
+        "//tools/workspace/lcm_internal:flag_with_lcm_runtime_true": [
             "drake_lcm_log.cc",
         ],
         "//conditions:default": [
@@ -117,9 +117,9 @@ drake_cc_library(
         "//common:essential",
     ],
     implementation_deps = select({
-        "//tools/workspace/lcm:flag_with_lcm_runtime_true": [
+        "//tools/workspace/lcm_internal:flag_with_lcm_runtime_true": [
             "//common:string_container",
-            "@lcm",
+            "//tools/workspace/lcm_internal:shared_library",
         ],
         "//conditions:default": [
             "//common:unused",
@@ -175,7 +175,7 @@ drake_cc_googletest(
         ":drake_lcm",
         ":lcmt_drake_signal_utils",
         "//common/test_utilities:expect_throws_message",
-        "@lcm",
+        "//tools/workspace/lcm_internal:shared_library",
     ],
 )
 
@@ -216,7 +216,7 @@ drake_cc_googletest(
     deps = [
         ":drake_lcm",
         ":lcmt_drake_signal_utils",
-        "@lcm",
+        "//tools/workspace/lcm_internal:shared_library",
     ],
 )
 
@@ -268,4 +268,5 @@ add_lint_tests(
         "drake_lcm_log_disabled.cc",
         "test/drake_lcm_disabled_test.cc",
     ],
+    python_lint_use_ruff_format = False,
 )

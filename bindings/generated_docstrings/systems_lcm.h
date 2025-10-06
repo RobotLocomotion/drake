@@ -35,7 +35,7 @@ constexpr struct /* pydrake_doc_systems_lcm */ {
       struct /* lcm */ {
         // Symbol: drake::systems::lcm::ApplyLcmBusConfig
         struct /* ApplyLcmBusConfig */ {
-          // Source: drake/systems/lcm/lcm_config_functions.h:55
+          // Source: drake/systems/lcm/lcm_config_functions.h
           const char* doc =
 R"""(Given LCM bus names and (nullable) parameters, adds an
 LcmInterfaceSystem within the given diagram builder for each bus, and
@@ -62,7 +62,7 @@ Parameter ``lcm_buses``:
         } ApplyLcmBusConfig;
         // Symbol: drake::systems::lcm::FindOrCreateLcmBus
         struct /* FindOrCreateLcmBus */ {
-          // Source: drake/systems/lcm/lcm_config_functions.h:80
+          // Source: drake/systems/lcm/lcm_config_functions.h
           const char* doc =
 R"""((Advanced) Returns an LCM interface based on a convenient set of
 heuristics.
@@ -93,7 +93,7 @@ Parameter ``builder``:
         } FindOrCreateLcmBus;
         // Symbol: drake::systems::lcm::LcmBuses
         struct /* LcmBuses */ {
-          // Source: drake/systems/lcm/lcm_buses.h:22
+          // Source: drake/systems/lcm/lcm_buses.h
           const char* doc =
 R"""(A mapping from {bus_name: interface} with sugar for error checking
 with nice error messages during access.
@@ -104,14 +104,14 @@ DrakeLcmInterface pointer and then "modify" the object it points to by
 subscribing to a channel.)""";
           // Symbol: drake::systems::lcm::LcmBuses::Add
           struct /* Add */ {
-            // Source: drake/systems/lcm/lcm_buses.h:59
+            // Source: drake/systems/lcm/lcm_buses.h
             const char* doc =
 R"""(Adds a bus. Throws if the bus is nullptr, or if there was already a
 bus of the same name.)""";
           } Add;
           // Symbol: drake::systems::lcm::LcmBuses::Find
           struct /* Find */ {
-            // Source: drake/systems/lcm/lcm_buses.h:51
+            // Source: drake/systems/lcm/lcm_buses.h
             const char* doc =
 R"""(Finds the bus of the given name, or throws if there is no such bus.
 
@@ -125,24 +125,24 @@ Parameter ``description_of_caller``:
           } Find;
           // Symbol: drake::systems::lcm::LcmBuses::GetAllBusNames
           struct /* GetAllBusNames */ {
-            // Source: drake/systems/lcm/lcm_buses.h:55
+            // Source: drake/systems/lcm/lcm_buses.h
             const char* doc =
 R"""(Returns a list of all known bus_name keys.)""";
           } GetAllBusNames;
           // Symbol: drake::systems::lcm::LcmBuses::LcmBuses
           struct /* ctor */ {
-            // Source: drake/systems/lcm/lcm_buses.h:36
+            // Source: drake/systems/lcm/lcm_buses.h
             const char* doc = R"""(Constructs an empty mapping.)""";
           } ctor;
           // Symbol: drake::systems::lcm::LcmBuses::size
           struct /* size */ {
-            // Source: drake/systems/lcm/lcm_buses.h:41
+            // Source: drake/systems/lcm/lcm_buses.h
             const char* doc = R"""(Returns the total number of buses.)""";
           } size;
         } LcmBuses;
         // Symbol: drake::systems::lcm::LcmInterfaceSystem
         struct /* LcmInterfaceSystem */ {
-          // Source: drake/systems/lcm/lcm_interface_system.h:40
+          // Source: drake/systems/lcm/lcm_interface_system.h
           const char* doc =
 R"""(LcmInterfaceSystem acts within a Diagram to allow LcmSubscriberSystem
 instances to receive data from the network during a simulation. When
@@ -176,18 +176,18 @@ simulation, not just `LcmSubscriberSystem`s.
     </details>)""";
           // Symbol: drake::systems::lcm::LcmInterfaceSystem::HandleSubscriptions
           struct /* HandleSubscriptions */ {
-            // Source: drake/systems/lcm/lcm_interface_system.h:73
+            // Source: drake/systems/lcm/lcm_interface_system.h
             const char* doc = R"""()""";
           } HandleSubscriptions;
           // Symbol: drake::systems::lcm::LcmInterfaceSystem::LcmInterfaceSystem
           struct /* ctor */ {
-            // Source: drake/systems/lcm/lcm_interface_system.h:49
+            // Source: drake/systems/lcm/lcm_interface_system.h
             const char* doc_1args_lcm_url =
 R"""(Constructs using the given URL. With no URL, uses the LCM_DEFAULT_URL
 environment variable iff it is set or else the default hard-coded URL.)""";
-            // Source: drake/systems/lcm/lcm_interface_system.h:52
+            // Source: drake/systems/lcm/lcm_interface_system.h
             const char* doc_1args_params = R"""(Constructs using the given params.)""";
-            // Source: drake/systems/lcm/lcm_interface_system.h:59
+            // Source: drake/systems/lcm/lcm_interface_system.h
             const char* doc_1args_lcm =
 R"""(Constructs using the given LCM service. The pointer is aliased by this
 class and must remain valid for the lifetime of this object. Users
@@ -195,33 +195,33 @@ MUST NOT start the receive thread on this object.)""";
           } ctor;
           // Symbol: drake::systems::lcm::LcmInterfaceSystem::Publish
           struct /* Publish */ {
-            // Source: drake/systems/lcm/lcm_interface_system.h:65
+            // Source: drake/systems/lcm/lcm_interface_system.h
             const char* doc = R"""()""";
           } Publish;
           // Symbol: drake::systems::lcm::LcmInterfaceSystem::Subscribe
           struct /* Subscribe */ {
-            // Source: drake/systems/lcm/lcm_interface_system.h:67
+            // Source: drake/systems/lcm/lcm_interface_system.h
             const char* doc = R"""()""";
           } Subscribe;
           // Symbol: drake::systems::lcm::LcmInterfaceSystem::SubscribeAllChannels
           struct /* SubscribeAllChannels */ {
-            // Source: drake/systems/lcm/lcm_interface_system.h:71
+            // Source: drake/systems/lcm/lcm_interface_system.h
             const char* doc = R"""()""";
           } SubscribeAllChannels;
           // Symbol: drake::systems::lcm::LcmInterfaceSystem::SubscribeMultichannel
           struct /* SubscribeMultichannel */ {
-            // Source: drake/systems/lcm/lcm_interface_system.h:69
+            // Source: drake/systems/lcm/lcm_interface_system.h
             const char* doc = R"""()""";
           } SubscribeMultichannel;
           // Symbol: drake::systems::lcm::LcmInterfaceSystem::get_lcm_url
           struct /* get_lcm_url */ {
-            // Source: drake/systems/lcm/lcm_interface_system.h:64
+            // Source: drake/systems/lcm/lcm_interface_system.h
             const char* doc = R"""()""";
           } get_lcm_url;
         } LcmInterfaceSystem;
         // Symbol: drake::systems::lcm::LcmLogPlaybackSystem
         struct /* LcmLogPlaybackSystem */ {
-          // Source: drake/systems/lcm/lcm_log_playback_system.h:19
+          // Source: drake/systems/lcm/lcm_log_playback_system.h
           const char* doc =
 R"""(Advances the cursor of a drake::lcm::DrakeLcmLog based on the
 timestamps seen the Context that is used to simulate this System.
@@ -232,12 +232,12 @@ data and when the log's cursor should advance automatically during
 simulation.)""";
           // Symbol: drake::systems::lcm::LcmLogPlaybackSystem::DoCalcNextUpdateTime
           struct /* DoCalcNextUpdateTime */ {
-            // Source: drake/systems/lcm/lcm_log_playback_system.h:33
+            // Source: drake/systems/lcm/lcm_log_playback_system.h
             const char* doc = R"""()""";
           } DoCalcNextUpdateTime;
           // Symbol: drake::systems::lcm::LcmLogPlaybackSystem::LcmLogPlaybackSystem
           struct /* ctor */ {
-            // Source: drake/systems/lcm/lcm_log_playback_system.h:28
+            // Source: drake/systems/lcm/lcm_log_playback_system.h
             const char* doc =
 R"""(Constructs a playback system that advances the given ``log``.
 
@@ -247,7 +247,7 @@ Parameter ``log``:
         } LcmLogPlaybackSystem;
         // Symbol: drake::systems::lcm::LcmPublisherSystem
         struct /* LcmPublisherSystem */ {
-          // Source: drake/systems/lcm/lcm_publisher_system.h:46
+          // Source: drake/systems/lcm/lcm_publisher_system.h
           const char* doc =
 R"""(Publishes an LCM message containing information from its input port.
 Optionally sends a one-time initialization message. Publishing can be
@@ -270,7 +270,7 @@ Note:
     - lcm_message)""";
           // Symbol: drake::systems::lcm::LcmPublisherSystem::AddInitializationMessage
           struct /* AddInitializationMessage */ {
-            // Source: drake/systems/lcm/lcm_publisher_system.h:215
+            // Source: drake/systems/lcm/lcm_publisher_system.h
             const char* doc =
 R"""(Specifies a message-publishing function to be invoked once from an
 initialization event. If this method is not called, no initialization
@@ -286,14 +286,14 @@ Precondition:
           } AddInitializationMessage;
           // Symbol: drake::systems::lcm::LcmPublisherSystem::InitializationPublisher
           struct /* InitializationPublisher */ {
-            // Source: drake/systems/lcm/lcm_publisher_system.h:202
+            // Source: drake/systems/lcm/lcm_publisher_system.h
             const char* doc =
 R"""(This is the type of an initialization message publisher that can be
 provided via AddInitializationMessage().)""";
           } InitializationPublisher;
           // Symbol: drake::systems::lcm::LcmPublisherSystem::LcmPublisherSystem
           struct /* ctor */ {
-            // Source: drake/systems/lcm/lcm_publisher_system.h:153
+            // Source: drake/systems/lcm/lcm_publisher_system.h
             const char* doc_5args =
 R"""(A constructor for an LcmPublisherSystem that takes LCM message objects
 on its sole abstract-valued input port. The LCM message type is
@@ -331,7 +331,7 @@ Precondition:
 
 Precondition:
     publish_offset is set to zero when the publish_period is zero.)""";
-            // Source: drake/systems/lcm/lcm_publisher_system.h:190
+            // Source: drake/systems/lcm/lcm_publisher_system.h
             const char* doc_6args =
 R"""(A constructor for an LcmPublisherSystem that takes LCM message objects
 on its sole abstract-valued input port. The LCM message type is
@@ -384,7 +384,7 @@ Precondition:
           } ctor;
           // Symbol: drake::systems::lcm::LcmPublisherSystem::Make
           struct /* Make */ {
-            // Source: drake/systems/lcm/lcm_publisher_system.h:79
+            // Source: drake/systems/lcm/lcm_publisher_system.h
             const char* doc_4args =
 R"""(A factory method that returns an LcmPublisherSystem that takes
 Value<LcmMessage> message objects on its sole abstract-valued input
@@ -423,7 +423,7 @@ Precondition:
 
 Precondition:
     publish_offset is set to zero when the publish_period is zero.)""";
-            // Source: drake/systems/lcm/lcm_publisher_system.h:117
+            // Source: drake/systems/lcm/lcm_publisher_system.h
             const char* doc_5args =
 R"""(A factory method for an LcmPublisherSystem that takes LCM message
 objects on its sole abstract-valued input port. The LCM message type
@@ -472,25 +472,25 @@ Precondition:
           } Make;
           // Symbol: drake::systems::lcm::LcmPublisherSystem::get_channel_name
           struct /* get_channel_name */ {
-            // Source: drake/systems/lcm/lcm_publisher_system.h:221
+            // Source: drake/systems/lcm/lcm_publisher_system.h
             const char* doc =
 R"""(Returns the channel name supplied during construction.)""";
           } get_channel_name;
           // Symbol: drake::systems::lcm::LcmPublisherSystem::get_publish_offset
           struct /* get_publish_offset */ {
-            // Source: drake/systems/lcm/lcm_publisher_system.h:246
+            // Source: drake/systems/lcm/lcm_publisher_system.h
             const char* doc =
 R"""(Returns the publish_offset provided at construction time.)""";
           } get_publish_offset;
           // Symbol: drake::systems::lcm::LcmPublisherSystem::get_publish_period
           struct /* get_publish_period */ {
-            // Source: drake/systems/lcm/lcm_publisher_system.h:241
+            // Source: drake/systems/lcm/lcm_publisher_system.h
             const char* doc =
 R"""(Returns the publish_period provided at construction time.)""";
           } get_publish_period;
           // Symbol: drake::systems::lcm::LcmPublisherSystem::lcm
           struct /* lcm */ {
-            // Source: drake/systems/lcm/lcm_publisher_system.h:233
+            // Source: drake/systems/lcm/lcm_publisher_system.h
             const char* doc =
 R"""(Returns a mutable reference to the LCM object in use by this
 publisher. This may have been supplied in the constructor or may be an
@@ -498,14 +498,14 @@ internally-maintained object of type drake::lcm::DrakeLcm.)""";
           } lcm;
           // Symbol: drake::systems::lcm::LcmPublisherSystem::make_name
           struct /* make_name */ {
-            // Source: drake/systems/lcm/lcm_publisher_system.h:226
+            // Source: drake/systems/lcm/lcm_publisher_system.h
             const char* doc =
 R"""(Returns the default name for a system that publishes ``channel``.)""";
           } make_name;
         } LcmPublisherSystem;
         // Symbol: drake::systems::lcm::LcmScopeSystem
         struct /* LcmScopeSystem */ {
-          // Source: drake/systems/lcm/lcm_scope_system.h:28
+          // Source: drake/systems/lcm/lcm_scope_system.h
           const char* doc =
 R"""(LcmScopeSystem provides the ability to convert any vector output port
 to a simple LCM message and publish that message periodically. The
@@ -521,7 +521,7 @@ intention is to instrument complex diagrams using external tools like
     - output)""";
           // Symbol: drake::systems::lcm::LcmScopeSystem::AddToBuilder
           struct /* AddToBuilder */ {
-            // Source: drake/systems/lcm/lcm_scope_system.h:52
+            // Source: drake/systems/lcm/lcm_scope_system.h
             const char* doc =
 R"""(Adds an LcmScopeSystem and LcmPublisherSystem to the given
 ``builder``.
@@ -545,7 +545,7 @@ Parameter ``publish_period``:
           } AddToBuilder;
           // Symbol: drake::systems::lcm::LcmScopeSystem::LcmScopeSystem
           struct /* ctor */ {
-            // Source: drake/systems/lcm/lcm_scope_system.h:37
+            // Source: drake/systems/lcm/lcm_scope_system.h
             const char* doc =
 R"""((Advanced.) Most users will use AddToBuilder instead of this
 constructor. On its own, this constructor does not publish anything.
@@ -557,7 +557,7 @@ lcmt_scope message.)""";
         } LcmScopeSystem;
         // Symbol: drake::systems::lcm::LcmSubscriberSystem
         struct /* LcmSubscriberSystem */ {
-          // Source: drake/systems/lcm/lcm_subscriber_system.h:53
+          // Source: drake/systems/lcm/lcm_subscriber_system.h
           const char* doc =
 R"""(Receives LCM messages from a given channel and outputs them to a
 System<double>'s port. This class stores the most recently processed
@@ -585,20 +585,20 @@ helper to advance the log cursor in concert with the simulation.
     - y0)""";
           // Symbol: drake::systems::lcm::LcmSubscriberSystem::GetInternalMessageCount
           struct /* GetInternalMessageCount */ {
-            // Source: drake/systems/lcm/lcm_subscriber_system.h:144
+            // Source: drake/systems/lcm/lcm_subscriber_system.h
             const char* doc =
 R"""(Returns the internal message counter. Meant to be used with
 ``WaitForMessage``.)""";
           } GetInternalMessageCount;
           // Symbol: drake::systems::lcm::LcmSubscriberSystem::GetMessageCount
           struct /* GetMessageCount */ {
-            // Source: drake/systems/lcm/lcm_subscriber_system.h:149
+            // Source: drake/systems/lcm/lcm_subscriber_system.h
             const char* doc =
 R"""(Returns the message counter stored in ``context``.)""";
           } GetMessageCount;
           // Symbol: drake::systems::lcm::LcmSubscriberSystem::LcmSubscriberSystem
           struct /* ctor */ {
-            // Source: drake/systems/lcm/lcm_subscriber_system.h:110
+            // Source: drake/systems/lcm/lcm_subscriber_system.h
             const char* doc =
 R"""(Constructor that returns a subscriber System that provides message
 objects on its sole abstract-valued output port. The type of the
@@ -629,7 +629,7 @@ Parameter ``wait_for_message_on_initialization_timeout``:
           } ctor;
           // Symbol: drake::systems::lcm::LcmSubscriberSystem::Make
           struct /* Make */ {
-            // Source: drake/systems/lcm/lcm_subscriber_system.h:79
+            // Source: drake/systems/lcm/lcm_subscriber_system.h
             const char* doc =
 R"""(Factory method that returns a subscriber System that provides
 Value<LcmMessage> message objects on its sole abstract-valued output
@@ -659,7 +659,7 @@ Parameter ``wait_for_message_on_initialization_timeout``:
           } Make;
           // Symbol: drake::systems::lcm::LcmSubscriberSystem::WaitForMessage
           struct /* WaitForMessage */ {
-            // Source: drake/systems/lcm/lcm_subscriber_system.h:137
+            // Source: drake/systems/lcm/lcm_subscriber_system.h
             const char* doc =
 R"""(Blocks the caller until its internal message count exceeds
 ``old_message_count`` with an optional timeout.
@@ -683,19 +683,19 @@ Precondition:
           } WaitForMessage;
           // Symbol: drake::systems::lcm::LcmSubscriberSystem::get_channel_name
           struct /* get_channel_name */ {
-            // Source: drake/systems/lcm/lcm_subscriber_system.h:120
+            // Source: drake/systems/lcm/lcm_subscriber_system.h
             const char* doc = R"""()""";
           } get_channel_name;
           // Symbol: drake::systems::lcm::LcmSubscriberSystem::make_name
           struct /* make_name */ {
-            // Source: drake/systems/lcm/lcm_subscriber_system.h:118
+            // Source: drake/systems/lcm/lcm_subscriber_system.h
             const char* doc =
 R"""(Returns the default name for a system that subscribes to ``channel``.)""";
           } make_name;
         } LcmSubscriberSystem;
         // Symbol: drake::systems::lcm::Serializer
         struct /* Serializer */ {
-          // Source: drake/systems/lcm/serializer.h:57
+          // Source: drake/systems/lcm/serializer.h
           const char* doc =
 R"""(Serializer is specific to a single LcmMessage type, and translates
 between LCM message bytes and drake::Value<LcmMessage> objects.
@@ -704,28 +704,28 @@ Template parameter ``LcmMessage``:
     message type to serialize, e.g., lcmt_drake_signal.)""";
           // Symbol: drake::systems::lcm::Serializer::CreateDefaultValue
           struct /* CreateDefaultValue */ {
-            // Source: drake/systems/lcm/serializer.h:64
+            // Source: drake/systems/lcm/serializer.h
             const char* doc = R"""()""";
           } CreateDefaultValue;
           // Symbol: drake::systems::lcm::Serializer::Deserialize
           struct /* Deserialize */ {
-            // Source: drake/systems/lcm/serializer.h:71
+            // Source: drake/systems/lcm/serializer.h
             const char* doc = R"""()""";
           } Deserialize;
           // Symbol: drake::systems::lcm::Serializer::Serialize
           struct /* Serialize */ {
-            // Source: drake/systems/lcm/serializer.h:79
+            // Source: drake/systems/lcm/serializer.h
             const char* doc = R"""()""";
           } Serialize;
           // Symbol: drake::systems::lcm::Serializer::Serializer<LcmMessage>
           struct /* ctor */ {
-            // Source: drake/systems/lcm/serializer.h:59
+            // Source: drake/systems/lcm/serializer.h
             const char* doc = R"""()""";
           } ctor;
         } Serializer;
         // Symbol: drake::systems::lcm::SerializerInterface
         struct /* SerializerInterface */ {
-          // Source: drake/systems/lcm/serializer.h:22
+          // Source: drake/systems/lcm/serializer.h
           const char* doc =
 R"""(SerializerInterface translates between LCM message bytes and
 drake::AbstractValue objects that contain LCM messages, e.g., a
@@ -733,26 +733,26 @@ Value<lcmt_drake_signal>. All ``const`` methods are threadsafe. See
 Serializer for a message-specific concrete subclass.)""";
           // Symbol: drake::systems::lcm::SerializerInterface::CreateDefaultValue
           struct /* CreateDefaultValue */ {
-            // Source: drake/systems/lcm/serializer.h:32
+            // Source: drake/systems/lcm/serializer.h
             const char* doc =
 R"""(Creates a value-initialized (zeroed) instance of the message object.
 The result can be used as the output object filled in by Deserialize.)""";
           } CreateDefaultValue;
           // Symbol: drake::systems::lcm::SerializerInterface::Deserialize
           struct /* Deserialize */ {
-            // Source: drake/systems/lcm/serializer.h:37
+            // Source: drake/systems/lcm/serializer.h
             const char* doc =
 R"""(Translates LCM message bytes into a drake::AbstractValue object.)""";
           } Deserialize;
           // Symbol: drake::systems::lcm::SerializerInterface::Serialize
           struct /* Serialize */ {
-            // Source: drake/systems/lcm/serializer.h:43
+            // Source: drake/systems/lcm/serializer.h
             const char* doc =
 R"""(Translates a drake::AbstractValue object into LCM message bytes.)""";
           } Serialize;
           // Symbol: drake::systems::lcm::SerializerInterface::SerializerInterface
           struct /* ctor */ {
-            // Source: drake/systems/lcm/serializer.h:24
+            // Source: drake/systems/lcm/serializer.h
             const char* doc = R"""()""";
           } ctor;
         } SerializerInterface;

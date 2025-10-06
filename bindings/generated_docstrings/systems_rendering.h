@@ -24,7 +24,7 @@ constexpr struct /* pydrake_doc_systems_rendering */ {
       struct /* rendering */ {
         // Symbol: drake::systems::rendering::MultibodyPositionToGeometryPose
         struct /* MultibodyPositionToGeometryPose */ {
-          // Source: drake/systems/rendering/multibody_position_to_geometry_pose.h:41
+          // Source: drake/systems/rendering/multibody_position_to_geometry_pose.h
           const char* doc =
 R"""(A direct-feedthrough system that converts a vector of joint positions
 directly to a geometry::FramePoseVector<T> to behave like a
@@ -45,7 +45,7 @@ pass the full state vector is provided only for convenience -- only
 the position values will affect the outputs.)""";
           // Symbol: drake::systems::rendering::MultibodyPositionToGeometryPose::MultibodyPositionToGeometryPose<T>
           struct /* ctor */ {
-            // Source: drake/systems/rendering/multibody_position_to_geometry_pose.h:57
+            // Source: drake/systems/rendering/multibody_position_to_geometry_pose.h
             const char* doc_2args_plant_input_multibody_state =
 R"""(The MultibodyPositionToGeometryPose holds an internal, non-owned
 reference to the MultibodyPlant object so you must ensure that
@@ -60,7 +60,7 @@ Parameter ``input_multibody_state``:
 
 Raises:
     if ``plant`` is not finalized and registered with a SceneGraph.)""";
-            // Source: drake/systems/rendering/multibody_position_to_geometry_pose.h:71
+            // Source: drake/systems/rendering/multibody_position_to_geometry_pose.h
             const char* doc_2args_owned_plant_input_multibody_state =
 R"""(The MultibodyPositionToGeometryPose owns its internal plant.
 
@@ -76,12 +76,12 @@ Raises:
           } ctor;
           // Symbol: drake::systems::rendering::MultibodyPositionToGeometryPose::multibody_plant
           struct /* multibody_plant */ {
-            // Source: drake/systems/rendering/multibody_position_to_geometry_pose.h:77
+            // Source: drake/systems/rendering/multibody_position_to_geometry_pose.h
             const char* doc = R"""()""";
           } multibody_plant;
           // Symbol: drake::systems::rendering::MultibodyPositionToGeometryPose::owns_plant
           struct /* owns_plant */ {
-            // Source: drake/systems/rendering/multibody_position_to_geometry_pose.h:80
+            // Source: drake/systems/rendering/multibody_position_to_geometry_pose.h
             const char* doc =
 R"""(Returns true if this system owns its MultibodyPlant.)""";
           } owns_plant;

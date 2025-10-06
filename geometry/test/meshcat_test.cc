@@ -35,6 +35,9 @@ using math::RotationMatrixd;
 using testing::ElementsAre;
 using ::testing::HasSubstr;
 
+// N.B. the bindings/pydrake/geometry/test/visualizers_test.py covers testing
+// of our Meshcat http operations. It's too awkward to try to do that here.
+
 // A small wrapper around std::system to ensure correct argument passing.
 int SystemCall(const std::vector<std::string>& argv) {
   std::string command;
@@ -125,28 +128,6 @@ std::pair<std::string, T> GetDecodedProperty(const Meshcat& meshcat,
   EXPECT_EQ(decoded.type, "set_property");
   EXPECT_EQ(decoded.property, property);
   return {decoded.path, decoded.value};
-}
-
-GTEST_TEST(MeshcatTest, TestHttp) {
-  Meshcat meshcat;
-  // Note: The server doesn't respect all requests; unfortunately we can't use
-  // curl --head and wget --spider nor curl --range to avoid downloading the
-  // full file.
-  EXPECT_EQ(SystemCall({"/usr/bin/curl", "-o", "/dev/null", "--silent",
-                        meshcat.web_url() + "/index.html"}),
-            0);
-  EXPECT_EQ(SystemCall({"/usr/bin/curl", "-o", "/dev/null", "--silent",
-                        meshcat.web_url() + "/meshcat.js"}),
-            0);
-  EXPECT_EQ(SystemCall({"/usr/bin/curl", "-o", "/dev/null", "--silent",
-                        meshcat.web_url() + "/favicon.ico"}),
-            0);
-  EXPECT_EQ(SystemCall({"/usr/bin/curl", "-o", "/dev/null", "--silent",
-                        meshcat.web_url() + "/no-such-file"}),
-            0);
-  // Note that the pydrake visualizers_test.py case test_start_meshcat() also
-  // checks the http Content-Type and page data. It's too awkward to try to
-  // do that here.
 }
 
 GTEST_TEST(MeshcatTest, ConstructMultiple) {

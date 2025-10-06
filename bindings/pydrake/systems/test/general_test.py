@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import pydrake.systems.framework
-
 import copy
 import gc
 from textwrap import dedent
@@ -25,7 +23,6 @@ from pydrake.systems.analysis import (
 )
 from pydrake.systems.framework import (
     BasicVector, BasicVector_,
-    CacheEntry,
     ContextBase,
     Context, Context_,
     ContinuousState, ContinuousState_,
@@ -69,7 +66,6 @@ from pydrake.systems.primitives import (
 )
 from pydrake.systems.test.test_util import (
     MyVector2,
-    DummySystemA,
     MakeDummySystem,
 )
 from pydrake.systems.test_utilities import framework_test_util
@@ -198,7 +194,7 @@ class TestGeneral(unittest.TestCase):
                 contextU.SetTime(0.5)
                 contextT.SetStateAndParametersFrom(contextU)
                 contextT.SetTimeStateAndParametersFrom(contextU)
-                if T == float:
+                if T is float:
                     self.assertEqual(contextT.get_time(), 0.5)
                 elif T == AutoDiffXd:
                     self.assertEqual(contextT.get_time().value(), 0.5)
@@ -376,7 +372,7 @@ class TestGeneral(unittest.TestCase):
         x = cast(np.array([1.23, 4.56]))
         discrete_values.set_value(1, x)
         numpy_compare.assert_equal(discrete_values.get_value(index=1), x)
-        if T == float:
+        if T is float:
             numpy_compare.assert_equal(
                 discrete_values.get_mutable_value(index=1), x)
         else:
@@ -394,12 +390,12 @@ class TestGeneral(unittest.TestCase):
         discrete_values.set_value(x)
         numpy_compare.assert_equal(discrete_values.value(index=0), x)
         numpy_compare.assert_equal(discrete_values.get_value(), x)
-        if T == float:
+        if T is float:
             numpy_compare.assert_equal(
                 discrete_values.get_mutable_value(), x)
         discrete_values[1] = 5.
         numpy_compare.assert_equal(discrete_values[1], T(5.))
-        if T == float:
+        if T is float:
             vector = discrete_values.get_mutable_value()
             vector[0] = 2.3
             self.assertEqual(discrete_values[0], 2.3)
@@ -449,7 +445,7 @@ class TestGeneral(unittest.TestCase):
                                   SystemScalarConverter)
             # N.B. Current scalar conversion does not permit conversion to and
             # from the same type.
-            if T != float:
+            if T is not float:
                 methods = [Adder_[T].ToScalarType[float],
                            Adder_[T].ToScalarTypeMaybe[float]]
                 for method in methods:
@@ -478,7 +474,7 @@ class TestGeneral(unittest.TestCase):
                                      target_context=context)
             u = system.get_input_port(0).Eval(context)
             self.assertEqual(len(u), 1)
-            if T == float:
+            if T is float:
                 self.assertEqual(u[0], 1.)
             elif T == AutoDiffXd:
                 self.assertEqual(u[0].value(), 1.)
@@ -494,7 +490,7 @@ class TestGeneral(unittest.TestCase):
         output = system.AllocateOutput()
         self.assertEqual(output.num_ports(), 1)
         system.CalcOutput(context=context, outputs=output)
-        if T == float:
+        if T is float:
             value = output.get_vector_data(0).get_value()
             self.assertTrue(np.allclose([1], value))
         elif T == AutoDiffXd:

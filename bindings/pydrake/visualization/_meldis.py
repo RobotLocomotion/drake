@@ -21,10 +21,7 @@ from drake import (
     lcmt_viewer_link_data,
     lcmt_viewer_load_robot,
 )
-from pydrake.common import (
-    configure_logging,
-    MemoryFile,
-)
+from pydrake.common import MemoryFile
 from pydrake.common.eigen_geometry import (
     Quaternion,
 )

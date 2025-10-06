@@ -13,14 +13,17 @@ Installation script generated from a Bazel `install` target.
 import argparse
 import collections
 import filecmp
+import functools
 import itertools
 import os
+from pathlib import Path
 import re
 import shutil
 import stat
+from subprocess import check_output, check_call
 import sys
 
-from subprocess import check_output, check_call
+from python import runfiles
 
 from tools.install import otool
 
@@ -75,6 +78,12 @@ def _needs_install(src, dst, prefix):
 
     # File needs to be installed.
     return True
+
+
+@functools.cache
+def _patchelf_path() -> Path:
+    manifest = runfiles.Create()
+    return Path(manifest.Rlocation("patchelf/patchelf"))
 
 
 class Installer:
@@ -336,7 +345,7 @@ class Installer:
         # /opt.
         str_rpath = ":".join(x for x in rpath)
         check_output([
-            "patchelf",
+            _patchelf_path(),
             "--force-rpath",  # We need to override LD_LIBRARY_PATH.
             "--set-rpath", str_rpath,
             dst_full

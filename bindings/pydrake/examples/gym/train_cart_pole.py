@@ -85,14 +85,14 @@ def _run_training(config, args):
     n = 1
     eval_env = VecVideoRecorder(
                         eval_env,
-                        log_dir+f"videos/test",
+                        log_dir+"videos/test",
                         record_video_trigger=lambda x: x % n == 0,
                         video_length=100)
     # Use deterministic actions for evaluation.
     eval_callback = EvalCallback(
         eval_env,
-        best_model_save_path=log_dir+f'eval_logs/test',
-        log_path=log_dir+f'eval_logs/test',
+        best_model_save_path=log_dir+'eval_logs/test',
+        log_path=log_dir+'eval_logs/test',
         eval_freq=eval_freq,
         deterministic=True,
         render=False)

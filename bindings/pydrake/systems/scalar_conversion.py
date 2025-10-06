@@ -1,6 +1,5 @@
 """Provides utilities to aid in scalar type conversion."""
 
-import copy
 from functools import partial
 
 from pydrake.autodiffutils import AutoDiffXd

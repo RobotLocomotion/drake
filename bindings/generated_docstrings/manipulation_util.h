@@ -30,7 +30,7 @@ constexpr struct /* pydrake_doc_manipulation_util */ {
     struct /* manipulation */ {
       // Symbol: drake::manipulation::ApplyDriverConfig
       struct /* ApplyDriverConfig */ {
-        // Source: drake/manipulation/util/zero_force_driver_functions.h:18
+        // Source: drake/manipulation/util/zero_force_driver_functions.h
         const char* doc =
 R"""(Applies zero actuation to every joint of a model mainly for debugging
 and testing purposes.
@@ -40,7 +40,7 @@ Precondition:
       } ApplyDriverConfig;
       // Symbol: drake::manipulation::ApplyDriverConfigs
       struct /* ApplyDriverConfigs */ {
-        // Source: drake/manipulation/util/apply_driver_configs.h:45
+        // Source: drake/manipulation/util/apply_driver_configs.h
         const char* doc =
 R"""(Apply many driver configurations to a model.
 
@@ -67,7 +67,7 @@ driver.)""";
       } ApplyDriverConfigs;
       // Symbol: drake::manipulation::ApplyNamedPositionsAsDefaults
       struct /* ApplyNamedPositionsAsDefaults */ {
-        // Source: drake/manipulation/util/named_positions_functions.h:21
+        // Source: drake/manipulation/util/named_positions_functions.h
         const char* doc =
 R"""(Sets default joint positions in the given ``plant`` according to the
 given ``input`` (which specifies joints by their string name). The
@@ -79,7 +79,7 @@ Raises:
       } ApplyNamedPositionsAsDefaults;
       // Symbol: drake::manipulation::NamedPositions
       struct /* NamedPositions */ {
-        // Source: drake/manipulation/util/named_positions_functions.h:13
+        // Source: drake/manipulation/util/named_positions_functions.h
         const char* doc =
 R"""(A map-of-maps {model_instance_name: {joint_name: joint_positions}}
 that describes joint positions. Note that a given joint's positions
@@ -89,19 +89,19 @@ a single element.)""";
       } NamedPositions;
       // Symbol: drake::manipulation::ZeroForceDriver
       struct /* ZeroForceDriver */ {
-        // Source: drake/manipulation/util/zero_force_driver.h:11
+        // Source: drake/manipulation/util/zero_force_driver.h
         const char* doc =
 R"""(A driver that applies zero actuation to every joint of a model. Useful
 for debugging and testing; useless in reality. No LCM channels are
 created.)""";
         // Symbol: drake::manipulation::ZeroForceDriver::Serialize
         struct /* Serialize */ {
-          // Source: drake/manipulation/util/zero_force_driver.h:17
+          // Source: drake/manipulation/util/zero_force_driver.h
           const char* doc = R"""()""";
         } Serialize;
         // Symbol: drake::manipulation::ZeroForceDriver::ZeroForceDriver
         struct /* ctor */ {
-          // Source: drake/manipulation/util/zero_force_driver.h:12
+          // Source: drake/manipulation/util/zero_force_driver.h
           const char* doc = R"""()""";
         } ctor;
       } ZeroForceDriver;
@@ -109,7 +109,7 @@ created.)""";
       struct /* util */ {
         // Symbol: drake::manipulation::util::ApplyJointVelocityLimits
         struct /* ApplyJointVelocityLimits */ {
-          // Source: drake/manipulation/util/robot_plan_utils.h:32
+          // Source: drake/manipulation/util/robot_plan_utils.h
           const char* doc =
 R"""(Scales a plan so that no step exceeds the robot's maximum joint
 velocities. The size of ``keyframes`` must match the size of
@@ -122,7 +122,7 @@ direction. If any step does exceed the maximum velocities in
         } ApplyJointVelocityLimits;
         // Symbol: drake::manipulation::util::EncodeKeyFrames
         struct /* EncodeKeyFrames */ {
-          // Source: drake/manipulation/util/robot_plan_utils.h:42
+          // Source: drake/manipulation/util/robot_plan_utils.h
           const char* doc =
 R"""(Makes an lcmt_robot_plan message. The entries in ``joint_names``
 should be unique, though the behavior if names are duplicated depends
@@ -133,7 +133,7 @@ strictly increasing order.)""";
         } EncodeKeyFrames;
         // Symbol: drake::manipulation::util::GetJointNames
         struct /* GetJointNames */ {
-          // Source: drake/manipulation/util/robot_plan_utils.h:21
+          // Source: drake/manipulation/util/robot_plan_utils.h
           const char* doc =
 R"""(Returns:
     A vector of joint names corresponding to the positions in
@@ -143,34 +143,34 @@ R"""(Returns:
         } GetJointNames;
         // Symbol: drake::manipulation::util::InterpolatorType
         struct /* InterpolatorType */ {
-          // Source: drake/manipulation/util/robot_plan_interpolator.h:17
+          // Source: drake/manipulation/util/robot_plan_interpolator.h
           const char* doc =
 R"""(This enum specifies the type of interpolator to use in constructing
 the piece-wise polynomial.)""";
           // Symbol: drake::manipulation::util::InterpolatorType::Cubic
           struct /* Cubic */ {
-            // Source: drake/manipulation/util/robot_plan_interpolator.h:17
+            // Source: drake/manipulation/util/robot_plan_interpolator.h
             const char* doc = R"""()""";
           } Cubic;
           // Symbol: drake::manipulation::util::InterpolatorType::FirstOrderHold
           struct /* FirstOrderHold */ {
-            // Source: drake/manipulation/util/robot_plan_interpolator.h:17
+            // Source: drake/manipulation/util/robot_plan_interpolator.h
             const char* doc = R"""()""";
           } FirstOrderHold;
           // Symbol: drake::manipulation::util::InterpolatorType::Pchip
           struct /* Pchip */ {
-            // Source: drake/manipulation/util/robot_plan_interpolator.h:17
+            // Source: drake/manipulation/util/robot_plan_interpolator.h
             const char* doc = R"""()""";
           } Pchip;
           // Symbol: drake::manipulation::util::InterpolatorType::ZeroOrderHold
           struct /* ZeroOrderHold */ {
-            // Source: drake/manipulation/util/robot_plan_interpolator.h:17
+            // Source: drake/manipulation/util/robot_plan_interpolator.h
             const char* doc = R"""()""";
           } ZeroOrderHold;
         } InterpolatorType;
         // Symbol: drake::manipulation::util::MoveIkDemoBase
         struct /* MoveIkDemoBase */ {
-          // Source: drake/manipulation/util/move_ik_demo_base.h:30
+          // Source: drake/manipulation/util/move_ik_demo_base.h
           const char* doc =
 R"""(This class provides some common functionality for generating IK plans
 for robot arms, including things like creating a MultibodyPlant,
@@ -185,7 +185,7 @@ configurations. See the kuka_iiwa_arm and kinova_jaco_arm examples for
 existing uses.)""";
           // Symbol: drake::manipulation::util::MoveIkDemoBase::HandleStatus
           struct /* HandleStatus */ {
-            // Source: drake/manipulation/util/move_ik_demo_base.h:64
+            // Source: drake/manipulation/util/move_ik_demo_base.h
             const char* doc =
 R"""(Update the current robot status.
 
@@ -195,7 +195,7 @@ Parameter ``q``:
           } HandleStatus;
           // Symbol: drake::manipulation::util::MoveIkDemoBase::MoveIkDemoBase
           struct /* ctor */ {
-            // Source: drake/manipulation/util/move_ik_demo_base.h:44
+            // Source: drake/manipulation/util/move_ik_demo_base.h
             const char* doc =
 R"""(Parameter ``robot_description``:
     A description file to load of the robot to plan.
@@ -213,7 +213,7 @@ Parameter ``print_interval``:
           } ctor;
           // Symbol: drake::manipulation::util::MoveIkDemoBase::Plan
           struct /* Plan */ {
-            // Source: drake/manipulation/util/move_ik_demo_base.h:72
+            // Source: drake/manipulation/util/move_ik_demo_base.h
             const char* doc =
 R"""(Attempt to generate a plan moving ik_link (specified at construction
 time) from the joint configuration specified in the last call to
@@ -225,14 +225,14 @@ Raises:
           } Plan;
           // Symbol: drake::manipulation::util::MoveIkDemoBase::plant
           struct /* plant */ {
-            // Source: drake/manipulation/util/move_ik_demo_base.h:50
+            // Source: drake/manipulation/util/move_ik_demo_base.h
             const char* doc =
 R"""(Returns:
     a reference to the internal plant.)""";
           } plant;
           // Symbol: drake::manipulation::util::MoveIkDemoBase::set_joint_velocity_limits
           struct /* set_joint_velocity_limits */ {
-            // Source: drake/manipulation/util/move_ik_demo_base.h:58
+            // Source: drake/manipulation/util/move_ik_demo_base.h
             const char* doc =
 R"""(Set the joint velocity limits when building the plan. The default
 velocity limits from the robot description will be used if this isn't
@@ -244,14 +244,14 @@ Precondition:
           } set_joint_velocity_limits;
           // Symbol: drake::manipulation::util::MoveIkDemoBase::status_count
           struct /* status_count */ {
-            // Source: drake/manipulation/util/move_ik_demo_base.h:75
+            // Source: drake/manipulation/util/move_ik_demo_base.h
             const char* doc =
 R"""(Returns a count of how many times ``HandleStatus`` has been called.)""";
           } status_count;
         } MoveIkDemoBase;
         // Symbol: drake::manipulation::util::MovingAverageFilter
         struct /* MovingAverageFilter */ {
-          // Source: drake/manipulation/util/moving_average_filter.h:33
+          // Source: drake/manipulation/util/moving_average_filter.h
           const char* doc =
 R"""(The implementation of a Moving Average Filter. This discrete time
 filter outputs the average of the last n samples i.e. y[k] = 1/n ∑ⱼ
@@ -272,7 +272,7 @@ Template parameter ``T``:
 - VectorX<double>)""";
           // Symbol: drake::manipulation::util::MovingAverageFilter::MovingAverageFilter<T>
           struct /* ctor */ {
-            // Source: drake/manipulation/util/moving_average_filter.h:41
+            // Source: drake/manipulation/util/moving_average_filter.h
             const char* doc =
 R"""(Constructs the filter with the specified ``window_size``.
 
@@ -284,7 +284,7 @@ Raises:
           } ctor;
           // Symbol: drake::manipulation::util::MovingAverageFilter::Update
           struct /* Update */ {
-            // Source: drake/manipulation/util/moving_average_filter.h:51
+            // Source: drake/manipulation/util/moving_average_filter.h
             const char* doc =
 R"""(Updates the average filter result. Every call to this method modifies
 the internal state of this filter thus resulting in a computation of
@@ -295,19 +295,19 @@ Parameter ``new_data``:
           } Update;
           // Symbol: drake::manipulation::util::MovingAverageFilter::moving_average
           struct /* moving_average */ {
-            // Source: drake/manipulation/util/moving_average_filter.h:58
+            // Source: drake/manipulation/util/moving_average_filter.h
             const char* doc =
 R"""(Returns the most recent result of the averaging filter.)""";
           } moving_average;
           // Symbol: drake::manipulation::util::MovingAverageFilter::window
           struct /* window */ {
-            // Source: drake/manipulation/util/moving_average_filter.h:53
+            // Source: drake/manipulation/util/moving_average_filter.h
             const char* doc = R"""()""";
           } window;
         } MovingAverageFilter;
         // Symbol: drake::manipulation::util::RobotPlanInterpolator
         struct /* RobotPlanInterpolator */ {
-          // Source: drake/manipulation/util/robot_plan_interpolator.h:39
+          // Source: drake/manipulation/util/robot_plan_interpolator.h
           const char* doc =
 R"""(This class implements a source of joint positions for a robot. It has
 one input port for lcmt_robot_plan messages containing a plan to
@@ -329,7 +329,7 @@ If a plan is received with no knot points, the system will create a
 plan which commands the robot to hold at the measured position.)""";
           // Symbol: drake::manipulation::util::RobotPlanInterpolator::Initialize
           struct /* Initialize */ {
-            // Source: drake/manipulation/util/robot_plan_interpolator.h:66
+            // Source: drake/manipulation/util/robot_plan_interpolator.h
             const char* doc =
 R"""(Makes a plan to hold at the measured joint configuration ``q0``
 starting at ``plan_start_time``. This function needs to be explicitly
@@ -337,12 +337,12 @@ called before any simulation. Otherwise this aborts in CalcOutput().)""";
           } Initialize;
           // Symbol: drake::manipulation::util::RobotPlanInterpolator::RobotPlanInterpolator
           struct /* ctor */ {
-            // Source: drake/manipulation/util/robot_plan_interpolator.h:41
+            // Source: drake/manipulation/util/robot_plan_interpolator.h
             const char* doc = R"""()""";
           } ctor;
           // Symbol: drake::manipulation::util::RobotPlanInterpolator::UpdatePlan
           struct /* UpdatePlan */ {
-            // Source: drake/manipulation/util/robot_plan_interpolator.h:74
+            // Source: drake/manipulation/util/robot_plan_interpolator.h
             const char* doc =
 R"""(Updates the plan if there is a new message on the input port. Normally
 this is done automatically by a Simulator; here we invoke the same
@@ -350,23 +350,23 @@ periodic event handler that the Simulator would use.)""";
           } UpdatePlan;
           // Symbol: drake::manipulation::util::RobotPlanInterpolator::get_acceleration_output_port
           struct /* get_acceleration_output_port */ {
-            // Source: drake/manipulation/util/robot_plan_interpolator.h:57
+            // Source: drake/manipulation/util/robot_plan_interpolator.h
             const char* doc = R"""()""";
           } get_acceleration_output_port;
           // Symbol: drake::manipulation::util::RobotPlanInterpolator::get_plan_input_port
           struct /* get_plan_input_port */ {
-            // Source: drake/manipulation/util/robot_plan_interpolator.h:49
+            // Source: drake/manipulation/util/robot_plan_interpolator.h
             const char* doc =
 R"""(N.B. This input port is useless and may be left disconnected.)""";
           } get_plan_input_port;
           // Symbol: drake::manipulation::util::RobotPlanInterpolator::get_state_output_port
           struct /* get_state_output_port */ {
-            // Source: drake/manipulation/util/robot_plan_interpolator.h:53
+            // Source: drake/manipulation/util/robot_plan_interpolator.h
             const char* doc = R"""()""";
           } get_state_output_port;
           // Symbol: drake::manipulation::util::RobotPlanInterpolator::plant
           struct /* plant */ {
-            // Source: drake/manipulation/util/robot_plan_interpolator.h:78
+            // Source: drake/manipulation/util/robot_plan_interpolator.h
             const char* doc = R"""()""";
           } plant;
         } RobotPlanInterpolator;

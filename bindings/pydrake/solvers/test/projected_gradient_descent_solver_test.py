@@ -7,8 +7,6 @@ from pydrake.solvers import (
     ClarabelSolver,
     MathematicalProgram,
     ProjectedGradientDescentSolver,
-    SolutionResult,
-    SolverType,
 )
 
 

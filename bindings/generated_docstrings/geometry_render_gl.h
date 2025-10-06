@@ -23,7 +23,7 @@ constexpr struct /* pydrake_doc_geometry_render_gl */ {
     struct /* geometry */ {
       // Symbol: drake::geometry::MakeRenderEngineGl
       struct /* MakeRenderEngineGl */ {
-        // Source: drake/geometry/render_gl/factory.h:46
+        // Source: drake/geometry/render_gl/factory.h
         const char* doc =
 R"""(Constructs a RenderEngine implementation which uses a purely OpenGL
 renderer. The engine only works under Ubuntu. If called on a Mac, it
@@ -66,32 +66,32 @@ Raises:
       } MakeRenderEngineGl;
       // Symbol: drake::geometry::RenderEngineGlParams
       struct /* RenderEngineGlParams */ {
-        // Source: drake/geometry/render_gl/render_engine_gl_params.h:14
+        // Source: drake/geometry/render_gl/render_engine_gl_params.h
         const char* doc =
 R"""(Construction parameters for RenderEngineGl.)""";
         // Symbol: drake::geometry::RenderEngineGlParams::Serialize
         struct /* Serialize */ {
-          // Source: drake/geometry/render_gl/render_engine_gl_params.h:18
+          // Source: drake/geometry/render_gl/render_engine_gl_params.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
         } Serialize;
         // Symbol: drake::geometry::RenderEngineGlParams::default_clear_color
         struct /* default_clear_color */ {
-          // Source: drake/geometry/render_gl/render_engine_gl_params.h:29
+          // Source: drake/geometry/render_gl/render_engine_gl_params.h
           const char* doc =
 R"""(The default background color for color images.)""";
         } default_clear_color;
         // Symbol: drake::geometry::RenderEngineGlParams::default_diffuse
         struct /* default_diffuse */ {
-          // Source: drake/geometry/render_gl/render_engine_gl_params.h:26
+          // Source: drake/geometry/render_gl/render_engine_gl_params.h
           const char* doc =
 R"""(Default diffuse color to apply to a geometry when none is otherwise
 specified in the (phong, diffuse) property.)""";
         } default_diffuse;
         // Symbol: drake::geometry::RenderEngineGlParams::lights
         struct /* lights */ {
-          // Source: drake/geometry/render_gl/render_engine_gl_params.h:33
+          // Source: drake/geometry/render_gl/render_engine_gl_params.h
           const char* doc =
 R"""(Lights in the scene. More than five lights is an error. If no lights
 are defined, a single directional light, fixed to the camera frame, is

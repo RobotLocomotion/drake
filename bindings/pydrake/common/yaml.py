@@ -12,7 +12,6 @@ import yaml
 import yaml.representer
 
 from pydrake.common import pretty_class_name
-from pydrake.common.deprecation import DrakeDeprecationWarning
 
 
 class _SchemaLoader(yaml.loader.SafeLoader):
@@ -421,7 +420,7 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
         (key_type, value_type) = generic_args
         # This requirement matches what we have in C++. Allowing sequences
         # or maps as keys would mean we're no longer JSON-compatible.
-        assert key_type == str
+        assert key_type is str
         if options.retain_map_defaults:
             old_value = getter()
             new_value = copy.deepcopy(old_value)
@@ -686,7 +685,7 @@ def _yaml_dump_typed_item(*, obj, schema):
     #  https://yaml.org/spec/1.2.2/#mapping
     if generic_base in (dict, collections.abc.Mapping):
         (key_schema, value_schema) = generic_args
-        if key_schema != str:
+        if key_schema is not str:
             # This requirement matches what we have in C++. Allowing sequences
             # or maps as keys would mean we're no longer JSON-compatible.
             raise RuntimeError(f"Dict keys must be strings, not {key_schema}")

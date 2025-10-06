@@ -142,12 +142,12 @@ TEST_F(AffineSystemTest, UpdateCoefficients) {
 }
 
 TEST_F(AffineSystemTest, UpdateCoefficientsButWrongSize) {
-  const Eigen::Matrix<double, 2, 3> new_A;
-  const Eigen::Matrix<double, 3, 2> new_B;
-  const Eigen::Vector3d new_f0;
-  const Eigen::Matrix3d new_C;
-  const Eigen::Matrix4d new_D;
-  const Eigen::Vector4d new_y0;
+  const Eigen::Matrix<double, 2, 3> new_A = Eigen::Matrix<double, 2, 3>::Zero();
+  const Eigen::Matrix<double, 3, 2> new_B = Eigen::Matrix<double, 3, 2>::Zero();
+  const Eigen::Vector3d new_f0 = Eigen::Vector3d::Zero();
+  const Eigen::Matrix3d new_C = Eigen::Matrix3d::Zero();
+  const Eigen::Matrix4d new_D = Eigen::Matrix4d::Zero();
+  const Eigen::Vector4d new_y0 = Eigen::Vector4d::Zero();
 
   const std::string error_msg_regrex =
       "^New and current .* have different sizes\\.$";

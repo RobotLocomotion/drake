@@ -37,7 +37,7 @@ constexpr struct /* pydrake_doc_common_trajectories */ {
     struct /* trajectories */ {
       // Symbol: drake::trajectories::BezierCurve
       struct /* BezierCurve */ {
-        // Source: drake/common/trajectories/bezier_curve.h:26
+        // Source: drake/common/trajectories/bezier_curve.h
         const char* doc =
 R"""(A Bézier curve is defined by a set of control points p₀ through pₙ,
 where n is called the order of the curve (n = 1 for linear, 2 for
@@ -52,7 +52,7 @@ depends on a local subset of the control points). In contrast,
 evaluating a Bézier curve will use all of the control points.)""";
         // Symbol: drake::trajectories::BezierCurve::AsLinearInControlPoints
         struct /* AsLinearInControlPoints */ {
-          // Source: drake/common/trajectories/bezier_curve.h:92
+          // Source: drake/common/trajectories/bezier_curve.h
           const char* doc =
 R"""(Supports writing optimizations using the control points as decision
 variables. This method returns the matrix, ``M``, defining the control
@@ -149,7 +149,7 @@ Precondition:
         } AsLinearInControlPoints;
         // Symbol: drake::trajectories::BezierCurve::BernsteinBasis
         struct /* BernsteinBasis */ {
-          // Source: drake/common/trajectories/bezier_curve.h:52
+          // Source: drake/common/trajectories/bezier_curve.h
           const char* doc =
 R"""(Returns the value of the ith basis function of ``order`` (1 for
 linear, 2 for quadratic, etc) evaluated at ``time``. The default value
@@ -157,11 +157,11 @@ for the optional argument ``order`` is the ``order()`` of ``this``.)""";
         } BernsteinBasis;
         // Symbol: drake::trajectories::BezierCurve::BezierCurve<T>
         struct /* ctor */ {
-          // Source: drake/common/trajectories/bezier_curve.h:32
+          // Source: drake/common/trajectories/bezier_curve.h
           const char* doc_0args =
 R"""(Default initializer. Constructs an empty Bézier curve over the
 interval t ∈ [0, 1].)""";
-          // Source: drake/common/trajectories/bezier_curve.h:38
+          // Source: drake/common/trajectories/bezier_curve.h
           const char* doc_3args =
 R"""(Constructs a Bézier curve over the interval t ∈ [`start_time`,
 ``end_time`] with control points defined in the columns of
@@ -172,7 +172,7 @@ Precondition:
         } ctor;
         // Symbol: drake::trajectories::BezierCurve::ElevateOrder
         struct /* ElevateOrder */ {
-          // Source: drake/common/trajectories/bezier_curve.h:113
+          // Source: drake/common/trajectories/bezier_curve.h
           const char* doc =
 R"""(Increases the order of the curve by 1. A Bézier curve of order n can
 be converted into a Bézier curve of order n + 1 with the same shape.
@@ -181,27 +181,27 @@ curve.)""";
         } ElevateOrder;
         // Symbol: drake::trajectories::BezierCurve::GetExpression
         struct /* GetExpression */ {
-          // Source: drake/common/trajectories/bezier_curve.h:107
+          // Source: drake/common/trajectories/bezier_curve.h
           const char* doc =
 R"""(Extracts the expanded underlying polynomial expression of this curve
 in terms of variable ``time``.)""";
         } GetExpression;
         // Symbol: drake::trajectories::BezierCurve::control_points
         struct /* control_points */ {
-          // Source: drake/common/trajectories/bezier_curve.h:56
+          // Source: drake/common/trajectories/bezier_curve.h
           const char* doc =
 R"""(Returns a const reference to the control points which define the
 curve.)""";
         } control_points;
         // Symbol: drake::trajectories::BezierCurve::order
         struct /* order */ {
-          // Source: drake/common/trajectories/bezier_curve.h:47
+          // Source: drake/common/trajectories/bezier_curve.h
           const char* doc =
 R"""(Returns the order of the curve (1 for linear, 2 for quadratic, etc.).)""";
         } order;
         // Symbol: drake::trajectories::BezierCurve::value
         struct /* value */ {
-          // Source: drake/common/trajectories/bezier_curve.h:100
+          // Source: drake/common/trajectories/bezier_curve.h
           const char* doc =
 R"""(Evaluates the curve at the given time.
 
@@ -214,7 +214,7 @@ Warning:
       } BezierCurve;
       // Symbol: drake::trajectories::BsplineTrajectory
       struct /* BsplineTrajectory */ {
-        // Source: drake/common/trajectories/bspline_trajectory.h:24
+        // Source: drake/common/trajectories/bspline_trajectory.h
         const char* doc =
 R"""(Represents a B-spline curve using a given ``basis`` with ordered
 ``control_points`` such that each control point is a matrix in ℝʳᵒʷˢ ˣ
@@ -224,7 +224,7 @@ See also:
     math::BsplineBasis)""";
         // Symbol: drake::trajectories::BsplineTrajectory::AsLinearInControlPoints
         struct /* AsLinearInControlPoints */ {
-          // Source: drake/common/trajectories/bspline_trajectory.h:73
+          // Source: drake/common/trajectories/bspline_trajectory.h
           const char* doc =
 R"""(Supports writing optimizations using the control points as decision
 variables. This method returns the matrix, ``M``, defining the control
@@ -250,7 +250,7 @@ Precondition:
         } AsLinearInControlPoints;
         // Symbol: drake::trajectories::BsplineTrajectory::BsplineTrajectory<T>
         struct /* ctor */ {
-          // Source: drake/common/trajectories/bspline_trajectory.h:33
+          // Source: drake/common/trajectories/bspline_trajectory.h
           const char* doc =
 R"""(Constructs a B-spline trajectory with the given ``basis`` and
 ``control_points``.
@@ -260,7 +260,7 @@ Precondition:
         } ctor;
         // Symbol: drake::trajectories::BsplineTrajectory::CopyBlock
         struct /* CopyBlock */ {
-          // Source: drake/common/trajectories/bspline_trajectory.h:126
+          // Source: drake/common/trajectories/bspline_trajectory.h
           const char* doc =
 R"""(Returns a new BsplineTrajectory that uses the same basis as ``this``,
 and whose control points are the result of calling
@@ -269,7 +269,7 @@ and whose control points are the result of calling
         } CopyBlock;
         // Symbol: drake::trajectories::BsplineTrajectory::CopyHead
         struct /* CopyHead */ {
-          // Source: drake/common/trajectories/bspline_trajectory.h:134
+          // Source: drake/common/trajectories/bspline_trajectory.h
           const char* doc =
 R"""(Returns a new BsplineTrajectory that uses the same basis as ``this``,
 and whose control points are the result of calling ``point.head(n)``
@@ -283,7 +283,7 @@ Precondition:
         } CopyHead;
         // Symbol: drake::trajectories::BsplineTrajectory::CopyWithSelector
         struct /* CopyWithSelector */ {
-          // Source: drake/common/trajectories/bspline_trajectory.h:119
+          // Source: drake/common/trajectories/bspline_trajectory.h
           const char* doc =
 R"""(Returns a new BsplineTrajectory that uses the same basis as ``this``,
 and whose control points are the result of calling ``select(point)``
@@ -291,7 +291,7 @@ on each ``point`` in ``this->control_points()``.)""";
         } CopyWithSelector;
         // Symbol: drake::trajectories::BsplineTrajectory::EvaluateLinearInControlPoints
         struct /* EvaluateLinearInControlPoints */ {
-          // Source: drake/common/trajectories/bspline_trajectory.h:87
+          // Source: drake/common/trajectories/bspline_trajectory.h
           const char* doc =
 R"""(Returns the vector, M, such that
 
@@ -321,17 +321,17 @@ Precondition:
         } EvaluateLinearInControlPoints;
         // Symbol: drake::trajectories::BsplineTrajectory::FinalValue
         struct /* FinalValue */ {
-          // Source: drake/common/trajectories/bspline_trajectory.h:102
+          // Source: drake/common/trajectories/bspline_trajectory.h
           const char* doc = R"""(Returns this->value(this->end_time()))""";
         } FinalValue;
         // Symbol: drake::trajectories::BsplineTrajectory::InitialValue
         struct /* InitialValue */ {
-          // Source: drake/common/trajectories/bspline_trajectory.h:99
+          // Source: drake/common/trajectories/bspline_trajectory.h
           const char* doc = R"""(Returns this->value(this->start_time()))""";
         } InitialValue;
         // Symbol: drake::trajectories::BsplineTrajectory::InsertKnots
         struct /* InsertKnots */ {
-          // Source: drake/common/trajectories/bspline_trajectory.h:114
+          // Source: drake/common/trajectories/bspline_trajectory.h
           const char* doc =
 R"""(Adds new knots at the specified ``additional_knots`` without changing
 the behavior of the trajectory. The basis and control points of the
@@ -346,7 +346,7 @@ Precondition:
         } InsertKnots;
         // Symbol: drake::trajectories::BsplineTrajectory::Serialize
         struct /* Serialize */ {
-          // Source: drake/common/trajectories/bspline_trajectory.h:149
+          // Source: drake/common/trajectories/bspline_trajectory.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background. This method is only available when T =
@@ -354,24 +354,24 @@ double.)""";
         } Serialize;
         // Symbol: drake::trajectories::BsplineTrajectory::basis
         struct /* basis */ {
-          // Source: drake/common/trajectories/bspline_trajectory.h:105
+          // Source: drake/common/trajectories/bspline_trajectory.h
           const char* doc = R"""(Returns the basis of this curve.)""";
         } basis;
         // Symbol: drake::trajectories::BsplineTrajectory::control_points
         struct /* control_points */ {
-          // Source: drake/common/trajectories/bspline_trajectory.h:94
+          // Source: drake/common/trajectories/bspline_trajectory.h
           const char* doc =
 R"""(Returns the control points of this curve.)""";
         } control_points;
         // Symbol: drake::trajectories::BsplineTrajectory::num_control_points
         struct /* num_control_points */ {
-          // Source: drake/common/trajectories/bspline_trajectory.h:91
+          // Source: drake/common/trajectories/bspline_trajectory.h
           const char* doc =
 R"""(Returns the number of control points in this curve.)""";
         } num_control_points;
         // Symbol: drake::trajectories::BsplineTrajectory::value
         struct /* value */ {
-          // Source: drake/common/trajectories/bspline_trajectory.h:60
+          // Source: drake/common/trajectories/bspline_trajectory.h
           const char* doc =
 R"""(Evaluates the BsplineTrajectory at the given time t.
 
@@ -393,7 +393,7 @@ Warning:
       } BsplineTrajectory;
       // Symbol: drake::trajectories::CompositeTrajectory
       struct /* CompositeTrajectory */ {
-        // Source: drake/common/trajectories/composite_trajectory.h:22
+        // Source: drake/common/trajectories/composite_trajectory.h
         const char* doc =
 R"""(A "composite trajectory" is a series of trajectories joined end to end
 where the end time of one trajectory coincides with the starting time
@@ -403,7 +403,7 @@ See also PiecewisePolynomial::ConcatenateInTime(), which might be
 preferred if all of the segments are PiecewisePolynomial.)""";
         // Symbol: drake::trajectories::CompositeTrajectory::AlignAndConcatenate
         struct /* AlignAndConcatenate */ {
-          // Source: drake/common/trajectories/composite_trajectory.h:58
+          // Source: drake/common/trajectories/composite_trajectory.h
           const char* doc =
 R"""(Constructs a composite trajectory from a list of trajectories whose
 start and end times may not coincide, by translating their start and
@@ -418,7 +418,7 @@ Precondition:
         } AlignAndConcatenate;
         // Symbol: drake::trajectories::CompositeTrajectory::CompositeTrajectory<T>
         struct /* ctor */ {
-          // Source: drake/common/trajectories/composite_trajectory.h:31
+          // Source: drake/common/trajectories/composite_trajectory.h
           const char* doc =
 R"""(Constructs a composite trajectory from a list of Trajectories.
 
@@ -434,13 +434,13 @@ Precondition:
         } ctor;
         // Symbol: drake::trajectories::CompositeTrajectory::segment
         struct /* segment */ {
-          // Source: drake/common/trajectories/composite_trajectory.h:47
+          // Source: drake/common/trajectories/composite_trajectory.h
           const char* doc =
 R"""(Returns a reference to the ``segment_index`` trajectory.)""";
         } segment;
         // Symbol: drake::trajectories::CompositeTrajectory::value
         struct /* value */ {
-          // Source: drake/common/trajectories/composite_trajectory.h:41
+          // Source: drake/common/trajectories/composite_trajectory.h
           const char* doc =
 R"""(Evaluates the curve at the given time.
 
@@ -453,7 +453,7 @@ Warning:
       } CompositeTrajectory;
       // Symbol: drake::trajectories::DerivativeTrajectory
       struct /* DerivativeTrajectory */ {
-        // Source: drake/common/trajectories/derivative_trajectory.h:27
+        // Source: drake/common/trajectories/derivative_trajectory.h
         const char* doc =
 R"""(Trajectory objects provide derivatives by implementing
 ``DoEvalDerivative`` *and* ``DoMakeDerivative``. `DoEvalDerivative`
@@ -470,7 +470,7 @@ Trajectory interface that calls ``nominal.EvalDerivative()`` to
 implement ``Trajectory::value()``.)""";
         // Symbol: drake::trajectories::DerivativeTrajectory::DerivativeTrajectory<T>
         struct /* ctor */ {
-          // Source: drake/common/trajectories/derivative_trajectory.h:37
+          // Source: drake/common/trajectories/derivative_trajectory.h
           const char* doc =
 R"""(Creates a DerivativeTrajectory representing the ``derivative_order``
 derivatives of ``nominal``. This constructor makes a Clone() of
@@ -485,7 +485,7 @@ Raises:
       } DerivativeTrajectory;
       // Symbol: drake::trajectories::DiscreteTimeTrajectory
       struct /* DiscreteTimeTrajectory */ {
-        // Source: drake/common/trajectories/discrete_time_trajectory.h:58
+        // Source: drake/common/trajectories/discrete_time_trajectory.h
         const char* doc =
 R"""(A DiscreteTimeTrajectory is a Trajectory whose value is only defined
 at discrete time points. Calling ``value()`` at a time that is not
@@ -549,10 +549,10 @@ having a true zero-order hold on u(t) is the correct model for the
 discrete-time LQR result.)""";
         // Symbol: drake::trajectories::DiscreteTimeTrajectory::DiscreteTimeTrajectory<T>
         struct /* ctor */ {
-          // Source: drake/common/trajectories/discrete_time_trajectory.h:64
+          // Source: drake/common/trajectories/discrete_time_trajectory.h
           const char* doc =
 R"""(Default constructor creates the empty trajectory.)""";
-          // Source: drake/common/trajectories/discrete_time_trajectory.h:73
+          // Source: drake/common/trajectories/discrete_time_trajectory.h
           const char* doc_Eigen =
 R"""(Constructs a trajectory of vector ``values`` at the specified
 ``times``.
@@ -569,7 +569,7 @@ Precondition:
 
 Raises:
     if T=symbolic:Expression and ``times`` are not constants.)""";
-          // Source: drake/common/trajectories/discrete_time_trajectory.h:86
+          // Source: drake/common/trajectories/discrete_time_trajectory.h
           const char* doc_stdvector =
 R"""(Constructs a trajectory of matrix ``values`` at the specified
 ``times``.
@@ -590,14 +590,14 @@ Raises:
         } ctor;
         // Symbol: drake::trajectories::DiscreteTimeTrajectory::ToZeroOrderHold
         struct /* ToZeroOrderHold */ {
-          // Source: drake/common/trajectories/discrete_time_trajectory.h:94
+          // Source: drake/common/trajectories/discrete_time_trajectory.h
           const char* doc =
 R"""(Converts the discrete-time trajectory using
 PiecewisePolynomial<T>::ZeroOrderHold().)""";
         } ToZeroOrderHold;
         // Symbol: drake::trajectories::DiscreteTimeTrajectory::cols
         struct /* cols */ {
-          // Source: drake/common/trajectories/discrete_time_trajectory.h:125
+          // Source: drake/common/trajectories/discrete_time_trajectory.h
           const char* doc =
 R"""(Returns the number of cols in the MatrixX<T> returned by value().
 
@@ -606,7 +606,7 @@ Precondition:
         } cols;
         // Symbol: drake::trajectories::DiscreteTimeTrajectory::end_time
         struct /* end_time */ {
-          // Source: drake/common/trajectories/discrete_time_trajectory.h:139
+          // Source: drake/common/trajectories/discrete_time_trajectory.h
           const char* doc =
 R"""(Returns the maximum value of get_times().
 
@@ -615,20 +615,20 @@ Precondition:
         } end_time;
         // Symbol: drake::trajectories::DiscreteTimeTrajectory::get_times
         struct /* get_times */ {
-          // Source: drake/common/trajectories/discrete_time_trajectory.h:106
+          // Source: drake/common/trajectories/discrete_time_trajectory.h
           const char* doc =
 R"""(Returns the times where the trajectory value is defined.)""";
         } get_times;
         // Symbol: drake::trajectories::DiscreteTimeTrajectory::num_times
         struct /* num_times */ {
-          // Source: drake/common/trajectories/discrete_time_trajectory.h:103
+          // Source: drake/common/trajectories/discrete_time_trajectory.h
           const char* doc =
 R"""(Returns the number of discrete times where the trajectory value is
 defined.)""";
         } num_times;
         // Symbol: drake::trajectories::DiscreteTimeTrajectory::rows
         struct /* rows */ {
-          // Source: drake/common/trajectories/discrete_time_trajectory.h:118
+          // Source: drake/common/trajectories/discrete_time_trajectory.h
           const char* doc =
 R"""(Returns the number of rows in the MatrixX<T> returned by value().
 
@@ -637,7 +637,7 @@ Precondition:
         } rows;
         // Symbol: drake::trajectories::DiscreteTimeTrajectory::start_time
         struct /* start_time */ {
-          // Source: drake/common/trajectories/discrete_time_trajectory.h:132
+          // Source: drake/common/trajectories/discrete_time_trajectory.h
           const char* doc =
 R"""(Returns the minimum value of get_times().
 
@@ -646,7 +646,7 @@ Precondition:
         } start_time;
         // Symbol: drake::trajectories::DiscreteTimeTrajectory::time_comparison_tolerance
         struct /* time_comparison_tolerance */ {
-          // Source: drake/common/trajectories/discrete_time_trajectory.h:99
+          // Source: drake/common/trajectories/discrete_time_trajectory.h
           const char* doc =
 R"""(The trajectory is only defined at finite sample times. This method
 returns the tolerance used determine which time sample (if any)
@@ -654,7 +654,7 @@ matches a query time on calls to value(t).)""";
         } time_comparison_tolerance;
         // Symbol: drake::trajectories::DiscreteTimeTrajectory::value
         struct /* value */ {
-          // Source: drake/common/trajectories/discrete_time_trajectory.h:111
+          // Source: drake/common/trajectories/discrete_time_trajectory.h
           const char* doc =
 R"""(Returns the value of the trajectory at ``t``.
 
@@ -665,7 +665,7 @@ Raises:
       } DiscreteTimeTrajectory;
       // Symbol: drake::trajectories::ExponentialPlusPiecewisePolynomial
       struct /* ExponentialPlusPiecewisePolynomial */ {
-        // Source: drake/common/trajectories/exponential_plus_piecewise_polynomial.h:40
+        // Source: drake/common/trajectories/exponential_plus_piecewise_polynomial.h
         const char* doc =
 R"""(Represents a piecewise-trajectory with piece :math:`j` given by:
 
@@ -688,29 +688,29 @@ stabilization," 2015 IEEE-RAS 15th International Conference on
 Humanoid Robots (Humanoids), Seoul, 2015, pp. 936-940.)""";
         // Symbol: drake::trajectories::ExponentialPlusPiecewisePolynomial::ExponentialPlusPiecewisePolynomial<T>
         struct /* ctor */ {
-          // Source: drake/common/trajectories/exponential_plus_piecewise_polynomial.h:43
+          // Source: drake/common/trajectories/exponential_plus_piecewise_polynomial.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::trajectories::ExponentialPlusPiecewisePolynomial::derivative
         struct /* derivative */ {
-          // Source: drake/common/trajectories/exponential_plus_piecewise_polynomial.h:74
+          // Source: drake/common/trajectories/exponential_plus_piecewise_polynomial.h
           const char* doc = R"""()""";
         } derivative;
         // Symbol: drake::trajectories::ExponentialPlusPiecewisePolynomial::shiftRight
         struct /* shiftRight */ {
-          // Source: drake/common/trajectories/exponential_plus_piecewise_polynomial.h:76
+          // Source: drake/common/trajectories/exponential_plus_piecewise_polynomial.h
           const char* doc = R"""()""";
         } shiftRight;
       } ExponentialPlusPiecewisePolynomial;
       // Symbol: drake::trajectories::FunctionHandleTrajectory
       struct /* FunctionHandleTrajectory */ {
-        // Source: drake/common/trajectories/function_handle_trajectory.h:19
+        // Source: drake/common/trajectories/function_handle_trajectory.h
         const char* doc =
 R"""(FunctionHandleTrajectory takes a function, value = f(t), and provides
 a Trajectory interface.)""";
         // Symbol: drake::trajectories::FunctionHandleTrajectory::FunctionHandleTrajectory<T>
         struct /* ctor */ {
-          // Source: drake/common/trajectories/function_handle_trajectory.h:37
+          // Source: drake/common/trajectories/function_handle_trajectory.h
           const char* doc =
 R"""(Creates the FunctionHandleTrajectory.
 
@@ -739,7 +739,7 @@ Raises:
         } ctor;
         // Symbol: drake::trajectories::FunctionHandleTrajectory::set_derivative
         struct /* set_derivative */ {
-          // Source: drake/common/trajectories/function_handle_trajectory.h:56
+          // Source: drake/common/trajectories/function_handle_trajectory.h
           const char* doc =
 R"""(Sets a callback function that returns the derivative of the function.
 ``func(t,order)`` will only be called with ``order > 0``. It is
@@ -753,7 +753,7 @@ is incorrect.)""";
       } FunctionHandleTrajectory;
       // Symbol: drake::trajectories::PathParameterizedTrajectory
       struct /* PathParameterizedTrajectory */ {
-        // Source: drake/common/trajectories/path_parameterized_trajectory.h:24
+        // Source: drake/common/trajectories/path_parameterized_trajectory.h
         const char* doc =
 R"""(A trajectory defined by a path and timing trajectory.
 
@@ -761,7 +761,7 @@ Using a path of form ``r(s)`` and a time_scaling of the form ``s(t)``,
 a full trajectory of form ``q(t) = r(s(t))`` is modeled.)""";
         // Symbol: drake::trajectories::PathParameterizedTrajectory::PathParameterizedTrajectory<T>
         struct /* ctor */ {
-          // Source: drake/common/trajectories/path_parameterized_trajectory.h:30
+          // Source: drake/common/trajectories/path_parameterized_trajectory.h
           const char* doc =
 R"""(Constructs a trajectory with the given ``path`` and ``time_scaling``.
 
@@ -770,18 +770,18 @@ Precondition:
         } ctor;
         // Symbol: drake::trajectories::PathParameterizedTrajectory::path
         struct /* path */ {
-          // Source: drake/common/trajectories/path_parameterized_trajectory.h:49
+          // Source: drake/common/trajectories/path_parameterized_trajectory.h
           const char* doc = R"""(Returns the path of this trajectory.)""";
         } path;
         // Symbol: drake::trajectories::PathParameterizedTrajectory::time_scaling
         struct /* time_scaling */ {
-          // Source: drake/common/trajectories/path_parameterized_trajectory.h:52
+          // Source: drake/common/trajectories/path_parameterized_trajectory.h
           const char* doc =
 R"""(Returns the time_scaling of this trajectory.)""";
         } time_scaling;
         // Symbol: drake::trajectories::PathParameterizedTrajectory::value
         struct /* value */ {
-          // Source: drake/common/trajectories/path_parameterized_trajectory.h:43
+          // Source: drake/common/trajectories/path_parameterized_trajectory.h
           const char* doc =
 R"""(Evaluates the PathParameterizedTrajectory at the given time t.
 
@@ -803,7 +803,7 @@ Warning:
       } PathParameterizedTrajectory;
       // Symbol: drake::trajectories::PiecewiseConstantCurvatureTrajectory
       struct /* PiecewiseConstantCurvatureTrajectory */ {
-        // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h:75
+        // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h
         const char* doc =
 R"""(A piecewise constant curvature trajectory in a plane, where the plane
 is posed arbitrarily in three dimensions.
@@ -879,7 +879,7 @@ See also:
     multibody::CurvilinearJoint)""";
         // Symbol: drake::trajectories::PiecewiseConstantCurvatureTrajectory::CalcPose
         struct /* CalcPose */ {
-          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h:164
+          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h
           const char* doc =
 R"""(Calculates the trajectory's pose X_AM(s) at the given arclength s.
 
@@ -896,7 +896,7 @@ Returns:
         } CalcPose;
         // Symbol: drake::trajectories::PiecewiseConstantCurvatureTrajectory::CalcSpatialAcceleration
         struct /* CalcSpatialAcceleration */ {
-          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h:242
+          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h
           const char* doc =
 R"""(Computes the spatial acceleration A_AM_A(s,ṡ,s̈) of frame M measured
 and expressed in the reference frame A. See the class's documentation
@@ -944,7 +944,7 @@ Returns ``A_AM_A``:
         } CalcSpatialAcceleration;
         // Symbol: drake::trajectories::PiecewiseConstantCurvatureTrajectory::CalcSpatialAccelerationInM
         struct /* CalcSpatialAccelerationInM */ {
-          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h:260
+          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h
           const char* doc =
 R"""(Computes the spatial acceleration A_AM_M(s,ṡ,s̈) of frame M measured
 in frame A but expressed in frame M.
@@ -970,7 +970,7 @@ Returns ``A_AM_M``:
         } CalcSpatialAccelerationInM;
         // Symbol: drake::trajectories::PiecewiseConstantCurvatureTrajectory::CalcSpatialVelocity
         struct /* CalcSpatialVelocity */ {
-          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h:201
+          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h
           const char* doc =
 R"""(Computes the spatial velocity V_AM_A(s,ṡ) of frame M measured and
 expressed in the reference frame A. See the class's documentation for
@@ -1008,7 +1008,7 @@ Returns ``V_AM_A``:
         } CalcSpatialVelocity;
         // Symbol: drake::trajectories::PiecewiseConstantCurvatureTrajectory::CalcSpatialVelocityInM
         struct /* CalcSpatialVelocityInM */ {
-          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h:215
+          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h
           const char* doc =
 R"""(Computes the spatial velocity V_AM_M(s,ṡ) of frame M measured in
 frame A but expressed in frame M.
@@ -1030,7 +1030,7 @@ Returns ``V_AM_M``:
         } CalcSpatialVelocityInM;
         // Symbol: drake::trajectories::PiecewiseConstantCurvatureTrajectory::EndpointsAreNearlyEqual
         struct /* EndpointsAreNearlyEqual */ {
-          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h:270
+          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h
           const char* doc =
 R"""(Returns:
     ``True`` if the trajectory is periodic within a given
@@ -1045,10 +1045,10 @@ Parameter ``tolerance``:
         } EndpointsAreNearlyEqual;
         // Symbol: drake::trajectories::PiecewiseConstantCurvatureTrajectory::PiecewiseConstantCurvatureTrajectory<T>
         struct /* ctor */ {
-          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h:81
+          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h
           const char* doc_0args =
 R"""(An empty piecewise constant curvature trajectory.)""";
-          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h:123
+          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h
           const char* doc_6args =
 R"""(Constructs a piecewise constant curvature trajectory.
 
@@ -1106,13 +1106,13 @@ Raises:
 Raises:
     RuntimeError if initial_curve_tangent is not perpendicular to
     plane_normal.)""";
-          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h:132
+          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h
           const char* doc_1args =
 R"""(Scalar conversion constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::trajectories::PiecewiseConstantCurvatureTrajectory::curvature
         struct /* curvature */ {
-          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h:180
+          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h
           const char* doc =
 R"""(Returns the signed curvature ρ(s).
 
@@ -1124,7 +1124,7 @@ Returns:
         } curvature;
         // Symbol: drake::trajectories::PiecewiseConstantCurvatureTrajectory::is_periodic
         struct /* is_periodic */ {
-          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h:154
+          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h
           const char* doc =
 R"""(Returns:
     ``True`` if ``this`` trajectory is periodic. That is, X_AM(s) =
@@ -1132,14 +1132,14 @@ R"""(Returns:
         } is_periodic;
         // Symbol: drake::trajectories::PiecewiseConstantCurvatureTrajectory::length
         struct /* length */ {
-          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h:150
+          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h
           const char* doc =
 R"""(Returns:
     the total arclength of the curve in meters.)""";
         } length;
         // Symbol: drake::trajectories::PiecewiseConstantCurvatureTrajectory::value
         struct /* value */ {
-          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h:171
+          // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h
           const char* doc =
 R"""(Computes r(s), the trajectory's position p_AoMo_A(s) expressed in
 reference frame A, at the given arclength s.
@@ -1153,7 +1153,7 @@ Returns:
       } PiecewiseConstantCurvatureTrajectory;
       // Symbol: drake::trajectories::PiecewisePolynomial
       struct /* PiecewisePolynomial */ {
-        // Source: drake/common/trajectories/piecewise_polynomial.h:76
+        // Source: drake/common/trajectories/piecewise_polynomial.h
         const char* doc =
 R"""(A scalar multi-variate piecewise polynomial.
 
@@ -1220,7 +1220,7 @@ Warning:
     in the example above would evaluate to -1.0. See value().)""";
         // Symbol: drake::trajectories::PiecewisePolynomial::AddBreak
         struct /* AddBreak */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:762
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Adds a break at the specified time. It does not change the value of
 the trajectory at any point but the number of segments increases by 1.
@@ -1239,7 +1239,7 @@ Warning:
         } AddBreak;
         // Symbol: drake::trajectories::PiecewisePolynomial::AppendCubicHermiteSegment
         struct /* AppendCubicHermiteSegment */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:705
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(The CubicHermite spline construction has a nice property of being
 incremental (each segment can be solved independently). Given a new
@@ -1258,7 +1258,7 @@ Precondition:
         } AppendCubicHermiteSegment;
         // Symbol: drake::trajectories::PiecewisePolynomial::AppendFirstOrderSegment
         struct /* AppendFirstOrderSegment */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:713
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Given a new sample, this method adds one segment to the end of
 ``this`` using a first-order hold, where the start sample is taken as
@@ -1266,7 +1266,7 @@ the value at the final break of ``this``.)""";
         } AppendFirstOrderSegment;
         // Symbol: drake::trajectories::PiecewisePolynomial::Block
         struct /* Block */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:579
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Extracts a trajectory representing a block of size (block_rows,
 block_cols) starting at (start_row, start_col) from the
@@ -1278,7 +1278,7 @@ Returns:
         } Block;
         // Symbol: drake::trajectories::PiecewisePolynomial::ConcatenateInTime
         struct /* ConcatenateInTime */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:692
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Concatenates ``other`` to the end of ``this``.
 
@@ -1303,7 +1303,7 @@ Raises:
         } ConcatenateInTime;
         // Symbol: drake::trajectories::PiecewisePolynomial::CubicHermite
         struct /* CubicHermite */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:362
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_matrix =
 R"""(Constructs a third order PiecewisePolynomial using matrix samples and
 derivatives of samples (``samples_dot``); each matrix element of
@@ -1312,7 +1312,7 @@ independent variable (e.g., the time derivative) of the corresponding
 entry in ``samples``. Each segment is fully specified by ``samples``
 and ``sample_dot`` at both ends. Second derivatives are not
 continuous.)""";
-          // Source: drake/common/trajectories/piecewise_polynomial.h:375
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_vector =
 R"""(Version of CubicHermite(breaks, samples, samples_dot) that uses vector
 samples and Eigen VectorXd / MatrixX<T> arguments. Corresponding
@@ -1324,7 +1324,7 @@ Precondition:
         } CubicHermite;
         // Symbol: drake::trajectories::PiecewisePolynomial::CubicShapePreserving
         struct /* CubicShapePreserving */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:299
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_matrix =
 R"""(Constructs a third order PiecewisePolynomial using vector samples,
 where each column of ``samples`` represents a sample point. First
@@ -1362,7 +1362,7 @@ Raises:
 Raises:
     RuntimeError under the conditions specified under
     coefficient_construction_methods.)""";
-          // Source: drake/common/trajectories/piecewise_polynomial.h:313
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_vector =
 R"""(Version of CubicShapePreserving(breaks, samples,
 zero_end_point_derivatives) that uses vector samples and Eigen
@@ -1378,7 +1378,7 @@ Raises:
         } CubicShapePreserving;
         // Symbol: drake::trajectories::PiecewisePolynomial::CubicWithContinuousSecondDerivatives
         struct /* CubicWithContinuousSecondDerivatives */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:331
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_4args_matrix =
 R"""(Constructs a third order PiecewisePolynomial using matrix samples. The
 PiecewisePolynomial is constructed such that the interior segments
@@ -1393,7 +1393,7 @@ Raises:
 Raises:
     RuntimeError under the conditions specified under
     coefficient_construction_methods.)""";
-          // Source: drake/common/trajectories/piecewise_polynomial.h:346
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_4args_vector =
 R"""(Version of CubicWithContinuousSecondDerivatives() that uses vector
 samples and Eigen VectorXd / MatrixX<T> arguments. Each column of
@@ -1405,7 +1405,7 @@ Precondition:
 Raises:
     RuntimeError under the conditions specified under
     coefficient_construction_methods.)""";
-          // Source: drake/common/trajectories/piecewise_polynomial.h:405
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_3args_matrix =
 R"""(Constructs a third order PiecewisePolynomial using matrix samples. The
 PiecewisePolynomial is constructed such that the interior segments
@@ -1430,7 +1430,7 @@ Precondition:
     would produce a straight line (use ``FirstOrderHold`` for this
     instead), and if ``periodic_end_condition`` is ``False`` the
     problem is ill-defined.)""";
-          // Source: drake/common/trajectories/piecewise_polynomial.h:417
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_3args_vector =
 R"""(Version of CubicWithContinuousSecondDerivatives(breaks, samples) that
 uses vector samples and Eigen VectorXd / MatrixX<T> arguments. Each
@@ -1441,7 +1441,7 @@ Precondition:
         } CubicWithContinuousSecondDerivatives;
         // Symbol: drake::trajectories::PiecewisePolynomial::FirstOrderHold
         struct /* FirstOrderHold */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:240
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_matrix =
 R"""(Constructs a piecewise linear PiecewisePolynomial using matrix
 samples.
@@ -1449,7 +1449,7 @@ samples.
 Raises:
     RuntimeError under the conditions specified under
     coefficient_construction_methods.)""";
-          // Source: drake/common/trajectories/piecewise_polynomial.h:253
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_vector =
 R"""(Version of FirstOrderHold(breaks, samples) that uses vector samples
 and Eigen VectorXd / MatrixX<T> arguments. Each column of ``samples``
@@ -1464,7 +1464,7 @@ Raises:
         } FirstOrderHold;
         // Symbol: drake::trajectories::PiecewisePolynomial::LagrangeInterpolatingPolynomial
         struct /* LagrangeInterpolatingPolynomial */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:431
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_matrix =
 R"""(Constructs a polynomial with a *single segment* of the lowest possible
 degree that passes through all of the sample points. See "polynomial
@@ -1476,7 +1476,7 @@ Precondition:
 
 Precondition:
     ``samples.size() == times.size()``.)""";
-          // Source: drake/common/trajectories/piecewise_polynomial.h:442
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_vector =
 R"""(Version of LagrangeInterpolatingPolynomial(times, samples) that uses
 vector samples and Eigen VectorXd / MatrixX<T> arguments. Each column
@@ -1487,23 +1487,23 @@ Precondition:
         } LagrangeInterpolatingPolynomial;
         // Symbol: drake::trajectories::PiecewisePolynomial::PiecewisePolynomial<T>
         struct /* ctor */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:81
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_0args =
 R"""(Constructs an empty piecewise polynomial.)""";
-          // Source: drake/common/trajectories/piecewise_polynomial.h:94
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_1args_constEigenMatrixBase =
 R"""(Single segment, constant value constructor over the interval [-∞, ∞].
 The constructed PiecewisePolynomial will return ``constant_value`` at
 every evaluated point (i.e., ``value(t) = constant_value`` ∀t ∈ [-∞,
 ∞]).)""";
-          // Source: drake/common/trajectories/piecewise_polynomial.h:171
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_2args_polynomials_matrix_breaks =
 R"""(Constructs a PiecewisePolynomial using matrix-output Polynomials
 defined over each segment.
 
 Precondition:
     ``polynomials.size() == breaks.size() - 1``)""";
-          // Source: drake/common/trajectories/piecewise_polynomial.h:180
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_2args_polynomials_breaks =
 R"""(Constructs a PiecewisePolynomial using scalar-output Polynomials
 defined over each segment.
@@ -1513,12 +1513,12 @@ Precondition:
         } ctor;
         // Symbol: drake::trajectories::PiecewisePolynomial::PolynomialMatrix
         struct /* PolynomialMatrix */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:86
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc = R"""()""";
         } PolynomialMatrix;
         // Symbol: drake::trajectories::PiecewisePolynomial::RemoveFinalSegment
         struct /* RemoveFinalSegment */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:720
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Removes the final segment from the trajectory, reducing the number of
 segments by 1.
@@ -1528,7 +1528,7 @@ Precondition:
         } RemoveFinalSegment;
         // Symbol: drake::trajectories::PiecewisePolynomial::Reshape
         struct /* Reshape */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:567
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Reshapes the dimensions of the Eigen::MatrixX<T> returned by value(),
 EvalDerivative(), etc.
@@ -1541,7 +1541,7 @@ See also:
         } Reshape;
         // Symbol: drake::trajectories::PiecewisePolynomial::ReverseTime
         struct /* ReverseTime */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:730
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Modifies the trajectory so that pp_after(t) = pp_before(-t).
 
@@ -1554,7 +1554,7 @@ Note:
         } ReverseTime;
         // Symbol: drake::trajectories::PiecewisePolynomial::ScaleTime
         struct /* ScaleTime */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:740
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Scales the time of the trajectory by non-negative ``scale`` (use
 ReverseTime() if you want to also negate time). The resulting
@@ -1565,7 +1565,7 @@ long (start_time() and end_time() have both doubled).)""";
         } ScaleTime;
         // Symbol: drake::trajectories::PiecewisePolynomial::Serialize
         struct /* Serialize */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:803
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background. This method is only available when T =
@@ -1573,7 +1573,7 @@ double.)""";
         } Serialize;
         // Symbol: drake::trajectories::PiecewisePolynomial::SliceByTime
         struct /* SliceByTime */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:770
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Slices the trajectory within a specified time range. q =
 p.SliceByTime(t1, t2) returns a PiecewisePolynomial q such that
@@ -1586,14 +1586,14 @@ Raises:
         } SliceByTime;
         // Symbol: drake::trajectories::PiecewisePolynomial::Transpose
         struct /* Transpose */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:571
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Constructs a new PiecewisePolynomial for which value(t) ==
 this.value(t).transpose().)""";
         } Transpose;
         // Symbol: drake::trajectories::PiecewisePolynomial::ZeroOrderHold
         struct /* ZeroOrderHold */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:216
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_matrix =
 R"""(Constructs a piecewise constant PiecewisePolynomial using matrix
 samples. Note that constructing a PiecewisePolynomial requires at
@@ -1603,7 +1603,7 @@ point's value is ignored, and only its break time is used.
 Raises:
     RuntimeError under the conditions specified under
     coefficient_construction_methods.)""";
-          // Source: drake/common/trajectories/piecewise_polynomial.h:229
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_vector =
 R"""(Version of ZeroOrderHold(breaks, samples) that uses vector samples and
 ``Eigen::VectorX<T>/MatrixX<T>`` arguments. Each column of ``samples``
@@ -1618,7 +1618,7 @@ Raises:
         } ZeroOrderHold;
         // Symbol: drake::trajectories::PiecewisePolynomial::cols
         struct /* cols */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:555
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Returns the column count of the output matrices.
 
@@ -1627,7 +1627,7 @@ Raises:
         } cols;
         // Symbol: drake::trajectories::PiecewisePolynomial::derivative
         struct /* derivative */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:462
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Returns a PiecewisePolynomial where each segment is the specified
 derivative of the corresponding segment in ``this``. Any rules or
@@ -1647,13 +1647,13 @@ Warning:
         } derivative;
         // Symbol: drake::trajectories::PiecewisePolynomial::empty
         struct /* empty */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:490
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Returns ``True`` if this trajectory has no breaks/samples/polynomials.)""";
         } empty;
         // Symbol: drake::trajectories::PiecewisePolynomial::getPolynomial
         struct /* getPolynomial */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:531
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Gets the Polynomial with the given matrix row and column index that
 corresponds to the given segment index. Equivalent to
@@ -1665,7 +1665,7 @@ Note:
         } getPolynomial;
         // Symbol: drake::trajectories::PiecewisePolynomial::getPolynomialMatrix
         struct /* getPolynomialMatrix */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:522
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Gets the matrix of Polynomials corresponding to the given segment
 index.
@@ -1675,7 +1675,7 @@ Warning:
         } getPolynomialMatrix;
         // Symbol: drake::trajectories::PiecewisePolynomial::getSegmentPolynomialDegree
         struct /* getSegmentPolynomialDegree */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:539
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Gets the degree of the Polynomial with the given matrix row and column
 index that corresponds to the given segment index. Equivalent to
@@ -1683,7 +1683,7 @@ index that corresponds to the given segment index. Equivalent to
         } getSegmentPolynomialDegree;
         // Symbol: drake::trajectories::PiecewisePolynomial::integral
         struct /* integral */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:473
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Returns a PiecewisePolynomial that is the indefinite integral of this
 one. Any rules or limitations of Polynomial::integral() also apply to
@@ -1695,7 +1695,7 @@ the first segment: adds that constant as the constant term
         } integral;
         // Symbol: drake::trajectories::PiecewisePolynomial::isApprox
         struct /* isApprox */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:673
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Checks whether a PiecewisePolynomial is approximately equal to this
 one by calling Polynomial<T>::CoefficientsAlmostEqual() on every
@@ -1706,7 +1706,7 @@ See also:
         } isApprox;
         // Symbol: drake::trajectories::PiecewisePolynomial::operator*
         struct /* operator_mul */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:657
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Multiplies each Polynomial in the PolynomialMatrix of ``other`` by the
 corresponding Polynomial in the PolynomialMatrix of ``this`` (i.e., a
@@ -1720,7 +1720,7 @@ Raises:
         } operator_mul;
         // Symbol: drake::trajectories::PiecewisePolynomial::operator*=
         struct /* operator_imul */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:614
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Multiplies each Polynomial in the PolynomialMatrix of ``other`` by the
 corresponding Polynomial in the PolynomialMatrix of ``this`` (i.e., a
@@ -1735,7 +1735,7 @@ Raises:
         } operator_imul;
         // Symbol: drake::trajectories::PiecewisePolynomial::operator+
         struct /* operator_add */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:629
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Adds each Polynomial in the PolynomialMatrix of ``other`` to the
 corresponding Polynomial in the PolynomialMatrix of ``this``. If
@@ -1749,7 +1749,7 @@ Raises:
         } operator_add;
         // Symbol: drake::trajectories::PiecewisePolynomial::operator+=
         struct /* operator_iadd */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:591
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Adds each Polynomial in the PolynomialMatrix of ``other`` to the
 corresponding Polynomial in the PolynomialMatrix of ``this``, storing
@@ -1763,7 +1763,7 @@ Raises:
         } operator_iadd;
         // Symbol: drake::trajectories::PiecewisePolynomial::operator-
         struct /* operator_sub */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:640
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_1args =
 R"""(Subtracts each Polynomial in the PolynomialMatrix of ``other`` from
 the corresponding Polynomial in the PolynomialMatrix of ``this``. If
@@ -1774,14 +1774,14 @@ Raises:
     RuntimeError if every element of ``other.get_segment_times()`` is
     not within PiecewiseTrajectory::kEpsilonTime from
     `this->get_segment_times().)""";
-          // Source: drake/common/trajectories/piecewise_polynomial.h:646
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_0args =
 R"""(Implements unary minus operator. Multiplies each Polynomial in
 ``this`` by -1.)""";
         } operator_sub;
         // Symbol: drake::trajectories::PiecewisePolynomial::operator-=
         struct /* operator_isub */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:602
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Subtracts each Polynomial in the PolynomialMatrix of ``other`` from
 the corresponding Polynomial in the PolynomialMatrix of ``this``,
@@ -1796,7 +1796,7 @@ Raises:
         } operator_isub;
         // Symbol: drake::trajectories::PiecewisePolynomial::rows
         struct /* rows */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:546
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Returns the row count of the output matrices.
 
@@ -1805,7 +1805,7 @@ Raises:
         } rows;
         // Symbol: drake::trajectories::PiecewisePolynomial::scalarValue
         struct /* scalarValue */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:497
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Evaluates the trajectory at the given time without returning the
 entire matrix. Equivalent to value(t)(row, col).
@@ -1815,7 +1815,7 @@ Warning:
         } scalarValue;
         // Symbol: drake::trajectories::PiecewisePolynomial::setPolynomialMatrixBlock
         struct /* setPolynomialMatrixBlock */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:780
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Replaces the specified block of the PolynomialMatrix at the given
 segment index.
@@ -1830,7 +1830,7 @@ Warning:
         } setPolynomialMatrixBlock;
         // Symbol: drake::trajectories::PiecewisePolynomial::shiftRight
         struct /* shiftRight */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:750
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Adds ``offset`` to all of the breaks. ``offset`` need not be a
 non-negative number. The resulting polynomial will evaluate to
@@ -1841,7 +1841,7 @@ end_time() being 2 seconds later.)""";
         } shiftRight;
         // Symbol: drake::trajectories::PiecewisePolynomial::slice
         struct /* slice */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:790
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Returns the PiecewisePolynomial comprising the ``num_segments``
 segments starting at the specified ``start_segment_index``.
@@ -1852,7 +1852,7 @@ Note:
         } slice;
         // Symbol: drake::trajectories::PiecewisePolynomial::value
         struct /* value */ {
-          // Source: drake/common/trajectories/piecewise_polynomial.h:513
+          // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Evaluates the PiecewisePolynomial at the given time t.
 
@@ -1878,41 +1878,41 @@ Warning:
       } PiecewisePolynomial;
       // Symbol: drake::trajectories::PiecewisePose
       struct /* PiecewisePose */ {
-        // Source: drake/common/trajectories/piecewise_pose.h:23
+        // Source: drake/common/trajectories/piecewise_pose.h
         const char* doc =
 R"""(A wrapper class that represents a pose trajectory, whose rotation part
 is a PiecewiseQuaternionSlerp and the translation part is a
 PiecewisePolynomial.)""";
         // Symbol: drake::trajectories::PiecewisePose::GetAcceleration
         struct /* GetAcceleration */ {
-          // Source: drake/common/trajectories/piecewise_pose.h:85
+          // Source: drake/common/trajectories/piecewise_pose.h
           const char* doc =
 R"""(Returns the interpolated acceleration at ``time`` or zero if ``time``
 is before this trajectory's start time or after its end time.)""";
         } GetAcceleration;
         // Symbol: drake::trajectories::PiecewisePose::GetPose
         struct /* GetPose */ {
-          // Source: drake/common/trajectories/piecewise_pose.h:73
+          // Source: drake/common/trajectories/piecewise_pose.h
           const char* doc =
 R"""(Returns the interpolated pose at ``time``.)""";
         } GetPose;
         // Symbol: drake::trajectories::PiecewisePose::GetVelocity
         struct /* GetVelocity */ {
-          // Source: drake/common/trajectories/piecewise_pose.h:79
+          // Source: drake/common/trajectories/piecewise_pose.h
           const char* doc =
 R"""(Returns the interpolated velocity at ``time`` or zero if ``time`` is
 before this trajectory's start time or after its end time.)""";
         } GetVelocity;
         // Symbol: drake::trajectories::PiecewisePose::IsApprox
         struct /* IsApprox */ {
-          // Source: drake/common/trajectories/piecewise_pose.h:91
+          // Source: drake/common/trajectories/piecewise_pose.h
           const char* doc =
 R"""(Returns true if the position and orientation trajectories are both
 within ``tol`` from the other's.)""";
         } IsApprox;
         // Symbol: drake::trajectories::PiecewisePose::MakeCubicLinearWithEndLinearVelocity
         struct /* MakeCubicLinearWithEndLinearVelocity */ {
-          // Source: drake/common/trajectories/piecewise_pose.h:64
+          // Source: drake/common/trajectories/piecewise_pose.h
           const char* doc =
 R"""(Constructs a PiecewisePose from given ``times`` and ``poses``. A cubic
 polynomial with given end velocities is used to construct the position
@@ -1934,7 +1934,7 @@ Parameter ``end_vel``:
         } MakeCubicLinearWithEndLinearVelocity;
         // Symbol: drake::trajectories::PiecewisePose::MakeLinear
         struct /* MakeLinear */ {
-          // Source: drake/common/trajectories/piecewise_pose.h:50
+          // Source: drake/common/trajectories/piecewise_pose.h
           const char* doc =
 R"""(Constructs a PiecewisePose from given ``times`` and ``poses``. The
 positions trajectory is constructed as a first-order hold. The
@@ -1949,10 +1949,10 @@ Parameter ``poses``:
         } MakeLinear;
         // Symbol: drake::trajectories::PiecewisePose::PiecewisePose<T>
         struct /* ctor */ {
-          // Source: drake/common/trajectories/piecewise_pose.h:30
+          // Source: drake/common/trajectories/piecewise_pose.h
           const char* doc_0args =
 R"""(Constructs an empty piecewise pose trajectory.)""";
-          // Source: drake/common/trajectories/piecewise_pose.h:37
+          // Source: drake/common/trajectories/piecewise_pose.h
           const char* doc_2args =
 R"""(Constructor.
 
@@ -1964,18 +1964,18 @@ Parameter ``orientation_trajectory``:
         } ctor;
         // Symbol: drake::trajectories::PiecewisePose::get_orientation_trajectory
         struct /* get_orientation_trajectory */ {
-          // Source: drake/common/trajectories/piecewise_pose.h:103
+          // Source: drake/common/trajectories/piecewise_pose.h
           const char* doc = R"""(Returns the orientation trajectory.)""";
         } get_orientation_trajectory;
         // Symbol: drake::trajectories::PiecewisePose::get_position_trajectory
         struct /* get_position_trajectory */ {
-          // Source: drake/common/trajectories/piecewise_pose.h:96
+          // Source: drake/common/trajectories/piecewise_pose.h
           const char* doc = R"""(Returns the position trajectory.)""";
         } get_position_trajectory;
       } PiecewisePose;
       // Symbol: drake::trajectories::PiecewiseQuaternionSlerp
       struct /* PiecewiseQuaternionSlerp */ {
-        // Source: drake/common/trajectories/piecewise_quaternion.h:35
+        // Source: drake/common/trajectories/piecewise_quaternion.h
         const char* doc =
 R"""(A class representing a trajectory for quaternions that are
 interpolated using piecewise slerp (spherical linear interpolation).
@@ -1994,39 +1994,39 @@ quarternion value is in w, x, y, z order when represented as a
 Vector4.)""";
         // Symbol: drake::trajectories::PiecewiseQuaternionSlerp::Append
         struct /* Append */ {
-          // Source: drake/common/trajectories/piecewise_quaternion.h:125
+          // Source: drake/common/trajectories/piecewise_quaternion.h
           const char* doc_2args_time_quaternion =
 R"""(Given a new Quaternion, this method adds one segment to the end of
 ``this``.)""";
-          // Source: drake/common/trajectories/piecewise_quaternion.h:131
+          // Source: drake/common/trajectories/piecewise_quaternion.h
           const char* doc_2args_time_rotation_matrix =
 R"""(Given a new RotationMatrix, this method adds one segment to the end of
 ``this``.)""";
-          // Source: drake/common/trajectories/piecewise_quaternion.h:136
+          // Source: drake/common/trajectories/piecewise_quaternion.h
           const char* doc_2args_time_angle_axis =
 R"""(Given a new AngleAxis, this method adds one segment to the end of
 ``this``.)""";
         } Append;
         // Symbol: drake::trajectories::PiecewiseQuaternionSlerp::PiecewiseQuaternionSlerp<T>
         struct /* ctor */ {
-          // Source: drake/common/trajectories/piecewise_quaternion.h:42
+          // Source: drake/common/trajectories/piecewise_quaternion.h
           const char* doc_0args =
 R"""(Builds an empty PiecewiseQuaternionSlerp.)""";
-          // Source: drake/common/trajectories/piecewise_quaternion.h:49
+          // Source: drake/common/trajectories/piecewise_quaternion.h
           const char* doc_2args_breaks_quaternions =
 R"""(Builds a PiecewiseQuaternionSlerp.
 
 Raises:
     RuntimeError if breaks and quaternions have different length, or
     breaks have length < 2.)""";
-          // Source: drake/common/trajectories/piecewise_quaternion.h:57
+          // Source: drake/common/trajectories/piecewise_quaternion.h
           const char* doc_2args_breaks_rotation_matrices =
 R"""(Builds a PiecewiseQuaternionSlerp.
 
 Raises:
     RuntimeError if breaks and rot_matrices have different length, or
     breaks have length < 2.)""";
-          // Source: drake/common/trajectories/piecewise_quaternion.h:74
+          // Source: drake/common/trajectories/piecewise_quaternion.h
           const char* doc_2args_breaks_angle_axes =
 R"""(Builds a PiecewiseQuaternionSlerp.
 
@@ -2036,7 +2036,7 @@ Raises:
         } ctor;
         // Symbol: drake::trajectories::PiecewiseQuaternionSlerp::angular_acceleration
         struct /* angular_acceleration */ {
-          // Source: drake/common/trajectories/piecewise_quaternion.h:100
+          // Source: drake/common/trajectories/piecewise_quaternion.h
           const char* doc =
 R"""(Interpolates angular acceleration.
 
@@ -2049,7 +2049,7 @@ Returns:
         } angular_acceleration;
         // Symbol: drake::trajectories::PiecewiseQuaternionSlerp::angular_velocity
         struct /* angular_velocity */ {
-          // Source: drake/common/trajectories/piecewise_quaternion.h:92
+          // Source: drake/common/trajectories/piecewise_quaternion.h
           const char* doc =
 R"""(Interpolates angular velocity.
 
@@ -2062,7 +2062,7 @@ Returns:
         } angular_velocity;
         // Symbol: drake::trajectories::PiecewiseQuaternionSlerp::get_quaternion_samples
         struct /* get_quaternion_samples */ {
-          // Source: drake/common/trajectories/piecewise_quaternion.h:111
+          // Source: drake/common/trajectories/piecewise_quaternion.h
           const char* doc =
 R"""(Getter for the internal quaternion samples.
 
@@ -2076,7 +2076,7 @@ Returns:
         } get_quaternion_samples;
         // Symbol: drake::trajectories::PiecewiseQuaternionSlerp::is_approx
         struct /* is_approx */ {
-          // Source: drake/common/trajectories/piecewise_quaternion.h:120
+          // Source: drake/common/trajectories/piecewise_quaternion.h
           const char* doc =
 R"""(Returns true if all the corresponding segment times are within ``tol``
 seconds, and the angle difference between the corresponding quaternion
@@ -2084,7 +2084,7 @@ sample points are within ``tol`` (using ``ExtractDoubleOrThrow``).)""";
         } is_approx;
         // Symbol: drake::trajectories::PiecewiseQuaternionSlerp::orientation
         struct /* orientation */ {
-          // Source: drake/common/trajectories/piecewise_quaternion.h:84
+          // Source: drake/common/trajectories/piecewise_quaternion.h
           const char* doc =
 R"""(Interpolates orientation.
 
@@ -2097,7 +2097,7 @@ Returns:
       } PiecewiseQuaternionSlerp;
       // Symbol: drake::trajectories::PiecewiseTrajectory
       struct /* PiecewiseTrajectory */ {
-        // Source: drake/common/trajectories/piecewise_trajectory.h:22
+        // Source: drake/common/trajectories/piecewise_trajectory.h
         const char* doc =
 R"""(Abstract class that implements the basic logic of maintaining
 consequent segments of time (delimited by ``breaks``) to implement a
@@ -2105,85 +2105,85 @@ trajectory that is represented by simpler logic in each segment or
 "piece".)""";
         // Symbol: drake::trajectories::PiecewiseTrajectory::PiecewiseTrajectory<T>
         struct /* ctor */ {
-          // Source: drake/common/trajectories/piecewise_trajectory.h:60
+          // Source: drake/common/trajectories/piecewise_trajectory.h
           const char* doc =
 R"""(``breaks`` increments must be greater or equal to kEpsilonTime.)""";
         } ctor;
         // Symbol: drake::trajectories::PiecewiseTrajectory::RandomSegmentTimes
         struct /* RandomSegmentTimes */ {
-          // Source: drake/common/trajectories/piecewise_trajectory.h:50
+          // Source: drake/common/trajectories/piecewise_trajectory.h
           const char* doc = R"""()""";
         } RandomSegmentTimes;
         // Symbol: drake::trajectories::PiecewiseTrajectory::SegmentTimesEqual
         struct /* SegmentTimesEqual */ {
-          // Source: drake/common/trajectories/piecewise_trajectory.h:66
+          // Source: drake/common/trajectories/piecewise_trajectory.h
           const char* doc = R"""()""";
         } SegmentTimesEqual;
         // Symbol: drake::trajectories::PiecewiseTrajectory::breaks
         struct /* breaks */ {
-          // Source: drake/common/trajectories/piecewise_trajectory.h:69
+          // Source: drake/common/trajectories/piecewise_trajectory.h
           const char* doc = R"""()""";
         } breaks;
         // Symbol: drake::trajectories::PiecewiseTrajectory::do_end_time
         struct /* do_end_time */ {
-          // Source: drake/common/trajectories/piecewise_trajectory.h:64
+          // Source: drake/common/trajectories/piecewise_trajectory.h
           const char* doc = R"""()""";
         } do_end_time;
         // Symbol: drake::trajectories::PiecewiseTrajectory::do_start_time
         struct /* do_start_time */ {
-          // Source: drake/common/trajectories/piecewise_trajectory.h:63
+          // Source: drake/common/trajectories/piecewise_trajectory.h
           const char* doc = R"""()""";
         } do_start_time;
         // Symbol: drake::trajectories::PiecewiseTrajectory::duration
         struct /* duration */ {
-          // Source: drake/common/trajectories/piecewise_trajectory.h:37
+          // Source: drake/common/trajectories/piecewise_trajectory.h
           const char* doc = R"""()""";
         } duration;
         // Symbol: drake::trajectories::PiecewiseTrajectory::end_time
         struct /* end_time */ {
-          // Source: drake/common/trajectories/piecewise_trajectory.h:34
+          // Source: drake/common/trajectories/piecewise_trajectory.h
           const char* doc = R"""()""";
         } end_time;
         // Symbol: drake::trajectories::PiecewiseTrajectory::get_mutable_breaks
         struct /* get_mutable_breaks */ {
-          // Source: drake/common/trajectories/piecewise_trajectory.h:70
+          // Source: drake/common/trajectories/piecewise_trajectory.h
           const char* doc = R"""()""";
         } get_mutable_breaks;
         // Symbol: drake::trajectories::PiecewiseTrajectory::get_number_of_segments
         struct /* get_number_of_segments */ {
-          // Source: drake/common/trajectories/piecewise_trajectory.h:29
+          // Source: drake/common/trajectories/piecewise_trajectory.h
           const char* doc = R"""()""";
         } get_number_of_segments;
         // Symbol: drake::trajectories::PiecewiseTrajectory::get_segment_index
         struct /* get_segment_index */ {
-          // Source: drake/common/trajectories/piecewise_trajectory.h:44
+          // Source: drake/common/trajectories/piecewise_trajectory.h
           const char* doc = R"""()""";
         } get_segment_index;
         // Symbol: drake::trajectories::PiecewiseTrajectory::get_segment_times
         struct /* get_segment_times */ {
-          // Source: drake/common/trajectories/piecewise_trajectory.h:46
+          // Source: drake/common/trajectories/piecewise_trajectory.h
           const char* doc = R"""()""";
         } get_segment_times;
         // Symbol: drake::trajectories::PiecewiseTrajectory::is_time_in_range
         struct /* is_time_in_range */ {
-          // Source: drake/common/trajectories/piecewise_trajectory.h:42
+          // Source: drake/common/trajectories/piecewise_trajectory.h
           const char* doc =
 R"""(Returns true iff ``t >= getStartTime() && t <= getEndTime()``.)""";
         } is_time_in_range;
         // Symbol: drake::trajectories::PiecewiseTrajectory::segment_number_range_check
         struct /* segment_number_range_check */ {
-          // Source: drake/common/trajectories/piecewise_trajectory.h:48
+          // Source: drake/common/trajectories/piecewise_trajectory.h
           const char* doc = R"""()""";
         } segment_number_range_check;
         // Symbol: drake::trajectories::PiecewiseTrajectory::start_time
         struct /* start_time */ {
-          // Source: drake/common/trajectories/piecewise_trajectory.h:31
+          // Source: drake/common/trajectories/piecewise_trajectory.h
           const char* doc = R"""()""";
         } start_time;
       } PiecewiseTrajectory;
       // Symbol: drake::trajectories::StackedTrajectory
       struct /* StackedTrajectory */ {
-        // Source: drake/common/trajectories/stacked_trajectory.h:35
+        // Source: drake/common/trajectories/stacked_trajectory.h
         const char* doc =
 R"""(A StackedTrajectory stacks the values from one or more underlying
 Trajectory objects into a single Trajectory, without changing the
@@ -2205,7 +2205,7 @@ Trajectory objects must have the same number of ``%rows()`` and the
 the order they were added.)""";
         // Symbol: drake::trajectories::StackedTrajectory::Append
         struct /* Append */ {
-          // Source: drake/common/trajectories/stacked_trajectory.h:48
+          // Source: drake/common/trajectories/stacked_trajectory.h
           const char* doc =
 R"""(Stacks another sub-Trajectory onto this. Refer to the class overview
 documentation for details.
@@ -2215,7 +2215,7 @@ Raises:
         } Append;
         // Symbol: drake::trajectories::StackedTrajectory::StackedTrajectory<T>
         struct /* ctor */ {
-          // Source: drake/common/trajectories/stacked_trajectory.h:41
+          // Source: drake/common/trajectories/stacked_trajectory.h
           const char* doc =
 R"""(Creates an empty trajectory.
 
@@ -2225,35 +2225,35 @@ Parameter ``rowwise``:
       } StackedTrajectory;
       // Symbol: drake::trajectories::Trajectory
       struct /* Trajectory */ {
-        // Source: drake/common/trajectories/trajectory.h:22
+        // Source: drake/common/trajectories/trajectory.h
         const char* doc =
 R"""(A Trajectory represents a time-varying matrix, indexed by a single
 scalar time.)""";
         // Symbol: drake::trajectories::Trajectory::Clone
         struct /* Clone */ {
-          // Source: drake/common/trajectories/trajectory.h:29
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc =
 R"""(Returns:
     A deep copy of this Trajectory.)""";
         } Clone;
         // Symbol: drake::trajectories::Trajectory::DoClone
         struct /* DoClone */ {
-          // Source: drake/common/trajectories/trajectory.h:102
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc = R"""()""";
         } DoClone;
         // Symbol: drake::trajectories::Trajectory::DoEvalDerivative
         struct /* DoEvalDerivative */ {
-          // Source: drake/common/trajectories/trajectory.h:108
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc = R"""()""";
         } DoEvalDerivative;
         // Symbol: drake::trajectories::Trajectory::DoMakeDerivative
         struct /* DoMakeDerivative */ {
-          // Source: drake/common/trajectories/trajectory.h:110
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc = R"""()""";
         } DoMakeDerivative;
         // Symbol: drake::trajectories::Trajectory::EvalDerivative
         struct /* EvalDerivative */ {
-          // Source: drake/common/trajectories/trajectory.h:72
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc =
 R"""(Evaluates the derivative of ``this`` at the given time ``t``. Returns
 the nth derivative, where ``n`` is the value of ``derivative_order``.
@@ -2263,7 +2263,7 @@ Raises:
         } EvalDerivative;
         // Symbol: drake::trajectories::Trajectory::MakeDerivative
         struct /* MakeDerivative */ {
-          // Source: drake/common/trajectories/trajectory.h:81
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc =
 R"""(Takes the derivative of this Trajectory.
 
@@ -2278,54 +2278,54 @@ Raises:
         } MakeDerivative;
         // Symbol: drake::trajectories::Trajectory::Trajectory<T>
         struct /* ctor */ {
-          // Source: drake/common/trajectories/trajectory.h:99
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::trajectories::Trajectory::cols
         struct /* cols */ {
-          // Source: drake/common/trajectories/trajectory.h:91
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc =
 R"""(Returns:
     The number of columns in the matrix returned by value().)""";
         } cols;
         // Symbol: drake::trajectories::Trajectory::do_cols
         struct /* do_cols */ {
-          // Source: drake/common/trajectories/trajectory.h:115
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc = R"""()""";
         } do_cols;
         // Symbol: drake::trajectories::Trajectory::do_end_time
         struct /* do_end_time */ {
-          // Source: drake/common/trajectories/trajectory.h:119
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc = R"""()""";
         } do_end_time;
         // Symbol: drake::trajectories::Trajectory::do_has_derivative
         struct /* do_has_derivative */ {
-          // Source: drake/common/trajectories/trajectory.h:106
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc = R"""()""";
         } do_has_derivative;
         // Symbol: drake::trajectories::Trajectory::do_rows
         struct /* do_rows */ {
-          // Source: drake/common/trajectories/trajectory.h:113
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc = R"""()""";
         } do_rows;
         // Symbol: drake::trajectories::Trajectory::do_start_time
         struct /* do_start_time */ {
-          // Source: drake/common/trajectories/trajectory.h:117
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc = R"""()""";
         } do_start_time;
         // Symbol: drake::trajectories::Trajectory::do_value
         struct /* do_value */ {
-          // Source: drake/common/trajectories/trajectory.h:104
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc = R"""()""";
         } do_value;
         // Symbol: drake::trajectories::Trajectory::end_time
         struct /* end_time */ {
-          // Source: drake/common/trajectories/trajectory.h:95
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc = R"""()""";
         } end_time;
         // Symbol: drake::trajectories::Trajectory::has_derivative
         struct /* has_derivative */ {
-          // Source: drake/common/trajectories/trajectory.h:64
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc =
 R"""(Returns true iff the Trajectory provides and implementation for
 EvalDerivative() and MakeDerivative(). The derivative need not be
@@ -2334,19 +2334,19 @@ returns a result.)""";
         } has_derivative;
         // Symbol: drake::trajectories::Trajectory::rows
         struct /* rows */ {
-          // Source: drake/common/trajectories/trajectory.h:86
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc =
 R"""(Returns:
     The number of rows in the matrix returned by value().)""";
         } rows;
         // Symbol: drake::trajectories::Trajectory::start_time
         struct /* start_time */ {
-          // Source: drake/common/trajectories/trajectory.h:93
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc = R"""()""";
         } start_time;
         // Symbol: drake::trajectories::Trajectory::value
         struct /* value */ {
-          // Source: drake/common/trajectories/trajectory.h:36
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc =
 R"""(Evaluates the trajectory at the given time ``t``.
 
@@ -2358,7 +2358,7 @@ Returns:
         } value;
         // Symbol: drake::trajectories::Trajectory::vector_values
         struct /* vector_values */ {
-          // Source: drake/common/trajectories/trajectory.h:46
+          // Source: drake/common/trajectories/trajectory.h
           const char* doc =
 R"""(If cols()==1, then evaluates the trajectory at each time ``t``, and
 returns the results as a Matrix with the ith column corresponding to

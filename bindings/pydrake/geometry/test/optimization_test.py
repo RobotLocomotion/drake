@@ -98,9 +98,9 @@ class TestGeometryOptimization(unittest.TestCase):
         mut.AffineBall(ellipsoid=mut.Hyperellipsoid.MakeUnitBall(dim=1))
 
         points = np.array([[1, 0], [-1, 0], [0, 2], [0, -2]]).T
-        e_lowner_john = mut.AffineBall.MinimumVolumeCircumscribedEllipsoid(
+        mut.AffineBall.MinimumVolumeCircumscribedEllipsoid(
             points=points, rank_tol=1e-2)
-        e_lowner_john = mut.AffineBall.MinimumVolumeCircumscribedEllipsoid(
+        mut.AffineBall.MinimumVolumeCircumscribedEllipsoid(
             points=points)
 
     def test_affine_subspace(self):
@@ -166,7 +166,7 @@ class TestGeometryOptimization(unittest.TestCase):
 
         p = np.array([11.1, 12.2, 13.3])
         point = mut.Point(p)
-        aff = mut.AffineSubspace(set=point, tol=1e-12)
+        mut.AffineSubspace(set=point, tol=1e-12)
 
     def test_h_polyhedron(self):
         mut.HPolyhedron()
@@ -263,12 +263,10 @@ class TestGeometryOptimization(unittest.TestCase):
             other=h_unit_box,
             check_for_redundancy=False)
         # Check that the ReduceInequalities binding works.
-        redundant_indices = h_half_box_intersect_unit_box.FindRedundant(
-            tol=1E-9)
+        h_half_box_intersect_unit_box.FindRedundant(tol=1E-9)
         # Check FindRedundant with default tol.
         h_half_box_intersect_unit_box.FindRedundant()
-        h_half_box3 = h_half_box_intersect_unit_box.ReduceInequalities(
-            tol=1E-9)
+        h_half_box_intersect_unit_box.ReduceInequalities(tol=1E-9)
 
         # Check SimplifyByIncrementalFaceTranslation binding with
         # default input parameters.
@@ -354,9 +352,9 @@ class TestGeometryOptimization(unittest.TestCase):
         np.testing.assert_array_equal(e_ball3.A(), self.A)
         np.testing.assert_array_equal(e_ball3.center(), [0, 0, 0])
         points = np.array([[1, 0], [-1, 0], [0, 2], [0, -2]]).T
-        e_lowner_john = mut.Hyperellipsoid.MinimumVolumeCircumscribedEllipsoid(
+        mut.Hyperellipsoid.MinimumVolumeCircumscribedEllipsoid(
             points=points, rank_tol=1e-2)
-        e_lowner_john = mut.Hyperellipsoid.MinimumVolumeCircumscribedEllipsoid(
+        mut.Hyperellipsoid.MinimumVolumeCircumscribedEllipsoid(
             points=points)
         mut.Hyperellipsoid(ellipsoid=mut.AffineBall.MakeUnitBall(dim=1))
 
@@ -1170,7 +1168,7 @@ class TestCspaceFreePolytope(unittest.TestCase):
 
         self.plant.Finalize()
 
-        diagram = builder.Build()
+        builder.Build()
 
         # Tests the constructor
         options = mut.CspaceFreePolytope.Options()
@@ -1248,8 +1246,8 @@ class TestCspaceFreePolytope(unittest.TestCase):
             lagrangian_options.ignore_redundant_C)
 
         # EllipsoidMarginCost
-        margin_cost = [dut.EllipsoidMarginCost.kGeometricMean,
-                       dut.EllipsoidMarginCost.kSum]
+        dut.EllipsoidMarginCost.kGeometricMean
+        dut.EllipsoidMarginCost.kSum
 
         # FindPolytopeGivenLagrangianOptions
         polytope_options = dut.FindPolytopeGivenLagrangianOptions()
@@ -1406,7 +1404,6 @@ class TestCspaceFreePolytope(unittest.TestCase):
     def test_CspaceFreePolytopeMethods(self):
         # These tests take very long using any solver besides Mosek so only run
         # them if Mosek is available.
-        mosek_solver = MosekSolver()
         C_init = np.vstack([np.atleast_2d(np.eye(self.plant.num_positions(
         ))), -np.atleast_2d(np.eye(self.plant.num_positions()))])
         d_init = 1e-3 * np.ones((C_init.shape[0], 1))

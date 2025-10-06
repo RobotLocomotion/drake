@@ -28,7 +28,7 @@ constexpr struct /* pydrake_doc_visualization */ {
     struct /* visualization */ {
       // Symbol: drake::visualization::AddDefaultVisualization
       struct /* AddDefaultVisualization */ {
-        // Source: drake/visualization/visualization_config_functions.h:133
+        // Source: drake/visualization/visualization_config_functions.h
         const char* doc =
 R"""(Adds LCM visualization publishers to communicate to Meshcat and/or
 Meldis, using all of the default configuration settings.
@@ -82,7 +82,7 @@ See also:
       } AddDefaultVisualization;
       // Symbol: drake::visualization::ApplyVisualizationConfig
       struct /* ApplyVisualizationConfig */ {
-        // Source: drake/visualization/visualization_config_functions.h:91
+        // Source: drake/visualization/visualization_config_functions.h
         const char* doc =
 R"""(Adds LCM visualization publishers to communicate to Meshcat and/or
 Meldis.
@@ -189,7 +189,7 @@ See also:
       } ApplyVisualizationConfig;
       // Symbol: drake::visualization::ColorizeDepthImage
       struct /* ColorizeDepthImage */ {
-        // Source: drake/visualization/colorize_depth_image.h:40
+        // Source: drake/visualization/colorize_depth_image.h
         const char* doc =
 R"""(ColorizeDepthImage converts a depth image, either 32F or 16U, to a
 color image. One input port, and only one, must be connected.
@@ -220,32 +220,32 @@ For the special depth pixel values "too close" or "too far", the color
 pixel will use the ``invalid_color`` property (by default, a dim red).)""";
         // Symbol: drake::visualization::ColorizeDepthImage::Calc
         struct /* Calc */ {
-          // Source: drake/visualization/colorize_depth_image.h:59
+          // Source: drake/visualization/colorize_depth_image.h
           const char* doc =
 R"""(Colorizes the ``input`` into ``output``, without using any System port
 conections nor any Context.)""";
         } Calc;
         // Symbol: drake::visualization::ColorizeDepthImage::ColorizeDepthImage<T>
         struct /* ctor */ {
-          // Source: drake/visualization/colorize_depth_image.h:45
+          // Source: drake/visualization/colorize_depth_image.h
           const char* doc = R"""(Creates a ColorizeDepthImage system.)""";
         } ctor;
         // Symbol: drake::visualization::ColorizeDepthImage::get_invalid_color
         struct /* get_invalid_color */ {
-          // Source: drake/visualization/colorize_depth_image.h:50
+          // Source: drake/visualization/colorize_depth_image.h
           const char* doc =
 R"""(Gets the color used for pixels with too-near or too-far depth.)""";
         } get_invalid_color;
         // Symbol: drake::visualization::ColorizeDepthImage::set_invalid_color
         struct /* set_invalid_color */ {
-          // Source: drake/visualization/colorize_depth_image.h:53
+          // Source: drake/visualization/colorize_depth_image.h
           const char* doc =
 R"""(Sets the color used for pixels with too-near or too-far depth.)""";
         } set_invalid_color;
       } ColorizeDepthImage;
       // Symbol: drake::visualization::ColorizeLabelImage
       struct /* ColorizeLabelImage */ {
-        // Source: drake/visualization/colorize_label_image.h:30
+        // Source: drake/visualization/colorize_label_image.h
         const char* doc =
 R"""(ColorizeLabelImage converts a label image to a color image.
 
@@ -265,32 +265,32 @@ etc.), the color pixel will use the ``background_color`` property (by
 default, black with 0% alpha).)""";
         // Symbol: drake::visualization::ColorizeLabelImage::Calc
         struct /* Calc */ {
-          // Source: drake/visualization/colorize_label_image.h:49
+          // Source: drake/visualization/colorize_label_image.h
           const char* doc =
 R"""(Colorizes the ``input`` into ``output``, without using any System port
 conections nor any Context.)""";
         } Calc;
         // Symbol: drake::visualization::ColorizeLabelImage::ColorizeLabelImage<T>
         struct /* ctor */ {
-          // Source: drake/visualization/colorize_label_image.h:35
+          // Source: drake/visualization/colorize_label_image.h
           const char* doc = R"""(Creates a ColorizeLabelImage system.)""";
         } ctor;
         // Symbol: drake::visualization::ColorizeLabelImage::get_background_color
         struct /* get_background_color */ {
-          // Source: drake/visualization/colorize_label_image.h:40
+          // Source: drake/visualization/colorize_label_image.h
           const char* doc =
 R"""(Gets the color used for pixels with no label.)""";
         } get_background_color;
         // Symbol: drake::visualization::ColorizeLabelImage::set_background_color
         struct /* set_background_color */ {
-          // Source: drake/visualization/colorize_label_image.h:43
+          // Source: drake/visualization/colorize_label_image.h
           const char* doc =
 R"""(Sets the color used for pixels with no label.)""";
         } set_background_color;
       } ColorizeLabelImage;
       // Symbol: drake::visualization::ConcatenateImages
       struct /* ConcatenateImages */ {
-        // Source: drake/visualization/concatenate_images.h:34
+        // Source: drake/visualization/concatenate_images.h
         const char* doc =
 R"""(ConcatenateImages stacks multiple input images into a single output
 image.
@@ -314,7 +314,7 @@ In case of non-uniform image sizes, any gaps between images will be
 filled with all-zero pixels (i.e., with 0% alpha).)""";
         // Symbol: drake::visualization::ConcatenateImages::ConcatenateImages<T>
         struct /* ctor */ {
-          // Source: drake/visualization/concatenate_images.h:41
+          // Source: drake/visualization/concatenate_images.h
           const char* doc =
 R"""(Constructs a ConcatenateImages system.
 
@@ -326,7 +326,7 @@ Parameter ``cols``:
         } ctor;
         // Symbol: drake::visualization::ConcatenateImages::get_input_port
         struct /* get_input_port */ {
-          // Source: drake/visualization/concatenate_images.h:47
+          // Source: drake/visualization/concatenate_images.h
           const char* doc =
 R"""(Returns the InputPort for the given (row, col) image. Rows and columns
 are 0-indexed, i.e., we have ``0 <= row < rows`` and ``0 <= col <
@@ -335,7 +335,7 @@ cols``.)""";
       } ConcatenateImages;
       // Symbol: drake::visualization::InertiaVisualizer
       struct /* InertiaVisualizer */ {
-        // Source: drake/visualization/inertia_visualizer.h:36
+        // Source: drake/visualization/inertia_visualizer.h
         const char* doc =
 R"""(InertiaVisualizer provides illustration geometry to reflect the
 equivalent inertia of all bodies in a MultibodyPlant that are not
@@ -359,23 +359,23 @@ Warning:
     visualization will not be updated.)""";
         // Symbol: drake::visualization::InertiaVisualizer::AddToBuilder
         struct /* AddToBuilder */ {
-          // Source: drake/visualization/inertia_visualizer.h:53
+          // Source: drake/visualization/inertia_visualizer.h
           const char* doc =
 R"""(Adds a new InertiaVisualizer to the given ``builder`` and connects it
 to the given ``plant`` and ``scene_graph``.)""";
         } AddToBuilder;
         // Symbol: drake::visualization::InertiaVisualizer::InertiaVisualizer<T>
         struct /* ctor */ {
-          // Source: drake/visualization/inertia_visualizer.h:42
+          // Source: drake/visualization/inertia_visualizer.h
           const char* doc =
 R"""(Creates an instance of InertiaVisualizer. The plant must be finalized.)""";
-          // Source: drake/visualization/inertia_visualizer.h:47
+          // Source: drake/visualization/inertia_visualizer.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::visualization::InertiaVisualizer::source_id
         struct /* source_id */ {
-          // Source: drake/visualization/inertia_visualizer.h:60
+          // Source: drake/visualization/inertia_visualizer.h
           const char* doc =
 R"""((Advanced) Returns the source_id for our visualization geometries.
 Most users will not need to use this.)""";
@@ -383,7 +383,7 @@ Most users will not need to use this.)""";
       } InertiaVisualizer;
       // Symbol: drake::visualization::MeshcatPoseSliders
       struct /* MeshcatPoseSliders */ {
-        // Source: drake/visualization/meshcat_pose_sliders.h:44
+        // Source: drake/visualization/meshcat_pose_sliders.h
         const char* doc =
 R"""(MeshcatPoseSliders adds slider bars to the MeshCat control panel for
 the roll, pitch, yaw, x, y, z control of a pose. These might be useful
@@ -411,7 +411,7 @@ systems::ZeroOrderHold system between the sliders and downstream
 calculations.)""";
         // Symbol: drake::visualization::MeshcatPoseSliders::Delete
         struct /* Delete */ {
-          // Source: drake/visualization/meshcat_pose_sliders.h:120
+          // Source: drake/visualization/meshcat_pose_sliders.h
           const char* doc =
 R"""(Removes our sliders from the associated meshcat instance.
 
@@ -424,7 +424,7 @@ Warning:
         } Delete;
         // Symbol: drake::visualization::MeshcatPoseSliders::MeshcatPoseSliders<T>
         struct /* ctor */ {
-          // Source: drake/visualization/meshcat_pose_sliders.h:96
+          // Source: drake/visualization/meshcat_pose_sliders.h
           const char* doc =
 R"""(Creates MeshCat sliders for a roll-pitch-yaw-x-y-z parameterization of
 a pose (aka RigidTransform).
@@ -495,7 +495,7 @@ The default keycodes provide the following keyboard mapping:
         } ctor;
         // Symbol: drake::visualization::MeshcatPoseSliders::Run
         struct /* Run */ {
-          // Source: drake/visualization/meshcat_pose_sliders.h:146
+          // Source: drake/visualization/meshcat_pose_sliders.h
           const char* doc =
 R"""(Publishes the given systems::System (typically, a Diagram including
 visualizers, to cause it to be visualized) whenever our sliders'
@@ -526,7 +526,7 @@ Precondition:
         } Run;
         // Symbol: drake::visualization::MeshcatPoseSliders::SetPose
         struct /* SetPose */ {
-          // Source: drake/visualization/meshcat_pose_sliders.h:156
+          // Source: drake/visualization/meshcat_pose_sliders.h
           const char* doc =
 R"""(Sets the pose to ``X``. The MeshCat sliders will have their value
 updated. Additionally, the "initial pose" tracked by this instance
@@ -536,7 +536,7 @@ if sliders are removed (e.g., via Delete).)""";
       } MeshcatPoseSliders;
       // Symbol: drake::visualization::VisualizationConfig
       struct /* VisualizationConfig */ {
-        // Source: drake/visualization/visualization_config.h:17
+        // Source: drake/visualization/visualization_config.h
         const char* doc =
 R"""(Settings for what MultibodyPlant and SceneGraph should send to Meshcat
 and/or Meldis.
@@ -544,26 +544,26 @@ and/or Meldis.
 See ApplyVisualizationConfig() for how to enact this configuration.)""";
         // Symbol: drake::visualization::VisualizationConfig::Serialize
         struct /* Serialize */ {
-          // Source: drake/visualization/visualization_config.h:19
+          // Source: drake/visualization/visualization_config.h
           const char* doc = R"""()""";
         } Serialize;
         // Symbol: drake::visualization::VisualizationConfig::default_illustration_color
         struct /* default_illustration_color */ {
-          // Source: drake/visualization/visualization_config.h:49
+          // Source: drake/visualization/visualization_config.h
           const char* doc =
 R"""(The color to apply to any illustration geometry that hasn't defined
 one. The vector must be of size three (rgb) or four (rgba).)""";
         } default_illustration_color;
         // Symbol: drake::visualization::VisualizationConfig::default_proximity_color
         struct /* default_proximity_color */ {
-          // Source: drake/visualization/visualization_config.h:56
+          // Source: drake/visualization/visualization_config.h
           const char* doc =
 R"""(The color to apply to any proximity geometry that hasn't defined one.
 The vector must be of size three (rgb) or four (rgba).)""";
         } default_proximity_color;
         // Symbol: drake::visualization::VisualizationConfig::delete_on_initialization_event
         struct /* delete_on_initialization_event */ {
-          // Source: drake/visualization/visualization_config.h:77
+          // Source: drake/visualization/visualization_config.h
           const char* doc =
 R"""(Determines whether to send a Meshcat::Delete() messages to the Meshcat
 object (if any) on an initialization event to remove any
@@ -571,19 +571,19 @@ visualizations, e.g., from a previous simulation.)""";
         } delete_on_initialization_event;
         // Symbol: drake::visualization::VisualizationConfig::enable_alpha_sliders
         struct /* enable_alpha_sliders */ {
-          // Source: drake/visualization/visualization_config.h:80
+          // Source: drake/visualization/visualization_config.h
           const char* doc =
 R"""(Determines whether to enable alpha sliders for geometry display.)""";
         } enable_alpha_sliders;
         // Symbol: drake::visualization::VisualizationConfig::enable_meshcat_creation
         struct /* enable_meshcat_creation */ {
-          // Source: drake/visualization/visualization_config.h:72
+          // Source: drake/visualization/visualization_config.h
           const char* doc =
 R"""(Whether to create a Meshcat object if needed.)""";
         } enable_meshcat_creation;
         // Symbol: drake::visualization::VisualizationConfig::initial_proximity_alpha
         struct /* initial_proximity_alpha */ {
-          // Source: drake/visualization/visualization_config.h:63
+          // Source: drake/visualization/visualization_config.h
           const char* doc =
 R"""(The initial value of the proximity alpha slider. Note: the effective
 transparency of the proximity geometry is the slider value multiplied
@@ -593,7 +593,7 @@ the slider should be used to change it.)""";
         } initial_proximity_alpha;
         // Symbol: drake::visualization::VisualizationConfig::lcm_bus
         struct /* lcm_bus */ {
-          // Source: drake/visualization/visualization_config.h:36
+          // Source: drake/visualization/visualization_config.h
           const char* doc =
 R"""(Which LCM URL to use.
 
@@ -602,22 +602,22 @@ See also:
         } lcm_bus;
         // Symbol: drake::visualization::VisualizationConfig::publish_contacts
         struct /* publish_contacts */ {
-          // Source: drake/visualization/visualization_config.h:69
+          // Source: drake/visualization/visualization_config.h
           const char* doc = R"""(Whether to show contact forces.)""";
         } publish_contacts;
         // Symbol: drake::visualization::VisualizationConfig::publish_illustration
         struct /* publish_illustration */ {
-          // Source: drake/visualization/visualization_config.h:45
+          // Source: drake/visualization/visualization_config.h
           const char* doc = R"""(Whether to show illustration geometry.)""";
         } publish_illustration;
         // Symbol: drake::visualization::VisualizationConfig::publish_inertia
         struct /* publish_inertia */ {
-          // Source: drake/visualization/visualization_config.h:66
+          // Source: drake/visualization/visualization_config.h
           const char* doc = R"""(Whether to show body inertia.)""";
         } publish_inertia;
         // Symbol: drake::visualization::VisualizationConfig::publish_period
         struct /* publish_period */ {
-          // Source: drake/visualization/visualization_config.h:42
+          // Source: drake/visualization/visualization_config.h
           const char* doc =
 R"""(The duration (in seconds) between published LCM messages that update
 visualization. (To help avoid small simulation time steps, we use a
@@ -626,7 +626,7 @@ point; see drake#15021 for details.))""";
         } publish_period;
         // Symbol: drake::visualization::VisualizationConfig::publish_proximity
         struct /* publish_proximity */ {
-          // Source: drake/visualization/visualization_config.h:52
+          // Source: drake/visualization/visualization_config.h
           const char* doc = R"""(Whether to show proximity geometry.)""";
         } publish_proximity;
         auto Serialize__fields() const {

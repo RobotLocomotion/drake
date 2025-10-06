@@ -166,7 +166,7 @@ class TestIntegration(unittest.TestCase):
         """Walks the tree rooted at `entry` and replace entries found in
         _REPLACED with the explicit tree referenced."""
         entry_type = type(entry)
-        if entry_type == dict:
+        if entry_type is dict:
             for to_remove in TestIntegration._REMOVED:
                 entry.pop(to_remove, None)
             for k, v in entry.items():
@@ -174,7 +174,7 @@ class TestIntegration(unittest.TestCase):
                 if k in TestIntegration._REPLACED.keys():
                     entry[k] = gltf[TestIntegration._REPLACED[k]][v]
                 TestIntegration._traverse_and_mutate(gltf, entry[k])
-        elif entry_type == list:
+        elif entry_type is list:
             # If the list contains only numeric numbers, round floating values
             # till 12 decimal places due to the precision differences across
             # platforms.
