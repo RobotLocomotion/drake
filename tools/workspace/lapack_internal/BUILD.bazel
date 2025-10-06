@@ -43,4 +43,4 @@ diff_test(
     ],
 )
 
-add_lint_tests(python_lint_use_ruff_format = False)
+add_lint_tests()
