@@ -25,10 +25,7 @@ def _rewrite(*, input: Path, output: Path, temp: Path):
         cwd=input_dir,
         check=True,
     )
-    objs = [
-        x.relative_to(input_dir)
-        for x in input_dir.glob("**/*.o")
-    ]
+    objs = [x.relative_to(input_dir) for x in input_dir.glob("**/*.o")]
     assert objs
 
     # Copy objects to the output archive, changing them to be hidden.
@@ -36,9 +33,12 @@ def _rewrite(*, input: Path, output: Path, temp: Path):
         subprocess.run(
             [
                 "/usr/bin/nmedit",
-                "-s", "/dev/null",
-                "-p", input_dir / x,
-                "-o", output_dir / x
+                "-s",
+                "/dev/null",
+                "-p",
+                input_dir / x,
+                "-o",
+                output_dir / x,
             ],
             check=True,
         )
@@ -53,8 +53,8 @@ def _rewrite(*, input: Path, output: Path, temp: Path):
 
 def _main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input', metavar='FILE', type=Path, required=True)
-    parser.add_argument('--output', metavar='FILE', type=Path, required=True)
+    parser.add_argument("--input", metavar="FILE", type=Path, required=True)
+    parser.add_argument("--output", metavar="FILE", type=Path, required=True)
     args = parser.parse_args()
     with tempfile.TemporaryDirectory() as temp:
         _rewrite(

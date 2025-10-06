@@ -8,7 +8,8 @@ class TestPathUtils(unittest.TestCase):
 
     def setUp(self):
         filename = runfiles.Create().Rlocation(
-            "drake/tools/skylark/pathutils.bzl")
+            "drake/tools/skylark/pathutils.bzl"
+        )
         with open(filename, "r", encoding="utf-8") as f:
             bzl_contents = f.read()
         self.bzl_globals = dict()
@@ -23,44 +24,40 @@ class TestPathUtils(unittest.TestCase):
         # A list of path, prefix, expected result.
         suite = [
             # Basic literal matching.
-            ["a/b",   "a",   "b"],
-            ["a/b/c", "a",   "b/c"],
+            ["a/b", "a", "b"],
+            ["a/b/c", "a", "b/c"],
             ["a/b/c", "a/b", "c"],
-            ["a/b", "a/b",   None],  # Prefix identical to path.
+            ["a/b", "a/b", None],  # Prefix identical to path.
             ["a/b", "a/b/c", None],  # Prefix longer than the path.
-            ["b",   "a/b/c", None],  # Prefix in the middle of the path.
-
+            ["b", "a/b/c", None],  # Prefix in the middle of the path.
             # Single glob matching.
-            ["a/b",     "*",     "b"],
-            ["a/b/c",   "*",     "b/c"],
-            ["a/b/c",   "a/*",   "c"],
-            ["a/b",     "a/*",   None],  # The * must match exactly one name.
-            ["a/b/c",   "*/b",   "c"],
-            ["b/c",     "*/b",   None],  # The * must match exactly one name.
+            ["a/b", "*", "b"],
+            ["a/b/c", "*", "b/c"],
+            ["a/b/c", "a/*", "c"],
+            ["a/b", "a/*", None],  # The * must match exactly one name.
+            ["a/b/c", "*/b", "c"],
+            ["b/c", "*/b", None],  # The * must match exactly one name.
             ["a/b/c/d", "a/*/c", "d"],
-            ["a/c/d",   "a/*/c", None],  # The * must match exactly one name.
-
+            ["a/c/d", "a/*/c", None],  # The * must match exactly one name.
             # Two glob matching.
-            ["a/b/c",   "*/*",   "c"],
-            ["a/b",     "*/*",   None],  # Each * must match exactly one name.
+            ["a/b/c", "*/*", "c"],
+            ["a/b", "*/*", None],  # Each * must match exactly one name.
             ["a/b/c/d", "a/*/*", "d"],
-            ["a/b/c",   "a/*/*", None],  # Each * must match exactly one name.
+            ["a/b/c", "a/*/*", None],  # Each * must match exactly one name.
             ["a/b/c/d", "*/*/c", "d"],
-            ["a/b/d",   "*/*/c", None],  # Each * must match exactly one name.
-
+            ["a/b/d", "*/*/c", None],  # Each * must match exactly one name.
             # Double glob matching.
-            ["a/b/c/d", "**",       "d"],
+            ["a/b/c/d", "**", "d"],
             ["a/b/c/d", "a/b/c/**", "d"],
-            ["a/b/c/d", "a/**",     "d"],
-            ["a/b/c/d", "a/*/**",   "d"],
-            ["a/b/c/d", "a/**/*",   "d"],
-            ["a/b/c/d", "**/c",     "d"],
-            ["a/b/c/d", "a/**/c",   "d"],
+            ["a/b/c/d", "a/**", "d"],
+            ["a/b/c/d", "a/*/**", "d"],
+            ["a/b/c/d", "a/**/*", "d"],
+            ["a/b/c/d", "**/c", "d"],
+            ["a/b/c/d", "a/**/c", "d"],
             ["a/b/c/d", "a/b/**/c", "d"],
-            ["a/b/c/d", "**/b",     "c/d"],
-            ["a/b/c/d", "a/**/b",   "c/d"],
-            ["a/b/c/d", "**/a/b",   "c/d"],
-
+            ["a/b/c/d", "**/b", "c/d"],
+            ["a/b/c/d", "a/**/b", "c/d"],
+            ["a/b/c/d", "**/a/b", "c/d"],
             # Repeated final name (".../c/c") in prefix.
             ["a/b/c/c", "a/**/c", "c"],
         ]
