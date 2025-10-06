@@ -11,7 +11,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/unused.h"
 #include "drake/geometry/proximity/mesh_traits.h"
 #include "drake/math/rigid_transform.h"
 
@@ -233,15 +232,12 @@ class PolygonSurfaceMesh {
 
   /** See TriangleSurfaceMesh::CalcBaryCentric(). This implementation is
    provided to maintain compatibility with MeshFieldLinear. However, it only
-   throws. %PolygonSurfaceMesh does not support barycentric coordinates. */
+   throws. %PolygonSurfaceMesh does not support barycentric coordinates.
+   @tparam C must be either `double` or `AutoDiffXd`. */
   template <typename C>
   Barycentric<promoted_numerical_t<T, C>> CalcBarycentric(
-      const Vector3<C>& p_MQ, int p) const {
-    unused(p_MQ, p);
-    throw std::runtime_error(
-        "PolygonSurfaceMesh::CalcBarycentric(): PolygonSurfaceMesh does not "
-        "have barycentric coordinates.");
-  }
+      const Vector3<C>& p_MQ, int p) const
+    requires scalar_predicate<C>::is_bool;
 
   // TODO(DamrongGuoy): Consider using an oriented bounding box in obb.h.
   //  Currently we have a problem that PolygonSurfaceMesh and its vertices are
@@ -269,8 +265,7 @@ class PolygonSurfaceMesh {
    will cause *this* method to be invoked which will, in turn, throw. */
   template <typename FieldValue>
   Vector3<FieldValue> CalcGradientVectorOfLinearField(
-      const std::array<FieldValue, 3>& field_value, int p) const {
-    unused(field_value, p);
+      const std::array<FieldValue, 3>& /* field_value */, int /* p */) const {
     throw std::runtime_error(
         "PolygonSurfaceMesh::CalcGradientVectorOfLinearField(): "
         "PolygonSurfaceMesh does not support this calculation. Defining a "

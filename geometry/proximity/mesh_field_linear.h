@@ -330,10 +330,12 @@ class MeshFieldLinear {
                coordinates. M is the frame of the mesh.
    @throws std::exception if the field does not have gradients defined _and_ the
            MeshType doesn't support Barycentric coordinates.
-   */
+   @tparam C must be either `double` or `AutoDiffXd`. */
   template <typename C>
   promoted_numerical_t<C, T> EvaluateCartesian(int e,
-                                               const Vector3<C>& p_MQ) const {
+                                               const Vector3<C>& p_MQ) const
+    requires scalar_predicate<C>::is_bool
+  {
     if (is_gradient_field_degenerate_) {
       throw std::runtime_error("Gradient field is degenerate.");
     }
