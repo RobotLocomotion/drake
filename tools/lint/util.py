@@ -1,5 +1,4 @@
-"""Common helpers for source-tree linter utilities.
-"""
+"""Common helpers for source-tree linter utilities."""
 
 import os
 import sys
@@ -51,13 +50,14 @@ def find_all_sources(workspace_name):
     with open(workspace_file, "r") as f:
         if (required_line + "\n") not in f.readlines():
             raise RuntimeError(
-                f"Cannot find {required_line} in {workspace_file}")
+                f"Cannot find {required_line} in {workspace_file}"
+            )
     # Walk the tree (ignoring symlinks), and collect a list of all workspace-
     # relative filenames, but excluding a few specific items.
     relpaths = []
     for abs_dirpath, dirs, files in os.walk(workspace_root):
         assert abs_dirpath.startswith(workspace_root)
-        rel_dirpath = abs_dirpath[len(workspace_root) + 1:]
+        rel_dirpath = abs_dirpath[len(workspace_root) + 1 :]
         # Take all files within the currently-walked directory.
         for one_filename in files:
             if one_filename == ".DS_Store":

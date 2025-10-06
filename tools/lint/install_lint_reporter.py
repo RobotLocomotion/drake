@@ -7,18 +7,21 @@ import sys
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        prog='install_lint',
-        description=__doc__)
+    parser = argparse.ArgumentParser(prog="install_lint", description=__doc__)
     parser.add_argument(
-        '--genquery_output', metavar='FILE', type=str, action='append',
-        required=True, help='Required genquery report(s) to validate')
+        "--genquery_output",
+        metavar="FILE",
+        type=str,
+        action="append",
+        required=True,
+        help="Required genquery report(s) to validate",
+    )
     args = parser.parse_args()
 
     return_code = 0
 
     for filename in args.genquery_output:
-        with open(filename, 'r') as f:
+        with open(filename, "r") as f:
             dependency_chain = f.readlines()
         if len(dependency_chain) > 0:
             # A dependency chain was found.  This label was correctly
@@ -26,10 +29,11 @@ def main():
             continue
 
         failed_label = filename.replace("/install_lint_genquery_", ":")
-        print("ERROR: {} is not included in the //:install rule".format(
-            failed_label))
-        print("note: Check the parent folder(s) BUILD.bazel file to find out "
-              "where to add a dependency")
+        print(f"ERROR: {failed_label} is not included in the //:install rule")
+        print(
+            "note: Check the parent folder(s) BUILD.bazel file to find out "
+            "where to add a dependency"
+        )
 
         return_code = 1
 
