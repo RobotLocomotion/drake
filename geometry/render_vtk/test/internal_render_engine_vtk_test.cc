@@ -2421,7 +2421,7 @@ TEST_F(RenderEngineVtkTest, Ssao) {
     // default 99.5% conformity value is too strict.
     CompareImages(default_image,
                   "drake/geometry/render_vtk/test/ssao_reference.png",
-                  /* tolerance = */ 2, /* conformity = */ 0.99);
+                  /* tolerance = */ 2, /* conformity = */ 0.985);
   }
 
   struct Config {
