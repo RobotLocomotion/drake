@@ -417,7 +417,8 @@ def _raw_drake_cc_library(
         compile_once_per_scalar = False,
         declare_installed_headers = None,
         install_hdrs_exclude = None,
-        deprecation = None):
+        deprecation = None,
+        target_compatible_with = None):
     """Creates a rule to declare a C++ library.  Uses Drake's include_prefix
     and checks the deps blacklist.  If declare_installed_headers is true, also
     adds a drake_installed_headers() target.  (This should be set if and only
@@ -504,6 +505,7 @@ def _raw_drake_cc_library(
         testonly = testonly,
         visibility = visibility,
         deprecation = deprecation,
+        target_compatible_with = target_compatible_with,
     )
 
 def _maybe_add_pruned_private_hdrs_dep(
