@@ -67,17 +67,12 @@ void ConvexIntegrator<T>::DoInitialize() {
   model_.ResizeData(&scratch_data_);
 
   // Allocate scratch variables
-  const SpanningForest& forest = plant().graph().forest();
   scratch_.v_guess.resize(plant().num_velocities());
   scratch_.search_direction.resize(plant().num_velocities());
   scratch_.v.resize(nv);
   scratch_.q.resize(nq);
   scratch_.z.resize(nz);
   scratch_.f_ext = std::make_unique<MultibodyForces<T>>(plant());
-  scratch_.abic = std::make_unique<ArticulatedBodyInertiaCache<T>>(forest);
-  scratch_.Zb_Bo_W.resize(forest.num_mobods());
-  scratch_.aba_forces = std::make_unique<ArticulatedBodyForceCache<T>>(forest);
-  scratch_.ac = std::make_unique<AccelerationKinematicsCache<T>>(forest);
   scratch_.Ku.resize(nv);
   scratch_.bu.resize(nv);
   scratch_.Ke.resize(nv);
@@ -95,11 +90,6 @@ void ConvexIntegrator<T>::DoInitialize() {
   x_next_half_2_ = this->get_system().AllocateTimeDerivatives();
   z_dot_ = this->get_system().AllocateTimeDerivatives();
 
-  // Allocate memory for holding onto constraint impulses from the previous time
-  // step.
-  previous_impulse_.setZero(nv);
-  previous_impulse_buffer_.setZero(nv);
-
   // Allocate memory for the solver statistics.
   stats_.Reserve(solver_parameters_.max_iterations);
 
@@ -113,22 +103,6 @@ void ConvexIntegrator<T>::DoInitialize() {
 
 template <typename T>
 bool ConvexIntegrator<T>::DoStep(const T& h) {
-  const std::string& strategy = solver_parameters_.error_estimation_strategy;
-
-  if (strategy == "half_stepping") {
-    return StepWithHalfSteppingErrorEstimate(h);
-  } else if (strategy == "trapezoid") {
-    return StepWithTrapezoidErrorEstimate(h);
-  } else {
-    throw std::runtime_error(
-        "ConvexIntegrator: unknown error estimation strategy: " +
-        solver_parameters_.error_estimation_strategy +
-        ". Supported strategies are 'half_stepping' and 'trapezoid'.");
-  }
-}
-
-template <typename T>
-bool ConvexIntegrator<T>::StepWithHalfSteppingErrorEstimate(const T& h) {
   // TODO(vincekurtz): consider delaying this to encourage cache hits
   Context<T>& context = *this->get_mutable_context();
   ContinuousState<T>& x_next = context.get_mutable_continuous_state();
@@ -184,125 +158,6 @@ bool ConvexIntegrator<T>::StepWithHalfSteppingErrorEstimate(const T& h) {
   }
 
   return true;  // step was successful
-}
-
-template <typename T>
-bool ConvexIntegrator<T>::StepWithTrapezoidErrorEstimate(const T& h) {
-  using std::isfinite;
-
-  // Some aliases for convenience
-  ContinuousState<T>& x = *x_next_full_;     // first order propagated solution
-  ContinuousState<T>& x0 = *x_next_half_1_;  // initial state xₙ
-
-  // Record the initial state
-  const T t0 = this->get_context().get_time();
-  x0.SetFrom(this->get_context().get_continuous_state());
-  const VectorX<T> q0 = x0.get_generalized_position().CopyToVector();
-  const VectorX<T> v0 = x0.get_generalized_velocity().CopyToVector();
-
-  // Take a full first-order step to xₙ₊₁. This step will satisfy the standard
-  // SAP optimality conditions,
-  //     Mₙ (vₙ₊₁ − vₙ) + h kₙ = Jₙᵀγₙ₊₁
-  //     qₙ₊₁ = qₙ + h Nₙ vₙ₊₁
-  // TODO(vincekurtz): in error control mode, reuse geometry data and
-  // linearization after a step has been rejected.
-  ComputeNextContinuousState(h, v0, &x, false, false);
-
-  if (!this->get_fixed_step_mode()) {
-    // Extract the constraint impulses τₙ₊₁ = Jₙᵀγₙ₊₁ from the first-order step,
-    // and save them for later.
-    VectorX<T>& tau = previous_impulse_buffer_;
-    const VectorX<T> v = x.get_generalized_velocity().CopyToVector();
-    model_.MultiplyByDynamicsMatrix(v, &tau);  // Av − r = Jᵀγ = τ
-    tau -= model_.params().r;
-
-    const T h0 = this->get_previous_integration_step_size();
-    if (!isfinite(h0)) {
-      // This is the first step, so we don't have previous impulses to use for
-      // error estimation. In this case, we'll advance the state using
-      // half-stepping instead. We've already recorded tau from the first step,
-      // so subsequent steps will be able to use the trapezoid strategy.
-      // TODO(vincekurtz): get rid of the redundant full-step solve.
-      return StepWithHalfSteppingErrorEstimate(h);
-    }
-
-    // Recover the constraint impulses τₙ from the previous time step, taking
-    // care to adjust for any difference in step size.
-    const VectorX<T> tau0 = (h / h0) * previous_impulse_;
-
-    // Compute a midpoint estimate of constraint impulses, τ̅ = (τₙ + τₙ₊₁) / 2.
-    const VectorX<T> tau_bar = 0.5 * (tau0 + tau);
-
-    // Store x̅ = (xₙ + xₙ₊₁) / 2 in the context. This will allow us to compute
-    // midpoint estimates of multibody dynamics quantities like M̅ = M(q̅).
-    const VectorX<T> x_bar = 0.5 * (x0.CopyToVector() + x.CopyToVector());
-    this->get_mutable_context()->get_mutable_continuous_state().SetFromVector(
-        x_bar);
-
-    // Compute a second-order velocity estimate
-    //    M̅(v̂ₙ₊₁ − vₙ) + h k̅ = τ̅ .
-    // We can do this in O(n) with the Articulated Body Algorithm by solving for
-    // accelerations
-    //    M̅ v̇ + k̅ = τ̅ / h,
-    // where
-    //    v̇ = (v̂ₙ₊₁ − vₙ) / h.
-    // Since x̅ is already stored in the context, we can just use MultibodyPlant
-    // APIs for this, and avoid constructing M̅ and k̅ explicitly.
-    const Context<T>& plant_context =
-        plant().GetMyContextFromRoot(this->get_context());
-    MultibodyForces<T>& forces = *scratch_.f_ext;
-    ArticulatedBodyInertiaCache<T>& abic = *scratch_.abic;
-    std::vector<SpatialForce<T>>& Zb_Bo_W = scratch_.Zb_Bo_W;
-    ArticulatedBodyForceCache<T>& aba_forces = *scratch_.aba_forces;
-    AccelerationKinematicsCache<T>& ac = *scratch_.ac;
-
-    const VectorX<T> diagonal_inertia =
-        plant().EvalJointDampingCache(plant_context) * h;
-    plant().CalcForceElementsContribution(plant_context, &forces);
-    forces.mutable_generalized_forces() += tau_bar / h;
-    plant().internal_tree().CalcArticulatedBodyInertiaCache(
-        plant_context, diagonal_inertia, &abic);
-    plant().internal_tree().CalcArticulatedBodyForceBias(plant_context, abic,
-                                                         &Zb_Bo_W);
-    plant().internal_tree().CalcArticulatedBodyForceCache(
-        plant_context, abic, Zb_Bo_W, forces, &aba_forces);
-    plant().internal_tree().CalcArticulatedBodyAccelerations(
-        plant_context, abic, aba_forces, &ac);
-
-    const VectorX<T>& vdot = ac.get_vdot();
-    VectorX<T>& v_hat = scratch_.v;
-    v_hat = h * vdot + v0;
-
-    // Compute the second-order position update, ̂q = q₀ + h N(q̅) (̂v + v₀) / 2
-    VectorX<T>& q_hat = scratch_.q;
-    plant().MapVelocityToQDot(plant_context, h * (v_hat + v0) / 2.0, &q_hat);
-    q_hat += q0;
-
-    // Estimate the error as the difference between the first and second-order
-    // solutions.
-    ContinuousState<T>& err = *this->get_mutable_error_estimate();
-    err.get_mutable_generalized_position().SetFromVector(q_hat);
-    err.get_mutable_generalized_velocity().SetFromVector(v_hat);
-    err.get_mutable_vector().PlusEqScaled(-1.0, x.get_vector());
-  }
-
-  // Propagate the first-order solution
-  this->get_mutable_context()
-      ->get_mutable_continuous_state()
-      .get_mutable_vector()
-      .SetFrom(x.get_vector());
-  this->get_mutable_context()->SetTime(t0 + h);
-
-  return true;  // step was successful
-}
-
-template <typename T>
-void ConvexIntegrator<T>::PostSuccessfulStepCallback(const T&) {
-  if (solver_parameters_.error_estimation_strategy == "trapezoid") {
-    // Record impulses τₙ₊₁ from this successful step, for use as τₙ in the
-    // next step.
-    previous_impulse_ = previous_impulse_buffer_;
-  }
 }
 
 template <typename T>

@@ -67,10 +67,6 @@ struct ConvexIntegratorSolverParameters {
   // This is primarily useful for debugging and testing: sparse algebra is
   // generally much faster.
   bool use_dense_algebra{false};
-
-  // How to compute the error estimate ||x̂ₜ₊ₕ - xₜ₊ₕ||.
-  // Options are "half_stepping", "trapezoid".
-  std::string error_estimation_strategy{"half_stepping"};
 };
 
 /**
@@ -254,18 +250,6 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // estimate.
   bool DoStep(const T& h) override;
 
-  // Do the main integration step, using two half-sized steps for error
-  // estimation. This requires a total of 3 SAP solves.
-  bool StepWithHalfSteppingErrorEstimate(const T& h);
-
-  // Do the main integration step, with custom explicit trapezoid/midpoint rule
-  // for error estimation. This requires only 1 SAP solve.
-  bool StepWithTrapezoidErrorEstimate(const T& h);
-
-  // After a successful step, record the constraint impulses J(q)'γ(q, v) for
-  // use in the next time step (with the explicit trapezoid method).
-  void PostSuccessfulStepCallback(const T& h) final;
-
   // Solve the SAP problem to compute x_{t+h} at a given step size. This will be
   // called multiple times for each DoStep to compute the error estimate.
   //
@@ -370,12 +354,6 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     // External forces
     std::unique_ptr<MultibodyForces<T>> f_ext;
 
-    // ABA-related intermediates
-    std::unique_ptr<ArticulatedBodyInertiaCache<T>> abic;
-    std::vector<SpatialForce<T>> Zb_Bo_W;
-    std::unique_ptr<ArticulatedBodyForceCache<T>> aba_forces;
-    std::unique_ptr<AccelerationKinematicsCache<T>> ac;
-
     // External system linearization
     VectorX<T> Ku;
     VectorX<T> bu;
@@ -411,12 +389,6 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   std::unique_ptr<ContinuousState<T>> x_next_half_1_;  // x_{t+h/2}
   std::unique_ptr<ContinuousState<T>> x_next_half_2_;  // x_{t+h/2+h/2}
   std::unique_ptr<ContinuousState<T>> z_dot_;          // Misc state derivs.
-
-  // Stored constraint impulses from the previous time step, for the trapezoid
-  // method. Note that we need to use a little buffer since we only want to
-  // store the result after a step is accepted by error control.
-  VectorX<T> previous_impulse_;
-  VectorX<T> previous_impulse_buffer_;
 };
 
 // Forward-declare specializations to double, prior to DRAKE_DECLARE... below.

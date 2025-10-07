@@ -307,10 +307,7 @@ PYBIND11_MODULE(analysis, m) {
             doc.ConvexIntegratorSolverParameters.log_solver_stats.doc)
         .def_readwrite("use_dense_algebra",
             &ConvexIntegratorSolverParameters::use_dense_algebra,
-            doc.ConvexIntegratorSolverParameters.use_dense_algebra.doc)
-        .def_readwrite("error_estimation_strategy",
-            &ConvexIntegratorSolverParameters::error_estimation_strategy,
-            doc.ConvexIntegratorSolverParameters.error_estimation_strategy.doc);
+            doc.ConvexIntegratorSolverParameters.use_dense_algebra.doc);
   }
 
   auto bind_nonsymbolic_scalar_types = [&m](auto dummy) {

@@ -550,11 +550,6 @@ R"""(Tolerances and other parameters for the convex integrator's solver.)""";
           // Source: drake/systems/analysis/convex_integrator.h
           const char* doc = R"""()""";
         } enable_hessian_reuse;
-        // Symbol: drake::systems::ConvexIntegratorSolverParameters::error_estimation_strategy
-        struct /* error_estimation_strategy */ {
-          // Source: drake/systems/analysis/convex_integrator.h
-          const char* doc = R"""()""";
-        } error_estimation_strategy;
         // Symbol: drake::systems::ConvexIntegratorSolverParameters::kappa
         struct /* kappa */ {
           // Source: drake/systems/analysis/convex_integrator.h
@@ -2641,13 +2636,6 @@ Parameter ``context``:
     The pointer to the context will be maintained internally. The
     integrator must not outlive the context.)""";
         } ctor;
-        // Symbol: drake::systems::IntegratorBase::PostSuccessfulStepCallback
-        struct /* PostSuccessfulStepCallback */ {
-          // Source: drake/systems/analysis/integrator_base.h
-          const char* doc =
-R"""(Derived classes can override this method to perform special processing
-after each successful step. This default method does nothing.)""";
-        } PostSuccessfulStepCallback;
         // Symbol: drake::systems::IntegratorBase::Reset
         struct /* Reset */ {
           // Source: drake/systems/analysis/integrator_base.h

@@ -126,7 +126,6 @@ def create_bouncing_ball_sim(acc, dt, use_error_control):
         ci = simulator.get_mutable_integrator()
         ci.set_plant(plant)
         ci_params = ci.get_solver_parameters()
-        ci_params.error_estimation_strategy = "trapezoid"
         ci.set_solver_parameters(ci_params)
 
     return simulator, plant, None

@@ -125,8 +125,6 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& h_max) {
            step_size_to_attempt < h_max))
         set_smallest_adapted_step_size_taken(step_size_to_attempt);
 
-      // Do some integrator-specific bookkeeping.
-      PostSuccessfulStepCallback(step_size_to_attempt);
     } else {
       ++num_shrinkages_from_error_control_;
 

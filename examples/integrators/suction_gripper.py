@@ -345,7 +345,6 @@ def run_simulation(
         ci = simulator.get_mutable_integrator()
         ci.set_plant(plant)
         ci_params = ci.get_solver_parameters()
-        ci_params.error_estimation_strategy = "half_stepping"
         ci.set_solver_parameters(ci_params)
     meshcat.StartRecording()
     simulator.Initialize()
