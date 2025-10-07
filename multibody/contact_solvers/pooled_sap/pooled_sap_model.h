@@ -162,9 +162,9 @@ class PooledSapModel {
 
     // Diagonal approximation of the Delassus operator for constraints for which
     // the Jacobian J is the identity matrix.
-    clique_delassus_.Reserve(clique_sizes_);
+    clique_delassus_.Resize(clique_sizes_, clique_sizes_);
     for (int c = 0; c < A.size(); ++c) {
-      clique_delassus_.PushBack(A[c].diagonal().cwiseInverse());
+      clique_delassus_[c] = A[c].diagonal().cwiseInverse();
     }
   }
 
