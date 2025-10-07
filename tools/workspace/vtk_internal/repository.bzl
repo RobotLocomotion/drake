@@ -199,6 +199,7 @@ def vtk_internal_repository(
             ":patches/upstream/rendering_core_vtkcomposite_exception.patch",
             ":patches/upstream/rendering_opengl2_scaled_albedo_for_ibl.patch",
             ":patches/upstream/vtkpugixml_global_ctor.patch",
+            ":patches/common_core_fmt12.patch",
             ":patches/common_core_fmt9.patch",
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_rm_cin_prompting.patch",
