@@ -291,7 +291,10 @@ class TriangleSurfaceMesh {
   template <typename C>
   Barycentric<promoted_numerical_t<T, C>> CalcBarycentric(
       const Vector3<C>& p_MQ, int t) const
-    requires scalar_predicate<C>::is_bool;
+#ifndef DRAKE_DOXYGEN_CXX
+    requires scalar_predicate<C>::is_bool
+#endif
+  ;  // NOLINT(whitespace/semicolon)
 
   // TODO(DamrongGuoy): Consider using an oriented bounding box in obb.h.
   //  Currently we have a problem that TriangleSurfaceMesh and its vertices are
