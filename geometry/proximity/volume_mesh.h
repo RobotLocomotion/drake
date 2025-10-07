@@ -244,7 +244,10 @@ class VolumeMesh {
   template <typename C>
   Barycentric<promoted_numerical_t<T, C>> CalcBarycentric(
       const Vector3<C>& p_MQ, int e) const
-    requires scalar_predicate<C>::is_bool;
+#ifndef DRAKE_DOXYGEN_CXX
+    requires scalar_predicate<C>::is_bool
+#endif
+  ;  // NOLINT(whitespace/semicolon)
 
   /** Checks to see whether the given VolumeMesh object is equal via deep
    comparison (up to a tolerance). NaNs are treated as not equal as per the IEEE
