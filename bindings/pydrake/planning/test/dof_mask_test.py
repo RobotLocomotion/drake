@@ -13,13 +13,11 @@ class TestDofMask(unittest.TestCase):
 
         empty = []
         self.assertEqual(
-            mut.DofMask.MakeFromModel(
-                plant=plant, model_index=instance),
-            empty)
+            mut.DofMask.MakeFromModel(plant=plant, model_index=instance), empty
+        )
         self.assertEqual(
-            mut.DofMask.MakeFromModel(
-                plant=plant, model_name="asdf"),
-            empty)
+            mut.DofMask.MakeFromModel(plant=plant, model_name="asdf"), empty
+        )
 
         empty_dofs = mut.DofMask()
 
@@ -29,8 +27,9 @@ class TestDofMask(unittest.TestCase):
         # Explicit constructors.
         self.assertEqual(mut.DofMask(values=a), a)
         for bool_val in [True, False]:
-            self.assertEqual(mut.DofMask(size=3, value=bool_val),
-                             [bool_val] * 3)
+            self.assertEqual(
+                mut.DofMask(size=3, value=bool_val), [bool_val] * 3
+            )
 
         self.assertEqual(mut.DofMask(a).Complement(), [True, False])
         self.assertEqual(mut.DofMask(a).Union(other=b), [True, True])
