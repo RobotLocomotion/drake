@@ -1,8 +1,9 @@
 import inspect as _inspect
 
 
-def ApplyDriverConfigs(*, driver_configs, sim_plant, models_from_directives,
-                       lcm_buses, builder):
+def ApplyDriverConfigs(
+    *, driver_configs, sim_plant, models_from_directives, lcm_buses, builder
+):
     """Applies many driver configurations to a model.
 
     A "driver configuration" helps stack Drake systems between an LCM interface
@@ -34,10 +35,9 @@ def ApplyDriverConfigs(*, driver_configs, sim_plant, models_from_directives,
     # function of the same name. Due to the peculiarities of std::variant
     # and argument-dependent lookup, it's easier to re-implement it rather
     # than bind it via pybind11.
-    models_from_directives_map = dict([
-        (info.model_name, info)
-        for info in models_from_directives
-    ])
+    models_from_directives_map = dict(
+        [(info.model_name, info) for info in models_from_directives]
+    )
     for model_instance_name, driver_config in driver_configs.items():
         module = _inspect.getmodule(driver_config)
         apply_function = getattr(module, "ApplyDriverConfig")
@@ -47,4 +47,5 @@ def ApplyDriverConfigs(*, driver_configs, sim_plant, models_from_directives,
             sim_plant,
             models_from_directives_map,
             lcm_buses,
-            builder)
+            builder,
+        )
