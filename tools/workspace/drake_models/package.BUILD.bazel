@@ -55,3 +55,5 @@ glob(["drake_repository_metadata.json"], allow_empty = True) or genrule(
         )),
     ),
 )
+
+exports_files(["drake_repository_metadata.json"])
