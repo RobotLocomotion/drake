@@ -6,11 +6,9 @@ import weakref
 
 import numpy as np
 
-from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.memory_test_util import actual_ref_count
 from pydrake.geometry import SceneGraph_
-from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import MultibodyPlant_, MultibodyPlantConfig
 from pydrake.systems.controllers import InverseDynamicsController
 from pydrake.systems.framework import Context_, DiagramBuilder_
@@ -30,7 +28,7 @@ class TestRobotDiagram(unittest.TestCase):
         """
         Class = mut.RobotDiagramBuilder_[T]
         dut = Class(time_step=0.0)
-        if T == float:
+        if T is float:
             dut.parser().AddModels(url=(
                 "package://drake_models/iiwa_description/urdf/"
                 + "iiwa14_spheres_dense_collision.urdf"))
@@ -166,5 +164,5 @@ class TestRobotDiagram(unittest.TestCase):
             # ref-cycle graph it participated in, would grow without bound.
             self.assertEqual(actual_ref_count(builder.builder()), 0,
                              msg=f"at iteration {i}")
-            diagram = builder.Build()
+            diagram = builder.Build()  # noqa: F841 (unused-variable)
             gc.collect()

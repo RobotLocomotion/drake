@@ -215,7 +215,7 @@ def main():
     )
     args = parser.parse_args()
 
-    image_array_viewer = LcmImageArrayViewer(
+    LcmImageArrayViewer(
         host=args.host, port=args.port, channel=args.channel
     )
 

@@ -10,7 +10,6 @@ load("//tools/workspace/clp_internal:repository.bzl", "clp_internal_repository")
 load("//tools/workspace/coinutils_internal:repository.bzl", "coinutils_internal_repository")  # noqa
 load("//tools/workspace/common_robotics_utilities_internal:repository.bzl", "common_robotics_utilities_internal_repository")  # noqa
 load("//tools/workspace/cpplint_internal:repository.bzl", "cpplint_internal_repository")  # noqa
-load("//tools/workspace/crate_universe:repository.bzl", "crate_universe_repositories_internal")  # noqa
 load("//tools/workspace/csdp_internal:repository.bzl", "csdp_internal_repository")  # noqa
 load("//tools/workspace/curl_internal:repository.bzl", "curl_internal_repository")  # noqa
 load("//tools/workspace/dm_control_internal:repository.bzl", "dm_control_internal_repository")  # noqa
@@ -61,7 +60,6 @@ load("//tools/workspace/pkgconfig_x11_internal:repository.bzl", "pkgconfig_x11_i
 load("//tools/workspace/poisson_disk_sampling_internal:repository.bzl", "poisson_disk_sampling_internal_repository")  # noqa
 load("//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
 load("//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")
-load("//tools/workspace/pycodestyle_internal:repository.bzl", "pycodestyle_internal_repository")  # noqa
 load("//tools/workspace/python:repository.bzl", "python_repository")
 load("//tools/workspace/qdldl_internal:repository.bzl", "qdldl_internal_repository")  # noqa
 load("//tools/workspace/qhull_internal:repository.bzl", "qhull_internal_repository")  # noqa
@@ -144,7 +142,6 @@ def _add_internal_repositories():
     pkgconfig_spdlog_internal_repository(name = "pkgconfig_spdlog_internal")
     pkgconfig_x11_internal_repository(name = "pkgconfig_x11_internal")
     poisson_disk_sampling_internal_repository(name = "poisson_disk_sampling_internal", mirrors = mirrors)  # noqa
-    pycodestyle_internal_repository(name = "pycodestyle_internal", mirrors = mirrors)  # noqa
     qdldl_internal_repository(name = "qdldl_internal", mirrors = mirrors)
     qhull_internal_repository(name = "qhull_internal", mirrors = mirrors)
     ros_xacro_internal_repository(name = "ros_xacro_internal", mirrors = mirrors)  # noqa
@@ -193,9 +190,14 @@ def _drake_dep_repositories_impl(module_ctx):
         "zlib",
     ]
     for name in ALIAS_REPOSITORIES:
+        actual = "@drake//tools/workspace/" + name
+        aliases = {name: actual}
+        if name == "glib":
+            # We provide @glib//glib to match bzlmod glib's package structure.
+            aliases.update({"//glib:glib": actual})
         alias_repository(
             name = name,
-            aliases = {name: "@drake//tools/workspace/" + name},
+            aliases = aliases,
         )
 
     # Deprecated 2026-01-01.
@@ -220,17 +222,4 @@ internal_repositories = module_extension(
     doc = """(Internal use only) Wraps the add_default_repositories repository
     rule into a bzlmod module extension, excluding repositories that are
     already covered by modules, drake_dep_repositories, and crate_universe.""",
-)
-
-def _internal_crate_universe_repositories_impl(module_ctx):
-    names = crate_universe_repositories_internal(mirrors = DEFAULT_MIRRORS)
-    return module_ctx.extension_metadata(
-        root_module_direct_deps = names,
-        root_module_direct_dev_deps = [],
-    )
-
-internal_crate_universe_repositories = module_extension(
-    implementation = _internal_crate_universe_repositories_impl,
-    doc = """(Internal use only) Wraps the crate_universe repository rules to
-    be usable as a bzlmod module extension.""",
 )

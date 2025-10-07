@@ -3,13 +3,13 @@ import io
 import os
 import shutil
 import subprocess
-import sys
 import tempfile
 import unittest
 
 
 bazel_wrapper = SourceFileLoader(
-    "bazel_wrapper", "tools/clion/bazel_wrapper").load_module("bazel_wrapper")
+    "bazel_wrapper", "tools/clion/bazel_wrapper"
+).load_module("bazel_wrapper")
 
 
 class ExecDetail(Exception):
@@ -24,7 +24,6 @@ class Mock:
 
 
 class TestBazelWrapper(unittest.TestCase):
-
     def setUp(self):
         # Collect what the DUT prints to stderr.
         self._stderr = bytes()
@@ -38,7 +37,8 @@ class TestBazelWrapper(unittest.TestCase):
         self._oldcwd = os.getcwd()
         self._tempdir = tempfile.mkdtemp(
             prefix="drake_tools_clion_bazel_wrapper_test_",
-            dir=os.environ["TEST_TMPDIR"])
+            dir=os.environ["TEST_TMPDIR"],
+        )
         with open(os.path.join(self._tempdir, "WORKSPACE"), "w") as f:
             f.write('workspace(name = "drake")\n')
         os.chdir(self._tempdir)
@@ -74,7 +74,8 @@ class TestBazelWrapper(unittest.TestCase):
             argv=argv,
             execvp=self._execvp,
             write_stderr=self._write_stderr,
-            popen=self._popen)
+            popen=self._popen,
+        )
 
     def test_no_workspace(self):
         # When cwd has no WORKSPACE, the wrapper immediately bails out.
@@ -86,7 +87,8 @@ class TestBazelWrapper(unittest.TestCase):
         self.assertSequenceEqual(detail.exception.args, argv)
         self.assertEqual(
             "Skipping drake/tools/clion/bazel_wrapper (empty)\n",
-            self._stderr.decode("utf-8"))
+            self._stderr.decode("utf-8"),
+        )
 
     def test_different_workspace(self):
         # When cwd has wrong WORKSPACE, the wrapper immediately bails out.
@@ -99,20 +101,23 @@ class TestBazelWrapper(unittest.TestCase):
         self.assertSequenceEqual(detail.exception.args, argv)
         self.assertEqual(
             "Skipping drake/tools/clion/bazel_wrapper (non-drake)\n",
-            self._stderr.decode("utf-8"))
+            self._stderr.decode("utf-8"),
+        )
 
     def test_no_rewriting(self):
         # When the user disables stderr rewriting, the wrapper bails out but
         # still replaces the include paths.
         old_magic = "--aspects=@intellij_aspect//:intellij_info_bundled.bzl%intellij_info_aspect"  # noqa
-        new_magic = "--aspects=@drake//tools/clion:aspect.bzl%intellij_info_aspect"  # noqa
+        new_magic = (
+            "--aspects=@drake//tools/clion:aspect.bzl%intellij_info_aspect"  # noqa
+        )
         argv = ["bazel", old_magic, "--nodrake_error_rewriting", "dummy_arg"]
         with self.assertRaises(ExecDetail) as detail:
             self._do_main(argv)
         self.assertEqual(detail.exception.name, "bazel")
         self.assertSequenceEqual(
-            detail.exception.args,
-            ["bazel", new_magic, "dummy_arg"])
+            detail.exception.args, ["bazel", new_magic, "dummy_arg"]
+        )
         self.assertEqual("", self._stderr.decode("utf-8"))
 
     def test_subprocess(self):
@@ -122,12 +127,12 @@ class TestBazelWrapper(unittest.TestCase):
         with self.assertRaises(SystemExit) as detail:
             self._do_main(argv)
         self.assertEqual(
-            detail.exception.code,
-            self._bazel_subprocess_mock.returncode)
+            detail.exception.code, self._bazel_subprocess_mock.returncode
+        )
         self.assertEqual("", self._stderr.decode("utf-8"))
         self.assertSequenceEqual(
-            self._bazel_subprocess_actions,
-            ["terminate", "wait"])
+            self._bazel_subprocess_actions, ["terminate", "wait"]
+        )
 
     def test_rewriting(self):
         # The wrapper replaces the include paths and runs until EOF.
@@ -154,16 +159,18 @@ class TestBazelWrapper(unittest.TestCase):
             bold + "WORKSPACE:3",
         ]
         self._bazel_subprocess_mock.stderr = io.BytesIO(
-            "\n".join(original_lines).encode("utf-8"))
+            "\n".join(original_lines).encode("utf-8")
+        )
         argv = ["bazel", "dummy_arg"]
         with self.assertRaises(SystemExit) as detail:
             self._do_main(argv)
         self.assertEqual(
-            detail.exception.code,
-            self._bazel_subprocess_mock.returncode)
+            detail.exception.code, self._bazel_subprocess_mock.returncode
+        )
         self.assertSequenceEqual(
-            self._bazel_subprocess_actions,
-            ["terminate", "wait"])
-        for orig, edit in zip(edited_lines,
-                              self._stderr.decode("utf-8").splitlines()):
+            self._bazel_subprocess_actions, ["terminate", "wait"]
+        )
+        for orig, edit in zip(
+            edited_lines, self._stderr.decode("utf-8").splitlines()
+        ):
             self.assertEqual(orig, edit)

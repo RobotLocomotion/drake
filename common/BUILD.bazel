@@ -637,6 +637,8 @@ drake_cc_library(
 drake_cc_binary(
     name = "resource_tool",
     srcs = ["resource_tool.cc"],
+    deprecation = "DRAKE DEPRECATED: The resource_tool binary is deprecated and will be removed from Drake on or after 2026-02-01",  # noqa
+    tags = ["manual"],
     deps = [
         ":add_text_logging_gflags",
         ":essential",
@@ -1357,4 +1359,5 @@ add_lint_tests(
     python_lint_extra_srcs = [
         ":test/resource_tool_installed_test.py",
     ],
+    python_lint_use_ruff_format = False,
 )

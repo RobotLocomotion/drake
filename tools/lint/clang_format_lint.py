@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import subprocess
 import sys
 
@@ -6,7 +7,9 @@ import tools.lint.clang_format as clang_format_lib
 
 # From https://bazel.build/reference/be/c-cpp#cc_library.srcs.
 # Keep this list in sync with cpplint.bzl.
-_SOURCE_EXTENSIONS = [source_ext for source_ext in """
+_SOURCE_EXTENSIONS = [
+    source_ext
+    for source_ext in """
 .c
 .cc
 .cpp
@@ -20,7 +23,9 @@ _SOURCE_EXTENSIONS = [source_ext for source_ext in """
 .inc
 .inl
 .H
-""".split("\n") if len(source_ext)]
+""".split("\n")
+    if len(source_ext)
+]
 
 
 def _is_cxx(filename):
@@ -37,20 +42,22 @@ def _is_cxx(filename):
 
 def _check_clang_format_idempotence(filename):
     clang_format = clang_format_lib.get_clang_format_path()
-    formatter = subprocess.Popen(
+    current = Path(filename).read_text(encoding="utf-8")
+    formatted = subprocess.check_output(
         [clang_format, "-style=file", filename],
-        stdout=subprocess.PIPE)
-    differ = subprocess.Popen(
-        ["/usr/bin/diff", "-u", "-", filename],
-        stdin=formatter.stdout, stdout=subprocess.PIPE)
-    changes = differ.communicate()[0]
-    if not changes:
+        encoding="utf-8",
+    )
+    if current == formatted:
         return 0
-    print("ERROR: {} needs clang-format".format(filename))
-    print("note: fix via {} -style=file -i {}".format(
-        "bazel-bin/tools/lint/clang-format", filename))
-    print("note: if that program does not exist, you might need to compile it "
-          "first: bazel build //tools/lint/...")
+    print(f"ERROR: {filename} needs clang-format")
+    print(
+        "note: fix via bazel-bin/tools/lint/clang-format "
+        f"-style=file -i {filename}"
+    )
+    print(
+        "note: if that program does not exist, you might need to compile it "
+        "first: bazel build //tools/lint/..."
+    )
     return 1
 
 

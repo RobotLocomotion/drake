@@ -103,7 +103,7 @@ cc_binary(
     }),
     linkshared = 1,
     visibility = ["//visibility:private"],
-    deps = ["@glib"],
+    deps = ["@glib//glib"],
 )
 
 # This is the compile-time target for liblcm.  See above for details.
@@ -132,7 +132,7 @@ cc_binary(
     copts = LCM_COPTS,
     deps = [
         ":lcm",
-        "@glib",
+        "@glib//glib",
     ],
 )
 
@@ -167,7 +167,7 @@ cc_binary(
     copts = LCM_COPTS,
     includes = ["."],
     deps = [
-        "@glib",
+        "@glib//glib",
     ],
 )
 

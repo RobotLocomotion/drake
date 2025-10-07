@@ -4,16 +4,18 @@ from tools.workspace.mkdoc_internal.mkdoc_comment import process_comment
 
 
 class TestDocstring(unittest.TestCase):
-
     # TODO(m-chaturvedi, eric.cousineau): Completely test `mkdoc_comment.py`
     # and `mkdoc.py`.
     # Meanwhile, please refer to: https://git.io/JexDb
     def test_process_comment_issue_12445(self):
-        self.assertEqual(process_comment("// `one` and `two`"),
-                         "// ``one`` and ``two``")
+        self.assertEqual(
+            process_comment("// `one` and `two`"), "// ``one`` and ``two``"
+        )
         self.assertEqual(process_comment("/// this is foo"), "this is foo")
-        self.assertEqual(process_comment(
-            "///< this is foo\n/// this is bar"), "this is foo this is bar")
+        self.assertEqual(
+            process_comment("///< this is foo\n/// this is bar"),
+            "this is foo this is bar",
+        )
 
     def test_markdown_to_restructuredtext(self):
         input = """\
@@ -96,11 +98,13 @@ Raises:
         self.assertEqual(process_comment("@e Italics"), "*Italics*")
         self.assertEqual(process_comment("@a Italics"), "*Italics*")
         self.assertEqual(process_comment("@em Italics"), "*Italics*")
-        self.assertEqual(process_comment("Begin line *Italics*"),
-                         "Begin line *Italics*")
+        self.assertEqual(
+            process_comment("Begin line *Italics*"), "Begin line *Italics*"
+        )
         self.assertEqual(process_comment("@b Bold"), "**Bold**")
-        self.assertEqual(process_comment("Begin line **Bold**"),
-                         "Begin line **Bold**")
+        self.assertEqual(
+            process_comment("Begin line **Bold**"), "Begin line **Bold**"
+        )
 
     def test_parameter(self):
         input = """\
@@ -313,8 +317,9 @@ eu non diam phasellus vestibulum.
         self.assertEqual(process_comment(input), output)
 
     def test_brief(self):
-        self.assertEqual(process_comment("/// @brief Static method"),
-                         "Static method")
+        self.assertEqual(
+            process_comment("/// @brief Static method"), "Static method"
+        )
 
     def test_code_cpp(self):
         input = """\
@@ -462,9 +467,6 @@ Sagittis id consectetur purus ut faucibus pulvinar.
 
     def test_public(self):
         self.assertEqual(process_comment("/// @public"), "")
-
-    def test_protected(self):
-        self.assertEqual(process_comment("/// @protected"), "")
 
     def test_showinitializer(self):
         self.assertEqual(process_comment("/// @showinitializer"), "")

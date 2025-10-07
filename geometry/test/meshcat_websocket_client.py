@@ -28,8 +28,8 @@ _asyncio_sleep = asyncio.sleep
 
 def _patch_asyncio(orig):
     def _patched(*args, **kwargs):
-        if 'loop' in kwargs and kwargs['loop'] is None:
-            kwargs.pop('loop')
+        if "loop" in kwargs and kwargs["loop"] is None:
+            kwargs.pop("loop")
         return orig(*args, **kwargs)
 
     return _patched
@@ -49,12 +49,13 @@ asyncio.sleep = _patch_asyncio(_asyncio_sleep)
 #
 # TODO(mwoehlke-kitware): Remove this when Jammy's python3-u-msgpack has been
 # updated to 2.5.2 or later.
-if not hasattr(umsgpack, 'Hashable'):
+if not hasattr(umsgpack, "Hashable"):
     import collections
-    setattr(umsgpack.collections, 'Hashable', collections.abc.Hashable)
+
+    setattr(umsgpack.collections, "Hashable", collections.abc.Hashable)
 
 
-def print_recursive_comparison(d1, d2, level='root'):
+def print_recursive_comparison(d1, d2, level="root"):
     if type(d1) is not type(d2):
         print(f"{level:<20} Type mismatch")
         print(f"{level:<20}    {type(d1)}: {repr(d1)}")
@@ -64,14 +65,13 @@ def print_recursive_comparison(d1, d2, level='root'):
         if d1.keys() != d2.keys():
             s1 = set(d1.keys())
             s2 = set(d2.keys())
-            print('{:<20} + {} - {}'.format(level, s1-s2, s2-s1))
+            print("{:<20} + {} - {}".format(level, s1 - s2, s2 - s1))
             common_keys = s1 & s2
         else:
             common_keys = set(d1.keys())
 
         for k in common_keys:
-            print_recursive_comparison(
-                d1[k], d2[k], level=f"{level}.{k}")
+            print_recursive_comparison(d1[k], d2[k], level=f"{level}.{k}")
 
     elif isinstance(d1, list) and isinstance(d2, list):
         if len(d1) != len(d2):
@@ -79,8 +79,7 @@ def print_recursive_comparison(d1, d2, level='root'):
         common_len = min(len(d1), len(d2))
 
         for i in range(common_len):
-            print_recursive_comparison(
-                d1[i], d2[i], level=f"{level}.{i}")
+            print_recursive_comparison(d1[i], d2[i], level=f"{level}.{i}")
 
     else:
         if d1 != d2:
@@ -89,8 +88,7 @@ def print_recursive_comparison(d1, d2, level='root'):
 
 async def socket_operations_async(args):
     logger.info("Connecting...")
-    async with websockets.connect(args.ws_url,
-                                  close_timeout=1) as websocket:
+    async with websockets.connect(args.ws_url, close_timeout=1) as websocket:
         logger.info("... connected")
         if args.send_message is not None:
             logger.info("Sending...")
@@ -98,7 +96,7 @@ async def socket_operations_async(args):
             logger.info("... sent")
         message = None
         for n in range(args.expect_num_messages):
-            logger.info(f"Receiving {n+1}...")
+            logger.info(f"Receiving {n + 1}...")
             message = await asyncio.wait_for(websocket.recv(), timeout=10)
             logger.info("... received")
         if args.expect_message:
@@ -113,30 +111,50 @@ async def socket_operations_async(args):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Test utility for Meshcat websockets")
+        description="Test utility for Meshcat websockets"
+    )
     parser.add_argument(
-        "--disable-drake-valgrind-tracing", action='count',
-        help="ignored by this program; see valgrind.sh for details")
+        "--disable-drake-valgrind-tracing",
+        action="count",
+        help="ignored by this program; see valgrind.sh for details",
+    )
     parser.add_argument(
-        "--ws_url", type=str, required=True,
-        help="websocket URL")
+        "--ws_url", type=str, required=True, help="websocket URL"
+    )
     parser.add_argument(
-        "--send_message", type=json.loads, default=None, metavar="JSON",
-        help="send this message (given as a json string) to the websocket")
+        "--send_message",
+        type=json.loads,
+        default=None,
+        metavar="JSON",
+        help="send this message (given as a json string) to the websocket",
+    )
     parser.add_argument(
-        "--expect_num_messages", type=int, default=0, metavar="N",
-        help="the expected number of messages to receive")
+        "--expect_num_messages",
+        type=int,
+        default=0,
+        metavar="N",
+        help="the expected number of messages to receive",
+    )
     parser.add_argument(
-        "--expect_message", type=json.loads, default=None, metavar="JSON",
+        "--expect_message",
+        type=json.loads,
+        default=None,
+        metavar="JSON",
         help="the expected contents of the the final message "
-        + "(given as a json string)")
+        + "(given as a json string)",
+    )
     parser.add_argument(
-        "--expect_success", type=int, default=True, metavar="0|1",
-        help="must be 0 or 1; when zero, exceptions and errors are ignored")
+        "--expect_success",
+        type=int,
+        default=True,
+        metavar="0|1",
+        help="must be 0 or 1; when zero, exceptions and errors are ignored",
+    )
     args = parser.parse_args()
     try:
         asyncio.get_event_loop().run_until_complete(
-            socket_operations_async(args))
+            socket_operations_async(args)
+        )
     except Exception as e:
         if args.expect_success:
             raise
@@ -147,6 +165,7 @@ def main():
 assert __name__ == "__main__"
 logging.basicConfig(
     level=logging.INFO,
-    format="[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s")
+    format="[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s",
+)
 logger = logging.getLogger("meshcat_websocket_client")
 main()

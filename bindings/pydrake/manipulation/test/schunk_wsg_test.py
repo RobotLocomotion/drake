@@ -87,7 +87,7 @@ class TestSchunkWsg(unittest.TestCase):
         parser = Parser(plant)
         directives = LoadModelDirectives(FindResourceOrThrow(
             "drake/manipulation/util/test/iiwa7_wsg.dmd.yaml"))
-        models_from_directives = ProcessModelDirectives(directives, parser)
+        ProcessModelDirectives(directives, parser)
         plant.Finalize()
 
         self.assertEqual(len(builder.GetSystems()), 1)

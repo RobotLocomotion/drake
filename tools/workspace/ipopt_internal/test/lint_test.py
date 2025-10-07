@@ -1,4 +1,3 @@
-import json
 import unittest
 from pathlib import Path
 
@@ -6,7 +5,6 @@ from python import runfiles
 
 
 class IpoptLintTest(unittest.TestCase):
-
     def _read(self, respath):
         """Returns the contents of the given resource path."""
         manifest = runfiles.Create()
@@ -24,7 +22,8 @@ class IpoptLintTest(unittest.TestCase):
         """
         result = []
         contents = self._read(
-            "drake/tools/workspace/ipopt_internal/package.BUILD.bazel")
+            "drake/tools/workspace/ipopt_internal/package.BUILD.bazel"
+        )
         lines = contents.splitlines()
         start_line = f"{varname} = ["
         end_line = "]"
@@ -36,7 +35,7 @@ class IpoptLintTest(unittest.TestCase):
             suffix = '",'
             self.assertTrue(line.startswith(prefix), line)
             self.assertTrue(line.endswith(suffix), line)
-            result.append(line[len(prefix):-len(suffix)])
+            result.append(line[len(prefix) : -len(suffix)])
         return set(result)
 
     def _parse_make(self, varname, *, guard_line=None):
@@ -80,8 +79,7 @@ class IpoptLintTest(unittest.TestCase):
         """Checks that _HDRS_PUBLIC matches includeipopt_HEADERS."""
         make_sources = self._parse_make("includeipopt_HEADERS")
         make_sources.remove("src/Interfaces/IpReturnCodes.inc")
-        self.assertSetEqual(self._parse_build("_HDRS_PUBLIC"),
-                            make_sources)
+        self.assertSetEqual(self._parse_build("_HDRS_PUBLIC"), make_sources)
 
     def test_srcs_initial(self):
         """Checks that _SRCS_INITIAL matches libipopt_la_SOURCES, except for
@@ -90,11 +88,13 @@ class IpoptLintTest(unittest.TestCase):
         make_sources = self._parse_make("libipopt_la_SOURCES")
         make_sources.remove("src/Interfaces/IpStdCInterface.cpp")
         make_sources.remove("src/Interfaces/IpStdFInterface.c")
-        self.assertSetEqual(self._parse_build("_SRCS_INITIAL"),
-                            make_sources)
+        self.assertSetEqual(self._parse_build("_SRCS_INITIAL"), make_sources)
 
     def test_srcs_solver_int32(self):
         """Checks that _SRCS_SOLVER_INT32 matches !IPOPT_INT64's effect."""
-        self.assertSetEqual(self._parse_build("_SRCS_SOLVER_INT32"),
-                            self._parse_make("libipopt_la_SOURCES",
-                                             guard_line="if !IPOPT_INT64"))
+        self.assertSetEqual(
+            self._parse_build("_SRCS_SOLVER_INT32"),
+            self._parse_make(
+                "libipopt_la_SOURCES", guard_line="if !IPOPT_INT64"
+            ),
+        )

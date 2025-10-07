@@ -182,7 +182,7 @@ def default_globals():
     # TODO(eric.cousineau): Consider relegating this to a different module,
     # possibly when this falls under `pydrake`.
     import numpy as np
-    from mpl_toolkits.mplot3d import Axes3D
+    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 (unused-import)
     import matplotlib
     # On Ubuntu the Debian package python3-tk is a recommended (but not
     # required) dependency of python3-matplotlib; help users understand that
@@ -365,7 +365,7 @@ class CallPythonClient:
         else:
             try:
                 self._execute_message_impl(msg)
-            except Exception as e:
+            except Exception:
                 traceback.print_exc(file=sys.stderr)
                 sys.stderr.write("  Continuing (no --stop_on_error)\n")
                 self._had_error = True
@@ -490,7 +490,7 @@ class CallPythonClient:
             # User pressed Ctrl+C.
             self._done = True
             print("Quitting")
-        except Exception as e:
+        except Exception:
             # We encountered an error, and must stop.
             self._done = True
             self._had_error = True

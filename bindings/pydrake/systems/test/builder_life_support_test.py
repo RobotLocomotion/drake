@@ -2,9 +2,7 @@
 
 See also systems/test/test_util_py.cc for the bindings used in the tests.
 """
-import gc
 import unittest
-import weakref
 
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.memory_test_util import actual_ref_count

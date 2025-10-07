@@ -5,7 +5,6 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
-import sys
 import unittest
 
 from pydrake.common import (
@@ -385,7 +384,8 @@ class TestFixInertiaFromString(unittest.TestCase):
   <link name="world"/>
   <link name="b">
     <inertial>
-      <inertia ixx="0.16667" ixy="0" ixz="0" iyy="0.16667" iyz="0" izz="0.16667"/>
+      <inertia ixx="0.16667" ixy="0" ixz="0" iyy="0.16667" iyz="0" \
+izz="0.16667"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="1"/>
     </inertial>
@@ -402,7 +402,7 @@ class TestFixInertiaFromString(unittest.TestCase):
       </geometry>
     </collision>
   </link>
-</robot>"""  # noqa
+</robot>"""
         output_illustration = fix_inertia_from_string(
             input_text, "urdf", geom_inertia_role_order=[Role.kIllustration],
         )
@@ -413,7 +413,8 @@ class TestFixInertiaFromString(unittest.TestCase):
   <link name="world"/>
   <link name="b">
     <inertial>
-      <inertia ixx="0.0016667" ixy="0" ixz="0" iyy="0.0016667" iyz="0" izz="0.0016667"/>
+      <inertia ixx="0.0016667" ixy="0" ixz="0" iyy="0.0016667" iyz="0" \
+izz="0.0016667"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="1"/>
     </inertial>
@@ -430,7 +431,7 @@ class TestFixInertiaFromString(unittest.TestCase):
       </geometry>
     </collision>
   </link>
-</robot>"""  # noqa
+</robot>"""
         output_proximity = fix_inertia_from_string(
             input_text, "urdf", geom_inertia_role_order=[Role.kProximity],
         )

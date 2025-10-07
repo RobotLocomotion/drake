@@ -8,9 +8,7 @@ import scipy.sparse
 from pydrake.common import ToleranceType
 from pydrake.common.eigen_geometry import AngleAxis_, Quaternion_
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
-from pydrake.common.value import AbstractValue
 from pydrake.common.yaml import yaml_load_typed
 from pydrake.math import BsplineBasis_, RigidTransform_, RotationMatrix_
 from pydrake.polynomial import Polynomial_
@@ -131,7 +129,7 @@ class TestTrajectories(unittest.TestCase):
         self.assertIsInstance(b, T)
         numpy_compare.assert_float_equal(curve.control_points(), points)
 
-        if T == float:  # See Drake#19712
+        if T is float:  # See Drake#19712
             M = curve.AsLinearInControlPoints(derivative_order=1)
             self.assertEqual(M.shape, (2, 1))
             self.assertIsInstance(M, scipy.sparse.csc_matrix)
@@ -159,7 +157,7 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(bspline.rows(), 4)
         self.assertEqual(bspline.cols(), 1)
         self.assertEqual(bspline.num_control_points(), 2)
-        if T == float:  # See Drake#19712
+        if T is float:  # See Drake#19712
             M = bspline.AsLinearInControlPoints(derivative_order=1)
             self.assertEqual(M.shape, (2, 1))
             self.assertIsInstance(M, scipy.sparse.csc_matrix)
@@ -470,11 +468,11 @@ class TestTrajectories(unittest.TestCase):
         x = np.diag([4., 5., 6.])
         periodic_end = False
         # Just test the spelling for these.
-        pp1 = PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
+        PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
             breaks=t, samples=x, periodic_end=periodic_end)
-        pp2 = PiecewisePolynomial.CubicHermite(
+        PiecewisePolynomial.CubicHermite(
             breaks=t, samples=x, samples_dot=np.identity(3))
-        pp3 = PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
+        PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
             breaks=t, samples=x, sample_dot_at_start=[0., 0., 0.],
             sample_dot_at_end=[0., 0., 0.])
 

@@ -233,15 +233,15 @@ class PolygonSurfaceMesh {
 
   /** See TriangleSurfaceMesh::CalcBaryCentric(). This implementation is
    provided to maintain compatibility with MeshFieldLinear. However, it only
-   throws. %PolygonSurfaceMesh does not support barycentric coordinates. */
+   throws. %PolygonSurfaceMesh does not support barycentric coordinates.
+   @tparam C must be either `double` or `AutoDiffXd`. */
   template <typename C>
   Barycentric<promoted_numerical_t<T, C>> CalcBarycentric(
-      const Vector3<C>& p_MQ, int p) const {
-    unused(p_MQ, p);
-    throw std::runtime_error(
-        "PolygonSurfaceMesh::CalcBarycentric(): PolygonSurfaceMesh does not "
-        "have barycentric coordinates.");
-  }
+      const Vector3<C>& p_MQ, int p) const
+#ifndef DRAKE_DOXYGEN_CXX
+    requires scalar_predicate<C>::is_bool
+#endif
+  ;  // NOLINT(whitespace/semicolon)
 
   // TODO(DamrongGuoy): Consider using an oriented bounding box in obb.h.
   //  Currently we have a problem that PolygonSurfaceMesh and its vertices are

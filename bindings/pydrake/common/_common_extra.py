@@ -1,6 +1,6 @@
-import collections
+# ruff: noqa: F821 (undefined-name). This file is only a fragment.
+
 import functools
-import inspect
 import logging as _logging
 import sys
 import typing

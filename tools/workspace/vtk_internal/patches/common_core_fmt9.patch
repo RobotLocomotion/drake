@@ -1,0 +1,43 @@
+[vtk] Backport vtkStringFormatter to fmt 9.1 for Jammy
+
+Reasoning for not upstreaming this patch: Drake-specific build compatibility.
+
+
+--- Common/Core/vtkStringFormatter.h
++++ Common/Core/vtkStringFormatter.h
+@@ -214,7 +214,9 @@
+ /**
+  * The result type of a format_to operation.
+  */
++#if 0  // Not defined in fmt 9, required for Drake's Jammy support.
+ using fmt::format_to_result;
++#endif
+ 
+ /**
+  * Given a format and a set of numbers/variables convert it to a string within out.
+@@ -236,7 +238,15 @@
+  * @remark `format_to_n` does not append a terminating null character.
+  * @note The standard library provides this function as of C++20, but we support up to C++17.
+  */
++#if 0  // Not defined correctly in fmt 9, required for Drake's Jammy support.
+ using fmt::format_to_n;
++#else
++template <typename OutputIt, typename... T>
++inline auto format_to_n(OutputIt out, size_t n, std::string_view fmt, T&&... args) -> format_to_n_result<OutputIt> {
++  return fmt::format_to_n(out, n, fmt::runtime(fmt), std::forward<T>(args)...);
++}
++
++#endif
+ 
+ /**
+  * Converts given time since epoch as ``std::time_t`` value into calendar time,
+@@ -268,7 +278,9 @@
+  *
+  * @note The standard library provides this function as of C++23, but we support up to C++17.
+  */
++#if 0  // Not defined in fmt 9, required for Drake's Jammy support.
+ using fmt::println;
++#endif
+ 
+ /**
+  * Check if the given string is a printf style format.

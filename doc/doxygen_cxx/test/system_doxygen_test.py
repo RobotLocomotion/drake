@@ -1,4 +1,3 @@
-import re
 from textwrap import dedent, indent
 import unittest
 
@@ -8,38 +7,48 @@ import doc.doxygen_cxx.system_doxygen as mut
 class TestSystemDoxygen(unittest.TestCase):
     def test_strip_cpp_comment_cruft(self):
         self.assertEqual(
-            mut.strip_cpp_comment_cruft(dedent("""\
-            // This should disappear.
-            /// comments.
-            /// yay.
-            /// @directive
-            /// @enddirective
-            // This should also disappear.
-            """)),
+            mut.strip_cpp_comment_cruft(
+                dedent("""\
+                // This should disappear.
+                /// comments.
+                /// yay.
+                /// @directive
+                /// @enddirective
+                // This should also disappear.
+                """)
+            ),
             # N.B. For simplicity, re-indent to show the leading space.
-            indent(dedent("""\
+            indent(
+                dedent("""\
 
-             comments.
-             yay.
-             @directive
-             @enddirective
-            """), " "),
+                comments.
+                yay.
+                @directive
+                @enddirective
+                """),
+                " ",
+            ),
         )
 
         self.assertEqual(
-            mut.strip_cpp_comment_cruft(dedent("""\
-            * Some more comment stuff
-            * @directive
-            * Something // ignore
-            * @enddirective
-            """)),
+            mut.strip_cpp_comment_cruft(
+                dedent("""\
+                * Some more comment stuff
+                * @directive
+                * Something // ignore
+                * @enddirective
+                """)
+            ),
             # N.B. For simplicity, re-indent to show the leading space.
-            indent(dedent("""\
-             Some more comment stuff
-             @directive
-             Something
-             @enddirective
-            """), " "),
+            indent(
+                dedent("""\
+                 Some more comment stuff
+                 @directive
+                 Something
+                 @enddirective
+                """),
+                " ",
+            ),
         )
 
     def test_system_yaml_to_html_and_rst(self):
@@ -105,7 +114,7 @@ class TestSystemDoxygen(unittest.TestCase):
         }
         */
         """)
-        self.do_test_process_doxygen_raises(s, 'obsolete syntax')
+        self.do_test_process_doxygen_raises(s, "obsolete syntax")
 
     def test_process_doxygen_missing_end(self):
         s = dedent("""\
@@ -113,7 +122,7 @@ class TestSystemDoxygen(unittest.TestCase):
         @system
         */
         """)
-        self.do_test_process_doxygen_raises(s, 'missing @endsystem')
+        self.do_test_process_doxygen_raises(s, "missing @endsystem")
 
     def test_process_doxygen_illegal_nest(self):
         s = dedent("""\
@@ -124,4 +133,4 @@ class TestSystemDoxygen(unittest.TestCase):
         @endsystem
         */
         """)
-        self.do_test_process_doxygen_raises(s, 'illegal nest')
+        self.do_test_process_doxygen_raises(s, "illegal nest")

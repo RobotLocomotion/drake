@@ -140,7 +140,6 @@ def assert_not_equal(a, b):
     br = np.broadcast(a, b)
     errs = []
     for ai, bi in br:
-        e = None
         try:
             assert_ne(ai, bi)
         except _UnwantedEquality as e:

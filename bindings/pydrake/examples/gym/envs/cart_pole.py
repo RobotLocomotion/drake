@@ -39,7 +39,6 @@ from pydrake.systems.framework import (
     DiagramBuilder,
     EventStatus,
     LeafSystem,
-    PublishEvent,
 )
 from pydrake.systems.primitives import (
     ConstantVectorSource,

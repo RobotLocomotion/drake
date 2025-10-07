@@ -130,7 +130,7 @@ class TestIntegration(unittest.TestCase):
         """
         gltf_path_pairs = []
         for index, image_type in enumerate(["color", "depth", "label"]):
-            gltf_path = f"{gltf_file_dir}/{index+1:019d}-{image_type}.gltf"
+            gltf_path = f"{gltf_file_dir}/{index + 1:019d}-{image_type}.gltf"
             ground_truth_gltf = self.runfiles.Rlocation(
                 "drake/geometry/render_gltf_client/test/"
                 f"test_{image_type}_scene.gltf"
@@ -166,7 +166,7 @@ class TestIntegration(unittest.TestCase):
         """Walks the tree rooted at `entry` and replace entries found in
         _REPLACED with the explicit tree referenced."""
         entry_type = type(entry)
-        if entry_type == dict:
+        if entry_type is dict:
             for to_remove in TestIntegration._REMOVED:
                 entry.pop(to_remove, None)
             for k, v in entry.items():
@@ -174,7 +174,7 @@ class TestIntegration(unittest.TestCase):
                 if k in TestIntegration._REPLACED.keys():
                     entry[k] = gltf[TestIntegration._REPLACED[k]][v]
                 TestIntegration._traverse_and_mutate(gltf, entry[k])
-        elif entry_type == list:
+        elif entry_type is list:
             # If the list contains only numeric numbers, round floating values
             # till 12 decimal places due to the precision differences across
             # platforms.
@@ -218,16 +218,17 @@ class TestIntegration(unittest.TestCase):
         self.assertCountEqual(actual["nodes"], expected["nodes"])
 
     @staticmethod
-    def _save_to_outputs(source_file, prefix=''):
+    def _save_to_outputs(source_file, prefix=""):
         """Writes the given source file to the undeclared outputs (if defined).
         If written, the files will be found in:
         bazel-testlogs/geometry/render_gltf_client/py/integration_test/test.outputs  # noqa
         """
-        output_dir = os.getenv('TEST_UNDECLARED_OUTPUTS_DIR')
+        output_dir = os.getenv("TEST_UNDECLARED_OUTPUTS_DIR")
         if output_dir is not None:
             source_path = Path(source_file)
-            shutil.copy(source_path,
-                        os.path.join(output_dir, prefix + source_path.name))
+            shutil.copy(
+                source_path, os.path.join(output_dir, prefix + source_path.name)
+            )
 
     def test_integration(self):
         """Quantitatively compares the images rendered by RenderEngineVtk and
@@ -240,11 +241,11 @@ class TestIntegration(unittest.TestCase):
 
         for image_set in vtk_image_sets:
             for image_path in image_set:
-                self._save_to_outputs(image_path, 'vtk_')
+                self._save_to_outputs(image_path, "vtk_")
 
         for image_set in client_image_sets:
             for image_path in image_set:
-                self._save_to_outputs(image_path, 'client_')
+                self._save_to_outputs(image_path, "client_")
 
         for vtk_image_paths, client_image_paths in zip(
             vtk_image_sets, client_image_sets

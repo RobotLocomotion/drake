@@ -7,7 +7,7 @@ import os
 from os.path import join
 import sys
 
-import pydrake._all_everything
+import pydrake._all_everything  # noqa: F401 (unused-import)
 from pydrake.common import _MangledName
 
 from doc.defs import (
@@ -25,7 +25,7 @@ def _get_submodules(name):
     for s_name in sys.modules.keys():
         if not s_name.startswith(prefix):
             continue
-        sub = s_name[len(prefix):]
+        sub = s_name[len(prefix) :]
         # Ensure its an immediate child.
         if "." in sub or sub.startswith("_"):
             continue
@@ -63,18 +63,18 @@ def _has_cc_imported_symbols(name):
         test = ".".join(pieces[:-1] + ["_{}_py".format(sub)])
         if test in sys.modules:
             raise RuntimeError(
-                ("The module `{}` should not exist; instead, only `{}` should "
-                 "exist").format(test, name))
+                f"The module `{test}` should not exist; "
+                f"instead, only `{name}` should exist"
+            )
     return False
 
 
 def _write_module(name, f_name):
-    """Writes an rst file for module `name` into `f_name`.
-    """
+    """Writes an rst file for module `name` into `f_name`."""
     if verbose():
         print("Write: {}".format(name))
     subs = _get_submodules(name)
-    with open(f_name, 'w') as f:
+    with open(f_name, "w") as f:
         f.write("\n")
         rst_name = name.replace("_", "\\_")
         f.write("{}\n".format(rst_name))
@@ -118,15 +118,19 @@ def _build(*, out_dir, temp_dir, modules):
 
     sphinx_build = "/usr/share/sphinx/scripts/python3/sphinx-build"
     if not os.path.isfile(sphinx_build):
-        print("Please re-run 'setup/install_prereqs' with the "
-              "'--with-doc-only' flag")
+        print(
+            "Please re-run 'setup/install_prereqs' with the "
+            "'--with-doc-only' flag"
+        )
         sys.exit(1)
 
     # Create a hermetic copy of our input.  This helps ensure that only files
     # listed in BUILD.bazel will render onto the website.
     symlink_input(
-        "drake/doc/pydrake/sphinx_input.txt", temp_dir,
-        strip_prefix=["drake/doc/"])
+        "drake/doc/pydrake/sphinx_input.txt",
+        temp_dir,
+        strip_prefix=["drake/doc/"],
+    )
     input_dir = join(temp_dir, "pydrake")
 
     # Process the command-line request for which modules to document.
@@ -159,16 +163,21 @@ def _build(*, out_dir, temp_dir, modules):
 
     # Run the documentation generator.
     os.environ["LANG"] = "en_US.UTF-8"
-    check_call([
-        sphinx_build,
-        "-b", "html",  # HTML output.
-        "-a", "-E",  # Don't use caching.
-        "-N",  # Disable colored output.
-        "-T",  # Traceback (for plugin).
-        "-d", join(temp_dir, "doctrees"),
-        input_dir,
-        out_dir,
-    ])
+    check_call(
+        [
+            sphinx_build,
+            "-b",
+            "html",  # HTML output.
+            "-a",
+            "-E",  # Don't use caching.
+            "-N",  # Disable colored output.
+            "-T",  # Traceback (for plugin).
+            "-d",
+            join(temp_dir, "doctrees"),
+            input_dir,
+            out_dir,
+        ]
+    )
 
     # Tidy up.
     perl_cleanup_html_output(out_dir=out_dir)
@@ -185,5 +194,9 @@ def _build(*, out_dir, temp_dir, modules):
 # test` (e.g. scan for instances of `TemporaryName`, scan for raw C++ types
 # in type signatures, etc).
 if __name__ == "__main__":
-    main(build=_build, subdir="pydrake", description=__doc__.strip(),
-         supports_modules=True)
+    main(
+        build=_build,
+        subdir="pydrake",
+        description=__doc__.strip(),
+        supports_modules=True,
+    )

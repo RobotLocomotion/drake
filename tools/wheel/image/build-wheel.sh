@@ -5,7 +5,7 @@
 set -eu -o pipefail
 
 if [[ "$(uname)" == "Darwin" ]]; then
-    HOMEBREW="$(brew config | \grep -E '^HOMEBREW_PREFIX' | cut -c18-)"
+    HOMEBREW="$(brew --prefix)"
 
     # Use GNU 'cp' on macOS so we have a consistent CLI.
     cp()

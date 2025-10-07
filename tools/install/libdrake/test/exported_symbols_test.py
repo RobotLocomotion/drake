@@ -1,5 +1,4 @@
 from collections import namedtuple
-from pathlib import Path
 import re
 import subprocess
 import sys
@@ -12,6 +11,7 @@ _GOOD_SYMBOLS_PREFIX = [
     "_ZTS",
     # For now, allow anything in `namespace std {}`. (We should
     # probably be checking for unwanted template arguments.)
+    "_ZGVNSt7__cxx11",
     "_ZGVZNKSt8__detail",
     "_ZN9__gnu_cxx",
     "_ZNKRSt",

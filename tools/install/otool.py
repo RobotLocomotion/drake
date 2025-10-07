@@ -8,29 +8,32 @@ import subprocess
 
 from collections import namedtuple
 
-Library = namedtuple('Library', [
-    'basename',
-    'path',
-    'version_compat',
-    'version_current',
-])
+Library = namedtuple(
+    "Library",
+    [
+        "basename",
+        "path",
+        "version_compat",
+        "version_current",
+    ],
+)
 
 # Known Load command keys that contain spaces; DO NOT MODIFY at runtime.
 _load_command_keys = (
-    'time stamp',
-    'current version',
-    'compatibility version',
+    "time stamp",
+    "current version",
+    "compatibility version",
 )
 
 
-def _join(proc, cmd='otool'):
+def _join(proc, cmd="otool"):
     """
     Wait for process `proc` to terminate, and raise an exception if it did not
     exit successfully (i.e. gave a non-zero exit code).
     """
     retcode = proc.wait(timeout=30)
     if retcode:
-        raise CalledProcessError(retcode, cmd)
+        raise subprocess.CalledProcessError(retcode, cmd)
 
 
 def _split_load_command(line):
@@ -39,10 +42,10 @@ def _split_load_command(line):
     that contain spaces.
     """
     for key in _load_command_keys:
-        if line.startswith(f'{key} '):
-            return [key, line[len(key):].lstrip()]
+        if line.startswith(f"{key} "):
+            return [key, line[len(key) :].lstrip()]
 
-    return line.split(' ', 1)
+    return line.split(" ", 1)
 
 
 def load_commands(path):
@@ -61,7 +64,7 @@ def load_commands(path):
     command = None
 
     proc = subprocess.Popen(
-        ['otool', '-l', path],
+        ["otool", "-l", path],
         stdout=subprocess.PIPE,
         text=True,
     )
@@ -82,13 +85,13 @@ def load_commands(path):
         # Key names may or may not be indented, and some key names contain
         # spaces. Most values are aligned to a particular (but varying) column,
         # but long key names may change this column.
-        if line.startswith('Load command'):
+        if line.startswith("Load command"):
             if command is not None and len(command):
                 commands.append(command)
 
             command = {}
 
-        elif line == 'Section\n':
+        elif line == "Section\n":
             if command is not None and len(command):
                 commands.append(command)
 
@@ -97,15 +100,15 @@ def load_commands(path):
         elif command is not None:
             kv = _split_load_command(line.strip())
             if len(kv) == 2:
-                m = re.match('^(.*) [(]offset ([0-9]+)[)]$', kv[1].strip())
+                m = re.match("^(.*) [(]offset ([0-9]+)[)]$", kv[1].strip())
                 if m is None:
-                    if kv[0] == 'cmdsize':
+                    if kv[0] == "cmdsize":
                         command[kv[0]] = int(kv[1].strip())
                     else:
                         command[kv[0]] = kv[1].strip()
                 else:
                     command[kv[0]] = m.group(1).strip()
-                    command[f'{kv[0]}:offset'] = int(m.group(2))
+                    command[f"{kv[0]}:offset"] = int(m.group(2))
 
     _join(proc)
 
@@ -120,7 +123,7 @@ def linked_libraries(path):
     libs = []
 
     proc = subprocess.Popen(
-        ['otool', '-L', path],
+        ["otool", "-L", path],
         stdout=subprocess.PIPE,
         text=True,
     )
@@ -135,12 +138,14 @@ def linked_libraries(path):
         #
         # <version> looks like '(compatibility version 1.0.0, '
         # 'current version 5.0.0)'.
-        m = re.match('^\t(.*)[(]([^)]+)[)]\\s*$', line)
+        m = re.match("^\t(.*)[(]([^)]+)[)]\\s*$", line)
         if m is not None:
             path = m.group(1).strip()
 
-            m = re.match('^compatibility version (.*), current version (.*)$',
-                         m.group(2).strip())
+            m = re.match(
+                "^compatibility version (.*), current version (.*)$",
+                m.group(2).strip(),
+            )
             if m is not None:
                 compat = m.group(1)
                 current = m.group(2)
@@ -153,7 +158,9 @@ def linked_libraries(path):
                     path=path,
                     basename=os.path.basename(path),
                     version_compat=compat,
-                    version_current=current))
+                    version_current=current,
+                )
+            )
 
     _join(proc)
 

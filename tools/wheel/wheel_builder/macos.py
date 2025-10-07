@@ -8,8 +8,8 @@ import shutil
 import subprocess
 import tempfile
 
-from .common import create_snopt_tgz, die, gripe, wheel_name
-from .common import build_root, resource_root, wheel_root, wheelhouse
+from .common import create_snopt_tgz, die, wheel_name
+from .common import build_root, resource_root, wheelhouse
 from .common import test_root, find_tests
 
 from .macos_types import PythonTarget

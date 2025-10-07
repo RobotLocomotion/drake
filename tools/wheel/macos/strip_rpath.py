@@ -3,7 +3,6 @@ Remove RPATH commands from an artifact (binary or library).
 """
 
 import argparse
-import re
 import subprocess
 import sys
 

@@ -1,4 +1,3 @@
-import os.path
 import sys
 
 from python import runfiles
@@ -31,7 +30,7 @@ def _check_preamble(name, contents):
             # The line matches, modulo trailing commas; given how JSON lists
             # work, we must ignore trailing commas.
             continue
-        print(f"{name}:{i+1}:1: preamble is incorrect:", file=sys.stderr)
+        print(f"{name}:{i + 1}:1: preamble is incorrect:", file=sys.stderr)
         print(f"   actual: {repr(actual_line)}", file=sys.stderr)
         print(f" expected: {repr(expected_line)}", file=sys.stderr)
         return 1
@@ -46,7 +45,7 @@ def _check_matplotlib(name, contents):
         if '"# %matplotlib notebook' in line:
             # Don't complain about commented-out uses.
             continue
-        print(f"{name}:{i+1}:1: do not use %matplotlib", file=sys.stderr)
+        print(f"{name}:{i + 1}:1: do not use %matplotlib", file=sys.stderr)
         return 1
     return 0
 
@@ -58,11 +57,11 @@ def _check_katex(name, contents):
     """
     for i, line in enumerate(contents):
         if "begin{align}" in line:
-            print(f"{name}:{i+1}:1: do not use 'align'", file=sys.stderr)
+            print(f"{name}:{i + 1}:1: do not use 'align'", file=sys.stderr)
             print(" Re-write it to use 'aligned' instead.", file=sys.stderr)
             return 1
         if "begin{gather}" in line:
-            print(f"{name}:{i+1}:1: do not use 'gather'", file=sys.stderr)
+            print(f"{name}:{i + 1}:1: do not use 'gather'", file=sys.stderr)
             print(" Re-write it to use 'gathered' instead.", file=sys.stderr)
             return 1
     return 0
@@ -83,7 +82,7 @@ def _check_cell_outputs(name, contents):
             if line == expected:
                 # A valid outputs line.
                 continue
-            print(f"{name}:{i+1}:1: clear all outputs", file=sys.stderr)
+            print(f"{name}:{i + 1}:1: clear all outputs", file=sys.stderr)
             return 1
     return 0
 

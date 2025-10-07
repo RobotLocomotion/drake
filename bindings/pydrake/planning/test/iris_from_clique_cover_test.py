@@ -5,7 +5,6 @@ from pydrake.common import RandomGenerator, Parallelism
 from pydrake.planning import (
     RobotDiagramBuilder,
     SceneGraphCollisionChecker,
-    CollisionCheckerParams,
     IrisNp2Options,
     IrisZoOptions,
 )
@@ -14,8 +13,6 @@ from pydrake.geometry.optimization import IrisOptions
 
 import textwrap
 import numpy as np
-import scipy.sparse as sp
-import scipy
 
 
 def _snopt_and_mip_solver_available():

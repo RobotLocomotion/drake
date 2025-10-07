@@ -1,5 +1,3 @@
-diffutils
-file
 gfortran
 libclang-19-dev
 libgl-dev
@@ -11,7 +9,6 @@ libx11-dev
 ocl-icd-opencl-dev
 opencl-headers
 patch
-patchelf
 pkg-config
 python3-all-dev
 zlib1g-dev

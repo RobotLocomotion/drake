@@ -50,17 +50,14 @@ import github3
 
 from tools.workspace.metadata import read_repository_metadata
 
-logger = logging.getLogger('new_release')
+logger = logging.getLogger("new_release")
 logger.setLevel(logging.INFO)
 
 warn = logger.warning
 info = logger.info
 
 # Repository rules that fetch from GitHub.
-_GITHUB_RULE_TYPES = [
-    "github",
-    "github_release_attachments"
-]
+_GITHUB_RULE_TYPES = ["github", "github_release_attachments"]
 
 # Repository rule that uses an external upgrade script.
 _SCRIPTED_RULE_TYPE = "scripted"
@@ -98,7 +95,6 @@ _OVERLOOK_RELEASE_REPOSITORIES = {
     "github3_py_internal": r"^(\d+.)",
     "gz_math_internal": r"^(gz)",
     "gz_utils_internal": r"^(gz)",
-    "pycodestyle_internal": "",
     "qhull_internal": r"^(2)",
     "sdformat_internal": "",
     "xmlrunner_py_internal": "",
@@ -147,7 +143,8 @@ def _check_output(args):
 
 def _get_default_username():
     origin_url = _check_output(
-        ["git", "config", "--get", "remote.origin.url"]).strip()
+        ["git", "config", "--get", "remote.origin.url"]
+    ).strip()
     # Match one of these two cases:
     #  git@github.com:user/drake.git
     #  https://user@github.com/user/drake.git
@@ -264,20 +261,24 @@ def _check_for_upgrades(gh, args, metadata):
             info(f"{workspace_name} may need upgrade")
             continue
         elif rule_type == "manual":
-            warn(f"{workspace_name} version %s needs manual inspection",
-                 data.get("version", "???"))
+            warn(
+                f"{workspace_name} version %s needs manual inspection",
+                data.get("version", "???"),
+            )
             continue
         else:
-            raise RuntimeError(
-                f"Bad rule type {rule_type} in {workspace_name}")
+            raise RuntimeError(f"Bad rule type {rule_type} in {workspace_name}")
         if old_commit == new_commit:
             continue
         elif new_commit is not None:
-            info(f"{workspace_name} needs upgrade"
-                 f" from {old_commit} to {new_commit}")
+            info(
+                f"{workspace_name} needs upgrade"
+                f" from {old_commit} to {new_commit}"
+            )
         else:
-            warn(f"{workspace_name} version {old_commit}"
-                 " needs manual inspection")
+            warn(
+                f"{workspace_name} version {old_commit} needs manual inspection"
+            )
 
 
 def _modified_paths(repo, root):
@@ -285,15 +286,15 @@ def _modified_paths(repo, root):
     altered.
     """
     assert os.path.isdir(os.path.join(repo.working_tree_dir, root))
-    if not root.endswith('/'):
-        root += '/'
+    if not root.endswith("/"):
+        root += "/"
 
     result = set()
     for item in repo.untracked_files:
         if item.startswith(root):
             result.add(item)
 
-    for other in [None, 'HEAD']:
+    for other in [None, "HEAD"]:
         for item in repo.index.diff(other):
             if item.a_path.startswith(root):
                 result.add(item.a_path)
@@ -314,20 +315,22 @@ def _is_unmodified(repo, path):
         return len(_modified_paths(repo, path)) == 0
 
     else:
-        for other in [None, 'HEAD']:
+        for other in [None, "HEAD"]:
             if path in [item.b_path for item in repo.index.diff(other)]:
                 return False
 
     return True
 
 
-def _do_commit(local_drake_checkout, actually_commit,
-               workspace_names, paths, message):
+def _do_commit(
+    local_drake_checkout, actually_commit, workspace_names, paths, message
+):
     if actually_commit:
         names = ", ".join(workspace_names)
-        local_drake_checkout.git.add('-A', *paths)
+        local_drake_checkout.git.add("-A", *paths)
         local_drake_checkout.git.commit(
-            '-o', *paths, '-m', "[workspace] " + message)
+            "-o", *paths, "-m", "[workspace] " + message
+        )
         info("")
         info("*" * 72)
         info(f"Done.  Changes for {names} were committed.")
@@ -361,21 +364,17 @@ def _download(url, local_filename):
 
 
 def _do_upgrade_github_archive(
-        *,
-        temp_dir,
-        old_commit,
-        new_commit,
-        bzl_filename,
-        repository):
+    *, temp_dir, old_commit, new_commit, bzl_filename, repository
+):
     # Slurp the file we're supposed to modify.
     with open(bzl_filename, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
     # Locate the two hexadecimal lines we need to edit.
     commit_line_re = re.compile(
-        r'(?<=    commit = ")(' + re.escape(old_commit) + r')(?=",)')
-    checksum_line_re = re.compile(
-        r'(?<=    sha256 = ")([0-9a-f]{64})(?=",)')
+        r'(?<=    commit = ")(' + re.escape(old_commit) + r')(?=",)'
+    )
+    checksum_line_re = re.compile(r'(?<=    sha256 = ")([0-9a-f]{64})(?=",)')
     commit_line_num = None
     checksum_line_num = None
     for i, line in enumerate(lines):
@@ -401,20 +400,23 @@ def _do_upgrade_github_archive(
 
     # Update the repository.bzl contents and then write it out.
     lines[commit_line_num] = commit_line_re.sub(
-        new_commit, lines[commit_line_num])
+        new_commit, lines[commit_line_num]
+    )
     lines[checksum_line_num] = checksum_line_re.sub(
-        new_checksum, lines[checksum_line_num])
-    _rewrite_file_contents(bzl_filename, ''.join(lines))
+        new_checksum, lines[checksum_line_num]
+    )
+    _rewrite_file_contents(bzl_filename, "".join(lines))
 
 
 def _do_upgrade_github_release_attachments(
-        *,
-        temp_dir,
-        old_commit,
-        new_commit,
-        bzl_filename,
-        repository,
-        old_attachments):
+    *,
+    temp_dir,
+    old_commit,
+    new_commit,
+    bzl_filename,
+    repository,
+    old_attachments,
+):
     # Slurp the file we're supposed to modify.
     with open(bzl_filename, "r", encoding="utf-8") as f:
         bzl_content = f.read()
@@ -423,31 +425,28 @@ def _do_upgrade_github_release_attachments(
     info("Downloading new attachments...")
     new_attachments = {}
     for filename in old_attachments.keys():
-        new_url = (f"https://github.com/{repository}/"
-                   f"releases/download/{new_commit}/{filename}")
+        new_url = (
+            f"https://github.com/{repository}/"
+            f"releases/download/{new_commit}/{filename}"
+        )
         new_checksum = _download(new_url, f"{temp_dir}/{filename}")
         new_attachments[filename] = new_checksum
 
     # Update the repository.bzl contents and then write it out.
     bzl_content = _str_replace_forced(
-        bzl_content,
-        f'commit = "{old_commit}"',
-        f'commit = "{new_commit}"')
+        bzl_content, f'commit = "{old_commit}"', f'commit = "{new_commit}"'
+    )
     for filename, old_checksum in old_attachments.items():
         new_checksum = new_attachments[filename]
         bzl_content = _str_replace_forced(
-            bzl_content,
-            f'"{old_checksum}"',
-            f'"{new_checksum}"')
+            bzl_content, f'"{old_checksum}"', f'"{new_checksum}"'
+        )
     _rewrite_file_contents(bzl_filename, bzl_content)
 
 
 def _do_upgrade_scripted(
-        *,
-        temp_dir,
-        local_drake_checkout,
-        workspace_root,
-        script):
+    *, temp_dir, local_drake_checkout, workspace_root, script
+):
     # Run the upgrade script.
     repo_root = local_drake_checkout.working_tree_dir
     subprocess.check_call([os.path.join(repo_root, workspace_root, script)])
@@ -550,9 +549,7 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     return UpgradeResult(True, can_commit, modified_paths, message)
 
 
-def _do_upgrades(temp_dir, gh, local_drake_checkout,
-                 workspace_names, metadata):
-
+def _do_upgrades(temp_dir, gh, local_drake_checkout, workspace_names, metadata):
     # Make sure there are workspaces to update.
     if len(workspace_names) == 0:
         return
@@ -562,8 +559,9 @@ def _do_upgrades(temp_dir, gh, local_drake_checkout,
     commit_messages = []
     modified_workspace_names = []
     for workspace_name in workspace_names:
-        result = _do_upgrade(temp_dir, gh, local_drake_checkout,
-                             workspace_name, metadata)
+        result = _do_upgrade(
+            temp_dir, gh, local_drake_checkout, workspace_name, metadata
+        )
         if result.was_upgraded:
             can_commit = can_commit and result.can_be_committed
             modified_paths += result.modified_paths
@@ -584,58 +582,88 @@ def _do_upgrades(temp_dir, gh, local_drake_checkout,
 
     # Determine if we should and can commit the changes made.
     if len(modified_workspace_names) == 1:
-        _do_commit(local_drake_checkout, actually_commit=can_commit,
-                   workspace_names=modified_workspace_names,
-                   paths=modified_paths, message=commit_messages[0])
+        _do_commit(
+            local_drake_checkout,
+            actually_commit=can_commit,
+            workspace_names=modified_workspace_names,
+            paths=modified_paths,
+            message=commit_messages[0],
+        )
     else:
-        cohort = ', '.join(modified_workspace_names)
+        cohort = ", ".join(modified_workspace_names)
 
         if not can_commit:
             warn(f"Changes made for {cohort} will NOT be committed.")
 
         message = f"Upgrade {cohort} to latest\n\n"
         message += "- " + "\n- ".join(commit_messages)
-        _do_commit(local_drake_checkout, actually_commit=can_commit,
-                   workspace_names=modified_workspace_names,
-                   paths=modified_paths, message=message)
+        _do_commit(
+            local_drake_checkout,
+            actually_commit=can_commit,
+            workspace_names=modified_workspace_names,
+            paths=modified_paths,
+            message=message,
+        )
 
 
 def main():
     parser = argparse.ArgumentParser(
-        prog="new_release", description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+        prog="new_release",
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument(
-        "--commit", action="store_true", default=False,
-        help="When upgrading repositories, automatically commit the changes.")
+        "--commit",
+        action="store_true",
+        default=False,
+        help="When upgrading repositories, automatically commit the changes.",
+    )
     parser.add_argument(
-        "--lint", action="store_true", default=False,
+        "--lint",
+        action="store_true",
+        default=False,
         help="Also run some sanity tests on the repository, after all other"
-             " operations have completed successfully.")
+        " operations have completed successfully.",
+    )
     parser.add_argument(
-        "--use_password", action="store_true", default=False,
-        help="Prompt for the GitHub password, instead of using an API token.")
+        "--use_password",
+        action="store_true",
+        default=False,
+        help="Prompt for the GitHub password, instead of using an API token.",
+    )
     parser.add_argument(
-        "--token_file", default="~/.config/readonly_github_api_token.txt",
+        "--token_file",
+        default="~/.config/readonly_github_api_token.txt",
         help="Uses an API token read from this filename, unless "
-        "--use_password was given (default: %(default)s)")
+        "--use_password was given (default: %(default)s)",
+    )
     parser.add_argument(
-        "--user", metavar="USER", type=str, default=_get_default_username(),
-        help="GitHub username (default: %(default)s)")
+        "--user",
+        metavar="USER",
+        type=str,
+        default=_get_default_username(),
+        help="GitHub username (default: %(default)s)",
+    )
+    parser.add_argument("--verbose", action="store_true", default=False)
     parser.add_argument(
-        "--verbose", action="store_true", default=False)
-    parser.add_argument(
-        "workspace", nargs="*", metavar="WORKSPACES_NAME", type=str,
+        "workspace",
+        nargs="*",
+        metavar="WORKSPACES_NAME",
+        type=str,
         help="(Optional) Instead of reporting on possible upgrades,"
-             " download new archives for the given externals"
-             " and edit their bzl rules to match.")
+        " download new archives for the given externals"
+        " and edit their bzl rules to match.",
+    )
     args = parser.parse_args()
 
-    if 'BUILD_WORKSPACE_DIRECTORY' in os.environ:
-        os.chdir(os.environ['BUILD_WORKING_DIRECTORY'])
+    if "BUILD_WORKSPACE_DIRECTORY" in os.environ:
+        os.chdir(os.environ["BUILD_WORKING_DIRECTORY"])
 
-    if not os.path.exists('WORKSPACE'):
-        parser.error("Couldn't find WORKSPACE; this script must be run"
-                     " from the root of your Drake checkout.")
+    if not os.path.exists("WORKSPACE"):
+        parser.error(
+            "Couldn't find WORKSPACE; this script must be run"
+            " from the root of your Drake checkout."
+        )
 
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
@@ -648,9 +676,7 @@ def main():
     # Log in to github.
     if args.use_password:
         prompt = f"Password for https://{args.user}@github.com: "
-        gh = github3.login(
-            username=args.user,
-            password=getpass.getpass(prompt))
+        gh = github3.login(username=args.user, password=getpass.getpass(prompt))
     else:
         with open(os.path.expanduser(args.token_file), "r") as f:
             token = f.read().strip()
@@ -696,9 +722,14 @@ def main():
                     cohort_workspaces = cohort
 
             # Actually do the upgrade(s).
-            with TemporaryDirectory(prefix='drake_new_release_') as temp_dir:
-                _do_upgrades(temp_dir, gh, local_drake_checkout,
-                             cohort_workspaces, metadata)
+            with TemporaryDirectory(prefix="drake_new_release_") as temp_dir:
+                _do_upgrades(
+                    temp_dir,
+                    gh,
+                    local_drake_checkout,
+                    cohort_workspaces,
+                    metadata,
+                )
                 visited_workspaces.update(cohort_workspaces)
     else:
         # Run our report of what's available.
@@ -712,5 +743,5 @@ def main():
         subprocess.check_call(["bazel", "test", "--config=lint", "//..."])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

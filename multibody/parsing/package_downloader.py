@@ -34,8 +34,16 @@ def _fail(message):
     raise SystemExit(message)
 
 
-def _run(*, temp_dir: Path, package_name: str, urls: List[str], sha256: str,
-         output_dir: Path, archive_type: str = None, strip_prefix: str = None):
+def _run(
+    *,
+    temp_dir: Path,
+    package_name: str,
+    urls: List[str],
+    sha256: str,
+    output_dir: Path,
+    archive_type: str = None,
+    strip_prefix: str = None,
+):
     """Runs the download and extract logic, assuming already-validated args.
 
     Args:
@@ -66,13 +74,15 @@ def _run(*, temp_dir: Path, package_name: str, urls: List[str], sha256: str,
     # it into place as a final step. (Renames are atomic; writes are not.)
     readme = output_dir.with_name(output_dir.name + ".README")
     fd, temp_readme = tempfile.mkstemp(
-        dir=readme.parent,
-        prefix=f"temp.{readme.name}.")
+        dir=readme.parent, prefix=f"temp.{readme.name}."
+    )
     temp_readme = Path(temp_readme)
     with os.fdopen(fd, "w") as f:
-        f.write(f"Our sibling directory ./{output_dir.name} contains "
-                f"package://{package_name}.\n\n"
-                f"It was downloaded by Drake from one of these URLs:\n")
+        f.write(
+            f"Our sibling directory ./{output_dir.name} contains "
+            f"package://{package_name}.\n\n"
+            f"It was downloaded by Drake from one of these URLs:\n"
+        )
         for url in urls:
             f.write(f" {url}\n")
     # Fix the README's access permissions (to 'rw-r--r--' from 'rw-------').
@@ -103,7 +113,8 @@ def _run(*, temp_dir: Path, package_name: str, urls: List[str], sha256: str,
             break
         errors.append(
             f"Candidate {url} failed:\n"
-            f"Checksum mismatch; was {download_sha256} but wanted {sha256}.")
+            f"Checksum mismatch; was {download_sha256} but wanted {sha256}."
+        )
 
     # Report in case no downloads succeeded.
     if not success:
@@ -112,12 +123,15 @@ def _run(*, temp_dir: Path, package_name: str, urls: List[str], sha256: str,
 
     # Unpack and check that the strip_prefix was valid.
     unpack_dir = temp_dir / "unpack"
-    shutil.unpack_archive(filename=temp_filename, extract_dir=unpack_dir,
-                          format=archive_type)
+    shutil.unpack_archive(
+        filename=temp_filename, extract_dir=unpack_dir, format=archive_type
+    )
     unpack_package_dir = unpack_dir / (strip_prefix or "")
     if not unpack_package_dir.is_dir():
-        _fail(f"The strip_prefix='{strip_prefix}' does not exist "
-              f"within {basename}")
+        _fail(
+            f"The strip_prefix='{strip_prefix}' does not exist "
+            f"within {basename}"
+        )
 
     # Now comes the really tricky part. Moving a directory is atomic but only
     # on the same filesystem! We need to move it from the temporary directory
@@ -127,8 +141,8 @@ def _run(*, temp_dir: Path, package_name: str, urls: List[str], sha256: str,
     # know whether unpack_dir can atomically rename to output_dir, so we'll
     # always take the long way around.)
     with tempfile.TemporaryDirectory(
-            dir=output_dir.parent,
-            prefix=f"temp.{output_dir.name}.") as output_dir_temp:
+        dir=output_dir.parent, prefix=f"temp.{output_dir.name}."
+    ) as output_dir_temp:
         move_destination = Path(output_dir_temp) / "incoming"
         shutil.move(src=unpack_package_dir, dst=move_destination)
         try:
@@ -150,7 +164,6 @@ def _run(*, temp_dir: Path, package_name: str, urls: List[str], sha256: str,
 
 
 def _wrapped_main(*, config_json):
-
     # Read our config file.
     with open(config_json, "r") as f:
         kwargs = json.load(f)

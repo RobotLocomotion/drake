@@ -4369,9 +4369,6 @@ GTEST_TEST(TestMathematicalProgram, AddConstraintMatrix2) {
   ASSERT_EQ(prog.GetAllConstraints().size(), 1);
   ASSERT_EQ(prog.GetAllLinearConstraints().size(), 1);
 
-  Eigen::Matrix<double, 4, 2> A_expected;
-  Eigen::Matrix<double, 4, 1> lower_bound_expected;
-  Eigen::Matrix<double, 4, 1> upper_bound_expected;
   std::array<std::array<Eigen::RowVector2d, 2>, 2> coeff;
   coeff[0][0] << 1, 0;
   coeff[0][1] << 1, 2;

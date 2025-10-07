@@ -34,9 +34,7 @@ from pydrake.manipulation import (
     SchunkWsgDriver,
     ZeroForceDriver,
 )
-from pydrake.geometry import (
-    SceneGraphConfig
-)
+from pydrake.geometry import SceneGraphConfig
 from pydrake.multibody.plant import (
     AddMultibodyPlant,
     MultibodyPlantConfig,
@@ -80,9 +78,8 @@ class Scenario:
 
     # Simulator configuration (integrator and publisher parameters).
     simulator_config: SimulatorConfig = SimulatorConfig(
-        max_step_size=1e-3,
-        accuracy=1.0e-2,
-        target_realtime_rate=1.0)
+        max_step_size=1e-3, accuracy=1.0e-2, target_realtime_rate=1.0
+    )
 
     # Plant configuration (time step and contact parameters).
     plant_config: MultibodyPlantConfig = MultibodyPlantConfig()
@@ -96,15 +93,19 @@ class Scenario:
     # A map of {bus_name: lcm_params} for LCM transceivers to be used by
     # drivers, sensors, etc.
     lcm_buses: typing.Mapping[str, DrakeLcmParams] = dc.field(
-        default_factory=lambda: dict(default=DrakeLcmParams()))
+        default_factory=lambda: dict(default=DrakeLcmParams())
+    )
 
     # For actuated models, specifies where each model's actuation inputs come
     # from, keyed on the ModelInstance name.
-    model_drivers: typing.Mapping[str, typing.Union[
-        IiwaDriver,
-        SchunkWsgDriver,
-        ZeroForceDriver,
-    ]] = dc.field(default_factory=dict)
+    model_drivers: typing.Mapping[
+        str,
+        typing.Union[
+            IiwaDriver,
+            SchunkWsgDriver,
+            ZeroForceDriver,
+        ],
+    ] = dc.field(default_factory=dict)
 
     # Cameras to add to the scene (and broadcast over LCM). The key for each
     # camera is a helpful mnemonic, but does not serve a technical role. The
@@ -132,42 +133,42 @@ def _load_scenario(*, filename, scenario_name, scenario_text):
         schema=Scenario,
         filename=filename,
         child_name=scenario_name,
-        defaults=Scenario())
+        defaults=Scenario(),
+    )
     result = yaml_load_typed(
-        schema=Scenario,
-        data=scenario_text,
-        defaults=result)
+        schema=Scenario, data=scenario_text, defaults=result
+    )
     return result
 
 
 def run(*, scenario, graphviz=None):
-    """Runs a simulation of the given scenario.
-    """
+    """Runs a simulation of the given scenario."""
     builder = DiagramBuilder()
 
     # Create the multibody plant and scene graph.
     sim_plant, scene_graph = AddMultibodyPlant(
         plant_config=scenario.plant_config,
         scene_graph_config=scenario.scene_graph_config,
-        builder=builder)
+        builder=builder,
+    )
 
     # Add model directives.
     added_models = ProcessModelDirectives(
         directives=ModelDirectives(directives=scenario.directives),
-        plant=sim_plant)
+        plant=sim_plant,
+    )
 
     # Override or supplement initial positions.
-    ApplyNamedPositionsAsDefaults(input=scenario.initial_position,
-                                  plant=sim_plant)
+    ApplyNamedPositionsAsDefaults(
+        input=scenario.initial_position, plant=sim_plant
+    )
 
     # Now the plant is complete.
     sim_plant.Finalize()
 
     # Add LCM buses. (The simulator will handle polling the network for new
     # messages and dispatching them to the receivers, i.e., "pump" the bus.)
-    lcm_buses = ApplyLcmBusConfig(
-        lcm_buses=scenario.lcm_buses,
-        builder=builder)
+    lcm_buses = ApplyLcmBusConfig(lcm_buses=scenario.lcm_buses, builder=builder)
 
     # Add actuation inputs.
     ApplyDriverConfigs(
@@ -175,14 +176,12 @@ def run(*, scenario, graphviz=None):
         sim_plant=sim_plant,
         models_from_directives=added_models,
         lcm_buses=lcm_buses,
-        builder=builder)
+        builder=builder,
+    )
 
     # Add scene cameras.
     for _, camera in scenario.cameras.items():
-        ApplyCameraConfig(
-            config=camera,
-            builder=builder,
-            lcm_buses=lcm_buses)
+        ApplyCameraConfig(config=camera, builder=builder, lcm_buses=lcm_buses)
 
     # Add visualization.
     ApplyVisualizationConfig(scenario.visualization, builder, lcm_buses)
@@ -209,27 +208,36 @@ def run(*, scenario, graphviz=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--scenario_file", required=True,
+        "--scenario_file",
+        required=True,
         help="Scenario filename, e.g., "
-             "drake/examples/hardware_sim/example_scenarios.yaml")
+        "drake/examples/hardware_sim/example_scenarios.yaml",
+    )
     parser.add_argument(
-        "--scenario_name", required=True,
+        "--scenario_name",
+        required=True,
         help="Scenario name within the scenario_file, e.g., Demo in the "
-             "example_scenarios.yaml; scenario names appears as the keys of "
-             "the YAML document's top-level mapping item")
+        "example_scenarios.yaml; scenario names appears as the keys of "
+        "the YAML document's top-level mapping item",
+    )
     parser.add_argument(
-        "--scenario_text", default="{}",
+        "--scenario_text",
+        default="{}",
         help="Additional YAML scenario text to load, in order to override "
-             "values in the scenario_file, e.g., timeouts")
+        "values in the scenario_file, e.g., timeouts",
+    )
     parser.add_argument(
-        "--graphviz", metavar="FILENAME",
+        "--graphviz",
+        metavar="FILENAME",
         help="Dump the Simulator's Diagram to this file in Graphviz format "
-             "as a debugging aid")
+        "as a debugging aid",
+    )
     args = parser.parse_args()
     scenario = _load_scenario(
         filename=args.scenario_file,
         scenario_name=args.scenario_name,
-        scenario_text=args.scenario_text)
+        scenario_text=args.scenario_text,
+    )
     run(scenario=scenario, graphviz=args.graphviz)
 
 

@@ -13,7 +13,7 @@ def _check_unguarded_openmp_uses(filename):
     openmp_pre_guard = "#if defined(_OPENMP)"
     openmp_post_guard = "#endif"
 
-    with open(filename, mode='r', encoding='utf-8') as file:
+    with open(filename, mode="r", encoding="utf-8") as file:
         lines = file.readlines()
 
     for index, current_line in enumerate(lines):
@@ -25,10 +25,12 @@ def _check_unguarded_openmp_uses(filename):
             missing_post_guard = next_line.strip() != openmp_post_guard
 
             if missing_pre_guard or missing_post_guard:
-                print(f"ERROR: {filename}:{index + 1}: "
-                      "OpenMP includes and directives must be guarded by "
-                      f"{openmp_pre_guard} on the previous line and "
-                      f"{openmp_post_guard} on the following line")
+                print(
+                    f"ERROR: {filename}:{index + 1}: "
+                    "OpenMP includes and directives must be guarded by "
+                    f"{openmp_pre_guard} on the previous line and "
+                    f"{openmp_post_guard} on the following line"
+                )
 
                 return 1
     return 0
@@ -40,13 +42,16 @@ def _check_header_using_overloaded(filename):
     forbidden_re = re.compile(
         # This expression approximates section 6.10.2 except 6.10.2.4 of
         # https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf
-        r'\s*#\s*include\s*[<"]drake/common/overloaded.h\s*[>"]')
+        r'\s*#\s*include\s*[<"]drake/common/overloaded.h\s*[>"]'
+    )
     if filename.endswith(".h"):
-        with open(filename, mode='r', encoding='utf-8') as file:
+        with open(filename, mode="r", encoding="utf-8") as file:
             for line in file.readlines():
                 if forbidden_re.match(line):
-                    print("ERROR:  Header files must not include "
-                          "drake/common/overloaded.h")
+                    print(
+                        "ERROR:  Header files must not include "
+                        "drake/common/overloaded.h"
+                    )
                     return 1
     return 0
 
@@ -59,9 +64,9 @@ def _check_header_doxygen_file_spelling(filename):
         "Always add a line break after a Doxygen @file marker. "
         "The description must start on the following line."
     )
-    forbidden_re = re.compile(r'\s*(///?|/\*\*?)\s+@file.')
+    forbidden_re = re.compile(r"\s*(///?|/\*\*?)\s+@file.")
     if filename.endswith(".h"):
-        with open(filename, mode='r', encoding='utf-8') as file:
+        with open(filename, mode="r", encoding="utf-8") as file:
             lines = file.readlines()
         for index, current_line in enumerate(lines):
             if forbidden_re.match(current_line):
@@ -75,7 +80,7 @@ def _check_invalid_line_endings(filename):
     otherwise.
     """
     # Ask Python to read the file and determine the newlines convention.
-    with open(filename, mode='r', encoding='utf-8') as file:
+    with open(filename, mode="r", encoding="utf-8") as file:
         file.read()
         if file.newlines is None:
             newlines = tuple()
@@ -84,11 +89,37 @@ def _check_invalid_line_endings(filename):
 
     # Only allow Unix newlines.
     for newline in newlines:
-        if newline != '\n':
+        if newline != "\n":
             print("ERROR: non-Unix newline characters found")
             return 1
 
     return 0
+
+
+def _check_80_cols(filename):
+    """Returns 0 if all lines are <= 80 columns, and 1 otherwise; note that
+    certain long lines are exempt (e.g., URLs).
+    """
+    result = 0
+    with open(filename, mode="r", encoding="utf8") as file:
+        lines = file.read().splitlines()
+    # Allow long-line URLs (optionally preceded by a comment marker).
+    url_re = re.compile(
+        # Optional leading whitespace + optional comment marker.
+        r"^\s*(#|//|///|\*|-)?\s*"
+        # URL without any whitespace + EOL.
+        r"(http|https|file|package)://\S*$"
+    )
+    for index, line in enumerate(lines):
+        if len(line) <= 80:
+            continue
+        if "# noqa" in line:
+            continue
+        if url_re.match(line):
+            continue
+        print(f"ERROR:{filename}:{index + 1}: line too long")
+        result = 1
+    return result
 
 
 def _check_shebang(filename, disallow_executable):
@@ -99,7 +130,7 @@ def _check_shebang(filename, disallow_executable):
     If the string "# noqa: shebang" is present in the file, then this check
     will be ignored.
     """
-    with open(filename, mode='r', encoding='utf8') as file:
+    with open(filename, mode="r", encoding="utf8") as file:
         content = file.read()
     if "# noqa: shebang" in content:
         # Ignore.
@@ -107,8 +138,8 @@ def _check_shebang(filename, disallow_executable):
 
     is_executable = os.access(filename, os.X_OK)
     if is_executable and disallow_executable:
-        print("ERROR: {} is executable, but should not be".format(filename))
-        print("note: fix via chmod a-x '{}'".format(filename))
+        print(f"ERROR: {filename} is executable, but should not be")
+        print(f"note: fix via chmod a-x '{filename}'")
         return 1
 
     lines = content.splitlines()
@@ -116,11 +147,11 @@ def _check_shebang(filename, disallow_executable):
     shebang = lines[0]
     has_shebang = shebang.startswith("#!")
     if is_executable and not has_shebang:
-        print("ERROR: {} is executable but lacks a shebang".format(filename))
-        print("note: fix via chmod a-x '{}'".format(filename))
+        print(f"ERROR: {filename} is executable but lacks a shebang")
+        print(f"note: fix via chmod a-x '{filename}'")
         return 1
     if has_shebang and not is_executable:
-        print("ERROR: {} has a shebang but is not executable".format(filename))
+        print(f"ERROR: {filename} has a shebang but is not executable")
         print("note: fix by removing the first line of the file")
         return 1
     shebang_whitelist = {
@@ -128,12 +159,16 @@ def _check_shebang(filename, disallow_executable):
         "python": "#!/usr/bin/env python3",
     }
     if has_shebang and shebang not in list(shebang_whitelist.values()):
-        print(("ERROR: shebang '{}' in the file '{}' is not in the shebang "
-              "whitelist").format(shebang, filename))
+        print(
+            f"ERROR: shebang '{shebang}' in the file '{filename}' is not in "
+            "the shebang whitelist"
+        )
         for hint, replacement_shebang in shebang_whitelist.items():
             if hint in shebang:
-                print(("note: fix by replacing the shebang with "
-                      "'{}'").format(replacement_shebang))
+                print(
+                    "note: fix by replacing the shebang with "
+                    f"'{replacement_shebang}'"
+                )
         return 1
     return 0
 
@@ -146,7 +181,7 @@ def _check_iostream(filename):
     which violates the Google Style Guide.
     """
     # Checks if we're using <iostream>.
-    with open(filename, mode='r', encoding='utf-8') as file:
+    with open(filename, mode="r", encoding="utf-8") as file:
         lines = file.readlines()
     line_num = None
     for i, line in enumerate(lines):
@@ -164,23 +199,24 @@ def _check_iostream(filename):
             return 0
 
     # It's unnecessary.
-    print(f"ERROR: {filename}:{line_num + 1}: "
-          "Do not include <iostream> unless you need std::cin, std::cout, or "
-          "std::cerr. If you need std::ostream then include <ostream>, or "
-          "likewise for std::istream; for std::ifstream include <fstream>. "
-          "If no streams are needed, remove the include statement entirely.")
+    print(
+        f"ERROR: {filename}:{line_num + 1}: "
+        "Do not include <iostream> unless you need std::cin, std::cout, or "
+        "std::cerr. If you need std::ostream then include <ostream>, or "
+        "likewise for std::istream; for std::ifstream include <fstream>. "
+        "If no streams are needed, remove the include statement entirely."
+    )
     return 1
 
 
 def _check_clang_format_toggles(filename):
-    """Checks that clang-format-{off,on} are correctly paired up.
-    """
+    """Checks that clang-format-{off,on} are correctly paired up."""
     # These are the needles we'll be looking for.
     offs = [
         "// clang-format off\n",
         "// clang-format off ",
         "/* clang-format off */",
-        "/* clang-format off to disable clang-format-includes */"
+        "/* clang-format off to disable clang-format-includes */",
     ]
     ons = [
         "// clang-format on\n",
@@ -188,7 +224,7 @@ def _check_clang_format_toggles(filename):
         "/* clang-format on */",
     ]
 
-    with open(filename, mode='r', encoding='utf-8') as file:
+    with open(filename, mode="r", encoding="utf-8") as file:
         lines = file.readlines()
     enabled = True
     num_errors = 0
@@ -198,14 +234,18 @@ def _check_clang_format_toggles(filename):
         found_off = any([x in line for x in offs])
         if found_on:
             if enabled:
-                print(f"ERROR: {filename}:{i + 1}: "
-                      "This line is redundant; clang-format is already on")
+                print(
+                    f"ERROR: {filename}:{i + 1}: "
+                    "This line is redundant; clang-format is already on"
+                )
                 num_errors += 1
             enabled = True
         if found_off:
             if not enabled:
-                print(f"ERROR: {filename}:{i + 1}: "
-                      "This line is redundant; clang-format is already off")
+                print(
+                    f"ERROR: {filename}:{i + 1}: "
+                    "This line is redundant; clang-format is already off"
+                )
                 num_errors += 1
             enabled = False
 
@@ -228,6 +268,7 @@ def main():
         print("drakelint.py: Linting " + filename)
         total_errors += _check_invalid_line_endings(filename)
         if not filename.endswith((".cc", ".cpp", ".h")):
+            total_errors += _check_80_cols(filename)
             # TODO(jwnimmer-tri) We should enable this check for C++ files
             # also, but that runs into some struggle with genfiles.
             total_errors += _check_shebang(filename, disallow_executable)

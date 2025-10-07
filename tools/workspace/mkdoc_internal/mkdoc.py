@@ -40,10 +40,8 @@
 from collections import OrderedDict, defaultdict
 from fnmatch import fnmatch
 import os
-import platform
 import re
 import shutil
-import subprocess
 import sys
 
 from clang import cindex
@@ -75,50 +73,82 @@ RECURSE_LIST = [
     CursorKind.CLASS_DECL,
     CursorKind.STRUCT_DECL,
     CursorKind.ENUM_DECL,
-    CursorKind.CLASS_TEMPLATE
+    CursorKind.CLASS_TEMPLATE,
 ]
 
-PRINT_LIST = CLASS_KINDS + FUNCTION_KINDS + [
-    CursorKind.ENUM_DECL,
-    CursorKind.ENUM_CONSTANT_DECL,
-    CursorKind.FIELD_DECL,
-    CursorKind.TYPE_ALIAS_DECL,  # using x = y
-    CursorKind.TYPEDEF_DECL
-]
+PRINT_LIST = (
+    CLASS_KINDS
+    + FUNCTION_KINDS
+    + [
+        CursorKind.ENUM_DECL,
+        CursorKind.ENUM_CONSTANT_DECL,
+        CursorKind.FIELD_DECL,
+        CursorKind.TYPE_ALIAS_DECL,  # using x = y
+        CursorKind.TYPEDEF_DECL,
+    ]
+)
 
 CPP_OPERATORS = {
-    '<=': 'le', '>=': 'ge', '==': 'eq', '!=': 'ne', '[]': 'array',
-    '+=': 'iadd', '-=': 'isub', '*=': 'imul', '/=': 'idiv', '%=':
-    'imod', '&=': 'iand', '|=': 'ior', '^=': 'ixor', '<<=': 'ilshift',
-    '>>=': 'irshift', '++': 'inc', '--': 'dec', '<<': 'lshift', '>>':
-    'rshift', '&&': 'land', '||': 'lor', '!': 'lnot', '~': 'bnot',
-    '&': 'band', '|': 'bor', '+': 'add', '-': 'sub', '*': 'mul', '/':
-    'div', '%': 'mod', '<': 'lt', '>': 'gt', '=': 'assign', '()': 'call'
+    "<=": "le",
+    ">=": "ge",
+    "==": "eq",
+    "!=": "ne",
+    "[]": "array",
+    "+=": "iadd",
+    "-=": "isub",
+    "*=": "imul",
+    "/=": "idiv",
+    "%=": "imod",
+    "&=": "iand",
+    "|=": "ior",
+    "^=": "ixor",
+    "<<=": "ilshift",
+    ">>=": "irshift",
+    "++": "inc",
+    "--": "dec",
+    "<<": "lshift",
+    ">>": "rshift",
+    "&&": "land",
+    "||": "lor",
+    "!": "lnot",
+    "~": "bnot",
+    "&": "band",
+    "|": "bor",
+    "+": "add",
+    "-": "sub",
+    "*": "mul",
+    "/": "div",
+    "%": "mod",
+    "<": "lt",
+    ">": "gt",
+    "=": "assign",
+    "()": "call",
 }
 
 CPP_OPERATORS = OrderedDict(
-    sorted(CPP_OPERATORS.items(), key=lambda t: -len(t[0])))
+    sorted(CPP_OPERATORS.items(), key=lambda t: -len(t[0]))
+)
 
 # 'Broadphase' culling; do not recurse inside these symbols.
 SKIP_RECURSE_NAMES = [
-    'DrakeDefaultCopyAndMoveAndAssign_DoAssign',
-    'Eigen',
-    'detail',
-    'dev',
-    'google',
-    'internal',
-    'std',
-    'tinyxml2',
+    "DrakeDefaultCopyAndMoveAndAssign_DoAssign",
+    "Eigen",
+    "detail",
+    "dev",
+    "google",
+    "internal",
+    "std",
+    "tinyxml2",
 ]
 
 # Filter based on partial names.
 SKIP_PARTIAL_NAMES = [
-    'operator new',
-    'operator delete',
-    'operator=',
-    'operator->',
-    'operator<<',
-    'operator>>',
+    "operator new",
+    "operator delete",
+    "operator=",
+    "operator->",
+    "operator<<",
+    "operator>>",
 ]
 
 # Filter based on access.
@@ -175,13 +205,13 @@ def sanitize_name(name):
     """
     Sanitizes a C++ symbol to be variable-friendly.
     """
-    name = re.sub(r'type-parameter-0-([0-9]+)', r'T\1', name)
+    name = re.sub(r"type-parameter-0-([0-9]+)", r"T\1", name)
     for k, v in CPP_OPERATORS.items():
-        name = name.replace('operator%s' % k, 'operator_%s' % v)
-    name = re.sub('<.*>', '', name)
-    name = name.replace('::', '_')
-    name = ''.join([ch if ch.isalnum() else '_' for ch in name])
-    name = re.sub('_+', '_', name)
+        name = name.replace("operator%s" % k, "operator_%s" % v)
+    name = re.sub("<.*>", "", name)
+    name = name.replace("::", "_")
+    name = "".join([ch if ch.isalnum() else "_" for ch in name])
+    name = re.sub("_+", "_", name)
     return name
 
 
@@ -189,7 +219,7 @@ def extract_comment(cursor, deprecations):
     # Returns the cursor's docstring INCLUDING any deprecation text.
 
     # Start with the cursor's docstring.
-    result = ''
+    result = ""
     if cursor.raw_comment is not None:
         result = cursor.raw_comment
 
@@ -197,7 +227,8 @@ def extract_comment(cursor, deprecations):
     c = cursor  # The cursor whose deprecation macro we want to find.
     found = None  # The DRAKE_DEPRECATED cursor associated with `c`.
     possible_d = [
-        d for d in deprecations
+        d
+        for d in deprecations
         if d.extent.start.file.name == c.extent.start.file.name
     ]
 
@@ -205,8 +236,12 @@ def extract_comment(cursor, deprecations):
     # identical and the MACRO_INSTATIATION will end immediately prior to
     # the FUNCTION_DECL begin.
     for d in possible_d:
-        if all([d.extent.start.column == c.extent.start.column,
-                (d.extent.end.line + 1) == c.extent.start.line]):
+        if all(
+            [
+                d.extent.start.column == c.extent.start.column,
+                (d.extent.end.line + 1) == c.extent.start.line,
+            ]
+        ):
             found = d
             break
 
@@ -217,9 +252,13 @@ def extract_comment(cursor, deprecations):
     # of the class, but we DO allow various whitespace arrangements of template
     # parameters, class decl, and macro.
     for d in possible_d:
-        if all([d.extent.start.line >= c.extent.start.line,
+        if all(
+            [
+                d.extent.start.line >= c.extent.start.line,
                 d.extent.start.line <= (c.extent.start.line + 5),
-                d.extent.end.line <= c.extent.end.line]):
+                d.extent.end.line <= c.extent.end.line,
+            ]
+        ):
             found = d
             break
 
@@ -230,18 +269,18 @@ def extract_comment(cursor, deprecations):
     # Extract the DRAKE_DEPRECATED macro arguments.
     tokens = [x.spelling for x in found.get_tokens()]
     assert len(tokens) >= 6, tokens
-    assert tokens[0] == 'DRAKE_DEPRECATED', tokens
-    assert tokens[1] == '(', tokens
-    assert tokens[3] == ',', tokens
-    assert tokens[-1] == ')', tokens
+    assert tokens[0] == "DRAKE_DEPRECATED", tokens
+    assert tokens[1] == "(", tokens
+    assert tokens[3] == ",", tokens
+    assert tokens[-1] == ")", tokens
     removal_date = tokens[2][1:-1]  # 1:-1 to strip quotes.
     message = "".join([x[1:-1] for x in tokens[4:-1]])
 
     # Append the deprecation text.
     result += (
         r" (Deprecated.) \deprecated {} "
-        "This will be removed from Drake on or after {}.").format(
-            message, removal_date)
+        "This will be removed from Drake on or after {}."
+    ).format(message, removal_date)
 
     return result
 
@@ -262,8 +301,7 @@ def get_name_chain(cursor):
         p = p.semantic_parent
     # Prune away the names of anonymous structs and enums.
     name_chain = [
-        x for x in name_chain
-        if x != '' and not x.startswith('(unnamed')
+        x for x in name_chain if x != "" and not x.startswith("(unnamed")
     ]
     return tuple(name_chain)
 
@@ -314,7 +352,7 @@ def extract(include_file_map, cursor, symbol_tree, deprecations=None):
             if i.kind == CursorKind.MACRO_DEFINITION:
                 continue
             if i.kind == CursorKind.MACRO_INSTANTIATION:
-                if i.spelling == 'DRAKE_DEPRECATED':
+                if i.spelling == "DRAKE_DEPRECATED":
                     deprecations.append(i)
                 continue
             extract(include_file_map, i, symbol_tree, deprecations)
@@ -333,8 +371,7 @@ def extract(include_file_map, cursor, symbol_tree, deprecations=None):
     def get_node():
         node = symbol_tree.get_node(name_chain)
         if node.first_symbol is None:
-            node.first_symbol = Symbol(
-                cursor, name_chain, include, line, None)
+            node.first_symbol = Symbol(cursor, name_chain, include, line, None)
         return node
 
     if cursor.kind in RECURSE_LIST:
@@ -346,7 +383,7 @@ def extract(include_file_map, cursor, symbol_tree, deprecations=None):
         if node is None:
             node = get_node()
         name = cursor.spelling
-        if len(name) > 0 and not name.startswith('(unnamed'):
+        if len(name) > 0 and not name.startswith("(unnamed"):
             comment = extract_comment(cursor, deprecations)
             comment = process_comment(comment)
             symbol = Symbol(cursor, name_chain, include, line, comment)
@@ -393,17 +430,19 @@ def choose_doc_var_names(symbols):
                 comment = symbols[i].comment
                 # Allow the user to manually specify a doc_foo identifier.
                 match = re.search(
-                    r"@pydrake_mkdoc_identifier\{(.*?)\}",
-                    comment)
+                    r"@pydrake_mkdoc_identifier\{(.*?)\}", comment
+                )
                 if not match:
                     raise RuntimeError(
-                        "Malformed pydrake_mkdoc_identifier in " + comment)
+                        "Malformed pydrake_mkdoc_identifier in " + comment
+                    )
                 (identifier,) = match.groups()
                 result[i] = "doc_" + identifier
                 continue
             elif len(symbols[i].comment) == 0 and not (
-                    cursor.is_default_constructor() and (
-                        len(cursor.type.argument_types()) == 0)):
+                cursor.is_default_constructor()
+                and (len(cursor.type.argument_types()) == 0)
+            ):
                 # Ignore (almost all) overloads without docstrings.
                 #
                 # This is convenient for things like deprecated methods or
@@ -443,8 +482,10 @@ def choose_doc_var_names(symbols):
             elif (  # Look for a constructor like Foo<T>(const Foo<U>&).
                 cursor.kind == CursorKind.FUNCTION_TEMPLATE
                 and cursor.semantic_parent.kind == CursorKind.CLASS_TEMPLATE
-                and re.search(r"^(.*)<T>\(const \1<U> *&\)$",
-                              cursor.displayname)):
+                and re.search(
+                    r"^(.*)<T>\(const \1<U> *&\)$", cursor.displayname
+                )
+            ):
                 # Special case for scalar conversion constructors; we want to
                 # have a nice short name for these, that doesn't necessarily
                 # conflte with any *other* 1-argument constructor.
@@ -487,12 +528,10 @@ def choose_doc_var_names(symbols):
     #
     # These list-of-lists are indexed by [#overload][#argument].
     overload_arg_types = [
-        [t.spelling for t in s.cursor.type.argument_types()]
-        for s in symbols
+        [t.spelling for t in s.cursor.type.argument_types()] for s in symbols
     ]
     overload_arg_names = [
-        [a.spelling for a in s.cursor.get_arguments()]
-        for s in symbols
+        [a.spelling for a in s.cursor.get_arguments()] for s in symbols
     ]
 
     # The argument count might be sufficient to disambiguate.
@@ -539,7 +578,7 @@ def print_symbols(f, name, node, level=0):
         # skip everything in the fmt namespace wholesale.
         return
 
-    indent = '  ' * level
+    indent = "  " * level
 
     def iprint(s):
         f.write((indent + s).rstrip() + "\n")
@@ -559,11 +598,11 @@ def print_symbols(f, name, node, level=0):
     name_var = sanitize_name(name_var)
     # We may get empty symbols if `libclang` produces warnings.
     assert len(name_var) > 0, node.first_symbol.sorting_key()
-    iprint('// Symbol: {}'.format(full_name))
+    iprint("// Symbol: {}".format(full_name))
     modifier = ""
     if level == 0:
         modifier = "constexpr "
-    iprint('{}struct /* {} */ {{'.format(modifier, name_var))
+    iprint("{}struct /* {} */ {{".format(modifier, name_var))
 
     # Print documentation items.
     symbol_iter = sorted(node.doc_symbols, key=Symbol.sorting_key)
@@ -573,15 +612,16 @@ def print_symbols(f, name, node, level=0):
         if doc_var is None:
             continue
         assert name_chain == symbol.name_chain
-        comment = re.sub(
-            r'@pydrake_mkdoc[a-z_]*\{.*\}', '',
-            symbol.comment)
+        comment = re.sub(r"@pydrake_mkdoc[a-z_]*\{.*\}", "", symbol.comment)
         delim = "\n"
         if "\n" not in comment and len(comment) < 40:
             delim = " "
-        iprint('  // Source: {}'.format(symbol.include))
-        iprint('  const char* {} ={}R"""({})""";'.format(
-            doc_var, delim, comment.strip()))
+        iprint("  // Source: {}".format(symbol.include))
+        iprint(
+            '  const char* {} ={}R"""({})""";'.format(
+                doc_var, delim, comment.strip()
+            )
+        )
 
     # Recurse into child elements.
     keys = sorted(node.children_map.keys())
@@ -598,18 +638,21 @@ def print_symbols(f, name, node, level=0):
         # std::array of pairs, to avoid gratuitous heap allocations from a
         # std::map keyed on std::string.
         field_names = [
-            x for x in keys
-            if (node.children_map[x].first_symbol.cursor.kind
-                == CursorKind.FIELD_DECL)
+            x
+            for x in keys
+            if (
+                node.children_map[x].first_symbol.cursor.kind
+                == CursorKind.FIELD_DECL
+            )
         ]
         if field_names:
-            iprint(f'  auto Serialize__fields() const {{')
-            iprint(f'    return std::array{{')
+            iprint("  auto Serialize__fields() const {")
+            iprint("    return std::array{")
             for x in field_names:
                 iprint(f'      std::make_pair("{x}", {x}.doc),')
-            iprint(f'    }};')
-            iprint(f'  }}')
-    iprint('}} {};'.format(name_var))
+            iprint("    };")
+            iprint("  }")
+    iprint("}} {};".format(name_var))
 
 
 class FileDict:
@@ -639,29 +682,29 @@ class FileDict:
 
 
 def main():
-    parameters = ['-x', 'c++', '-D__MKDOC_PY__']
+    parameters = ["-x", "c++", "-D__MKDOC_PY__"]
     add_library_paths(parameters)
     filenames = []
 
     quiet = False
-    std = '-std=c++11'
-    root_name = 'mkdoc_doc'
+    std = "-std=c++11"
+    root_name = "mkdoc_doc"
     ignore_patterns = []
     output_filename = None
 
     # TODO(m-chaturvedi): Consider using argparse.
     for item in sys.argv[1:]:
-        if item == '-quiet':
+        if item == "-quiet":
             quiet = True
-        elif item.startswith('-output='):
-            output_filename = item[len('-output='):]
-        elif item.startswith('-std='):
+        elif item.startswith("-output="):
+            output_filename = item[len("-output=") :]
+        elif item.startswith("-std="):
             std = item
-        elif item.startswith('-root-name='):
-            root_name = item[len('-root-name='):]
-        elif item.startswith('-exclude-hdr-patterns='):
-            ignore_patterns.append(item[len('-exclude-hdr-patterns='):])
-        elif item.startswith('-'):
+        elif item.startswith("-root-name="):
+            root_name = item[len("-root-name=") :]
+        elif item.startswith("-exclude-hdr-patterns="):
+            ignore_patterns.append(item[len("-exclude-hdr-patterns=") :])
+        elif item.startswith("-"):
             parameters.append(item)
         else:
             filenames.append(item)
@@ -669,15 +712,18 @@ def main():
     parameters.append(std)
 
     if output_filename is None or len(filenames) == 0:
-        eprint('Syntax: %s -output=<file> [.. a list of header files ..]'
-               % sys.argv[0])
+        eprint(
+            "Syntax: %s -output=<file> [.. a list of header files ..]"
+            % sys.argv[0]
+        )
         sys.exit(1)
 
-    f = open(output_filename, 'w', encoding='utf-8')
+    f = open(output_filename, "w", encoding="utf-8")
 
     # N.B. We substitute the `GENERATED FILE...` bits in this fashion because
     # otherwise Reviewable gets confused.
-    f.write('''#pragma once
+    f.write(
+        """#pragma once
 
 // {0} {1}
 // This file contains docstrings for the Python bindings that were
@@ -691,7 +737,8 @@ def main():
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 
-'''.format('GENERATED FILE', 'DO NOT EDIT'))
+""".format("GENERATED FILE", "DO NOT EDIT")
+    )
 
     # Determine project include directories.
     # N.B. For simplicity when using with Bazel, we do not try to get canonical
@@ -711,12 +758,14 @@ def main():
         for include_path in include_paths:
             prefix = include_path + "/"
             if filename.startswith(prefix):
-                include_file = filename[len(prefix):]
+                include_file = filename[len(prefix) :]
                 break
         else:
             raise RuntimeError(
                 "Filename not incorporated into -I includes: {}".format(
-                    filename))
+                    filename
+                )
+            )
         for p in ignore_patterns:
             if fnmatch(include_file, p):
                 break
@@ -730,28 +779,28 @@ def main():
     tmpdir = output_filename + ".tmp_artifacts"
     os.mkdir(tmpdir)
     glue_filename = os.path.join(tmpdir, "mkdoc_glue.h")
-    with open(glue_filename, 'w') as glue_f:
+    with open(glue_filename, "w") as glue_f:
         # As the first line of the glue file, include a C++ standard library
         # file to sanity check that it's working, before we start processing
         # the user headers.
         glue_f.write("#include <optional>\n")
         # Add the includes to the glue, and as comments in the output.
         for include_file in sorted(include_files):
-            line = "#include \"{}\"".format(include_file)
+            line = '#include "{}"'.format(include_file)
             glue_f.write(line + "\n")
             f.write("// " + line + "\n")
         f.write("\n")
         glue_f.flush()
         if not quiet:
             eprint("Parse headers...")
-        index = cindex.Index(
-            cindex.conf.lib.clang_createIndex(False, True))
+        index = cindex.Index(cindex.conf.lib.clang_createIndex(False, True))
         translation_unit = index.parse(
-            glue_filename, parameters,
-            options=cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD)
+            glue_filename,
+            parameters,
+            options=cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD,
+        )
         if not translation_unit:
-            raise RuntimeError(
-                "Parsing headers using the clang library failed")
+            raise RuntimeError("Parsing headers using the clang library failed")
         # If there is an error on line 1, that means the C++ standard library
         # include paths are broken.
         if translation_unit.diagnostics:
@@ -767,17 +816,23 @@ def main():
                     "example, libgcc-??-dev is installed but libstdc++-??-dev "
                     "is not installed (the ?? indicates a version number). "
                     "Try re-running Drake's install_prereqs, or maybe check "
-                    "your system and install anything that's missing by hand.")
+                    "your system and install anything that's missing by hand."
+                )
         severities = [
-            diagnostic.severity for diagnostic in translation_unit.diagnostics
+            diagnostic.severity
+            for diagnostic in translation_unit.diagnostics
             if diagnostic.severity >= cindex.Diagnostic.Error
         ]
         if severities:
             raise RuntimeError(
-                ("Parsing headers using the clang library failed with {} "
-                 "error(s) and {} fatal error(s)").format(
-                     severities.count(cindex.Diagnostic.Error),
-                     severities.count(cindex.Diagnostic.Fatal)))
+                (
+                    "Parsing headers using the clang library failed with {} "
+                    "error(s) and {} fatal error(s)"
+                ).format(
+                    severities.count(cindex.Diagnostic.Error),
+                    severities.count(cindex.Diagnostic.Fatal),
+                )
+            )
     shutil.rmtree(tmpdir)
     # Extract symbols.
     if not quiet:
@@ -791,20 +846,23 @@ def main():
         print_symbols(f, root_name, symbol_tree.root)
     except UnicodeEncodeError as e:
         # User-friendly error for #9903.
-        print("""
+        print(
+            """
 Encountered unicode error: {}
 If you are on Ubuntu, please ensure you have en_US.UTF-8 locales generated:
     sudo apt-get install --no-install-recommends  locales
     sudo locale-gen en_US.UTF-8
-""".format(e), file=sys.stderr)
+""".format(e),
+            file=sys.stderr,
+        )
         sys.exit(1)
 
-    f.write('''
+    f.write("""
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
-''')
+""")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

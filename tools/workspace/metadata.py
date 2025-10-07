@@ -3,7 +3,6 @@ implementation uses Bazel command-line actions so is suitable only
 for manual use, not any build rules or test automation.
 """
 
-import glob
 import json
 import logging
 import os
@@ -16,6 +15,7 @@ _REPOSITORIES_WITH_NO_METADATA = [
     "bazel_skylib",
     "bazel_tools",
     "buildifier_prebuilt",
+    "crate",
     "gflags",
     "google_benchmark",
     "googletest",
@@ -63,14 +63,14 @@ def read_repository_metadata(repositories=None):
     result = {}
 
     # Ask where the repository rules write their output.
-    output_base = _check_output(
-        ["bazel", "info", "output_base"]).strip()
+    output_base = _check_output(["bazel", "info", "output_base"]).strip()
     assert os.path.isdir(output_base), output_base
 
     if not repositories:
         # Obtain a list of known repositories.
         package_lines = _check_output(
-            ["bazel", "query", "deps(//...)", "--output", "package"])
+            ["bazel", "query", "deps(//...)", "--output", "package"]
+        )
         repositories = set()
         for line in package_lines.split("\n"):
             if not line.startswith("@"):
@@ -91,11 +91,15 @@ def read_repository_metadata(repositories=None):
     for apparent_name in sorted(repositories):
         found = False
         for canonical_name in [
-                f"+drake_dep_repositories+{apparent_name}",
-                f"+internal_repositories+{apparent_name}"]:
+            f"+drake_dep_repositories+{apparent_name}",
+            f"+internal_repositories+{apparent_name}",
+        ]:
             json_path = os.path.join(
-                output_base, "external", canonical_name,
-                "drake_repository_metadata.json")
+                output_base,
+                "external",
+                canonical_name,
+                "drake_repository_metadata.json",
+            )
             try:
                 with open(json_path, "r") as f:
                     data = json.load(f)

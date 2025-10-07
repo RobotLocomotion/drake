@@ -2,7 +2,6 @@ import hashlib
 import io
 import json
 from pathlib import Path
-import shutil
 import tempfile
 import zipfile
 import unittest
@@ -17,7 +16,6 @@ setattr(mut, "request", None)
 
 
 class TestDownloader(unittest.TestCase):
-
     def setUp(self):
         # Prepare the test stub flavor of `~/.cache/drake/package_map/`.
         self._scratch_dir = Path(tempfile.mkdtemp())
@@ -44,15 +42,13 @@ class TestDownloader(unittest.TestCase):
         return io.BytesIO(data)
 
     def _checksum(self, data):
-        """Returns the sha256 hash of the given data.
-        """
+        """Returns the sha256 hash of the given data."""
         hasher = hashlib.sha256()
         hasher.update(data)
         return hasher.hexdigest()
 
     def _create_sample_zip(self):
-        """Creates a sample archive, and returns it as (data, checksum).
-        """
+        """Creates a sample archive, and returns it as (data, checksum)."""
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "a") as z:
             z.writestr("hello/world", b"Hello, world!")
@@ -60,8 +56,7 @@ class TestDownloader(unittest.TestCase):
         return result, self._checksum(result)
 
     def _call_main(self, expect_success=True, **kwargs):
-        """Calls the module under test using the given kwargs (as json).
-        """
+        """Calls the module under test using the given kwargs (as json)."""
         # Match output_dir to the sha256, as is convention for the downloader.
         output_dir = self._output_parent_dir / kwargs["sha256"]
         kwargs["output_dir"] = str(output_dir)
@@ -95,8 +90,7 @@ class TestDownloader(unittest.TestCase):
             return errors
 
     def test_vanilla(self):
-        """Sanity checks the most typical control flow.
-        """
+        """Sanity checks the most typical control flow."""
         # Create some sample data.
         url = "http://127.0.0.1/example.zip"
         data, sha256 = self._create_sample_zip()
@@ -121,8 +115,7 @@ class TestDownloader(unittest.TestCase):
         self.assertEqual(hello, "Hello, world!")
 
     def test_checksum_failure(self):
-        """Checks that sha256 verification is happening.
-        """
+        """Checks that sha256 verification is happening."""
         # Create some sample data.
         url = "http://127.0.0.1/example.zip"
         data, _ = self._create_sample_zip()
@@ -130,14 +123,16 @@ class TestDownloader(unittest.TestCase):
         sha256 = "0" * 64
 
         # Call the module under test.
-        errors = self._call_main(expect_success=False,
-                                 package_name="some_name",
-                                 urls=[url], sha256=sha256)
+        errors = self._call_main(
+            expect_success=False,
+            package_name="some_name",
+            urls=[url],
+            sha256=sha256,
+        )
         self.assertIn("Checksum mismatch", errors)
 
     def test_archive_type_failure(self):
-        """Checks that archive_type is obeyed (via an error when set wrong).
-        """
+        """Checks that archive_type is obeyed (via an error when set wrong)."""
         # Create some sample data.
         url = "http://127.0.0.1/example.zip"
         data, sha256 = self._create_sample_zip()
@@ -147,24 +142,30 @@ class TestDownloader(unittest.TestCase):
         archive_type = "gztar"
 
         # Call the module under test.
-        errors = self._call_main(expect_success=False,
-                                 package_name="some_name",
-                                 urls=[url], sha256=sha256,
-                                 archive_type=archive_type)
+        errors = self._call_main(
+            expect_success=False,
+            package_name="some_name",
+            urls=[url],
+            sha256=sha256,
+            archive_type=archive_type,
+        )
         self.assertIn("example.zip", errors)
         self.assertIn("tar file", errors)
 
     def test_strip_prefix(self):
-        """Sanity checks the strip_prefix feature.
-        """
+        """Sanity checks the strip_prefix feature."""
         # Create some sample data.
         url = "http://127.0.0.1/example.zip"
         data, sha256 = self._create_sample_zip()
         self._url_contents[url] = data
 
         # Call the module under test.
-        self._call_main(package_name="some_name", urls=[url], sha256=sha256,
-                        strip_prefix="hello")
+        self._call_main(
+            package_name="some_name",
+            urls=[url],
+            sha256=sha256,
+            strip_prefix="hello",
+        )
 
         # Check that the downloader stripped off "hello".
         output_dir = self._output_parent_dir / sha256
@@ -173,28 +174,33 @@ class TestDownloader(unittest.TestCase):
         self.assertEqual(hello, "Hello, world!")
 
     def test_strip_prefix_failure(self):
-        """Checks the error report for a malformed strip_prefix.
-        """
+        """Checks the error report for a malformed strip_prefix."""
         # Create some sample data.
         url = "http://127.0.0.1/example.zip"
         data, sha256 = self._create_sample_zip()
         self._url_contents[url] = data
 
         # Call the module under test.
-        errors = self._call_main(expect_success=False,
-                                 package_name="some_name",
-                                 urls=[url], sha256=sha256,
-                                 strip_prefix="wrong")
+        errors = self._call_main(
+            expect_success=False,
+            package_name="some_name",
+            urls=[url],
+            sha256=sha256,
+            strip_prefix="wrong",
+        )
         self.assertIn("strip_prefix", errors)
 
         # Now use the correct prefix. This exercises the code path where we
         # need to clean up the output_dir_tmp from a prior unpacking attempt.
-        self._call_main(package_name="some_name", urls=[url], sha256=sha256,
-                        strip_prefix="hello")
+        self._call_main(
+            package_name="some_name",
+            urls=[url],
+            sha256=sha256,
+            strip_prefix="hello",
+        )
 
     def test_all_urls_failed(self):
-        """Checks the error report when all URLs have gone AWOL.
-        """
+        """Checks the error report when all URLs have gone AWOL."""
         # Make some URLs, but don't populate self._url_contents with them.
         # This will produce http 404 errors.
         urls = [
@@ -205,9 +211,12 @@ class TestDownloader(unittest.TestCase):
         sha256 = "0" * 64
 
         # Call the module under test.
-        errors = self._call_main(expect_success=False,
-                                 package_name="some_name",
-                                 urls=urls, sha256=sha256)
+        errors = self._call_main(
+            expect_success=False,
+            package_name="some_name",
+            urls=urls,
+            sha256=sha256,
+        )
         self.assertIn("All downloads failed", errors)
         for url in urls:
             self.assertIn(url, errors)

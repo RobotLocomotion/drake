@@ -1,5 +1,4 @@
 import copy
-import gc
 import scipy.sparse
 import unittest
 import numpy as np
@@ -7,7 +6,6 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomDistribution, RandomGenerator
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import Value
 from pydrake.symbolic import Expression, Variable
 from pydrake.systems.framework import (
@@ -24,11 +22,11 @@ from pydrake.systems.test.test_util import (
     MyVector2,
 )
 from pydrake.systems.primitives import (
-    Adder, Adder_,
+    Adder_,
     AddRandomInputs,
     AffineSystem, AffineSystem_,
-    BusCreator, BusCreator_,
-    BusSelector, BusSelector_,
+    BusCreator_,
+    BusSelector_,
     ConstantValueSource, ConstantValueSource_,
     ConstantVectorSource, ConstantVectorSource_,
     ControllabilityMatrix,
@@ -46,7 +44,7 @@ from pydrake.systems.primitives import (
     IsStabilizable,
     Linearize,
     LinearSystem, LinearSystem_,
-    LinearTransformDensity, LinearTransformDensity_,
+    LinearTransformDensity_,
     LogVectorOutput,
     MatrixGain,
     Multiplexer, Multiplexer_,
@@ -57,7 +55,7 @@ from pydrake.systems.primitives import (
     PortSwitch, PortSwitch_,
     RandomSource,
     Saturation, Saturation_,
-    Selector, Selector_, SelectorParams,
+    Selector_, SelectorParams,
     SharedPointerSystem, SharedPointerSystem_,
     Sine, Sine_,
     SparseMatrixGain_,
@@ -450,7 +448,6 @@ class TestGeneral(unittest.TestCase):
                 self.assertTrue(np.allclose(output.get_vector_data(
                     0).CopyToVector(), expected))
 
-            test_input = np.arange(input_size)
             mytest(np.arange(input_size), k*np.arange(input_size))
 
     def test_integrator(self):
@@ -1023,7 +1020,7 @@ class TestGeneral(unittest.TestCase):
         kSize = 1
         constructors = [VectorLogSink_[T]]
         loggers = []
-        if T == float:
+        if T is float:
             constructors.append(VectorLogSink)
         for constructor in constructors:
             loggers.append(builder.AddSystem(constructor(kSize)))

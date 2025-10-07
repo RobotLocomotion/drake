@@ -78,7 +78,8 @@ PrimitiveType.__str__ = lambda self: self.name
 
 @dataclasses.dataclass(frozen=True)
 class UserType:
-    """A struct name from an LCM message definition, e.g., "foo" or "foo.bar"."""
+    """A struct name from an LCM message definition, e.g., "foo" (when
+    `package` is None) or "foo.bar" (`package` is "foo"; `name` is "bar")."""
 
     package: Optional[str]
     name: str

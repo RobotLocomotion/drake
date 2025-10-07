@@ -16,7 +16,6 @@ from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import (
     MultibodyPlant, AddMultibodyPlantSceneGraph)
-from pydrake.multibody.tree import BodyIndex
 import pydrake.solvers as mp
 from pydrake.symbolic import Variable
 from pydrake.systems.framework import DiagramBuilder
@@ -556,7 +555,7 @@ class TestConstraints(unittest.TestCase):
         self.assertIsInstance(cost, mp.Cost)
 
     @check_type_variables
-    def test_distance_constraint(self, variables):
+    def test_distance_constraint_1(self, variables):
 
         def get_sphere_geometry_id(frame):
             id_, = variables.plant.GetCollisionGeometriesForBody(frame.body())
@@ -614,7 +613,7 @@ class TestConstraints(unittest.TestCase):
         q = variables.plant.GetPositions(variables.plant_context)
         # Make sure that we can call Eval with the user defined penalty
         # function without riasing an exception.
-        y = constraint.Eval(q)
+        constraint.Eval(q)
 
         # Now test the case with penalty_function=None. It will use the
         # default penalty function.
@@ -625,7 +624,7 @@ class TestConstraints(unittest.TestCase):
         self.assertIsInstance(constraint, mp.Constraint)
         # Make sure that we can call Eval with the user defined penalty
         # function without riasing an exception.
-        y_default_penalty = constraint.Eval(q)
+        constraint.Eval(q)
 
     @check_type_variables
     def test_minimum_distance_upper_bound_constraint(self, variables):
@@ -659,7 +658,7 @@ class TestConstraints(unittest.TestCase):
         q = variables.plant.GetPositions(variables.plant_context)
         # Make sure that we can call Eval with the user defined penalty
         # function without riasing an exception.
-        y = constraint.Eval(q)
+        constraint.Eval(q)
 
         # Now test the case with penalty_function=None. It will use the
         # default penalty function.
@@ -670,7 +669,7 @@ class TestConstraints(unittest.TestCase):
         self.assertIsInstance(constraint, mp.Constraint)
         # Make sure that we can call Eval with the user defined penalty
         # function without riasing an exception.
-        y_default_penalty = constraint.Eval(q)
+        constraint.Eval(q)
 
     def _make_robot_diagram(self):
         builder = RobotDiagramBuilder()
@@ -832,7 +831,7 @@ class TestConstraints(unittest.TestCase):
         self.assertIsInstance(constraint, mp.Constraint)
 
     @check_type_variables
-    def test_distance_constraint(self, variables):
+    def test_distance_constraint_2(self, variables):
         inspector = self.scene_graph_f.model_inspector()
         frame_id1 = inspector.GetGeometryIdByName(
             self.plant_f.GetBodyFrameIdOrThrow(
@@ -971,7 +970,6 @@ class TestGlobalInverseKinematics(unittest.TestCase):
         model_instance, = Parser(plant).AddModels(FindResourceOrThrow(
             "drake/bindings/pydrake/multibody/test/double_pendulum.sdf"))
         plant.Finalize()
-        context = plant.CreateDefaultContext()
         options = ik.GlobalInverseKinematics.Options()
         global_ik = ik.GlobalInverseKinematics(plant=plant, options=options)
 

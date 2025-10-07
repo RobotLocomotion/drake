@@ -83,16 +83,6 @@ drake_py_binary(
 )
 
 drake_py_binary(
-    name = "bzlcodestyle",
-    srcs = ["bzlcodestyle.py"],
-    main = "bzlcodestyle.py",
-    deps = [
-        ":module_py",
-        "@pycodestyle_internal//:pycodestyle",
-    ],
-)
-
-drake_py_binary(
     name = "install_lint_reporter",
     testonly = 1,
     srcs = ["install_lint_reporter.py"],
