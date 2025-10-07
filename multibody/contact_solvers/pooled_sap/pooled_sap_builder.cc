@@ -590,18 +590,16 @@ void PooledSapBuilder<T>::AddExternalGains(const VectorX<T>& Ke,
   DRAKE_DEMAND(Ke.size() == nv);
   DRAKE_DEMAND(be.size() == nv);
 
-  auto& gain_constraints = model->gain_constraints_pool();
-
+  const T& dt = model->time_step();
+  PooledSapParameters<T>& params = model->params();
   for (int c = 0; c < model->num_cliques(); ++c) {
+    auto A_c = params.A[c];
     const auto Ke_c = model->clique_segment(c, Ke);
+    A_c.diagonal() += dt * Ke_c;
+
     const auto be_c = model->clique_segment(c, be);
-
-    // Effort limits set to infinity, since external gains are not subject to
-    // actuator limits.
-    const VectorX<T> e_c = std::numeric_limits<T>::infinity() *
-                           VectorX<T>::Ones(model->clique_size(c));
-
-    gain_constraints.Add(c, Ke_c, be_c, e_c);
+    auto r_c = model->clique_segment(c, &params.r);
+    r_c += dt * be_c;
   }
 }
 
