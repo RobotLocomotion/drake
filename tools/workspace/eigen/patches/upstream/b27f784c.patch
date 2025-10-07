@@ -1,0 +1,26 @@
+[eigen] Fix scalar_inner_product_op when binary ops return a different type
+
+Cherry-picked from upstream b27f784c on the 5.0 branch. We can drop this patch
+when we upgrade to a newer tag than 5.0.0.
+
+--- Eigen/src/Core/InnerProduct.h
++++ Eigen/src/Core/InnerProduct.h
+@@ -211,8 +211,14 @@ struct scalar_inner_product_op {
+   static constexpr bool PacketAccess = false;
+ };
+ 
++// Partial specialization for packet access if and only if
++// LhsScalar == RhsScalar == ScalarBinaryOpTraits<LhsScalar, RhsScalar>::ReturnType.
+ template <typename Scalar, bool Conj>
+-struct scalar_inner_product_op<Scalar, Scalar, Conj> {
++struct scalar_inner_product_op<
++    Scalar,
++    typename std::enable_if<internal::is_same<typename ScalarBinaryOpTraits<Scalar, Scalar>::ReturnType, Scalar>::value,
++                            Scalar>::type,
++    Conj> {
+   using result_type = Scalar;
+   using conj_helper = conditional_conj<Scalar, Conj>;
+   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar coeff(const Scalar& a, const Scalar& b) const {
+-- 
+2.43.0
+

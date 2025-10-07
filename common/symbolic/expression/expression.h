@@ -1294,7 +1294,9 @@ namespace Eigen {
 template <>
 struct NumTraits<drake::symbolic::Expression>
     : GenericNumTraits<drake::symbolic::Expression> {
-  static inline int digits10() { return 0; }
+  constexpr static int digits() { return 0; }
+  constexpr static int digits10() { return 0; }
+  constexpr static int max_digits10() { return 0; }
 };
 
 // Informs Eigen that Variable op Variable gets Expression.
