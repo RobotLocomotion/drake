@@ -284,46 +284,6 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
 }
 
 template <typename T>
-void PooledSapBuilder<T>::AccumulateForceElementForces(
-    const systems::Context<T>& context, VectorX<T>* r) const {
-  MultibodyForces<T>& forces = *scratch_.forces;
-  VectorX<T>& tau_g = scratch_.tmp_v1;
-  plant().CalcForceElementsContribution(context, &forces);
-  plant().AddAppliedExternalSpatialForces(context, &forces);
-  plant().AddAppliedExternalGeneralizedForces(context, &forces);
-  plant().CalcGeneralizedForces(context, forces, &tau_g);
-  *r += tau_g;
-}
-
-template <typename T>
-void PooledSapBuilder<T>::CalcActuationInput(
-    const systems::Context<T>& context, VectorX<T>* actuation_w_pd,
-    VectorX<T>* actuation_wo_pd) const {
-  DRAKE_DEMAND(actuation_w_pd != nullptr);
-  DRAKE_DEMAND(actuation_w_pd->size() == plant().num_velocities());
-  DRAKE_DEMAND(actuation_wo_pd != nullptr);
-  DRAKE_DEMAND(actuation_wo_pd->size() == plant().num_velocities());
-  actuation_w_pd->setZero();
-  actuation_wo_pd->setZero();
-  if (plant().num_actuators() > 0) {
-    const VectorX<T> u = plant().AssembleActuationInput(context);
-
-    for (JointActuatorIndex actuator_index :
-         plant().GetJointActuatorIndices()) {
-      const JointActuator<T>& actuator =
-          plant().get_joint_actuator(actuator_index);
-      const Joint<T>& joint = actuator.joint();
-      // We only support actuators on single dof joints for now.
-      DRAKE_DEMAND(joint.num_velocities() == 1);
-      const int v_index = joint.velocity_start();
-      VectorX<T>& actuation =
-          actuator.has_controller() ? *actuation_w_pd : *actuation_wo_pd;
-      actuation[v_index] += u[actuator.input_start()];
-    }
-  }
-}
-
-template <typename T>
 void PooledSapBuilder<T>::AddCouplerConstraints(
     const systems::Context<T>& context, PooledSapModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
