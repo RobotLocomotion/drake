@@ -20,13 +20,14 @@ from pydrake.systems.sensors import (
 
 
 class TestRenderEngineSubclass(unittest.TestCase):
-
     def test_unimplemented_rendering(self):
         """The RenderEngine API throws exceptions for derived implementations
         that don't override DoRender*Image. This test confirms that behavior
         propagates down to Python."""
+
         class MinimalEngine(mut.RenderEngine):
             """Minimal implementation of the RenderEngine virtual API"""
+
             def UpdateViewpoint(self, X_WC):
                 pass
 
@@ -44,23 +45,27 @@ class TestRenderEngineSubclass(unittest.TestCase):
 
         class ColorOnlyEngine(MinimalEngine):
             """Rendering Depth and Label images should throw"""
+
             def DoRenderColorImage(self, camera, image_out):
                 pass
 
         class DepthOnlyEngine(MinimalEngine):
             """Rendering Color and Label images should throw"""
+
             def DoRenderDepthImage(self, camera, image_out):
                 pass
 
         class LabelOnlyEngine(MinimalEngine):
             """Rendering Color and Depth images should throw"""
+
             def DoRenderLabelImage(self, camera, image_out):
                 pass
 
         identity = RigidTransform()
         intrinsics = CameraInfo(10, 10, pi / 4)
-        core = mut.RenderCameraCore("n/a", intrinsics,
-                                    mut.ClippingRange(0.1, 10), identity)
+        core = mut.RenderCameraCore(
+            "n/a", intrinsics, mut.ClippingRange(0.1, 10), identity
+        )
         color_cam = mut.ColorRenderCamera(core, False)
         depth_cam = mut.DepthRenderCamera(core, mut.DepthRange(0.1, 9))
         color_image = ImageRgba8U(intrinsics.width(), intrinsics.height())
