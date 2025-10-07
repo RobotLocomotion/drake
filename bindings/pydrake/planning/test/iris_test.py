@@ -2,14 +2,13 @@ import unittest
 
 import pydrake.planning as mut
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common import RandomGenerator, Parallelism
+from pydrake.common import Parallelism
 from pydrake.geometry.optimization import Hyperellipsoid, HPolyhedron
 from pydrake.multibody.inverse_kinematics import InverseKinematics
 from pydrake.multibody.rational import RationalForwardKinematics
 from pydrake.planning import (
     RobotDiagramBuilder,
     SceneGraphCollisionChecker,
-    CollisionCheckerParams,
     IrisParameterizationFunction,
 )
 from pydrake.solvers import IpoptSolver
@@ -77,6 +76,7 @@ def SetSampledIrisOptions(options):
     options.sampled_iris_options.parallelism = Parallelism(True)
     options.sampled_iris_options.verbose = False
     options.sampled_iris_options.configuration_space_margin = 1e-2
+    options.sampled_iris_options.relax_margin = False
     options.sampled_iris_options.termination_threshold = 1e-2
     options.sampled_iris_options.relative_termination_threshold = 1e-3
     options.sampled_iris_options.random_seed = 1337
@@ -184,6 +184,11 @@ class TestIrisNp2(unittest.TestCase):
         checker = SceneGraphCollisionChecker(**params)
         options = mut.IrisNp2Options()
         SetSampledIrisOptions(options)
+        options.sampling_strategy = "greedy"
+        options.ray_sampler_options.only_walk_toward_collisions = True
+        options.ray_sampler_options.ray_search_num_steps = 10
+        options.ray_sampler_options.num_particles_to_walk_towards = 200
+        options.add_hyperplane_if_solve_fails = False
 
         # For speed reasons -- IPOPT seems to be faster than SNOPT here.
         options.solver = IpoptSolver()
@@ -235,3 +240,46 @@ class TestIrisNp2(unittest.TestCase):
                              options=options)
         test_point_shifted = inverse_parameterization(test_point)
         self.assertTrue(region.PointInSet(test_point_shifted))
+
+
+class TestOptionsPrinting(unittest.TestCase):
+    skip_fields = [
+        "parameterization",  # a function
+        "solver",  # a solver object
+    ]
+
+    def get_options_fields(self, options, skip):
+        return [x for x in dir(options)
+                if not x.startswith("_") and x not in skip]
+
+    def check_fields(self, options, fields, printed):
+        for field in fields:
+            substring = f"{field}={str(getattr(options, field))}"
+            self.assertTrue(substring in printed, substring)
+
+    def check_sampled_iris_options(self, options, printed):
+        fields = self.get_options_fields(options, skip=[
+            "containment_points",  # a matrix
+            "prog_with_additional_constraints",  # a program
+        ])
+        self.check_fields(options, fields, printed)
+
+    def test_options_zo(self):
+        options = mut.IrisZoOptions()
+        printed = repr(options)
+        fields = self.get_options_fields(options, skip=self.skip_fields)
+        self.check_fields(options, fields, printed)
+
+        self.check_sampled_iris_options(options.sampled_iris_options, printed)
+
+    def test_options_np2(self):
+        options = mut.IrisNp2Options()
+        printed = repr(options)
+        fields = self.get_options_fields(options, skip=self.skip_fields)
+        self.check_fields(options, fields, printed)
+
+        # Check ray_sampler_options.
+        fields = self.get_options_fields(options.ray_sampler_options, skip=[])
+        self.check_fields(options.ray_sampler_options, fields, printed)
+
+        self.check_sampled_iris_options(options.sampled_iris_options, printed)

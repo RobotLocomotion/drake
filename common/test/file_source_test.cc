@@ -1,6 +1,7 @@
 #include "drake/common/file_source.h"
 
 #include <filesystem>
+#include <string>
 
 #include <gtest/gtest.h>
 

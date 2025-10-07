@@ -1,0 +1,14 @@
+[msgpack] Include <type_traits>
+
+This mirrors upstream commit cbeb5805ccc835168cc7e175956de2622b91a4c5.
+
+--- include/msgpack/v1/cpp_config_decl.hpp.orig
++++ include/msgpack/v1/cpp_config_decl.hpp
+@@ -87,6 +87,7 @@ struct is_pointer;
+
+ #include <memory>
+ #include <tuple>
++#include <type_traits>
+
+ namespace msgpack {
+ /// @cond

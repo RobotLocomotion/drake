@@ -1,10 +1,8 @@
 import pydrake.geometry as mut
 
+from math import pi
 import numpy as np
 import unittest
-from math import pi
-
-import numpy as np
 
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.value import Value
@@ -451,7 +449,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
         geometry = mut.GeometryInstance(X_PG=RigidTransform_[float](),
                                         shape=mut.Sphere(1.),
                                         name="sphere1")
-        global_geometry = scene_graph.RegisterGeometry(
+        scene_graph.RegisterGeometry(
             context=context, source_id=global_source, frame_id=global_frame,
             geometry=geometry)
         self.assertEqual(model_inspector.num_geometries(), 0)
@@ -707,7 +705,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
             results = query_object.ComputeContactSurfaces(
                 representation=hydro_rep)
             self.assertEqual(len(results), 0)
-            surfaces, results = query_object.ComputeContactSurfacesWithFallback(  # noqa
+            surfaces, results = query_object.ComputeContactSurfacesWithFallback(
                 representation=hydro_rep)
             self.assertEqual(len(surfaces), 0)
             self.assertEqual(len(results), 0)

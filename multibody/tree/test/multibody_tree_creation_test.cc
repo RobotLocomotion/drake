@@ -4,10 +4,13 @@
 /* clang-format on */
 
 #include <algorithm>
+#include <limits>
+#include <map>
 #include <memory>
 #include <set>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -15,7 +18,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/tree/prismatic_joint.h"
-#include "drake/multibody/tree/prismatic_mobilizer.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_mobilizer.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -330,59 +332,30 @@ class TreeTopologyTests : public ::testing::Test {
   // Performs a number of tests on the BodyNodeTopology corresponding to the
   // body indexed by `body`.
   static void TestBodyNode(const MultibodyTreeTopology& topology,
-                           BodyIndex body) {
-    const MobodIndex node = topology.get_rigid_body(body).mobod_index;
+                           const SpanningForest& forest, BodyIndex body) {
+    // In case of merged composites, many links may follow the same mobod.
+    // Make sure the link's mobod agrees that the link follows it.
+    const LinkJointGraph::Link& link = forest.link_by_index(body);
+    const MobodIndex mobod_index = link.mobod_index();
+    const SpanningForest::Mobod& mobod = forest.mobods(mobod_index);
+    EXPECT_EQ(mobod.index(), mobod_index);
+    mobod.HasFollower(link.ordinal());
 
-    // Verify that the corresponding RigidBody and BodyNode reference each other
-    // correctly.
-    EXPECT_EQ(topology.get_rigid_body(body).mobod_index,
-              topology.get_body_node(node).index);
-    EXPECT_EQ(topology.get_body_node(node).rigid_body,
-              topology.get_rigid_body(body).index);
+    const MobodIndex parent_mobod_index = mobod.inboard();
+    EXPECT_TRUE(parent_mobod_index.is_valid() ^ link.is_world());
 
-    // They should belong to the same level.
-    EXPECT_EQ(topology.get_rigid_body(body).level,
-              topology.get_body_node(node).level);
+    if (link.is_world()) return;
 
-    const MobodIndex parent_node =
-        topology.get_body_node(node).parent_body_node;
-    // Either (and thus the exclusive or):
-    // 1. `body` is the world, and thus `parent_node` is invalid, XOR
-    // 2. `body` is not the world, and thus we have a valid `parent_node`.
-    EXPECT_TRUE(parent_node.is_valid() ^ (body == world_index()));
-
-    if (body != world_index()) {
-      // Verifies BodyNode has the parent node to the correct body.
-      const BodyIndex parent_body =
-          topology.get_body_node(parent_node).rigid_body;
-      EXPECT_TRUE(parent_body.is_valid());
-      EXPECT_EQ(parent_body, topology.get_rigid_body(body).parent_body);
-      EXPECT_EQ(topology.get_body_node(parent_node).index,
-                topology.get_rigid_body(parent_body).mobod_index);
-
-      // Verifies that BodyNode and Mobilizer indexes match.
-      const MobodIndex mobilizer = topology.get_body_node(node).index;
-      EXPECT_EQ(mobilizer, topology.get_rigid_body(body).inboard_mobilizer);
-      EXPECT_EQ(topology.get_mobilizer(mobilizer).index, node);
-
-      // Helper lambda to check if this "node" effectively is a child of
-      // "parent_node".
-      auto is_child_of_parent = [&]() {
-        const auto& children = topology.get_body_node(parent_node).child_nodes;
-        return std::find(children.begin(), children.end(), node) !=
-               children.end();
-      };
-      EXPECT_TRUE(is_child_of_parent());
-    }
+    // Verify that the link's mobod is actually a child of its parent mobod.
+    const SpanningForest::Mobod& parent_mobod =
+        forest.mobods(parent_mobod_index);
+    const std::vector<MobodIndex>& child_mobods = parent_mobod.outboards();
+    EXPECT_TRUE(std::find(child_mobods.begin(), child_mobods.end(),
+                          mobod_index) != child_mobods.end());
   }
 
-  static const BodyNodeTopology& node_topology_from_body_index(
-      const MultibodyTreeTopology& topology, int body_index) {
-    return topology.get_body_node(
-        topology.get_rigid_body(BodyIndex(body_index)).mobod_index);
-  }
-
-  static void VerifyTopology(const MultibodyTreeTopology& topology) {
+  static void VerifyTopology(const MultibodyTreeTopology& topology,
+                             const SpanningForest& forest) {
     const int kNumRigidBodies = 10;
 
     EXPECT_EQ(topology.num_rigid_bodies(), kNumRigidBodies);
@@ -390,63 +363,82 @@ class TreeTopologyTests : public ::testing::Test {
     EXPECT_EQ(topology.num_mobods(), kNumRigidBodies);
     EXPECT_EQ(topology.forest_height(), 4);
 
+    EXPECT_EQ(forest.num_links(), kNumRigidBodies);
+    EXPECT_EQ(forest.num_mobods(), kNumRigidBodies);
+    EXPECT_EQ(forest.height(), 4);
+
     // These sets contain the indexes of the RigidBodies in each tree level.
     // The order of these indexes in each set is not important, but only the
     // fact that they belong to the appropriate set.
-    set<BodyIndex> expected_level0 = {BodyIndex(0)};
-    set<BodyIndex> expected_level1 = {BodyIndex(4), BodyIndex(7), BodyIndex(5),
-                                      BodyIndex(9)};
-    set<BodyIndex> expected_level2 = {BodyIndex(2), BodyIndex(1), BodyIndex(3),
-                                      BodyIndex(8)};
-    set<BodyIndex> expected_level3 = {BodyIndex(6)};
+    const set<LinkIndex> expected_level0 = {LinkIndex(0)};
+    const set<LinkIndex> expected_level1 = {LinkIndex(4), LinkIndex(7),
+                                            LinkIndex(5), LinkIndex(9)};
+    const set<LinkIndex> expected_level2 = {LinkIndex(2), LinkIndex(1),
+                                            LinkIndex(3), LinkIndex(8)};
+    const set<LinkIndex> expected_level3 = {LinkIndex(6)};
 
-    std::vector<std::set<BodyIndex>> levels(topology.num_rigid_bodies());
+    std::vector<std::set<BodyIndex>> topo_levels(topology.num_rigid_bodies());
     for (BodyIndex index(0); index < topology.num_rigid_bodies(); ++index) {
       const RigidBodyTopology& rigid_body_topology =
-          topology.get_rigid_body(index);
-      levels[rigid_body_topology.level].insert(index);
+          topology.get_rigid_body_topology(index);
+      topo_levels[rigid_body_topology.level].insert(index);
     }
-
     // Comparison of sets. The order of the elements is not important.
+    EXPECT_EQ(topo_levels[0], expected_level0);
+    EXPECT_EQ(topo_levels[1], expected_level1);
+    EXPECT_EQ(topo_levels[2], expected_level2);
+    EXPECT_EQ(topo_levels[3], expected_level3);
+
+    // Repeat for the forest.
+    std::vector<std::set<LinkIndex>> levels(topology.num_rigid_bodies());
+    for (const LinkJointGraph::Link& link : forest.links()) {
+      const LinkIndex link_index = link.index();
+      const int level = forest.mobods(link.mobod_index()).level();
+      levels[level].insert(link_index);
+    }
     EXPECT_EQ(levels[0], expected_level0);
     EXPECT_EQ(levels[1], expected_level1);
     EXPECT_EQ(levels[2], expected_level2);
     EXPECT_EQ(levels[3], expected_level3);
 
+    const std::map<LinkIndex, int> expected_num_outboards{
+        {LinkIndex(0), 4}, {LinkIndex(1), 1}, {LinkIndex(2), 0},
+        {LinkIndex(3), 0}, {LinkIndex(4), 2}, {LinkIndex(5), 1},
+        {LinkIndex(6), 0}, {LinkIndex(7), 0}, {LinkIndex(8), 0},
+        {LinkIndex(9), 1}};
+
     // Verifies the expected number of child nodes.
-    EXPECT_EQ(node_topology_from_body_index(topology, 0).get_num_children(), 4);
-    EXPECT_EQ(node_topology_from_body_index(topology, 4).get_num_children(), 2);
-    EXPECT_EQ(node_topology_from_body_index(topology, 7).get_num_children(), 0);
-    EXPECT_EQ(node_topology_from_body_index(topology, 5).get_num_children(), 1);
-    EXPECT_EQ(node_topology_from_body_index(topology, 9).get_num_children(), 1);
-    EXPECT_EQ(node_topology_from_body_index(topology, 2).get_num_children(), 0);
-    EXPECT_EQ(node_topology_from_body_index(topology, 1).get_num_children(), 1);
-    EXPECT_EQ(node_topology_from_body_index(topology, 3).get_num_children(), 0);
-    EXPECT_EQ(node_topology_from_body_index(topology, 8).get_num_children(), 0);
-    EXPECT_EQ(node_topology_from_body_index(topology, 6).get_num_children(), 0);
+    for (const auto& [link_index, num_outboards] : expected_num_outboards) {
+      const LinkOrdinal ordinal = forest.graph().index_to_ordinal(link_index);
+      const LinkJointGraph::Link& link = forest.links(ordinal);
+      const SpanningForest::Mobod& mobod = forest.mobods(link.mobod_index());
+      EXPECT_EQ(ssize(mobod.outboards()), num_outboards);
+    }
 
     // Checks the correctness of each BodyNode associated with a Link.
     for (BodyIndex index(0); index < kNumRigidBodies; ++index) {
-      TestBodyNode(topology, index);
+      TestBodyNode(topology, forest, index);
     }
 
     // We now verify the precise expected topology. We use our internal
     // knowledge that branches are created according to the order in which
     // Joints are added. Refer to schematic in the documentation of this
     // test fixture.
-    EXPECT_EQ(world_mobod_index(), MobodIndex(0));
-    EXPECT_EQ(topology.get_body_node(MobodIndex(0)).rigid_body, 0);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(1)).rigid_body, 7);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(2)).rigid_body, 5);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(3)).rigid_body, 3);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(4)).rigid_body, 9);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(5)).rigid_body, 8);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(6)).rigid_body, 4);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(7)).rigid_body, 2);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(8)).rigid_body, 1);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(9)).rigid_body, 6);
+    const std::map<MobodIndex, LinkIndex> expected_mobod_to_link = {
+        {MobodIndex(0), LinkIndex(0)}, {MobodIndex(1), LinkIndex(7)},
+        {MobodIndex(2), LinkIndex(5)}, {MobodIndex(3), LinkIndex(3)},
+        {MobodIndex(4), LinkIndex(9)}, {MobodIndex(5), LinkIndex(8)},
+        {MobodIndex(6), LinkIndex(4)}, {MobodIndex(7), LinkIndex(2)},
+        {MobodIndex(8), LinkIndex(1)}, {MobodIndex(9), LinkIndex(6)}};
 
-    // Verify the expected "forest" of trees.
+    for (const auto& [mobod_index, primary_link_index] :
+         expected_mobod_to_link) {
+      const SpanningForest::Mobod& mobod = forest.mobods(mobod_index);
+      const LinkJointGraph::Link& link = forest.links(mobod.link_ordinal());
+      EXPECT_EQ(link.index(), primary_link_index);
+    }
+
+    // Verify the expected forest of trees.
     EXPECT_EQ(topology.num_trees(), 4);
     EXPECT_EQ(topology.num_tree_velocities(TreeIndex(0)), 1);
     EXPECT_EQ(topology.num_tree_velocities(TreeIndex(1)), 2);
@@ -456,28 +448,57 @@ class TreeTopologyTests : public ::testing::Test {
     EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(1)), 1);
     EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(2)), 3);
     EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(3)), 3);
+
+    EXPECT_EQ(forest.num_trees(), 4);
+    EXPECT_EQ(forest.trees(TreeIndex(0)).nv(), 1);
+    EXPECT_EQ(forest.trees(TreeIndex(1)).nv(), 2);
+    EXPECT_EQ(forest.trees(TreeIndex(2)).nv(), 0);
+    EXPECT_EQ(forest.trees(TreeIndex(3)).nv(), 4);
+    EXPECT_EQ(forest.trees(TreeIndex(0)).v_start(), 0);
+    EXPECT_EQ(forest.trees(TreeIndex(1)).v_start(), 1);
+    EXPECT_EQ(forest.trees(TreeIndex(2)).v_start(), 3);
+    EXPECT_EQ(forest.trees(TreeIndex(3)).v_start(), 3);
+
+    const std::map<LinkIndex, TreeIndex> expected_link_to_tree = {
+        {LinkIndex(0), TreeIndex()},  {LinkIndex(1), TreeIndex(3)},
+        {LinkIndex(2), TreeIndex(3)}, {LinkIndex(3), TreeIndex(1)},
+        {LinkIndex(4), TreeIndex(3)}, {LinkIndex(5), TreeIndex(1)},
+        {LinkIndex(6), TreeIndex(3)}, {LinkIndex(7), TreeIndex(0)},
+        {LinkIndex(8), TreeIndex(2)}, {LinkIndex(9), TreeIndex(2)}};
+
     // The world body does not belong to a tree. Therefore the returned index is
     // invalid.
-    EXPECT_FALSE(topology.body_to_tree_index(world_index()).is_valid());
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(7)), TreeIndex(0));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(5)), TreeIndex(1));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(3)), TreeIndex(1));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(9)), TreeIndex(2));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(8)), TreeIndex(2));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(4)), TreeIndex(3));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(2)), TreeIndex(3));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(1)), TreeIndex(3));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(6)), TreeIndex(3));
+    for (const auto& [link_index, tree_index] : expected_link_to_tree) {
+      if (link_index == world_index()) {
+        EXPECT_FALSE(topology.body_to_tree_index(link_index).is_valid());
+        continue;
+      }
+      EXPECT_EQ(topology.body_to_tree_index(link_index), tree_index);
+    }
+
+    for (const auto& [link_index, tree_index] : expected_link_to_tree) {
+      if (link_index == world_index()) {
+        EXPECT_FALSE(forest.link_to_tree(link_index).is_valid());
+        continue;
+      }
+      EXPECT_EQ(forest.link_to_tree(link_index), tree_index);
+    }
+
+    // No velocities map to Tree 2.
+    const std::map<int, TreeIndex> expected_velocity_to_tree = {
+        {0, TreeIndex(0)}, {1, TreeIndex(1)}, {2, TreeIndex(1)},
+        {3, TreeIndex(3)}, {4, TreeIndex(3)}, {5, TreeIndex(3)},
+        {6, TreeIndex(3)}};
 
     EXPECT_EQ(topology.num_velocities(), 7);
-    EXPECT_EQ(topology.velocity_to_tree_index(0), TreeIndex(0));
-    EXPECT_EQ(topology.velocity_to_tree_index(1), TreeIndex(1));
-    EXPECT_EQ(topology.velocity_to_tree_index(2), TreeIndex(1));
-    // No velocities map to Tree 2.
-    EXPECT_EQ(topology.velocity_to_tree_index(3), TreeIndex(3));
-    EXPECT_EQ(topology.velocity_to_tree_index(4), TreeIndex(3));
-    EXPECT_EQ(topology.velocity_to_tree_index(5), TreeIndex(3));
-    EXPECT_EQ(topology.velocity_to_tree_index(6), TreeIndex(3));
+    for (const auto& [velocity_index, tree_index] : expected_velocity_to_tree) {
+      EXPECT_EQ(topology.velocity_to_tree_index(velocity_index), tree_index);
+    }
+
+    EXPECT_EQ(forest.num_velocities(), 7);
+    for (const auto& [velocity_index, tree_index] : expected_velocity_to_tree) {
+      EXPECT_EQ(forest.v_to_tree(velocity_index), tree_index);
+    }
   }
 
  protected:
@@ -498,10 +519,15 @@ TEST_F(TreeTopologyTests, Finalize) {
   EXPECT_EQ(model_->num_mobilizers(), 10);
 
   const MultibodyTreeTopology& topology = model_->get_topology();
-  EXPECT_EQ(topology.num_mobods(), model_->num_bodies());
+  const SpanningForest& forest = model_->forest();
+
+  EXPECT_EQ(topology.num_mobods(), 10);
   EXPECT_EQ(topology.forest_height(), 4);
 
-  VerifyTopology(topology);
+  EXPECT_EQ(forest.num_mobods(), 10);
+  EXPECT_EQ(forest.height(), 4);
+
+  VerifyTopology(topology, forest);
 }
 
 // This unit tests verifies the correct number of generalized positions and
@@ -512,41 +538,37 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
   EXPECT_EQ(model_->num_mobilizers(), 10);
   EXPECT_EQ(model_->num_joints(), 9);
 
+  // TODO(sherm1) First make sure topology and forest agree, then nuke the
+  //  old topology code.
   const MultibodyTreeTopology& topology = model_->get_topology();
+  const SpanningForest& forest = model_->forest();
+
   EXPECT_EQ(topology.num_mobods(), model_->num_bodies());
   EXPECT_EQ(topology.forest_height(), 4);
-
-  // Verifies the total number of generalized positions and velocities.
   EXPECT_EQ(topology.num_positions(), 7);
   EXPECT_EQ(topology.num_velocities(), 7);
   EXPECT_EQ(topology.num_states(), 14);
 
-  // Tip-to-Base recursion.
+  EXPECT_EQ(forest.num_mobods(), 10);
+  EXPECT_EQ(forest.height(), 4);
+  EXPECT_EQ(forest.num_positions(), 7);
+  EXPECT_EQ(forest.num_velocities(), 7);
+
   // In this case all mobilizers are RevoluteMobilizer objects with one
   // generalized position and one generalized velocity per mobilizer.
   int positions_index = 0;
   int velocities_index = 0;
-  for (MobodIndex mobod_index(1); /* Skips the world mobilized body. */
-       mobod_index < topology.num_mobods(); ++mobod_index) {
-    const BodyNodeTopology& node = topology.get_body_node(mobod_index);
-    const BodyIndex body_index = node.rigid_body;
-    const MobodIndex mobilizer_index = node.index;
+  for (const SpanningForest::Mobod& mobod : forest.mobods()) {
+    const LinkOrdinal active_link_ordinal = mobod.link_ordinal();
+    const LinkJointGraph::Link active_link = forest.links(active_link_ordinal);
 
-    const MobilizerTopology& mobilizer_topology =
-        topology.get_mobilizer(mobilizer_index);
+    EXPECT_EQ(active_link.mobod_index(), mobod.index());
+    EXPECT_EQ(active_link.ordinal(), active_link_ordinal);
 
-    EXPECT_EQ(body_index, bodies_[body_index]->index());
-
-    // Verify positions and velocity indexes.
-    EXPECT_EQ(positions_index, node.mobilizer_positions_start);
-    EXPECT_EQ(positions_index, mobilizer_topology.positions_start);
-    EXPECT_EQ(velocities_index, node.mobilizer_velocities_start_in_v);
-    EXPECT_EQ(velocities_index, mobilizer_topology.velocities_start_in_v);
-
-    // Mobilizers 5 and 8 are weld joints, with no velocities. All other
-    // mobilizers introduce one position and one velocity.
-    positions_index += mobilizer_topology.num_positions;
-    velocities_index += mobilizer_topology.num_velocities;
+    EXPECT_EQ(positions_index, mobod.q_start());
+    EXPECT_EQ(velocities_index, mobod.v_start());
+    positions_index += mobod.nq();
+    velocities_index += mobod.nv();
   }
   EXPECT_EQ(positions_index, topology.num_positions());
   EXPECT_EQ(velocities_index, topology.num_velocities());
@@ -567,6 +589,7 @@ TEST_F(TreeTopologyTests, Clone) {
   EXPECT_EQ(cloned_model->num_mobilizers(), 10);
   EXPECT_EQ(cloned_model->num_force_elements(), 1);
   const MultibodyTreeTopology& clone_topology = cloned_model->get_topology();
+  const SpanningForest& clone_forest = cloned_model->forest();
 
   // Verify the cloned topology actually is a different object.
   ASSERT_NE(&topology, &clone_topology);
@@ -577,7 +600,7 @@ TEST_F(TreeTopologyTests, Clone) {
 
   // Even though the test above confirms the two topologies are exactly equal,
   // we perform a number of additional tests.
-  VerifyTopology(clone_topology);
+  VerifyTopology(clone_topology, clone_forest);
 }
 
 // Verifies that the AutoDiffXd version of a given MultibodyTree model created
@@ -594,6 +617,7 @@ TEST_F(TreeTopologyTests, ToAutoDiffXd) {
   EXPECT_EQ(autodiff_model->num_mobilizers(), 10);
   const MultibodyTreeTopology& autodiff_topology =
       autodiff_model->get_topology();
+  const SpanningForest& autodiff_forest = autodiff_model->forest();
 
   // The topology of the clone must be exactly equal to the topology of the
   // original MultibodyTree.
@@ -601,7 +625,7 @@ TEST_F(TreeTopologyTests, ToAutoDiffXd) {
 
   // Even though the test above confirms the two topologies are exactly equal,
   // we perform a number of additional tests.
-  VerifyTopology(autodiff_topology);
+  VerifyTopology(autodiff_topology, autodiff_forest);
 }
 
 // Verifies that the symbolic version of a given MultibodyTree model created
@@ -618,6 +642,7 @@ TEST_F(TreeTopologyTests, ToSymbolic) {
   EXPECT_EQ(symbolic_model->num_mobilizers(), 10);
   const MultibodyTreeTopology& symbolic_topology =
       symbolic_model->get_topology();
+  const SpanningForest& symbolic_forest = symbolic_model->forest();
 
   // The topology of the clone must be exactly equal to the topology of the
   // original MultibodyTree.
@@ -625,7 +650,7 @@ TEST_F(TreeTopologyTests, ToSymbolic) {
 
   // Even though the test above confirms the two topologies are exactly equal,
   // we perform a number of additional tests.
-  VerifyTopology(symbolic_topology);
+  VerifyTopology(symbolic_topology, symbolic_forest);
 }
 
 // Confirm that the topology methods SpanningForest::FindPathFromWorld() and

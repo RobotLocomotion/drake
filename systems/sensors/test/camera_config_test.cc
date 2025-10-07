@@ -1,5 +1,7 @@
 #include "drake/systems/sensors/camera_config.h"
 
+#include <limits>
+#include <string>
 #include <vector>
 
 #include <fmt/format.h>

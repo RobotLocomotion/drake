@@ -371,5 +371,9 @@ DrakeLcm::~DrakeLcm() {
   ::lcm_destroy(impl_->lcm_);
 }
 
+bool DrakeLcm::available() {
+  return true;
+}
+
 }  // namespace lcm
 }  // namespace drake

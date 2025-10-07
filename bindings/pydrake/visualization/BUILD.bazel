@@ -24,7 +24,7 @@ PACKAGE_INFO = get_pybind_package_info("//bindings")
 drake_pybind_library(
     name = "visualization",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:visualization",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:serialize_pybind",
     ],
@@ -248,4 +248,5 @@ add_lint_tests_pydrake(
         "run_installed_model_visualizer.py",
         "test/visualization_install_tests.py",
     ],
+    python_lint_use_ruff_format = False,
 )

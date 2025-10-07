@@ -6,7 +6,7 @@ common --@drake//tools/flags:private_runtime_repo_default=external
 
 # Tell spdlog to build a library, not header-only. This *substantially* reduces
 # build size and improves build speed.
-build --@@spdlog+//:header_only=False
+common --@@spdlog+//:header_only=False
 
 # Require all rules to be loaded in MODULE.bazel -- don't allow any legacy
 # implicit loads built-in to Bazel itself to take effect.
@@ -14,6 +14,7 @@ common --incompatible_autoload_externally=
 
 # Default to an optimized build.
 build -c opt
+build --features=prefer_pic_for_opt_binaries
 
 # Default build options.
 build --strip=never
@@ -21,6 +22,14 @@ build --strict_system_includes
 
 # Use the host Python interpreter by default.
 build --extra_toolchains=@python//:all
+
+# For background, see https://bazel.build/docs/bazel-and-java.
+# The java_runtime_version defaults to local_jdk, which is some uncontrolled
+# version from Ubuntu or Homebrew that can lead to build failures. Instead,
+# we'll set it (and correspondingly the java_language_version) to an arbitrary
+# value that's compatible with what `lcm.jar` needs.
+build --java_language_version=11
+build --java_runtime_version=remotejdk_11
 
 # Use C++23 by default.
 build --cxxopt=-std=c++23

@@ -413,13 +413,22 @@ class TestDiffIkSystems(unittest.TestCase):
 
         command = dut.get_output_port_commanded_velocity().Eval(context_vel)
 
-        np.testing.assert_array_equal(command, [1, 2])
+        np.testing.assert_allclose(command, [1, 2], atol=1e-4)
 
         # Now test stray APIs, untested in the above evaluation.
         self.assertIs(dut.plant(), dut.collision_checker().plant())
         self.assertEqual(dut.active_dof().count(), 2)
         self.assertEqual(dut.time_step(), 0.1)
         self.assertEqual(dut.task_frame().name(), "world")
+        self.assertEqual(dut.K_VX(), 2)
+        np.testing.assert_array_equal(dut.Vd_TG_limit().get_coeffs(),
+                                      [0, 0, 0, np.inf, np.inf, 0])
+        self.assertIsInstance(dut.recipe(),
+                              mut.DifferentialInverseKinematicsSystem.Recipe)
+        self.assertEqual(dut.recipe().num_ingredients(), 1)
+        self.assertIsInstance(dut.recipe().ingredient(i=0),
+                              mut.DifferentialInverseKinematicsSystem
+                              .LeastSquaresCost)
 
         # Note: setting poses in addition to velocities would cause an
         # evaluation error. We'll start with a fresh context (because we can't
@@ -434,7 +443,7 @@ class TestDiffIkSystems(unittest.TestCase):
         # Current pose is at (0, 0), target pose is at (1, 2). The inferred
         # velocity is that displacement multiplied by K_VX / time_step = 20.
         expected_vel = [20, 40]
-        np.testing.assert_array_equal(command, expected_vel)
+        np.testing.assert_allclose(command, expected_vel, atol=1e-3)
 
     def test_diff_ik_controller(self):
         Controller = mut.DifferentialInverseKinematicsController

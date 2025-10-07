@@ -6,7 +6,6 @@ import unittest
 
 
 class TestGurobiSolverLicenseRetention(unittest.TestCase):
-
     def _subprocess_license_use_count(self, license_file_content):
         """Sets GRB_LICENSE_FILE to a temp file with the given content, runs
         our test helper, and then returns the license pointer use_count.
@@ -24,7 +23,8 @@ class TestGurobiSolverLicenseRetention(unittest.TestCase):
 
         # Run the helper and return the pointer use_count.
         output = subprocess.check_output(
-            ["solvers/gurobi_solver_license_retention_test_helper"])
+            ["solvers/gurobi_solver_license_retention_test_helper"]
+        )
         return int(output)
 
     def test_local_license(self):

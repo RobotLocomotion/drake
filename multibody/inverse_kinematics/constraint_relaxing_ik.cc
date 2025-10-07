@@ -16,20 +16,16 @@ constexpr int kDefaultRandomSeed = 1234;
 }  // namespace
 
 ConstraintRelaxingIk::ConstraintRelaxingIk(
-    const std::string& model_path,
-    const std::string& end_effector_link_name)
-    : rand_generator_(kDefaultRandomSeed),
-      plant_(0) {
+    const std::string& model_path, const std::string& end_effector_link_name)
+    : rand_generator_(kDefaultRandomSeed), plant_(0) {
   const auto models = Parser(&plant_).AddModels(model_path);
   DRAKE_THROW_UNLESS(models.size() == 1);
   const auto model_instance = models[0];
 
-
   // Check if our robot is welded to the world.  If not, try welding the first
   // link.
   if (plant_.GetBodiesWeldedTo(plant_.world_body()).size() <= 1) {
-    const std::vector<BodyIndex> bodies =
-        plant_.GetBodyIndices(model_instance);
+    const std::vector<BodyIndex> bodies = plant_.GetBodyIndices(model_instance);
     plant_.WeldFrames(plant_.world_frame(),
                       plant_.get_body(bodies[0]).body_frame());
   }
@@ -40,8 +36,7 @@ ConstraintRelaxingIk::ConstraintRelaxingIk(
 
 bool ConstraintRelaxingIk::PlanSequentialTrajectory(
     const std::vector<IkCartesianWaypoint>& waypoints,
-    const VectorX<double>& q_current,
-    std::vector<Eigen::VectorXd>* q_sol_out,
+    const VectorX<double>& q_current, std::vector<Eigen::VectorXd>* q_sol_out,
     const std::function<bool(int)>& keep_going) {
   DRAKE_DEMAND(q_sol_out != nullptr);
   int num_steps = static_cast<int>(waypoints.size());
@@ -158,11 +153,10 @@ bool ConstraintRelaxingIk::PlanSequentialTrajectory(
   return true;
 }
 
-bool ConstraintRelaxingIk::SolveIk(
-    const IkCartesianWaypoint& waypoint,
-    const VectorX<double>& q0,
-    const Vector3<double>& pos_tol, double rot_tol,
-    VectorX<double>* q_res) {
+bool ConstraintRelaxingIk::SolveIk(const IkCartesianWaypoint& waypoint,
+                                   const VectorX<double>& q0,
+                                   const Vector3<double>& pos_tol,
+                                   double rot_tol, VectorX<double>* q_res) {
   DRAKE_DEMAND(q_res != nullptr);
 
   InverseKinematics ik(plant_);
@@ -171,10 +165,9 @@ bool ConstraintRelaxingIk::SolveIk(
   Vector3<double> pos_lb = waypoint.pose.translation() - pos_tol;
   Vector3<double> pos_ub = waypoint.pose.translation() + pos_tol;
 
-  ik.AddPositionConstraint(
-      plant_.get_body(end_effector_body_idx_).body_frame(),
-      Vector3<double>::Zero(),
-      plant_.world_frame(), pos_lb, pos_ub);
+  ik.AddPositionConstraint(plant_.get_body(end_effector_body_idx_).body_frame(),
+                           Vector3<double>::Zero(), plant_.world_frame(),
+                           pos_lb, pos_ub);
 
   if (waypoint.constrain_orientation) {
     ik.AddOrientationConstraint(

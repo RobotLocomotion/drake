@@ -2,11 +2,17 @@
  and drake/geometry/render* directories. They can be found in the
  pydrake.geometry module. */
 
+#include <memory>
+#include <string>
+
+#include "drake/bindings/generated_docstrings/geometry_render.h"
+#include "drake/bindings/generated_docstrings/geometry_render_gl.h"
+#include "drake/bindings/generated_docstrings/geometry_render_gltf_client.h"
+#include "drake/bindings/generated_docstrings/geometry_render_vtk.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/geometry/render/light_parameter.h"
 #include "drake/geometry/render/render_engine.h"
@@ -22,6 +28,7 @@ using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::PerceptionProperties;
 using geometry::Shape;
+using geometry::SsaoParameter;
 using geometry::render::ColorRenderCamera;
 using geometry::render::DepthRenderCamera;
 using geometry::render::LightParameter;
@@ -137,8 +144,11 @@ void DoScalarIndependentDefinitions(py::module m) {
   using namespace drake::geometry;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry::render;
-  constexpr auto& doc_geometry = pydrake_doc.drake.geometry;
-  constexpr auto& doc = doc_geometry.render;
+  constexpr auto& doc = pydrake_doc_geometry_render.drake.geometry.render;
+  constexpr auto& doc_gl = pydrake_doc_geometry_render_gl.drake.geometry;
+  constexpr auto& doc_gltf_client =
+      pydrake_doc_geometry_render_gltf_client.drake.geometry;
+  constexpr auto& doc_vtk = pydrake_doc_geometry_render_vtk.drake.geometry;
 
   {
     using Class = ClippingRange;
@@ -361,7 +371,7 @@ void DoScalarIndependentDefinitions(py::module m) {
 
   {
     using Class = geometry::NullTexture;
-    constexpr auto& cls_doc = doc_geometry.NullTexture;
+    constexpr auto& cls_doc = doc_vtk.NullTexture;
     py::class_<Class> cls(m, "NullTexture", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
@@ -372,7 +382,7 @@ void DoScalarIndependentDefinitions(py::module m) {
 
   {
     using Class = geometry::EquirectangularMap;
-    constexpr auto& cls_doc = doc_geometry.EquirectangularMap;
+    constexpr auto& cls_doc = doc_vtk.EquirectangularMap;
     py::class_<Class> cls(m, "EquirectangularMap", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
@@ -383,7 +393,7 @@ void DoScalarIndependentDefinitions(py::module m) {
 
   {
     using Class = geometry::EnvironmentMap;
-    constexpr auto& cls_doc = doc_geometry.EnvironmentMap;
+    constexpr auto& cls_doc = doc_vtk.EnvironmentMap;
     py::class_<Class> cls(m, "EnvironmentMap", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
@@ -394,7 +404,7 @@ void DoScalarIndependentDefinitions(py::module m) {
 
   {
     using Class = geometry::GltfExtension;
-    constexpr auto& cls_doc = doc_geometry.GltfExtension;
+    constexpr auto& cls_doc = doc_vtk.GltfExtension;
     py::class_<Class> cls(m, "GltfExtension", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
@@ -415,8 +425,19 @@ void DoScalarIndependentDefinitions(py::module m) {
   }
 
   {
+    using Class = geometry::SsaoParameter;
+    constexpr auto& cls_doc = doc_vtk.SsaoParameter;
+    py::class_<Class> cls(m, "SsaoParameter", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
     using Class = RenderEngineVtkParams;
-    constexpr auto& cls_doc = doc_geometry.RenderEngineVtkParams;
+    constexpr auto& cls_doc = doc_vtk.RenderEngineVtkParams;
     py::class_<Class> cls(m, "RenderEngineVtkParams", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
@@ -440,11 +461,11 @@ void DoScalarIndependentDefinitions(py::module m) {
         return result.release();
       },
       py::arg("params"), py_rvp::take_ownership,
-      doc_geometry.MakeRenderEngineVtk.doc);
+      doc_vtk.MakeRenderEngineVtk.doc);
 
   {
     using Class = RenderEngineGlParams;
-    constexpr auto& cls_doc = doc_geometry.RenderEngineGlParams;
+    constexpr auto& cls_doc = doc_gl.RenderEngineGlParams;
     py::class_<Class> cls(m, "RenderEngineGlParams", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
@@ -468,11 +489,11 @@ void DoScalarIndependentDefinitions(py::module m) {
         return result.release();
       },
       py::arg("params") = RenderEngineGlParams(), py_rvp::take_ownership,
-      doc_geometry.MakeRenderEngineGl.doc);
+      doc_gl.MakeRenderEngineGl.doc);
 
   {
     using Class = RenderEngineGltfClientParams;
-    constexpr auto& cls_doc = doc_geometry.RenderEngineGltfClientParams;
+    constexpr auto& cls_doc = doc_gltf_client.RenderEngineGltfClientParams;
     py::class_<Class> cls(m, "RenderEngineGltfClientParams", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
@@ -497,7 +518,7 @@ void DoScalarIndependentDefinitions(py::module m) {
         return result.release();
       },
       py::arg("params") = RenderEngineGltfClientParams(),
-      py_rvp::take_ownership, doc_geometry.MakeRenderEngineGltfClient.doc);
+      py_rvp::take_ownership, doc_gltf_client.MakeRenderEngineGltfClient.doc);
 
   AddValueInstantiation<RenderLabel>(m);
 }

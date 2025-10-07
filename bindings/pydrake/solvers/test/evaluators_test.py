@@ -4,7 +4,6 @@ import weakref
 
 import numpy as np
 import scipy.sparse
-import copy
 
 import pydrake.solvers as mp
 import pydrake.solvers._testing as mp_testing
@@ -457,9 +456,6 @@ class TestConstraints(unittest.TestCase):
         constraint2 = mp.ExpressionConstraint(v=np.array([e2]),
                                               lb=np.array([1.0]),
                                               ub=np.array([2.0]))
-        constraint2_binding = mp.Binding[mp.ExpressionConstraint](
-            constraint2, constraint2.vars()
-        )
         self.assertEqual(hash(constraint1_binding1),
                          hash(constraint1_binding2))
         self.assertNotEqual(hash(constraint1_binding1), hash(constraint2))
@@ -482,8 +478,6 @@ class TestMinimumValueLowerBoundConstraint(unittest.TestCase):
         self.assertEqual(dut.num_constraints(), 1)
         self.assertTrue(dut.CheckSatisfied(np.array([1.])))
         self.assertFalse(dut.CheckSatisfied(np.array([-5.])))
-        # Evaluate with autodiff.
-        y = dut.Eval(InitializeAutoDiff(np.array([1.])))
         self.assertEqual(dut.minimum_value_lower(), 0.)
         self.assertEqual(dut.influence_value(), 1.)
 
@@ -537,8 +531,6 @@ class TestMinimumValueUpperBoundConstraint(unittest.TestCase):
         self.assertEqual(dut.num_constraints(), 1)
         self.assertTrue(dut.CheckSatisfied(np.array([1.])))
         self.assertFalse(dut.CheckSatisfied(np.array([5.])))
-        # Evaluate with autodiff.
-        y = dut.Eval(InitializeAutoDiff(np.array([1.])))
         self.assertEqual(dut.minimum_value_upper(), 2)
         self.assertEqual(dut.influence_value(), 3)
 

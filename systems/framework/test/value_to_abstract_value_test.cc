@@ -1,7 +1,9 @@
 #include "drake/systems/framework/value_to_abstract_value.h"
 
 #include <memory>
+#include <string>
 #include <type_traits>
+#include <utility>
 
 #include <gtest/gtest.h>
 

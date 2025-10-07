@@ -3,6 +3,8 @@
 #include <atomic>
 #include <cstdlib>
 #include <memory>
+#include <string>
+#include <vector>
 
 // clang-format off to disable clang-format-includes
 // N.B. text-logging.h must be included before spdlog headers

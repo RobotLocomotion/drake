@@ -19,9 +19,11 @@ IrisParameterizationFunction::IrisParameterizationFunction(
                 Eigen::VectorXd(q_star_val)](const Eigen::VectorXd& s_val) {
         return kin->ComputeQValue(s_val, q_star_captured);
       };
-  // TODO(cohnt): Construct a VectorX<AutoDiffXd> parameterization when using
-  // this constructor as well.
-  parameterization_autodiff_ = nullptr;
+  parameterization_autodiff_ = [kin,
+                                q_star_captured = Eigen::VectorXd(q_star_val)](
+                                   const Eigen::VectorX<AutoDiffXd>& s_val) {
+    return kin->ComputeQValue(s_val, q_star_captured);
+  };
 
   parameterization_is_threadsafe_ = true;
   parameterization_dimension_ = dimension;
@@ -63,8 +65,8 @@ IrisParameterizationFunction::IrisParameterizationFunction(
             });
         return out;
       };
-  // TODO(cohnt): Construct a VectorX<AutoDiffXd> parameterization when using
-  // this constructor as well.
+  // Since Expression cannot be evaluated on type AutoDiffXd, we currently
+  // cannot support a VectorX<AutoDiffXd> parameterization.
   parameterization_autodiff_ = nullptr;
 
   parameterization_is_threadsafe_ = true;
@@ -93,7 +95,7 @@ float calc_delta_min(double delta, int max_iterations) {
 void AddTangentToPolytope(
     const geometry::optimization::Hyperellipsoid& E,
     const Eigen::Ref<const Eigen::VectorXd>& point,
-    double configuration_space_margin,
+    double configuration_space_margin, bool relax_margin,
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>* A,
     Eigen::VectorXd* b, int* num_constraints) {
   while (*num_constraints >= A->rows()) {
@@ -101,20 +103,38 @@ void AddTangentToPolytope(
     A->conservativeResize(A->rows() * 2, A->cols());
     b->conservativeResize(b->rows() * 2);
   }
-
-  A->row(*num_constraints) =
+  const Eigen::VectorXd a_face =
       (E.A().transpose() * E.A() * (point - E.center())).normalized();
-  (*b)[*num_constraints] =
-      A->row(*num_constraints) * point - configuration_space_margin;
-  if (A->row(*num_constraints) * E.center() > (*b)[*num_constraints]) {
-    throw std::logic_error(
-        "The current center of the IRIS region is within "
-        "sampled_iris_options.configuration_space_margin of being "
-        "infeasible.  Check your sample point and/or any additional "
-        "constraints you've passed in via the options. The configuration "
-        "space surrounding the sample point must have an interior.");
+  double b_point = a_face.transpose() * point;
+  double b_face = b_point - configuration_space_margin;
+  double b_center = a_face.transpose() * E.center();
+
+  // Check if the face cuts off the center.
+  if (b_center > b_face) {
+    if (relax_margin) {
+      // If the user has allowed relaxing the configuration space margin, we set
+      // the hyperplane halfway between the point and the center.
+      // | b-margin  ...  O| center, b-margin+relaxation ...
+      b_face = (b_point + b_center) / 2.0;
+    } else {
+      throw std::logic_error(
+          "The current center of the IRIS region is within "
+          "sampled_iris_options.configuration_space_margin of being "
+          "infeasible. Check your sample point and/or any additional "
+          "constraints you've passed in via the options. The configuration "
+          "space surrounding the sample point must have an interior.");
+    }
   }
+
+  A->row(*num_constraints) = a_face.transpose();
+  (*b)[*num_constraints] = b_face;
   *num_constraints += 1;
+
+  // Resize A matrix if we need more faces.
+  if (A->rows() <= *num_constraints) {
+    A->conservativeResize(A->rows() * 2, A->cols());
+    b->conservativeResize(b->rows() * 2);
+  }
 }
 
 void AddTangentToPolytope(

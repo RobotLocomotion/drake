@@ -19,21 +19,23 @@ Rotation::Rotation(const math::RollPitchYaw<double>& arg) {
 }
 
 bool Rotation::IsDeterministic() const {
-  return std::visit<bool>(overloaded{
-    [](const Identity&) {
-      return true;
-    },
-    [](const Rpy& rpy) {
-      return schema::IsDeterministic(rpy.deg);
-    },
-    [](const AngleAxis& aa) {
-      return schema::IsDeterministic(aa.angle_deg) &&
-             schema::IsDeterministic(aa.axis);
-    },
-    [](const Uniform&) {
-      return false;
-    },
-  }, value);
+  return std::visit<bool>(  // BR
+      overloaded{
+          [](const Identity&) {
+            return true;
+          },
+          [](const Rpy& rpy) {
+            return schema::IsDeterministic(rpy.deg);
+          },
+          [](const AngleAxis& aa) {
+            return schema::IsDeterministic(aa.angle_deg) &&
+                   schema::IsDeterministic(aa.axis);
+          },
+          [](const Uniform&) {
+            return false;
+          },
+      },
+      value);
 }
 
 math::RotationMatrixd Rotation::GetDeterministicValue() const {
@@ -65,26 +67,30 @@ Vector<Expression, Size> deg2rad(
 
 math::RotationMatrix<Expression> Rotation::ToSymbolic() const {
   using Result = math::RotationMatrix<Expression>;
-  return std::visit<Result>(overloaded{
-    [](const Identity&) {
-      return Result{};
-    },
-    [](const Rpy& rpy) {
-      const Vector3<Expression> rpy_rad = deg2rad(rpy.deg);
-      return Result{math::RollPitchYaw<Expression>(rpy_rad)};
-    },
-    [](const AngleAxis& aa) {
-      const Expression angle_rad = deg2rad(aa.angle_deg);
-      const Vector3<Expression> axis =
-          schema::ToDistributionVector(aa.axis)->ToSymbolic().normalized();
-      const Eigen::AngleAxis<Expression> theta_lambda(angle_rad, axis);
-      return Result{theta_lambda};
-    },
-    [](const Uniform&) {
-      RandomGenerator generator;
-      return math::UniformlyRandomRotationMatrix<Expression>(&generator);
-    },
-  }, value);
+  return std::visit<Result>(
+      overloaded{
+          [](const Identity&) {
+            return Result{};
+          },
+          [](const Rpy& rpy) {
+            const Vector3<Expression> rpy_rad = deg2rad(rpy.deg);
+            return Result{math::RollPitchYaw<Expression>(rpy_rad)};
+          },
+          [](const AngleAxis& aa) {
+            const Expression angle_rad = deg2rad(aa.angle_deg);
+            const Vector3<Expression> axis =
+                schema::ToDistributionVector(aa.axis)
+                    ->ToSymbolic()
+                    .normalized();
+            const Eigen::AngleAxis<Expression> theta_lambda(angle_rad, axis);
+            return Result{theta_lambda};
+          },
+          [](const Uniform&) {
+            RandomGenerator generator;
+            return math::UniformlyRandomRotationMatrix<Expression>(&generator);
+          },
+      },
+      value);
 }
 
 math::RotationMatrixd Rotation::Sample(RandomGenerator* generator) const {

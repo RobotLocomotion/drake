@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 
 #include "drake/common/symbolic/expression.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
@@ -8,10 +9,10 @@
 // A simple example of extracting the symbolic dynamics of the pendulum system,
 // and printing them to std::out.
 
-using drake::symbolic::Expression;
-using drake::symbolic::Variable;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
+using drake::symbolic::Expression;
+using drake::symbolic::Variable;
 using drake::systems::System;
 
 namespace drake {
@@ -29,8 +30,8 @@ VectorX<Expression> PendulumPlantDynamics() {
   auto context = symbolic_plant.CreateDefaultContext();
   symbolic_plant.get_input_port().FixValue(context.get(),
                                            Expression(Variable("tau")));
-  context->get_mutable_continuous_state_vector().SetAtIndex(
-      0, Variable("theta"));
+  context->get_mutable_continuous_state_vector().SetAtIndex(0,
+                                                            Variable("theta"));
   context->get_mutable_continuous_state_vector().SetAtIndex(
       1, Variable("thetadot"));
   const auto& derivatives = symbolic_plant.EvalTimeDerivatives(*context);
@@ -54,8 +55,8 @@ VectorX<Expression> MultibodyPlantDynamics() {
   symbolic_plant.get_actuation_input_port().FixValue(
       context.get(), Expression(Variable("tau")));
   symbolic_plant.SetPositionsAndVelocities(
-      context.get(), Vector2<Expression>(
-          Variable("theta"), Variable("thetadot")));
+      context.get(),
+      Vector2<Expression>(Variable("theta"), Variable("thetadot")));
   const auto& derivatives = symbolic_plant.EvalTimeDerivatives(*context);
   return derivatives.CopyToVector();
 }

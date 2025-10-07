@@ -113,7 +113,7 @@ BvType Bvh<BvType, SourceMeshType>::ComputeBoundingVolume(
   for (auto pair = start; pair < end; ++pair) {
     const auto& element = mesh.element(pair->first);
     // Check each vertex in the element.
-    for (int v = 0; v < kElementVertexCount; ++v) {
+    for (int v = 0; v < MeshType::kVertexPerElement; ++v) {
       vertices.insert(element.vertex(v));
     }
   }
@@ -127,11 +127,11 @@ Vector3d Bvh<BvType, SourceMeshType>::ComputeCentroid(
   Vector3d centroid{0, 0, 0};
   const auto& element = mesh.element(i);
   // Calculate average from all vertices.
-  for (int v = 0; v < kElementVertexCount; ++v) {
+  for (int v = 0; v < MeshType::kVertexPerElement; ++v) {
     const Vector3d& vertex = convert_to_double(mesh.vertex(element.vertex(v)));
     centroid += vertex;
   }
-  centroid /= kElementVertexCount;
+  centroid /= MeshType::kVertexPerElement;
   return centroid;
 }
 

@@ -72,8 +72,7 @@ class JacoStatusReceiver : public systems::LeafSystem<double> {
 
  private:
   template <std::vector<double> drake::lcmt_jaco_status::*,
-            std::vector<double> drake::lcmt_jaco_status::*,
-            int>
+            std::vector<double> drake::lcmt_jaco_status::*, int>
   void CalcJointOutput(const systems::Context<double>&,
                        systems::BasicVector<double>*) const;
 

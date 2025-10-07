@@ -1,6 +1,7 @@
 #include "drake/common/parallelism.h"
 
 #include <thread>
+#include <vector>
 
 #include <gtest/gtest.h>
 

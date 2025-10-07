@@ -1,5 +1,7 @@
 #include "drake/planning/collision_checker_context.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/planning/robot_diagram_builder.h"

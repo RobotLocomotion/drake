@@ -22,7 +22,7 @@ class TestEigenGeometry(unittest.TestCase):
     def check_cast(self, template, T):
         value = template[T]()
         # Refer to docstrings for `CastUPack` in `default_scalars_pybind.h`.
-        if T == float:
+        if T is float:
             U_list = [float, AutoDiffXd, Expression]
         else:
             U_list = [T]
@@ -39,7 +39,7 @@ class TestEigenGeometry(unittest.TestCase):
     def test_quaternion(self, T):
         # Simple API.
         Quaternion = mut.Quaternion_[T]
-        cast = np.vectorize(T)
+        np.vectorize(T)
         q_identity = Quaternion()
         self.assertEqual(numpy_compare.resolve_type(q_identity.wxyz()), T)
         numpy_compare.assert_float_equal(q_identity.wxyz(), [1., 0, 0, 0])
@@ -47,7 +47,7 @@ class TestEigenGeometry(unittest.TestCase):
                 copy.copy(q_identity).wxyz(), [1., 0, 0, 0])
         numpy_compare.assert_equal(
                 q_identity.wxyz(), Quaternion.Identity().wxyz())
-        if T == float:
+        if T is float:
             self.assertEqual(
                 str(q_identity),
                 "Quaternion(w=1.0, x=0.0, y=0.0, z=0.0)")
@@ -132,7 +132,7 @@ class TestEigenGeometry(unittest.TestCase):
         self.assertEqual((q_AB @ vs).shape, (3, 2))
 
         # Test `type_caster`s.
-        if T == float:
+        if T is float:
             value = test_util.create_quaternion()
             self.assertTrue(isinstance(value, mut.Quaternion))
             test_util.check_quaternion(value)
@@ -161,7 +161,7 @@ class TestEigenGeometry(unittest.TestCase):
         X_I_np = np.eye(4, 4)
         numpy_compare.assert_float_equal(transform.matrix(), X_I_np)
         numpy_compare.assert_float_equal(copy.copy(transform).matrix(), X_I_np)
-        if T == float:
+        if T is float:
             self.assertEqual(str(transform), str(X_I_np))
         # - Constructor with (X_I_np)
         transform = Isometry3(matrix=X_I_np)
@@ -207,7 +207,7 @@ class TestEigenGeometry(unittest.TestCase):
                 X_temp.set_matrix(X_bad_np)
             numpy_compare.assert_float_equal(X_temp.matrix(), X_AB_np)
         # Test `type_caster`s.
-        if T == float:
+        if T is float:
             value = test_util.create_isometry()
             self.assertTrue(isinstance(value, mut.Isometry3))
             test_util.check_isometry(value)

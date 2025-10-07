@@ -4,6 +4,9 @@
 /// depth frames, and retransmits the images.  The output can be viewed in
 /// Meldis once #18862 is finished.
 
+#include <memory>
+#include <utility>
+
 #include <gflags/gflags.h>
 
 #include "drake/lcmt_image_array.hpp"

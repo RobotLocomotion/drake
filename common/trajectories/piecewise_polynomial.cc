@@ -33,14 +33,16 @@ PiecewisePolynomial<T>::PiecewisePolynomial(
     : PiecewiseTrajectory<T>(breaks), polynomials_(polynomials) {
   DRAKE_ASSERT(breaks.size() == (polynomials.size() + 1));
   for (int i = 1; i < this->get_number_of_segments(); i++) {
-    if (polynomials[i].rows() != polynomials[0].rows())
+    if (polynomials[i].rows() != polynomials[0].rows()) {
       throw std::runtime_error(
           "The polynomial matrix for each segment must have the same number of "
           "rows.");
-    if (polynomials[i].cols() != polynomials[0].cols())
+    }
+    if (polynomials[i].cols() != polynomials[0].cols()) {
       throw std::runtime_error(
           "The polynomial matrix for each segment must have the same number of "
           "columns.");
+    }
   }
 }
 
@@ -246,9 +248,10 @@ int PiecewisePolynomial<T>::getSegmentPolynomialDegree(int segment_index,
 template <typename T>
 PiecewisePolynomial<T>& PiecewisePolynomial<T>::operator+=(
     const PiecewisePolynomial<T>& other) {
-  if (!this->SegmentTimesEqual(other))
+  if (!this->SegmentTimesEqual(other)) {
     throw runtime_error(
         "Addition not yet implemented when segment times are not equal");
+  }
   for (size_t i = 0; i < polynomials_.size(); i++)
     polynomials_[i] += other.polynomials_[i];
   return *this;
@@ -257,9 +260,10 @@ PiecewisePolynomial<T>& PiecewisePolynomial<T>::operator+=(
 template <typename T>
 PiecewisePolynomial<T>& PiecewisePolynomial<T>::operator-=(
     const PiecewisePolynomial<T>& other) {
-  if (!this->SegmentTimesEqual(other))
+  if (!this->SegmentTimesEqual(other)) {
     throw runtime_error(
         "Subtraction not yet implemented when segment times are not equal");
+  }
   for (size_t i = 0; i < polynomials_.size(); i++)
     polynomials_[i] -= other.polynomials_[i];
   return *this;
@@ -268,9 +272,10 @@ PiecewisePolynomial<T>& PiecewisePolynomial<T>::operator-=(
 template <typename T>
 PiecewisePolynomial<T>& PiecewisePolynomial<T>::operator*=(
     const PiecewisePolynomial<T>& other) {
-  if (!this->SegmentTimesEqual(other))
+  if (!this->SegmentTimesEqual(other)) {
     throw runtime_error(
         "Multiplication not yet implemented when segment times are not equal");
+  }
   for (size_t i = 0; i < polynomials_.size(); i++) {
     polynomials_[i] *= other.polynomials_[i];
   }
@@ -808,10 +813,11 @@ PiecewisePolynomial<T> PiecewisePolynomial<T>::FirstOrderHold(
 
 template <typename T>
 static int sign(T val, T tol) {
-  if (val < -tol)
+  if (val < -tol) {
     return -1;
-  else if (val > tol)
+  } else if (val > tol) {
     return 1;
+  }
   return 0;
 }
 

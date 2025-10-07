@@ -12,7 +12,10 @@
 ///        the vertical case. Using these keyframes to simulate the horizontal
 ///        case may cause the simulation to fail.
 
+#include <map>
 #include <memory>
+#include <string>
+#include <utility>
 
 #include <gflags/gflags.h>
 
@@ -97,7 +100,8 @@ int DoMain() {
   auto state_src = builder.AddSystem<systems::TrajectorySource<double>>(
       pp, 1 /* with one derivative */);
 
-  VectorX<double> torques(num_joints); torques.setZero();
+  VectorX<double> torques(num_joints);
+  torques.setZero();
   auto torques_src = builder.AddSystem<systems::ConstantVectorSource>(torques);
   builder.Connect(state_src->get_output_port(),
                   command_encoder->get_state_input_port());
@@ -114,7 +118,9 @@ int DoMain() {
   drake::log()->info("Waiting for first lcmt_planar_gripper_status");
   lcm::Subscriber<lcmt_planar_gripper_status> status_sub(&lcm,
                                                          kLcmStatusChannel);
-  LcmHandleSubscriptionsUntil(&lcm, [&]() { return status_sub.count() > 0; });
+  LcmHandleSubscriptionsUntil(&lcm, [&]() {
+    return status_sub.count() > 0;
+  });
 
   const lcmt_planar_gripper_status& first_status = status_sub.message();
   DRAKE_DEMAND(first_status.num_fingers == 0 ||
@@ -133,8 +139,8 @@ int DoMain() {
 
   systems::Context<double>& status_context =
       diagram->GetMutableSubsystemContext(*status_decoder, &diagram_context);
-  auto& status_value = status_decoder->get_input_port(0).FixValue(
-      &status_context, first_status);
+  auto& status_value =
+      status_decoder->get_input_port(0).FixValue(&status_context, first_status);
 
   // Run forever, using the lcmt_planar_gripper_status message to dictate when
   // simulation time advances.
@@ -142,7 +148,9 @@ int DoMain() {
   while (true) {
     // Wait for an lcmt_planar_gripper_status message.
     status_sub.clear();
-    LcmHandleSubscriptionsUntil(&lcm, [&]() { return status_sub.count() > 0; });
+    LcmHandleSubscriptionsUntil(&lcm, [&]() {
+      return status_sub.count() > 0;
+    });
     // Write the lcmt_planar_gripper_status message into the context and
     // advance.
     status_value.GetMutableData()->set_value(status_sub.message());

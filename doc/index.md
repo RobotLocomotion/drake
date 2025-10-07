@@ -39,19 +39,19 @@ purpose of the front page (HTML for layout, Markdown for content).
       <div class="core-el">
         <h4>Modeling Dynamical<br> Systems</h4>
         <div class="core-el-buttons">
-          <a class="button--text" href="/doxygen_cxx/group__systems.html" target="_blank">API</a><a class="button--text" href="https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2Fdynamical_systems.ipynb" target="_blank">TUTORIAL</a>
+          <a class="button--text" href="/doxygen_cxx/group__systems.html" target="_blank">API</a><a class="button--text" href="https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/dynamicalsystems-0da445e96cc24a358022b5075d7b0826" target="_blank">TUTORIAL</a>
         </div>
       </div>
       <div class="core-el">
         <h4>Solving Mathematical<br> Programs</h4>
         <div class="core-el-buttons">
-          <a class="button--text" href="/doxygen_cxx/group__solvers.html" target="_blank">API</a><a class="button--text" href="https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2Fmathematical_program.ipynb" target="_blank">TUTORIAL</a>
+          <a class="button--text" href="/doxygen_cxx/group__solvers.html" target="_blank">API</a><a class="button--text" href="https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/mathematicalprogram-a901caa611f54d3e9302233a4df1b0af" target="_blank">TUTORIAL</a>
         </div>
       </div>
       <div class="core-el">
         <h4>Multibody Kinematics<br> and Dynamics</h4>
         <div class="core-el-buttons">
-          <a class="button--text" href="/doxygen_cxx/group__multibody.html" target="_blank">API</a><a class="button--text" href="https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2Fauthoring_multibody_simulation.ipynb" target="_blank">TUTORIAL</a>
+          <a class="button--text" href="/doxygen_cxx/group__multibody.html" target="_blank">API</a><a class="button--text" href="https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/authoringmultibodysimulation-8159e3be6dc048a6a8ab6876017def4b" target="_blank">TUTORIAL</a>
         </div>
       </div>
     </div>
@@ -110,7 +110,7 @@ bug fixes, features, and examples!
 ## Tutorials
 
 Drake offers Python-based tutorials using Jupyter notebooks. We recommend that
-you [view the tutorials online](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2Findex.ipynb).
+you [view the tutorials online](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/index-753e3c9d261247ba9f0eb1d7868c18c8).
 
 Alternatively, to run the tutorials locally via `pip`, refer to
 [drake/tutorials/README.md](https://github.com/RobotLocomotion/drake/blob/master/tutorials/README.md).

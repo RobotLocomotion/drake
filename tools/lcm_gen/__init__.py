@@ -57,24 +57,30 @@ from typing import Optional, List, Union
 #  [1] https://github.com/lcm-proj/lcm/commit/d9dcf8e3
 
 
-PrimitiveType = enum.Enum("PrimitiveType", " ".join([
-    "boolean",
-    "byte",
-    "double",
-    "float",
-    "int8_t",
-    "int16_t",
-    "int32_t",
-    "int64_t",
-    "string",
-]))
+PrimitiveType = enum.Enum(
+    "PrimitiveType",
+    " ".join(
+        [
+            "boolean",
+            "byte",
+            "double",
+            "float",
+            "int8_t",
+            "int16_t",
+            "int32_t",
+            "int64_t",
+            "string",
+        ]
+    ),
+)
 PrimitiveType.__str__ = lambda self: self.name
 
 
 @dataclasses.dataclass(frozen=True)
 class UserType:
-    """A struct name from an LCM message definition, e.g., "foo" or "foo.bar".
-    """
+    """A struct name from an LCM message definition, e.g., "foo" (when
+    `package` is None) or "foo.bar" (`package` is "foo"; `name` is "bar")."""
+
     package: Optional[str]
     name: str
 
@@ -87,6 +93,7 @@ class UserType:
 @dataclasses.dataclass(frozen=True)
 class StructField:
     """A field within an LCM message definition."""
+
     name: str
     typ: Union[PrimitiveType, UserType]
     array_dims: List[Union[int, str]] = dataclasses.field(default_factory=list)
@@ -101,6 +108,7 @@ class StructField:
 @dataclasses.dataclass(frozen=True)
 class StructConstant:
     """A constant within an LCM message definition."""
+
     name: str
     typ: PrimitiveType
     value: Union[int, float]
@@ -113,6 +121,7 @@ class StructConstant:
 @dataclasses.dataclass(frozen=True)
 class Struct:
     """The parse tree for an LCM message definition."""
+
     typ: UserType
     fields: List[StructField] = dataclasses.field(default_factory=list)
     constants: List[StructConstant] = dataclasses.field(default_factory=list)
@@ -166,10 +175,13 @@ class Parser:
             m = re.search(r"/\*.*?\*/", data, flags=re.DOTALL)
             if not m:
                 break
-            replacement = "".join([
-                ch if ch == "\n" else " "
-                for ch in m.group()
-            ])
+            replacement = "".join(
+                [
+                    # All but newlines turn into whitespace.
+                    ch if ch == "\n" else " "
+                    for ch in m.group()
+                ]
+            )
             start, end = m.span()
             data = data[:start] + replacement + data[end:]
         return data
@@ -191,11 +203,7 @@ class Parser:
 
     def _syntax_error_details(self):
         """Provides the detail attribute of a SyntaxError."""
-        return (
-            self._filename,
-            self._tokens[self._i][2][0],
-            None,
-            None)
+        return (self._filename, self._tokens[self._i][2][0], None, None)
 
     def _expect(self, expected_type, expected_value=None):
         """Raises a syntax error unless the current token matches the expected
@@ -207,14 +215,15 @@ class Parser:
         expected_typename = token.tok_name[expected_type]
         if expected_value is not None and actual_value != expected_value:
             raise SyntaxError(
-                f"Expected '{expected_value}' "
-                f"but got '{actual_value}'",
-                self._syntax_error_details())
+                f"Expected '{expected_value}' but got '{actual_value}'",
+                self._syntax_error_details(),
+            )
         if actual_type != expected_type:
             raise SyntaxError(
                 f"Expected a token.{expected_typename}"
                 f" but got a token.{actual_typename} ('{actual_value}')",
-                self._syntax_error_details())
+                self._syntax_error_details(),
+            )
 
     def _advance(self):
         """Advances the parser to the next token, skipping whitespace."""
@@ -276,7 +285,8 @@ class Parser:
             self._i -= 1
             raise SyntaxError(
                 f"Expected a primitive type name but got '{typ_str}'",
-                self._syntax_error_details())
+                self._syntax_error_details(),
+            )
         self._const_definition(typ=typ)
         while self._current_value() == ",":
             self._consume(token.OP, ",")
@@ -302,9 +312,11 @@ class Parser:
             self._i -= 1
             raise SyntaxError(
                 f"Invalid constant value '{value_str}' for {typ.name}",
-                self._syntax_error_details())
-        self._result.constants.append(StructConstant(
-            name=name, typ=typ, value=value, value_str=value_str))
+                self._syntax_error_details(),
+            )
+        self._result.constants.append(
+            StructConstant(name=name, typ=typ, value=value, value_str=value_str)
+        )
 
     def _field_statement(self):
         """Parses a field_statement production."""
@@ -321,8 +333,9 @@ class Parser:
             self._consume(token.OP, "]")
             array_dims.append(dim)
         self._consume(token.OP, ";")
-        self._result.fields.append(StructField(
-            name=name, typ=typ, array_dims=array_dims))
+        self._result.fields.append(
+            StructField(name=name, typ=typ, array_dims=array_dims)
+        )
 
     def _qualified_identifier(self):
         """Parses a qualified_identifier production."""
@@ -709,10 +722,9 @@ class CppGen:
             for field in self._struct.fields
             if isinstance(field.typ, UserType)
         ]
-        includes = "\n".join([
-            f'#include "{filename}"\n'
-            for filename in sorted(set(filenames))
-        ])
+        includes = "\n".join(
+            [f'#include "{filename}"\n' for filename in sorted(set(filenames))]
+        )
         if includes:
             includes += "\n"
         self._replace("@@SUBSTRUCT_INCLUDES@@\n\n", includes)
@@ -729,19 +741,23 @@ class CppGen:
         package = self._struct.typ.package
         if package is None:
             return ("", "")
-        return (f"namespace {package} {{\n\n",
-                f"\n}}  // namespace {package}\n")
+        return (
+            f"namespace {package} {{\n\n",
+            f"\n}}  // namespace {package}\n",
+        )
 
     def _fill_member_constants(self):
         """Updates member constants for this message."""
-        content = "".join([
-            "  static constexpr {typ} {name} = {value};\n".format(
-                typ=self._full_typename(const.typ),
-                name=const.name,
-                value=const.value_str,
-            )
-            for const in self._struct.constants
-        ])
+        content = "".join(
+            [
+                "  static constexpr {typ} {name} = {value};\n".format(
+                    typ=self._full_typename(const.typ),
+                    name=const.name,
+                    value=const.value_str,
+                )
+                for const in self._struct.constants
+            ]
+        )
         if content:
             content += "\n"
         self._replace("@@MEMBER_CONSTANTS@@\n", content)
@@ -760,10 +776,12 @@ class CppGen:
 
     def _fill_member_fields(self):
         """Updates member fields for this message."""
-        content = "".join([
-            f"  {self._to_member_field_type(field)} {field.name};\n"
-            for field in self._struct.fields
-        ])
+        content = "".join(
+            [
+                f"  {self._to_member_field_type(field)} {field.name};\n"
+                for field in self._struct.fields
+            ]
+        )
         if content:
             content += "\n"
         self._replace("@@MEMBER_FIELDS@@\n", content)
@@ -836,25 +854,21 @@ class CppGen:
         operations = []
 
         # Check that all variable-length sizes are valid.
-        operations.extend([
-            f"({dim} >= 0)"
-            for dim in self._size_variables
-        ])
+        operations.extend([f"({dim} >= 0)" for dim in self._size_variables])
 
         # Encode the hash.
-        operations.extend([
-            "(with_hash ? _encode_field(_hash, _cursor, _end) : true)",
-        ])
+        operations.extend(
+            [
+                "(with_hash ? _encode_field(_hash, _cursor, _end) : true)",
+            ]
+        )
 
         # Encode the fields.
         for item in self._struct.fields:
             operations.extend(self._fill_one_encode(item))
 
         # Format the sequence of operations as a C++ short-circuit expression.
-        content = " &&\n".join([
-            " " * 8 + item
-            for item in operations
-        ]) + ";\n"
+        content = " &&\n".join([" " * 8 + item for item in operations]) + ";\n"
         self._replace("@@ENCODE@@\n", content)
 
     def _fill_one_encode(self, field):
@@ -874,20 +888,19 @@ class CppGen:
         operations = []
 
         # Decode the hash.
-        operations.extend([
-            "(with_hash ? _decode_field(&_hash, _cursor, _end) : true)",
-            "(_hash == _expected_hash)",
-        ])
+        operations.extend(
+            [
+                "(with_hash ? _decode_field(&_hash, _cursor, _end) : true)",
+                "(_hash == _expected_hash)",
+            ]
+        )
 
         # Decode the fields.
         for item in self._struct.fields:
             operations.extend(self._fill_one_decode(item))
 
         # Format the sequence of operations as a C++ short-circuit expression.
-        content = " &&\n".join([
-            " " * 8 + item
-            for item in operations
-        ]) + ";\n"
+        content = " &&\n".join([" " * 8 + item for item in operations]) + ";\n"
         self._replace("@@DECODE@@\n", content)
 
     def _fill_one_decode(self, field):
@@ -959,10 +972,12 @@ class CppGen:
         if has_any_user_types:
             self._replace(
                 "@@GET_HASH_DECLARE_NEW_PARENTS@@",
-                pad + "std::array<uint64_t, N + 1> new_parents{base_hash};")
+                pad + "std::array<uint64_t, N + 1> new_parents{base_hash};",
+            )
             self._replace(
                 "@@GET_HASH_UPDATE_NEW_PARENT@@",
-                pad + "  new_parents[n + 1] = parents[n];")
+                pad + "  new_parents[n + 1] = parents[n];",
+            )
         else:
             self._replace("@@GET_HASH_DECLARE_NEW_PARENTS@@\n", "")
             self._replace("@@GET_HASH_UPDATE_NEW_PARENT@@\n", "")
@@ -971,12 +986,28 @@ class CppGen:
 def main():
     description, _ = __doc__.split("# Details")
     parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("src", nargs="+", help="*.lcm source file(s)")
     parser.add_argument(
-        "src", nargs="+",
-        help="*.lcm source file(s)")
-    parser.add_argument(
-        "--outdir", required=True, type=pathlib.Path,
-        help="Directory where output files should be written")
+        "--cpp",
+        action="count",
+        help="Ignored for backwards compatiblity.",
+    )
+    directory_config = parser.add_mutually_exclusive_group(required=True)
+    directory_config.add_argument(
+        "--outdir",
+        type=pathlib.Path,
+        metavar="DIR",
+        help="Directory where output files should be written. "
+        "The lcm package name will NOT be used as a subdirectory name. "
+        "(This is a Drake-specific flag, not available in upstream lcm-gen.)",
+    )
+    directory_config.add_argument(
+        "--cpp-hpath",
+        type=pathlib.Path,
+        metavar="DIR",
+        help="Directory where output files should be written. "
+        "The lcm package name WILL be used as a subdirectory name.",
+    )
     args = parser.parse_args()
 
     # If we were invoked via `bazel run`, we must be careful to interpret
@@ -985,12 +1016,16 @@ def main():
     if real_cwd is not None:
         os.chdir(real_cwd)
 
-    returncode = 0
     for src in args.src:
         struct = Parser.parse(filename=src)
+        package = struct.typ.package or ""
+        name = struct.typ.name
         generator = CppGen(struct=struct)
         content = generator.generate()
-        path = args.outdir / f"{struct.typ.name}.hpp"
+        if args.outdir is not None:
+            path = args.outdir / f"{name}.hpp"
+        else:
+            path = args.cpp_hpath / package / f"{name}.hpp"
         path.write_text(content, encoding="utf-8")
 
 

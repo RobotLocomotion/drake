@@ -1,5 +1,12 @@
+#include <memory>
+#include <string>
+#include <unordered_set>
+#include <utility>
+
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/sorted_pair.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/deformable_model.h"
@@ -29,9 +36,8 @@ class DeformableCollisionFilterTest : public ::testing::Test {
   /* Sets up a scene with a deformable sphere intersecting two rigid bodies, one
    welded to the world and the other free. */
   void SetUp() override {
-    systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) =
-        AddMultibodyPlantSceneGraph(&builder, 0.01);
+        AddMultibodyPlantSceneGraph(&builder_, 0.01);
     DeformableModel<double>& deformable_model =
         plant_->mutable_deformable_model();
     DeformableBodyId deformable_body_id =
@@ -71,33 +77,6 @@ class DeformableCollisionFilterTest : public ::testing::Test {
     free_geometry_id_ = plant_->RegisterCollisionGeometry(
         free_body, RigidTransformd(Vector3d(0.75, 0, 0)), box, "free",
         proximity_prop);
-
-    /* ExcludeCollisionGeometriesWithCollisionFilterGroupPair() is invoked
-     during parsing, but it still must adhere to MultibodyPlant's promise to
-     not introduce collision filters on deformable bodies. Rather than exercise
-     via parsing, we'll execute it here with some collision filters which
-     *explicitly* include the deformable body's geometry id. If the dut has
-     correct behavior (ignoring deformable geometries), there will be no
-     collision filters involving the deformable geometry. */
-    GeometrySet welded_and_deformable{deformable_geometry_id_,
-                                      welded_geometry_id_};
-    GeometrySet free_and_deformable{deformable_geometry_id_, free_geometry_id_};
-    std::pair<std::string, GeometrySet> collision_filter_group_a = {
-        "a", welded_and_deformable};
-    std::pair<std::string, GeometrySet> collision_filter_group_b = {
-        "b", free_and_deformable};
-    plant_->ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
-        collision_filter_group_a, collision_filter_group_a);
-    plant_->ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
-        collision_filter_group_a, collision_filter_group_b);
-    DRAKE_DEMAND(!scene_graph_->model_inspector().CollisionFiltered(
-        deformable_geometry_id_, welded_geometry_id_));
-    DRAKE_DEMAND(!scene_graph_->model_inspector().CollisionFiltered(
-        deformable_geometry_id_, free_geometry_id_));
-
-    plant_->Finalize();
-
-    diagram_ = builder.Build();
   }
 
   /* Registers a deformable octahedron with the given `name` in the world to the
@@ -137,19 +116,31 @@ class DeformableCollisionFilterTest : public ::testing::Test {
     return id;
   }
 
+  systems::DiagramBuilder<double> builder_;
   SceneGraph<double>* scene_graph_{nullptr};
   MultibodyPlant<double>* plant_{nullptr};
   GeometryId deformable_geometry_id_;
   GeometryId welded_geometry_id_;
   GeometryId free_geometry_id_;
-  std::unique_ptr<systems::Diagram<double>> diagram_{nullptr};
 };
 
-/* Tests that the default collision filters applied in MbP do not affect
- deformable bodies. That is, the deformable body is in contact with both rigid
- geometries. */
+/* Tests that multiple deformable bodies, which are adjacent to each other as
+ children of the world body, are not automatically filtered. */
 TEST_F(DeformableCollisionFilterTest, DefaultMbPFilterIgnoresDeformable) {
-  auto diagram_context = diagram_->CreateDefaultContext();
+  /* Add a second deformable body to the scene which is in contact with the
+   other rigid and deformable bodies. */
+  DeformableModel<double>& deformable_model =
+      plant_->mutable_deformable_model();
+  DeformableBodyId other_deformable_body_id =
+      RegisterDeformableOctahedron(&deformable_model, "other_deformable");
+  GeometryId other_deformable_geometry_id =
+      deformable_model.GetGeometryId(other_deformable_body_id);
+
+  /* Contact detection not allowed pre-Finalize. */
+  plant_->Finalize();
+  auto diagram = builder_.Build();
+
+  auto diagram_context = diagram->CreateDefaultContext();
   const auto& scene_graph_context =
       scene_graph_->GetMyContextFromRoot(*diagram_context);
   const QueryObject<double>& query_object =
@@ -157,19 +148,76 @@ TEST_F(DeformableCollisionFilterTest, DefaultMbPFilterIgnoresDeformable) {
           scene_graph_context);
   geometry::internal::DeformableContact<double> deformable_contact;
   query_object.ComputeDeformableContact(&deformable_contact);
-  /* Both rigid geometries should still be in collision with the deformable
-   geometry. */
-  EXPECT_EQ(deformable_contact.contact_surfaces().size(), 2);
+  /* No contacts are filtered, so each deformable contacts the other and both of
+   the rigid bodies. The rigid bodies do not contact each other due to their
+   placement. */
+  EXPECT_EQ(deformable_contact.contact_surfaces().size(), 5);
+
+  std::unordered_set<SortedPair<GeometryId>> expected_pairs = {
+      {deformable_geometry_id_, welded_geometry_id_},
+      {deformable_geometry_id_, free_geometry_id_},
+      {deformable_geometry_id_, other_deformable_geometry_id},
+      {other_deformable_geometry_id, welded_geometry_id_},
+      {other_deformable_geometry_id, free_geometry_id_},
+  };
+
+  std::unordered_set<SortedPair<GeometryId>> actual_pairs = {};
+  for (const auto& contact_surface : deformable_contact.contact_surfaces()) {
+    actual_pairs.insert({contact_surface.id_A(), contact_surface.id_B()});
+  }
+
+  EXPECT_THAT(expected_pairs, ::testing::ContainerEq(actual_pairs));
+}
+
+/* Tests that applying collision filters directly to the MbP via the
+ ExcludeCollisionGeometriesWithCollisionFilterGroupPair() method does affect
+ deformable geometries. */
+TEST_F(DeformableCollisionFilterTest, ExplicitlyFilterDeformableOnPlant) {
+  GeometrySet welded_and_deformable{deformable_geometry_id_,
+                                    welded_geometry_id_};
+  GeometrySet free_and_deformable{deformable_geometry_id_, free_geometry_id_};
+  std::pair<std::string, GeometrySet> collision_filter_group_a = {
+      "a", welded_and_deformable};
+  std::pair<std::string, GeometrySet> collision_filter_group_b = {
+      "b", free_and_deformable};
+  plant_->ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
+      collision_filter_group_a, collision_filter_group_a);
+  plant_->ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
+      collision_filter_group_a, collision_filter_group_b);
+  DRAKE_DEMAND(scene_graph_->model_inspector().CollisionFiltered(
+      deformable_geometry_id_, welded_geometry_id_));
+  DRAKE_DEMAND(scene_graph_->model_inspector().CollisionFiltered(
+      deformable_geometry_id_, free_geometry_id_));
+
+  /* Contact detection not allowed pre-Finalize. */
+  plant_->Finalize();
+  auto diagram = builder_.Build();
+
+  auto diagram_context = diagram->CreateDefaultContext();
+  const auto& scene_graph_context =
+      scene_graph_->GetMyContextFromRoot(*diagram_context);
+  const QueryObject<double>& query_object =
+      scene_graph_->get_query_output_port().Eval<QueryObject<double>>(
+          scene_graph_context);
+  geometry::internal::DeformableContact<double> deformable_contact;
+  query_object.ComputeDeformableContact(&deformable_contact);
+  /* All deformable contacts are filtered by the plant collision exclusion. */
+  EXPECT_EQ(deformable_contact.contact_surfaces().size(), 0);
 }
 
 /* Tests collision filter has an effect on deformable geometries if a collision
  filter is declared on the deformable geometry with the appropriate scope. */
 TEST_F(DeformableCollisionFilterTest, ExplicitlyFilterDeformable) {
+  /* Collision filter declaration and contact detection not allowed
+   pre-Finalize. */
+  plant_->Finalize();
+  auto diagram = builder_.Build();
+
   scene_graph_->collision_filter_manager().Apply(
       CollisionFilterDeclaration(CollisionFilterScope::kAll)
           .ExcludeBetween(GeometrySet(deformable_geometry_id_),
                           GeometrySet(welded_geometry_id_)));
-  auto diagram_context = diagram_->CreateDefaultContext();
+  auto diagram_context = diagram->CreateDefaultContext();
   const auto& scene_graph_context =
       scene_graph_->GetMyContextFromRoot(*diagram_context);
   const QueryObject<double>& query_object =
@@ -189,11 +237,16 @@ TEST_F(DeformableCollisionFilterTest, ExplicitlyFilterDeformable) {
  filter is declared on the deformable geometry with the omit deformable scope.
  */
 TEST_F(DeformableCollisionFilterTest, ExplicitlyFilterDeformableWrongScope) {
+  /* Collision filter declaration and contact detection not allowed
+   pre-Finalize. */
+  plant_->Finalize();
+  auto diagram = builder_.Build();
+
   scene_graph_->collision_filter_manager().Apply(
       CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
           .ExcludeBetween(GeometrySet(deformable_geometry_id_),
                           GeometrySet(welded_geometry_id_)));
-  auto diagram_context = diagram_->CreateDefaultContext();
+  auto diagram_context = diagram->CreateDefaultContext();
   const auto& scene_graph_context =
       scene_graph_->GetMyContextFromRoot(*diagram_context);
   const QueryObject<double>& query_object =

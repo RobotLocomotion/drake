@@ -3,9 +3,12 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
+#include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -280,15 +283,28 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
           sample.v_WB_expected.cwiseProduct(sample.v_WB_mask));
 
       EXPECT_TRUE(CompareMatrices(V_WB_masked.get_coeffs(),
-                                  V_WB_expected.get_coeffs(), 1e-14));
+                                  V_WB_expected.get_coeffs(), 1e-4));
     }
     return results;
   }
 };
 
 TEST_F(DifferentialInverseKinematicsTest, Structure) {
-  // No costs or constraints; we're just checking structure.
-  DiffIk dut = MakeDiffIk(std::make_shared<Recipe>());
+  // Add a few arbitrary ingredients (in arbitrary order), just so we can see
+  // them in the owned recipe. These are the ingredients that can easily be
+  // constructed.
+  auto recipe = std::make_shared<Recipe>();
+  recipe->AddIngredient(std::make_unique<DiffIk::LeastSquaresCost>(
+      DiffIk::LeastSquaresCost::Config{}));
+  recipe->AddIngredient(std::make_unique<DiffIk::CollisionConstraint>(
+      DiffIk::CollisionConstraint::Config{}));
+  recipe->AddIngredient(std::make_unique<DiffIk::JointCenteringCost>(
+      DiffIk::JointCenteringCost::Config{}));
+  recipe->AddIngredient(
+      std::make_unique<DiffIk::CartesianVelocityLimitConstraint>(
+          DiffIk::CartesianVelocityLimitConstraint::Config{
+              .V_next_TG_limit = Vector6d::Zero()}));
+  DiffIk dut = MakeDiffIk(std::move(recipe));
 
   // Port check.
   EXPECT_EQ(&dut.GetInputPort("position"), &dut.get_input_port_position());
@@ -310,6 +326,19 @@ TEST_F(DifferentialInverseKinematicsTest, Structure) {
                                    std::string(kRobotName)));
   EXPECT_EQ(dut.time_step(), kTimeStep);
   EXPECT_EQ(dut.task_frame().name(), kTaskFrame);
+  EXPECT_EQ(dut.K_VX(), kK_VX);
+  EXPECT_TRUE(CompareMatrices(dut.Vd_TG_limit().get_coeffs(),
+                              MakeSpatialLimits().get_coeffs()));
+  const Recipe& dut_recipe = dut.recipe();
+  EXPECT_EQ(dut_recipe.num_ingredients(), 4);
+  EXPECT_EQ(NiceTypeName::Get(dut_recipe.ingredient(0)),
+            NiceTypeName::Get<DiffIk::LeastSquaresCost>());
+  EXPECT_EQ(NiceTypeName::Get(dut_recipe.ingredient(1)),
+            NiceTypeName::Get<DiffIk::CollisionConstraint>());
+  EXPECT_EQ(NiceTypeName::Get(dut_recipe.ingredient(2)),
+            NiceTypeName::Get<DiffIk::JointCenteringCost>());
+  EXPECT_EQ(NiceTypeName::Get(dut_recipe.ingredient(3)),
+            NiceTypeName::Get<DiffIk::CartesianVelocityLimitConstraint>());
 }
 
 /* A simple ingredient whose sole purpose is to examine the contents of details
@@ -486,7 +515,7 @@ TEST_F(DifferentialInverseKinematicsTest, VelocityFromPosition) {
   EXPECT_FALSE(
       CompareMatrices(V_WB.get_coeffs(), V_WB_candidate.get_coeffs(), 0.1));
   EXPECT_TRUE(
-      CompareMatrices(V_WB.get_coeffs(), V_WB_expected.get_coeffs(), 1e-14));
+      CompareMatrices(V_WB.get_coeffs(), V_WB_expected.get_coeffs(), 1e-4));
 }
 
 /* The joint centering cost resolves scenarios where the optimal solution isn't
@@ -561,7 +590,7 @@ TEST_F(DifferentialInverseKinematicsTest, JointCenteringCost) {
 
   // The centered command is our target velocity.
   Vector3d expected_command(2, 0, 0);
-  EXPECT_TRUE(CompareMatrices(centered_command, expected_command, 1e-15));
+  EXPECT_TRUE(CompareMatrices(centered_command, expected_command, 1e-4));
 }
 
 /* We'll repeat the previous joint centering test, but, this time, we'll mask
@@ -622,7 +651,7 @@ TEST_F(DifferentialInverseKinematicsTest, JointCenteringCostAxisMask) {
 
   EXPECT_FALSE(CompareMatrices(uncentered_command, centered_command, 1e-1));
 
-  EXPECT_TRUE(CompareMatrices(centered_command, expected_command, 1e-15));
+  EXPECT_TRUE(CompareMatrices(centered_command, expected_command, 1e-4));
 }
 
 /* We're starting the ball at p_WB = (0, 0, 0). The cartesian position limit

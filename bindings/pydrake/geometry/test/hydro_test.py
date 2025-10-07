@@ -1,10 +1,7 @@
 import pydrake.geometry as mut
 import pydrake.geometry._testing as mut_testing
 
-import copy
 import unittest
-
-import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 

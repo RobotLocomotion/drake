@@ -1,5 +1,7 @@
 #include "drake/math/soft_min_max.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"

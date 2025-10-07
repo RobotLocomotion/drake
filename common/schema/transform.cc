@@ -54,8 +54,8 @@ bool Transform::IsDeterministic() const {
 math::RigidTransformd Transform::GetDeterministicValue() const {
   DRAKE_THROW_UNLESS(this->IsDeterministic());
   return {
-    rotation.GetDeterministicValue(),
-    schema::GetDeterministicValue(translation),
+      rotation.GetDeterministicValue(),
+      schema::GetDeterministicValue(translation),
   };
 }
 
@@ -85,9 +85,10 @@ math::RigidTransformd Transform::Mean() const {
   // Extract the underlying matrix of the transform, substitute the env so
   // that the expressions are now all constants, and then re-create the
   // RigidTransform wrapper around the matrix.
-  const auto to_double = [&env](const auto& x) { return x.Evaluate(env); };
-  return math::RigidTransformd(
-      symbolic.GetAsMatrix34().unaryExpr(to_double));
+  const auto to_double = [&env](const auto& x) {
+    return x.Evaluate(env);
+  };
+  return math::RigidTransformd(symbolic.GetAsMatrix34().unaryExpr(to_double));
 }
 
 Transform Transform::SampleAsTransform(RandomGenerator* generator) const {
@@ -98,11 +99,10 @@ Transform Transform::SampleAsTransform(RandomGenerator* generator) const {
 
 math::RigidTransformd Transform::Sample(RandomGenerator* generator) const {
   if (base_frame.has_value() && (*base_frame != "world")) {
-    throw std::logic_error(
-        fmt::format(
-            "Transform::Sample() would discard non-trivial base frame \"{}\"; "
-            "use Transform::SampleAsTransform() instead.",
-            *base_frame));
+    throw std::logic_error(fmt::format(
+        "Transform::Sample() would discard non-trivial base frame \"{}\"; "
+        "use Transform::SampleAsTransform() instead.",
+        *base_frame));
   }
   return SampleInternal(*this, generator);
 }

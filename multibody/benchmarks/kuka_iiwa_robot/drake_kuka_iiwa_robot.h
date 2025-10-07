@@ -29,8 +29,7 @@ class MultibodyPlantTester {
 
   // Use private constructor to create an MBP from an MBT.
   template <typename T>
-  static std::unique_ptr<MultibodyPlant<T>>
-  CreateMultibodyPlantFromTree(
+  static std::unique_ptr<MultibodyPlant<T>> CreateMultibodyPlantFromTree(
       std::unique_ptr<internal::MultibodyTree<T>> tree, double time_step = 0.) {
     // Do not use `make_unique` for the private constructor, as it would have
     // to be a friend of MultibodyPlant.
@@ -82,11 +81,9 @@ class DrakeKukaIIwaRobot {
   /// to this constructor, it means the gravity vector is directed opposite the
   /// world upward z-unit vector (which is correct -- gravity is downward).
   explicit DrakeKukaIIwaRobot(double gravity) {
-    plant_ =
-        MultibodyPlantTester::CreateMultibodyPlantFromTree(
-            MakeKukaIiwaModel<T>(
-                false /* finalized model */,
-                gravity /* acceleration of gravity */));
+    plant_ = MultibodyPlantTester::CreateMultibodyPlantFromTree(
+        MakeKukaIiwaModel<T>(false /* finalized model */,
+                             gravity /* acceleration of gravity */));
 
     linkN_ = &tree().world_body();
 
@@ -100,20 +97,13 @@ class DrakeKukaIIwaRobot {
     linkG_ = &tree().GetRigidBodyByName("iiwa_link_7");
 
     // Get this robot's seven joints.
-    NA_joint_ =
-        &tree().template GetJointByName<RevoluteJoint>("iiwa_joint_1");
-    AB_joint_ =
-        &tree().template GetJointByName<RevoluteJoint>("iiwa_joint_2");
-    BC_joint_ =
-        &tree().template GetJointByName<RevoluteJoint>("iiwa_joint_3");
-    CD_joint_ =
-        &tree().template GetJointByName<RevoluteJoint>("iiwa_joint_4");
-    DE_joint_ =
-        &tree().template GetJointByName<RevoluteJoint>("iiwa_joint_5");
-    EF_joint_ =
-        &tree().template GetJointByName<RevoluteJoint>("iiwa_joint_6");
-    FG_joint_ =
-        &tree().template GetJointByName<RevoluteJoint>("iiwa_joint_7");
+    NA_joint_ = &tree().template GetJointByName<RevoluteJoint>("iiwa_joint_1");
+    AB_joint_ = &tree().template GetJointByName<RevoluteJoint>("iiwa_joint_2");
+    BC_joint_ = &tree().template GetJointByName<RevoluteJoint>("iiwa_joint_3");
+    CD_joint_ = &tree().template GetJointByName<RevoluteJoint>("iiwa_joint_4");
+    DE_joint_ = &tree().template GetJointByName<RevoluteJoint>("iiwa_joint_5");
+    EF_joint_ = &tree().template GetJointByName<RevoluteJoint>("iiwa_joint_6");
+    FG_joint_ = &tree().template GetJointByName<RevoluteJoint>("iiwa_joint_7");
 
     // After Finalize() method has been called, Context can be created.
     context_ = plant_->CreateDefaultContext();
@@ -121,7 +111,7 @@ class DrakeKukaIIwaRobot {
 
   /// This method gets the number of rigid bodies in this robot.
   /// @returns the number of rigid bodies in this robot.
-  int get_number_of_rigid_bodies() const  { return tree().num_bodies(); }
+  int get_number_of_rigid_bodies() const { return tree().num_bodies(); }
 
   /// This method calculates kinematic properties of the end-effector (herein
   /// denoted as rigid body G) of a 7-DOF KUKA LBR iiwa robot (14 kg payload).
@@ -135,16 +125,16 @@ class DrakeKukaIIwaRobot {
   /// @param[in] qDDt 2nd-time-derivative of q.
   ///
   /// @returns G's kinematics in N, expressed in N.
-  test_utilities::SpatialKinematicsPVA<T>
-  CalcEndEffectorKinematics(const Eigen::Ref<const VectorX<T>>& q,
-                            const Eigen::Ref<const VectorX<T>>& qDt,
-                            const Eigen::Ref<const VectorX<T>>& qDDt) {
+  test_utilities::SpatialKinematicsPVA<T> CalcEndEffectorKinematics(
+      const Eigen::Ref<const VectorX<T>>& q,
+      const Eigen::Ref<const VectorX<T>>& qDt,
+      const Eigen::Ref<const VectorX<T>>& qDDt) {
     SetJointAnglesAnd1stDerivatives(q.data(), qDt.data());
 
     // For each body, set the pose and spatial velocity in the position,
     // velocity, and acceleration caches with specified values for testing.
-    multibody::internal::PositionKinematicsCache<T> pc(tree().get_topology());
-    multibody::internal::VelocityKinematicsCache<T> vc(tree().get_topology());
+    multibody::internal::PositionKinematicsCache<T> pc(tree().forest());
+    multibody::internal::VelocityKinematicsCache<T> vc(tree().forest());
 
     // Retrieve end-effector pose from position kinematics cache.
     tree().CalcPositionKinematicsCache(*context_, &pc);
@@ -190,10 +180,9 @@ class DrakeKukaIIwaRobot {
     SetJointAnglesAnd1stDerivatives(q.data(), qDt.data());
 
     // Get the position, velocity, and acceleration cache from the context.
-    multibody::internal::PositionKinematicsCache<T> pc(tree().get_topology());
-    multibody::internal::VelocityKinematicsCache<T> vc(tree().get_topology());
-    multibody::internal::AccelerationKinematicsCache<T> ac(
-        tree().get_topology());
+    multibody::internal::PositionKinematicsCache<T> pc(tree().forest());
+    multibody::internal::VelocityKinematicsCache<T> vc(tree().forest());
+    multibody::internal::AccelerationKinematicsCache<T> ac(tree().forest());
     tree().CalcPositionKinematicsCache(*context_, &pc);
     tree().CalcVelocityKinematicsCache(*context_, pc, &vc);
     tree().CalcAccelerationKinematicsCache(*context_, pc, vc, qDDt, &ac);
@@ -221,13 +210,12 @@ class DrakeKukaIIwaRobot {
     // Aliases to the arrays of applied forces:
     std::vector<SpatialForce<T>>& Fapplied_Bo_W_array =
         forces.mutable_body_forces();
-    VectorX<T>& generalized_force_applied =
-        forces.mutable_generalized_forces();
+    VectorX<T>& generalized_force_applied = forces.mutable_generalized_forces();
 
     // Calculate inverse dynamics on this robot.
-    tree().CalcInverseDynamics(*context_, qDDt,
-                Fapplied_Bo_W_array, generalized_force_applied,
-                &A_WB_array, &F_BMo_W_array, &generalized_force_output);
+    tree().CalcInverseDynamics(*context_, qDDt, Fapplied_Bo_W_array,
+                               generalized_force_applied, &A_WB_array,
+                               &F_BMo_W_array, &generalized_force_output);
 
     // Put joint reaction forces into return struct.
     KukaRobotJointReactionForces<T> reaction_forces;
@@ -250,8 +238,7 @@ class DrakeKukaIIwaRobot {
   // This method sets the Kuka joint angles and their 1st and 2nd derivatives.
   // @param[in] q robot's joint angles (generalized coordinates).
   // @param[in] qDt 1st-time-derivative of q (q̇).
-  void SetJointAnglesAnd1stDerivatives(const T q[7],
-                                       const T qDt[7]) {
+  void SetJointAnglesAnd1stDerivatives(const T q[7], const T qDt[7]) {
     systems::Context<T>* context = context_.get();
 
     NA_joint_->set_angle(context, q[0]);

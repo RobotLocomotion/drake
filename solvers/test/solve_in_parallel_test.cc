@@ -1,3 +1,6 @@
+#include <memory>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/solvers/choose_best_solver.h"

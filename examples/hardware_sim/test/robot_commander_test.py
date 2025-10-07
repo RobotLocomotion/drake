@@ -8,7 +8,6 @@ import examples.hardware_sim.robot_commander as mut
 
 
 class RobotCommanderTest(unittest.TestCase):
-
     def setUp(self):
         runfiles = CreateRunfiles()
         self._example_scenarios = runfiles.Rlocation(

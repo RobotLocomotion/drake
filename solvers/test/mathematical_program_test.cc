@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -4088,40 +4089,6 @@ GTEST_TEST(TestMathematicalProgram, TestAddVisualizationCallback) {
   EXPECT_TRUE(was_called);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(TestMathematicalProgram, DeprecatedTestSolverOptions) {
-  MathematicalProgram prog;
-  const SolverId solver_id("solver_id");
-  const SolverId wrong_solver_id("wrong_solver_id");
-
-  prog.SetSolverOption(solver_id, "double_name", 1.0);
-  EXPECT_EQ(prog.GetSolverOptionsDouble(solver_id).at("double_name"), 1.0);
-  EXPECT_EQ(prog.GetSolverOptionsDouble(wrong_solver_id).size(), 0);
-
-  prog.SetSolverOption(solver_id, "int_name", 2);
-  EXPECT_EQ(prog.GetSolverOptionsInt(solver_id).at("int_name"), 2);
-  EXPECT_EQ(prog.GetSolverOptionsInt(wrong_solver_id).size(), 0);
-
-  prog.SetSolverOption(solver_id, "string_name", "3");
-  EXPECT_EQ(prog.GetSolverOptionsStr(solver_id).at("string_name"), "3");
-  EXPECT_EQ(prog.GetSolverOptionsStr(wrong_solver_id).size(), 0);
-
-  const SolverId dummy_id("dummy_id");
-  SolverOptions dummy_options;
-  dummy_options.SetOption(dummy_id, "double_name", 10.0);
-  dummy_options.SetOption(dummy_id, "int_name", 20);
-  dummy_options.SetOption(dummy_id, "string_name", "30.0");
-  prog.SetSolverOptions(dummy_options);
-  EXPECT_EQ(prog.GetSolverOptionsDouble(dummy_id).at("double_name"), 10.0);
-  EXPECT_EQ(prog.GetSolverOptionsDouble(solver_id).size(), 0);
-  EXPECT_EQ(prog.GetSolverOptionsInt(dummy_id).at("int_name"), 20);
-  EXPECT_EQ(prog.GetSolverOptionsInt(solver_id).size(), 0);
-  EXPECT_EQ(prog.GetSolverOptionsStr(dummy_id).at("string_name"), "30.0");
-  EXPECT_EQ(prog.GetSolverOptionsStr(solver_id).size(), 0);
-}
-#pragma GCC diagnostic pop
-
 GTEST_TEST(TestMathematicalProgram, TestSolverOptions) {
   MathematicalProgram prog;
   const SolverId solver_id("solver_id");
@@ -4402,9 +4369,6 @@ GTEST_TEST(TestMathematicalProgram, AddConstraintMatrix2) {
   ASSERT_EQ(prog.GetAllConstraints().size(), 1);
   ASSERT_EQ(prog.GetAllLinearConstraints().size(), 1);
 
-  Eigen::Matrix<double, 4, 2> A_expected;
-  Eigen::Matrix<double, 4, 1> lower_bound_expected;
-  Eigen::Matrix<double, 4, 1> upper_bound_expected;
   std::array<std::array<Eigen::RowVector2d, 2>, 2> coeff;
   coeff[0][0] << 1, 0;
   coeff[0][1] << 1, 2;

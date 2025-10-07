@@ -23,8 +23,8 @@ officially supports:
 |------------------------------------|--------------|------------|-----------------|
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽³⁾   | March 2026      |
 | Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12 ⁽³⁾   | March 2028      |
-| macOS Sonoma (14)                  | arm64        | 3.13 ⁽³⁾   | October 2025    |
 | macOS Sequoia (15)                 | arm64        | 3.13 ⁽³⁾   | October 2026    |
+| macOS Tahoe (26) ⁽⁵⁾               | arm64        | TBD        | October 2027    |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -53,6 +53,9 @@ timeline for changing which Python versions are supported.
 ⁽⁴⁾ These end-of-life dates are estimates.
 Refer to [OS Support](/stable.html#os-support) for details.
 
+⁽⁵⁾ Tahoe support is in development; refer to
+[#23439](https://github.com/RobotLocomotion/drake/issues/23439) for details.
+
 The following table shows the configurations that *must* be used when
 compiling your own C++ code against Drake's C++ code using one of
 Drake's pre-compiled binaries:
@@ -61,8 +64,8 @@ Drake's pre-compiled binaries:
 |------------------------------------|----------------------------|-------|
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | GCC 11                     | C++20 |
 | Ubuntu 24.04 LTS (Noble Numbat)    | GCC 13                     | C++23 |
-| macOS Sonoma (14)                  | Apple LLVM 16 (Xcode 16.2) | C++23 |
-| macOS Sequoia (15)                 | Apple LLVM 17 (Xcode 16.4) | C++23 |
+| macOS Sequoia (15)                 | Apple LLVM 17 (Xcode 26.0) | C++23 |
+| macOS Tahoe (26)                   | TBD                        | TBD   |
 
 Any other configuration not listed here will lead to undefined behavior
 (as a violation of the C++ One-Definition Rule).

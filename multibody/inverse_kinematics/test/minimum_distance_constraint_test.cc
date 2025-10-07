@@ -1,4 +1,7 @@
 #include <limits>
+#include <memory>
+#include <utility>
+#include <vector>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/compute_numerical_gradient.h"

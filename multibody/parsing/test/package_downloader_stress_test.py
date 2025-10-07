@@ -36,9 +36,16 @@ class StressTestDownloader(unittest.TestCase):
         # Create the arguments json file.
         kwargs = scratch_dir / "kwargs.json"
         with open(kwargs, "w", encoding="utf-8") as f:
-            f.write(json.dumps(dict(
-                package_name="some_name", output_dir=str(output_dir),
-                urls=[url], sha256=sha256)))
+            f.write(
+                json.dumps(
+                    dict(
+                        package_name="some_name",
+                        output_dir=str(output_dir),
+                        urls=[url],
+                        sha256=sha256,
+                    )
+                )
+            )
 
         # Call the downloader program repeatedly and in parallel.
         N = 100
@@ -53,9 +60,17 @@ class StressTestDownloader(unittest.TestCase):
             # first handful.
             while (len(children) + 1 < cpus) and (launch_count < N):
                 error_filename = scratch_dir / f"error-{launch_count:03}.txt"
-                children.append(subprocess.Popen([
-                    sys.executable, "multibody/parsing/package_downloader.py",
-                    kwargs, error_filename, "UNUSED_ARGUMENT"]))
+                children.append(
+                    subprocess.Popen(
+                        [
+                            sys.executable,
+                            "multibody/parsing/package_downloader.py",
+                            kwargs,
+                            error_filename,
+                            "UNUSED_ARGUMENT",
+                        ]
+                    )
+                )
                 launch_count += 1
             # Reap completed processes.
             for i in reversed(range(len(children))):
@@ -72,11 +87,14 @@ class StressTestDownloader(unittest.TestCase):
             str(Path(x).relative_to(scratch_dir))
             for x in glob.glob(f"{scratch_dir}/drake/**", recursive=True)
         ]
-        self.assertListEqual(sorted(found), [
-            f"drake",
-            f"drake/package_map",
-            f"drake/package_map/{sha256}",
-            f"drake/package_map/{sha256}.README",
-            f"drake/package_map/{sha256}/hello",
-            f"drake/package_map/{sha256}/hello/world",
-        ])
+        self.assertListEqual(
+            sorted(found),
+            [
+                "drake",
+                "drake/package_map",
+                f"drake/package_map/{sha256}",
+                f"drake/package_map/{sha256}.README",
+                f"drake/package_map/{sha256}/hello",
+                f"drake/package_map/{sha256}/hello/world",
+            ],
+        )

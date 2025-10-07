@@ -1,5 +1,8 @@
 #include "drake/geometry/proximity/calc_signed_distance_to_surface_mesh.h"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

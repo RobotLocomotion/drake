@@ -6,7 +6,6 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
-    "drake_cc_test",
 )
 load(
     "//tools/skylark:drake_py.bzl",
@@ -429,7 +428,11 @@ drake_cc_library(
     name = "nice_type_name_override_header",
     hdrs = ["nice_type_name_override.h"],
     install_hdrs_exclude = ["nice_type_name_override.h"],
-    tags = ["exclude_from_package"],
+    tags = [
+        "exclude_from_package",
+        # This is linted using `extra_srcs`, below.
+        "nolint",
+    ],
     visibility = ["//bindings/pydrake/common:__pkg__"],
 )
 
@@ -441,6 +444,10 @@ drake_cc_library(
     ],
     hdrs = [
         "nice_type_name.h",
+    ],
+    tags = [
+        # This is linted using `extra_srcs`, below.
+        "nolint",
     ],
     deps = [
         ":essential",
@@ -619,6 +626,8 @@ drake_cc_library(
 drake_cc_binary(
     name = "resource_tool",
     srcs = ["resource_tool.cc"],
+    deprecation = "DRAKE DEPRECATED: The resource_tool binary is deprecated and will be removed from Drake on or after 2026-02-01",  # noqa
+    tags = ["manual"],
     deps = [
         ":add_text_logging_gflags",
         ":essential",
@@ -627,24 +636,20 @@ drake_cc_binary(
 )
 
 install(
-    name = "install_drake_marker",
-    targets = [":libdrake_marker.so"],
-)
-
-install(
     name = "install",
     install_tests = [":test/resource_tool_installed_test.py"],
     targets = [
-        ":libdrake_marker.so",
+        # TODO(tyler-yankee): As written, these tools rely on dynamic loading,
+        # so they disregard //tools/flags:install_libdrake=static. We should
+        # determine alternatives to make this work, so that users linking
+        # libdrake statically can distribute a single archive file.
         ":resource_tool",
+        ":libdrake_marker.so",
     ],
     runtime_dest = "share/drake/common",
     data_dest = "share/drake",
     guess_data = "WORKSPACE",
     allowed_externals = [DRAKE_RESOURCE_SENTINEL],
-    deps = [
-        ":install_drake_marker",
-    ],
 )
 
 # === test/ ===
@@ -1334,8 +1339,14 @@ drake_cc_googletest(
 )
 
 add_lint_tests(
-    enable_clang_format_lint = False,
+    cpplint_extra_srcs = [
+        "nice_type_name.cc",
+        "nice_type_name.h",
+        "nice_type_name_override.cc",
+        "nice_type_name_override.h",
+    ],
     python_lint_extra_srcs = [
         ":test/resource_tool_installed_test.py",
     ],
+    python_lint_use_ruff_format = False,
 )

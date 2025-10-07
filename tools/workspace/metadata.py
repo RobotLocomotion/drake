@@ -3,7 +3,6 @@ implementation uses Bazel command-line actions so is suitable only
 for manual use, not any build rules or test automation.
 """
 
-import glob
 import json
 import logging
 import os
@@ -11,41 +10,46 @@ import subprocess
 
 
 _REPOSITORIES_WITH_NO_METADATA = [
-    # Bazel modules.
-    "eigen",
-    "fmt",
-    "spdlog",
-    "module_eigen",
-    "module_fmt",
-    "module_spdlog",
-    "pkgconfig_eigen",
-    "pkgconfig_fmt",
-    "pkgconfig_spdlog",
+    # Bazel modules (or module extensions thereof).
+    "apple_support",
+    "bazel_skylib",
+    "bazel_tools",
+    "buildifier_prebuilt",
+    "crate",
+    "gflags",
+    "google_benchmark",
+    "googletest",
+    "gurobi",
+    "lcm_maven",
+    "llvm",
+    "nasm",
     "platforms",
     "rules_cc",
     "rules_java",
+    "rules_jvm_external",
     "rules_license",
     "rules_python",
     "rules_rust",
     "rules_shell",
     # Host libraries / binaries.
-    "gfortran",
-    "glib",
-    "gurobi",
-    "lapack",
-    "libblas",
-    "liblapack",
-    "nasm",
-    "net_sf_jchart2d",
-    "opencl",
-    "org_apache_xmlgraphics_commons",
-    "x11",
-    "zlib",
-    # Vendored.
-    "doxygen",
+    "gfortran_internal",
+    # Only ever upgraded by hand.
+    "doxygen_internal",
     "snopt",
     "spgrid_internal",
 ]
+
+
+def _expect_to_have_metadata(apparent_name):
+    if apparent_name.startswith("crate_"):
+        # Handled by the over-arching "crate_universe" upgrade.
+        return False
+    if apparent_name.startswith("module_"):
+        # Bazel modules are handled by Renovate, not Drake tools.
+        return False
+    if apparent_name in _REPOSITORIES_WITH_NO_METADATA:
+        return False
+    return True
 
 
 def _check_output(args):
@@ -59,14 +63,14 @@ def read_repository_metadata(repositories=None):
     result = {}
 
     # Ask where the repository rules write their output.
-    output_base = _check_output(
-        ["bazel", "info", "output_base"]).strip()
+    output_base = _check_output(["bazel", "info", "output_base"]).strip()
     assert os.path.isdir(output_base), output_base
 
     if not repositories:
         # Obtain a list of known repositories.
         package_lines = _check_output(
-            ["bazel", "query", "deps(//...)", "--output", "package"])
+            ["bazel", "query", "deps(//...)", "--output", "package"]
+        )
         repositories = set()
         for line in package_lines.split("\n"):
             if not line.startswith("@"):
@@ -80,16 +84,6 @@ def read_repository_metadata(repositories=None):
             apparent_name = line[1:].split("/")[0]
             repositories.add(apparent_name)
 
-        # The bazel query only finds build-time dependencies.  Drake also
-        # requires some load-time dependencies such as starlark libraries,
-        # compilers, etc.  Here, we add by hand those we want to be archived
-        # and upgraded.
-        #
-        # NOTE: At this time, we are skipping the rust_toolchain repositories;
-        # see TODO in tools/workspace/rust_toolchain/repository.bzl.
-        repositories.add("bazel_skylib")
-        repositories.add("com_github_nelhage_rules_boost_internal")
-
     # Make sure all of the repository_rule results are up-to-date.
     subprocess.check_call(["bazel", "fetch", "//..."])
 
@@ -97,25 +91,31 @@ def read_repository_metadata(repositories=None):
     for apparent_name in sorted(repositories):
         found = False
         for canonical_name in [
-                f"+drake_dep_repositories+{apparent_name}",
-                f"+internal_repositories+{apparent_name}"]:
+            f"+drake_dep_repositories+{apparent_name}",
+            f"+internal_repositories+{apparent_name}",
+        ]:
             json_path = os.path.join(
-                output_base, "external", canonical_name,
-                "drake_repository_metadata.json")
+                output_base,
+                "external",
+                canonical_name,
+                "drake_repository_metadata.json",
+            )
             try:
                 with open(json_path, "r") as f:
                     data = json.load(f)
                     result[data["name"]] = data
+                found = True
             except IOError:
                 pass
             if found:
                 break
 
-    # Yell when something went wrong.
-    if not found and apparent_name not in _REPOSITORIES_WITH_NO_METADATA:
-        logging.warn(f"Missing metadata for {apparent_name}")
-    elif found and apparent_name in _REPOSITORIES_WITH_NO_METADATA:
-        logging.warn(f"Unexpectedly found metadata for {name}")
+        # Yell when something went wrong.
+        expect_to_find = _expect_to_have_metadata(apparent_name)
+        if expect_to_find and not found:
+            logging.warn(f"Missing metadata for {apparent_name}")
+        elif not expect_to_find and found:
+            logging.warn(f"Unexpectedly found metadata for {apparent_name}")
 
     # Add 'magic' metadata for repositories that don't/can't generate it the
     # usual way.

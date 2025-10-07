@@ -11,6 +11,6 @@
 try:
     import drake.lcmtypes
     __path__.append(list(drake.lcmtypes.__path__)[0] + "/drake")
-    from drake.lcmtypes.drake import *
+    from drake.lcmtypes.drake import *  # noqa: F403 (import-star)
 except ImportError:
     pass

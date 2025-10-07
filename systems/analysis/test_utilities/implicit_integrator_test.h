@@ -335,10 +335,10 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Reset the time, position, and velocity.
     mod_spring_mass_damper_context_->SetTime(0.0);
-    mod_spring_mass_damper_->set_position(
-        mod_spring_mass_damper_context_.get(), initial_position);
-    mod_spring_mass_damper_->set_velocity(
-        mod_spring_mass_damper_context_.get(), initial_velocity);
+    mod_spring_mass_damper_->set_position(mod_spring_mass_damper_context_.get(),
+                                          initial_position);
+    mod_spring_mass_damper_->set_velocity(mod_spring_mass_damper_context_.get(),
+                                          initial_velocity);
 
     // Integrate again.
     integrator.IntegrateWithMultipleStepsToTime(t_final);
@@ -348,8 +348,8 @@ class ImplicitIntegratorTest : public ::testing::Test {
                   .get_vector()
                   .GetAtIndex(0);
     xdot_final = mod_spring_mass_damper_context_->get_continuous_state()
-                      .get_vector()
-                      .GetAtIndex(1);
+                     .get_vector()
+                     .GetAtIndex(1);
     EXPECT_NEAR(mod_spring_mass_damper_context_->get_time(), t_final, ttol);
     EXPECT_NEAR(equilibrium_position, x_final, sol_tol);
     EXPECT_NEAR(equilibrium_velocity, xdot_final, sol_tol);
@@ -361,10 +361,10 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Reset the time, position, and velocity.
     mod_spring_mass_damper_context_->SetTime(0.0);
-    mod_spring_mass_damper_->set_position(
-        mod_spring_mass_damper_context_.get(), initial_position);
-    mod_spring_mass_damper_->set_velocity(
-        mod_spring_mass_damper_context_.get(), initial_velocity);
+    mod_spring_mass_damper_->set_position(mod_spring_mass_damper_context_.get(),
+                                          initial_position);
+    mod_spring_mass_damper_->set_velocity(mod_spring_mass_damper_context_.get(),
+                                          initial_velocity);
 
     // Integrate again.
     integrator.IntegrateWithMultipleStepsToTime(t_final);
@@ -374,8 +374,8 @@ class ImplicitIntegratorTest : public ::testing::Test {
                   .get_vector()
                   .GetAtIndex(0);
     xdot_final = mod_spring_mass_damper_context_->get_continuous_state()
-                      .get_vector()
-                      .GetAtIndex(1);
+                     .get_vector()
+                     .GetAtIndex(1);
     EXPECT_NEAR(mod_spring_mass_damper_context_->get_time(), t_final, ttol);
     EXPECT_NEAR(equilibrium_position, x_final, sol_tol);
     EXPECT_NEAR(equilibrium_velocity, xdot_final, sol_tol);

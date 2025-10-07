@@ -1,6 +1,7 @@
 #include "drake/planning/graph_algorithms/max_clique_solver_via_greedy.h"
 
 #include <exception>
+#include <vector>
 
 #include <gtest/gtest.h>
 

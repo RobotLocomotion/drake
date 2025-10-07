@@ -1,5 +1,10 @@
 #include "drake/planning/iris/iris_from_clique_cover.h"
 
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"

@@ -297,9 +297,10 @@ Polynomial<T> Polynomial<T>::Substitute(
 template <typename T>
 Polynomial<T> Polynomial<T>::Derivative(int derivative_order) const {
   DRAKE_DEMAND(derivative_order >= 0);
-  if (!is_univariate_)
+  if (!is_univariate_) {
     throw runtime_error(
         "Derivative is only defined for univariate polynomials");
+  }
   if (derivative_order == 0) {
     return *this;
   }
@@ -357,7 +358,9 @@ Polynomial<T> Polynomial<T>::Integral(const T& integration_constant) const {
 }
 
 template <typename T>
-bool Polynomial<T>::is_univariate() const {return is_univariate_;}
+bool Polynomial<T>::is_univariate() const {
+  return is_univariate_;
+}
 
 template <typename T>
 bool Polynomial<T>::operator==(const Polynomial<T>& other) const {

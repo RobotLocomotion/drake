@@ -1,5 +1,7 @@
 #include "drake/multibody/plant/coulomb_friction.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"

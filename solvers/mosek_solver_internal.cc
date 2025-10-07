@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <cstdio>
 #include <limits>
 
 #include "drake/common/fmt_ostream.h"
@@ -1679,8 +1680,8 @@ void MosekSolverProgram::UpdateOptions(
       }
       *is_printing = true;
     }
-    const int num_threads = common.max_threads.value_or(
-        Parallelism::Max().num_threads());
+    const int num_threads =
+        common.max_threads.value_or(Parallelism::Max().num_threads());
     respelled->emplace("MSK_IPAR_NUM_THREADS", num_threads);
   });
   options->CopyToCallbacks(

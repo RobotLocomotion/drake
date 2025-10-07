@@ -1,7 +1,4 @@
-curl
-libstdc++6-10-dbg
 python3-dateutil
-python3-dbg
 python3-flask
 python3-nbconvert
 python3-nbformat

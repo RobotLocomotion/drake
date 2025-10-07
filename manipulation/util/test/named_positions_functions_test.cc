@@ -1,5 +1,7 @@
 #include "drake/manipulation/util/named_positions_functions.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"

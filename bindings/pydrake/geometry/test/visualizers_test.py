@@ -36,7 +36,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         Simulator = Simulator_[T]
         role = mut.Role.kIllustration
         params = mut.DrakeVisualizerParams(
-            publish_period=0.1, role=mut.Role.kIllustration,
+            publish_period=0.1, role=role,
             default_color=mut.Rgba(0.1, 0.2, 0.3, 0.4),
             show_hydroelastic=False,
             use_role_channel_suffix=False)
@@ -184,7 +184,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         self.assertIn("host", repr(params))
         copy.copy(params)
         with self.assertRaises(RuntimeError):
-            meshcat2 = mut.Meshcat(port=port)
+            mut.Meshcat(port=port)
         self.assertIn("http", meshcat.web_url())
         self.assertIn("ws", meshcat.ws_url())
         meshcat.SetEnvironmentMap(image_path="")
@@ -362,9 +362,15 @@ class TestGeometryVisualizers(unittest.TestCase):
     def test_meshcat_404(self):
         meshcat = mut.Meshcat()
 
-        good_url = meshcat.web_url()
-        with urllib.request.urlopen(good_url) as response:
-            self.assertTrue(response.read(1))
+        good_urls = [
+            meshcat.web_url(),
+            meshcat.web_url() + "/index.html",
+            meshcat.web_url() + "/favicon.ico",
+            meshcat.web_url() + "/meshcat.js",
+        ]
+        for good_url in good_urls:
+            with urllib.request.urlopen(good_url) as response:
+                self.assertTrue(response.read(1))
 
         bad_url = f"{good_url}/no_such_file"
         with self.assertRaisesRegex(Exception, "HTTP.*404"):
@@ -455,7 +461,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         self.assertIsInstance(visualizer.pose_input_port(), InputPort_[T])
         visualizer.ForcedPublish(context)
         visualizer.Delete()
-        if T == float:
+        if T is float:
             ad_visualizer = visualizer.ToAutoDiffXd()
             self.assertIsInstance(
                 ad_visualizer, mut.MeshcatPointCloudVisualizer_[AutoDiffXd])
@@ -468,6 +474,8 @@ class TestGeometryVisualizers(unittest.TestCase):
         with urllib.request.urlopen(meshcat.web_url()) as response:
             content_type = response.getheader("Content-Type")
             some_data = response.read(4096)
+            # Finish reading everything, but discard it.
+            response.read()
         # This also serves as a regresion test of the C++ code, where parsing
         # the Content-Type is difficult within its unit test infrastructure.
         self.assertIn("text/html", content_type)

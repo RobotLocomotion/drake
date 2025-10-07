@@ -1,5 +1,8 @@
 #include <algorithm>
+#include <limits>
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -399,7 +402,7 @@ TEST_F(KukaIiwaArmTests, CalcAccelerationKinematicsCache) {
   // Verify CompliantContactManager loads the acceleration kinematics with the
   // proper results.
   AccelerationKinematicsCache<double> ac(
-      CompliantContactManagerTester::topology(*manager_));
+      CompliantContactManagerTester::forest(*manager_));
   manager_->CalcAccelerationKinematicsCache(*context_, &ac);
   EXPECT_TRUE(CompareMatrices(ac.get_vdot(), a_expected));
   for (BodyIndex b(0); b < plant_.num_bodies(); ++b) {

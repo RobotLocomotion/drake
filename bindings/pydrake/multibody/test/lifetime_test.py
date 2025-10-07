@@ -1,9 +1,6 @@
 import gc
-import math
 import unittest
 import weakref
-
-import numpy as np
 
 from pydrake.geometry import SceneGraph, SceneGraphConfig
 from pydrake.multibody.plant import (AddMultibodyPlant,

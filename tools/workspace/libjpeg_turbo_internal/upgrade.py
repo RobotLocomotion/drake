@@ -53,20 +53,20 @@ def _main():
     new_version = None
     with open(local / "third_party/jpeg/workspace.bzl", encoding="utf-8") as f:
         for line in f.readlines():
-            m = re.search(r'archive/refs/tags/([0-9a-z.]*).tar.gz', line)
+            m = re.search(r"archive/refs/tags/([0-9a-z.]*).tar.gz", line)
             if m:
-                new_version, = m.groups()
+                (new_version,) = m.groups()
                 break
     assert new_version
     logging.info(f"Drake's new jpeg version: {new_version}")
 
     # Bail out early.
     if new_version == old_version:
-        logging.info(f"No new archive is required")
+        logging.info("No new archive is required")
         return
 
     # Update the repository.bzl.
-    logging.info(f"Updating repository.bzl ...")
+    logging.info("Updating repository.bzl ...")
     with open(mydir / "repository.bzl", encoding="utf-8") as f:
         old_repository_bzl = f.read()
     new_repository_bzl = old_repository_bzl.replace(old_version, new_version)

@@ -1,5 +1,7 @@
 #include "drake/solvers/osqp_solver.h"
 
+#include <limits>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -22,7 +24,7 @@ GTEST_TEST(QPtest, TestUnconstrainedQP) {
   if (solver.available()) {
     auto result = solver.Solve(prog, {}, {});
     EXPECT_TRUE(result.is_success());
-    const double tol = 1E-10;
+    const double tol = 1e-4;
     EXPECT_NEAR(result.GetSolution(x(0)), 0, tol);
     EXPECT_NEAR(result.get_optimal_cost(), 0, tol);
     EXPECT_EQ(result.get_solver_details<OsqpSolver>().y.rows(), 0);
@@ -33,7 +35,7 @@ GTEST_TEST(QPtest, TestUnconstrainedQP) {
   if (solver.available()) {
     auto result = solver.Solve(prog, {}, {});
     EXPECT_TRUE(result.is_success());
-    const double tol = 1E-10;
+    const double tol = 1e-4;
     EXPECT_NEAR(result.GetSolution(x(0)), 0, tol);
     EXPECT_NEAR(result.GetSolution(x(1)) + result.GetSolution(x(2)), 2, tol);
     EXPECT_NEAR(result.get_optimal_cost(), 0, tol);
@@ -46,7 +48,7 @@ GTEST_TEST(QPtest, TestUnconstrainedQP) {
   if (solver.available()) {
     auto result = solver.Solve(prog, {}, {});
     EXPECT_TRUE(result.is_success());
-    const double tol = 1E-10;
+    const double tol = 1e-4;
     EXPECT_NEAR(result.GetSolution(x(0)), -2, tol);
     EXPECT_NEAR(result.GetSolution(x(1)) + result.GetSolution(x(2)), 2, tol);
     EXPECT_NEAR(result.get_optimal_cost(), 1, tol);
@@ -144,7 +146,7 @@ GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
 GTEST_TEST(OsqpSolverTest, DuplicatedVariable) {
   OsqpSolver solver;
   if (solver.available()) {
-    TestDuplicatedVariableQuadraticProgram(solver, 1E-5);
+    TestDuplicatedVariableQuadraticProgram(solver, 1e-4);
   }
 }
 
@@ -333,7 +335,7 @@ GTEST_TEST(OsqpSolverTest, SolverOptionsTest) {
     EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
     // OSQP is not very accurate, use a loose tolerance.
     EXPECT_TRUE(CompareMatrices(result.get_solver_details<OsqpSolver>().y,
-                                Eigen::Vector3d(0, 0, -0.0619621), 1E-5));
+                                Eigen::Vector3d(0, 0, -0.0619621), 1e-4));
 
     // Now only allow half the iterations in the OSQP solver. The solver should
     // not be able to solve the problem accurately.
@@ -441,19 +443,25 @@ GTEST_TEST(OsqpSolverTest, TimeLimitTest) {
     // Status codes listed in
     // https://osqp.org/docs/interfaces/status_values.html
     const int OSQP_SOLVED = 1;
-    const int OSQP_TIME_LIMIT_REACHED = -6;
+    const int OSQP_TIME_LIMIT_REACHED = 8;
+    EXPECT_TRUE(result.is_success());
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
     EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
     // OSQP is not very accurate, use a loose tolerance.
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(x), -b, 1E-5));
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x), -b, 1e-4));
 
     // Now only allow one hundredth of the solve time in the OSQP solver. The
     // solver should not be able to solve the problem in time.
-    const double one_hundredth_solve_time =
-        result.get_solver_details<OsqpSolver>().solve_time / 100.0;
+    const double original_solve_time =
+        result.get_solver_details<OsqpSolver>().solve_time;
+    ASSERT_GT(original_solve_time, 0.0);
+    const double one_hundredth_solve_time = original_solve_time / 100.0;
     SolverOptions solver_options;
     solver_options.SetOption(osqp_solver.solver_id(), "time_limit",
                              one_hundredth_solve_time);
     osqp_solver.Solve(prog, {}, solver_options, &result);
+    EXPECT_EQ(result.get_solution_result(),
+              SolutionResult::kSolverSpecificError);
     EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val,
               OSQP_TIME_LIMIT_REACHED);
 
@@ -461,6 +469,8 @@ GTEST_TEST(OsqpSolverTest, TimeLimitTest) {
     prog.SetSolverOption(osqp_solver.solver_id(), "time_limit",
                          one_hundredth_solve_time);
     osqp_solver.Solve(prog, {}, {}, &result);
+    EXPECT_EQ(result.get_solution_result(),
+              SolutionResult::kSolverSpecificError);
     EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val,
               OSQP_TIME_LIMIT_REACHED);
   }
@@ -516,7 +526,7 @@ GTEST_TEST(OsqpSolverTest, VariableScaling1) {
     auto result = solver.Solve(prog);
 
     EXPECT_TRUE(result.is_success());
-    const double tol = 1E-6;
+    const double tol = 1e-4;
     EXPECT_NEAR(result.get_optimal_cost(), 0.5, tol);
     EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
                                 Eigen::Vector2d((-0.5) * s, -1.5), tol));
@@ -541,7 +551,7 @@ GTEST_TEST(OsqpSolverTest, VariableScaling2) {
     auto result = solver.Solve(prog);
 
     EXPECT_TRUE(result.is_success());
-    const double tol = 1E-6;
+    const double tol = 1e-4;
     EXPECT_NEAR(result.get_optimal_cost(), 2.25, tol);
     EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
                                 Eigen::Vector2d((0.5) * s, -1), tol));

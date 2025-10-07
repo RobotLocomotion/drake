@@ -132,7 +132,8 @@ FILE_PATTERNS          = *.h \
 RECURSIVE              = YES
 EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO
-EXCLUDE_PATTERNS       = "@INPUT_ROOT@/*/dev/*" \
+EXCLUDE_PATTERNS       = "@INPUT_ROOT@/*/generated_docstrings/*" \
+                         "@INPUT_ROOT@/*/dev/*" \
                          "@INPUT_ROOT@/*/test/*" \
                          "@INPUT_ROOT@/*/MG/*"
 EXCLUDE_SYMBOLS        = "*::internal" \

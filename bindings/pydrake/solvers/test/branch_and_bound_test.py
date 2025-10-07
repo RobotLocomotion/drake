@@ -1,8 +1,6 @@
 import copy
 import unittest
 
-import numpy as np
-
 from pydrake.solvers import (
     MathematicalProgram,
     MixedIntegerBranchAndBound,

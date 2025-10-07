@@ -1,5 +1,11 @@
 #include "drake/multibody/plant/discrete_update_manager.h"
 
+#include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/kinematics_vector.h"

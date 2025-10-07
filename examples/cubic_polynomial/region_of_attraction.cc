@@ -72,8 +72,8 @@ void ComputeRegionOfAttraction() {
   // Define the Lyapunov function.
   const Expression V = x.dot(x);
 
-  const Expression Vdot = (Jacobian(Vector1<Expression>(V), xvar) *
-                         derivatives->CopyToVector())[0];
+  const Expression Vdot =
+      (Jacobian(Vector1<Expression>(V), xvar) * derivatives->CopyToVector())[0];
 
   // Maximize ρ s.t. V̇ ≥ 0 ∧ x ≠ 0 ⇒ V ≥ ρ,
   // implemented as (V(x) - ρ)x² - λ(x)V̇(x) is SOS;

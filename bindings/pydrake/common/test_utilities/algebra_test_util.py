@@ -20,7 +20,7 @@ class BaseAlgebra:
 
     def to_algebra(self, scalar):
         # Morphs a scalar to the given algebra (e.g. a scalar or array).
-        raise NotImplemented
+        raise NotImplementedError()
 
 
 class ScalarAlgebra(BaseAlgebra):

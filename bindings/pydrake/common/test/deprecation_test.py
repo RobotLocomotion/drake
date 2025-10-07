@@ -46,7 +46,7 @@ class TestDeprecation(unittest.TestCase):
         # N.B. This is imported first because `from {mod} import {var}` could
         # end up resolving `{var}` as a module.
         # @ref https://docs.python.org/3/reference/simple_stmts.html#import
-        import deprecation_example
+        import deprecation_example  # noqa: F401 (unused-import)
         # Test submodule behavior.
         # `from_direct` should use the `getattr` overload.
         from deprecation_example import sub_module as sub
@@ -161,10 +161,10 @@ class TestDeprecation(unittest.TestCase):
                 warnings.simplefilter("default", DrakeDeprecationWarning)
             for _ in range(3):
                 base_deprecation()
-                method = mut.ExampleClass.deprecated_method
-                method_extra = mut.ExampleClass.deprecated_method
-                prop = mut.ExampleClass.deprecated_prop
-                prop_extra = mut.ExampleClass.deprecated_prop
+                mut.ExampleClass.deprecated_method
+                mut.ExampleClass.deprecated_method
+                mut.ExampleClass.deprecated_prop
+                mut.ExampleClass.deprecated_prop
             # Manually set this back to `once`.
             warnings.simplefilter("ignore", DeprecationWarning)
             warnings.simplefilter("once", DrakeDeprecationWarning)

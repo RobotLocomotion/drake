@@ -1,3 +1,5 @@
+# ruff: noqa: F821 (undefined-name). This file is only a fragment.
+
 import pydrake.autodiffutils as _ad
 from pydrake.common import (
     _MangledName,

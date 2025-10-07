@@ -32,14 +32,32 @@ filegroup(
 
 # Workspace Member Dependencies
 alias(
+    name = "cfg-if-1.0.3",
+    actual = "@crate__cfg-if-1.0.3//:cfg_if",
+    tags = ["manual"],
+)
+
+alias(
     name = "cfg-if",
-    actual = "@crate__cfg-if-1.0.1//:cfg_if",
+    actual = "@crate__cfg-if-1.0.3//:cfg_if",
+    tags = ["manual"],
+)
+
+alias(
+    name = "clarabel-0.11.1",
+    actual = "@crate__clarabel-0.11.1//:clarabel",
     tags = ["manual"],
 )
 
 alias(
     name = "clarabel",
     actual = "@crate__clarabel-0.11.1//:clarabel",
+    tags = ["manual"],
+)
+
+alias(
+    name = "paste-1.0.15",
+    actual = "@crate__paste-1.0.15//:paste",
     tags = ["manual"],
 )
 

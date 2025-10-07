@@ -1,10 +1,14 @@
 #include "drake/systems/framework/leaf_system.h"
 
 #include <limits>
+#include <map>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <typeinfo>
+#include <utility>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <gmock/gmock.h>

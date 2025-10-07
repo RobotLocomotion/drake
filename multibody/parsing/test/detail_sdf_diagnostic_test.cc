@@ -1,5 +1,8 @@
 #include "drake/multibody/parsing/detail_sdf_diagnostic.h"
 
+#include <string>
+#include <utility>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <sdf/Root.hh>

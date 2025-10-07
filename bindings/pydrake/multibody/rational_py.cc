@@ -1,6 +1,6 @@
+#include "drake/bindings/generated_docstrings/multibody_rational.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 
@@ -22,7 +22,7 @@ void DoPoseDeclaration(py::module m, T) {
 
 PYBIND11_MODULE(rational, m) {
   using drake::multibody::MultibodyPlant;
-  constexpr auto& doc = pydrake_doc.drake.multibody;
+  constexpr auto& doc = pydrake_doc_multibody_rational.drake.multibody;
 
   m.doc() = "RationalForwardKinematics module";
   py::module::import("pydrake.math");

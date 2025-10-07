@@ -50,9 +50,9 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
    * context, λ.
    */
   template <typename DerivedQ, typename DerivedLambda>
-  typename std::enable_if_t<std::is_same_v<typename DerivedQ::Scalar,
-                                           typename DerivedLambda::Scalar>,
-                          VectorX<typename DerivedQ::Scalar>>
+  typename std::enable_if_t<
+      std::is_same_v<typename DerivedQ::Scalar, typename DerivedLambda::Scalar>,
+      VectorX<typename DerivedQ::Scalar>>
   ComposeVariableValues(
       const Eigen::MatrixBase<DerivedQ>& q_value,
       const Eigen::MatrixBase<DerivedLambda>& lambda_value) const {
@@ -193,10 +193,10 @@ struct GeometryPairContactWrenchEvaluatorBinding {
       std::vector<int> lambda_indices_in_all_lambda_in,
       std::shared_ptr<ContactWrenchEvaluator> contact_wrench_evaluator_in)
       : lambda_indices_in_all_lambda{std::move(
-      lambda_indices_in_all_lambda_in)},
+            lambda_indices_in_all_lambda_in)},
         contact_wrench_evaluator{std::move(contact_wrench_evaluator_in)} {
     DRAKE_DEMAND(static_cast<int>(lambda_indices_in_all_lambda.size()) ==
-        contact_wrench_evaluator->num_lambda());
+                 contact_wrench_evaluator->num_lambda());
   }
   std::vector<int> lambda_indices_in_all_lambda;
   std::shared_ptr<ContactWrenchEvaluator> contact_wrench_evaluator;

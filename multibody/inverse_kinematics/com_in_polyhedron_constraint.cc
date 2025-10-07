@@ -27,9 +27,10 @@ ComInPolyhedronConstraint::ComInPolyhedronConstraint(
       context_double_{plant_context},
       plant_autodiff_(nullptr),
       context_autodiff_(nullptr) {
-  if (plant_context == nullptr)
+  if (plant_context == nullptr) {
     throw std::invalid_argument(
         "ComInPolyhedronConstraint: plant_context is nullptr.");
+  }
   this->set_description("com in polyhedron constraint");
   if (model_instances_.has_value() && model_instances_.value().empty()) {
     throw std::invalid_argument(
@@ -54,9 +55,10 @@ ComInPolyhedronConstraint::ComInPolyhedronConstraint(
       context_double_{nullptr},
       plant_autodiff_{plant},
       context_autodiff_{plant_context} {
-  if (plant_context == nullptr)
+  if (plant_context == nullptr) {
     throw std::invalid_argument(
         "ComInPolyhedronConstraint: plant_context is nullptr.");
+  }
   this->set_description("com in polyhedron constraint");
   if (model_instances_.has_value() && model_instances_.value().empty()) {
     throw std::invalid_argument(

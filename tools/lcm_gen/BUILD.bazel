@@ -34,9 +34,9 @@ drake_py_binary(
 drake_py_unittest(
     name = "lcm_gen_test",
     data = [
-        "test/goal/lima.hpp",
-        "test/goal/mike.hpp",
-        "test/goal/november.hpp",
+        "test/goal/papa/lima.hpp",
+        "test/goal/papa/mike.hpp",
+        "test/goal/papa/november.hpp",
         "test/lima.lcm",
         "test/mike.lcm",
         "test/november.lcm",
@@ -96,7 +96,7 @@ genrule(
         "test/romeo/november.hpp",
     ],
     cmd = " ".join([
-        "$(execpath @lcm//:lcm-gen)",
+        "$(execpath @lcm_internal//lcmgen:lcm-gen)",
         "--cpp",
         "--cpp-std=c++11",
         "--use-quotes-for-includes",
@@ -106,7 +106,7 @@ genrule(
         "$(execpath :test/romeo/november.lcm)",
     ]),
     tools = [
-        "@lcm//:lcm-gen",
+        "@lcm_internal//lcmgen:lcm-gen",
     ],
 )
 
@@ -122,7 +122,7 @@ cc_library(
     includes = ["test"],
     tags = ["nolint"],
     deps = [
-        "@lcm//:lcm_coretypes",
+        "@lcm_internal//lcm:lcm-coretypes",
     ],
 )
 
@@ -134,11 +134,10 @@ cc_library(
     name = "papa",
     testonly = True,
     hdrs = [
-        "test/goal/lima.hpp",
-        "test/goal/mike.hpp",
-        "test/goal/november.hpp",
+        "test/goal/papa/lima.hpp",
+        "test/goal/papa/mike.hpp",
+        "test/goal/papa/november.hpp",
     ],
-    include_prefix = "papa",
     strip_include_prefix = "test/goal",
     tags = ["nolint"],
 )
@@ -157,4 +156,4 @@ drake_cc_googletest(
 # sub-struct. At the moment we have no test coverage of the legacy API's
 # nesting support (_encodeNoHash, _decodeNoHash, _computeHash).
 
-add_lint_tests()
+add_lint_tests(python_lint_use_ruff_format = True)

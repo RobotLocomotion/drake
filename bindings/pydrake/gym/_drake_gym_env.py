@@ -333,7 +333,7 @@ class DrakeGymEnv(gym.Env):
                 self.simulator.get_context())
             return
         elif self.render_mode == 'ansi':
-            return __repr__(self.simulator.get_context())
+            return repr(self.simulator.get_context())
         elif self.render_mode == 'rgb_array':
             assert self.render_rgb_port, \
                 "You must set render_rgb_port in the constructor"

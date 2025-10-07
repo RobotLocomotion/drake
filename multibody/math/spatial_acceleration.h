@@ -71,7 +71,8 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// Constructs a spatial acceleration A from an angular acceleration α (alpha)
   /// and a translational acceleration 𝐚.
   SpatialAcceleration(const Eigen::Ref<const Vector3<T>>& alpha,
-                      const Eigen::Ref<const Vector3<T>>& a) : Base(alpha, a) {}
+                      const Eigen::Ref<const Vector3<T>>& a)
+      : Base(alpha, a) {}
 
   /// Constructs a spatial acceleration A from an Eigen expression that
   /// represents a 6-element vector, i.e., a 3-element angular acceleration α
@@ -134,8 +135,8 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
     const Vector3<T>& alpha_MB_E = this->rotational();
     // Calculate point Co's translational acceleration measured in M.
     Vector3<T>& a_MCo_E = this->translational();
-    a_MCo_E += (alpha_MB_E.cross(p_BoCo_E)
-            +   w_MB_E.cross(w_MB_E.cross(p_BoCo_E)));  // 33 flops
+    a_MCo_E += (alpha_MB_E.cross(p_BoCo_E) +
+                w_MB_E.cross(w_MB_E.cross(p_BoCo_E)));  // 33 flops
   }
 
   /// Shifts a %SpatialAcceleration from a frame B to a frame C, where both

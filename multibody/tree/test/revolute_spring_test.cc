@@ -1,5 +1,9 @@
 #include "drake/multibody/tree/revolute_spring.h"
 
+#include <limits>
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -94,14 +98,6 @@ TEST_F(SpringTester, ConstructionAndAccessors) {
   EXPECT_EQ(spring_->joint().index(), joint_->index());
   EXPECT_EQ(spring_->default_stiffness(), stiffness_);
   EXPECT_EQ(spring_->default_nominal_angle(), nominal_angle_);
-}
-
-TEST_F(SpringTester, DeprecatedAccessors) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(spring_->stiffness(), stiffness_);
-  EXPECT_EQ(spring_->nominal_angle(), nominal_angle_);
-#pragma GCC diagnostic pop
 }
 
 TEST_F(SpringTester, ContextDependentAccess) {

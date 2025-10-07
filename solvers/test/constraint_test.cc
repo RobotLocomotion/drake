@@ -1,6 +1,7 @@
 #include "drake/solvers/constraint.h"
 
 #include <limits>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

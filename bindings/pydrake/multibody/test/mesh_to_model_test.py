@@ -58,7 +58,7 @@ def _make_offset_obj(target_obj_path: Path, offset):
     to the given path. The vertices are all translated by the given offset.
     """
     source_path = FindResourceOrThrow(
-            f"drake/geometry/render/test/meshes/box.obj")
+        "drake/geometry/render/test/meshes/box.obj")
     mesh = ReadObjToTriangleSurfaceMesh(source_path)
     with open(target_obj_path, 'w') as f:
         for v in mesh.vertices():
@@ -369,7 +369,7 @@ class TestModelMaker(unittest.TestCase):
         # "auto" with pre-existing package.xml in obj file will use it.
         # We'll change the name in the generated xml to confirm it gets used.
         with open(generated_xml, 'w') as f:
-            f.write(f"""<?xml version="1.0"?>
+            f.write("""<?xml version="1.0"?>
                 <package format="2">
                 <name>unique</name>
                 </package>
@@ -394,7 +394,7 @@ class TestModelMaker(unittest.TestCase):
 
         package_xml_path = package_dir / "package.xml"
         with open(package_xml_path, 'w') as f:
-            f.write(f"""<?xml version="1.0"?>
+            f.write("""<?xml version="1.0"?>
                 <package format="2">
                 <name>test_package</name>
                 </package>
@@ -481,7 +481,7 @@ class TestMeshToModelProcess(unittest.TestCase):
         # to parse the resulting SDF work.
         self._obj_stem = "box"
         obj_source_path = FindResourceOrThrow(
-            f"drake/geometry/render/test/meshes/box.obj")
+            "drake/geometry/render/test/meshes/box.obj")
         self._obj_path = self._temp_dir / "box.obj"
         shutil.copy(obj_source_path, self._obj_path)
         self._dut = FindResourceOrThrow(
@@ -496,8 +496,8 @@ class TestMeshToModelProcess(unittest.TestCase):
         ref_dir = self._temp_dir / "reference"
         ref_dir.mkdir()
         reference_sdf = ref_dir / "box.sdf"
-        maker = MeshModelMaker(mesh_path=self._obj_path,
-                               output_dir=ref_dir).make_model()
+        MeshModelMaker(mesh_path=self._obj_path,
+                       output_dir=ref_dir).make_model()
 
         subprocess.check_call([self._dut, self._obj_path])
 
@@ -514,9 +514,9 @@ class TestMeshToModelProcess(unittest.TestCase):
         ref_dir = self._temp_dir / "reference"
         ref_dir.mkdir()
         reference_sdf = ref_dir / "box.sdf"
-        maker = MeshModelMaker(mesh_path=self._obj_path,
-                               output_dir=ref_dir,
-                               scale=1.5).make_model()
+        MeshModelMaker(mesh_path=self._obj_path,
+                       output_dir=ref_dir,
+                       scale=1.5).make_model()
 
         dut_sdf = self._obj_path.parent / "box.sdf"
         subprocess.check_call([self._dut, '--scale', '1.5', self._obj_path])

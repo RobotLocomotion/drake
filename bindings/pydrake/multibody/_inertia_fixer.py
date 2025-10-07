@@ -15,8 +15,8 @@ and the `<inertial>` tag includes the pose of C relative to B, X_BC.
 from __future__ import annotations
 
 import abc
-import argparse
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Callable
 import xml.parsers.expat as expat
 
@@ -293,8 +293,8 @@ class UrdfDriver(FormatDriver):
             assert serial_number < plant.num_bodies()
             bix = BodyIndex(serial_number)
             mapping[bix] = find_inertial_facts_for_link(link)
-            assert plant.get_body(bix).name() == link.attributes.get("name"), (
-                plant.get_body(bix).name(), bix, link.attributes.get("name"))
+            assert plant.get_body(bix).name() == link_name, (
+                plant.get_body(bix).name(), bix, link_name)
         return mapping
 
     def format_inertia(self, input_bytes: bytes, inertial_facts: ElementFacts,

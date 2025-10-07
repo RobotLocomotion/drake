@@ -1,5 +1,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_weld_constraint.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
@@ -21,7 +23,6 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
-namespace kcov339_avoidance_magic {
 namespace {
 
 // These Jacobian matrices have arbitrary values for testing. We specify the
@@ -246,7 +247,6 @@ GTEST_TEST(SapWeldConstraint, AccumulateSpatialImpulses) {
 }
 
 }  // namespace
-}  // namespace kcov339_avoidance_magic
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody

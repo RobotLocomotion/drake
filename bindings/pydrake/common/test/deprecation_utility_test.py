@@ -59,7 +59,7 @@ class TestDeprecationExample(unittest.TestCase):
 
     def test_cc_wrap_deprecated_for_parallelism(self):
         obj = mut_cc.ExampleCppClass()
-        with catch_drake_warnings(expected_count=1) as w:
+        with catch_drake_warnings(expected_count=1):
             obj.ParallelWork(Parallelism.Max())
 
     def test_cc_wrap_deprecated_for_old_kwarg(self):

@@ -1,5 +1,7 @@
 #include "drake/multibody/mpm/spgrid.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/limit_malloc.h"

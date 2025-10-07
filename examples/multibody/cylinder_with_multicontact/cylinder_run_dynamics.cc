@@ -1,4 +1,5 @@
 #include <memory>
+#include <utility>
 
 #include <gflags/gflags.h>
 
@@ -15,7 +16,6 @@ namespace drake {
 namespace examples {
 namespace multibody {
 namespace cylinder_with_multicontact {
-inline namespace kcov339_avoidance_magic {
 namespace {
 
 DEFINE_double(target_realtime_rate, 0.5,
@@ -25,11 +25,9 @@ DEFINE_double(target_realtime_rate, 0.5,
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
 
-DEFINE_double(z0, 0.5,
-              "The initial height of the cylinder, m.");
+DEFINE_double(z0, 0.5, "The initial height of the cylinder, m.");
 
-DEFINE_double(vx0, 1.0,
-              "The initial x-velocity of the cylinder, m/s.");
+DEFINE_double(vx0, 1.0, "The initial x-velocity of the cylinder, m/s.");
 
 DEFINE_double(wx0, 0.1,
               "The initial x-angular velocity of the cylinder, rad/s.");
@@ -100,9 +98,8 @@ int do_main() {
   plant.SetFreeBodyPose(&plant_context, cylinder, X_WB);
   plant.SetFreeBodySpatialVelocity(
       &plant_context, cylinder,
-      SpatialVelocity<double>(
-          Vector3<double>(FLAGS_wx0, 0.0, 0.0),
-          Vector3<double>(FLAGS_vx0, 0.0, 0.0)));
+      SpatialVelocity<double>(Vector3<double>(FLAGS_wx0, 0.0, 0.0),
+                              Vector3<double>(FLAGS_vx0, 0.0, 0.0)));
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
@@ -115,7 +112,6 @@ int do_main() {
 }
 
 }  // namespace
-}  // inline namespace kcov339_avoidance_magic
 }  // namespace cylinder_with_multicontact
 }  // namespace multibody
 }  // namespace examples

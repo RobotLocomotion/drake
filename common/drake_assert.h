@@ -62,14 +62,17 @@
 #else  //  DRAKE_DOXYGEN_CXX
 
 // Users should NOT set these; only this header should set them.
+// clang-format off
 #ifdef DRAKE_ASSERT_IS_ARMED
 # error Unexpected DRAKE_ASSERT_IS_ARMED defined.
 #endif
 #ifdef DRAKE_ASSERT_IS_DISARMED
 # error Unexpected DRAKE_ASSERT_IS_DISARMED defined.
 #endif
+// clang-format on
 
 // Decide whether Drake assertions are enabled.
+// clang-format off
 #if defined(DRAKE_ENABLE_ASSERTS) && defined(DRAKE_DISABLE_ASSERTS)
 # error Conflicting assertion toggles.
 #elif defined(DRAKE_ENABLE_ASSERTS)
@@ -79,6 +82,7 @@
 #else
 # define DRAKE_ASSERT_IS_ARMED
 #endif
+// clang-format on
 
 namespace drake {
 namespace internal {
@@ -98,21 +102,20 @@ namespace assert {
 template <typename Condition>
 struct ConditionTraits {
   static constexpr bool is_valid = std::is_convertible_v<Condition, bool>;
-  static bool Evaluate(const Condition& value) {
-    return value;
-  }
+  static bool Evaluate(const Condition& value) { return value; }
 };
 }  // namespace assert
 }  // namespace drake
 
-#define DRAKE_UNREACHABLE()                                             \
-  ::drake::internal::Abort(                                             \
-      "Unreachable code was reached?!", __func__, __FILE__, __LINE__)
+#define DRAKE_UNREACHABLE()                                            \
+  ::drake::internal::Abort("Unreachable code was reached?!", __func__, \
+                           __FILE__, __LINE__)
 
 #define DRAKE_DEMAND(condition)                                              \
   do {                                                                       \
     typedef ::drake::assert::ConditionTraits<                                \
-        typename std::remove_cv_t<decltype(condition)>> Trait;               \
+        typename std::remove_cv_t<decltype(condition)>>                      \
+        Trait;                                                               \
     static_assert(Trait::is_valid, "Condition should be bool-convertible."); \
     static_assert(                                                           \
         !std::is_pointer_v<decltype(condition)>,                             \
@@ -120,8 +123,8 @@ struct ConditionTraits {
         "DRAKE_DEMAND(foo != nullptr), do not write DRAKE_DEMAND(foo) "      \
         "and rely on implicit pointer-to-bool conversion.");                 \
     if (!Trait::Evaluate(condition)) {                                       \
-      ::drake::internal::AssertionFailed(                                    \
-           #condition, __func__, __FILE__, __LINE__);                        \
+      ::drake::internal::AssertionFailed(#condition, __func__, __FILE__,     \
+                                         __LINE__);                          \
     }                                                                        \
   } while (0)
 
@@ -131,12 +134,12 @@ namespace drake {
 constexpr bool kDrakeAssertIsArmed = true;
 constexpr bool kDrakeAssertIsDisarmed = false;
 }  // namespace drake
-# define DRAKE_ASSERT(condition) DRAKE_DEMAND(condition)
-# define DRAKE_ASSERT_VOID(expression) do {                     \
-    static_assert(                                              \
-        std::is_convertible_v<decltype(expression), void>,      \
-        "Expression should be void.");                          \
-    expression;                                                 \
+#define DRAKE_ASSERT(condition) DRAKE_DEMAND(condition)
+#define DRAKE_ASSERT_VOID(expression)                                \
+  do {                                                               \
+    static_assert(std::is_convertible_v<decltype(expression), void>, \
+                  "Expression should be void.");                     \
+    expression;                                                      \
   } while (0)
 #else
 // Assertions are disabled, so just typecheck the expression.
@@ -144,9 +147,11 @@ namespace drake {
 constexpr bool kDrakeAssertIsArmed = false;
 constexpr bool kDrakeAssertIsDisarmed = true;
 }  // namespace drake
-# define DRAKE_ASSERT(condition) do {                                        \
+#define DRAKE_ASSERT(condition)                                              \
+  do {                                                                       \
     typedef ::drake::assert::ConditionTraits<                                \
-        typename std::remove_cv_t<decltype(condition)>> Trait;               \
+        typename std::remove_cv_t<decltype(condition)>>                      \
+        Trait;                                                               \
     static_assert(Trait::is_valid, "Condition should be bool-convertible."); \
     static_assert(                                                           \
         !std::is_pointer_v<decltype(condition)>,                             \
@@ -154,9 +159,9 @@ constexpr bool kDrakeAssertIsDisarmed = true;
         "DRAKE_ASSERT(foo != nullptr), do not write DRAKE_ASSERT(foo) "      \
         "and rely on implicit pointer-to-bool conversion.");                 \
   } while (0)
-# define DRAKE_ASSERT_VOID(expression) static_assert(           \
-    std::is_convertible_v<decltype(expression), void>,          \
-    "Expression should be void.")
+#define DRAKE_ASSERT_VOID(expression)                              \
+  static_assert(std::is_convertible_v<decltype(expression), void>, \
+                "Expression should be void.")
 #endif
 
 #endif  // DRAKE_DOXYGEN_CXX

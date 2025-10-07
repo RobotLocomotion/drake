@@ -12,9 +12,9 @@ class TestPolynomial(unittest.TestCase):
     def test_constructors(self, T):
         Polynomial = Polynomial_[T]
 
-        p1 = Polynomial()
-        p2 = Polynomial(5)
-        p3 = Polynomial(coefficients=[1, 2, 3])
+        Polynomial()
+        Polynomial(5)
+        Polynomial(coefficients=[1, 2, 3])
 
     @numpy_compare.check_all_types
     def test_analysis_methods(self, T):

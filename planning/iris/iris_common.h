@@ -21,6 +21,10 @@
 namespace drake {
 namespace planning {
 
+/** Various options which are common to the sampling-based algorithms IrisNp2
+ * and IrisZo for generating collision free polytopes in configuration space.
+ *
+ * @ingroup planning_iris */
 class CommonSampledIrisOptions {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CommonSampledIrisOptions);
@@ -51,7 +55,9 @@ class CommonSampledIrisOptions {
 
   CommonSampledIrisOptions() = default;
 
-  /** Number of particles used to estimate the closest collision. */
+  /** Minimum number of particles drawn per inner iteration. Some or all of
+   * these particles, depending on the other algorithm settings, will be used to
+   * find the closest collisions. */
   int num_particles = 1e3;
 
   /** Decision threshold for the unadaptive test. Choosing a small value
@@ -106,6 +112,13 @@ class CommonSampledIrisOptions {
    * possibility of requiring an infinite number of faces to approximate a
    * curved boundary. */
   double configuration_space_margin{1e-2};
+
+  /** Suppose stepping back by configuration_space_margin would cut off the seed
+   * point. If `relax_margin` is false, we throw an error, and if `relax_margin`
+   * is true, we repeatedly divide configuration_space_margin by two (for that
+   * hyperplane only) until the seed point is not cut off. Ignored if the user
+   * has provided `containment_points`. */
+  bool relax_margin{false};
 
   /** IRIS will terminate if the change in the *volume* of the hyperellipsoid
   between iterations is less that this threshold. This termination condition can
@@ -172,7 +185,9 @@ class CommonSampledIrisOptions {
  * IrisNp2 requires that the user also provies a version of the function for
  * Eigen::VectorX<AutoDiffXd>. If not specified, the input dimension is assumed
  * to be equal to the output dimension. The user must also specify whether or
- * not the parameterization function can be called in parallel. */
+ * not the parameterization function can be called in parallel.
+ *
+ * @ingroup planning_iris */
 class IrisParameterizationFunction {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IrisParameterizationFunction);
@@ -221,7 +236,7 @@ class IrisParameterizationFunction {
    * the order that they should be evaluated. Each `Variable` in `variables`
    * must be used, each `Variable` used in `expression_parameterization` must
    * appear in `variables`, and there must be no duplicates in `variables`.
-   * @note This currently only populates the VectorX<double> parameterization.
+   * @note This constructor only populates the VectorX<double> parameterization.
    * @note Expression parameterizations are always threadsafe.
    * @throws if the number of variables used across
    * `expression_parameterization` does not match `ssize(variables)`.
@@ -237,7 +252,8 @@ class IrisParameterizationFunction {
    * rational kinematic parameterization. Regions are grown in the `s`
    * variables, so as to minimize collisions in the `q` variables. See
    * RationalForwardKinematics for details.
-   * @note This currently only populates the VectorX<double> parameterization.
+   * @note This constructor populates the VectorX<double> and
+   * VectorX<AutoDiffXd> parameterizations.
    * @note The user is responsible for ensuring `kin` (and the underlying
    * MultibodyPlant it is built on) is kept alive. If that object is deleted,
    * then the parameterization can no longer be used. */
@@ -306,7 +322,7 @@ float calc_delta_min(double delta, int max_iterations);
 void AddTangentToPolytope(
     const geometry::optimization::Hyperellipsoid& E,
     const Eigen::Ref<const Eigen::VectorXd>& point,
-    double configuration_space_margin,
+    double configuration_space_margin, bool relax_margin,
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>* A,
     Eigen::VectorXd* b, int* num_constraints);
 

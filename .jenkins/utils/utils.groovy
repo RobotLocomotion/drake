@@ -1,7 +1,7 @@
 /**
  * Performs the checkout step for drake (cloning into WORKSPACE/'src') and
  * drake-ci (cloning into WORKSPACE/'ci').
- * 
+ *
  * @param ciSha the commit SHA or branch name to use for drake-ci
  * @param drakeSha the commit SHA or branch name to use for drake; if none is
  *                 given, uses the current branch or pull request
@@ -10,6 +10,13 @@
 def checkout(String ciSha = 'main', String drakeSha = null) {
   def scmVars = null
   retry(4) {
+    // N.B. The userRemoteConfigs in the first case are crucially used for
+    // production builds in order to allow pushing to additional remote
+    // branches (e.g., nightly_release) beyond the one being cloned (master).
+    // The second case below (`checkout scm`) does not specify such an option,
+    // however, it is useful for checkout of the specific merge commit created
+    // by Jenkins for pull requests as they build after a merge with master
+    // (for this call, we have no access to that commit SHA).
     if (drakeSha) {
       scmVars = checkout([$class: 'GitSCM',
         branches: [[name: drakeSha]],
@@ -58,17 +65,26 @@ def checkout(String ciSha = 'main', String drakeSha = null) {
 def doMainBuild(Map scmVars, String stagingReleaseVersion = null) {
   if (env.JOB_NAME.contains("cache-server-health-check")) {
     echo "Checking the cache server:"
-    sh "${env.WORKSPACE}/ci/cache_server/health_check.bash"
+    try {
+      sh "${env.WORKSPACE}/ci/cache_server/health_check.bash"
+    }
+    catch(exc) {
+      currentBuild.result = 'FAILURE'
+    }
   }
   else {
-    withCredentials([
+    def credentials = [
       sshUserPrivateKey(credentialsId: 'ad794d10-9bc8-4a7a-a2f3-998af802cab0',
-        keyFileVariable: 'SSH_PRIVATE_KEY_FILE'),
-      string(credentialsId: 'e21b9517-8aa7-419e-8f25-19cd42e10f68',
-        variable: 'DOCKER_USERNAME'),
-      file(credentialsId: '912dd413-d419-4760-b7ab-c132ab9e7c5e',
+        keyFileVariable: 'SSH_PRIVATE_KEY_FILE')
+    ]
+    if (!env.JOB_NAME.contains("experimental")) {
+      // Use Docker credentials for production jobs only.
+      credentials += string(credentialsId: 'e21b9517-8aa7-419e-8f25-19cd42e10f68',
+        variable: 'DOCKER_USERNAME')
+      credentials += file(credentialsId: '912dd413-d419-4760-b7ab-c132ab9e7c5e',
         variable: 'DOCKER_PASSWORD_FILE')
-    ]) {
+    }
+    withCredentials(credentials) {
       def environment = ["GIT_COMMIT=${scmVars.GIT_COMMIT}"]
       if (stagingReleaseVersion) {
         environment += "DRAKE_VERSION=${stagingReleaseVersion}"
@@ -109,7 +125,7 @@ def emailFailureResults() {
 }
 
 /**
- * Deletes the workspace and tmp directories, for use at the end of a build.
+ * Deletes the workspace and tmp directories.
  */
 def cleanWorkspace() {
   dir(env.WORKSPACE) {
@@ -133,6 +149,19 @@ def addCDashBadge() {
   }
 }
 
-// This must be present in order for this script to be consumed by
-// Jenkinsfiles when using 'load'.
-return this
+/**
+ * Extracts the node label from the job name.
+ *
+ * @return the node label
+ */
+def getNodeLabel() {
+  def pattern = ~/^((linux(-arm)?|mac-arm)-[A-Za-z]+(-unprovisioned)?).*/
+  def match = env.JOB_NAME =~ pattern
+
+  if (match.find()) {
+    return match.group(1)
+  }
+  else {
+    return null
+  }
+}

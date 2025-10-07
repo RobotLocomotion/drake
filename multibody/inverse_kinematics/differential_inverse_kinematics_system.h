@@ -177,6 +177,12 @@ class DifferentialInverseKinematicsSystem final
 
   ~DifferentialInverseKinematicsSystem() final;
 
+  /** Gets the mathematical formulation recipe. */
+  const Recipe& recipe() const { return *recipe_; }
+
+  /** Gets the frame assumed on the desired_cartesian_poses input port. */
+  const Frame<double>& task_frame() const { return *task_frame_; }
+
   /** Gets the plant used by the controller. */
   const MultibodyPlant<double>& plant() const {
     return collision_checker_->plant();
@@ -193,8 +199,13 @@ class DifferentialInverseKinematicsSystem final
   /** Gets the time step used by the controller. */
   double time_step() const { return time_step_; }
 
-  /** Gets the frame assumed on the desired_cartesian_poses input port. */
-  const Frame<double>& task_frame() const { return *task_frame_; }
+  /** Gets the gain factor used to convert desired cartesian poses to
+  velocities. */
+  double K_VX() const { return K_VX_; }
+
+  /** Gets the clamping limit applied to inferred desired cartesian velocities.
+   */
+  const SpatialVelocity<double>& Vd_TG_limit() const { return Vd_TG_limit_; }
 
   /** Returns the input port for the joint positions. */
   const systems::InputPort<double>& get_input_port_position() const {
@@ -382,6 +393,16 @@ class DifferentialInverseKinematicsSystem::Recipe final {
 
   void AddIngredient(std::shared_ptr<const Ingredient> ingredient) {
     ingredients_.push_back(std::move(ingredient));
+  }
+
+  /* Reports the number of ingredients in this recipe. */
+  int num_ingredients() const { return ssize(ingredients_); }
+
+  /* Returns the ith ingredient.
+  @pre `0 <= i < num_ingredients()`. */
+  const Ingredient& ingredient(int i) const {
+    DRAKE_THROW_UNLESS(i >= 0 && i < num_ingredients());
+    return *ingredients_[i];
   }
 
   /** Calls DifferentialInverseKinematicsSystem::Ingredient::AddToProgram on all

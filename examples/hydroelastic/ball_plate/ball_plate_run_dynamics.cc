@@ -64,10 +64,10 @@ namespace examples {
 namespace ball_plate {
 namespace {
 
-using Eigen::Vector3d;
 using drake::math::RigidTransformd;
 using drake::multibody::CoulombFriction;
 using drake::multibody::SpatialVelocity;
+using Eigen::Vector3d;
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
@@ -82,15 +82,14 @@ int do_main() {
   auto [plant, scene_graph] = AddMultibodyPlant(config, &builder);
 
   // Ball's parameters.
-  const double radius = 0.05;   // m
-  const double mass = 0.1;      // kg
+  const double radius = 0.05;  // m
+  const double mass = 0.1;     // kg
   AddBallPlateBodies(
       radius, mass, FLAGS_hydroelastic_modulus, FLAGS_dissipation,
-      CoulombFriction<double>{
-          // static friction (unused in discrete systems)
-          FLAGS_friction_coefficient,
-          // dynamic friction
-          FLAGS_friction_coefficient},
+      CoulombFriction<double>{// static friction (unused in discrete systems)
+                              FLAGS_friction_coefficient,
+                              // dynamic friction
+                              FLAGS_friction_coefficient},
       FLAGS_resolution_hint_factor, &plant);
 
   plant.Finalize();

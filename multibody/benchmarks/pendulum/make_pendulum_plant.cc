@@ -16,9 +16,8 @@ using geometry::FrameId;
 using geometry::SceneGraph;
 using geometry::Sphere;
 
-std::unique_ptr<MultibodyPlant<double>>
-MakePendulumPlant(const PendulumParameters& params,
-                  SceneGraph<double>* scene_graph) {
+std::unique_ptr<MultibodyPlant<double>> MakePendulumPlant(
+    const PendulumParameters& params, SceneGraph<double>* scene_graph) {
   auto plant = std::make_unique<MultibodyPlant<double>>(0.0);
 
   // Position of the com of the pendulum's body (in this case a point mass) in
@@ -50,8 +49,9 @@ MakePendulumPlant(const PendulumParameters& params,
 
     // Pose of the cylinder used to visualize the massless rod in frame B.
     const math::RigidTransformd X_BGc(-params.l() / 2.0 * Vector3d::UnitZ());
-    plant->RegisterVisualGeometry(point_mass, X_BGc,
-        Cylinder(params.massless_rod_radius(), params.l()), "arm");
+    plant->RegisterVisualGeometry(
+        point_mass, X_BGc, Cylinder(params.massless_rod_radius(), params.l()),
+        "arm");
   }
 
   const RevoluteJoint<double>& pin = plant->AddJoint<RevoluteJoint>(
@@ -67,8 +67,8 @@ MakePendulumPlant(const PendulumParameters& params,
   plant->AddJointActuator(params.actuator_name(), pin);
 
   // Gravity acting in the -z direction.
-  plant->mutable_gravity_field().set_gravity_vector(
-      -params.g() * Vector3d::UnitZ());
+  plant->mutable_gravity_field().set_gravity_vector(-params.g() *
+                                                    Vector3d::UnitZ());
 
   plant->Finalize();
 

@@ -1,6 +1,9 @@
 #include "drake/multibody/contact_solvers/sap/dense_supernodal_solver.h"
 
+#include <limits>
 #include <tuple>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

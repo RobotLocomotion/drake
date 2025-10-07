@@ -7,6 +7,7 @@ import copy
 import numpy as np
 
 from pydrake.common import RandomGenerator, temp_directory, Parallelism
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.geometry import (
     Box, Capsule, Cylinder, Convex, Ellipsoid, FramePoseVector, GeometryFrame,
@@ -97,9 +98,9 @@ class TestGeometryOptimization(unittest.TestCase):
         mut.AffineBall(ellipsoid=mut.Hyperellipsoid.MakeUnitBall(dim=1))
 
         points = np.array([[1, 0], [-1, 0], [0, 2], [0, -2]]).T
-        e_lowner_john = mut.AffineBall.MinimumVolumeCircumscribedEllipsoid(
+        mut.AffineBall.MinimumVolumeCircumscribedEllipsoid(
             points=points, rank_tol=1e-2)
-        e_lowner_john = mut.AffineBall.MinimumVolumeCircumscribedEllipsoid(
+        mut.AffineBall.MinimumVolumeCircumscribedEllipsoid(
             points=points)
 
     def test_affine_subspace(self):
@@ -165,7 +166,7 @@ class TestGeometryOptimization(unittest.TestCase):
 
         p = np.array([11.1, 12.2, 13.3])
         point = mut.Point(p)
-        aff = mut.AffineSubspace(set=point, tol=1e-12)
+        mut.AffineSubspace(set=point, tol=1e-12)
 
     def test_h_polyhedron(self):
         mut.HPolyhedron()
@@ -262,12 +263,10 @@ class TestGeometryOptimization(unittest.TestCase):
             other=h_unit_box,
             check_for_redundancy=False)
         # Check that the ReduceInequalities binding works.
-        redundant_indices = h_half_box_intersect_unit_box.FindRedundant(
-            tol=1E-9)
+        h_half_box_intersect_unit_box.FindRedundant(tol=1E-9)
         # Check FindRedundant with default tol.
         h_half_box_intersect_unit_box.FindRedundant()
-        h_half_box3 = h_half_box_intersect_unit_box.ReduceInequalities(
-            tol=1E-9)
+        h_half_box_intersect_unit_box.ReduceInequalities(tol=1E-9)
 
         # Check SimplifyByIncrementalFaceTranslation binding with
         # default input parameters.
@@ -353,9 +352,9 @@ class TestGeometryOptimization(unittest.TestCase):
         np.testing.assert_array_equal(e_ball3.A(), self.A)
         np.testing.assert_array_equal(e_ball3.center(), [0, 0, 0])
         points = np.array([[1, 0], [-1, 0], [0, 2], [0, -2]]).T
-        e_lowner_john = mut.Hyperellipsoid.MinimumVolumeCircumscribedEllipsoid(
+        mut.Hyperellipsoid.MinimumVolumeCircumscribedEllipsoid(
             points=points, rank_tol=1e-2)
-        e_lowner_john = mut.Hyperellipsoid.MinimumVolumeCircumscribedEllipsoid(
+        mut.Hyperellipsoid.MinimumVolumeCircumscribedEllipsoid(
             points=points)
         mut.Hyperellipsoid(ellipsoid=mut.AffineBall.MakeUnitBall(dim=1))
 
@@ -747,7 +746,7 @@ class TestGeometryOptimization(unittest.TestCase):
         options.prog_with_additional_constraints = ik.prog()
         options.num_additional_constraint_infeasible_samples = 2
         plant.SetPositions(plant.GetMyMutableContextFromRoot(context), [0])
-        region = mut.IrisInConfigurationSpace(
+        region = mut.IrisNp(
             plant=plant, context=plant.GetMyContextFromRoot(context),
             options=options)
         self.assertIsInstance(region, mut.ConvexSet)
@@ -759,13 +758,19 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(point.x(), [-0.5])
         point2, = options.configuration_obstacles
         self.assertIs(point2, point)
-        region = mut.IrisInConfigurationSpace(
+        region = mut.IrisNp(
             plant=plant, context=plant.GetMyContextFromRoot(context),
             options=options)
         self.assertIsInstance(region, mut.ConvexSet)
         self.assertEqual(region.ambient_dimension(), 1)
         self.assertTrue(region.PointInSet([1.0]))
         self.assertFalse(region.PointInSet([-1.0]))
+
+        with catch_drake_warnings(expected_count=1) as w:
+            region = mut.IrisInConfigurationSpace(
+                plant=plant, context=plant.GetMyContextFromRoot(context),
+                options=options)
+            self.assertIn("Use IrisNp", str(w[0].message))
 
     def test_serialize_iris_regions(self):
         iris_regions = {
@@ -1163,7 +1168,7 @@ class TestCspaceFreePolytope(unittest.TestCase):
 
         self.plant.Finalize()
 
-        diagram = builder.Build()
+        builder.Build()
 
         # Tests the constructor
         options = mut.CspaceFreePolytope.Options()
@@ -1241,8 +1246,8 @@ class TestCspaceFreePolytope(unittest.TestCase):
             lagrangian_options.ignore_redundant_C)
 
         # EllipsoidMarginCost
-        margin_cost = [dut.EllipsoidMarginCost.kGeometricMean,
-                       dut.EllipsoidMarginCost.kSum]
+        dut.EllipsoidMarginCost.kGeometricMean
+        dut.EllipsoidMarginCost.kSum
 
         # FindPolytopeGivenLagrangianOptions
         polytope_options = dut.FindPolytopeGivenLagrangianOptions()
@@ -1399,7 +1404,6 @@ class TestCspaceFreePolytope(unittest.TestCase):
     def test_CspaceFreePolytopeMethods(self):
         # These tests take very long using any solver besides Mosek so only run
         # them if Mosek is available.
-        mosek_solver = MosekSolver()
         C_init = np.vstack([np.atleast_2d(np.eye(self.plant.num_positions(
         ))), -np.atleast_2d(np.eye(self.plant.num_positions()))])
         d_init = 1e-3 * np.ones((C_init.shape[0], 1))

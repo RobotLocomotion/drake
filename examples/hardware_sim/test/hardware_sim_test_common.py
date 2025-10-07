@@ -20,7 +20,6 @@ from python.runfiles import Create as CreateRunfiles
 
 
 class HardwareSimTest:
-
     def _find_resource(self, respath):
         runfiles = CreateRunfiles()
         result = runfiles.Rlocation(respath)
@@ -34,11 +33,14 @@ class HardwareSimTest:
         """
         lang = self._sim_lang
         self._simulator = self._find_resource(
-            f"drake/examples/hardware_sim/hardware_sim_{lang}")
+            f"drake/examples/hardware_sim/hardware_sim_{lang}"
+        )
         self._example_scenarios = self._find_resource(
-            "drake/examples/hardware_sim/example_scenarios.yaml")
+            "drake/examples/hardware_sim/example_scenarios.yaml"
+        )
         self._test_scenarios = self._find_resource(
-            "drake/examples/hardware_sim/test/test_scenarios.yaml")
+            "drake/examples/hardware_sim/test/test_scenarios.yaml"
+        )
         self._default_extra = {
             # For our smoke test, exit fairly quickly.
             "simulation_duration": 0.0625,
@@ -66,10 +68,9 @@ class HardwareSimTest:
         ]
         if graphviz is not None:
             args.append(f"--graphviz={graphviz}")
-        printable_args = " ".join([
-            shlex.quote(re.sub(r"[^=]*\.runfiles/", "", x))
-            for x in args
-        ])
+        printable_args = " ".join(
+            [shlex.quote(re.sub(r"[^=]*\.runfiles/", "", x)) for x in args]
+        )
         print(f"== Running {printable_args}", file=sys.stderr, flush=True)
         subprocess.run(args, check=True)
 

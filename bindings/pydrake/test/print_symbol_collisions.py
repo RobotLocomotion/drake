@@ -6,7 +6,7 @@ from collections import defaultdict
 import sys
 
 # Populate `sys.modules`.
-import pydrake.all
+import pydrake.all  # noqa: F401 (unused-import)
 
 
 def _is_module_of(name, target):

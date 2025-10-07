@@ -1,4 +1,3 @@
-import errno
 import os
 import signal
 import stat
@@ -22,7 +21,8 @@ def install():
     after installation process is completed.
     """
     assert "TEST_TMPDIR" in os.environ, (
-        "This may only be run from within `bazel test`")
+        "This may only be run from within `bazel test`"
+    )
     # Install into a tmpdir.
     installation_folder = get_install_dir()
     # The following will fail if `install()` is called multiple times, which it
@@ -51,10 +51,10 @@ def get_install_dir():
     with 'installation'. This allows to use this writable folder to create
     additional files without modifying the install tree.
     """
-    return os.path.join(os.environ['TEST_TMPDIR'], 'installation')
+    return os.path.join(os.environ["TEST_TMPDIR"], "installation")
 
 
-def create_temporary_dir(name='tmp'):
+def create_temporary_dir(name="tmp"):
     """Creates temporary directory and returns its path.
 
     When running tests in the install tree, a temporary folder is created
@@ -63,7 +63,7 @@ def create_temporary_dir(name='tmp'):
     this folder is also used to install `drake`, so this function creates a
     subdirectory nested inside `os.environ['TEST_TMPDIR']`.
     """
-    tmp_dir = os.path.join(os.environ['TEST_TMPDIR'], name)
+    tmp_dir = os.path.join(os.environ["TEST_TMPDIR"], name)
     os.mkdir(tmp_dir)
     return tmp_dir
 
@@ -93,7 +93,7 @@ def run_and_kill(cmd, timeout=2.0, from_install_dir=True):
     if from_install_dir:
         cmd[0] = os.path.join(get_install_dir(), cmd[0])
     env = os.environ
-    proc = subprocess.Popen(cmd, cwd='/', env=env)
+    proc = subprocess.Popen(cmd, cwd="/", env=env)
     start = time.time()
     while time.time() - start < timeout:
         time.sleep(0.5)
@@ -112,14 +112,14 @@ def check_call(args, *extra_args, **kwargs):
     calls `subprocess.check_call()` and updates the current working directory
     to `/`.
     """
-    if args[0].endswith('.py'):
+    if args[0].endswith(".py"):
         # Ensure that we test with the same Python version that Bazel is using.
         args = [get_python_executable()] + args
-    if 'env' in kwargs:
-        env = kwargs.pop('env')
+    if "env" in kwargs:
+        env = kwargs.pop("env")
     else:
         env = os.environ
-    return subprocess.check_call(args, cwd='/', env=env, *extra_args, **kwargs)
+    return subprocess.check_call(args, cwd="/", env=env, *extra_args, **kwargs)
 
 
 def check_output(*args, **kwargs):
@@ -130,19 +130,23 @@ def check_output(*args, **kwargs):
     calls `subprocess.check_output()` and updates the current working directory
     to `/`.
     """
-    if 'env' in kwargs:
-        env = kwargs.pop('env')
+    if "env" in kwargs:
+        env = kwargs.pop("env")
     else:
         env = os.environ
-    return subprocess.check_output(
-        cwd='/', env=env, *args, **kwargs).decode('utf8')
+    return subprocess.check_output(cwd="/", env=env, *args, **kwargs).decode(
+        "utf8"
+    )
 
 
 def get_python_site_packages_dir(install_dir):
     return os.path.abspath(
         os.path.join(
-            install_dir, "lib",
+            install_dir,
+            "lib",
             "python{}.{}".format(
-                sys.version_info.major, sys.version_info.minor),
-            "site-packages")
+                sys.version_info.major, sys.version_info.minor
+            ),
+            "site-packages",
+        )
     )

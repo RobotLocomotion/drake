@@ -44,7 +44,7 @@ namespace MG {
 /// the corresponding `z` unit vectors).  Hence F connects to the end-effector G
 /// at origin Go of link G, and right-handed orthogonal unit vectors Gx, Gy, Gz
 /// are fixed in G.
-template<typename T>
+template <typename T>
 class MGKukaIIwaRobot {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MGKukaIIwaRobot);
@@ -127,9 +127,9 @@ class MGKukaIIwaRobot {
              SpatialForce<double>, SpatialForce<double>, SpatialForce<double>,
              SpatialForce<double>>
   CalcJointReactionForcesExpressedInMobilizer(
-                          const Eigen::Ref<const VectorX<T>>& q,
-                          const Eigen::Ref<const VectorX<T>>& qDt,
-                          const Eigen::Ref<const VectorX<T>>& qDDt) const;
+      const Eigen::Ref<const VectorX<T>>& q,
+      const Eigen::Ref<const VectorX<T>>& qDt,
+      const Eigen::Ref<const VectorX<T>>& qDDt) const;
 
   /// @see CalcJointReactionForcesExpressedInMobilizerFrame.
   /// @returns Machine-precision values as defined below.
@@ -145,9 +145,9 @@ class MGKukaIIwaRobot {
              SpatialForce<double>, SpatialForce<double>, SpatialForce<double>,
              SpatialForce<double>>
   CalcJointReactionForcesExpressedInWorld(
-                          const Eigen::Ref<const VectorX<T>>& q,
-                          const Eigen::Ref<const VectorX<T>>& qDt,
-                          const Eigen::Ref<const VectorX<T>>& qDDt) const;
+      const Eigen::Ref<const VectorX<T>>& q,
+      const Eigen::Ref<const VectorX<T>>& qDt,
+      const Eigen::Ref<const VectorX<T>>& qDDt) const;
 
   /// This method calculates the torques for the 7 revolute motors that connect
   /// frames Na to A, Ab to B, Bc to C, ... Fg to G.  These torques arise from
@@ -166,10 +166,10 @@ class MGKukaIIwaRobot {
   ///
   /// @returns 7x1 matrix of machine-precision values for the actuation
   /// (generalized) torques tAz, tBz, tCz, tDz, tEz, tFz, tGz.
-  Vector<double, 7>
-  CalcRevoluteMotorZTorques(const Eigen::Ref<const VectorX<T>>& q,
-                            const Eigen::Ref<const VectorX<T>>& qDt,
-                            const Eigen::Ref<const VectorX<T>>& qDDt) const;
+  Vector<double, 7> CalcRevoluteMotorZTorques(
+      const Eigen::Ref<const VectorX<T>>& q,
+      const Eigen::Ref<const VectorX<T>>& qDt,
+      const Eigen::Ref<const VectorX<T>>& qDDt) const;
 
   /// This method sets Earth's (or astronomical body's) uniform gravitational
   /// acceleration ("little g").  By default, little g is initialized to
@@ -182,13 +182,13 @@ class MGKukaIIwaRobot {
    *  These methods return the mass of robot links A, B, C, D, E, F, G (in kg).
    */
   ///@{
-  double get_mass_of_link_A() const  { return MG_kuka_auto_generated_.mA; }
-  double get_mass_of_link_B() const  { return MG_kuka_auto_generated_.mB; }
-  double get_mass_of_link_C() const  { return MG_kuka_auto_generated_.mC; }
-  double get_mass_of_link_D() const  { return MG_kuka_auto_generated_.mD; }
-  double get_mass_of_link_E() const  { return MG_kuka_auto_generated_.mE; }
-  double get_mass_of_link_F() const  { return MG_kuka_auto_generated_.mF; }
-  double get_mass_of_link_G() const  { return MG_kuka_auto_generated_.mG; }
+  double get_mass_of_link_A() const { return MG_kuka_auto_generated_.mA; }
+  double get_mass_of_link_B() const { return MG_kuka_auto_generated_.mB; }
+  double get_mass_of_link_C() const { return MG_kuka_auto_generated_.mC; }
+  double get_mass_of_link_D() const { return MG_kuka_auto_generated_.mD; }
+  double get_mass_of_link_E() const { return MG_kuka_auto_generated_.mE; }
+  double get_mass_of_link_F() const { return MG_kuka_auto_generated_.mF; }
+  double get_mass_of_link_G() const { return MG_kuka_auto_generated_.mG; }
   ///@}
 
  private:

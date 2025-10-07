@@ -4,8 +4,6 @@ from pydrake.visualization import (
 
 import unittest
 
-import numpy as np
-
 from pydrake.geometry import (
     Meshcat,
 )

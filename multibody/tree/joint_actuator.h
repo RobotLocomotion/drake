@@ -70,6 +70,8 @@ class JointActuator final : public MultibodyElement<T> {
   const std::string& name() const { return name_; }
 
   /// Returns a reference to the joint actuated by this %JointActuator.
+  /// @throws std::exception if this element is not associated with a
+  ///   MultibodyPlant.
   const Joint<T>& joint() const;
 
   /// Adds into `forces` a force along one of the degrees of freedom of the
@@ -106,11 +108,14 @@ class JointActuator final : public MultibodyElement<T> {
   /// Gets the actuation values for `this` actuator from the actuation vector u
   /// for the entire plant model.
   /// @return a reference to a nv-dimensional vector, where nv is the number
-  ///         of velocity variables of joint().
+  ///   of velocity variables of joint().
+  /// @throws std::exception if this element is not associated with a
+  ///   MultibodyPlant.
   const Eigen::Ref<const VectorX<T>> get_actuation_vector(
       const VectorX<T>& u) const {
+    DRAKE_THROW_UNLESS(this->has_parent_tree());
     DRAKE_DEMAND(u.size() == this->get_parent_tree().num_actuated_dofs());
-    return u.segment(topology_.actuator_index_start, joint().num_velocities());
+    return u.segment(topology_.actuator_dof_start, joint().num_velocities());
   }
 
   /// Given the actuation values `u_actuator` for `this` actuator, updates the
@@ -128,6 +133,8 @@ class JointActuator final : public MultibodyElement<T> {
   /// @throws std::exception if
   ///   `u_actuator.size() != this->num_inputs()`.
   /// @throws std::exception if u is nullptr.
+  /// @throws std::exception if this element is not associated with a
+  ///   MultibodyPlant.
   /// @throws std::exception if
   ///   `u.size() != this->GetParentPlant().num_actuated_dofs()`.
   void set_actuation_vector(const Eigen::Ref<const VectorX<T>>& u_actuator,

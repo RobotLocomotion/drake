@@ -1,5 +1,9 @@
 #include "drake/systems/analysis/integrator_base.h"
 
+#include <limits>
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

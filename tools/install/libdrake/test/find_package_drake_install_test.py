@@ -26,12 +26,18 @@ class FindPackageDrakeInstallTest(unittest.TestCase):
         cmake_prefix_path = install_test_helper.get_install_dir()
 
         cmake_content = """
-            cmake_minimum_required(VERSION 3.9...4.0)
+            cmake_minimum_required(VERSION 3.9...4.1)
             project(find_package_drake_install_test)
             set(CMAKE_PREFIX_PATH {cmake_prefix_path})
             find_package(drake CONFIG REQUIRED)
             add_executable(main_drake main_drake.cc)
             target_link_libraries(main_drake drake::drake)
+
+            # Check that the imported drake::drake is a shared library.
+            get_target_property(drake_type drake::drake TYPE)
+            if(NOT drake_type STREQUAL "SHARED_LIBRARY")
+                message(FATAL_ERROR "drake::drake is ${{drake_type}}, but expected SHARED_LIBRARY.")
+            endif()
         """.format(cmake_prefix_path=cmake_prefix_path)
 
         cmake_filename = os.path.join(cmake_source_dir, "CMakeLists.txt")

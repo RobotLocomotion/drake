@@ -209,9 +209,10 @@ class Polynomial {
     typedef typename std::remove_const_t<typename Product<T, U>::type>
         ProductType;
 
-    if (!is_univariate_)
+    if (!is_univariate_) {
       throw std::runtime_error(
           "this method can only be used for univariate polynomials");
+    }
 
     DRAKE_DEMAND(derivative_order >= 0);
     ProductType value = 0;
@@ -421,10 +422,11 @@ class Polynomial {
 
     for (typename std::vector<Term>::const_iterator iter = m.terms.begin();
          iter != m.terms.end(); iter++) {
-      if (print_star)
+      if (print_star) {
         os << '*';
-      else
+      } else {
         print_star = true;
+      }
       os << IdToVariableName(iter->var);
       if (iter->power != 1) {
         os << "^" << iter->power;

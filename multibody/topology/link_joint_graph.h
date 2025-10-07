@@ -6,13 +6,10 @@
 
 #include <filesystem>
 #include <map>
-#include <memory>
 #include <optional>
 #include <set>
 #include <string>
 #include <tuple>
-#include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include "drake/common/copyable_unique_ptr.h"
@@ -366,6 +363,11 @@ class LinkJointGraph {
   present. `ssize(links())` is the number of Links currently in this graph. */
   [[nodiscard]] const std::vector<Link>& links() const { return data_.links; }
 
+  /* Returns the number of Links currently in this graph, including World and
+  ephemeral Links. This is the same as `ssize(links())`. Links that have been
+  removed are not counted. */
+  [[nodiscard]] inline int num_links() const;
+
   // TODO(sherm1) Re-think this naming strategy to use either link() or
   //  link_by_ordinal(), and similar for the other APIs.
 
@@ -386,6 +388,11 @@ class LinkJointGraph {
   [[nodiscard]] const std::vector<Joint>& joints() const {
     return data_.joints;
   }
+
+  /* Returns the number of Joints currently in this graph, including ephemeral
+  joints. This is the same as `ssize(joints())`. Joints that have been removed
+  are not counted. */
+  [[nodiscard]] inline int num_joints() const;
 
   /* Returns a reference to a particular Joint using its current ordinal
   within the joints() vector. Requires a JointOrdinal, not a plain integer. */
@@ -419,11 +426,11 @@ class LinkJointGraph {
   forest-building). See the class comment for more information. */
   [[nodiscard]] int num_user_joints() const { return data_.num_user_joints; }
 
-  /* After the SpanningForest has been built, returns the mobilized body
-  (Mobod) followed by this Link. If the Link is part of a merged composite, this
-  will be the mobilized body for the whole composite. If the Link was split into
-  a primary and shadows, this is the mobilized body followed by the primary. If
-  there is no valid Forest, the returned index will be invalid. */
+  /* After the SpanningForest has been built, returns the index of the mobilized
+  body (Mobod) followed by this Link. If the Link is part of a merged composite,
+  this will be the mobilized body for the whole composite. If the Link was split
+  into a primary and shadows, this is the mobilized body followed by the
+  primary. If there is no valid Forest, the returned index will be invalid. */
   [[nodiscard]] MobodIndex link_to_mobod(LinkIndex index) const;
 
   /* After the SpanningForest has been built, returns groups of Links that are
@@ -635,6 +642,28 @@ class LinkJointGraph {
     return JointTraitsIndex(2);
   }
 
+  /* Given a link index returns that link's ordinal.
+  @pre the index refers to a link that exists and hasn't been removed. */
+  [[nodiscard]] LinkOrdinal index_to_ordinal(LinkIndex link_index) const {
+    DRAKE_ASSERT(link_index.is_valid() &&
+                 link_index < ssize(data_.link_index_to_ordinal));
+    const std::optional<LinkOrdinal>& ordinal =
+        data_.link_index_to_ordinal[link_index];
+    DRAKE_ASSERT(ordinal.has_value());
+    return *ordinal;
+  }
+
+  /* Given a joint index returns that joint's ordinal.
+  @pre the index refers to a joint that exists and hasn't been removed. */
+  [[nodiscard]] JointOrdinal index_to_ordinal(JointIndex joint_index) const {
+    DRAKE_ASSERT(joint_index.is_valid() &&
+                 joint_index < ssize(data_.joint_index_to_ordinal));
+    const std::optional<JointOrdinal>& ordinal =
+        data_.joint_index_to_ordinal[joint_index];
+    DRAKE_ASSERT(ordinal.has_value());
+    return *ordinal;
+  }
+
  private:
   friend class SpanningForest;
   friend class LinkJointGraphTester;
@@ -653,28 +682,6 @@ class LinkJointGraph {
   // may have been removed).
   [[nodiscard]] int num_joint_indexes() const {
     return ssize(data_.joint_index_to_ordinal);
-  }
-
-  // Given a link index returns that link's ordinal.
-  // @pre the index refers to a link that exists and hasn't been removed.
-  [[nodiscard]] LinkOrdinal index_to_ordinal(LinkIndex link_index) const {
-    DRAKE_ASSERT(link_index.is_valid() &&
-                 link_index < ssize(data_.link_index_to_ordinal));
-    const std::optional<LinkOrdinal>& ordinal =
-        data_.link_index_to_ordinal[link_index];
-    DRAKE_ASSERT(ordinal.has_value());
-    return *ordinal;
-  }
-
-  // Given a joint index returns that joint's ordinal.
-  // @pre the index refers to a joint that exists and hasn't been removed.
-  [[nodiscard]] JointOrdinal index_to_ordinal(JointIndex joint_index) const {
-    DRAKE_ASSERT(joint_index.is_valid() &&
-                 joint_index < ssize(data_.joint_index_to_ordinal));
-    const std::optional<JointOrdinal>& ordinal =
-        data_.joint_index_to_ordinal[joint_index];
-    DRAKE_ASSERT(ordinal.has_value());
-    return *ordinal;
   }
 
   // Tells this Link which Mobod it follows and which Joint corresponds to

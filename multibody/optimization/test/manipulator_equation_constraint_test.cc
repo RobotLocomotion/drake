@@ -1,5 +1,11 @@
 #include "drake/multibody/optimization/manipulator_equation_constraint.h"
 
+#include <limits>
+#include <memory>
+#include <set>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -145,13 +151,12 @@ class TwoFreeSpheresTest : public ::testing::Test {
         dt_autodiff;
     AutoDiffVecXd y_autodiff;
     manipulator_equation_binding.evaluator()->Eval(x_autodiff, &y_autodiff);
-    EXPECT_TRUE(CompareMatrices(
-        math::ExtractValue(y_autodiff),
-        math::ExtractValue(y_autodiff_expected), 100 * kEps));
-    EXPECT_TRUE(CompareMatrices(
-        math::ExtractGradient(y_autodiff),
-        math::ExtractGradient(y_autodiff_expected),
-        100 * kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_autodiff),
+                                math::ExtractValue(y_autodiff_expected),
+                                100 * kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_autodiff),
+                                math::ExtractGradient(y_autodiff_expected),
+                                100 * kEps));
 
     // Use a std::function instead of auto eval_fun as a lambda. This is
     // explained in ComputeNumericalGradient.

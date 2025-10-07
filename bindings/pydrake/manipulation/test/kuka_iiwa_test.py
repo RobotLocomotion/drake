@@ -8,7 +8,6 @@ import numpy as np
 import weakref
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.lcm import DrakeLcm
 from pydrake.math import RigidTransform
 from pydrake.multibody.parsing import (
@@ -22,7 +21,6 @@ from pydrake.systems.framework import (
     InputPort,
     OutputPort,
 )
-from pydrake.systems.analysis import Simulator
 from pydrake.systems.lcm import LcmBuses
 from pydrake.systems.test.test_util import call_build_from_cpp
 
@@ -34,7 +32,7 @@ class TestKukaIiwa(unittest.TestCase):
         parser = Parser(plant)
         directives = LoadModelDirectives(FindResourceOrThrow(
             "drake/manipulation/util/test/iiwa7_wsg.dmd.yaml"))
-        models_from_directives = ProcessModelDirectives(directives, parser)
+        ProcessModelDirectives(directives, parser)
         plant.Finalize()
         controller_plant = MultibodyPlant(1.)
         parser = Parser(controller_plant)
@@ -138,21 +136,6 @@ class TestKukaIiwa(unittest.TestCase):
         )
         self.assertGreater(len(builder.GetSystems()), tare)
 
-    def test_deprecated_kuka_iiwa_build_control(self):
-        builder, plant, controller_plant = (
-            self.make_builder_plant_controller_plant()
-        )
-        tare = len(builder.GetSystems())
-        with catch_drake_warnings(expected_count=1):
-            mut.BuildIiwaControl(
-                plant=plant,
-                iiwa_instance=plant.GetModelInstanceByName("iiwa7"),
-                controller_plant=controller_plant, lcm=DrakeLcm(),
-                builder=builder, ext_joint_filter_tau=0.12,
-                desired_iiwa_kp_gains=np.arange(7),
-            )
-        self.assertGreater(len(builder.GetSystems()), tare)
-
     def test_kuka_iiwa_driver(self):
         dut = mut.IiwaDriver()
         dut.hand_model_name = "schunk_wsg"
@@ -221,7 +204,7 @@ class TestKukaIiwa(unittest.TestCase):
         diagram = make_diagram()
         gc.collect()
         # Crashes if controller_plant is not kept alive by bindings.
-        ad_diagram = diagram.ToAutoDiffXd()
+        ad_diagram = diagram.ToAutoDiffXd()  # noqa: F841 (unused-variable)
 
     def call_build_from(self, diagram_builder, language):
         assert language in ["python", "c++"]
@@ -257,7 +240,7 @@ class TestKukaIiwa(unittest.TestCase):
             del dut
             gc.collect()
             # Crashes if controller_plant is not kept alive by bindings.
-            ad_diagram = diagram.ToAutoDiffXd()
+            ad_diagram = diagram.ToAutoDiffXd()  # noqa: F841 (unused-variable)
             # The diagram is mortal.
             spy = weakref.finalize(diagram, lambda: None)
             del diagram
@@ -270,7 +253,7 @@ class TestKukaIiwa(unittest.TestCase):
         del diagram
         gc.collect()
         # Crashes if controller_plant is not kept alive by bindings.
-        ad_dut = dut.ToAutoDiffXd()
+        ad_dut = dut.ToAutoDiffXd()  # noqa: F841 (unused-variable)
         # The dut is mortal.
         spy = weakref.finalize(dut, lambda: None)
         del dut

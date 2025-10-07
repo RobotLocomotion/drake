@@ -35,7 +35,7 @@ using geometry::Rgba;
 using geometry::Sphere;
 using geometry::optimization::HPolyhedron;
 using geometry::optimization::Hyperellipsoid;
-using geometry::optimization::IrisInConfigurationSpace;
+using geometry::optimization::IrisNp;
 using geometry::optimization::IrisOptions;
 using graph_algorithms::MaxCliqueSolverBase;
 using math::RigidTransform;
@@ -262,8 +262,8 @@ std::queue<HPolyhedron> IrisWorker(
         overloaded{
             [&](IrisOptions& arg) {
               arg.starting_ellipse = clique_ellipse;
-              ret.emplace(IrisInConfigurationSpace(
-                  checker.plant(), checker.plant_context(builder_id), arg));
+              ret.emplace(IrisNp(checker.plant(),
+                                 checker.plant_context(builder_id), arg));
             },
             [&](IrisNp2Options& arg) {
               arg.sampled_iris_options.parallelism = options.parallelism;
@@ -424,8 +424,7 @@ void CheckIrisInConfigurationSpaceFromCliqueCoverPreconditions(
   }
 
   // Note: Even though the iris_options.bounding_region may be
-  // provided, IrisInConfigurationSpace (currently) requires finite
-  // joint limits.
+  // provided, IrisNp (currently) requires finite joint limits.
   DRAKE_THROW_UNLESS(
       checker.plant().GetPositionLowerLimits().array().isFinite().all());
   DRAKE_THROW_UNLESS(
@@ -566,9 +565,9 @@ void IrisInConfigurationSpaceFromCliqueCover(
       // We will use one thread to build cliques. If we are building sets using
       // IrisNp2 or IrisZo, we use only one worker thread to produce sets as
       // these methods use parallelism internally in the collision checker. If
-      // we use IrisInConfigurationSpace to build sets, we use all the remaining
-      // threads of parallelism to build sets. If this number is 0, then this
-      // function will end up single threaded.
+      // we use IrisNp to build sets, we use all the remaining threads of
+      // parallelism to build sets. If this number is 0, then this function will
+      // end up single threaded.
       const int num_builder_threads =
           std::visit(overloaded{[&options](const IrisOptions&) {
                                   return options.parallelism.num_threads() - 1;
