@@ -212,6 +212,7 @@ def vtk_internal_repository(
             ":patches/rendering_opengl2_no_factory.patch",
             ":patches/rendering_opengl2_no_global_display_counter.patch",
             ":patches/rendering_opengl2_preserve_direct_light_specular_reflections.patch",  # noqa
+            ":patches/utilities_x11_dlsym.patch",
             ":patches/vtkfast_float_hidden.patch",
             ":patches/vtkpugixml_hidden.patch",
             ":patches/vtkscn_hidden.patch",
