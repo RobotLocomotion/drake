@@ -1348,5 +1348,4 @@ add_lint_tests(
     python_lint_extra_srcs = [
         ":test/resource_tool_installed_test.py",
     ],
-    python_lint_use_ruff_format = False,
 )
