@@ -854,7 +854,7 @@ void GlobalInverseKinematics::AddJointCenteringCost(BodyIndex body_index,
                                                     double nominal_value,
                                                     double weight, int norm,
                                                     bool squared) {
-  if (plant_.get_body(body_index).is_floating()) {
+  if (plant_.get_body(body_index).is_floating_base_body()) {
     throw std::runtime_error(
         "The body is floating, do not use AddJointCenteringCost(). Use "
         "AddPostureCost() instead.");
