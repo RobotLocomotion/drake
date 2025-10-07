@@ -78,16 +78,19 @@ _SDF_TEMPLATE = """<?xml version='1.0'?>
 class MeshModelMaker:
     """Converts a mesh file into a model, documenting the work as it goes."""
 
-    def __init__(self, *,
-                 mesh_path: Path,
-                 output_dir: Path = None,
-                 scale: float = 1.0,
-                 model_name: str = None,
-                 density: float = 1000.0,
-                 mass: float = None,
-                 at_com: bool = False,
-                 p_GoBo: np.array = None,
-                 encoded_package: str = 'none'):
+    def __init__(
+        self,
+        *,
+        mesh_path: Path,
+        output_dir: Path = None,
+        scale: float = 1.0,
+        model_name: str = None,
+        density: float = 1000.0,
+        mass: float = None,
+        at_com: bool = False,
+        p_GoBo: np.array = None,
+        encoded_package: str = "none",
+    ):
         """
         Read the given mesh definition and construct a corresponding SDFormat
         file representing a single model with a single body. The body's mass
@@ -118,8 +121,10 @@ class MeshModelMaker:
         if output_dir is None:
             output_dir = None if mesh_path is None else mesh_path.parent
         elif not output_dir.is_dir():
-            raise ValueError("The output directory must name an existing "
-                             f"directory; given {output_dir}.")
+            raise ValueError(
+                "The output directory must name an existing "
+                f"directory; given {output_dir}."
+            )
         self.mesh_path = mesh_path
         self.output_dir = output_dir
         self.scale = scale
@@ -142,20 +147,25 @@ class MeshModelMaker:
         _logger.info(f"Creating a model from: {self.mesh_path}")
 
         # Figure out the mesh URI and model names.
-        mesh_uri = MeshModelMaker._make_mesh_uri(self.encoded_package,
-                                                 self.mesh_path)
+        mesh_uri = MeshModelMaker._make_mesh_uri(
+            self.encoded_package, self.mesh_path
+        )
 
         if self.scale <= 0:
             raise ValueError(
-                f"Scale value must be positive, given {self.scale}.")
+                f"Scale value must be positive, given {self.scale}."
+            )
 
-        mesh_G = ReadObjToTriangleSurfaceMesh(filename=str(self.mesh_path),
-                                              scale=self.scale)
+        mesh_G = ReadObjToTriangleSurfaceMesh(
+            filename=str(self.mesh_path), scale=self.scale
+        )
         p_GoMin, p_GoMax = mesh_G.CalcBoundingBox()
         size = p_GoMax - p_GoMin
         _logger.info("Mesh-model summary:")
-        _logger.info(f"    Bounding box (in geometry frame): {size[0]} x "
-                     f"{size[1]} x {size[2]} meters")
+        _logger.info(
+            f"    Bounding box (in geometry frame): {size[0]} x "
+            f"{size[1]} x {size[2]} meters"
+        )
 
         # TODO(SeanCurtis-TRI): Confirm that the mesh is watertight.
 
@@ -168,12 +178,13 @@ class MeshModelMaker:
             density = 1.0
             M_GGo_G = CalcSpatialInertia(mesh=mesh_G, density=density)
             volume = M_GGo_G.get_mass() / density
-            M_GGo_G = SpatialInertia(mass=self.mass,
-                                     p_PScm_E=M_GGo_G.get_com(),
-                                     G_SP_E=M_GGo_G.get_unit_inertia())
+            M_GGo_G = SpatialInertia(
+                mass=self.mass,
+                p_PScm_E=M_GGo_G.get_com(),
+                G_SP_E=M_GGo_G.get_unit_inertia(),
+            )
         else:
-            M_GGo_G = CalcSpatialInertia(mesh=mesh_G,
-                                         density=self.density)
+            M_GGo_G = CalcSpatialInertia(mesh=mesh_G, density=self.density)
             volume = M_GGo_G.get_mass() / self.density
 
         p_GoGcm = M_GGo_G.get_com()
@@ -194,28 +205,30 @@ class MeshModelMaker:
             p_BoGo = -self.p_GoBo
             p_BoBcm = p_GoGcm - self.p_GoBo
 
-        _logger.info(f"    p_GoGcm: [{p_GoGcm[0]}, {p_GoGcm[1]}, "
-                     f"{p_GoGcm[2]}]")
-        _logger.info(f"    p_BoBcm: [{p_BoBcm[0]}, {p_BoBcm[1]}, "
-                     f"{p_BoBcm[2]}]")
+        _logger.info(f"    p_GoGcm: [{p_GoGcm[0]}, {p_GoGcm[1]}, {p_GoGcm[2]}]")
+        _logger.info(f"    p_BoBcm: [{p_BoBcm[0]}, {p_BoBcm[1]}, {p_BoBcm[2]}]")
 
         # The Empire State building conveniently exemplifies 1e6 cubic meters.
         # https://en.wikipedia.org/wiki/Empire_State_Building#Interior
         huge_volume = 1e6
         if volume > huge_volume:
-            _logger.warning(f"Mesh volume [{volume} m³] exceeds the volume"
-                            f" of the Empire State Building"
-                            f" [{huge_volume} m³]. Consider using the"
-                            f" --scale option.")
+            _logger.warning(
+                f"Mesh volume [{volume} m³] exceeds the volume"
+                f" of the Empire State Building"
+                f" [{huge_volume} m³]. Consider using the"
+                f" --scale option."
+            )
 
         # Medium sand tops out at 0.5 mm diameter, leading to the approximate
         # volume shown below.
         # https://en.wikipedia.org/wiki/Grain_size
         tiny_volume = 6e-11
         if volume < tiny_volume:
-            _logger.warning(f"Mesh volume [{volume} m³] is smaller than the"
-                            f" volume of a grain of sand [{tiny_volume} m³]."
-                            f" Consider using the --scale option.")
+            _logger.warning(
+                f"Mesh volume [{volume} m³] is smaller than the"
+                f" volume of a grain of sand [{tiny_volume} m³]."
+                f" Consider using the --scale option."
+            )
 
         # In SDF files, the inertia tensor is always reported around the center
         # of mass.
@@ -277,7 +290,8 @@ class MeshModelMaker:
             if not package_spec.exists():
                 raise ValueError(
                     "The indicated package.xml cannot be found: "
-                    f"'{package_spec}'")
+                    f"'{package_spec}'"
+                )
             abs_package = package_spec.resolve().absolute()
             abs_mesh = mesh_path.resolve().absolute()
             try:
@@ -286,7 +300,8 @@ class MeshModelMaker:
                 raise ValueError(
                     "When specifying the package, the mesh must be located in "
                     f"the file tree of the package.\n  package: {abs_package}"
-                    f"\n  mesh: {abs_mesh}")
+                    f"\n  mesh: {abs_mesh}"
+                )
             package_name = MeshModelMaker._read_package_name(package_spec)
             package_path = f"package://{package_name}/{mesh_rel_path}"
 
@@ -295,7 +310,8 @@ class MeshModelMaker:
             candidate_package_path = mesh_dir / "package.xml"
             if candidate_package_path.exists():
                 package_name = MeshModelMaker._read_package_name(
-                    candidate_package_path)
+                    candidate_package_path
+                )
             else:
                 # The name of the *package* is the name of the mesh file's
                 # directory.
@@ -309,7 +325,8 @@ class MeshModelMaker:
             return package_path
 
         raise ValueError(
-            f"Unrecognized package specification: '{package_spec}'.")
+            f"Unrecognized package specification: '{package_spec}'."
+        )
 
     @staticmethod
     def _read_package_name(package_path: Path):
@@ -320,6 +337,8 @@ class MeshModelMaker:
         root = xml.etree.ElementTree.parse(package_path).getroot()
         name_element = root.find("name")
         if name_element is None:
-            raise ValueError("The provided package.xml is missing a 'name' "
-                             f"element: {package_path}.")
+            raise ValueError(
+                "The provided package.xml is missing a 'name' "
+                f"element: {package_path}."
+            )
         return name_element.text.strip()
