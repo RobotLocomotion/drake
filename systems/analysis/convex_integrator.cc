@@ -14,7 +14,6 @@ using multibody::Joint;
 using multibody::JointIndex;
 using multibody::contact_solvers::internal::Bracket;
 using multibody::contact_solvers::internal::DoNewtonWithBisectionFallback;
-using multibody::internal::SpanningForest;
 
 template <typename T>
 ConvexIntegrator<T>::ConvexIntegrator(const System<T>& system,

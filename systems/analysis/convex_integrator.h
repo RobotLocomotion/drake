@@ -19,7 +19,6 @@ namespace systems {
 
 using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
-using multibody::SpatialForce;
 using multibody::contact_solvers::internal::BlockSparseCholeskySolver;
 using multibody::contact_solvers::internal::BlockSparseSymmetricMatrixT;
 using multibody::contact_solvers::internal::BlockSparsityPattern;
@@ -27,9 +26,6 @@ using multibody::contact_solvers::pooled_sap::PooledSapBuilder;
 using multibody::contact_solvers::pooled_sap::PooledSapModel;
 using multibody::contact_solvers::pooled_sap::SapData;
 using multibody::contact_solvers::pooled_sap::SearchDirectionData;
-using multibody::internal::AccelerationKinematicsCache;
-using multibody::internal::ArticulatedBodyForceCache;
-using multibody::internal::ArticulatedBodyInertiaCache;
 
 /**
  * Tolerances and other parameters for the convex integrator's solver.
