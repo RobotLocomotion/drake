@@ -136,6 +136,9 @@ class TestGeometryRender(unittest.TestCase):
                     should_warn=should_warn)
 
     def _do_test_render_vtk_gltf_warnings(self, *, should_warn):
+        # Verify that the render engine is available.
+        self.assertTrue(mut.kHasRenderEngineVtk)
+
         # Create the render engine.
         expected_level = logging.WARNING if should_warn else logging.DEBUG
         params = mut.RenderEngineVtkParams()
@@ -373,6 +376,9 @@ class TestGeometryRender(unittest.TestCase):
         # TODO(eric, duy): Test more properties.
 
     def test_render_engine_gltf_client_api(self):
+        # Verify that the render engine is available.
+        self.assertTrue(mut.kHasRenderEngineGltfClient)
+
         scene_graph = mut.SceneGraph()
         params = mut.RenderEngineGltfClientParams()
         scene_graph.AddRenderer("gltf_renderer",
