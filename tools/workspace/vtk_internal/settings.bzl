@@ -86,6 +86,12 @@ MODULE_SETTINGS = {
                 "VTK_USE_X",
             ],
         }),
+        "cmake_undefines": select({
+            ":osx": [
+                "VTK_USE_X",
+            ],
+            "//conditions:default": [],
+        }),
     },
 
     # Second, we'll configure the modules Drake needs (in alphabetical order).
