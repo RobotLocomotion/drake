@@ -288,6 +288,17 @@ const DiscreteStepMemory::Data<T>* get_discrete_step_memory(
       .template get<T>();
 }
 
+// Checks the given vector for NaNs, unless the vector is symbolic in which case
+// always returns false.
+template <typename EigenMatrix>
+bool HasNaN(const EigenMatrix& x) {
+  if constexpr (scalar_predicate<typename EigenMatrix::Scalar>::is_bool) {
+    return x.hasNaN();
+  } else {
+    return false;
+  }
+}
+
 }  // namespace
 
 template <typename T>
@@ -2625,7 +2636,7 @@ void MultibodyPlant<T>::AddAppliedExternalGeneralizedForces(
   if (applied_generalized_force_input.HasValue(context)) {
     const VectorX<T>& applied_generalized_force =
         applied_generalized_force_input.Eval(context);
-    if (applied_generalized_force.hasNaN()) {
+    if (HasNaN(applied_generalized_force)) {
       throw std::runtime_error(
           "Detected NaN in applied generalized force input port.");
     }
@@ -2673,9 +2684,9 @@ void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
   auto throw_if_contains_nan = [this](const ExternallyAppliedSpatialForce<T>&
                                           external_spatial_force) {
     const SpatialForce<T>& spatial_force = external_spatial_force.F_Bq_W;
-    if (external_spatial_force.p_BoBq_B.hasNaN() ||
-        spatial_force.rotational().hasNaN() ||
-        spatial_force.translational().hasNaN()) {
+    if (HasNaN(external_spatial_force.p_BoBq_B) ||
+        HasNaN(spatial_force.rotational()) ||
+        HasNaN(spatial_force.translational())) {
       throw std::runtime_error(fmt::format(
           "Spatial force applied on body {} contains NaN.",
           internal_tree().get_body(external_spatial_force.body_index).name()));
@@ -2789,7 +2800,7 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
 
     if (input_port.HasValue(context)) {
       const auto& u_instance = input_port.Eval(context);
-      if (u_instance.hasNaN()) {
+      if (HasNaN(u_instance)) {
         throw std::runtime_error(fmt::format(
             "Actuation input port for model instance {} contains NaN.",
             GetModelInstanceName(model_instance_index)));
@@ -2804,7 +2815,7 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
       this->get_input_port(input_port_indices_.actuation);
   if (actuation_port.HasValue(context)) {
     const auto& u = actuation_port.Eval(context);
-    if (u.hasNaN()) {
+    if (HasNaN(u)) {
       throw std::runtime_error(
           "Detected NaN in the actuation input port for all instances.");
     }
