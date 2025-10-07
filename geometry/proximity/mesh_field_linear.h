@@ -334,7 +334,9 @@ class MeshFieldLinear {
   template <typename C>
   promoted_numerical_t<C, T> EvaluateCartesian(int e,
                                                const Vector3<C>& p_MQ) const
+#ifndef DRAKE_DOXYGEN_CXX
     requires scalar_predicate<C>::is_bool
+#endif
   {
     if (is_gradient_field_degenerate_) {
       throw std::runtime_error("Gradient field is degenerate.");
