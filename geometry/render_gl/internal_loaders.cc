@@ -4,9 +4,9 @@
 #include <stdexcept>
 #include <string>
 
-#if !defined(__APPLE__)
-#include <vtkglad/include/glad/egl.h>
-#include <vtkglad/include/glad/glx.h>
+#ifdef HAS_RENDER_GL
+  #include <vtkglad/include/glad/egl.h>
+  #include <vtkglad/include/glad/glx.h>
 #endif
 
 #include <fmt/format.h>
@@ -23,9 +23,9 @@ constexpr char kTroubleshootingUrl[] =
     "https://drake.mit.edu/troubleshooting.html#gl-init";
 
 void GladLoaderLoadEgl() {
-#if defined(__APPLE__)
+#ifndef HAS_RENDER_GL
   // This is not reachable via Drake's public API.
-  throw std::logic_error("Drake's GladLoaderLoadEgl() is unavailable on macOS");
+  throw std::logic_error("Drake's GladLoaderLoadEgl() is unavailable.");
   unused(kTroubleshootingUrl);
 #else
   // Open the library at most once per process. At the time of this
@@ -46,9 +46,9 @@ void GladLoaderLoadEgl() {
 }
 
 void* GladLoaderLoadGlx() {
-#if defined(__APPLE__)
+#ifndef HAS_RENDER_GL
   // This is not reachable via Drake's public API.
-  throw std::logic_error("Drake's GladLoaderLoadGlx() is unavailable on macOS");
+  throw std::logic_error("Drake's GladLoaderLoadGlx() is unavailable.");
 #else
   // Turn Display into a singleton to make CI happy, since when we close and
   // reopen the display on CI, we can't request a new OpenGL context. This

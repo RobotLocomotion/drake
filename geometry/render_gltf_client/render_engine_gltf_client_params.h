@@ -53,7 +53,17 @@ struct RenderEngineGltfClientParams {
    The full url is constructed as `{base_url}/{render_endpoint}` where all
    trailing slashes in `base_url` and all leading slashes in `render_endpoint`
    have been removed. */
-  std::string GetUrl() const;
+  std::string GetUrl() const {
+    std::string url = base_url;
+    std::string endpoint = render_endpoint;
+    while (url.size() > 0 && url.back() == '/') {
+      url.pop_back();
+    }
+    while (endpoint.size() > 0 && endpoint.front() == '/') {
+      endpoint.erase(0, 1);
+    }
+    return url + "/" + endpoint;
+  }
 };
 
 }  // namespace geometry

@@ -422,9 +422,26 @@ drake_cc_googletest(
     ],
 )
 
+config_setting(
+    name = "no_render_engine_vtk",
+    flag_values = {
+        "//tools/flags:with_render_vtk": "False",
+    },
+)
+
 drake_cc_googletest(
     name = "camera_config_functions_test",
     allow_network = ["render_gltf_client"],
+    args = select({
+        # Most of these tests run with the default RenderEngineVtk, so if it's
+        # been disabled in this build then they're meaningless. We'll always
+        # run the RenderEngineUnsupported test regardless of configuration, as
+        # it explicitly checks the availability of each render engine.
+        "no_render_engine_vtk": [
+            "--gtest_filter=*RenderEngineUnsupported",
+        ],
+        "//conditions:default": [],
+    }),
     display = True,
     tags = vtk_test_tags(),
     deps = [
