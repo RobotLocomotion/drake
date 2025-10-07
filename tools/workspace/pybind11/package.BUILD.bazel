@@ -108,3 +108,5 @@ install(
 )
 
 python_lint()
+
+exports_files(["drake_repository_metadata.json"])

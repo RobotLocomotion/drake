@@ -19,3 +19,5 @@ install(
     name = "install",
     docs = ["COPYING"],
 )
+
+exports_files(["drake_repository_metadata.json"])

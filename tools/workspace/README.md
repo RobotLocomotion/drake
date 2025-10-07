@@ -318,6 +318,7 @@ roughly:
   `foo_repository()` macro or rule.
 - Load the module extension in `MODULE.bazel`.
 - Add a courtesy mention of the software in `doc/_pages/credits.md`.
+- List the `drake_repository_metadata.json` in `tools/workspace/BUILD.bazel`.
 
 When indicating licenses in the source, use the identifier from the
 [SPDX License List](https://spdx.org/licenses/).
