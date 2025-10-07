@@ -37,9 +37,11 @@ class SuctionGripper(LeafSystem):
 
         # Input ports take body poses and geometry info
         self.body_poses_input_port = self.DeclareAbstractInputPort(
-            "body_poses", AbstractValue.Make([RigidTransform()]))
+            "body_poses", AbstractValue.Make([RigidTransform()])
+        )
         self.query_object_input_port = self.DeclareAbstractInputPort(
-            "query_object", AbstractValue.Make(QueryObject()))
+            "query_object", AbstractValue.Make(QueryObject())
+        )
 
         # Output port sends externally applied spatial forces
         self.DeclareAbstractOutputPort(
@@ -164,9 +166,7 @@ def add_gripper_mbp_elements(plant, scene_graph):
             # Add a small body on the gripper base to model the pressure source
             pressure_source = plant.AddRigidBody(
                 f"pressure_source_{i}",
-                SpatialInertia.SolidSphereWithDensity(
-                    1000, 0.002
-                ),
+                SpatialInertia.SolidSphereWithDensity(1000, 0.002),
             )
             plant.RegisterVisualGeometry(
                 pressure_source,

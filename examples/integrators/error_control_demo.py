@@ -97,16 +97,71 @@ def clutter():
     use_hydroelastic = False
     initial_state = np.array(
         [
-            1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
         ]
     )
     sim_time = 3.0
@@ -120,12 +175,36 @@ def plate_and_spatula():
     name = "Plate and spatula"
     url = "package://drake/examples/integrators/plate_and_spatula.sdf"
     use_hydroelastic = True
-    initial_state = np.array([
-        1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.02,   # plate pos
-        1.0, 0.0, 0.0, 0.0, -0.05, 0.0, 0.08,  # spatula pos
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0,         # plate vel
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0,         # spatula vel
-    ])
+    initial_state = np.array(
+        [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.02,  # plate pos
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            -0.05,
+            0.0,
+            0.08,  # spatula pos
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,  # plate vel
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,  # spatula vel
+        ]
+    )
     sim_time = 2.0
     return SimulationExample(
         name, url, use_hydroelastic, initial_state, sim_time
@@ -320,8 +399,7 @@ if __name__ == "__main__":
         "--plot",
         action="store_true",
         help=(
-            "Whether to make plots of the step size over time. Default: "
-            "False."
+            "Whether to make plots of the step size over time. Default: False."
         ),
     )
     args = parser.parse_args()
@@ -352,7 +430,7 @@ if __name__ == "__main__":
         args.accuracy,
         max_step_size=args.max_step_size,
         meshcat=meshcat,
-        visualize=True
+        visualize=True,
     )
 
     if args.plot:

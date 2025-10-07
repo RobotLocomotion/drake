@@ -106,9 +106,7 @@ def create_bouncing_ball_sim(acc, dt, use_error_control):
     context = diagram.CreateDefaultContext()
 
     plant_context = plant.GetMyMutableContextFromRoot(context)
-    plant.SetFreeBodyPose(
-        plant_context, ball_body, RigidTransform([0, 0, 1.0])
-    )
+    plant.SetFreeBodyPose(plant_context, ball_body, RigidTransform([0, 0, 1.0]))
     plant.SetFreeBodySpatialVelocity(
         ball_body, SpatialVelocity(np.zeros(3), np.zeros(3)), plant_context
     )

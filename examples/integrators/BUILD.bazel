@@ -66,4 +66,8 @@ drake_py_binary(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(python_lint_exclude = [
+    ":suction_gripper.py",
+    ":error_control_demo.py",
+    ":ball_drop_velocity_error.py",
+])

@@ -94,7 +94,7 @@ def run_simulation(
 
     print(
         f"Simulating a {plant.num_positions()} DoF model",
-        f"for {sim_time} seconds with dt={time_step}..."
+        f"for {sim_time} seconds with dt={time_step}...",
     )
     if visualize:
         input("Press [ENTER] to continue...")
