@@ -39,11 +39,9 @@ GTEST_TEST(EigenPoolTest, ResizeForFixedSizedElements) {
   for (int i = 0; i < pool.size(); ++i) {
     pool[i] = i * S33;
   }
-  pool.PushBack(S33);
   for (int i = 0; i < 3; ++i) {
     EXPECT_EQ(pool[i], Matrix3d(i * S33));
   }
-  EXPECT_EQ(pool[3], S33);
 
   pool.Clear();
   EXPECT_EQ(pool.size(), 0);
@@ -95,47 +93,6 @@ GTEST_TEST(EigenPoolTest, ResizeForPoolsOfMatrixX) {
     pool[i] = A;
     const auto& const_pool = pool;
     EXPECT_EQ(const_pool[i], A);
-  }
-}
-
-GTEST_TEST(EigenPoolTest, PushBack) {
-  EigenPool<Eigen::Matrix3d> pool;
-  EXPECT_EQ(pool.size(), 0);
-
-  std::vector<Matrix3d> data = {S33, 2.0 * S33, 3.0 * S33};
-  pool.PushBack(data);
-  EXPECT_EQ(pool.size(), 3);
-
-  // Internally, pool should pretty much resolve to a
-  // std::vector<Eigen::Matrix3d>.
-  EXPECT_EQ(sizeof(pool), sizeof(std::vector<Eigen::Matrix3d>));
-
-  for (int i = 0; i < pool.size(); ++i) {
-    EXPECT_EQ(Matrix3d(pool[i]), data[i]);
-  }
-
-  // Clear and push again.
-  // There should be no memory allocation.
-  {
-    drake::test::LimitMalloc guard;
-    pool.Clear();
-    EXPECT_EQ(pool.size(), 0);
-    pool.PushBack(data);
-    EXPECT_EQ(pool.size(), 3);
-    for (int i = 0; i < pool.size(); ++i) {
-      EXPECT_EQ(Matrix3d(pool[i]), data[i]);
-    }
-  }
-
-  // We allow allocation here.
-  pool.PushBack(data);
-
-  EXPECT_EQ(pool.size(), 6);
-  for (int i = 0; i < ssize(data); ++i) {
-    EXPECT_EQ(Matrix3d(pool[i]), data[i]);
-  }
-  for (int i = 0; i < ssize(data); ++i) {
-    EXPECT_EQ(Matrix3d(pool[i + 3]), data[i]);
   }
 }
 
