@@ -30,9 +30,6 @@ class GainConstraintsDataPool {
   /* @param constraint_size The size (number of velocties) for the k-th gain
    * constraint. */
   void Resize(const std::vector<int>& constraint_size) {
-    // const int num_equations =
-    //     std::accumulate(constraint_size.begin(), constraint_size.end(), 0);
-    // cost_pool_.resize(num_equations);
     gamma_pool_.Resize(constraint_size);
     G_pool_.Resize(constraint_size, constraint_size);
 
@@ -55,8 +52,7 @@ class GainConstraintsDataPool {
   T& cost() { return cost_; }
 
  private:
-  T cost_{0.0};  // Total cost over all gain constraints.
-  // EigenPool<VectorX<T>> cost_pool_;   // Cost per constraint.
+  T cost_{0.0};                       // Total cost over all gain constraints.
   EigenPool<VectorX<T>> gamma_pool_;  // Generalized impulses per constraint.
   EigenPool<MatrixX<T>> G_pool_;      // G = -∂γ/∂v ≥ is Diagonal.
 };

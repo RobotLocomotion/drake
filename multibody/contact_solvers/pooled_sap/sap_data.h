@@ -133,8 +133,6 @@ class SapData {
 
 template <typename T>
 struct SearchDirectionData {
-  // DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SearchDirectionData);
-
   VectorX<T> w;  // Search direction.
 
   // Precomputed terms:

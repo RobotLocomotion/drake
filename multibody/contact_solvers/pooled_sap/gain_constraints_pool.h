@@ -96,10 +96,6 @@ class PooledSapModel<T>::GainConstraintsPool {
     return index;
   }
 
-  /* Gain constraints only add block-diagonal elements to the Hessian, and thus
-  this method has nothing new to add. */
-  // void CalcSparsityPattern(std::vector<std::vector<int>>* sparsity) const;
-
   void ResizeData(GainConstraintsDataPool<T>* gain_data) const;
 
   void CalcData(const VectorX<T>& v,
@@ -191,7 +187,3 @@ class PooledSapModel<T>::GainConstraintsPool {
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
-
-// DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-//     class ::drake::multibody::contact_solvers::pooled_sap::
-//         GainConstraintsPool);

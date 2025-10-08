@@ -540,7 +540,6 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateHessian(
 
       // Accumulate (upper triangular) Hessian.
       auto H_AA = GetMatrixXScratch(nv_a, nv_a);
-      // auto H_AA = hessian->block(start_a, start_a, nv_a, nv_a);
       const Matrix6<T> G_Phi = ShiftFromTheRight(G_Bp, p_AB_W);  // = Gₚ⋅Φ
       const Matrix6<T> G_Ap = ShiftFromTheLeft(G_Phi, p_AB_W);   // = Φᵀ⋅Gₚ⋅Φ
 
@@ -607,10 +606,6 @@ void PooledSapModel<T>::PatchConstraintsPool::CalcSparsityPattern(
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
-
-// DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-//     class ::drake::multibody::contact_solvers::pooled_sap::
-//         PatchConstraintsPool);
 
 template class ::drake::multibody::contact_solvers::pooled_sap::PooledSapModel<
     double>::PatchConstraintsPool;

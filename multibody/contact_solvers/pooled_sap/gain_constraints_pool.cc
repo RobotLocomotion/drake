@@ -28,7 +28,6 @@ void PooledSapModel<T>::GainConstraintsPool::CalcData(
 
   using VectorXView = typename EigenPool<VectorX<T>>::ElementView;
   using MatrixXView = typename EigenPool<MatrixX<T>>::ElementView;
-  // using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstElementView;
 
   T& cost = gain_data->cost();
   cost = 0;
@@ -61,7 +60,6 @@ template <typename T>
 void PooledSapModel<T>::GainConstraintsPool::AccumulateHessian(
     const SapData<T>& data,
     internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
-  // using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstElementView;
   using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstElementView;
 
   const GainConstraintsDataPool<T>& gain_data =

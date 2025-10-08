@@ -109,10 +109,6 @@ class PooledSapModel {
   class PatchConstraintsPool;
   class GainConstraintsPool;
 
-  // TODO(amcastro-tri).
-  // class LimitConstraintsPool;
-  // class ActuationConstraintsPool;
-
   using ConstSpatialVelocityJacobianView =
       typename EigenPool<Matrix6X<T>>::ConstElementView;
 

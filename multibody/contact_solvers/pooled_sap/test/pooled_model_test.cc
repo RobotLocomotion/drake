@@ -318,12 +318,6 @@ GTEST_TEST(PooledSapModel, SingleVsMultipleCliques) {
   EXPECT_TRUE(CompareMatrices(data_single.cache().gradient,
                               data_multiple.cache().gradient, kEps,
                               MatrixCompareType::relative));
-
-#if 0
-  EXPECT_TRUE(CompareMatrices(data_single.cache().hessian.MakeDenseMatrix(),
-                              data_multiple.cache().hessian.MakeDenseMatrix(),
-                              kEps, MatrixCompareType::relative));
-#endif
 }
 
 GTEST_TEST(PooledSapModel, LimitMallocOnCalcData) {
@@ -362,8 +356,6 @@ GTEST_TEST(PooledSapModel, CostAlongLine) {
   // Compute data.
   const int nv = model.num_velocities();
   const VectorX<AutoDiffXd> v = VectorXd::LinSpaced(nv, 0.05, 0.01);
-  // VectorX<AutoDiffXd> v(nv);
-  // math::InitializeAutoDiff(v_values, &v);
   model.CalcData(v, &data);
 
   // Allocate search direction.
@@ -413,7 +405,6 @@ GTEST_TEST(PooledSapModel, GainConstraint) {
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
   EXPECT_EQ(model.num_constraints(), 3);
-  // const int nv = model.num_velocities();
 
   SapData<AutoDiffXd> data;
   model.ResizeData(&data);
@@ -599,7 +590,6 @@ GTEST_TEST(PooledSapModel, LimitConstraint) {
 
   const AutoDiffXd dt = model.time_step();
   VectorX<AutoDiffXd> q = q0 + dt * v;
-  // const VectorXd q_value = math::ExtractValue(q);
   fmt::print("q: {}\n", fmt_eigen(q.transpose()));
 
   const LimitConstraintsDataPool<AutoDiffXd> limits_data =
@@ -644,7 +634,6 @@ GTEST_TEST(PooledSapModel, LimitConstraint) {
 }
 
 GTEST_TEST(PooledSapModel, CouplerConstraint) {
-  // using T = AutoDiffXd;
   PooledSapModel<AutoDiffXd> model;
   MakeModel(&model, false /* multiple cliques */);
   EXPECT_EQ(model.num_cliques(), 3);
