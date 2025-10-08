@@ -3478,7 +3478,7 @@ enabled only if every contained subsystem supports that pair.
 See system_scalar_conversion for detailed background and examples
 related to scalar-type conversion support.)""";
           // Source: drake/systems/framework/diagram.h
-          const char* doc_2args_drakesystemsSystemScalarConverter_constDiagram =
+          const char* doc_2args_SystemScalarConverter_constDiagram =
 R"""((Advanced) Scalar-converting constructor, for used by derived classes
 that are performing a conversion and also need to supply a
 ``converter`` that preserves subtypes for additional conversions.
@@ -6352,7 +6352,7 @@ See also:
         // Symbol: drake::systems::LeafSystem::DeclareInequalityConstraint
         struct /* DeclareInequalityConstraint */ {
           // Source: drake/systems/framework/leaf_system.h
-          const char* doc_3args_voidMySystemconstContextconst_drakesystemsSystemConstraintBounds_stdstring =
+          const char* doc_3args_voidMySystemconstContextconst_SystemConstraintBounds_stdstring =
 R"""(Declares a system constraint of the form bounds.lower() <=
 calc(context) <= bounds.upper() by specifying a member function to use
 to calculate the (VectorX) constraint value with a signature:
@@ -7631,7 +7631,7 @@ Parameter ``size``:
         // Symbol: drake::systems::PortBase::PortEvalCast
         struct /* PortEvalCast */ {
           // Source: drake/systems/framework/port_base.h
-          const char* doc_1args_constdrakeAbstractValue =
+          const char* doc_1args_constAbstractValue =
 R"""(Pull a value of a given type from an abstract value or issue a nice
 message if the type is not correct.)""";
           // Source: drake/systems/framework/port_base.h
@@ -7738,6 +7738,16 @@ owning System.)""";
         const char* doc =
 R"""(All system ports are either vectors of Eigen scalars, or black-box
 AbstractValues which may contain any type.)""";
+        // Symbol: drake::systems::PortDataType::kAbstractValued
+        struct /* kAbstractValued */ {
+          // Source: drake/systems/framework/framework_common.h
+          const char* doc = R"""()""";
+        } kAbstractValued;
+        // Symbol: drake::systems::PortDataType::kVectorValued
+        struct /* kVectorValued */ {
+          // Source: drake/systems/framework/framework_common.h
+          const char* doc = R"""()""";
+        } kVectorValued;
       } PortDataType;
       // Symbol: drake::systems::PublishEvent
       struct /* PublishEvent */ {
@@ -12751,16 +12761,6 @@ R"""(Gets a pointer to the continuous state at the right end of the
 isolation window.)""";
         } xcf;
       } WitnessTriggeredEventData;
-      // Symbol: drake::systems::kAbstractValued
-      struct /* kAbstractValued */ {
-        // Source: drake/systems/framework/framework_common.h
-        const char* doc = R"""()""";
-      } kAbstractValued;
-      // Symbol: drake::systems::kVectorValued
-      struct /* kVectorValued */ {
-        // Source: drake/systems/framework/framework_common.h
-        const char* doc = R"""()""";
-      } kVectorValued;
       // Symbol: drake::systems::scalar_conversion
       struct /* scalar_conversion */ {
         // Symbol: drake::systems::scalar_conversion::FromDoubleTraits
