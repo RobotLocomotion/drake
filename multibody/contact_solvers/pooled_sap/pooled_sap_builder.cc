@@ -569,6 +569,7 @@ void PooledSapBuilder<T>::AddActuationGains(const VectorX<T>& Ku,
   if (plant().num_actuators() == 0) return;
 
   auto& gain_constraints = model->gain_constraints_pool();
+  gain_constraints.Resize();
 
   for (int c = 0; c < model->num_cliques(); ++c) {
     if (model->params().clique_nu[c] == 0) continue;
