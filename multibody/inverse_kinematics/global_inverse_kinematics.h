@@ -361,19 +361,51 @@ class GlobalInverseKinematics {
                                bool linear_constraint_approximation = false);
 
   /**
-   * Adds a cost pushing the value of a joint to equal its nominal value.
-   * @note Cf. AddPostureCost, which penalizes deviations in body poses from
-   * those that are achieved from the goal configuration.
-   * @param body_index The joint connecting the parent link to this body will
-   * have a cost applied.
-   * @param nominal_value The cost is minimized when the joint is equal to this
-   * value.
-   * @param weight The weight applied to this cost.
-   * @param norm Uses the L1 norm cost if norm is 1, and L2 norm cost if norm
-   * is 2. Throws otherwise.
-   * @param squared Ignored for L1 norm cost. If using L2 norm cost, specify
-   * whether or not to square the cost.
-   * */
+   * Adds a cost that penalizes deviation of a revolute joint from a specified
+   * nominal angle.
+   * For the joint connecting the specified body to its parent, this method adds
+   * a cost that encourages the joint’s orientation to align with the nominal
+   * rotation nominal_value about its revolute axis. The cost is evaluated by
+   * comparing the rotation of a small set of unit vectors orthogonal to the
+   * joint axis, as expressed in both the parent and child frames.
+   *
+   * Specifically, let
+   * R_WB be the rotation matrix of the child body frame B in world frame W.
+   * R_WP be the rotation matrix of the parent body frame P in world frame W.
+   * X_CJc and X_PJp be the fixed poses of the joint frames in the child and
+   * parent body frames, respectively.
+   * R(k, nominal_value) be the rotation about the joint’s revolute axis by the
+   * nominal angle.
+   * For a small set of unit vectors vᵢ orthogonal to the joint axis, the
+   * cost penalizes
+   * ∑ᵢ ‖ R_WB X_CJc vᵢ − R_WP X_PJp R(k, nominal_value) vᵢ ‖ₙ
+   * where ‖·‖ₙ denotes either the L1 or L2 norm (depending on norm), and the
+   * result is scaled by weight. If squared is true and norm = 2, the
+   * squared 2-norm is used instead.
+   *
+   * This cost can be interpreted as a joint centering term that drives the
+   * joint angle toward its nominal value, independently of the global posture.
+   * This contrasts with AddPostureCost(), which penalizes deviations in body
+   * poses from those achieved at a target configuration. For approximating a
+   * true quadratic joint centering cost, L2-squared is the most accurate (and
+   * slowest), followed by L2, L1, and then the posture cost is the least
+   * accurate (but fastest).
+   *
+   * @param body_index The index of the child body whose inboard joint will have
+   * this centering cost applied.
+   * @param nominal_value The nominal joint angle (in radians). The cost is
+   * minimized when the joint’s rotation equals this value.
+   * @param weight The scalar weight applied to this cost.
+   * @param norm Specifies which norm to use in the cost:
+   * 1: use an L1 norm on the unit-vector differences.
+   * 2: use an L2 norm (optionally squared).
+   * @param squared If true and norm = 2, applies the squared L2 norm cost;
+   * otherwise, applies the unsquared version.
+   * @throws std::exception if the body has a floating base, if its joint is not
+   * a revolute joint, or if norm is not 1 or 2.
+   * @note Only revolute joints are currently supported. For floating bodies,
+   * use AddPostureCost() instead.
+   */
   void AddJointCenteringCost(BodyIndex body_index, double nominal_value,
                              double weight = 1.0, int norm = 1,
                              bool squared = false);
