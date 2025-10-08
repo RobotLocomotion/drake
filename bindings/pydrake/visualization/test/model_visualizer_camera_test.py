@@ -36,27 +36,15 @@ class TestModelVisualizerCamera(unittest.TestCase):
                 {
                     "type": "camera_pose",
                     "camera_pose": [
-                        1,
-                        0,
-                        0,
-                        0,
-                        0,
-                        1,
-                        0,
-                        0,
-                        0,
-                        0,
-                        1,
-                        0,
-                        1,
-                        2,
-                        3,
-                        1,
+                        1, 0, 0, 0,
+                        0, 1, 0, 0,
+                        0, 0, 1, 0,
+                        1, 2, 3, 1,
                     ],
                     "is_perspective": True,
                 }
             )
-        )
+        )  # fmt: skip
         # Transform y-up to z-up, and from facing in the +z direction to the -z
         # direction (with concomitant flip of the y-axis).
         X_WB_expected = RigidTransform(

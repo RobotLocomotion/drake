@@ -825,35 +825,18 @@ Kd 1 1 0
         geom0.string_data = "tetrahedron"
         geom0.float_data = [
             # 4 vertices and 4 triangles
-            4.0,
-            4.0,
+            4.0, 4.0,
             # 4 vertices at the origin and on the three axes.
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
+            0.0, 0.0, 0.0,
+            1.0, 0.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 0.0, 1.0,
             # 4 triangles, use float for integer vertex indices
-            0.0,
-            2.0,
-            1.0,
-            0.0,
-            1.0,
-            3.0,
-            0.0,
-            3.0,
-            2.0,
-            1.0,
-            2.0,
-            3.0,
-        ]
+            0.0, 2.0, 1.0,
+            0.0, 1.0, 3.0,
+            0.0, 3.0, 2.0,
+            1.0, 2.0, 3.0,
+        ]  # fmt: skip
         geom0.num_float_data = len(geom0.float_data)
         message = lcmt_viewer_link_data()
         message.name = "test_deformable_geometry"
