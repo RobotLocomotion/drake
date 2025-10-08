@@ -15,9 +15,12 @@ def _get_module_from_stack(frame=2):
 
 
 def _is_pybind11_type_error(e):
-    return "incompatible function arguments" in str(
-        e
-    ) or "incompatible constructor arguments" in str(e)
+    return any(
+        [
+            "incompatible function arguments" in str(e),
+            "incompatible constructor arguments" in str(e),
+        ]
+    )
 
 
 def get_or_init(scope, name, template_cls, *args, **kwargs):
@@ -106,19 +109,15 @@ class TemplateBase:
         """
         if len(args) == 0 and len(kwargs) == 0:
             raise TypeError(
-                (
-                    "{}: incompatible function arguments for template: Cannot "
-                    "call without arguments"
-                ).format(self.name)
+                f"{self.name}: incompatible function arguments for template: "
+                "Cannot call without arguments"
             )
         result = self._call_internal(*args, **kwargs)
         if result is not None:
             return result
         raise TypeError(
-            (
-                "{}: incompatible function arguments for template: No "
-                "compatible instantiations"
-            ).format(self.name)
+            f"{self.name}: incompatible function arguments for template: "
+            "No compatible instantiations"
         )
 
     def _call_internal(self, *args, **kwargs):
@@ -192,9 +191,7 @@ class TemplateBase:
             )
         elif instantiation is None and throw_error:
             raise RuntimeError(
-                "Invalid instantiation: {}".format(
-                    self._instantiation_name(param)
-                )
+                f"Invalid instantiation: {self._instantiation_name(param)}"
             )
         deprecation = self._deprecation_map.get(param)
         if deprecation is not None:
@@ -211,7 +208,7 @@ class TemplateBase:
         param = get_param_canonical(self._param_resolve(param))
         if param in self._instantiation_map:
             raise RuntimeError(
-                "Parameter instantiation already registered: {}".format(param)
+                f"Parameter instantiation already registered: {param}"
             )
         # Register it.
         self.param_list.append(param)
@@ -506,7 +503,7 @@ class TemplateMethod(TemplateBase):
         raise RuntimeError("Read-only property")
 
     def __str__(self):
-        return "<unbound TemplateMethod {}>".format(self._full_name())
+        return f"<unbound TemplateMethod {self._full_name()}>"
 
     def _full_name(self):
         return "{}.{}".format(self._cls.__name__, self.name)

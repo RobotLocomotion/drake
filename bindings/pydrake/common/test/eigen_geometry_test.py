@@ -78,7 +78,13 @@ class TestEigenGeometry(unittest.TestCase):
         # Alternative constructors.
         q_other = Quaternion(wxyz=q_wxyz)
         numpy_compare.assert_float_equal(q_other.wxyz(), q_wxyz)
-        R = np.array([[0.0, 0, 1], [1, 0, 0], [0, 1, 0]])
+        R = np.array(
+            [
+                [0.0, 0, 1],  # BR
+                [1, 0, 0],
+                [0, 1, 0],
+            ]
+        )
         q_wxyz_expected = np.array([0.5, 0.5, 0.5, 0.5])
         q_other = Quaternion(q_wxyz_expected)
         numpy_compare.assert_float_equal(q_other.rotation(), R)
@@ -175,7 +181,13 @@ class TestEigenGeometry(unittest.TestCase):
         transform = Isometry3.Identity()
         numpy_compare.assert_float_equal(transform.matrix(), X_I_np)
         # - Constructor with (R, p)
-        R_AB = np.array([[0.0, 1, 0], [-1, 0, 0], [0, 0, 1]])
+        R_AB = np.array(
+            [
+                [0.0, 1, 0],  # BR
+                [-1, 0, 0],
+                [0, 0, 1],
+            ]
+        )
         p_AB = np.array([1.0, 2, 3])
         X_AB_np = np.eye(4)
         X_AB_np[:3, :3] = R_AB
@@ -244,7 +256,13 @@ class TestEigenGeometry(unittest.TestCase):
         numpy_compare.assert_float_equal(value_identity.axis(), [1.0, 0, 0])
 
         # Construct with rotation matrix.
-        R = np.array([[0.0, 1, 0], [-1, 0, 0], [0, 0, 1]])
+        R = np.array(
+            [
+                [0.0, 1, 0],  # BR
+                [-1, 0, 0],
+                [0, 0, 1],
+            ]
+        )
         value = AngleAxis(rotation=R)
         numpy_compare.assert_float_allclose(value.rotation(), R)
         numpy_compare.assert_float_allclose(copy.copy(value).rotation(), R)

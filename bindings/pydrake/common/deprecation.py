@@ -68,7 +68,7 @@ class ModuleShim:
                     raise e
                 else:
                     raise AttributeError(
-                        "'module' object has no attribute '{}'".format(name)
+                        f"'module' object has no attribute '{name}'"
                     )
             setattr(m, name, value)
             return value
