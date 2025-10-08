@@ -259,7 +259,12 @@ class TestModelVisualizer(unittest.TestCase):
         dut.Run(loop_once=True)
         self.assertTrue(
             meshcat._GetPackedProperty(
-                path="contact_forces/hydroelastic/ground_plane_box+link/force_C_W",
+                path="+".join(
+                    [
+                        "contact_forces/hydroelastic/ground_plane_box",
+                        "link/force_C_W",
+                    ]
+                ),
                 property="visible",
             )
         )
