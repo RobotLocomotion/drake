@@ -66,7 +66,11 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         scene_graph,
         draw_period=None,
         T_VW=np.array(
-            [[1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]
+            [
+                [1.0, 0.0, 0.0, 0.0],  # BR
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
         ),
         xlim=[-1.0, 1],
         ylim=[-1, 1],
