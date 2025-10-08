@@ -45,7 +45,7 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
     A.template block<6, 6>(0, 0) = A1;
     A.template block<6, 6>(6, 6) = A2;
     A.template block<6, 6>(12, 12) = A3;
-    params->A.PushBack(A);
+    params->A.Add(nv, nv) = A;
   } else {
     params->A.Add(6, 6) = A1;
     params->A.Add(6, 6) = A2;

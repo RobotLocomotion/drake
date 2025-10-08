@@ -56,15 +56,6 @@ struct DynamicSizeStorage {
 
   DynamicSizeStorage() = default;
 
-  /* Resizes pool to store VectorX elements of the specified sizes. */
-  void Resize(const std::vector<int>& sizes) {
-    static_assert(is_dynamic_size_vector_v<EigenType>);
-    Reserve(sizes);
-    for (int sz : sizes) {
-      Add(sz, 1);
-    }
-  }
-
   /* Reserves pool to store VectorX elements of the specified sizes. */
   void Reserve(const std::vector<int>& sizes) {
     static_assert(is_dynamic_size_vector_v<EigenType>);
@@ -74,6 +65,16 @@ struct DynamicSizeStorage {
     blocks_.reserve(ssize(sizes));
   }
 
+  /* Resizes pool to store VectorX elements of the specified sizes. */
+  void Resize(const std::vector<int>& sizes) {
+    static_assert(is_dynamic_size_vector_v<EigenType>);
+    Reserve(sizes);
+    for (int sz : sizes) {
+      Add(sz, 1);
+    }
+  }
+
+  /* Resizes pool to store MatrixX elements of the specified sizes. */
   void Resize(const std::vector<int>& rows, const std::vector<int>& cols) {
     static_assert(!is_fixed_size_v<EigenType>);
     DRAKE_ASSERT(rows.size() == cols.size());
