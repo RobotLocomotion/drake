@@ -4,11 +4,11 @@ To see this interactively:
   bazel run //bindings/pydrake:py/math_example
 """
 
+import os
+
 # To be a meaningful unit test, we must render the figure somehow.
 # The Agg backend (creating a PNG image) is suitably cross-platform.
 # Users should feel free to use a different back-end in their own code.
-import os
-
 os.environ["MPLBACKEND"] = "Agg"  # noqa
 
 # Now that the environment is set up, it's safe to import matplotlib, etc.
