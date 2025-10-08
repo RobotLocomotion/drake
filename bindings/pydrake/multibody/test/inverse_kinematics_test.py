@@ -1019,10 +1019,8 @@ class TestGlobalInverseKinematics(unittest.TestCase):
             ),
         )
         self.assertEqual(options.num_intervals_per_half_axis, 2)
-        self.assertEqual(
-            options.approach,
-            mp.MixedIntegerRotationConstraintGenerator.Approach.kBilinearMcCormick,
-        )
+        mircg = mp.MixedIntegerRotationConstraintGenerator
+        self.assertEqual(options.approach, mircg.Approach.kBilinearMcCormick)
         self.assertEqual(
             options.interval_binning, mp.IntervalBinning.kLogarithmic
         )

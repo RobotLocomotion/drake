@@ -168,7 +168,7 @@ class TestParsing(unittest.TestCase):
         self.assertIsInstance(results[0], ModelInstanceIndex)
 
     def test_parser_url(self):
-        """Tests for AddModelsFromUrl as well as its related AddModel overload."""
+        """Tests AddModelsFromUrl as well as its related AddModel overload."""
         sdf_url = "package://drake/multibody/benchmarks/acrobot/acrobot.sdf"
 
         plant = MultibodyPlant(time_step=0.01)
