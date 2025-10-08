@@ -51,6 +51,7 @@ from .trajectories import *
 # Submodules.
 from .common.all import *
 from .geometry.all import *
+
 # - `.gym` is an optional dependency, so is excluded from `all`.
 # - `.examples` does not offer public Drake library symbols.
 from .multibody.all import *
@@ -63,6 +64,7 @@ from .visualization import *
 # - Ensure .math imports win over less capable .symbolic or .autodiffutils
 # overloads.
 from .math import *
+
 # - Ensure symbolic.Polynomial wins (#18353).
 from .symbolic import Polynomial
 
