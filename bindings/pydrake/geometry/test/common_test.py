@@ -721,7 +721,14 @@ class TestGeometryCore(unittest.TestCase):
         # Throw away Convex; we just want to make sure the scalar-valued
         # `scale` parameter is bound.
         convex = mut.Convex(
-            points=np.array(((0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1))).T,
+            points=np.array(
+                (
+                    (0, 0, 0),  # BR
+                    (1, 0, 0),
+                    (0, 1, 0),
+                    (0, 0, 1),
+                )
+            ).T,
             label="test_label",
             scale=2,
         )
@@ -729,7 +736,14 @@ class TestGeometryCore(unittest.TestCase):
         # For the test, we'll test the non-uniform scale API; the two are
         # otherwise equivalent.
         convex = mut.Convex(
-            points=np.array(((0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1))).T,
+            points=np.array(
+                (
+                    (0, 0, 0),  # BR
+                    (1, 0, 0),
+                    (0, 1, 0),
+                    (0, 0, 1),
+                )
+            ).T,
             label="test_label",
             scale3=[1, 2, 3],
         )
@@ -821,15 +835,15 @@ class TestGeometryCore(unittest.TestCase):
             ref_mesh = mesh_type(filename="/path/to/file.obj", scale=2)
             current_data = pickle.dumps(ref_mesh)
             v1_33_data = (
-                b"\x80\x04\x95@\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c"
+                b"\x80\x04\x95@\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c"  # noqa
                 + pickle_str
-                + b"\x94\x93\x94)\x81\x94\x8c\x11/path/to/file.obj\x94G@\x00\x00\x00\x00\x00\x00\x00\x86\x94b."
-            )  # noqa
+                + b"\x94\x93\x94)\x81\x94\x8c\x11/path/to/file.obj\x94G@\x00\x00\x00\x00\x00\x00\x00\x86\x94b."  # noqa
+            )
             v1_39_data = (
-                b"\x80\x04\x95\x83\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c"
+                b"\x80\x04\x95\x83\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c"  # noqa
                 + pickle_str
-                + b"\x94\x93\x94)\x81\x94h\x00\x8c\nMeshSource\x94\x93\x94)\x81\x94}\x94\x8c\x04path\x94\x8c\x07pathlib\x94\x8c\tPosixPath\x94\x93\x94(\x8c\x01/\x94\x8c\x04path\x94\x8c\x02to\x94\x8c\x08file.obj\x94t\x94R\x94sbG@\x00\x00\x00\x00\x00\x00\x00\x86\x94b."
-            )  # noqa
+                + b"\x94\x93\x94)\x81\x94h\x00\x8c\nMeshSource\x94\x93\x94)\x81\x94}\x94\x8c\x04path\x94\x8c\x07pathlib\x94\x8c\tPosixPath\x94\x93\x94(\x8c\x01/\x94\x8c\x04path\x94\x8c\x02to\x94\x8c\x08file.obj\x94t\x94R\x94sbG@\x00\x00\x00\x00\x00\x00\x00\x86\x94b."  # noqa
+            )
             for legacy_data in (v1_33_data, v1_39_data):
                 # Confirm legacy pickled data *is* different.
                 self.assertNotEqual(legacy_data, current_data)
