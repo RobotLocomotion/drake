@@ -2215,6 +2215,34 @@ kinematics constraints, with some error. The approach is described in
 Global Inverse Kinematics via Mixed-integer Convex Optimization by
 Hongkai Dai, Gregory Izatt and Russ Tedrake, International Journal of
 Robotics Research, 2019.)""";
+        // Symbol: drake::multibody::GlobalInverseKinematics::AddJointCenteringCost
+        struct /* AddJointCenteringCost */ {
+          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
+          const char* doc =
+R"""(Adds a cost pushing the value of a joint to equal its nominal value.
+
+Note:
+    Cf. AddPostureCost, which penalizes deviations in body poses from
+    those that are achieved from the goal configuration.
+
+Parameter ``body_index``:
+    The joint connecting the parent link to this body will have a cost
+    applied.
+
+Parameter ``nominal_value``:
+    The cost is minimized when the joint is equal to this value.
+
+Parameter ``weight``:
+    The weight applied to this cost.
+
+Parameter ``norm``:
+    Uses the L1 norm cost if norm is 1, and L2 norm cost if norm is 2.
+    Throws otherwise.
+
+Parameter ``squared``:
+    Ignored for L1 norm cost. If using L2 norm cost, specify whether
+    or not to square the cost.)""";
+        } AddJointCenteringCost;
         // Symbol: drake::multibody::GlobalInverseKinematics::AddJointLimitConstraint
         struct /* AddJointLimitConstraint */ {
           // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h

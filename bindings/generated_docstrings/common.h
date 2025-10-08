@@ -3007,16 +3007,7 @@ When using fmt < 8, this is a no-op.)""";
     // Symbol: drake::fmt_streamed
     struct /* fmt_streamed */ {
       // Source: drake/common/fmt_ostream.h
-      const char* doc =
-R"""(When using fmt >= 9, this is an alias for <a
-href="https://fmt.dev/latest/api.html#ostream-api">fmt::streamed</a>.
-When using fmt < 9, this uses a polyfill instead.
-
-Within Drake, the nominal use for ``fmt::streamed`` is when formatting
-third-party types that provide ``operator<<`` support but not
-``fmt::formatter<T>`` support. Once we stop using
-``FMT_DEPRECATED_OSTREAM=1``, compilation errors will help you
-understand where you are required to use this wrapper.)""";
+      const char* doc = R"""()""";
     } fmt_streamed;
     // Symbol: drake::hash_append
     struct /* hash_append */ {
@@ -3265,6 +3256,18 @@ R"""(Determines whether ``x > y`` using ``operator<``.)""";
       const char* doc =
 R"""(Determines whether ``x >= y`` using ``operator<``.)""";
     } operator_ge;
+    // Symbol: drake::ostream_formatter
+    struct /* ostream_formatter */ {
+      // Source: drake/common/fmt_ostream.h
+      const char* doc =
+R"""(When using fmt >= 9, this is an alias for fmt::ostream_formatter. When
+using fmt < 9, this uses a polyfill instead.)""";
+      // Symbol: drake::ostream_formatter::format
+      struct /* format */ {
+        // Source: drake/common/fmt_ostream.h
+        const char* doc = R"""()""";
+      } format;
+    } ostream_formatter;
     // Symbol: drake::pow
     struct /* pow */ {
       // Source: drake/common/polynomial.h
