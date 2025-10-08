@@ -13,3 +13,5 @@ py_library(
     srcs = glob(["xmlrunner/**"], allow_empty = False),
     imports = ["."],
 )
+
+exports_files(["drake_repository_metadata.json"])

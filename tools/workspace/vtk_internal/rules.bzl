@@ -570,11 +570,50 @@ def generate_common_core_array_instantiations():
         srcs = result,
     )
 
+def generate_common_core_implicit_arrays():
+    """Mimics a subset of the vtkImplicitArrays.cmake logic.
+    Generates `*.h` and `*.cxx` files.
+    """
+    name = "common_core_implicit_arrays"
+    result_hdrs = []
+    result_srcs = []
+    for backend in ["Constant"]:
+        for ctype in (
+            "unsigned char",
+        ):
+            cased_type = _ctype_to_vtk_camel_type(ctype)[len("vtk"):]
+            class_name = "vtk{}{}Array".format(backend, cased_type)
+            in_hdr = "Common/Core/vtk{}TypedArray.h.in".format(backend)
+            out_hdr = "Common/Core/{}.h".format(class_name)
+            in_src = "Common/Core/vtk{}TypedArray.cxx.in".format(backend)
+            out_src = "Common/Core/{}.cxx".format(class_name)
+            cmake_configure_files(
+                name = "_genrule_implicit_arrays_{}".format(class_name),
+                srcs = [in_hdr, in_src],
+                outs = [out_hdr, out_src],
+                defines = [
+                    "CONCRETE_TYPE={}".format(ctype),
+                    "VTK_TYPE_NAME={}".format(cased_type),
+                ],
+                strict = True,
+            )
+            result_hdrs.append(out_hdr)
+            result_srcs.append(out_src)
+    native.filegroup(
+        name = name + "_hdrs",
+        srcs = result_hdrs,
+    )
+    native.filegroup(
+        name = name + "_srcs",
+        srcs = result_srcs,
+    )
+
 def generate_common_core_sources():
     generate_common_core_array_dispatch_array_list()
     generate_common_core_type_list_macros()
     generate_common_core_vtk_type_arrays()
     generate_common_core_array_instantiations()
+    generate_common_core_implicit_arrays()
 
 def _path_stem(src):
     """Returns e.g. "quux" when given "foo/bar/quux.ext".

@@ -32,3 +32,5 @@ install(
     name = "install",
     docs = ["LICENSE.MIT"],
 )
+
+exports_files(["drake_repository_metadata.json"])

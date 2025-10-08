@@ -305,3 +305,5 @@ install(
         "LICENSE",
     ],
 )
+
+exports_files(["drake_repository_metadata.json"])
