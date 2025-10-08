@@ -102,7 +102,7 @@ struct DynamicSizeStorage {
     blocks_.clear();
   }
 
-  void PushBack(const EigenType& data) { AddAndCopy(data); }
+  void PushBack(const EigenType& data) { Add(data.rows(), data.cols()) = data; }
 
   // Capcity to store Eigen elements.
   int elements_capacity() const { return blocks_.capacity(); }
@@ -118,12 +118,6 @@ struct DynamicSizeStorage {
     blocks_.push_back({next_data_index_, rows, cols});
     next_data_index_ += size;
     return at(index);
-  }
-
-  // Adds new element and copies `data` into it.
-  // @returns index to the new element.
-  ElementView AddAndCopy(const EigenType& data) {
-    return Add(data.rows(), data.cols()) = data;
   }
 
   void SetZero() {
