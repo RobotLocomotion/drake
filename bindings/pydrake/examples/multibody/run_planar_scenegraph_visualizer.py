@@ -27,7 +27,11 @@ def run_pendulum_example(args):
     plant.Finalize()
 
     T_VW = np.array(
-        [[1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]
+        [
+            [1.0, 0.0, 0.0, 0.0],  # BR
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
     )
     visualizer = ConnectPlanarSceneGraphVisualizer(
         builder, scene_graph, T_VW=T_VW, xlim=[-1.2, 1.2], ylim=[-1.2, 1.2]
