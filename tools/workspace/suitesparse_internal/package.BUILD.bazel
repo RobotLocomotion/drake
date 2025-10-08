@@ -55,3 +55,5 @@ install(
     docs = ["AMD/Doc/License.txt"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

@@ -25,35 +25,45 @@ def _chlpath(path, replacements):
     for lib in otool.linked_libraries(path):
         for old, new in replacements:
             if lib.path.startswith(old):
-                changes += ['-change', lib.path, new + lib.path[len(old):]]
+                changes += ["-change", lib.path, new + lib.path[len(old) :]]
 
     if len(changes):
-        subprocess.check_call(['install_name_tool'] + changes + [path])
+        subprocess.check_call(["install_name_tool"] + changes + [path])
 
         # Determine if the library needs to be re-signed.
-        signature = subprocess.run(['codesign', '--verify', path],
-                                   capture_output=True, text=True)
+        signature = subprocess.run(
+            ["codesign", "--verify", path], capture_output=True, text=True
+        )
         if not signature.stderr:
             pass  # The existing signature is valid.
-        elif 'code object is not signed at all' in signature.stderr:
+        elif "code object is not signed at all" in signature.stderr:
             pass  # Not signed.
         else:
-            subprocess.check_call(['codesign', '--force', '--sign', '-', path])
+            subprocess.check_call(["codesign", "--force", "--sign", "-", path])
 
 
 def main(args):
     # Set up argument parser.
     parser = argparse.ArgumentParser(
-        description='Change the prefix(es) of dependent shared libraries.')
+        description="Change the prefix(es) of dependent shared libraries."
+    )
     parser.add_argument(
-        '--old', required=True, action='append',
-        help='Old prefix to be replaced (may be specified multiple times)')
+        "--old",
+        required=True,
+        action="append",
+        help="Old prefix to be replaced (may be specified multiple times)",
+    )
     parser.add_argument(
-        '--new', required=True, action='append',
-        help='Replacement prefix (must be specified once per --old)')
+        "--new",
+        required=True,
+        action="append",
+        help="Replacement prefix (must be specified once per --old)",
+    )
     parser.add_argument(
-        'library', nargs='+',
-        help='Dynamic library to modify')
+        "library",  # BR
+        nargs="+",
+        help="Dynamic library to modify",
+    )
 
     # Parse arguments.
     options = parser.parse_args(args)
@@ -67,5 +77,5 @@ def main(args):
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])

@@ -9,8 +9,7 @@ import install_test_helper
 
 class DrakePythonDirInstallTest(unittest.TestCase):
     def test_drake_python_dir(self):
-        cmake_source_dir = install_test_helper.create_temporary_dir(
-            "pydir_src")
+        cmake_source_dir = install_test_helper.create_temporary_dir("pydir_src")
 
         cmake_prefix_path = install_test_helper.get_install_dir()
 
@@ -51,8 +50,11 @@ class DrakePythonDirInstallTest(unittest.TestCase):
               message(STATUS "Import of pydrake works as expected")
             endif()
         """.format(
-            cmake_prefix_path=cmake_prefix_path, python_exe=sys.executable,
-            py_major=sys.version_info.major, py_minor=sys.version_info.minor)
+            cmake_prefix_path=cmake_prefix_path,
+            python_exe=sys.executable,
+            py_major=sys.version_info.major,
+            py_minor=sys.version_info.minor,
+        )
 
         cmake_filename = os.path.join(cmake_source_dir, "CMakeLists.txt")
 
@@ -60,11 +62,11 @@ class DrakePythonDirInstallTest(unittest.TestCase):
             f.write(textwrap.dedent(cmake_content))
 
         cmake_binary_dir = install_test_helper.create_temporary_dir(
-            "pydir_build")
+            "pydir_build"
+        )
 
-        subprocess.check_call(["cmake", cmake_source_dir],
-                              cwd=cmake_binary_dir)
+        subprocess.check_call(["cmake", cmake_source_dir], cwd=cmake_binary_dir)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

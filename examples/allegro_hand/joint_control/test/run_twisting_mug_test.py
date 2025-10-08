@@ -16,11 +16,11 @@ def _unique_lcm_url(path):
     """Returns a unique LCM url given a path."""
     rand = [int(c) for c in hashlib.sha256(path.encode("utf8")).digest()]
     return "udpm://239.{:d}.{:d}.{:d}:{:d}?ttl=0".format(
-        rand[0], rand[1], rand[2], 20000 + rand[3])
+        rand[0], rand[1], rand[2], 20000 + rand[3]
+    )
 
 
 class TestRunTwistingMug(unittest.TestCase):
-
     def _find_resource(self, basename):
         respath = f"drake/examples/allegro_hand/joint_control/{basename}"
         runfiles = CreateRunfiles()
@@ -41,22 +41,30 @@ class TestRunTwistingMug(unittest.TestCase):
         self._env["LCM_DEFAULT_URL"] = _unique_lcm_url(self._test_tmpdir)
 
     def test_only_sim(self):
-        subprocess.run([
-            self._sim, "--simulation_time=0.01"],
-            env=self._env, cwd=self._test_tmpdir, check=True)
+        subprocess.run(
+            [self._sim, "--simulation_time=0.01"],
+            env=self._env,
+            cwd=self._test_tmpdir,
+            check=True,
+        )
 
     @unittest.skipIf(
         "--compilation_mode=dbg" in sys.argv,
-        "This test is prohibitively slow in Debug builds.")
+        "This test is prohibitively slow in Debug builds.",
+    )
     @unittest.skipIf(sys.platform == "darwin", "Not supported on macOS")
     def test_sim_and_control(self):
         # Run both the simulator and controller.
-        sim_process = subprocess.Popen([
-            self._sim, "--simulation_time=30"],
-            env=self._env, cwd=self._test_tmpdir)
-        control_process = subprocess.Popen([
-            self._control, "--max_cycles=1"],
-            env=self._env, cwd=self._test_tmpdir)
+        sim_process = subprocess.Popen(
+            [self._sim, "--simulation_time=30"],
+            env=self._env,
+            cwd=self._test_tmpdir,
+        )
+        control_process = subprocess.Popen(
+            [self._control, "--max_cycles=1"],
+            env=self._env,
+            cwd=self._test_tmpdir,
+        )
 
         # Wait until one of them exits.  Nominally the first to exit will be
         # the controller, once it finishes one twist.

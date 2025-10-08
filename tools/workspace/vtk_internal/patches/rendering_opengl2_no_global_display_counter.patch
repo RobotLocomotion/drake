@@ -15,7 +15,7 @@ global atomic variables.
 +#else
    if (!::GLADGLXLibraryDisplayOpened.exchange(true))
    {
-     ::GLADGLXLibraryDisplay = XOpenDisplay(static_cast<char*>(nullptr));
+     ::GLADGLXLibraryDisplay = vtkXOpenDisplay(static_cast<char*>(nullptr));
 @@ -1464,6 +1467,7 @@ bool vtkXOpenGLRenderWindow::EnsureGLX()
    {
      return (::GLXVersion > 0);

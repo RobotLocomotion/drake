@@ -16,21 +16,22 @@ import sys
 import zipfile
 
 # This bit may need adjusting if this file moves to a new directory.
-WORKSPACE = os.path.dirname(os.path.dirname(os.path.dirname(
-    os.path.abspath(__file__))))
+WORKSPACE = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 
 
 def has_kcov_data(path):
     """Returns True iff the supplied path contains kcov data, either in a
     `kcov` subtree, or in a bazel-constructed zip file."""
-    kcov_dir = os.path.join(path, 'kcov')
+    kcov_dir = os.path.join(path, "kcov")
     if os.path.isdir(kcov_dir):
         return True
-    zip_path = os.path.join(path, 'outputs.zip')
+    zip_path = os.path.join(path, "outputs.zip")
     if not os.path.exists(zip_path):
         return False
-    with zipfile.ZipFile(zip_path, 'r') as zf:
-        return 'kcov/' in zf.namelist()
+    with zipfile.ZipFile(zip_path, "r") as zf:
+        return "kcov/" in zf.namelist()
 
 
 def maybe_expand_zipped_kcov_data(path):
@@ -38,15 +39,15 @@ def maybe_expand_zipped_kcov_data(path):
     `kcov` subtree on disk, expanding data from the bazel-constructed zip file
     if necessary.
     """
-    kcov_dir = os.path.join(path, 'kcov')
-    if os.path.exists(os.path.join(kcov_dir, 'index.html')):
+    kcov_dir = os.path.join(path, "kcov")
+    if os.path.exists(os.path.join(kcov_dir, "index.html")):
         return
     # Maybe our data has been zipped and deleted.
-    zip_path = os.path.join(path, 'outputs.zip')
+    zip_path = os.path.join(path, "outputs.zip")
     shutil.rmtree(kcov_dir, ignore_errors=True)
     os.chmod(path, 0o755)
-    with zipfile.ZipFile(zip_path, 'r') as zf:
-        members = [m for m in zf.namelist() if m.startswith('kcov')]
+    with zipfile.ZipFile(zip_path, "r") as zf:
+        members = [m for m in zf.namelist() if m.startswith("kcov")]
         zf.extractall(path=path, members=members)
 
 
@@ -60,10 +61,10 @@ def remove_kcov_data(path):
     """Removes kcov data from the supplied path, both from any `kcov` subtree,
     and from any bazel-constructed zip file.
     """
-    kcov_dir = os.path.join(path, 'kcov')
+    kcov_dir = os.path.join(path, "kcov")
     # TODO(jwnimmer-tri) Once we have Python >= 3.12, use onexc (not onerror).
     shutil.rmtree(kcov_dir, onerror=_on_rmtree_error)
-    zip_path = os.path.join(path, 'outputs.zip')
+    zip_path = os.path.join(path, "outputs.zip")
     if not os.path.exists(zip_path):
         return
     # Sadly, python's zipfile module cannot remove members of an archive.
@@ -76,8 +77,10 @@ def find_kcov_test_outputs():
     """Finds the `test.outputs` paths of individual test runs that contain kcov
     data, within the tree linked by `bazel-testlogs`.
     """
-    dirs = glob.glob(os.path.join(WORKSPACE, 'bazel-testlogs/**/test.outputs'),
-                     recursive=True)
+    dirs = glob.glob(
+        os.path.join(WORKSPACE, "bazel-testlogs/**/test.outputs"),
+        recursive=True,
+    )
     return [d for d in dirs if has_kcov_data(d)]
 
 
@@ -96,8 +99,8 @@ def do_merge(output_dir):
     for d in dirs:
         maybe_expand_zipped_kcov_data(d)
 
-    cmd = ['kcov', '--merge', output_dir]
-    cmd.extend([os.path.join(d, 'kcov') for d in dirs])
+    cmd = ["kcov", "--merge", output_dir]
+    cmd.extend([os.path.join(d, "kcov") for d in dirs])
     subprocess.run(cmd, check=True)
 
 
@@ -114,30 +117,37 @@ def merge(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(
-        help='subcommand to run', dest='subcommand')
+        help="subcommand to run", dest="subcommand"
+    )
     subparsers.required = True
 
     parser_ci_merge = subparsers.add_parser(
-        'ci_merge', help='like merge, but verbose, and always to bazel-kcov.'
-        ' For now, succeeds even if no data is available; see #10617.')
+        "ci_merge",
+        help="like merge, but verbose, and always to bazel-kcov."
+        " For now, succeeds even if no data is available; see #10617.",
+    )
     parser_ci_merge.set_defaults(func=ci_merge)
 
     parser_clean = subparsers.add_parser(
-        'clean', help='remove all kcov data from the bazel-testlogs tree')
+        "clean", help="remove all kcov data from the bazel-testlogs tree"
+    )
     parser_clean.set_defaults(func=clean)
 
     parser_merge = subparsers.add_parser(
-        'merge',
-        help='merge all kcov data from the bazel-testlogs tree to OUTPUT-DIR')
+        "merge",
+        help="merge all kcov data from the bazel-testlogs tree to OUTPUT-DIR",
+    )
     parser_merge.add_argument(
-        'output_dir', metavar='OUTPUT-DIR',
-        help='output directory for merged kcov data;'
-        ' if not existing it will be created.')
+        "output_dir",
+        metavar="OUTPUT-DIR",
+        help="output directory for merged kcov data;"
+        " if not existing it will be created.",
+    )
     parser_merge.set_defaults(func=merge)
 
     args = parser.parse_args()
     args.func(args)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

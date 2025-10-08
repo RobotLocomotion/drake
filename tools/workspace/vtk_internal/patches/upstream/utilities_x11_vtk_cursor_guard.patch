@@ -1,0 +1,20 @@
+[vtk] Add missing preprocessor guards
+
+Otherwise, libXcursor is an unknown variable and compilation fails.
+
+--- Utilities/X11/vtkX11Functions.cxx
++++ Utilities/X11/vtkX11Functions.cxx
+@@ -255,11 +255,13 @@
+         dlclose(libX11);
+         libX11 = nullptr;
+       }
++#if VTK_HAVE_XCURSOR
+       if (libXcursor)
+       {
+         dlclose(libXcursor);
+         libXcursor = nullptr;
+       }
++#endif
+     }
+   }
+ }
