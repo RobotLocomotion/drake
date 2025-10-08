@@ -33,12 +33,10 @@ def _execute_extra_python_code(m, use_subdir: bool = False):
     module_path = m.__name__.split(".")
     if len(module_path) == 1:
         raise RuntimeError(
-            (
-                "ExecuteExtraPythonCode cannot be used with the top-level "
-                "module `{}`. If you are writing modules in a downstream "
-                "project, please review this thread and ensure your import is "
-                "correct: https://stackoverflow.com/a/57858822/7829525"
-            ).format(m.__name__)
+            "ExecuteExtraPythonCode cannot be used with the top-level "
+            f"module `{m.__name__}`. If you are writing modules in a "
+            "downstream project, please review this thread and ensure your "
+            "import is correct: https://stackoverflow.com/a/57858822/7829525"
         )
     top_module_name = module_path[0]
     top_module_dir = os.path.dirname(sys.modules[top_module_name].__file__)

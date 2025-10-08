@@ -20,7 +20,7 @@ class TestCommonInstall(unittest.TestCase):
                 install_test_helper.get_python_executable(),
                 "-c",
                 "import pydrake; print(pydrake.getDrakePath());\
-             import pydrake; print(pydrake.getDrakePath())",
+                 import pydrake; print(pydrake.getDrakePath())",
             ],
             env=tool_env,
         ).strip()

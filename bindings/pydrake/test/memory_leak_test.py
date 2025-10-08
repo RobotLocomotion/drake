@@ -166,7 +166,7 @@ def _dut_full_example():
         builder=builder,
     )
     directives = LoadModelDirectivesFromString(
-        textwrap.dedent("""  # noqa
+        textwrap.dedent("""
     directives:
     - add_model:
         name: amazon_table

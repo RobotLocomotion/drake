@@ -16,8 +16,12 @@ from pydrake.systems.framework import DiagramBuilder
 
 def find_model_files(base_dir):
     return glob.glob(
-        os.path.join(base_dir, "**/*.sdf"), recursive=True
-    ) + glob.glob(os.path.join(base_dir, "**/*.urdf"), recursive=True)
+        os.path.join(base_dir, "**/*.sdf"),
+        recursive=True,
+    ) + glob.glob(
+        os.path.join(base_dir, "**/*.urdf"),
+        recursive=True,
+    )
 
 
 def parse_model_and_create_context(file):
