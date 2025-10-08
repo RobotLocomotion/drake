@@ -2219,29 +2219,59 @@ Robotics Research, 2019.)""";
         struct /* AddJointCenteringCost */ {
           // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
           const char* doc =
-R"""(Adds a cost pushing the value of a joint to equal its nominal value.
+R"""(Adds a cost that penalizes deviation of a revolute joint from a
+specified nominal angle. For the joint connecting the specified body
+to its parent, this method adds a cost that encourages the joint’s
+orientation to align with the nominal rotation nominal_value about its
+revolute axis. The cost is evaluated by comparing the rotation of a
+small set of unit vectors orthogonal to the joint axis, as expressed
+in both the parent and child frames.
 
-Note:
-    Cf. AddPostureCost, which penalizes deviations in body poses from
-    those that are achieved from the goal configuration.
+Specifically, let R_WB be the rotation matrix of the child body frame
+B in world frame W. R_WP be the rotation matrix of the parent body
+frame P in world frame W. X_CJc and X_PJp be the fixed poses of the
+joint frames in the child and parent body frames, respectively. R(k,
+nominal_value) be the rotation about the joint’s revolute axis by the
+nominal angle. For a small set of unit vectors vᵢ orthogonal to the
+joint axis, the cost penalizes ∑ᵢ ‖ R_WB X_CJc vᵢ − R_WP X_PJp R(k,
+nominal_value) vᵢ ‖ₙ where ‖·‖ₙ denotes either the L1 or L2 norm
+(depending on norm), and the result is scaled by weight. If squared is
+true and norm = 2, the squared 2-norm is used instead.
+
+This cost can be interpreted as a joint centering term that drives the
+joint angle toward its nominal value, independently of the global
+posture. This contrasts with AddPostureCost(), which penalizes
+deviations in body poses from those achieved at a target
+configuration. For approximating a true quadratic joint centering
+cost, L2-squared is the most accurate (and slowest), followed by L2,
+L1, and then the posture cost is the least accurate (but fastest).
 
 Parameter ``body_index``:
-    The joint connecting the parent link to this body will have a cost
-    applied.
+    The index of the child body whose inboard joint will have this
+    centering cost applied.
 
 Parameter ``nominal_value``:
-    The cost is minimized when the joint is equal to this value.
+    The nominal joint angle (in radians). The cost is minimized when
+    the joint’s rotation equals this value.
 
 Parameter ``weight``:
-    The weight applied to this cost.
+    The scalar weight applied to this cost.
 
 Parameter ``norm``:
-    Uses the L1 norm cost if norm is 1, and L2 norm cost if norm is 2.
-    Throws otherwise.
+    Specifies which norm to use in the cost: 1: use an L1 norm on the
+    unit-vector differences. 2: use an L2 norm (optionally squared).
 
 Parameter ``squared``:
-    Ignored for L1 norm cost. If using L2 norm cost, specify whether
-    or not to square the cost.)""";
+    If true and norm = 2, applies the squared L2 norm cost; otherwise,
+    applies the unsquared version.
+
+Raises:
+    RuntimeError if the body has a floating base, if its joint is not
+    a revolute joint, or if norm is not 1 or 2.
+
+Note:
+    Only revolute joints are currently supported. For floating bodies,
+    use AddPostureCost() instead.)""";
         } AddJointCenteringCost;
         // Symbol: drake::multibody::GlobalInverseKinematics::AddJointLimitConstraint
         struct /* AddJointLimitConstraint */ {
