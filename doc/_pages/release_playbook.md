@@ -68,6 +68,9 @@ the main body of the document:
   not the "Multibody" heading.
 * Expand all acronyms (eg, MBP -> MultibodyPlant, SG -> SceneGraph).
 * Commits can be omitted if they only affect tests or non-installed examples. {% comment %}TODO(jwnimmer-tri) Explain how to check if something is installed.{% endcomment %}
+* PRs that are tagged with release deprecation information will appear twice:
+  once in their topical section and once in the appropriate deprecation-related
+  section.
 * In general you should mention deprecated/removed classes and methods using
   their exact name (for easier searching).
   * In the deprecation section you can provide the fully-qualified name as the
