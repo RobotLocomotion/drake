@@ -663,6 +663,7 @@ GTEST_TEST(PooledSapModel, CouplerConstraint) {
 
   // Add coupler constraints.
   auto& couplers = model.coupler_constraints_pool();
+  couplers.Resize(1 /* one constraint */);
 
   const int nv = model.num_velocities();
   VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
@@ -671,9 +672,8 @@ GTEST_TEST(PooledSapModel, CouplerConstraint) {
   const auto q0_c1 = model.clique_segment(1, q0);
   const double rho1 = 2.5;
   const double offset1 = 0.1;
-  int k = couplers.Add(1 /* clique */, 1 /* i */, 3 /* j */, q0_c1(1), q0_c1(3),
-                       rho1, offset1);
-  EXPECT_EQ(k, 0);
+  couplers.Add(0 /* constraint index */, 1 /* clique */, 1 /* i */, 3 /* j */,
+               q0_c1(1), q0_c1(3), rho1, offset1);
   EXPECT_EQ(model.num_coupler_constraints(), 1);
   EXPECT_EQ(model.num_constraints(), 4);
 

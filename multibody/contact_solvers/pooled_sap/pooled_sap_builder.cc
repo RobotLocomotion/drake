@@ -320,8 +320,9 @@ void PooledSapBuilder<T>::AddCouplerConstraints(
 
   typename PooledSapModel<T>::CouplerConstraintsPool& couplers =
       model->coupler_constraints_pool();
-  couplers.Reset();
+  couplers.Resize(specs_map.size());
 
+  int index = 0;
   for (const auto& [id, spec] : specs_map) {
     const Joint<T>& joint0 = plant().get_joint(spec.joint0_index);
     const Joint<T>& joint1 = plant().get_joint(spec.joint1_index);
@@ -350,8 +351,9 @@ void PooledSapBuilder<T>::AddCouplerConstraints(
     const int tree_dof0 = dof0 - topology.tree_velocities_start_in_v(tree0);
     const int tree_dof1 = dof1 - topology.tree_velocities_start_in_v(tree1);
 
-    couplers.Add(clique0, tree_dof0, tree_dof1, q0, q1, spec.gear_ratio,
+    couplers.Add(index, clique0, tree_dof0, tree_dof1, q0, q1, spec.gear_ratio,
                  spec.offset);
+    ++index;
   }
 }
 
