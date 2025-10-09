@@ -569,8 +569,17 @@ void PooledSapBuilder<T>::AddActuationGains(const VectorX<T>& Ku,
   if (plant().num_actuators() == 0) return;
 
   auto& gain_constraints = model->gain_constraints_pool();
-  gain_constraints.Resize();
 
+  // Allocate gain constraints for each clique with actuated DOFs.
+  std::vector<int> actuated_clique_sizes(0);
+  for (int c = 0; c < model->num_cliques(); ++c) {
+    if (model->params().clique_nu[c] > 0) {
+      actuated_clique_sizes.push_back(model->clique_size(c));
+    }
+  }
+  gain_constraints.Resize(actuated_clique_sizes);
+
+  int i = 0;  // track actuated clique index.
   for (int c = 0; c < model->num_cliques(); ++c) {
     if (model->params().clique_nu[c] == 0) continue;
 
@@ -578,7 +587,8 @@ void PooledSapBuilder<T>::AddActuationGains(const VectorX<T>& Ku,
     const auto bu_c = model->clique_segment(c, bu);
     const auto e_c = model->clique_segment(c, model->params().effort_limits);
 
-    gain_constraints.Add(c, Ku_c, bu_c, e_c);
+    gain_constraints.Add(i, c, Ku_c, bu_c, e_c);
+    ++i;
   }
 }
 

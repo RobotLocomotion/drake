@@ -74,32 +74,35 @@ class PooledSapModel<T>::GainConstraintsPool {
     ue_.Reserve(clique_sizes);
   }
 
-  void Resize() {
-    const std::vector<int>& clique_sizes = model().clique_sizes();
-    K_.Resize(clique_sizes);
-    b_.Resize(clique_sizes);
-    le_.Resize(clique_sizes);
-    ue_.Resize(clique_sizes);
+  void Resize(const std::vector<int>& sizes) {
+    clique_.resize(sizes.size());
+    constraint_sizes_.resize(sizes.size());
+    K_.Resize(sizes);
+    b_.Resize(sizes);
+    le_.Resize(sizes);
+    ue_.Resize(sizes);
   }
 
   /* Adds gain constraint for `clique`.
+   @param i The index of this gain constraint in the pool.
+   @param clique The clique to which this gain constraint applies.
    @param K The diagonal entries of gain matrix K. They must be positive or
    zero.
    @param b The bias term.
    @param e The vector of effort limits for each DoF of the clique.
    @pre K, b, e are of size model().clique_size(clique). */
-  void Add(int clique, const VectorX<T>& K, const VectorX<T>& b,
+  void Add(const int i, int clique, const VectorX<T>& K, const VectorX<T>& b,
            const VectorX<T>& e) {
     const int nv = model().clique_size(clique);
     DRAKE_DEMAND(K.size() == nv);
     DRAKE_DEMAND(b.size() == nv);
     DRAKE_DEMAND(e.size() == nv);
-    clique_.push_back(clique);
-    constraint_sizes_.push_back(nv);
-    K_[clique] = K;
-    b_[clique] = b;
-    le_[clique] = -e;
-    ue_[clique] = e;
+    clique_[i] = clique;
+    constraint_sizes_[i] = nv;
+    K_[i] = K;
+    b_[i] = b;
+    le_[i] = -e;
+    ue_[i] = e;
   }
 
   void ResizeData(GainConstraintsDataPool<T>* gain_data) const;
