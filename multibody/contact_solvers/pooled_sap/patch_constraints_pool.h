@@ -92,41 +92,38 @@ class PooledSapModel<T>::PatchConstraintsPool {
     n0_.resize(num_pairs);
     epsilon_soft_.resize(num_pairs);
     net_friction_.resize(num_pairs);
+
+    // Start indexes for each patch
+    pair_data_start_.resize(num_patches);
+    int previous_total = 0;
+    for (int i = 0; i < num_patches; ++i) {
+      pair_data_start_[i] = previous_total;
+      previous_total += num_pairs_[i];
+    }
   }
 
   /* Adds a contact patch between bodies A and B.
    @pre B is always dynamic (not anchored).
-   @returns the index into the new patch. */
-  int AddPatch(int bodyA, int bodyB, const T& dissipation,
+   */
+  void AddPatch(int index, int bodyA, int bodyB, const T& dissipation,
                const T& static_friction, const T& dynamic_friction,
                const Vector3<T>& p_AB_W) {
     DRAKE_DEMAND(bodyA != bodyB);               // Same body never makes sense.
     DRAKE_DEMAND(!model().is_anchored(bodyB));  // B is never anchored.
-    const int index = num_patches();
 
-    bodies_.emplace_back(bodyB, bodyA);  // Dynamic body B always first.
-    dissipation_.push_back(dissipation);
-    static_friction_.push_back(static_friction);
-    dynamic_friction_.push_back(dynamic_friction);
-    p_AB_W_.PushBack(p_AB_W);
+    bodies_[index] =
+        std::make_pair(bodyB, bodyA);  // Dynamic body B always first.
+    dissipation_[index] = dissipation;
+    static_friction_[index] = static_friction;
+    dynamic_friction_[index] = dynamic_friction;
+    p_AB_W_[index] = p_AB_W;
 
     const int num_cliques =
         (model().is_anchored(bodyA) || model().is_anchored(bodyB)) ? 1 : 2;
-    num_cliques_.push_back(num_cliques);
-
-    // Start indexes.
-    if (index == 0) {  // the very first patch.
-      pair_data_start_.push_back(0);
-    } else {
-      pair_data_start_.push_back(pair_data_start_.back() + num_pairs_.back());
-    }
-    num_pairs_.push_back(0);
-
-    return index;
+    num_cliques_[index] = num_cliques;
   }
 
-  /* Adds per-pair data associated with the patch last added with AddPatch(),
-   that is, the patch with index equal to num_patches()-1.
+  /* Adds per-pair data
 
    @note As required by AddPatch(), body B is always dynamics (not anchored).
    Therefore we provide the position of the contact point relative to B and, if
@@ -134,48 +131,47 @@ class PooledSapModel<T>::PatchConstraintsPool {
    AddPatch().
 
    @param[in] normal_W Contact normal, from A into B by convention. */
-  void AddPair(const Vector3<T>& p_BoC_W, const Vector3<T>& normal_W,
-               const T& fn0, const T& stiffness) {
-    const int p = num_patches() - 1;
-    ++num_pairs_[p];
+  void AddPair(const int patch_idx, const int pair_idx, const Vector3<T>& p_BoC_W,
+               const Vector3<T>& normal_W, const T& fn0, const T& stiffness) {
+    const int idx = patch_pair_index(patch_idx, pair_idx);
 
-    p_BC_W_.PushBack(p_BoC_W);
-    normal_W_.PushBack(normal_W);
-    fn0_.push_back(fn0);
-    stiffness_.push_back(stiffness);
+    p_BC_W_[idx] = p_BoC_W;
+    normal_W_[idx] = normal_W;
+    fn0_[idx] = fn0;
+    stiffness_[idx] = stiffness;
 
     // Pre-computed quantities.
-    const int num_cliques = num_cliques_[p];
+    const int num_cliques = num_cliques_[patch_idx];
 
     // First clique.
-    const Vector6<T>& V_WB = model().V_WB(bodies_[p].first);
+    const Vector6<T>& V_WB = model().V_WB(bodies_[patch_idx].first);
     const auto w_WB = V_WB.template head<3>();
     const auto v_WB = V_WB.template tail<3>();
     Vector3<T> v_AcBc_W = v_WB + w_WB.cross(p_BoC_W);
 
     // Second clique.
     if (num_cliques == 2) {
-      const Vector6<T>& V_WA = model().V_WB(bodies_[p].second);
-      const Vector3<T> p_AC_W = p_AB_W_[p] + p_BoC_W;
+      const Vector6<T>& V_WA = model().V_WB(bodies_[patch_idx].second);
+      const Vector3<T> p_AC_W = p_AB_W_[patch_idx] + p_BoC_W;
       const auto w_WA = V_WA.template head<3>();
       const auto v_WA = V_WA.template tail<3>();
       v_AcBc_W -= (v_WA + w_WA.cross(p_AC_W));
     }
 
     using std::max;
-    const T& d = dissipation_[p];
+    const T& d = dissipation_[patch_idx];
     const T vn0 = v_AcBc_W.dot(normal_W);
     const T damping = max(0.0, 1.0 - d * vn0);
     const T n0 = max(0.0, time_step_ * fn0) * damping;
-    n0_.push_back(n0);
+    n0_[idx] = n0;
 
     // Coefficient of friction is determined based on previous velocity. This
     // allows us to consider a Streibeck-like curve while maintaining a convex
     // formulation.
     const T vt0 = (v_AcBc_W - vn0 * normal_W).norm();
     const T s = vt0 / stiction_tolerance_;
-    const T& mu_s = static_friction_[p];
-    const T& mu_d = dynamic_friction_[p];
+    const T& mu_s = static_friction_[patch_idx];
+    const T& mu_d = dynamic_friction_[patch_idx];
 
     auto sigmoid = [](const T& x) -> T {
       return x / sqrt(1 + x * x);
@@ -183,7 +179,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
 
     const T mu =
         (mu_s - mu_d) * 0.5 * (1 - (sigmoid(s - 10) / sigmoid(10))) + mu_d;
-    net_friction_.push_back(mu);
+    net_friction_[idx] = mu;
 
     // Compute per-patch regularization of friction. We use a "spherical body
     // approximation" for the estimation of the Delassus operator. A sphere has
@@ -193,16 +189,16 @@ class PooledSapModel<T>::PatchConstraintsPool {
     //   W = 1/m⋅[I₃   0
     //           [ 0   R²/g²]
     // It's RMS norm will be w = sqrt(7)/m ≈ 2.65/m.
-    T w = 2.65 / model().body_mass(bodies_[p].first);
+    T w = 2.65 / model().body_mass(bodies_[patch_idx].first);
     if (num_cliques == 2) {
-      w += 2.65 / model().body_mass(bodies_[p].second);
+      w += 2.65 / model().body_mass(bodies_[patch_idx].second);
     }
     const T Rt = sigma_ * w;  // SAP's regularization.
 
     // Regularized Lagged model.
     const T sap_stiction_tolerance = mu * Rt * n0;
     const T eps = max(stiction_tolerance_, sap_stiction_tolerance);
-    epsilon_soft_.push_back(eps);
+    epsilon_soft_[idx] = eps;
   }
 
   /* Clears memory, no memory is freed, and the capacity remains the same.

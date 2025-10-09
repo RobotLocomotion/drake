@@ -274,9 +274,9 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   }
 
   AllocatePatchConstraints(model);
-  model->patch_constraints_pool().Clear();
+  // model->patch_constraints_pool().Clear();
 
-  AddPatchConstraintsForHydroelasticContact(context, model);
+  // AddPatchConstraintsForHydroelasticContact(context, model);
   AddPatchConstraintsForPointContact(context, model);
 
   // Add other constraints to the problem
@@ -475,105 +475,105 @@ void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
     const T fn0 = k * pp.depth;
 
     // For point contact we add single-pair patches.
-    patches.AddPatch(bodyA->index(), bodyB->index(), d, mu.static_friction(),
+    patches.AddPatch(point_pair_index, bodyA->index(), bodyB->index(), d, mu.static_friction(),
                      mu.dynamic_friction(), p_AB_W);
-    patches.AddPair(p_BoC_W, nhat_AB_W, fn0, k);
+    patches.AddPair(point_pair_index, 0, p_BoC_W, nhat_AB_W, fn0, k);
   }
 }
 
-template <typename T>
-void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
-    const systems::Context<T>& context, PooledSapModel<T>* model) const {
-  // Add contact constraints for hydro.
-  const std::vector<geometry::ContactSurface<T>>& surfaces = scratch_.surfaces;
+// template <typename T>
+// void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
+//     const systems::Context<T>& context, PooledSapModel<T>* model) const {
+//   // Add contact constraints for hydro.
+//   const std::vector<geometry::ContactSurface<T>>& surfaces = scratch_.surfaces;
 
-  const geometry::SceneGraphInspector<T>& inspector =
-      plant().EvalSceneGraphInspector(context);
+//   const geometry::SceneGraphInspector<T>& inspector =
+//       plant().EvalSceneGraphInspector(context);
 
-  // TODO(amcastro-tri): This should be retrieved from the default contact
-  // properties.
-  const double kDefaultDissipation = 50.0;
+//   // TODO(amcastro-tri): This should be retrieved from the default contact
+//   // properties.
+//   const double kDefaultDissipation = 50.0;
 
-  const int num_surfaces = surfaces.size();
+//   const int num_surfaces = surfaces.size();
 
-  typename PooledSapModel<T>::PatchConstraintsPool& patches =
-      model->patch_constraints_pool();
+//   typename PooledSapModel<T>::PatchConstraintsPool& patches =
+//       model->patch_constraints_pool();
 
-  for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
-    const auto& s = surfaces[surface_index];
-    const bool M_is_compliant = s.HasGradE_M();
-    const bool N_is_compliant = s.HasGradE_N();
-    DRAKE_DEMAND(M_is_compliant || N_is_compliant);
+//   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
+//     const auto& s = surfaces[surface_index];
+//     const bool M_is_compliant = s.HasGradE_M();
+//     const bool N_is_compliant = s.HasGradE_N();
+//     DRAKE_DEMAND(M_is_compliant || N_is_compliant);
 
-    // Retrieve participating geometries and bodies.
-    const geometry::FrameId Mid = inspector.GetFrameId(s.id_M());
-    const geometry::FrameId Nid = inspector.GetFrameId(s.id_N());
-    const RigidBody<T>* bodyM = plant().GetBodyFromFrameId(Mid);
-    const RigidBody<T>* bodyN = plant().GetBodyFromFrameId(Nid);
-    DRAKE_DEMAND(bodyM != nullptr && bodyN != nullptr);
+//     // Retrieve participating geometries and bodies.
+//     const geometry::FrameId Mid = inspector.GetFrameId(s.id_M());
+//     const geometry::FrameId Nid = inspector.GetFrameId(s.id_N());
+//     const RigidBody<T>* bodyM = plant().GetBodyFromFrameId(Mid);
+//     const RigidBody<T>* bodyN = plant().GetBodyFromFrameId(Nid);
+//     DRAKE_DEMAND(bodyM != nullptr && bodyN != nullptr);
 
-    const bool M_not_anchored = !plant().IsAnchored(*bodyM);
-    const bool N_not_anchored = !plant().IsAnchored(*bodyN);
-    // Sanity check at least one body is not anchored.
-    DRAKE_DEMAND(M_not_anchored || N_not_anchored);
+//     const bool M_not_anchored = !plant().IsAnchored(*bodyM);
+//     const bool N_not_anchored = !plant().IsAnchored(*bodyN);
+//     // Sanity check at least one body is not anchored.
+//     DRAKE_DEMAND(M_not_anchored || N_not_anchored);
 
-    // By convention, body B is always not-anchored.
-    const RigidBody<T>* bodyB = N_not_anchored ? bodyN : bodyM;
-    const RigidBody<T>* bodyA = bodyB == bodyN ? bodyM : bodyN;
+//     // By convention, body B is always not-anchored.
+//     const RigidBody<T>* bodyB = N_not_anchored ? bodyN : bodyM;
+//     const RigidBody<T>* bodyA = bodyB == bodyN ? bodyM : bodyN;
 
-    // Get compliance properties.
-    const T Em = multibody::internal::GetHydroelasticModulus(
-        s.id_M(), std::numeric_limits<double>::infinity(), inspector);
-    const T En = multibody::internal::GetHydroelasticModulus(
-        s.id_N(), std::numeric_limits<double>::infinity(), inspector);
-    const T d = multibody::internal::GetCombinedHuntCrossleyDissipation(
-        s.id_M(), s.id_N(), Em, En, kDefaultDissipation, inspector);
+//     // Get compliance properties.
+//     const T Em = multibody::internal::GetHydroelasticModulus(
+//         s.id_M(), std::numeric_limits<double>::infinity(), inspector);
+//     const T En = multibody::internal::GetHydroelasticModulus(
+//         s.id_N(), std::numeric_limits<double>::infinity(), inspector);
+//     const T d = multibody::internal::GetCombinedHuntCrossleyDissipation(
+//         s.id_M(), s.id_N(), Em, En, kDefaultDissipation, inspector);
 
-    // Get friction properties
-    const auto& mu_A = GetCoulombFriction(s.id_M(), inspector);
-    const auto& mu_B = GetCoulombFriction(s.id_N(), inspector);
-    CoulombFriction<double> mu =
-        CalcContactFrictionFromSurfaceProperties(mu_A, mu_B);
+//     // Get friction properties
+//     const auto& mu_A = GetCoulombFriction(s.id_M(), inspector);
+//     const auto& mu_B = GetCoulombFriction(s.id_N(), inspector);
+//     CoulombFriction<double> mu =
+//         CalcContactFrictionFromSurfaceProperties(mu_A, mu_B);
 
-    const auto& X_WA = bodyA->EvalPoseInWorld(context);
-    const auto& X_WB = bodyB->EvalPoseInWorld(context);
-    const Vector3<T>& p_WAo = X_WA.translation();
-    const Vector3<T>& p_WBo = X_WB.translation();
-    const Vector3<T> p_AB_W = p_WBo - p_WAo;
+//     const auto& X_WA = bodyA->EvalPoseInWorld(context);
+//     const auto& X_WB = bodyB->EvalPoseInWorld(context);
+//     const Vector3<T>& p_WAo = X_WA.translation();
+//     const Vector3<T>& p_WBo = X_WB.translation();
+//     const Vector3<T> p_AB_W = p_WBo - p_WAo;
 
-    patches.AddPatch(bodyA->index(), bodyB->index(), d, mu.static_friction(),
-                     mu.dynamic_friction(), p_AB_W);
+//     patches.AddPatch(bodyA->index(), bodyB->index(), d, mu.static_friction(),
+//                      mu.dynamic_friction(), p_AB_W);
 
-    for (int face = 0; face < s.num_faces(); ++face) {
-      const T Ae = s.area(face);  // Face element area.
-      const Vector3<T>& nhat_NM_W = s.face_normal(face);
-      const T gM = M_is_compliant ? s.EvaluateGradE_M_W(face).dot(nhat_NM_W)
-                                  : std::numeric_limits<double>::infinity();
-      const T gN = N_is_compliant ? -s.EvaluateGradE_N_W(face).dot(nhat_NM_W)
-                                  : std::numeric_limits<double>::infinity();
-      constexpr double kGradientEpsilon = 1.0e-14;
-      if (gM < kGradientEpsilon || gN < kGradientEpsilon) {
-        continue;
-      }
-      const T g = 1.0 / (1.0 / gM + 1.0 / gN);
-      const Vector3<T>& p_WC = s.centroid(face);
-      const Vector3<T> p_BoC_W = p_WC - p_WBo;
+//     for (int face = 0; face < s.num_faces(); ++face) {
+//       const T Ae = s.area(face);  // Face element area.
+//       const Vector3<T>& nhat_NM_W = s.face_normal(face);
+//       const T gM = M_is_compliant ? s.EvaluateGradE_M_W(face).dot(nhat_NM_W)
+//                                   : std::numeric_limits<double>::infinity();
+//       const T gN = N_is_compliant ? -s.EvaluateGradE_N_W(face).dot(nhat_NM_W)
+//                                   : std::numeric_limits<double>::infinity();
+//       constexpr double kGradientEpsilon = 1.0e-14;
+//       if (gM < kGradientEpsilon || gN < kGradientEpsilon) {
+//         continue;
+//       }
+//       const T g = 1.0 / (1.0 / gM + 1.0 / gN);
+//       const Vector3<T>& p_WC = s.centroid(face);
+//       const Vector3<T> p_BoC_W = p_WC - p_WBo;
 
-      // Normal must always point from A to B, by convention.
-      const Vector3<T> nhat_AB_W = bodyB == bodyN ? -nhat_NM_W : nhat_NM_W;
+//       // Normal must always point from A to B, by convention.
+//       const Vector3<T> nhat_AB_W = bodyB == bodyN ? -nhat_NM_W : nhat_NM_W;
 
-      // Pressure at the quadrature point.
-      const Vector3<T> tri_centroid_barycentric(1 / 3., 1 / 3., 1 / 3.);
-      const T p0 = s.is_triangle()
-                       ? s.tri_e_MN().Evaluate(face, tri_centroid_barycentric)
-                       : s.poly_e_MN().EvaluateCartesian(face, p_WC);
+//       // Pressure at the quadrature point.
+//       const Vector3<T> tri_centroid_barycentric(1 / 3., 1 / 3., 1 / 3.);
+//       const T p0 = s.is_triangle()
+//                        ? s.tri_e_MN().Evaluate(face, tri_centroid_barycentric)
+//                        : s.poly_e_MN().EvaluateCartesian(face, p_WC);
 
-      const T fn0 = Ae * p0;
-      const T k = Ae * g;
-      patches.AddPair(p_BoC_W, nhat_AB_W, fn0, k);
-    }
-  }
-}
+//       const T fn0 = Ae * p0;
+//       const T k = Ae * g;
+//       patches.AddPair(p_BoC_W, nhat_AB_W, fn0, k);
+//     }
+//   }
+// }
 
 template <typename T>
 void PooledSapBuilder<T>::AddActuationGains(const VectorX<T>& Ku,
