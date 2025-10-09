@@ -109,42 +109,48 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
 
   typename PooledSapModel<T>::PatchConstraintsPool& patches =
       model->patch_constraints_pool();
-  patches.Clear();
+
+  // Allocate space
+  std::vector<int> num_pairs_per_patch = {1, 1, 1};
+  patches.Resize(num_pairs_per_patch);
 
   // first patch
   {
     const Vector3<T> p_AB_W(0.1, 0.0, 0.0);
-    patches.AddPatch(1 /* body A */, 2 /* body B */, dissipation, friction,
-                     friction, p_AB_W);
+    patches.AddPatch(0 /* patch index */, 1 /* body A */, 2 /* body B */,
+                     dissipation, friction, friction, p_AB_W);
 
     const Vector3<T> nhat_AB_W(1.0, 0.0, 0.0);
     const Vector3<T> p_BC_W = -0.5 * p_AB_W;
     const T fn0 = 1.5;
-    patches.AddPair(p_BC_W, nhat_AB_W, fn0, stiffness);
+    patches.AddPair(0 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
+                    fn0, stiffness);
   }
 
   // Single clique patch.
   {
     const Vector3<T> p_AB_W(0.0, 0.05, 0.0);  // A = World.
-    patches.AddPatch(0 /* World */, 2 /* body B */, dissipation, friction,
-                     friction, p_AB_W);
+    patches.AddPatch(1 /* patch index */, 0 /* World */, 2 /* body B */,
+                     dissipation, friction, friction, p_AB_W);
 
     const Vector3<T> nhat_AB_W(0.0, 1.0, 0.0);
     const Vector3<T> p_BC_W(0.0, -0.05, 0.0);
     const T fn0 = 1.5;
-    patches.AddPair(p_BC_W, nhat_AB_W, fn0, stiffness);
+    patches.AddPair(1 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
+                    fn0, stiffness);
   }
 
   // Third patch
   {
     const Vector3<T> p_AB_W(-0.1, 0.0, 0.0);
-    patches.AddPatch(3 /* World */, 2 /* body B */, dissipation, friction,
-                     friction, p_AB_W);
+    patches.AddPatch(2 /* patch index */, 3 /* World */, 2 /* body B */,
+                     dissipation, friction, friction, p_AB_W);
 
     const Vector3<T> nhat_AB_W(-1.0, 0.0, 0.0);
     const Vector3<T> p_BC_W = -0.5 * p_AB_W;
     const T fn0 = 1.5;
-    patches.AddPair(p_BC_W, nhat_AB_W, fn0, stiffness);
+    patches.AddPair(2 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
+                    fn0, stiffness);
   }
 
   // Establish the sparsity pattern.

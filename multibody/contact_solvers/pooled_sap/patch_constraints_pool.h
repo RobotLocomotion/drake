@@ -106,8 +106,8 @@ class PooledSapModel<T>::PatchConstraintsPool {
    @pre B is always dynamic (not anchored).
    */
   void AddPatch(int index, int bodyA, int bodyB, const T& dissipation,
-               const T& static_friction, const T& dynamic_friction,
-               const Vector3<T>& p_AB_W) {
+                const T& static_friction, const T& dynamic_friction,
+                const Vector3<T>& p_AB_W) {
     DRAKE_DEMAND(bodyA != bodyB);               // Same body never makes sense.
     DRAKE_DEMAND(!model().is_anchored(bodyB));  // B is never anchored.
 
@@ -131,8 +131,9 @@ class PooledSapModel<T>::PatchConstraintsPool {
    AddPatch().
 
    @param[in] normal_W Contact normal, from A into B by convention. */
-  void AddPair(const int patch_idx, const int pair_idx, const Vector3<T>& p_BoC_W,
-               const Vector3<T>& normal_W, const T& fn0, const T& stiffness) {
+  void AddPair(const int patch_idx, const int pair_idx,
+               const Vector3<T>& p_BoC_W, const Vector3<T>& normal_W,
+               const T& fn0, const T& stiffness) {
     DRAKE_ASSERT(patch_idx >= 0 && patch_idx < num_patches());
     DRAKE_ASSERT(pair_idx >= 0 && pair_idx < num_pairs_[patch_idx]);
     const int idx = patch_pair_index(patch_idx, pair_idx);

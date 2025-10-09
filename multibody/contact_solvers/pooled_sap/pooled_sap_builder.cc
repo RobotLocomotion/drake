@@ -299,7 +299,7 @@ void PooledSapBuilder<T>::AllocatePatchConstraints(
   std::vector<int> num_pairs_per_patch(num_point_contacts, 1);
 
   // Now we'll do hydro contact. With hydro we typically have multiple contact
-  // pairs in each patch. 
+  // pairs in each patch.
   for (const auto& surface : scratch_.surfaces) {
     num_pairs_per_patch.push_back(surface.num_faces());
   }
@@ -473,8 +473,8 @@ void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
     const T fn0 = k * pp.depth;
 
     // For point contact we add single-pair patches.
-    patches.AddPatch(point_pair_index, bodyA->index(), bodyB->index(), d, mu.static_friction(),
-                     mu.dynamic_friction(), p_AB_W);
+    patches.AddPatch(point_pair_index, bodyA->index(), bodyB->index(), d,
+                     mu.static_friction(), mu.dynamic_friction(), p_AB_W);
     patches.AddPair(point_pair_index, 0, p_BoC_W, nhat_AB_W, fn0, k);
   }
 }
