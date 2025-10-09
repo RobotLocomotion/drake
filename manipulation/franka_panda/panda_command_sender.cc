@@ -1,0 +1,109 @@
+#include "manipulation/franka_panda/panda_command_sender.h"
+
+#include <vector>
+
+#include <fmt/format.h>
+
+#include "drake/lcmt_panda_status.hpp"
+
+namespace drake {
+namespace manipulation {
+
+using drake::lcmt_panda_command;
+using drake::lcmt_panda_status;
+using drake::systems::Context;
+using drake::systems::kVectorValued;
+
+PandaCommandSender::PandaCommandSender(int num_joints, int control_mode)
+    : num_joints_(num_joints), control_mode_(control_mode) {
+  int remaining = control_mode_;
+  if (control_mode_ & lcmt_panda_status::CONTROL_MODE_POSITION) {
+    remaining &= ~int{lcmt_panda_status::CONTROL_MODE_POSITION};
+    position_input_port_ =
+        &this->DeclareInputPort("position", kVectorValued, num_joints_);
+  }
+  if (control_mode_ & lcmt_panda_status::CONTROL_MODE_VELOCITY) {
+    remaining &= ~int{lcmt_panda_status::CONTROL_MODE_VELOCITY};
+    velocity_input_port_ =
+        &this->DeclareInputPort("velocity", kVectorValued, num_joints_);
+  }
+  if (control_mode_ & lcmt_panda_status::CONTROL_MODE_TORQUE) {
+    remaining &= ~int{lcmt_panda_status::CONTROL_MODE_TORQUE};
+    torque_input_port_ =
+        &this->DeclareInputPort("torque", kVectorValued, num_joints_);
+  }
+  if (remaining != 0) {
+    throw std::logic_error(
+        fmt::format("Invalid control_mode bits set: 0x{:x}", remaining));
+  }
+  this->DeclareAbstractOutputPort("lcmt_panda_command",
+                                  &PandaCommandSender::CalcOutput);
+}
+
+PandaCommandSender::~PandaCommandSender() = default;
+
+using InPort = drake::systems::InputPort<double>;
+
+const InPort& PandaCommandSender::get_position_input_port() const {
+  if (position_input_port_ == nullptr) {
+    throw std::logic_error(
+        "Invalid call to PandaCommandSender::get_position_input_port when"
+        " control_mode does not involve position");
+  }
+  return *position_input_port_;
+}
+
+const InPort& PandaCommandSender::get_velocity_input_port() const {
+  if (velocity_input_port_ == nullptr) {
+    throw std::logic_error(
+        "Invalid call to PandaCommandSender::get_velocity_input_port when"
+        " control_mode does not involve velocity");
+  }
+  return *velocity_input_port_;
+}
+
+const InPort& PandaCommandSender::get_torque_input_port() const {
+  if (torque_input_port_ == nullptr) {
+    throw std::logic_error(
+        "Invalid call to PandaCommandSender::get_torque_input_port when"
+        " control_mode does not involve torque");
+  }
+  return *torque_input_port_;
+}
+
+namespace {
+void CopyInputPortToMessage(const Context<double>& context, const InPort* port,
+                            int32_t* size_out,
+                            std::vector<double>* values_out) {
+  DRAKE_DEMAND(size_out != nullptr);
+  DRAKE_DEMAND(values_out != nullptr);
+  if (port == nullptr) {
+    *size_out = 0;
+    values_out->clear();
+  } else {
+    const auto& values_in = port->Eval(context);
+    const int size_in = values_in.size();
+    *size_out = size_in;
+    values_out->resize(size_in);
+    for (int i = 0; i < size_in; ++i) {
+      (*values_out)[i] = values_in[i];
+    }
+  }
+}
+}  // namespace
+
+void PandaCommandSender::CalcOutput(const Context<double>& context,
+                                    lcmt_panda_command* output) const {
+  lcmt_panda_command& command = *output;
+  command.utime = context.get_time() * 1e6;
+  command.control_mode_expected = control_mode_;
+  CopyInputPortToMessage(context, position_input_port_,
+                         &command.num_joint_position, &command.joint_position);
+  CopyInputPortToMessage(context, velocity_input_port_,
+                         &command.num_joint_velocity, &command.joint_velocity);
+  CopyInputPortToMessage(context, torque_input_port_, &command.num_joint_torque,
+                         &command.joint_torque);
+}
+
+}  // namespace manipulation
+}  // namespace drake
