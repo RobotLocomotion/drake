@@ -269,10 +269,13 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
 
   // Add contact constraints. We'll need to clear the patch constraints pool
   // here to avoid conflicting hydro and point contact constraints.
-  model->patch_constraints_pool().Clear();
   if (!reuse_geometry_data) {
     CalcGeometryContactData(context);
   }
+
+  AllocatePatchConstraints(model);
+  model->patch_constraints_pool().Clear();
+
   AddPatchConstraintsForHydroelasticContact(context, model);
   AddPatchConstraintsForPointContact(context, model);
 
@@ -281,6 +284,29 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   AddLimitConstraints(context, model);
 
   model->SetSparsityPattern();
+}
+
+template <typename T>
+void PooledSapBuilder<T>::AllocatePatchConstraints(
+    PooledSapModel<T>* model) const {
+  // N.B. This assumes that geometry info has already been computed and stored
+  // in scratch_.
+  DRAKE_ASSERT(model != nullptr);
+  typename PooledSapModel<T>::PatchConstraintsPool& patches =
+      model->patch_constraints_pool();
+
+  // First we'll get the number of contact pairs for point contact. There is one
+  // pair per contact patch with point contact.
+  const int num_point_contacts = scratch_.point_pairs.size();
+  std::vector<int> num_pairs_per_patch(num_point_contacts, 1);
+
+  // Now we'll do hydro contact. With hydro we typically have multiple contact
+  // pairs in each patch. 
+  for (const auto& surface : scratch_.surfaces) {
+    num_pairs_per_patch.push_back(surface.num_faces());
+  }
+
+  patches.Resize(num_pairs_per_patch);
 }
 
 template <typename T>
@@ -468,13 +494,7 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
   // properties.
   const double kDefaultDissipation = 50.0;
 
-  // Pre-allocate as needed. No allocation if size is not exceeded.
-  int num_pairs = 0;
-  for (const auto& s : surfaces) {
-    num_pairs += s.num_faces();
-  }
   const int num_surfaces = surfaces.size();
-  (void)num_pairs;
 
   typename PooledSapModel<T>::PatchConstraintsPool& patches =
       model->patch_constraints_pool();
@@ -571,6 +591,7 @@ void PooledSapBuilder<T>::AddActuationGains(const VectorX<T>& Ku,
   auto& gain_constraints = model->gain_constraints_pool();
 
   // Allocate gain constraints for each clique with actuated DOFs.
+  // TODO(vincekurtz): consider a separate AllocateGainConstraints() method.
   std::vector<int> actuated_clique_sizes(0);
   for (int c = 0; c < model->num_cliques(); ++c) {
     if (model->params().clique_nu[c] > 0) {

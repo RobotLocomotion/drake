@@ -67,13 +67,16 @@ class PooledSapModel<T>::PatchConstraintsPool {
   /* Resizes to store patch constraint data. No memory allocation performed if
      the current capcity is enough to store this data size.
    @param num_patches The number of patches.
-   @param num_pairs_capcity Capacity for the total number of pairs.
-   @param max_clique_size Used to estimate storage for spatial velocity
-     Jacobians.  */
-  void Resize(int num_patches, int num_pairs_capacity, int max_clique_size) {
-    unused(max_clique_size);
+   @param num_pairs_capcity The total number of pairs (multiple pairs per patch)
+   */
+  void Resize(const std::vector<int>& num_pairs_per_patch) {
+    num_pairs_ = num_pairs_per_patch;
+
+    const int num_patches = num_pairs_.size();
+    const int num_pairs =
+        std::accumulate(num_pairs_.begin(), num_pairs_.end(), 0);
+
     // per-patch data.
-    num_pairs_.resize(num_patches);
     num_cliques_.resize(num_patches);
     bodies_.resize(num_patches);
     p_AB_W_.Resize(num_patches);
@@ -82,41 +85,13 @@ class PooledSapModel<T>::PatchConstraintsPool {
     dynamic_friction_.resize(num_patches);
 
     // per-pair data.
-    normal_W_.Resize(num_pairs_capacity);
-    p_BC_W_.Resize(num_pairs_capacity);
-    stiffness_.resize(num_pairs_capacity);
-    fn0_.resize(num_pairs_capacity);
-    n0_.resize(num_pairs_capacity);
-    epsilon_soft_.resize(num_pairs_capacity);
-    net_friction_.resize(num_pairs_capacity);
-  }
-
-  /* Reserve to store patch constraint data. No memory allocation performed if
-     the current capcity is enough to store this data size.
-   @param num_patches The number of patches.
-   @param num_pairs_capcity Capacity for the total number of pairs.
-   @param max_clique_size Used to estimate storage for spatial velocity
-     Jacobians.  */
-  void Reserve(int num_patches, int num_pairs_capacity, int max_clique_size) {
-    unused(max_clique_size);
-
-    // Data per patch.
-    num_pairs_.reserve(num_patches);
-    num_cliques_.reserve(num_patches);
-    bodies_.reserve(num_patches);
-    p_AB_W_.Reserve(num_patches);
-    dissipation_.reserve(num_patches);
-    static_friction_.reserve(num_patches);
-    dynamic_friction_.reserve(num_patches);
-
-    // Data per patch and per pair.
-    normal_W_.Reserve(num_pairs_capacity);
-    p_BC_W_.Reserve(num_pairs_capacity);
-    stiffness_.reserve(num_pairs_capacity);
-    fn0_.reserve(num_pairs_capacity);
-    n0_.reserve(num_pairs_capacity);
-    epsilon_soft_.reserve(num_pairs_capacity);
-    net_friction_.reserve(num_pairs_capacity);
+    normal_W_.Resize(num_pairs);
+    p_BC_W_.Resize(num_pairs);
+    stiffness_.resize(num_pairs);
+    fn0_.resize(num_pairs);
+    n0_.resize(num_pairs);
+    epsilon_soft_.resize(num_pairs);
+    net_friction_.resize(num_pairs);
   }
 
   /* Adds a contact patch between bodies A and B.
