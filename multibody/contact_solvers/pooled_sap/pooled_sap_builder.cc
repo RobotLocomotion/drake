@@ -368,10 +368,35 @@ void PooledSapBuilder<T>::AddLimitConstraints(
 
   typename PooledSapModel<T>::LimitConstraintsPool& limits =
       model->limit_constraints_pool();
-
   limits.Reset();
-
   const std::vector<int>& tree_to_clique = model->params().tree_to_clique;
+
+  // Identify all cliques that have at least one 1-DoF joint with finite limits.
+  std::vector<int> clique_to_constraint(model->num_cliques(), -1);
+  std::vector<int> limited_clique_sizes(0);
+  for (JointIndex joint_index : plant().GetJointIndices()) {
+    const Joint<T>& joint = plant().get_joint(joint_index);
+    bool is_one_dof = (joint.num_positions() == 1 &&
+                       joint.num_velocities() == 1);
+    bool has_finite_limits = (!isinf(joint.position_lower_limits()[0]) ||
+                              !isinf(joint.position_upper_limits()[0]));
+
+    if (is_one_dof && has_finite_limits) {
+      const TreeIndex tree_index = topology.velocity_to_tree_index(
+          joint.velocity_start());
+      const int clique = tree_to_clique[tree_index];
+      const int clique_nv = model->clique_size(clique);
+      limited_clique_sizes.push_back(clique_nv);
+      if (clique_to_constraint[clique] < 0) {
+        clique_to_constraint[clique] = limited_clique_sizes.size() - 1;
+      }
+    }
+  }
+
+  // Allocate space for the limit constraints. When we do this allocation, all
+  // of the limits will be set to +/- infinity. We'll set the actual limits
+  // below.
+  limits.Resize(limited_clique_sizes);
 
   for (JointIndex joint_index : plant().GetJointIndices()) {
     const Joint<T>& joint = plant().get_joint(joint_index);
@@ -393,7 +418,8 @@ void PooledSapBuilder<T>::AddLimitConstraints(
 
       if (!isinf(ql) || !isinf(qu)) {
         // Add constraint for this dof in clique.
-        limits.Add(clique, tree_dof, q0, ql, qu);
+        const int k = clique_to_constraint[clique];
+        limits.Add(k, clique, tree_dof, q0, ql, qu);
       }
     }
   }

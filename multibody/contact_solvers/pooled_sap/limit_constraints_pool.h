@@ -78,6 +78,16 @@ class PooledSapModel<T>::LimitConstraintsPool {
     R_.Reserve(clique_sizes);
   }
 
+  /* Re-allocate memory as needed, setting all constraints as infinite. */
+  void Resize(const std::vector<int>& constrained_clique_sizes) {
+    ql_.Resize(constrained_clique_sizes);
+    qu_.Resize(constrained_clique_sizes);
+    q0_.Resize(constrained_clique_sizes);
+    R_.Resize(constrained_clique_sizes);
+    vl_hat_.Resize(constrained_clique_sizes);
+    vu_hat_.Resize(constrained_clique_sizes);
+  }
+
   /* If not yet added, adds a limit constraint for the given `clique`. */
   int MaybeAdd(int clique) {
     const int index = num_constraints();
@@ -101,8 +111,7 @@ class PooledSapModel<T>::LimitConstraintsPool {
     }
   }
 
-  int Add(int clique, int dof, const T& q0, const T& ql, const T& qu) {
-    const int k = MaybeAdd(clique);
+  void Add(int k, int clique, int dof, const T& q0, const T& ql, const T& qu) {
     lower_limit(k, dof) = ql;
     upper_limit(k, dof) = qu;
     configuration(k, dof) = q0;
@@ -115,8 +124,6 @@ class PooledSapModel<T>::LimitConstraintsPool {
     regularization(k, dof) = eps * w_clique(dof);
     vl_hat(k, dof) = (ql - q0) / (dt * (1.0 + beta));
     vu_hat(k, dof) = (q0 - qu) / (dt * (1.0 + beta));
-
-    return k;
   }
 
   T& lower_limit(int k, int dof) { return ql_[k](dof); }
