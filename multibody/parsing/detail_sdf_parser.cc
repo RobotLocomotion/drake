@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
+#include <cmath>
 #include <limits>
 #include <map>
 #include <memory>
@@ -24,6 +25,7 @@
 #include "drake/common/trajectories/piecewise_constant_curvature_trajectory.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/detail_ignition.h"
 #include "drake/multibody/parsing/detail_make_model_name.h"
@@ -35,6 +37,7 @@
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/curvilinear_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
+#include "drake/multibody/tree/geometry_spatial_inertia.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/prismatic_spring.h"
@@ -58,6 +61,7 @@ using Eigen::Translation3d;
 using Eigen::Vector3d;
 using geometry::GeometryInstance;
 using math::RigidTransformd;
+using math::RollPitchYawd;
 using math::RotationMatrixd;
 using std::unique_ptr;
 
@@ -2458,7 +2462,8 @@ void AddJointsToInterfaceModel(const MultibodyPlant<double>& plant,
 
 // This is a forward-declaration of an anonymous helper that's defined later
 // in this file.
-sdf::ParserConfig MakeSdfParserConfig(const ParsingWorkspace&);
+sdf::ParserConfig MakeSdfParserConfig(const ParsingWorkspace&,
+                                      const std::string& /* root_dir */);
 
 sdf::Error MakeSdfError(sdf::ErrorCode code, const DiagnosticDetail& detail) {
   sdf::Error result(code, detail.message);
@@ -2532,8 +2537,9 @@ sdf::InterfaceModelPtr ConvertToInterfaceModel(
 // parsers comply with this assumption.
 sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     const ParsingWorkspace& workspace, const sdf::NestedInclude& include,
-    sdf::Errors* errors) {
-  const sdf::ParserConfig parser_config = MakeSdfParserConfig(workspace);
+    sdf::Errors* errors, const std::string& root_dir) {
+  const sdf::ParserConfig parser_config =
+      MakeSdfParserConfig(workspace, root_dir);
   auto& [options, package_map, diagnostic, builder, plant, scene_graph,
          collision_resolver, parser_selector] = workspace;
   const std::string resolved_filename{include.ResolvedFileName()};
@@ -2640,10 +2646,97 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   return main_interface_model;
 }
 
-// Note that this function keeps an alias of the input @p workspace in its
-// return value. Therefore, the lifetime of the @p workspace must be greater
-// than that of the returned parser config object.
-sdf::ParserConfig MakeSdfParserConfig(const ParsingWorkspace& workspace) {
+gz::math::Inertiald CalculateMeshInertia(const ParsingWorkspace& workspace,
+                                         double density, const sdf::Mesh& mesh,
+                                         const std::string& root_dir) {
+  if (!(std::isfinite(density) && density >= 0.0)) {
+    std::optional<int> line_no = mesh.Element()->LineNumber();
+    workspace.diagnostic.Error(fmt::format(
+        "The <mesh> tag{} specifies a non-physical density value: {} m/kg³. "
+        "Density must be a positive, finite value.",
+        line_no ? fmt::format(" on line {}", *line_no) : std::string(),
+        density));
+    return gz::math::Inertiald();
+  }
+  if (mesh.Uri().empty()) {
+    std::optional<int> line_no = mesh.Element()->LineNumber();
+    workspace.diagnostic.Error(fmt::format(
+        "The <mesh> tag{} is missing the required 'uri' attribute.",
+        line_no ? fmt::format(" on line {}", *line_no) : std::string()));
+    return gz::math::Inertiald();
+  }
+
+  // TODO(SeanCurtis-TRI): The sdformat API for this callback includes a
+  // CustomInertiaCalcProperties struct. We're not using it so it is omitted
+  // here. We could conceivably use it to give the user more control over how
+  // the spatial inertia is computed E.g., fail instead of fallback to Convex,
+  // or only use Convex in the first place, etc.
+  // https://github.com/gazebosim/sdformat/blob/main/include/sdf/CustomInertiaCalcProperties.hh
+  // E.g.
+  //
+  // ...
+  // <link name="link">
+  //   <inertial auto="true">
+  //     <auto_inertia_params>
+  //       <drake:force_convex_hull>true</drake:force_convex_hull>
+  //     </auto_inertia_params>
+  //   <inertial>
+  // </link>
+  // ...
+
+  auto resolve_filename = [&workspace, &root_dir](
+                              const DiagnosticPolicy& diagnostic,
+                              const std::string& uri_local) {
+    const ResolveUriResult resolved =
+        ResolveUri(diagnostic, uri_local, workspace.package_map, root_dir);
+    return resolved.GetStringPathIfExists();
+  };
+
+  const std::string filename =
+      resolve_filename(workspace.diagnostic, mesh.Uri());
+  const Vector3d scale = ToVector3(mesh.Scale());
+  const geometry::Mesh mesh_geo(filename, scale);
+
+  CalcSpatialInertiaResult result = internal::CalcSpatialInertiaWithFallback(
+      mesh_geo, density,
+      /* warn_for_convex= */ [&workspace](const std::string& message) {
+        workspace.diagnostic.Warning(message);
+      });
+
+  if (std::holds_alternative<std::string>(result)) {
+    workspace.diagnostic.Error(fmt::format(
+        "Failed to compute spatial inertia even for the convex hull of "
+        "{}.\n{}",
+        mesh_geo.source().path().string(), std::get<std::string>(result)));
+    return gz::math::Inertiald();
+  }
+
+  const SpatialInertia<double>& M_GGo_G =
+      std::get<SpatialInertia<double>>(result);
+
+  const Vector3d& p_GGcm = M_GGo_G.get_com();
+  const double mass = M_GGo_G.get_mass();
+  const RotationalInertia<double>& I_GGcm = M_GGo_G.CalcRotationalInertia();
+  const Vector3d moments = I_GGcm.get_moments();
+  const Vector3d products = I_GGcm.get_products();
+  const RollPitchYawd rpy(0, 0, 0);
+  return gz::math::Inertiald(
+      gz::math::MassMatrix3d(
+          mass, gz::math::Vector3(moments.x(), moments.y(), moments.z()),
+          gz::math::Vector3(products.x(), products.y(), products.z())),
+      gz::math::Pose3d(p_GGcm.x(), p_GGcm.y(), p_GGcm.z(), rpy.roll_angle(),
+                       rpy.pitch_angle(), rpy.yaw_angle()));
+}
+
+// TODO(10218) As per the issue, we eventually want to disallow relative-path
+// files (preferring package:// urls). But, for now, we maintain backwards
+// compatibility with the existing behavior. When resolving the issue, we'll be
+// able to eliminate the `root_dir` argument.
+// Note that this function keeps an alias of the inputs `workspace` and
+// `root_dir` in its return value. Therefore, the lifetime of the inputs must be
+// greater than that of the returned parser config object.
+sdf::ParserConfig MakeSdfParserConfig(const ParsingWorkspace& workspace,
+                                      const std::string& root_dir) {
   // The error severity settings here are somewhat subtle. We set all of them
   // to ERR so that reports will append into an sdf::Errors collection instead
   // of spamming into spdlog. However, when grabbing the reports out of the
@@ -2672,9 +2765,32 @@ sdf::ParserConfig MakeSdfParserConfig(const ParsingWorkspace& workspace) {
   });
 
   parser_config.RegisterCustomModelParser(
-      [&workspace](const sdf::NestedInclude& include, sdf::Errors& errors) {
-        return ParseNestedInterfaceModel(workspace, include, &errors);
+      [&workspace, &root_dir](const sdf::NestedInclude& include,
+                              sdf::Errors& errors) {
+        return ParseNestedInterfaceModel(workspace, include, &errors, root_dir);
       });
+
+  auto mesh_inertia_calculator =
+      [&workspace, &root_dir](
+          sdf::Errors&, const sdf::CustomInertiaCalcProperties& properties)
+      -> std::optional<gz::math::Inertiald> {
+    const std::optional<sdf::Mesh>& maybe_mesh = properties.Mesh();
+    if (!maybe_mesh.has_value()) {
+      // Note: this refers to "geometries", but we expect sdformat will handle
+      // all primitives and, in practice, this will only be invoked for meshes.
+      // TODO(SeanCurtis-TRI): We have shapes drake::capsule and
+      // drake::ellipsoid. They should be able to set inertial properties there
+      // too.
+      workspace.diagnostic.Warning(
+          "A body's inertial tag requested auto-computation (i.e., <inertial "
+          "auto=\"true\">), but no collision geometries are given for the "
+          "body.");
+      return gz::math::Inertiald();
+    }
+    return CalculateMeshInertia(workspace, properties.Density(), *maybe_mesh,
+                                root_dir);
+  };
+  parser_config.RegisterCustomInertiaCalc(mesh_inertia_calculator);
 
   return parser_config;
 }
@@ -2704,7 +2820,8 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
     const ParsingWorkspace& workspace) {
   DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
-  sdf::ParserConfig parser_config = MakeSdfParserConfig(workspace);
+  sdf::ParserConfig parser_config =
+      MakeSdfParserConfig(workspace, data_source.GetRootDir());
 
   sdf::Root root;
 
@@ -2752,7 +2869,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const ParsingWorkspace& workspace) {
   DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
-  sdf::ParserConfig parser_config = MakeSdfParserConfig(workspace);
+  sdf::ParserConfig parser_config =
+      MakeSdfParserConfig(workspace, data_source.GetRootDir());
 
   sdf::Root root;
 
