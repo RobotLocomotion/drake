@@ -11,7 +11,7 @@
 
 namespace drake {
 namespace manipulation {
-namespace {
+namespace franka_panda {
 
 using drake::lcmt_panda_command;
 using drake::lcmt_panda_status;
@@ -137,6 +137,6 @@ TEST_F(PandaCommandSenderTest, BadControlMode) {
   EXPECT_THROW(PandaCommandSender(7, 0x9999), std::exception);
 }
 
-}  // namespace
+}  // namespace franka_panda
 }  // namespace manipulation
 }  // namespace drake

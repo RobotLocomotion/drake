@@ -8,7 +8,7 @@
 
 namespace drake {
 namespace manipulation {
-namespace {
+namespace franka_panda {
 
 using drake::lcmt_panda_status;
 using drake::systems::Context;
@@ -94,6 +94,6 @@ TEST_F(PandaStatusSenderTest, AcceptanceTest) {
   EXPECT_EQ(output().joint_torque_external, as_vector(t0_external));
 }
 
-}  // namespace
+}  // namespace franka_panda
 }  // namespace manipulation
 }  // namespace drake

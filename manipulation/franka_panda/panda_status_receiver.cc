@@ -4,6 +4,7 @@
 
 namespace drake {
 namespace manipulation {
+namespace franka_panda {
 
 using drake::lcmt_panda_status;
 using drake::Value;
@@ -92,5 +93,6 @@ void PandaStatusReceiver::CalcLcmOutput(const Context<double>& context,
   }
 }
 
+}  // namespace franka_panda
 }  // namespace manipulation
 }  // namespace drake

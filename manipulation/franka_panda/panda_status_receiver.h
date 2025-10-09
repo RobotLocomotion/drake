@@ -10,6 +10,7 @@
 
 namespace drake {
 namespace manipulation {
+namespace franka_panda {
 
 /// Handles lcmt_panda_status messages from a LcmSubscriberSystem.
 ///
@@ -64,5 +65,6 @@ class PandaStatusReceiver final : public drake::systems::LeafSystem<double> {
   const int num_joints_;
 };
 
+}  // namespace franka_panda
 }  // namespace manipulation
 }  // namespace drake

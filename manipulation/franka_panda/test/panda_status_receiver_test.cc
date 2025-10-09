@@ -11,7 +11,7 @@
 
 namespace drake {
 namespace manipulation {
-namespace {
+namespace franka_panda {
 
 using drake::CompareMatrices;
 using drake::lcmt_panda_status;
@@ -132,6 +132,6 @@ TEST_F(PandaStatusReceiverTest, MallocTest) {
   }
 }
 
-}  // namespace
+}  // namespace franka_panda
 }  // namespace manipulation
 }  // namespace drake

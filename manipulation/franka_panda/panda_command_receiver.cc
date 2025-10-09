@@ -9,6 +9,7 @@
 
 namespace drake {
 namespace manipulation {
+namespace franka_panda {
 
 using drake::lcmt_panda_command;
 using drake::lcmt_panda_status;
@@ -265,5 +266,6 @@ void PandaCommandReceiver::CalcTorqueOutput(const Context<double>& context,
       message.joint_torque.data(), message.joint_torque.size()));
 }
 
+}  // namespace franka_panda
 }  // namespace manipulation
 }  // namespace drake

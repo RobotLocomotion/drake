@@ -8,6 +8,7 @@
 
 namespace drake {
 namespace manipulation {
+namespace franka_panda {
 
 /// Creates and outputs lcmt_panda_command messages.
 ///
@@ -61,5 +62,6 @@ class PandaCommandSender final : public drake::systems::LeafSystem<double> {
   const drake::systems::InputPort<double>* torque_input_port_{};
 };
 
+}  // namespace franka_panda
 }  // namespace manipulation
 }  // namespace drake
