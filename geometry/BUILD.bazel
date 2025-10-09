@@ -848,6 +848,7 @@ filegroup(
         "test/rotated_cube_squished.obj",
         "test/rotated_cube_unit_scale.obj",
         "test/two_cube_objects.obj",
+        "test/two_inverted_faces.obj",
     ],
 )
 
