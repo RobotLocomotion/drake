@@ -102,8 +102,6 @@ struct DynamicSizeStorage {
     blocks_.clear();
   }
 
-  void PushBack(const EigenType& data) { Add(data.rows(), data.cols()) = data; }
-
   // Capcity to store Eigen elements.
   int elements_capacity() const { return blocks_.capacity(); }
 
@@ -181,8 +179,6 @@ struct FixedSizeStorage {
   ElementView AddAndCopy(const EigenType& data) {
     return Add(data.rows(), data.cols()) = data;
   }
-
-  void PushBack(const EigenType& data) { data_.push_back(data); }
 
   void SetZero() {
     Eigen::Map<VectorX<Scalar>>(data_.data()->data(),
@@ -276,8 +272,6 @@ class EigenPool {
   /* Clears data. Capacity is not changed, and thus memory is not freed. */
   void Clear() { storage_.Clear(); }
 
-  void PushBack(const EigenType& data) { storage_.PushBack(data); }
-
   /* Adds element of the specified size and returns mutable to it. */
   ElementView Add(int rows, int cols) { return storage_.Add(rows, cols); }
 
@@ -285,14 +279,6 @@ class EigenPool {
    @returns mutable view to the new element. */
   ElementView AddAndCopy(const EigenType& data) {
     return storage_.AddAndCopy(data);
-  }
-
-  /* Sugar to add a data set into the pool. */
-  // TODO(amcastro-tri): Consider more efficient, all-at-once, allocation.
-  void PushBack(const std::vector<EigenType>& data) {
-    for (const auto& d : data) {
-      AddAndCopy(d);
-    }
   }
 
   /* Zeroes out all elements in the pool. */
