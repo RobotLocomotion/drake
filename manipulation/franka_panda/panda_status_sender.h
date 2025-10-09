@@ -8,6 +8,7 @@
 
 namespace drake {
 namespace manipulation {
+namespace franka_panda {
 
 /// Creates and outputs lcmt_panda_status messages.
 ///
@@ -64,5 +65,6 @@ class PandaStatusSender final : public drake::systems::LeafSystem<double> {
   const Eigen::VectorXd zero_vector_;
 };
 
+}  // namespace franka_panda
 }  // namespace manipulation
 }  // namespace drake

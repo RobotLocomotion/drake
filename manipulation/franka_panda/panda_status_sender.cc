@@ -2,6 +2,7 @@
 
 namespace drake {
 namespace manipulation {
+namespace franka_panda {
 
 using drake::lcmt_panda_status;
 using drake::systems::Context;
@@ -141,5 +142,6 @@ void PandaStatusSender::CalcOutput(const Context<double>& context,
   }
 }
 
+}  // namespace franka_panda
 }  // namespace manipulation
 }  // namespace drake

@@ -10,7 +10,7 @@
 
 namespace drake {
 namespace manipulation {
-namespace {
+namespace franka_panda {
 
 using drake::CompareMatrices;
 using drake::lcmt_panda_command;
@@ -163,6 +163,6 @@ TEST_F(PandaCommandReceiverTest, BadControlMode) {
   EXPECT_THROW(PandaCommandReceiver(7, 0x9999), std::exception);
 }
 
-}  // namespace
+}  // namespace franka_panda
 }  // namespace manipulation
 }  // namespace drake

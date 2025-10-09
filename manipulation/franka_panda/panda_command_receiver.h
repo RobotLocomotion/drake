@@ -9,6 +9,7 @@
 
 namespace drake {
 namespace manipulation {
+namespace franka_panda {
 
 /// Handles lcmt_panda_command message from a LcmSubscriberSystem.
 ///
@@ -117,5 +118,6 @@ class PandaCommandReceiver final : public drake::systems::LeafSystem<double> {
   const drake::systems::OutputPort<double>* commanded_torque_output_{};
 };
 
+}  // namespace franka_panda
 }  // namespace manipulation
 }  // namespace drake

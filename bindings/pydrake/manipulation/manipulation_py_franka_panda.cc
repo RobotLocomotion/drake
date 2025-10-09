@@ -16,9 +16,9 @@ using systems::LeafSystem;
 
 void DefineManipulationFrankaPanda(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::manipulation;
+  using namespace drake::manipulation::franka_panda;
   constexpr auto& doc =
-      pydrake_doc_manipulation_franka_panda.drake.manipulation;
+      pydrake_doc_manipulation_franka_panda.drake.manipulation.franka_panda;
 
   // Constants.
   m.attr("kPandaArmNumJoints") = kPandaArmNumJoints;
