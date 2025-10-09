@@ -1,0 +1,41 @@
+Drake's solution to
+https://github.com/gazebosim/sdformat/issues/1592
+
+Note, this isn't a *complete* solution. The _warnIfDensityIsUnset parameter
+has merely been muted. It should actually be removed all the way up the call
+stack.
+
+--- src/Collision.cc
++++ src/Collision.cc
+@@ -273,7 +273,7 @@ void Collision::CalculateInertial(
+   const ParserConfig &_config,
+   const std::optional<double> &_density,
+   sdf::ElementPtr _autoInertiaParams,
+-  bool _warnIfDensityIsUnset)
++  bool /* _warnIfDensityIsUnset */)
+ {
+   // Order of precedence for density:
+   double density;
+@@ -292,21 +292,8 @@ void Collision::CalculateInertial(
+   // 3. DensityDefault value.
+   else
+   {
+-    // If density was not explicitly set, default value is used
+-    // Send a warning about the default value being used if needed
++    // If density was not explicitly set, default value is used.
+     density = DensityDefault();
+-    if (_warnIfDensityIsUnset)
+-    {
+-      Error densityMissingErr(
+-        ErrorCode::ELEMENT_MISSING,
+-        "Collision is missing a <density> child element. "
+-        "Using a default density value of " +
+-        std::to_string(DensityDefault()) + " kg/m^3. "
+-      );
+-      enforceConfigurablePolicyCondition(
+-        _config.WarningsPolicy(), densityMissingErr, _errors
+-      );
+-    }
+   }
+ 
+   // If this Collision's auto inertia params have not been set, then use the

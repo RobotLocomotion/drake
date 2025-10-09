@@ -1,0 +1,244 @@
+SDFormat provides a mechanism for computing the spatial inertia for mesh
+geometries when `<inertial auto="true"/>` set. It does not have a mechanism for
+computing the spatial inertia for arbitrary geometry types.
+
+This mirrors the mesh mechanism by, essentially, swapping sdf::Mesh for
+sdf::Geometry.
+
+--- include/sdf/CustomInertiaCalcProperties.hh
++++ include/sdf/CustomInertiaCalcProperties.hh
+@@ -36,6 +36,7 @@ inline namespace SDF_VERSION_NAMESPACE
+ 
+ // Forward Declarations
+ class Mesh;
++class Geometry;
+ 
+ class SDFORMAT_VISIBLE CustomInertiaCalcProperties
+ {
+@@ -82,7 +83,53 @@ class SDFORMAT_VISIBLE CustomInertiaCalcProperties
+ using CustomInertiaCalculator =
+     std::function<std::optional<gz::math::Inertiald>(sdf::Errors &,
+         const sdf::CustomInertiaCalcProperties &)>;
+-}
++
++
++class SDFORMAT_VISIBLE CustomGeometryInertiaCalcProperties
++{
++  /// \brief Default Constructor
++  public: CustomGeometryInertiaCalcProperties();
++
++  /// \brief Constructor with mesh properties
++  /// \param[in] _density Double density value
++  /// \param[in] _geometry sdf::ElementPtr for geometry element
++  /// \param[in] _calculatorParams sdf::ElementPtr for calculator params element
++  public: CustomGeometryInertiaCalcProperties(const double _density,
++              const std::optional<sdf::Geometry> _geometry,
++              const sdf::ElementPtr _calculatorParams);
++
++  /// \brief Get the density of the mesh.
++  /// \return Double density of the mesh.
++  public: double Density() const;
++
++  /// \brief Function to set the density of the interface object
++  /// \param[in] _density Double density value
++  public: void SetDensity(double _density);
++
++  /// \brief Get the reference to the geometry element being used.
++  /// \return Reference to the sdf::ElementPtr object.
++  public: const std::optional<sdf::Geometry> &Geometry() const;
++
++  /// \brief Function to set the geometry element
++  /// \param[in] _geometry sdf::ElementPtr for geometry element
++  public: void SetGeometry(std::optional<sdf::Geometry> _geometry);
++
++  /// \brief Get the reference to the <auto_inertia_params> sdf element.
++  /// User defined calculator params can be accessed through this element
++  /// \return sdf::ElementPtr for the tag
++  public: const sdf::ElementPtr AutoInertiaParams() const;
++
++  /// \brief Function to set the calculator params sdf element object
++  /// \param[in] _autoInertiaParamsElem sdf::ElementPtr for calculator params
++  public: void SetAutoInertiaParams(sdf::ElementPtr _autoInertiaParamsElem);
++
++  /// \brief Private data pointer.
++  GZ_UTILS_IMPL_PTR(dataPtr)
++};
++
++using CustomGeometryInertiaCalculator =
++    std::function<std::optional<gz::math::Inertiald>(sdf::Errors &,
++        const sdf::CustomGeometryInertiaCalcProperties &)>;}
+ }
+ 
+ #endif
+--- include/sdf/ParserConfig.hh
++++ include/sdf/ParserConfig.hh
+@@ -239,9 +239,21 @@ class SDFORMAT_VISIBLE ParserConfig
+   /// \return registered mesh MOI Calculator.
+   public: const CustomInertiaCalculator &CustomInertiaCalc() const;
+ 
+-  /// \brief Set the preserveFixedJoint flag.
+-  /// \param[in] _preserveFixedJoint True to preserve fixed joints, false to
+-  /// reduce the fixed joints and merge the child link into the parent.
++  /// \brief Registers a custom Moment of Inertia Calculator for unrecognized
++  /// geometry Elements.
++  /// \param[in] _inertiaCalculator Callback with signature as described in
++  /// sdf/CustomInertiaCalcProperties.hh.
++  public: void RegisterCustomGeometryInertiaCalc(
++      CustomGeometryInertiaCalculator _inertiaCalculator);
++
++  /// \brief Get the registered custom geometry MOI Calculator
++  /// \return registered geometry MOI Calculator.
++  public:
++   const CustomGeometryInertiaCalculator &CustomGeometryInertiaCalc() const;
++
++   /// \brief Set the preserveFixedJoint flag.
++   /// \param[in] _preserveFixedJoint True to preserve fixed joints, false to
++   /// reduce the fixed joints and merge the child link into the parent.
+   public: void URDFSetPreserveFixedJoint(bool _preserveFixedJoint);
+ 
+   /// \brief Get the preserveFixedJoint flag value.
+--- src/CustomInertiaCalcProperties.cc
++++ src/CustomInertiaCalcProperties.cc
+@@ -18,6 +18,7 @@
+ #include <optional>
+ 
+ #include "sdf/CustomInertiaCalcProperties.hh"
++#include "sdf/Geometry.hh"
+ #include "sdf/Mesh.hh"
+ #include "sdf/Element.hh"
+ 
+@@ -92,3 +93,67 @@ void CustomInertiaCalcProperties::SetAutoInertiaParams(
+ {
+   this->dataPtr->inertiaCalculatorParams = _autoInertiaParamsElem;
+ }
++
++class CustomGeometryInertiaCalcProperties::Implementation {
++  /// \brief Density of the mesh. 1000 kg/m^3 by default
++ public:
++  double density{1000.0};
++
++  /// \brief The SDF geometry.
++ public:
++  std::optional<sdf::Geometry> geometry{std::nullopt};
++
++  /// \brief SDF element pointer to <auto_inertia_params> tag.
++  /// This can be used to access custom params for the
++  /// Inertia Calculator
++ public:
++  sdf::ElementPtr inertiaCalculatorParams{nullptr};
++};
++
++/////////////////////////////////////////////////
++CustomGeometryInertiaCalcProperties::CustomGeometryInertiaCalcProperties()
++    : dataPtr(gz::utils::MakeImpl<Implementation>()) {}
++
++/////////////////////////////////////////////////
++CustomGeometryInertiaCalcProperties::CustomGeometryInertiaCalcProperties(
++    const double _density, const std::optional<sdf::Geometry> _geometry,
++    const sdf::ElementPtr _calculatorParams)
++    : dataPtr(gz::utils::MakeImpl<Implementation>()) {
++  this->dataPtr->density = _density;
++  this->dataPtr->geometry = _geometry;
++  this->dataPtr->inertiaCalculatorParams = _calculatorParams;
++}
++
++/////////////////////////////////////////////////
++double CustomGeometryInertiaCalcProperties::Density() const {
++  return this->dataPtr->density;
++}
++
++/////////////////////////////////////////////////
++void CustomGeometryInertiaCalcProperties::SetDensity(double _density) {
++  this->dataPtr->density = _density;
++}
++
++/////////////////////////////////////////////////
++const std::optional<sdf::Geometry> &
++CustomGeometryInertiaCalcProperties::Geometry() const {
++  return this->dataPtr->geometry;
++}
++
++/////////////////////////////////////////////////
++void CustomGeometryInertiaCalcProperties::SetGeometry(
++    std::optional<sdf::Geometry> _geometry) {
++  this->dataPtr->geometry = _geometry;
++}
++
++/////////////////////////////////////////////////
++const sdf::ElementPtr CustomGeometryInertiaCalcProperties::AutoInertiaParams()
++    const {
++  return this->dataPtr->inertiaCalculatorParams;
++}
++
++/////////////////////////////////////////////////
++void CustomGeometryInertiaCalcProperties::SetAutoInertiaParams(
++    sdf::ElementPtr _autoInertiaParamsElem) {
++  this->dataPtr->inertiaCalculatorParams = _autoInertiaParamsElem;
++}
+\ No newline at end of file
+--- src/Geometry.cc
++++ src/Geometry.cc
+@@ -370,15 +370,23 @@ std::optional<gz::math::Inertiald> Geometry::CalculateInertial(
+                                               _config);
+       break;
+     default:
+-      Error invalidGeomTypeErr(
+-        ErrorCode::WARNING,
+-        "Automatic inertia calculations are not supported for the given"
+-        " Geometry type. "
+-      );
+-      enforceConfigurablePolicyCondition(
+-        _config.WarningsPolicy(), invalidGeomTypeErr, _errors
+-      );
+-      geomInertial = std::nullopt;
++      const auto &customCalculator = _config.CustomGeometryInertiaCalc();
++      if (customCalculator)
++      {
++        sdf::CustomGeometryInertiaCalcProperties calcInterface =
++          CustomGeometryInertiaCalcProperties(
++            _density, *this, _autoInertiaParams);
++
++        geomInertial = customCalculator(_errors, calcInterface);
++        if (!geomInertial.has_value()) {
++          Error invalidGeomTypeErr(
++              ErrorCode::WARNING,
++              "Automatic inertia calculations are not supported for the given"
++              " Geometry type.");
++          enforceConfigurablePolicyCondition(_config.WarningsPolicy(),
++                                             invalidGeomTypeErr, _errors);
++        }
++      }
+       break;
+   }
+ 
+--- src/ParserConfig.cc
++++ src/ParserConfig.cc
+@@ -61,6 +61,9 @@ class sdf::ParserConfig::Implementation
+   /// \brief Collection of custom model parsers.
+   public: CustomInertiaCalculator customInertiaCalculator;
+ 
++  /// \brief Optional inertia calculator for unknown geometry types.
++  public: CustomGeometryInertiaCalculator customGeometryInertiaCalculator;
++
+   /// \brief Flag to explicitly preserve fixed joints when
+   /// reading the SDF/URDF file.
+   public: bool preserveFixedJoint = false;
+@@ -224,6 +227,18 @@ const CustomInertiaCalculator &ParserConfig::CustomInertiaCalc() const
+   return this->dataPtr->customInertiaCalculator;
+ }
+ 
++/////////////////////////////////////////////////
++void ParserConfig::RegisterCustomGeometryInertiaCalc(
++    CustomGeometryInertiaCalculator _inertiaCalculator) {
++  this->dataPtr->customGeometryInertiaCalculator = _inertiaCalculator;
++}
++
++/////////////////////////////////////////////////
++const CustomGeometryInertiaCalculator &ParserConfig::CustomGeometryInertiaCalc()
++    const {
++  return this->dataPtr->customGeometryInertiaCalculator;
++}
++
+ /////////////////////////////////////////////////
+ void ParserConfig::URDFSetPreserveFixedJoint(bool _preserveFixedJoint)
+ {
