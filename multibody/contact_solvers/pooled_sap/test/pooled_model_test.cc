@@ -1,6 +1,7 @@
 #include <limits>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -418,12 +419,17 @@ GTEST_TEST(PooledSapModel, GainConstraint) {
   // Add gain constraints.
   auto& gain_constraints = model.gain_constraints_pool();
 
+  // Allocate space for two gain constraints (on cliques 0 and 2).
+  const std::vector<int> actuated_clique_sizes = {model.clique_size(0),
+                                                  model.clique_size(2)};
+  gain_constraints.Resize(actuated_clique_sizes);
+
   // On clique 0:
   const int nv0 = model.clique_size(0);
   VectorX<AutoDiffXd> K0 = 1.1 * VectorX<AutoDiffXd>::Ones(nv0);
   VectorX<AutoDiffXd> u0 = -6.0 * VectorX<AutoDiffXd>::Ones(nv0);
   VectorX<AutoDiffXd> e0 = 0.9 * VectorX<AutoDiffXd>::Ones(nv0);
-  gain_constraints.Add(0, K0, u0, e0);
+  gain_constraints.Add(0, 0, K0, u0, e0);
 
   // On clique 2:
   const int nv2 = model.clique_size(2);
@@ -435,7 +441,7 @@ GTEST_TEST(PooledSapModel, GainConstraint) {
   u2(1) = -13.5;  // bias below limit.
   u2(2) = -5.5;   // bias within limits.
   u2(4) = 15.2;   // bias above limits.
-  gain_constraints.Add(2, K2, u2, e2);
+  gain_constraints.Add(1, 2, K2, u2, e2);
 
   EXPECT_EQ(model.num_gain_constraints(), 2);
   EXPECT_EQ(model.num_constraints(), 5);
