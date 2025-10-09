@@ -63,9 +63,7 @@ class TamsiDriver {
 
   // Returns a reference to the underlying tree topology of the multibody
   // system.
-  const MultibodyTreeTopology& tree_topology() const {
-    return manager().tree_topology();
-  }
+  const SpanningForest& get_forest() const { return manager().get_forest(); }
 
   // Returns a reference to the MultibodyPlant model held by the manager
   // provided at construction.

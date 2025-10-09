@@ -421,16 +421,6 @@ class TreeTopologyTests : public ::testing::Test {
     }
 
     // Verify the expected forest of trees.
-    EXPECT_EQ(topology.num_trees(), 4);
-    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(0)), 1);
-    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(1)), 2);
-    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(2)), 0);
-    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(3)), 4);
-    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(0)), 0);
-    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(1)), 1);
-    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(2)), 3);
-    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(3)), 3);
-
     EXPECT_EQ(forest.num_trees(), 4);
     EXPECT_EQ(forest.trees(TreeIndex(0)).nv(), 1);
     EXPECT_EQ(forest.trees(TreeIndex(1)).nv(), 2);

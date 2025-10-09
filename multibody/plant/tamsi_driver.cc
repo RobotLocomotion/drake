@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "multibody/topology/spanning_forest.h"
+
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/math/rigid_transform.h"
@@ -42,16 +44,14 @@ internal::ContactJacobians<T> TamsiDriver<T>::CalcContactJacobians(
   contact_jacobians.Jn = MatrixX<T>::Zero(nc, nv);
   contact_jacobians.Jt = MatrixX<T>::Zero(2 * nc, nv);
 
-  const auto& topology = tree_topology();
+  const SpanningForest& forest = get_forest();
   for (int i = 0; i < nc; ++i) {
     const int row_offset = 3 * i;
     const DiscreteContactPair<T>& contact_pair = contact_pairs[i];
     for (const typename DiscreteContactPair<T>::JacobianTreeBlock&
              tree_jacobian : contact_pair.jacobian) {
-      const int col_offset =
-          topology.tree_velocities_start_in_v(tree_jacobian.tree);
-      const int tree_nv = topology.num_tree_velocities(tree_jacobian.tree);
-      contact_jacobians.Jc.block(row_offset, col_offset, 3, tree_nv) =
+      const SpanningForest::Tree& tree = forest.trees(tree_jacobian.tree);
+      contact_jacobians.Jc.block(row_offset, tree.v_start(), 3, tree.nv()) =
           tree_jacobian.J.MakeDenseMatrix();
     }
     contact_jacobians.Jt.middleRows(2 * i, 2) =
