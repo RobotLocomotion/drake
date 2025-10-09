@@ -133,6 +133,8 @@ class PooledSapModel<T>::PatchConstraintsPool {
    @param[in] normal_W Contact normal, from A into B by convention. */
   void AddPair(const int patch_idx, const int pair_idx, const Vector3<T>& p_BoC_W,
                const Vector3<T>& normal_W, const T& fn0, const T& stiffness) {
+    DRAKE_ASSERT(patch_idx >= 0 && patch_idx < num_patches());
+    DRAKE_ASSERT(pair_idx >= 0 && pair_idx < num_pairs_[patch_idx]);
     const int idx = patch_pair_index(patch_idx, pair_idx);
 
     p_BC_W_[idx] = p_BoC_W;

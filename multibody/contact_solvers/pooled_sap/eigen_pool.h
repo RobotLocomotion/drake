@@ -310,13 +310,13 @@ class EigenPool {
 
   /* Const access to the i-th element. */
   const ConstElementView operator[](int i) const {
-    DRAKE_ASSERT(0 <= i && i < size());
+    DRAKE_DEMAND(0 <= i && i < size());
     return storage_.at(i);
   }
 
   /* Non-const access to the i-th element. */
   ElementView operator[](int i) {
-    DRAKE_ASSERT(0 <= i && i < size());
+    DRAKE_DEMAND(0 <= i && i < size());
     return storage_.at(i);
   }
 

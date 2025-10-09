@@ -274,8 +274,6 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   }
 
   AllocatePatchConstraints(model);
-  // model->patch_constraints_pool().Clear();
-
   AddPatchConstraintsForPointContact(context, model);
   AddPatchConstraintsForHydroelasticContact(context, model);
 
@@ -555,10 +553,15 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
                                   : std::numeric_limits<double>::infinity();
       const T gN = N_is_compliant ? -s.EvaluateGradE_N_W(face).dot(nhat_NM_W)
                                   : std::numeric_limits<double>::infinity();
-      constexpr double kGradientEpsilon = 1.0e-14;
-      if (gM < kGradientEpsilon || gN < kGradientEpsilon) {
-        continue;
-      }
+
+      // TODO(vincekurtz): add this check back, which eliminates hydro
+      // constraints with a very small contribution. For now it's just
+      // overcomplicating the logic of how many pairs to pre-allocate for each
+      // contact patch.
+      // constexpr double kGradientEpsilon = 1.0e-14;
+      // if (gM < kGradientEpsilon || gN < kGradientEpsilon) {
+      //   continue;
+      // }
       const T g = 1.0 / (1.0 / gM + 1.0 / gN);
       const Vector3<T>& p_WC = s.centroid(face);
       const Vector3<T> p_BoC_W = p_WC - p_WBo;
