@@ -612,6 +612,56 @@ void ApproximateBoundedNormByLinearConstraints(
   prog->AddLinearConstraint(x(0) - x(1) - x(2), -sqrt3_c, sqrt3_c);
 }
 }  // namespace
+namespace {
+
+// Helper struct containing precomputed quantities shared by
+// AddJointLimitConstraint() and AddJointCenteringCost().
+struct RevoluteJointGeometry {
+  std::array<Eigen::Vector3d, 4> v_samples;
+  Eigen::Matrix3d rotmat_joint_offset;
+};
+
+// Helper to compute v_samples and rotmat_joint_offset for a revolute joint.
+RevoluteJointGeometry ComputeRevoluteJointGeometry(
+    const Eigen::Vector3d& axis_F, double angle_offset) {
+  // First generate a vector v_C that is perpendicular to rotation
+  // axis, in child frame.
+  Vector3d v_C = axis_F.cross(Vector3d(1, 0, 0));
+  double v_C_norm = v_C.norm();
+  if (v_C_norm < sqrt(2) / 2) {
+    // axis_F is almost parallel to [1; 0; 0]. Try another axis [0, 1, 0]
+    v_C = axis_F.cross(Vector3d(0, 1, 0));
+    v_C_norm = v_C.norm();
+  }
+  // Normalizes the revolute vector.
+  v_C /= v_C_norm;
+
+  // The constraint would be tighter, if we choose many unit
+  // length vector `v`, perpendicular to the joint axis, in the
+  // joint frame. Here to balance between the size of the
+  // optimization problem, and the tightness of the convex
+  // relaxation, we just use four vectors in `v`. Notice that
+  // v_basis contains the orthonormal basis of the null space
+  // null(axis_F).
+  std::array<Eigen::Vector3d, 2> v_basis = {{v_C, axis_F.cross(v_C)}};
+  v_basis[1] /= v_basis[1].norm();
+
+  std::array<Eigen::Vector3d, 4> v_samples;
+  v_samples[0] = v_basis[0];
+  v_samples[1] = v_basis[1];
+  v_samples[2] = v_basis[0] + v_basis[1];
+  v_samples[2] /= v_samples[2].norm();
+  v_samples[3] = v_basis[0] - v_basis[1];
+  v_samples[3] /= v_samples[3].norm();
+
+  // rotmat_joint_offset is R(k, angle_offset) explained above.
+  const Matrix3d rotmat_joint_offset =
+      Eigen::AngleAxisd(angle_offset, axis_F).toRotationMatrix();
+
+  return {v_samples, rotmat_joint_offset};
+}
+
+}  // namespace
 
 void GlobalInverseKinematics::AddJointLimitConstraint(
     BodyIndex body_index, double joint_lower_bound, double joint_upper_bound,
@@ -649,9 +699,6 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
       throw std::runtime_error("Cannot impose joint limits for a fixed joint.");
     }
     case 1: {
-      // If the new bound [joint_lower_bound joint_upper_bound] is not tighter
-      // than the existing bound, then we ignore it, without adding new
-      // constraints.
       bool is_limits_tightened = false;
       const int position_idx = joint->position_start();
       if (joint_lower_bound > joint_lower_bounds_(position_idx)) {
@@ -663,101 +710,30 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
         is_limits_tightened = true;
       }
       if (is_limits_tightened) {
-        // Should NOT do this evil dynamic cast here, but currently we do
-        // not have a method to tell if a joint is revolute or not.
         if (dynamic_cast<const RevoluteJoint<double>*>(joint) != nullptr) {
           const auto* revolute_joint =
               dynamic_cast<const RevoluteJoint<double>*>(joint);
-          // axis_F is the vector of the rotation axis in the joint
-          // inboard/outboard frame.
           const Vector3d axis_F = revolute_joint->revolute_axis();
 
-          // Now we process the joint limits constraint.
           const double joint_bound = (joint_upper_bounds_[position_idx] -
                                       joint_lower_bounds_[position_idx]) /
                                      2;
 
           if (joint_bound < M_PI) {
-            // We use the fact that if the angle between two unit length
-            // vectors u and v is smaller than α, it is equivalent to
-            // |u - v| <= 2*sin(α/2)
-            // which is a second order cone constraint.
+            // Compute shared geometric quantities.
+            const double offset_angle = (joint_lower_bounds_[position_idx] +
+                                         joint_upper_bounds_[position_idx]) /
+                                        2;
+            const auto geom =
+                ComputeRevoluteJointGeometry(axis_F, offset_angle);
 
-            // If the rotation angle θ satisfies
-            // a <= θ <= b
-            // This is equivalent to
-            // -α <= θ - (a+b)/2 <= α
-            // where α = (b-a) / 2, (a+b) / 2 is the joint offset, such that
-            // the bounds on β = θ - (a+b)/2 are symmetric.
-            // We use the following notation:
-            // R_WP     The rotation matrix of parent frame `P` to world
-            //          frame `W`.
-            // R_WC     The rotation matrix of child frame `C` to world
-            //          frame `W`.
-            // R_PJp    The rotation matrix of joint frame `Jp` to parent
-            //          frame `P`.
-            // R(k, β)  The rotation matrix along joint axis k by angle β.
-            // R_JcC    The rotation matrix of child frame `C` to the
-            //          outboard frame `Jc`.
-            // The kinematics constraint is
-            // R_WP * R_PJp * R(k, θ) * R_JcC = R_WC.
-            // This is equivalent to
-            // R_WP * R_PJp * R(k, (a+b)/2) * R(k, β)) = R_WC * R_CJc.
-            // So to constrain that -α <= β <= α,
-            // we can constrain the angle between the two vectors
-            // R_WC * R_CJc * v and R_WP * R_PJp * R(k,(a+b)/2) * v is no larger
-            // than α, where v is a unit length vector perpendicular to the
-            // rotation axis k, in the joint frame. Thus we can constrain that
-            // |R_WC*R_CJc*v - R_WP * R_PJp * R(k,(a+b)/2)*v | <= 2*sin (α / 2)
-            // as we explained above.
+            const auto& v_samples = geom.v_samples;
+            const auto& rotmat_joint_offset = geom.rotmat_joint_offset;
 
-            // First generate a vector v_C that is perpendicular to rotation
-            // axis, in child frame.
-            Vector3d v_C = axis_F.cross(Vector3d(1, 0, 0));
-            double v_C_norm = v_C.norm();
-            if (v_C_norm < sqrt(2) / 2) {
-              // axis_F is almost parallel to [1; 0; 0]. Try another axis
-              // [0, 1, 0]
-              v_C = axis_F.cross(Vector3d(0, 1, 0));
-              v_C_norm = v_C.norm();
-            }
-            // Normalizes the revolute vector.
-            v_C /= v_C_norm;
-
-            // The constraint would be tighter, if we choose many unit
-            // length vector `v`, perpendicular to the joint axis, in the
-            // joint frame. Here to balance between the size of the
-            // optimization problem, and the tightness of the convex
-            // relaxation, we just use four vectors in `v`. Notice that
-            // v_basis contains the orthonormal basis of the null space
-            // null(axis_F).
-            std::array<Eigen::Vector3d, 2> v_basis = {{v_C, axis_F.cross(v_C)}};
-            v_basis[1] /= v_basis[1].norm();
-
-            std::array<Eigen::Vector3d, 4> v_samples;
-            v_samples[0] = v_basis[0];
-            v_samples[1] = v_basis[1];
-            v_samples[2] = v_basis[0] + v_basis[1];
-            v_samples[2] /= v_samples[2].norm();
-            v_samples[3] = v_basis[0] - v_basis[1];
-            v_samples[3] /= v_samples[3].norm();
-
-            // rotmat_joint_offset is R(k, (a+b)/2) explained above.
-            const Matrix3d rotmat_joint_offset =
-                Eigen::AngleAxisd((joint_lower_bounds_[position_idx] +
-                                   joint_upper_bounds_[position_idx]) /
-                                      2,
-                                  axis_F)
-                    .toRotationMatrix();
-
-            // joint_limit_expr is going to be within the Lorentz cone.
             Eigen::Matrix<Expression, 4, 1> joint_limit_expr;
             const double joint_limit_lorentz_rhs = 2 * sin(joint_bound / 2);
             joint_limit_expr(0) = joint_limit_lorentz_rhs;
             for (const auto& v : v_samples) {
-              // joint_limit_expr.tail<3> is
-              // R_WC * R_CJc * v - R_WP * R_PJp * R(k,(a+b)/2) * v mentioned
-              // above.
               joint_limit_expr.tail<3>() =
                   R_WB_[body_index] * X_CJc.rotation().matrix() * v -
                   R_WB_[parent_idx] * X_PJp.rotation().matrix() *
@@ -766,7 +742,6 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
                 ApproximateBoundedNormByLinearConstraints(
                     joint_limit_expr.tail<3>(), joint_limit_lorentz_rhs,
                     &prog_);
-
               } else {
                 prog_.AddLorentzConeConstraint(joint_limit_expr);
               }
@@ -774,40 +749,11 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
 
             const std::unordered_set<BodyIndex> weld_to_world_body_index_set =
                 GetWeldToWorldBodyIndexSet(plant_);
-            // This dummy_plant_context is used to compute the pose of a body
-            // welded to the world.
             auto dummy_plant_context = plant_.CreateDefaultContext();
             if (weld_to_world_body_index_set.contains(BodyIndex{parent_idx})) {
               const RigidTransformd X_WP = plant_.CalcRelativeTransform(
                   *dummy_plant_context, plant_.world_frame(),
                   plant_.get_body(BodyIndex{parent_idx}).body_frame());
-              // If the parent body is rigidly fixed to the world. Then we
-              // can impose a tighter constraint. Based on the derivation
-              // above, we have
-              // R(k, β) = [R_WP * R_PJp * R(k, (a+b)/2)]ᵀ * R_WC * R_CJc
-              // as a linear expression of the decision variable R_WC
-              // (notice that R_WP is constant, since the parent body is
-              // rigidly fixed to the world.
-              // Any unit length vector `v` that is perpendicular to
-              // joint axis `axis_F` in the joint Frame, can be written as
-              //   v = V * u, uᵀ * u = 1
-              // where V = [v_basis[0] v_basis[1]] containing the basis
-              // vectors for the linear space Null(axis_F).
-              // On the other hand, we know
-              //   vᵀ * R(k, β) * v = cos(β) >= cos(α)
-              // due to the joint limits constraint
-              //   -α <= β <= α.
-              // So we have the condition that
-              // uᵀ * u = 1
-              //    => uᵀ * Vᵀ * R(k, β) * V * u >= cos(α)
-              // Using S-lemma, we know this implication is equivalent to
-              // Vᵀ * [R(k, β) + R(k, β)ᵀ]/2 * V - cos(α) * I is p.s.d
-              // We let a 2 x 2 matrix
-              //   M = Vᵀ * [R(k, β) + R(k, β)ᵀ]/2 * V - cos(α) * I
-              // A 2 x 2 matrix M being positive semidefinite (p.s.d) is
-              // equivalent to the condition that
-              // [M(0, 0), M(1, 1), M(1, 0)] is in the rotated Lorentz cone.
-              // R_joint_beta is R(k, β) in the documentation.
               Eigen::Matrix<symbolic::Expression, 3, 3> R_joint_beta =
                   (X_WP.rotation().matrix() * X_PJp.rotation().matrix() *
                    rotmat_joint_offset)
@@ -815,6 +761,8 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
                   R_WB_[body_index] * X_CJc.rotation().matrix();
               const double joint_bound_cos{std::cos(joint_bound)};
               if (!linear_constraint_approximation) {
+                std::array<Eigen::Vector3d, 2> v_basis = {
+                    {v_samples[0], (v_samples[0].cross(axis_F)).normalized()}};
                 Eigen::Matrix<double, 3, 2> V;
                 V << v_basis[0], v_basis[1];
                 const Eigen::Matrix<symbolic::Expression, 2, 2> M =
@@ -824,11 +772,6 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
                 prog_.AddRotatedLorentzConeConstraint(
                     Vector3<symbolic::Expression>(M(0, 0), M(1, 1), M(1, 0)));
               }
-
-              // From Rodriguez formula, we know that -α <= β <= α implies
-              // trace(R(k, β)) = 1 + 2 * cos(β) >= 1 + 2*cos(α)
-              // So we can impose the constraint
-              // 1+2*cos(α) ≤ trace(R(k, β))
               const symbolic::Expression R_joint_beta_trace{
                   R_joint_beta.trace()};
               prog_.AddLinearConstraint(R_joint_beta_trace >=
@@ -836,7 +779,6 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
             }
           }
         } else {
-          // TODO(hongkai.dai): add prismatic and helical joint.
           throw std::runtime_error("Unsupported joint type.");
         }
       }
@@ -880,53 +822,18 @@ void GlobalInverseKinematics::AddJointCenteringCost(BodyIndex body_index,
 
   switch (joint->num_velocities()) {
     case 0: {
-      // Fixed to the parent body.
       throw std::runtime_error("Cannot impose joint limits for a fixed joint.");
     }
     case 1: {
-      // Should NOT do this evil dynamic cast here, but currently we do
-      // not have a method to tell if a joint is revolute or not.
       if (dynamic_cast<const RevoluteJoint<double>*>(joint) != nullptr) {
         const auto* revolute_joint =
             dynamic_cast<const RevoluteJoint<double>*>(joint);
-        // axis_F is the vector of the rotation axis in the joint
-        // inboard/outboard frame.
         const Vector3d axis_F = revolute_joint->revolute_axis();
 
-        // First generate a vector v_C that is perpendicular to rotation
-        // axis, in child frame.
-        Vector3d v_C = axis_F.cross(Vector3d(1, 0, 0));
-        double v_C_norm = v_C.norm();
-        if (v_C_norm < sqrt(2) / 2) {
-          // axis_F is almost parallel to [1; 0; 0]. Try another axis
-          // [0, 1, 0]
-          v_C = axis_F.cross(Vector3d(0, 1, 0));
-          v_C_norm = v_C.norm();
-        }
-        // Normalizes the revolute vector.
-        v_C /= v_C_norm;
-
-        // The constraint would be tighter, if we choose many unit
-        // length vector `v`, perpendicular to the joint axis, in the
-        // joint frame. Here to balance between the size of the
-        // optimization problem, and the tightness of the convex
-        // relaxation, we just use four vectors in `v`. Notice that
-        // v_basis contains the orthonormal basis of the null space
-        // null(axis_F).
-        std::array<Eigen::Vector3d, 2> v_basis = {{v_C, axis_F.cross(v_C)}};
-        v_basis[1] /= v_basis[1].norm();
-
-        std::array<Eigen::Vector3d, 4> v_samples;
-        v_samples[0] = v_basis[0];
-        v_samples[1] = v_basis[1];
-        v_samples[2] = v_basis[0] + v_basis[1];
-        v_samples[2] /= v_samples[2].norm();
-        v_samples[3] = v_basis[0] - v_basis[1];
-        v_samples[3] /= v_samples[3].norm();
-
-        // rotmat_joint_offset is R(k, nominal) explained above.
-        const Matrix3d rotmat_joint_offset =
-            Eigen::AngleAxisd(nominal_value, axis_F).toRotationMatrix();
+        // Compute shared geometric quantities.
+        const auto geom = ComputeRevoluteJointGeometry(axis_F, nominal_value);
+        const auto& v_samples = geom.v_samples;
+        const auto& rotmat_joint_offset = geom.rotmat_joint_offset;
 
         for (const auto& v : v_samples) {
           Eigen::Matrix<Expression, 3, 1> unit_vector_difference =
@@ -942,7 +849,6 @@ void GlobalInverseKinematics::AddJointCenteringCost(BodyIndex body_index,
               prog_.AddLinearCost(weight * s);
             }
           } else if (norm == 2) {
-            // Get the union of all variables in all expressions
             symbolic::Variables var_set;
             for (int i = 0; i < unit_vector_difference.size(); ++i) {
               var_set += unit_vector_difference[i].GetVariables();
@@ -953,17 +859,14 @@ void GlobalInverseKinematics::AddJointCenteringCost(BodyIndex body_index,
               vars[count++] = var;
             }
 
-            // Decompose unit_vector_difference as an affine expression Ax+b.
             Eigen::MatrixXd A(3, vars.size());
             Eigen::VectorXd b(3);
             symbolic::DecomposeAffineExpressions(unit_vector_difference, vars,
                                                  &A, &b);
 
             if (squared) {
-              // Sign flip is necessary since this method adds a cost on Ax-b.
               prog_.Add2NormSquaredCost(A, -b, vars);
             } else {
-              // prog_.AddL2NormCost(A, b, vars);
               prog_.AddL2NormCostUsingConicConstraint(A, b, vars);
             }
           } else {
@@ -971,7 +874,6 @@ void GlobalInverseKinematics::AddJointCenteringCost(BodyIndex body_index,
           }
         }
       } else {
-        // TODO(hongkai.dai): add prismatic and helical joint.
         throw std::runtime_error("Unsupported joint type.");
       }
       break;
