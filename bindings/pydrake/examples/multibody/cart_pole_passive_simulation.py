@@ -2,6 +2,7 @@
 
 import argparse
 
+from pydrake.common import configure_logging
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.framework import DiagramBuilder
@@ -10,6 +11,7 @@ from pydrake.visualization import AddDefaultVisualization
 
 
 def main():
+    configure_logging()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--target_realtime_rate", type=float, default=1.0,
