@@ -11,7 +11,9 @@ from pydrake.multibody.parsing import (
     ProcessModelDirectives,
 )
 from pydrake.manipulation import (
-    ApplyDriverConfigs, ApplyNamedPositionsAsDefaults)
+    ApplyDriverConfigs,
+    ApplyNamedPositionsAsDefaults,
+)
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.lcm import LcmBuses
@@ -23,10 +25,13 @@ class TestUtil(unittest.TestCase):
         self.assertIn("ZeroForceDriver", repr(dut))
 
         builder = DiagramBuilder()
-        plant = builder.AddSystem(MultibodyPlant(1.))
+        plant = builder.AddSystem(MultibodyPlant(1.0))
         parser = Parser(plant)
-        directives = LoadModelDirectives(FindResourceOrThrow(
-            "drake/manipulation/util/test/iiwa7_wsg.dmd.yaml"))
+        directives = LoadModelDirectives(
+            FindResourceOrThrow(
+                "drake/manipulation/util/test/iiwa7_wsg.dmd.yaml"
+            )
+        )
         models_from_directives = ProcessModelDirectives(directives, parser)
         plant.Finalize()
         model_dict = dict()
@@ -35,19 +40,25 @@ class TestUtil(unittest.TestCase):
 
         self.assertEqual(len(builder.GetSystems()), 1)
         mut.ApplyDriverConfig(
-            driver_config=dut, model_instance_name="iiwa7", sim_plant=plant,
-            models_from_directives=model_dict, lcms=LcmBuses(),
-            builder=builder)
+            driver_config=dut,
+            model_instance_name="iiwa7",
+            sim_plant=plant,
+            models_from_directives=model_dict,
+            lcms=LcmBuses(),
+            builder=builder,
+        )
         self.assertEqual(len(builder.GetSystems()), 2)
 
     def test_apply_driver_configs(self):
-        """Checks the ApplyDriverConfigs from our parent module.
-        """
+        """Checks the ApplyDriverConfigs from our parent module."""
         builder = DiagramBuilder()
-        plant = builder.AddSystem(MultibodyPlant(1.))
+        plant = builder.AddSystem(MultibodyPlant(1.0))
         parser = Parser(plant)
-        directives = LoadModelDirectives(FindResourceOrThrow(
-            "drake/manipulation/util/test/iiwa7_wsg.dmd.yaml"))
+        directives = LoadModelDirectives(
+            FindResourceOrThrow(
+                "drake/manipulation/util/test/iiwa7_wsg.dmd.yaml"
+            )
+        )
         models_from_directives = ProcessModelDirectives(directives, parser)
         plant.Finalize()
 
@@ -63,14 +74,16 @@ class TestUtil(unittest.TestCase):
             sim_plant=plant,
             models_from_directives=models_from_directives,
             lcm_buses=lcm_buses,
-            builder=builder)
+            builder=builder,
+        )
         self.assertEqual(len(builder.GetSystems()), 3)
 
     def test_apply_named_positions(self):
         plant = MultibodyPlant(0.01)
         parser = Parser(plant)
         parser.AddModels(
-            url="package://drake/multibody/benchmarks/acrobot/acrobot.sdf")
+            url="package://drake/multibody/benchmarks/acrobot/acrobot.sdf"
+        )
         plant.Finalize()
 
         # Set one initial joint position by name.
