@@ -22,6 +22,7 @@ from IPython import get_ipython
 # describes the problem but it only offers the solution of using separate
 # threads for execution; a workflow that we do not wish to impose on users.
 
+
 def process_ipywidget_events(num_events_to_process=1):
     """
     Allows the kernel to process GUI events.  This is required in order to
@@ -30,12 +31,12 @@ def process_ipywidget_events(num_events_to_process=1):
 
     shell = get_ipython()
     # Ok to do nothing if running from console.
-    if shell is None or not hasattr(shell, 'kernel'):
+    if shell is None or not hasattr(shell, "kernel"):
         return
     kernel = shell.kernel
     events = []
-    old_handler = kernel.shell_handlers['execute_request']
-    kernel.shell_handlers['execute_request'] = lambda *e: events.append(e)
+    old_handler = kernel.shell_handlers["execute_request"]
+    kernel.shell_handlers["execute_request"] = lambda *e: events.append(e)
     current_parent = (kernel._parent_ident, kernel._parent_header)
 
     for _ in range(num_events_to_process):
@@ -44,7 +45,7 @@ def process_ipywidget_events(num_events_to_process=1):
         kernel.do_one_iteration()
         kernel.set_parent(*current_parent)
 
-    kernel.shell_handlers['execute_request'] = old_handler
+    kernel.shell_handlers["execute_request"] = old_handler
 
     def _replay_events(shell, events):
         kernel = shell.kernel
@@ -59,13 +60,15 @@ def process_ipywidget_events(num_events_to_process=1):
         if loop.is_running():
             loop.call_soon(lambda: _replay_events(shell, events))
         else:
-            warn("One of your components is attempting to use pydrake's "
-                 "process_ipywidget_events function. However, this IPython "
-                 "kernel is not asyncio-based. This means the following:\n"
-                 "  (1) Once your block cell is done executing, future cells "
-                 "will *not* execute, but it may appear like they are still "
-                 "executing ([*]).\n"
-                 "  (2) Your Jupyter UI may break. If you find your UI to be "
-                 "unresponsive, you may need to restart the UI itself.\n"
-                 "To avoid this behavior, avoid requesting execution of "
-                 "future cells before or during execution of this cell.")
+            warn(
+                "One of your components is attempting to use pydrake's "
+                "process_ipywidget_events function. However, this IPython "
+                "kernel is not asyncio-based. This means the following:\n"
+                "  (1) Once your block cell is done executing, future cells "
+                "will *not* execute, but it may appear like they are still "
+                "executing ([*]).\n"
+                "  (2) Your Jupyter UI may break. If you find your UI to be "
+                "unresponsive, you may need to restart the UI itself.\n"
+                "To avoid this behavior, avoid requesting execution of "
+                "future cells before or during execution of this cell."
+            )

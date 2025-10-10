@@ -2,7 +2,6 @@ import unittest
 
 
 class TestSerializeImportFailure(unittest.TestCase):
-
     def test_import_exception(self):
         """Confirms that serialized types will fail-fast when they are missing
         a py::module::import() statement for a member field's type.
