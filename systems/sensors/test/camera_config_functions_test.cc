@@ -23,6 +23,9 @@ namespace sensors {
 namespace {
 
 using drake::geometry::FrameId;
+using drake::geometry::kHasRenderEngineGl;
+using drake::geometry::kHasRenderEngineGltfClient;
+using drake::geometry::kHasRenderEngineVtk;
 using drake::geometry::RenderEngineGlParams;
 using drake::geometry::RenderEngineGltfClientParams;
 using drake::geometry::RenderEngineVtkParams;
@@ -247,25 +250,23 @@ TEST_F(CameraConfigFunctionsTest, RendererClassVariant) {
                 testing::EndsWith("RenderEngineGltfClient"));
   }
 
-  if (geometry::kHasRenderEngineGl) {
-    // Add GL by name.
-    {
-      const CameraConfig config{.renderer_name = "gl_name",
-                                .renderer_class = "RenderEngineGl"};
-      ApplyCameraConfig(config, &builder_);
-      EXPECT_EQ(scene_graph_->RendererCount(), ++renderer_count);
-      EXPECT_THAT(scene_graph_->GetRendererTypeName(config.renderer_name),
-                  testing::EndsWith("RenderEngineGl"));
-    }
-    // Add GL by parameters.
-    {
-      const CameraConfig config{.renderer_name = "gl_params",
-                                .renderer_class = RenderEngineGlParams{}};
-      ApplyCameraConfig(config, &builder_);
-      EXPECT_EQ(scene_graph_->RendererCount(), ++renderer_count);
-      EXPECT_THAT(scene_graph_->GetRendererTypeName(config.renderer_name),
-                  testing::EndsWith("RenderEngineGl"));
-    }
+  // Add GL by name.
+  {
+    const CameraConfig config{.renderer_name = "gl_name",
+                              .renderer_class = "RenderEngineGl"};
+    ApplyCameraConfig(config, &builder_);
+    EXPECT_EQ(scene_graph_->RendererCount(), ++renderer_count);
+    EXPECT_THAT(scene_graph_->GetRendererTypeName(config.renderer_name),
+                testing::EndsWith("RenderEngineGl"));
+  }
+  // Add GL by parameters.
+  {
+    const CameraConfig config{.renderer_name = "gl_params",
+                              .renderer_class = RenderEngineGlParams{}};
+    ApplyCameraConfig(config, &builder_);
+    EXPECT_EQ(scene_graph_->RendererCount(), ++renderer_count);
+    EXPECT_THAT(scene_graph_->GetRendererTypeName(config.renderer_name),
+                testing::EndsWith("RenderEngineGl"));
   }
 }
 
@@ -352,43 +353,36 @@ TEST_F(CameraConfigFunctionsTest, RendererNameReuse) {
         ".*The name is already used with a different type.*.");
   };
 
-  {
-    SCOPED_TRACE("Vtk");
+  SCOPED_TRACE("Vtk");
 
-    perform_test(
-        RenderEngineVtkParams(),
-        [](const RenderEngineVtkParams& params) {
-          RenderEngineVtkParams new_params(params);
-          new_params.shadow_map_size += 1;
-          return new_params;
-        },
-        "RenderEngineVtk");
-  }
+  perform_test(
+      RenderEngineVtkParams(),
+      [](const RenderEngineVtkParams& params) {
+        RenderEngineVtkParams new_params(params);
+        new_params.shadow_map_size += 1;
+        return new_params;
+      },
+      "RenderEngineVtk");
 
-  {
-    SCOPED_TRACE("GltfClient");
-    perform_test(
-        RenderEngineGltfClientParams(),
-        [](const RenderEngineGltfClientParams& params) {
-          RenderEngineGltfClientParams new_params(params);
-          new_params.verbose = !new_params.verbose;
-          return new_params;
-        },
-        "RenderEngineGltfClient");
-  }
+  SCOPED_TRACE("GltfClient");
+  perform_test(
+      RenderEngineGltfClientParams(),
+      [](const RenderEngineGltfClientParams& params) {
+        RenderEngineGltfClientParams new_params(params);
+        new_params.verbose = !new_params.verbose;
+        return new_params;
+      },
+      "RenderEngineGltfClient");
 
-  if (geometry::kHasRenderEngineGl) {
-    SCOPED_TRACE("Gl");
-    perform_test(
-        RenderEngineGlParams(),
-        [](const RenderEngineGlParams& params) {
-          RenderEngineGlParams new_params(params);
-          new_params.default_diffuse =
-              new_params.default_diffuse.scale_rgb(0.5);
-          return new_params;
-        },
-        "RenderEngineGl");
-  }
+  SCOPED_TRACE("Gl");
+  perform_test(
+      RenderEngineGlParams(),
+      [](const RenderEngineGlParams& params) {
+        RenderEngineGlParams new_params(params);
+        new_params.default_diffuse = new_params.default_diffuse.scale_rgb(0.5);
+        return new_params;
+      },
+      "RenderEngineGl");
 }
 
 // TODO(SeanCurtis-TRI): We'd like to verify that the .background value is used
@@ -639,10 +633,9 @@ TEST_F(CameraConfigFunctionsTest, NullLcmBus) {
 }
 
 // Confirms that the render engine implementation follows the requested type
-// (when supported). We already know that the config gets validated, so we
-// don't need to test cases where an invalid renderer_class value is passed.
-// However, we do have to worry about requesting RenderEngineGl when it isn't
-// available.
+// We already know that the config gets validated, so we don't need to test
+// cases where an invalid renderer_class value is passed. Assumes the render
+// engine types requested are supported; we'll use another test for that.
 TEST_F(CameraConfigFunctionsTest, RenderEngineRequest) {
   // Unspecified class produces RenderEngineVtk.
   const CameraConfig default_config{.renderer_name = "default"};
@@ -667,23 +660,42 @@ TEST_F(CameraConfigFunctionsTest, RenderEngineRequest) {
   EXPECT_EQ(current_renderer_count, scene_graph_->RendererCount());
 
   // The implementation now always attempts to instantiate the configured
-  // render engine (possibly throwing it out if it's unneeded). In this case,
-  // we'll fail with an "already used" error if RenderEngineGl is available and
-  // "not supported" if it isn't.
-  if (geometry::kHasRenderEngineGl) {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        ApplyCameraConfig(
-            CameraConfig{.renderer_name = default_config.renderer_name,
-                         .renderer_class = "RenderEngineGl"},
-            &builder_),
-        ".*The name is already used with a different type.+");
+  // render engine (possibly throwing it out if it's unneeded). Fail with
+  // "already used," since we know it should be available.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ApplyCameraConfig(
+          CameraConfig{.renderer_name = default_config.renderer_name,
+                       .renderer_class = "RenderEngineGl"},
+          &builder_),
+      ".*The name is already used with a different type.+");
+}
+
+TEST_F(CameraConfigFunctionsTest, RenderEngineUnsupported) {
+  const CameraConfig gl_config{.renderer_name = "gl_renderer",
+                               .renderer_class = "RenderEngineGl"};
+  if (!kHasRenderEngineGl) {
+    DRAKE_EXPECT_THROWS_MESSAGE(ApplyCameraConfig(gl_config, &builder_),
+                                ".*'RenderEngineGl' is not supported.*");
   } else {
+    ApplyCameraConfig(gl_config, &builder_);
+  }
+  const CameraConfig gltf_client_config{
+      .renderer_name = "gltf_client_renderer",
+      .renderer_class = "RenderEngineGltfClient"};
+  if (!kHasRenderEngineGltfClient) {
     DRAKE_EXPECT_THROWS_MESSAGE(
-        ApplyCameraConfig(
-            CameraConfig{.renderer_name = default_config.renderer_name,
-                         .renderer_class = "RenderEngineGl"},
-            &builder_),
-        ".*'RenderEngineGl' is not supported.*");
+        ApplyCameraConfig(gltf_client_config, &builder_),
+        ".*'RenderEngineGltfClient' is not supported.*");
+  } else {
+    ApplyCameraConfig(gltf_client_config, &builder_);
+  }
+  const CameraConfig vtk_config{.renderer_name = "vtk_renderer",
+                                .renderer_class = "RenderEngineVtk"};
+  if (!kHasRenderEngineVtk) {
+    DRAKE_EXPECT_THROWS_MESSAGE(ApplyCameraConfig(vtk_config, &builder_),
+                                ".*'RenderEngineVtk' is not supported.*");
+  } else {
+    ApplyCameraConfig(vtk_config, &builder_);
   }
 }
 

@@ -42,7 +42,7 @@ extern const bool kHasRenderEngineGl;
  receive a clone of the original %RenderEngineGl. One systems::Context can be
  used per thread to create rendered images in parallel.
 
- @throws std::exception if kHasRenderEngineGl is false. */
+ @throws std::runtime_error if kHasRenderEngineGl is false. */
 std::unique_ptr<render::RenderEngine> MakeRenderEngineGl(
     RenderEngineGlParams params = {});
 

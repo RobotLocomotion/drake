@@ -330,14 +330,14 @@ cc_library(
     }),
 )
 
-# Depend on X11 iff on Ubuntu and not MacOS.
+# Depend on X11 iff on Ubuntu and needed by geometry/render_gl.
 cc_library(
     name = "x11_deps",
     deps = select({
-        "//conditions:default": [
+        "//geometry/render_gl:with_render_gl_and_linux": [
             "@x11",
         ],
-        "//tools/cc_toolchain:apple": [],
+        "//conditions:default": [],
     }),
 )
 

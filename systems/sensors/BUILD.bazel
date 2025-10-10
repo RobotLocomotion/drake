@@ -1,3 +1,4 @@
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:alias.bzl",
@@ -422,9 +423,49 @@ drake_cc_googletest(
     ],
 )
 
+config_setting(
+    name = "disabled_render_gl",
+    flag_values = {
+        "//tools/flags:with_render_gl": "False",
+    },
+)
+
+config_setting(
+    name = "disabled_render_gltf_client",
+    flag_values = {
+        "//tools/flags:with_render_gltf_client": "False",
+    },
+)
+
+config_setting(
+    name = "disabled_render_vtk",
+    flag_values = {
+        "//tools/flags:with_render_vtk": "False",
+    },
+)
+
+selects.config_setting_group(
+    name = "missing_render_engine_backend",
+    match_any = [
+        ":disabled_render_gl",
+        ":disabled_render_gltf_client",
+        ":disabled_render_vtk",
+    ],
+)
+
 drake_cc_googletest(
     name = "camera_config_functions_test",
     allow_network = ["render_gltf_client"],
+    args = select({
+        # Always run the RenderEngineUnsupported test regardless of
+        # configuration, as it explicitly checks the availability of each
+        # render engine. By default (when all render engines are available),
+        # run all the tests.
+        ":missing_render_engine_backend": [
+            "--gtest_filter=*RenderEngineUnsupported",
+        ],
+        "//conditions:default": [],
+    }),
     display = True,
     tags = vtk_test_tags(),
     deps = [

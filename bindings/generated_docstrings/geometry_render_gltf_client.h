@@ -109,6 +109,10 @@ the behavior to suit their needs.
 
     </details>
 
+Raises:
+    RuntimeError if kHasRenderEngineGltfClient is false, or if
+    disabled via the environment variable DRAKE_ALLOW_NETWORK.
+
 [libcurl]: https://curl.se/libcurl/ [libcurl_threadsafe]:
 https://curl.se/libcurl/c/threadsafe.html [libcurl_init]:
 https://curl.se/libcurl/c/curl_global_init.html [libcurl_cleanup]:
