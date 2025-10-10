@@ -11,7 +11,7 @@ import argparse
 
 import numpy as np
 
-from pydrake.common import RandomGenerator
+from pydrake.common import RandomGenerator, configure_logging
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.symbolic import Variable
@@ -27,6 +27,7 @@ from pydrake.systems.primitives import Saturation
 
 
 def main():
+    configure_logging()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--num_samples", type=int, default=50,

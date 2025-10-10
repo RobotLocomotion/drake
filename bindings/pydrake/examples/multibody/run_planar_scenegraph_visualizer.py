@@ -7,7 +7,7 @@ import argparse
 
 import numpy as np
 
-from pydrake.common import temp_directory
+from pydrake.common import configure_logging, temp_directory
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.analysis import Simulator
@@ -54,6 +54,7 @@ def run_pendulum_example(args):
 
 
 def main():
+    configure_logging()
     np.set_printoptions(precision=5, suppress=True)
     parser = argparse.ArgumentParser(
         description=__doc__,
