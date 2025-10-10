@@ -113,7 +113,6 @@ Properties of the resulting SDFormat file:
 """
 
 import argparse
-import logging
 import numpy as np
 import os
 from pathlib import Path
@@ -122,8 +121,6 @@ from pydrake.common import configure_logging as _configure_logging
 from pydrake.multibody._mesh_model_maker import (
     MeshModelMaker as _MeshModelMaker,
 )
-
-_logger = logging.getLogger("drake")
 
 
 def _CommaSeparatedXYZ(arg: str):

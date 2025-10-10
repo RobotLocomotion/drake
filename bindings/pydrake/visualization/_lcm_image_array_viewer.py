@@ -7,6 +7,7 @@ import numpy as np
 from PIL import Image
 
 from drake import lcmt_image, lcmt_image_array
+from pydrake.common import configure_logging
 from pydrake.lcm import DrakeLcm
 from pydrake.systems.sensors import (
     ImageDepth16U,
@@ -188,6 +189,7 @@ class LcmImageArrayViewer:
 
 
 def main():
+    configure_logging()
     parser = argparse.ArgumentParser(
         description=__doc__,
     )

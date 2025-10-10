@@ -40,6 +40,7 @@ import os
 from pathlib import Path
 import textwrap
 
+from pydrake.common import configure_logging as _configure_logging
 from pydrake.visualization._model_visualizer import (
     ModelVisualizer as _ModelVisualizer,
 )
@@ -47,11 +48,10 @@ from pydrake.visualization._model_visualizer import (
 
 def _main():
     # Use a few color highlights for the user's terminal output.
+    _configure_logging()
     logging.addLevelName(logging.INFO, "\033[36mINFO\033[0m")
     logging.addLevelName(logging.WARNING, "\033[33mWARNING\033[0m")
     logging.addLevelName(logging.ERROR, "\033[31mERROR\033[0m")
-    format = "%(levelname)s: %(message)s"
-    logging.basicConfig(level=logging.INFO, format=format)
 
     # Prepare to parse arguments.
     args_parser = argparse.ArgumentParser(

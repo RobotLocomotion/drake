@@ -55,13 +55,10 @@ tags.
 """
 
 import argparse
-import logging
 import os
 
 from pydrake.common import configure_logging as _configure_logging
 from pydrake.multibody import _inertia_fixer
-
-_logger = logging.getLogger("drake")
 
 
 def _main():
