@@ -233,8 +233,8 @@ class _GeometryFileHasher:
         else:
             _logger.warning(
                 f"Unsupported mesh file: '{path}'\n"
-                "Update Meldis's hasher to trigger reloads on "
-                "this kind of file."
+                "Update Meldis's hasher to trigger reloads on this kind of "
+                "file."
             )
 
     def on_obj_from_disk(self, path: Path, content: bytes):
