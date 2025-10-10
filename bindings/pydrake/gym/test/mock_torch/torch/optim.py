@@ -1,3 +1,2 @@
-
 Adam = None
 Optimizer = None
