@@ -128,9 +128,7 @@ class SapDriver {
 
   const MultibodyPlant<T>& plant() const { return manager().plant(); }
 
-  const MultibodyTreeTopology& tree_topology() const {
-    return manager().tree_topology();
-  }
+  const SpanningForest& get_forest() const { return manager().get_forest(); }
 
   // Computes the linearized momentum equation matrix A to build the SAP
   // contact problem. The matrices for deformable bodies come after those for

@@ -274,10 +274,6 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
   // In the functions below we use CompliantContactManagerTester to provide
   // access to private functions for unit testing.
 
-  const internal::MultibodyTreeTopology& topology() const {
-    return CompliantContactManagerTester::topology(*contact_manager_);
-  }
-
   const GeometryContactData<double>& EvalGeometryContactData(
       const Context<double>& context) const {
     return CompliantContactManagerTester::EvalGeometryContactData(

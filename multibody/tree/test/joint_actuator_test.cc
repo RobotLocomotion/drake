@@ -67,10 +67,8 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
       tree.AddJointActuator("act3", body3_body2, kZeroEffortLimit),
       "Effort limit must be strictly positive!");
 
-  DRAKE_EXPECT_THROWS_MESSAGE(actuator1.input_start(),
-                              ".*after the MultibodyPlant is finalized.");
-  DRAKE_EXPECT_THROWS_MESSAGE(actuator1.num_inputs(),
-                              ".*after the MultibodyPlant is finalized.");
+  EXPECT_EQ(actuator1.input_start(), 0);  // First & only actuated dof.
+  EXPECT_EQ(actuator1.num_inputs(), 1);   // Prismatic is 1 dof.
 
   const auto body4 = &tree.AddRigidBody("body4", M_NaN());
   const Joint<double>& body4_world =

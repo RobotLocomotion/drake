@@ -145,8 +145,8 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
   // The functions below provide access to private CompliantContactManager
   // functions for unit testing.
 
-  const internal::MultibodyTreeTopology& topology() const {
-    return CompliantContactManagerTester::topology(*contact_manager_);
+  const SpanningForest& get_forest() const {
+    return CompliantContactManagerTester::get_forest(*contact_manager_);
   }
 };
 
@@ -165,7 +165,7 @@ TEST_F(SpheresStackTest, EvalContactProblemCache) {
   const int num_contacts = contact_pairs.size();
 
   // Verify sizes.
-  EXPECT_EQ(problem.num_cliques(), topology().num_trees());
+  EXPECT_EQ(problem.num_cliques(), get_forest().num_trees());
   EXPECT_EQ(problem.num_velocities(), plant_->num_velocities());
   EXPECT_EQ(problem.num_constraints(), num_contacts);
   EXPECT_EQ(problem.num_constraint_equations(), 3 * num_contacts);
@@ -294,9 +294,11 @@ TEST_F(SpheresStackTest, CalcLinearDynamicsMatrix) {
   const std::vector<MatrixXd> A = CalcLinearDynamicsMatrix(*plant_context_);
   const int nv = plant_->num_velocities();
   MatrixXd Adense = MatrixXd::Zero(nv, nv);
-  for (TreeIndex t(0); t < topology().num_trees(); ++t) {
-    const int tree_start_in_v = topology().tree_velocities_start_in_v(t);
-    const int tree_nv = topology().num_tree_velocities(t);
+  const SpanningForest& forest = get_forest();
+  for (TreeIndex t(0); t < forest.num_trees(); ++t) {
+    const SpanningForest::Tree& tree = forest.trees(t);
+    const int tree_start_in_v = tree.v_start();
+    const int tree_nv = tree.nv();
     Adense.block(tree_start_in_v, tree_start_in_v, tree_nv, tree_nv) = A[t];
   }
   MatrixXd Aexpected(nv, nv);

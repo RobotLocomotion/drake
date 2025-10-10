@@ -1,13 +1,10 @@
 #pragma once
 
 #include <algorithm>
-#include <iterator>
 #include <memory>
 #include <optional>
 #include <string>
-#include <tuple>
 #include <type_traits>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -61,10 +58,6 @@ const FrameType<T>& MultibodyTree<T>::AddFrame(
   }
   DRAKE_DEMAND(frame->model_instance().is_valid());
   const FrameIndex frame_index(num_frames());
-  topology_.add_frame_topology(frame_index, frame->body().index());
-
-  // TODO(amcastro-tri): consider not depending on setting this pointer at
-  //  all. Consider also removing MultibodyElement altogether.
   frame->set_parent_tree(this, frame_index);
   FrameType<T>* result = frame.get();
   frames_.Add(std::move(frame));
@@ -112,40 +105,15 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
   // Sanity check that we are processing in the expected order.
   DRAKE_DEMAND(mobilizer->mobod().index() == num_mobilizers());
 
-  topology_.add_mobilizer_topology(mobilizer->mobod(),
-                                   mobilizer->inboard_frame().index(),
-                                   mobilizer->outboard_frame().index());
-
   if (!mobilizer->model_instance().is_valid()) {
     mobilizer->set_model_instance(default_model_instance());
   }
 
   mobilizer->set_parent_tree(this, mobilizer->mobod().index());
 
-  // Mark floating base bodies as needed. Note the strict definition:
-  // (1) the inboard joint must have six degrees of freedom, and
-  // (2) that joint must be ephemeral (added automatically).
-  bool is_floating_base_body =
-      mobilizer->has_six_dofs() && mobilizer->is_ephemeral();
-
-  const BodyIndex outboard_body_index = mobilizer->outboard_body().index();
-  topology_.get_mutable_rigid_body_topology(outboard_body_index)
-      .is_floating_base = is_floating_base_body;
-  topology_.get_mutable_rigid_body_topology(outboard_body_index)
-      .has_quaternion_dofs = mobilizer->has_quaternion_dofs();
-
   MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
   mobilizers_.push_back(std::move(mobilizer));
   return *raw_mobilizer_ptr;
-}
-
-template <typename T>
-template <template <typename Scalar> class MobilizerType, typename... Args>
-const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(Args&&... args) {
-  static_assert(std::is_base_of_v<Mobilizer<T>, MobilizerType<T>>,
-                "MobilizerType must be a sub-class of Mobilizer<T>.");
-  return AddMobilizer(
-      std::make_unique<MobilizerType<T>>(std::forward<Args>(args)...));
 }
 
 template <typename T>
@@ -313,7 +281,8 @@ const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
   // if the JointActuator constructor throws our state will still be valid.
   auto actuator = std::make_unique<JointActuator<T>>(name, joint, effort_limit);
   const JointActuatorIndex actuator_index(actuators_.next_index());
-  topology_.add_joint_actuator_topology(actuator_index, joint.num_velocities());
+  actuator->set_actuator_dof_start(num_actuated_dofs_);
+  num_actuated_dofs_ += joint.num_velocities();
   actuator->set_parent_tree(this, actuator_index);
   return actuators_.Add(std::move(actuator));
 }
@@ -440,7 +409,7 @@ MultibodyTree<T>::get_mutable_positions_and_velocities(
 // Must be implemented carefully to avoid invalidating more cache entries than
 // are necessary.
 // TODO(sherm1) Currently we can only get q and v together so have no way to
-// invalidate just q-dependent or v-dependent cache entries.
+//  invalidate just q-dependent or v-dependent cache entries.
 template <typename T>
 Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::GetMutablePositions(
     systems::Context<T>* context) const {
