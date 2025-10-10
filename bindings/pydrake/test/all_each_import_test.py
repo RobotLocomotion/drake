@@ -13,7 +13,6 @@ from pydrake.common.test_utilities.meta import (
 
 
 class TestAllEachImport(unittest.TestCase, metaclass=ValueParameterizedTest):
-
     def setUp(self):
         self._expected_non_native_modules = [
             # An example of a module we'd want to be non-native would be
@@ -64,7 +63,8 @@ class TestAllEachImport(unittest.TestCase, metaclass=ValueParameterizedTest):
             self.assertFalse(
                 has_common,
                 f"The module {name} is not supposed to induce a load-time"
-                " dependency on pydrake.common, but somehow it did.")
+                " dependency on pydrake.common, but somehow it did.",
+            )
         else:
             self.assertTrue(
                 has_common,
@@ -74,4 +74,5 @@ class TestAllEachImport(unittest.TestCase, metaclass=ValueParameterizedTest):
                 " list of expected_non_native_modules. If the module does"
                 " contain native code, then add this line near the start of"
                 " the PYBIND11_MODULE stanza in its cc file: "
-                " py::module::import(\"pydrake.common\");")
+                ' py::module::import("pydrake.common");',
+            )

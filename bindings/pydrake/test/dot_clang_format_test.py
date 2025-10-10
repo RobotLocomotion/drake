@@ -53,4 +53,5 @@ class TestDotfile(unittest.TestCase):
         # The bindings config only ever appends to the root settings.
         self.assertMultiLineEqual(
             "".join(root_contents),
-            "".join(bindings_contents[:len(root_contents)]))
+            "".join(bindings_contents[: len(root_contents)]),
+        )

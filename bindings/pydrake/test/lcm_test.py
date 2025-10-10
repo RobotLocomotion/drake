@@ -67,8 +67,8 @@ class TestLcm(unittest.TestCase):
 
         received = []
         dut.Subscribe(
-            channel=channel,
-            handler=lambda data: received.append(data))
+            channel=channel, handler=lambda data: received.append(data)
+        )
         for _ in range(10):
             dut.Publish(channel=channel, buffer=self.quat.encode())
             dut.HandleSubscriptions(timeout_millis=100)
@@ -85,7 +85,8 @@ class TestLcm(unittest.TestCase):
         received = []
         dut.SubscribeMultichannel(
             regex="ROUND.*MULTI",
-            handler=lambda name, data: received.append((name, data)))
+            handler=lambda name, data: received.append((name, data)),
+        )
         for _ in range(10):
             dut.Publish(channel=channel, buffer=self.quat.encode())
             dut.HandleSubscriptions(timeout_millis=100)
@@ -102,7 +103,8 @@ class TestLcm(unittest.TestCase):
 
         received = []
         dut.SubscribeAllChannels(
-            handler=lambda name, data: received.append((name, data)))
+            handler=lambda name, data: received.append((name, data))
+        )
         for _ in range(10):
             dut.Publish(channel=channel, buffer=self.quat.encode())
             dut.HandleSubscriptions(timeout_millis=100)

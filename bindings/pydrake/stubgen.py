@@ -52,29 +52,23 @@ def _pyi_generated(directory: Path):
 def _copy_pyi(pyi_generated, output_root, pyi_outputs):
     """Copies pyi_generated to pyi_outputs, with cross-checking."""
     # Check for too few *.pyi files.
-    missing_pyi = [
-        x
-        for x in pyi_outputs
-        if x not in pyi_generated
-    ]
+    missing_pyi = [x for x in pyi_outputs if x not in pyi_generated]
     if missing_pyi:
         raise RuntimeError(
             "The PYI_FILES = ... in the BUILD.bazel file specified that the "
             f"{missing_pyi} should have been created, but they were not. "
             "Possibly PYI_FILES should not have listed those items, or there "
-            "are missing imports in all.py or _all_everything.py.")
+            "are missing imports in all.py or _all_everything.py."
+        )
 
     # Check for too many *.pyi files.
-    extra_pyi = [
-        x
-        for x in pyi_generated
-        if x not in pyi_outputs
-    ]
+    extra_pyi = [x for x in pyi_generated if x not in pyi_outputs]
     if extra_pyi:
         raise RuntimeError(
             "The PYI_FILES = ... in the BUILD.bazel file did not specify "
             f"that {extra_pyi} would be created, but they were. "
-            "Possibly PYI_FILES should list those items.")
+            "Possibly PYI_FILES should list those items."
+        )
 
     # Just right. The lists are identical.
     for pyi in pyi_outputs:
@@ -90,10 +84,12 @@ def _actual_main():
     # might appear multiple times and we want to match the final one.
     output_root_str = sys.argv[1].rsplit("/pydrake/", maxsplit=1)[0]
     output_root = Path(output_root_str).absolute()
-    pyi_outputs = sorted([
-        Path(path).absolute().relative_to(output_root)
-        for path in sys.argv[1:]
-    ])
+    pyi_outputs = sorted(
+        [
+            Path(path).absolute().relative_to(output_root)
+            for path in sys.argv[1:]
+        ]
+    )
 
     # Find all native modules in pydrake (i.e., excluding pure python modules).
     native_modules = _pydrake_modules()
@@ -106,12 +102,7 @@ def _actual_main():
     # it from a safe place.
     with tempfile.TemporaryDirectory(prefix="drake_stubgen_") as temp:
         os.chdir(temp)
-        args = [
-            "--output=."
-        ] + [
-            f"--module={name}"
-            for name in native_modules
-        ]
+        args = ["--output=."] + [f"--module={name}" for name in native_modules]
         returncode = stubgen.main(args=args) or 0
         assert returncode == 0, returncode
 

@@ -54,6 +54,7 @@ class _Sentinel:
 
     See also: https://docs.python.org/3/library/weakref.html#weakref.finalize
     """
+
     finalizer: weakref.finalize
     name: str
 
@@ -69,15 +70,18 @@ def _make_sentinel(obj, name):
     def done(oid):
         if VERBOSE:
             print(f"sentinel: unmade {name} {hex(oid)}")
+
     return _Sentinel(finalizer=weakref.finalize(obj, done, id(obj)), name=name)
 
 
 def _make_sentinels_from_locals(dut_name, locals_dict):
     """Makes _Sentinels for all local variables of interest."""
     # Skip specific types not supported by weakref, as needed.
-    return {_make_sentinel(value, f"{dut_name}::{key}")
-            for key, value in locals_dict.items()
-            if not any(isinstance(value, typ) for typ in [list, str])}
+    return {
+        _make_sentinel(value, f"{dut_name}::{key}")
+        for key, value in locals_dict.items()
+        if not any(isinstance(value, typ) for typ in [list, str])
+    }
 
 
 def _report_sentinels(sentinels, message: str):
@@ -161,7 +165,8 @@ def _dut_full_example():
         scene_graph_config=SceneGraphConfig(),
         builder=builder,
     )
-    directives = LoadModelDirectivesFromString(textwrap.dedent("""  # noqa
+    directives = LoadModelDirectivesFromString(
+        textwrap.dedent("""
     directives:
     - add_model:
         name: amazon_table
@@ -215,7 +220,8 @@ def _dut_full_example():
           flush_bottom_center__z_up:
             base_frame: amazon_table::amazon_table
             translation: [0, 0.10, 0.20]
-    """))
+    """)
+    )
     added_models = ProcessModelDirectives(
         plant=plant,
         directives=directives,
@@ -305,8 +311,7 @@ def _repeat(*, dut: callable, count: int):
         gc.collect()
         if VERBOSE:
             _report_sentinels(sentinels, "after collect")
-        leaks += any(
-            [sentinel.finalizer.alive for sentinel in sentinels])
+        leaks += any([sentinel.finalizer.alive for sentinel in sentinels])
     return leaks
 
 

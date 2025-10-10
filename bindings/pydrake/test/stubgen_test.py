@@ -9,7 +9,6 @@ import mypy.fastparse
 
 
 class TestStubgen(unittest.TestCase):
-
     def _rlocation(self, resource_path):
         manifest = runfiles.Create()
         result = manifest.Rlocation(resource_path)
@@ -28,8 +27,7 @@ class TestStubgen(unittest.TestCase):
         return stubs_dir, paths
 
     def test_valid_syntax(self):
-        """Checks that all *.pyi files can be parsed by Mypy.
-        """
+        """Checks that all *.pyi files can be parsed by Mypy."""
         stubs_dir, paths = self._expected_pyi_files()
         self.assertGreater(len(paths), 0)
         for path in paths:
@@ -37,8 +35,7 @@ class TestStubgen(unittest.TestCase):
                 self._check_one_valid_syntax(stubs_dir, path)
 
     def _check_one_valid_syntax(self, stubs_dir, path):
-        """Helper for test_valid_syntax.
-        """
+        """Helper for test_valid_syntax."""
         with open(f"{stubs_dir}/{path}", "r") as f:
             source = f.read()
         # Check that the parser doesn't raise any exceptions. For compilation
@@ -47,8 +44,9 @@ class TestStubgen(unittest.TestCase):
         failure_message = None
         try:
             errors = mypy.errors.Errors(mypy.options.Options())
-            mypy.fastparse.parse(source=source, fnam=path, module=None,
-                                 errors=errors)
+            mypy.fastparse.parse(
+                source=source, fnam=path, module=None, errors=errors
+            )
             if errors.is_errors():
                 errors.raise_error()
         except mypy.errors.CompileError as e:
