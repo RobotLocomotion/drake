@@ -12,7 +12,6 @@ from pydrake.systems.estimators import (
 
 
 class TestEstimators(unittest.TestCase):
-
     def test_luenberger_observer(self):
         plant = PendulumPlant()
         context = plant.CreateDefaultContext()
@@ -20,7 +19,8 @@ class TestEstimators(unittest.TestCase):
         observer = LuenbergerObserver(
             observed_system=plant,
             observed_system_context=context,
-            observer_gain=L)
+            observer_gain=L,
+        )
         port = observer.get_observed_system_input_input_port()
         self.assertEqual(port.size(), 1)
         port = observer.get_observed_system_output_input_port()
@@ -35,7 +35,7 @@ class TestEstimators(unittest.TestCase):
         copy.deepcopy(observer)
 
     def test_steady_state_kalman_filter(self):
-        A = np.array([[0., 1.], [-10., -0.1]])
+        A = np.array([[0.0, 1.0], [-10.0, -0.1]])
         C = np.eye(2)
         W = np.eye(2)
         V = np.eye(2)
@@ -51,7 +51,8 @@ class TestEstimators(unittest.TestCase):
 
         plant = PendulumPlant()
         context = plant.CreateDefaultContext()
-        plant.get_input_port().FixValue(context, [0.])
+        plant.get_input_port().FixValue(context, [0.0])
         filter = SteadyStateKalmanFilter(
-            system=plant, context=context, W=W, V=V)
+            system=plant, context=context, W=W, V=V
+        )
         self.assertIsInstance(filter, LuenbergerObserver)
