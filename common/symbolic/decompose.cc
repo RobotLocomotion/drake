@@ -63,6 +63,24 @@ class IsAffineVisitor {
 
 }  // namespace
 
+}  // namespace symbolic
+}  // namespace drake
+
+namespace Eigen {
+namespace internal {
+// Using Matrix::visit requires providing functor_traits.
+template <>
+struct functor_traits<drake::symbolic::IsAffineVisitor> {
+  static constexpr int Cost = 10;
+  [[maybe_unused]] static constexpr bool LinearAccess = false;
+  [[maybe_unused]] static constexpr bool PacketAccess = false;
+};
+}  // namespace internal
+}  // namespace Eigen
+
+namespace drake {
+namespace symbolic {
+
 bool IsAffine(const Eigen::Ref<const MatrixX<Expression>>& m,
               const Variables& vars) {
   if (m.size() == 0) {

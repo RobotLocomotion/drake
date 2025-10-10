@@ -752,7 +752,7 @@ class Joint : public MultibodyElement<T> {
   void SetDampingVector(systems::Context<T>* context,
                         const VectorX<T>& damping) const {
     DRAKE_THROW_UNLESS(damping.size() == num_velocities());
-    DRAKE_THROW_UNLESS((damping.array() >= 0).all());
+    DRAKE_THROW_UNLESS((damping.array() >= 0).template cast<bool>().all());
     context->get_mutable_numeric_parameter(damping_parameter_index_)
         .set_value(damping);
   }
