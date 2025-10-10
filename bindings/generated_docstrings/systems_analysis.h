@@ -3562,7 +3562,10 @@ R"""(The integrator supports error estimation.)""";
         // Source: drake/systems/analysis/runge_kutta5_integrator.h
         const char* doc =
 R"""(A fifth-order, seven-stage, first-same-as-last (FSAL) Runge Kutta
-integrator with a fourth order error estimate.
+integrator with a fifth order error estimate. Specifically, this is an
+explicit Runge-Kutta method of order 5(4), where the higher order
+estimate is meant to be propagated (unlike the Fehlberg 4(5) method,
+where the 4th order solution is meant to be propagated).
 
 For a discussion of this Runge-Kutta method, see [Dormand, 1980] and
 [Hairer, 1993]. The embedded error estimate was derived as described
@@ -3600,7 +3603,10 @@ control.
 Runge-Kutta formulae", Journal of Computational and Applied Mathematics,
 1980, 6(1): 19–26.
 - [Hairer, 1993] E. Hairer, S. Nørsett, and G. Wanner. Solving ODEs I. 2nd
-rev. ed. Springer, 1993. pp. 178-9.)""";
+rev. ed. Springer, 1993. pp. 178-9.
+- [Fehlberg, 1969] E. Fehlberg. Low-order classical Runge-Kutta formulas with
+stepsize control and their application to some heat transfer problems (Vol.
+315). National aeronautics and space administration, 1969.)""";
         // Symbol: drake::systems::RungeKutta5Integrator::RungeKutta5Integrator<T>
         struct /* ctor */ {
           // Source: drake/systems/analysis/runge_kutta5_integrator.h
