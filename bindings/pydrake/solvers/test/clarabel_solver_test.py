@@ -10,7 +10,6 @@ from pydrake.solvers import (
 
 
 class TestClarabelSolver(unittest.TestCase):
-
     def test_attributes(self):
         dut = ClarabelSolver()
         self.assertEqual(dut.solver_id(), ClarabelSolver.id())

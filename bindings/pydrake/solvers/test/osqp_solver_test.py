@@ -25,11 +25,12 @@ class TestOsqpSolver(unittest.TestCase):
         x_expected = np.array([1, 1])
         self.assertTrue(np.allclose(result.GetSolution(x), x_expected))
         self.assertEqual(result.get_solver_details().status_val, 1)
-        self.assertEqual(result.get_solver_details().primal_res, 0.)
+        self.assertEqual(result.get_solver_details().primal_res, 0.0)
         np.testing.assert_allclose(
-            result.get_solver_details().y, np.array([-1., -1.]))
-        np.testing.assert_allclose(result.GetDualSolution(constraint1), [1.])
-        np.testing.assert_allclose(result.GetDualSolution(constraint2), [1.])
+            result.get_solver_details().y, np.array([-1.0, -1.0])
+        )
+        np.testing.assert_allclose(result.GetDualSolution(constraint1), [1.0])
+        np.testing.assert_allclose(result.GetDualSolution(constraint2), [1.0])
 
     def unavailable(self):
         """Per the BUILD file, this test is only run when OSQP is disabled."""
