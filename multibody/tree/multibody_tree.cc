@@ -957,6 +957,18 @@ void MultibodyTree<T>::Finalize() {
   process (BuildForest()), which augmented the graph with them. We call those
   "ephemeral" elements. */
 
+  // TODO(sherm1) Add shadow links and loop constraints.
+  if (!graph.loop_constraints().empty()) {
+    link_joint_graph_.InvalidateForest();
+    throw std::runtime_error(fmt::format(
+        "The bodies and joints of this system form one or "
+        "more loops in the system graph. Drake currently does not "
+        "support automatic modeling of such systems; however, they "
+        "can be modeled with some input changes. See "
+        "https://drake.mit.edu/troubleshooting.html"
+        "#mbp-loops-in-graph for advice on how to model systems with loops."));
+  }
+
   /* Add the ephemeral Joints. */
   for (JointOrdinal i(graph.num_user_joints()); i < graph.num_joints(); ++i) {
     const LinkJointGraph::Joint& added_joint = graph.joints(i);
@@ -985,17 +997,6 @@ void MultibodyTree<T>::Finalize() {
       DRAKE_UNREACHABLE();
     }();
     DRAKE_DEMAND(new_joint.index() == added_joint.index());
-  }
-
-  // TODO(sherm1) Add shadow links and loop constraints.
-  if (!graph.loop_constraints().empty()) {
-    throw std::runtime_error(fmt::format(
-        "The bodies and joints of this system form one or "
-        "more loops in the system graph. Drake currently does not "
-        "support automatic modeling of such systems; however, they "
-        "can be modeled with some input changes. See "
-        "https://drake.mit.edu/troubleshooting.html"
-        "#mbp-loops-in-graph for advice on how to model systems with loops."));
   }
 
   CreateJointImplementations();
