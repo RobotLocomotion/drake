@@ -129,9 +129,7 @@ class LcmImageArrayViewer:
                 == lcmt_image.COMPRESSION_METHOD_NOT_COMPRESSED
             ):
                 data_bytes = image.data
-            elif (
-                image.compression_method == lcmt_image.COMPRESSION_METHOD_ZLIB
-            ):
+            elif image.compression_method == lcmt_image.COMPRESSION_METHOD_ZLIB:
                 # TODO(eric): Consider using `data`s buffer, if possible.
                 # Can decompress() somehow use an existing buffer in Python?
                 data_bytes = zlib.decompress(image.data)
@@ -215,9 +213,7 @@ def main():
     )
     args = parser.parse_args()
 
-    LcmImageArrayViewer(
-        host=args.host, port=args.port, channel=args.channel
-    )
+    LcmImageArrayViewer(host=args.host, port=args.port, channel=args.channel)
 
 
 if __name__ == "__main__":
