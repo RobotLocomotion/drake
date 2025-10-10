@@ -8,8 +8,7 @@ from pydrake.systems.framework import LeafSystem
 
 def _TransformPoints(points_Ci, X_CiSi):
     # Make homogeneous copy of points.
-    points_h_Ci = np.vstack((points_Ci,
-                             np.ones((1, points_Ci.shape[1]))))
+    points_h_Ci = np.vstack((points_Ci, np.ones((1, points_Ci.shape[1]))))
 
     return X_CiSi.dot(points_h_Ci)[:3, :]
 
@@ -57,7 +56,7 @@ class PointCloudConcatenation(LeafSystem):
         - point_cloud_FS
     """
 
-    def __init__(self, id_list, default_rgb=[255., 255., 255.]):
+    def __init__(self, id_list, default_rgb=[255.0, 255.0, 255.0]):
         """
         A system that takes in N point clouds of points Si in frame Ci, and N
         RigidTransforms from frame Ci to F, to put each point cloud in a common
@@ -87,16 +86,18 @@ class PointCloudConcatenation(LeafSystem):
         for id in self._id_list:
             self._point_cloud_ports[id] = self.DeclareAbstractInputPort(
                 "point_cloud_CiSi_{}".format(id),
-                Value(PointCloud(fields=output_fields)))
+                Value(PointCloud(fields=output_fields)),
+            )
 
             self._transform_ports[id] = self.DeclareAbstractInputPort(
-                "X_FCi_{}".format(id),
-                Value(RigidTransform.Identity()))
+                "X_FCi_{}".format(id), Value(RigidTransform.Identity())
+            )
 
-        self.DeclareAbstractOutputPort("point_cloud_FS",
-                                       lambda: Value(
-                                           PointCloud(fields=output_fields)),
-                                       self.DoCalcOutput)
+        self.DeclareAbstractOutputPort(
+            "point_cloud_FS",
+            lambda: Value(PointCloud(fields=output_fields)),
+            self.DoCalcOutput,
+        )
 
     def _AlignPointClouds(self, context):
         points = {}
@@ -104,18 +105,22 @@ class PointCloudConcatenation(LeafSystem):
 
         for id in self._id_list:
             point_cloud = self.EvalAbstractInput(
-                context, self._point_cloud_ports[id].get_index()).get_value()
+                context, self._point_cloud_ports[id].get_index()
+            ).get_value()
             X_CiSi = self.EvalAbstractInput(
-                context, self._transform_ports[id].get_index()).get_value()
+                context, self._transform_ports[id].get_index()
+            ).get_value()
 
             points[id] = _TransformPoints(
-                point_cloud.xyzs(), X_CiSi.GetAsMatrix4())
+                point_cloud.xyzs(), X_CiSi.GetAsMatrix4()
+            )
 
             if point_cloud.has_rgbs():
                 colors[id] = point_cloud.rgbs()
             else:
                 colors[id] = _TileColors(
-                    self._default_rgb, point_cloud.xyzs().shape[1])
+                    self._default_rgb, point_cloud.xyzs().shape[1]
+                )
 
         return _ConcatenatePointClouds(points, colors)
 

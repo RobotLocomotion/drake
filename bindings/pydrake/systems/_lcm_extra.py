@@ -11,6 +11,7 @@ class PySerializer(SerializerInterface):
     with `LcmPublisherSystem` and `LcmSubscriberSystem` when the given
     `lcm_type` is a Python object (not a C++ object).
     """
+
     def __init__(self, lcm_type):
         SerializerInterface.__init__(self)
         self._lcm_type = lcm_type
@@ -33,12 +34,14 @@ class PySerializer(SerializerInterface):
 
 
 @staticmethod
-def _make_lcm_subscriber(channel,
-                         lcm_type,
-                         lcm,
-                         use_cpp_serializer=False,
-                         *,
-                         wait_for_message_on_initialization_timeout=0.0):
+def _make_lcm_subscriber(
+    channel,
+    lcm_type,
+    lcm,
+    use_cpp_serializer=False,
+    *,
+    wait_for_message_on_initialization_timeout=0.0,
+):
     """Convenience to create an LCM subscriber system with a concrete type.
 
     Args:
@@ -65,14 +68,22 @@ def _make_lcm_subscriber(channel,
         serializer = PySerializer(lcm_type)
     else:
         serializer = _Serializer_[lcm_type]()
-    return LcmSubscriberSystem(channel, serializer, lcm,
-                               wait_for_message_on_initialization_timeout)
+    return LcmSubscriberSystem(
+        channel, serializer, lcm, wait_for_message_on_initialization_timeout
+    )
 
 
 @staticmethod
 def _make_lcm_publisher(
-        channel, lcm_type, lcm, publish_period=0.0, use_cpp_serializer=False,
-        *, publish_triggers=None, publish_offset=0.0):
+    channel,
+    lcm_type,
+    lcm,
+    publish_period=0.0,
+    use_cpp_serializer=False,
+    *,
+    publish_triggers=None,
+    publish_offset=0.0,
+):
     """Convenience to create an LCM publisher system with a concrete type.
 
     Args:
@@ -92,13 +103,21 @@ def _make_lcm_publisher(
         serializer = _Serializer_[lcm_type]()
     if publish_triggers is not None:
         return LcmPublisherSystem(
-            channel=channel, serializer=serializer, lcm=lcm,
-            publish_triggers=publish_triggers, publish_period=publish_period,
-            publish_offset=publish_offset)
+            channel=channel,
+            serializer=serializer,
+            lcm=lcm,
+            publish_triggers=publish_triggers,
+            publish_period=publish_period,
+            publish_offset=publish_offset,
+        )
     else:
         return LcmPublisherSystem(
-            channel=channel, serializer=serializer, lcm=lcm,
-            publish_period=publish_period, publish_offset=publish_offset)
+            channel=channel,
+            serializer=serializer,
+            lcm=lcm,
+            publish_period=publish_period,
+            publish_offset=publish_offset,
+        )
 
 
 LcmSubscriberSystem.Make = _make_lcm_subscriber
