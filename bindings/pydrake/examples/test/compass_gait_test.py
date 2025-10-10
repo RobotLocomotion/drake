@@ -20,29 +20,29 @@ class TestCompassGait(unittest.TestCase):
 
     def test_params(self):
         params = CompassGaitParams()
-        params.set_mass_hip(1.)
-        params.set_mass_leg(2.)
-        params.set_length_leg(3.)
-        params.set_center_of_mass_leg(4.)
-        params.set_gravity(5.)
-        params.set_slope(.15)
-        self.assertEqual(params.mass_hip(), 1.)
-        self.assertEqual(params.mass_leg(), 2.)
-        self.assertEqual(params.length_leg(), 3.)
-        self.assertEqual(params.center_of_mass_leg(), 4.)
-        self.assertEqual(params.gravity(), 5.)
-        self.assertEqual(params.slope(), .15)
+        params.set_mass_hip(1.0)
+        params.set_mass_leg(2.0)
+        params.set_length_leg(3.0)
+        params.set_center_of_mass_leg(4.0)
+        params.set_gravity(5.0)
+        params.set_slope(0.15)
+        self.assertEqual(params.mass_hip(), 1.0)
+        self.assertEqual(params.mass_leg(), 2.0)
+        self.assertEqual(params.length_leg(), 3.0)
+        self.assertEqual(params.center_of_mass_leg(), 4.0)
+        self.assertEqual(params.gravity(), 5.0)
+        self.assertEqual(params.slope(), 0.15)
 
     def test_state(self):
         state = CompassGaitContinuousState()
-        state.set_stance(1.)
-        state.set_swing(2.)
-        state.set_stancedot(3.)
-        state.set_swingdot(4.)
-        self.assertEqual(state.stance(), 1.)
-        self.assertEqual(state.swing(), 2.)
-        self.assertEqual(state.stancedot(), 3.)
-        self.assertEqual(state.swingdot(), 4.)
+        state.set_stance(1.0)
+        state.set_swing(2.0)
+        state.set_stancedot(3.0)
+        state.set_swingdot(4.0)
+        self.assertEqual(state.stance(), 1.0)
+        self.assertEqual(state.swing(), 2.0)
+        self.assertEqual(state.stancedot(), 3.0)
+        self.assertEqual(state.swingdot(), 4.0)
 
     def test_geometry(self):
         builder = DiagramBuilder()
@@ -51,7 +51,8 @@ class TestCompassGait(unittest.TestCase):
         geom = CompassGaitGeometry.AddToBuilder(
             builder=builder,
             floating_base_state_port=plant.get_floating_base_state_output_port(),  # noqa
-            scene_graph=scene_graph)
+            scene_graph=scene_graph,
+        )
         # Confirming that the resulting diagram builds.
         builder.Build()
         self.assertIsInstance(geom, CompassGaitGeometry)
@@ -63,7 +64,9 @@ class TestCompassGait(unittest.TestCase):
         geom = CompassGaitGeometry.AddToBuilder(
             builder=builder,
             floating_base_state_port=plant.get_floating_base_state_output_port(),  # noqa
-            compass_gait_params=CompassGaitParams(), scene_graph=scene_graph)
+            compass_gait_params=CompassGaitParams(),
+            scene_graph=scene_graph,
+        )
         # Confirming that the resulting diagram builds.
         builder.Build()
         self.assertIsInstance(geom, CompassGaitGeometry)
@@ -82,8 +85,8 @@ class TestCompassGait(unittest.TestCase):
 
         # Set the initial state.
         state = context.get_mutable_continuous_state_vector()
-        state.set_stance(0.)
-        state.set_swing(0.)
+        state.set_stance(0.0)
+        state.set_swing(0.0)
         state.set_stancedot(0.4)
         state.set_swingdot(-2.0)
 
