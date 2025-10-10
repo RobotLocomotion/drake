@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "manipulation/franka_panda/panda_constants.h"
 #include <fmt/format.h>
 
 #include "drake/lcmt_panda_status.hpp"
@@ -18,18 +19,18 @@ using drake::systems::kVectorValued;
 PandaCommandSender::PandaCommandSender(int num_joints, int control_mode)
     : num_joints_(num_joints), control_mode_(control_mode) {
   int remaining = control_mode_;
-  if (control_mode_ & lcmt_panda_status::CONTROL_MODE_POSITION) {
-    remaining &= ~int{lcmt_panda_status::CONTROL_MODE_POSITION};
+  if (control_mode_ & PandaControlMode::kPosition) {
+    remaining &= ~int{PandaControlMode::kPosition};
     position_input_port_ =
         &this->DeclareInputPort("position", kVectorValued, num_joints_);
   }
-  if (control_mode_ & lcmt_panda_status::CONTROL_MODE_VELOCITY) {
-    remaining &= ~int{lcmt_panda_status::CONTROL_MODE_VELOCITY};
+  if (control_mode_ & PandaControlMode::kVelocity) {
+    remaining &= ~int{PandaControlMode::kVelocity};
     velocity_input_port_ =
         &this->DeclareInputPort("velocity", kVectorValued, num_joints_);
   }
-  if (control_mode_ & lcmt_panda_status::CONTROL_MODE_TORQUE) {
-    remaining &= ~int{lcmt_panda_status::CONTROL_MODE_TORQUE};
+  if (control_mode_ & PandaControlMode::kTorque) {
+    remaining &= ~int{PandaControlMode::kTorque};
     torque_input_port_ =
         &this->DeclareInputPort("torque", kVectorValued, num_joints_);
   }

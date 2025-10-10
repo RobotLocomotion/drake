@@ -16,8 +16,8 @@ class TestFrankaPanda(unittest.TestCase):
 
     def test_franka_panda_command_receiver(self):
         # Test with position and torque control mode
-        control_mode = (mut.CONTROL_MODE_POSITION |
-                        mut.CONTROL_MODE_TORQUE)
+        control_mode = (mut.PandaControlMode.kPosition |
+                        mut.PandaControlMode.kTorque)
         command_rec = mut.PandaCommandReceiver(
             num_joints=mut.kPandaArmNumJoints,
             control_mode=control_mode)
@@ -31,9 +31,9 @@ class TestFrankaPanda(unittest.TestCase):
             command_rec.get_commanded_torque_output_port(), OutputPort)
 
         # Test with position, velocity, and torque control mode
-        control_mode_all = (mut.CONTROL_MODE_POSITION |
-                            mut.CONTROL_MODE_VELOCITY |
-                            mut.CONTROL_MODE_TORQUE)
+        control_mode_all = (mut.PandaControlMode.kPosition |
+                            mut.PandaControlMode.kVelocity |
+                            mut.PandaControlMode.kTorque)
         command_rec_all = mut.PandaCommandReceiver(
             num_joints=mut.kPandaArmNumJoints,
             control_mode=control_mode_all)
@@ -42,8 +42,8 @@ class TestFrankaPanda(unittest.TestCase):
 
     def test_franka_panda_command_sender(self):
         # Test with position and torque control mode
-        control_mode = (mut.CONTROL_MODE_POSITION |
-                        mut.CONTROL_MODE_TORQUE)
+        control_mode = (mut.PandaControlMode.kPosition |
+                        mut.PandaControlMode.kTorque)
         command_send = mut.PandaCommandSender(
             num_joints=mut.kPandaArmNumJoints,
             control_mode=control_mode)
@@ -53,9 +53,9 @@ class TestFrankaPanda(unittest.TestCase):
             command_send.get_torque_input_port(), InputPort)
 
         # Test with position, velocity, and torque control mode
-        control_mode_all = (mut.CONTROL_MODE_POSITION |
-                            mut.CONTROL_MODE_VELOCITY |
-                            mut.CONTROL_MODE_TORQUE)
+        control_mode_all = (mut.PandaControlMode.kPosition |
+                            mut.PandaControlMode.kVelocity |
+                            mut.PandaControlMode.kTorque)
         command_send_all = mut.PandaCommandSender(
             num_joints=mut.kPandaArmNumJoints,
             control_mode=control_mode_all)
