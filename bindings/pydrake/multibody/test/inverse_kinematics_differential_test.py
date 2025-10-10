@@ -55,8 +55,7 @@ class TestPlanner(unittest.TestCase):
         np.testing.assert_equal(params.get_joint_centering_gain(), np.eye(2))
         flag_E = [False, True, True, False, False, True]
         params.set_end_effector_velocity_flag(flag_E)
-        np.testing.assert_equal(params.get_end_effector_velocity_flag(),
-                                flag_E)
+        np.testing.assert_equal(params.get_end_effector_velocity_flag(), flag_E)
         params.get_joint_position_limits
         params.set_joint_position_limits
         params.get_joint_velocity_limits
@@ -67,47 +66,62 @@ class TestPlanner(unittest.TestCase):
         self.assertEqual(params.get_maximum_scaling_to_report_stuck(), 0.1)
         params.set_end_effector_angular_speed_limit(speed=0.12)
         self.assertEqual(params.get_end_effector_angular_speed_limit(), 0.12)
-        params.set_end_effector_translational_velocity_limits([-1, -2, -3],
-                                                              [1, 2, 3])
+        params.set_end_effector_translational_velocity_limits(
+            [-1, -2, -3], [1, 2, 3]
+        )
         np.testing.assert_equal(
             params.get_end_effector_translational_velocity_limits()[0],
-            [-1, -2, -3])
+            [-1, -2, -3],
+        )
         np.testing.assert_equal(
             params.get_end_effector_translational_velocity_limits()[1],
-            [1, 2, 3])
+            [1, 2, 3],
+        )
         params.get_mutable_solver_options().SetOption(
-            SolverId("dummy"), "dummy", 0.0)
+            SolverId("dummy"), "dummy", 0.0
+        )
 
         # Test a basic call for the API. These values intentionally have no
         # physical meaning.
         result = mut.DoDifferentialInverseKinematics(
-            q_current=[0, 1], v_current=[2, 3],
+            q_current=[0, 1],
+            v_current=[2, 3],
             V=[0, 1, 2, 3, 4, 5],
-            J=np.array([
-                [0, 1, 2, 3, 4, 5],
-                [6, 7, 8, 9, 10, 11],
-            ]).T,
-            parameters=params)
-        self.assertTrue(np.allclose(
-            result.joint_velocities, [1, 0], atol=1e-8, rtol=0))
+            J=np.array(
+                [
+                    [0, 1, 2, 3, 4, 5],
+                    [6, 7, 8, 9, 10, 11],
+                ]
+            ).T,
+            parameters=params,
+        )
+        self.assertTrue(
+            np.allclose(result.joint_velocities, [1, 0], atol=1e-8, rtol=0)
+        )
         self.assertEqual(result.status, enum.kSolutionFound)
-        result = mut.DoDifferentialInverseKinematics(q_current=[0, 1],
-                                                     v_current=[2, 3],
-                                                     V=[0, 1, 2, 3, 4, 5],
-                                                     J=np.array([
-                                                         [0, 1, 2, 3, 4, 5],
-                                                         [6, 7, 8, 9, 10, 11],
-                                                     ]).T,
-                                                     parameters=params,
-                                                     N=np.eye(2),
-                                                     Nplus=np.eye(2))
-        self.assertTrue(np.allclose(
-            result.joint_velocities, [1, 0], atol=1e-8, rtol=0))
+        result = mut.DoDifferentialInverseKinematics(
+            q_current=[0, 1],
+            v_current=[2, 3],
+            V=[0, 1, 2, 3, 4, 5],
+            J=np.array(
+                [
+                    [0, 1, 2, 3, 4, 5],
+                    [6, 7, 8, 9, 10, 11],
+                ]
+            ).T,
+            parameters=params,
+            N=np.eye(2),
+            Nplus=np.eye(2),
+        )
+        self.assertTrue(
+            np.allclose(result.joint_velocities, [1, 0], atol=1e-8, rtol=0)
+        )
         self.assertEqual(result.status, enum.kSolutionFound)
 
     def test_mbp_overloads(self):
         file_name = FindResourceOrThrow(
-            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf"
+        )
         plant = MultibodyPlant(0.0)
         Parser(plant).AddModels(file_name)
         plant.Finalize()
@@ -124,14 +138,16 @@ class TestPlanner(unittest.TestCase):
             context=context,
             V_WE_desired=np.zeros(6),
             frame_E=frame,
-            parameters=parameters)
+            parameters=parameters,
+        )
 
         mut.DoDifferentialInverseKinematics(
             robot=plant,
             context=context,
             X_WE_desired=RigidTransform(),
             frame_E=frame,
-            parameters=parameters)
+            parameters=parameters,
+        )
 
         mut.DoDifferentialInverseKinematics(
             robot=plant,
@@ -139,7 +155,8 @@ class TestPlanner(unittest.TestCase):
             V_AE_desired=np.zeros(6),
             frame_A=world_frame,
             frame_E=frame,
-            parameters=parameters)
+            parameters=parameters,
+        )
 
         mut.DoDifferentialInverseKinematics(
             robot=plant,
@@ -147,11 +164,13 @@ class TestPlanner(unittest.TestCase):
             X_AE_desired=RigidTransform(),
             frame_A=world_frame,
             frame_E=frame,
-            parameters=parameters)
+            parameters=parameters,
+        )
 
     def test_diff_ik_integrator(self):
         file_name = FindResourceOrThrow(
-            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf"
+        )
         plant = MultibodyPlant(0.0)
         Parser(plant).AddModels(file_name)
         plant.Finalize()
@@ -168,7 +187,8 @@ class TestPlanner(unittest.TestCase):
             time_step=time_step,
             parameters=parameters,
             robot_context=robot_context,
-            log_only_when_result_state_changes=True)
+            log_only_when_result_state_changes=True,
+        )
 
         context = integrator.CreateDefaultContext()
         X_AE = integrator.ForwardKinematics(context=context)
@@ -182,7 +202,8 @@ class TestPlanner(unittest.TestCase):
             time_step=time_step,
             parameters=parameters,
             robot_context=robot_context,
-            log_only_when_result_state_changes=True)
+            log_only_when_result_state_changes=True,
+        )
 
         context2 = integrator2.CreateDefaultContext()
         X_WE = integrator2.ForwardKinematics(context2)
@@ -214,8 +235,9 @@ class TestDiffIkSystems(unittest.TestCase):
                 # cartesian mask and explicitly test for it.
                 for joint_name, dof_selector_expected in params[key].items():
                     self.assertIn(joint_name, dut_value)
-                    np.testing.assert_array_equal(dut_value[joint_name],
-                                                  dof_selector_expected)
+                    np.testing.assert_array_equal(
+                        dut_value[joint_name], dof_selector_expected
+                    )
             elif isinstance(dut_value, np.ndarray):
                 # params uses lists, but the config will probably contain
                 # ndarray for the equivalent list; so test on dut_value type.
@@ -269,29 +291,33 @@ class TestDiffIkSystems(unittest.TestCase):
 
     def test_least_squares_cost(self):
         Ingredient = mut.DifferentialInverseKinematicsSystem.LeastSquaresCost
-        params = {"cartesian_qp_weight": 2,
-                  "cartesian_axis_masks": {"one": [1, 1, 1, 0, 0, 0]},
-                  "use_legacy_implementation": True}
+        params = {
+            "cartesian_qp_weight": 2,
+            "cartesian_axis_masks": {"one": [1, 1, 1, 0, 0, 0]},
+            "use_legacy_implementation": True,
+        }
 
-        self._check_ingredient(Ingredient, params,
-                               params | {"cartesian_qp_weight": 3})
+        self._check_ingredient(
+            Ingredient, params, params | {"cartesian_qp_weight": 3}
+        )
 
     def test_joint_centering_cost(self):
         Ingredient = mut.DifferentialInverseKinematicsSystem.JointCenteringCost
-        params = {"posture_gain": 2,
-                  "cartesian_axis_masks": {"one": [1, 1, 1, 0, 0, 0]}}
+        params = {
+            "posture_gain": 2,
+            "cartesian_axis_masks": {"one": [1, 1, 1, 0, 0, 0]},
+        }
 
-        self._check_ingredient(Ingredient, params,
-                               params | {"posture_gain": 3})
+        self._check_ingredient(Ingredient, params, params | {"posture_gain": 3})
 
     def test_cartesian_position_limit_constraint(self):
         DiffIk = mut.DifferentialInverseKinematicsSystem
         Ingredient = DiffIk.CartesianPositionLimitConstraint
-        params = {"p_TG_next_lower": [-1, -2, -3],
-                  "p_TG_next_upper": [4, 5, 6]}
+        params = {"p_TG_next_lower": [-1, -2, -3], "p_TG_next_upper": [4, 5, 6]}
 
         self._check_ingredient(
-            Ingredient, params, params | {"p_TG_next_lower": [-10, -20, -30]})
+            Ingredient, params, params | {"p_TG_next_lower": [-10, -20, -30]}
+        )
 
     def test_cartesian_velocity_limit_constraint(self):
         DiffIk = mut.DifferentialInverseKinematicsSystem
@@ -299,7 +325,8 @@ class TestDiffIkSystems(unittest.TestCase):
         params = {"V_next_TG_limit": [1, 2, 3, 4, 5, 6]}
 
         self._check_ingredient(
-            Ingredient, params, {"V_next_TG_limit": [10, 20, 30, 40, 50, 60]})
+            Ingredient, params, {"V_next_TG_limit": [10, 20, 30, 40, 50, 60]}
+        )
 
     def test_collision_constraint(self):
         DiffIk = mut.DifferentialInverseKinematicsSystem
@@ -307,7 +334,8 @@ class TestDiffIkSystems(unittest.TestCase):
         params = {"safety_distance": 1.5, "influence_distance": 2.5}
 
         dut = self._check_ingredient(
-            Ingredient, params, params | {"safety_distance": 15})
+            Ingredient, params, params | {"safety_distance": 15}
+        )
 
         # Note: this is an malformed selector function; but it is sufficient
         # to show that the corresponding setter has been bound. Evaluating the
@@ -316,7 +344,8 @@ class TestDiffIkSystems(unittest.TestCase):
             pass
 
         dut.SetSelectDataForCollisionConstraintFunction(
-            select_data_for_collision_constraint=selector)
+            select_data_for_collision_constraint=selector
+        )
 
     def test_joint_velocity_limit_constraint(self):
         DiffIk = mut.DifferentialInverseKinematicsSystem
@@ -332,17 +361,19 @@ class TestDiffIkSystems(unittest.TestCase):
             velocity_lower=[0, 0],
             velocity_upper=[1, 1],
             acceleration_lower=[0, 0],
-            acceleration_upper=[1, 1]
+            acceleration_upper=[1, 1],
         )
 
         def ctor(config):
             return Ingredient(config, limits)
 
         dut = self._check_ingredient(
-            Ingredient, params, params | {"min_margin": 0.5}, ctor)
+            Ingredient, params, params | {"min_margin": 0.5}, ctor
+        )
 
-        np.testing.assert_array_equal(dut.GetJointLimits().position_lower(),
-                                      [0, 0])
+        np.testing.assert_array_equal(
+            dut.GetJointLimits().position_lower(), [0, 0]
+        )
 
         limits2 = JointLimits(
             position_lower=[-1, -1],
@@ -350,11 +381,12 @@ class TestDiffIkSystems(unittest.TestCase):
             velocity_lower=[0, 0],
             velocity_upper=[1, 1],
             acceleration_lower=[0, 0],
-            acceleration_upper=[1, 1]
+            acceleration_upper=[1, 1],
         )
         dut.SetJointLimits(joint_limits=limits2)
-        np.testing.assert_array_equal(dut.GetJointLimits().position_lower(),
-                                      [-1, -1])
+        np.testing.assert_array_equal(
+            dut.GetJointLimits().position_lower(), [-1, -1]
+        )
 
     def _make_collision_checker(self):
         """This is a simplified version of the checker/robot diagram used in
@@ -366,16 +398,25 @@ class TestDiffIkSystems(unittest.TestCase):
         robot_index = plant.AddModelInstance("robot")
         body0 = plant.AddRigidBody("body0", robot_index, SpatialInertia.Zero())
         body1 = plant.AddRigidBody("ball", robot_index, SpatialInertia.Zero())
-        plant.AddJoint(PrismaticJoint("Wx", plant.world_frame(),
-                                      body0.body_frame(), [1, 0, 0]))
-        plant.AddJoint(PrismaticJoint("Wy", body0.body_frame(),
-                                      body1.body_frame(), [0, 1, 0]))
+        plant.AddJoint(
+            PrismaticJoint(
+                "Wx", plant.world_frame(), body0.body_frame(), [1, 0, 0]
+            )
+        )
+        plant.AddJoint(
+            PrismaticJoint(
+                "Wy", body0.body_frame(), body1.body_frame(), [0, 1, 0]
+            )
+        )
         plant.Finalize()
 
         robot = builder.Build()
         params = CollisionCheckerParams(
-            model=robot, robot_model_instances=[robot_index],
-            edge_step_size=0.1, env_collision_padding=0)
+            model=robot,
+            robot_model_instances=[robot_index],
+            edge_step_size=0.1,
+            env_collision_padding=0,
+        )
         return SceneGraphCollisionChecker(params)
 
     def _make_diff_ik_system(self):
@@ -383,15 +424,22 @@ class TestDiffIkSystems(unittest.TestCase):
         DiffIk = mut.DifferentialInverseKinematicsSystem
         recipe = DiffIk.Recipe()
         recipe.AddIngredient(
-            DiffIk.LeastSquaresCost(DiffIk.LeastSquaresCost.Config()))
+            DiffIk.LeastSquaresCost(DiffIk.LeastSquaresCost.Config())
+        )
         checker = self._make_collision_checker()
         active_dof = DofMask(2, True)  # 2 dofs in the plant.
         # No velocity limits on the two dofs of the robot.
         Vd_limit = SpatialVelocity([0, 0, 0], [np.inf, np.inf, 0])
 
-        return DiffIk(recipe=recipe, task_frame="world",
-                      collision_checker=checker, active_dof=active_dof,
-                      time_step=0.1, K_VX=2, Vd_TG_limit=Vd_limit)
+        return DiffIk(
+            recipe=recipe,
+            task_frame="world",
+            collision_checker=checker,
+            active_dof=active_dof,
+            time_step=0.1,
+            K_VX=2,
+            Vd_TG_limit=Vd_limit,
+        )
 
     def test_diff_ik_system(self):
         """Builds a simple Diff IK system and evaluate it."""
@@ -406,10 +454,12 @@ class TestDiffIkSystems(unittest.TestCase):
 
         context_vel = copy.copy(context_common)
         desired_velocities = BusValue()
-        desired_velocities.Set("robot::ball",
-                               Value(SpatialVelocity([0, 0, 0], [1, 2, 0])))
+        desired_velocities.Set(
+            "robot::ball", Value(SpatialVelocity([0, 0, 0], [1, 2, 0]))
+        )
         dut.get_input_port_desired_cartesian_velocities().FixValue(
-            context_vel, desired_velocities)
+            context_vel, desired_velocities
+        )
 
         command = dut.get_output_port_commanded_velocity().Eval(context_vel)
 
@@ -421,14 +471,17 @@ class TestDiffIkSystems(unittest.TestCase):
         self.assertEqual(dut.time_step(), 0.1)
         self.assertEqual(dut.task_frame().name(), "world")
         self.assertEqual(dut.K_VX(), 2)
-        np.testing.assert_array_equal(dut.Vd_TG_limit().get_coeffs(),
-                                      [0, 0, 0, np.inf, np.inf, 0])
-        self.assertIsInstance(dut.recipe(),
-                              mut.DifferentialInverseKinematicsSystem.Recipe)
+        np.testing.assert_array_equal(
+            dut.Vd_TG_limit().get_coeffs(), [0, 0, 0, np.inf, np.inf, 0]
+        )
+        self.assertIsInstance(
+            dut.recipe(), mut.DifferentialInverseKinematicsSystem.Recipe
+        )
         self.assertEqual(dut.recipe().num_ingredients(), 1)
-        self.assertIsInstance(dut.recipe().ingredient(i=0),
-                              mut.DifferentialInverseKinematicsSystem
-                              .LeastSquaresCost)
+        self.assertIsInstance(
+            dut.recipe().ingredient(i=0),
+            mut.DifferentialInverseKinematicsSystem.LeastSquaresCost,
+        )
 
         # Note: setting poses in addition to velocities would cause an
         # evaluation error. We'll start with a fresh context (because we can't
@@ -436,8 +489,9 @@ class TestDiffIkSystems(unittest.TestCase):
         context_pose = copy.copy(context_common)
         desired_poses = BusValue()
         desired_poses.Set("robot::ball", Value(RigidTransform([1, 2, 0])))
-        dut.get_input_port_desired_cartesian_poses().FixValue(context_pose,
-                                                              desired_poses)
+        dut.get_input_port_desired_cartesian_poses().FixValue(
+            context_pose, desired_poses
+        )
 
         command = dut.get_output_port_commanded_velocity().Eval(context_pose)
         # Current pose is at (0, 0), target pose is at (1, 2). The inferred
@@ -449,14 +503,17 @@ class TestDiffIkSystems(unittest.TestCase):
         Controller = mut.DifferentialInverseKinematicsController
         dut = Controller(
             differential_inverse_kinematics=self._make_diff_ik_system(),
-            planar_rotation_dof_indices=[])
+            planar_rotation_dof_indices=[],
+        )
 
         diff_ik_sys = dut.differential_inverse_kinematics()
-        self.assertIsInstance(diff_ik_sys,
-                              mut.DifferentialInverseKinematicsSystem)
+        self.assertIsInstance(
+            diff_ik_sys, mut.DifferentialInverseKinematicsSystem
+        )
         self.assertIsInstance(
             dut.get_mutable_differential_inverse_kinematics(),
-            mut.DifferentialInverseKinematicsSystem)
+            mut.DifferentialInverseKinematicsSystem,
+        )
 
         context = dut.CreateDefaultContext()
 
