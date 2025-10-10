@@ -1,0 +1,117 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_package_library(
+    name = "franka_panda",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":panda_command_receiver",
+        ":panda_command_sender",
+        ":panda_constants",
+        ":panda_status_receiver",
+        ":panda_status_sender",
+    ],
+)
+
+drake_cc_library(
+    name = "panda_constants",
+    hdrs = ["panda_constants.h"],
+)
+
+drake_cc_library(
+    name = "panda_command_receiver",
+    srcs = ["panda_command_receiver.cc"],
+    hdrs = ["panda_command_receiver.h"],
+    deps = [
+        ":panda_constants",
+        "//common:essential",
+        "//lcmtypes:lcmtypes_drake_cc",
+        "//systems/framework:leaf_system",
+        "//systems/lcm:lcm_pubsub_system",
+    ],
+)
+
+drake_cc_library(
+    name = "panda_command_sender",
+    srcs = ["panda_command_sender.cc"],
+    hdrs = ["panda_command_sender.h"],
+    deps = [
+        ":panda_constants",
+        "//common:essential",
+        "//lcmtypes:lcmtypes_drake_cc",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "panda_status_receiver",
+    srcs = ["panda_status_receiver.cc"],
+    hdrs = ["panda_status_receiver.h"],
+    deps = [
+        ":panda_constants",
+        "//common:essential",
+        "//lcmtypes:lcmtypes_drake_cc",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "panda_status_sender",
+    srcs = ["panda_status_sender.cc"],
+    hdrs = ["panda_status_sender.h"],
+    deps = [
+        ":panda_constants",
+        "//common:essential",
+        "//lcmtypes:lcmtypes_drake_cc",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "panda_command_receiver_test",
+    deps = [
+        ":panda_command_receiver",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest(
+    name = "panda_command_sender_test",
+    deps = [
+        ":panda_command_sender",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest(
+    name = "panda_status_receiver_test",
+    deps = [
+        ":panda_status_receiver",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest(
+    name = "panda_status_sender_test",
+    deps = [
+        ":panda_status_sender",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+add_lint_tests()
