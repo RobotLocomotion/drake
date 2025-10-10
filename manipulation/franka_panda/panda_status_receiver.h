@@ -2,10 +2,9 @@
 
 #include <vector>
 
-#include "manipulation/franka_panda/panda_constants.h"
-
 #include "drake/common/drake_copyable.h"
 #include "drake/lcmt_panda_status.hpp"
+#include "drake/manipulation/franka_panda/panda_constants.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {

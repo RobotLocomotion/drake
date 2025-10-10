@@ -24,21 +24,24 @@ void DefineManipulationFrankaPanda(py::module m) {
   // Constants.
   m.attr("kPandaArmNumJoints") = kPandaArmNumJoints;
 
-  // Control mode constants
-  auto control_mode = m.def_submodule("PandaControlMode");
-  control_mode.doc() =
+  // Control mode enum
+  py::enum_<PandaControlMode>(m, "PandaControlMode", py::arithmetic(),
       "Control modes for the Panda robot. "
-      "These can be bitwise OR'd together.";
-  control_mode.attr("kPosition") = PandaControlMode::kPosition;
-  control_mode.attr("kVelocity") = PandaControlMode::kVelocity;
-  control_mode.attr("kTorque") = PandaControlMode::kTorque;
-
+      "These can be bitwise OR'd together.")
+      .value("kNone", PandaControlMode::kNone)
+      .value("kPosition", PandaControlMode::kPosition)
+      .value("kVelocity", PandaControlMode::kVelocity)
+      .value("kTorque", PandaControlMode::kTorque)
+      .def("__or__",
+          [](PandaControlMode a, PandaControlMode b) { return a | b; })
+      .def("__and__",
+          [](PandaControlMode a, PandaControlMode b) { return a & b; });
   {
     using Class = PandaCommandReceiver;
     constexpr auto& cls_doc = doc.PandaCommandReceiver;
     py::class_<Class, LeafSystem<double>>(
         m, "PandaCommandReceiver", cls_doc.doc)
-        .def(py::init<int, int>(), py::arg("num_joints") = kPandaArmNumJoints,
+        .def(py::init<int, PandaControlMode>(), py::arg("num_joints"),
             py::arg("control_mode"), cls_doc.ctor.doc)
         .def("LatchInitialPosition",
             overload_cast_explicit<void, drake::systems::Context<double>*>(
@@ -68,7 +71,7 @@ void DefineManipulationFrankaPanda(py::module m) {
     using Class = PandaCommandSender;
     constexpr auto& cls_doc = doc.PandaCommandSender;
     py::class_<Class, LeafSystem<double>>(m, "PandaCommandSender", cls_doc.doc)
-        .def(py::init<int, int>(), py::arg("num_joints") = kPandaArmNumJoints,
+        .def(py::init<int, PandaControlMode>(), py::arg("num_joints"),
             py::arg("control_mode"), cls_doc.ctor.doc)
         .def("get_position_input_port", &Class::get_position_input_port,
             py_rvp::reference_internal, cls_doc.get_position_input_port.doc)

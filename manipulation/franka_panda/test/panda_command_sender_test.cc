@@ -51,7 +51,7 @@ TEST_F(PandaCommandSenderTest, PositionAndTorque) {
   dut_.get_position_input_port().FixValue(&context_, q0_);
   dut_.get_torque_input_port().FixValue(&context_, t0_);
   EXPECT_EQ(output().control_mode_expected,
-            PandaControlMode::kPosition | PandaControlMode::kTorque);
+            to_int(PandaControlMode::kPosition | PandaControlMode::kTorque));
   EXPECT_EQ(output().num_joint_position, N);
   EXPECT_EQ(output().joint_position, std_q0_);
   EXPECT_EQ(output().num_joint_velocity, 0);
@@ -66,7 +66,7 @@ TEST_F(PandaCommandSenderTest, PositionOnly) {
   sender.get_position_input_port().FixValue(context.get(), q0_);
   const lcmt_panda_command output =
       sender.get_output_port().Eval<lcmt_panda_command>(*context);
-  EXPECT_EQ(output.control_mode_expected, PandaControlMode::kPosition);
+  EXPECT_EQ(output.control_mode_expected, to_int(PandaControlMode::kPosition));
   EXPECT_EQ(output.num_joint_position, N);
   EXPECT_EQ(output.joint_position, std_q0_);
   EXPECT_EQ(output.num_joint_velocity, 0);
@@ -81,7 +81,7 @@ TEST_F(PandaCommandSenderTest, VelocityOnly) {
   sender.get_velocity_input_port().FixValue(context.get(), v0_);
   const lcmt_panda_command output =
       sender.get_output_port().Eval<lcmt_panda_command>(*context);
-  EXPECT_EQ(output.control_mode_expected, PandaControlMode::kVelocity);
+  EXPECT_EQ(output.control_mode_expected, to_int(PandaControlMode::kVelocity));
   EXPECT_EQ(output.num_joint_position, 0);
   EXPECT_EQ(output.joint_position.size(), 0);
   EXPECT_EQ(output.num_joint_velocity, N);
@@ -96,7 +96,7 @@ TEST_F(PandaCommandSenderTest, TorqueOnly) {
   sender.get_torque_input_port().FixValue(context.get(), t0_);
   const lcmt_panda_command output =
       sender.get_output_port().Eval<lcmt_panda_command>(*context);
-  EXPECT_EQ(output.control_mode_expected, PandaControlMode::kTorque);
+  EXPECT_EQ(output.control_mode_expected, to_int(PandaControlMode::kTorque));
   EXPECT_EQ(output.num_joint_position, 0);
   EXPECT_EQ(output.joint_position.size(), 0);
   EXPECT_EQ(output.num_joint_velocity, 0);
@@ -129,7 +129,8 @@ TEST_F(PandaCommandSenderTest, MallocTest) {
 }
 
 TEST_F(PandaCommandSenderTest, BadControlMode) {
-  EXPECT_THROW(PandaCommandSender(7, 0x9999), std::exception);
+  EXPECT_THROW(PandaCommandSender(7, static_cast<PandaControlMode>(0x9999)),
+               std::exception);
 }
 
 }  // namespace franka_panda

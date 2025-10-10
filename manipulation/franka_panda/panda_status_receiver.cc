@@ -1,4 +1,4 @@
-#include "manipulation/franka_panda/panda_status_receiver.h"
+#include "drake/manipulation/franka_panda/panda_status_receiver.h"
 
 #include "drake/common/drake_throw.h"
 
@@ -75,7 +75,7 @@ const OutPort& PandaStatusReceiver::get_torque_external_output_port() const {
   return LeafSystem<double>::get_output_port(7);
 }
 
-template <std::vector<double> drake::lcmt_panda_status::* field_ptr>
+template <std::vector<double> drake::lcmt_panda_status::*field_ptr>
 void PandaStatusReceiver::CalcLcmOutput(const Context<double>& context,
                                         BasicVector<double>* output) const {
   const auto& status = get_input_port().Eval<lcmt_panda_status>(context);

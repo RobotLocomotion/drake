@@ -81,7 +81,7 @@ TEST_F(PandaCommandReceiverTest, AcceptanceTestWithMeasuredPositionInput) {
   const VectorXd t1 = VectorXd::LinSpaced(N, 0.5, 0.6);
   lcmt_panda_command command{};
   command.control_mode_expected =
-      PandaControlMode::kPosition | PandaControlMode::kTorque;
+      to_int(PandaControlMode::kPosition | PandaControlMode::kTorque);
   command.utime = 0;
   command.num_joint_position = N;
   command.joint_position = {q1.data(), q1.data() + q1.size()};
@@ -127,7 +127,7 @@ TEST_F(PandaCommandReceiverTest, AcceptanceTestWithLatching) {
   const VectorXd t3 = VectorXd::LinSpaced(N, 0.6, 0.7);
   lcmt_panda_command command{};
   command.control_mode_expected =
-      PandaControlMode::kPosition | PandaControlMode::kTorque;
+      to_int(PandaControlMode::kPosition | PandaControlMode::kTorque);
   command.utime = 0;
   command.num_joint_position = N;
   command.joint_position = {q3.data(), q3.data() + q3.size()};
@@ -148,7 +148,7 @@ GTEST_TEST(PandaCommandReceiverTestVelocity, VelocityControl) {
   EXPECT_THROW(receiver.get_commanded_torque_output_port(), std::runtime_error);
 
   lcmt_panda_command command{};
-  command.control_mode_expected = PandaControlMode::kVelocity;
+  command.control_mode_expected = to_int(PandaControlMode::kVelocity);
   command.num_joint_velocity = kPandaArmNumJoints;
   command.joint_velocity.resize(kPandaArmNumJoints, 0.1);
 
@@ -160,7 +160,8 @@ GTEST_TEST(PandaCommandReceiverTestVelocity, VelocityControl) {
 }
 
 TEST_F(PandaCommandReceiverTest, BadControlMode) {
-  EXPECT_THROW(PandaCommandReceiver(7, 0x9999), std::exception);
+  EXPECT_THROW(PandaCommandReceiver(7, static_cast<PandaControlMode>(0x9999)),
+               std::exception);
 }
 
 }  // namespace franka_panda
