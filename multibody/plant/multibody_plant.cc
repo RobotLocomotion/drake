@@ -1720,6 +1720,77 @@ const CoulombFriction<double>& MultibodyPlant<T>::GetCoulombFriction(
 }
 
 template <typename T>
+const std::optional<double> MultibodyPlant<T>::GetSurfaceSpeed(
+    geometry::GeometryId id, const SceneGraphInspector<T>& inspector) const {
+  const geometry::ProximityProperties* prop =
+      inspector.GetProximityProperties(id);
+  DRAKE_DEMAND(prop != nullptr);
+  if (prop->HasProperty(geometry::internal::kSurfaceVelocityGroup,
+                        geometry::internal::kSurfaceSpeed)) {
+    return prop->GetProperty<double>(geometry::internal::kSurfaceVelocityGroup,
+                                     geometry::internal::kSurfaceSpeed);
+
+  } else {
+    return std::nullopt;
+  }
+}
+
+template <typename T>
+const std::optional<Eigen::Vector3<T>>
+MultibodyPlant<T>::GetSurfaceVelocityNormal(
+    geometry::GeometryId id, const SceneGraphInspector<T>& inspector) const {
+  const geometry::ProximityProperties* prop =
+      inspector.GetProximityProperties(id);
+  DRAKE_DEMAND(prop != nullptr);
+  if (prop->HasProperty(geometry::internal::kSurfaceVelocityGroup,
+                        geometry::internal::kSurfaceVelocityNormal)) {
+    return prop->GetProperty<Eigen::Vector3<T>>(
+        geometry::internal::kSurfaceVelocityGroup,
+        geometry::internal::kSurfaceVelocityNormal);
+  } else {
+    return std::nullopt;
+  }
+}
+
+template <typename T>
+Vector3<T> MultibodyPlant<T>::GetSurfaceVelocity(
+    geometry::GeometryId id, const geometry::SceneGraphInspector<T>& inspector,
+    const RigidTransform<T>& X_W, const Vector3<T>& p_WC) const {
+  Vector3<T> surface_velocity = Vector3<T>::Zero();
+
+  // Get surface speed for this geometry
+  std::optional<double> surface_speed = GetSurfaceSpeed(id, inspector);
+  if (!surface_speed.has_value()) {
+    return surface_velocity;
+  }
+  // Get surface velocity normal for this geometry
+  std::optional<Eigen::Vector3<T>> velocity_normal =
+      GetSurfaceVelocityNormal(id, inspector);
+  if (!velocity_normal.has_value()) {
+    return surface_velocity;
+  }
+
+  // Transform contact point from world frame to the local geometry frame.
+  const Vector3<T> p_GC = X_W.inverse() * p_WC;
+
+  // Use the shape of the collision geometry and the contact point to
+  // get the normal vector to the surface at that point
+  const geometry::Shape& shape = inspector.GetShape(id);
+  std::optional<Vector3<T>> normal_at_p_GC =
+      geometry::GetNormalAtPoint<T>(shape, p_GC);
+  if (!normal_at_p_GC.has_value()) {
+    return surface_velocity;
+  }
+
+  // The velocity vector is the cross product between the velocity_normal
+  // and the surface normal, in that order. Its magnitude is the surface speed.
+  surface_velocity =
+      surface_speed.value() *
+      (velocity_normal.value().cross(normal_at_p_GC.value()).normalized());
+  return surface_velocity;
+}
+
+template <typename T>
 void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
   DRAKE_DEMAND(geometry_source_is_registered());
   if (adjacent_bodies_collision_filters_) {
@@ -2359,19 +2430,33 @@ void MultibodyPlant<T>::CalcContactResultsPointPairContinuous(
     // Contact point C.
     const Vector3<T> p_WC = 0.5 * (p_WCa + p_WCb);
 
+    // Get RigidBodyTransforms for bodies in contact.
+    const RigidTransform<T>& X_WA = pc.get_X_WB(bodyA_mobod_index);
+    const RigidTransform<T>& X_WB = pc.get_X_WB(bodyB_mobod_index);
+
     // Contact point position on body A.
-    const Vector3<T>& p_WAo = pc.get_X_WB(bodyA_mobod_index).translation();
+    const Vector3<T>& p_WAo = X_WA.translation();
     const Vector3<T>& p_CoAo_W = p_WAo - p_WC;
 
     // Contact point position on body B.
-    const Vector3<T>& p_WBo = pc.get_X_WB(bodyB_mobod_index).translation();
+    const Vector3<T>& p_WBo = X_WB.translation();
     const Vector3<T>& p_CoBo_W = p_WBo - p_WC;
 
+    // Get surface velocity at Ca relative to A in coordinates of A
+    const Vector3<T> v_ACa_ss =
+        GetSurfaceVelocity(geometryA_id, inspector, X_WA, p_WCa);
+    // Get surface velocity at Cb relative to B in coordinates of B
+    const Vector3<T> v_BCb_ss =
+        GetSurfaceVelocity(geometryB_id, inspector, X_WB, p_WCb);
+
     // Separation velocity, > 0  if objects separate.
+    // Account for any surface velocities.
     const Vector3<T> v_WAc =
-        vc.get_V_WB(bodyA_mobod_index).Shift(-p_CoAo_W).translational();
+        vc.get_V_WB(bodyA_mobod_index).Shift(-p_CoAo_W).translational() +
+        X_WA.rotation() * v_ACa_ss;
     const Vector3<T> v_WBc =
-        vc.get_V_WB(bodyB_mobod_index).Shift(-p_CoBo_W).translational();
+        vc.get_V_WB(bodyB_mobod_index).Shift(-p_CoBo_W).translational() +
+        X_WB.rotation() * v_BCb_ss;
     const Vector3<T> v_AcBc_W = v_WBc - v_WAc;
 
     // if xdot = vn > 0 ==> they are getting closer.
@@ -2383,18 +2468,20 @@ void MultibodyPlant<T>::CalcContactResultsPointPairContinuous(
     const auto [k, d] = internal::CombinePointContactParameters(kA, kB, dA, dB);
     const T fn_AC = k * x * (1.0 + d * vn);
 
-    // Acquire friction coefficients and combine them.
-    const CoulombFriction<double>& geometryA_friction =
-        GetCoulombFriction(geometryA_id, inspector);
-    const CoulombFriction<double>& geometryB_friction =
-        GetCoulombFriction(geometryB_id, inspector);
-    const CoulombFriction<double> combined_friction =
-        CalcContactFrictionFromSurfaceProperties(geometryA_friction,
-                                                 geometryB_friction);
-
     if (fn_AC > 0) {
+      // Acquire friction coefficients and combine them.
+      const CoulombFriction<double>& geometryA_friction =
+          GetCoulombFriction(geometryA_id, inspector);
+      const CoulombFriction<double>& geometryB_friction =
+          GetCoulombFriction(geometryB_id, inspector);
+      const CoulombFriction<double> combined_friction =
+          CalcContactFrictionFromSurfaceProperties(geometryA_friction,
+                                                   geometryB_friction);
+
       // Normal force on body A, at C, expressed in W.
       const Vector3<T> fn_AC_W = fn_AC * nhat_BA_W;
+
+      // Check if surface speed properties were defined
 
       // Compute tangential velocity, that is, v_AcBc projected onto the tangent
       // plane with normal nhat_BA:
