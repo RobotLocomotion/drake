@@ -83,21 +83,25 @@ import pydrake.visualization.meldis
 #
 # TODO(mwoehlke-kitware): Remove this when Jammy's python3-u-msgpack has been
 # updated to 2.5.2 or later.
-if not hasattr(umsgpack, 'Hashable'):
+if not hasattr(umsgpack, "Hashable"):
     import collections
-    setattr(umsgpack.collections, 'Hashable', collections.abc.Hashable)
+
+    setattr(umsgpack.collections, "Hashable", collections.abc.Hashable)
 
 
 class TestMeldis(unittest.TestCase):
-
     def _make_diagram(self, *, resource, visualizer_params, lcm):
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         parser = Parser(plant=plant)
         parser.AddModels(url=f"package://{resource}")
         plant.Finalize()
-        DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
-                                     params=visualizer_params, lcm=lcm)
+        DrakeVisualizer.AddToBuilder(
+            builder=builder,
+            scene_graph=scene_graph,
+            params=visualizer_params,
+            lcm=lcm,
+        )
         diagram = builder.Build()
         return diagram
 
@@ -138,10 +142,12 @@ class TestMeldis(unittest.TestCase):
                 lcm_type=lcmt_point_cloud,
                 lcm=lcm,
                 publish_period=1.0,
-                use_cpp_serializer=True))
+                use_cpp_serializer=True,
+            )
+        )
         builder.Connect(
-            cloud_to_lcm.get_output_port(),
-            cloud_lcm_publisher.get_input_port())
+            cloud_to_lcm.get_output_port(), cloud_lcm_publisher.get_input_port()
+        )
         diagram = builder.Build()
 
         # Set input and publish the point cloud.
@@ -166,7 +172,8 @@ class TestMeldis(unittest.TestCase):
         diagram = self._make_diagram(
             resource="drake/multibody/benchmarks/acrobot/acrobot.sdf",
             visualizer_params=DrakeVisualizerParams(),
-            lcm=lcm)
+            lcm=lcm,
+        )
         context = diagram.CreateDefaultContext()
         diagram.ForcedPublish(context)
 
@@ -182,25 +189,24 @@ class TestMeldis(unittest.TestCase):
         self.assertEqual(meshcat.HasPath(link_path), True)
 
     def _check_viewer_applet_on_model(self, resource):
-        """Checks that _ViewerApplet doesn't crash on the given model file.
-        """
+        """Checks that _ViewerApplet doesn't crash on the given model file."""
         dut = mut.Meldis()
         lcm = dut._lcm
         diagram = self._make_diagram(
             resource=resource,
             visualizer_params=DrakeVisualizerParams(),
-            lcm=lcm)
+            lcm=lcm,
+        )
         diagram.ForcedPublish(diagram.CreateDefaultContext())
         lcm.HandleSubscriptions(timeout_millis=0)
         dut._invoke_subscriptions()
         self.assertEqual(dut.meshcat.HasPath("/DRAKE_VIEWER"), True)
 
     def test_viewer_applet_plain_meshes(self):
-        """Checks _ViewerApplet support for untextured meshes.
-        """
+        """Checks _ViewerApplet support for untextured meshes."""
         self._check_viewer_applet_on_model(
-            "drake_models/iiwa_description/urdf/"
-            "iiwa14_no_collision.urdf")
+            "drake_models/iiwa_description/urdf/iiwa14_no_collision.urdf"
+        )
 
     def test_viewer_applet_meshes_non_uniform_scale(self):
         """Confirms that a mesh's non-uniform scale is taken from the lcm
@@ -225,16 +231,25 @@ class TestMeldis(unittest.TestCase):
         """
         mesh = Mesh(
             mesh_data=InMemoryMesh(
-                mesh_file=MemoryFile(contents=obj_contents,
-                                     extension=".obj",
-                                     filename_hint="a.obj")),
-            scale3=scale3)
+                mesh_file=MemoryFile(
+                    contents=obj_contents,
+                    extension=".obj",
+                    filename_hint="a.obj",
+                )
+            ),
+            scale3=scale3,
+        )
         g_id = scene_graph.RegisterAnchoredGeometry(
-            s_id, GeometryInstance(RigidTransform(), mesh, "test_mesh"))
+            s_id, GeometryInstance(RigidTransform(), mesh, "test_mesh")
+        )
         scene_graph.AssignRole(s_id, g_id, IllustrationProperties())
 
-        DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
-                                     params=DrakeVisualizerParams(), lcm=lcm)
+        DrakeVisualizer.AddToBuilder(
+            builder=builder,
+            scene_graph=scene_graph,
+            params=DrakeVisualizerParams(),
+            lcm=lcm,
+        )
         diagram = builder.Build()
         diagram.ForcedPublish(diagram.CreateDefaultContext())
         lcm.HandleSubscriptions(timeout_millis=0)
@@ -247,18 +262,16 @@ class TestMeldis(unittest.TestCase):
         scale_matrix[5] = scale3[1]
         scale_matrix[10] = scale3[2]
         scale_matrix[15] = 1.0
-        self.assertListEqual(unpacked_obj['object']['object']['matrix'],
-                             scale_matrix)
+        self.assertListEqual(
+            unpacked_obj["object"]["object"]["matrix"], scale_matrix
+        )
 
     def test_viewer_applet_textured_meshes(self):
-        """Checks _ViewerApplet support for textured meshes.
-        """
-        self._check_viewer_applet_on_model(
-            "drake_models/ycb/004_sugar_box.sdf")
+        """Checks _ViewerApplet support for textured meshes."""
+        self._check_viewer_applet_on_model("drake_models/ycb/004_sugar_box.sdf")
 
     def test_viewer_applet_reload_optimization(self):
-        """Checks that loading the identical scene twice is efficient.
-        """
+        """Checks that loading the identical scene twice is efficient."""
         # Create the device under test.
         dut = mut.Meldis()
         meshcat = dut.meshcat
@@ -270,18 +283,22 @@ class TestMeldis(unittest.TestCase):
             # its messages to a temporary location and then forward them along
             # one at a time to Meldis.
             temp_lcm = DrakeLcm()
-            temp_lcm_queue = []   # Tuples of (channel, buffer).
+            temp_lcm_queue = []  # Tuples of (channel, buffer).
             for name in ["DRAKE_VIEWER_LOAD_ROBOT", "DRAKE_VIEWER_DRAW"]:
+
                 def _on_message(channel, data):
                     temp_lcm_queue.append((channel, data))
-                temp_lcm.Subscribe(channel=name, handler=functools.partial(
-                    _on_message, name))
+
+                temp_lcm.Subscribe(
+                    channel=name, handler=functools.partial(_on_message, name)
+                )
 
             # Create the plant + visualizer.
             diagram = self._make_diagram(
                 resource="drake/multibody/benchmarks/acrobot/acrobot.sdf",
                 visualizer_params=DrakeVisualizerParams(),
-                lcm=temp_lcm)
+                lcm=temp_lcm,
+            )
 
             # Capture the LOAD and DRAW messages via temp_lcm.
             diagram.ForcedPublish(diagram.CreateDefaultContext())
@@ -313,8 +330,8 @@ class TestMeldis(unittest.TestCase):
             self.assertTrue(meshcat.HasPath(link_path))
 
     def test_geometry_file_hasher(self):
-        """Checks _GeometryFileHasher's detection of changes to files.
-        """
+        """Checks _GeometryFileHasher's detection of changes to files."""
+
         # A tiny wrapper function to make it easy to compute the hash.
         def dut(data):
             hasher = mut._meldis._GeometryFileHasher()
@@ -392,9 +409,14 @@ class TestMeldis(unittest.TestCase):
         hasher = mut._meldis._GeometryFileHasher()
         hasher.on_viewer_load_robot(message)
         hashed_names = set([x.name for x in hasher._paths])
-        self.assertSetEqual(hashed_names, {"mesh_checksum_test.obj",
-                                           "mesh_checksum_test.mtl",
-                                           "mesh_checksum_test.png"})
+        self.assertSetEqual(
+            hashed_names,
+            {
+                "mesh_checksum_test.obj",
+                "mesh_checksum_test.mtl",
+                "mesh_checksum_test.png",
+            },
+        )
 
         # Message with .gltf mesh that can't be parsed => non-empty hash.
         # (Invalid glTF content is not an error.)
@@ -430,11 +452,15 @@ class TestMeldis(unittest.TestCase):
 
         # Valid(ish) glTF file references a buffer image.
         with open(gltf_filename, "w") as f:
-            f.write(json.dumps({
-                "buffers": [{"byteLength": 0}],
-                "bufferViews": [{"buffer": 0, "byteLength": 0}],
-                "images": [{"bufferView": 0, "mimeType": "image/png"}],
-            }))
+            f.write(
+                json.dumps(
+                    {
+                        "buffers": [{"byteLength": 0}],
+                        "bufferViews": [{"buffer": 0, "byteLength": 0}],
+                        "images": [{"bufferView": 0, "mimeType": "image/png"}],
+                    }
+                )
+            )
         gltf_hash_5 = dut(message)
         self.assertNotEqual(gltf_hash_5, empty_hash)
         self.assertNotEqual(gltf_hash_5, gltf_hash_4)
@@ -444,16 +470,25 @@ class TestMeldis(unittest.TestCase):
         bin_filename = test_tmpdir / "mesh_checksum_test.bin"
         bin_filename.touch()
         with open(gltf_filename, "w") as f:
-            f.write(json.dumps({
-                "images": [{"uri": str(png_filename)}],
-                "buffers": [{"uri": str(bin_filename)}]
-            }))
+            f.write(
+                json.dumps(
+                    {
+                        "images": [{"uri": str(png_filename)}],
+                        "buffers": [{"uri": str(bin_filename)}],
+                    }
+                )
+            )
         hasher = mut._meldis._GeometryFileHasher()
         hasher.on_viewer_load_robot(message)
         hashed_names = set([x.name for x in hasher._paths])
-        self.assertSetEqual(hashed_names, {"mesh_checksum_test.gltf",
-                                           "mesh_checksum_test.bin",
-                                           "mesh_checksum_test.png"})
+        self.assertSetEqual(
+            hashed_names,
+            {
+                "mesh_checksum_test.gltf",
+                "mesh_checksum_test.bin",
+                "mesh_checksum_test.png",
+            },
+        )
 
         # A message with an unsupported extension => non-empty hash.
         unsupported_filename = test_tmpdir / "mesh_checksum_test.ply"
@@ -505,7 +540,8 @@ class TestMeldis(unittest.TestCase):
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         parser = Parser(plant=plant)
-        parser.AddModelsFromString(f"""
+        parser.AddModelsFromString(
+            f"""
 <?xml version="1.0"?>
 <sdf version="1.9">
   <model name="box">
@@ -524,10 +560,16 @@ class TestMeldis(unittest.TestCase):
     <static>1</static>
   </model>
 </sdf>
-""", "sdf")
+""",
+            "sdf",
+        )
         plant.Finalize()
-        DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
-                                     params=DrakeVisualizerParams(), lcm=lcm)
+        DrakeVisualizer.AddToBuilder(
+            builder=builder,
+            scene_graph=scene_graph,
+            params=DrakeVisualizerParams(),
+            lcm=lcm,
+        )
         diagram = builder.Build()
 
         # Process the load + draw messages.
@@ -549,7 +591,7 @@ class TestMeldis(unittest.TestCase):
         self.assertEqual(meshcat.HasPath(path), True)
         message = meshcat._GetPackedProperty(path, "modulated_opacity")
         parsed = umsgpack.unpackb(message)
-        self.assertEqual(parsed['value'], new_alpha)
+        self.assertEqual(parsed["value"], new_alpha)
 
     def test_viewer_applet_in_memory_mesh(self):
         """This simply makes sure meldis doesn't crash for in-memory meshes.
@@ -571,21 +613,32 @@ f 1 2 3
 newmtl meldis_mat
 Kd 1 1 0
 """
-        mesh = Mesh(mesh_data=InMemoryMesh(
-                        mesh_file=MemoryFile(obj_contents, ".obj",
-                                             "from_test.obj"),
-                    supporting_files={
-                        "meldis_test.mtl": MemoryFile(mtl_contents, ".mtl",
-                                                      "meldis_test.mtl")}))
+        mesh = Mesh(
+            mesh_data=InMemoryMesh(
+                mesh_file=MemoryFile(obj_contents, ".obj", "from_test.obj"),
+                supporting_files={
+                    "meldis_test.mtl": MemoryFile(
+                        mtl_contents, ".mtl", "meldis_test.mtl"
+                    )
+                },
+            )
+        )
         g_id = scene_graph.RegisterAnchoredGeometry(
             plant.get_source_id(),
-            GeometryInstance(X_PG=RigidTransform(), shape=mesh,
-                             name="in_memory"))
-        scene_graph.AssignRole(plant.get_source_id(), g_id,
-                               IllustrationProperties())
+            GeometryInstance(
+                X_PG=RigidTransform(), shape=mesh, name="in_memory"
+            ),
+        )
+        scene_graph.AssignRole(
+            plant.get_source_id(), g_id, IllustrationProperties()
+        )
         lcm = dut._lcm
-        DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
-                                     params=DrakeVisualizerParams(), lcm=lcm)
+        DrakeVisualizer.AddToBuilder(
+            builder=builder,
+            scene_graph=scene_graph,
+            params=DrakeVisualizerParams(),
+            lcm=lcm,
+        )
         plant.Finalize()
         diagram = builder.Build()
 
@@ -622,11 +675,12 @@ Kd 1 1 0
         lcm = dut._lcm
         diagram = self._make_diagram(
             resource="drake/examples/hydroelastic/"
-                     "spatula_slip_control/spatula.sdf",
+            "spatula_slip_control/spatula.sdf",
             visualizer_params=DrakeVisualizerParams(
-                show_hydroelastic=True,
-                role=Role.kProximity),
-            lcm=lcm)
+                show_hydroelastic=True, role=Role.kProximity
+            ),
+            lcm=lcm,
+        )
         context = diagram.CreateDefaultContext()
         diagram.ForcedPublish(context)
         lcm.HandleSubscriptions(timeout_millis=0)
@@ -634,7 +688,7 @@ Kd 1 1 0
 
     def test_contact_applet_point_pair(self):
         """Checks that _ContactApplet doesn't crash when receiving point
-           contact messages.
+        contact messages.
         """
         # Create the device under test.
         dut = mut.Meldis()
@@ -646,23 +700,35 @@ Kd 1 1 0
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.001)
         plant.SetUseSampledOutputPorts(False)  # We're not stepping time.
-        sphere1_model, = Parser(plant, "sphere1").AddModels(url=url)
-        sphere2_model, = Parser(plant, "sphere2").AddModels(url=url)
+        (sphere1_model,) = Parser(plant, "sphere1").AddModels(url=url)
+        (sphere2_model,) = Parser(plant, "sphere2").AddModels(url=url)
         body1 = plant.GetBodyByName("base_link", sphere1_model)
         body2 = plant.GetBodyByName("base_link", sphere2_model)
-        plant.AddJoint(PrismaticJoint(
-            name="sphere1_x", frame_on_parent=plant.world_body().body_frame(),
-            frame_on_child=body1.body_frame(), axis=[1, 0, 0]))
-        plant.AddJoint(PrismaticJoint(
-            name="sphere2_x", frame_on_parent=plant.world_body().body_frame(),
-            frame_on_child=body2.body_frame(), axis=[1, 0, 0]))
+        plant.AddJoint(
+            PrismaticJoint(
+                name="sphere1_x",
+                frame_on_parent=plant.world_body().body_frame(),
+                frame_on_child=body1.body_frame(),
+                axis=[1, 0, 0],
+            )
+        )
+        plant.AddJoint(
+            PrismaticJoint(
+                name="sphere2_x",
+                frame_on_parent=plant.world_body().body_frame(),
+                frame_on_child=body2.body_frame(),
+                axis=[1, 0, 0],
+            )
+        )
         plant.Finalize()
         ConnectContactResultsToDrakeVisualizer(
-            builder=builder, plant=plant, scene_graph=scene_graph, lcm=lcm)
+            builder=builder, plant=plant, scene_graph=scene_graph, lcm=lcm
+        )
         diagram = builder.Build()
         context = diagram.CreateDefaultContext()
-        plant.SetPositions(plant.GetMyMutableContextFromRoot(context),
-                           [-0.03, 0.03])
+        plant.SetPositions(
+            plant.GetMyMutableContextFromRoot(context), [-0.03, 0.03]
+        )
         diagram.ForcedPublish(context)
 
         # The geometry isn't registered until the load is processed.
@@ -677,7 +743,7 @@ Kd 1 1 0
 
     def test_contact_applet_hydroelastic(self):
         """Checks that _ContactApplet doesn't crash when receiving hydroelastic
-           messages.
+        messages.
         """
         # Create the device under test.
         dut = mut.Meldis()
@@ -693,26 +759,42 @@ Kd 1 1 0
         parser.AddModels(url=url)
         body1 = plant.GetBodyByName("body1")
         body2 = plant.GetBodyByName("body2")
-        plant.AddJoint(PrismaticJoint(
-            name="body1", frame_on_parent=plant.world_body().body_frame(),
-            frame_on_child=body1.body_frame(), axis=[0, 0, 1]))
-        plant.AddJoint(PrismaticJoint(
-            name="body2", frame_on_parent=plant.world_body().body_frame(),
-            frame_on_child=body2.body_frame(), axis=[1, 0, 0]))
+        plant.AddJoint(
+            PrismaticJoint(
+                name="body1",
+                frame_on_parent=plant.world_body().body_frame(),
+                frame_on_child=body1.body_frame(),
+                axis=[0, 0, 1],
+            )
+        )
+        plant.AddJoint(
+            PrismaticJoint(
+                name="body2",
+                frame_on_parent=plant.world_body().body_frame(),
+                frame_on_child=body2.body_frame(),
+                axis=[1, 0, 0],
+            )
+        )
         plant.Finalize()
         ConnectContactResultsToDrakeVisualizer(
-            builder=builder, plant=plant, scene_graph=scene_graph, lcm=lcm)
+            builder=builder, plant=plant, scene_graph=scene_graph, lcm=lcm
+        )
         diagram = builder.Build()
         context = diagram.CreateDefaultContext()
-        plant.SetPositions(plant.GetMyMutableContextFromRoot(context),
-                           [0.1, 0.3])
+        plant.SetPositions(
+            plant.GetMyMutableContextFromRoot(context), [0.1, 0.3]
+        )
         diagram.ForcedPublish(context)
 
         # The geometry isn't registered until the load is processed.
-        hydro_path = "/CONTACT_RESULTS/hydroelastic/" + \
-                     "body1.two_bodies::body1_collision+body2"
-        hydro_path2 = "/CONTACT_RESULTS/hydroelastic/" + \
-                      "body1.two_bodies::body1_collision2+body2"
+        hydro_path = (
+            "/CONTACT_RESULTS/hydroelastic/"
+            + "body1.two_bodies::body1_collision+body2"
+        )
+        hydro_path2 = (
+            "/CONTACT_RESULTS/hydroelastic/"
+            + "body1.two_bodies::body1_collision2+body2"
+        )
         self.assertEqual(meshcat.HasPath(hydro_path), False)
         self.assertEqual(meshcat.HasPath(hydro_path2), False)
 
@@ -720,8 +802,7 @@ Kd 1 1 0
         lcm.HandleSubscriptions(timeout_millis=1)
         dut._invoke_subscriptions()
 
-        self.assertEqual(meshcat.HasPath("/CONTACT_RESULTS/hydroelastic"),
-                         True)
+        self.assertEqual(meshcat.HasPath("/CONTACT_RESULTS/hydroelastic"), True)
         self.assertEqual(meshcat.HasPath(hydro_path), True)
         self.assertEqual(meshcat.HasPath(hydro_path2), True)
 
@@ -751,10 +832,11 @@ Kd 1 1 0
             0.0, 1.0, 0.0,
             0.0, 0.0, 1.0,
             # 4 triangles, use float for integer vertex indices
-            0., 2., 1.,
-            0., 1., 3.,
-            0., 3., 2.,
-            1., 2., 3.]
+            0.0, 2.0, 1.0,
+            0.0, 1.0, 3.0,
+            0.0, 3.0, 2.0,
+            1.0, 2.0, 3.0,
+        ]  # fmt: skip
         geom0.num_float_data = len(geom0.float_data)
         message = lcmt_viewer_link_data()
         message.name = "test_deformable_geometry"
@@ -762,12 +844,16 @@ Kd 1 1 0
         message.num_geom = 1
         message.geom = [geom0]
 
-        dut._lcm.Publish(channel="DRAKE_VIEWER_DEFORMABLE",
-                         buffer=message.encode())
-        dut._lcm.Publish(channel="DRAKE_VIEWER_DEFORMABLE_ILLUSTRATION",
-                         buffer=message.encode())
-        dut._lcm.Publish(channel="DRAKE_VIEWER_DEFORMABLE_PROXIMITY",
-                         buffer=message.encode())
+        dut._lcm.Publish(
+            channel="DRAKE_VIEWER_DEFORMABLE", buffer=message.encode()
+        )
+        dut._lcm.Publish(
+            channel="DRAKE_VIEWER_DEFORMABLE_ILLUSTRATION",
+            buffer=message.encode(),
+        )
+        dut._lcm.Publish(
+            channel="DRAKE_VIEWER_DEFORMABLE_PROXIMITY", buffer=message.encode()
+        )
 
         meshcat_default = f"/DRAKE_VIEWER/{message.robot_num}/{message.name}"
         meshcat_proximity = (
@@ -799,9 +885,9 @@ Kd 1 1 0
         dut = mut.Meldis()
 
         test_tuples = (
-           (3, "DRAKE_POINT_CLOUD", "/POINT_CLOUD/default"),
-           (4, "DRAKE_POINT_CLOUD_XYZRGB", "/POINT_CLOUD/XYZRGB"),
-           (7, "DRAKE_POINT_CLOUD_12345", "/POINT_CLOUD/12345"),
+            (3, "DRAKE_POINT_CLOUD", "/POINT_CLOUD/default"),
+            (4, "DRAKE_POINT_CLOUD_XYZRGB", "/POINT_CLOUD/XYZRGB"),
+            (7, "DRAKE_POINT_CLOUD_12345", "/POINT_CLOUD/12345"),
         )
         for num_fields, channel, meshcat_path in test_tuples:
             with self.subTest(num_fields=num_fields):
@@ -826,11 +912,10 @@ Kd 1 1 0
         message.position = [[0.0, 0.0, 0.1]]
         message.quaternion = [[1.0, 0.0, 0.0, 0.0]]
         message.num_links = 1
-        message.link_name = ['0']
+        message.link_name = ["0"]
         message.robot_num = [1]
 
-        dut._lcm.Publish(channel="DRAKE_DRAW_FRAMES",
-                         buffer=message.encode())
+        dut._lcm.Publish(channel="DRAKE_DRAW_FRAMES", buffer=message.encode())
 
         meshcat_path = f"/DRAKE_DRAW_FRAMES/default/{message.link_name[0]}"
         # Before the subscribed handlers are called, there is no meshcat path
@@ -843,8 +928,7 @@ Kd 1 1 0
         self.assertEqual(dut.meshcat.HasPath(meshcat_path), True)
 
     def test_args_precedence(self):
-        """Checks that the "kwargs wins" part of our API contract is met.
-        """
+        """Checks that the "kwargs wins" part of our API contract is met."""
         # When bad MeshcatParams are used Meldis rejects them, but good kwargs
         # can override them and win (no errors).
         bad_host = MeshcatParams(host="8.8.8.8")

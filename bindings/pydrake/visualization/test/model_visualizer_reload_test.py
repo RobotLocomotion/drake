@@ -24,8 +24,10 @@ class TestModelVisualizerReload(unittest.TestCase):
         dut = mut.ModelVisualizer(meshcat=meshcat)
         filename = "drake/multibody/benchmarks/acrobot/acrobot.sdf"
         dut.AddModels(FindResourceOrThrow(filename))
-        dut.AddModels(url="package://drake_models/veggies/assets/"
-                          + "yellow_bell_pepper_no_stem_low.gltf")
+        dut.AddModels(
+            url="package://drake_models/veggies/assets/"
+            + "yellow_bell_pepper_no_stem_low.gltf"
+        )
         dut.Finalize()
 
         # Check that it allowed reloading.
@@ -42,10 +44,9 @@ class TestModelVisualizerReload(unittest.TestCase):
             "type": "button",
             "name": "{button}"
         }}"""
-        subprocess.check_call([
-            cli,
-            f"--ws_url={meshcat.ws_url()}",
-            f"--send_message={message}"])
+        subprocess.check_call(
+            [cli, f"--ws_url={meshcat.ws_url()}", f"--send_message={message}"]
+        )
 
         # Wait up to 5 seconds for the button click to be processed.
         for _ in range(500):
@@ -62,8 +63,10 @@ class TestModelVisualizerReload(unittest.TestCase):
 
         # Ensure the reloaded slider and joint values are the same.
         slider_q = dut._sliders.get_output_port().Eval(
-            dut._sliders.GetMyContextFromRoot(dut._context))
+            dut._sliders.GetMyContextFromRoot(dut._context)
+        )
         self.assertListEqual(list(original_q), list(slider_q))
         joint_q = dut._diagram.plant().GetPositions(
-            dut._diagram.plant().GetMyContextFromRoot(dut._context))
+            dut._diagram.plant().GetMyContextFromRoot(dut._context)
+        )
         self.assertListEqual(list(original_q), list(joint_q))
