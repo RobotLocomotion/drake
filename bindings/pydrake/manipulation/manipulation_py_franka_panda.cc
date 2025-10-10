@@ -24,12 +24,14 @@ void DefineManipulationFrankaPanda(py::module m) {
   // Constants.
   m.attr("kPandaArmNumJoints") = kPandaArmNumJoints;
 
-  // Control mode constants from lcmt_panda_status
-  m.attr("CONTROL_MODE_POSITION") =
-      drake::lcmt_panda_status::CONTROL_MODE_POSITION;
-  m.attr("CONTROL_MODE_VELOCITY") =
-      drake::lcmt_panda_status::CONTROL_MODE_VELOCITY;
-  m.attr("CONTROL_MODE_TORQUE") = drake::lcmt_panda_status::CONTROL_MODE_TORQUE;
+  // Control mode constants
+  auto control_mode = m.def_submodule("PandaControlMode");
+  control_mode.doc() =
+      "Control modes for the Panda robot. "
+      "These can be bitwise OR'd together.";
+  control_mode.attr("kPosition") = PandaControlMode::kPosition;
+  control_mode.attr("kVelocity") = PandaControlMode::kVelocity;
+  control_mode.attr("kTorque") = PandaControlMode::kTorque;
 
   {
     using Class = PandaCommandReceiver;

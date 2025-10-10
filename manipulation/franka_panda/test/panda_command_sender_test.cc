@@ -24,8 +24,7 @@ constexpr int N = kPandaArmNumJoints;
 class PandaCommandSenderTest : public testing::Test {
  public:
   PandaCommandSenderTest()
-      : dut_(N, lcmt_panda_status::CONTROL_MODE_POSITION |
-                    lcmt_panda_status::CONTROL_MODE_TORQUE),
+      : dut_(N, PandaControlMode::kPosition | PandaControlMode::kTorque),
         context_ptr_(dut_.CreateDefaultContext()),
         context_(*context_ptr_) {}
 
@@ -52,8 +51,7 @@ TEST_F(PandaCommandSenderTest, PositionAndTorque) {
   dut_.get_position_input_port().FixValue(&context_, q0_);
   dut_.get_torque_input_port().FixValue(&context_, t0_);
   EXPECT_EQ(output().control_mode_expected,
-            lcmt_panda_status::CONTROL_MODE_POSITION |
-                lcmt_panda_status::CONTROL_MODE_TORQUE);
+            PandaControlMode::kPosition | PandaControlMode::kTorque);
   EXPECT_EQ(output().num_joint_position, N);
   EXPECT_EQ(output().joint_position, std_q0_);
   EXPECT_EQ(output().num_joint_velocity, 0);
@@ -63,13 +61,12 @@ TEST_F(PandaCommandSenderTest, PositionAndTorque) {
 }
 
 TEST_F(PandaCommandSenderTest, PositionOnly) {
-  const PandaCommandSender sender(N, lcmt_panda_status::CONTROL_MODE_POSITION);
+  const PandaCommandSender sender(N, PandaControlMode::kPosition);
   auto context = sender.CreateDefaultContext();
   sender.get_position_input_port().FixValue(context.get(), q0_);
   const lcmt_panda_command output =
       sender.get_output_port().Eval<lcmt_panda_command>(*context);
-  EXPECT_EQ(output.control_mode_expected,
-            lcmt_panda_status::CONTROL_MODE_POSITION);
+  EXPECT_EQ(output.control_mode_expected, PandaControlMode::kPosition);
   EXPECT_EQ(output.num_joint_position, N);
   EXPECT_EQ(output.joint_position, std_q0_);
   EXPECT_EQ(output.num_joint_velocity, 0);
@@ -79,13 +76,12 @@ TEST_F(PandaCommandSenderTest, PositionOnly) {
 }
 
 TEST_F(PandaCommandSenderTest, VelocityOnly) {
-  const PandaCommandSender sender(N, lcmt_panda_status::CONTROL_MODE_VELOCITY);
+  const PandaCommandSender sender(N, PandaControlMode::kVelocity);
   auto context = sender.CreateDefaultContext();
   sender.get_velocity_input_port().FixValue(context.get(), v0_);
   const lcmt_panda_command output =
       sender.get_output_port().Eval<lcmt_panda_command>(*context);
-  EXPECT_EQ(output.control_mode_expected,
-            lcmt_panda_status::CONTROL_MODE_VELOCITY);
+  EXPECT_EQ(output.control_mode_expected, PandaControlMode::kVelocity);
   EXPECT_EQ(output.num_joint_position, 0);
   EXPECT_EQ(output.joint_position.size(), 0);
   EXPECT_EQ(output.num_joint_velocity, N);
@@ -95,13 +91,12 @@ TEST_F(PandaCommandSenderTest, VelocityOnly) {
 }
 
 TEST_F(PandaCommandSenderTest, TorqueOnly) {
-  const PandaCommandSender sender(N, lcmt_panda_status::CONTROL_MODE_TORQUE);
+  const PandaCommandSender sender(N, PandaControlMode::kTorque);
   auto context = sender.CreateDefaultContext();
   sender.get_torque_input_port().FixValue(context.get(), t0_);
   const lcmt_panda_command output =
       sender.get_output_port().Eval<lcmt_panda_command>(*context);
-  EXPECT_EQ(output.control_mode_expected,
-            lcmt_panda_status::CONTROL_MODE_TORQUE);
+  EXPECT_EQ(output.control_mode_expected, PandaControlMode::kTorque);
   EXPECT_EQ(output.num_joint_position, 0);
   EXPECT_EQ(output.joint_position.size(), 0);
   EXPECT_EQ(output.num_joint_velocity, 0);
