@@ -66,7 +66,11 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         scene_graph,
         draw_period=None,
         T_VW=np.array(
-            [[1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]
+            [
+                [1.0, 0.0, 0.0, 0.0],  # BR
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
         ),
         xlim=[-1.0, 1],
         ylim=[-1, 1],
@@ -213,17 +217,12 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
 
                 if isinstance(shape, Box):
                     # Draw a bounding box.
+                    half_width = shape.width() / 2.0
                     patch_G = np.vstack(
                         (
-                            shape.width()
-                            / 2.0
-                            * np.array([-1, -1, 1, 1, -1, -1, 1, 1]),
-                            shape.depth()
-                            / 2.0
-                            * np.array([-1, 1, -1, 1, -1, 1, -1, 1]),
-                            shape.height()
-                            / 2.0
-                            * np.array([-1, -1, -1, -1, 1, 1, 1, 1]),
+                            half_width * np.array([-1, -1, 1, 1, -1, -1, 1, 1]),
+                            half_width * np.array([-1, 1, -1, 1, -1, 1, -1, 1]),
+                            half_width * np.array([-1, -1, -1, -1, 1, 1, 1, 1]),
                         )
                     )
 
@@ -255,24 +254,19 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                     # In the lcm geometry, cylinders are along +z
                     # https://github.com/RobotLocomotion/drake/blob/last_sha_with_original_matlab/drake/matlab/systems/plants/RigidBodyCylinder.m
                     # Two circles: one at bottom, one at top.
-                    sample_pts = np.arange(0.0, 2.0 * math.pi, 0.25)
+                    sample_cos_sin = [
+                        (math.cos(angle), math.sin(angle))
+                        for angle in np.arange(0.0, 2.0 * math.pi, 0.25)
+                    ]
                     patch_G = np.hstack(
                         [
                             np.array(
                                 [
-                                    [
-                                        radius * math.cos(pt),
-                                        radius * math.sin(pt),
-                                        -length / 2.0,
-                                    ],
-                                    [
-                                        radius * math.cos(pt),
-                                        radius * math.sin(pt),
-                                        length / 2.0,
-                                    ],
+                                    [radius * cos, radius * sin, -length / 2.0],
+                                    [radius * cos, radius * sin, length / 2.0],
                                 ]
                             ).T
-                            for pt in sample_pts
+                            for cos, sin in sample_cos_sin
                         ]
                     )
 
