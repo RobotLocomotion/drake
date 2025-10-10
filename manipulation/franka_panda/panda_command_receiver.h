@@ -1,10 +1,9 @@
 #pragma once
 
-#include "manipulation/franka_panda/panda_constants.h"
-
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/lcmt_panda_command.hpp"
+#include "drake/manipulation/franka_panda/panda_constants.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -57,8 +56,8 @@ class PandaCommandReceiver final : public drake::systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PandaCommandReceiver);
 
   /// @param control_mode is a bitset of one or more control mode constants
-  /// defined in lcmt_panda_status::CONTROL_MODE_{POSITION,VELOCITY,TORQUE}.
-  PandaCommandReceiver(int num_joints, int control_mode);
+  /// defined in PandaControlMode enum. Use bitwise OR to combine modes.
+  PandaCommandReceiver(int num_joints, PandaControlMode control_mode);
   ~PandaCommandReceiver() final;
 
   /// (Advanced.) Copies the current "position_measured" input
@@ -106,7 +105,7 @@ class PandaCommandReceiver final : public drake::systems::LeafSystem<double> {
                         drake::systems::BasicVector<double>*) const;
 
   const int num_joints_;
-  const int control_mode_;
+  const PandaControlMode control_mode_;
   const drake::systems::InputPort<double>* message_input_{};
   const drake::systems::InputPort<double>* position_measured_input_{};
   drake::systems::DiscreteStateIndex latched_position_measured_is_set_;

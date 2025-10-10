@@ -1,9 +1,8 @@
 #pragma once
 
-#include "manipulation/franka_panda/panda_constants.h"
-
 #include "drake/common/drake_copyable.h"
 #include "drake/lcmt_panda_command.hpp"
+#include "drake/manipulation/franka_panda/panda_constants.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -39,8 +38,8 @@ class PandaCommandSender final : public drake::systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PandaCommandSender);
 
   /// @param control_mode is a bitset of one or more control mode constants
-  /// defined in lcmt_panda_status::CONTROL_MODE_{POSITION,VELOCITY,TORQUE}.
-  PandaCommandSender(int num_joints, int control_mode);
+  /// defined in PandaControlMode enum. Use bitwise OR to combine modes.
+  PandaCommandSender(int num_joints, PandaControlMode control_mode);
   ~PandaCommandSender() final;
 
   /// @name Named accessors for this System's input and output ports.
@@ -55,7 +54,7 @@ class PandaCommandSender final : public drake::systems::LeafSystem<double> {
                   drake::lcmt_panda_command*) const;
 
   const int num_joints_;
-  const int control_mode_;
+  const PandaControlMode control_mode_;
 
   const drake::systems::InputPort<double>* position_input_port_{};
   const drake::systems::InputPort<double>* velocity_input_port_{};

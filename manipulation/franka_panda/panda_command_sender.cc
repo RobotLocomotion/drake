@@ -1,11 +1,11 @@
-#include "manipulation/franka_panda/panda_command_sender.h"
+#include "drake/manipulation/franka_panda/panda_command_sender.h"
 
 #include <vector>
 
-#include "manipulation/franka_panda/panda_constants.h"
 #include <fmt/format.h>
 
 #include "drake/lcmt_panda_status.hpp"
+#include "drake/manipulation/franka_panda/panda_constants.h"
 
 namespace drake {
 namespace manipulation {
@@ -16,27 +16,30 @@ using drake::lcmt_panda_status;
 using drake::systems::Context;
 using drake::systems::kVectorValued;
 
-PandaCommandSender::PandaCommandSender(int num_joints, int control_mode)
+PandaCommandSender::PandaCommandSender(int num_joints,
+                                       PandaControlMode control_mode)
     : num_joints_(num_joints), control_mode_(control_mode) {
-  int remaining = control_mode_;
-  if (control_mode_ & PandaControlMode::kPosition) {
-    remaining &= ~int{PandaControlMode::kPosition};
+  PandaControlMode remaining = control_mode_;
+  if ((control_mode_ & PandaControlMode::kPosition) !=
+      PandaControlMode::kNone) {
+    remaining &= ~PandaControlMode::kPosition;
     position_input_port_ =
         &this->DeclareInputPort("position", kVectorValued, num_joints_);
   }
-  if (control_mode_ & PandaControlMode::kVelocity) {
-    remaining &= ~int{PandaControlMode::kVelocity};
+  if ((control_mode_ & PandaControlMode::kVelocity) !=
+      PandaControlMode::kNone) {
+    remaining &= ~PandaControlMode::kVelocity;
     velocity_input_port_ =
         &this->DeclareInputPort("velocity", kVectorValued, num_joints_);
   }
-  if (control_mode_ & PandaControlMode::kTorque) {
-    remaining &= ~int{PandaControlMode::kTorque};
+  if ((control_mode_ & PandaControlMode::kTorque) != PandaControlMode::kNone) {
+    remaining &= ~PandaControlMode::kTorque;
     torque_input_port_ =
         &this->DeclareInputPort("torque", kVectorValued, num_joints_);
   }
-  if (remaining != 0) {
-    throw std::logic_error(
-        fmt::format("Invalid control_mode bits set: 0x{:x}", remaining));
+  if (remaining != PandaControlMode::kNone) {
+    throw std::logic_error(fmt::format("Invalid control_mode bits set: 0x{:x}",
+                                       to_int(remaining)));
   }
   this->DeclareAbstractOutputPort("lcmt_panda_command",
                                   &PandaCommandSender::CalcOutput);
@@ -98,7 +101,7 @@ void PandaCommandSender::CalcOutput(const Context<double>& context,
                                     lcmt_panda_command* output) const {
   lcmt_panda_command& command = *output;
   command.utime = context.get_time() * 1e6;
-  command.control_mode_expected = control_mode_;
+  command.control_mode_expected = to_int(control_mode_);
   CopyInputPortToMessage(context, position_input_port_,
                          &command.num_joint_position, &command.joint_position);
   CopyInputPortToMessage(context, velocity_input_port_,
