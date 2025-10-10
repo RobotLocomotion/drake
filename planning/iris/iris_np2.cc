@@ -807,7 +807,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
           // TODO(cohnt): Allow the user to specify the solver options used
           // here.
-          solve_succeeded = prog.Solve(*solver, particle, {}, &closest);
+          solve_succeeded =
+              prog.Solve(*solver, particle, options.solver_options, &closest);
         } else {
           // We did not find a collision pair corresponding to this particle, so
           // the particle must be violating one of the constraints from
@@ -860,8 +861,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
           // TODO(cohnt): Allow the user to specify the solver options used
           // here.
-          solve_succeeded =
-              counter_example_prog->Solve(*solver, particle, {}, &closest);
+          solve_succeeded = counter_example_prog->Solve(
+              *solver, particle, options.solver_options, &closest);
         }
 
         bool add_hyperplane =
