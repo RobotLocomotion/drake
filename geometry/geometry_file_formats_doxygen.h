@@ -368,6 +368,19 @@ namespace geometry {
   4. Default diffuse color defined by geometry consumer (visualizer or render
      engine) will be applied.
 
+ @section geometry_image_types Supported image types
+
+ Drake supports three main image file formats: PNG, JPG, and TIFF (there is a
+ fourth format, KTX2, see below). These main file formats can be written (see
+ systems::sensors::ImageIo) and read as part of model definitions (e.g., as
+ part of glTF or Obj objects).
+
+ The fourth format, KTX2, is only supported as part of a glTF file. It is a
+ highly compressed image format designed to be used efficiently by GPUs. It is
+ currently only supported by Meshcat (via the illustration role) and will either
+ be ignored or cause console spam if used elsewhere. (See @ref gltf_support
+ "the discussion of glTF files" above.")
+
 <!-- Foot notes for this file -->
 
 <hr>
