@@ -109,9 +109,13 @@ Fixes
 
 ## Newly-deprecated APIs
 
+<!-- <relnotes for newly-deprecated go here> -->
+
 * TBD
 
 ## Removal of deprecated items
+
+<!-- <relnotes for deprecated-removed go here> -->
 
 * TBD
 

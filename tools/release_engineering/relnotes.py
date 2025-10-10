@@ -201,6 +201,30 @@ def _format_commit(gh, drake, commit):
     return packages, severities, bullet
 
 
+def _insert_into_section(lines, section_name, bullet):
+    """Insert the given bullet into a section indicated by `section_name`.
+
+    The section is identified by a line that looks like:
+      <relnotes for name1(,name2,name3) go here>.
+
+    The bullet is inserted two lines after that line (i.e., after the section
+    header assuming `section_name` is found in the name list. `section_name`
+    should only appear once in lines.
+    """
+    found = False
+    for i, one_line in enumerate(lines):
+        match = re.search(r"<relnotes for (\S+) go here>", one_line)
+        if match:
+            (anchors_csv,) = match.groups()
+            anchors = anchors_csv.split(",")
+            if section_name in anchors:
+                lines.insert(i + 2, f"{bullet}\n")
+                found = True
+                break
+    if not found:
+        raise RuntimeError(f"Could not find anchor for {section_name}")
+
+
 def _update(args, notes_filename, gh, drake, target_commit):
     """The --update action."""
 
@@ -279,18 +303,17 @@ def _update(args, notes_filename, gh, drake, target_commit):
         primary_package = packages[0]
         # Find the section for this commit, matching a line that looks like:
         # <relnotes for foo,{package},bar go here>
-        found = False
-        for i, one_line in enumerate(lines):
-            match = re.search(r"<relnotes for (\S+) go here>", one_line)
-            if match:
-                (anchors_csv,) = match.groups()
-                anchors = anchors_csv.split(",")
-                if primary_package in anchors:
-                    lines.insert(i + 2, f"{bullet}\n")
-                    found = True
-                    break
-        if not found:
-            raise RuntimeError(f"Could not find anchor for {primary_package}")
+        _insert_into_section(lines, primary_package, bullet)
+
+        if "newly deprecated" in severities:
+            # Those marked newly duplicated should also be copied into the
+            # newly deprecated section.
+            _insert_into_section(lines, "newly-deprecated", bullet)
+
+        if "removal of deprecated" in severities:
+            # Those marked removal of duplicated should also be copied into the
+            # removed deprecated section.
+            _insert_into_section(lines, "deprecated-removed", bullet)
 
     # Update the issue links.  Replace the text between these markers:
     # .. <begin issue links>
