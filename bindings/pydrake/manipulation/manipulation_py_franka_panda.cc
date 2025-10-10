@@ -2,6 +2,7 @@
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/manipulation/manipulation_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/lcmt_panda_status.hpp"
 #include "drake/manipulation/franka_panda/panda_command_receiver.h"
 #include "drake/manipulation/franka_panda/panda_command_sender.h"
 #include "drake/manipulation/franka_panda/panda_constants.h"
@@ -23,10 +24,18 @@ void DefineManipulationFrankaPanda(py::module m) {
   // Constants.
   m.attr("kPandaArmNumJoints") = kPandaArmNumJoints;
 
+  // Control mode constants from lcmt_panda_status
+  m.attr("CONTROL_MODE_POSITION") =
+      drake::lcmt_panda_status::CONTROL_MODE_POSITION;
+  m.attr("CONTROL_MODE_VELOCITY") =
+      drake::lcmt_panda_status::CONTROL_MODE_VELOCITY;
+  m.attr("CONTROL_MODE_TORQUE") = drake::lcmt_panda_status::CONTROL_MODE_TORQUE;
+
   {
     using Class = PandaCommandReceiver;
     constexpr auto& cls_doc = doc.PandaCommandReceiver;
-    py::class_<Class, LeafSystem<double>>(m, "PandaCommandReceiver", cls_doc.doc)
+    py::class_<Class, LeafSystem<double>>(
+        m, "PandaCommandReceiver", cls_doc.doc)
         .def(py::init<int, int>(), py::arg("num_joints") = kPandaArmNumJoints,
             py::arg("control_mode"), cls_doc.ctor.doc)
         .def("LatchInitialPosition",
