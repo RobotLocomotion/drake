@@ -450,5 +450,4 @@ add_lint_tests(
         "build_components_refresh.py",
         "test/drake_python_dir_install_test.py",
     ],
-    python_lint_use_ruff_format = False,
 )

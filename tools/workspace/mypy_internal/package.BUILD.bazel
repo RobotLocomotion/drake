@@ -16,3 +16,5 @@ py_library(
         "@typing_extensions_internal//:typing_extensions",
     ],
 )
+
+exports_files(["drake_repository_metadata.json"])

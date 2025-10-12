@@ -15,3 +15,5 @@ py_library(
     ], allow_empty = False),
     imports = ["."],
 )
+
+exports_files(["drake_repository_metadata.json"])

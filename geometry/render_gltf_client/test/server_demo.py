@@ -96,9 +96,9 @@ class RenderError(Exception):
     def __init__(self, message: str, error_code: int = 400):
         super().__init__(message)
         # Do not allow successful HTTP codes to be used, this is an Error.
-        assert (
-            error_code >= 400
-        ), f"RenderError: provided error code {error_code} is less than 400"
+        assert error_code >= 400, (
+            f"RenderError: provided error code {error_code} is less than 400"
+        )
         self.message = message
         self.error_code = error_code
 
@@ -264,9 +264,7 @@ class RenderRequest:
         # the two sets may not match exactly.
         extras = provided_fields.difference(expected_fields)
         if extras:
-            raise RenderError(
-                f"Extra field(s) {extras} in the request <form>."
-            )
+            raise RenderError(f"Extra field(s) {extras} in the request <form>.")
 
     def _parse_numeric(
         self, field_name: str, field_type: FieldType
@@ -334,9 +332,7 @@ class RenderRequest:
                 )
 
             # Create a timestamp for saving the file to avoid collisions.
-            timestamp = datetime.datetime.now().strftime(
-                "%Y-%m-%d_%H-%M-%S-%f"
-            )
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")
             scene_path = TMP_DIR / f"{timestamp}.gltf"
             temp_path.rename(scene_path)
 
@@ -528,9 +524,7 @@ def render_endpoint():
             elif image_extension in {".tif", ".tiff"}:
                 mime_type = "image/tiff"
             else:
-                raise RuntimeError(
-                    f"Missing mime_type for '{image_extension}'"
-                )
+                raise RuntimeError(f"Missing mime_type for '{image_extension}'")
             # If we are not deleting the file, use the file path directly for
             # simplicity.  Otherwise, we load the image into RAM, delete it,
             # and then send that.  See the documentation:
@@ -615,7 +609,7 @@ def render_endpoint():
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__,)
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--host",
         type=str,

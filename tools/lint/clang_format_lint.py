@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import subprocess
 import sys
 
@@ -41,16 +42,12 @@ def _is_cxx(filename):
 
 def _check_clang_format_idempotence(filename):
     clang_format = clang_format_lib.get_clang_format_path()
-    formatter = subprocess.Popen(
-        [clang_format, "-style=file", filename], stdout=subprocess.PIPE
+    current = Path(filename).read_text(encoding="utf-8")
+    formatted = subprocess.check_output(
+        [clang_format, "-style=file", filename],
+        encoding="utf-8",
     )
-    differ = subprocess.Popen(
-        ["/usr/bin/diff", "-u", "-", filename],
-        stdin=formatter.stdout,
-        stdout=subprocess.PIPE,
-    )
-    changes = differ.communicate()[0]
-    if not changes:
+    if current == formatted:
         return 0
     print(f"ERROR: {filename} needs clang-format")
     print(

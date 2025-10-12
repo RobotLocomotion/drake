@@ -309,25 +309,24 @@ RigidTransformd PoseCamera(const Vector3d& p_WC, const Vector3d& p_WT,
 
 // Compares the test image against a reference image.
 //
-// The bytes of `test_image` are compared with the bytes of `ref_image` to
-// within the given tolerance.
+// The bytes of `test_image` are compared with the bytes of `ref_image`.
+// Confirming image equivalence is tricky. We want to be sensitive to changes in
+// code that might produce different images but, at the same time, write a test
+// that will survive the vagaries of rendering in CI. Equivalence is determined
+// by both tolerance and conformity.
+//
+// @param tolerance   The maximum acceptable pixel-wise, per-channel deviation
+//                    (for 8-bit channels in the range [0, 255]).
+// @param conformity  The fraction of channel values that must deviate less than
+//                    `tolerance`. The default value (99.5%) is strict enough to
+//                    catch most changes in the "WholeImage*" family of tests;
+//                    each object takes about 0.5% of the image (by pixel area).
+//                    So, detecting if that much of the image changes will help
+//                    catch most changes to object behavior. However, some tests
+//                    may need to tweak it on a case-by-case basis.
 template <typename ImageType>
 void CompareImages(const ImageType& test_image, const ImageType& ref_image,
-                   double tolerance) {
-  // Confirming image equivalence is tricky. We want to be sensitive to changes
-  // in code that might produce different images but, at the same time, write a
-  // test that will survive the vagaries of rendering in CI. To that end, we
-  // employ two thresholds:
-  //
-  //   - tolerance: allowed per-channel deviation (passed as parameter).
-  //   - conformity: the fraction of channel values that must deviate less than
-  //                 `tolerance` (hard-coded below).
-  //
-  // Tolerance is provided by each test, but the conformity is hard-coded to be
-  // a high value (99.5%). Essentially, each of the primitives added by
-  // AddShapeRows() fills about 0.5% of the final image. If we want to recognize
-  // when any of those shapes changes in some significant way, we need to fail
-  // if that number of pixels deviates.
+                   double tolerance, double conformity = 0.995) {
   using T = typename ImageType::T;
   ASSERT_EQ(ref_image.size(), test_image.size());
   Eigen::Map<const VectorX<T>> data_expected(ref_image.at(0, 0),
@@ -339,18 +338,15 @@ void CompareImages(const ImageType& test_image, const ImageType& ref_image,
                                          .array()
                                          .abs();
   const int num_acceptable = (differences <= tolerance).count();
-  const double kConformity = 0.995;
-  EXPECT_GE(num_acceptable / static_cast<float>(ref_image.size()), kConformity);
+  EXPECT_GE(num_acceptable / static_cast<float>(ref_image.size()), conformity);
 }
 
-// Compares the test image against a reference image.
+// Compares the test image against a reference image named by its file path.
 //
-// The bytes of `test_image` are compared with the decoded bytes of the image
-// located at `ref_resource` to within the given tolerance.
-// Note: We'll call FindResource(ref_resource) to resolve the filename.
+// See the CompareImages(ImageType, ImageType) overload for details.
 template <typename ImageType>
 void CompareImages(const ImageType& test_image, const std::string& ref_resource,
-                   double tolerance) {
+                   double tolerance, double conformity = 0.995) {
   // The type we save to disk and compare the bytes of; may not be the same as
   // the input image type.
   using CompareType =
@@ -370,7 +366,7 @@ void CompareImages(const ImageType& test_image, const std::string& ref_resource,
   CompareType expected_image;
   ASSERT_TRUE(systems::sensors::LoadImage(ref_path, &expected_image));
 
-  CompareImages(compare_image, expected_image, tolerance);
+  CompareImages(compare_image, expected_image, tolerance, conformity);
 }
 
 // Sanitizes a test case description into a legal filename.
@@ -2359,6 +2355,101 @@ TEST_F(RenderEngineVtkTest, PbrMaterialSettingSurvivesCloning) {
   EXPECT_EQ(clone_image, pbr_image);
 }
 
+// The purpose of this test is two-fold:
+//   1. Provide a base-line image to validate the default values as visually
+//      reasonable.
+//   2. Show that all of the parameters affect the rendered result. Note: the
+//      effects aren't predicted or tested in their specifics; just that changes
+//      in parameters lead to changes in images.
+//
+// We have a cached image of the default parameters (so a human can inspect the
+// image and judge whether the defaults are reasonable). All other renderings
+// are compared against that reference image.
+TEST_F(RenderEngineVtkTest, Ssao) {
+  const RigidTransformd X_WC = PoseCamera(/* p_WC */ Vector3d(1.5, -1.5, 2.5),
+                                          /* p_WT */ Vector3d(0, 0, 0.5));
+  const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
+
+  auto populate_renderer = [this, &X_WC](RenderEngineVtk* renderer) {
+    InitializeRenderer(X_WC, true /* add terrain */, renderer);
+    // We'll create an arrangement of cubes, so we can get some interesting and
+    // obvious ambient occlusion effects.
+    PerceptionProperties material;
+    material.AddProperty("label", "id", RenderLabel(17));
+    material.AddProperty("phong", "diffuse", Rgba(0.8, 0.2, 0.2));
+    const RigidTransformd X_WB(Vector3d(0, 0, 0.5));
+    renderer->RegisterVisual(GeometryId::get_new_id(), Box(1, 1, 1), material,
+                             X_WB, false);
+    renderer->RegisterVisual(GeometryId::get_new_id(), Box(1.45, 0.5, 0.5),
+                             material, X_WB, false);
+    renderer->RegisterVisual(GeometryId::get_new_id(), Box(1.6, 0.2, 0.2),
+                             material, X_WB, false);
+    renderer->RegisterVisual(GeometryId::get_new_id(), Box(0.5, 0.5, 1.45),
+                             material, X_WB, false);
+    renderer->RegisterVisual(GeometryId::get_new_id(), Box(0.2, 0.2, 1.6),
+                             material, X_WB, false);
+    renderer->RegisterVisual(GeometryId::get_new_id(), Box(0.5, 1.45, 0.5),
+                             material, X_WB, false);
+    renderer->RegisterVisual(GeometryId::get_new_id(), Box(0.2, 1.6, 0.2),
+                             material, X_WB, false);
+  };
+
+  auto render_image = [&camera, &populate_renderer](
+                          std::optional<SsaoParameter> ssao,
+                          const std::string& description,
+                          const std::source_location& caller =
+                              std::source_location::current()) {
+    RenderEngineVtk renderer(RenderEngineVtkParams{
+        .ssao = ssao,
+        .force_to_pbr = true,
+    });
+    populate_renderer(&renderer);
+    ImageRgba8U image(camera.core().intrinsics().width(),
+                      camera.core().intrinsics().height());
+    renderer.RenderColorImage(camera, &image);
+    const std::string stem = fmt::format("line_{:0>4}_ssao_{}", caller.line(),
+                                         SafeFilename(description));
+    SaveTestOutputImage(image, fmt::format("{0}.png", stem));
+    return image;
+  };
+
+  const SsaoParameter default_ssao;
+  const ImageRgba8U default_image = render_image(default_ssao, "default");
+  {
+    SCOPED_TRACE("Default image");
+    // Note: There is slight deviation from linux to mac in CI such that the
+    // default 99.5% conformity value is too strict.
+    CompareImages(default_image,
+                  "drake/geometry/render_vtk/test/ssao_reference.png",
+                  /* tolerance = */ 2, /* conformity = */ 0.985);
+  }
+
+  struct Config {
+    std::string description;
+    std::optional<SsaoParameter> params;
+  };
+
+  const std::vector<Config> configs{
+      {"radius increase", SsaoParameter{.radius = default_ssao.radius * 2}},
+      {"bias increase", SsaoParameter{.bias = default_ssao.bias * 10}},
+      {"sample count decrease",
+       SsaoParameter{.sample_count = default_ssao.sample_count / 4}},
+      {"intensity scale increase",
+       SsaoParameter{.intensity_scale = default_ssao.intensity_scale * 4}},
+      {"intensity shift increase",
+       SsaoParameter{.intensity_shift = default_ssao.intensity_shift + 0.25}},
+      {"blur toggle", SsaoParameter{.blur = !default_ssao.blur}},
+      {"diabled", std::nullopt},
+  };
+
+  for (const auto& config : configs) {
+    SCOPED_TRACE(config.description);
+    const ImageRgba8U test_image =
+        render_image(config.params, config.description);
+    EXPECT_NE(test_image, default_image);
+  }
+}
+
 namespace {
 
 // Defines the relationship between two adjacent pixels in a rendering of a box.
@@ -3048,6 +3139,8 @@ TEST_F(RenderEngineVtkTest, WholeImageCustomParams) {
             // able to see the skybox.
             .texture = EquirectangularMap{.path = hdr_path}}},
         .exposure = 0.75,
+        // We're _explicitly_ excluding SSAO; the CI environment seems to panic
+        // on this scene when enabling SSAO. See the Ssao test above for more.
         .cast_shadows = true,
         .shadow_map_size = 1024,
         .backend = FLAGS_backend,

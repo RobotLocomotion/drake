@@ -43,3 +43,7 @@ class TestDofMask(unittest.TestCase):
         self.assertEqual(mut.DofMask([True, False]).count(), 1)
         self.assertTrue(mut.DofMask([True, False])[0])
         self.assertFalse(mut.DofMask([True, False])[1])
+        self.assertEqual(
+            mut.DofMask([True, False]).GetFullToSelectedIndex(), [0, None])
+        self.assertEqual(
+            mut.DofMask([False, True]).GetSelectedToFullIndex(), [1])

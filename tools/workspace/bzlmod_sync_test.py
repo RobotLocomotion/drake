@@ -5,7 +5,6 @@ from python import runfiles
 
 
 class TestBzlmodSync(unittest.TestCase):
-
     def _read(self, respath):
         """Returns the contents of the given resource path."""
         manifest = runfiles.Create()
@@ -31,7 +30,7 @@ class TestBzlmodSync(unittest.TestCase):
             kwargs = {}
             for item in line.split(","):
                 name, value = item.split(" = ")
-                kwargs[name.strip()] = value.strip().replace('"', '')
+                kwargs[name.strip()] = value.strip().replace('"', "")
             if "version" in kwargs:
                 result[kwargs["name"]] = kwargs["version"]
         return result
@@ -51,5 +50,5 @@ class TestBzlmodSync(unittest.TestCase):
                 self.assertEqual(cmake[item], top[item])
 
 
-assert __name__ == '__main__'
+assert __name__ == "__main__"
 unittest.main()

@@ -14,5 +14,8 @@ def highway_internal_repository(
             ":patches/target_get_index_inline_always.patch",
             ":patches/target_update_noinline.patch",
         ],
+        patch_cmds = [
+            "echo 'exports_files([\"drake_repository_metadata.json\"])' >> BUILD",  # noqa
+        ],
         mirrors = mirrors,
     )

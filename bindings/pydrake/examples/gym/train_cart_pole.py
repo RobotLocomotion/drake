@@ -7,6 +7,7 @@ import gymnasium as gym
 import stable_baselines3
 from stable_baselines3.common.env_checker import check_env
 
+from pydrake.common import configure_logging
 from pydrake.geometry import StartMeshcat
 from pydrake.examples.gym._bazel_cwd_helpers import bazel_chdir
 
@@ -107,6 +108,7 @@ def _run_training(config, args):
 
 def _main():
     bazel_chdir()
+    configure_logging()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--test', action='store_true')
     parser.add_argument('--train_single_env', action='store_true')
