@@ -639,12 +639,13 @@ install(
     name = "install",
     install_tests = [":test/resource_tool_installed_test.py"],
     targets = [
-        # TODO(tyler-yankee): As written, these tools rely on dynamic loading,
-        # so they disregard //tools/flags:install_libdrake=static. We should
-        # determine alternatives to make this work, so that users linking
-        # libdrake statically can distribute a single archive file.
-        ":resource_tool",
+        # TODO(tyler-yankee): As written, find_resource relies on dynamic
+        # loading and disregards //tools/flags:install_libdrake=static.
+        # We should determine alternatives to make this work, so that users
+        # linking libdrake statically can distribute a single archive file.
         ":libdrake_marker.so",
+        # Remove with resource_tool deprecation 2026-02-01.
+        ":resource_tool",
     ],
     runtime_dest = "share/drake/common",
     data_dest = "share/drake",
@@ -1306,6 +1307,7 @@ drake_py_unittest(
     data = [":drake_cc_googletest_main_test_device"],
 )
 
+# Remove with resource_tool deprecation 2026-02-01.
 drake_py_unittest(
     name = "resource_tool_test",
     args = [
@@ -1346,6 +1348,7 @@ add_lint_tests(
         "nice_type_name_override.h",
     ],
     python_lint_extra_srcs = [
+        # Remove with resource_tool deprecation 2026-02-01.
         ":test/resource_tool_installed_test.py",
     ],
 )
