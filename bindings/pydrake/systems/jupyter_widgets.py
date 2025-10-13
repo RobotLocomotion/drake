@@ -32,6 +32,7 @@ class PoseSliders(LeafSystem):
         output_ports:
         - pose
     """
+
     # TODO(russt): Use namedtuple defaults parameter once we are Python >= 3.7.
     Visible = namedtuple("Visible", ("roll", "pitch", "yaw", "x", "y", "z"))
     Visible.__new__.__defaults__ = (True, True, True, True, True, True)
@@ -42,8 +43,13 @@ class PoseSliders(LeafSystem):
     Value = namedtuple("Value", ("roll", "pitch", "yaw", "x", "y", "z"))
     Value.__new__.__defaults__ = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 
-    def __init__(self, visible=Visible(), min_range=MinRange(),
-                 max_range=MaxRange(), value=Value()):
+    def __init__(
+        self,
+        visible=Visible(),
+        min_range=MinRange(),
+        max_range=MaxRange(),
+        value=Value(),
+    ):
         """
         Args:
             visible: An object with boolean elements for 'roll', 'pitch',
@@ -56,8 +62,10 @@ class PoseSliders(LeafSystem):
         """
         LeafSystem.__init__(self)
         port = self.DeclareAbstractOutputPort(
-            "pose", lambda: AbstractValue.Make(RigidTransform()),
-            self.DoCalcOutput)
+            "pose",
+            lambda: AbstractValue.Make(RigidTransform()),
+            self.DoCalcOutput,
+        )
 
         # The widgets themselves have undeclared state.  For now, we accept it,
         # and simply disable caching on the output port.
@@ -67,52 +75,65 @@ class PoseSliders(LeafSystem):
 
         # Note: This timing affects the keyboard teleop performance. A larger
         #       time step causes more lag in the response.
-        self.DeclarePeriodicEvent(0.01, 0.0,
-                                  PublishEvent(self._process_event_queue))
+        self.DeclarePeriodicEvent(
+            0.01, 0.0, PublishEvent(self._process_event_queue)
+        )
 
-        self._roll = FloatSlider(min=min_range.roll,
-                                 max=max_range.roll,
-                                 value=value.roll,
-                                 step=0.01,
-                                 continuous_update=True,
-                                 description="roll",
-                                 layout=Layout(width='90%'))
-        self._pitch = FloatSlider(min=min_range.pitch,
-                                  max=max_range.pitch,
-                                  value=value.pitch,
-                                  step=0.01,
-                                  continuous_update=True,
-                                  description="pitch",
-                                  layout=Layout(width='90%'))
-        self._yaw = FloatSlider(min=min_range.yaw,
-                                max=max_range.yaw,
-                                value=value.yaw,
-                                step=0.01,
-                                continuous_update=True,
-                                description="yaw",
-                                layout=Layout(width='90%'))
-        self._x = FloatSlider(min=min_range.x,
-                              max=max_range.x,
-                              value=value.x,
-                              step=0.01,
-                              continuous_update=True,
-                              description="x",
-                              orient='horizontal',
-                              layout=Layout(width='90%'))
-        self._y = FloatSlider(min=min_range.y,
-                              max=max_range.y,
-                              value=value.y,
-                              step=0.01,
-                              continuous_update=True,
-                              description="y",
-                              layout=Layout(width='90%'))
-        self._z = FloatSlider(min=min_range.z,
-                              max=max_range.z,
-                              value=value.z,
-                              step=0.01,
-                              continuous_update=True,
-                              description="z",
-                              layout=Layout(width='90%'))
+        self._roll = FloatSlider(
+            min=min_range.roll,
+            max=max_range.roll,
+            value=value.roll,
+            step=0.01,
+            continuous_update=True,
+            description="roll",
+            layout=Layout(width="90%"),
+        )
+        self._pitch = FloatSlider(
+            min=min_range.pitch,
+            max=max_range.pitch,
+            value=value.pitch,
+            step=0.01,
+            continuous_update=True,
+            description="pitch",
+            layout=Layout(width="90%"),
+        )
+        self._yaw = FloatSlider(
+            min=min_range.yaw,
+            max=max_range.yaw,
+            value=value.yaw,
+            step=0.01,
+            continuous_update=True,
+            description="yaw",
+            layout=Layout(width="90%"),
+        )
+        self._x = FloatSlider(
+            min=min_range.x,
+            max=max_range.x,
+            value=value.x,
+            step=0.01,
+            continuous_update=True,
+            description="x",
+            orient="horizontal",
+            layout=Layout(width="90%"),
+        )
+        self._y = FloatSlider(
+            min=min_range.y,
+            max=max_range.y,
+            value=value.y,
+            step=0.01,
+            continuous_update=True,
+            description="y",
+            layout=Layout(width="90%"),
+        )
+        self._z = FloatSlider(
+            min=min_range.z,
+            max=max_range.z,
+            value=value.z,
+            step=0.01,
+            continuous_update=True,
+            description="z",
+            layout=Layout(width="90%"),
+        )
 
         if visible.roll:
             display(self._roll)
@@ -168,9 +189,14 @@ class PoseSliders(LeafSystem):
         """
         Constructs the output values from the widget elements.
         """
-        output.set_value(RigidTransform(
-            RollPitchYaw(self._roll.value, self._pitch.value, self._yaw.value),
-            [self._x.value, self._y.value, self._z.value]))
+        output.set_value(
+            RigidTransform(
+                RollPitchYaw(
+                    self._roll.value, self._pitch.value, self._yaw.value
+                ),
+                [self._x.value, self._y.value, self._z.value],
+            )
+        )
 
 
 class WidgetSystem(LeafSystem):
@@ -206,16 +232,19 @@ class WidgetSystem(LeafSystem):
         for i, widget_iterable in enumerate(self._widgets):
             for w in widget_iterable:
                 assert isinstance(w, Widget), (
-                    "args must be collections of widgets")
+                    "args must be collections of widgets"
+                )
                 display(w)
             port = self.DeclareVectorOutputPort(
                 f"widget_group_{i}",
                 len(widget_iterable),
-                partial(self.DoCalcOutput, port_index=i))
+                partial(self.DoCalcOutput, port_index=i),
+            )
             port.disable_caching_by_default()
 
-        self.DeclarePeriodicEvent(update_period_sec, 0.0,
-                                  PublishEvent(self._process_event_queue))
+        self.DeclarePeriodicEvent(
+            update_period_sec, 0.0, PublishEvent(self._process_event_queue)
+        )
 
     def _process_event_queue(self, unused_context, unused_event):
         """
