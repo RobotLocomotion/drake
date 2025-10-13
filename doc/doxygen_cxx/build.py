@@ -272,6 +272,8 @@ def _build(*, out_dir, temp_dir, modules, quick):
         # to a <span>, which *is* passed through as raw HTML by Doxygen. Then,
         # with the following regular expressions, we transform the two <span>s
         # to <detail> and </detail>.
+        # TODO(tyler-yankee): investigate porting given "our current version"
+        # note above ...
         (
             r's#<p><span class="_python_details_begin"></span> </p>#'
             r"<p><details><summary>Click to expand Python code...</summary>#;"
