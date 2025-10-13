@@ -700,9 +700,27 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
     math::RotationMatrix<T> R_WC =
         math::RotationMatrix<T>::MakeFromOneVector(nhat_AB_W, 2);
 
+    const RigidTransform<T>& X_WA =
+        plant().EvalBodyPoseInWorld(context, body_A);
+    const RigidTransform<T>& X_WB =
+        plant().EvalBodyPoseInWorld(context, body_B);
+
+    // Get surface velocity at Ca relative to A in coordinates of A and
+    // transform to world frame W.
+    const Vector3<T> v_ACa_W_ss =
+        X_WA.rotation() *
+        plant().GetSurfaceVelocity(pair.id_A, inspector, X_WA, pair.p_WCa);
+    // Get surface velocity at Cb relative to B in coordinates of B and
+    // transform to world frame W.
+    const Vector3<T> v_BCb_W_ss =
+        X_WB.rotation() *
+        plant().GetSurfaceVelocity(pair.id_B, inspector, X_WB, pair.p_WCb);
+    // Relative separation velocity due to surface velocity in contact frame C.
+    const Vector3<T> v_AcBc_C_ss = R_WC.transpose() * (v_BCb_W_ss - v_ACa_W_ss);
+
     // Contact velocity stored in the current context (previous time step).
     const Vector3<T> v_AcBc_W = Jv_AcBc_W * v;
-    const Vector3<T> v_AcBc_C = R_WC.transpose() * v_AcBc_W;
+    const Vector3<T> v_AcBc_C = (R_WC.transpose() * v_AcBc_W);
     const T vn0 = v_AcBc_C(2);
 
     // We have at most two blocks per contact.
@@ -754,12 +772,8 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
     const T fn0 = k * pair.depth;
 
     // Contact point position relative to each body.
-    const RigidTransform<T>& X_WA =
-        plant().EvalBodyPoseInWorld(context, body_A);
     const Vector3<T>& p_WA = X_WA.translation();
     const Vector3<T> p_AC_W = p_WC - p_WA;
-    const RigidTransform<T>& X_WB =
-        plant().EvalBodyPoseInWorld(context, body_B);
     const Vector3<T>& p_WB = X_WB.translation();
     const Vector3<T> p_BC_W = p_WC - p_WB;
 
@@ -775,6 +789,7 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
                                         .nhat_BA_W = pair.nhat_BA_W,
                                         .phi0 = phi0,
                                         .vn0 = vn0,
+                                        .v_b = v_AcBc_C_ss,
                                         .fn0 = fn0,
                                         .stiffness = k,
                                         .damping = d,
@@ -1022,6 +1037,7 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
             .nhat_BA_W = nhat_BA_W,
             .phi0 = phi0,
             .vn0 = vn0,
+            .v_b = {},  // No bias velocity yet.
             .fn0 = fn0,
             .stiffness = k,
             .damping = d,
@@ -1029,7 +1045,7 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
             .friction_coefficient = mu,
             .surface_index = surface_index,
             .face_index = face,
-            .point_pair_index = {} /* no point pair index */};
+            .point_pair_index = {} /* No point pair index. */};
         contact_pairs->AppendHydroData(std::move(contact_pair));
       }
     }

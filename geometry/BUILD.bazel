@@ -454,17 +454,26 @@ drake_cc_library(
 
 drake_cc_library(
     name = "shape_specification",
-    srcs = ["shape_specification.cc"],
-    hdrs = ["shape_specification.h"],
+    srcs = [
+        "shape_specification.cc",
+        "shape_specification_helpers.cc",
+    ],
+    hdrs = [
+        "shape_specification.h",
+    ],
     deps = [
         ":mesh_source",
         "//common:essential",
+        "//geometry/proximity:bv",
+        "//geometry/proximity:bvh",
         "//geometry/proximity:polygon_surface_mesh",
+        "//geometry/proximity:triangle_surface_mesh",
         "//math:geometric_transform",
     ],
     implementation_deps = [
         "//common:nice_type_name",
         "//common:overloaded",
+        "//geometry/proximity:distance_to_point_callback",
         "//geometry/proximity:make_convex_hull_mesh_impl",
         "//geometry/proximity:meshing_utilities",
         "//geometry/proximity:obj_to_surface_mesh",
@@ -1158,6 +1167,15 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "shape_to_point_cloud",
+    hdrs = ["test/shape_to_point_cloud.h"],
+    tags = ["exclude_from_package"],
+    deps = [
+        "//geometry/proximity:obj_to_surface_mesh",
+    ],
+)
+
 drake_cc_googletest(
     name = "shape_specification_test",
     data = [
@@ -1167,8 +1185,10 @@ drake_cc_googletest(
     ],
     deps = [
         ":shape_specification",
+        ":shape_to_point_cloud",
         "//common:find_resource",
         "//common:overloaded",
+        "//common/schema:stochastic",
         "//common/test_utilities",
     ],
 )

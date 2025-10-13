@@ -5783,6 +5783,16 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     return internal_tree().graph();
   }
 
+  // Get the surface velocity defined by the proximity properties
+  // drake:surface_speed and drake:surface_velocity_normal. The velocity
+  // is computed at the point p_WC, which should be point very close (1mm)
+  // to the surface and expressed in the world frame. The velocity is
+  // expressed in the local frame of geometry identified by id.
+  Vector3<T> GetSurfaceVelocity(
+      geometry::GeometryId id,
+      const geometry::SceneGraphInspector<T>& inspector,
+      const math::RigidTransform<T>& X_W, const Vector3<T>& p_WC) const;
+
   /// @} <!-- Introspection -->
 
 #ifndef DRAKE_DOXYGEN_CXX
@@ -5950,6 +5960,15 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   // Helper to acquire per-geometry Coulomb friction coefficients from
   // SceneGraph.
   const CoulombFriction<double>& GetCoulombFriction(
+      geometry::GeometryId id,
+      const geometry::SceneGraphInspector<T>& inspector) const;
+
+  // Helper to acquire per-geometry surface speed value from SceneGraph.
+  const std::optional<double> GetSurfaceSpeed(
+      geometry::GeometryId id,
+      const geometry::SceneGraphInspector<T>& inspector) const;
+
+  const std::optional<Vector3<T>> GetSurfaceVelocityNormal(
       geometry::GeometryId id,
       const geometry::SceneGraphInspector<T>& inspector) const;
 

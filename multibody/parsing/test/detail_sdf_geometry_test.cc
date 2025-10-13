@@ -1481,6 +1481,8 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     <drake:relaxation_time>3.1</drake:relaxation_time>
     <drake:mu_dynamic>4.25</drake:mu_dynamic>
     <drake:mu_static>4.75</drake:mu_static>
+    <drake:surface_speed>1.1</drake:surface_speed>
+    <drake:surface_velocity_normal> 1.0 0.0 0.0 </drake:surface_velocity_normal>
   </drake:proximity_properties>)""");
     std::optional<ProximityProperties> properties =
         MakeProximityPropertiesForCollision(sdf_diagnostic_, *sdf_collision);
@@ -1496,6 +1498,20 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     assert_single_property(*properties, geometry::internal::kMaterialGroup,
                            geometry::internal::kRelaxationTime, 3.1);
     assert_friction(*properties, {4.75, 4.25});
+    assert_single_property(*properties,
+                           geometry::internal::kSurfaceVelocityGroup,
+                           geometry::internal::kSurfaceSpeed, 1.1);
+    SCOPED_TRACE(fmt::format("testing group {} property {} value {}",
+                             geometry::internal::kSurfaceVelocityGroup,
+                             geometry::internal::kSurfaceVelocityNormal,
+                             "1.0 0.0 0.0"));
+    ASSERT_TRUE(properties.value().HasProperty(
+        geometry::internal::kSurfaceVelocityGroup,
+        geometry::internal::kSurfaceVelocityNormal));
+    const Vector3d& velocity_normal = properties.value().GetProperty<Vector3d>(
+        geometry::internal::kSurfaceVelocityGroup,
+        geometry::internal::kSurfaceVelocityNormal);
+    EXPECT_LT((velocity_normal - Vector3d(1.0, 0.0, 0.0)).norm(), 1e-5);
   }
 
   // Case: specifies rigid hydroelastic.

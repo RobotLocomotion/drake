@@ -49,6 +49,64 @@ bool Aabb::HasOverlap(const Aabb& aabb_G, const Obb& obb_H,
   return internal::BoxesOverlap(aabb_G.half_width(), obb_H.half_width(), X_AO);
 }
 
+bool Aabb::HasOverlap(const Aabb& bv_H, const math::RigidTransformd& X_CH) {
+  /*
+                                   ▲ Hy
+                                   ┃
+                        By         ┃        Hx
+                        ▲           ━━━━━━━>
+                        ┃
+                    ┌───────────┐
+                    │           │
+           bv  ---> │     Bo    │
+                    │           │
+                    └───────────┘L
+                        ┃
+                        ▼            Cz
+                                     ^
+                                     ┃  Cx
+              ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┺━━━>┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+              ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Half space
+              ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+    This algorithm is borrowed from Obb::HasOverlap(Obb, RigidTransformd); refer
+    to it for details. The only difference is we know that the orientation of
+    the AABB is the Identity matrix. The rest stays the same:
+
+    If any point in the bounding volume has a signed distance φ that is less
+    than or equal to zero, we consider the box to be overlapping the half space.
+    We could simply, yet inefficiently, determine this by iterating over all
+    eight vertices and evaluating the signed distance for each vertex.
+  */
+
+  // The z-component of the position vector from box center (Bo) to the lowest
+  // corner of the box (L) expressed in the half space's canonical frame C.
+  const RotationMatrixd& R_CH = X_CH.rotation();
+  const auto R_CB = R_CH.matrix();
+  double p_BL_C_z = 0.0;
+  for (int i = 0; i < 3; ++i) {
+    // R_CB(2, i) is Bi_C(2) --> the z-component of Bi_C.
+    const double Bi_C_z = R_CB(2, i);
+    const double s_i = Bi_C_z > 0 ? -1 : 1;
+    p_BL_C_z += s_i * bv_H.half_width()(i) * Bi_C_z;
+  }
+  // Now we compute the z-component of the position vector from Co to L,
+  // expressed in Frame C.
+  //  p_CL_C = p_CB_C                   + p_BL_C
+  //         = p_CH_C + p_HB_C          + p_BL_C
+  //         = p_CH_C + (R_CH * p_HB_H) + p_BL_C
+  // In all of these calculations, we only need the z-component. So, that means
+  // we can get the z-component of p_HB_C without the full
+  // R_CH * p_HB_H calculation; we can simply do Cz_H ⋅ p_HB_H.
+  const Vector3d& p_HB_H = bv_H.center();
+  const Vector3d& Cz_H = R_CH.row(2);
+  const double p_HB_C_z = Cz_H.dot(p_HB_H);
+  const double p_CH_C_z = X_CH.translation()(2);
+  const double p_CB_C_z = p_CH_C_z + p_HB_C_z;
+  const double p_CL_C_z = p_CB_C_z + p_BL_C_z;
+  return p_CL_C_z <= 0;
+}
+
 template <typename MeshType>
 Aabb AabbMaker<MeshType>::Compute() const {
   auto itr = vertices_.begin();

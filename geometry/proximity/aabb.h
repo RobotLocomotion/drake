@@ -126,6 +126,21 @@ class Aabb {
   static bool HasOverlap(const Aabb& aabb_G, const Obb& obb_H,
                          const math::RigidTransformd& X_GH);
 
+  /**
+   This function follows the implementation of the function with similar
+   signature in obb.h. Checks whether bounding volume `bv_H` intersects an
+   imaginary half space. The bounding volume is centered on its canonical frame
+   B, and B is posed in the corresponding hierarchy frame H. The imaginary half
+   space is defined in its canonical frame C (such that the boundary plane of
+   the half space is perpendicular to Cz and Co lies on the boundary plane).
+
+   @param bv_H      The bounding box to test.
+   @param X_CH      The relative pose between the hierarchy frame H and the
+                    half space canonical frame C.
+   @returns `true` if the half space intersects the box.
+   @pydrake_mkdoc_identifier{aabb_halfspace} */
+  static bool HasOverlap(const Aabb& bv_H, const math::RigidTransformd& X_CH);
+
   // TODO(SeanCurtis-TRI): Support collision with primitives as appropriate
   //  (see obb.h for an example).
 

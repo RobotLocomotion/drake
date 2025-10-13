@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "shape_to_point_cloud.h"
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
@@ -1044,6 +1045,294 @@ GTEST_TEST(ShapeTest, MoveConstructor) {
   // The moved-from mesh has its source revert to an empty in-memory mesh.
   ASSERT_TRUE(orig.source().is_in_memory());
   EXPECT_TRUE(orig.source().in_memory().mesh_file.contents().empty());
+}
+
+GTEST_TEST(ShapeTest, NormalAtBoxPoint) {
+  const double tol = 1e-5;
+
+  const double w = 4.0;
+  const double d = 1.0;
+  const double h = 0.1;
+  const Box box(w, d, h);
+
+  const std::vector<Eigen::Vector3d> points = {
+      {w / 2, 0.0, 0.0},  {0.0, d / 2, 0.0},  {0.0, 0.0, h / 2},
+      {-w / 2, 0.0, 0.0}, {0.0, -d / 2, 0.0}, {0.0, 0.0, -h / 2}};
+
+  for (const Eigen::Vector3d& p : points) {
+    std::optional<Eigen::Vector3d> n = GetNormalAtPoint<double>(box, p);
+    ASSERT_TRUE(n.has_value());
+    EXPECT_LT((n.value() - p.normalized()).norm(), tol);
+  }
+
+  // Write down
+  math::RigidTransformd T;
+  T.SetIdentity();
+  PointCloud box_pc = SampleBoxSurface(box, T, 30);
+
+  for (int i = 0; i < static_cast<int>(box_pc.points.size()); ++i) {
+    std::optional<Eigen::Vector3d> n =
+        GetNormalAtPoint<double>(box, box_pc.points.at(i));
+    EXPECT_LT((box_pc.normals.at(i) - n.value()).norm(), tol);
+  }
+}
+
+GTEST_TEST(ShapeTest, NormalAtSpherePoint) {
+  constexpr double tol = 1e-5;
+
+  const double r = 1.3;
+
+  const int n = 50;
+  math::RigidTransformd T;
+  T.SetIdentity();
+
+  // Create an sphere and sample random points on its surface along
+  // with its normal vector which will be used as reference.
+  const Sphere sphere(r);
+  PointCloud sphere_cloud = SampleSphereSurface(sphere, T, n);
+
+  // For each point sampled on the sphere, recover its normal vector
+  // and verify it agrees with the reference normal.
+  for (int i = 0; i < n; ++i) {
+    const Eigen::Vector3d& p = sphere_cloud.points.at(i);
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(sphere, p);
+    ASSERT_TRUE(normal.has_value());
+    ASSERT_LT((normal.value() - sphere_cloud.normals.at(i)).norm(), tol);
+  }
+
+  // Create some points that are definitely not close to the surface of
+  // the sphere.
+  std::vector<Eigen::Vector3d> outliers = {
+      {r + 0.1, 0., 0.},  {r - 0.5, 0., 0.}, {0., r + 0.01, 0.},
+      {0., r - 0.03, 0.}, {0., 0., r + 1.0}, {0., 0., r - 2.5},
+  };
+
+  // Verify the return value is empty.
+  for (const Eigen::Vector3d& p : outliers) {
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(sphere, p);
+    ASSERT_FALSE(normal.has_value());
+  }
+}
+
+GTEST_TEST(ShapeTest, NormalAtCapsulePoint) {
+  constexpr double tol = 1e-5;
+
+  const double l = 0.5;
+  const double r = 0.3;
+
+  const Capsule capsule(r, l);
+
+  // Create some points that are on the surface of the capsule.
+  std::vector<Eigen::Vector3d> points = {
+      {r, 0., 0.},  {-r, 0., 0.},          {0., r, 0.},
+      {0., -r, 0.}, {0., 0., r + l / 2.0}, {0., 0., -r - l / 2.0},
+  };
+
+  // Verify the return value is empty.
+  for (const Eigen::Vector3d& p : points) {
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(capsule, p);
+    ASSERT_TRUE(normal.has_value());
+    const Eigen::Vector3d n = normal.value();
+    ASSERT_LT((n - p.normalized()).norm(), tol);
+  }
+
+  // Perturn some of the points and verify no value is returned.
+  for (Eigen::Vector3d& p : points) {
+    Eigen::Vector3d p_n = p;
+    p_n.y() += 0.1;
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(capsule, p_n);
+    ASSERT_FALSE(normal.has_value());
+  }
+
+  // Create a point cloud of the surface of the capsule and verify the
+  // normals coincide.
+  const int n = 50;
+  math::RigidTransformd T;
+  T.SetIdentity();
+  PointCloud capsule_cloud = SampleCapsuleSurface(capsule, T, n);
+  for (int i = 0; i < n; ++i) {
+    const Eigen::Vector3d& p = capsule_cloud.points.at(i);
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(capsule, p);
+    ASSERT_TRUE(normal.has_value());
+    ASSERT_LT((normal.value() - capsule_cloud.normals.at(i)).norm(), tol);
+  }
+}
+
+GTEST_TEST(ShapeTest, NormalAtCylinderPoint) {
+  constexpr double tol = 1e-5;
+
+  const double l = 0.5;
+  const double r = 0.3;
+
+  const Cylinder cylinder(r, l);
+
+  // Create some points that are on the surface of the capsule.
+  std::vector<Eigen::Vector3d> points = {
+      {r, 0., 0.},  {-r, 0., 0.},      {0., r, 0.},
+      {0., -r, 0.}, {0., 0., l / 2.0}, {0., 0., -l / 2.0},
+  };
+
+  // Verify the return value is empty.
+  for (const Eigen::Vector3d& p : points) {
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(cylinder, p);
+    ASSERT_TRUE(normal.has_value());
+    const Eigen::Vector3d n = normal.value();
+    ASSERT_LT((n - p.normalized()).norm(), tol);
+  }
+
+  // Perturb some of the points and verify no value is returned.
+  for (Eigen::Vector3d& p : points) {
+    Eigen::Vector3d p_n = p;
+    p_n.y() += 0.5;
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(cylinder, p_n);
+    ASSERT_FALSE(normal.has_value());
+  }
+
+  // Create a point cloud of the surface of the capsule and verify the
+  // normals coincide.
+  const int n = 50;
+  math::RigidTransformd T;
+  T.SetIdentity();
+  PointCloud cylinder_cloud = SampleCylinderSurface(cylinder, T, n);
+  for (int i = 0; i < n; ++i) {
+    const Eigen::Vector3d& p = cylinder_cloud.points.at(i);
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(cylinder, p);
+    ASSERT_TRUE(normal.has_value());
+    ASSERT_LT((normal.value() - cylinder_cloud.normals.at(i)).norm(), tol);
+  }
+}
+
+GTEST_TEST(ShapeTest, NormalAtEllipsoidPoint) {
+  constexpr double tol = 1e-5;
+  const double a = 0.4, b = 0.6, c = 0.8;
+  const Ellipsoid ellipsoid(a, b, c);
+
+  std::vector<Eigen::Vector3d> points = {{a, 0., 0.}, {-a, 0., 0.},
+                                         {0., b, 0.}, {0., -b, 0.},
+                                         {0., 0., c}, {0., 0., -c}};
+
+  for (const Eigen::Vector3d& p : points) {
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(ellipsoid, p);
+    ASSERT_TRUE(normal.has_value());
+    ASSERT_LT((normal.value() - p.normalized()).norm(), tol);
+  }
+
+  // Perturb some of the points and verify no value is returned.
+  for (const Eigen::Vector3d& p : points) {
+    Eigen::Vector3d q = p;
+    q.x() += 0.1;
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(ellipsoid, q);
+    ASSERT_FALSE(normal.has_value());
+  }
+
+  const int n = 50;
+  math::RigidTransformd T;
+  T.SetIdentity();
+  PointCloud cloud = SampleEllipsoidSurface(ellipsoid, T, n);
+  for (int i = 0; i < n; ++i) {
+    const Eigen::Vector3d& p = cloud.points.at(i);
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(ellipsoid, p);
+    ASSERT_TRUE(normal.has_value());
+    ASSERT_LT((normal.value() - cloud.normals.at(i)).norm(), tol);
+  }
+}
+
+GTEST_TEST(ShapeTest, NormalAtMeshPoint) {
+  constexpr double tol = 1e-5;
+  // Read an axis-aligned unit cube.
+  std::string path = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  const Mesh cube(path);
+
+  // Check some points on each face of the cube.
+  std::vector<Eigen::Vector3d> points = {{1., 0., 0.}, {-1., 0., 0.},
+                                         {0., 1., 0.}, {0., -1., 0.},
+                                         {0., 0., 1.}, {0., 0., -1.}};
+  for (const Eigen::Vector3d& p : points) {
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(cube, p);
+    EXPECT_TRUE(normal.has_value());
+    EXPECT_LT((normal.value() - p.normalized()).norm(), tol);
+  }
+
+  // Check some outliers.
+  std::vector<Eigen::Vector3d> outliers = {
+      {1.2, 0., 0.}, {0., 0., 2.0}, {0., 1.5, 0.}};
+  for (const Eigen::Vector3d& p : outliers) {
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(cube, p);
+    EXPECT_FALSE(normal.has_value());
+  }
+
+  // Sample random points on the mesh and check their normal.
+  const int n = 50;
+  math::RigidTransformd T;
+  T.SetIdentity();
+  PointCloud cloud = SampleMeshSurface(cube, T, n);
+  for (int i = 0; i < n; ++i) {
+    const Eigen::Vector3d& p = cloud.points.at(i);
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(cube, p);
+    ASSERT_TRUE(normal.has_value());
+    ASSERT_LT((normal.value() - cloud.normals.at(i)).norm(), tol);
+  }
+
+  // Read a rotated unit cube
+  path = FindResourceOrThrow("drake/geometry/test/rotated_cube_unit_scale.obj");
+  const Mesh cube_rotated(path);
+  // Sample random points on the mesh and check their normal.
+  cloud = SampleMeshSurface(cube_rotated, T, n);
+  for (int i = 0; i < n; ++i) {
+    const Eigen::Vector3d& p = cloud.points.at(i);
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(cube_rotated, p);
+    ASSERT_TRUE(normal.has_value());
+    ASSERT_LT((normal.value() - cloud.normals.at(i)).norm(), tol);
+  }
+}
+
+GTEST_TEST(ShapeTest, NormalAtConvexPoint) {
+  constexpr double tol = 1e-5;
+  // Read an axis-aligned unit cube.
+  std::string path = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  const Convex cube(path);
+
+  // Check some points on each face of the cube.
+  std::vector<Eigen::Vector3d> points = {{1., 0., 0.}, {-1., 0., 0.},
+                                         {0., 1., 0.}, {0., -1., 0.},
+                                         {0., 0., 1.}, {0., 0., -1.}};
+  for (const Eigen::Vector3d& p : points) {
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(cube, p);
+    EXPECT_TRUE(normal.has_value());
+    EXPECT_LT((normal.value() - p.normalized()).norm(), tol);
+  }
+
+  // Check some outliers.
+  std::vector<Eigen::Vector3d> outliers = {
+      {1.2, 0., 0.}, {0., 0., 2.0}, {0., 1.5, 0.}};
+  for (const Eigen::Vector3d& p : outliers) {
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(cube, p);
+    EXPECT_FALSE(normal.has_value());
+  }
+
+  // Sample random points on the mesh and check their normal.
+  const int n = 50;
+  math::RigidTransformd T;
+  T.SetIdentity();
+  PointCloud cloud = SampleConvexSurface(cube, T, n);
+  for (int i = 0; i < n; ++i) {
+    const Eigen::Vector3d& p = cloud.points.at(i);
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(cube, p);
+    ASSERT_TRUE(normal.has_value());
+    ASSERT_LT((normal.value() - cloud.normals.at(i)).norm(), tol);
+  }
+
+  // Read a rotated unit cube
+  path = FindResourceOrThrow("drake/geometry/test/rotated_cube_unit_scale.obj");
+  const Convex cube_rotated(path);
+  // Sample random points on the mesh and check their normal.
+  cloud = SampleConvexSurface(cube_rotated, T, n);
+  for (int i = 0; i < n; ++i) {
+    const Eigen::Vector3d& p = cloud.points.at(i);
+    std::optional<Eigen::Vector3d> normal = GetNormalAtPoint(cube_rotated, p);
+    ASSERT_TRUE(normal.has_value());
+    ASSERT_LT((normal.value() - cloud.normals.at(i)).norm(), tol);
+  }
 }
 
 }  // namespace

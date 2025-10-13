@@ -102,11 +102,11 @@ drake_cc_library(
     ],
     deps = [
         ":boxes_overlap",
+        ":polygon_surface_mesh",
         ":posed_half_space",
         ":triangle_surface_mesh",
         ":volume_mesh",
         "//common:essential",
-        "//geometry:shape_specification",
         "//geometry:utilities",
         "//math:geometric_transform",
     ],
@@ -116,13 +116,13 @@ drake_cc_library(
     name = "bvh",
     srcs = ["bvh.cc"],
     hdrs = ["bvh.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":bv",
         ":posed_half_space",
         ":triangle_surface_mesh",
         ":volume_mesh",
         "//common:essential",
-        "//geometry:shape_specification",
         "//geometry:utilities",
         "//math:geometric_transform",
     ],
@@ -901,9 +901,21 @@ drake_cc_library(
         "//common:drake_export",
         "//common:sorted_pair",
         "//geometry:geometry_ids",
-        "//geometry:shape_specification",
         "@fcl_internal//:fcl",
         "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "proximity_shape_utilities",
+    srcs = [
+        "proximity_shape_utilities.cc",
+    ],
+    hdrs = ["proximity_shape_utilities.h"],
+    tags = ["exclude_from_package"],
+    deps = [
+        "//common:drake_export",
+        "//geometry:shape_specification",
     ],
 )
 
@@ -1347,6 +1359,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":hydroelastic_internal",
+        ":proximity_shape_utilities",
         ":proximity_utilities",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1403,6 +1416,7 @@ drake_cc_googletest(
     name = "make_capsule_mesh_test",
     deps = [
         ":make_capsule_mesh",
+        ":proximity_shape_utilities",
         ":proximity_utilities",
     ],
 )
@@ -1587,6 +1601,7 @@ drake_cc_googletest(
         ":mesh_half_space_intersection",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//geometry:shape_specification",
         "//math:autodiff",
         "//math:gradient",
     ],
@@ -1598,6 +1613,7 @@ drake_cc_googletest(
         ":mesh_intersection",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//geometry:shape_specification",
         "//math:autodiff",
         "//math:geometric_transform",
         "//math:gradient",
@@ -1611,6 +1627,7 @@ drake_cc_googletest(
         ":mesh_plane_intersection",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//geometry:shape_specification",
         "//math:autodiff",
         "//math:geometric_transform",
         "//math:gradient",
