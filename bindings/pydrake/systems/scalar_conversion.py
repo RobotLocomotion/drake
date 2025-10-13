@@ -227,15 +227,11 @@ class TemplateSystem(TemplateClass):
                 cls.ToSymbolic = new_method
                 cls.ToSymbolicMaybe = new_method_maybe
             cls.ToScalarType.add_instantiation(
-                param=[
-                    U,
-                ],
+                param=[U],
                 instantiation=new_method,
             )
             cls.ToScalarTypeMaybe.add_instantiation(
-                param=[
-                    U,
-                ],
+                param=[U],
                 instantiation=new_method_maybe,
             )
 
