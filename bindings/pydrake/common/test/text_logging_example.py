@@ -9,17 +9,33 @@ def main():
     # Parse our arguments.
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--use_nice_format", metavar="1|0", type=int, required=True,
-        help="Switch on (or off) nicely formatted Python output.")
+        "--use_nice_format",
+        metavar="1|0",
+        type=int,
+        required=True,
+        help="Switch on (or off) nicely formatted Python output.",
+    )
     parser.add_argument(
-        "--use_native_cpp_logging", metavar="1|0", type=int, required=True,
-        help="Whether to unhook the C++ => Python log redirection.")
+        "--use_native_cpp_logging",
+        metavar="1|0",
+        type=int,
+        required=True,
+        help="Whether to unhook the C++ => Python log redirection.",
+    )
     parser.add_argument(
-        "--root_level", metavar="INT", type=int, required=True,
-        help="Set Python root logger to this level, or use -1 for a no-op.")
+        "--root_level",
+        metavar="INT",
+        type=int,
+        required=True,
+        help="Set Python root logger to this level, or use -1 for a no-op.",
+    )
     parser.add_argument(
-        "--drake_level", metavar="INT", type=int, required=True,
-        help="Set Python Drake logger to this level, or use -1 for a no-op.")
+        "--drake_level",
+        metavar="INT",
+        type=int,
+        required=True,
+        help="Set Python Drake logger to this level, or use -1 for a no-op.",
+    )
     args = parser.parse_args()
 
     # Configure logging as instructed.

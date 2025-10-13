@@ -2,13 +2,20 @@
 
 See also ref_cycle_test_util_py.cc for the bindings used in the tests.
 """
+
 import gc
 import unittest
 import weakref
 
 from pydrake.common.ref_cycle_test_util import (
-    arbitrary_bad, arbitrary_ok, free_function,  invalid_arg_index, IsDynamic,
-    NotDynamic, ouroboros)
+    arbitrary_bad,
+    arbitrary_ok,
+    free_function,
+    invalid_arg_index,
+    IsDynamic,
+    NotDynamic,
+    ouroboros,
+)
 from pydrake.common.test_utilities.memory_test_util import actual_ref_count
 
 
@@ -25,7 +32,8 @@ class TestRefCycle(unittest.TestCase):
         for x in [p0, p1]:
             self.assertEqual(actual_ref_count(x.__dict__), 1)
             self.assertEqual(
-                actual_ref_count(x._pydrake_internal_ref_cycle_peers), 1)
+                actual_ref_count(x._pydrake_internal_ref_cycle_peers), 1
+            )
 
             # Check that all parts are tracked by gc.
             self.assertTrue(gc.is_tracked(x))
@@ -38,11 +46,12 @@ class TestRefCycle(unittest.TestCase):
 
     def check_no_cycle(self, p0, p1):
         for x in [p0, p1]:
-            self.assertFalse(hasattr(x, '_pydrake_internal_ref_cycle_peers'))
+            self.assertFalse(hasattr(x, "_pydrake_internal_ref_cycle_peers"))
 
     def test_invalid_index(self):
-        with self.assertRaisesRegex(RuntimeError,
-                                    "Could not activate ref_cycle.*"):
+        with self.assertRaisesRegex(
+            RuntimeError, "Could not activate ref_cycle.*"
+        ):
             invalid_arg_index()
 
     def test_ouroboros(self):
@@ -59,11 +68,12 @@ class TestRefCycle(unittest.TestCase):
 
     def test_arbitrary_ok(self):
         got = arbitrary_ok()
-        self.assertTrue(hasattr(got, '_pydrake_internal_ref_cycle_peers'))
+        self.assertTrue(hasattr(got, "_pydrake_internal_ref_cycle_peers"))
 
     def test_arbitrary_bad(self):
-        with self.assertRaisesRegex(RuntimeError,
-                                    ".*IsDynamic::arbitrary_bad.*"):
+        with self.assertRaisesRegex(
+            RuntimeError, ".*IsDynamic::arbitrary_bad.*"
+        ):
             arbitrary_bad()
 
     def test_free_function(self):
@@ -87,7 +97,8 @@ class TestRefCycle(unittest.TestCase):
         self.check_no_cycle(dut, peer)
         # Annotated call dies because dut is not py::dynamic_attr().
         with self.assertRaisesRegex(
-                RuntimeError, ".type.*index 1.*AddIsCycle.*not tracked.*"):
+            RuntimeError, ".type.*index 1.*AddIsCycle.*not tracked.*"
+        ):
             dut.AddIsCycle(peer)
 
     def test_not_dynamic_return(self):
@@ -97,7 +108,8 @@ class TestRefCycle(unittest.TestCase):
         self.check_no_cycle(dut, returned)
         # Annotated call dies because dut is not py::dynamic_attr().
         with self.assertRaisesRegex(
-                RuntimeError, ".type.*index 1.*ReturnIsCycle.*not tracked.*"):
+            RuntimeError, ".type.*index 1.*ReturnIsCycle.*not tracked.*"
+        ):
             dut.ReturnIsCycle()
 
     def test_not_dynamic_null(self):
@@ -114,7 +126,8 @@ class TestRefCycle(unittest.TestCase):
         self.check_no_cycle(dut, notpeer)
         # Annotated call dies because notpeer is not py::dynamic_attr().
         with self.assertRaisesRegex(
-                RuntimeError, ".type.*index 2.*AddNotCycle.*not tracked.*"):
+            RuntimeError, ".type.*index 2.*AddNotCycle.*not tracked.*"
+        ):
             dut.AddNotCycle(notpeer)
 
     def test_is_dynamic_return_not(self):
@@ -124,7 +137,8 @@ class TestRefCycle(unittest.TestCase):
         self.check_no_cycle(dut, returned)
         # Annotated call dies because return is not py::dynamic_attr().
         with self.assertRaisesRegex(
-                RuntimeError, ".type.*index 0.*ReturnNotCycle.*not tracked.*"):
+            RuntimeError, ".type.*index 0.*ReturnNotCycle.*not tracked.*"
+        ):
             dut.ReturnNotCycle()
 
     def test_is_dynamic_return_null(self):
@@ -156,7 +170,6 @@ class TestRefCycle(unittest.TestCase):
         self.check_is_collectable_cycle(dut, returned)
 
     def test_actual_collection(self):
-
         def make_a_cycle():
             dut = IsDynamic()
             return dut.ReturnIsCycle()
