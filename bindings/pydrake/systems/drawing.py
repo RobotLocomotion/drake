@@ -18,9 +18,8 @@ try:
     # *not* running as a notebook.
     from IPython import get_ipython
     from IPython.display import SVG, display
-    running_as_notebook = (
-        get_ipython() and hasattr(get_ipython(), "kernel")
-    )
+
+    running_as_notebook = get_ipython() and hasattr(get_ipython(), "kernel")
 except ModuleNotFoundError:
     running_as_notebook = False
 
@@ -33,9 +32,10 @@ def _plt():
     result = None
     try:
         import matplotlib.pyplot as __plt
+
         result = __plt
     except ImportError as e:
-        if e.name == 'tkinter':
+        if e.name == "tkinter":
             result = None
         else:
             raise
@@ -44,13 +44,15 @@ def _plt():
             "On Ubuntu when using the default pyplot configuration (i.e.,"
             " the TkAgg backend) you must 'sudo apt install python3-tk' to"
             " obtain Tk support. Alternatively, you may set MPLBACKEND to"
-            " something else (e.g., Qt5Agg).")
+            " something else (e.g., Qt5Agg)."
+        )
     return result
 
 
 def _pydot():
     """Deferred import of pyplot, so pydrake.all importing doesn't bomb out."""
     import pydot as __pydot
+
     return __pydot
 
 
@@ -73,9 +75,9 @@ def plot_graphviz(dot_text):
     if running_as_notebook:
         return display(SVG(g.create_svg()))
     else:
-        f = NamedTemporaryFile(suffix='.png', dir=temp_directory())
+        f = NamedTemporaryFile(suffix=".png", dir=temp_directory())
         g.write_png(f.name)
-        plt.axis('off')
+        plt.axis("off")
 
         return plt.imshow(plt.imread(f.name), aspect="equal")
 
