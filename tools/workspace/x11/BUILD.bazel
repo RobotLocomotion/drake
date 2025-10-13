@@ -1,5 +1,6 @@
 load("//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_cc.bzl", "cc_nolink_library")
 
 # ---- Logic for choosing which x11 to use. ---
 
@@ -10,6 +11,12 @@ alias(
     name = "x11",
     actual = "@pkgconfig_x11_internal",
     visibility = ["//visibility:public"],
+)
+
+cc_nolink_library(
+    name = "hdrs",
+    visibility = ["@vtk_internal//:__pkg__"],
+    deps = ["@x11"],
 )
 
 # ---- Logic for installing x11-related files. ---
