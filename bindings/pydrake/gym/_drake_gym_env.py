@@ -17,6 +17,12 @@ from pydrake.systems.framework import (
 from pydrake.systems.sensors import ImageRgba8U
 
 
+def _reached_termination(status: SimulatorStatus):
+    """Returns true iff status is "reached termination condition"."""
+    ReturnReason = SimulatorStatus.ReturnReason
+    return status.reason() == ReturnReason.kReachedTerminationCondition
+
+
 class DrakeGymEnv(gym.Env):
     """
     DrakeGymEnv provides a gym.Env interface for a Drake System (often a
@@ -269,10 +275,7 @@ class DrakeGymEnv(gym.Env):
 
         observation = self.observation_port.Eval(context)
         reward = self.reward(self.simulator.get_system(), context)
-        terminated = not truncated and (
-            status.reason()
-            == SimulatorStatus.ReturnReason.kReachedTerminationCondition
-        )
+        terminated = not truncated and _reached_termination(status)
         info = self.info_handler(self.simulator)
 
         return observation, reward, terminated, truncated, info
