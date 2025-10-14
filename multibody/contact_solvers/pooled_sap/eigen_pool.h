@@ -174,12 +174,6 @@ struct FixedSizeStorage {
     return at(index);
   }
 
-  // Adds new element and copies `data` into it.
-  // @returns index to the new element.
-  ElementView AddAndCopy(const EigenType& data) {
-    return Add(data.rows(), data.cols()) = data;
-  }
-
   void SetZero() {
     Eigen::Map<VectorX<Scalar>>(data_.data()->data(),
                                 data_.size() * EigenType::SizeAtCompileTime)
@@ -274,12 +268,6 @@ class EigenPool {
 
   /* Adds element of the specified size and returns mutable to it. */
   ElementView Add(int rows, int cols) { return storage_.Add(rows, cols); }
-
-  /* Adds new element and copies `data` into it.
-   @returns mutable view to the new element. */
-  ElementView AddAndCopy(const EigenType& data) {
-    return storage_.AddAndCopy(data);
-  }
 
   /* Zeroes out all elements in the pool. */
   void SetZero() { storage_.SetZero(); }
