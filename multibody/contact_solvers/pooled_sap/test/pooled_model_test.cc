@@ -566,27 +566,37 @@ GTEST_TEST(PooledSapModel, LimitConstraint) {
   // Add limit constraints.
   auto& limits = model.limit_constraints_pool();
 
+  // Cliques 0 and 2 will have limits. We'll resize the constraint pool
+  // accordingly before adding the limit constraints.
+  std::vector<int> limited_clique_sizes = {model.clique_size(0),
+                                           model.clique_size(2)};
+  std::vector<int> constraint_to_clique = {0, 2};
+  limits.Resize(limited_clique_sizes, constraint_to_clique);
+
+  EXPECT_EQ(model.num_limit_constraints(), 2);
+  EXPECT_EQ(model.num_constraints(), 5);
+
   const int nv = model.num_velocities();
   VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
 
   // Limits on clique 0.
-  int k = limits.Add(0 /* clique */, 1 /* dof */, q0(1), -0.5, 0.5);  // Below.
-  EXPECT_EQ(k, 0);  // First constraint on clique 0.
-  k = limits.Add(0 /* clique */, 4 /* dof */, q0(2), -1.5, -1.0);  // Above.
-  EXPECT_EQ(k, 0);  // Still the same clique, same constraint.
-  k = limits.Add(0 /* clique */, 3 /* dof */, q0(3), -1.0, 1.0);  // Within.
-  EXPECT_EQ(k, 0);  // Still the same clique, same constraint.
+  limits.Add(0 /* constraint */, 0 /* clique */, 1 /* dof */, q0(1), -0.5,
+             0.5);  // Below.
+  limits.Add(0 /* constraint */, 0 /* clique */, 4 /* dof */, q0(2), -1.5,
+             -1.0);  // Above.
+  limits.Add(0 /* constraint */, 0 /* clique */, 3 /* dof */, q0(3), -1.0,
+             1.0);  // Within.
 
-  EXPECT_EQ(model.num_limit_constraints(), 1);
-  EXPECT_EQ(model.num_constraints(), 4);
+  EXPECT_EQ(model.num_limit_constraints(), 2);
+  EXPECT_EQ(model.num_constraints(), 5);
 
   // Limits on clique 2.
-  k = limits.Add(2 /* clique */, 0 /* dof */, q0(12), 0.5, 1.5);  // Below.
-  EXPECT_EQ(k, 1);  // First constraint on clique 2.
-  k = limits.Add(2 /* clique */, 2 /* dof */, q0(14), -1.0, 0.5);  // Above.
-  EXPECT_EQ(k, 1);  // Still the same clique, same constraint.
-  k = limits.Add(2 /* clique */, 5 /* dof */, q0(17), 0.5, 1.5);  // Within.
-  EXPECT_EQ(k, 1);  // Still the same clique, same constraint.
+  limits.Add(1 /* constraint */, 2 /* clique */, 0 /* dof */, q0(12), 0.5,
+             1.5);  // Below.
+  limits.Add(1 /* constraint */, 2 /* clique */, 2 /* dof */, q0(14), -1.0,
+             0.5);  // Above.
+  limits.Add(1 /* constraint */, 2 /* clique */, 5 /* dof */, q0(17), 0.5,
+             1.5);  // Within.
 
   EXPECT_EQ(model.num_limit_constraints(), 2);
   EXPECT_EQ(model.num_constraints(), 5);

@@ -79,35 +79,30 @@ class PooledSapModel<T>::LimitConstraintsPool {
   }
 
   /* Re-allocate memory as needed, setting all constraints as infinite. */
-  void Resize(const std::vector<int>& constrained_clique_sizes) {
+  void Resize(const std::vector<int>& constrained_clique_sizes,
+              const std::vector<int>& constraint_to_clique) {
+    DRAKE_DEMAND(constrained_clique_sizes.size() ==
+                 constraint_to_clique.size());
     ql_.Resize(constrained_clique_sizes);
     qu_.Resize(constrained_clique_sizes);
     q0_.Resize(constrained_clique_sizes);
     R_.Resize(constrained_clique_sizes);
     vl_hat_.Resize(constrained_clique_sizes);
     vu_hat_.Resize(constrained_clique_sizes);
-  }
+    constraint_sizes_ = constrained_clique_sizes;
+    constraint_to_clique_ = constraint_to_clique;
 
-  /* If not yet added, adds a limit constraint for the given `clique`. */
-  int MaybeAdd(int clique) {
-    const int index = num_constraints();
-    if (clique_to_constraint_[clique] < 0) {
-      const int nv = model().clique_size(clique);
-      clique_to_constraint_[clique] = index;
-      constraint_to_clique_.push_back(clique);
-      constraint_sizes_.push_back(nv);  // Upper + lower per clique.
-      ql_.Add(nv, 1).setConstant(-std::numeric_limits<double>::infinity());
-      qu_.Add(nv, 1).setConstant(std::numeric_limits<double>::infinity());
-      q0_.Add(nv, 1).setConstant(0.0);
-      R_.Add(nv, 1).setConstant(std::numeric_limits<double>::infinity());
-
-      // For v_hat =  infinity, the constraint can never be active, and thus
-      // gamma = 0, unless someone sets another v_hat.
-      vl_hat_.Add(nv, 1).setConstant(-std::numeric_limits<double>::infinity());
-      vu_hat_.Add(nv, 1).setConstant(-std::numeric_limits<double>::infinity());
-      return index;
-    } else {
-      return index - 1;
+    // All constraints are disabled (e.g., infinite bounds) by default. This
+    // allows us to add a limit constraint on only one DoF in a multi-DoF
+    // clique, for example.
+    // TODO(vincekurtz): consider a setConstant method in EigenPool.
+    for (int k = 0; k < num_constraints(); ++k) {
+      ql_[k].setConstant(-std::numeric_limits<double>::infinity());
+      qu_[k].setConstant(std::numeric_limits<double>::infinity());
+      q0_[k].setConstant(0.0);
+      R_[k].setConstant(std::numeric_limits<double>::infinity());
+      vl_hat_[k].setConstant(-std::numeric_limits<double>::infinity());
+      vu_hat_[k].setConstant(-std::numeric_limits<double>::infinity());
     }
   }
 
