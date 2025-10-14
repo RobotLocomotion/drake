@@ -109,9 +109,9 @@ class TestAcrobot(unittest.TestCase):
 
         self.assertTrue(acrobot.DynamicsBiasTerm(context).shape == (2,))
         self.assertTrue(acrobot.MassMatrix(context).shape == (2, 2))
-        initial_total_energy = acrobot.EvalPotentialEnergy(
-            context
-        ) + acrobot.EvalKineticEnergy(context)
+        initial_potential_energy = acrobot.EvalPotentialEnergy(context)
+        initial_kinetic_energy = acrobot.EvalKineticEnergy(context)
+        initial_total_energy = initial_potential_energy + initial_kinetic_energy
 
         # Simulate (and make sure the energy actually changes).
         simulator.AdvanceTo(1.0)
