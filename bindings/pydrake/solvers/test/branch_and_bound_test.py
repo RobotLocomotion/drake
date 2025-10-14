@@ -37,10 +37,12 @@ class TestMixedIntegerBranchAndBound(unittest.TestCase):
         self.assertAlmostEqual(dut1.GetSolution(x, 1)[0], 1.0)
         # For x₁ the optimal vs suboptimal ordering is not deterministic, so we
         # need to allow for either order.
-        x1_solutions = sorted([
-            dut1.GetSolution(x[1], 0),
-            dut1.GetSolution(x[1], 1),
-        ])
+        x1_solutions = sorted(
+            [
+                dut1.GetSolution(x[1], 0),
+                dut1.GetSolution(x[1], 1),
+            ]
+        )
         self.assertAlmostEqual(x1_solutions[0], 0.0)
         self.assertAlmostEqual(x1_solutions[1], 0.5)
 
@@ -52,5 +54,6 @@ class TestMixedIntegerBranchAndBound(unittest.TestCase):
         copy.copy(options)
 
         dut2 = MixedIntegerBranchAndBound(
-            prog=prog, solver_id=OsqpSolver().solver_id(), options=options)
+            prog=prog, solver_id=OsqpSolver().solver_id(), options=options
+        )
         solution_result = dut2.Solve()
