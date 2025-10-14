@@ -51,10 +51,10 @@ class TestQP:
             # Bounding box
             prog.AddLinearConstraint(sym.logical_and(x1 >= 1, x1 <= 2.0)),
             # Linear inequality
-            prog.AddLinearConstraint(3 * x0 - x1 <= 2),
+            prog.AddLinearConstraint(3*x0 - x1 <= 2),
             # Linear equality
-            prog.AddLinearConstraint(x0 + 2 * x1 == 3),
-        ]
+            prog.AddLinearConstraint(x0 + 2*x1 == 3),
+        ]  # fmt: skip
 
         # TODO(eric.cousineau): Add constant terms
         self.costs = [
@@ -103,7 +103,7 @@ class TestMathematicalProgram(unittest.TestCase):
 
         # Add linear equality constraints; make sure the solver works.
         prog.AddLinearConstraint(x[0] + x[1] == 0)
-        prog.AddLinearConstraint(2 * x[0] - x[1] == 1)
+        prog.AddLinearConstraint(2*x[0] - x[1] == 1)  # fmt: skip
         solver_id = mp.ChooseBestSolver(prog)
         self.assertEqual(solver_id.name(), "Linear system")
         solver = mp.MakeSolver(solver_id)
@@ -378,34 +378,36 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_cost_api(self):
         prog = mp.MathematicalProgram()
         (x0,) = prog.NewContinuousVariables(1, "x")
-        lc = prog.AddLinearCost([1], 2, [x0]).evaluator()
-        qc = prog.AddQuadraticCost(0.5 * x0**2 + 2 * x0 + 3).evaluator()
+        linear_cost = prog.AddLinearCost([1], 2, [x0]).evaluator()
+        quadradic_cost = prog.AddQuadraticCost(
+            0.5*x0**2 + 2*x0 + 3
+        ).evaluator()  # fmt: skip
 
         def check_linear_cost(cost, a, b):
             self.assertTrue(np.allclose(cost.a(), a))
             self.assertTrue(np.allclose(cost.b(), b))
 
-        check_linear_cost(lc, [1.0], 2.0)
-        lc.UpdateCoefficients([10.0])
-        check_linear_cost(lc, [10.0], 0.0)
+        check_linear_cost(linear_cost, [1.0], 2.0)
+        linear_cost.UpdateCoefficients([10.0])
+        check_linear_cost(linear_cost, [10.0], 0.0)
 
-        lc2 = prog.AddLinearCost([2], [x0]).evaluator()
-        check_linear_cost(lc2, [2], 0.0)
+        linear_cost2 = prog.AddLinearCost([2], [x0]).evaluator()
+        check_linear_cost(linear_cost2, [2], 0.0)
 
         def check_quadratic_cost(cost, Q, b, c):
             self.assertTrue(np.allclose(cost.Q(), Q))
             self.assertTrue(np.allclose(cost.b(), b))
             self.assertTrue(np.allclose(cost.c(), c))
 
-        check_quadratic_cost(qc, [1.0], [2.0], 3.0)
-        qc.UpdateCoefficients([10.0], [20.0])
-        check_quadratic_cost(qc, [10.0], [20.0], 0)
+        check_quadratic_cost(quadradic_cost, [1.0], [2.0], 3.0)
+        quadradic_cost.UpdateCoefficients([10.0], [20.0])
+        check_quadratic_cost(quadradic_cost, [10.0], [20.0], 0)
 
-        qc.UpdateCoefficients([-10.0], [20.0])
-        self.assertFalse(qc.is_convex())
+        quadradic_cost.UpdateCoefficients([-10.0], [20.0])
+        self.assertFalse(quadradic_cost.is_convex())
 
-        qc.UpdateCoefficients([10.0], [20.0], is_convex=True)
-        self.assertTrue(qc.is_convex())
+        quadradic_cost.UpdateCoefficients([10.0], [20.0], is_convex=True)
+        self.assertTrue(quadradic_cost.is_convex())
 
     def test_eval_binding(self):
         qp = TestQP()
@@ -463,7 +465,8 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(3)
         binding1 = prog.AddBoundingBoxConstraint(-1, 1, x[0])
-        binding2 = prog.AddLinearEqualityConstraint(x[1] + 2 * x[2], 2)
+        binding2 = prog.AddLinearEqualityConstraint(
+            x[1] + 2*x[2], 2)  # fmt: skip
         x_val = np.array([-2.0, 1.0, 2.0])
         np.testing.assert_allclose(
             prog.GetBindingVariableValues(binding1, x_val), np.array([-2])
@@ -780,9 +783,9 @@ class TestMathematicalProgram(unittest.TestCase):
         x = prog.NewIndeterminates(1, "x")
         a = prog.NewContinuousVariables(2, "a")
         linear_eq_constraints = prog.AddEqualityConstraintBetweenPolynomials(
-            sym.Polynomial(2 * a[0] * x[0] + a[1] + 2, x),
-            sym.Polynomial(2 * x[0] + 4, x),
-        )
+            sym.Polynomial(2*a[0]*x[0] + a[1] + 2, x),
+            sym.Polynomial(2*x[0] + 4, x),
+        )  # fmt: skip
         self.assertEqual(len(linear_eq_constraints), 2)
         result = mp.Solve(prog)
         a_val = result.GetSolution(a)
@@ -1356,8 +1359,8 @@ class TestMathematicalProgram(unittest.TestCase):
 
         hessian_type = mp.QuadraticConstraint.HessianType.kIndefinite
         prog.AddQuadraticConstraint(
-            x[0] * x[0] - x[2] * x[2], 1, 2, hessian_type=hessian_type
-        )
+            x[0]*x[0] - x[2]*x[2], 1, 2, hessian_type=hessian_type
+        )  # fmt: skip
         self.assertEqual(len(prog.quadratic_constraints()), 2)
 
     @unittest.skipIf(
@@ -1378,8 +1381,7 @@ class TestMathematicalProgram(unittest.TestCase):
             coefficient_tol=1e-7,
         )
         prog.AddLorentzConeConstraint(
-            np.array([0 * x[0] + 1, x[0] - 1, x[1] - 1])
-        )
+            np.array([0*x[0] + 1, x[0] - 1, x[1] - 1]))  # fmt: skip
         prog.AddLorentzConeConstraint(np.array([z[0], x[0], x[1]]))
         self.assertEqual(len(prog.lorentz_cone_constraints()), 3)
 
@@ -1441,8 +1443,8 @@ class TestMathematicalProgram(unittest.TestCase):
         constraint = prog.AddRotatedLorentzConeConstraint(
             linear_expression1=x[0] + 1,
             linear_expression2=x[0] + x[1],
-            quadratic_expression=x[0] * x[0] + 2 * x[0] + x[1] * x[1] + 5,
-        )
+            quadratic_expression=x[0]*x[0] + 2*x[0] + x[1]*x[1] + 5,
+        )  # fmt: skip
 
     def test_add_quadratic_as_rotated_lorentz_cone_constraint(self):
         prog = mp.MathematicalProgram()
@@ -1705,17 +1707,18 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_remove_cost(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(3)
-        linear_cost1 = prog.AddLinearCost(x[0] + 2 * x[1])
+        x0, x1, x2 = x
+        linear_cost1 = prog.AddLinearCost(x0 + 2 * x1)
         prog.RemoveCost(cost=linear_cost1)
         self.assertEqual(len(prog.linear_costs()), 0)
 
-        quadratic_cost1 = prog.AddQuadraticCost(x[0] * x[0] + 2 * x[1] * x[1])
-        prog.AddQuadraticCost(x[2] * x[2])
+        quadratic_cost1 = prog.AddQuadraticCost(x0**2 + 2 * x1**2)
+        prog.AddQuadraticCost(x2**2)
         prog.RemoveCost(cost=quadratic_cost1)
         self.assertEqual(len(prog.quadratic_costs()), 1)
 
-        prog.AddCost(x[0] * x[1] * x[2])
-        generic_cost2 = prog.AddCost(x[0] * x[1] * x[2] * x[2])
+        prog.AddCost(x0 * x1 * x2)
+        generic_cost2 = prog.AddCost(x0 * x1 * x2 * x2)
         prog.RemoveCost(cost=generic_cost2)
         self.assertEqual(len(prog.generic_costs()), 1)
 

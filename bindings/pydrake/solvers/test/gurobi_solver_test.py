@@ -36,8 +36,8 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
         constraint = prog.AddLorentzConeConstraint(
-            [2.0, 2 * x[0], 3 * x[1] + 1]
-        )
+            [2.0, 2*x[0], 3*x[1] + 1]
+        )  # fmt: skip
         prog.AddLinearCost(x[1])
         solver = GurobiSolver()
         options = SolverOptions()
@@ -59,8 +59,9 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_write_to_file(self):
         prog = MathematicalProgram()
         x = prog.NewContinuousVariables(2)
-        prog.AddLinearConstraint(x[0] + x[1] == 1)
-        prog.AddQuadraticCost(x[0] * x[0] + x[1] * x[1])
+        x0, x1 = x
+        prog.AddLinearConstraint(x0 + x1 == 1)
+        prog.AddQuadraticCost(x0**2 + x1**2)
         solver = GurobiSolver()
         file_name = temp_directory() + "/gurobi.mps"
         options = SolverOptions()

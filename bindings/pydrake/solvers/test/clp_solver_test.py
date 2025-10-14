@@ -13,11 +13,13 @@ class TestClpSolver(unittest.TestCase):
     def _make_prog(self):
         prog = MathematicalProgram()
         x = prog.NewContinuousVariables(4, "x")
-        prog.AddLinearCost(-3 * x[0] - 2 * x[1])
-        prog.AddLinearCost(x[1] - 5 * x[2] - x[3] + 2)
-        prog.AddLinearConstraint(3 * x[0] + x[1] + 2 * x[2] == 30)
-        prog.AddLinearConstraint(2 * x[0] + x[1] + 3 * x[2] + x[3] >= 15)
-        prog.AddLinearConstraint(2 * x[1] + 3 * x[3] <= 25)
+        # fmt: off
+        prog.AddLinearCost(-3*x[0] - 2*x[1])
+        prog.AddLinearCost(x[1] - 5*x[2] - x[3] + 2)
+        prog.AddLinearConstraint(3*x[0] + x[1] + 2*x[2] == 30)
+        prog.AddLinearConstraint(2*x[0] + x[1] + 3*x[2] + x[3] >= 15)
+        prog.AddLinearConstraint(2*x[1] + 3*x[3] <= 25)
+        # fmt: on
         prog.AddLinearConstraint(np.array([[1, 2]]), [-100], [40], [x[0], x[2]])
         prog.AddBoundingBoxConstraint(0, np.inf, x)
         prog.AddLinearConstraint(x[1] <= 10)

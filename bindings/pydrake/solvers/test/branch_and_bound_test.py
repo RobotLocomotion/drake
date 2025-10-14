@@ -15,10 +15,12 @@ class TestMixedIntegerBranchAndBound(unittest.TestCase):
         x = prog.NewContinuousVariables(2)
         b = prog.NewBinaryVariables(2)
 
-        prog.AddLinearConstraint(b[0] + x[0] + 2 * x[1] == 2)
-        prog.AddLinearConstraint(x[0] - 3.1 * b[1] >= 1)
-        prog.AddLinearConstraint(b[1] + 1.2 * x[1] - b[0] <= 5)
-        prog.AddQuadraticCost(x[0] * x[0])
+        # fmt: off
+        prog.AddLinearConstraint(b[0] + x[0] + 2*x[1] == 2)
+        prog.AddLinearConstraint(x[0] - 3.1*b[1] >= 1)
+        prog.AddLinearConstraint(b[1] + 1.2*x[1] - b[0] <= 5)
+        prog.AddQuadraticCost(x[0]*x[0])
+        # fmt: on
 
         dut1 = MixedIntegerBranchAndBound(prog, OsqpSolver().solver_id())
         solution_result = dut1.Solve()

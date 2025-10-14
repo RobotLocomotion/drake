@@ -21,13 +21,12 @@ class TestCsdpSolver(unittest.TestCase):
         prog.AddPositiveSemidefiniteConstraint(x2)
         prog.AddLinearConstraint(y[0] >= 0)
         prog.AddLinearConstraint(y[1] >= 0)
+        # fmt: off
         prog.AddLinearEqualityConstraint(
-            3 * x1[0, 0] + 2 * x1[0, 1] + 3 * x1[1, 1] + y[0] == 1
-        )
+            3*x1[0, 0] + 2*x1[0, 1] + 3*x1[1, 1] + y[0] == 1)
         prog.AddLinearEqualityConstraint(
-            3 * x2[0, 0] + 4 * x2[1, 1] + 2 * x2[0, 2] + 5 * x2[2, 2] + y[1]
-            == 2
-        )
+            3*x2[0, 0] + 4*x2[1, 1] + 2*x2[0, 2] + 5*x2[2, 2] + y[1] == 2)
+        # fmt: on
         prog.AddLinearCost(
             -(
                 2 * x1[0, 0]
