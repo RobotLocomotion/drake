@@ -42,23 +42,24 @@ class TestQP:
         # The solution should be [1, 1].
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
+        x0, x1 = x
         self.prog = prog
         self.x = x
         self.constraints = [
             # Bounding box
-            prog.AddLinearConstraint(x[0] >= 1),
+            prog.AddLinearConstraint(x0 >= 1),
             # Bounding box
-            prog.AddLinearConstraint(sym.logical_and(x[1] >= 1, x[1] <= 2.0)),
+            prog.AddLinearConstraint(sym.logical_and(x1 >= 1, x1 <= 2.0)),
             # Linear inequality
-            prog.AddLinearConstraint(3 * x[0] - x[1] <= 2),
+            prog.AddLinearConstraint(3 * x0 - x1 <= 2),
             # Linear equality
-            prog.AddLinearConstraint(x[0] + 2 * x[1] == 3),
+            prog.AddLinearConstraint(x0 + 2 * x1 == 3),
         ]
 
         # TODO(eric.cousineau): Add constant terms
         self.costs = [
-            prog.AddLinearCost(e=x[0] + x[1]),
-            prog.AddQuadraticCost(0.5 * (x[0] ** 2 + x[1] ** 2)),
+            prog.AddLinearCost(e=x0 + x1),
+            prog.AddQuadraticCost(0.5 * (x0**2 + x1**2)),
         ]
 
 
@@ -234,9 +235,10 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_symbolic_qp(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
-        prog.AddConstraint(x[0], 1.0, 100.0)
-        prog.AddConstraint(x[1] >= 1)
-        prog.AddQuadraticCost(x[0] ** 2 + x[1] ** 2)
+        x0, x1 = x
+        prog.AddConstraint(x0, 1.0, 100.0)
+        prog.AddConstraint(x1 >= 1)
+        prog.AddQuadraticCost(x0**2 + x1**2)
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
 
@@ -685,15 +687,15 @@ class TestMathematicalProgram(unittest.TestCase):
 
     def test_add_sos_constraint(self):
         prog = mp.MathematicalProgram()
-        x = prog.NewIndeterminates(1, "x")
+        (x0,) = prog.NewIndeterminates(1, "x")
         Q = prog.AddSosConstraint(
-            p=sym.Polynomial(x[0] ** 2 + 1),
-            monomial_basis=[sym.Monomial(x[0])],
+            p=sym.Polynomial(x0**2 + 1),
+            monomial_basis=[sym.Monomial(x0)],
             type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos,
             gram_name="Q",
         )
         Q, m = prog.AddSosConstraint(
-            p=sym.Polynomial(x[0] ** 2 + 2),
+            p=sym.Polynomial(x0**2 + 2),
             type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos,
             gram_name="Q",
         )

@@ -484,7 +484,8 @@ class TestConstraints(unittest.TestCase):
 
 # A dummy value function for MinimumValue{Lower,Upper}BoundConstraint.
 def value_function(x: np.ndarray, v_influence: float) -> np.ndarray:
-    return np.array([x[0] ** 2, x[0] + 1, 2 * x[0]])
+    x0 = x[0]
+    return np.array([x0**2, x0 + 1, 2 * x0])
 
 
 class TestMinimumValueLowerBoundConstraint(unittest.TestCase):
