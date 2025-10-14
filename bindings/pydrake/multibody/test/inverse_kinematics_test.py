@@ -981,7 +981,7 @@ class TestGlobalInverseKinematics(unittest.TestCase):
             linear_constraint_approximation=False)
         global_ik.AddJointCenteringCost(
             body_index=body_index,
-            nominal_value=0.0,
+            desired_theta=0.0,
             weight=1.0,
             norm=1,
             squared=False)

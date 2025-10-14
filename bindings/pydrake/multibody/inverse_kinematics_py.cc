@@ -1087,7 +1087,7 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::arg("linear_constraint_approximation") = false,
             cls_doc.AddJointLimitConstraint.doc)
         .def("AddJointCenteringCost", &Class::AddJointCenteringCost,
-            py::arg("body_index"), py::arg("nominal_value"),
+            py::arg("body_index"), py::arg("desired_theta"),
             py::arg("weight") = 1.0, py::arg("norm") = 1,
             py::arg("squared") = false)
         .def("SetInitialGuess", &Class::SetInitialGuess, py::arg("q"),
