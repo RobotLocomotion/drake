@@ -2,7 +2,6 @@
 Test math overloads.
 """
 
-
 import math
 import unittest
 
@@ -41,6 +40,7 @@ class FloatOverloads(Overloads):
     # Imports `math` and provides support for testing `float` overloads.
     def __init__(self):
         import pydrake.math as m
+
         self.m = m
         self.T = float
         self.T_logical = bool
@@ -60,18 +60,25 @@ class AutoDiffOverloads(Overloads):
     # overloads.
     def __init__(self):
         import pydrake.autodiffutils as m
+
         self.m = m
         self.T = m.AutoDiffXd
         self.T_logical = bool
 
     def supports(self, func):
         backwards_compat = [
-            "cos", "sin",
+            "cos",
+            "sin",
         ]
         supported = backwards_compat + [
             "log",
-            "tan", "asin", "acos", "atan2",
-            "sinh", "cosh", "tanh",
+            "tan",
+            "asin",
+            "acos",
+            "atan2",
+            "sinh",
+            "cosh",
+            "tanh",
             "inv",
         ]
         if func.__name__ in backwards_compat:
@@ -91,16 +98,32 @@ class SymbolicOverloads(Overloads):
     # overloads.
     def __init__(self):
         import pydrake.symbolic as m
+
         self.m = m
         self.T = m.Expression
         self.T_logical = bool
 
     def supports(self, func):
         backwards_compat = [
-            "log", "abs", "exp", "sqrt",
-            "sin", "cos", "tan", "asin", "acos", "atan",
-            "sinh", "cosh", "tanh", "ceil", "floor",
-            "min", "max", "pow", "atan2",
+            "log",
+            "abs",
+            "exp",
+            "sqrt",
+            "sin",
+            "cos",
+            "tan",
+            "asin",
+            "acos",
+            "atan",
+            "sinh",
+            "cosh",
+            "tanh",
+            "ceil",
+            "floor",
+            "min",
+            "max",
+            "pow",
+            "atan2",
             "inv",
         ]
         supported = backwards_compat
@@ -128,6 +151,7 @@ class MathOverloadsTest(unittest.TestCase):
         # TODO(eric.cousineau): Consider comparing against `numpy` ufunc
         # methods.
         import pydrake.math as drake_math
+
         unary = [
             (drake_math.log, math.log),
             (drake_math.abs, math.fabs),
