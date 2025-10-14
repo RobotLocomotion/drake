@@ -18,6 +18,7 @@ def main():
 
     # Execute the imported main.
     from pydrake.multibody.mesh_to_model import _main
+
     _main()
 
 
