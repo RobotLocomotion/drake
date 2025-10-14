@@ -18,10 +18,9 @@ class TestProjectedGradientDescentSolver(unittest.TestCase):
         prog.AddBoundingBoxConstraint(0, 1, x[1])
         prog.AddLinearCost(x[0])
 
+        SolverType = ProjectedGradientDescentSolver
         solver = ProjectedGradientDescentSolver()
-        self.assertEqual(
-            solver.solver_id(), ProjectedGradientDescentSolver.id()
-        )
+        self.assertEqual(solver.solver_id(), SolverType.id())
         self.assertTrue(solver.available())
         self.assertTrue(solver.enabled())
 
@@ -76,60 +75,15 @@ class TestProjectedGradientDescentSolver(unittest.TestCase):
             result.GetSolution(x), [0.0, 1.0], atol=1e-7
         )
 
-        self.assertTrue(
-            isinstance(
-                ProjectedGradientDescentSolver.ConvergenceTolOptionName(), str
-            )
-        )
-        self.assertTrue(
-            isinstance(
-                ProjectedGradientDescentSolver.MaxIterationsOptionName(), str
-            )
-        )
-        self.assertTrue(
-            isinstance(
-                ProjectedGradientDescentSolver.BacktrackingCOptionName(), str
-            )
-        )
-        self.assertTrue(
-            isinstance(
-                ProjectedGradientDescentSolver.BacktrackingTauOptionName(), str
-            )
-        )
-        self.assertTrue(
-            isinstance(
-                ProjectedGradientDescentSolver.BacktrackingAlpha0OptionName(),
-                str,
-            )
-        )
+        self.assertIsInstance(SolverType.ConvergenceTolOptionName(), str)
+        self.assertIsInstance(SolverType.MaxIterationsOptionName(), str)
+        self.assertIsInstance(SolverType.BacktrackingCOptionName(), str)
+        self.assertIsInstance(SolverType.BacktrackingTauOptionName(), str)
+        self.assertIsInstance(SolverType.BacktrackingAlpha0OptionName(), str)
 
-        self.assertTrue(
-            isinstance(
-                ProjectedGradientDescentSolver.kDefaultConvergenceTol, float
-            )
-        )
-        self.assertTrue(
-            isinstance(
-                ProjectedGradientDescentSolver.kDefaultMaxIterations, int
-            )
-        )
-        self.assertTrue(
-            isinstance(
-                ProjectedGradientDescentSolver.kDefaultBacktrackingC, float
-            )
-        )
-        self.assertTrue(
-            isinstance(
-                ProjectedGradientDescentSolver.kDefaultBacktrackingTau, float
-            )
-        )
-        self.assertTrue(
-            isinstance(
-                ProjectedGradientDescentSolver.kDefaultBacktrackingAlpha0, float
-            )
-        )
-        self.assertTrue(
-            isinstance(
-                ProjectedGradientDescentSolver.kDefaultMaxLineSearchSteps, int
-            )
-        )
+        self.assertIsInstance(SolverType.kDefaultConvergenceTol, float)
+        self.assertIsInstance(SolverType.kDefaultMaxIterations, int)
+        self.assertIsInstance(SolverType.kDefaultBacktrackingC, float)
+        self.assertIsInstance(SolverType.kDefaultBacktrackingTau, float)
+        self.assertIsInstance(SolverType.kDefaultBacktrackingAlpha0, float)
+        self.assertIsInstance(SolverType.kDefaultMaxLineSearchSteps, int)
