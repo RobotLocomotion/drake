@@ -67,20 +67,14 @@ class AutoDiffOverloads(Overloads):
 
     def supports(self, func):
         backwards_compat = [
-            "cos",
-            "sin",
-        ]
+            "cos", "sin",
+        ]  # fmt: skip
         supported = backwards_compat + [
             "log",
-            "tan",
-            "asin",
-            "acos",
-            "atan2",
-            "sinh",
-            "cosh",
-            "tanh",
+            "tan", "asin", "acos", "atan2",
+            "sinh", "cosh", "tanh",
             "inv",
-        ]
+        ]  # fmt: skip
         if func.__name__ in backwards_compat:
             # Check backwards compatibility.
             assert hasattr(self.T, func.__name__)
@@ -105,27 +99,12 @@ class SymbolicOverloads(Overloads):
 
     def supports(self, func):
         backwards_compat = [
-            "log",
-            "abs",
-            "exp",
-            "sqrt",
-            "sin",
-            "cos",
-            "tan",
-            "asin",
-            "acos",
-            "atan",
-            "sinh",
-            "cosh",
-            "tanh",
-            "ceil",
-            "floor",
-            "min",
-            "max",
-            "pow",
-            "atan2",
+            "log", "abs", "exp", "sqrt",
+            "sin", "cos", "tan", "asin", "acos", "atan",
+            "sinh", "cosh", "tanh", "ceil", "floor",
+            "min", "max", "pow", "atan2",
             "inv",
-        ]
+        ]  # fmt: skip
         supported = backwards_compat
         if func.__name__ in backwards_compat:
             # Check backwards compatibility.

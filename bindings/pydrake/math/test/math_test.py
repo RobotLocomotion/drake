@@ -187,7 +187,13 @@ class TestMath(unittest.TestCase):
         self.assertEqual((X @ v.reshape((3, 1))).shape, (3, 1))
         self.assertEqual((X @ vs).shape, (3, 2))
         # - Test 3-element vector multiplication.
-        R_AB = RotationMatrix([[0.0, 1, 0], [-1, 0, 0], [0, 0, 1]])
+        R_AB = RotationMatrix(
+            [
+                [0, 1, 0],  # BR
+                [-1, 0, 0],
+                [0, 0, 1],
+            ]
+        )
         p_AB = np.array([1.0, 2, 3])
         X_AB = RigidTransform(R=R_AB, p=p_AB)
         p_BQ = [10, 20, 30]
@@ -328,7 +334,13 @@ class TestMath(unittest.TestCase):
         R_P = RotationMatrix.ProjectToRotationMatrix(M=2 * np.eye(3))
         numpy_compare.assert_float_equal(R_P.matrix(), np.eye(3))
         # - Multiplication.
-        R_AB = RotationMatrix([[0.0, 1, 0], [-1, 0, 0], [0, 0, 1]])
+        R_AB = RotationMatrix(
+            [
+                [0.0, 1, 0],  # BR
+                [-1, 0, 0],
+                [0, 0, 1],
+            ]
+        )
         v_B = [10, 20, 30]
         v_A = [20.0, -10.0, 30]
         numpy_compare.assert_float_equal(R_AB.multiply(v_B=v_B), v_A)
