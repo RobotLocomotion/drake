@@ -56,12 +56,14 @@ class PooledSapModel<T>::PatchConstraintsPool {
     // for two Jacobian matrices of size 6 x nv, with nv the number of
     // velocities of a clique. Conservatively, request memory for all clique
     // sizes, noting that cliques might be repeated.
-    MatrixX_pool_.Clear();
-    for (int c = 0; c < model().num_cliques(); ++c) {
-      const int nv = model().clique_size(c);
-      MatrixX_pool_.Add(6, nv);
-      MatrixX_pool_.Add(6, nv);
-    }
+    // MatrixX_pool_.Resize(std::vector<int>(model().num_cliques(), 6),
+    //                      model().clique_sizes());
+    // MatrixX_pool_.Clear();
+    // for (int c = 0; c < model().num_cliques(); ++c) {
+    //   const int nv = model().clique_size(c);
+    //   MatrixX_pool_.Add(6, nv);
+    //   MatrixX_pool_.Add(6, nv);
+    // }
   }
 
   /* Resizes to store patch constraint data. No memory allocation performed if
@@ -286,9 +288,6 @@ class PooledSapModel<T>::PatchConstraintsPool {
   double vs2_{stiction_tolerance_ * stiction_tolerance_};
   double sigma_{1.0e-3};
 
-  /* Computes Rt. */
-  T CalcRegularizationOfFriction(int p, const Vector3<T>& p_BoC_W) const;
-
   T CalcLaggedHuntCrossleyModel(int p, int k, const Vector3<T>& v_AcBc_W,
                                 Vector3<T>* gamma_Bc_W, Matrix3<T>* G) const;
 
@@ -341,9 +340,6 @@ class PooledSapModel<T>::PatchConstraintsPool {
   std::vector<T> n0_;               // Previous time step impulse.
   std::vector<T> epsilon_soft_;     // Regularized stiction tolerance.
   std::vector<T> net_friction_;     // Regularized stiction tolerance.
-
-  // Scratch used during construction to compute Delassus approximation.
-  mutable EigenPool<MatrixX<T>> MatrixX_pool_;
 };
 
 }  // namespace pooled_sap
