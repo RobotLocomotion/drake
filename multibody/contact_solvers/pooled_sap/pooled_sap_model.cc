@@ -78,7 +78,8 @@ void PooledSapModel<T>::CalcMomentumTerms(
 
   // Scratch data.
   data.scratch().Clear();
-  auto tmp = data.scratch().VectorX_pool.Add(num_velocities(), 1);
+  VectorX<T>& tmp = data.scratch().v_pool;
+  tmp.resize(num_velocities());
 
   MultiplyByDynamicsMatrix(v, &Av);
 

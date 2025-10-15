@@ -73,14 +73,12 @@ class SapData {
     /* Clears all data without changing capacity. */
     void Clear() {
       Vector6_pool.Clear();
-      VectorX_pool.Clear();
       MatrixX_pool.Clear();
     }
     // Meant for velocity sized vectors that do not change size. Update to
     // EigenPool when AutoDiffXd is better supported.
     VectorX<T> v_pool;
     EigenPool<Vector6<T>> Vector6_pool;
-    EigenPool<VectorX<T>> VectorX_pool;
     EigenPool<MatrixX<T>> MatrixX_pool;
   };
 
