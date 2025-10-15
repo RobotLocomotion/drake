@@ -83,13 +83,18 @@ genrule(
     name = "_gen_implib",
     srcs = [_MOSEK_MAJMIN_GLOB[0]],
     outs = _IMPLIB_SRCS,
-    cmd = "$(execpath @implib_so_internal//:gen) --outdir=$(RULEDIR) $<",
+    cmd = "$(execpath @implib_so_internal//:gen) --dlopen-callback=drake_dlopen_mosek --outdir=$(RULEDIR) $<",
     tools = ["@implib_so_internal//:gen"],
 )
 
 cc_library(
     name = "implib_mosek",
-    srcs = _IMPLIB_SRCS,
+    srcs = _IMPLIB_SRCS + [
+        "@drake//tools/workspace/mosek:drake_dlopen_mosek.cc",
+    ],
+    deps = [
+        "@drake//common:find_resource",
+    ],
     linkstatic = True,
 )
 
