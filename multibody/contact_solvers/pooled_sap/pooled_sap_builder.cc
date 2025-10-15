@@ -135,20 +135,32 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   // N.B. The mass matrix already includes reflected inertia terms.
   M.diagonal() += plant().EvalJointDampingCache(context) * time_step;
 
+  // Allocate space for the linear dynamics matrix A.
   // We only add a clique for tree's with non-zero number of velocities.
   int num_cliques = 0;
   std::vector<int>& tree_clique = params->tree_to_clique;
   tree_clique.resize(topology.num_trees());
   std::fill(tree_clique.begin(), tree_clique.end(), -1);
+  std::vector<int> clique_sizes;
   for (TreeIndex t(0); t < topology.num_trees(); ++t) {
-    const int tree_start_in_v = topology.tree_velocities_start_in_v(t);
     const int tree_nv = topology.num_tree_velocities(t);
     if (tree_nv > 0) {
       tree_clique[t] = num_cliques;
+      clique_sizes.push_back(tree_nv);
       ++num_cliques;
-      typename EigenPool<MatrixX<T>>::ElementView At =
-          params->A.Add(tree_nv, tree_nv);
-      At = M.block(tree_start_in_v, tree_start_in_v, tree_nv, tree_nv);
+    }
+  }
+  params->A.Resize(clique_sizes, clique_sizes);
+
+  // Set the linear dynamics matrix A
+  for (TreeIndex t(0); t < topology.num_trees(); ++t) {
+    const int c = tree_clique[t];
+    if (c >= 0) {
+      const int tree_start_in_v = topology.tree_velocities_start_in_v(t);
+      const int tree_nv = topology.num_tree_velocities(t);
+      DRAKE_ASSERT(tree_nv > 0);
+      params->A[c] =
+          M.block(tree_start_in_v, tree_start_in_v, tree_nv, tree_nv);
     }
   }
 
