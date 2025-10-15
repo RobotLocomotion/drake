@@ -102,12 +102,6 @@ struct DynamicSizeStorage {
     blocks_.clear();
   }
 
-  // Capcity to store Eigen elements.
-  int elements_capacity() const { return blocks_.capacity(); }
-
-  // Capacity to store scalar entries across all elements.
-  int scalars_capacity() const { return data_.capacity(); }
-
   // Adds new element and returns mutable view to it.
   ElementView Add(int rows, int cols) {
     const int index = size();
@@ -156,23 +150,6 @@ struct FixedSizeStorage {
 
   /* Reserves storage to store `num_elements`. Size is not modified. */
   void Reserve(int num_elements) { data_.reserve(num_elements); }
-
-  // Capcity to store Eigen elements.
-  int elements_capacity() const { return data_.capacity(); }
-
-  // Capacity to store scalar entries across all elements.
-  int scalars_capacity() const {
-    return data_.capacity() * EigenType::SizeAtCompileTime;
-  }
-
-  // Adds new element and returns mutable view to it.
-  ElementView Add(int rows, int cols) {
-    DRAKE_ASSERT(rows == EigenType::RowsAtCompileTime);
-    DRAKE_ASSERT(cols == EigenType::ColsAtCompileTime);
-    const int index = size();
-    data_.emplace_back();
-    return at(index);
-  }
 
   void SetZero() {
     Eigen::Map<VectorX<Scalar>>(data_.data()->data(),
@@ -266,21 +243,11 @@ class EigenPool {
   /* Clears data. Capacity is not changed, and thus memory is not freed. */
   void Clear() { storage_.Clear(); }
 
-  /* Adds element of the specified size and returns mutable to it. */
-  ElementView Add(int rows, int cols) { return storage_.Add(rows, cols); }
-
   /* Zeroes out all elements in the pool. */
   void SetZero() { storage_.SetZero(); }
 
   /* Returns the number of elements in the pool. */
   int size() const { return storage_.size(); }
-
-  /* Returns the maximum number of Eigen objects that can be stored without
-  additional dynamics memory allocation. */
-  int elements_capacity() const { return storage_.elements_capacity(); }
-
-  /* Returns the capacity to store scalars. */
-  int scalars_capacity() { return storage_.scalars_capacity(); }
 
   /* Const access to the i-th element. */
   const ConstElementView operator[](int i) const {
