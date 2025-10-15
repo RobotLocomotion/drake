@@ -1,2 +1,1 @@
-"""Provides examples of using ``pydrake.gym``.
-"""
+"""Provides examples of using ``pydrake.gym``."""

@@ -31,8 +31,10 @@ class TestGeometryCore(unittest.TestCase):
         geometries = mut.GeometrySet()
 
         # Confirm that both invocations provide access.
-        for dut in (sg.collision_filter_manager(),
-                    sg.collision_filter_manager(sg_context)):
+        for dut in (
+            sg.collision_filter_manager(),
+            sg.collision_filter_manager(sg_context),
+        ):
             self.assertIsInstance(dut, mut.CollisionFilterManager)
 
         # We'll test against the Context-variant, assuming that if the API
@@ -40,41 +42,57 @@ class TestGeometryCore(unittest.TestCase):
         dut = sg.collision_filter_manager(sg_context)
         dut.Apply(
             declaration=mut.CollisionFilterDeclaration().ExcludeBetween(
-                geometries, geometries))
+                geometries, geometries
+            )
+        )
         dut.Apply(
             declaration=mut.CollisionFilterDeclaration().ExcludeWithin(
-                geometries))
+                geometries
+            )
+        )
         dut.Apply(
             declaration=mut.CollisionFilterDeclaration().AllowBetween(
-                set_A=geometries, set_B=geometries))
+                set_A=geometries, set_B=geometries
+            )
+        )
         dut.Apply(
             declaration=mut.CollisionFilterDeclaration().AllowWithin(
-                geometry_set=geometries))
+                geometry_set=geometries
+            )
+        )
 
         id = dut.ApplyTransient(
             declaration=mut.CollisionFilterDeclaration().ExcludeWithin(
-                geometries))
+                geometries
+            )
+        )
         self.assertTrue(dut.has_transient_history())
         self.assertTrue(dut.IsActive(filter_id=id))
         self.assertTrue(dut.RemoveDeclaration(filter_id=id))
 
         # Test CollisionFilterScope enum.
         self.assertIsInstance(
-            mut.CollisionFilterScope.kAll, mut.CollisionFilterScope)
+            mut.CollisionFilterScope.kAll, mut.CollisionFilterScope
+        )
         self.assertIsInstance(
-            mut.CollisionFilterScope.kOmitDeformable, mut.CollisionFilterScope)
+            mut.CollisionFilterScope.kOmitDeformable, mut.CollisionFilterScope
+        )
 
         # Test CollisionFilterDeclaration constructor with scope parameter.
         declaration_all = mut.CollisionFilterDeclaration(
-            scope=mut.CollisionFilterScope.kAll)
+            scope=mut.CollisionFilterScope.kAll
+        )
         id = dut.ApplyTransient(
-            declaration=declaration_all.ExcludeWithin(geometries))
+            declaration=declaration_all.ExcludeWithin(geometries)
+        )
         self.assertTrue(dut.IsActive(filter_id=id))
 
         declaration_omit = mut.CollisionFilterDeclaration(
-            scope=mut.CollisionFilterScope.kOmitDeformable)
+            scope=mut.CollisionFilterScope.kOmitDeformable
+        )
         id = dut.ApplyTransient(
-            declaration=declaration_omit.ExcludeWithin(geometries))
+            declaration=declaration_omit.ExcludeWithin(geometries)
+        )
         self.assertTrue(dut.IsActive(filter_id=id))
 
     def test_geometry_frame_api(self):
@@ -85,8 +103,9 @@ class TestGeometryCore(unittest.TestCase):
         self.assertEqual(frame.frame_group(), 1)
 
     def test_geometry_instance_api(self):
-        geometry = mut.GeometryInstance(X_PG=RigidTransform(),
-                                        shape=mut.Sphere(1.), name="sphere")
+        geometry = mut.GeometryInstance(
+            X_PG=RigidTransform(), shape=mut.Sphere(1.0), name="sphere"
+        )
         self.assertIsInstance(geometry.id(), mut.GeometryId)
         geometry.set_pose(RigidTransform([1, 0, 0]))
         self.assertIsInstance(geometry.pose(), RigidTransform)
@@ -97,23 +116,30 @@ class TestGeometryCore(unittest.TestCase):
         geometry.set_proximity_properties(mut.ProximityProperties())
         geometry.set_illustration_properties(mut.IllustrationProperties())
         geometry.set_perception_properties(mut.PerceptionProperties())
-        self.assertIsInstance(geometry.mutable_proximity_properties(),
-                              mut.ProximityProperties)
-        self.assertIsInstance(geometry.proximity_properties(),
-                              mut.ProximityProperties)
-        self.assertIsInstance(geometry.mutable_illustration_properties(),
-                              mut.IllustrationProperties)
-        self.assertIsInstance(geometry.illustration_properties(),
-                              mut.IllustrationProperties)
-        self.assertIsInstance(geometry.mutable_perception_properties(),
-                              mut.PerceptionProperties)
-        self.assertIsInstance(geometry.perception_properties(),
-                              mut.PerceptionProperties)
+        self.assertIsInstance(
+            geometry.mutable_proximity_properties(), mut.ProximityProperties
+        )
+        self.assertIsInstance(
+            geometry.proximity_properties(), mut.ProximityProperties
+        )
+        self.assertIsInstance(
+            geometry.mutable_illustration_properties(),
+            mut.IllustrationProperties,
+        )
+        self.assertIsInstance(
+            geometry.illustration_properties(), mut.IllustrationProperties
+        )
+        self.assertIsInstance(
+            geometry.mutable_perception_properties(), mut.PerceptionProperties
+        )
+        self.assertIsInstance(
+            geometry.perception_properties(), mut.PerceptionProperties
+        )
 
     def test_geometry_properties_api(self):
         # Test perception/ illustration properties (specifically Rgba).
-        test_vector = [0., 0., 1., 1.]
-        test_color = mut.Rgba(0., 0., 1., 1.)
+        test_vector = [0.0, 0.0, 1.0, 1.0]
+        test_color = mut.Rgba(0.0, 0.0, 1.0, 1.0)
         phong_props = mut.MakePhongIllustrationProperties(test_vector)
         self.assertIsInstance(phong_props, mut.IllustrationProperties)
         actual_color = phong_props.GetProperty("phong", "diffuse")
@@ -131,37 +157,45 @@ class TestGeometryCore(unittest.TestCase):
         self.assertEqual(prop.num_groups(), 1)
         self.assertTrue(default_group in prop.GetGroupNames())
         prop.AddProperty(group_name=default_group, name="test", value=3)
-        self.assertTrue(prop.HasProperty(group_name=default_group,
-                                         name="test"))
+        self.assertTrue(prop.HasProperty(group_name=default_group, name="test"))
         self.assertEqual(
-            prop.GetProperty(group_name=default_group, name="test"), 3)
+            prop.GetProperty(group_name=default_group, name="test"), 3
+        )
         self.assertEqual(
             prop.GetPropertyOrDefault(
-                group_name=default_group, name="empty", default_value=5),
-            5)
+                group_name=default_group, name="empty", default_value=5
+            ),
+            5,
+        )
         group_values = prop.GetPropertiesInGroup(group_name=default_group)
         for name, value in group_values.items():
             self.assertIsInstance(name, str)
             self.assertIsInstance(value, AbstractValue)
         # Remove the property.
-        self.assertTrue(prop.RemoveProperty(group_name=default_group,
-                                            name="test"))
-        self.assertFalse(prop.HasProperty(group_name=default_group,
-                                          name="test"))
+        self.assertTrue(
+            prop.RemoveProperty(group_name=default_group, name="test")
+        )
+        self.assertFalse(
+            prop.HasProperty(group_name=default_group, name="test")
+        )
         # Update a property.
         prop.AddProperty(group_name=default_group, name="to_update", value=17)
-        self.assertTrue(prop.HasProperty(group_name=default_group,
-                                         name="to_update"))
+        self.assertTrue(
+            prop.HasProperty(group_name=default_group, name="to_update")
+        )
         self.assertEqual(
-            prop.GetProperty(group_name=default_group, name="to_update"), 17)
+            prop.GetProperty(group_name=default_group, name="to_update"), 17
+        )
 
-        prop.UpdateProperty(group_name=default_group, name="to_update",
-                            value=20)
-        self.assertTrue(prop.HasProperty(group_name=default_group,
-                                         name="to_update"))
+        prop.UpdateProperty(
+            group_name=default_group, name="to_update", value=20
+        )
+        self.assertTrue(
+            prop.HasProperty(group_name=default_group, name="to_update")
+        )
         self.assertEqual(
-            prop.GetProperty(group_name=default_group, name="to_update"),
-            20)
+            prop.GetProperty(group_name=default_group, name="to_update"), 20
+        )
 
         # Property copying.
         for property_cls in PROPERTY_CLS_LIST:
@@ -209,26 +243,35 @@ class TestGeometryCore(unittest.TestCase):
         inspector = scene_graph.model_inspector()
         version0 = inspector.geometry_version()
         version1 = copy.deepcopy(version0)
-        self.assertTrue(version0.IsSameAs(other=version1,
-                                          role=mut.Role.kProximity))
-        self.assertTrue(version0.IsSameAs(other=version1,
-                                          role=mut.Role.kPerception))
-        self.assertTrue(version0.IsSameAs(other=version1,
-                                          role=mut.Role.kIllustration))
+        self.assertTrue(
+            version0.IsSameAs(other=version1, role=mut.Role.kProximity)
+        )
+        self.assertTrue(
+            version0.IsSameAs(other=version1, role=mut.Role.kPerception)
+        )
+        self.assertTrue(
+            version0.IsSameAs(other=version1, role=mut.Role.kIllustration)
+        )
         version2 = mut.GeometryVersion(other=version0)
-        self.assertTrue(version0.IsSameAs(other=version2,
-                                          role=mut.Role.kProximity))
-        self.assertTrue(version0.IsSameAs(other=version2,
-                                          role=mut.Role.kPerception))
-        self.assertTrue(version0.IsSameAs(other=version2,
-                                          role=mut.Role.kIllustration))
+        self.assertTrue(
+            version0.IsSameAs(other=version2, role=mut.Role.kProximity)
+        )
+        self.assertTrue(
+            version0.IsSameAs(other=version2, role=mut.Role.kPerception)
+        )
+        self.assertTrue(
+            version0.IsSameAs(other=version2, role=mut.Role.kIllustration)
+        )
         version3 = mut.GeometryVersion()
-        self.assertFalse(version0.IsSameAs(other=version3,
-                                           role=mut.Role.kProximity))
-        self.assertFalse(version0.IsSameAs(other=version3,
-                                           role=mut.Role.kPerception))
-        self.assertFalse(version0.IsSameAs(other=version3,
-                                           role=mut.Role.kIllustration))
+        self.assertFalse(
+            version0.IsSameAs(other=version3, role=mut.Role.kProximity)
+        )
+        self.assertFalse(
+            version0.IsSameAs(other=version3, role=mut.Role.kPerception)
+        )
+        self.assertFalse(
+            version0.IsSameAs(other=version3, role=mut.Role.kIllustration)
+        )
 
     def test_identifier_api(self):
         cls_list = [
@@ -252,16 +295,15 @@ class TestGeometryCore(unittest.TestCase):
         self.assertIsNot(id_1, id_2)
         self.assertEqual(hash(id_1), hash(id_2))
 
-        self.assertIn(
-            f"value={id_1.get_value()}",
-            repr(id_1))
+        self.assertIn(f"value={id_1.get_value()}", repr(id_1))
 
     def test_in_memory_mesh(self):
         empty_mesh = mut.InMemoryMesh()
         self.assertEqual(len(empty_mesh.mesh_file.contents()), 0)
 
-        file = MemoryFile(contents="stuff", extension=".ext",
-                          filename_hint="some_hint")
+        file = MemoryFile(
+            contents="stuff", extension=".ext", filename_hint="some_hint"
+        )
         only_mesh = mut.InMemoryMesh(mesh_file=file)
         self.assertEqual(only_mesh.mesh_file.contents(), file.contents())
         self.assertEqual(len(only_mesh.supporting_files), 0)
@@ -272,13 +314,16 @@ class TestGeometryCore(unittest.TestCase):
         #     the contents length is below MemoryFile's hard-coded limit
         #     on creating a perfect representation.
         #   - the repr'd string has expected values.
-        self.assertIsInstance(eval(representation,
-                                   {"InMemoryMesh": mut.InMemoryMesh,
-                                    "MemoryFile": MemoryFile}),
-                              mut.InMemoryMesh)
-        self.assertRegex(representation,
-                         re.compile("mesh_file=MemoryFile.+stuff",
-                                    re.DOTALL))
+        self.assertIsInstance(
+            eval(
+                representation,
+                {"InMemoryMesh": mut.InMemoryMesh, "MemoryFile": MemoryFile},
+            ),
+            mut.InMemoryMesh,
+        )
+        self.assertRegex(
+            representation, re.compile("mesh_file=MemoryFile.+stuff", re.DOTALL)
+        )
         self.assertNotIn("supporting_files=", representation)
 
         copy.copy(only_mesh)
@@ -291,28 +336,34 @@ class TestGeometryCore(unittest.TestCase):
         legacy_data = b"\x80\x04\x95\xa2\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c\x0cInMemoryMesh\x94\x93\x94)\x81\x94}\x94\x8c\tmesh_file\x94\x8c\x0epydrake.common\x94\x8c\nMemoryFile\x94\x93\x94)\x81\x94}\x94(\x8c\x08contents\x94\x8c\x05stuff\x94\x8c\textension\x94\x8c\x04.ext\x94\x8c\rfilename_hint\x94\x8c\tsome_hint\x94ubsb."  # noqa
         obj = pickle.loads(legacy_data)
         self.assertIsInstance(obj, mut.InMemoryMesh)
-        self.assertEqual(obj.mesh_file.contents(),
-                         only_mesh.mesh_file.contents())
+        self.assertEqual(
+            obj.mesh_file.contents(), only_mesh.mesh_file.contents()
+        )
 
         supporting_files = {
             "file": MemoryFile(contents="a", extension=".a", filename_hint="a")
         }
-        full_mesh = mut.InMemoryMesh(mesh_file=file,
-                                     supporting_files=supporting_files)
-        self.assertEqual(full_mesh.mesh_file.contents(),
-                         file.contents())
+        full_mesh = mut.InMemoryMesh(
+            mesh_file=file, supporting_files=supporting_files
+        )
+        self.assertEqual(full_mesh.mesh_file.contents(), file.contents())
         self.assertIn("file", full_mesh.supporting_files)
         self.assertNotIn("c", full_mesh.supporting_files)
 
         representation = repr(full_mesh)
-        self.assertIsInstance(eval(representation,
-                                   {"InMemoryMesh": mut.InMemoryMesh,
-                                    "MemoryFile": MemoryFile}),
-                              mut.InMemoryMesh)
-        self.assertRegex(representation,
-                         re.compile("mesh_file=MemoryFile.*stuff", re.DOTALL))
-        self.assertRegex(representation,
-                         re.compile("supporting_files=.*\\.a", re.DOTALL))
+        self.assertIsInstance(
+            eval(
+                representation,
+                {"InMemoryMesh": mut.InMemoryMesh, "MemoryFile": MemoryFile},
+            ),
+            mut.InMemoryMesh,
+        )
+        self.assertRegex(
+            representation, re.compile("mesh_file=MemoryFile.*stuff", re.DOTALL)
+        )
+        self.assertRegex(
+            representation, re.compile("supporting_files=.*\\.a", re.DOTALL)
+        )
 
         copy.copy(full_mesh)
         copy.deepcopy(full_mesh)
@@ -324,8 +375,9 @@ class TestGeometryCore(unittest.TestCase):
         legacy_data = b"\x80\x04\x95\xfc\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c\x0cInMemoryMesh\x94\x93\x94)\x81\x94}\x94(\x8c\tmesh_file\x94\x8c\x0epydrake.common\x94\x8c\nMemoryFile\x94\x93\x94)\x81\x94}\x94(\x8c\x08contents\x94\x8c\x05stuff\x94\x8c\textension\x94\x8c\x04.ext\x94\x8c\rfilename_hint\x94\x8c\tsome_hint\x94ub\x8c\x10supporting_files\x94}\x94\x8c\x04file\x94h\x08)\x81\x94}\x94(\x8c\x08contents\x94\x8c\x01a\x94\x8c\textension\x94\x8c\x02.a\x94\x8c\rfilename_hint\x94h\x17ubsub."  # noqa
         obj = pickle.loads(legacy_data)
         self.assertIsInstance(obj, mut.InMemoryMesh)
-        self.assertEqual(obj.mesh_file.contents(),
-                         full_mesh.mesh_file.contents())
+        self.assertEqual(
+            obj.mesh_file.contents(), full_mesh.mesh_file.contents()
+        )
         self.assertIn("file", obj.supporting_files)
 
     def test_mesh_source(self):
@@ -339,9 +391,9 @@ class TestGeometryCore(unittest.TestCase):
             source.in_memory()
         # repr correctness is determined the same as for InMemoryMesh (with the
         # same caveats).
-        self.assertIsInstance(eval(repr(source),
-                                   {"MeshSource": mut.MeshSource}),
-                              mut.MeshSource)
+        self.assertIsInstance(
+            eval(repr(source), {"MeshSource": mut.MeshSource}), mut.MeshSource
+        )
         self.assertRegex(repr(source), "path=['\"]/a/path.obj['\"]")
         copy.copy(source)
         copy.deepcopy(source)
@@ -369,13 +421,20 @@ class TestGeometryCore(unittest.TestCase):
         self.assertIsInstance(source.in_memory(), mut.InMemoryMesh)
         with self.assertRaises(RuntimeError):
             source.path()
-        self.assertIsInstance(eval(repr(source),
-                                   {"MeshSource": mut.MeshSource,
-                                    "InMemoryMesh": mut.InMemoryMesh,
-                                    "MemoryFile": MemoryFile}),
-                              mut.MeshSource)
-        self.assertRegex(repr(source),
-                         re.compile("mesh=InMemoryMesh.*hint.*", re.DOTALL))
+        self.assertIsInstance(
+            eval(
+                repr(source),
+                {
+                    "MeshSource": mut.MeshSource,
+                    "InMemoryMesh": mut.InMemoryMesh,
+                    "MemoryFile": MemoryFile,
+                },
+            ),
+            mut.MeshSource,
+        )
+        self.assertRegex(
+            repr(source), re.compile("mesh=InMemoryMesh.*hint.*", re.DOTALL)
+        )
         copy.copy(source)
         copy.deepcopy(source)
 
@@ -385,8 +444,10 @@ class TestGeometryCore(unittest.TestCase):
         obj = pickle.loads(legacy_data)
         self.assertIsInstance(obj, mut.MeshSource)
         self.assertEqual(obj.is_in_memory(), source.is_in_memory())
-        self.assertEqual(obj.in_memory().mesh_file.contents(),
-                         source.in_memory().mesh_file.contents())
+        self.assertEqual(
+            obj.in_memory().mesh_file.contents(),
+            source.in_memory().mesh_file.contents(),
+        )
 
     def test_proximity_properties(self):
         """
@@ -398,35 +459,47 @@ class TestGeometryCore(unittest.TestCase):
         mut.AddContactMaterial(properties=props)
         props = mut.ProximityProperties()
         reference_friction = CoulombFriction(0.25, 0.125)
-        mut.AddContactMaterial(dissipation=2.7,
-                               point_stiffness=3.9,
-                               friction=reference_friction,
-                               properties=props)
+        mut.AddContactMaterial(
+            dissipation=2.7,
+            point_stiffness=3.9,
+            friction=reference_friction,
+            properties=props,
+        )
         self.assertTrue(
-            props.HasProperty("material", "hunt_crossley_dissipation"))
+            props.HasProperty("material", "hunt_crossley_dissipation")
+        )
         self.assertEqual(
-            props.GetProperty("material", "hunt_crossley_dissipation"), 2.7)
+            props.GetProperty("material", "hunt_crossley_dissipation"), 2.7
+        )
         self.assertTrue(
-            props.HasProperty("material", "point_contact_stiffness"))
+            props.HasProperty("material", "point_contact_stiffness")
+        )
         self.assertEqual(
-            props.GetProperty("material", "point_contact_stiffness"), 3.9)
+            props.GetProperty("material", "point_contact_stiffness"), 3.9
+        )
         self.assertTrue(props.HasProperty("material", "coulomb_friction"))
         stored_friction = props.GetProperty("material", "coulomb_friction")
-        self.assertEqual(stored_friction.static_friction(),
-                         reference_friction.static_friction())
-        self.assertEqual(stored_friction.dynamic_friction(),
-                         reference_friction.dynamic_friction())
+        self.assertEqual(
+            stored_friction.static_friction(),
+            reference_friction.static_friction(),
+        )
+        self.assertEqual(
+            stored_friction.dynamic_friction(),
+            reference_friction.dynamic_friction(),
+        )
 
         props = mut.ProximityProperties()
         res_hint = 0.175
         E = 1e8
         mut.AddRigidHydroelasticProperties(
-            resolution_hint=res_hint, properties=props)
+            resolution_hint=res_hint, properties=props
+        )
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
         self.assertFalse(mut_testing.PropertiesIndicateCompliantHydro(props))
         self.assertTrue(props.HasProperty("hydroelastic", "resolution_hint"))
-        self.assertEqual(props.GetProperty("hydroelastic", "resolution_hint"),
-                         res_hint)
+        self.assertEqual(
+            props.GetProperty("hydroelastic", "resolution_hint"), res_hint
+        )
 
         props = mut.ProximityProperties()
         mut.AddRigidHydroelasticProperties(properties=props)
@@ -437,31 +510,40 @@ class TestGeometryCore(unittest.TestCase):
         props = mut.ProximityProperties()
         res_hint = 0.275
         mut.AddCompliantHydroelasticProperties(
-            resolution_hint=res_hint, hydroelastic_modulus=E, properties=props)
+            resolution_hint=res_hint, hydroelastic_modulus=E, properties=props
+        )
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
         self.assertTrue(mut_testing.PropertiesIndicateCompliantHydro(props))
         self.assertTrue(props.HasProperty("hydroelastic", "resolution_hint"))
-        self.assertEqual(props.GetProperty("hydroelastic", "resolution_hint"),
-                         res_hint)
-        self.assertTrue(props.HasProperty("hydroelastic",
-                                          "hydroelastic_modulus"))
-        self.assertEqual(props.GetProperty("hydroelastic",
-                                           "hydroelastic_modulus"), E)
+        self.assertEqual(
+            props.GetProperty("hydroelastic", "resolution_hint"), res_hint
+        )
+        self.assertTrue(
+            props.HasProperty("hydroelastic", "hydroelastic_modulus")
+        )
+        self.assertEqual(
+            props.GetProperty("hydroelastic", "hydroelastic_modulus"), E
+        )
 
         props = mut.ProximityProperties()
         slab_thickness = 0.275
         mut.AddCompliantHydroelasticPropertiesForHalfSpace(
-            slab_thickness=slab_thickness, hydroelastic_modulus=E,
-            properties=props)
+            slab_thickness=slab_thickness,
+            hydroelastic_modulus=E,
+            properties=props,
+        )
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
         self.assertTrue(mut_testing.PropertiesIndicateCompliantHydro(props))
         self.assertTrue(props.HasProperty("hydroelastic", "slab_thickness"))
-        self.assertEqual(props.GetProperty("hydroelastic", "slab_thickness"),
-                         slab_thickness)
-        self.assertTrue(props.HasProperty("hydroelastic",
-                                          "hydroelastic_modulus"))
-        self.assertEqual(props.GetProperty("hydroelastic",
-                                           "hydroelastic_modulus"), E)
+        self.assertEqual(
+            props.GetProperty("hydroelastic", "slab_thickness"), slab_thickness
+        )
+        self.assertTrue(
+            props.HasProperty("hydroelastic", "hydroelastic_modulus")
+        )
+        self.assertEqual(
+            props.GetProperty("hydroelastic", "hydroelastic_modulus"), E
+        )
 
     def test_rgba_api(self):
         default_white = mut.Rgba()
@@ -474,9 +556,7 @@ class TestGeometryCore(unittest.TestCase):
         self.assertEqual(color.a(), a)
         self.assertEqual(color, mut.Rgba(r, g, b, a))
         self.assertNotEqual(color, mut.Rgba(r, g, b, 0.0))
-        self.assertEqual(
-            repr(color),
-            "Rgba(r=0.75, g=0.5, b=0.25, a=1.0)")
+        self.assertEqual(repr(color), "Rgba(r=0.75, g=0.5, b=0.25, a=1.0)")
         color.set(r=1.0, g=1.0, b=1.0, a=0.0)
         self.assertEqual(color, mut.Rgba(1.0, 1.0, 1.0, 0.0))
         color.set(rgba=[0.75, 0.5, 0.25])
@@ -552,19 +632,33 @@ class TestGeometryCore(unittest.TestCase):
             mut.HalfSpace(),
             mut.Mesh(filename="arbitrary/path", scale=1.0),
             mut.Mesh(filename="arbitrary/path", scale3=[1.0, 2.0, 3.0]),
-            mut.Mesh(mesh_data=mut.InMemoryMesh(
-                mesh_file=MemoryFile("# ", ".obj", "junk")), scale=1.0),
-            mut.Mesh(mesh_data=mut.InMemoryMesh(
-                mesh_file=MemoryFile("# ", ".obj", "junk")),
-                scale3=[1.0, 2.0, 3.0]),
+            mut.Mesh(
+                mesh_data=mut.InMemoryMesh(
+                    mesh_file=MemoryFile("# ", ".obj", "junk")
+                ),
+                scale=1.0,
+            ),
+            mut.Mesh(
+                mesh_data=mut.InMemoryMesh(
+                    mesh_file=MemoryFile("# ", ".obj", "junk")
+                ),
+                scale3=[1.0, 2.0, 3.0],
+            ),
             mut.Convex(filename="arbitrary/path", scale=1.0),
             mut.Convex(filename="arbitrary/path", scale3=[1.0, 2.0, 3.0]),
-            mut.Convex(mesh_data=mut.InMemoryMesh(
-                mesh_file=MemoryFile("# ", ".obj", "junk")), scale=1.0),
-            mut.Convex(mesh_data=mut.InMemoryMesh(
-                mesh_file=MemoryFile("# ", ".obj", "junk")),
-                scale3=[1.0, 2.0, 3.0]),
-            mut.MeshcatCone(height=1.23, a=3.45, b=6.78)
+            mut.Convex(
+                mesh_data=mut.InMemoryMesh(
+                    mesh_file=MemoryFile("# ", ".obj", "junk")
+                ),
+                scale=1.0,
+            ),
+            mut.Convex(
+                mesh_data=mut.InMemoryMesh(
+                    mesh_file=MemoryFile("# ", ".obj", "junk")
+                ),
+                scale3=[1.0, 2.0, 3.0],
+            ),
+            mut.MeshcatCone(height=1.23, a=3.45, b=6.78),
         ]
         for shape in shapes:
             self.assertIsInstance(shape, mut.Shape)
@@ -580,9 +674,14 @@ class TestGeometryCore(unittest.TestCase):
             self.assertIsNot(shape_copy, shape)
 
             # Representation of Mesh/Convex requires additional types.
-            new_shape = eval(repr(shape), {shape_cls_name: shape_cls,
-                                           'InMemoryMesh': mut.InMemoryMesh,
-                                           'MemoryFile': MemoryFile})
+            new_shape = eval(
+                repr(shape),
+                {
+                    shape_cls_name: shape_cls,
+                    "InMemoryMesh": mut.InMemoryMesh,
+                    "MemoryFile": MemoryFile,
+                },
+            )
             self.assertIsInstance(new_shape, shape_cls)
             self.assertEqual(repr(new_shape), repr(shape))
 
@@ -621,25 +720,39 @@ class TestGeometryCore(unittest.TestCase):
 
         # Throw away Convex; we just want to make sure the scalar-valued
         # `scale` parameter is bound.
-        convex = mut.Convex(points=np.array(((0, 0, 0),
-                                             (1, 0, 0),
-                                             (0, 1, 0),
-                                             (0, 0, 1))).T,
-                            label="test_label", scale=2)
+        convex = mut.Convex(
+            points=np.array(
+                (
+                    (0, 0, 0),  # BR
+                    (1, 0, 0),
+                    (0, 1, 0),
+                    (0, 0, 1),
+                )
+            ).T,
+            label="test_label",
+            scale=2,
+        )
 
         # For the test, we'll test the non-uniform scale API; the two are
         # otherwise equivalent.
-        convex = mut.Convex(points=np.array(((0, 0, 0),
-                                             (1, 0, 0),
-                                             (0, 1, 0),
-                                             (0, 0, 1))).T,
-                            label="test_label", scale3=[1, 2, 3])
+        convex = mut.Convex(
+            points=np.array(
+                (
+                    (0, 0, 0),  # BR
+                    (1, 0, 0),
+                    (0, 1, 0),
+                    (0, 0, 1),
+                )
+            ).T,
+            label="test_label",
+            scale3=[1, 2, 3],
+        )
         self.assertEqual(".obj", convex.extension())
         np.testing.assert_array_equal(convex.scale3(), [1, 2, 3])
         self.assertTrue(convex.source().is_in_memory())
         convex_file = convex.source().in_memory().mesh_file
         self.assertTrue(convex_file.filename_hint(), "test_label")
-        self.assertTrue(convex_file.contents().startswith(b'v 0 0 0'))
+        self.assertTrue(convex_file.contents().startswith(b"v 0 0 0"))
 
         cylinder = mut.Cylinder(radius=1.0, length=2.0)
         assert_shape_api(cylinder)
@@ -660,26 +773,32 @@ class TestGeometryCore(unittest.TestCase):
         self.assertIsInstance(X_FH, RigidTransform)
 
         junk_path = "arbitrary/path.ext"
-        for dut_mesh in [mut.Mesh(filename=junk_path, scale=1.5),
-                         mut.Mesh(mesh_data=mut.InMemoryMesh(
-                                      mesh_file=MemoryFile("#junk", ".ext",
-                                                           "test")),
-                                  scale=1.5),
-                         mut.Mesh(source=mut.MeshSource(path=junk_path),
-                                  scale=1.5),
-                         mut.Convex(filename=junk_path, scale=1.5),
-                         mut.Convex(mesh_data=mut.InMemoryMesh(
-                            mesh_file=MemoryFile("#junk", ".ext", "test")),
-                            scale=1.5),
-                         mut.Convex(source=mut.MeshSource(path=junk_path),
-                                    scale=1.5)]:
+        for dut_mesh in [
+            mut.Mesh(filename=junk_path, scale=1.5),
+            mut.Mesh(
+                mesh_data=mut.InMemoryMesh(
+                    mesh_file=MemoryFile("#junk", ".ext", "test")
+                ),
+                scale=1.5,
+            ),
+            mut.Mesh(source=mut.MeshSource(path=junk_path), scale=1.5),
+            mut.Convex(filename=junk_path, scale=1.5),
+            mut.Convex(
+                mesh_data=mut.InMemoryMesh(
+                    mesh_file=MemoryFile("#junk", ".ext", "test")
+                ),
+                scale=1.5,
+            ),
+            mut.Convex(source=mut.MeshSource(path=junk_path), scale=1.5),
+        ]:
             assert_shape_api(dut_mesh)
             self.assertEqual(".ext", dut_mesh.extension())
             self.assertEqual(dut_mesh.scale(), 1.5)
             np.testing.assert_array_equal(dut_mesh.scale3(), [1.5, 1.5, 1.5])
             self.assertIsInstance(dut_mesh.source(), mut.MeshSource)
-            with self.assertRaisesRegex(RuntimeError,
-                                        "MakeConvexHull only applies to"):
+            with self.assertRaisesRegex(
+                RuntimeError, "MakeConvexHull only applies to"
+            ):
                 # We just need evidence that it invokes convex hull
                 # machinery; the exception for a bad extension suffices.
                 dut_mesh.GetConvexHull()
@@ -709,12 +828,22 @@ class TestGeometryCore(unittest.TestCase):
         # Check that data pickled in older versions can be unpickled into the
         # current version. The data should produce a Mesh/Convex equivalent to
         # the reference instance.
-        for mesh_type, pickle_str in ((mut.Mesh, b"\x04Mesh"),
-                                      (mut.Convex, b"\x06Convex")):
+        for mesh_type, pickle_str in (
+            (mut.Mesh, b"\x04Mesh"),
+            (mut.Convex, b"\x06Convex"),
+        ):
             ref_mesh = mesh_type(filename="/path/to/file.obj", scale=2)
             current_data = pickle.dumps(ref_mesh)
-            v1_33_data = b"\x80\x04\x95@\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c" + pickle_str + b"\x94\x93\x94)\x81\x94\x8c\x11/path/to/file.obj\x94G@\x00\x00\x00\x00\x00\x00\x00\x86\x94b."  # noqa
-            v1_39_data = b"\x80\x04\x95\x83\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c" + pickle_str + b"\x94\x93\x94)\x81\x94h\x00\x8c\nMeshSource\x94\x93\x94)\x81\x94}\x94\x8c\x04path\x94\x8c\x07pathlib\x94\x8c\tPosixPath\x94\x93\x94(\x8c\x01/\x94\x8c\x04path\x94\x8c\x02to\x94\x8c\x08file.obj\x94t\x94R\x94sbG@\x00\x00\x00\x00\x00\x00\x00\x86\x94b."  # noqa
+            v1_33_data = (
+                b"\x80\x04\x95@\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c"  # noqa
+                + pickle_str
+                + b"\x94\x93\x94)\x81\x94\x8c\x11/path/to/file.obj\x94G@\x00\x00\x00\x00\x00\x00\x00\x86\x94b."  # noqa
+            )
+            v1_39_data = (
+                b"\x80\x04\x95\x83\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c"  # noqa
+                + pickle_str
+                + b"\x94\x93\x94)\x81\x94h\x00\x8c\nMeshSource\x94\x93\x94)\x81\x94}\x94\x8c\x04path\x94\x8c\x07pathlib\x94\x8c\tPosixPath\x94\x93\x94(\x8c\x01/\x94\x8c\x04path\x94\x8c\x02to\x94\x8c\x08file.obj\x94t\x94R\x94sbG@\x00\x00\x00\x00\x00\x00\x00\x86\x94b."  # noqa
+            )
             for legacy_data in (v1_33_data, v1_39_data):
                 # Confirm legacy pickled data *is* different.
                 self.assertNotEqual(legacy_data, current_data)

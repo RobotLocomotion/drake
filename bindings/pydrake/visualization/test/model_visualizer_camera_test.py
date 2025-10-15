@@ -31,21 +31,26 @@ class TestModelVisualizerCamera(unittest.TestCase):
         # Create a meshcat instance as if a browser had connected and sent its
         # camera pose.
         meshcat = Meshcat()
-        meshcat._InjectWebsocketMessage(message=umsgpack.packb({
-            "type": "camera_pose",
-            "camera_pose": [
-                1, 0, 0, 0,
-                0, 1, 0, 0,
-                0, 0, 1, 0,
-                1, 2, 3, 1,
-            ],
-            "is_perspective": True,
-        }))
+        meshcat._InjectWebsocketMessage(
+            message=umsgpack.packb(
+                {
+                    "type": "camera_pose",
+                    "camera_pose": [
+                        1, 0, 0, 0,
+                        0, 1, 0, 0,
+                        0, 0, 1, 0,
+                        1, 2, 3, 1,
+                    ],
+                    "is_perspective": True,
+                }
+            )
+        )  # fmt: skip
         # Transform y-up to z-up, and from facing in the +z direction to the -z
         # direction (with concomitant flip of the y-axis).
         X_WB_expected = RigidTransform(
             R=RotationMatrix(RollPitchYaw(np.pi / 2, np.pi, np.pi)),
-            p=[1.0, -3.0, 2.0])
+            p=[1.0, -3.0, 2.0],
+        )
 
         # N.B. We don't need perception geometry in the scene -- we'll rely on
         # the RgbdSensor unit tests to check that cameras work as advertised.
@@ -65,11 +70,12 @@ class TestModelVisualizerCamera(unittest.TestCase):
         # Confirm that the pose got updated properly. Updated pose is a proxy
         # for the full behavior in dut._render_if_necessary().
         camera_frame = dut._diagram.plant().GetFrameByName(
-            "$rgbd_sensor_offset")
+            "$rgbd_sensor_offset"
+        )
         X_WB = camera_frame.GetPoseInParentFrame(
-            dut._diagram.plant().GetMyContextFromRoot(
-                dut._context))
+            dut._diagram.plant().GetMyContextFromRoot(dut._context)
+        )
 
-        numpy_compare.assert_allclose(X_WB.GetAsMatrix34(),
-                                      X_WB_expected.GetAsMatrix34(),
-                                      atol=1e-15)
+        numpy_compare.assert_allclose(
+            X_WB.GetAsMatrix34(), X_WB_expected.GetAsMatrix34(), atol=1e-15
+        )
