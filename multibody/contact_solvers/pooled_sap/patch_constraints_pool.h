@@ -51,19 +51,6 @@ class PooledSapModel<T>::PatchConstraintsPool {
     clique_start_ = clique_start;
     clique_size_ = clique_size;
     Clear();
-
-    // We use this pool in CalcRegularizationOfFriction(), where we need space
-    // for two Jacobian matrices of size 6 x nv, with nv the number of
-    // velocities of a clique. Conservatively, request memory for all clique
-    // sizes, noting that cliques might be repeated.
-    // MatrixX_pool_.Resize(std::vector<int>(model().num_cliques(), 6),
-    //                      model().clique_sizes());
-    // MatrixX_pool_.Clear();
-    // for (int c = 0; c < model().num_cliques(); ++c) {
-    //   const int nv = model().clique_size(c);
-    //   MatrixX_pool_.Add(6, nv);
-    //   MatrixX_pool_.Add(6, nv);
-    // }
   }
 
   /* Resizes to store patch constraint data. No memory allocation performed if
