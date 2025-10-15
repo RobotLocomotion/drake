@@ -57,21 +57,28 @@ class PooledSapModel<T>::CouplerConstraintsPool {
     // TODO(amcastro-tri): Reserve capacity for all couplers in the model.
   }
 
+  void Resize(const int num_constraints) {
+    constraint_to_clique_.resize(num_constraints);
+    dofs_.resize(num_constraints);
+    gear_ratio_.resize(num_constraints);
+    v_hat_.resize(num_constraints);
+    R_.resize(num_constraints);
+  }
+
   /* Enforces the constraint g = qᵢ − ρqⱼ−Δq = 0, between the i-th and j-th DoFs
    of `clique`. */
-  int Add(int clique, int i, int j, const T& qi, const T& qj, T gear_ratio,
-          T offset) {
-    const int k = constraint_to_clique_.size();
-    constraint_to_clique_.push_back(clique);
-    dofs_.emplace_back(i, j);
-    gear_ratio_.push_back(gear_ratio);
+  void Add(int index, int clique, int i, int j, const T& qi, const T& qj,
+           T gear_ratio, T offset) {
+    constraint_to_clique_[index] = clique;
+    dofs_[index] = std::make_pair(i, j);
+    gear_ratio_[index] = gear_ratio;
 
     const T dt = model().time_step();
     const double beta = 0.1;
     const double eps = beta * beta / (4 * M_PI * M_PI) / (1 + beta / M_PI);
 
     const T g0 = qi - gear_ratio * qj - offset;
-    v_hat_.push_back(-g0 / (dt * (1.0 + beta / M_PI)));
+    v_hat_[index] = -g0 / (dt * (1.0 + beta / M_PI));
 
     const auto w_clique = model().get_clique_delassus(clique);
     // Approximation of W = Jᵀ⋅M⁻¹⋅J, with
@@ -80,9 +87,7 @@ class PooledSapModel<T>::CouplerConstraintsPool {
     //             i      j
     const T w = w_clique(i) + gear_ratio * gear_ratio * w_clique(j);
 
-    R_.push_back(eps * w);
-
-    return k;
+    R_[index] = eps * w;
   }
 
   T& regularization(int k) { return R_[k]; }

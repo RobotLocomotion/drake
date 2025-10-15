@@ -1,6 +1,7 @@
 #include <limits>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -45,7 +46,7 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
     A.template block<6, 6>(0, 0) = A1;
     A.template block<6, 6>(6, 6) = A2;
     A.template block<6, 6>(12, 12) = A3;
-    params->A.PushBack(A);
+    params->A.Add(nv, nv) = A;
   } else {
     params->A.Add(6, 6) = A1;
     params->A.Add(6, 6) = A2;
@@ -108,42 +109,48 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
 
   typename PooledSapModel<T>::PatchConstraintsPool& patches =
       model->patch_constraints_pool();
-  patches.Clear();
+
+  // Allocate space
+  std::vector<int> num_pairs_per_patch = {1, 1, 1};
+  patches.Resize(num_pairs_per_patch);
 
   // first patch
   {
     const Vector3<T> p_AB_W(0.1, 0.0, 0.0);
-    patches.AddPatch(1 /* body A */, 2 /* body B */, dissipation, friction,
-                     friction, p_AB_W);
+    patches.AddPatch(0 /* patch index */, 1 /* body A */, 2 /* body B */,
+                     dissipation, friction, friction, p_AB_W);
 
     const Vector3<T> nhat_AB_W(1.0, 0.0, 0.0);
     const Vector3<T> p_BC_W = -0.5 * p_AB_W;
     const T fn0 = 1.5;
-    patches.AddPair(p_BC_W, nhat_AB_W, fn0, stiffness);
+    patches.AddPair(0 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
+                    fn0, stiffness);
   }
 
   // Single clique patch.
   {
     const Vector3<T> p_AB_W(0.0, 0.05, 0.0);  // A = World.
-    patches.AddPatch(0 /* World */, 2 /* body B */, dissipation, friction,
-                     friction, p_AB_W);
+    patches.AddPatch(1 /* patch index */, 0 /* World */, 2 /* body B */,
+                     dissipation, friction, friction, p_AB_W);
 
     const Vector3<T> nhat_AB_W(0.0, 1.0, 0.0);
     const Vector3<T> p_BC_W(0.0, -0.05, 0.0);
     const T fn0 = 1.5;
-    patches.AddPair(p_BC_W, nhat_AB_W, fn0, stiffness);
+    patches.AddPair(1 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
+                    fn0, stiffness);
   }
 
   // Third patch
   {
     const Vector3<T> p_AB_W(-0.1, 0.0, 0.0);
-    patches.AddPatch(3 /* World */, 2 /* body B */, dissipation, friction,
-                     friction, p_AB_W);
+    patches.AddPatch(2 /* patch index */, 3 /* World */, 2 /* body B */,
+                     dissipation, friction, friction, p_AB_W);
 
     const Vector3<T> nhat_AB_W(-1.0, 0.0, 0.0);
     const Vector3<T> p_BC_W = -0.5 * p_AB_W;
     const T fn0 = 1.5;
-    patches.AddPair(p_BC_W, nhat_AB_W, fn0, stiffness);
+    patches.AddPair(2 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
+                    fn0, stiffness);
   }
 
   // Establish the sparsity pattern.
@@ -418,12 +425,17 @@ GTEST_TEST(PooledSapModel, GainConstraint) {
   // Add gain constraints.
   auto& gain_constraints = model.gain_constraints_pool();
 
+  // Allocate space for two gain constraints (on cliques 0 and 2).
+  const std::vector<int> actuated_clique_sizes = {model.clique_size(0),
+                                                  model.clique_size(2)};
+  gain_constraints.Resize(actuated_clique_sizes);
+
   // On clique 0:
   const int nv0 = model.clique_size(0);
   VectorX<AutoDiffXd> K0 = 1.1 * VectorX<AutoDiffXd>::Ones(nv0);
   VectorX<AutoDiffXd> u0 = -6.0 * VectorX<AutoDiffXd>::Ones(nv0);
   VectorX<AutoDiffXd> e0 = 0.9 * VectorX<AutoDiffXd>::Ones(nv0);
-  gain_constraints.Add(0, K0, u0, e0);
+  gain_constraints.Add(0, 0, K0, u0, e0);
 
   // On clique 2:
   const int nv2 = model.clique_size(2);
@@ -435,7 +447,7 @@ GTEST_TEST(PooledSapModel, GainConstraint) {
   u2(1) = -13.5;  // bias below limit.
   u2(2) = -5.5;   // bias within limits.
   u2(4) = 15.2;   // bias above limits.
-  gain_constraints.Add(2, K2, u2, e2);
+  gain_constraints.Add(1, 2, K2, u2, e2);
 
   EXPECT_EQ(model.num_gain_constraints(), 2);
   EXPECT_EQ(model.num_constraints(), 5);
@@ -554,27 +566,37 @@ GTEST_TEST(PooledSapModel, LimitConstraint) {
   // Add limit constraints.
   auto& limits = model.limit_constraints_pool();
 
+  // Cliques 0 and 2 will have limits. We'll resize the constraint pool
+  // accordingly before adding the limit constraints.
+  std::vector<int> limited_clique_sizes = {model.clique_size(0),
+                                           model.clique_size(2)};
+  std::vector<int> constraint_to_clique = {0, 2};
+  limits.Resize(limited_clique_sizes, constraint_to_clique);
+
+  EXPECT_EQ(model.num_limit_constraints(), 2);
+  EXPECT_EQ(model.num_constraints(), 5);
+
   const int nv = model.num_velocities();
   VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
 
   // Limits on clique 0.
-  int k = limits.Add(0 /* clique */, 1 /* dof */, q0(1), -0.5, 0.5);  // Below.
-  EXPECT_EQ(k, 0);  // First constraint on clique 0.
-  k = limits.Add(0 /* clique */, 4 /* dof */, q0(2), -1.5, -1.0);  // Above.
-  EXPECT_EQ(k, 0);  // Still the same clique, same constraint.
-  k = limits.Add(0 /* clique */, 3 /* dof */, q0(3), -1.0, 1.0);  // Within.
-  EXPECT_EQ(k, 0);  // Still the same clique, same constraint.
+  limits.Add(0 /* constraint */, 0 /* clique */, 1 /* dof */, q0(1), -0.5,
+             0.5);  // Below.
+  limits.Add(0 /* constraint */, 0 /* clique */, 4 /* dof */, q0(2), -1.5,
+             -1.0);  // Above.
+  limits.Add(0 /* constraint */, 0 /* clique */, 3 /* dof */, q0(3), -1.0,
+             1.0);  // Within.
 
-  EXPECT_EQ(model.num_limit_constraints(), 1);
-  EXPECT_EQ(model.num_constraints(), 4);
+  EXPECT_EQ(model.num_limit_constraints(), 2);
+  EXPECT_EQ(model.num_constraints(), 5);
 
   // Limits on clique 2.
-  k = limits.Add(2 /* clique */, 0 /* dof */, q0(12), 0.5, 1.5);  // Below.
-  EXPECT_EQ(k, 1);  // First constraint on clique 2.
-  k = limits.Add(2 /* clique */, 2 /* dof */, q0(14), -1.0, 0.5);  // Above.
-  EXPECT_EQ(k, 1);  // Still the same clique, same constraint.
-  k = limits.Add(2 /* clique */, 5 /* dof */, q0(17), 0.5, 1.5);  // Within.
-  EXPECT_EQ(k, 1);  // Still the same clique, same constraint.
+  limits.Add(1 /* constraint */, 2 /* clique */, 0 /* dof */, q0(12), 0.5,
+             1.5);  // Below.
+  limits.Add(1 /* constraint */, 2 /* clique */, 2 /* dof */, q0(14), -1.0,
+             0.5);  // Above.
+  limits.Add(1 /* constraint */, 2 /* clique */, 5 /* dof */, q0(17), 0.5,
+             1.5);  // Within.
 
   EXPECT_EQ(model.num_limit_constraints(), 2);
   EXPECT_EQ(model.num_constraints(), 5);
@@ -651,6 +673,7 @@ GTEST_TEST(PooledSapModel, CouplerConstraint) {
 
   // Add coupler constraints.
   auto& couplers = model.coupler_constraints_pool();
+  couplers.Resize(1 /* one constraint */);
 
   const int nv = model.num_velocities();
   VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
@@ -659,9 +682,8 @@ GTEST_TEST(PooledSapModel, CouplerConstraint) {
   const auto q0_c1 = model.clique_segment(1, q0);
   const double rho1 = 2.5;
   const double offset1 = 0.1;
-  int k = couplers.Add(1 /* clique */, 1 /* i */, 3 /* j */, q0_c1(1), q0_c1(3),
-                       rho1, offset1);
-  EXPECT_EQ(k, 0);
+  couplers.Add(0 /* constraint index */, 1 /* clique */, 1 /* i */, 3 /* j */,
+               q0_c1(1), q0_c1(3), rho1, offset1);
   EXPECT_EQ(model.num_coupler_constraints(), 1);
   EXPECT_EQ(model.num_constraints(), 4);
 

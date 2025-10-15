@@ -154,59 +154,6 @@ T CalcDiscreteHuntCrossleyDerivative(const T& dt, const T& vn, const T& fe0,
 }
 
 template <typename T>
-T PooledSapModel<T>::PatchConstraintsPool::CalcRegularizationOfFriction(
-    int p, const Vector3<T>& p_BoC_W) const {
-  MatrixX_pool_.Clear();
-
-  // Diagonal entry of the Delassus operator for this k-th pair.
-  Matrix3<T> Wkk = Matrix3<T>::Zero();
-
-  const int body_b = bodies_[p].first;
-  const int c_b = model().body_clique(body_b);
-  const int nv_b = model().clique_size(c_b);
-  const ConstJacobianView J_WB = model().get_jacobian(body_b);
-  const auto J_WBw = J_WB.template topRows<3>();
-  const auto J_WBv = J_WB.template bottomRows<3>();
-  auto J_Bk = MatrixX_pool_.Add(3, nv_b);
-  // N.B Eigen's .colwise().cross() dynamically allocates memory. Thus we use
-  // a regular for loop along the columns of J_WBw.
-  for (int i = 0; i < J_WBw.cols(); ++i) {
-    J_Bk.col(i) = J_WBv.col(i) + J_WBw.col(i).cross(p_BoC_W);
-  }
-
-  const auto& Ab = model().get_dynamics_matrix(c_b);
-  Wkk = J_Bk * Ab.diagonal().cwiseInverse().asDiagonal() * J_Bk.transpose();
-
-  const int num_cliques = num_cliques_[p];
-  if (num_cliques == 2) {
-    const int body_a = bodies_[p].second;
-    const int c_a = model().body_clique(body_a);
-    const int nv_a = model().clique_size(c_a);
-    const ConstJacobianView J_WA = model().get_jacobian(body_a);
-    const auto J_WAw = J_WA.template topRows<3>();
-    const auto J_WAv = J_WA.template bottomRows<3>();
-    const Vector3<T>& p_AB_W = p_AB_W_[p];
-    const Vector3<T> p_AoC_W = p_AB_W + p_BoC_W;
-    auto J_Ak = MatrixX_pool_.Add(3, nv_a);
-    for (int i = 0; i < J_WBw.cols(); ++i) {
-      J_Ak.col(i) = J_WAv.col(i) + J_WAw.col(i).cross(p_AoC_W);
-    }
-
-    const auto& Aa = model().get_dynamics_matrix(c_a);
-    Wkk += J_Ak * Aa.diagonal().cwiseInverse().asDiagonal() * J_Ak.transpose();
-  }
-
-  const Vector3<T> Wdiag = Wkk.diagonal();
-
-  // TODO(amcastro-tri): Consider splitting into normal and tangential
-  // components as done in SapHuntCrossleyConstraint.
-  const T w_rms = Wdiag.norm() / sqrt(3.0);
-  const T Rt = sigma_ * w_rms;  // SAP's regularization.
-
-  return Rt;
-}
-
-template <typename T>
 T PooledSapModel<T>::PatchConstraintsPool::CalcLaggedHuntCrossleyModel(
     int p, int k, const Vector3<T>& v_AcBc_W, Vector3<T>* gamma_Bc_W,
     Matrix3<T>* G) const {

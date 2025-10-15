@@ -552,8 +552,6 @@ T ConvexIntegrator<T>::SolveQuadraticInUnitInterval(const T& a, const T& b,
   // The solution must be in [0, 1], modulo some numerical slop.
   constexpr double slop = 1e-8;
   if (s < -slop || s > 1.0 + slop) {
-    fmt::print("a: {}, b: {}, c: {}\n", a, b, c);
-    fmt::print("s: {}\n", s);
     throw std::runtime_error(
         "ConvexIntegrator: quadratic root falls outside [0, 1].");
   }

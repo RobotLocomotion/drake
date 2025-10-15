@@ -269,18 +269,42 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
 
   // Add contact constraints. We'll need to clear the patch constraints pool
   // here to avoid conflicting hydro and point contact constraints.
-  model->patch_constraints_pool().Clear();
   if (!reuse_geometry_data) {
     CalcGeometryContactData(context);
   }
-  AddPatchConstraintsForHydroelasticContact(context, model);
+
+  AllocatePatchConstraints(model);
   AddPatchConstraintsForPointContact(context, model);
+  AddPatchConstraintsForHydroelasticContact(context, model);
 
   // Add other constraints to the problem
   AddCouplerConstraints(context, model);
   AddLimitConstraints(context, model);
 
   model->SetSparsityPattern();
+}
+
+template <typename T>
+void PooledSapBuilder<T>::AllocatePatchConstraints(
+    PooledSapModel<T>* model) const {
+  // N.B. This assumes that geometry info has already been computed and stored
+  // in scratch_.
+  DRAKE_ASSERT(model != nullptr);
+  typename PooledSapModel<T>::PatchConstraintsPool& patches =
+      model->patch_constraints_pool();
+
+  // First we'll get the number of contact pairs for point contact. There is one
+  // pair per contact patch with point contact.
+  const int num_point_contacts = scratch_.point_pairs.size();
+  std::vector<int> num_pairs_per_patch(num_point_contacts, 1);
+
+  // Now we'll do hydro contact. With hydro we typically have multiple contact
+  // pairs in each patch.
+  for (const auto& surface : scratch_.surfaces) {
+    num_pairs_per_patch.push_back(surface.num_faces());
+  }
+
+  patches.Resize(num_pairs_per_patch);
 }
 
 template <typename T>
@@ -296,8 +320,9 @@ void PooledSapBuilder<T>::AddCouplerConstraints(
 
   typename PooledSapModel<T>::CouplerConstraintsPool& couplers =
       model->coupler_constraints_pool();
-  couplers.Reset();
+  couplers.Resize(specs_map.size());
 
+  int index = 0;
   for (const auto& [id, spec] : specs_map) {
     const Joint<T>& joint0 = plant().get_joint(spec.joint0_index);
     const Joint<T>& joint1 = plant().get_joint(spec.joint1_index);
@@ -326,8 +351,9 @@ void PooledSapBuilder<T>::AddCouplerConstraints(
     const int tree_dof0 = dof0 - topology.tree_velocities_start_in_v(tree0);
     const int tree_dof1 = dof1 - topology.tree_velocities_start_in_v(tree1);
 
-    couplers.Add(clique0, tree_dof0, tree_dof1, q0, q1, spec.gear_ratio,
+    couplers.Add(index, clique0, tree_dof0, tree_dof1, q0, q1, spec.gear_ratio,
                  spec.offset);
+    ++index;
   }
 }
 
@@ -342,10 +368,38 @@ void PooledSapBuilder<T>::AddLimitConstraints(
 
   typename PooledSapModel<T>::LimitConstraintsPool& limits =
       model->limit_constraints_pool();
-
   limits.Reset();
-
   const std::vector<int>& tree_to_clique = model->params().tree_to_clique;
+
+  // Identify all cliques that have at least one 1-DoF joint with finite limits.
+  // TODO(vincekurtz): consider alternative/better data structures here
+  std::vector<int> clique_to_constraint(model->num_cliques(), -1);
+  std::vector<int> limited_clique_sizes(0);
+  std::vector<int> constraint_to_clique(0);
+  for (JointIndex joint_index : plant().GetJointIndices()) {
+    const Joint<T>& joint = plant().get_joint(joint_index);
+    bool is_one_dof =
+        (joint.num_positions() == 1 && joint.num_velocities() == 1);
+    bool has_finite_limits = (!isinf(joint.position_lower_limits()[0]) ||
+                              !isinf(joint.position_upper_limits()[0]));
+
+    if (is_one_dof && has_finite_limits) {
+      const TreeIndex tree_index =
+          topology.velocity_to_tree_index(joint.velocity_start());
+      const int clique = tree_to_clique[tree_index];
+      const int clique_nv = model->clique_size(clique);
+      limited_clique_sizes.push_back(clique_nv);
+      constraint_to_clique.push_back(clique);
+      if (clique_to_constraint[clique] < 0) {
+        clique_to_constraint[clique] = limited_clique_sizes.size() - 1;
+      }
+    }
+  }
+
+  // Allocate space for the limit constraints. When we do this allocation, all
+  // of the limits will be set to +/- infinity. We'll set the actual limits
+  // below.
+  limits.Resize(limited_clique_sizes, constraint_to_clique);
 
   for (JointIndex joint_index : plant().GetJointIndices()) {
     const Joint<T>& joint = plant().get_joint(joint_index);
@@ -367,7 +421,8 @@ void PooledSapBuilder<T>::AddLimitConstraints(
 
       if (!isinf(ql) || !isinf(qu)) {
         // Add constraint for this dof in clique.
-        limits.Add(clique, tree_dof, q0, ql, qu);
+        const int k = clique_to_constraint[clique];
+        limits.Add(k, clique, tree_dof, q0, ql, qu);
       }
     }
   }
@@ -449,9 +504,9 @@ void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
     const T fn0 = k * pp.depth;
 
     // For point contact we add single-pair patches.
-    patches.AddPatch(bodyA->index(), bodyB->index(), d, mu.static_friction(),
-                     mu.dynamic_friction(), p_AB_W);
-    patches.AddPair(p_BoC_W, nhat_AB_W, fn0, k);
+    patches.AddPatch(point_pair_index, bodyA->index(), bodyB->index(), d,
+                     mu.static_friction(), mu.dynamic_friction(), p_AB_W);
+    patches.AddPair(point_pair_index, 0, p_BoC_W, nhat_AB_W, fn0, k);
   }
 }
 
@@ -468,18 +523,16 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
   // properties.
   const double kDefaultDissipation = 50.0;
 
-  // Pre-allocate as needed. No allocation if size is not exceeded.
-  int num_pairs = 0;
-  for (const auto& s : surfaces) {
-    num_pairs += s.num_faces();
-  }
   const int num_surfaces = surfaces.size();
-  (void)num_pairs;
 
   typename PooledSapModel<T>::PatchConstraintsPool& patches =
       model->patch_constraints_pool();
 
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
+    // To get the patch index, we need to account for the fact that there may
+    // be some point contact pairs that get added before this
+    const int patch_index = surface_index + scratch_.point_pairs.size();
+
     const auto& s = surfaces[surface_index];
     const bool M_is_compliant = s.HasGradE_M();
     const bool N_is_compliant = s.HasGradE_N();
@@ -521,8 +574,8 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
     const Vector3<T>& p_WBo = X_WB.translation();
     const Vector3<T> p_AB_W = p_WBo - p_WAo;
 
-    patches.AddPatch(bodyA->index(), bodyB->index(), d, mu.static_friction(),
-                     mu.dynamic_friction(), p_AB_W);
+    patches.AddPatch(patch_index, bodyA->index(), bodyB->index(), d,
+                     mu.static_friction(), mu.dynamic_friction(), p_AB_W);
 
     for (int face = 0; face < s.num_faces(); ++face) {
       const T Ae = s.area(face);  // Face element area.
@@ -531,10 +584,15 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
                                   : std::numeric_limits<double>::infinity();
       const T gN = N_is_compliant ? -s.EvaluateGradE_N_W(face).dot(nhat_NM_W)
                                   : std::numeric_limits<double>::infinity();
-      constexpr double kGradientEpsilon = 1.0e-14;
-      if (gM < kGradientEpsilon || gN < kGradientEpsilon) {
-        continue;
-      }
+
+      // TODO(vincekurtz): add this check back, which eliminates hydro
+      // constraints with a very small contribution. For now it's just
+      // overcomplicating the logic of how many pairs to pre-allocate for each
+      // contact patch.
+      // constexpr double kGradientEpsilon = 1.0e-14;
+      // if (gM < kGradientEpsilon || gN < kGradientEpsilon) {
+      //   continue;
+      // }
       const T g = 1.0 / (1.0 / gM + 1.0 / gN);
       const Vector3<T>& p_WC = s.centroid(face);
       const Vector3<T> p_BoC_W = p_WC - p_WBo;
@@ -550,7 +608,8 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
 
       const T fn0 = Ae * p0;
       const T k = Ae * g;
-      patches.AddPair(p_BoC_W, nhat_AB_W, fn0, k);
+
+      patches.AddPair(patch_index, face, p_BoC_W, nhat_AB_W, fn0, k);
     }
   }
 }
@@ -570,6 +629,17 @@ void PooledSapBuilder<T>::AddActuationGains(const VectorX<T>& Ku,
 
   auto& gain_constraints = model->gain_constraints_pool();
 
+  // Allocate gain constraints for each clique with actuated DOFs.
+  // TODO(vincekurtz): consider a separate AllocateGainConstraints() method.
+  std::vector<int> actuated_clique_sizes(0);
+  for (int c = 0; c < model->num_cliques(); ++c) {
+    if (model->params().clique_nu[c] > 0) {
+      actuated_clique_sizes.push_back(model->clique_size(c));
+    }
+  }
+  gain_constraints.Resize(actuated_clique_sizes);
+
+  int i = 0;  // track actuated clique index.
   for (int c = 0; c < model->num_cliques(); ++c) {
     if (model->params().clique_nu[c] == 0) continue;
 
@@ -577,7 +647,8 @@ void PooledSapBuilder<T>::AddActuationGains(const VectorX<T>& Ku,
     const auto bu_c = model->clique_segment(c, bu);
     const auto e_c = model->clique_segment(c, model->params().effort_limits);
 
-    gain_constraints.Add(c, Ku_c, bu_c, e_c);
+    gain_constraints.Add(i, c, Ku_c, bu_c, e_c);
+    ++i;
   }
 }
 

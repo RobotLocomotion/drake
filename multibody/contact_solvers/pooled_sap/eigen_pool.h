@@ -56,15 +56,6 @@ struct DynamicSizeStorage {
 
   DynamicSizeStorage() = default;
 
-  /* Resizes pool to store VectorX elements of the specified sizes. */
-  void Resize(const std::vector<int>& sizes) {
-    static_assert(is_dynamic_size_vector_v<EigenType>);
-    Reserve(sizes);
-    for (int sz : sizes) {
-      Add(sz, 1);
-    }
-  }
-
   /* Reserves pool to store VectorX elements of the specified sizes. */
   void Reserve(const std::vector<int>& sizes) {
     static_assert(is_dynamic_size_vector_v<EigenType>);
@@ -74,6 +65,16 @@ struct DynamicSizeStorage {
     blocks_.reserve(ssize(sizes));
   }
 
+  /* Resizes pool to store VectorX elements of the specified sizes. */
+  void Resize(const std::vector<int>& sizes) {
+    static_assert(is_dynamic_size_vector_v<EigenType>);
+    Reserve(sizes);
+    for (int sz : sizes) {
+      Add(sz, 1);
+    }
+  }
+
+  /* Resizes pool to store MatrixX elements of the specified sizes. */
   void Resize(const std::vector<int>& rows, const std::vector<int>& cols) {
     static_assert(!is_fixed_size_v<EigenType>);
     DRAKE_ASSERT(rows.size() == cols.size());
@@ -101,8 +102,6 @@ struct DynamicSizeStorage {
     blocks_.clear();
   }
 
-  void PushBack(const EigenType& data) { AddAndCopy(data); }
-
   // Capcity to store Eigen elements.
   int elements_capacity() const { return blocks_.capacity(); }
 
@@ -117,12 +116,6 @@ struct DynamicSizeStorage {
     blocks_.push_back({next_data_index_, rows, cols});
     next_data_index_ += size;
     return at(index);
-  }
-
-  // Adds new element and copies `data` into it.
-  // @returns index to the new element.
-  ElementView AddAndCopy(const EigenType& data) {
-    return Add(data.rows(), data.cols()) = data;
   }
 
   void SetZero() {
@@ -180,14 +173,6 @@ struct FixedSizeStorage {
     data_.emplace_back();
     return at(index);
   }
-
-  // Adds new element and copies `data` into it.
-  // @returns index to the new element.
-  ElementView AddAndCopy(const EigenType& data) {
-    return Add(data.rows(), data.cols()) = data;
-  }
-
-  void PushBack(const EigenType& data) { data_.push_back(data); }
 
   void SetZero() {
     Eigen::Map<VectorX<Scalar>>(data_.data()->data(),
@@ -281,24 +266,8 @@ class EigenPool {
   /* Clears data. Capacity is not changed, and thus memory is not freed. */
   void Clear() { storage_.Clear(); }
 
-  void PushBack(const EigenType& data) { storage_.PushBack(data); }
-
   /* Adds element of the specified size and returns mutable to it. */
   ElementView Add(int rows, int cols) { return storage_.Add(rows, cols); }
-
-  /* Adds new element and copies `data` into it.
-   @returns mutable view to the new element. */
-  ElementView AddAndCopy(const EigenType& data) {
-    return storage_.AddAndCopy(data);
-  }
-
-  /* Sugar to add a data set into the pool. */
-  // TODO(amcastro-tri): Consider more efficient, all-at-once, allocation.
-  void PushBack(const std::vector<EigenType>& data) {
-    for (const auto& d : data) {
-      AddAndCopy(d);
-    }
-  }
 
   /* Zeroes out all elements in the pool. */
   void SetZero() { storage_.SetZero(); }
@@ -315,13 +284,13 @@ class EigenPool {
 
   /* Const access to the i-th element. */
   const ConstElementView operator[](int i) const {
-    DRAKE_ASSERT(0 <= i && i < size());
+    DRAKE_DEMAND(0 <= i && i < size());
     return storage_.at(i);
   }
 
   /* Non-const access to the i-th element. */
   ElementView operator[](int i) {
-    DRAKE_ASSERT(0 <= i && i < size());
+    DRAKE_DEMAND(0 <= i && i < size());
     return storage_.at(i);
   }
 

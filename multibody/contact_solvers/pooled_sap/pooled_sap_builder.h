@@ -65,6 +65,7 @@ class PooledSapBuilder {
   const MultibodyPlant<T>& plant() const { return *plant_; }
 
  private:
+  void AllocatePatchConstraints(PooledSapModel<T>* model) const;
   void CalcGeometryContactData(const systems::Context<T>& context) const;
   void AddPatchConstraintsForPointContact(const systems::Context<T>& context,
                                           PooledSapModel<T>* model) const;
