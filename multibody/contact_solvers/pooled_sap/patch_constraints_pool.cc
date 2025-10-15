@@ -449,19 +449,6 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateHessian(
     const int nv_b = model().clique_size(c_b);
     const int nv_a = model().clique_size(c_a);  // zero if anchored.
 
-    // Ensure MatrixX_pool has enough capacity so that there are no re-allocs
-    // that could invalidate the returned vector views.
-    if constexpr (!std::is_same_v<T, AutoDiffXd>) {
-      MatrixX_pool.Add(nv_b, nv_b);
-      MatrixX_pool.Add(6, nv_b);
-      if (nv_a > 0) {
-        MatrixX_pool.Add(nv_a, nv_a);
-        MatrixX_pool.Add(nv_a, nv_b);
-        MatrixX_pool.Add(nv_b, nv_a);
-        MatrixX_pool.Add(6, nv_a);
-      }
-    }
-
     // First clique, body B.
     DRAKE_ASSERT(!model().is_anchored(body_b));  // Body B is never anchored.
 
