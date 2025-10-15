@@ -407,41 +407,27 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateHessian(
   const PatchConstraintsDataPool<T>& patch_data =
       data.cache().patch_constraints_data;
 
-  // Make sure the scratch has enough storage before requesting more elements.
-  // N.B. ElementView's can be invalidating if adding new elements results in
-  // memory allocation.
+  // Conservatively allocate scratch space for intermediate matrices.
+  // TODO(vincekurtz): consider doing this earlier on, maybe at construction?
   data.scratch().Clear();
-  auto& MatrixX_pool = data.scratch().MatrixX_pool;
-  // Conservatively, request memory for all clique sizes, noting that cliques
-  // might be repeated.
-  for (int c = 0; c < model().num_cliques(); ++c) {
-    const int nv = model().clique_size(c);
-    MatrixX_pool.Add(6, nv);
-    MatrixX_pool.Add(6, nv);
-    MatrixX_pool.Add(nv, nv);  // For H_BB
-    MatrixX_pool.Add(nv, nv);  // For H_AA
-  }
+  auto& H_BB_pool = data.scratch().H_BB_pool;
+  auto& H_AA_pool = data.scratch().H_AA_pool;
+  auto& H_AB_pool = data.scratch().H_AB_pool;
+  auto& H_BA_pool = data.scratch().H_BA_pool;
+  auto& GJa_pool = data.scratch().GJa_pool;
+  auto& GJb_pool = data.scratch().GJb_pool;
 
-  // EigenPool and AutoDiffXd do not play well together.
-  // When T = AutoDiffXd this function simply allocates new memory, not from the
-  // pool. Otherwise it returns a new element into MatrixX_pool.
-  // TODO(amcastro-tri): Consider resolving EigenPool to a simple std::vector
-  // when the scalar type is AutoDiffXd.
-  auto GetMatrixXScratch = [&MatrixX_pool](int rows, int cols) {
-    if constexpr (std::is_same_v<T, AutoDiffXd>) {
-      unused(MatrixX_pool);
-      return MatrixX<T>(rows, cols);  // For AutoDiffXd always allocate memory.
-    } else {
-      return MatrixX_pool.Add(rows, cols);
-    }
-  };
+  const int nv = model().max_clique_size();
+  H_BB_pool.Resize({nv}, {nv});
+  H_AA_pool.Resize({nv}, {nv});
+  H_AB_pool.Resize({nv}, {nv});
+  H_BA_pool.Resize({nv}, {nv});
+  GJa_pool.Resize({6}, {nv});
+  GJb_pool.Resize({6}, {nv});
 
   const EigenPool<Matrix6<T>>& G_Bp_pool = patch_data.G_Bp_pool();
 
   for (int p = 0; p < num_patches(); ++p) {
-    // We'll work at most with two entries in the pool at a time.
-    MatrixX_pool.Clear();
-
     const int body_a = bodies_[p].second;
     const int body_b = bodies_[p].first;
     const int c_b = model().body_clique(body_b);
@@ -453,13 +439,16 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateHessian(
     DRAKE_ASSERT(!model().is_anchored(body_b));  // Body B is never anchored.
 
     // Accumulate Hessian.
-    auto H_BB = GetMatrixXScratch(nv_b, nv_b);
+    H_BB_pool.Resize({nv_b}, {nv_b});
+    auto H_BB = H_BB_pool[0];
+
     const Matrix6<T>& G_Bp = G_Bp_pool[p];
     const ConstJacobianView J_WB = model().get_jacobian(body_b);
     if (model().is_floating(body_b)) {
       H_BB.noalias() = G_Bp;
     } else {
-      auto GJb = GetMatrixXScratch(6, nv_b);
+      GJb_pool.Resize({6}, {nv_b});
+      auto GJb = GJb_pool[0];
       GJb.noalias() = G_Bp * J_WB;
       H_BB.noalias() = J_WB.transpose() * GJb;
     }
@@ -467,13 +456,15 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateHessian(
 
     // Second clique, for body A, only contributes if not anchored.
     if (!model().is_anchored(body_a)) {
-      auto GJa = GetMatrixXScratch(6, nv_a);
+      GJa_pool.Resize({6}, {nv_a});
+      auto GJa = GJa_pool[0];
 
       const Vector3<T>& p_AB_W = p_AB_W_[p];
       const ConstJacobianView J_WA = model().get_jacobian(body_a);
 
       // Accumulate (upper triangular) Hessian.
-      auto H_AA = GetMatrixXScratch(nv_a, nv_a);
+      H_AA_pool.Resize({nv_a}, {nv_a});
+      auto H_AA = H_AA_pool[0];
       const Matrix6<T> G_Phi = ShiftFromTheRight(G_Bp, p_AB_W);  // = Gₚ⋅Φ
       const Matrix6<T> G_Ap = ShiftFromTheLeft(G_Phi, p_AB_W);   // = Φᵀ⋅Gₚ⋅Φ
 
@@ -483,7 +474,8 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateHessian(
       // When c_a != c_b, we only write the lower triangular portion.
       // If c_a == c_b, we must compute both terms.
       GJa.noalias() = G_Phi * J_WA;
-      auto H_BA = GetMatrixXScratch(nv_b, nv_a);
+      H_BA_pool.Resize({nv_b}, {nv_a});
+      auto H_BA = H_BA_pool[0];
       if (model().is_floating(body_b)) {
         H_BA.noalias() = -GJa;
       } else {
@@ -495,7 +487,8 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateHessian(
       if (c_a > c_b) {
         // N.B. Doing:
         // AddToBlock(c_a, c_b, H_BA.transpose()) allocates temp memory!!!.
-        auto H_AB = GetMatrixXScratch(nv_a, nv_b);
+        H_AB_pool.Resize({nv_a}, {nv_b});
+        auto H_AB = H_AB_pool[0];
         H_AB = H_BA.transpose();
         hessian->AddToBlock(c_a, c_b, H_AB);
       }

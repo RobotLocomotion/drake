@@ -273,6 +273,10 @@ class PooledSapModel {
     return clique_sizes_;
   }
 
+  int max_clique_size() const {
+    return *std::max_element(clique_sizes_.begin(), clique_sizes_.end());
+  }
+
   /* Returns the total number of generalized velocities for this problem. */
   int num_velocities() const {
     DRAKE_ASSERT(params_ != nullptr);

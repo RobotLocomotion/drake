@@ -33,8 +33,8 @@ class PatchConstraintsDataPool {
     Resize(num_velocities, patch_size);
   }
 
-  /* @param patch_size Number of contact pairs for the k-th patch.
-     @param num_velocities Number of velocities for the k-th patch. */
+  /* @param num_velocities Number of velocities for overall problem.
+     @param patch_size Number of contact pairs for the k-th patch. */
   void Resize(int, const std::vector<int>& patch_size) {
     num_patches_ = ssize(patch_size);
     num_pairs_ = std::accumulate(patch_size.begin(), patch_size.end(), 0);
@@ -50,10 +50,10 @@ class PatchConstraintsDataPool {
 
   EigenPool<Matrix6<T>>& G_Bp_pool() { return G_Bp_pool_; }
   const EigenPool<Matrix6<T>>& G_Bp_pool() const { return G_Bp_pool_; }
-  const EigenPool<Vector3<T>>& v_AcBc_W_pool() const { return v_AcBc_W_; }
   EigenPool<Vector3<T>>& v_AcBc_W_pool() { return v_AcBc_W_; }
-  const EigenPool<Vector6<T>>& Gamma_Bo_W_pool() const { return Gamma_Bo_W_; }
+  const EigenPool<Vector3<T>>& v_AcBc_W_pool() const { return v_AcBc_W_; }
   EigenPool<Vector6<T>>& Gamma_Bo_W_pool() { return Gamma_Bo_W_; }
+  const EigenPool<Vector6<T>>& Gamma_Bo_W_pool() const { return Gamma_Bo_W_; }
 
   const T& cost() const { return cost_; }
   T& cost() { return cost_; }
@@ -71,7 +71,7 @@ class PatchConstraintsDataPool {
   EigenPool<Matrix6<T>> G_Bp_pool_;
   EigenPool<Vector6<T>> Gamma_Bo_W_;  // Spatial impulse on body B.
 
-  /* Data per patch and per pair. */
+  // Data per patch and per pair.
   EigenPool<Vector3<T>> v_AcBc_W_;  // Contact velocity.
 };
 

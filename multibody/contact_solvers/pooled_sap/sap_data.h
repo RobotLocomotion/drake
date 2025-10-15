@@ -74,12 +74,28 @@ class SapData {
     void Clear() {
       Vector6_pool.Clear();
       MatrixX_pool.Clear();
+      H_BB_pool.Clear();
+      H_AA_pool.Clear();
+      H_AB_pool.Clear();
+      H_BA_pool.Clear();
+      GJa_pool.Clear();
+      GJb_pool.Clear();
     }
     // Meant for velocity sized vectors that do not change size. Update to
     // EigenPool when AutoDiffXd is better supported.
     VectorX<T> v_pool;
     EigenPool<Vector6<T>> Vector6_pool;
     EigenPool<MatrixX<T>> MatrixX_pool;
+
+    // Data for Hessian accumulation. These pools will only ever hold one
+    // element, but using pools instead of a single MatrixX<T> allows us to
+    // avoid extra heap allocations, as their sizes change frequently.
+    EigenPool<MatrixX<T>> H_BB_pool;
+    EigenPool<MatrixX<T>> H_AA_pool;
+    EigenPool<MatrixX<T>> H_AB_pool;
+    EigenPool<MatrixX<T>> H_BA_pool;
+    EigenPool<Matrix6X<T>> GJa_pool;
+    EigenPool<Matrix6X<T>> GJb_pool;
   };
 
   /* Default constructor for empty data. */
