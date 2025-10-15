@@ -41,16 +41,19 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
   const Matrix6<T> A1 = 0.3 * Matrix6<T>::Identity();
   const Matrix6<T> A2 = 2.3 * Matrix6<T>::Identity();
   const Matrix6<T> A3 = 1.5 * Matrix6<T>::Identity();
+
   if (single_clique) {
+    params->A.Resize({nv}, {nv});
     MatrixX<T> A = MatrixX<T>::Identity(nv, nv);
     A.template block<6, 6>(0, 0) = A1;
     A.template block<6, 6>(6, 6) = A2;
     A.template block<6, 6>(12, 12) = A3;
-    params->A.Add(nv, nv) = A;
+    params->A[0] = A;
   } else {
-    params->A.Add(6, 6) = A1;
-    params->A.Add(6, 6) = A2;
-    params->A.Add(6, 6) = A3;
+    params->A.Resize({6, 6, 6}, {6, 6, 6});
+    params->A[0] = A1;
+    params->A[1] = A2;
+    params->A[2] = A3;
   }
   params->r = VectorX<T>::LinSpaced(nv, -0.5, 0.5);
 
@@ -67,22 +70,25 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
   const Matrix6<T> J_WB0 = VectorX<T>::LinSpaced(36, -1.0, 1.0).reshaped(6, 6);
   const Matrix6<T> J_WB1 = 1.5 * J_WB0 + 0.1 * Matrix6<T>::Identity();
   const Matrix6<T> J_WB2 = J_WB0.transpose();
-  params->J_WB.Add(6, 6) = Matrix6<T>::Identity();  // World.
 
   if (single_clique) {
-    auto J0 = params->J_WB.Add(6, 18);
+    params->J_WB.Resize({6, 6, 6, 6}, {6, 18, 18, 18});
+    params->J_WB[0] = Matrix6<T>::Identity();  // World.
+    auto J0 = params->J_WB[1];
     J0.setZero();
     J0.template block<6, 6>(0, 0) = J_WB0;
-    auto J1 = params->J_WB.Add(6, 18);
+    auto J1 = params->J_WB[2];
     J1.setZero();
     J1.template block<6, 6>(0, 6) = J_WB1;
-    auto J2 = params->J_WB.Add(6, 18);
+    auto J2 = params->J_WB[3];
     J2.setZero();
     J2.template block<6, 6>(0, 12) = J_WB2;
   } else {
-    params->J_WB.Add(6, 6) = J_WB0;
-    params->J_WB.Add(6, 6) = J_WB1;
-    params->J_WB.Add(6, 6) = J_WB2;
+    params->J_WB.Resize({6, 6, 6, 6}, {6, 6, 6, 6});
+    params->J_WB[0] = Matrix6<T>::Identity();  // World.
+    params->J_WB[1] = J_WB0;
+    params->J_WB[2] = J_WB1;
+    params->J_WB[3] = J_WB2;
   }
 
   // None of the bodies are marked as floating
