@@ -11,20 +11,20 @@ class TestMatplotlibUtil(unittest.TestCase):
     def test_plot_sublevelset_quadratic(self):
         fig, ax = plt.subplots()
 
-        A = np.diag([1., 2.])
-        b = [3., 4.]
-        c = -5.
+        A = np.diag([1.0, 2.0])
+        b = [3.0, 4.0]
+        c = -5.0
         vertices = 11
-        facecolor = (0., 0., 1., 1.)
-        polys = mut.plot_sublevelset_quadratic(ax=ax, A=A, b=b, c=c,
-                                               vertices=vertices,
-                                               facecolor=facecolor)
+        facecolor = (0.0, 0.0, 1.0, 1.0)
+        polys = mut.plot_sublevelset_quadratic(
+            ax=ax, A=A, b=b, c=c, vertices=vertices, facecolor=facecolor
+        )
         x = polys[0].get_xy()
-        self.assertEqual(np.size(x, 0), vertices+1)
+        self.assertEqual(np.size(x, 0), vertices + 1)
         for i in range(vertices):
             y = x[i, :]
             val = y.dot(A).dot(y) + y.dot(b) + c
-            np.testing.assert_almost_equal(val, 1.)
+            np.testing.assert_almost_equal(val, 1.0)
 
         self.assertEqual(polys[0].get_facecolor(), facecolor)
 
@@ -32,20 +32,21 @@ class TestMatplotlibUtil(unittest.TestCase):
         fig, ax = plt.subplots()
 
         x = np.array([Variable("x0"), Variable("x1")])
-        A = np.diag([1., 2.])
-        b = [3., 4.]
-        c = -5.
+        A = np.diag([1.0, 2.0])
+        b = [3.0, 4.0]
+        c = -5.0
         e = x.dot(A).dot(x) + x.dot(b) + c
         vertices = 11
-        facecolor = (0., 0., 1., 1.)
-        polys = mut.plot_sublevelset_expression(ax=ax, e=e, vertices=vertices,
-                                                facecolor=facecolor)
+        facecolor = (0.0, 0.0, 1.0, 1.0)
+        polys = mut.plot_sublevelset_expression(
+            ax=ax, e=e, vertices=vertices, facecolor=facecolor
+        )
         x = polys[0].get_xy()
-        self.assertEqual(np.size(x, 0), vertices+1)
+        self.assertEqual(np.size(x, 0), vertices + 1)
         for i in range(np.size(x, 0)):
             y = x[i, :]
             val = y.dot(A).dot(y) + y.dot(b) + c
-            np.testing.assert_almost_equal(val, 1.)
+            np.testing.assert_almost_equal(val, 1.0)
 
         self.assertEqual(polys[0].get_facecolor(), facecolor)
 
@@ -61,4 +62,4 @@ class TestMatplotlibUtil(unittest.TestCase):
         xys = polys[0].get_xy()
         for i in range(np.size(xys, 0)):
             env = {x[0]: xys[i, 0], x[1]: xys[i, 1]}
-            np.testing.assert_almost_equal(V.Evaluate(env), 1., 1e-5)
+            np.testing.assert_almost_equal(V.Evaluate(env), 1.0, 1e-5)

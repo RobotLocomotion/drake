@@ -94,8 +94,8 @@ class TestLcmImageArrayViewer(unittest.TestCase):
         np.testing.assert_equal(np_image_data[:, 0:image_width], 1)
         np.testing.assert_equal(np_image_data[:, -image_width:], 1)
         # Depth and label.
-        np_depth_data = np_image_data[:, image_width: image_width * 2]
-        np_label_data = np_image_data[:, image_width * 2: image_width * 3]
+        np_depth_data = np_image_data[:, image_width : image_width * 2]
+        np_label_data = np_image_data[:, image_width * 2 : image_width * 3]
         depth_pixel_values = set(np_depth_data.flatten())
         label_pixel_values = set(np_label_data.flatten())
         self.assertGreaterEqual(len(depth_pixel_values), 6)
@@ -132,7 +132,7 @@ class TestLcmImageArrayViewer(unittest.TestCase):
                 for c in range(cols):
                     expected_pixel_value = pixel_value_base + r * cols + c
                     sub_image = result[
-                        r * image_height: (r + 1) * image_height,
-                        c * image_width: (c + 1) * image_width,
+                        r * image_height : (r + 1) * image_height,
+                        c * image_width : (c + 1) * image_width,
                     ]
                     np.testing.assert_equal(sub_image, expected_pixel_value)

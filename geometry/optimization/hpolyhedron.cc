@@ -410,7 +410,7 @@ HPolyhedron::HPolyhedron(const MathematicalProgram& prog)
   VectorXd b_eigen(b.size());
   b_eigen = VectorXd::Map(b.data(), b.size());
 
-  *this = HPolyhedron(A_sparse.toDense()(rows_to_keep, Eigen::all),
+  *this = HPolyhedron(A_sparse.toDense()(rows_to_keep, eigen_all),
                       b_eigen(rows_to_keep));
 }
 

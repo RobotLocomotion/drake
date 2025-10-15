@@ -74,8 +74,13 @@ void LinearSystemSolver::DoSolve(const MathematicalProgram& prog,
   }
 
   // least-squares solution
-  const Eigen::VectorXd least_square_sol =
-      Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq);
+#if EIGEN_VERSION_AT_LEAST(5, 0, 0)
+  const auto svd =
+      Aeq.template jacobiSvd<Eigen::ComputeThinU | Eigen::ComputeThinV>();
+#else
+  const auto svd = Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV);
+#endif
+  const Eigen::VectorXd least_square_sol = svd.solve(beq);
 
   result->set_x_val(least_square_sol);
   if (beq.isApprox(Aeq * least_square_sol)) {
