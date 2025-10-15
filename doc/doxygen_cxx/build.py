@@ -7,6 +7,7 @@ from fnmatch import fnmatch
 from glob import glob
 import os
 from os.path import join, relpath
+from pathlib import Path
 import shutil
 import sys
 
@@ -110,6 +111,15 @@ def _generate_doxyfile(*, manifest, out_dir, temp_dir, dot):
     )
     assert os.path.exists(output_filename)
     return output_filename
+
+
+def _generate_system_doxygen_wrapper(*, temp_dir):
+    # This matches Doxyfile_CXX.
+    script = "drake/doc/doxygen_cxx/system_doxygen.py"
+    content = f'exec {sys.executable} {script} "$@"'
+    wrapper_path = f"{temp_dir}/system_doxygen.sh"
+    Path(wrapper_path).write_text(content, encoding="utf-8")
+    os.chmod(wrapper_path, 0o500)
 
 
 def _generate_doxygen_header(*, doxygen, temp_dir):
@@ -234,6 +244,7 @@ def _build(*, out_dir, temp_dir, modules, quick):
         temp_dir=temp_dir,
         dot=(dot if not quick else ""),
     )
+    _generate_system_doxygen_wrapper(temp_dir=temp_dir)
 
     # Prepare our input.
     symlink_input("drake/doc/doxygen_cxx/doxygen_input.txt", temp_dir)
