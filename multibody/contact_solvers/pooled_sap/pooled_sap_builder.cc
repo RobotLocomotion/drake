@@ -159,7 +159,21 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   // TODO(vincekurtz): consider reusing mass matrix as well. Note that
   // A = M + hD includes the time step, so M would need to be stored separately.
   if (!reuse_geometry_data) {
-    params->J_WB.Clear();
+    // Get sizes of each body's Jacobian.
+    const std::vector<int> body_jacobian_rows(plant().num_bodies(), 6);
+    std::vector<int> body_jacobian_cols(0);
+    for (int b = 0; b < plant().num_bodies(); ++b) {
+      const auto& body = plant().get_body(BodyIndex(b));
+      if (plant().IsAnchored(body)) {
+        body_jacobian_cols.push_back(1);  // dummy column.
+      } else {
+        const TreeIndex t = topology.body_to_tree_index(BodyIndex(b));
+        const int nt = topology.num_tree_velocities(t);
+        body_jacobian_cols.push_back(nt);
+      }
+    }
+    params->J_WB.Resize(body_jacobian_rows, body_jacobian_cols);
+
     params->body_cliques.resize(plant().num_bodies());
     params->body_mass.resize(plant().num_bodies());
     params->body_is_floating.resize(plant().num_bodies());
@@ -196,10 +210,6 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
 
       if (plant().IsAnchored(body)) {
         params->body_cliques[b] = -1;  // mark as anchored.
-        // Empty Jacobian.
-        // N.B. Eigen does not like 0-sized matrices. Thus we push a dummy
-        // one-column Jacobian.
-        params->J_WB.Add(6, 1);
       } else {
         const TreeIndex t = topology.body_to_tree_index(BodyIndex(b));
         const int clique = tree_clique[t];
@@ -211,8 +221,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
         const int nt = topology.num_tree_velocities(t);
 
         params->body_cliques[b] = clique;
-        typename EigenPool<Matrix6X<T>>::ElementView Jv_WBc_W =
-            params->J_WB.Add(6, nt);
+        typename EigenPool<Matrix6X<T>>::ElementView Jv_WBc_W = params->J_WB[b];
         if (body.is_floating_base_body()) {
           Jv_WBc_W.setIdentity();
         } else {
