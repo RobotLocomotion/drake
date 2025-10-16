@@ -26,7 +26,9 @@ GTEST_TEST(EigenPoolTest, ResizeForFixedSizedElements) {
   EigenPool<Matrix3d> pool;
   EXPECT_EQ(pool.size(), 0);
 
-  pool.Reserve(10);
+  // Reserve some memory by resizing, then clearing
+  pool.Resize(10);
+  pool.Clear();
   EXPECT_EQ(pool.size(), 0);
 
   // We already reserved.
