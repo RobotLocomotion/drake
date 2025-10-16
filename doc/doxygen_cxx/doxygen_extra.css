@@ -1106,16 +1106,18 @@ footer.site-footer>div.contain {
   text-shadow: none;
 }
 
-.arrow {
-  color: var(--primary);
+span.arrowhead {
+  border-right-color: var(--primary);
+  border-bottom-color: var(--primary);
 }
 
 #nav-tree .selected {
   background: var(--primary);
 }
 
-#nav-tree .selected .arrow {
-  color: white;
+#nav-tree .selected span.arrowhead {
+  border-right-color: white;
+  border-bottom-color: white;
 }
 
 #nav-tree .selected .label, #nav-tree .selected .label a {
