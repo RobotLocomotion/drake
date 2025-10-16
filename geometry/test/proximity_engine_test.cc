@@ -5198,10 +5198,9 @@ GTEST_TEST(ProximityEngineTests, ImplementedAsFclConvex) {
   }
 }
 
-// TODO(vincekurtz): re-enable this test and figure out how to handle openmp
+// TODO(CENIC): re-enable this test and figure out how to handle openmp
 // parallelism (omp parallel for)
-/*
-GTEST_TEST(ProximityEngineTest, ThrowForStrictRejectedContacts) {
+GTEST_TEST(ProximityEngineTest_DISABLED, ThrowForStrictRejectedContacts) {
   using enum HydroelasticType;
   using enum HydroelasticContactRepresentation;
   const bool anchored{true};
@@ -5257,7 +5256,6 @@ GTEST_TEST(ProximityEngineTest, ThrowForStrictRejectedContacts) {
                                 "Requested contact between two half spaces .+");
   }
 }
-*/
 
 }  // namespace
 }  // namespace internal

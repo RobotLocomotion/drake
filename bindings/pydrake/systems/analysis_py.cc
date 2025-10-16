@@ -340,8 +340,7 @@ PYBIND11_MODULE(analysis, m) {
             &ConvexIntegrator<T>::set_solver_parameters, py::arg("parameters"),
             doc.ConvexIntegrator.set_solver_parameters.doc);
 
-    // See equivalent note about EventCallback in
-    // `framework_py_systems.cc`.
+    // See equivalent note about EventCallback in `framework_py_systems.cc`.
     using MonitorCallback =
         std::function<std::optional<EventStatus>(const Context<T>&)>;
 
@@ -397,8 +396,8 @@ a Context object among Simulators will likely lead to incorrect results.
               return self->AdvanceTo(boundary_time);
             },
             py::arg("boundary_time"), py::arg("interruptible") = true,
-            // This is a long-running function that might sleep; for
-            // both reasons, we must release the GIL.
+            // This is a long-running function that might sleep; for both
+            // reasons, we must release the GIL.
             py::call_guard<py::gil_scoped_release>(),
             // Amend the docstring with the additional parameter.
             []() {

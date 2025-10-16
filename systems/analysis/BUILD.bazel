@@ -542,24 +542,28 @@ drake_cc_googletest(
     ],
 )
 
-# drake_cc_googletest(
-#     name = "simulator_test",
-#     deps = [
-#         ":explicit_euler_integrator",
-#         ":implicit_euler_integrator",
-#         ":runge_kutta3_integrator",
-#         ":simulator",
-#         "//common/test_utilities:expect_throws_message",
-#         "//common/test_utilities:is_dynamic_castable",
-#         "//systems/analysis/test_utilities:controlled_spring_mass_system",
-#         "//systems/analysis/test_utilities:logistic_system",
-#         "//systems/analysis/test_utilities:my_spring_mass_system",
-#         "//systems/analysis/test_utilities:stateless_system",
-#         "//systems/primitives:constant_vector_source",
-#         "//systems/primitives:integrator",
-#         "//systems/primitives:vector_log_sink",
-#     ],
-# )
+drake_cc_googletest(
+    name = "simulator_test",
+    tags = [
+        # TODO(CENIC) Re-enable this test.
+        "manual",
+    ],
+    deps = [
+        ":explicit_euler_integrator",
+        ":implicit_euler_integrator",
+        ":runge_kutta3_integrator",
+        ":simulator",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:is_dynamic_castable",
+        "//systems/analysis/test_utilities:controlled_spring_mass_system",
+        "//systems/analysis/test_utilities:logistic_system",
+        "//systems/analysis/test_utilities:my_spring_mass_system",
+        "//systems/analysis/test_utilities:stateless_system",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:integrator",
+        "//systems/primitives:vector_log_sink",
+    ],
+)
 
 drake_cc_googletest(
     name = "simulator_limit_malloc_test",
@@ -610,15 +614,19 @@ drake_cc_binary(
     ],
 )
 
-# drake_py_unittest(
-#     name = "simulator_gflags_test",
-#     data = [
-#         ":simulator_gflags_main",
-#     ],
-#     deps = [
-#         "@rules_python//python/runfiles",
-#     ],
-# )
+drake_py_unittest(
+    name = "simulator_gflags_test",
+    data = [
+        ":simulator_gflags_main",
+    ],
+    tags = [
+        # TODO(CENIC) Re-enable this test.
+        "manual",
+    ],
+    deps = [
+        "@rules_python//python/runfiles",
+    ],
+)
 
 drake_cc_googletest(
     name = "batch_eval_test",
@@ -633,19 +641,23 @@ drake_cc_googletest(
     ],
 )
 
-# drake_cc_googletest(
-#     name = "bogacki_shampine3_integrator_test",
-#    # If necessary, increase test timeout to 'moderate' when run with Valgrind
-#    # and/or disable in debug mode.
-#     deps = [
-#         ":bogacki_shampine3_integrator",
-#         ":runge_kutta2_integrator",
-#         "//common/test_utilities:eigen_matrix_compare",
-#         "//math:geometric_transform",
-#         "//multibody/plant",
-#         "//systems/analysis/test_utilities",
-#     ],
-# )
+drake_cc_googletest(
+    name = "bogacki_shampine3_integrator_test",
+    tags = [
+        # TODO(CENIC) Re-enable this test.
+        "manual",
+    ],
+    # If necessary, increase test timeout to 'moderate' when run with Valgrind
+    # and/or disable in debug mode.
+    deps = [
+        ":bogacki_shampine3_integrator",
+        ":runge_kutta2_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//systems/analysis/test_utilities",
+    ],
+)
 
 drake_cc_googletest(
     name = "convex_integrator_test",
@@ -705,32 +717,38 @@ drake_cc_googletest(
     ],
 )
 
-# drake_cc_googletest(
-#     name = "rosenbrock2_integrator_test",
-#     deps = [
-#         ":rosenbrock2_integrator",
-#         "//common/test_utilities:eigen_matrix_compare",
-#         "//systems/analysis/test_utilities",
-#     ],
-# )
+drake_cc_googletest(
+    name = "rosenbrock2_integrator_test",
+    tags = [
+        # TODO(CENIC) Re-enable this test.
+        "manual",
+    ],
+    deps = [
+        ":rosenbrock2_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/analysis/test_utilities",
+    ],
+)
 
-# drake_cc_googletest(
-#     name = "implicit_euler_integrator_test",
-#     timeout = "moderate",
-#     shard_count = 2,
-#     # Adding cache invalidation made this take too long with Valgrind.
-#     # See Drake issue #9261.
-#     tags = [
-#         "no_memcheck",
-#     ],
-#     deps = [
-#         ":implicit_euler_integrator",
-#         "//common/test_utilities:expect_throws_message",
-#         "//systems/analysis/test_utilities:implicit_integrator_test",
-#         "//systems/analysis/test_utilities:quadratic_scalar_system",
-#         "//systems/analysis/test_utilities:spring_mass_system",
-#     ],
-# )
+drake_cc_googletest(
+    name = "implicit_euler_integrator_test",
+    timeout = "moderate",
+    shard_count = 2,
+    # Adding cache invalidation made this take too long with Valgrind.
+    # See Drake issue #9261.
+    tags = [
+        "no_memcheck",
+        # TODO(CENIC) Re-enable this test.
+        "manual",
+    ],
+    deps = [
+        ":implicit_euler_integrator",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/analysis/test_utilities:implicit_integrator_test",
+        "//systems/analysis/test_utilities:quadratic_scalar_system",
+        "//systems/analysis/test_utilities:spring_mass_system",
+    ],
+)
 
 drake_cc_googletest(
     name = "implicit_integrator_test",
@@ -743,17 +761,21 @@ drake_cc_googletest(
     ],
 )
 
-# drake_cc_googletest(
-#     name = "integrator_base_test",
-#     deps = [
-#         ":integrator_base",
-#         ":simulator_config_functions",
-#         "//common/test_utilities:eigen_matrix_compare",
-#         "//common/test_utilities:expect_throws_message",
-#         "//systems/analysis/test_utilities:spring_mass_system",
-#         "//systems/primitives:linear_system",
-#     ],
-# )
+drake_cc_googletest(
+    name = "integrator_base_test",
+    tags = [
+        # TODO(CENIC) Re-enable this test.
+        "manual",
+    ],
+    deps = [
+        ":integrator_base",
+        ":simulator_config_functions",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/analysis/test_utilities:spring_mass_system",
+        "//systems/primitives:linear_system",
+    ],
+)
 
 drake_cc_googletest(
     name = "realtime_rate_calculator_test",
@@ -762,22 +784,26 @@ drake_cc_googletest(
     ],
 )
 
-# drake_cc_googletest(
-#     name = "radau_integrator_test",
-#     # Note: if memcheck takes too long with Valgrind, disable
-#     # memcheck (per Drake issue #9621).
-#     timeout = "moderate",
-#     shard_count = 2,
-#     deps = [
-#         ":implicit_euler_integrator",
-#         ":radau_integrator",
-#         "//systems/analysis/test_utilities:cubic_scalar_system",
-#         "//systems/analysis/test_utilities:implicit_integrator_test",
-#         "//systems/analysis/test_utilities:linear_scalar_system",
-#         "//systems/analysis/test_utilities:quadratic_scalar_system",
-#         "//systems/analysis/test_utilities:spring_mass_system",
-#     ],
-# )
+drake_cc_googletest(
+    name = "radau_integrator_test",
+    # Note: if memcheck takes too long with Valgrind, disable
+    # memcheck (per Drake issue #9621).
+    timeout = "moderate",
+    shard_count = 2,
+    tags = [
+        # TODO(CENIC) Re-enable this test.
+        "manual",
+    ],
+    deps = [
+        ":implicit_euler_integrator",
+        ":radau_integrator",
+        "//systems/analysis/test_utilities:cubic_scalar_system",
+        "//systems/analysis/test_utilities:implicit_integrator_test",
+        "//systems/analysis/test_utilities:linear_scalar_system",
+        "//systems/analysis/test_utilities:quadratic_scalar_system",
+        "//systems/analysis/test_utilities:spring_mass_system",
+    ],
+)
 
 drake_cc_googletest(
     name = "lyapunov_test",
@@ -821,35 +847,43 @@ drake_cc_googletest(
     ],
 )
 
-# drake_cc_googletest(
-#     name = "runge_kutta3_integrator_test",
-#     # Test timeout increased to not timeout when run with Valgrind.
-#     timeout = "moderate",
-#     # This test is prohibitively slow with --compilation_mode=dbg.
-#     disable_in_compilation_mode_dbg = True,
-#     deps = [
-#         ":runge_kutta3_integrator",
-#         "//common/test_utilities:eigen_matrix_compare",
-#         "//math:geometric_transform",
-#         "//multibody/plant",
-#         "//systems/analysis/test_utilities",
-#     ],
-# )
+drake_cc_googletest(
+    name = "runge_kutta3_integrator_test",
+    # Test timeout increased to not timeout when run with Valgrind.
+    timeout = "moderate",
+    # This test is prohibitively slow with --compilation_mode=dbg.
+    disable_in_compilation_mode_dbg = True,
+    tags = [
+        # TODO(CENIC) Re-enable this test.
+        "manual",
+    ],
+    deps = [
+        ":runge_kutta3_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//systems/analysis/test_utilities",
+    ],
+)
 
-# drake_cc_googletest(
-#     name = "runge_kutta5_integrator_test",
-#     # Test timeout increased to not timeout when run with Valgrind.
-#     timeout = "moderate",
-#     # This test is prohibitively slow with --compilation_mode=dbg.
-#     disable_in_compilation_mode_dbg = True,
-#     deps = [
-#         ":runge_kutta5_integrator",
-#         "//common/test_utilities:eigen_matrix_compare",
-#         "//math:geometric_transform",
-#         "//multibody/plant",
-#         "//systems/analysis/test_utilities",
-#     ],
-# )
+drake_cc_googletest(
+    name = "runge_kutta5_integrator_test",
+    # Test timeout increased to not timeout when run with Valgrind.
+    timeout = "moderate",
+    # This test is prohibitively slow with --compilation_mode=dbg.
+    disable_in_compilation_mode_dbg = True,
+    tags = [
+        # TODO(CENIC) Re-enable this test.
+        "manual",
+    ],
+    deps = [
+        ":runge_kutta5_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//systems/analysis/test_utilities",
+    ],
+)
 
 drake_cc_googletest(
     name = "semi_explicit_euler_integrator_test",
@@ -862,47 +896,63 @@ drake_cc_googletest(
     ],
 )
 
-# drake_cc_googletest(
-#     name = "velocity_implicit_euler_integrator_test",
-#     # Note: if memcheck takes too long with Valgrind, disable
-#     # memcheck (per Drake issue #9621).
-#     timeout = "moderate",
-#     shard_count = 2,
-#     deps = [
-#         ":velocity_implicit_euler_integrator",
-#         "//systems/analysis/test_utilities:implicit_integrator_test",
-#         "//systems/analysis/test_utilities:quadratic_scalar_system",
-#     ],
-# )
+drake_cc_googletest(
+    name = "velocity_implicit_euler_integrator_test",
+    # Note: if memcheck takes too long with Valgrind, disable
+    # memcheck (per Drake issue #9621).
+    timeout = "moderate",
+    shard_count = 2,
+    tags = [
+        # TODO(CENIC) Re-enable this test.
+        "manual",
+    ],
+    deps = [
+        ":velocity_implicit_euler_integrator",
+        "//systems/analysis/test_utilities:implicit_integrator_test",
+        "//systems/analysis/test_utilities:quadratic_scalar_system",
+    ],
+)
 
-# drake_cc_googletest(
-#     name = "initial_value_problem_test",
-#     timeout = "moderate",
-#     deps = [
-#         ":initial_value_problem",
-#         ":runge_kutta2_integrator",
-#         "//common/test_utilities:eigen_matrix_compare",
-#         "//common/test_utilities:expect_throws_message",
-#     ],
-# )
+drake_cc_googletest(
+    name = "initial_value_problem_test",
+    timeout = "moderate",
+    tags = [
+        # TODO(CENIC) Re-enable this test.
+        "manual",
+    ],
+    deps = [
+        ":initial_value_problem",
+        ":runge_kutta2_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
 
-# drake_cc_googletest(
-#     name = "scalar_initial_value_problem_test",
-#     deps = [
-#         ":runge_kutta2_integrator",
-#         ":scalar_initial_value_problem",
-#         "//common/test_utilities:expect_throws_message",
-#     ],
-# )
+drake_cc_googletest(
+    name = "scalar_initial_value_problem_test",
+    tags = [
+        # TODO(CENIC) Re-enable this test.
+        "manual",
+    ],
+    deps = [
+        ":runge_kutta2_integrator",
+        ":scalar_initial_value_problem",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
 
-# drake_cc_googletest(
-#     name = "antiderivative_function_test",
-#     deps = [
-#         ":antiderivative_function",
-#         ":runge_kutta2_integrator",
-#         "//common/test_utilities:expect_throws_message",
-#     ],
-# )
+drake_cc_googletest(
+    name = "antiderivative_function_test",
+    tags = [
+        # TODO(CENIC) Re-enable this test.
+        "manual",
+    ],
+    deps = [
+        ":antiderivative_function",
+        ":runge_kutta2_integrator",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
 
 drake_cc_googletest(
     name = "hermitian_dense_output_test",
