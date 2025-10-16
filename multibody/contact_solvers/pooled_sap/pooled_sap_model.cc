@@ -38,11 +38,6 @@ Eigen::VectorBlock<VectorX<T>> PooledSapModel<T>::clique_segment(
   return x->segment(clique_start_[clique], clique_sizes_[clique]);
 }
 
-/* A⋅v = r + Jᵀ⋅γ,
- which corresponds to the convex cost:
-    ℓ(v) = 1/2‖v‖²−r⋅v + ℓ(vc).
-*/
-
 template <typename T>
 void PooledSapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
                                                  VectorX<T>* result) const {
@@ -51,9 +46,7 @@ void PooledSapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
   DRAKE_ASSERT(result->size() == num_velocities());
 
   const auto& A = params().A;
-  result->setZero();
   for (int c = 0; c < A.size(); ++c) {
-    // Compute A*v
     ConstMatrixXView<T> A_clique = A[c];
     const int start = clique_start_[c];
     const int nv = clique_sizes_[c];
@@ -63,9 +56,6 @@ void PooledSapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
   }
 }
 
-/* Computes:
-  - Av
-  - momentum_cost */
 template <typename T>
 void PooledSapModel<T>::CalcMomentumTerms(
     const PooledSapData<T>& data,
@@ -117,24 +107,31 @@ void PooledSapModel<T>::CalcBodySpatialVelocities(
 template <typename T>
 void PooledSapModel<T>::CalcData(const VectorX<T>& v,
                                  PooledSapData<T>* data) const {
+  // Set generalized velocities v
   data->v() = v;
+
+  // Set momentum cost (1/2 v'Av - r'v) and gradient (Av - r).
   typename PooledSapData<T>::Cache& cache = data->cache();
   CalcMomentumTerms(*data, &cache);
+
+  // Compute spatial velocities for all bodies.
   CalcBodySpatialVelocities(v, &cache.spatial_velocities);
+
+  // Compute constraint data.
+  // TODO(CENIC): factor out common functionality into a ConstraintsPool class.
   coupler_constraints_pool_.CalcData(v, &cache.coupler_constraints_data);
   gain_constraints_pool_.CalcData(v, &cache.gain_constraints_data);
   limit_constraints_pool_.CalcData(v, &cache.limit_constraints_data);
   patch_constraints_pool_.CalcData(cache.spatial_velocities,
                                    &cache.patch_constraints_data);
 
-  // Include patch constraints contributions.
-  // TODO(amcastro-tri): factor out this function into a ConstraintPool class,
-  // along with clique data size and other common per-pool functionality.
+  // Accumulate gradient contributions from constraints.
   coupler_constraints_pool_.AccumulateGradient(*data, &cache.gradient);
   gain_constraints_pool_.AccumulateGradient(*data, &cache.gradient);
   limit_constraints_pool_.AccumulateGradient(*data, &cache.gradient);
   patch_constraints_pool_.AccumulateGradient(*data, &cache.gradient);
 
+  // Accumulate cost contributions from constraints.
   cache.cost = cache.momentum_cost;
   cache.cost += cache.coupler_constraints_data.cost();
   cache.cost += cache.gain_constraints_data.cost();
@@ -157,7 +154,7 @@ void PooledSapModel<T>::UpdateHessian(
     internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
   hessian->SetZero();
 
-  // Initialize hessian = diag(A).
+  // Initialize hessian = A (block diagonal).
   const auto& A = params().A;
   for (int c = 0; c < A.size(); ++c) {
     ConstMatrixXView<T> A_clique = A[c];
@@ -176,15 +173,15 @@ void PooledSapModel<T>::SetSparsityPattern() {
   std::vector<int> block_sizes = clique_sizes_;
   const int num_nodes = block_sizes.size();
 
-  /* Build diagonal entry in sparsity pattern. */
+  // Build diagonal entries in the sparsity pattern.
   std::vector<std::vector<int>> sparsity(num_nodes);
   for (int i = 0; i < num_nodes; ++i) {
     sparsity[i].emplace_back(i);
   }
 
-  /* Build off-diagonal entry in sparsity pattern. */
-  // TODO(amcastro-tri): Make parent ConstraintsPool for all constraints pool
-  // types.
+  // Build off-diagonal entries in the sparsity pattern.
+  // TODO(CENIC): account for other constraints that may change the sparsity
+  // pattern.
   patch_constraints_pool_.CalcSparsityPattern(&sparsity);
 
   sparsity_pattern_ = std::make_unique<internal::BlockSparsityPattern>(
