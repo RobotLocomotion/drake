@@ -359,7 +359,7 @@ class ParticleSorter {
    indices. */
   void UnpackResults();
 
-  /* Helper for `Sort`()` that builds `colored_ranges_`. */
+  /* Helper for `Sort()` that builds `colored_ranges_`. */
   template <typename SpGrid>
   void BuildColoredRanges(const SpGrid& spgrid, int num_particles) {
     /* Keep track of where each new "page" begins. */
