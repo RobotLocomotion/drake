@@ -146,18 +146,23 @@ class _Generic:
         return f"<Generic {self._name}>"
 
 
-def _dict_instantiator(params):
-    return dict[params]
+def _dict_instantiator(params: tuple):
+    (param_key, param_value) = params
+    return dict[param_key, param_value]
 
 
-def _list_instantiator(params):
-    return list[params]
+def _list_instantiator(params: tuple):
+    (param,) = params
+    return list[param]
 
 
-def _optional_instantiator(params):
-    # Unpack the tuple into the (single) argument required by typing.Optional.
+def _optional_instantiator(params: tuple):
     (param,) = params
     return typing.Optional[param]
+
+
+def _union_instantiator(params: tuple):
+    return typing.Union[params]
 
 
 # A generic type `dict[KT, VT]` for the C++ class std::map<KT, VT>.
@@ -171,4 +176,4 @@ List = _Generic("List", _list_instantiator, 1)
 Optional = _Generic("Optional", _optional_instantiator, 1)
 
 # A generic type `typing.Union[X, ...]` for the C++ class std::variant<X, ...>.
-Union = _Generic("Union", typing.Union.__getitem__, None)
+Union = _Generic("Union", _union_instantiator, None)
