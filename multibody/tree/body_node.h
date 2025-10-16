@@ -216,7 +216,7 @@ class BodyNode : public MultibodyElement<T> {
       PositionKinematicsCache<T>* pc) const = 0;
 
   // Calculates the hinge matrix H_PB_W, the `6 x nm` hinge matrix that relates
-  // V_PB_W`(body B's spatial velocity in its parent body P, expressed in world
+  // `V_PB_W`(body B's spatial velocity in its parent body P, expressed in world
   // W) to this node's nm generalized velocities (or mobilities) v_B as
   // V_PB_W = H_PB_W * v_B.
   //
@@ -482,7 +482,7 @@ class BodyNode : public MultibodyElement<T> {
   // @param[out] aba_force_cache
   //   A pointer to a valid, non nullptr, force bias cache.
   //
-  // @pre pc, vc, and abic previously computed to be in sync with `context.
+  // @pre pc, vc, and abic previously computed to be in sync with `context`.
   // @pre CalcArticulatedBodyForceCache_TipToBase() must have already been
   // called for all the child nodes of `this` node (and, by recursive
   // precondition, all successor nodes in the tree.)
@@ -529,7 +529,7 @@ class BodyNode : public MultibodyElement<T> {
   // @param[out] ac
   //   A pointer to a valid, non nullptr, acceleration kinematics cache.
   //
-  // @pre pc, vc, and abic previously computed to be in sync with `context.
+  // @pre pc, vc, and abic previously computed to be in sync with `context`.
   // @pre CalcArticulatedBodyAccelerations_BaseToTip() must have already been
   // called for the parent node (and, by recursive precondition, all
   // predecessor nodes in the tree.)

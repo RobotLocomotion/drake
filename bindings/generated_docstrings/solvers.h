@@ -3709,7 +3709,7 @@ available, throws a RuntimeError.)""";
 R"""(Converts an input of type ``F`` to a nonlinear cost.
 
 Template parameter ``FF``:
-    The forwarded function type (e.g., ``const F&, `F&&``, ...). The
+    The forwarded function type (e.g., ``const F&``, `F&&`, ...). The
     class ``F`` should have functions numInputs(), numOutputs(), and
     eval(x, y).)""";
       } MakeFunctionCost;

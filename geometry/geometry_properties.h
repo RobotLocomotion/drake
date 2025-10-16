@@ -414,7 +414,7 @@ class GeometryProperties {
 
 #ifndef DRAKE_DOXYGEN_CXX
   // Note: these overloads of the property access methods exist to enable
-  // calls like `properties.AddProperty("group", "property", "string literal");
+  // calls like `properties.AddProperty("group", "property", "string literal");`
   // Template matching would deduce that the `ValueType` in this case is a const
   // char* (which is not copyable). By explicitly declaring this API, we can
   // implicitly convert the string literals to copyable std::strings. We assume
