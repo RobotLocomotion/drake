@@ -16,7 +16,7 @@
 #include "drake/multibody/contact_solvers/pooled_sap/eigen_pool.h"
 #include "drake/multibody/contact_solvers/pooled_sap/limit_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
-#include "drake/multibody/contact_solvers/pooled_sap/sap_data.h"
+#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap_data.h"
 
 namespace drake {
 namespace multibody {
@@ -116,10 +116,11 @@ class PooledSapModel<T>::LimitConstraintsPool {
   // TODO(amcastro-tri): factor out this method into a
   // GeneralizedVelocitiesConstraintsPool parent class, along with other common
   // functionality to all constraint pools on generalized velocities.
-  void AccumulateGradient(const SapData<T>& data, VectorX<T>* gradient) const;
+  void AccumulateGradient(const PooledSapData<T>& data,
+                          VectorX<T>* gradient) const;
 
   void AccumulateHessian(
-      const SapData<T>& data,
+      const PooledSapData<T>& data,
       internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
   void ProjectAlongLine(const LimitConstraintsDataPool<T>& limit_data,

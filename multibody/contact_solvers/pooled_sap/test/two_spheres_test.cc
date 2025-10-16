@@ -289,7 +289,7 @@ TEST_F(TwoSpheres, MakeData) {
   EXPECT_EQ(patch_constraints.total_num_pairs(), num_pairs);
   EXPECT_EQ(patch_constraints.patch_sizes(), std::vector<int>({num_pairs}));
 
-  SapData<double> data;
+  PooledSapData<double> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
   EXPECT_EQ(data.num_patches(), 1);

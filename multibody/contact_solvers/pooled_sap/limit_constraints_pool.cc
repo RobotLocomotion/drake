@@ -72,7 +72,7 @@ void PooledSapModel<T>::LimitConstraintsPool::CalcData(
 
 template <typename T>
 void PooledSapModel<T>::LimitConstraintsPool::AccumulateGradient(
-    const SapData<T>& data, VectorX<T>* gradient) const {
+    const PooledSapData<T>& data, VectorX<T>* gradient) const {
   using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstElementView;
 
   const LimitConstraintsDataPool<T>& limit_data =
@@ -93,7 +93,7 @@ void PooledSapModel<T>::LimitConstraintsPool::AccumulateGradient(
 
 template <typename T>
 void PooledSapModel<T>::LimitConstraintsPool::AccumulateHessian(
-    const SapData<T>& data,
+    const PooledSapData<T>& data,
     internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
   const LimitConstraintsDataPool<T>& limit_data =
       data.cache().limit_constraints_data;

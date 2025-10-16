@@ -21,7 +21,7 @@ drake_cc_package_library(
         ":patch_constraints_data_pool",
         ":pooled_sap_builder",
         ":pooled_sap_core",
-        ":sap_data",
+        ":pooled_sap_data",
     ],
 )
 
@@ -78,8 +78,8 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "sap_data",
-    hdrs = ["sap_data.h"],
+    name = "pooled_sap_data",
+    hdrs = ["pooled_sap_data.h"],
     deps = [
         ":coupler_constraints_data_pool",
         ":eigen_pool",
@@ -121,7 +121,7 @@ drake_cc_library(
         "pooled_sap_model.h",
     ],
     deps = [
-        ":sap_data",
+        ":pooled_sap_data",
         "//common:default_scalars",
         "//common:essential",
         "//math:gradient",

@@ -282,7 +282,7 @@ bool ConvexIntegrator<T>::SolveWithGuess(const PooledSapModel<T>&,
 template <>
 bool ConvexIntegrator<double>::SolveWithGuess(
     const PooledSapModel<double>& model, VectorXd* v_guess) {
-  SapData<double>& data = get_data();
+  PooledSapData<double>& data = get_data();
   VectorXd& v = *v_guess;
   VectorXd& dv = scratch_.search_direction;
   model.ResizeData(&data);
@@ -429,19 +429,19 @@ bool ConvexIntegrator<double>::SolveWithGuess(
 
 template <typename T>
 std::pair<T, int> ConvexIntegrator<T>::PerformExactLineSearch(
-    const PooledSapModel<T>&, const SapData<T>&, const VectorX<T>&) {
+    const PooledSapModel<T>&, const PooledSapData<T>&, const VectorX<T>&) {
   throw std::logic_error(
       "ConvexIntegrator: PerformExactLineSearch only supports T = double.");
 }
 
 template <>
 std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
-    const PooledSapModel<double>& model, const SapData<double>& data,
+    const PooledSapModel<double>& model, const PooledSapData<double>& data,
     const VectorXd& dv) {
   const double alpha_max = solver_parameters_.alpha_max;
 
   // Set up prerequisites for an efficient CalcCostAlongLine
-  SapData<double>& scratch = scratch_data_;
+  PooledSapData<double>& scratch = scratch_data_;
   model.ResizeData(&scratch);
   SearchDirectionData<double>& search_data = search_direction_data_;
   model.UpdateSearchDirection(data, dv, &search_data);
@@ -560,7 +560,7 @@ T ConvexIntegrator<T>::SolveQuadraticInUnitInterval(const T& a, const T& b,
 }
 
 template <typename T>
-void ComputeSearchDirection(const PooledSapModel<T>&, const SapData<T>&,
+void ComputeSearchDirection(const PooledSapModel<T>&, const PooledSapData<T>&,
                             VectorX<T>*, bool, bool) {
   throw std::logic_error(
       "ConvexIntegrator: ComputeSearchDirection only supports T = double.");
@@ -568,7 +568,7 @@ void ComputeSearchDirection(const PooledSapModel<T>&, const SapData<T>&,
 
 template <>
 void ConvexIntegrator<double>::ComputeSearchDirection(
-    const PooledSapModel<double>& model, const SapData<double>& data,
+    const PooledSapModel<double>& model, const PooledSapData<double>& data,
     VectorXd* dv, bool reuse_factorization, bool reuse_sparsity_pattern) {
   DRAKE_ASSERT(dv != nullptr);
 

@@ -49,7 +49,7 @@ void PooledSapModel<T>::CouplerConstraintsPool::CalcData(
 
 template <typename T>
 void PooledSapModel<T>::CouplerConstraintsPool::AccumulateGradient(
-    const SapData<T>& data, VectorX<T>* gradient) const {
+    const PooledSapData<T>& data, VectorX<T>* gradient) const {
   const CouplerConstraintsDataPool<T>& coupler_data =
       data.cache().coupler_constraints_data;
 
@@ -72,7 +72,7 @@ void PooledSapModel<T>::CouplerConstraintsPool::AccumulateGradient(
 
 template <typename T>
 void PooledSapModel<T>::CouplerConstraintsPool::AccumulateHessian(
-    const SapData<T>& data,
+    const PooledSapData<T>& data,
     internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
   unused(data);
 

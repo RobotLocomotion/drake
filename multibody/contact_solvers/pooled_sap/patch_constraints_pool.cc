@@ -335,7 +335,7 @@ template <typename T>
 void PooledSapModel<T>::PatchConstraintsPool::ProjectAlongLine(
     const PatchConstraintsDataPool<T>& patch_data,
     const EigenPool<Vector6<T>>& U_WB_pool,
-    typename SapData<T>::Scratch* scratch, T* dcost, T* d2cost) const {
+    typename PooledSapData<T>::Scratch* scratch, T* dcost, T* d2cost) const {
   auto& U_AbB_W_pool = scratch->Vector6_pool;
   U_AbB_W_pool.Clear();
   U_AbB_W_pool.Resize(num_patches());
@@ -360,7 +360,7 @@ void PooledSapModel<T>::PatchConstraintsPool::ProjectAlongLine(
 
 template <typename T>
 void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradient(
-    const SapData<T>& data, VectorX<T>* gradient) const {
+    const PooledSapData<T>& data, VectorX<T>* gradient) const {
   const PatchConstraintsDataPool<T>& patch_data =
       data.cache().patch_constraints_data;
   const EigenPool<Vector6<T>>& Gamma_Bo_W_pool = patch_data.Gamma_Bo_W_pool();
@@ -402,7 +402,7 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradient(
 
 template <typename T>
 void PooledSapModel<T>::PatchConstraintsPool::AccumulateHessian(
-    const SapData<T>& data,
+    const PooledSapData<T>& data,
     internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
   const PatchConstraintsDataPool<T>& patch_data =
       data.cache().patch_constraints_data;

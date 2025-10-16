@@ -15,7 +15,7 @@
 #include "drake/multibody/contact_solvers/pooled_sap/eigen_pool.h"
 #include "drake/multibody/contact_solvers/pooled_sap/patch_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
-#include "drake/multibody/contact_solvers/pooled_sap/sap_data.h"
+#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap_data.h"
 
 namespace drake {
 namespace multibody {
@@ -245,15 +245,16 @@ class PooledSapModel<T>::PatchConstraintsPool {
   // TODO(amcastro-tri): factor out this method into a BodyConstraintsPool
   // parent class, along with other common functionality to all body-constraint
   // pools.
-  void AccumulateGradient(const SapData<T>& data, VectorX<T>* gradient) const;
+  void AccumulateGradient(const PooledSapData<T>& data,
+                          VectorX<T>* gradient) const;
 
   void AccumulateHessian(
-      const SapData<T>& data,
+      const PooledSapData<T>& data,
       internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
   void ProjectAlongLine(const PatchConstraintsDataPool<T>& patch_data,
                         const EigenPool<Vector6<T>>& U_WB_pool,
-                        typename SapData<T>::Scratch* scratch, T* dcost,
+                        typename PooledSapData<T>::Scratch* scratch, T* dcost,
                         T* d2cost) const;
 
  private:

@@ -42,7 +42,7 @@ void PooledSapModel<T>::GainConstraintsPool::CalcData(
 
 template <typename T>
 void PooledSapModel<T>::GainConstraintsPool::AccumulateGradient(
-    const SapData<T>& data, VectorX<T>* gradient) const {
+    const PooledSapData<T>& data, VectorX<T>* gradient) const {
   using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstElementView;
 
   const GainConstraintsDataPool<T>& gain_data =
@@ -58,7 +58,7 @@ void PooledSapModel<T>::GainConstraintsPool::AccumulateGradient(
 
 template <typename T>
 void PooledSapModel<T>::GainConstraintsPool::AccumulateHessian(
-    const SapData<T>& data,
+    const PooledSapData<T>& data,
     internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
   using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstElementView;
 

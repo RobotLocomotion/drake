@@ -23,8 +23,8 @@ using multibody::contact_solvers::internal::BlockSparseCholeskySolver;
 using multibody::contact_solvers::internal::BlockSparseSymmetricMatrixT;
 using multibody::contact_solvers::internal::BlockSparsityPattern;
 using multibody::contact_solvers::pooled_sap::PooledSapBuilder;
+using multibody::contact_solvers::pooled_sap::PooledSapData;
 using multibody::contact_solvers::pooled_sap::PooledSapModel;
-using multibody::contact_solvers::pooled_sap::SapData;
 using multibody::contact_solvers::pooled_sap::SearchDirectionData;
 
 /**
@@ -176,7 +176,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
    * Get a reference to the SAP problem data, used to store the cost, gradient,
    * Hessian, etc.
    */
-  SapData<T>& get_data() { return data_; }
+  PooledSapData<T>& get_data() { return data_; }
 
   /**
    * Get the current convex solver tolerances and iteration limits.
@@ -276,7 +276,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Solve min_α ℓ(v + α Δ v) using a 1D Newton method with bisection fallback.
   // Returns the linesearch parameter α and the number of iterations taken.
   std::pair<T, int> PerformExactLineSearch(const PooledSapModel<T>& model,
-                                           const SapData<T>& data,
+                                           const PooledSapData<T>& data,
                                            const VectorX<T>& dv);
 
   // Returns the root of the quadratic equation ax² + bx + c = 0, x ∈ [0, 1].
@@ -292,7 +292,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   //                            stored sparsity pattern. This gives an exact
   //                            Newton step, but avoids some allocations.
   void ComputeSearchDirection(const PooledSapModel<T>& model,
-                              const SapData<T>& data, VectorX<T>* dv,
+                              const PooledSapData<T>& data, VectorX<T>* dv,
                               bool reuse_factorization = false,
                               bool reuse_sparsity_pattern = false);
 
@@ -330,8 +330,8 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Pre-allocated objects used to formulate and solve the optimization problem.
   std::unique_ptr<PooledSapBuilder<T>> builder_;
   PooledSapModel<T> model_;
-  SapData<T> data_;
-  SapData<T> scratch_data_;
+  PooledSapData<T> data_;
+  PooledSapData<T> scratch_data_;
   std::unique_ptr<BlockSparseSymmetricMatrixT<T>> hessian_;
   BlockSparseCholeskySolver<Eigen::MatrixXd> hessian_factorization_;
   Eigen::LDLT<Eigen::MatrixXd> dense_hessian_factorization_;
@@ -393,13 +393,13 @@ bool ConvexIntegrator<double>::SolveWithGuess(const PooledSapModel<double>&,
                                               VectorX<double>*);
 template <>
 std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
-    const PooledSapModel<double>&, const SapData<double>&,
+    const PooledSapModel<double>&, const PooledSapData<double>&,
     const VectorX<double>&);
 
 template <>
 void ConvexIntegrator<double>::ComputeSearchDirection(
-    const PooledSapModel<double>&, const SapData<double>&, VectorX<double>*,
-    bool, bool);
+    const PooledSapModel<double>&, const PooledSapData<double>&,
+    VectorX<double>*, bool, bool);
 
 }  // namespace systems
 }  // namespace drake

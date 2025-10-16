@@ -68,7 +68,8 @@ void PooledSapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
   - momentum_cost */
 template <typename T>
 void PooledSapModel<T>::CalcMomentumTerms(
-    const SapData<T>& data, typename SapData<T>::Cache* cache) const {
+    const PooledSapData<T>& data,
+    typename PooledSapData<T>::Cache* cache) const {
   // Parameters.
   const auto& r = params().r;
 
@@ -114,9 +115,10 @@ void PooledSapModel<T>::CalcBodySpatialVelocities(
 }
 
 template <typename T>
-void PooledSapModel<T>::CalcData(const VectorX<T>& v, SapData<T>* data) const {
+void PooledSapModel<T>::CalcData(const VectorX<T>& v,
+                                 PooledSapData<T>* data) const {
   data->v() = v;
-  typename SapData<T>::Cache& cache = data->cache();
+  typename PooledSapData<T>::Cache& cache = data->cache();
   CalcMomentumTerms(*data, &cache);
   CalcBodySpatialVelocities(v, &cache.spatial_velocities);
   coupler_constraints_pool_.CalcData(v, &cache.coupler_constraints_data);
@@ -142,7 +144,7 @@ void PooledSapModel<T>::CalcData(const VectorX<T>& v, SapData<T>* data) const {
 
 template <typename T>
 std::unique_ptr<internal::BlockSparseSymmetricMatrixT<T>>
-PooledSapModel<T>::MakeHessian(const SapData<T>& data) const {
+PooledSapModel<T>::MakeHessian(const PooledSapData<T>& data) const {
   auto hessian = std::make_unique<internal::BlockSparseSymmetricMatrixT<T>>(
       sparsity_pattern());
   UpdateHessian(data, hessian.get());
@@ -151,7 +153,7 @@ PooledSapModel<T>::MakeHessian(const SapData<T>& data) const {
 
 template <typename T>
 void PooledSapModel<T>::UpdateHessian(
-    const SapData<T>& data,
+    const PooledSapData<T>& data,
     internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
   hessian->SetZero();
 
@@ -190,7 +192,7 @@ void PooledSapModel<T>::SetSparsityPattern() {
 }
 
 template <typename T>
-void PooledSapModel<T>::ResizeData(SapData<T>* data) const {
+void PooledSapModel<T>::ResizeData(PooledSapData<T>* data) const {
   data->Resize(num_bodies_, num_velocities_, clique_sizes_,
                patch_constraints_pool_.patch_sizes());
   coupler_constraints_pool_.ResizeData(&data->cache().coupler_constraints_data);
@@ -200,7 +202,7 @@ void PooledSapModel<T>::ResizeData(SapData<T>* data) const {
 
 template <typename T>
 void PooledSapModel<T>::UpdateSearchDirection(
-    const SapData<T>& data, const VectorX<T>& w,
+    const PooledSapData<T>& data, const VectorX<T>& w,
     SearchDirectionData<T>* search_data) const {
   search_data->w.resize(num_velocities());
   search_data->U.Resize(num_bodies());
@@ -223,10 +225,10 @@ void PooledSapModel<T>::UpdateSearchDirection(
 
 template <typename T>
 T PooledSapModel<T>::CalcCostAlongLine(
-    const T& alpha, const SapData<T>& data,
-    const SearchDirectionData<T>& search_direction, SapData<T>* scratch,
+    const T& alpha, const PooledSapData<T>& data,
+    const SearchDirectionData<T>& search_direction, PooledSapData<T>* scratch,
     T* dcost_dalpha, T* d2cost_dalpha2) const {
-  typename SapData<T>::Cache& cache_alpha = scratch->cache();
+  typename PooledSapData<T>::Cache& cache_alpha = scratch->cache();
 
   const T& a = search_direction.a;
   const T& b = search_direction.b;

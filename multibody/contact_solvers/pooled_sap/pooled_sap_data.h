@@ -30,9 +30,9 @@ namespace pooled_sap {
 Convex Formulation of Compliant Contact. Available at
 https://arxiv.org/abs/2110.10107 */
 template <typename T>
-class SapData {
+class PooledSapData {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SapData);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PooledSapData);
 
   struct Cache {
     void Resize(int num_bodies, int num_velocities,
@@ -99,7 +99,7 @@ class SapData {
   };
 
   /* Default constructor for empty data. */
-  SapData() = default;
+  PooledSapData() = default;
 
   /* @param num_velocities Total number of generalized velocities.
      @param patch_sizes Number of contact pairs for each patch.

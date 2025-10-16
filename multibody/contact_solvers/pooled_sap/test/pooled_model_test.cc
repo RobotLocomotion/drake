@@ -188,7 +188,7 @@ GTEST_TEST(PooledSapModel, CalcData) {
   EXPECT_EQ(model.num_constraints(), 3);
   const int nv = model.num_velocities();
 
-  SapData<AutoDiffXd> data;
+  PooledSapData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
   EXPECT_EQ(data.num_patches(), model.num_constraints());
@@ -223,7 +223,7 @@ GTEST_TEST(PooledSapModel, CalcDenseHessian) {
   EXPECT_EQ(model.num_constraints(), 3);
   const int nv = model.num_velocities();
 
-  SapData<AutoDiffXd> data;
+  PooledSapData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
   EXPECT_EQ(data.num_patches(), model.num_constraints());
@@ -266,7 +266,7 @@ GTEST_TEST(PooledSapModel, CalcSparseHessian) {
   EXPECT_EQ(model.num_constraints(), 3);
   const int nv = model.num_velocities();
 
-  SapData<AutoDiffXd> data;
+  PooledSapData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
   EXPECT_EQ(data.num_patches(), model.num_constraints());
@@ -313,9 +313,9 @@ GTEST_TEST(PooledSapModel, SingleVsMultipleCliques) {
   EXPECT_EQ(model_multiple.num_constraints(), 3);
 
   // Allocate data.
-  SapData<double> data_single;
+  PooledSapData<double> data_single;
   model_single.ResizeData(&data_single);
-  SapData<double> data_multiple;
+  PooledSapData<double> data_multiple;
   model_multiple.ResizeData(&data_multiple);
 
   // Compute data.
@@ -340,7 +340,7 @@ GTEST_TEST(PooledSapModel, LimitMallocOnCalcData) {
   EXPECT_EQ(model.num_velocities(), 18);
   EXPECT_EQ(model.num_constraints(), 3);
 
-  SapData<double> data;
+  PooledSapData<double> data;
   model.ResizeData(&data);
 
   const int nv = model.num_velocities();
@@ -362,7 +362,7 @@ GTEST_TEST(PooledSapModel, CostAlongLine) {
   EXPECT_EQ(model.num_constraints(), 3);
 
   // Allocate data, and additional scratch.
-  SapData<AutoDiffXd> data, scratch;
+  PooledSapData<AutoDiffXd> data, scratch;
   model.ResizeData(&data);
   model.ResizeData(&scratch);
 
@@ -419,7 +419,7 @@ GTEST_TEST(PooledSapModel, GainConstraint) {
   EXPECT_EQ(model.num_velocities(), 18);
   EXPECT_EQ(model.num_constraints(), 3);
 
-  SapData<AutoDiffXd> data;
+  PooledSapData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
   EXPECT_EQ(data.num_patches(), model.num_constraints());
@@ -560,7 +560,7 @@ GTEST_TEST(PooledSapModel, LimitConstraint) {
   EXPECT_EQ(model.num_velocities(), 18);
   EXPECT_EQ(model.num_constraints(), 3);
 
-  SapData<AutoDiffXd> data;
+  PooledSapData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
   EXPECT_EQ(data.num_patches(), model.num_constraints());
@@ -668,7 +668,7 @@ GTEST_TEST(PooledSapModel, CouplerConstraint) {
   EXPECT_EQ(model.num_velocities(), 18);
   EXPECT_EQ(model.num_constraints(), 3);
 
-  SapData<AutoDiffXd> data;
+  PooledSapData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
   EXPECT_EQ(data.num_patches(), model.num_constraints());
@@ -762,7 +762,7 @@ GTEST_TEST(PooledSapModel, CouplerConstraint) {
   const VectorX<AutoDiffXd> w = VectorX<AutoDiffXd>::LinSpaced(
       nv, 0.1, -0.2);  // Arbitrary search direction.
   SearchDirectionData<AutoDiffXd> search_data;
-  SapData<AutoDiffXd> scratch;
+  PooledSapData<AutoDiffXd> scratch;
   model.ResizeData(&scratch);
 
   // Set data with constant value of v.

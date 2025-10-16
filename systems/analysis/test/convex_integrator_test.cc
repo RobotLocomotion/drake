@@ -383,7 +383,7 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
 
   const PooledSapBuilder<double>& sap_builder = integrator.builder();
   PooledSapModel<double>& model = integrator.get_model();
-  SapData<double>& data = integrator.get_data();
+  PooledSapData<double>& data = integrator.get_data();
   sap_builder.UpdateModel(plant_context, h, false, &model);
   sap_builder.AddActuationGains(K, b, &model);
   model.ResizeData(&data);

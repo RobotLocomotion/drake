@@ -16,7 +16,7 @@
 #include "drake/math/linear_solve.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/pooled_sap/eigen_pool.h"
-#include "drake/multibody/contact_solvers/pooled_sap/sap_data.h"
+#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap_data.h"
 
 namespace drake {
 namespace multibody {
@@ -352,10 +352,10 @@ class PooledSapModel {
 
   /* Resizes data accordingly to store data for this model.
    No allocations are required if data's capacity is already enough. */
-  void ResizeData(SapData<T>* data) const;
+  void ResizeData(PooledSapData<T>* data) const;
 
   // Updates `data` as a function of v.
-  void CalcData(const VectorX<T>& v, SapData<T>* data) const;
+  void CalcData(const VectorX<T>& v, PooledSapData<T>* data) const;
 
   /* Makes a new Hessian matrix. If only `data` changes for the same SAP model,
    calling UpdateHessian() to reuse the sparsity pattern of the Hessian is
@@ -392,14 +392,14 @@ class PooledSapModel {
   See documentation in  internal::BlockSparseCholeskySolver for further details.
   */
   std::unique_ptr<internal::BlockSparseSymmetricMatrixT<T>> MakeHessian(
-      const SapData<T>& data) const;
+      const PooledSapData<T>& data) const;
 
   /* Updates the values of the Hessian for the input `data`.
    @pre The sparsity of the `hessian` matches the structure of `this` model. */
-  void UpdateHessian(const SapData<T>& data,
+  void UpdateHessian(const PooledSapData<T>& data,
                      internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
-  void UpdateSearchDirection(const SapData<T>& data, const VectorX<T>& w,
+  void UpdateSearchDirection(const PooledSapData<T>& data, const VectorX<T>& w,
                              SearchDirectionData<T>* search_data) const;
 
   /* Computes ℓ(α) = ℓ(v + α⋅w) along w at α and its first dℓ/dα(α) and second
@@ -412,9 +412,9 @@ class PooledSapModel {
    @param dcost_dalpha dℓ/dα on output.
    @param dcost_dalpha d²ℓ/dα² on output.
    @returns The cost ℓ(α). */
-  T CalcCostAlongLine(const T& alpha, const SapData<T>& data,
+  T CalcCostAlongLine(const T& alpha, const PooledSapData<T>& data,
                       const SearchDirectionData<T>& search_direction,
-                      SapData<T>* scratch, T* dcost_dalpha,
+                      PooledSapData<T>* scratch, T* dcost_dalpha,
                       T* d2cost_dalpha2) const;
 
   /* Compute and store the Hessian sparsity pattern. */
@@ -427,8 +427,8 @@ class PooledSapModel {
 
  private:
   void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* result) const;
-  void CalcMomentumTerms(const SapData<T>& data,
-                         typename SapData<T>::Cache* cache) const;
+  void CalcMomentumTerms(const PooledSapData<T>& data,
+                         typename PooledSapData<T>::Cache* cache) const;
   void CalcBodySpatialVelocities(const VectorX<T>& v,
                                  EigenPool<Vector6<T>>* V_pool) const;
 
