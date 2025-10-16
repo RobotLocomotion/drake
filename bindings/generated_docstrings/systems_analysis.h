@@ -29,14 +29,12 @@
 // #include "drake/systems/analysis/radau_integrator.h"
 // #include "drake/systems/analysis/realtime_rate_calculator.h"
 // #include "drake/systems/analysis/region_of_attraction.h"
-// #include "drake/systems/analysis/rosenbrock2_integrator.h"
 // #include "drake/systems/analysis/runge_kutta2_integrator.h"
 // #include "drake/systems/analysis/runge_kutta3_integrator.h"
 // #include "drake/systems/analysis/runge_kutta5_integrator.h"
 // #include "drake/systems/analysis/scalar_dense_output.h"
 // #include "drake/systems/analysis/scalar_initial_value_problem.h"
 // #include "drake/systems/analysis/scalar_view_dense_output.h"
-// #include "drake/systems/analysis/sdirk2_integrator.h"
 // #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 // #include "drake/systems/analysis/simulator.h"
 // #include "drake/systems/analysis/simulator_config.h"
@@ -3690,35 +3688,6 @@ Returns:
     A reference to the newly created integrator owned by
     ``simulator``.)""";
       } ResetIntegratorFromFlags;
-      // Symbol: drake::systems::Rosenbrock2Integrator
-      struct /* Rosenbrock2Integrator */ {
-        // Source: drake/systems/analysis/rosenbrock2_integrator.h
-        const char* doc =
-R"""(A two-stage Rosenbrock integrator with an embedded error estimate.
-
-This integrator is second-order and L-stable.
-
-TODO(vincekurtz): add documentation.)""";
-        // Symbol: drake::systems::Rosenbrock2Integrator::Rosenbrock2Integrator<T>
-        struct /* ctor */ {
-          // Source: drake/systems/analysis/rosenbrock2_integrator.h
-          const char* doc = R"""()""";
-        } ctor;
-        // Symbol: drake::systems::Rosenbrock2Integrator::get_error_estimate_order
-        struct /* get_error_estimate_order */ {
-          // Source: drake/systems/analysis/rosenbrock2_integrator.h
-          const char* doc =
-R"""(The error estimate order is 2, because the integrator uses a
-second-order Rosenbrock method with an embedded first-order error
-estimate.)""";
-        } get_error_estimate_order;
-        // Symbol: drake::systems::Rosenbrock2Integrator::supports_error_estimation
-        struct /* supports_error_estimation */ {
-          // Source: drake/systems/analysis/rosenbrock2_integrator.h
-          const char* doc =
-R"""(Returns true, because this integrator supports error estimation.)""";
-        } supports_error_estimation;
-      } Rosenbrock2Integrator;
       // Symbol: drake::systems::RungeKutta2Integrator
       struct /* RungeKutta2Integrator */ {
         // Source: drake/systems/analysis/runge_kutta2_integrator.h
@@ -4175,60 +4144,6 @@ R"""(Returns the base dense output upon which the view operates.)""";
           const char* doc = R"""()""";
         } n_;
       } ScalarViewDenseOutput;
-      // Symbol: drake::systems::Sdirk2Integrator
-      struct /* Sdirk2Integrator */ {
-        // Source: drake/systems/analysis/sdirk2_integrator.h
-        const char* doc =
-R"""(A two-stage, second-order, stiffly accurate, L-stable, Singly
-Diagonally Implicit Runge Kutta (SDIRK) integrator with embedded error
-estimation.
-
-The Butcher tableau for this integrator is given by
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    γ  | γ
-    1  | (1-γ)        γ
-    -----------------------------------------------------------------------------
-    (1-γ)        γ
-    (1-α)        α
-
-.. raw:: html
-
-    </details>
-
-where γ = 1 + √2/2 and α = 2 - 5√2 / 4. The final row provides an
-embedded first-order accurate solution for error control.
-
-This method is described in [Kennedy, 2016], with error estimation
-coefficients from Table 4 of [Blom, 2016].
-
-- [Kennedy, 2016] C. Kennedy and M. Carpenter. "Diagonally implicit Runge-Kutta
-methods for ordinary differential equations. A review." Sec. 4.1.2, 2016
-- [Blom, 2016] D. Blom et al. "A comparison of Rosenbrock and ESDIRK methods
-combined with iterative solvers for unsteady compressible flows." Advances in
-Computational Mathematics 42 (2016): 1401-1426.)""";
-        // Symbol: drake::systems::Sdirk2Integrator::Sdirk2Integrator<T>
-        struct /* ctor */ {
-          // Source: drake/systems/analysis/sdirk2_integrator.h
-          const char* doc = R"""()""";
-        } ctor;
-        // Symbol: drake::systems::Sdirk2Integrator::get_error_estimate_order
-        struct /* get_error_estimate_order */ {
-          // Source: drake/systems/analysis/sdirk2_integrator.h
-          const char* doc = R"""()""";
-        } get_error_estimate_order;
-        // Symbol: drake::systems::Sdirk2Integrator::supports_error_estimation
-        struct /* supports_error_estimation */ {
-          // Source: drake/systems/analysis/sdirk2_integrator.h
-          const char* doc = R"""()""";
-        } supports_error_estimation;
-      } Sdirk2Integrator;
       // Symbol: drake::systems::SemiExplicitEulerIntegrator
       struct /* SemiExplicitEulerIntegrator */ {
         // Source: drake/systems/analysis/semi_explicit_euler_integrator.h
