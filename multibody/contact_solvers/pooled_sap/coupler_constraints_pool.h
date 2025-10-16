@@ -52,11 +52,6 @@ class PooledSapModel<T>::CouplerConstraintsPool {
     R_.clear();
   }
 
-  void Reset() {
-    Clear();
-    // TODO(amcastro-tri): Reserve capacity for all couplers in the model.
-  }
-
   void Resize(const int num_constraints) {
     constraint_to_clique_.resize(num_constraints);
     dofs_.resize(num_constraints);

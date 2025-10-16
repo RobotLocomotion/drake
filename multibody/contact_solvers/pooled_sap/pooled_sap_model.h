@@ -144,10 +144,9 @@ class PooledSapModel {
       clique_start_.push_back(clique_start_.back() + clique_nv);
     }
     DRAKE_DEMAND(params_->r.size() == num_velocities_);
-    coupler_constraints_pool_.Reset();
+    coupler_constraints_pool_.Clear();
     gain_constraints_pool_.Clear();
-    gain_constraints_pool_.Reset();
-    limit_constraints_pool_.Reset();
+    limit_constraints_pool_.Clear();
 
     patch_constraints_pool_.Clear();
     patch_constraints_pool_.Reset(params_->time_step, clique_start_,

@@ -45,7 +45,6 @@ class PooledSapModel<T>::LimitConstraintsPool {
   const PooledSapModel<T>& model() const { return *model_; }
 
   void Clear() {
-    clique_to_constraint_.clear();
     constraint_to_clique_.clear();
     constraint_sizes_.clear();
     ql_.Clear();
@@ -54,28 +53,6 @@ class PooledSapModel<T>::LimitConstraintsPool {
     vl_hat_.Clear();
     vu_hat_.Clear();
     R_.Clear();
-  }
-
-  void Reset() {
-    Clear();
-
-    const int nc = model().num_cliques();
-    DRAKE_DEMAND(nc > 0);
-    const std::vector<int>& clique_sizes = model().clique_sizes();
-
-    clique_to_constraint_.resize(nc);
-    std::fill(clique_to_constraint_.begin(), clique_to_constraint_.end(), -1);
-
-    // At most all cliques involved.
-    constraint_to_clique_.reserve(nc);
-    constraint_sizes_.reserve(nc);
-
-    ql_.Reserve(clique_sizes);
-    qu_.Reserve(clique_sizes);
-    q0_.Reserve(clique_sizes);
-    vl_hat_.Reserve(clique_sizes);
-    vu_hat_.Reserve(clique_sizes);
-    R_.Reserve(clique_sizes);
   }
 
   /* Re-allocate memory as needed, setting all constraints as infinite. */
@@ -153,9 +130,6 @@ class PooledSapModel<T>::LimitConstraintsPool {
   T CalcLimitData(const T& v_hat, const T& R, const T& v, T* gamma, T* G) const;
 
   const PooledSapModel<T>* model_{nullptr};  // The parent model.
-
-  // Constraint index or -1. Of size num_cliques.
-  std::vector<int> clique_to_constraint_;
 
   // Clique for the k-th constraint. Of size num_constraints().
   std::vector<int> constraint_to_clique_;
