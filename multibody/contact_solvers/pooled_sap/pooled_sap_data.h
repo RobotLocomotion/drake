@@ -36,18 +36,12 @@ class PooledSapData {
 
   struct Cache {
     void Resize(int num_bodies, int num_velocities,
-                const std::vector<int>& clique_sizes,
                 const std::vector<int>& patch_sizes) {
-      (void)clique_sizes;
       const int nv = num_velocities;
       Av.resize(nv);
       gradient.resize(nv);
       spatial_velocities.Resize(num_bodies);
       patch_constraints_data.Resize(num_velocities, patch_sizes);
-
-      // These are members in BlockSparseSuperNodalSolver, along sugar.
-      // std::unique_ptr<BlockSparseSymmetricMatrix> H_;
-      // BlockSparseCholeskySolver<Eigen::MatrixXd> solver_;
     }
 
     T momentum_cost{0};
@@ -106,10 +100,9 @@ class PooledSapData {
      @param patch_num_velocities Number of participating velocities per patch.
      */
   void Resize(int num_bodies, int num_velocities,
-              const std::vector<int>& clique_sizes,
               const std::vector<int>& patch_sizes) {
     v_.resize(num_velocities);
-    cache_.Resize(num_bodies, num_velocities, clique_sizes, patch_sizes);
+    cache_.Resize(num_bodies, num_velocities, patch_sizes);
   }
 
   int num_velocities() const { return v_.size(); }

@@ -193,7 +193,7 @@ void PooledSapModel<T>::SetSparsityPattern() {
 
 template <typename T>
 void PooledSapModel<T>::ResizeData(PooledSapData<T>* data) const {
-  data->Resize(num_bodies_, num_velocities_, clique_sizes_,
+  data->Resize(num_bodies_, num_velocities_,
                patch_constraints_pool_.patch_sizes());
   coupler_constraints_pool_.ResizeData(&data->cache().coupler_constraints_data);
   gain_constraints_pool_.ResizeData(&data->cache().gain_constraints_data);
