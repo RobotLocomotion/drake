@@ -25,8 +25,21 @@ namespace pooled_sap {
 
 using internal::BlockSparsityPattern;
 
+/**
+ * A struct to hold the key parameters that define a convex SAP problem,
+ *
+ *    minᵥ ℓ(v;q₀,v₀,δt) = 1/2 v'Av - r'v + ℓ(v)
+ *
+ * These parameters are owned by the PooledSapModel, and are set externally by
+ * a PooledSapBuilder.
+ *
+ * TODO(CENIC): Consider some restructuring here. It's not obvious to me (Vince)
+ * that this struct is better than having these parameters as members of
+ * PooledSapModel directly.
+ */
 template <typename T>
 struct PooledSapParameters {
+  // Check some conditions that are required for a valid SAP problem.
   void VerifyInvariants() const {
     DRAKE_DEMAND(time_step > 0);
     const int num_bodies = ssize(body_cliques);
@@ -58,14 +71,20 @@ struct PooledSapParameters {
     }
   }
 
-  // Discrete time step.
+  // The discrete time step δt.
   T time_step{0.0};
-  // Linear dynamics matrix. Of size num_cliques.
+
+  // The current generalized velocities.
+  VectorX<T> v0;
+
+  // The (sparse) linear dynamics matrix (mass matrix + damping). Of size
+  // num_cliques.
   EigenPool<MatrixX<T>> A;
-  // Cost linear term
+
+  // The linear term in the cost, r = M₀ v₀ - δt k₀  + δt τ₀.
   VectorX<T> r;
 
-  // Maps tree index to clique index, or -1 if tree is anchored.
+  // Maps tree index to clique index, or -1 if the tree is anchored.
   std::vector<int> tree_to_clique;
 
   // Scaling factor D = diag(M)^{-1/2} for convergence check. Scales all
@@ -75,15 +94,22 @@ struct PooledSapParameters {
   // Clique for the b-th rigid body. Negative if anchored.
   // body_cliques[0]  < 0 must correspond to the world.
   std::vector<int> body_cliques;
-  std::vector<int> body_is_floating;  // 1 if floating.
-  std::vector<T>
-      body_mass;  // mass of each body. Composite mass for zero massless bodies.
-  EigenPool<Matrix6X<T>> J_WB;  // Rigid body spatial velocity Jacobians.
-  VectorX<T> v0;                // The current generalized velocities.
 
-  // Effort limits for the entire model.
-  std::vector<int> clique_nu;  // Num actuators per clique.
-  VectorX<T> effort_limits;  // of size model.num_velocities(). Zero if unused.
+  // Indicator flag for floating bodies (1 if floating, 0 otherwise).
+  std::vector<int> body_is_floating;
+
+  // Mass of each body. Uses composite mass if the body is massless.
+  std::vector<T> body_mass;
+
+  // Spatial velocity Jacobian for each body.
+  EigenPool<Matrix6X<T>> J_WB;
+
+  // Number of actuators in each clique.
+  std::vector<int> clique_nu;
+
+  // Effort limits for the entire model, of size model.num_velocities(). Zero if
+  // unused.
+  VectorX<T> effort_limits;
 };
 
 /* A model of the SAP problem.
