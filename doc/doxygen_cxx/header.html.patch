@@ -79,7 +79,7 @@
 + </div>
 + <!--BEGIN SEARCHENGINE-->
 + <div id="MSearchBoxContainer">
-+  $searchbox
++  <td>$searchbox</td>
 + </div>
 + <!--END SEARCHENGINE-->
 +</div>
