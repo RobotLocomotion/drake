@@ -50,7 +50,6 @@ drake_cc_package_library(
         ":parallelism",
         ":pointer_cast",
         ":polynomial",
-        ":profiler",
         ":random",
         ":reset_after_move",
         ":reset_on_copy",
@@ -239,16 +238,6 @@ drake_cc_library(
         ":default_scalars",
         ":essential",
         "//common/symbolic:expression",
-    ],
-)
-
-drake_cc_library(
-    name = "profiler",
-    srcs = ["profiler.cc"],
-    hdrs = ["profiler.h"],
-    deps = [
-        ":scope_exit",
-        ":type_safe_index",
     ],
 )
 
