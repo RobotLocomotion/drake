@@ -56,19 +56,13 @@ struct DynamicSizeStorage {
 
   DynamicSizeStorage() = default;
 
-  /* Reserves pool to store VectorX elements of the specified sizes. */
-  void Reserve(const std::vector<int>& sizes) {
+  /* Resizes pool to store VectorX elements of the specified sizes. */
+  void Resize(const std::vector<int>& sizes) {
     static_assert(is_dynamic_size_vector_v<EigenType>);
     Clear();
     const int total_size = std::accumulate(sizes.begin(), sizes.end(), 0);
     data_.reserve(total_size);
     blocks_.reserve(ssize(sizes));
-  }
-
-  /* Resizes pool to store VectorX elements of the specified sizes. */
-  void Resize(const std::vector<int>& sizes) {
-    static_assert(is_dynamic_size_vector_v<EigenType>);
-    Reserve(sizes);
     for (int sz : sizes) {
       Add(sz, 1);
     }
@@ -148,9 +142,6 @@ struct FixedSizeStorage {
   /* Resizes storage to store `num_elements`. */
   void Resize(int num_elements) { data_.resize(num_elements); }
 
-  /* Reserves storage to store `num_elements`. Size is not modified. */
-  void Reserve(int num_elements) { data_.reserve(num_elements); }
-
   void SetZero() {
     Eigen::Map<VectorX<Scalar>>(data_.data()->data(),
                                 data_.size() * EigenType::SizeAtCompileTime)
@@ -197,12 +188,6 @@ class EigenPool {
   /* Default constructor for an empty pool. */
   EigenPool() = default;
 
-  void Reserve(int num_elements)
-    requires is_fixed_size_v<EigenType>
-  {  // NOLINT(whitespace/braces)
-    storage_.Reserve(num_elements);
-  }
-
   /* Resizes the pool to store num_elements.
    Only available for fixed size Eigen tpes. */
   void Resize(int num_elements)
@@ -218,13 +203,6 @@ class EigenPool {
     storage_.Resize(sizes);
   }
 
-  /* Resize for a pool of VectorX elements of the given `sizes`. */
-  void Reserve(const std::vector<int>& sizes)
-    requires is_dynamic_size_vector_v<EigenType>
-  {  // NOLINT(whitespace/braces)
-    storage_.Reserve(sizes);
-  }
-
   /* Resize for a pool of matrices with the specified `rows` and `cols`.
    rows (cols) are ignored if the rows (cols) of EigenType are fixed at compile
    time. */
@@ -232,12 +210,6 @@ class EigenPool {
     requires(!is_fixed_size_v<EigenType>)
   {  // NOLINT(whitespace/braces)
     storage_.Resize(rows, cols);
-  }
-
-  // Reserves memory for `num_elements` of at most `max_size` scalars each.
-  // For fixed size EigenType, max_size is ignored.
-  void Reserve(int num_elements, int max_size) {
-    storage_.Reserve(num_elements, max_size);
   }
 
   /* Clears data. Capacity is not changed, and thus memory is not freed. */
