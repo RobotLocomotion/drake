@@ -432,16 +432,14 @@ Ignore those for now; we'll need to circle back and fix them later.
   std::cout << "- An environment map has been loaded from a png -- the Cornell "
             << "box.\n"
             << "  The shiny pyramids should reflect it (the camera has moved "
-            << "to focus on the pyramids). This may not be apparent until "
-            << "after you move the mouse.\n";
+            << "to focus on the pyramids).\n";
   MaybePauseForUser();
 
   meshcat->SetEnvironmentMap(
       FindResourceOrThrow("drake/geometry/test/env_256_brick_room.jpg"));
 
   std::cout << "- The Cornell box has been replaced by a room with brick walls "
-            << "loaded from a jpg. Again, the change may not be apparent "
-            << "until after you move the mouse.\n";
+            << "loaded from a jpg.\n";
   MaybePauseForUser();
 
   std::cout << ltrim(R"""(
