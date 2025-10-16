@@ -734,6 +734,17 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, VectorX<T>* Ku,
   (*be) = ge0 + (*Ke).asDiagonal() * v0;
 }
 
+template <typename T>
+T ConvexIntegrator<T>::CalcStateChangeNorm(
+    const ContinuousState<T>& dx_state) const {
+  // Simple infinity norm of the generalized position change.
+  const VectorBase<T>& dgq = dx_state.get_generalized_position();
+  const T x_norm = dgq.CopyToVector().template lpNorm<Eigen::Infinity>();
+  using std::isnan;
+  if (isnan(x_norm)) return std::numeric_limits<T>::quiet_NaN();
+  return x_norm;
+}
+
 }  // namespace systems
 }  // namespace drake
 

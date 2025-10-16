@@ -147,16 +147,6 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& h_max) {
 template <class T>
 T IntegratorBase<T>::CalcStateChangeNorm(
     const ContinuousState<T>& dx_state) const {
-  // Given the weights Wv, Wz and time scale are all ones, the computations
-  // below are expensive and overkill.
-  // We thus simplify to an infinity norm.
-  const VectorBase<T>& dgq = dx_state.get_generalized_position();
-  const T x_norm = dgq.CopyToVector().template lpNorm<Eigen::Infinity>();
-  using std::isnan;
-  if (isnan(x_norm)) return std::numeric_limits<T>::quiet_NaN();
-  return x_norm;
-
-#if 0
   using std::max;
   const Context<T>& context = get_context();
   const System<T>& system = get_system();
@@ -219,7 +209,6 @@ T IntegratorBase<T>::CalcStateChangeNorm(
   // Infinity norm of the concatenation of multiple vectors is equal to the
   // maximum of the infinity norms of the individual vectors.
   return max(z_nrm, max(q_nrm, v_nrm));
-#endif
 }
 
 template <class T>

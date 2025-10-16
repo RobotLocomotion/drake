@@ -324,6 +324,10 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   void LinearizeExternalSystem(const T& h, VectorX<T>* Ku, VectorX<T>* bu,
                                VectorX<T>* Ke, VectorX<T>* be);
 
+  // Overrides the typical state change norm (weighted infinity norm) to use
+  // just the infinity norm of the position vector.
+  T CalcStateChangeNorm(const ContinuousState<T>& dx_state) const final;
+
   // The multibody plant used as the basis of the convex optimization problem.
   MultibodyPlant<T>* plant_{nullptr};
 
