@@ -24,16 +24,20 @@ namespace multibody {
 namespace contact_solvers {
 namespace pooled_sap {
 
-/* SAP generalized velocities v and SAP quantities function of v.
-
-[Castro et al., 2021] Castro A., Permenter F. and Han X., 2021. An Unconstrained
-Convex Formulation of Compliant Contact. Available at
-https://arxiv.org/abs/2110.10107 */
+/**
+ * Data for the SAP problem minᵥ ℓ(v; q₀, v₀, δt).
+ *
+ * This class stores all data that depends on the current generalized velocity
+ * v, and therefore changes at each solver iteration. That is in contrast with
+ * PooledSapModel, which changes with (q₀, v₀, δt) but remains constant for
+ * different values of v during the optimization process.
+ */
 template <typename T>
 class PooledSapData {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PooledSapData);
 
+  // The cache holds quantities that are computed from v, so they can be reused.
   struct Cache {
     void Resize(int num_bodies, int num_velocities,
                 const std::vector<int>& patch_sizes) {
@@ -60,14 +64,12 @@ class PooledSapData {
     PatchConstraintsDataPool<T> patch_constraints_data;
   };
 
-  /* Struct to store pre-allocated scratch space.
-   This space is not intended for long-term storage and is often cleared or
-   overwritten as needed. */
+  // Struct to store pre-allocated scratch space. This space is not intended for
+  // long-term storage and is often cleared or overwritten as needed.
   struct Scratch {
-    /* Clears all data without changing capacity. */
+    // Clear all data without changing capacity.
     void Clear() {
       Vector6_pool.Clear();
-      MatrixX_pool.Clear();
       H_BB_pool.Clear();
       H_AA_pool.Clear();
       H_AB_pool.Clear();
@@ -75,8 +77,8 @@ class PooledSapData {
       GJa_pool.Clear();
       GJb_pool.Clear();
     }
-    // Meant for velocity sized vectors that do not change size. Update to
-    // EigenPool when AutoDiffXd is better supported.
+    // TODO(CENIC): this is meant for velocity sized vectors that do not change
+    // size. Update to EigenPool when AutoDiffXd is better supported.
     VectorX<T> v_pool;
     EigenPool<Vector6<T>> Vector6_pool;
     EigenPool<MatrixX<T>> MatrixX_pool;
@@ -95,10 +97,17 @@ class PooledSapData {
   /* Default constructor for empty data. */
   PooledSapData() = default;
 
-  /* @param num_velocities Total number of generalized velocities.
-     @param patch_sizes Number of contact pairs for each patch.
-     @param patch_num_velocities Number of participating velocities per patch.
-     */
+  /**
+   * Resizes the data to accommodate the given problem, typically called at the
+   * beginning of each solve/time step.
+   *
+   * @param num_velocities Total number of generalized velocities.
+   * @param patch_sizes Number of contact pairs for each patch.
+   * @param patch_num_velocities Number of participating velocities per patch.
+   *
+   * TODO(vincekurtz): consider fixing num_bodies and num_velocities at
+   * construction, and only resizing based on patch_sizes here.
+   */
   void Resize(int num_bodies, int num_velocities,
               const std::vector<int>& patch_sizes) {
     v_.resize(num_velocities);
@@ -133,8 +142,10 @@ class PooledSapData {
 
  private:
   VectorX<T> v_;  // Generalized velocities.
-  Cache cache_;   // All other quantities function of v.
+  Cache cache_;   // All other quantities that are computed from v.
+
   // We allow PooledSapModel methods to write on the scratch as needed.
+  // TODO(CENIC): figure out a better/cleaner way to handle scratch space.
   mutable Scratch scratch_;
 };
 
