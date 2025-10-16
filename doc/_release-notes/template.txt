@@ -11,6 +11,8 @@ released: YYYY-MM-DD
 
 # Breaking changes since v{prior_version}
 
+<!-- <relnotes for breaking-changes go here> -->
+
 * TBD
 
 Refer to our [Drake Stability Guidelines](/stable.html) for our policy
@@ -109,9 +111,13 @@ Fixes
 
 ## Newly-deprecated APIs
 
+<!-- <relnotes for newly-deprecated go here> -->
+
 * TBD
 
 ## Removal of deprecated items
+
+<!-- <relnotes for deprecated-removed go here> -->
 
 * TBD
 
