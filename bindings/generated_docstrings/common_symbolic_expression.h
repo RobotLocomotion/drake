@@ -4061,7 +4061,7 @@ following methods which take ``f`` and ``args:`` ``VisitConstant``,
 ``VisitSqrt``, `VisitPow`, ``VisitSin``, `VisitCos`, ``VisitTan``,
 `VisitAsin`, ``VisitAtan``, `VisitAtan2`, ``VisitSinh``, `VisitCosh`,
 ``VisitTanh``, `VisitMin`, ``VisitMax``, `VisitCeil`, ``VisitFloor``,
-`VisitIfThenElse`, `VisitUninterpretedFunction.
+`VisitIfThenElse`, ``VisitUninterpretedFunction``.
 
 Raises:
     RuntimeError if NaN is detected during a visit.)""";

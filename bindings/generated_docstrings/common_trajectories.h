@@ -414,7 +414,7 @@ Precondition:
 
 Precondition:
     ∀i, ``segments[i].rows() == segments[0].rows()`` and
-    segments[i].cols() == segments[0].cols()`.)""";
+    ``segments[i].cols() == segments[0].cols()``.)""";
         } AlignAndConcatenate;
         // Symbol: drake::trajectories::CompositeTrajectory::CompositeTrajectory<T>
         struct /* ctor */ {
@@ -430,7 +430,7 @@ Precondition:
 
 Precondition:
     ∀i, ``segments[i].rows() == segments[0].rows()`` and
-    segments[i].cols() == segments[0].cols()`.)""";
+    ``segments[i].cols() == segments[0].cols()``.)""";
         } ctor;
         // Symbol: drake::trajectories::CompositeTrajectory::segment
         struct /* segment */ {
@@ -1716,7 +1716,7 @@ coefficient-wise multiplication). If ``this`` corresponds to t² and
 Raises:
     RuntimeError if every element of ``other.get_segment_times()`` is
     not within PiecewiseTrajectory::kEpsilonTime from
-    `this->get_segment_times()1.)""";
+    ``this->get_segment_times()``.)""";
         } operator_mul;
         // Symbol: drake::trajectories::PiecewisePolynomial::operator*=
         struct /* operator_imul */ {
@@ -1731,7 +1731,7 @@ other`` will correspond to t⁵.
 Raises:
     RuntimeError if every element of ``other.get_segment_times()`` is
     not within PiecewiseTrajectory::kEpsilonTime from
-    `this->get_segment_times().)""";
+    ``this->get_segment_times()``.)""";
         } operator_imul;
         // Symbol: drake::trajectories::PiecewisePolynomial::operator+
         struct /* operator_add */ {
@@ -1745,7 +1745,7 @@ other`` will correspond to t³ + t².
 Raises:
     RuntimeError if every element of ``other.get_segment_times()`` is
     not within PiecewiseTrajectory::kEpsilonTime from
-    `this->get_segment_times().)""";
+    ``this->get_segment_times()``.)""";
         } operator_add;
         // Symbol: drake::trajectories::PiecewisePolynomial::operator+=
         struct /* operator_iadd */ {
@@ -1759,7 +1759,7 @@ corresponds to t³, ``this += other`` will correspond to t³ + t².
 Raises:
     RuntimeError if every element of ``other.get_segment_times()`` is
     not within PiecewiseTrajectory::kEpsilonTime from
-    `this->get_segment_times().)""";
+    ``this->get_segment_times()``.)""";
         } operator_iadd;
         // Symbol: drake::trajectories::PiecewisePolynomial::operator-
         struct /* operator_sub */ {
@@ -1773,7 +1773,7 @@ other`` will correspond to t² - t³.
 Raises:
     RuntimeError if every element of ``other.get_segment_times()`` is
     not within PiecewiseTrajectory::kEpsilonTime from
-    `this->get_segment_times().)""";
+    ``this->get_segment_times()``.)""";
           // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_0args =
 R"""(Implements unary minus operator. Multiplies each Polynomial in
@@ -1792,7 +1792,7 @@ t³.
 Raises:
     RuntimeError if every element of ``other.get_segment_times()`` is
     not within PiecewiseTrajectory::kEpsilonTime from
-    `this->get_segment_times().)""";
+    ``this->get_segment_times()``.)""";
         } operator_isub;
         // Symbol: drake::trajectories::PiecewisePolynomial::rows
         struct /* rows */ {

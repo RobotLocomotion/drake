@@ -1327,7 +1327,7 @@ R"""(Returns:
           // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Returns:
-    a `const reference to the full model's plant.)""";
+    a ``const`` reference to the full model's plant.)""";
         } plant;
         // Symbol: drake::planning::CollisionChecker::plant_context
         struct /* plant_context */ {
