@@ -171,7 +171,7 @@ the main body of the document:
       ``/tmp/drake-release/v1.N.0/...``:
       - 9: 3 `.tar.gz` + 6 checksums
       - 6: 2 `.deb` + 4 checksums
-      - 12: 4 linux `.whl` + 8 checksums
+      - 15: 5 linux `.whl` + 10 checksums
       - 6: 2 macOS arm `.whl` + 4 checksums
       * Note that on Jammy with `snap` provided Firefox, drag-and-drop from
         Nautilus will fail, and drop all of your release page inputs typed so
