@@ -87,9 +87,7 @@ class PooledSapBuilder {
   struct Scratch {
     MatrixX<T> M;        // Dense mass matrix computed by MbP.
     Matrix6X<T> J_V_WB;  // Dense spatial velocity Jacobian.
-    VectorX<T> u_no_pd;
-    VectorX<T> u_w_pd;
-    VectorX<T> tmp_v1;  // Scratch of size num_velocities.
+    VectorX<T> tmp_v1;   // Scratch of size num_velocities.
     std::unique_ptr<MultibodyForces<T>> forces;
     std::vector<geometry::PenetrationAsPointPair<T>> point_pairs;
     std::vector<geometry::ContactSurface<T>> surfaces;

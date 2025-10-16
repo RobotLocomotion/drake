@@ -105,8 +105,6 @@ PooledSapBuilder<T>::PooledSapBuilder(const MultibodyPlant<T>& plant)
   const int nv = plant.num_velocities();
   scratch_.M.resize(nv, nv);
   scratch_.J_V_WB.resize(6, nv);
-  scratch_.u_no_pd.resize(nv);
-  scratch_.u_w_pd.resize(nv);
   scratch_.tmp_v1.resize(nv);
   scratch_.forces = std::make_unique<MultibodyForces<T>>(plant);
 }
@@ -121,11 +119,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   const LinkJointGraph& graph = GetInternalTree(plant()).graph();
   DRAKE_DEMAND(graph.forest_is_valid());
   const SpanningForest& forest = graph.forest();
-  (void)forest;
-
   const int nv = plant().num_velocities();
-  MatrixX<T>& M = scratch_.M;
-  Matrix6X<T>& J_V_WB = scratch_.J_V_WB;
 
   std::unique_ptr<PooledSapParameters<T>> params = model->ReleaseParameters();
   params->time_step = time_step;
@@ -134,26 +128,39 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   params->A.Clear();
 
   // Dense linearized dynamics from MbP.
+  MatrixX<T>& M = scratch_.M;
   plant().CalcMassMatrix(context, &M);
 
   // Implicit damping.
   // N.B. The mass matrix already includes reflected inertia terms.
   M.diagonal() += plant().EvalJointDampingCache(context) * time_step;
 
+  // Allocate space for the linear dynamics matrix A.
   // We only add a clique for tree's with non-zero number of velocities.
   int num_cliques = 0;
   std::vector<int>& tree_clique = params->tree_to_clique;
   tree_clique.resize(topology.num_trees());
   std::fill(tree_clique.begin(), tree_clique.end(), -1);
+  std::vector<int> clique_sizes;
   for (TreeIndex t(0); t < topology.num_trees(); ++t) {
-    const int tree_start_in_v = topology.tree_velocities_start_in_v(t);
     const int tree_nv = topology.num_tree_velocities(t);
     if (tree_nv > 0) {
       tree_clique[t] = num_cliques;
+      clique_sizes.push_back(tree_nv);
       ++num_cliques;
-      typename EigenPool<MatrixX<T>>::ElementView At =
-          params->A.Add(tree_nv, tree_nv);
-      At = M.block(tree_start_in_v, tree_start_in_v, tree_nv, tree_nv);
+    }
+  }
+  params->A.Resize(clique_sizes, clique_sizes);
+
+  // Set the linear dynamics matrix A
+  for (TreeIndex t(0); t < topology.num_trees(); ++t) {
+    const int c = tree_clique[t];
+    if (c >= 0) {
+      const int tree_start_in_v = topology.tree_velocities_start_in_v(t);
+      const int tree_nv = topology.num_tree_velocities(t);
+      DRAKE_ASSERT(tree_nv > 0);
+      params->A[c] =
+          M.block(tree_start_in_v, tree_start_in_v, tree_nv, tree_nv);
     }
   }
 
@@ -164,13 +171,24 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   // TODO(vincekurtz): consider reusing mass matrix as well. Note that
   // A = M + hD includes the time step, so M would need to be stored separately.
   if (!reuse_geometry_data) {
-    params->J_WB.Clear();
-    params->body_cliques.clear();
-    params->body_cliques.reserve(plant().num_bodies());
-    params->body_mass.clear();
-    params->body_mass.reserve(plant().num_bodies());
-    params->body_is_floating.clear();
-    params->body_is_floating.reserve(plant().num_bodies());
+    // Get sizes of each body's Jacobian.
+    const std::vector<int> body_jacobian_rows(plant().num_bodies(), 6);
+    std::vector<int> body_jacobian_cols(0);
+    for (int b = 0; b < plant().num_bodies(); ++b) {
+      const auto& body = plant().get_body(BodyIndex(b));
+      if (plant().IsAnchored(body)) {
+        body_jacobian_cols.push_back(1);  // dummy column.
+      } else {
+        const TreeIndex t = topology.body_to_tree_index(BodyIndex(b));
+        const int nt = topology.num_tree_velocities(t);
+        body_jacobian_cols.push_back(nt);
+      }
+    }
+    params->J_WB.Resize(body_jacobian_rows, body_jacobian_cols);
+
+    params->body_cliques.resize(plant().num_bodies());
+    params->body_mass.resize(plant().num_bodies());
+    params->body_is_floating.resize(plant().num_bodies());
     for (int b = 0; b < plant().num_bodies(); ++b) {
       const auto& body = plant().get_body(BodyIndex(b));
 
@@ -180,7 +198,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
       const auto& mobod = forest.mobods(link.mobod_index());
       const bool is_free_floating =
           body.is_floating_base_body() && mobod.is_leaf_mobod();
-      params->body_is_floating.push_back(is_free_floating ? 1 : 0);
+      params->body_is_floating[b] = is_free_floating ? 1 : 0;
 
       // TODO(amcastro-tri): consider using forest.link_composites() in
       // combination with LinkJointGraph::Link::composite() to precompute
@@ -197,17 +215,13 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
           throw std::logic_error(fmt::format(
               "Composite for body '{}' has zero mass.", body.name()));
         }
-        params->body_mass.push_back(composite_mass);
+        params->body_mass[b] = composite_mass;
       } else {
-        params->body_mass.push_back(body.default_mass());
+        params->body_mass[b] = body.default_mass();
       }
 
       if (plant().IsAnchored(body)) {
-        params->body_cliques.push_back(-1);  // mark as anchored.
-        // Empty Jacobian.
-        // N.B. Eigen does not like 0-sized matrices. Thus we push a dummy
-        // one-column Jacobian.
-        params->J_WB.Add(6, 1);
+        params->body_cliques[b] = -1;  // mark as anchored.
       } else {
         const TreeIndex t = topology.body_to_tree_index(BodyIndex(b));
         const int clique = tree_clique[t];
@@ -218,12 +232,12 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
         const int vt_start = topology.tree_velocities_start_in_v(t);
         const int nt = topology.num_tree_velocities(t);
 
-        params->body_cliques.push_back(clique);
-        typename EigenPool<Matrix6X<T>>::ElementView Jv_WBc_W =
-            params->J_WB.Add(6, nt);
+        params->body_cliques[b] = clique;
+        typename EigenPool<Matrix6X<T>>::ElementView Jv_WBc_W = params->J_WB[b];
         if (body.is_floating_base_body()) {
           Jv_WBc_W.setIdentity();
         } else {
+          Matrix6X<T>& J_V_WB = scratch_.J_V_WB;
           plant().CalcJacobianSpatialVelocity(
               context, JacobianWrtVariable::kV, body.body_frame(),
               Vector3<T>::Zero(), world_frame, world_frame, &J_V_WB);

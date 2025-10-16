@@ -273,6 +273,10 @@ class PooledSapModel {
     return clique_sizes_;
   }
 
+  int max_clique_size() const {
+    return *std::max_element(clique_sizes_.begin(), clique_sizes_.end());
+  }
+
   /* Returns the total number of generalized velocities for this problem. */
   int num_velocities() const {
     DRAKE_ASSERT(params_ != nullptr);
@@ -422,9 +426,8 @@ class PooledSapModel {
     return *sparsity_pattern_;
   }
 
-  void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* result) const;
-
  private:
+  void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* result) const;
   void CalcMomentumTerms(const SapData<T>& data,
                          typename SapData<T>::Cache* cache) const;
   void CalcBodySpatialVelocities(const VectorX<T>& v,
