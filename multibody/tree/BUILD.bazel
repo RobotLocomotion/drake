@@ -621,10 +621,6 @@ drake_cc_googletest(
     name = "door_hinge_test",
     timeout = "moderate",
     shard_count = 2,
-    tags = [
-        # TODO(CENIC) Re-enable this test.
-        "manual",
-    ],
     deps = [
         "//multibody/plant",
         "//systems/analysis:initial_value_problem",

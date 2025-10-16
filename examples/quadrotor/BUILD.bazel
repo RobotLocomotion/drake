@@ -114,10 +114,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "quadrotor_dynamics_test",
     data = [":models"],
-    tags = [
-        # TODO(CENIC) Re-enable this test.
-        "manual",
-    ],
     deps = [
         ":quadrotor_plant",
         "//common/test_utilities:eigen_matrix_compare",

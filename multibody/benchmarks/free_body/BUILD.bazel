@@ -45,10 +45,6 @@ drake_cc_googletest(
     name = "multibody_plant_free_body_test",
     timeout = "moderate",
     data = [":models"],
-    tags = [
-        # TODO(CENIC) Re-enable this test.
-        "manual",
-    ],
     deps = [
         ":free_body",
         "//common/test_utilities:eigen_matrix_compare",

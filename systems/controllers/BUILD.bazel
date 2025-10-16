@@ -162,10 +162,6 @@ drake_cc_googletest(
     data = [
         "//examples/multibody/cart_pole:models",
     ],
-    tags = [
-        # TODO(CENIC) Re-enable this test.
-        "manual",
-    ],
     deps = [
         ":finite_horizon_linear_quadratic_regulator",
         ":linear_quadratic_regulator",

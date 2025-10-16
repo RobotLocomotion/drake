@@ -1085,10 +1085,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "inclined_plane_test",
     timeout = "moderate",
-    tags = [
-        # TODO(CENIC) Re-enable this test.
-        "manual",
-    ],
     deps = [
         ":plant",
         "//multibody/benchmarks/inclined_plane",

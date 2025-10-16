@@ -517,10 +517,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "simulator_test",
-    tags = [
-        # TODO(CENIC) Re-enable this test.
-        "manual",
-    ],
     deps = [
         ":explicit_euler_integrator",
         ":implicit_euler_integrator",
@@ -592,10 +588,6 @@ drake_py_unittest(
     data = [
         ":simulator_gflags_main",
     ],
-    tags = [
-        # TODO(CENIC) Re-enable this test.
-        "manual",
-    ],
     deps = [
         "@rules_python//python/runfiles",
     ],
@@ -616,10 +608,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "bogacki_shampine3_integrator_test",
-    tags = [
-        # TODO(CENIC) Re-enable this test.
-        "manual",
-    ],
     # If necessary, increase test timeout to 'moderate' when run with Valgrind
     # and/or disable in debug mode.
     deps = [
@@ -689,8 +677,6 @@ drake_cc_googletest(
     # See Drake issue #9261.
     tags = [
         "no_memcheck",
-        # TODO(CENIC) Re-enable this test.
-        "manual",
     ],
     deps = [
         ":implicit_euler_integrator",
@@ -714,10 +700,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "integrator_base_test",
-    tags = [
-        # TODO(CENIC) Re-enable this test.
-        "manual",
-    ],
     deps = [
         ":integrator_base",
         ":simulator_config_functions",
@@ -741,10 +723,6 @@ drake_cc_googletest(
     # memcheck (per Drake issue #9621).
     timeout = "moderate",
     shard_count = 2,
-    tags = [
-        # TODO(CENIC) Re-enable this test.
-        "manual",
-    ],
     deps = [
         ":implicit_euler_integrator",
         ":radau_integrator",
@@ -804,10 +782,6 @@ drake_cc_googletest(
     timeout = "moderate",
     # This test is prohibitively slow with --compilation_mode=dbg.
     disable_in_compilation_mode_dbg = True,
-    tags = [
-        # TODO(CENIC) Re-enable this test.
-        "manual",
-    ],
     deps = [
         ":runge_kutta3_integrator",
         "//common/test_utilities:eigen_matrix_compare",
@@ -823,10 +797,6 @@ drake_cc_googletest(
     timeout = "moderate",
     # This test is prohibitively slow with --compilation_mode=dbg.
     disable_in_compilation_mode_dbg = True,
-    tags = [
-        # TODO(CENIC) Re-enable this test.
-        "manual",
-    ],
     deps = [
         ":runge_kutta5_integrator",
         "//common/test_utilities:eigen_matrix_compare",
@@ -853,10 +823,6 @@ drake_cc_googletest(
     # memcheck (per Drake issue #9621).
     timeout = "moderate",
     shard_count = 2,
-    tags = [
-        # TODO(CENIC) Re-enable this test.
-        "manual",
-    ],
     deps = [
         ":velocity_implicit_euler_integrator",
         "//systems/analysis/test_utilities:implicit_integrator_test",
@@ -867,10 +833,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "initial_value_problem_test",
     timeout = "moderate",
-    tags = [
-        # TODO(CENIC) Re-enable this test.
-        "manual",
-    ],
     deps = [
         ":initial_value_problem",
         ":runge_kutta2_integrator",
@@ -881,10 +843,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "scalar_initial_value_problem_test",
-    tags = [
-        # TODO(CENIC) Re-enable this test.
-        "manual",
-    ],
     deps = [
         ":runge_kutta2_integrator",
         ":scalar_initial_value_problem",
@@ -894,10 +852,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "antiderivative_function_test",
-    tags = [
-        # TODO(CENIC) Re-enable this test.
-        "manual",
-    ],
     deps = [
         ":antiderivative_function",
         ":runge_kutta2_integrator",
