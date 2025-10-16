@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 Usage:
   system_doxygen input-file
