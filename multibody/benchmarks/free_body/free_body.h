@@ -158,7 +158,7 @@ class FreeBody {
   /// </table>
   ///
   /// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York,
-  ///   1983. (with P. W. Likins and D. A. Levinson).  Available for free .pdf
+  ///   1983\. (with P. W. Likins and D. A. Levinson).  Available for free .pdf
   ///   download: https://ecommons.cornell.edu/handle/1813/637
   std::tuple<Eigen::Quaterniond, Eigen::Vector4d, Eigen::Vector3d,
              Eigen::Vector3d>
@@ -193,7 +193,7 @@ class FreeBody {
   ///       are returned in units of radian/second.
   ///
   /// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York,
-  ///   1983. (with P. W. Likins and D. A. Levinson).  Available for free .pdf
+  ///   1983\. (with P. W. Likins and D. A. Levinson).  Available for free .pdf
   ///   download: https://ecommons.cornell.edu/handle/1813/637
   std::pair<double, double> CalcAngularRates_s_p() const {
     const double I = get_I();
