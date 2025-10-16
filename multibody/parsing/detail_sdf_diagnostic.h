@@ -90,6 +90,13 @@ bool PropagateErrors(sdf::Errors&& input_errors, sdf::Errors* output_errors);
 // for warnings.
 bool IsError(const sdf::Error& report);
 
+// Returns true iff the given report indicates a warning that should be muted
+// (simply ignored). SDFormat is not 100% consistent about what gets reported
+// as an sdf::Error and this is the last chance to filter out those that are
+// truly frivolous. (See implementation for details.)
+// @pre IsError(report) == false.
+bool IsMutedWarning(const sdf::Error& report);
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

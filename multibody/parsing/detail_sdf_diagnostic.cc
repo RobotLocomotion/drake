@@ -77,7 +77,9 @@ bool SDFormatDiagnostic::PropagateErrors(const sdf::Errors& errors) const {
       diagnostic_->Error(detail);
       result = true;
     } else {
-      diagnostic_->Warning(detail);
+      if (!IsMutedWarning(e)) {
+        diagnostic_->Warning(detail);
+      }
     }
   }
   return result;
@@ -91,10 +93,31 @@ bool IsError(const sdf::Error& report) {
     case sdf::ErrorCode::NONE: {
       return false;
     }
+    case sdf::ErrorCode::ELEMENT_MISSING: {
+      // TODO(https://github.com/gazebosim/sdformat/issues/1592): Omitting
+      // density reports as an error. This is tested in detail_sdf_parser_test.
+      // See AutoInertiaForMeshBadData.
+      return report.Message().find(
+                 "Collision is missing a <density> child element.") ==
+             std::string::npos;
+    }
     default: {
       return true;
     }
   }
+}
+
+bool IsMutedWarning(const sdf::Error& report) {
+  // TODO(https://github.com/gazebosim/sdformat/issues/1592): Omitting
+  // density reports as an error. This is tested in detail_sdf_parser_test.
+  // See AutoInertiaForMeshBadData.
+  if (report.Code() == sdf::ErrorCode::ELEMENT_MISSING &&
+      report.Message().find(
+          "Collision is missing a <density> child element.") !=
+          std::string::npos) {
+    return true;
+  }
+  return false;
 }
 
 bool PropagateErrors(sdf::Errors&& input_errors, sdf::Errors* output_errors) {

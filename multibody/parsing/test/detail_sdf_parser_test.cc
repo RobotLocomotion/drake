@@ -5138,9 +5138,7 @@ TEST_F(SdfParserTest, AutoInertiaForMeshBadData) {
   ParseTestString(R"""(
 <model name='inertia_from_box'>
   <link name='missing_uri'>
-    <inertial auto="true">
-      <density>25</density>
-    </inertial>
+    <inertial auto="true"/>      !!-- default density is not a problem. -->
     <collision name="collision1">
       <geometry>
         <mesh/>                   <!-- missing uri -->
