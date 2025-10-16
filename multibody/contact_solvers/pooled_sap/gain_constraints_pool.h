@@ -61,18 +61,7 @@ class PooledSapModel<T>::GainConstraintsPool {
     ue_.Clear();
   }
 
-  void Reset() {
-    const int nc = model().num_cliques();
-    DRAKE_DEMAND(nc > 0);
-    const std::vector<int>& clique_sizes = model().clique_sizes();
-    // At most all cliques involved.
-    clique_.reserve(nc);
-    constraint_sizes_.reserve(nc);
-    K_.Reserve(clique_sizes);
-    b_.Reserve(clique_sizes);
-    le_.Reserve(clique_sizes);
-    ue_.Reserve(clique_sizes);
-  }
+  void Reset() { Clear(); }
 
   void Resize(const std::vector<int>& sizes) {
     clique_.resize(sizes.size());
