@@ -13,44 +13,32 @@ class TestForwardDiff(unittest.TestCase):
 
     def test_mul(self):
         x = 2.0
-        self.assertAlmostEqual(derivative(lambda x: x * x, x),
-                               2 * x)
-        self.assertAlmostEqual(derivative(lambda x: 5 * x, x),
-                               5)
-        self.assertAlmostEqual(derivative(lambda x: x * 5, x),
-                               5)
+        self.assertAlmostEqual(derivative(lambda x: x * x, x), 2 * x)
+        self.assertAlmostEqual(derivative(lambda x: 5 * x, x), 5)
+        self.assertAlmostEqual(derivative(lambda x: x * 5, x), 5)
 
     def test_add(self):
         x = 2.0
-        self.assertAlmostEqual(derivative(lambda x: x + x, x),
-                               2)
-        self.assertAlmostEqual(derivative(lambda x: x + 10, x),
-                               1)
-        self.assertAlmostEqual(derivative(lambda x: 10 + x, x),
-                               1)
+        self.assertAlmostEqual(derivative(lambda x: x + x, x), 2)
+        self.assertAlmostEqual(derivative(lambda x: x + 10, x), 1)
+        self.assertAlmostEqual(derivative(lambda x: 10 + x, x), 1)
 
     def test_sub(self):
         x = 2.0
-        self.assertAlmostEqual(derivative(lambda x: x - x, x),
-                               0)
-        self.assertAlmostEqual(derivative(lambda x: x - 11, x),
-                               1)
-        self.assertAlmostEqual(derivative(lambda x: 11 - x, x),
-                               -1)
+        self.assertAlmostEqual(derivative(lambda x: x - x, x), 0)
+        self.assertAlmostEqual(derivative(lambda x: x - 11, x), 1)
+        self.assertAlmostEqual(derivative(lambda x: 11 - x, x), -1)
 
     def test_truediv(self):
         x = 2.0
-        self.assertAlmostEqual(derivative(lambda x: x / x, x),
-                               0)
-        self.assertAlmostEqual(derivative(lambda x: x / 1.0, x),
-                               1)
-        self.assertAlmostEqual(derivative(lambda x: 1.0 / x, x),
-                               -1.0 / x**2)
+        self.assertAlmostEqual(derivative(lambda x: x / x, x), 0)
+        self.assertAlmostEqual(derivative(lambda x: x / 1.0, x), 1)
+        self.assertAlmostEqual(derivative(lambda x: 1.0 / x, x), -1.0 / x**2)
 
     def test_gradient_and_jacobian(self):
         # Explicitly test with type(x) == list, so that we ensure the API
         # handles this case.
-        x = [1., 2.]
+        x = [1.0, 2.0]
 
         def f(x):
             return x.dot(x)
@@ -89,14 +77,14 @@ class TestForwardDiff(unittest.TestCase):
         # Test that jacobian can handle AutoDiffXd entries with
         # empty derivative vectors.
 
-        x = [0., 2.]
+        x = [0.0, 2.0]
 
         def f(q):
             # The math.min function will have empty derivatives when
             # it promotes the constant.
             return np.array([q[0], drake_math.min(q[1], 1), q[1]])
 
-        expected_jacobian = np.array([[1., 0.], [0., 0.], [0., 1.]])
+        expected_jacobian = np.array([[1.0, 0.0], [0.0, 0.0], [0.0, 1.0]])
 
         numpy_compare.assert_equal(jacobian(f, x), expected_jacobian)
 
@@ -111,12 +99,13 @@ class TestForwardDiff(unittest.TestCase):
 
         def f_bad(_):
             # This will cause an error.
-            return [0., 1.]
+            return [0.0, 1.0]
 
         with self.assertRaises(AssertionError) as cm:
-            gradient(f_bad, x=[10.])
+            gradient(f_bad, x=[10.0])
         self.assertIn(
-            "must be of a scalar or a vector of size 1", str(cm.exception))
+            "must be of a scalar or a vector of size 1", str(cm.exception)
+        )
 
     def test_jacobian_api_negative(self):
         def g_good(x):

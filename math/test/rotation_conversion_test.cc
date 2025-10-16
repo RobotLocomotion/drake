@@ -62,7 +62,12 @@ GTEST_TEST(EigenEulerAngleTest, BodyXYZ) {
        RotationMatrix<double>::MakeYRotation(input_angles(1)) *
        RotationMatrix<double>::MakeZRotation(input_angles(2)))
           .matrix();
-  const Vector3d output_angles = bodyXYZ_rotmat.eulerAngles(0, 1, 2);
+  const Vector3d output_angles =
+#if EIGEN_VERSION_AT_LEAST(5, 0, 0)
+      bodyXYZ_rotmat.canonicalEulerAngles(0, 1, 2);
+#else
+      bodyXYZ_rotmat.eulerAngles(0, 1, 2);
+#endif
   // input_angles.isApprox(output_angles) is a valid test (rathan than
   // comparing the converted quaternions) since all the angles are between
   // 0 and PI/2.
@@ -78,7 +83,12 @@ GTEST_TEST(EigenEulerAngleTest, SpaceXYZ) {
        RotationMatrix<double>::MakeYRotation(input_angles(1)) *
        RotationMatrix<double>::MakeXRotation(input_angles(2)))
           .matrix();
-  const Vector3d output_angles = spaceXYZ_rotmat.eulerAngles(2, 1, 0);
+  const Vector3d output_angles =
+#if EIGEN_VERSION_AT_LEAST(5, 0, 0)
+      spaceXYZ_rotmat.canonicalEulerAngles(2, 1, 0);
+#else
+      spaceXYZ_rotmat.eulerAngles(2, 1, 0);
+#endif
   // input_angles.isApprox(output_angles) is a valid test (rathan than
   // comparing the converted quaternions) since all the angles are between
   // 0 and PI/2.
@@ -94,7 +104,12 @@ GTEST_TEST(EigenEulerAngleTest, BodyZYZ) {
        RotationMatrix<double>::MakeYRotation(input_angles(1)) *
        RotationMatrix<double>::MakeZRotation(input_angles(2)))
           .matrix();
-  const Vector3d output_angles = bodyZYZ_angles.eulerAngles(2, 1, 2);
+  const Vector3d output_angles =
+#if EIGEN_VERSION_AT_LEAST(5, 0, 0)
+      bodyZYZ_angles.canonicalEulerAngles(2, 1, 2);
+#else
+      bodyZYZ_angles.eulerAngles(2, 1, 2);
+#endif
   // input_angles.isApprox(output_angles) is a valid test (rathan than
   // comparing the converted quaternions) since all the angles are between
   // 0 and PI/2.

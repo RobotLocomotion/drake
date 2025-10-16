@@ -28,9 +28,9 @@ class StochasticVectors:
 
 
 class BaseTest(unittest.TestCase):
-
-    def _check_yaml_semantic_equality(self, expected_yaml_string,
-                                      actual_yaml_string):
+    def _check_yaml_semantic_equality(
+        self, expected_yaml_string, actual_yaml_string
+    ):
         """Given two yaml strings, parses them into dictionaries (i.e., do not
         deserialize into pydrake types) and then compares them for equality.
         """
@@ -161,7 +161,7 @@ class TestTransformSerialization(BaseTest):
         assert_allclose(x.translation.min, [1.0, 2.0, 3.0])
         assert_allclose(x.translation.max, [4.0, 5.0, 6.0])
         assert_allclose(x.rotation.value.deg.min, [380, -0.25, -1.0])
-        assert_allclose(x.rotation.value.deg.max, [400,  0.25,  1.0])
+        assert_allclose(x.rotation.value.deg.max, [400, 0.25, 1.0])
         self._check_yaml_semantic_equality(yaml_dump_typed(x), data)
 
     def test_random_angle_axis(self):

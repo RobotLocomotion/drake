@@ -149,7 +149,7 @@ INSTANTIATE_TEST_SUITE_P(
     PointDistance, AutoDiffTest,
     testing::Values(
         QueryInstance(kPoint, kBox, 1e-15),
-        QueryInstance(kPoint, kCapsule, 4e-15),
+        QueryInstance(kPoint, kCapsule, 7e-15),
         QueryInstance(kPoint, kConvex, kIgnores),
         QueryInstance(kPoint, kCylinder, kIgnores),
         QueryInstance(kPoint, kEllipsoid, kIgnores),

@@ -36,18 +36,19 @@ class TestValue(unittest.TestCase):
         self.assertEqual(
             str(cm.exception),
             "Cannot get mutable value (or reference) for a type-conversion "
-            "type: <class 'str'>")
+            "type: <class 'str'>",
+        )
 
     def test_abstract_value_registered_class(self):
         """Tests registered class types (passable by reference and value). Also
         tests a move-only class type."""
         obj = MoveOnlyType(10)
         self.assertEqual(
-            pretty_class_name(Value[MoveOnlyType]),
-            "Value[MoveOnlyType]")
+            pretty_class_name(Value[MoveOnlyType]), "Value[MoveOnlyType]"
+        )
         self.assertRegex(
-            str(Value[MoveOnlyType]),
-            "<class 'pydrake.*Value.*MoveOnlyType")
+            str(Value[MoveOnlyType]), "<class 'pydrake.*Value.*MoveOnlyType"
+        )
         # This *always* clones `obj`.
         value = Value[MoveOnlyType](obj)
         self.assertTrue(value.get_value() is not obj)
@@ -164,13 +165,18 @@ class TestValue(unittest.TestCase):
         self.assertIsInstance(value, AbstractValue)
         with self.assertRaises(RuntimeError) as cm:
             value.get_value()
-        self.assertTrue(all(
-            s in str(cm.exception) for s in [
-                "AbstractValue",
-                "UnregisteredType",
-                "get_value",
-                "AddValueInstantiation",
-            ]), cm.exception)
+        self.assertTrue(
+            all(
+                s in str(cm.exception)
+                for s in [
+                    "AbstractValue",
+                    "UnregisteredType",
+                    "get_value",
+                    "AddValueInstantiation",
+                ]
+            ),
+            cm.exception,
+        )
 
     def test_value_registration(self):
         # Existence check.

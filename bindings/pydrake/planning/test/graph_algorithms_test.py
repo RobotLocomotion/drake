@@ -4,28 +4,36 @@ import numpy as np
 import scipy.sparse as sp
 
 import pydrake.planning as mut
-from pydrake.solvers import (SolverOptions, CommonSolverOption,
-                             MosekSolver, GurobiSolver)
+from pydrake.solvers import (
+    SolverOptions,
+    CommonSolverOption,
+    MosekSolver,
+    GurobiSolver,
+)
 from pydrake.common.test_utilities import numpy_compare
 
 
 def GurobiOrMosekSolverAvailable():
     return (MosekSolver().available() and MosekSolver().enabled()) or (
-            GurobiSolver().available() and GurobiSolver().enabled())
+        GurobiSolver().available() and GurobiSolver().enabled()
+    )
 
 
 class TestGraphAlgorithms(unittest.TestCase):
     """Tests the classes and methods defined in
-     pydrake.planning.graph_algorithms.
+    pydrake.planning.graph_algorithms.
     """
+
     def _butteryfly_graph(self):
-        adjacency = np.array([
-            [0, 1, 1, 0, 0],
-            [1, 0, 1, 0, 0],
-            [1, 1, 0, 1, 1],
-            [0, 0, 1, 0, 1],
-            [0, 0, 1, 1, 0],
-        ]).astype(bool)
+        adjacency = np.array(
+            [
+                [0, 1, 1, 0, 0],
+                [1, 0, 1, 0, 0],
+                [1, 1, 0, 1, 1],
+                [0, 0, 1, 0, 1],
+                [0, 0, 1, 1, 0],
+            ]
+        ).astype(bool)
         data = np.ones(12).astype(bool)
         indices = [1, 2, 0, 2, 0, 1, 3, 4, 2, 4, 2, 3]
         indptr = [0, 2, 4, 8, 10, 12]
@@ -49,7 +57,7 @@ class TestGraphAlgorithms(unittest.TestCase):
         self.assertEqual(name, solver.name)
         numpy_compare.assert_equal(
             solver.SolveMaxClique(adjacency_matrix=graph),
-            np.ones(graph.shape[0])
+            np.ones(graph.shape[0]),
         )
 
     def test_max_clique_solver_via_mip_methods(self):
@@ -64,8 +72,9 @@ class TestGraphAlgorithms(unittest.TestCase):
         solver_options = SolverOptions()
         solver_options.SetOption(CommonSolverOption.kPrintToConsole, True)
         initial_guess = np.ones(graph.shape[0])
-        solver = mut.MaxCliqueSolverViaMip(solver_options=solver_options,
-                                           initial_guess=initial_guess)
+        solver = mut.MaxCliqueSolverViaMip(
+            solver_options=solver_options, initial_guess=initial_guess
+        )
         # Test the getters.
         numpy_compare.assert_equal(solver.GetInitialGuess(), initial_guess)
         self.assertTrue(
@@ -114,7 +123,7 @@ class TestGraphAlgorithms(unittest.TestCase):
         self.assertEqual(name, solver.name)
         self.assertEqual(
             solver.SolveMinCliqueCover(adjacency_matrix=graph),
-            [set(i for i in range(5))]
+            [set(i for i in range(5))],
         )
 
     def test_min_clique_cover_solver_via_greedy_methods(self):
@@ -123,11 +132,13 @@ class TestGraphAlgorithms(unittest.TestCase):
         # Test the default constructor.
         max_clique_solver = mut.MaxCliqueSolverViaGreedy()
         solver = mut.MinCliqueCoverSolverViaGreedy(
-            max_clique_solver=max_clique_solver, min_clique_size=3)
+            max_clique_solver=max_clique_solver, min_clique_size=3
+        )
 
         # Test solve min clique cover.
-        min_clique_cover = solver.SolveMinCliqueCover(adjacency_matrix=graph,
-                                                      partition=False)
+        min_clique_cover = solver.SolveMinCliqueCover(
+            adjacency_matrix=graph, partition=False
+        )
         self.assertEqual(len(min_clique_cover), 2)
 
         self.assertEqual(solver.get_min_clique_size(), 3)

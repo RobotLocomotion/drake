@@ -260,7 +260,9 @@ namespace Eigen {
 template <>
 struct NumTraits<drake::symbolic::RationalFunction>
     : GenericNumTraits<drake::symbolic::RationalFunction> {
-  static inline int digits10() { return 0; }
+  constexpr static int digits() { return 0; }
+  constexpr static int digits10() { return 0; }
+  constexpr static int max_digits10() { return 0; }
 };
 
 // Informs Eigen that BinaryOp(LhsType, RhsType) gets ResultType.

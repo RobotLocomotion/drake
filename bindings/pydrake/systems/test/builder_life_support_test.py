@@ -2,12 +2,15 @@
 
 See also systems/test/test_util_py.cc for the bindings used in the tests.
 """
+
 import unittest
 
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.memory_test_util import actual_ref_count
 from pydrake.systems.test.test_util import (
-    Arbitrary, DiagramBuilderTestAdversary_)
+    Arbitrary,
+    DiagramBuilderTestAdversary_,
+)
 
 
 class TestBuilderLifeSupport(unittest.TestCase):
@@ -16,8 +19,8 @@ class TestBuilderLifeSupport(unittest.TestCase):
         DiagramBuilderTestAdversary = DiagramBuilderTestAdversary_[T]
         adversary = DiagramBuilderTestAdversary()
         with self.assertRaisesRegex(
-                RuntimeError,
-                "Could not activate builder_life_support_stash.*"):
+            RuntimeError, "Could not activate builder_life_support_stash.*"
+        ):
             adversary.StashBadIndex()
         self.assertEqual(actual_ref_count(adversary), 1)
 

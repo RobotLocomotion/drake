@@ -40,22 +40,24 @@ import os
 from pathlib import Path
 import textwrap
 
-from pydrake.visualization._model_visualizer import \
-    ModelVisualizer as _ModelVisualizer
+from pydrake.common import configure_logging as _configure_logging
+from pydrake.visualization._model_visualizer import (
+    ModelVisualizer as _ModelVisualizer,
+)
 
 
 def _main():
     # Use a few color highlights for the user's terminal output.
+    _configure_logging()
     logging.addLevelName(logging.INFO, "\033[36mINFO\033[0m")
     logging.addLevelName(logging.WARNING, "\033[33mWARNING\033[0m")
     logging.addLevelName(logging.ERROR, "\033[31mERROR\033[0m")
-    format = "%(levelname)s: %(message)s"
-    logging.basicConfig(level=logging.INFO, format=format)
 
     # Prepare to parse arguments.
     args_parser = argparse.ArgumentParser(
         description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
 
     # Many of our command line arguments map directly onto named arguments to
     # the ModelVisualizer constructor. We'll obey those constructor defaults
@@ -63,20 +65,28 @@ def _main():
     defaults = _ModelVisualizer._get_constructor_defaults()
 
     args_parser.add_argument(
-        "filename", nargs="+", type=str,
+        "filename",
+        nargs="+",
+        type=str,
         help="Filesystem path to an SDFormat, URDF, OBJ, or DMD file; "
-        "or a package:// URL to use a ROS package path.")
+        "or a package:// URL to use a ROS package path.",
+    )
 
     assert defaults["browser_new"] is False
     args_parser.add_argument(
-        "-w", "--open-window", dest="browser_new",
+        "-w",
+        "--open-window",
+        dest="browser_new",
         action="store_true",
-        help="Open the MeshCat display in a new browser window.")
+        help="Open the MeshCat display in a new browser window.",
+    )
     assert defaults["pyplot"] is False
     args_parser.add_argument(
-        "--pyplot", action="store_true",
+        "--pyplot",
+        action="store_true",
         help="Open a pyplot figure for rendering using "
-             "PlanarSceneGraphVisualizer.")
+        "PlanarSceneGraphVisualizer.",
+    )
     # TODO(russt): Consider supporting the PlanarSceneGraphVisualizer
     #  options as additional arguments.
     assert defaults["visualize_frames"] is False
@@ -90,18 +100,21 @@ def _main():
         "--show_rgbd_sensor",
         action="store_true",
         help="Add and show an RgbdSensor. At the moment, the image display "
-             "uses a native window so will not work in a remote or cloud "
-             "runtime environment.",
+        "uses a native window so will not work in a remote or cloud "
+        "runtime environment.",
     )
     assert defaults["environment_map"] == Path()
     args_parser.add_argument(
-        "--environment_map", default=Path(), type=Path,
+        "--environment_map",
+        default=Path(),
+        type=Path,
         help="Filesystem path to an image to be used as an environment map. "
-             "It must be an image type normally used by your browser (e.g., "
-             ".jpg, .png, etc.). HDR images are not supported yet."
+        "It must be an image type normally used by your browser (e.g., "
+        ".jpg, .png, etc.). HDR images are not supported yet.",
     )
     args_parser.add_argument(
-        "--compliance_type", default=defaults["compliance_type"],
+        "--compliance_type",
+        default=defaults["compliance_type"],
         help=textwrap.dedent("""Overrides the DefaultProximityProperties
         setting with same name. Can be set to either 'rigid' or 'compliant' for
         hydroelastic contact, or 'undefined' to use point contact.  When a
@@ -134,31 +147,40 @@ def _main():
         help="Triad opacity for frame visualization.",
     )
     args_parser.add_argument(
-        "-q", "--position", dest="position",
-        type=float, nargs="+", default=[],
+        "-q",
+        "--position",
+        dest="position",
+        type=float,
+        nargs="+",
+        default=[],
         help="A list of positions which must be the same length as the number "
-             "of positions in the sdf models.  Note that most models have a "
-             "floating-base joint by default (unless the sdf explicitly welds "
-             "the base to the world, and so have 7 positions corresponding to "
-             "the quaternion representation of that floating-base position).")
+        "of positions in the sdf models.  Note that most models have a "
+        "floating-base joint by default (unless the sdf explicitly welds "
+        "the base to the world, and so have 7 positions corresponding to "
+        "the quaternion representation of that floating-base position).",
+    )
 
     args_parser.add_argument(
-        "--loop_once", action='store_true',
-        help="Run the evaluation loop once and then quit.")
+        "--loop_once",
+        action="store_true",
+        help="Run the evaluation loop once and then quit.",
+    )
     args = args_parser.parse_args()
 
-    if 'BUILD_WORKSPACE_DIRECTORY' in os.environ:
-        os.chdir(os.environ['BUILD_WORKING_DIRECTORY'])
+    if "BUILD_WORKSPACE_DIRECTORY" in os.environ:
+        os.chdir(os.environ["BUILD_WORKING_DIRECTORY"])
 
-    visualizer = _ModelVisualizer(visualize_frames=args.visualize_frames,
-                                  show_rgbd_sensor=args.show_rgbd_sensor,
-                                  triad_length=args.triad_length,
-                                  triad_radius=args.triad_radius,
-                                  triad_opacity=args.triad_opacity,
-                                  browser_new=args.browser_new,
-                                  pyplot=args.pyplot,
-                                  environment_map=args.environment_map,
-                                  compliance_type=args.compliance_type)
+    visualizer = _ModelVisualizer(
+        visualize_frames=args.visualize_frames,
+        show_rgbd_sensor=args.show_rgbd_sensor,
+        triad_length=args.triad_length,
+        triad_radius=args.triad_radius,
+        triad_opacity=args.triad_opacity,
+        browser_new=args.browser_new,
+        pyplot=args.pyplot,
+        environment_map=args.environment_map,
+        compliance_type=args.compliance_type,
+    )
     package_map = visualizer.package_map()
     package_map.PopulateFromRosPackagePath()
     for item in args.filename:
@@ -180,5 +202,5 @@ def _main():
     visualizer.Run(position=args.position, loop_once=args.loop_once)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()
