@@ -112,15 +112,31 @@ struct PooledSapParameters {
   VectorX<T> effort_limits;
 };
 
-/* A model of the SAP problem.
- It models the discrete momentum equation:
-    A⋅v = r + Jᵀ⋅γ,
- which corresponds to the convex cost:
-    ℓ(v) = 1/2‖v‖²−r⋅v + ℓ(vc).
-
-[Castro et al., 2021] Castro A., Permenter F. and Han X., 2021. An Unconstrained
-Convex Formulation of Compliant Contact. Available at
-https://arxiv.org/abs/2110.10107 */
+/**
+ * This class define a convex SAP problem,
+ *
+ *    minᵥ ℓ(v;q₀,v₀,δt) = 1/2 v'Av - r'v + ℓ(v).
+ *
+ * The gradient of this cost is
+ *
+ *    Av = r + Jᵀγ,
+ *    Mv = Mv₀ + δt(τ₀ - k₀) + Jᵀγ,
+ *    M(v - v₀) + δt k₀ = δt τ₀ + Jᵀγ,
+ *
+ * which are the discrete momentum balance conditions for a multibody system
+ * with contact (and other constraints).
+ *
+ * This class is designed to be independent of the MultibodyPlant used to
+ * construct the problem: the job of constructing the problem given a
+ * MultibodyPlant and its state (Context) falls to PooledSapBuilder.
+ *
+ * Similarly, this model does not change with different values of the decision
+ * variable v: quantities that change with v are stored in PooledSapData.
+ *
+ * TODO(CENIC): Consider renaming everything from "PooledSap" to "ICF"
+ * (Irrotational Contact Fields) or something like that. "SAP" is already an
+ * overloaded term, and CENIC builds on ICF more so than SAP.
+ */
 template <typename T>
 class PooledSapModel {
  public:
@@ -146,22 +162,26 @@ class PooledSapModel {
         limit_constraints_pool_(this),
         patch_constraints_pool_(this) {}
 
-  /* Resets problem parameters.
-   @pre params->VerifyInvariants() is true. */
+  // Reset problem parameters. Verifies that the parameters are valid, then
+  // computes some auxiliary data that will be useful during the solve.
   void ResetParameters(std::unique_ptr<PooledSapParameters<T>> params) {
     DRAKE_DEMAND(params != nullptr);
     params->VerifyInvariants();
+
     params_ = std::move(params);
     num_bodies_ = ssize(params_->body_cliques);
+
+    // Pre-compute the size of each clique and its starting index in the
+    // full velocity vector.
+    const int num_cliques = params_->A.size();
     clique_sizes_.clear();
     clique_start_.clear();
-
-    const int num_cliques = params_->A.size();
     clique_sizes_.reserve(num_cliques);
     clique_start_.reserve(num_cliques + 1);
     clique_start_.push_back(0);
     num_velocities_ = 0;
     auto& A = params_->A;
+    // TODO(CENIC): this loop feels redundant with the loop in VerifyInvariants.
     for (int c = 0; c < A.size(); ++c) {
       const int clique_nv = A[c].rows();
       num_velocities_ += clique_nv;
@@ -170,109 +190,116 @@ class PooledSapModel {
       clique_start_.push_back(clique_start_.back() + clique_nv);
     }
     DRAKE_DEMAND(params_->r.size() == num_velocities_);
+
+    // Reset all constraint pools.
     coupler_constraints_pool_.Clear();
     gain_constraints_pool_.Clear();
     limit_constraints_pool_.Clear();
-
     patch_constraints_pool_.Clear();
     patch_constraints_pool_.Reset(params_->time_step, clique_start_,
                                   clique_sizes_);
 
+    // Pre-compute spatial velocity for each body at the current state.
     V_WB0_.Resize(num_bodies_);
     CalcBodySpatialVelocities(params_->v0, &V_WB0_);
 
-    // Diagonal approximation of the Delassus operator for constraints for which
-    // the Jacobian J is the identity matrix.
+    // Set the diagonal approximation of the Delassus operator for constraints
+    // for which the Jacobian J is the identity matrix.
     clique_delassus_.Resize(clique_sizes_, clique_sizes_);
     for (int c = 0; c < A.size(); ++c) {
       clique_delassus_[c] = A[c].diagonal().cwiseInverse();
     }
   }
 
-  /* Releases ownership of parameters so that we can re-use previously allocated
-  memory. */
+  // Release ownership of parameters so that we can re-use memory.
+  // The typical usage is something like:
+  //
+  //   auto params = model.ReleaseParameters();
+  //   ... modify params ...
+  //   model.ResetParameters(std::move(params));
+  //
   std::unique_ptr<PooledSapParameters<T>> ReleaseParameters() {
     return std::move(params_);
   }
 
+  // Read-only access to parameters.
   const PooledSapParameters<T>& params() const {
     DRAKE_ASSERT(params_ != nullptr);
     return *params_;
   }
 
+  // Mutable access to parameters.
+  // TODO(CENIC): this seems redundant with the ResetParameters/ResetParameters
+  // workflow. We should choose one (or figure out a better way).
   PooledSapParameters<T>& params() {
     DRAKE_ASSERT(params_ != nullptr);
     return *params_;
   }
 
+  // The time step δt.
   const T& time_step() const {
     DRAKE_ASSERT(params_ != nullptr);
     return params().time_step;
   }
 
+  // Get the clique index associated with the given body.
   int body_clique(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return params_->body_cliques[body];
   }
 
-  /* Returns true iff body is anchored to the world.
-   Anchored bodies have a zero-sized (clique_size(body_clique(body)) == 0)
-   negative clique (body_clique(body) < 0). */
+  // Returns true iff the given body is anchored to the world. Anchored bodies
+  // are not included in the problem, and thus have a negative clique index.
   bool is_anchored(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return body_clique(body) < 0;
   }
 
-  /* Returns `true` for a free floating body. This can be used to optimize out
-   Jacobian multiplications when these are the identity matrix. */
+  // Returns `true` for a free floating body. This can be used to optimize out
+  // Jacobian multiplications when these are the identity matrix.
+  // TODO(vincekurtz): consider using operator Jacobians instead of matrix
+  // Jacobians, to avoid the need for this sort of manual optimization.
   bool is_floating(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return params().body_is_floating[body] == 1;
   }
 
-  /* Returns the mass for `body`. */
+  // Returns the mass of `body`.
   const T& body_mass(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return params().body_mass[body];
   }
 
-  /* Returns the number of velocities for `clique` or zero if clique < 0
-   (anchored body). */
+  // Returns the number of velocities in the given clique. In the case of an
+  // anchored bodies (clique < 0), this returns 0.
   int clique_size(int clique) const {
     return clique < 0 ? 0 : clique_sizes_[clique];
   }
 
-  /* Returns the first element for `clique` in a full-model vector of
-   generalized velocities (or generalized forces). */
+  // Returns the first element for `clique` in a full-model vector of
+  // generalized velocities (or generalized forces).
   int clique_start(int clique) const {
     DRAKE_ASSERT(clique >= 0);
     return clique_start_[clique];
   }
 
-  /* Spatial velocity at current state x = [q0, v0]. */
+  // Returns the current (at q₀, v₀) spatial velocity of the given body.
   const Vector6<T>& V_WB(int body) const {
     DRAKE_ASSERT(params_ != nullptr);
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return V_WB0_[body];
   }
 
-  /* Returns the spatial velocity Jacobian J_WB for `body`. */
+  // Returns the spatial velocity Jacobian J_WB for `body`.
   ConstSpatialVelocityJacobianView get_jacobian(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return params().J_WB[body];
   }
 
-  typename EigenPool<MatrixX<T>>::ConstElementView get_dynamics_matrix(
-      int clique) const {
-    DRAKE_ASSERT(params_ != nullptr);
-    DRAKE_ASSERT(0 <= clique && clique < num_cliques());
-    return params().A[clique];
-  }
-
-  /* Returns a "diagonal" estimation for the Delassus operator per-clique. The
-   Delassus operator is W = J⋅M⁻¹⋅Jᵀ. For constraints for which vc = v, i.e. the
-   constraint Jacobian is the identity, we have W = M⁻¹. Further, we simplify
-   this estimation as W = diag(M)⁻¹. */
+  // Returns a "diagonal" estimation for the Delassus operator per-clique. The
+  // Delassus operator is W = J⋅M⁻¹⋅Jᵀ. For constraints for which vc = v, i.e.
+  // the constraint Jacobian is the identity, we have W = M⁻¹. Further, we
+  // simplify this estimation as W = diag(M)⁻¹.
   typename EigenPool<VectorX<T>>::ConstElementView get_clique_delassus(
       int clique) const {
     DRAKE_ASSERT(params_ != nullptr);
@@ -280,6 +307,7 @@ class PooledSapModel {
     return clique_delassus_[clique];
   }
 
+  // The linear term in the cost, r = M₀ v₀ - δt k₀  + δt τ₀.
   const VectorX<T>& r() const { return params_->r; }
 
   int num_bodies() const {
@@ -287,7 +315,6 @@ class PooledSapModel {
     return num_bodies_;
   }
 
-  /* Returns the number of cliques. */
   int num_cliques() const {
     DRAKE_ASSERT(params_ != nullptr);
     return clique_sizes_.size();
@@ -302,19 +329,16 @@ class PooledSapModel {
     return *std::max_element(clique_sizes_.begin(), clique_sizes_.end());
   }
 
-  /* Returns the total number of generalized velocities for this problem. */
   int num_velocities() const {
     DRAKE_ASSERT(params_ != nullptr);
     return num_velocities_;
   }
 
-  /* Total number of constraints. */
   int num_constraints() const {
     return num_patch_constraints() + num_gain_constraints() +
            num_limit_constraints() + num_coupler_constraints();
   }
 
-  /* Total number of constraint equations. */
   int num_constraint_equations() const {
     return coupler_constraints_pool_.num_constraint_equations() +
            patch_constraints_pool_.num_constraint_equations() +
@@ -322,6 +346,7 @@ class PooledSapModel {
            limit_constraints_pool_.num_constraint_equations();
   }
 
+  // TODO(CENIC): set/parse this in a more reasonable place
   void set_stiction_tolerance(double stiction_tolerance) {
     patch_constraints_pool_.set_stiction_tolerance(stiction_tolerance);
   }
@@ -341,17 +366,6 @@ class PooledSapModel {
   LimitConstraintsPool& limit_constraints_pool() {
     return limit_constraints_pool_;
   }
-
-  /* Limit constraints are added on a per-clique basis. Therefore this method
-   * can only be called at most num_cliques() times. */
-  // int AddConstraint(SapLimitConstraint<T> constraint);
-
-  // TODO(amcastro-tri): Add these:
-  //   SapActuationConstraint: actuation with effort limits. Per-clique.
-  //   SapHolonomicConstraint: usually one or two cliques. Consider among more
-  //   than two cliques?
-  //   SapUnilateralConstraint: things like tendons. Maybe SapLimitConstraint
-  //   covers this?
 
   int num_patch_constraints() const {
     return patch_constraints_pool_.num_patches();
@@ -376,8 +390,8 @@ class PooledSapModel {
   Eigen::VectorBlock<VectorX<T>> clique_segment(int clique,
                                                 VectorX<T>* x) const;
 
-  /* Resizes data accordingly to store data for this model.
-   No allocations are required if data's capacity is already enough. */
+  // Resizes `data` to fit this model.
+  // No allocations are required if `data`'s capacity is already enough.
   void ResizeData(PooledSapData<T>* data) const;
 
   // Updates `data` as a function of v.
@@ -420,58 +434,76 @@ class PooledSapModel {
   std::unique_ptr<internal::BlockSparseSymmetricMatrixT<T>> MakeHessian(
       const PooledSapData<T>& data) const;
 
-  /* Updates the values of the Hessian for the input `data`.
-   @pre The sparsity of the `hessian` matches the structure of `this` model. */
+  // Updates the values of the Hessian for the input `data`.
+  // @pre The sparsity of the `hessian` matches the structure of `this` model.
   void UpdateHessian(const PooledSapData<T>& data,
                      internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
+  // Pre-compute some quantities used to speed up CalcCostAlongLine() below.
   void UpdateSearchDirection(const PooledSapData<T>& data, const VectorX<T>& w,
                              SearchDirectionData<T>* search_data) const;
 
-  /* Computes ℓ(α) = ℓ(v + α⋅w) along w at α and its first dℓ/dα(α) and second
-   derivatives d²ℓ/dα²(α).
-   @param alpha The value of α.
-   @param data Stores velocity v along with cached quantities. See CalcData().
-   @param search_direction Stores w along with cached quantities. See
-   UpdateSearchDirection().
-   @param scratch Scratch space properly resized with ResizeData().
-   @param dcost_dalpha dℓ/dα on output.
-   @param dcost_dalpha d²ℓ/dα² on output.
-   @returns The cost ℓ(α). */
+  /**
+   * Computes ℓ(α) = ℓ(v + α⋅w) along w at α and its first dℓ/dα(α) and second
+   * derivatives d²ℓ/dα²(α).
+   *
+   * @param alpha The value of α.
+   * @param data Stores velocity v along with cached quantities. See CalcData().
+   * @param search_direction Stores w along with cached quantities. See
+   * UpdateSearchDirection().
+   * @param scratch Scratch space properly resized with ResizeData().
+   * @param dcost_dalpha dℓ/dα on output.
+   * @param dcost_dalpha d²ℓ/dα² on output.
+   * @returns The cost ℓ(α).
+   *
+   * TODO(CENIC): figure out a better scratch space solution than dragging
+   * around a whole extra PooledSapData object.
+   */
   T CalcCostAlongLine(const T& alpha, const PooledSapData<T>& data,
                       const SearchDirectionData<T>& search_direction,
                       PooledSapData<T>* scratch, T* dcost_dalpha,
                       T* d2cost_dalpha2) const;
 
-  /* Compute and store the Hessian sparsity pattern. */
+  // Compute and store the Hessian sparsity pattern.
   void SetSparsityPattern();
 
+  // Access the Hessian sparsity pattern. This is useful for when the sparsity
+  // pattern is the same (in which case we use UpdateHessian()), and when it has
+  // changed (in which case we use MakeHessian()).
   const BlockSparsityPattern& sparsity_pattern() const {
     DRAKE_ASSERT(sparsity_pattern_ != nullptr);
     return *sparsity_pattern_;
   }
 
  private:
+  // Compute result = A⋅v, where A is the (sparse) linearized dynamics matrix.
   void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* result) const;
+
+  // Compute the cost (1/2 v'Av - r'v) and gradient (Av - r) for the terms that
+  // relate to momentum only (no constraints).
   void CalcMomentumTerms(const PooledSapData<T>& data,
                          typename PooledSapData<T>::Cache* cache) const;
+
+  // Compute spatial velocities V_WB for all bodies, given generalized
+  // velocities v.
   void CalcBodySpatialVelocities(const VectorX<T>& v,
                                  EigenPool<Vector6<T>>* V_pool) const;
 
+  // Underlying parameters that define the optimization problem.
   std::unique_ptr<PooledSapParameters<T>> params_;
 
   // Sparsity pattern for the Hessian is set once at construction, and used
   // later to detect when the sparsity pattern has changed.
   std::unique_ptr<BlockSparsityPattern> sparsity_pattern_;
 
-  // Total number of generalized velocities. = sum(clique_sizes_).
   int num_bodies_{0};
   int num_velocities_{0};
-  std::vector<int> clique_start_;          // Clique first velocity.
+  std::vector<int> clique_start_;          // Clique first velocity index.
   std::vector<int> clique_sizes_;          // Number of velocities per clique.
   EigenPool<Vector6<T>> V_WB0_;            // Initial spatial velocities.
-  EigenPool<VectorX<T>> clique_delassus_;  // W = W = diag(M)⁻¹.
+  EigenPool<VectorX<T>> clique_delassus_;  // W = diag(M)⁻¹.
 
+  // Fixed set of constraints
   CouplerConstraintsPool coupler_constraints_pool_;
   GainConstraintsPool gain_constraints_pool_;
   LimitConstraintsPool limit_constraints_pool_;
