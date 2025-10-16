@@ -55,8 +55,6 @@ class PooledSapModel<T>::LimitConstraintsPool {
     R_.Clear();
   }
 
-  void Reset() { Clear(); }
-
   /* Re-allocate memory as needed, setting all constraints as infinite. */
   void Resize(const std::vector<int>& constrained_clique_sizes,
               const std::vector<int>& constraint_to_clique) {

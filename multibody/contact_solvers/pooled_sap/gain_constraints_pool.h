@@ -61,8 +61,6 @@ class PooledSapModel<T>::GainConstraintsPool {
     ue_.Clear();
   }
 
-  void Reset() { Clear(); }
-
   void Resize(const std::vector<int>& sizes) {
     clique_.resize(sizes.size());
     constraint_sizes_.resize(sizes.size());

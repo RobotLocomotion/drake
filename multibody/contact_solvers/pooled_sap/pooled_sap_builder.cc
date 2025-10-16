@@ -382,7 +382,7 @@ void PooledSapBuilder<T>::AddLimitConstraints(
 
   typename PooledSapModel<T>::LimitConstraintsPool& limits =
       model->limit_constraints_pool();
-  limits.Reset();
+  limits.Clear();
   const std::vector<int>& tree_to_clique = model->params().tree_to_clique;
 
   // Identify all cliques that have at least one 1-DoF joint with finite limits.
