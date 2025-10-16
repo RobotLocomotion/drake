@@ -420,18 +420,17 @@ selects.config_setting_group(
     ],
 )
 
-# Disabling for now b/c profiler.h breaks it
-# drake_py_unittest(
-#     name = "exported_symbols_test",
-#     args = selects.with_or({
-#         ":skip_exported_symbols_test": ["--help"],
-#         "//conditions:default": [],
-#     }),
-#     data = [
-#         ":libdrake.so",
-#     ],
-#     tags = ["no_kcov"],
-# )
+drake_py_unittest(
+    name = "exported_symbols_test",
+    args = selects.with_or({
+        ":skip_exported_symbols_test": ["--help"],
+        "//conditions:default": [],
+    }),
+    data = [
+        ":libdrake.so",
+    ],
+    tags = ["no_kcov"],
+)
 
 drake_py_unittest(
     name = "header_dependency_test",
