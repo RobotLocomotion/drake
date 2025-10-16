@@ -1094,9 +1094,8 @@ TEST_F(SdfParserTest, MimicSuccessfulParsingForwardReference) {
 }
 
 // Disabled because mimic constraints are supported for the convex integrator.
-// TODO(vincekurtz): properly parse mimic constraints for continuous systems.
-/**
-TEST_F(SdfParserTest, MimicNoSap) {
+// TODO(CENIC): properly parse mimic constraints for continuous systems.
+TEST_F(SdfParserTest, DISABLED_MimicNoSap) {
   plant_.set_discrete_contact_approximation(
       DiscreteContactApproximation::kTamsi);
   ParseTestString(R"""(
@@ -1127,7 +1126,6 @@ TEST_F(SdfParserTest, MimicNoSap) {
           ".*Mimic elements are currently only supported by MultibodyPlant "
           "with a discrete time step and using DiscreteContactSolver::kSap."));
 }
-*/
 
 TEST_F(SdfParserTest, MimicNoJoint) {
   plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
