@@ -29,7 +29,7 @@ namespace free_body {
 /// acceleration of Bcm (B's center of mass) in N (World).
 /// Algorithm from [Kane, 1983] Sections 1.13 and 3.1, Pages 60-62 and 159-169.
 ///
-/// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
+/// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983
 ///   (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
 ///   https://ecommons.cornell.edu/handle/1813/637
 class FreeBody {
@@ -133,16 +133,33 @@ class FreeBody {
   /// @note This function allows for initial misalignment of Nx, Ny, Nz and
   /// Bx, By, Bz.
   ///
-  /// std::tuple | Description
-  /// -----------|-------------------------------------------------
-  /// quat_NB    | Quaternion relating frame N to frame B: [e0, e1, e2, e3]
-  ///            | Note: quat_NB is analogous to the rotation matrix R_NB.
-  /// quatDt     | Time-derivative of `quat_NB`, i.e., [ė0, ė1, ė2, ė3].
-  /// w_NB_B     | B's angular velocity in N, expressed in B.
-  /// alpha_NB_B | B's angular acceleration in N, expressed in B.
+  /// <table>
+  ///   <tr>
+  ///     <th>std::tuple</th>
+  ///     <th>Description</th>
+  ///   </tr>
+  ///   <tr>
+  ///     <td>quat_NB</td>
+  ///     <td>Quaternion [e0, e1, e2, e3] relating frame N to frame B.
+  ///         <br>quat_NB is analogous to the rotation matrix R_NB.
+  ///     </td>
+  ///   </tr>
+  ///   <tr>
+  ///     <td>quatDt</td>
+  ///     <td>Time-derivative of `quat_NB`, i.e., [ė0, ė1, ė2, ė3].</td>
+  ///   </tr>
+  ///   <tr>
+  ///     <td>w_NB_B</td>
+  ///     <td>B's angular velocity in N, expressed in B.</td>
+  ///   </tr>
+  ///   <tr>
+  ///     <td>alpha_NB_B</td>
+  ///     <td>B's angular acceleration in N, expressed in B.</td>
+  ///   </tr>
+  /// </table>
   ///
   /// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York,
-  ///   1983. (with P. W. Likins and D. A. Levinson).  Available for free .pdf
+  ///   1983 (with P. W. Likins and D. A. Levinson).  Available for free .pdf
   ///   download: https://ecommons.cornell.edu/handle/1813/637
   std::tuple<Eigen::Quaterniond, Eigen::Vector4d, Eigen::Vector3d,
              Eigen::Vector3d>
@@ -177,7 +194,7 @@ class FreeBody {
   ///       are returned in units of radian/second.
   ///
   /// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York,
-  ///   1983. (with P. W. Likins and D. A. Levinson).  Available for free .pdf
+  ///   1983 (with P. W. Likins and D. A. Levinson).  Available for free .pdf
   ///   download: https://ecommons.cornell.edu/handle/1813/637
   std::pair<double, double> CalcAngularRates_s_p() const {
     const double I = get_I();
@@ -215,7 +232,7 @@ class FreeBody {
   // w_NB_B     | B's angular velocity in N, expressed in B, e.g., [wx, wy, wz].
   // alpha_NB_B | B's angular acceleration in N, expressed in B, [ẇx, ẇy, ẇz].
   //
-  // - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
+  // - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983
   //   (with P. W. Likins and D. A. Levinson).  Available for free .pdf
   // download: https://ecommons.cornell.edu/handle/1813/637
   std::tuple<Eigen::Quaterniond, Eigen::Vector3d, Eigen::Vector3d>
