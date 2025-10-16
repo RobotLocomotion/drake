@@ -133,13 +133,29 @@ class FreeBody {
   /// @note This function allows for initial misalignment of Nx, Ny, Nz and
   /// Bx, By, Bz.
   ///
-  /// std::tuple | Description
-  /// -----------|-------------------------------------------------
-  /// quat_NB    | Quaternion relating frame N to frame B: [e0, e1, e2, e3]
-  ///            | Note: quat_NB is analogous to the rotation matrix R_NB.
-  /// quatDt     | Time-derivative of `quat_NB', i.e., [ė0, ė1, ė2, ė3].
-  /// w_NB_B     | B's angular velocity in N, expressed in B.
-  /// alpha_NB_B | B's angular acceleration in N, expressed in B.
+  /// <table>
+  ///   <tr>
+  ///     <th>std::tuple</th>
+  ///     <th>Description</th></tr>
+  ///   <tr>
+  ///     <td>quat_NB</td>
+  ///     <td>Quaternion relating frame N to frame B [e0, e1, e2, e3].<br>
+  ///         quat_NB is analogous to the rotation matrix R_NB.
+  ///     </td>
+  ///   </tr>
+  ///   <tr>
+  ///     <td>quatDt</td>
+  ///     <td>Time-derivative of `quat_NB`, i.e., [ė0, ė1, ė2, ė3].</td>
+  ///   </tr>
+  ///   <tr>
+  ///     <td>w_NB_B</td>
+  ///     <td>B's angular velocity in N, expressed in B.</td>
+  ///   </tr>
+  ///   <tr>
+  ///     <td>alpha_NB_B</td>
+  ///     <td>B's angular acceleration in N, expressed in B.</td>
+  ///   </tr>
+  /// </table>
   ///
   /// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York,
   ///   1983. (with P. W. Likins and D. A. Levinson).  Available for free .pdf
