@@ -46,7 +46,7 @@ drake_cc_library(
     ] + select({
         "@drake//tools/skylark:linux": [
             "@vtk_internal//:vtkglad",
-            "@x11",
+            "@vtk_internal//:vtkx11",
         ],
         "//conditions:default": [],
     }),
