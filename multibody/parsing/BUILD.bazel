@@ -607,6 +607,7 @@ drake_cc_googletest(
     name = "detail_sdf_parser_test",
     data = [
         ":test_models",
+        "//geometry:test_obj_files",
         "//multibody/benchmarks/acrobot:models",
         "@drake_models//:iiwa_description",
     ],
