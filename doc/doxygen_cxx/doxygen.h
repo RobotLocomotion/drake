@@ -31,7 +31,7 @@ If you want to make your own Doxygen locally, see
 Generation Instructions</a></p>
 
 <p><a href="https://www.doxygen.nl/manual/docblocks.html">Check
-out the Doxygen C++ documentation</a></p>
+out the Doxygen C++ documentation.</a></p>
 
 <p>Drake's Doxygen documentation is
 <a href="https://drake.mit.edu">hosted online</a> for the master branch, but is
@@ -60,7 +60,7 @@ only updated nightly.</p>
    @defgroup drake_contacts Contact Modeling in Drake
    @defgroup multibody_solvers Simulation of Multibody Systems
    @defgroup multibody_parsing Parsing Models for Multibody Dynamics
-   @defgroup hydroelastic_user_guide Hydroelastic Contact User Guide   
+   @defgroup hydroelastic_user_guide Hydroelastic Contact User Guide
  @}
 
  @addtogroup drake_contacts
@@ -241,7 +241,7 @@ namespace solvers {
  - <b>\ref pydrake_python_logging "DRAKE_PYTHON_LOGGING"</b>
  - <b>\ref drake::common::FindResource() "DRAKE_RESOURCE_ROOT"</b>
  - <b>\ref drake::solvers::SnoptSolver "DRAKE_SNOPT_SOLVER_ENABLED"</b>
- - <b>\ref drake::solvers::GurobiSolver "GRB_LICENSE_FILE"</b> (see also 
+ - <b>\ref drake::solvers::GurobiSolver "GRB_LICENSE_FILE"</b> (see also
    <a href="https://support.gurobi.com/hc/en-us/articles/360013417211-Where-do-I-place-the-Gurobi-license-file-gurobi-lic-">upstream documentation</a>)
  - <b>\ref drake::solvers::GurobiSolver "GUROBI_NUM_THREADS"</b>
  - <b>HOME</b>

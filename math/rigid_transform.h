@@ -115,7 +115,7 @@ class RigidTransform {
   /// direction herein called `lambda`) is non-zero and finite, but which may or
   /// may not have unit length [i.e., `lambda.norm()` does not have to be 1].
   /// @param[in] p position vector from frame A's origin to frame B's origin,
-  /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A
+  /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
   /// @throws std::exception in debug builds if the rotation matrix
   /// that is built from `theta_lambda` is invalid.
   /// @see RotationMatrix::RotationMatrix(const Eigen::AngleAxis<T>&)
@@ -1021,7 +1021,7 @@ static_assert(sizeof(RigidTransform<double>) == 12 * sizeof(double),
 
 /// Stream insertion operator to write an instance of RigidTransform into a
 /// `std::ostream`. Especially useful for debugging.
-/// @relates RigidTransform.
+/// @relates RigidTransform
 template <typename T>
 std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X);
 
