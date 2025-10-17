@@ -15,7 +15,6 @@
 #include "drake/multibody/tree/mobilizer.h"
 #include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/spatial_inertia.h"
@@ -648,8 +647,7 @@ class BodyNode : public MultibodyElement<T> {
   friend class BodyNodeTester;
 
   // Implementation for MultibodyElement::DoSetTopology().
-  // TODO(sherm1) Get rid of this.
-  void DoSetTopology(const MultibodyTreeTopology&) final {
+  void DoSetTopology() final {
     // BodyNode gets everything it needs at construction.
     DRAKE_DEMAND(body_ != nullptr && mobilizer_ != nullptr);
   }
