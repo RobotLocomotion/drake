@@ -5095,7 +5095,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// Returns `true` if this %MultibodyPlant was finalized with a call to
   /// Finalize().
   /// @see Finalize().
-  bool is_finalized() const { return internal_tree().topology_is_valid(); }
+  bool is_finalized() const { return internal_tree().is_finalized(); }
 
   /// (Advanced) If `this` plant is continuous (i.e., is_discrete() is `false`),
   /// returns false. If `this` plant is discrete, returns whether or not the

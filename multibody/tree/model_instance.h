@@ -195,7 +195,7 @@ class ModelInstance final : public MultibodyElement<T> {
                             EigenPtr<VectorX<T>> v) const;
 
  private:
-  void DoSetTopology(const MultibodyTreeTopology&) final {}
+  void DoSetTopology() final {}
 
   std::string name_;
 

@@ -408,7 +408,7 @@ class DeformableBody final : public MultibodyElement<T> {
                                    const fem::DeformableBodyConfig<T>& config,
                                    const Vector3<double>& weights);
 
-  void DoSetTopology(const internal::MultibodyTreeTopology&) final {
+  void DoSetTopology() final {
     /* No-op because deformable bodies are not part of the MultibodyTree
      topology. */
   }
