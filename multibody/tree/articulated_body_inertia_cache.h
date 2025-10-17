@@ -6,9 +6,9 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/math/linear_solve.h"
+#include "drake/multibody/topology/forest.h"
 #include "drake/multibody/tree/articulated_body_inertia.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 
 namespace drake {
 namespace multibody {

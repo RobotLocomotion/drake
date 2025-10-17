@@ -376,16 +376,17 @@ namespace geometry {
  PNG, JPG, and TIFF: can be written (via systems::sensors::ImageIo and
  systems::sensors::ImageWriter). They can be read as part of model definitions
  (e.g. as part of glTF or Obj objects). They can be used to define environment
- maps in geometry::RenderEngineVtkParams.
+ maps in geometry::Meshcat::SetEnvironmentMap() or
+ geometry::RenderEngineVtkParams.
 
  HDR: This file type can only be used to define environment maps in
- geometry::RenderEngineVtkParams.
+ geometry::Meshcat::SetEnvironmentMap() or geometry::RenderEngineVtkParams.
 
  KTX2: This file type can only be used as part of a glTF file (see above). It is
  a highly compressed image format designed to be used efficiently by GPUs. It is
  currently only supported by Meshcat (via the illustration role) and will either
- be ignored or cause console spam if used elsewhere. (See @ref gltf_support
- "the discussion of glTF files" above.")
+ be ignored or cause warnings to be logged if used elsewhere. (See
+ @ref gltf_support "the discussion of glTF files" above.")
 
 <!-- Foot notes for this file -->
 

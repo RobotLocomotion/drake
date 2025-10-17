@@ -97,6 +97,9 @@ class SpanningForest::Tree {
     return last_v_plus_1 - v_start();
   }
 
+  /* Convenience method equivalent to (nv() > 0). */
+  bool has_dofs() const { return nv() > 0; }
+
  private:
   friend class SpanningForest;
 
