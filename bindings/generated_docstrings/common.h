@@ -3145,11 +3145,11 @@ For example:
 .. code-block:: c++
 
     double* SanityCheck(double* data) {
-      if (!data) {
-        static const logging::Warn log_once("Bad data!");
-        return alternative_data();
-      }
-      return data;
+    if (!data) {
+    static const logging::Warn log_once("Bad data!");
+    return alternative_data();
+    }
+    return data;
     }
 
 .. raw:: html

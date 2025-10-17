@@ -6,7 +6,6 @@ def _python_lint(
         *,
         name_prefix,
         files,
-        use_ruff_format,
         disallow_executable):
     locations = ["$(location %s)" % f for f in files]
 
@@ -21,15 +20,14 @@ def _python_lint(
     )
 
     # Ruff format.
-    if use_ruff_format:
-        sh_test(
-            name = name_prefix + "_ruff_format_lint",
-            size = "small",
-            srcs = ["//tools/lint:ruff_format_lint.sh"],
-            data = ["@ruff", "//:.ruff.toml"] + files,
-            args = locations,
-            tags = ["ruff", "lint"],
-        )
+    sh_test(
+        name = name_prefix + "_ruff_format_lint",
+        size = "small",
+        srcs = ["//tools/lint:ruff_format_lint.sh"],
+        data = ["@ruff", "//:.ruff.toml"] + files,
+        args = locations,
+        tags = ["ruff", "lint"],
+    )
 
     # Additional Drake lint.
     drakelint_args = []
@@ -49,8 +47,7 @@ def _python_lint(
 def python_lint(
         existing_rules = None,
         exclude = None,
-        extra_srcs = None,
-        use_ruff_format = True):
+        extra_srcs = None):
     """Runs the linters on all Python source files declared in rules in a BUILD
     file: ruff check, ruff format --check, and drakelint. (At the moment, the
     formatter can be opted-out but we're working to remove that option.)
@@ -61,7 +58,6 @@ def python_lint(
             internally (re-)computed.
         exclude: List of labels to exclude from linting, e.g., [:foo.py].
         extra_srcs: Source files that are not discoverable via rules.
-        use_ruff_format: When False, skips ruff auto-formatting checking.
     """
     if existing_rules == None:
         existing_rules = native.existing_rules().values()
@@ -99,7 +95,6 @@ def python_lint(
         _python_lint(
             name_prefix = "package",
             files = files,
-            use_ruff_format = use_ruff_format,
             disallow_executable = True,
         )
 
@@ -108,6 +103,5 @@ def python_lint(
         _python_lint(
             name_prefix = "extra_srcs",
             files = extra_srcs,
-            use_ruff_format = use_ruff_format,
             disallow_executable = False,
         )

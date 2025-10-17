@@ -201,6 +201,30 @@ def _format_commit(gh, drake, commit):
     return packages, severities, bullet
 
 
+def _insert_into_section(lines, section_name, bullet):
+    """Inserts the given bullet into a section indicated by `section_name`.
+
+    The section is identified by a line that looks like:
+      <relnotes for name1(,name2,name3) go here>.
+
+    The bullet is inserted two lines after that line (i.e., after the section
+    header assuming `section_name` is found in the name list. `section_name`
+    should only appear once in lines.
+    """
+    found = False
+    for i, one_line in enumerate(lines):
+        match = re.search(r"<relnotes for (\S+) go here>", one_line)
+        if match:
+            (anchors_csv,) = match.groups()
+            anchors = anchors_csv.split(",")
+            if section_name in anchors:
+                lines.insert(i + 2, f"{bullet}\n")
+                found = True
+                break
+    if not found:
+        raise RuntimeError(f"Could not find anchor for {section_name}")
+
+
 def _update(args, notes_filename, gh, drake, target_commit):
     """The --update action."""
 
@@ -277,20 +301,31 @@ def _update(args, notes_filename, gh, drake, target_commit):
         bullet = f"* [{' '.join(severities)}] {bullet[2:]}"
 
         primary_package = packages[0]
-        # Find the section for this commit, matching a line that looks like:
-        # <relnotes for foo,{package},bar go here>
-        found = False
-        for i, one_line in enumerate(lines):
-            match = re.search(r"<relnotes for (\S+) go here>", one_line)
-            if match:
-                (anchors_csv,) = match.groups()
-                anchors = anchors_csv.split(",")
-                if primary_package in anchors:
-                    lines.insert(i + 2, f"{bullet}\n")
-                    found = True
-                    break
-        if not found:
-            raise RuntimeError(f"Could not find anchor for {primary_package}")
+
+        # For each known severity tag, we insert the bullet into the document
+        # at a particular section. The bullet can be filed in multiple
+        # sections. Unknown tags are an error.
+        insertion_points = {
+            "fix": primary_package,
+            "feature": primary_package,
+            "breaking change": "breaking-changes",
+            "newly deprecated": "newly-deprecated",
+            "removal of deprecated": "deprecated-removed",
+        }
+        primary_used = False
+        for severity in severities:
+            package_name = insertion_points.get(severity, "")
+            if package_name == "":
+                raise RuntimeError(
+                    f"Unknown severity ('{severity}') prevents disposition:\n"
+                    f"   '{bullet[2:]}'"
+                )
+            if package_name == primary_package:
+                if primary_used:
+                    # We only file once per primary package.
+                    continue
+                primary_used = True
+            _insert_into_section(lines, package_name, bullet)
 
     # Update the issue links.  Replace the text between these markers:
     # .. <begin issue links>
