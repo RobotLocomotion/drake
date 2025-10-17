@@ -840,9 +840,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // allocated and prepared vector for results of the parallelizable step.
     vector<std::unique_ptr<ContactSurface<T>>> surface_ptrs(candidates.size());
     // TODO(rpoyner-tri): try some thread parallelism here.
-#if defined(_OPENMP)
-#pragma omp parallel for num_threads(16) schedule(dynamic)
-#endif
     for (int k = 0; k < ssize(candidates); ++k) {
       const auto& [id0, id1] = candidates[k];
       auto [result, surface] = calculator.MaybeMakeContactSurface(id0, id1);

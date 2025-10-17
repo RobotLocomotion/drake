@@ -704,16 +704,14 @@ TEST_F(ContactModelTest, PointPairContact) {
   }
 }
 
-// TODO(vincekurtz): re-enable this test and figure out how to handle openmp
+// TODO(CENIC): re-enable this test and figure out how to handle openmp
 // parallelism (omp parallel for)
-/*
 TEST_F(ContactModelTest, HydroelasticOnly) {
   this->Configure(ContactModel::kHydroelastic);
   // Rigid-rigid contact precludes successful evaluation.
   DRAKE_EXPECT_THROWS_MESSAGE(GetContactResults(),
                               "Requested contact between two rigid objects .+");
 }
-*/
 
 TEST_F(ContactModelTest, HydroelasticWithFallback) {
   this->Configure(ContactModel::kHydroelasticWithFallback);

@@ -5198,9 +5198,7 @@ GTEST_TEST(ProximityEngineTests, ImplementedAsFclConvex) {
   }
 }
 
-// TODO(CENIC): re-enable this test and figure out how to handle openmp
-// parallelism (omp parallel for)
-GTEST_TEST(ProximityEngineTest, DISABLED_ThrowForStrictRejectedContacts) {
+GTEST_TEST(ProximityEngineTest, ThrowForStrictRejectedContacts) {
   using enum HydroelasticType;
   using enum HydroelasticContactRepresentation;
   const bool anchored{true};
