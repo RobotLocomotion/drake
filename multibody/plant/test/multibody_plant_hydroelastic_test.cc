@@ -704,8 +704,6 @@ TEST_F(ContactModelTest, PointPairContact) {
   }
 }
 
-// TODO(CENIC): re-enable this test and figure out how to handle openmp
-// parallelism (omp parallel for)
 TEST_F(ContactModelTest, HydroelasticOnly) {
   this->Configure(ContactModel::kHydroelastic);
   // Rigid-rigid contact precludes successful evaluation.
