@@ -3,31 +3,6 @@ load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_library")
 
 package(default_visibility = ["//visibility:private"])
 
-filegroup(
-    name = "models",
-    srcs = [
-        "ball_on_table.xml",
-        "clutter.xml",
-        "cylinder.xml",
-        "double_pendulum.xml",
-        "gripper.xml",
-        "plate_and_spatula.sdf",
-    ],
-    visibility = ["//:__pkg__"],
-)
-
-drake_py_binary(
-    name = "error_control_demo",
-    srcs = ["error_control_demo.py"],
-    data = [
-        ":models",
-        "@drake_models//:dishes",
-    ],
-    deps = [
-        "//bindings/pydrake",
-    ],
-)
-
 drake_py_binary(
     name = "suction_gripper",
     srcs = ["suction_gripper.py"],
@@ -39,35 +14,8 @@ drake_py_binary(
     ],
 )
 
-drake_py_binary(
-    name = "ball_drop_velocity_error",
-    srcs = ["ball_drop_velocity_error.py"],
-    data = [
-        ":models",
-    ],
-    deps = [
-        "//bindings/pydrake",
+add_lint_tests(
+    python_lint_exclude = [
+        ":suction_gripper.py",
     ],
 )
-
-drake_py_binary(
-    name = "bouncing_ball",
-    srcs = ["bouncing_ball.py"],
-    deps = [
-        "//bindings/pydrake",
-    ],
-)
-
-drake_py_binary(
-    name = "simulate_mjcf",
-    srcs = ["simulate_mjcf.py"],
-    deps = [
-        "//bindings/pydrake",
-    ],
-)
-
-add_lint_tests(python_lint_exclude = [
-    ":suction_gripper.py",
-    ":error_control_demo.py",
-    ":ball_drop_velocity_error.py",
-])
