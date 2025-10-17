@@ -295,8 +295,9 @@ class MathematicalProgramResult final {
    *    GurobiSolver solver;
    *    // Explicitly tell the solver to compute the dual solution for Lorentz
    *    // cone or rotated Lorentz cone constraint, check
-   *    // https://www.gurobi.com/documentation/10.1/refman/qcpdual.html for
-   *    // more information.
+   *    //
+   * https://docs.gurobi.com/projects/optimizer/en/12.0/reference/parameters.html#qcpdual
+   *    // for more information.
    *    SolverOptions options;
    *    options.SetOption(GurobiSolver::id(), "QCPDual", 1);
    *    MathematicalProgramResult result = solver.Solve(prog, {}, options);
