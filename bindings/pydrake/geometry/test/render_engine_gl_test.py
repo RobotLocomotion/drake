@@ -13,8 +13,10 @@ class TestGeometry(unittest.TestCase):
         scene_graph = SceneGraph()
         params = mut.RenderEngineGlParams()
         if "darwin" in sys.platform:  # OpenGL is not supported on macOS.
+            self.assertFalse(mut.kHasRenderEngineGl)
             self.assertRaises(RuntimeError, mut.MakeRenderEngineGl)
         else:
+            self.assertTrue(mut.kHasRenderEngineGl)
             scene_graph.AddRenderer(
                 "gl_renderer", mut.MakeRenderEngineGl(params=params)
             )
