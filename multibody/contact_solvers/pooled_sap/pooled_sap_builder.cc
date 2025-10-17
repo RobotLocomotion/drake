@@ -18,7 +18,6 @@ using drake::multibody::internal::GetInternalTree;
 using drake::multibody::internal::GetPointContactStiffness;
 using drake::multibody::internal::LinkJointGraph;
 using drake::multibody::internal::MobodIndex;
-using drake::multibody::internal::MultibodyTreeTopology;
 using drake::multibody::internal::SpanningForest;
 using drake::multibody::internal::TreeIndex;
 
@@ -114,11 +113,9 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
                                       const T& time_step,
                                       bool reuse_geometry_data,
                                       PooledSapModel<T>* model) const {
-  const MultibodyTreeTopology& topology =
-      GetInternalTree(plant()).get_topology();
+  const SpanningForest& forest = GetInternalTree(plant()).forest();
   const LinkJointGraph& graph = GetInternalTree(plant()).graph();
   DRAKE_DEMAND(graph.forest_is_valid());
-  const SpanningForest& forest = graph.forest();
   const int nv = plant().num_velocities();
 
   std::unique_ptr<PooledSapParameters<T>> params = model->ReleaseParameters();
@@ -139,11 +136,11 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   // We only add a clique for tree's with non-zero number of velocities.
   int num_cliques = 0;
   std::vector<int>& tree_clique = params->tree_to_clique;
-  tree_clique.resize(topology.num_trees());
+  tree_clique.resize(forest.num_trees());
   std::fill(tree_clique.begin(), tree_clique.end(), -1);
   std::vector<int> clique_sizes;
-  for (TreeIndex t(0); t < topology.num_trees(); ++t) {
-    const int tree_nv = topology.num_tree_velocities(t);
+  for (TreeIndex t(0); t < forest.num_trees(); ++t) {
+    const int tree_nv = forest.trees(t).nv();
     if (tree_nv > 0) {
       tree_clique[t] = num_cliques;
       clique_sizes.push_back(tree_nv);
@@ -153,11 +150,11 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   params->A.Resize(clique_sizes, clique_sizes);
 
   // Set the linear dynamics matrix A
-  for (TreeIndex t(0); t < topology.num_trees(); ++t) {
+  for (TreeIndex t(0); t < forest.num_trees(); ++t) {
     const int c = tree_clique[t];
     if (c >= 0) {
-      const int tree_start_in_v = topology.tree_velocities_start_in_v(t);
-      const int tree_nv = topology.num_tree_velocities(t);
+      const int tree_start_in_v = forest.trees(t).v_start();
+      const int tree_nv = forest.trees(t).nv();
       DRAKE_ASSERT(tree_nv > 0);
       params->A[c] =
           M.block(tree_start_in_v, tree_start_in_v, tree_nv, tree_nv);
@@ -179,8 +176,8 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
       if (plant().IsAnchored(body)) {
         body_jacobian_cols.push_back(1);  // dummy column.
       } else {
-        const TreeIndex t = topology.body_to_tree_index(BodyIndex(b));
-        const int nt = topology.num_tree_velocities(t);
+        const TreeIndex t = forest.link_to_tree_index(BodyIndex(b));
+        const int nt = forest.trees(t).nv();
         body_jacobian_cols.push_back(nt);
       }
     }
@@ -223,14 +220,14 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
       if (plant().IsAnchored(body)) {
         params->body_cliques[b] = -1;  // mark as anchored.
       } else {
-        const TreeIndex t = topology.body_to_tree_index(BodyIndex(b));
+        const TreeIndex t = forest.link_to_tree_index(BodyIndex(b));
         const int clique = tree_clique[t];
         DRAKE_ASSERT(clique >= 0);
-        const bool tree_has_dofs = topology.tree_has_dofs(t);
+        const bool tree_has_dofs = t.is_valid() && forest.trees(t).has_dofs();
         DRAKE_ASSERT(tree_has_dofs);
 
-        const int vt_start = topology.tree_velocities_start_in_v(t);
-        const int nt = topology.num_tree_velocities(t);
+        const int vt_start = forest.trees(t).v_start();
+        const int nt = forest.trees(t).nv();
 
         params->body_cliques[b] = clique;
         typename EigenPool<Matrix6X<T>>::ElementView Jv_WBc_W = params->J_WB[b];
@@ -271,7 +268,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
         plant().get_joint_actuator(actuator_index);
     const Joint<T>& joint = actuator.joint();
     const int dof = joint.velocity_start();
-    const TreeIndex t = topology.velocity_to_tree_index(dof);
+    const TreeIndex t = forest.v_to_tree_index(dof);
     const int c = tree_clique[t];
     DRAKE_ASSERT(c >= 0);
     ++params->clique_nu[c];
@@ -326,8 +323,7 @@ void PooledSapBuilder<T>::AddCouplerConstraints(
     const systems::Context<T>& context, PooledSapModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
 
-  const MultibodyTreeTopology& topology =
-      GetInternalTree(plant()).get_topology();
+  const SpanningForest& forest = GetInternalTree(plant()).forest();
   const std::vector<int>& tree_to_clique = model->params().tree_to_clique;
   const std::map<MultibodyConstraintId, CouplerConstraintSpec>& specs_map =
       plant().get_coupler_constraint_specs();
@@ -343,8 +339,8 @@ void PooledSapBuilder<T>::AddCouplerConstraints(
 
     const int dof0 = joint0.velocity_start();
     const int dof1 = joint1.velocity_start();
-    const TreeIndex tree0 = topology.velocity_to_tree_index(dof0);
-    const TreeIndex tree1 = topology.velocity_to_tree_index(dof1);
+    const TreeIndex tree0 = forest.v_to_tree_index(dof0);
+    const TreeIndex tree1 = forest.v_to_tree_index(dof1);
 
     // Sanity check.
     DRAKE_DEMAND(tree0.is_valid() && tree1.is_valid());
@@ -362,8 +358,8 @@ void PooledSapBuilder<T>::AddCouplerConstraints(
     const T q1 = joint1.GetOnePosition(context);
 
     // DOFs local to their tree.
-    const int tree_dof0 = dof0 - topology.tree_velocities_start_in_v(tree0);
-    const int tree_dof1 = dof1 - topology.tree_velocities_start_in_v(tree1);
+    const int tree_dof0 = dof0 - forest.trees(tree0).v_start();
+    const int tree_dof1 = dof1 - forest.trees(tree0).v_start();
 
     couplers.Add(index, clique0, tree_dof0, tree_dof1, q0, q1, spec.gear_ratio,
                  spec.offset);
@@ -377,8 +373,7 @@ void PooledSapBuilder<T>::AddLimitConstraints(
   DRAKE_ASSERT(model != nullptr);
   using std::isinf;
 
-  const MultibodyTreeTopology& topology =
-      GetInternalTree(plant()).get_topology();
+  const SpanningForest& forest = GetInternalTree(plant()).forest();
 
   typename PooledSapModel<T>::LimitConstraintsPool& limits =
       model->limit_constraints_pool();
@@ -399,7 +394,7 @@ void PooledSapBuilder<T>::AddLimitConstraints(
 
     if (is_one_dof && has_finite_limits) {
       const TreeIndex tree_index =
-          topology.velocity_to_tree_index(joint.velocity_start());
+          forest.v_to_tree_index(joint.velocity_start());
       const int clique = tree_to_clique[tree_index];
       const int clique_nv = model->clique_size(clique);
       limited_clique_sizes.push_back(clique_nv);
@@ -420,12 +415,11 @@ void PooledSapBuilder<T>::AddLimitConstraints(
     // We only support limits for 1 DOF joints for which we know that q̇ = v.
     if (joint.num_positions() == 1 && joint.num_velocities() == 1) {
       const int velocity_start = joint.velocity_start();
-      const TreeIndex tree_index =
-          topology.velocity_to_tree_index(velocity_start);
-      const int tree_nv = topology.num_tree_velocities(tree_index);
+      const TreeIndex tree_index = forest.v_to_tree_index(velocity_start);
+      const int tree_nv = forest.trees(tree_index).nv();
       DRAKE_ASSERT(tree_nv >= 0);
-      const int tree_velocity_start =
-          topology.tree_velocities_start_in_v(tree_index);
+      const int tree_velocity_start = forest.trees(tree_index).v_start();
+
       const int tree_dof = velocity_start - tree_velocity_start;
       const int clique = tree_to_clique[tree_index];
 
