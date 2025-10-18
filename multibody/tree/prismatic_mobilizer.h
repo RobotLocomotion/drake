@@ -275,6 +275,12 @@ class PrismaticMobilizerAxial final : public PrismaticMobilizer<T> {
     return SpatialVelocity<T>(Vector3<T>::Zero(), v_FM);
   }
 
+  SpatialVelocity<T> calc_V_FM_M(const math::RigidTransform<T>&, const T*,
+                                 const T* v) const {
+    // axis_M == axis_F so this is the same as V_FM_F.
+    return calc_V_FM(nullptr, v);
+  }
+
   SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
     DRAKE_ASSERT(vdot != nullptr);
     Eigen::Vector3<T> a_FM;
@@ -284,10 +290,25 @@ class PrismaticMobilizerAxial final : public PrismaticMobilizer<T> {
     return SpatialAcceleration<T>(Vector3<T>::Zero(), a_FM);
   }
 
+  SpatialAcceleration<T> calc_A_FM_M(const math::RigidTransform<T>&, const T*,
+                                     const T*, const T* vdot) const {
+    // axis_M == axis_F so this is the same as A_FM_F.
+    return calc_A_FM(nullptr, nullptr, vdot);
+  }
+
   // Returns tau = H_FM_Fᵀ⋅F, where H_FM_Fᵀ = [0₃ᵀ axis_Fᵀ].
   void calc_tau(const T*, const SpatialForce<T>& F_BMo_F, T* tau) const {
     DRAKE_ASSERT(tau != nullptr);
     const Vector3<T>& f_BMo_F = F_BMo_F.translational();
+    tau[0] = f_BMo_F[axis];
+  }
+
+  // Returns tau = H_FM_Mᵀ⋅F_M, where H_FM_Mᵀ = [0₃ᵀ axis_Mᵀ], and
+  // axis_M == axis_F (see class comments).
+  void calc_tau_from_M(const math::RigidTransform<T>&, const T*,
+                       const Vector6<T>& F_BMo_M, T* tau) const {
+    DRAKE_ASSERT(tau != nullptr);
+    const auto f_BMo_F = F_BMo_M.template tail<3>();  // translational
     tau[0] = f_BMo_F[axis];
   }
 
