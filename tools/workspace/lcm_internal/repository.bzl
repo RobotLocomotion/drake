@@ -11,8 +11,8 @@ def lcm_internal_repository(
         the monthly upgrades.
         """,
         # TODO(jwnimmer-tri) At the moment we have both @lcm and @lcm_internal
-        # repositories. We are working to deprecate @lcm. In the meantime, be
-        # aware that we have a different pins for each repository.
+        # repositories, with @lcm being deprecated. Be aware that we have
+        # different pins for each repository.
         # TODO(jwnimmer-tri) Once LCM has its next tagged release >v1.5.1, we
         # should switch this back to a release tag instead of this hash.
         commit = "e4bed2c86fbd6dd2280326801acf71cbd05074be",

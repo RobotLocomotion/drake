@@ -139,6 +139,8 @@ _lcm_library_gen = rule(
     implementation = _lcmgen_impl,
 )
 
+MACRO_DEPRECATION = "DRAKE DEPRECATED: The starlark macros at `@drake//tools/workspace/lcm:lcm.bzl` are deprecated for removal. Instead, you should add LCM to your project's MODULE.bazel file as a bazel module and then use LCM's upstream Bazel support at `@lcm//lcm-bazel:*.bzl`. The deprecated code will be removed from Drake on or after 2026-01-01."  # noqa
+
 def lcm_cc_library(
         name,
         lcm_srcs = [],
@@ -147,6 +149,7 @@ def lcm_cc_library(
         deprecation = None,
         aggregate_hdr = None,
         aggregate_hdr_strip_prefix = ["**/include/"],
+        macro_deprecation = MACRO_DEPRECATION,
         _use_new_lcm_gen = False,
         **kwargs):
     """Declares a cc_library on message classes generated from `*.lcm` files.
@@ -176,6 +179,8 @@ def lcm_cc_library(
         fail("lcm_srcs is required")
     if not lcm_package:
         fail("lcm_package is required")
+    if macro_deprecation != None:
+        print(macro_deprecation)
 
     helper_tags = []
     for sticky_tag in ["manual", "nolint"]:
@@ -201,11 +206,15 @@ def lcm_cc_library(
             tags = helper_tags,
         )
     else:
+        lcmgen = None
+        if macro_deprecation == None:
+            lcmgen = "@lcm//:lcm-gen_non_deprecated"
         _lcm_library_gen(
             name = name + "_lcm_library_gen",
             language = "cc",
             lcm_srcs = lcm_srcs,
             lcm_package = lcm_package,
+            lcmgen = lcmgen,
             outs = outs,
             deprecation = deprecation,
             tags = helper_tags,
@@ -226,7 +235,10 @@ def lcm_cc_library(
     deps = kwargs.pop("deps", [])
     if not _use_new_lcm_gen:
         if "@lcm//:lcm_coretypes" not in deps:
-            deps = deps + ["@lcm//:lcm_coretypes"]
+            if macro_deprecation == None:
+                deps = deps + ["@lcm//:lcm_coretypes_non_deprecated"]
+            else:
+                deps = deps + ["@lcm//:lcm_coretypes"]
 
     includes = kwargs.pop("includes", [])
     if "." not in includes:
@@ -252,6 +264,7 @@ def lcm_py_library(
         lcm_structs = [],
         add_current_package_to_imports = True,
         extra_srcs = [],
+        macro_deprecation = MACRO_DEPRECATION,
         **kwargs):
     """Declares a py_library on message classes generated from `*.lcm` files.
 
@@ -275,13 +288,19 @@ def lcm_py_library(
         fail("lcm_srcs is required")
     if not lcm_package:
         fail("lcm_package is required")
+    if macro_deprecation != None:
+        print(macro_deprecation)
 
     outs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".py")
+    lcmgen = None
+    if macro_deprecation == None:
+        lcmgen = "@lcm//:lcm-gen_non_deprecated"
     _lcm_library_gen(
         name = name + "_lcm_library_gen",
         language = "py",
         lcm_srcs = lcm_srcs,
         lcm_package = lcm_package,
+        lcmgen = lcmgen,
         outs = outs,
     )
 
@@ -300,6 +319,7 @@ def lcm_java_library(
         lcm_srcs = [],
         lcm_package = None,
         lcm_structs = [],
+        macro_deprecation = MACRO_DEPRECATION,
         **kwargs):
     """Declares a java_library on message classes generated from `*.lcm` files.
 
@@ -311,19 +331,28 @@ def lcm_java_library(
         fail("lcm_srcs is required")
     if not lcm_package:
         fail("lcm_package is required")
+    if macro_deprecation != None:
+        print(macro_deprecation)
 
     outs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".java")
+    lcmgen = None
+    if macro_deprecation == None:
+        lcmgen = "@lcm//:lcm-gen_non_deprecated"
     _lcm_library_gen(
         name = name + "_lcm_library_gen",
         language = "java",
         lcm_srcs = lcm_srcs,
         lcm_package = lcm_package,
+        lcmgen = lcmgen,
         outs = outs,
     )
 
     deps = kwargs.pop("deps", [])
     if "@lcm//:lcm-java" not in deps:
-        deps = deps + ["@lcm//:lcm-java"]
+        if macro_deprecation == None:
+            deps = deps + ["@lcm//:lcm-java_non_deprecated"]
+        else:
+            deps = deps + ["@lcm//:lcm-java"]
 
     java_library(
         name = name,
