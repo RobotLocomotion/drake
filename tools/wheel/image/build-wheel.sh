@@ -71,7 +71,11 @@ cp -r -t ${WHEEL_DIR}/pydrake \
 cp -r -t ${WHEEL_DIR}/pydrake/lib \
     /tmp/drake-wheel-build/drake-dist/lib/libdrake*.so
 
-if [[ "$(uname)" == "Darwin" ]]; then
+# See tools/wheel/image/build-drake.sh for details on the lack of Mosek support
+# for Python 3.14.
+PYTHON_MINOR=$(python -c "import sys; print(sys.version_info.minor)")
+
+if [[ "$(uname)" == "Darwin" && ${PYTHON_MINOR} -lt 14 ]]; then
     # MOSEK is "sort of" third party, but is procured as part of Drake's build
     # and ends up in /tmp/drake-wheel-build/drake-dist/. It should end up in
     # the same place as libdrake.so.
@@ -127,7 +131,7 @@ fi
 
 python -m build --wheel
 
-if [[ "$(uname)" == "Darwin" ]]; then
+if [[ "$(uname)" == "Darwin" && ${PYTHON_MINOR} -lt 14 ]]; then
     delocate-wheel -w wheelhouse -v dist/drake*.whl
 
     # Remove libmosek from wheels.
@@ -163,7 +167,7 @@ if [[ "$(uname)" == "Darwin" ]]; then
         wheel pack --dest wheelhouse fixup-wheel/drake-*/
         rm -rf fixup-wheel
     done
-else
+elif [[ "$(uname)" == "Linux" ]]; then
     GLIBC_VERSION=$(ldd --version | sed -n '1{s/.* //;s/[.]/_/p}')
 
     auditwheel repair --plat manylinux_${GLIBC_VERSION}_x86_64 dist/drake*.whl
