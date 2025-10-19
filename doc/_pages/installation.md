@@ -23,7 +23,7 @@ officially supports:
 |------------------------------------|--------------|------------|-----------------|
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽³⁾   | March 2026      |
 | Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12 ⁽³⁾   | March 2028      |
-| macOS Sequoia (15)                 | arm64        | 3.13 ⁽³⁾   | October 2026    |
+| macOS Sequoia (15)                 | arm64        | 3.14 ⁽³⁾   | October 2026    |
 | macOS Tahoe (26) ⁽⁵⁾               | arm64        | TBD        | October 2027    |
 
 "Official support" means that we have Continuous Integration test coverage to
