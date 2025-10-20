@@ -375,20 +375,20 @@ DeformableBody<T>::BuildLinearVolumetricModel(
     const Vector3<double>& weights) {
   switch (config.material_model()) {
     case MaterialModel::kLinear:
-      ConstitutiveModelHelper<fem::internal::LinearConstitutiveModel>(
-          mesh, config, weights);
+      SelectSubdivisionAndBuildVolumetricModel<
+          fem::internal::LinearConstitutiveModel>(mesh, config, weights);
       break;
     case MaterialModel::kCorotated:
-      ConstitutiveModelHelper<fem::internal::CorotatedModel>(mesh, config,
-                                                             weights);
+      SelectSubdivisionAndBuildVolumetricModel<fem::internal::CorotatedModel>(
+          mesh, config, weights);
       break;
     case MaterialModel::kNeoHookean:
-      ConstitutiveModelHelper<fem::internal::NeoHookeanModel>(mesh, config,
-                                                              weights);
+      SelectSubdivisionAndBuildVolumetricModel<fem::internal::NeoHookeanModel>(
+          mesh, config, weights);
       break;
     case MaterialModel::kLinearCorotated:
-      ConstitutiveModelHelper<fem::internal::LinearCorotatedModel>(mesh, config,
-                                                                   weights);
+      SelectSubdivisionAndBuildVolumetricModel<
+          fem::internal::LinearCorotatedModel>(mesh, config, weights);
       break;
   }
 }
@@ -396,25 +396,25 @@ DeformableBody<T>::BuildLinearVolumetricModel(
 template <typename T>
 template <template <typename> class Model, typename T1>
 typename std::enable_if_t<std::is_same_v<T1, double>, void>
-DeformableBody<T>::ConstitutiveModelHelper(
+DeformableBody<T>::SelectSubdivisionAndBuildVolumetricModel(
     const geometry::VolumeMesh<double>& mesh,
     const fem::DeformableBodyConfig<T>& config,
     const Vector3<double>& weights) {
   switch (config.element_subdivision_count()) {
     case 0:
-      SubdElementHelper<Model, 0>(mesh, config, weights);
+      BuildLinearVolumetricModelHelper<Model, 0>(mesh, config, weights);
       break;
     case 1:
-      SubdElementHelper<Model, 1>(mesh, config, weights);
+      BuildLinearVolumetricModelHelper<Model, 1>(mesh, config, weights);
       break;
     case 2:
-      SubdElementHelper<Model, 2>(mesh, config, weights);
+      BuildLinearVolumetricModelHelper<Model, 2>(mesh, config, weights);
       break;
     case 3:
-      SubdElementHelper<Model, 3>(mesh, config, weights);
+      BuildLinearVolumetricModelHelper<Model, 3>(mesh, config, weights);
       break;
     case 4:
-      SubdElementHelper<Model, 4>(mesh, config, weights);
+      BuildLinearVolumetricModelHelper<Model, 4>(mesh, config, weights);
       break;
   }
 }
@@ -422,9 +422,10 @@ DeformableBody<T>::ConstitutiveModelHelper(
 template <typename T>
 template <template <typename> class Model, int num_subd, typename T1>
 typename std::enable_if_t<std::is_same_v<T1, double>, void>
-DeformableBody<T>::SubdElementHelper(const geometry::VolumeMesh<double>& mesh,
-                                     const fem::DeformableBodyConfig<T>& config,
-                                     const Vector3<double>& weights) {
+DeformableBody<T>::BuildLinearVolumetricModelHelper(
+    const geometry::VolumeMesh<double>& mesh,
+    const fem::DeformableBodyConfig<T>& config,
+    const Vector3<double>& weights) {
   constexpr int kNaturalDimension = 3;
   constexpr int kSpatialDimension = 3;
   constexpr int kQuadratureOrder = 1;

@@ -36,7 +36,7 @@ class ConstantForceDensityField final : public ForceDensityField<double> {
 constexpr int kNaturalDimension = 3;
 constexpr int kSpatialDimension = 3;
 constexpr int kQuadratureOrder = 1;
-constexpr double kEpsilon = 1e-14;
+constexpr double kTolerance = 1e-14;
 constexpr int kSubdivisions = 2;
 using QuadratureType =
     internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
@@ -156,10 +156,7 @@ class VolumetricElementTest : public ::testing::Test {
 namespace {
 
 /* Tests that when applying a per current volume force density field, the result
- agrees with analytic solution. The only reason we use AutoDiffXd here is
- because we are reusing an AutoDiffXd fixture previously used to compute
- gradients. This unit test in particular does not use AutoDiffXd to
- compute gradients. */
+ agrees with analytic solution. */
 TEST_F(VolumetricElementTest, PerCurrentVolumeExternalForce) {
   /* We scale the reference positions to get the current positions so we have
    precise control of the current volume. */
@@ -193,7 +190,7 @@ TEST_F(VolumetricElementTest, PerCurrentVolumeExternalForce) {
   const double current_volume = reference_volume()[0] * scale * scale * scale;
   const Vector3<double> expected_force =
       current_volume * force_per_current_volume;
-  EXPECT_TRUE(CompareMatrices(total_force, expected_force, kEpsilon));
+  EXPECT_TRUE(CompareMatrices(total_force, expected_force, kTolerance));
 }
 
 }  // namespace

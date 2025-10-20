@@ -401,21 +401,25 @@ class DeformableBody final : public MultibodyElement<T> {
                              const fem::DeformableBodyConfig<T>& config,
                              const Vector3<double>& weights);
 
-  /* Helper function for BuildLinearVolumetricModel that turns
-   constitutive model to a template parameter. */
+  /* Helper used by BuildLinearVolumetricModel() to make the proper fem_model_
+   instantiation. The model type is inferred from the template argument Model,
+   while the number of element subdivisions (as needed at compile time) is
+   selected from config.element_subdivision_count(). */
   template <template <class> class Model, typename T1 = T>
   typename std::enable_if_t<std::is_same_v<T1, double>, void>
-  ConstitutiveModelHelper(const geometry::VolumeMesh<double>& mesh,
-                          const fem::DeformableBodyConfig<T>& config,
-                          const Vector3<double>& weights);
-
-  /* Helper function for BuildLinearVolumetricModel that turns
-   element_subdivision_count to a template parameter. */
-  template <template <class> class Model, int num_subd, typename T1 = T>
-  typename std::enable_if_t<std::is_same_v<T1, double>, void> SubdElementHelper(
+  SelectSubdivisionAndBuildVolumetricModel(
       const geometry::VolumeMesh<double>& mesh,
       const fem::DeformableBodyConfig<T>& config,
       const Vector3<double>& weights);
+
+  /* Helper called by SelectSubdivisionAndBuildVolumetricModel() to instantiate
+   the appropriate fem_model_ based on template parameters Model and num_subd.
+   */
+  template <template <class> class Model, int num_subd, typename T1 = T>
+  typename std::enable_if_t<std::is_same_v<T1, double>, void>
+  BuildLinearVolumetricModelHelper(const geometry::VolumeMesh<double>& mesh,
+                                   const fem::DeformableBodyConfig<T>& config,
+                                   const Vector3<double>& weights);
 
   void DoSetTopology(const internal::MultibodyTreeTopology&) final {
     /* No-op because deformable bodies are not part of the MultibodyTree

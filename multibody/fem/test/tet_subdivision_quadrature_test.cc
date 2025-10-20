@@ -50,6 +50,7 @@ class TetSubdivisionQuadratureTest : public ::testing::Test {
   const TetSubdivisionQuadrature<1> subd_1_quadrature_;
   const TetSubdivisionQuadrature<2> subd_2_quadrature_;
   const TetSubdivisionQuadrature<3> subd_3_quadrature_;
+  const TetSubdivisionQuadrature<4> subd_4_quadrature_;
 };
 
 TEST_F(TetSubdivisionQuadratureTest, Weights) {
@@ -57,6 +58,7 @@ TEST_F(TetSubdivisionQuadratureTest, Weights) {
   EXPECT_EQ(subd_1_quadrature_.num_quadrature_points, 4);
   EXPECT_EQ(subd_2_quadrature_.num_quadrature_points, 16);
   EXPECT_EQ(subd_3_quadrature_.num_quadrature_points, 64);
+  EXPECT_EQ(subd_4_quadrature_.num_quadrature_points, 256);
   for (int i = 0; i < subd_0_quadrature_.num_quadrature_points; ++i) {
     EXPECT_EQ(subd_0_quadrature_.get_weight(i), 1.0 / 6.0);
   }
@@ -68,6 +70,9 @@ TEST_F(TetSubdivisionQuadratureTest, Weights) {
   }
   for (int i = 0; i < subd_3_quadrature_.num_quadrature_points; ++i) {
     EXPECT_EQ(subd_3_quadrature_.get_weight(i), 1.0 / 384.0);
+  }
+  for (int i = 0; i < subd_4_quadrature_.num_quadrature_points; ++i) {
+    EXPECT_EQ(subd_4_quadrature_.get_weight(i), 1.0 / 1536.0);
   }
 }
 
@@ -90,6 +95,8 @@ TEST_F(TetSubdivisionQuadratureTest, ReproducesLinearFunctions) {
                    Integrate(subd_2_quadrature_, LinearTestFunction3D::Eval));
   EXPECT_DOUBLE_EQ(analytical_integral,
                    Integrate(subd_3_quadrature_, LinearTestFunction3D::Eval));
+  EXPECT_DOUBLE_EQ(analytical_integral,
+                   Integrate(subd_4_quadrature_, LinearTestFunction3D::Eval));
 }
 
 }  // namespace

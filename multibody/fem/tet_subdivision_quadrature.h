@@ -12,7 +12,7 @@ namespace multibody {
 namespace fem {
 namespace internal {
 
-/* Returns 4^n. */
+/* Returns 4ᴺ */
 constexpr int pow4(int n) {
   return (n <= 0) ? 1 : 4 * pow4(n - 1);
 }
@@ -29,8 +29,8 @@ constexpr int pow4(int n) {
  which has volume = 1/6.
 
  We subdivide N times by recursively connecting the centroid of each tetrahedron
- to its 4 vertices, yielding 4^N sub-tetrahedra total. The centroid of each
- sub-tetrahedron is used as a quadrature point, each with weight = (1/6) / 4^N.
+ to its 4 vertices, yielding 4ᴺ sub-tetrahedra total. The centroid of each
+ sub-tetrahedron is used as a quadrature point, each with weight = (1/6) / 4ᴺ.
 
  This approach is *not* a high-order accurate rule. but is convenient for
  sampling more quadrature points in coarse tetrahedral elements when that's
@@ -45,8 +45,8 @@ class TetSubdivisionQuadrature final
   static constexpr int num_quadrature_points = pow4(subdivisions);
   using Base = Quadrature<natural_dimension, num_quadrature_points>;
   using LocationsType =
-      typename Base::LocationsType;  // array<Vector3<double>, 4^N>
-  using WeightsType = typename Base::WeightsType;  // array<double, 4^N>
+      typename Base::LocationsType;                // array<Vector3<double>, 4ᴺ>
+  using WeightsType = typename Base::WeightsType;  // array<double, 4ᴺ>
   using VectorD = typename Base::VectorD;          // Vector3<double>
 
   static_assert(0 <= subdivisions && subdivisions <= 4,
@@ -57,15 +57,15 @@ class TetSubdivisionQuadrature final
   TetSubdivisionQuadrature() : Base(MakePointsAndWeights()) {}
 
  private:
-  /* A small struct to hold 4 vertices of a tetrahedron in R^3 for the
+  /* A small struct to hold 4 vertices of a tetrahedron in R³ for the
    subdivision recursion. */
   struct Tetrahedron {
     Vector3<double> v[4];
   };
 
   /* Returns (points[], weights[]) in a single std::pair, which the base class
-   constructor expects.  The number of points is 4^N.  We store them in
-   a std::array<Vector3<double>, 4^N> and std::array<double, 4^N>. */
+   constructor expects.  The number of points is 4ᴺ  We store them in
+   a std::array<Vector3<double>, 4ᴺ> and std::array<double, 4ᴺ>. */
   static std::pair<LocationsType, WeightsType> MakePointsAndWeights();
 
   /* Recursively subdivides a tetrahedron `tet` `level` times, collecting the

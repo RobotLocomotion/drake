@@ -51,12 +51,12 @@ struct VolumetricElementData {
   Eigen::Matrix<T, num_dofs, num_dofs> damping_matrix;
   /* The tangent matrix matrix = w0*K + w1*D + w2*D. */
   Eigen::Matrix<T, num_dofs, num_dofs> tangent_matrix;
-  /* Quadrature point data used to integrate external forces in the world frame.
-   */
+  /* Quadrature positions to integrate external force fields. */
   std::array<Vector<T, 3>, num_external_force_quadrature_points>
-      external_force_quadrature;
-  std::array<T, num_external_force_quadrature_points>
-      external_force_quadrature_F_det;
+      force_quadrature_positions;
+  /* Determinant of the deformation gradient evaluated at each quadrature point
+     for external force integration. */
+  std::array<T, num_external_force_quadrature_points> force_quadrature_F_det;
 };
 
 /* Forward declaration needed for defining the traits below. */
@@ -158,7 +158,14 @@ struct FemElementTraits<VolumetricElement<
                          Quadrature.
  @tparam ConstitutiveModelType  The type of constitutive model used in this
                                 VolumetricElement. ConstitutiveModelType must be
-                                derived from ConstitutiveModel. */
+                                derived from ConstitutiveModel.
+ @tparam SubdIsoparametricElementType Like IsoparametricElementType, but used
+                                      for the subdivided element. By default,
+                                      equal to IsoparametricElementType.
+ @tparam SubdQuadratureType Like QuadratureType, but used for the subdivided
+                            element. Subdivision is enabled if this type is not
+                            the same as QuadratureType. By default, equal to
+                            QuadratureType. */
 template <class IsoparametricElementType, class QuadratureType,
           class ConstitutiveModelType, class SubdIsoparametricElementType,
           class SubdQuadratureType>
@@ -559,7 +566,7 @@ class VolumetricElement
           data.deformation_gradient_data[q], &(data.dPdF[q]));
     }
     if constexpr (use_subd) {
-      data.external_force_quadrature =
+      data.force_quadrature_positions =
           subd_isoparametric_element_.value()
               .template InterpolateNodalValues<3>(element_q_reshaped);
       const std::array<Matrix3<T>, num_subd_quadrature_points> subd_F =
@@ -567,14 +574,14 @@ class VolumetricElement
                                   subd_isoparametric_element_.value(),
                                   subd_dxidX_.value());
       for (int q = 0; q < num_subd_quadrature_points; ++q) {
-        data.external_force_quadrature_F_det[q] = subd_F[q].determinant();
+        data.force_quadrature_F_det[q] = subd_F[q].determinant();
       }
     } else {
-      data.external_force_quadrature =
+      data.force_quadrature_positions =
           isoparametric_element_.template InterpolateNodalValues<3>(
               element_q_reshaped);
       for (int q = 0; q < num_quadrature_points; ++q) {
-        data.external_force_quadrature_F_det[q] = F[q].determinant();
+        data.force_quadrature_F_det[q] = F[q].determinant();
       }
     }
 
@@ -593,12 +600,12 @@ class VolumetricElement
                                  const FemPlantData<T>& plant_data,
                                  const T& scale,
                                  EigenPtr<Vector<T, num_dofs>> result) const {
-    const auto& quadrature_positions = data.external_force_quadrature;
+    const auto& quadrature_positions = data.force_quadrature_positions;
     const int num_quads = quadrature_positions.size();
     for (int q = 0; q < num_quads; ++q) {
       const T& reference_volume =
           use_subd ? subd_reference_volume_.value()[q] : reference_volume_[q];
-      const T& det = data.external_force_quadrature_F_det[q];
+      const T& det = data.force_quadrature_F_det[q];
       Vector3<T> scaled_force = Vector3<T>::Zero();
       for (const multibody::ForceDensityFieldBase<T>* force_density :
            plant_data.force_density_fields) {
