@@ -1,55 +1,57 @@
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 
-// @file
-// Tests the public interfaces in `cpp_param.py` and `cpp_param_pybind.h`.
+// @file This file contains direct C++ tests for the public interfaces in
+// `cpp_param.py` and `cpp_param_pybind.h`. A python interpreter is required;
+// it is provided by having these tests be invoked from cpp_param_test.py.
+//
 
-#include <stdexcept>
 #include <string>
 
-#include "pybind11/embed.h"
 #include "pybind11/eval.h"
-#include <gtest/gtest.h>
 
 #include "drake/bindings/pydrake/test/test_util_pybind.h"
+#include "drake/common/drake_assert.h"
 
 using std::string;
 
 namespace drake {
 namespace pydrake {
+namespace {
 
 // Compare two Python objects directly.
 bool PyEquals(py::object lhs, py::object rhs) {
   // TODO(eric.cousineau): Consider using `py::eval` as calling __eq__ may not
   // be robust. Types from `typing` may raise a NotImplemented error when
   // attempting to compare.
-  return lhs.attr("__eq__")(rhs).cast<bool>();
+  return py::cast<bool>(lhs.attr("__eq__")(rhs));
 }
 
 // Ensures that the type `T` maps to the expression in `py_expr_expected`.
 template <typename... Ts>
 bool CheckPyParam(const string& py_expr_expected, type_pack<Ts...> param = {}) {
   py::object actual = GetPyParam(param);
-  py::object expected = py::eval(py_expr_expected.c_str());
+  py::object expected =
+      py::eval(py::str(py_expr_expected.c_str()), py::globals());
   return PyEquals(actual, expected);
 }
 
-GTEST_TEST(CppParamTest, PrimitiveTypes) {
-  // Tests primitive types that are not expose directly via `pybind11`, thus
+void CheckPrimitiveTypes() {
+  // Tests primitive types that are not exposed directly via `pybind11`, thus
   // needing custom registration.
   // This follows the ordering in `cpp_param_pybind.cc`,
   // `RegisterCommon`.
-  ASSERT_TRUE(CheckPyParam<bool>("bool,"));
-  ASSERT_TRUE(CheckPyParam<std::string>("str,"));
-  ASSERT_TRUE(CheckPyParam<double>("float,"));
-  ASSERT_TRUE(CheckPyParam<float>("np.float32,"));
-  ASSERT_TRUE(CheckPyParam<int>("int,"));
-  ASSERT_TRUE(CheckPyParam<int16_t>("np.int16,"));
-  ASSERT_TRUE(CheckPyParam<int64_t>("np.int64,"));
-  ASSERT_TRUE(CheckPyParam<uint16_t>("np.uint16,"));
-  ASSERT_TRUE(CheckPyParam<uint32_t>("np.uint32,"));
-  ASSERT_TRUE(CheckPyParam<uint64_t>("np.uint64,"));
+  DRAKE_THROW_UNLESS(CheckPyParam<bool>("bool,"));
+  DRAKE_THROW_UNLESS(CheckPyParam<std::string>("str,"));
+  DRAKE_THROW_UNLESS(CheckPyParam<double>("float,"));
+  DRAKE_THROW_UNLESS(CheckPyParam<float>("np.float32,"));
+  DRAKE_THROW_UNLESS(CheckPyParam<int>("int,"));
+  DRAKE_THROW_UNLESS(CheckPyParam<int16_t>("np.int16,"));
+  DRAKE_THROW_UNLESS(CheckPyParam<int64_t>("np.int64,"));
+  DRAKE_THROW_UNLESS(CheckPyParam<uint16_t>("np.uint16,"));
+  DRAKE_THROW_UNLESS(CheckPyParam<uint32_t>("np.uint32,"));
+  DRAKE_THROW_UNLESS(CheckPyParam<uint64_t>("np.uint64,"));
   // N.B. CheckPyParam<py::object>(...) should cause a compile-time failure.
-  ASSERT_TRUE(CheckPyParam<Object>("object,"));
+  DRAKE_THROW_UNLESS(CheckPyParam<Object>("object,"));
 }
 
 // Dummy type.
@@ -58,59 +60,62 @@ struct CustomCppType {};
 // - Unregistered.
 struct CustomCppTypeUnregistered {};
 
-GTEST_TEST(CppParamTest, CustomTypes) {
+void CheckCustomTypes() {
   // Tests types that are C++ types registered with `pybind11`.
-  ASSERT_TRUE(CheckPyParam<CustomCppType>("CustomCppType,"));
-  EXPECT_THROW(
-      CheckPyParam<CustomCppTypeUnregistered>("CustomCppTypeUnregistered"),
-      std::runtime_error);
+  DRAKE_THROW_UNLESS(CheckPyParam<CustomCppType>("CustomCppType,"));
+  try {
+    CheckPyParam<CustomCppTypeUnregistered>("CustomCppTypeUnregistered");
+  } catch (const std::runtime_error&) {
+    // Test passes.
+  } catch (...) {
+    DRAKE_THROW_UNLESS(false);
+  }
 }
 
 template <typename T, T Value>
 using constant = std::integral_constant<T, Value>;
 
-GTEST_TEST(CppParamTest, LiteralTypes) {
+void CheckLiteralTypes() {
   // Tests that literal types are mapped to literals in Python.
-  ASSERT_TRUE(CheckPyParam<std::true_type>("True,"));
-  ASSERT_TRUE((CheckPyParam<constant<int, -1>>("-1,")));
-  ASSERT_TRUE((CheckPyParam<constant<uint, 1>>("1,")));
+  DRAKE_THROW_UNLESS(CheckPyParam<std::true_type>("True,"));
+  DRAKE_THROW_UNLESS((CheckPyParam<constant<int, -1>>("-1,")));
+  DRAKE_THROW_UNLESS((CheckPyParam<constant<uint, 1>>("1,")));
 }
 
-GTEST_TEST(CppParamTest, Packs) {
+void CheckPacks() {
   // Tests that type packs are properly interpreted.
-  ASSERT_TRUE((CheckPyParam<int, bool>("int, bool")));
-  ASSERT_TRUE((CheckPyParam<bool, constant<bool, false>>("bool, False")));
+  DRAKE_THROW_UNLESS((CheckPyParam<int, bool>("int, bool")));
+  DRAKE_THROW_UNLESS(
+      (CheckPyParam<bool, constant<bool, false>>("bool, False")));
 }
 
-GTEST_TEST(CppParamTest, Typing) {
-  ASSERT_TRUE(CheckPyParam<std::vector<int>>("List[int],"));
-  ASSERT_TRUE(CheckPyParam<std::vector<std::vector<int>>>("List[List[int]],"));
-  ASSERT_TRUE(CheckPyParam<std::vector<CustomCppType>>("List[CustomCppType],"));
-}
-
-int main(int argc, char** argv) {
-  // Reconstructing `scoped_interpreter` multiple times (e.g. via `SetUp()`)
-  // while *also* importing `numpy` wreaks havoc.
-  py::scoped_interpreter guard;
-
-  // Define common scope, import numpy and List for use in `eval`.
-  py::module m =
-      py::module::create_extension_module("__main__", "", new PyModuleDef());
-  py::globals()["np"] = py::module::import("numpy");
+void CheckTyping() {
   py::globals()["List"] =
       py::module::import("pydrake.common.cpp_param").attr("List");
+  DRAKE_THROW_UNLESS(CheckPyParam<std::vector<int>>("List[int],"));
+  DRAKE_THROW_UNLESS(
+      CheckPyParam<std::vector<std::vector<int>>>("List[List[int]],"));
+  DRAKE_THROW_UNLESS(
+      CheckPyParam<std::vector<CustomCppType>>("List[CustomCppType],"));
+}
+
+}  // namespace
+
+PYBIND11_MODULE(cpp_param_pybind_test, m) {
+  py::globals()["np"] = py::module::import("numpy");
 
   // Define custom class only once here.
   py::class_<CustomCppType>(m, "CustomCppType");
 
-  test::SynchronizeGlobalsForPython3(m);
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+  m.def("execute_tests", [m]() {
+    test::SynchronizeGlobalsForPython3(m);
+    CheckPrimitiveTypes();
+    CheckCustomTypes();
+    CheckLiteralTypes();
+    CheckPacks();
+    CheckTyping();
+  });
 }
 
 }  // namespace pydrake
 }  // namespace drake
-
-int main(int argc, char** argv) {
-  return drake::pydrake::main(argc, argv);
-}

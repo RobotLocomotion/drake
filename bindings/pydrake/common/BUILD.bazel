@@ -329,41 +329,49 @@ drake_py_unittest(
     ],
 )
 
-drake_py_unittest(
-    name = "cpp_param_test",
-    deps = [
-        ":common",
-    ],
-)
-
-drake_pybind_cc_googletest(
-    name = "cpp_param_pybind_test",
+drake_pybind_library(
+    name = "cpp_param_pybind_test_py",
+    testonly = True,
+    add_install = False,
     cc_deps = [
         ":cpp_param_pybind",
         "//bindings/pydrake:test_util_pybind",
     ],
+    cc_srcs = ["test/cpp_param_pybind_test.cc"],
+    package_info = PACKAGE_INFO,
     py_deps = [
         ":common",
     ],
 )
 
 drake_py_unittest(
-    name = "cpp_template_test",
+    name = "cpp_param_test",
     deps = [
         ":common",
-        "//bindings/pydrake/common/test_utilities",
+        ":cpp_param_pybind_test_py",
     ],
 )
 
-drake_pybind_cc_googletest(
-    name = "cpp_template_pybind_test",
+drake_pybind_library(
+    name = "cpp_template_test_util_py",
+    testonly = True,
+    add_install = False,
     cc_deps = [
         ":cpp_template_pybind",
-        "//bindings/pydrake:test_util_pybind",
         "//common:nice_type_name",
-        "//common/test_utilities:expect_throws_message",
     ],
+    cc_srcs = ["test/cpp_template_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
     py_deps = [":common"],
+)
+
+drake_py_unittest(
+    name = "cpp_template_test",
+    deps = [
+        ":common",
+        ":cpp_template_test_util_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
 )
 
 drake_cc_library(
@@ -606,12 +614,15 @@ drake_py_unittest(
     ],
 )
 
-drake_pybind_cc_googletest(
-    name = "sorted_pair_pybind_test",
+drake_pybind_library(
+    name = "sorted_pair_test_util_py",
+    testonly = True,
+    add_install = False,
     cc_deps = [
         ":sorted_pair_pybind",
-        "//bindings/pydrake:test_util_pybind",
     ],
+    cc_srcs = ["test/sorted_pair_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
 )
 
 drake_pybind_library(
@@ -630,6 +641,14 @@ drake_py_binary(
     deps = [
         ":common",
         ":text_logging_test_helpers_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "sorted_pair_test",
+    deps = [
+        ":common",
+        ":sorted_pair_test_util_py",
     ],
 )
 
@@ -679,14 +698,22 @@ drake_cc_googletest(
     ],
 )
 
-drake_pybind_cc_googletest(
-    name = "type_safe_index_pybind_test",
+drake_pybind_library(
+    name = "type_safe_index_test_util_py",
+    testonly = True,
+    add_install = False,
     cc_deps = [
         ":type_safe_index_pybind",
-        "//bindings/pydrake:test_util_pybind",
     ],
-    py_deps = [
+    cc_srcs = ["test/type_safe_index_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
+)
+
+drake_py_unittest(
+    name = "type_safe_index_test",
+    deps = [
         ":common",
+        ":type_safe_index_test_util_py",
     ],
 )
 

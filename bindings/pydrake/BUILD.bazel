@@ -236,11 +236,20 @@ drake_py_library(
 
 # N.B. Due to dependency on `common` (#7912), this is not a fully isolated /
 # decoupled test.
-drake_pybind_cc_googletest(
+drake_pybind_library(
+    name = "pydrake_pybind_test_util_py",
+    testonly = True,
+    add_install = False,
+    cc_srcs = ["test/pydrake_pybind_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
+)
+
+drake_py_unittest(
     name = "pydrake_pybind_test",
-    cc_deps = [":test_util_pybind"],
-    py_deps = [":module_py"],
-    py_srcs = ["test/_pydrake_pybind_test_extra.py"],
+    deps = [
+        ":module_py",
+        ":pydrake_pybind_test_util_py",
+    ],
 )
 
 drake_py_binary(
