@@ -121,10 +121,9 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   std::unique_ptr<PooledSapParameters<T>> params = model->ReleaseParameters();
   params->time_step = time_step;
   params->v0 = plant().GetVelocities(context);
-  const auto& v0 = params->v0;
   params->A.Clear();
 
-  // Dense linearized dynamics from MbP.
+  // Dense linearized dynamics from MbP, A = M + δt⋅damping.
   MatrixX<T>& M = scratch_.M;
   plant().CalcMassMatrix(context, &M);
 
@@ -133,7 +132,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   M.diagonal() += plant().EvalJointDampingCache(context) * time_step;
 
   // Allocate space for the linear dynamics matrix A.
-  // We only add a clique for tree's with non-zero number of velocities.
+  // We only add a clique for trees with a non-zero number of velocities.
   int num_cliques = 0;
   std::vector<int>& tree_clique = params->tree_to_clique;
   tree_clique.resize(forest.num_trees());
@@ -149,7 +148,7 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   }
   params->A.Resize(clique_sizes, clique_sizes);
 
-  // Set the linear dynamics matrix A
+  // Set the linear dynamics matrix A = M + dt⋅damping, block-by-block.
   for (TreeIndex t(0); t < forest.num_trees(); ++t) {
     const int c = tree_clique[t];
     if (c >= 0) {
@@ -161,9 +160,11 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
     }
   }
 
+  // Set the scaling factor D = diag(A)^{-1/2}.
+  params->D = M.diagonal().cwiseSqrt().cwiseInverse();
+
   // Update rigid body cliques and body Jacobians.
   const auto& world_frame = plant().world_frame();
-  params->D = M.diagonal().cwiseSqrt().cwiseInverse();
 
   // TODO(vincekurtz): consider reusing mass matrix as well. Note that
   // A = M + hD includes the time step, so M would need to be stored separately.
@@ -244,7 +245,12 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
     }
   }
 
-  // r = dt⋅(u₀ + τᵉˣ - C(q₀,v₀)) + A⋅v₀
+  // Residual term r = A⋅v₀ - dt⋅k(q₀,v₀)
+  //                 = M⋅v₀ + dt⋅damping⋅v₀ - dt⋅k(q₀,v₀)
+  //                 = dt (M⋅v₀/dt - k₀) + dt⋅damping⋅v₀
+  //                 = - dt (M⋅ (-v₀/dt) + k₀) + dt⋅damping⋅v₀
+  //                 = - dt InverseDynamics((-v₀/dt), q₀, v₀) + dt⋅damping⋅v₀
+  const VectorX<T>& v0 = params->v0;
   const T& dt = params->time_step;
   auto& r = params->r;
   r.resize(nv);
@@ -252,9 +258,6 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   VectorX<T>& vdot = scratch_.tmp_v1;
   vdot = -v0 / dt;
   plant().CalcForceElementsContribution(context, &forces);
-
-  // TODO(vincekurtz): use a CalcInverseDynamics signature that doesn't allocate
-  // a return value.
   r = -dt * plant().CalcInverseDynamics(context, vdot, forces);
   r += dt * plant().EvalJointDampingCache(context).asDiagonal() * v0;
 
