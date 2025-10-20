@@ -5,6 +5,7 @@
 #include <string>
 
 #if !defined(__APPLE__)
+#include <vtkX11Functions.h>
 #include <vtkglad/include/glad/egl.h>
 #include <vtkglad/include/glad/glx.h>
 #endif
@@ -56,8 +57,9 @@ void* GladLoaderLoadGlx() {
   // exits (https://linux.die.net/man/3/xclosedisplay), but it seems not so
   // evil to skip that.
   static Display* g_display = []() {
-    XInitThreads();
-    Display* display = XOpenDisplay(0);
+    vtkX11FunctionsInitialize();
+    vtkXInitThreads();
+    Display* display = vtkXOpenDisplay(0);
     if (display == nullptr) {
       const char* display_env = std::getenv("DISPLAY");
       throw std::logic_error(
