@@ -949,7 +949,7 @@ GTEST_TEST(WeldedBodies, ThrowErrorForDistalCompositeBodyWithZeroMass) {
 
   // The next function is usually called from MultibodyPlant::Finalize().
   const std::string expected_message =
-      "Body bodyA is the active body for a terminal composite body that "
+      "Body bodyA is the active body for a terminal assembly that "
       "is massless, but its joint has a translational degree of freedom.";
   DRAKE_EXPECT_THROWS_MESSAGE(model.ThrowDefaultMassInertiaError(),
                               expected_message);
@@ -976,7 +976,7 @@ GTEST_TEST(WeldedBodies, ThrowErrorForDistalCompositeBodyWithZeroInertia) {
 
   // The next function is usually called from MultibodyPlant::Finalize().
   const std::string expected_message =
-      "Body bodyA is the active body for a terminal composite body that "
+      "Body bodyA is the active body for a terminal assembly that "
       "has zero rotational inertia, but its joint has a rotational degree "
       "of freedom.";
   DRAKE_EXPECT_THROWS_MESSAGE(model.ThrowDefaultMassInertiaError(),
@@ -1007,7 +1007,7 @@ GTEST_TEST(WeldedBodies, ThrowErrorForDistalCompositeBodyWithNaNInertia) {
 
   // The next function is usually called from MultibodyPlant::Finalize().
   const std::string expected_message =
-      "Body bodyA is the active body for a terminal composite body that "
+      "Body bodyA is the active body for a terminal assembly that "
       "has a NaN rotational inertia, but its joint has a rotational degree "
       "of freedom.";
   DRAKE_EXPECT_THROWS_MESSAGE(model.ThrowDefaultMassInertiaError(),
