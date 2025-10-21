@@ -74,9 +74,8 @@ INLINE_GROUPED_CLASSES = NO
 INLINE_SIMPLE_STRUCTS  = NO
 TYPEDEF_HIDES_STRUCT   = YES
 LOOKUP_CACHE_SIZE      = 0
-NUM_PROC_THREADS       = 1
+NUM_PROC_THREADS       = 0
 TIMESTAMP              = YES
-
 #---------------------------------------------------------------------------
 # Build related configuration options
 #---------------------------------------------------------------------------
