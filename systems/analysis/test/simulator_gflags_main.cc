@@ -1,5 +1,6 @@
 #include <gflags/gflags.h>
 
+#include "drake/common/text_logging.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/analysis/simulator_gflags.h"

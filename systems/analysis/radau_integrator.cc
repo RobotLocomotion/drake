@@ -4,6 +4,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace systems {
