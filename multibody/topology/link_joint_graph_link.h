@@ -14,11 +14,11 @@ namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.
 namespace internal {
 
-/* Represents a %Link in the LinkJointGraph. This includes Links provided via
+/* Represents a %Link in the LinkJointGraph. This includes links provided via
 user input and also those added during forest building as Shadow links created
-when we cut a user %Link in order to break a kinematic loop. Links may be
-modeled individually or can be combined into LinkComposites comprising groups
-of Links that were connected by weld joints. */
+when we cut a user link in order to break a kinematic loop. Links may be
+modeled individually (each with its own Mobod) or can be combined with other
+mutually-welded links in a WeldedLinksAssembly onto a composite Mobod. */
 class LinkJointGraph::Link {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Link);
@@ -59,17 +59,17 @@ class LinkJointGraph::Link {
   }
 
   /* Returns `true` only if this is the World %Link. Static Links and Links
-  in the World Composite are not included; see is_anchored() if you want to
-  include everything that is fixed with respect to World. */
+  in the World WeldedLinksAssembly are not included; see is_anchored() if you
+  want to include everything that is fixed with respect to World. */
   bool is_world() const { return index_ == LinkIndex(0); }
 
   /* After modeling, returns `true` if this %Link is fixed with respect to
   World. That includes World itself, static Links, and any Link that is part
-  of the World Composite (that is, it is directly or indirectly welded to
-  World). */
+  of the World WeldedLinksAssembly (that is, it is directly or indirectly welded
+  to World). */
   bool is_anchored() const {
     return is_world() || is_static_flag_set() ||
-           (composite() == LinkCompositeIndex(0));
+           (welded_links_assembly() == WeldedLinksAssemblyIndex(0));
   }
 
   /* Returns `true` if this %Link was added with LinkFlags::kStatic. */
@@ -84,8 +84,8 @@ class LinkJointGraph::Link {
 
   /* Returns `true` if this %Link was added with LinkFlags::kMassless.
   However, this %Link may still be _effectively_ massful if it is welded
-  into a massful composite. See
-  LinkJointGraph::link_and_its_composite_are_massless() for the full story. */
+  into a massful assembly. See
+  LinkJointGraph::link_and_its_assembly_are_massless() for the full story. */
   bool is_massless() const {
     return static_cast<bool>(flags_ & LinkFlags::kMassless);
   }
@@ -103,26 +103,47 @@ class LinkJointGraph::Link {
   Links that were added due to loop breaking. */
   int num_shadows() const { return ssize(shadow_links_); }
 
+  /* After the forest has been built, returns the indexes of this link's
+  shadow links, if any. */
+  const std::vector<LinkIndex>& shadow_links() const { return shadow_links_; }
+
   /* Returns the index of the mobilized body (Mobod) that mobilizes this %Link.
-  If this %Link is part of a LinkComposite, this is the Mobod that mobilizes the
-  LinkComposite as a whole via the composite's active %Link. If you ask
-  this Mobod what Joint it represents, it will report the Joint that was used
-  to mobilize the LinkComposite; that won't necessarily be a Joint connected to
-  this %Link. See inboard_joint_index() to find the Joint that connected this
-  %Link to its LinkComposite. */
+  If this %Link is part of a WeldedLinksAssembly, the returned Mobod may be
+  a composite of some or all of the links in the assembly (including this one
+  of course). If you ask this Mobod what Joint it represents, it will report the
+  Joint that was used to mobilize that composite; that won't necessarily be a
+  Joint connected to this %Link. See inboard_joint_index() to find the Joint
+  that connected this %Link to its WeldedLinksAssembly. */
   MobodIndex mobod_index() const { return mobod_; }
 
   /* Returns the Joint that was used to associate this %Link with its
-  mobilized body. If this %Link is part of a LinkComposite, returns the weld
-  Joint that connects this %Link to the Composite, not necessarily the Joint
+  mobilized body. If this %Link is part of a WeldedLinksAssembly, returns the
+  weld Joint that connects this %Link to the Assembly, not necessarily the Joint
   that is modeled by the Mobod returned by mobod_index(). */
   JointIndex inboard_joint_index() const { return joint_; }
 
-  /* Returns the index of the LinkComposite this %Link is part of, if any.
-  World is always in LinkComposite 0; any other link is in a Composite only if
-  it is connected by a weld joint to another link. */
-  std::optional<LinkCompositeIndex> composite() const {
-    return link_composite_index_;
+  /* Returns the index of the WeldedLinksAssembly this %Link is part of, if any.
+  World is always in WeldedLinksAssembly 0; any other link is in an assembly
+  only if it is connected by a weld joint to at least one other link. */
+  std::optional<WeldedLinksAssemblyIndex> welded_links_assembly() const {
+    return welded_links_assembly_index_;
+  }
+
+  /* Returns true if the indicated joint is one that was originally connected
+  to this Link but due to loop breaking is now connected to one of this Link's
+  shadow links instead.
+  @pre the specified joint is one of this Link's joints */
+  bool JointHasMovedToShadowLink(JointIndex joint_index) const {
+    DRAKE_DEMAND(HasJoint(joint_index));
+    return std::find(joints_moved_to_shadow_links_.begin(),
+                     joints_moved_to_shadow_links_.end(),
+                     joint_index) != joints_moved_to_shadow_links_.end();
+  }
+
+  /* Returns true if the indicated joint is attached to this link. */
+  bool HasJoint(JointIndex joint_index) const {
+    return std::find(joints_.begin(), joints_.end(), joint_index) !=
+           joints_.end();
   }
 
  private:
@@ -157,6 +178,12 @@ class LinkJointGraph::Link {
 
   void add_loop_constraint(LoopConstraintIndex constraint_index) {
     loop_constraints_.push_back(constraint_index);
+  }
+
+  void NoteRetargetedJoint(JointIndex joint_for_shadow_link) {
+    DRAKE_DEMAND(HasJoint(joint_for_shadow_link));
+    DRAKE_DEMAND(!JointHasMovedToShadowLink(joint_for_shadow_link));
+    joints_moved_to_shadow_links_.push_back(joint_for_shadow_link);
   }
 
   // This is used when a Joint is removed.
@@ -196,9 +223,14 @@ class LinkJointGraph::Link {
 
   std::vector<LinkIndex> shadow_links_;
 
-  // World is always in a composite; other links are in a composite only
-  // if they are welded to another link.
-  std::optional<LinkCompositeIndex> link_composite_index_;
+  // These are joints on the joints_ list above, but which have been
+  // retargeted to one of the shadow links rather than the primary.
+  // The ordering is the same as for shadow_links_.
+  std::vector<JointIndex> joints_moved_to_shadow_links_;
+
+  // World is always in an assembly; other links are in an assembly only
+  // if they are welded to at least one other link.
+  std::optional<WeldedLinksAssemblyIndex> welded_links_assembly_index_;
 };
 
 }  // namespace internal
