@@ -161,9 +161,6 @@ def _is_important_warning(line):
         # ... unable to resolve ... `AssignRole(SourceId,...)' for ref ...
         if "(" in line:
             return False
-        # TODO(#14107) Remove this if-clause once the issue is resolved.
-        if "df_contact_material" in line:
-            return False
         # Broken link.
         return True
 
