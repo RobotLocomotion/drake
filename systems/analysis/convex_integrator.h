@@ -160,8 +160,10 @@ class ConvexIntegrator final : public IntegratorBase<T> {
 
   /**
    * Get a reference to SAP problem builder, used to set up the convex problem.
+   *
+   * N.B. this is not const because the builder caches geometry data.
    */
-  const PooledSapBuilder<T>& builder() const {
+  PooledSapBuilder<T>& builder() {
     DRAKE_ASSERT(builder_ != nullptr);
     return *builder_;
   }

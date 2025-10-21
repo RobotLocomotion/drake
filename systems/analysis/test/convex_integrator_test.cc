@@ -381,7 +381,7 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   const MatrixXd H_ref =
       M + h * K_ref.asDiagonal() * MatrixXd::Identity(nv, nv);
 
-  const PooledSapBuilder<double>& sap_builder = integrator.builder();
+  PooledSapBuilder<double>& sap_builder = integrator.builder();
   PooledSapModel<double>& model = integrator.get_model();
   PooledSapData<double>& data = integrator.get_data();
   sap_builder.UpdateModel(plant_context, h, false, &model);

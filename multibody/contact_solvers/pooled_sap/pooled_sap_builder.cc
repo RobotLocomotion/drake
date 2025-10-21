@@ -44,12 +44,9 @@ T CombineHuntCrossleyDissipation(const T& stiffness_A, const T& stiffness_B,
 
 template <typename T>
 void PooledSapBuilder<T>::CalcGeometryContactData(
-    const systems::Context<T>& context) const {
-  auto& surfaces = scratch_.surfaces;
-  auto& point_pairs = scratch_.point_pairs;
-
-  surfaces.clear();
-  point_pairs.clear();
+    const systems::Context<T>& context) {
+  surfaces_.clear();
+  point_pairs_.clear();
 
   auto& query_object = plant()
                            .get_geometry_query_input_port()
@@ -57,18 +54,18 @@ void PooledSapBuilder<T>::CalcGeometryContactData(
 
   switch (plant().get_contact_model()) {
     case ContactModel::kPoint: {
-      point_pairs = query_object.ComputePointPairPenetration();
+      point_pairs_ = query_object.ComputePointPairPenetration();
       break;
     }
     case ContactModel::kHydroelastic: {
-      surfaces = query_object.ComputeContactSurfaces(
+      surfaces_ = query_object.ComputeContactSurfaces(
           plant().get_contact_surface_representation());
       break;
     }
     case ContactModel::kHydroelasticWithFallback: {
       query_object.ComputeContactSurfacesWithFallback(
-          plant().get_contact_surface_representation(), &surfaces,
-          &point_pairs);
+          plant().get_contact_surface_representation(), &surfaces_,
+          &point_pairs_);
       break;
     }
   }
@@ -112,7 +109,7 @@ template <typename T>
 void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
                                       const T& time_step,
                                       bool reuse_geometry_data,
-                                      PooledSapModel<T>* model) const {
+                                      PooledSapModel<T>* model) {
   const SpanningForest& forest = GetInternalTree(plant()).forest();
   const LinkJointGraph& graph = GetInternalTree(plant()).graph();
   DRAKE_DEMAND(graph.forest_is_valid());
@@ -301,20 +298,19 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
 template <typename T>
 void PooledSapBuilder<T>::AllocatePatchConstraints(
     PooledSapModel<T>* model) const {
-  // N.B. This assumes that geometry info has already been computed and stored
-  // in scratch_.
+  // N.B. This assumes that geometry info has already been computed
   DRAKE_ASSERT(model != nullptr);
   typename PooledSapModel<T>::PatchConstraintsPool& patches =
       model->patch_constraints_pool();
 
   // First we'll get the number of contact pairs for point contact. There is one
   // pair per contact patch with point contact.
-  const int num_point_contacts = scratch_.point_pairs.size();
+  const int num_point_contacts = point_pairs_.size();
   std::vector<int> num_pairs_per_patch(num_point_contacts, 1);
 
   // Now we'll do hydro contact. With hydro we typically have multiple contact
   // pairs in each patch.
-  for (const auto& surface : scratch_.surfaces) {
+  for (const auto& surface : surfaces_) {
     num_pairs_per_patch.push_back(surface.num_faces());
   }
 
@@ -442,9 +438,7 @@ void PooledSapBuilder<T>::AddLimitConstraints(
 template <typename T>
 void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
     const systems::Context<T>& context, PooledSapModel<T>* model) const {
-  const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs =
-      scratch_.point_pairs;
-  const int num_point_contacts = point_pairs.size();
+  const int num_point_contacts = point_pairs_.size();
   if (num_point_contacts == 0) {
     return;
   }
@@ -459,7 +453,7 @@ void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
   for (int point_pair_index = 0; point_pair_index < num_point_contacts;
        ++point_pair_index) {
     const geometry::PenetrationAsPointPair<T>& pp =
-        point_pairs[point_pair_index];
+        point_pairs_[point_pair_index];
 
     // Retrieve participating geometries and bodies.
     const geometry::GeometryId Mid = pp.id_A;
@@ -524,9 +518,6 @@ void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
 template <typename T>
 void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
     const systems::Context<T>& context, PooledSapModel<T>* model) const {
-  // Add contact constraints for hydro.
-  const std::vector<geometry::ContactSurface<T>>& surfaces = scratch_.surfaces;
-
   const geometry::SceneGraphInspector<T>& inspector =
       plant().EvalSceneGraphInspector(context);
 
@@ -534,7 +525,7 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
   // properties.
   const double kDefaultDissipation = 50.0;
 
-  const int num_surfaces = surfaces.size();
+  const int num_surfaces = surfaces_.size();
 
   typename PooledSapModel<T>::PatchConstraintsPool& patches =
       model->patch_constraints_pool();
@@ -542,9 +533,9 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
     // To get the patch index, we need to account for the fact that there may
     // be some point contact pairs that get added before this
-    const int patch_index = surface_index + scratch_.point_pairs.size();
+    const int patch_index = surface_index + point_pairs_.size();
 
-    const auto& s = surfaces[surface_index];
+    const auto& s = surfaces_[surface_index];
     const bool M_is_compliant = s.HasGradE_M();
     const bool N_is_compliant = s.HasGradE_N();
     DRAKE_DEMAND(M_is_compliant || N_is_compliant);

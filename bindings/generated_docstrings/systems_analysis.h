@@ -444,7 +444,9 @@ Note:
           // Source: drake/systems/analysis/convex_integrator.h
           const char* doc =
 R"""(Get a reference to SAP problem builder, used to set up the convex
-problem.)""";
+problem.
+
+N.B. this is not const because the builder caches geometry data.)""";
         } builder;
         // Symbol: drake::systems::ConvexIntegrator::get_data
         struct /* get_data */ {
