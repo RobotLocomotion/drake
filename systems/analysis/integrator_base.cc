@@ -1,5 +1,7 @@
 #include "drake/systems/analysis/integrator_base.h"
 
+#include "drake/common/text_logging.h"
+
 namespace drake {
 namespace systems {
 
