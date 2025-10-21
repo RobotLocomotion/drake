@@ -9,6 +9,8 @@
 #include <variant>
 #include <vector>
 
+#include "drake/common/drake_assert.h"
+
 namespace drake {
 namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.
@@ -32,10 +34,16 @@ class LinkJointGraph::Joint {
   /* Returns this %Joint's name, unique within model_instance(). */
   const std::string& name() const { return name_; }
 
-  /* Returns the index of this %Joint's parent Link. */
+  /* Returns the index of this %Joint's parent Link, as supplied at
+  construction. In case we break a loop at this Link, the effective
+  parent Link may be an ephemeral shadow link instead.
+  @see effective_parent_link_index() */
   LinkIndex parent_link_index() const { return parent_link_index_; }
 
-  /* Returns the index of this %Joint's child Link. */
+  /* Returns the index of this %Joint's child Link, as supplied at
+  construction. In case we break a loop at this Link, the effective
+  child Link may be an ephemeral shadow link instead.
+  @see effective_child_link_index() */
   LinkIndex child_link_index() const { return child_link_index_; }
 
   /* Returns `true` if this is a Weld %Joint. */
@@ -91,6 +99,33 @@ class LinkJointGraph::Joint {
     return !std::holds_alternative<std::monostate>(how_modeled_);
   }
 
+  /* (Advanced) Returns the link that is actually serving as the parent link
+  for this joint. Might be different from the user's specified parent link
+  if we split that link to break a loop. If there is no SpanningForest yet
+  (or it has been cleared) this will be the same as parent_link_index(). */
+  LinkIndex effective_parent_link_index() const {
+    return effective_parent_link_index_;
+  }
+
+  /* (Advanced) Returns the link that is actually serving as the child link
+  for this joint. Might be different from the user's specified child link
+  if we split that link to break a loop. If there is no SpanningForest yet
+  (or it has been cleared) this will be the same as child_link_index(). */
+  LinkIndex effective_child_link_index() const {
+    return effective_child_link_index_;
+  }
+
+  /* (Advanced) Given one of the effective links of this joint, returns the
+  other one.
+  @pre The specified link is one of this joint's effective links. */
+  LinkIndex other_effective_link_index(LinkIndex effective_link_index) const {
+    DRAKE_DEMAND((effective_parent_link_index() == effective_link_index) ||
+                 (effective_child_link_index() == effective_link_index));
+    return effective_parent_link_index() == effective_link_index
+               ? effective_child_link_index()
+               : effective_parent_link_index();
+  }
+
  private:
   friend class LinkJointGraph;
   friend class LinkJointGraphTester;
@@ -100,7 +135,11 @@ class LinkJointGraph::Joint {
         LinkIndex parent_link_index, LinkIndex child_link_index,
         JointFlags flags);
 
-  void ClearModel() { how_modeled_ = std::monostate{}; }
+  void ClearModel() {
+    how_modeled_ = std::monostate{};
+    effective_parent_link_index_ = parent_link_index_;
+    effective_child_link_index_ = child_link_index_;
+  }
 
   // (For testing) If `to_set` is JointFlags::kDefault sets the flags to
   // kDefault. Otherwise or's in the given flags to the current set. Returns
@@ -108,6 +147,17 @@ class LinkJointGraph::Joint {
   JointFlags set_flags(JointFlags to_set) {
     return flags_ = (to_set == JointFlags::kDefault ? JointFlags::kDefault
                                                     : flags_ | to_set);
+  }
+
+  // If we have to split one of this joint's links to break a loop, the
+  // resulting ephemeral shadow link must replace the parent or child link here.
+  // That must be undone if we clear or rebuild the forest.
+  void set_effective_parent_link(LinkIndex shadow_link_index) {
+    effective_parent_link_index_ = shadow_link_index;
+  }
+
+  void set_effective_child_link(LinkIndex shadow_link_index) {
+    effective_child_link_index_ = shadow_link_index;
   }
 
   // Only joints that are modeled with Mobods need renumbering. This gets
@@ -128,16 +178,22 @@ class LinkJointGraph::Joint {
   LinkIndex parent_link_index_;
   LinkIndex child_link_index_;
 
-  // Below here is the as-built information; must be flushed when the forest is
+  // Below here is the as-built information; must be reset when the forest is
   // cleared or rebuilt.
 
   // Meaning of the variants:
   // - monostate: not yet processed
   // - MobodIndex: modeled directly by a mobilizer
-  // - LinkCompositeIndex: not modeled because this is a weld interior to
-  //     the indicated composite and we are combining so that one Mobod serves
-  //     the whole composite.
-  std::variant<std::monostate, MobodIndex, LinkCompositeIndex> how_modeled_;
+  // - WeldedLinksAssemblyIndex: not modeled because this is a weld interior to
+  //     the indicated assembly and we are optimizing so that one Mobod serves
+  //     the whole assembly.
+  std::variant<std::monostate, MobodIndex, WeldedLinksAssemblyIndex>
+      how_modeled_;
+
+  // These are set to the user's originals on construction and when the
+  // forest is cleared or rebuilt.
+  LinkIndex effective_parent_link_index_;
+  LinkIndex effective_child_link_index_;
 };
 
 }  // namespace internal
