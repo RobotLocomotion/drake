@@ -6,6 +6,9 @@
 // N.B. `CommonScalarPack` and `NonSymbolicScalarPack` in `systems_pybind.h`
 // should be kept in sync with this file.
 
+// N.B. The spelling of the macro names between doc/Doxyfile_CXX.in and this
+// file should be kept in sync.
+
 /// @defgroup default_scalars Default Scalars
 /// @ingroup technical_notes
 /// @{
