@@ -3,6 +3,9 @@
 #include <string>
 #include <string_view>
 
+// N.B. The spelling of the macro name between doc/Doxyfile_CXX.in and this
+// file must be kept in sync.
+
 /** @file
 Provides a portable macro for use in generating compile-time warnings for
 use of code that is permitted but discouraged. */
