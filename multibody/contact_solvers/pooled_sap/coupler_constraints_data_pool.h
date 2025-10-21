@@ -14,6 +14,11 @@ namespace multibody {
 namespace contact_solvers {
 namespace pooled_sap {
 
+/** 
+ * Stores data for coupler constraints (qᵢ = qⱼ). This data is updated at each
+ * solver iteration, as opposed to the CouplerConstraintsPool, which helps
+ * define the optimization problem.
+ */
 template <typename T>
 class CouplerConstraintsDataPool {
  public:
@@ -22,20 +27,23 @@ class CouplerConstraintsDataPool {
   /* Default constructor for an empty pool. */
   CouplerConstraintsDataPool() = default;
 
+  /* Resize the pool, allocating memory only as necessary. */
   void Resize(int num_couplers) { gamma_pool_.resize(num_couplers); }
 
   /* Returns the number of gain constraints. */
   int num_constraints() const { return gamma_pool_.size(); }
 
+  /* The constraint impulse γ = ∇ℓ_c(v) */
   const T& gamma(int k) const { return gamma_pool_[k]; }
   T& gamma(int k) { return gamma_pool_[k]; }
 
+  /* The constraint cost ∇ℓ_c(v)*/
   const T& cost() const { return cost_; }
   T& cost() { return cost_; }
 
  private:
-  T cost_{0.0};  // Total cost over all gain constraints.
-  std::vector<T> gamma_pool_;
+  T cost_{0.0};  // Total cost over all coupler constraints.
+  std::vector<T> gamma_pool_;   // Constraint impulses
 };
 
 }  // namespace pooled_sap
