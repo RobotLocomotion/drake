@@ -298,28 +298,6 @@ GTEST_TEST(TestQuaternionToAngleAxisLikeEigen, TestSymbolic) {
     EXPECT_EQ(angle_axis.axis()(i).GetVariables().size(), 4);
   }
 }
-
-GTEST_TEST(TestQuaternionExponential, TestDouble) {
-  const double kTol = std::numeric_limits<double>::epsilon();
-
-  // Zero rotation should give the identity quaternion.
-  const Eigen::Vector4d dq0(0.0, 0.0, 0.0, 0.0);
-  const Eigen::Vector4d exp_dq0 = quatExp(dq0);
-  const Eigen::Vector4d exp_dq0_ref(1.0, 0.0, 0.0, 0.0);
-  EXPECT_TRUE(CompareMatrices(exp_dq0, exp_dq0_ref, kTol));
-
-  // A pure rotational component should give a unit quaternion.
-  const Eigen::Vector4d dq1(0.0, 11, 22.3, 10.2);
-  const Eigen::Vector4d exp_dq1 = quatExp(dq1);
-  EXPECT_NEAR(exp_dq1.norm(), 1.0, kTol);
-
-  // A pure scalar component should give a purely real quaternion
-  const Eigen::Vector4d dq2(1.0, 0.0, 0.0, 0.0);
-  const Eigen::Vector4d exp_dq2 = quatExp(dq2);
-  const Eigen::Vector4d exp_dq2_ref(std::exp(1.0), 0.0, 0.0, 0.0);
-  EXPECT_TRUE(CompareMatrices(exp_dq2, exp_dq2_ref, kTol));
-}
-
 }  // namespace quaternion_test
 }  // namespace math
 }  // namespace drake

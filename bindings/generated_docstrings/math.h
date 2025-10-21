@@ -5124,11 +5124,6 @@ Returns:
         // Source: drake/math/quaternion.h
         const char* doc = R"""()""";
       } quatDiffAxisInvar;
-      // Symbol: drake::math::quatExp
-      struct /* quatExp */ {
-        // Source: drake/math/quaternion.h
-        const char* doc = R"""()""";
-      } quatExp;
       // Symbol: drake::math::quatProduct
       struct /* quatProduct */ {
         // Source: drake/math/quaternion.h
