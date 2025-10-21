@@ -4,6 +4,7 @@
 #error Do not include this file. Use "drake/multibody/topology/graph.h".
 #endif
 
+#include <algorithm>
 #include <filesystem>
 #include <map>
 #include <optional>
@@ -14,7 +15,6 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/ssize.h"
 #include "drake/common/string_unordered_map.h"
 #include "drake/multibody/topology/link_joint_graph_defs.h"
 
@@ -79,16 +79,14 @@ In general during SpanningForest building:
   - A primary Link and its shadows must be welded together by Weld Constraints
     which will be added to this Graph during modeling.
   - Building the forest may require additional Joints to mobilize free bodies or
-    immobilize static bodies. Each Joint maps to at most one Mobod; some Joints
-    may instead be represented as Constraints or (for welds) implicitly as
-    part of a composite rigid body.
-  - Composite bodies (Links welded together) can be represented by a single
+    immobilize static bodies. Each Joint maps to at most one Mobod; some weld
+    Joints may instead be represented implicitly as part of a
+    WeldedLinksAssembly.
+  - A WeldedLinksAssembly (Links welded together) can be represented by a single
     Mobod, so many Links may follow one Mobod.
   - We never delete any of the user's Links or Joints; we may add new ones
-    during forest building but those are distinct from the user's.
-
-@note Links are indexed using MultibodyPlant's LinkIndex type; there is no
-separate LinkIndex type since these are necessarily the same. */
+    during forest building (we call those _ephemeral_ elements) but those are
+    kept distinct from the user's elements. */
 class LinkJointGraph {
  public:
   DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(LinkJointGraph);
@@ -105,10 +103,18 @@ class LinkJointGraph {
     bool has_quaternion{false};  // If so, the first 4 qs are wxyz.
   };
 
-  /* A LinkComposite is a set of Links that are mutually connected by weld
-  joints. It is massless only if _all_ its constituent Links are massless. */
-  struct LinkComposite {
+  /* A WeldedLinksAssembly is a set of Links and weld Joints where the links
+  are all interconnected by the joints. It is massless only if _all_ its
+  constituent Links are massless. */
+  struct WeldedLinksAssembly {
+    bool HasLink(LinkIndex index) const {
+      return std::find(links.begin(), links.end(), index) != links.end();
+    }
+    bool HasJoint(JointIndex index) const {
+      return std::find(joints.begin(), joints.end(), index) != joints.end();
+    }
     std::vector<LinkIndex> links;
+    std::vector<JointIndex> joints;
     bool is_massless{false};
   };
 
@@ -225,7 +231,7 @@ class LinkJointGraph {
   @returns The unique LinkIndex for the added Link in the graph.
   @throws std::exception if `name` is duplicated within `model_instance`.
   @throws std::exception if an attempt is made to add a link into the World's
-    model instance
+    model instance.
   @throws std::exception if the `flags` parameter has any internal-only flags
     set (currently just `Shadow`). */
   LinkIndex AddLink(const std::string& name, ModelInstanceIndex model_instance,
@@ -427,43 +433,84 @@ class LinkJointGraph {
   [[nodiscard]] int num_user_joints() const { return data_.num_user_joints; }
 
   /* After the SpanningForest has been built, returns the index of the mobilized
-  body (Mobod) followed by this Link. If the Link is part of a merged composite,
-  this will be the mobilized body for the whole composite. If the Link was split
-  into a primary and shadows, this is the mobilized body followed by the
-  primary. If there is no valid Forest, the returned index will be invalid. */
+  body (Mobod) followed by this Link. If the Link is part of an optimized
+  WeldedLinksAssembly, this will be the mobilized body for the whole assembly.
+  If the Link was split into a primary and shadows, this is the mobilized body
+  followed by the primary. If there is no valid Forest, the returned index will
+  be invalid. */
   [[nodiscard]] MobodIndex link_to_mobod(LinkIndex index) const;
 
   /* After the SpanningForest has been built, returns groups of Links that are
-  welded together, which we call "LinkComposites". Each composite may be modeled
-  in the Forest with a single mobilized body (a "merged composite") or multiple
-  mobilized bodies depending on modeling options, but that doesn't change
-  anything here. The first entry in each LinkComposite is the "active link", the
-  one whose (non-weld) Joint moves the whole LinkComposite due to its modeling
-  in the SpanningForest. The rest of the Links in the composite are listed in no
-  particular order.
+  welded together, as WeldedLinksAssembly objects. Each such assembly has no
+  internal degrees of freedom and will move as a single rigid object. The first
+  entry in each WeldedLinksAssembly is the _active link_, whose non-weld
+  inboard Joint moves the whole assembly. (World is considered the active link
+  for the welded-to-World WeldedLinksAssembly.) The remaining links are
+  ordered in the WeldedLinksAssembly in the order they are processed during
+  BuildForest(). That will be generally inboard to outboard, but not necessarily
+  depth-first.
 
-  The 0th LinkComposite is always present (if there is a valid SpanningForest)
-  and its first entry is World (Link 0), even if nothing else is welded to
-  World. Otherwise, composites are present here if they contain two or more
-  welded Links; Links that aren't welded to any other Links are not included
-  here at all. LinkComposites are discovered as a side effect of
+  Depending on modeling options, each assembly may be modeled in the Forest with
+  either
+  (1) a Mobod for each Link (an _unoptimized_ assembly), or
+  (2) a single Mobod (an _optimized_ assembly or composite body), or
+  (3) several Mobods due to special treatment of selected weld joints (a
+      _split_ assembly with several composite bodies)
+
+  In an unoptimized assembly (1), the weld joints are treated just as for any
+  other joint: each weld and link is modeled with its own Mobod, and loops are
+  cut by splitting links as necessary. At runtime, reaction forces will be
+  available for each weld as they are for other joint types.
+
+  In an optimized assembly (2), a single composite Mobod is allocated for the
+  entire assembly, with the combined mass properties of all the welded-together
+  links. Only the active link's inboard joint is modeled and has reaction forces
+  calculated. Most multibody algorithms have complexity proportional to the
+  number of Mobods, so optimized assemblies can result in considerable speedups.
+
+  A split assembly (3) occurs because particular weld joints interior to an
+  assembly have been designated by a user as "must be modeled". That's done
+  because reaction forces are needed for those weld joints (for example, a wrist
+  force sensor). You can get those while still taking advantage of optimized
+  assemblies. In that case the full WeldedLinksAssembly will be split into more
+  than one composite Mobod, with reaction forces available for each Mobod's
+  inboard mobilizer which models the "must be modeled" weld joint.
+
+  The 0th WeldedLinksAssembly is always present (if there is a valid
+  SpanningForest) and its first entry is World (Link 0), even if nothing else is
+  welded to World. Otherwise, assemblies are present here if they contain two or
+  more welded Links; Links that aren't welded to any other Links are not
+  included here at all. WeldedLinksAssemblies are discovered as a side effect of
   forest-building; there is no cost to accessing them here.
 
-  A LinkComposite consisting only of massless Links is itself massless. If a
-  composite contains World or any massful body then it is massful. You can
-  check with the member LinkComposite::is_massless.
+  A WeldedLinksAssembly consisting only of massless Links is itself massless. If
+  an assembly contains World or any massful body then it is massful. You can
+  check with the member WeldedLinksAssembly::is_massless.
 
-  If there is no valid Forest, the returned vector is empty. */
-  [[nodiscard]] const std::vector<LinkComposite>& link_composites() const {
-    return data_.link_composites;
+  If there is no valid Forest, the returned vector is empty.
+
+  @note To be precise about the ordering, consider a typical weld joint jᵢ
+  interior to a WeldedLinksAssembly with active link A. Joint jᵢ connects parent
+  link pᵢ to child link cᵢ. Whichever of those links is topologically closer to
+  A (typically, but not necessarily, pᵢ) will appear in the list before the
+  more-distal link. In case of a tie (only possible if the welds form a
+  topological loop interior to the WeldedLinksAssembly) the ordering of the two
+  links is arbitrary. When there are no loops, the inboard-to-outboard ordering
+  permits post-processing to calculate reaction forces for joints interior to an
+  optimized assembly (composite) by working through the links in reverse order.
+  Processed that way, each link will have only one unknown reaction force at the
+  time it is encountered. */
+  [[nodiscard]] const std::vector<WeldedLinksAssembly>&
+  welded_links_assemblies() const {
+    return data_.welded_links_assemblies;
   }
 
-  /* Returns a reference to a particular LinkComposite. Requires a
-  LinkCompositeIndex, not a plain integer.
-  @pre `link_composite_index` is valid and in range. */
-  [[nodiscard]] const LinkComposite& link_composites(
-      LinkCompositeIndex link_composite_index) const {
-    return link_composites().at(link_composite_index);
+  /* Returns a reference to a particular WeldedLinksAssembly. Requires a
+  WeldedLinksAssemblyIndex, not a plain integer.
+  @pre `welded_links_assembly_index` is valid and in range. */
+  [[nodiscard]] const WeldedLinksAssembly& welded_links_assemblies(
+      WeldedLinksAssemblyIndex welded_links_assembly_index) const {
+    return welded_links_assemblies().at(welded_links_assembly_index);
   }
 
   /* @returns `true` if a Link named `name` was added to `model_instance`.
@@ -486,11 +533,11 @@ class LinkJointGraph {
   [[nodiscard]] std::optional<JointIndex> MaybeGetJointBetween(
       LinkIndex link1_index, LinkIndex link2_index) const;
 
-  /* Returns true if the given Link should be treated as massless. That
-  requires that the Link was flagged kMassless and is not connected by
-  a Weld Joint to a massful Composite. If this Link is not part of a
-  LinkComposite then the result is the same as Link::is_massless(). */
-  [[nodiscard]] bool link_and_its_composite_are_massless(
+  /* Returns true if the given Link should be treated as massless. That requires
+  that the Link was flagged kMassless and is not connected by a Weld Joint to a
+  massful WeldedLinksAssembly. If this Link is not part of a WeldedLinksAssembly
+  then the result is the same as Link::is_massless(). */
+  [[nodiscard]] bool link_and_its_assembly_are_massless(
       LinkOrdinal link_ordinal) const;
 
   /* (Internal use only) For testing -- invalidates the Forest. */
@@ -511,16 +558,15 @@ class LinkJointGraph {
                        const std::string& name_of_new_type);
 
   /* After the Forest is built, returns the sequence of Links from World to the
-  given Link L in the Forest. In case the Forest was built with a single Mobod
-  for each Link Composite (Links connected by Weld joints), we only report the
-  "active Link" for each Link Composite so that there is only one Link returned
-  for each level in Link L's tree. World is always the active Link for its
-  composite so will always be the first entry in the result. However, if L is
-  part of a Link Composite the final entry will be L's composite's active link,
-  which might not be L. Cost is O(ℓ) where ℓ is Link L's level in the
-  SpanningForest.
-  @@throws std::exception if the SpanningForest hasn't been built yet.
-  @see link_composites(), SpanningForest::FindPathFromWorld() */
+  given Link L in the Forest. In case the Forest was built with optimization
+  enabled for WeldedLinksAssemblies, we only report the "active link" for each
+  WeldedLinksAssembly so that there is only one Link returned for each level in
+  Link L's tree. World is always the active Link for its assembly so will always
+  be the first entry in the result. However, if L is part of a
+  WeldedLinksAssembly the final entry will be L's assembly's active link, which
+  might not be L. Cost is O(ℓ) where ℓ is Link L's level in the SpanningForest.
+  @throws std::exception if the SpanningForest hasn't been built yet.
+  @see welded_link_assemblies(), SpanningForest::FindPathFromWorld() */
   std::vector<LinkIndex> FindPathFromWorld(LinkIndex link_index) const;
 
   /* After the Forest is built, finds the first Link common to the paths
@@ -548,20 +594,21 @@ class LinkJointGraph {
   /* After the Forest is built, this method can be called to return a
   partitioning of the LinkJointGraph into subgraphs such that (a) every Link is
   in one and only one subgraph, and (b) two Links are in the same subgraph iff
-  there is a path between them which consists only of Weld joints.
-  Each subgraph of welded Links is represented as a set of
-  Link indexes (using LinkIndex). By definition, these subgraphs will be
-  disconnected by any non-Weld joint between two Links. A few notes:
+  there is a path between them which consists only of Weld joints. Each subgraph
+  of welded Links is represented as a set of Link indexes (using LinkIndex). By
+  definition, these subgraphs will be disconnected by any non-Weld joint between
+  two Links. A few notes:
     - The maximum number of returned subgraphs equals the number of Links in
       the graph. This corresponds to a graph with no Weld joints.
     - The World Link is included in a set of welded Links, and this set is
       element zero in the returned vector. The other subgraphs are in no
       particular order.
     - The minimum number of subgraphs is one. This corresponds to a graph with
-      all Links welded to World.
+      just World or all Links welded to World.
 
   @throws std::exception if the SpanningForest hasn't been built yet.
-  @see CalcSubgraphsOfWeldedLinks() if you haven't built a Forest yet */
+  @see CalcSubgraphsOfWeldedLinks() if you haven't built a Forest yet
+  @see welded_links_assemblies() for fast access to the welded subgraphs */
   std::vector<std::set<LinkIndex>> GetSubgraphsOfWeldedLinks() const;
 
   /* This much-slower method does not depend on the SpanningForest having
@@ -578,7 +625,7 @@ class LinkJointGraph {
   Therefore, if `link_index` is a valid index to a Link in this graph, then the
   return vector will always contain at least one entry storing `link_index`.
   This is fast because we just need to sort the already-calculated
-  LinkComposite the given `link_index` is part of (if any).
+  WeldedLinksAssembly the given `link_index` is part of (if any).
 
   @throws std::exception if the SpanningForest hasn't been built yet or
                          `link_index` is out of range
@@ -595,7 +642,7 @@ class LinkJointGraph {
 
   /* Generate a graphviz representation of this %LinkJointGraph, with the
   given label at the top. Will include ephemeral elements if they are
-  available (that is, if the forest is valid)  unless suppressed explicitly.
+  available (that is, if the forest is valid) unless suppressed explicitly.
   The result is in the "dot" language, see https://graphviz.org. If you
   write it to some file foo.dot, you can generate a viewable png (for
   example) using the command `dot -Tpng foo.dot >foo.png`.
@@ -693,9 +740,10 @@ class LinkJointGraph {
   // Tells this currently-unmodeled Joint that the given Mobod models it.
   void set_mobod_for_joint(JointOrdinal joint_ordinal, MobodIndex mobod_index);
 
-  // The World Link must already be in the graph but there are no Link
-  // Composites yet. This creates the 0th LinkComposite and puts World in it.
-  void CreateWorldLinkComposite();
+  // The World Link must already be in the graph but there are no
+  // WeldedLinksAssemblies yet. This creates the 0th WeldedLinksAssembly and
+  // puts World in it.
+  void CreateWorldWeldedLinksAssembly();
 
   // Registers a loop-closing weld constraint between these Links and updates
   // the Links to know about it.
@@ -723,12 +771,13 @@ class LinkJointGraph {
   JointIndex AddEphemeralJointToWorld(JointTraitsIndex type_index,
                                       LinkOrdinal child_link_ordinal);
 
-  // Adds the new Link to the LinkComposite of which maybe_composite_link is a
-  // member. If maybe_composite_link is not a member of any LinkComposite, then
-  // we create a new LinkComposite with maybe_composite_link as the first
-  // (and hence "active") Link.
-  LinkCompositeIndex AddToLinkComposite(
-      LinkOrdinal maybe_composite_link_ordinal, LinkOrdinal new_link_ordinal);
+  // Adds the new Link and Joint to the WeldedLinksAssembly of which
+  // maybe_assembly_link is a member. If maybe_assembly_link is not a member of
+  // any WeldedLinksAssembly, then we create a new WeldedLinksAssembly with
+  // maybe_assembly_link as the first (and hence "active") Link.
+  WeldedLinksAssemblyIndex AddToWeldedLinksAssembly(
+      LinkOrdinal maybe_assembly_link_ordinal, LinkOrdinal new_link_ordinal,
+      JointOrdinal weld_joint_ordinal);
 
   // While building the Forest, adds a new Shadow link to the given Primary
   // link, with the Shadow mobilized by the given joint. We'll derive a name for
@@ -778,9 +827,14 @@ class LinkJointGraph {
   }
 
   // Notes that we didn't model this Joint in the Forest because it is just a
-  // weld to an existing Composite.
-  void AddUnmodeledJointToComposite(JointOrdinal unmodeled_joint_ordinal,
-                                    LinkCompositeIndex which);
+  // weld to an existing Assembly. We expect that the joint is already in the
+  // assembly.
+  void NoteUnmodeledJointInWeldedLinksAssembly(
+      JointOrdinal unmodeled_joint_ordinal, WeldedLinksAssemblyIndex which);
+
+  // Adds the joint to the assembly and notes that it is unmodeled as above.
+  void AddUnmodeledJointToWeldedLinksAssembly(
+      JointOrdinal unmodeled_joint_ordinal, WeldedLinksAssemblyIndex which);
 
   // This is the implementation for CalcLinksWeldedTo().
   void AppendLinksWeldedTo(LinkIndex link_index,
@@ -855,11 +909,11 @@ class LinkJointGraph {
     string_unordered_multimap<LinkIndex> link_name_to_index;
     string_unordered_multimap<JointIndex> joint_name_to_index;
 
-    // The 0th composite always exists and contains World (listed first)
-    // and any links welded (recursively) to World. The other composites are
-    // only present if there are at least two Links welded together. The first
-    // Link in the composite is the active Link.
-    std::vector<LinkComposite> link_composites;
+    // The 0th assembly always exists and contains World (listed first) and any
+    // links welded (recursively) to World. The other assemblies are only
+    // present if there are at least two Links welded together. The first Link
+    // in an assembly is the active Link.
+    std::vector<WeldedLinksAssembly> welded_links_assemblies;
 
     bool forest_is_valid{false};  // set false whenever changes are made
 
