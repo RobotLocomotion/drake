@@ -134,10 +134,11 @@ class LinkJointGraph::Joint {
   // Meaning of the variants:
   // - monostate: not yet processed
   // - MobodIndex: modeled directly by a mobilizer
-  // - LinkCompositeIndex: not modeled because this is a weld interior to
+  // - WeldedLinksAssemblyIndex: not modeled because this is a weld interior to
   //     the indicated composite and we are combining so that one Mobod serves
   //     the whole composite.
-  std::variant<std::monostate, MobodIndex, LinkCompositeIndex> how_modeled_;
+  std::variant<std::monostate, MobodIndex, WeldedLinksAssemblyIndex>
+      how_modeled_;
 };
 
 }  // namespace internal

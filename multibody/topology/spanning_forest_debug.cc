@@ -29,18 +29,20 @@ void SpanningForest::SanityCheckForest() const {
   DRAKE_THROW_UNLESS(!world_mobod.inboard().is_valid());
   DRAKE_THROW_UNLESS(ssize(world_mobod.outboards()) == ssize(trees()));
 
-  /* WeldedMobods groups and LinkComposites are different but in either case
-  there is always a World group or composite, it must come first, and the World
-  Link or Mobod must be listed first in that group or composite. */
+  /* WeldedMobods groups and WeldedLinksAssemblies are different but in either
+  case there is always a World group or assembly, it must come first, and the
+  World Link or Mobod must be listed first in that group or assembly. */
   DRAKE_THROW_UNLESS(world_mobod.welded_mobods_group().has_value());
   DRAKE_THROW_UNLESS(world_mobod.welded_mobods_group() == WeldedMobodsIndex(0));
   DRAKE_THROW_UNLESS(welded_mobods()[0][0] == MobodIndex(0));
 
   const LinkJointGraph::Link& world_link = links(LinkOrdinal(0));
   DRAKE_THROW_UNLESS(world_link.mobod_index() == 0);
-  DRAKE_THROW_UNLESS(world_link.composite().has_value());
-  DRAKE_THROW_UNLESS(world_link.composite() == LinkCompositeIndex(0));
-  DRAKE_THROW_UNLESS(graph().link_composites()[0].links[0] == LinkIndex(0));
+  DRAKE_THROW_UNLESS(world_link.welded_links_assembly().has_value());
+  DRAKE_THROW_UNLESS(world_link.welded_links_assembly() ==
+                     WeldedLinksAssemblyIndex(0));
+  DRAKE_THROW_UNLESS(graph().welded_links_assemblies()[0].links[0] ==
+                     LinkIndex(0));
 
   for (MobodIndex index(1); index < ssize(mobods()); ++index) {
     const Mobod& mobod = mobods(index);
@@ -61,19 +63,21 @@ void SpanningForest::SanityCheckForest() const {
     }
   }
 
-  /* Check that Links alleged to be in a LinkComposite agree that they are,
-  and that massless LinkComposites are composed only of massless Links. */
-  for (LinkCompositeIndex composite_index(0);
-       composite_index < ssize(graph().link_composites()); ++composite_index) {
-    const LinkJointGraph::LinkComposite& composite =
-        graph().link_composites(composite_index);
+  /* Check that Links alleged to be in a WeldedLinksAssembly agree that they
+  are, and that massless WeldedLinksAssemblies are composed only of massless
+  Links. */
+  for (WeldedLinksAssemblyIndex assembly_index(0);
+       assembly_index < ssize(graph().welded_links_assemblies());
+       ++assembly_index) {
+    const LinkJointGraph::WeldedLinksAssembly& assembly =
+        graph().welded_links_assemblies(assembly_index);
     bool all_links_are_massless = true;
-    for (const LinkIndex& link_index : composite.links) {
+    for (const LinkIndex& link_index : assembly.links) {
       const LinkJointGraph::Link& link = link_by_index(link_index);
-      DRAKE_THROW_UNLESS(link.composite() == composite_index);
+      DRAKE_THROW_UNLESS(link.welded_links_assembly() == assembly_index);
       if (!link.is_massless()) all_links_are_massless = false;
     }
-    DRAKE_THROW_UNLESS(composite.is_massless == all_links_are_massless);
+    DRAKE_THROW_UNLESS(assembly.is_massless == all_links_are_massless);
   }
 
   /* Check that all the Links and Joints have Mobods that point back to them. */
@@ -117,7 +121,7 @@ void SpanningForest::SanityCheckForest() const {
      - except for the World group, the first entry in each group is a
        Mobod that has a non-weld inboard joint, and all the others are Welds.
      - the first entry in each WeldedMobods group should map to the Link (the
-       "active link") that is listed first in its LinkComposite. */
+       "active link") that is listed first in its WeldedLinksAssembly. */
   for (WeldedMobodsIndex welded_mobods_index(0);
        welded_mobods_index < ssize(welded_mobods()); ++welded_mobods_index) {
     const std::vector<MobodIndex> welded_mobods_group =
@@ -135,11 +139,12 @@ void SpanningForest::SanityCheckForest() const {
       if (is_active_mobod) {
         const LinkOrdinal active_link_ordinal = mobod.link_ordinal();
         const Link& active_link = links(active_link_ordinal);
-        const std::optional<LinkCompositeIndex> link_composite =
-            active_link.composite();
-        DRAKE_THROW_UNLESS(link_composite.has_value());
-        DRAKE_THROW_UNLESS(graph().link_composites(*link_composite).links[0] ==
-                           active_link.index());
+        const std::optional<WeldedLinksAssemblyIndex> link_assembly =
+            active_link.welded_links_assembly();
+        DRAKE_THROW_UNLESS(link_assembly.has_value());
+        DRAKE_THROW_UNLESS(
+            graph().welded_links_assemblies(*link_assembly).links[0] ==
+            active_link.index());
       }
     }
   }

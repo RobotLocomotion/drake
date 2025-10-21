@@ -122,7 +122,7 @@ void LinkJointGraph::InvalidateForest() {
     DRAKE_DEMAND(ssize(data_.joint_name_to_index) == data_.num_user_joints);
     DRAKE_DEMAND(data_.ephemeral_link_name_to_index.empty());
     DRAKE_DEMAND(data_.ephemeral_joint_name_to_index.empty());
-    DRAKE_DEMAND(data_.link_composites.empty());
+    DRAKE_DEMAND(data_.welded_links_assemblies.empty());
     DRAKE_DEMAND(data_.num_user_links == ssize(data_.links));
     DRAKE_DEMAND(data_.num_user_joints == ssize(data_.joints));
     return;
@@ -161,7 +161,7 @@ void LinkJointGraph::InvalidateForest() {
   // Remove all as-modeled information from the user's graph.
   for (auto& link : data_.links) link.ClearModel(data_.max_user_joint_index);
   for (auto& joint : data_.joints) joint.ClearModel();
-  data_.link_composites.clear();
+  data_.welded_links_assemblies.clear();
 }
 
 const LinkJointGraph::Link& LinkJointGraph::world_link() const {
@@ -485,14 +485,14 @@ bool LinkJointGraph::IsJointTypeRegistered(
   return it != data_.joint_type_name_to_index.end();
 }
 
-void LinkJointGraph::CreateWorldLinkComposite() {
+void LinkJointGraph::CreateWorldWeldedLinksAssembly() {
   DRAKE_DEMAND(!links().empty());  // Better be at least World!
-  DRAKE_DEMAND(data_.link_composites.empty());
+  DRAKE_DEMAND(data_.welded_links_assemblies.empty());
   Link& world_link = data_.links[LinkOrdinal(0)];
-  DRAKE_DEMAND(!world_link.link_composite_index_.has_value());
-  data_.link_composites.emplace_back(LinkComposite{
+  DRAKE_DEMAND(!world_link.welded_links_assembly_index_.has_value());
+  data_.welded_links_assemblies.emplace_back(WeldedLinksAssembly{
       .links = std::vector{world_link.index()}, .is_massless = false});
-  world_link.link_composite_index_ = LinkCompositeIndex(0);
+  world_link.welded_links_assembly_index_ = WeldedLinksAssemblyIndex(0);
 }
 
 LoopConstraintIndex LinkJointGraph::AddLoopClosingWeldConstraint(
@@ -602,42 +602,42 @@ JointIndex LinkJointGraph::AddEphemeralJointToWorld(
   return new_joint_index;
 }
 
-LinkCompositeIndex LinkJointGraph::AddToLinkComposite(
-    LinkOrdinal maybe_composite_link_ordinal, LinkOrdinal new_link_ordinal) {
-  DRAKE_ASSERT(maybe_composite_link_ordinal.is_valid() &&
+WeldedLinksAssemblyIndex LinkJointGraph::AddToWeldedLinksAssembly(
+    LinkOrdinal maybe_assembly_link_ordinal, LinkOrdinal new_link_ordinal) {
+  DRAKE_ASSERT(maybe_assembly_link_ordinal.is_valid() &&
                new_link_ordinal.is_valid());
-  Link& maybe_composite_link = mutable_link(maybe_composite_link_ordinal);
+  Link& maybe_assembly_link = mutable_link(maybe_assembly_link_ordinal);
   Link& new_link = mutable_link(new_link_ordinal);
   DRAKE_DEMAND(!new_link.is_world());
 
-  std::optional<LinkCompositeIndex> existing_composite_index =
-      maybe_composite_link.link_composite_index_;
-  if (!existing_composite_index.has_value()) {
-    // We're starting a new LinkComposite. This must be the "active link"
-    // for this Composite because we saw it first while building the Forest.
-    existing_composite_index = maybe_composite_link.link_composite_index_ =
-        LinkCompositeIndex(ssize(data_.link_composites));
-    data_.link_composites.emplace_back(LinkComposite{
-        .links = std::vector<LinkIndex>{maybe_composite_link.index()},
-        .is_massless = maybe_composite_link.is_massless()});
+  std::optional<WeldedLinksAssemblyIndex> existing_assembly_index =
+      maybe_assembly_link.welded_links_assembly_index_;
+  if (!existing_assembly_index.has_value()) {
+    // We're starting a new WeldedLinksAssembly. This must be the "active link"
+    // for this Assembly because we saw it first while building the Forest.
+    existing_assembly_index = maybe_assembly_link.welded_links_assembly_index_ =
+        WeldedLinksAssemblyIndex(ssize(data_.welded_links_assemblies));
+    data_.welded_links_assemblies.emplace_back(WeldedLinksAssembly{
+        .links = std::vector<LinkIndex>{maybe_assembly_link.index()},
+        .is_massless = maybe_assembly_link.is_massless()});
   }
 
-  LinkComposite& existing_composite =
-      data_.link_composites[*existing_composite_index];
-  existing_composite.links.push_back(new_link.index());
-  // For the composite to be massless, _all_ its links must be massless.
-  if (!new_link.is_massless()) existing_composite.is_massless = false;
-  new_link.link_composite_index_ = existing_composite_index;
+  WeldedLinksAssembly& existing_assembly =
+      data_.welded_links_assemblies[*existing_assembly_index];
+  existing_assembly.links.push_back(new_link.index());
+  // For the assembly to be massless, _all_ its links must be massless.
+  if (!new_link.is_massless()) existing_assembly.is_massless = false;
+  new_link.welded_links_assembly_index_ = existing_assembly_index;
 
-  return *existing_composite_index;
+  return *existing_assembly_index;
 }
 
-void LinkJointGraph::AddUnmodeledJointToComposite(
+void LinkJointGraph::AddUnmodeledJointToWeldedLinksAssembly(
     JointOrdinal unmodeled_joint_ordinal,
-    LinkCompositeIndex link_composite_index) {
+    WeldedLinksAssemblyIndex welded_links_assembly_index) {
   Joint& joint = mutable_joint(unmodeled_joint_ordinal);
   DRAKE_DEMAND(joint.traits_index() == weld_joint_traits_index());
-  joint.how_modeled_ = link_composite_index;
+  joint.how_modeled_ = welded_links_assembly_index;
 }
 
 LinkOrdinal LinkJointGraph::AddShadowLink(LinkOrdinal primary_link_ordinal,
@@ -720,7 +720,7 @@ std::vector<LinkIndex> LinkJointGraph::FindPathFromWorld(
   std::vector<LinkIndex> path(mobod->level() + 1);
   while (mobod->inboard().is_valid()) {
     const Link& link = links(mobod->link_ordinal());
-    path[mobod->level()] = link.index();  // Active Link if composite.
+    path[mobod->level()] = link.index();  // Active Link if optimized assembly.
     mobod = &forest().mobods(mobod->inboard());
   }
   DRAKE_DEMAND(mobod->is_world());
@@ -745,25 +745,25 @@ std::vector<LinkIndex> LinkJointGraph::FindSubtreeLinks(
   return forest().FindSubtreeLinks(root_mobod_index);
 }
 
-// Our link_composites collection doesn't include lone Links that aren't welded
-// to anything. The return from this function must include every Link, with
-// the World link in the first set (even if nothing is welded to it).
+// Our welded_links_assemblies collection doesn't include lone Links that aren't
+// welded to anything. The return from this function must include every Link,
+// with the World link in the first set (even if nothing is welded to it).
 std::vector<std::set<LinkIndex>> LinkJointGraph::GetSubgraphsOfWeldedLinks()
     const {
   ThrowIfForestNotBuiltYet(__func__);
 
   std::vector<std::set<LinkIndex>> subgraphs;
 
-  // First, collect all the precomputed Link Composites. World is always
+  // First, collect all the precomputed WeldedLinksAssemblies. World is always
   // the first one, even if nothing is welded to it.
-  for (const LinkComposite& composite : link_composites()) {
+  for (const WeldedLinksAssembly& assembly : welded_links_assemblies()) {
     subgraphs.emplace_back(
-        std::set<LinkIndex>(composite.links.cbegin(), composite.links.cend()));
+        std::set<LinkIndex>(assembly.links.cbegin(), assembly.links.cend()));
   }
 
-  // Finally, make one-Link subgraphs for Links that aren't in any composite.
+  // Finally, make one-Link subgraphs for Links that aren't in any assembly.
   for (const Link& link : links()) {
-    if (link.composite().has_value()) continue;
+    if (link.welded_links_assembly().has_value()) continue;
     subgraphs.emplace_back(std::set<LinkIndex>{link.index()});
   }
 
@@ -806,22 +806,23 @@ std::vector<std::set<LinkIndex>> LinkJointGraph::CalcSubgraphsOfWeldedLinks()
   return subgraphs;
 }
 
-// If the Link isn't part of a LinkComposite just return the Link. Otherwise,
-// return all the Links in its LinkComposite.
+// If the Link isn't part of a WeldedLinksAssembly just return the Link.
+// Otherwise, return all the Links in its WeldedLinksAssembly.
 std::set<LinkIndex> LinkJointGraph::GetLinksWeldedTo(
     LinkIndex link_index) const {
   ThrowIfForestNotBuiltYet(__func__);
   DRAKE_DEMAND(link_index.is_valid());
   DRAKE_THROW_UNLESS(has_link(link_index));
   const Link& link = link_by_index(link_index);
-  const std::optional<LinkCompositeIndex> composite_index = link.composite();
-  if (!composite_index.has_value()) return std::set<LinkIndex>{link_index};
+  const std::optional<WeldedLinksAssemblyIndex> assembly_index =
+      link.welded_links_assembly();
+  if (!assembly_index.has_value()) return std::set<LinkIndex>{link_index};
   const std::vector<LinkIndex>& welded_links =
-      link_composites(*composite_index).links;
+      welded_links_assemblies(*assembly_index).links;
   return std::set<LinkIndex>(welded_links.cbegin(), welded_links.cend());
 }
 
-// Without a Forest we don't have LinkComposites available so recursively
+// Without a Forest we don't have WeldedLinksAssemblies available so recursively
 // chase Weld joints instead.
 std::set<LinkIndex> LinkJointGraph::CalcLinksWeldedTo(
     LinkIndex link_index) const {
@@ -930,7 +931,7 @@ void LinkJointGraph::Link::ClearModel(JointIndex max_user_joint_index) {
   mobod_ = {};
   joint_ = {};
   shadow_links_.clear();
-  link_composite_index_ = {};
+  welded_links_assembly_index_ = {};
 }
 
 LinkJointGraph::Joint::Joint(JointIndex index, JointOrdinal ordinal,
