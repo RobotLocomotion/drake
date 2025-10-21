@@ -34,7 +34,9 @@ tag_base = "pip-drake"
 # Python version, must be unique.
 targets = (
     # NOTE: adding or removing a python version?  Please update the artifact
-    # tallies in doc/_pages/release_playbook.md (search `Attach binaries`).
+    # tallies in doc/_pages/release_playbook.md (search `Attach binaries`)
+    # and, if necessary, the set of Python versions for which lockfiles are
+    # generated in tools/workspace/python/venv_upgrade.
     Target(
         build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
         test_platform=Platform("ubuntu", "22.04", "jammy"),
