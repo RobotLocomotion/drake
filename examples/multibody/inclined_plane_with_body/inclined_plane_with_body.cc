@@ -1,5 +1,4 @@
 #include <iostream>
-#include <limits>
 #include <memory>
 #include <utility>
 
@@ -10,9 +9,7 @@
 #include "drake/multibody/benchmarks/inclined_plane/inclined_plane_plant.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
-#include "drake/systems/analysis/convex_integrator.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/analysis/simulator_print_stats.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/visualization/visualization_config_functions.h"
 
@@ -32,33 +29,39 @@ namespace {
 DEFINE_double(target_realtime_rate, 1.0,
               "Desired rate relative to real time (usually between 0 and 1). "
               "This is documented in Simulator::set_target_realtime_rate().");
-DEFINE_double(simulation_time, 5.0, "Simulation duration in seconds");
-DEFINE_double(time_step, 1.0E-2,
+DEFINE_double(simulation_time, 2.0, "Simulation duration in seconds");
+DEFINE_double(time_step, 1.0E-3,
               "If time_step > 0, the fixed-time step period (in seconds) of "
               "discrete updates for the plant (modeled as a discrete system). "
               "If time_step = 0, the plant is modeled as a continuous system "
               "and no contact forces are displayed.  time_step must be >= 0.");
-DEFINE_double(integration_accuracy, 1.0E-1,
+DEFINE_double(integration_accuracy, 1.0E-6,
               "When time_step = 0 (plant is modeled as a continuous system), "
               "this is the desired integration accuracy.  This value is not "
               "used if time_step > 0 (fixed-time step).");
 DEFINE_double(penetration_allowance, 1.0E-5, "Allowable penetration (meters).");
-DEFINE_double(stiction_tolerance, 1.0E-4,
+DEFINE_double(stiction_tolerance, 1.0E-5,
               "Allowable drift speed during stiction (m/s).");
-DEFINE_double(inclined_plane_angle_degrees, 30.0,
+DEFINE_double(inclined_plane_angle_degrees, 15.0,
               "Inclined plane angle (degrees), i.e., angle from Wx to Ax.");
-DEFINE_double(static_friction, 1.0,
-              "Coefficient of static friction (no units).  "
+DEFINE_double(inclined_plane_coef_static_friction, 0.3,
+              "Inclined plane's coefficient of static friction (no units).");
+DEFINE_double(inclined_plane_coef_kinetic_friction, 0.3,
+              "Inclined plane's coefficient of kinetic friction (no units).  "
               "When time_step > 0, this value is ignored.  Only the "
-              "coefficient of dynamic friction is used in fixed-time step.");
-DEFINE_double(dynamic_friction, 1.0,
-              "Coefficient of kinetic friction (no units).");
-DEFINE_bool(is_inclined_plane_half_space, false,
+              "coefficient of static friction is used in fixed-time step.");
+DEFINE_double(bodyB_coef_static_friction, 0.3,
+              "Body B's coefficient of static friction (no units).");
+DEFINE_double(bodyB_coef_kinetic_friction, 0.3,
+              "Body B's coefficient of kinetic friction (no units).  "
+              "When time_step > 0, this value is ignored.  Only the "
+              "coefficient of static friction is used in fixed-time step.");
+DEFINE_bool(is_inclined_plane_half_space, true,
             "Is inclined plane a half-space (true) or box (false).");
-DEFINE_string(bodyB_type, "block_with_4Spheres",
-              "Valid body types are "
-              "'sphere', 'block', or 'block_with_4Spheres'");
-DEFINE_string(contact_approximation, "lagged",
+DEFINE_string(
+    bodyB_type, "sphere",
+    "Valid body types are 'sphere', 'block', or 'block_with_4Spheres'");
+DEFINE_string(contact_approximation, "tamsi",
               "Discrete contact approximation. Options are: 'tamsi', "
               "'sap', 'similar', 'lagged'");
 
@@ -84,9 +87,10 @@ int do_main() {
   // Information on how coefficients of friction are used in the file README.md
   // (which is in the folder associated with this example).
   const drake::multibody::CoulombFriction<double> coef_friction_bodyB(
-      FLAGS_static_friction, FLAGS_dynamic_friction);
+      FLAGS_bodyB_coef_static_friction, FLAGS_bodyB_coef_kinetic_friction);
   const drake::multibody::CoulombFriction<double> coef_friction_inclined_plane(
-      FLAGS_static_friction, FLAGS_dynamic_friction);
+      FLAGS_inclined_plane_coef_static_friction,
+      FLAGS_inclined_plane_coef_kinetic_friction);
 
   if (FLAGS_bodyB_type == "sphere") {
     const double radiusB = 0.04;      // B's radius when modeled as a sphere.
@@ -143,12 +147,7 @@ int do_main() {
   DRAKE_DEMAND(plant.num_positions() == 7);
 
   // Provide visualization.
-  auto meshcat = std::make_shared<drake::geometry::Meshcat>();
-  visualization::VisualizationConfig vis_config;
-  vis_config.publish_period = std::numeric_limits<double>::infinity();
-  vis_config.publish_contacts = true;
-  visualization::ApplyVisualizationConfig(vis_config, &builder, nullptr, &plant,
-                                          &scene_graph, meshcat);
+  visualization::AddDefaultVisualization(&builder);
 
   auto diagram = builder.Build();
 
@@ -172,41 +171,17 @@ int do_main() {
   plant.SetFloatingBaseBodyPoseInWorldFrame(&plant_context, bodyB, X_WB);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
-
-  // Choose the convex integrator
-  if (FLAGS_time_step == 0.0) {
-    systems::ConvexIntegrator<double>& ci =
-        simulator.reset_integrator<systems::ConvexIntegrator<double>>();
-    ci.set_plant(&plant);
-    ci.set_maximum_step_size(0.01);
-  }
+  systems::IntegratorBase<double>& integrator =
+      simulator.get_mutable_integrator();
 
   // Set the integration accuracy when the plant is integrated with a variable-
   // step integrator. This value is not used if time_step > 0 (fixed-time step).
-  //   systems::IntegratorBase<double>& integrator =
-  //       simulator.get_mutable_integrator();
-  //   integrator.set_target_accuracy(FLAGS_integration_accuracy);
+  integrator.set_target_accuracy(FLAGS_integration_accuracy);
 
-  simulator.set_publish_every_time_step(true);
+  simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-
-  // Wait for meshcat to load
-  std::cout << "Press [ENTER] to continue ...\n";
-  getchar();
-
-  const double recording_frames_per_second =
-      FLAGS_time_step == 0 ? 32 : 1.0 / FLAGS_time_step;
-  meshcat->StartRecording(recording_frames_per_second);
   simulator.AdvanceTo(FLAGS_simulation_time);
-  meshcat->StopRecording();
-  meshcat->PublishRecording();
-
-  PrintSimulatorStatistics(simulator);
-
-  // Wait for meshcat to load
-  std::cout << "Press [ENTER] to continue ...\n";
-  getchar();
 
   return 0;
 }
