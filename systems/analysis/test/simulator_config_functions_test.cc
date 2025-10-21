@@ -39,8 +39,6 @@ TYPED_TEST(SimulatorConfigFunctionsTest, ResetIntegratorTest) {
   EXPECT_EQ(NiceTypeName::Get(result), result_name_expected);
 }
 
-/* Disable tests that break the convex integrator for now (since convex
-integrator demands a diagram with a plant).
 TYPED_TEST(SimulatorConfigFunctionsTest, GetSchemes) {
   using T = TypeParam;
 
@@ -118,7 +116,6 @@ TYPED_TEST(SimulatorConfigFunctionsTest, RoundTripTest) {
   EXPECT_EQ(readback.target_realtime_rate, bespoke.target_realtime_rate);
   EXPECT_EQ(readback.publish_every_time_step, bespoke.publish_every_time_step);
 }
-*/
 
 template <typename T>
 class IntegratorConfigFunctionsTest : public ::testing::Test {
