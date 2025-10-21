@@ -185,6 +185,30 @@ If an external required non-trivial changes, even if you were able to make the
 changes yourself, consider separating that external into its own pull request
 and assigning it to the associated feature owner.
 
+## drake-external-examples
+
+The
+[drake_cmake_external](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_cmake_external)
+example demonstrates the use of some of Drake's CMake options for user-provided
+external packages as part of the public API. While users may be able to provide their own versions
+which don't necessarily match those officially supported by Drake, the official
+examples should match and be kept up-to-date as part of the monthly upgrades
+process.
+
+The packages are listed in Drake's `MODULE.bazel`, and the corresponding
+user-provided versions in drake-external-examples are found in the calls to
+`ExternalProject_Add` in the example's
+[CMakeLists.txt](https://github.com/RobotLocomotion/drake-external-examples/blob/main/drake_cmake_external/CMakeLists.txt).
+Any time these packages are upgraded in Drake (via the steps above, or
+separately from the monthly upgrades), then use the
+[automated upgrade script](https://github.com/RobotLocomotion/drake-external-examples/blob/main/private/upgrade_cmake_externals.py)
+to create a pull request on drake-external-examples with the corresponding
+upgrade.
+
+See the script for its usage requirements; in general, the version
+used there should match the version in Drake exactly, minus the "bcr..." at the
+end of the version string.
+
 # Changing the version of third-party software manually
 
 The instructions for updating third-party software differ depending on how
