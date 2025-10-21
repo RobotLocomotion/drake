@@ -216,20 +216,6 @@ void ExtractAndAppendVariablesFromExpression(
   }
 }
 
-void ExtractAndAppendVariablesFromExpression(
-    const Expression& e, VectorX<Variable>* vars,
-    std::unordered_map<Variable::Id, int>* map_var_to_index) {
-  DRAKE_DEMAND(static_cast<int>(map_var_to_index->size()) == vars->size());
-  for (const Variable& var : e.GetVariables()) {
-    if (map_var_to_index->find(var.get_id()) == map_var_to_index->end()) {
-      map_var_to_index->emplace(var.get_id(), vars->size());
-      const int vars_size = vars->size();
-      vars->conservativeResize(vars_size + 1, Eigen::NoChange);
-      (*vars)(vars_size) = var;
-    }
-  }
-}
-
 std::pair<VectorX<Variable>, std::unordered_map<Variable::Id, int>>
 ExtractVariablesFromExpression(const Expression& e) {
   int var_count = 0;

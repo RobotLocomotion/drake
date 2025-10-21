@@ -274,19 +274,6 @@ GTEST_TEST(SymbolicExtraction, ExtractVariables1) {
   std::tie(vars, map_var_to_index) = ExtractVariablesFromExpression(e);
   EXPECT_EQ(vars_expected, vars);
   ExpectValidMapVarToIndex(vars, map_var_to_index);
-
-  const Variable z("z");
-  e += x * (z - y);
-  const int vars_size = vars_expected.rows();
-  vars_expected.conservativeResize(vars_size + 1, Eigen::NoChange);
-  vars_expected(vars_size) = z;
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  ExtractAndAppendVariablesFromExpression(e, &vars, &map_var_to_index);
-#pragma GCC diagnostic pop
-  EXPECT_EQ(vars_expected, vars);
-  ExpectValidMapVarToIndex(vars, map_var_to_index);
 }
 
 GTEST_TEST(SymbolicExtraction, ExtractVariables2) {
