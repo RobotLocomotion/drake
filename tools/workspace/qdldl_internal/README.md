@@ -25,5 +25,3 @@ Given the potential interactions of QDLDL, OSQP, and SCS it may not be possible
 to keep all of the versions aligned perfectly.  When in doubt, prefer to use
 the newest tagged release of all three, patching them as necessary to get
 everything working.
-
-[qdldl-link]:
