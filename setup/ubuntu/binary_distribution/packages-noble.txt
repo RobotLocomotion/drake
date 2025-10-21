@@ -8,7 +8,6 @@ libglx0
 libgomp1
 liblapack3
 libopengl0
-libquadmath0
 libpython3.12
 libspdlog-dev
 libx11-6

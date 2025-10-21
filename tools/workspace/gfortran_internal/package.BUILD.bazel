@@ -4,9 +4,7 @@ load("@drake//tools/skylark:cc.bzl", "cc_library")
 load("@drake//tools/skylark:sh.bzl", "sh_binary")
 load(":path.bzl", "LIBDIR")
 
-# libgfortran: GPL-3.0-or-later WITH GCC-exception-3.1.
-# libquadmath: LGPL-2.0-or-later.
-licenses(["restricted"])  # See above for details.
+licenses(["restricted"])  # libgfortran: GPL-3.0-or-later WITH GCC-exception-3.1
 
 sh_binary(
     name = "compiler",
@@ -27,13 +25,6 @@ cc_library(
         "-L{}".format(LIBDIR),
         "-ldl",
         "-lgfortran",
-    ] + select({
-        ":x86_64": [
-            # TODO(jwnimmer-tri) Possibly this is unnecessary on Ubuntu 24.04?
-            # The libgfortran5 no longer depends on libquadmath0.
-            "-lquadmath",
-        ],
-        "//conditions:default": [],
-    }),
+    ],
     visibility = ["//visibility:public"],
 )
