@@ -7,7 +7,7 @@ with those old versions just for the sake of SCS.)
 
 For example, if Drake pinned OSQP to commit = "v1.0.0" then look at OSQP
 1.0.0's
-[qdldl.cmake](https://github.com/osqp/osqp/blob/v1.0.0/algebra/_common/lin_sys/qdldl/qdldl.cmake). 
+[qdldl.cmake](https://github.com/osqp/osqp/blob/v1.0.0/algebra/_common/lin_sys/qdldl/qdldl.cmake).
 recipe, where you should encounter a stanza that resembles the following...
 
 ```cmake
