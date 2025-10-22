@@ -31,6 +31,15 @@ GTEST_TEST(DofMaskTest, ConstructorsAndSize) {
   EXPECT_EQ(dut1.count(), 0);
   EXPECT_EQ(dut1.size(), 0);
 
+  const DofMask dut1b(0, true);
+  EXPECT_EQ(dut1b.count(), 0);
+  EXPECT_EQ(dut1b.size(), 0);
+
+  std::vector<bool> bits1c;
+  const DofMask dut1c(bits1c);
+  EXPECT_EQ(dut1c.count(), 0);
+  EXPECT_EQ(dut1c.size(), 0);
+
   const DofMask dut2(13, true);
   EXPECT_EQ(dut2.count(), 13);
   EXPECT_EQ(dut2.size(), 13);
@@ -43,8 +52,8 @@ GTEST_TEST(DofMaskTest, ConstructorsAndSize) {
   EXPECT_EQ(dut4.count(), 3);
   EXPECT_EQ(dut4.size(), 5);
 
-  std::vector<bool> bits{true, true, false, true, true, false};
-  const DofMask dut5(bits);
+  std::vector<bool> bits5{true, true, false, true, true, false};
+  const DofMask dut5(bits5);
   EXPECT_EQ(dut5.count(), 4);
   EXPECT_EQ(dut5.size(), 6);
 }
@@ -52,6 +61,7 @@ GTEST_TEST(DofMaskTest, ConstructorsAndSize) {
 // In addition to testing move/copy semantics, this also provides testing for
 // operator==.
 GTEST_TEST(DofMaskTest, CopyMoveSemantics) {
+  const DofMask empty;
   const DofMask dofs({true, false, true, false});
 
   // Copy constructor.
@@ -79,9 +89,13 @@ GTEST_TEST(DofMaskTest, CopyMoveSemantics) {
   EXPECT_EQ(moved.count(), 0);
 
   // Copy assignment.
-  moved = copied;
+  DofMask target;
+  target = copied;
+  EXPECT_EQ(target, dofs);
   EXPECT_EQ(copied, dofs);
-  EXPECT_EQ(moved, dofs);
+  target = empty;
+  EXPECT_EQ(target, DofMask{});
+  EXPECT_EQ(empty, DofMask{});
 }
 
 // Confirms the factories work.
@@ -189,6 +203,9 @@ GTEST_TEST(DofMaskTest, Complement) {
   const DofMask expected({false, true, true});
 
   EXPECT_EQ(d1.Complement(), expected);
+
+  const DofMask empty;
+  EXPECT_EQ(empty.Complement(), DofMask{});
 }
 
 GTEST_TEST(DofMaskTest, Union) {
@@ -197,6 +214,9 @@ GTEST_TEST(DofMaskTest, Union) {
   const DofMask expected({true, false, true});
 
   EXPECT_EQ(d1.Union(d2), expected);
+
+  const DofMask empty;
+  EXPECT_EQ(empty.Union(empty), DofMask{});
 }
 
 GTEST_TEST(DofMaskTest, Intersect) {
@@ -205,6 +225,9 @@ GTEST_TEST(DofMaskTest, Intersect) {
   const DofMask expected({false, true, false});
 
   EXPECT_EQ(d1.Intersect(d2), expected);
+
+  const DofMask empty;
+  EXPECT_EQ(empty.Intersect(empty), DofMask{});
 }
 
 GTEST_TEST(DofMaskTest, Subtract) {
@@ -213,6 +236,9 @@ GTEST_TEST(DofMaskTest, Subtract) {
   const DofMask expected({true, false, false});
 
   EXPECT_EQ(d1.Subtract(d2), expected);
+
+  const DofMask empty;
+  EXPECT_EQ(empty.Subtract(empty), DofMask{});
 }
 
 GTEST_TEST(DofMaskTest, GetFromArrayWithReturn) {
