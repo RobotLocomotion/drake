@@ -99,7 +99,7 @@ MODULE_SETTINGS = {
         "deps_extra": select({
             ":osx": [],
             "//conditions:default": [
-                "@drake//tools/workspace/x11:hdrs",
+                "@drake//tools/workspace/vtk_internal:x11_hdrs",
             ],
         }),
     },
