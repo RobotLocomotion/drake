@@ -10,12 +10,17 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <vector>
+
+#include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include "drake/common/drake_assertion_error.h"
 #include "drake/common/never_destroyed.h"
 
 namespace drake {
 namespace internal {
+
 namespace {
 
 // Singleton to manage assertion configuration.
@@ -38,6 +43,7 @@ void PrintFailureDetailTo(std::ostream& out, const char* condition,
     out << ".";
   }
 }
+
 }  // namespace
 
 // Declared in drake_assert.h.
@@ -50,10 +56,20 @@ void Abort(const char* condition, const char* func, const char* file,
 }
 
 // Declared in drake_throw.h.
-void Throw(const char* condition, const char* func, const char* file,
-           int line) {
+// If the suffix should end with punctuation, the caller must provide it.
+void Throw(const char* condition, const char* func, const char* file, int line,
+           const ThrowValuesBuf& buffer) {
   std::ostringstream what;
   PrintFailureDetailTo(what, condition, func, file, line);
+  if (buffer.values[0].first != nullptr) {
+    std::vector<std::string> pairs;
+    pairs.reserve(buffer.values.size());
+    for (const auto& [key, value_str] : buffer.values) {
+      if (key == nullptr) break;
+      pairs.push_back(fmt::format("{} = {}", key, value_str));
+    }
+    what << fmt::format(" {}.", fmt::join(pairs, ", "));
+  }
   throw assertion_error(what.str().c_str());
 }
 
