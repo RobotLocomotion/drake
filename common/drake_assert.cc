@@ -1,8 +1,4 @@
-// This file contains the implementation of both drake_assert and drake_throw.
-/* clang-format off to disable clang-format-includes */
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_throw.h"
-/* clang-format on */
 
 #include <atomic>
 #include <cstdlib>
