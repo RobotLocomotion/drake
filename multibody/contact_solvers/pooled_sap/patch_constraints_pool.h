@@ -33,8 +33,6 @@ class PooledSapModel<T>::PatchConstraintsPool {
 
   int num_constraints() const { return ssize(num_pairs_); }
 
-  int num_constraint_equations() const { return 3 * total_num_pairs(); }
-
   /* Constructor for an empty pool. */
   PatchConstraintsPool(const PooledSapModel<T>* parent_model)
       : model_(parent_model) {

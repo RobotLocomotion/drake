@@ -339,13 +339,6 @@ class PooledSapModel {
            num_limit_constraints() + num_coupler_constraints();
   }
 
-  int num_constraint_equations() const {
-    return coupler_constraints_pool_.num_constraint_equations() +
-           patch_constraints_pool_.num_constraint_equations() +
-           gain_constraints_pool_.num_constraint_equations() +
-           limit_constraints_pool_.num_constraint_equations();
-  }
-
   // TODO(CENIC): set/parse this in a more reasonable place
   void set_stiction_tolerance(double stiction_tolerance) {
     patch_constraints_pool_.set_stiction_tolerance(stiction_tolerance);

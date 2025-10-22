@@ -31,10 +31,6 @@ class PooledSapModel<T>::LimitConstraintsPool {
 
   int num_constraints() const { return constraint_to_clique_.size(); }
 
-  // Total number of constriant equations. Each constraint has a clique c and
-  // size model().clique_size(c).
-  int num_constraint_equations() const { return q0_.size(); }
-
   /* Constructor for an empty pool. */
   LimitConstraintsPool(const PooledSapModel<T>* parent_model)
       : model_(parent_model) {

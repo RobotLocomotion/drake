@@ -96,9 +96,6 @@ class PooledSapModel<T>::CouplerConstraintsPool {
   // Total number of constraints.
   int num_constraints() const { return constraint_to_clique_.size(); }
 
-  // Each constraint has exactly one equation associated with it.
-  int num_constraint_equations() const { return constraint_to_clique_.size(); }
-
   // Return a reference to the parent model.
   const PooledSapModel<T>& model() const { return *model_; }
 

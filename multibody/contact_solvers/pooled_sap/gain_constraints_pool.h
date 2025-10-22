@@ -22,35 +22,28 @@ namespace multibody {
 namespace contact_solvers {
 namespace pooled_sap {
 
-/* A pool of gain constraints organized by cliques.
-
- A clique can have a gain constraint that models generalized forces on the
- clique according to:
-
-  τ = clamp(−K⋅v + b, e)
-
- where K is a positive semi-definite diagonal gain matrix, b is a bias term and
- e is an effort limit. Generalized impulses for that clique are thus γ = δt⋅τ.
+/**
+ * A pool of gain constraints organized by cliques.
+ *
+ * A clique can have a gain constraint that models generalized forces on the
+ * clique according to:
+ *
+ *  τ = clamp(−K⋅v + b, e)
+ *
+ * where K is a positive semi-definite diagonal gain matrix, b is a bias term
+ * and e is an effort limit. Generalized impulses for that clique are thus γ =
+ * δt⋅τ.
  */
 template <typename T>
 class PooledSapModel<T>::GainConstraintsPool {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GainConstraintsPool);
 
-  int num_constraints() const { return clique_.size(); }
-
-  // Total number of constriant equations. Each constraint has a clique c and
-  // size model().clique_size(c).
-  int num_constraint_equations() const { return b_.size(); }
-
-  /* Constructor for an empty pool. */
+  // Constructor for an empty pool.
   GainConstraintsPool(const PooledSapModel<T>* parent_model)
       : model_(parent_model) {
     DRAKE_ASSERT(parent_model != nullptr);
   }
-
-  /* Returns reference to the parent model. */
-  const PooledSapModel<T>& model() const { return *model_; }
 
   void Clear() {
     clique_.clear();
@@ -110,6 +103,12 @@ class PooledSapModel<T>::GainConstraintsPool {
   void ProjectAlongLine(const GainConstraintsDataPool<T>& gain_data,
                         const VectorX<T>& w, VectorX<T>* v_sized_scratch,
                         T* dcost, T* d2cost) const;
+
+  // Total number of gain constraints.
+  int num_constraints() const { return clique_.size(); }
+
+  /* Return a reference to the parent model. */
+  const PooledSapModel<T>& model() const { return *model_; }
 
  private:
   /* Computes yᵢ = clamp(xᵢ). */
