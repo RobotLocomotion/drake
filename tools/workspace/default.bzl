@@ -186,8 +186,9 @@ def _drake_dep_repositories_impl(module_ctx):
         "lapack",
         "opencl",
         "spdlog",
-        "x11",
         "zlib",
+        # Deprecated for removal on 2026-02-01.
+        "x11",
     ]
     for name in ALIAS_REPOSITORIES:
         actual = "@drake//tools/workspace/" + name
