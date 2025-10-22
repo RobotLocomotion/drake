@@ -1,6 +1,7 @@
 // NOLINTNEXTLINE(build/include): prevent complaint re patch_constraints_pool.h
 
 #include <numeric>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -19,6 +20,55 @@ template <typename T>
 void PooledSapModel<T>::CouplerConstraintsPool::ResizeData(
     CouplerConstraintsDataPool<T>* coupler_data) const {
   coupler_data->Resize(num_constraints());
+}
+
+template <typename T>
+void PooledSapModel<T>::CouplerConstraintsPool::Clear() {
+  constraint_to_clique_.clear();
+  dofs_.clear();
+  gear_ratio_.clear();
+  v_hat_.clear();
+  R_.clear();
+}
+
+template <typename T>
+void PooledSapModel<T>::CouplerConstraintsPool::Resize(
+    const int num_constraints) {
+  constraint_to_clique_.resize(num_constraints);
+  dofs_.resize(num_constraints);
+  gear_ratio_.resize(num_constraints);
+  v_hat_.resize(num_constraints);
+  R_.resize(num_constraints);
+}
+
+template <typename T>
+void PooledSapModel<T>::CouplerConstraintsPool::Add(int index, int clique,
+                                                    int i, int j, const T& qi,
+                                                    const T& qj, T gear_ratio,
+                                                    T offset) {
+  DRAKE_ASSERT(index >= 0 && index < num_constraints());
+  DRAKE_ASSERT(i >= 0 && i < model().clique_size(clique));
+  DRAKE_ASSERT(j >= 0 && j < model().clique_size(clique));
+
+  constraint_to_clique_[index] = clique;
+  dofs_[index] = std::make_pair(i, j);
+  gear_ratio_[index] = gear_ratio;
+
+  const T dt = model().time_step();
+  const double beta = 0.1;
+  const double eps = beta * beta / (4 * M_PI * M_PI) / (1 + beta / M_PI);
+
+  const T g0 = qi - gear_ratio * qj - offset;
+  v_hat_[index] = -g0 / (dt * (1.0 + beta / M_PI));
+
+  const auto w_clique = model().get_clique_delassus(clique);
+  // Approximation of W = Jᵀ⋅M⁻¹⋅J, with
+  //  J = [0 ... 1 ... -ρ ... 0]
+  //             ↑      ↑
+  //             i      j
+  const T w = w_clique(i) + gear_ratio * gear_ratio * w_clique(j);
+
+  R_[index] = eps * w;
 }
 
 template <typename T>

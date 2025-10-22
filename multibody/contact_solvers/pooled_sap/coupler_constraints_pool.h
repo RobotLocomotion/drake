@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <limits>
 #include <numeric>
-#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -23,88 +22,85 @@ namespace multibody {
 namespace contact_solvers {
 namespace pooled_sap {
 
-/* A pool of limit constraints organized by cliques. */
+/**
+ * A pool of coupler constraints (qᵢ - ρqⱼ = Δq) linking generalized positions
+ * (qᵢ, qⱼ) with gear ratio ρ and offset Δq.
+ *
+ * Coupler constraints only apply to joints within the same clique, so they do
+ * not change the sparsity structure of the problem.
+ * TODO(vincekurtz): consider relaxing this requirement.
+ */
 template <typename T>
 class PooledSapModel<T>::CouplerConstraintsPool {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CouplerConstraintsPool);
 
-  int num_constraints() const { return constraint_to_clique_.size(); }
-
-  // Total number of constraint equations. Each constraint has a clique c and
-  // size model().clique_size(c).
-  int num_constraint_equations() const { return constraint_to_clique_.size(); }
-
-  /* Constructor for an empty pool. */
+  // Constructor for an empty pool.
   CouplerConstraintsPool(const PooledSapModel<T>* parent_model)
       : model_(parent_model) {
     DRAKE_ASSERT(parent_model != nullptr);
   }
 
-  /* Returns reference to the parent model. */
-  const PooledSapModel<T>& model() const { return *model_; }
+  // Resets, zeroing out the constraints while keeping memory allocated.
+  void Clear();
 
-  void Clear() {
-    constraint_to_clique_.clear();
-    dofs_.clear();
-    gear_ratio_.clear();
-    v_hat_.clear();
-    R_.clear();
-  }
+  // Resize the constraints pool to store the given number of constraints.
+  void Resize(const int num_constraints);
 
-  void Resize(const int num_constraints) {
-    constraint_to_clique_.resize(num_constraints);
-    dofs_.resize(num_constraints);
-    gear_ratio_.resize(num_constraints);
-    v_hat_.resize(num_constraints);
-    R_.resize(num_constraints);
-  }
-
-  /* Enforces the constraint g = qᵢ − ρqⱼ−Δq = 0, between the i-th and j-th DoFs
-   of `clique`. */
+  /**
+   * Add a coupler constraint qᵢ − ρqⱼ−Δq = 0 between the i-th and j-th DoFs of
+   * the given clique.
+   *
+   * @param index The index of the constraint within the pool,
+   *               must be in [0, num_constraints()).
+   * @param clique The clique index where the constraint is applied. Both DoFs
+   *               must belong to the same clique.
+   * @param i The index of the first DoF within `clique`.
+   * @param j The index of the second DoF within `clique`.
+   * @param qi The current position of the i-th DoF.
+   * @param qj The current position of the j-th DoF.
+   * @param gear_ratio The gear ratio ρ.
+   * @param offset The offset Δq.
+   *
+   */
   void Add(int index, int clique, int i, int j, const T& qi, const T& qj,
-           T gear_ratio, T offset) {
-    constraint_to_clique_[index] = clique;
-    dofs_[index] = std::make_pair(i, j);
-    gear_ratio_[index] = gear_ratio;
+           T gear_ratio, T offset);
 
-    const T dt = model().time_step();
-    const double beta = 0.1;
-    const double eps = beta * beta / (4 * M_PI * M_PI) / (1 + beta / M_PI);
-
-    const T g0 = qi - gear_ratio * qj - offset;
-    v_hat_[index] = -g0 / (dt * (1.0 + beta / M_PI));
-
-    const auto w_clique = model().get_clique_delassus(clique);
-    // Approximation of W = Jᵀ⋅M⁻¹⋅J, with
-    //  J = [0 ... 1 ... -ρ ... 0]
-    //             ↑      ↑
-    //             i      j
-    const T w = w_clique(i) + gear_ratio * gear_ratio * w_clique(j);
-
-    R_[index] = eps * w;
-  }
-
-  T& regularization(int k) { return R_[k]; }
-  T& v_hat(int k) { return v_hat_[k]; }
-
+  // Resize the data object (stores information that changes between iterations)
+  // to match this constraints pool.
   void ResizeData(CouplerConstraintsDataPool<T>* coupler_data) const;
 
+  // Compute problem data from the given generalized velocities v, and store in
+  // the given data struct.
   void CalcData(const VectorX<T>& v,
                 CouplerConstraintsDataPool<T>* coupler_data) const;
 
+  // Add the gradient constribution of this constraint, ∇ℓ = −Jᵀ⋅γ, to the
+  // overall gradient.
   // TODO(amcastro-tri): factor out this method into a
   // GeneralizedVelocitiesConstraintsPool parent class, along with other common
   // functionality to all constraint pools on generalized velocities.
   void AccumulateGradient(const PooledSapData<T>& data,
                           VectorX<T>* gradient) const;
 
+  // Add the Hessian contribution of this constraint to the overall Hessian.
   void AccumulateHessian(
       const PooledSapData<T>& data,
       internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
+  // Compute the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0. Used
+  // for exact line search.
   void ProjectAlongLine(const CouplerConstraintsDataPool<T>& coupler_data,
                         const VectorX<T>& w, T* dcost, T* d2cost) const;
+
+  // Total number of constraints.
+  int num_constraints() const { return constraint_to_clique_.size(); }
+
+  // Each constraint has exactly one equation associated with it.
+  int num_constraint_equations() const { return constraint_to_clique_.size(); }
+
+  // Return a reference to the parent model.
+  const PooledSapModel<T>& model() const { return *model_; }
 
  private:
   const PooledSapModel<T>* model_{nullptr};  // The parent model.
