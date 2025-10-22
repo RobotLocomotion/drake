@@ -11,7 +11,7 @@
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/parallelism.h"
-#include "drake/common/text_logging.h"
+#include "drake/common/text_logging.h"  // drakelint: ignore
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/planning/dev/sphere_robot_model_collision_checker.h"
 
