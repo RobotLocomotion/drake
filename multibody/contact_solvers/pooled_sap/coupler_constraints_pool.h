@@ -75,7 +75,7 @@ class PooledSapModel<T>::CouplerConstraintsPool {
   void CalcData(const VectorX<T>& v,
                 CouplerConstraintsDataPool<T>* coupler_data) const;
 
-  // Add the gradient constribution of this constraint, ∇ℓ = −Jᵀ⋅γ, to the
+  // Add the gradient contribution of this constraint, ∇ℓ = −Jᵀ⋅γ, to the
   // overall gradient.
   // TODO(amcastro-tri): factor out this method into a
   // GeneralizedVelocitiesConstraintsPool parent class, along with other common

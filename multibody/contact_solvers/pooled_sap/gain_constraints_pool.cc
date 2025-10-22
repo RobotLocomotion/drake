@@ -22,6 +22,45 @@ void PooledSapModel<T>::GainConstraintsPool::ResizeData(
 }
 
 template <typename T>
+void PooledSapModel<T>::GainConstraintsPool::Clear() {
+  clique_.clear();
+  constraint_sizes_.clear();
+  K_.Clear();
+  b_.Clear();
+  le_.Clear();
+  ue_.Clear();
+}
+
+template <typename T>
+void PooledSapModel<T>::GainConstraintsPool::Resize(
+    const std::vector<int>& sizes) {
+  clique_.resize(sizes.size());
+  constraint_sizes_.resize(sizes.size());
+  K_.Resize(sizes);
+  b_.Resize(sizes);
+  le_.Resize(sizes);
+  ue_.Resize(sizes);
+}
+
+template <typename T>
+void PooledSapModel<T>::GainConstraintsPool::Add(const int i, int clique,
+                                                 const VectorX<T>& K,
+                                                 const VectorX<T>& b,
+                                                 const VectorX<T>& e) {
+  DRAKE_ASSERT(i >= 0 && i < num_constraints());
+  const int nv = model().clique_size(clique);
+  DRAKE_DEMAND(K.size() == nv);
+  DRAKE_DEMAND(b.size() == nv);
+  DRAKE_DEMAND(e.size() == nv);
+  clique_[i] = clique;
+  constraint_sizes_[i] = nv;
+  K_[i] = K;
+  b_[i] = b;
+  le_[i] = -e;
+  ue_[i] = e;
+}
+
+template <typename T>
 void PooledSapModel<T>::GainConstraintsPool::CalcData(
     const VectorX<T>& v, GainConstraintsDataPool<T>* gain_data) const {
   DRAKE_ASSERT(gain_data != nullptr);
@@ -97,6 +136,64 @@ void PooledSapModel<T>::GainConstraintsPool::ProjectAlongLine(
     (*dcost) -= w_c.dot(gk);
     (*d2cost) += w_c.dot(G_times_w);
   }
+}
+
+template <typename T>
+T PooledSapModel<T>::GainConstraintsPool::Clamp(
+    int k, const Eigen::Ref<const VectorX<T>>& v, EigenPtr<VectorX<T>> gamma,
+    EigenPtr<MatrixX<T>> G) const {
+  const int n = v.size();
+  DRAKE_ASSERT(gamma->size() == n);
+  DRAKE_ASSERT(G->rows() == n);
+  DRAKE_ASSERT(G->cols() == n);
+  using std::max;
+  using std::min;
+
+  const T& dt = model().time_step();
+
+  T cost = 0;
+  for (int i = 0; i < n; ++i) {
+    const T& ki = K_[k][i];
+    const T& bi = b_[k][i];
+    const T& lei = le_[k][i];
+    const T& uei = ue_[k][i];
+    const T& vi = v[i];
+    T& gi = (*gamma)[i];
+    T& Gi = (*G)(i, i);
+
+    const T yi = -ki * vi + bi;
+
+    if (yi < lei) {
+      // Below lower limit.
+      gi = dt * lei;
+      Gi = 0.0;
+      if (ki > 0) {
+        cost += gi * (yi - 0.5 * lei) / ki;
+      } else {
+        cost -= gi * vi;  // Zero gain case.
+      }
+    } else if (yi > uei) {
+      // Above upper limit.
+      gi = dt * uei;
+      Gi = 0.0;
+      if (ki > 0) {
+        cost += gi * (yi - 0.5 * uei) / ki;
+      } else {
+        cost -= gi * vi;  // Zero gain case.
+      }
+    } else {
+      // Within limit.
+      gi = dt * yi;
+      Gi = dt * ki;
+      if (ki > 0) {
+        cost += 0.5 * yi * yi * dt / ki;
+      } else {
+        cost -= gi * vi;  // Zero gain case.
+      }
+    }
+  }
+
+  return cost;
 }
 
 }  // namespace pooled_sap

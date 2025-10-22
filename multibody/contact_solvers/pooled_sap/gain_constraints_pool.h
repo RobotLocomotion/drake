@@ -45,61 +45,47 @@ class PooledSapModel<T>::GainConstraintsPool {
     DRAKE_ASSERT(parent_model != nullptr);
   }
 
-  void Clear() {
-    clique_.clear();
-    constraint_sizes_.clear();
-    K_.Clear();
-    b_.Clear();
-    le_.Clear();
-    ue_.Clear();
-  }
+  // Reset, zeroing out the constraints while keeping memory allocated.
+  void Clear();
 
-  void Resize(const std::vector<int>& sizes) {
-    clique_.resize(sizes.size());
-    constraint_sizes_.resize(sizes.size());
-    K_.Resize(sizes);
-    b_.Resize(sizes);
-    le_.Resize(sizes);
-    ue_.Resize(sizes);
-  }
+  // Resize this pool to store gain constraints of the given sizes.
+  void Resize(const std::vector<int>& sizes);
 
-  /* Adds gain constraint for `clique`.
-   @param i The index of this gain constraint in the pool.
-   @param clique The clique to which this gain constraint applies.
-   @param K The diagonal entries of gain matrix K. They must be positive or
-   zero.
-   @param b The bias term.
-   @param e The vector of effort limits for each DoF of the clique.
-   @pre K, b, e are of size model().clique_size(clique). */
+  /**
+   * Add a gain constraint for the given clique.
+   *
+   * @param i The index of this gain constraint in the pool.
+   * @param clique The clique to which this gain constraint applies.
+   * @param K The diagonal entries of gain matrix K. They must be >= 0.
+   * @param b The bias term.
+   * @param e The vector of effort limits for each DoF of the clique.
+   * @pre K, b, e are of size model().clique_size(clique).
+   */
   void Add(const int i, int clique, const VectorX<T>& K, const VectorX<T>& b,
-           const VectorX<T>& e) {
-    const int nv = model().clique_size(clique);
-    DRAKE_DEMAND(K.size() == nv);
-    DRAKE_DEMAND(b.size() == nv);
-    DRAKE_DEMAND(e.size() == nv);
-    clique_[i] = clique;
-    constraint_sizes_[i] = nv;
-    K_[i] = K;
-    b_[i] = b;
-    le_[i] = -e;
-    ue_[i] = e;
-  }
+           const VectorX<T>& e);
 
+  // Resize the associated data pool to match this pool size.
   void ResizeData(GainConstraintsDataPool<T>* gain_data) const;
 
+  // Compute problem data for the given generalized velocities `v`.
   void CalcData(const VectorX<T>& v,
                 GainConstraintsDataPool<T>* gain_data) const;
 
+  // Add the gradient contribution of this constraint, ∇ℓ = −γ, to the overall
+  // gradient.
   // TODO(amcastro-tri): factor out this method into a
   // GeneralizedVelocitiesConstraintsPool parent class, along with other common
   // functionality to all constraint pools on generalized velocities.
   void AccumulateGradient(const PooledSapData<T>& data,
                           VectorX<T>* gradient) const;
 
+  // Add the Hessian contribution of this constraint to the overall Hessian.
   void AccumulateHessian(
       const PooledSapData<T>& data,
       internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
+  // Compute the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0. Used
+  // for exact line search.
   void ProjectAlongLine(const GainConstraintsDataPool<T>& gain_data,
                         const VectorX<T>& w, VectorX<T>* v_sized_scratch,
                         T* dcost, T* d2cost) const;
@@ -107,66 +93,16 @@ class PooledSapModel<T>::GainConstraintsPool {
   // Total number of gain constraints.
   int num_constraints() const { return clique_.size(); }
 
-  /* Return a reference to the parent model. */
+  // Return a reference to the parent model.
   const PooledSapModel<T>& model() const { return *model_; }
 
  private:
-  /* Computes yᵢ = clamp(xᵢ). */
+  // For the k-th gain constraint, compute:
+  //     The clamped cost ℓ(v)
+  //     The clamped gradient/impulse γ = -∇ℓ(v) = clamp(−K⋅v + b, e)
+  //     The clamped Hessian G = -∂γ/∂v (diagonal)
   T Clamp(int k, const Eigen::Ref<const VectorX<T>>& v,
-          EigenPtr<VectorX<T>> gamma, EigenPtr<MatrixX<T>> G) const {
-    const int n = v.size();
-    DRAKE_ASSERT(gamma->size() == n);
-    DRAKE_ASSERT(G->rows() == n);
-    DRAKE_ASSERT(G->cols() == n);
-    using std::max;
-    using std::min;
-
-    const T& dt = model().time_step();
-
-    T cost = 0;
-    for (int i = 0; i < n; ++i) {
-      const T& ki = K_[k][i];
-      const T& bi = b_[k][i];
-      const T& lei = le_[k][i];
-      const T& uei = ue_[k][i];
-      const T& vi = v[i];
-      T& gi = (*gamma)[i];
-      T& Gi = (*G)(i, i);
-
-      const T yi = -ki * vi + bi;
-
-      if (yi < lei) {
-        // Below lower limit.
-        gi = dt * lei;
-        Gi = 0.0;
-        if (ki > 0) {
-          cost += gi * (yi - 0.5 * lei) / ki;
-        } else {
-          cost -= gi * vi;  // Zero gain case.
-        }
-      } else if (yi > uei) {
-        // Above upper limit.
-        gi = dt * uei;
-        Gi = 0.0;
-        if (ki > 0) {
-          cost += gi * (yi - 0.5 * uei) / ki;
-        } else {
-          cost -= gi * vi;  // Zero gain case.
-        }
-      } else {
-        // Within limit.
-        gi = dt * yi;
-        Gi = dt * ki;
-        if (ki > 0) {
-          cost += 0.5 * yi * yi * dt / ki;
-        } else {
-          cost -= gi * vi;  // Zero gain case.
-        }
-      }
-    }
-
-    return cost;
-  }
+          EigenPtr<VectorX<T>> gamma, EigenPtr<MatrixX<T>> G) const;
 
   const PooledSapModel<T>* model_{nullptr};  // The parent model.
 
