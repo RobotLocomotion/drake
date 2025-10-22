@@ -69,7 +69,9 @@ class GainConstraintsDataPool {
  private:
   T cost_{0.0};                       // Total cost over all gain constraints.
   EigenPool<VectorX<T>> gamma_pool_;  // Generalized impulses per constraint.
-  EigenPool<MatrixX<T>> G_pool_;      // G = -∂γ/∂v ≥ is diagonal.
+
+  // TODO(vincekurtz): consider storing as VectorX<T> since diagonal.
+  EigenPool<MatrixX<T>> G_pool_;  // G = -∂γ/∂v ≥ is diagonal.
 };
 
 }  // namespace pooled_sap

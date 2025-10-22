@@ -81,6 +81,8 @@ class LimitConstraintsDataPool {
   T cost_{0.0};
   EigenPool<VectorX<T>> gamma_lower_pool_;
   EigenPool<VectorX<T>> gamma_upper_pool_;
+
+  // TODO(vincekurtz): consider storing as VectorX<T> since diagonal.
   EigenPool<MatrixX<T>> G_lower_pool_;  // G = -∂γ/∂v ≥ is Diagonal.
   EigenPool<MatrixX<T>> G_upper_pool_;  // G = -∂γ/∂v ≥ is Diagonal.
 };
