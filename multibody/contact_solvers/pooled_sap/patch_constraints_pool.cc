@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -151,6 +152,169 @@ T CalcDiscreteHuntCrossleyDerivative(const T& dt, const T& vn, const T& fe0,
   const T dn_dvn = -dt * (k * dt * damping + d * fe);
 
   return dn_dvn;
+}
+
+template <typename T>
+void PooledSapModel<T>::PatchConstraintsPool::Clear() {
+  // Data per patch.
+  num_pairs_.clear();
+  num_cliques_.clear();
+  bodies_.clear();
+  p_AB_W_.Clear();
+  dissipation_.clear();
+  static_friction_.clear();
+  dynamic_friction_.clear();
+  pair_data_start_.clear();
+
+  // Data per pair.
+  p_BC_W_.Clear();
+  normal_W_.Clear();
+  stiffness_.clear();
+  fn0_.clear();
+  n0_.clear();
+  epsilon_soft_.clear();
+  net_friction_.clear();
+}
+
+template <typename T>
+void PooledSapModel<T>::PatchConstraintsPool::Reset(
+    const T& time_step, const std::vector<int>& clique_start,
+    const std::vector<int>& clique_size) {
+  // TODO(vincekurtz): add sanity checks
+  time_step_ = time_step;
+  clique_start_ = clique_start;
+  clique_size_ = clique_size;
+  Clear();
+}
+
+template <typename T>
+void PooledSapModel<T>::PatchConstraintsPool::Resize(
+    const std::vector<int>& num_pairs_per_patch) {
+  num_pairs_ = num_pairs_per_patch;
+
+  const int num_patches = num_pairs_.size();
+  const int num_pairs =
+      std::accumulate(num_pairs_.begin(), num_pairs_.end(), 0);
+
+  // per-patch data.
+  num_cliques_.resize(num_patches);
+  bodies_.resize(num_patches);
+  p_AB_W_.Resize(num_patches);
+  dissipation_.resize(num_patches);
+  static_friction_.resize(num_patches);
+  dynamic_friction_.resize(num_patches);
+
+  // per-pair data.
+  normal_W_.Resize(num_pairs);
+  p_BC_W_.Resize(num_pairs);
+  stiffness_.resize(num_pairs);
+  fn0_.resize(num_pairs);
+  n0_.resize(num_pairs);
+  epsilon_soft_.resize(num_pairs);
+  net_friction_.resize(num_pairs);
+
+  // Start indexes for each patch
+  pair_data_start_.resize(num_patches);
+  int previous_total = 0;
+  for (int i = 0; i < num_patches; ++i) {
+    pair_data_start_[i] = previous_total;
+    previous_total += num_pairs_[i];
+  }
+}
+
+template <typename T>
+void PooledSapModel<T>::PatchConstraintsPool::AddPatch(
+    int index, int bodyA, int bodyB, const T& dissipation,
+    const T& static_friction, const T& dynamic_friction,
+    const Vector3<T>& p_AB_W) {
+  DRAKE_ASSERT(index >= 0 && index < num_patches());
+  DRAKE_DEMAND(bodyA != bodyB);               // Same body never makes sense.
+  DRAKE_DEMAND(!model().is_anchored(bodyB));  // B is never anchored.
+
+  bodies_[index] =
+      std::make_pair(bodyB, bodyA);  // Dynamic body B always first.
+  dissipation_[index] = dissipation;
+  static_friction_[index] = static_friction;
+  dynamic_friction_[index] = dynamic_friction;
+  p_AB_W_[index] = p_AB_W;
+
+  const int num_cliques =
+      (model().is_anchored(bodyA) || model().is_anchored(bodyB)) ? 1 : 2;
+  num_cliques_[index] = num_cliques;
+}
+
+template <typename T>
+void PooledSapModel<T>::PatchConstraintsPool::AddPair(
+    const int patch_idx, const int pair_idx, const Vector3<T>& p_BoC_W,
+    const Vector3<T>& normal_W, const T& fn0, const T& stiffness) {
+  DRAKE_ASSERT(patch_idx >= 0 && patch_idx < num_patches());
+  DRAKE_ASSERT(pair_idx >= 0 && pair_idx < num_pairs_[patch_idx]);
+  const int idx = patch_pair_index(patch_idx, pair_idx);
+
+  p_BC_W_[idx] = p_BoC_W;
+  normal_W_[idx] = normal_W;
+  fn0_[idx] = fn0;
+  stiffness_[idx] = stiffness;
+
+  // Pre-computed quantities.
+  const int num_cliques = num_cliques_[patch_idx];
+
+  // First clique.
+  const Vector6<T>& V_WB = model().V_WB(bodies_[patch_idx].first);
+  const auto w_WB = V_WB.template head<3>();
+  const auto v_WB = V_WB.template tail<3>();
+  Vector3<T> v_AcBc_W = v_WB + w_WB.cross(p_BoC_W);
+
+  // Second clique.
+  if (num_cliques == 2) {
+    const Vector6<T>& V_WA = model().V_WB(bodies_[patch_idx].second);
+    const Vector3<T> p_AC_W = p_AB_W_[patch_idx] + p_BoC_W;
+    const auto w_WA = V_WA.template head<3>();
+    const auto v_WA = V_WA.template tail<3>();
+    v_AcBc_W -= (v_WA + w_WA.cross(p_AC_W));
+  }
+
+  using std::max;
+  const T& d = dissipation_[patch_idx];
+  const T vn0 = v_AcBc_W.dot(normal_W);
+  const T damping = max(0.0, 1.0 - d * vn0);
+  const T n0 = max(0.0, time_step_ * fn0) * damping;
+  n0_[idx] = n0;
+
+  // Coefficient of friction is determined based on previous velocity. This
+  // allows us to consider a Streibeck-like curve while maintaining a convex
+  // formulation.
+  const T vt0 = (v_AcBc_W - vn0 * normal_W).norm();
+  const T s = vt0 / stiction_tolerance_;
+  const T& mu_s = static_friction_[patch_idx];
+  const T& mu_d = dynamic_friction_[patch_idx];
+
+  auto sigmoid = [](const T& x) -> T {
+    return x / sqrt(1 + x * x);
+  };
+
+  const T mu =
+      (mu_s - mu_d) * 0.5 * (1 - (sigmoid(s - 10) / sigmoid(10))) + mu_d;
+  net_friction_[idx] = mu;
+
+  // Compute per-patch regularization of friction. We use a "spherical body
+  // approximation" for the estimation of the Delassus operator. A sphere has
+  // gyration radius of g = 5/2 R (with R the radius). A contact will happen
+  // at distance R from the CoM.
+  // Thus the Delassus operator will be:
+  //   W = 1/m⋅[I₃   0
+  //           [ 0   R²/g²]
+  // It's RMS norm will be w = sqrt(7)/m ≈ 2.65/m.
+  T w = 2.65 / model().body_mass(bodies_[patch_idx].first);
+  if (num_cliques == 2) {
+    w += 2.65 / model().body_mass(bodies_[patch_idx].second);
+  }
+  const T Rt = sigma_ * w;  // SAP's regularization.
+
+  // Regularized Lagged model.
+  const T sap_stiction_tolerance = mu * Rt * n0;
+  const T eps = max(stiction_tolerance_, sap_stiction_tolerance);
+  epsilon_soft_[idx] = eps;
 }
 
 template <typename T>

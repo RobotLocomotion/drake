@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <numeric>
-#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -22,8 +21,10 @@ namespace multibody {
 namespace contact_solvers {
 namespace pooled_sap {
 
-/* A pool of contact constraints organized by patches. Each patch involves two
-bodies. */
+/**
+ * A pool of contact constraints organized by patches. Each patch involves two
+ * bodies and one (point contact) or more (hydroelastic) contact pairs.
+ */
 template <typename T>
 class PooledSapModel<T>::PatchConstraintsPool {
  public:
@@ -31,229 +32,135 @@ class PooledSapModel<T>::PatchConstraintsPool {
 
   using JacobianView = Eigen::Map<Matrix6X<T>>;
 
-  int num_constraints() const { return ssize(num_pairs_); }
-
-  /* Constructor for an empty pool. */
+  // Constructor for an empty pool.
   PatchConstraintsPool(const PooledSapModel<T>* parent_model)
       : model_(parent_model) {
     DRAKE_ASSERT(parent_model != nullptr);
   }
 
-  /* Returns reference to the parent model. */
-  const PooledSapModel<T>& model() const { return *model_; }
+  // Clear the constraints without freeing memory (capacity remains the same).
+  // After this call num_patches() and num_pairs() are zero.
+  void Clear();
 
-  // Reset to work in a model with the given cliques.
+  /**
+   * Reset to work with the given time step and cliques
+   *
+   * @param time_step The current time step dt.
+   * @param clique_start The starting index of each clique in the generalized
+   *                   velocity vector v.
+   * @param clique_size The number of DoFs in each clique.
+   */
   void Reset(const T& time_step, const std::vector<int>& clique_start,
-             const std::vector<int>& clique_size) {
-    time_step_ = time_step;
-    clique_start_ = clique_start;
-    clique_size_ = clique_size;
-    Clear();
-  }
+             const std::vector<int>& clique_size);
 
-  /* Resizes to store patch constraint data. No memory allocation performed if
-     the current capcity is enough to store this data size.
-   @param num_patches The number of patches.
-   @param num_pairs_capcity The total number of pairs (multiple pairs per patch)
+  /**
+   * Resize to store the given patches and pairs.
+   *
+   * @param num_pairs_per_patch Number of contact pairs for each patch.
    */
-  void Resize(const std::vector<int>& num_pairs_per_patch) {
-    num_pairs_ = num_pairs_per_patch;
+  void Resize(const std::vector<int>& num_pairs_per_patch);
 
-    const int num_patches = num_pairs_.size();
-    const int num_pairs =
-        std::accumulate(num_pairs_.begin(), num_pairs_.end(), 0);
-
-    // per-patch data.
-    num_cliques_.resize(num_patches);
-    bodies_.resize(num_patches);
-    p_AB_W_.Resize(num_patches);
-    dissipation_.resize(num_patches);
-    static_friction_.resize(num_patches);
-    dynamic_friction_.resize(num_patches);
-
-    // per-pair data.
-    normal_W_.Resize(num_pairs);
-    p_BC_W_.Resize(num_pairs);
-    stiffness_.resize(num_pairs);
-    fn0_.resize(num_pairs);
-    n0_.resize(num_pairs);
-    epsilon_soft_.resize(num_pairs);
-    net_friction_.resize(num_pairs);
-
-    // Start indexes for each patch
-    pair_data_start_.resize(num_patches);
-    int previous_total = 0;
-    for (int i = 0; i < num_patches; ++i) {
-      pair_data_start_[i] = previous_total;
-      previous_total += num_pairs_[i];
-    }
-  }
-
-  /* Adds a contact patch between bodies A and B.
-   @pre B is always dynamic (not anchored).
+  /**
+   * Set the contact patch between bodies A and B.
+   *
+   * @param index The index of the patch within the pool.
+   * @param bodyA The index of body A (may be anchored).
+   * @param bodyB The index of body B (must be dynamic).
+   * @param dissipation The dissipation coefficient for the patch.
+   * @param static_friction The static friction coefficient for the patch.
+   * @param dynamic_friction The dynamic friction coefficient for the patch.
+   * @param p_AB_W The position of body B relative to body A.
+   *
+   * @pre B is always dynamic (not anchored).
    */
+  // TODO(vincekurtz): consider renaming AddFoo to SetFoo in this and other
+  // constraints.
   void AddPatch(int index, int bodyA, int bodyB, const T& dissipation,
                 const T& static_friction, const T& dynamic_friction,
-                const Vector3<T>& p_AB_W) {
-    DRAKE_DEMAND(bodyA != bodyB);               // Same body never makes sense.
-    DRAKE_DEMAND(!model().is_anchored(bodyB));  // B is never anchored.
+                const Vector3<T>& p_AB_W);
 
-    bodies_[index] =
-        std::make_pair(bodyB, bodyA);  // Dynamic body B always first.
-    dissipation_[index] = dissipation;
-    static_friction_[index] = static_friction;
-    dynamic_friction_[index] = dynamic_friction;
-    p_AB_W_[index] = p_AB_W;
-
-    const int num_cliques =
-        (model().is_anchored(bodyA) || model().is_anchored(bodyB)) ? 1 : 2;
-    num_cliques_[index] = num_cliques;
-  }
-
-  /* Adds per-pair data
-
-   @note As required by AddPatch(), body B is always dynamics (not anchored).
-   Therefore we provide the position of the contact point relative to B and, if
-   needed, the position relative to A is inferred from p_AB_W provided to
-   AddPatch().
-
-   @param[in] normal_W Contact normal, from A into B by convention. */
+  /**
+   * Set the contact pair data for the given patch and pair index.
+   *
+   * @param patch_idx The index of the patch within the pool.
+   * @param pair_idx The index of the contact pair within the patch.
+   * @param p_BoC_W The position of the contact point C relative to body B.
+   * @param normal_W Contact normal, from A into B by convention.
+   * @param fn0 The previous-step normal contact force (lagged for convexity.)
+   * @param stiffness The contact stiffness for the pair.
+   *
+   * @note As required by AddPatch(), body B is always dynamic (not anchored).
+   * Therefore we provide the position of the contact point relative to B and,
+   * if needed, the position relative to A is inferred from p_AB_W provided to
+   * AddPatch().
+   */
   void AddPair(const int patch_idx, const int pair_idx,
                const Vector3<T>& p_BoC_W, const Vector3<T>& normal_W,
-               const T& fn0, const T& stiffness) {
-    DRAKE_ASSERT(patch_idx >= 0 && patch_idx < num_patches());
-    DRAKE_ASSERT(pair_idx >= 0 && pair_idx < num_pairs_[patch_idx]);
-    const int idx = patch_pair_index(patch_idx, pair_idx);
+               const T& fn0, const T& stiffness);
 
-    p_BC_W_[idx] = p_BoC_W;
-    normal_W_[idx] = normal_W;
-    fn0_[idx] = fn0;
-    stiffness_[idx] = stiffness;
-
-    // Pre-computed quantities.
-    const int num_cliques = num_cliques_[patch_idx];
-
-    // First clique.
-    const Vector6<T>& V_WB = model().V_WB(bodies_[patch_idx].first);
-    const auto w_WB = V_WB.template head<3>();
-    const auto v_WB = V_WB.template tail<3>();
-    Vector3<T> v_AcBc_W = v_WB + w_WB.cross(p_BoC_W);
-
-    // Second clique.
-    if (num_cliques == 2) {
-      const Vector6<T>& V_WA = model().V_WB(bodies_[patch_idx].second);
-      const Vector3<T> p_AC_W = p_AB_W_[patch_idx] + p_BoC_W;
-      const auto w_WA = V_WA.template head<3>();
-      const auto v_WA = V_WA.template tail<3>();
-      v_AcBc_W -= (v_WA + w_WA.cross(p_AC_W));
-    }
-
-    using std::max;
-    const T& d = dissipation_[patch_idx];
-    const T vn0 = v_AcBc_W.dot(normal_W);
-    const T damping = max(0.0, 1.0 - d * vn0);
-    const T n0 = max(0.0, time_step_ * fn0) * damping;
-    n0_[idx] = n0;
-
-    // Coefficient of friction is determined based on previous velocity. This
-    // allows us to consider a Streibeck-like curve while maintaining a convex
-    // formulation.
-    const T vt0 = (v_AcBc_W - vn0 * normal_W).norm();
-    const T s = vt0 / stiction_tolerance_;
-    const T& mu_s = static_friction_[patch_idx];
-    const T& mu_d = dynamic_friction_[patch_idx];
-
-    auto sigmoid = [](const T& x) -> T {
-      return x / sqrt(1 + x * x);
-    };
-
-    const T mu =
-        (mu_s - mu_d) * 0.5 * (1 - (sigmoid(s - 10) / sigmoid(10))) + mu_d;
-    net_friction_[idx] = mu;
-
-    // Compute per-patch regularization of friction. We use a "spherical body
-    // approximation" for the estimation of the Delassus operator. A sphere has
-    // gyration radius of g = 5/2 R (with R the radius). A contact will happen
-    // at distance R from the CoM.
-    // Thus the Delassus operator will be:
-    //   W = 1/m⋅[I₃   0
-    //           [ 0   R²/g²]
-    // It's RMS norm will be w = sqrt(7)/m ≈ 2.65/m.
-    T w = 2.65 / model().body_mass(bodies_[patch_idx].first);
-    if (num_cliques == 2) {
-      w += 2.65 / model().body_mass(bodies_[patch_idx].second);
-    }
-    const T Rt = sigma_ * w;  // SAP's regularization.
-
-    // Regularized Lagged model.
-    const T sap_stiction_tolerance = mu * Rt * n0;
-    const T eps = max(stiction_tolerance_, sap_stiction_tolerance);
-    epsilon_soft_[idx] = eps;
-  }
-
-  /* Clears memory, no memory is freed, and the capacity remains the same.
-   After this call num_patches() and num_pairs() equal zero. */
-  void Clear() {
-    // Data per patch.
-    num_pairs_.clear();
-    num_cliques_.clear();
-    bodies_.clear();
-    p_AB_W_.Clear();
-    dissipation_.clear();
-    static_friction_.clear();
-    dynamic_friction_.clear();
-    pair_data_start_.clear();
-
-    // Data per patch and per pair.
-    p_BC_W_.Clear();
-    normal_W_.Clear();
-    stiffness_.clear();
-    fn0_.clear();
-    n0_.clear();
-    epsilon_soft_.clear();
-    net_friction_.clear();
-  }
-
+  // Number of patches (pairs of contacting bodies) in the pool.
   int num_patches() const { return ssize(num_pairs_); }
 
-  /* Returns the sizes of all patches in the pool. */
+  // Number of constraints (contact pairs) in the pool. Should be >=
+  // num_patches().
+  int num_constraints() const { return ssize(num_pairs_); }
+
+  // Return a reference to the parent model.
+  const PooledSapModel<T>& model() const { return *model_; }
+
+  // Return the number of pairs in each patch.
   const std::vector<int>& patch_sizes() const { return num_pairs_; }
 
-  /* Total number of pairs across all patches. */
+  // Total number of pairs across all patches.
   int total_num_pairs() const { return ssize(fn0_); }
 
+  // Number of pairs in the given patch.
   int num_pairs(int patch_index) const {
     DRAKE_ASSERT(0 <= patch_index && patch_index < num_patches());
     return num_pairs_[patch_index];
   }
 
+  // Compute the sparsity pattern for the pool. That is, cliques i is connected
+  // to clique j > i iff sparsity[i] contains j.
+  void CalcSparsityPattern(std::vector<std::vector<int>>* sparsity) const;
+
+  // Given the body spatial velocities V_WB, compute the constraint data for
+  // each patch.
+  void CalcData(const EigenPool<Vector6<T>>& V_WB,
+                PatchConstraintsDataPool<T>* patch_data) const;
+
+  // Add the gradient contribution of the patch constraints, ∇ℓ = −Jᵀ⋅γ, to the
+  // overall gradient.
+  void AccumulateGradient(const PooledSapData<T>& data,
+                          VectorX<T>* gradient) const;
+
+  // Add the Hessian contribution of the patch constraints to the overall
+  // Hessian.
+  void AccumulateHessian(
+      const PooledSapData<T>& data,
+      internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
+
+  /**
+   * Compute the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0. Used
+   * for exact line search.
+   *
+   * @param patch_data The pre-computed patch constraint data.
+   * @param U_WB Body spatial velocities associated with u = v + αw.
+   * @param scratch Scratch space for the computation.
+   * @param dcost The first derivative, dℓ/dα at α = 0.
+   * @param d2cost The second derivative, d²ℓ/dα² at α = 0.
+   */
+  void ProjectAlongLine(const PatchConstraintsDataPool<T>& patch_data,
+                        const EigenPool<Vector6<T>>& U_WB_pool,
+                        typename PooledSapData<T>::Scratch* scratch, T* dcost,
+                        T* d2cost) const;
+
+  // Set the stiction tolerance used for regularization.
   void set_stiction_tolerance(double stiction_tolerance) {
     DRAKE_DEMAND(stiction_tolerance > 0.0);
     stiction_tolerance_ = stiction_tolerance;
     vs2_ = stiction_tolerance_ * stiction_tolerance_;
   }
-
-  /* Computes sparsity pattern for the pool. That is, cliques i is connected to
-  clique j > i iff sparsity[i] contains j. */
-  void CalcSparsityPattern(std::vector<std::vector<int>>* sparsity) const;
-
-  void CalcData(const EigenPool<Vector6<T>>& V_WB,
-                PatchConstraintsDataPool<T>* patch_data) const;
-
-  // TODO(amcastro-tri): factor out this method into a BodyConstraintsPool
-  // parent class, along with other common functionality to all body-constraint
-  // pools.
-  void AccumulateGradient(const PooledSapData<T>& data,
-                          VectorX<T>* gradient) const;
-
-  void AccumulateHessian(
-      const PooledSapData<T>& data,
-      internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
-
-  void ProjectAlongLine(const PatchConstraintsDataPool<T>& patch_data,
-                        const EigenPool<Vector6<T>>& U_WB_pool,
-                        typename PooledSapData<T>::Scratch* scratch, T* dcost,
-                        T* d2cost) const;
 
  private:
   using ConstJacobianView =
@@ -274,20 +181,34 @@ class PooledSapModel<T>::PatchConstraintsPool {
   double vs2_{stiction_tolerance_ * stiction_tolerance_};
   double sigma_{1.0e-3};
 
+  /**
+   * Compute cost, gradient, and Hessian contributions for the given pair
+   *
+   * @param p Patch index.
+   * @param k Pair index within patch.
+   * @param v_AcBc_W Relative contact point velocity.
+   * @param[out] gamma_Bc_W Contact spatial impulse on body B
+   * @param[out] G Contact spatial Hessian for the pair.
+   */
   T CalcLaggedHuntCrossleyModel(int p, int k, const Vector3<T>& v_AcBc_W,
                                 Vector3<T>* gamma_Bc_W, Matrix3<T>* G) const;
 
-  /* Given the body spatial velocities V_WB, this function computes the relative
-   spatial velocity V_AbB_W for each patch. When A is anchored, V_WA = 0 and
-   V_AbB_W = V_WB. */
-  void CalcConstraintVelocities(const EigenPool<Vector6<T>>& V_WB_pool,
-                                EigenPool<Vector6<T>>* V_AbB_W_pool) const;
-  void CalcContactVelocities(const EigenPool<Vector6<T>>& V_WB_pool,
-                             EigenPool<Vector3<T>>* v_AcBc_W_pool) const;
+  // Compute cost, gradient, and Hessian contributions for each patch.
   void CalcPatchQuantities(const EigenPool<Vector3<T>>& v_AcBc_W_pool,
                            std::vector<T>* cost_pool,
                            EigenPool<Vector6<T>>* spatial_impulses_pool,
                            EigenPool<Matrix6<T>>* patch_hessians_pool) const;
+
+  // Given the body spatial velocities V_WB, compute the contact velocities
+  // for each contact pair.
+  void CalcContactVelocities(const EigenPool<Vector6<T>>& V_WB_pool,
+                             EigenPool<Vector3<T>>* v_AcBc_W_pool) const;
+
+  // Given the body spatial velocities V_WB, compute the relative spatial
+  // velocity V_AbB_W for each patch. When A is anchored, V_WA = 0 and V_AbB_W
+  // = V_WB.
+  void CalcConstraintVelocities(const EigenPool<Vector6<T>>& V_WB_pool,
+                                EigenPool<Vector6<T>>* V_AbB_W_pool) const;
 
   const PooledSapModel<T>* model_{nullptr};  // The parent model.
 
