@@ -80,6 +80,7 @@ MODULE_SETTINGS = {
         }),
     },
     "VTK::x11": {
+        "visibility": ["//visibility:public"],
         "cmake_defines": select({
             ":osx": [],
             "//conditions:default": [
@@ -91,6 +92,15 @@ MODULE_SETTINGS = {
                 "VTK_USE_X",
             ],
             "//conditions:default": [],
+        }),
+        # Propagate X11 include dirs to dependents so that they can access X11
+        # structs and definitions. This mimics `vtk_module_include(VTK::x11
+        # INTERFACE ${X11_INCLUDE_DIR})` from upstream.
+        "deps_extra": select({
+            ":osx": [],
+            "//conditions:default": [
+                "@drake//tools/workspace/x11:hdrs",
+            ],
         }),
     },
 
@@ -557,13 +567,6 @@ MODULE_SETTINGS = {
                 "-framework Cocoa",
             ],
             "//conditions:default": [],
-        }),
-        "deps_extra": select({
-            ":osx": [],
-            "//conditions:default": [
-                # Mimic vtk_module_link(... X11::X11) from upstream.
-                "@x11",
-            ],
         }),
         "module_deps_ignore": [
             "VTK::IOXML",
