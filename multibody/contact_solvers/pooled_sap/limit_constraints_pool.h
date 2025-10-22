@@ -23,107 +23,93 @@ namespace multibody {
 namespace contact_solvers {
 namespace pooled_sap {
 
-/* A pool of limit constraints organized by cliques. */
+/**
+ * A pool of limit constraints, qu ≥ q ≥ ql.
+ */
 template <typename T>
 class PooledSapModel<T>::LimitConstraintsPool {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LimitConstraintsPool);
 
-  int num_constraints() const { return constraint_to_clique_.size(); }
-
-  /* Constructor for an empty pool. */
+  // Constructor for an empty pool.
   LimitConstraintsPool(const PooledSapModel<T>* parent_model)
       : model_(parent_model) {
     DRAKE_ASSERT(parent_model != nullptr);
   }
 
-  /* Returns reference to the parent model. */
-  const PooledSapModel<T>& model() const { return *model_; }
+  // Reset, zeroing out the constraints while keeping memory allocated.
+  void Clear();
 
-  void Clear() {
-    constraint_to_clique_.clear();
-    constraint_sizes_.clear();
-    ql_.Clear();
-    qu_.Clear();
-    q0_.Clear();
-    vl_hat_.Clear();
-    vu_hat_.Clear();
-    R_.Clear();
-  }
-
-  /* Re-allocate memory as needed, setting all constraints as infinite. */
+  // Re-allocate memory as needed, setting all constraints as infinite by
+  // default so they are disabled to start with.
   void Resize(const std::vector<int>& constrained_clique_sizes,
-              const std::vector<int>& constraint_to_clique) {
-    DRAKE_DEMAND(constrained_clique_sizes.size() ==
-                 constraint_to_clique.size());
-    ql_.Resize(constrained_clique_sizes);
-    qu_.Resize(constrained_clique_sizes);
-    q0_.Resize(constrained_clique_sizes);
-    R_.Resize(constrained_clique_sizes);
-    vl_hat_.Resize(constrained_clique_sizes);
-    vu_hat_.Resize(constrained_clique_sizes);
-    constraint_sizes_ = constrained_clique_sizes;
-    constraint_to_clique_ = constraint_to_clique;
+              const std::vector<int>& constraint_to_clique);
 
-    // All constraints are disabled (e.g., infinite bounds) by default. This
-    // allows us to add a limit constraint on only one DoF in a multi-DoF
-    // clique, for example.
-    // TODO(vincekurtz): consider a setConstant method in EigenPool.
-    for (int k = 0; k < num_constraints(); ++k) {
-      ql_[k].setConstant(-std::numeric_limits<double>::infinity());
-      qu_[k].setConstant(std::numeric_limits<double>::infinity());
-      q0_[k].setConstant(0.0);
-      R_[k].setConstant(std::numeric_limits<double>::infinity());
-      vl_hat_[k].setConstant(-std::numeric_limits<double>::infinity());
-      vu_hat_[k].setConstant(-std::numeric_limits<double>::infinity());
-    }
-  }
+  /**
+   * Set the k-th limit constraint parameters for the given clique and DoF.
+   *
+   * @param k The index of this limit constraint in the pool.
+   * @param clique The clique to which this limit constraint applies.
+   * @param dof The degree of freedom within the clique to which this limit
+   * constraint applies.
+   * @param q0 The current configuration value for this DoF.
+   * @param ql The lower limit for this DoF.
+   * @param qu The upper limit for this DoF.
+   */
+  void Add(int k, int clique, int dof, const T& q0, const T& ql, const T& qu);
 
-  void Add(int k, int clique, int dof, const T& q0, const T& ql, const T& qu) {
-    lower_limit(k, dof) = ql;
-    upper_limit(k, dof) = qu;
-    configuration(k, dof) = q0;
-
-    const T dt = model().time_step();
-    const double beta = 0.1;
-    const double eps = beta * beta / (4 * M_PI * M_PI) * (1 + beta / M_PI);
-
-    const auto w_clique = model().get_clique_delassus(clique);
-    regularization(k, dof) = eps * w_clique(dof);
-    vl_hat(k, dof) = (ql - q0) / (dt * (1.0 + beta));
-    vu_hat(k, dof) = (q0 - qu) / (dt * (1.0 + beta));
-  }
-
+  // Upper and lower limits
   T& lower_limit(int k, int dof) { return ql_[k](dof); }
   T& upper_limit(int k, int dof) { return qu_[k](dof); }
+
+  // Initial configuration q0
   T& configuration(int k, int dof) { return q0_[k](dof); }
+
+  // Near-rigid regularization
   T& regularization(int k, int dof) { return R_[k](dof); }
+  const T regularization(int k, int dof) const { return R_[k](dof); }
+
+  // Upper and lower bound velocity targets
   T& vl_hat(int k, int dof) { return vl_hat_[k](dof); }
   T& vu_hat(int k, int dof) { return vu_hat_[k](dof); }
-  const T regularization(int k, int dof) const { return R_[k](dof); }
   const T vl_hat(int k, int dof) const { return vl_hat_[k](dof); }
   const T vu_hat(int k, int dof) const { return vu_hat_[k](dof); }
 
+  // Resize the associated data pool to match this pool size.
   void ResizeData(LimitConstraintsDataPool<T>* limit_data) const;
 
+  // Compute problem data for the given generalized velocities `v`.
   void CalcData(const VectorX<T>& v,
                 LimitConstraintsDataPool<T>* limit_data) const;
 
+  // Add the gradient contribution of this constraint, ∇ℓ = −γ, to the overall
+  // gradient.
   // TODO(amcastro-tri): factor out this method into a
   // GeneralizedVelocitiesConstraintsPool parent class, along with other common
   // functionality to all constraint pools on generalized velocities.
   void AccumulateGradient(const PooledSapData<T>& data,
                           VectorX<T>* gradient) const;
 
+  // Add the Hessian contribution of this constraint to the overall Hessian.
   void AccumulateHessian(
       const PooledSapData<T>& data,
       internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
+  // Compute the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0. Used
+  // for exact line search.
   void ProjectAlongLine(const LimitConstraintsDataPool<T>& limit_data,
                         const VectorX<T>& w, VectorX<T>* v_sized_scratch,
                         T* dcost, T* d2cost) const;
 
+  // Total number of limit constraints.
+  int num_constraints() const { return constraint_to_clique_.size(); }
+
+  // Return a reference to the parent model.
+  const PooledSapModel<T>& model() const { return *model_; }
+
  private:
+  // Compute cost, gradient, and Hessian contribution for a single limit
+  // constraint.
   T CalcLimitData(const T& v_hat, const T& R, const T& v, T* gamma, T* G) const;
 
   const PooledSapModel<T>* model_{nullptr};  // The parent model.

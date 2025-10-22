@@ -22,6 +22,64 @@ void PooledSapModel<T>::LimitConstraintsPool::ResizeData(
 }
 
 template <typename T>
+void PooledSapModel<T>::LimitConstraintsPool::Clear() {
+  constraint_to_clique_.clear();
+  constraint_sizes_.clear();
+  ql_.Clear();
+  qu_.Clear();
+  q0_.Clear();
+  vl_hat_.Clear();
+  vu_hat_.Clear();
+  R_.Clear();
+}
+
+template <typename T>
+void PooledSapModel<T>::LimitConstraintsPool::Resize(
+    const std::vector<int>& constrained_clique_sizes,
+    const std::vector<int>& constraint_to_clique) {
+  DRAKE_DEMAND(constrained_clique_sizes.size() == constraint_to_clique.size());
+  ql_.Resize(constrained_clique_sizes);
+  qu_.Resize(constrained_clique_sizes);
+  q0_.Resize(constrained_clique_sizes);
+  R_.Resize(constrained_clique_sizes);
+  vl_hat_.Resize(constrained_clique_sizes);
+  vu_hat_.Resize(constrained_clique_sizes);
+  constraint_sizes_ = constrained_clique_sizes;
+  constraint_to_clique_ = constraint_to_clique;
+
+  // All constraints are disabled (e.g., infinite bounds) by default. This
+  // allows us to add a limit constraint on only one DoF in a multi-DoF
+  // clique, for example.
+  // TODO(vincekurtz): consider a setConstant method in EigenPool.
+  for (int k = 0; k < num_constraints(); ++k) {
+    ql_[k].setConstant(-std::numeric_limits<double>::infinity());
+    qu_[k].setConstant(std::numeric_limits<double>::infinity());
+    q0_[k].setConstant(0.0);
+    R_[k].setConstant(std::numeric_limits<double>::infinity());
+    vl_hat_[k].setConstant(-std::numeric_limits<double>::infinity());
+    vu_hat_[k].setConstant(-std::numeric_limits<double>::infinity());
+  }
+}
+
+template <typename T>
+void PooledSapModel<T>::LimitConstraintsPool::Add(int k, int clique, int dof,
+                                                  const T& q0, const T& ql,
+                                                  const T& qu) {
+  lower_limit(k, dof) = ql;
+  upper_limit(k, dof) = qu;
+  configuration(k, dof) = q0;
+
+  const T dt = model().time_step();
+  const double beta = 0.1;
+  const double eps = beta * beta / (4 * M_PI * M_PI) * (1 + beta / M_PI);
+
+  const auto w_clique = model().get_clique_delassus(clique);
+  regularization(k, dof) = eps * w_clique(dof);
+  vl_hat(k, dof) = (ql - q0) / (dt * (1.0 + beta));
+  vu_hat(k, dof) = (q0 - qu) / (dt * (1.0 + beta));
+}
+
+template <typename T>
 T PooledSapModel<T>::LimitConstraintsPool::CalcLimitData(const T& v_hat,
                                                          const T& R, const T& v,
                                                          T* gamma, T* G) const {
@@ -85,7 +143,7 @@ void PooledSapModel<T>::LimitConstraintsPool::AccumulateGradient(
     ConstVectorXView gamma_upper = limit_data.gamma_upper(k);
 
     // For this constraint vc = [v; -v], i.e. J = [1; -1]^ᵀ.
-    // Therefore ∇ℓ =γᵤ − γₗ:
+    // Therefore ∇ℓ = γᵤ − γₗ:
     gradient_c += gamma_upper;
     gradient_c -= gamma_lower;
   }
