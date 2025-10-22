@@ -2,9 +2,7 @@
 
 --- Utilities/X11/vtkX11Functions.cxx
 +++ Utilities/X11/vtkX11Functions.cxx
-@@ -79,6 +79,11 @@ DEFINE_POINTER_TO_FUNCTION(vtkXCreateWindow);
- DEFINE_POINTER_TO_FUNCTION(vtkXRootWindowOfScreen);
- DEFINE_POINTER_TO_FUNCTION(vtkXRootWindow);
+@@ -79,4 +79,9 @@ DEFINE_POINTER_TO_FUNCTION(vtkXCreateWindow);
  DEFINE_POINTER_TO_FUNCTION(vtkXGetVisualInfo);
 +DEFINE_POINTER_TO_FUNCTION(vtkXClearWindow);
 +DEFINE_POINTER_TO_FUNCTION(vtkXFreeColormap);
@@ -14,9 +12,7 @@
  
  // Xcursor API
  #if VTK_HAVE_XCURSOR
-@@ -167,6 +172,11 @@ extern "C"
-       LOAD_POINTER_TO_FUNCTION(libX11, XRootWindowOfScreen, vtkXRootWindowOfScreen);
-       LOAD_POINTER_TO_FUNCTION(libX11, XRootWindow, vtkXRootWindow);
+@@ -167,2 +172,7 @@ extern "C"
        LOAD_POINTER_TO_FUNCTION(libX11, XGetVisualInfo, vtkXGetVisualInfo);
 +      LOAD_POINTER_TO_FUNCTION(libX11, XClearWindow, vtkXClearWindow);
 +      LOAD_POINTER_TO_FUNCTION(libX11, XFreeColormap, vtkXFreeColormap);
@@ -24,11 +20,7 @@
 +      LOAD_POINTER_TO_FUNCTION(libX11, XMapRaised, vtkXMapRaised);
 +      LOAD_POINTER_TO_FUNCTION(libX11, XWindowEvent, vtkXWindowEvent);
  #if VTK_HAVE_XCURSOR
-       libXcursor = dlopen("libXcursor.so", RTLD_LAZY | RTLD_GLOBAL);
-       if (libXcursor == nullptr)
-@@ -245,6 +255,11 @@ extern "C"
-       NULLIFY_POINTER_TO_FUNCTION(vtkXRootWindowOfScreen);
-       NULLIFY_POINTER_TO_FUNCTION(vtkXRootWindow);
+@@ -245,3 +255,8 @@ extern "C"
        NULLIFY_POINTER_TO_FUNCTION(vtkXGetVisualInfo);
 +      NULLIFY_POINTER_TO_FUNCTION(vtkXClearWindow);
 +      NULLIFY_POINTER_TO_FUNCTION(vtkXFreeColormap);
@@ -37,13 +29,10 @@
 +      NULLIFY_POINTER_TO_FUNCTION(vtkXWindowEvent);
  
  // Xcursor API
- #if VTK_HAVE_XCURSOR
 
 --- Utilities/X11/vtkX11Functions.h.in
 +++ Utilities/X11/vtkX11Functions.h.in
-@@ -111,6 +111,11 @@
- #define vtkXRootWindowOfScreen VTK_ABI_NAMESPACE_MANGLE(vtkXRootWindowOfScreen)
- #define vtkXRootWindow VTK_ABI_NAMESPACE_MANGLE(vtkXRootWindow)
+@@ -111,3 +111,8 @@
  #define vtkXGetVisualInfo VTK_ABI_NAMESPACE_MANGLE(vtkXGetVisualInfo)
 +#define vtkXClearWindow VTK_ABI_NAMESPACE_MANGLE(vtkXClearWindow)
 +#define vtkXFreeColormap VTK_ABI_NAMESPACE_MANGLE(vtkXFreeColormap)
@@ -52,10 +41,7 @@
 +#define vtkXWindowEvent VTK_ABI_NAMESPACE_MANGLE(vtkXWindowEvent)
  
  #if VTK_HAVE_XCURSOR
- #define vtkXcursorFilenameLoadCursor VTK_ABI_NAMESPACE_MANGLE(vtkXcursorFilenameLoadCursor)
-@@ -198,6 +203,11 @@ extern "C"
-   typedef Window (*vtkXRootWindowOfScreenType)(Screen*);
-   typedef Window (*vtkXRootWindowType)(Display*, int);
+@@ -198,2 +203,7 @@ extern "C"
    typedef XVisualInfo* (*vtkXGetVisualInfoType)(Display*, long, XVisualInfo*, int*);
 +  typedef int (*vtkXClearWindowType)(Display*, Window);
 +  typedef Colormap (*vtkXFreeColormapType)(Display*, Window);
@@ -63,11 +49,7 @@
 +  typedef int (*vtkXMapRaisedType)(Display*, Window);
 +  typedef int (*vtkXWindowEventType)(Display*, Window, long, XEvent*);
    // Xcursor API
- #if VTK_HAVE_XCURSOR
-   typedef Cursor (*vtkXcursorFilenameLoadCursorType)(Display*, const char*);
-@@ -263,6 +273,11 @@ extern "C"
-   VTKX11_EXPORT extern vtkXRootWindowOfScreenType vtkXRootWindowOfScreen;
-   VTKX11_EXPORT extern vtkXRootWindowType vtkXRootWindow;
+@@ -263,2 +273,7 @@ extern "C"
    VTKX11_EXPORT extern vtkXGetVisualInfoType vtkXGetVisualInfo;
 +  VTKX11_EXPORT extern vtkXClearWindowType vtkXClearWindow;
 +  VTKX11_EXPORT extern vtkXFreeColormapType vtkXFreeColormap;
@@ -75,5 +57,3 @@
 +  VTKX11_EXPORT extern vtkXMapRaisedType vtkXMapRaised;
 +  VTKX11_EXPORT extern vtkXWindowEventType vtkXWindowEvent;
    // Xcursor API
- #if VTK_HAVE_XCURSOR
-   VTKX11_EXPORT extern vtkXcursorFilenameLoadCursorType vtkXcursorFilenameLoadCursor;

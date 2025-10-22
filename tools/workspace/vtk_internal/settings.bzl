@@ -87,7 +87,9 @@ MODULE_SETTINGS = {
                 "VTK_USE_X",
             ],
         }),
-        "cmake_undefines": select({
+        "cmake_undefines": [
+            "VTK_HAVE_XCURSOR",
+        ] + select({
             ":osx": [
                 "VTK_USE_X",
             ],

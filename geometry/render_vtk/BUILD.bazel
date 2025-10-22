@@ -93,6 +93,7 @@ drake_cc_library(
         "@vtk_internal//:vtkCommonExecutionModel",
         "@vtk_internal//:vtkCommonTransforms",
         "@vtk_internal//:vtkFiltersSources",
+        "@vtk_internal//:vtkIOCore",
         "@vtk_internal//:vtkIOGeometry",
         "@vtk_internal//:vtkIOImage",
         "@vtk_internal//:vtkIOImport",
